@@ -25,16 +25,8 @@ import (
 	cachev8 "github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
-	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
-	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
-	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/health"
-	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -51,27 +43,8 @@ import (
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
+	managerserver "d7y.io/dragonfly/v2/pkg/rpc/manager/server"
 )
-
-// Default middlewares for stream.
-func defaultStreamMiddleWares() []grpc.StreamServerInterceptor {
-	return []grpc.StreamServerInterceptor{
-		grpc_validator.StreamServerInterceptor(),
-		grpc_recovery.StreamServerInterceptor(),
-		grpc_prometheus.StreamServerInterceptor,
-		grpc_zap.StreamServerInterceptor(logger.GrpcLogger.Desugar()),
-	}
-}
-
-// Default middlewares for unary.
-func defaultUnaryMiddleWares() []grpc.UnaryServerInterceptor {
-	return []grpc.UnaryServerInterceptor{
-		grpc_validator.UnaryServerInterceptor(),
-		grpc_recovery.UnaryServerInterceptor(),
-		grpc_prometheus.UnaryServerInterceptor,
-		grpc_zap.UnaryServerInterceptor(logger.GrpcLogger.Desugar()),
-	}
-}
 
 // Server is grpc server.
 type Server struct {
@@ -85,8 +58,6 @@ type Server struct {
 	cache *cache.Cache
 	// Searcher interface.
 	searcher searcher.Searcher
-	// Manager grpc interface.
-	managerv1.UnimplementedManagerServer
 	// Object storage interface.
 	objectStorage objectstorage.ObjectStorage
 	// Object storage configuration.
@@ -98,7 +69,7 @@ func New(
 	cfg *config.Config, database *database.Database, cache *cache.Cache, searcher searcher.Searcher,
 	objectStorage objectstorage.ObjectStorage, objectStorageConfig *config.ObjectStorageConfig, opts ...grpc.ServerOption,
 ) *grpc.Server {
-	server := &Server{
+	return managerserver.New(&Server{
 		config:              cfg,
 		db:                  database.DB,
 		rdb:                 database.RDB,
@@ -106,19 +77,7 @@ func New(
 		searcher:            searcher,
 		objectStorage:       objectStorage,
 		objectStorageConfig: objectStorageConfig,
-	}
-
-	grpcServer := grpc.NewServer(append([]grpc.ServerOption{
-		grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
-		grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()),
-		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(defaultStreamMiddleWares()...)),
-		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(defaultUnaryMiddleWares()...)),
-	}, opts...)...)
-
-	// Register servers on grpc server.
-	managerv1.RegisterManagerServer(grpcServer, server)
-	healthpb.RegisterHealthServer(grpcServer, health.NewServer())
-	return grpcServer
+	}, opts...)
 }
 
 // Get SeedPeer and SeedPeer cluster configuration.

@@ -26,16 +26,20 @@ import (
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/credentials/insecure"
 
 	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/balancer"
+	pkgbalancer "d7y.io/dragonfly/v2/pkg/balancer"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/resolver"
+	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
 const (
@@ -50,29 +54,27 @@ const (
 	perRetryTimeout = 3 * time.Second
 )
 
-// defaultDialOptions is default dial options of manager client.
-var defaultDialOptions = []grpc.DialOption{
-	grpc.WithDefaultServiceConfig(balancer.BalancerServiceConfig),
-	grpc.WithTransportCredentials(insecure.NewCredentials()),
-	grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
-		grpc_prometheus.UnaryClientInterceptor,
-		grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
-		grpc_retry.UnaryClientInterceptor(
-			grpc_retry.WithPerRetryTimeout(perRetryTimeout),
-			grpc_retry.WithMax(maxRetries),
-			grpc_retry.WithBackoff(grpc_retry.BackoffLinear(backoffWaitBetween)),
-		),
-	)),
-	grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
-		grpc_prometheus.StreamClientInterceptor,
-		grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
-	)),
-}
-
 func GetClientByAddr(netAddr dfnet.NetAddr, options ...grpc.DialOption) (Client, error) {
 	conn, err := grpc.Dial(
 		netAddr.Addr,
-		append(defaultDialOptions, options...)...,
+		append([]grpc.DialOption{
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
+				otelgrpc.UnaryClientInterceptor(),
+				grpc_prometheus.UnaryClientInterceptor,
+				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
+				grpc_retry.UnaryClientInterceptor(
+					grpc_retry.WithPerRetryTimeout(perRetryTimeout),
+					grpc_retry.WithMax(maxRetries),
+					grpc_retry.WithBackoff(grpc_retry.BackoffLinear(backoffWaitBetween)),
+				),
+			)),
+			grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
+				otelgrpc.StreamClientInterceptor(),
+				grpc_prometheus.StreamClientInterceptor,
+				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
+			)),
+		}, options...)...,
 	)
 	if err != nil {
 		return nil, err
@@ -84,10 +86,34 @@ func GetClientByAddr(netAddr dfnet.NetAddr, options ...grpc.DialOption) (Client,
 	}, nil
 }
 
-func GetClient(options ...grpc.DialOption) (Client, error) {
+func GetClient(dynconfig config.DynconfigInterface, options ...grpc.DialOption) (Client, error) {
+	// Register resolver and balancer.
+	resolver.RegisterSeedPeer(dynconfig)
+	balancer.Register(pkgbalancer.NewConsistentHashingBuilder())
+
 	conn, err := grpc.Dial(
 		resolver.SeedPeerVirtualTarget,
-		append(defaultDialOptions, options...)...,
+		append([]grpc.DialOption{
+			grpc.WithDefaultServiceConfig(pkgbalancer.BalancerServiceConfig),
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
+				otelgrpc.UnaryClientInterceptor(),
+				grpc_prometheus.UnaryClientInterceptor,
+				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
+				grpc_retry.UnaryClientInterceptor(
+					grpc_retry.WithPerRetryTimeout(perRetryTimeout),
+					grpc_retry.WithMax(maxRetries),
+					grpc_retry.WithBackoff(grpc_retry.BackoffLinear(backoffWaitBetween)),
+				),
+				rpc.RefresherUnaryClientInterceptor(dynconfig),
+			)),
+			grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
+				otelgrpc.StreamClientInterceptor(),
+				grpc_prometheus.StreamClientInterceptor,
+				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
+				rpc.RefresherStreamClientInterceptor(dynconfig),
+			)),
+		}, options...)...,
 	)
 	if err != nil {
 		return nil, err
@@ -120,7 +146,7 @@ type client struct {
 // ObtainSeeds triggers the seed peer to download task back-to-source..
 func (c *client) ObtainSeeds(ctx context.Context, req *cdnsystemv1.SeedRequest, options ...grpc.CallOption) (cdnsystemv1.Seeder_ObtainSeedsClient, error) {
 	return c.SeederClient.ObtainSeeds(
-		context.WithValue(ctx, balancer.ContextKey, req.TaskId),
+		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		req,
 		options...,
 	)
@@ -129,7 +155,7 @@ func (c *client) ObtainSeeds(ctx context.Context, req *cdnsystemv1.SeedRequest, 
 // GetPieceTasks gets detail information of task.
 func (c *client) GetPieceTasks(ctx context.Context, req *commonv1.PieceTaskRequest, options ...grpc.CallOption) (*commonv1.PiecePacket, error) {
 	return c.SeederClient.GetPieceTasks(
-		context.WithValue(ctx, balancer.ContextKey, req.TaskId),
+		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		req,
 		options...,
 	)
@@ -138,7 +164,7 @@ func (c *client) GetPieceTasks(ctx context.Context, req *commonv1.PieceTaskReque
 // SyncPieceTasks syncs detail information of task.
 func (c *client) SyncPieceTasks(ctx context.Context, req *commonv1.PieceTaskRequest, options ...grpc.CallOption) (cdnsystemv1.Seeder_SyncPieceTasksClient, error) {
 	stream, err := c.SeederClient.SyncPieceTasks(
-		context.WithValue(ctx, balancer.ContextKey, req.TaskId),
+		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		options...,
 	)
 	if err != nil {

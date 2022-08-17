@@ -38,9 +38,8 @@ import (
 	"go.uber.org/atomic"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/health"
-	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
@@ -97,11 +96,7 @@ func New(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskManager,
 	}
 
 	s.downloadServer = dfdaemonserver.New(s, downloadOpts...)
-	healthpb.RegisterHealthServer(s.downloadServer, health.NewServer())
-
 	s.peerServer = dfdaemonserver.New(s, peerOpts...)
-	healthpb.RegisterHealthServer(s.peerServer, health.NewServer())
-
 	cdnsystemv1.RegisterSeederServer(s.peerServer, sd)
 	return s, nil
 }
@@ -318,9 +313,9 @@ func (s *server) SyncPieceTasks(sync dfdaemonv1.Daemon_SyncPieceTasksServer) err
 	return sub.sendRemainingPieceTasks()
 }
 
-func (s *server) CheckHealth(context.Context) error {
+func (s *server) CheckHealth(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
 	s.Keep()
-	return nil
+	return new(emptypb.Empty), nil
 }
 
 func (s *server) Download(req *dfdaemonv1.DownRequest, stream dfdaemonv1.Daemon_DownloadServer) error {
@@ -535,7 +530,7 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemonv1.DownRequest, st
 	}
 }
 
-func (s *server) StatTask(ctx context.Context, req *dfdaemonv1.StatTaskRequest) error {
+func (s *server) StatTask(ctx context.Context, req *dfdaemonv1.StatTaskRequest) (*emptypb.Empty, error) {
 	s.Keep()
 	taskID := idgen.TaskID(req.Url, req.UrlMeta)
 	log := logger.With("function", "StatTask", "URL", req.Url, "Tag", req.UrlMeta.Tag, "taskID", taskID, "LocalOnly", req.LocalOnly)
@@ -543,35 +538,36 @@ func (s *server) StatTask(ctx context.Context, req *dfdaemonv1.StatTaskRequest) 
 	log.Info("new stat task request")
 	if completed := s.isTaskCompleted(taskID); completed {
 		log.Info("task found in local storage")
-		return nil
+		return new(emptypb.Empty), nil
 	}
 
 	// If only stat local cache and task doesn't exist, return not found
 	if req.LocalOnly {
 		msg := "task not found in local cache"
 		log.Info(msg)
-		return dferrors.New(commonv1.Code_PeerTaskNotFound, msg)
+		return nil, dferrors.New(commonv1.Code_PeerTaskNotFound, msg)
 	}
 
 	// Check scheduler if other peers hold the task
 	task, se := s.peerTaskManager.StatTask(ctx, taskID)
 	if se != nil {
-		return se
+		return new(emptypb.Empty), se
 	}
+
 	// Task available for download only if task is in succeeded state and has available peer
 	if task.State == resource.TaskStateSucceeded && task.HasAvailablePeer {
-		return nil
+		return new(emptypb.Empty), nil
 	}
 	msg := fmt.Sprintf("task found but not available for download, state %s, has available peer %t", task.State, task.HasAvailablePeer)
 	log.Info(msg)
-	return dferrors.New(commonv1.Code_PeerTaskNotFound, msg)
+	return nil, dferrors.New(commonv1.Code_PeerTaskNotFound, msg)
 }
 
 func (s *server) isTaskCompleted(taskID string) bool {
 	return s.storageManager.FindCompletedTask(taskID) != nil
 }
 
-func (s *server) ImportTask(ctx context.Context, req *dfdaemonv1.ImportTaskRequest) error {
+func (s *server) ImportTask(ctx context.Context, req *dfdaemonv1.ImportTaskRequest) (*emptypb.Empty, error) {
 	s.Keep()
 	peerID := idgen.PeerID(s.peerHost.Ip)
 	taskID := idgen.TaskID(req.Url, req.UrlMeta)
@@ -601,7 +597,7 @@ func (s *server) ImportTask(ctx context.Context, req *dfdaemonv1.ImportTaskReque
 		// Announce to scheduler as well, but in background
 		ptm.PeerID = task.PeerID
 		go announceFunc()
-		return nil
+		return new(emptypb.Empty), nil
 	}
 
 	// 1. Register to storageManager
@@ -615,7 +611,7 @@ func (s *server) ImportTask(ctx context.Context, req *dfdaemonv1.ImportTaskReque
 	if err != nil {
 		msg := fmt.Sprintf("register task to storage manager failed: %v", err)
 		log.Error(msg)
-		return errors.New(msg)
+		return nil, errors.New(msg)
 	}
 
 	// 2. Import task file
@@ -623,17 +619,17 @@ func (s *server) ImportTask(ctx context.Context, req *dfdaemonv1.ImportTaskReque
 	if err := pieceManager.ImportFile(ctx, ptm, tsd, req); err != nil {
 		msg := fmt.Sprintf("import file failed: %v", err)
 		log.Error(msg)
-		return errors.New(msg)
+		return nil, errors.New(msg)
 	}
 	log.Info("import file succeeded")
 
 	// 3. Announce to scheduler asynchronously
 	go announceFunc()
 
-	return nil
+	return new(emptypb.Empty), nil
 }
 
-func (s *server) ExportTask(ctx context.Context, req *dfdaemonv1.ExportTaskRequest) error {
+func (s *server) ExportTask(ctx context.Context, req *dfdaemonv1.ExportTaskRequest) (*emptypb.Empty, error) {
 	s.Keep()
 	taskID := idgen.TaskID(req.Url, req.UrlMeta)
 	log := logger.With("function", "ExportTask", "URL", req.Url, "Tag", req.UrlMeta.Tag, "taskID", taskID, "destination", req.Output)
@@ -645,17 +641,19 @@ func (s *server) ExportTask(ctx context.Context, req *dfdaemonv1.ExportTaskReque
 		if req.LocalOnly {
 			msg := fmt.Sprintf("task not found in local storage")
 			log.Info(msg)
-			return dferrors.New(commonv1.Code_PeerTaskNotFound, msg)
+			return nil, dferrors.New(commonv1.Code_PeerTaskNotFound, msg)
 		}
 		log.Info("task not found, try from peers")
-		return s.exportFromPeers(ctx, log, req)
+		return new(emptypb.Empty), s.exportFromPeers(ctx, log, req)
 	}
+
 	err := s.exportFromLocal(ctx, req, task.PeerID)
 	if err != nil {
 		log.Errorf("export from local failed: %s", err)
-		return err
+		return nil, err
 	}
-	return nil
+
+	return new(emptypb.Empty), nil
 }
 
 func (s *server) exportFromLocal(ctx context.Context, req *dfdaemonv1.ExportTaskRequest, peerID string) error {
@@ -755,7 +753,7 @@ func call(ctx context.Context, peerID string, sender ResultSender, s *server, re
 	}
 }
 
-func (s *server) DeleteTask(ctx context.Context, req *dfdaemonv1.DeleteTaskRequest) error {
+func (s *server) DeleteTask(ctx context.Context, req *dfdaemonv1.DeleteTaskRequest) (*emptypb.Empty, error) {
 	s.Keep()
 	taskID := idgen.TaskID(req.Url, req.UrlMeta)
 	log := logger.With("function", "DeleteTask", "URL", req.Url, "Tag", req.UrlMeta.Tag, "taskID", taskID)
@@ -764,7 +762,7 @@ func (s *server) DeleteTask(ctx context.Context, req *dfdaemonv1.DeleteTaskReque
 	task := s.storageManager.FindCompletedTask(taskID)
 	if task == nil {
 		log.Info("task not found, skip delete")
-		return nil
+		return new(emptypb.Empty), nil
 	}
 
 	// Unregister task
@@ -775,9 +773,10 @@ func (s *server) DeleteTask(ctx context.Context, req *dfdaemonv1.DeleteTaskReque
 	if err := s.storageManager.UnregisterTask(ctx, unregReq); err != nil {
 		msg := fmt.Sprintf("failed to UnregisterTask: %s", err)
 		log.Errorf(msg)
-		return errors.New(msg)
+		return nil, errors.New(msg)
 	}
-	return nil
+
+	return new(emptypb.Empty), nil
 }
 
 func checkOutput(output string) error {

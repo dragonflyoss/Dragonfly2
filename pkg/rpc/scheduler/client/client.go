@@ -26,14 +26,17 @@ import (
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/credentials/insecure"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
+	"d7y.io/dragonfly/v2/client/config"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/balancer"
+	pkgbalancer "d7y.io/dragonfly/v2/pkg/balancer"
 	"d7y.io/dragonfly/v2/pkg/resolver"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
 )
@@ -50,30 +53,33 @@ const (
 	perRetryTimeout = 3 * time.Second
 )
 
-// defaultDialOptions is default dial options of manager client.
-var defaultDialOptions = []grpc.DialOption{
-	grpc.WithDefaultServiceConfig(balancer.BalancerServiceConfig),
-	grpc.WithTransportCredentials(insecure.NewCredentials()),
-	grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
-		grpc_prometheus.UnaryClientInterceptor,
-		grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
-		grpc_retry.UnaryClientInterceptor(
-			grpc_retry.WithPerRetryTimeout(perRetryTimeout),
-			grpc_retry.WithMax(maxRetries),
-			grpc_retry.WithBackoff(grpc_retry.BackoffLinear(backoffWaitBetween)),
-		),
-	)),
-	grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
-		grpc_prometheus.StreamClientInterceptor,
-		grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
-	)),
-}
-
 // GetClient get scheduler clients using resolver and balancer,
-func GetClient(options ...grpc.DialOption) (Client, error) {
+func GetClient(dynconfig config.Dynconfig, options ...grpc.DialOption) (Client, error) {
+	// Register resolver and balancer.
+	resolver.RegisterScheduler(dynconfig)
+	balancer.Register(pkgbalancer.NewConsistentHashingBuilder())
+
 	conn, err := grpc.Dial(
 		resolver.SchedulerVirtualTarget,
-		append(defaultDialOptions, options...)...,
+		append([]grpc.DialOption{
+			grpc.WithDefaultServiceConfig(pkgbalancer.BalancerServiceConfig),
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
+				otelgrpc.UnaryClientInterceptor(),
+				grpc_prometheus.UnaryClientInterceptor,
+				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
+				grpc_retry.UnaryClientInterceptor(
+					grpc_retry.WithPerRetryTimeout(perRetryTimeout),
+					grpc_retry.WithMax(maxRetries),
+					grpc_retry.WithBackoff(grpc_retry.BackoffLinear(backoffWaitBetween)),
+				),
+			)),
+			grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
+				otelgrpc.StreamClientInterceptor(),
+				grpc_prometheus.StreamClientInterceptor,
+				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
+			)),
+		}, options...)...,
 	)
 	if err != nil {
 		return nil, err
@@ -141,7 +147,7 @@ type client struct {
 // RegisterPeerTask registers a peer into task.
 func (c *client) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, options ...grpc.CallOption) (*schedulerv1.RegisterResult, error) {
 	return c.SchedulerClient.RegisterPeerTask(
-		context.WithValue(ctx, balancer.ContextKey, req.TaskId),
+		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		req,
 		options...,
 	)
@@ -150,7 +156,7 @@ func (c *client) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTask
 // ReportPieceResult reports piece results and receives peer packets.
 func (c *client) ReportPieceResult(ctx context.Context, req *schedulerv1.PeerTaskRequest, options ...grpc.CallOption) (schedulerv1.Scheduler_ReportPieceResultClient, error) {
 	stream, err := c.SchedulerClient.ReportPieceResult(
-		context.WithValue(ctx, balancer.ContextKey, req.TaskId),
+		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		options...,
 	)
 	if err != nil {
@@ -163,7 +169,7 @@ func (c *client) ReportPieceResult(ctx context.Context, req *schedulerv1.PeerTas
 // ReportPeerResult reports downloading result for the peer.
 func (c *client) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult, options ...grpc.CallOption) error {
 	if _, err := c.SchedulerClient.ReportPeerResult(
-		context.WithValue(ctx, balancer.ContextKey, req.TaskId),
+		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		req,
 		options...,
 	); err != nil {
@@ -176,7 +182,7 @@ func (c *client) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResu
 // LeaveTask makes the peer leaving from task.
 func (c *client) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget, options ...grpc.CallOption) error {
 	if _, err := c.SchedulerClient.LeaveTask(
-		context.WithValue(ctx, balancer.ContextKey, req.TaskId),
+		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		req,
 		options...,
 	); err != nil {
@@ -189,7 +195,7 @@ func (c *client) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget, opt
 // Checks if any peer has the given task.
 func (c *client) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest, options ...grpc.CallOption) (*schedulerv1.Task, error) {
 	return c.SchedulerClient.StatTask(
-		context.WithValue(ctx, balancer.ContextKey, req.TaskId),
+		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		req,
 		options...,
 	)
@@ -198,7 +204,7 @@ func (c *client) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest,
 // A peer announces that it has the announced task to other peers.
 func (c *client) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequest, options ...grpc.CallOption) error {
 	if _, err := c.SchedulerClient.AnnounceTask(
-		context.WithValue(ctx, balancer.ContextKey, req.TaskId),
+		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		req,
 		options...,
 	); err != nil {
