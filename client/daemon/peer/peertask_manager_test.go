@@ -44,6 +44,7 @@ import (
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
+	dfdaemonv1mocks "d7y.io/api/pkg/apis/dfdaemon/v1/mocks"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	schedulerv1mocks "d7y.io/api/pkg/apis/scheduler/v1/mocks"
 
@@ -58,7 +59,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
-	servermocks "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server/mocks"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	schedulerclientmocks "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client/mocks"
 	"d7y.io/dragonfly/v2/pkg/source"
@@ -89,7 +89,7 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 	schedulerclient.Client, storage.Manager) {
 	port := int32(freeport.GetPort())
 	// 1. set up a mock daemon server for uploading pieces info
-	var daemon = servermocks.NewMockDaemonServer(ctrl)
+	var daemon = dfdaemonv1mocks.NewMockDaemonServer(ctrl)
 
 	// 1.1 calculate piece digest and total digest
 	r := bytes.NewBuffer(opt.content)

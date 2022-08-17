@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/gin-contrib/static"
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -155,14 +154,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	}
 
 	// Initialize GRPC server
-	var grpcOptions []grpc.ServerOption
-	if s.config.Options.Telemetry.Jaeger != "" {
-		grpcOptions = []grpc.ServerOption{
-			grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
-			grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()),
-		}
-	}
-	grpcServer := rpcserver.New(cfg, db, cache, searcher, objectStorage, cfg.ObjectStorage, grpcOptions...)
+	grpcServer := rpcserver.New(cfg, db, cache, searcher, objectStorage, cfg.ObjectStorage)
 	s.grpcServer = grpcServer
 
 	// Initialize prometheus

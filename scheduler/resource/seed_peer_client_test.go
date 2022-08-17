@@ -24,6 +24,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/resolver"
 
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
@@ -45,6 +46,8 @@ func TestSeedPeerClient_newSeedPeerClient(t *testing.T) {
 					dynconfig.Get().Return(&config.DynconfigData{
 						SeedPeers: []*config.SeedPeer{{ID: 1}},
 					}, nil).Times(1),
+					dynconfig.Register(gomock.Any()).Return().Times(1),
+					dynconfig.GetResolveSeedPeerAddrs().Return([]resolver.Address{}, nil).Times(1),
 					hostManager.Store(gomock.Any()).Return().Times(1),
 					dynconfig.Register(gomock.Any()).Return().Times(1),
 				)
@@ -71,6 +74,8 @@ func TestSeedPeerClient_newSeedPeerClient(t *testing.T) {
 					dynconfig.Get().Return(&config.DynconfigData{
 						SeedPeers: []*config.SeedPeer{},
 					}, nil).Times(1),
+					dynconfig.Register(gomock.Any()).Return().Times(1),
+					dynconfig.GetResolveSeedPeerAddrs().Return([]resolver.Address{}, nil).Times(1),
 					dynconfig.Register(gomock.Any()).Return().Times(1),
 				)
 			},
@@ -121,6 +126,8 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 							Port:     8080,
 						}},
 					}, nil).Times(1),
+					dynconfig.Register(gomock.Any()).Return().Times(1),
+					dynconfig.GetResolveSeedPeerAddrs().Return([]resolver.Address{}, nil).Times(1),
 					hostManager.Store(gomock.Any()).Return().Times(1),
 					dynconfig.Register(gomock.Any()).Return().Times(1),
 				)
@@ -145,6 +152,8 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 							IP:       "127.0.0.1",
 						}},
 					}, nil).Times(1),
+					dynconfig.Register(gomock.Any()).Return().Times(1),
+					dynconfig.GetResolveSeedPeerAddrs().Return([]resolver.Address{}, nil).Times(1),
 					hostManager.Store(gomock.Any()).Return().Times(1),
 					dynconfig.Register(gomock.Any()).Return().Times(1),
 					hostManager.Load(gomock.Any()).Return(mockHost, true).Times(1),
@@ -171,6 +180,8 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 							IP:       "127.0.0.1",
 						}},
 					}, nil).Times(1),
+					dynconfig.Register(gomock.Any()).Return().Times(1),
+					dynconfig.GetResolveSeedPeerAddrs().Return([]resolver.Address{}, nil).Times(1),
 					hostManager.Store(gomock.Any()).Return().Times(1),
 					dynconfig.Register(gomock.Any()).Return().Times(1),
 					hostManager.Load(gomock.Any()).Return(nil, false).Times(1),
@@ -194,6 +205,8 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 							IP: "127.0.0.1",
 						}},
 					}, nil).Times(1),
+					dynconfig.Register(gomock.Any()).Return().Times(1),
+					dynconfig.GetResolveSeedPeerAddrs().Return([]resolver.Address{}, nil).Times(1),
 					hostManager.Store(gomock.Any()).Return().Times(1),
 					dynconfig.Register(gomock.Any()).Return().Times(1),
 				)
