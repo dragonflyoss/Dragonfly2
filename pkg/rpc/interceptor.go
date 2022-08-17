@@ -89,28 +89,25 @@ func (r *RateLimiterInterceptor) Limit() bool {
 
 // ConvertErrorUnaryServerInterceptor returns a new unary server interceptor that convert error when trigger custom error.
 func ConvertErrorUnaryServerInterceptor(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-	m, err := handler(ctx, req)
+	h, err := handler(ctx, req)
 	if err != nil {
-		err = convertError(err)
-		logger.GrpcLogger.Errorf("do unary server error: %v for method: %s", err, info.FullMethod)
+		return h, convertServerError(err)
 	}
 
-	return m, err
+	return h, nil
 }
 
 // ConvertErrorStreamServerInterceptor returns a new stream server interceptor that convert error when trigger custom error.
 func ConvertErrorStreamServerInterceptor(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-	err := handler(srv, ss)
-	if err != nil {
-		err = convertError(err)
-		logger.GrpcLogger.Errorf("do stream server error: %v for method: %s", err, info.FullMethod)
+	if err := handler(srv, ss); err != nil {
+		return convertServerError(err)
 	}
 
-	return err
+	return nil
 }
 
-// convertError converts custom error.
-func convertError(err error) error {
+// convertServerError converts custom error of server.
+func convertServerError(err error) error {
 	if status.Code(err) == codes.InvalidArgument {
 		err = dferrors.New(commonv1.Code_BadRequest, err.Error())
 	}
@@ -121,5 +118,39 @@ func convertError(err error) error {
 			err = s.Err()
 		}
 	}
+	return err
+}
+
+// ConvertErrorUnaryClientInterceptor returns a new unary client interceptor that convert error when trigger custom error.
+func ConvertErrorUnaryClientInterceptor(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+	if err := invoker(ctx, method, req, reply, cc, opts...); err != nil {
+		return convertClientError(err)
+	}
+
+	return nil
+}
+
+// ConvertErrorStreamClientInterceptor returns a new stream client interceptor that convert error when trigger custom error.
+func ConvertErrorStreamClientInterceptor(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
+	s, err := streamer(ctx, desc, cc, method, opts...)
+	if err != nil {
+		return nil, convertClientError(err)
+	}
+
+	return s, nil
+}
+
+// convertClientError converts custom error of client.
+func convertClientError(err error) error {
+	for _, d := range status.Convert(err).Details() {
+		switch internal := d.(type) {
+		case *commonv1.GrpcDfError:
+			return &dferrors.DfError{
+				Code:    internal.Code,
+				Message: internal.Message,
+			}
+		}
+	}
+
 	return err
 }
