@@ -38,6 +38,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	pkgbalancer "d7y.io/dragonfly/v2/pkg/balancer"
 	"d7y.io/dragonfly/v2/pkg/resolver"
+	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
 )
 
@@ -65,6 +66,7 @@ func GetClient(dynconfig config.Dynconfig, options ...grpc.DialOption) (Client, 
 			grpc.WithDefaultServiceConfig(pkgbalancer.BalancerServiceConfig),
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
+				rpc.ConvertErrorUnaryClientInterceptor,
 				otelgrpc.UnaryClientInterceptor(),
 				grpc_prometheus.UnaryClientInterceptor,
 				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
@@ -73,11 +75,14 @@ func GetClient(dynconfig config.Dynconfig, options ...grpc.DialOption) (Client, 
 					grpc_retry.WithMax(maxRetries),
 					grpc_retry.WithBackoff(grpc_retry.BackoffLinear(backoffWaitBetween)),
 				),
+				rpc.RefresherUnaryClientInterceptor(dynconfig),
 			)),
 			grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
+				rpc.ConvertErrorStreamClientInterceptor,
 				otelgrpc.StreamClientInterceptor(),
 				grpc_prometheus.StreamClientInterceptor,
 				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
+				rpc.RefresherStreamClientInterceptor(dynconfig),
 			)),
 		}, options...)...,
 	)
