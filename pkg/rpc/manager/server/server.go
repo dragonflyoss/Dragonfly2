@@ -17,8 +17,6 @@
 package server
 
 import (
-	"time"
-
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_ratelimit "github.com/grpc-ecosystem/go-grpc-middleware/ratelimit"
@@ -29,7 +27,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
-	"google.golang.org/grpc/keepalive"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 
@@ -43,10 +40,6 @@ const (
 
 	// DefaultBurst is default burst of grpc server.
 	DefaultBurst = 20 * 1000
-
-	// DefaultMaxConnectionIdle is default timeout of connection idle state.
-	// If a client state is idle for DefaultMaxConnectionIdle, send a GOAWAY.
-	DefaultMaxConnectionIdle = 10 * time.Second
 )
 
 // New returns a grpc server instance and register service on grpc server.
@@ -54,9 +47,6 @@ func New(svr managerv1.ManagerServer, opts ...grpc.ServerOption) *grpc.Server {
 	limiter := rpc.NewRateLimiterInterceptor(DefaultQPS, DefaultBurst)
 
 	grpcServer := grpc.NewServer(append([]grpc.ServerOption{
-		grpc.KeepaliveParams(keepalive.ServerParameters{
-			MaxConnectionIdle: DefaultMaxConnectionIdle,
-		}),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			grpc_ratelimit.UnaryServerInterceptor(limiter),
 			otelgrpc.UnaryServerInterceptor(),

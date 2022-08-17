@@ -26,16 +26,16 @@ import (
 )
 
 const (
-	// DefaultPort is the default tcp port
+	// DefaultPort is the default tcp port.
 	DefaultPort = "80"
-	// DefaultNetwork is the default network type
+	// DefaultNetwork is the default network type.
 	DefaultNetwork = "tcp"
-	// DefaultTimeout is the default dial timeout
+	// DefaultTimeout is the default dial timeout.
 	DefaultTimeout = 1 * time.Second
 )
 
 type Reachable interface {
-	// Check that the address can be accessed
+	// Check that the address can be accessed.
 	Check() error
 }
 
@@ -51,7 +51,7 @@ type Config struct {
 	Timeout time.Duration
 }
 
-// New returns a new ReachableInterface interface
+// New returns a new ReachableInterface interface.
 func New(r *Config) Reachable {
 	network := DefaultNetwork
 	if r.Network != "" {
@@ -70,6 +70,7 @@ func New(r *Config) Reachable {
 	}
 }
 
+// Check that the address can be accessed.
 func (r *reachable) Check() error {
 	if !strings.Contains(r.address, ":") {
 		r.address = fmt.Sprintf("%s:%s", r.address, DefaultPort)
