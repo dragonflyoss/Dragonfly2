@@ -28,7 +28,6 @@ import (
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/common"
 )
 
 // Refresher is the interface for refreshing dynconfig.
@@ -114,7 +113,10 @@ func convertServerError(err error) error {
 
 	if v, ok := err.(*dferrors.DfError); ok {
 		logger.GrpcLogger.Errorf(v.Message)
-		if s, e := status.Convert(err).WithDetails(common.NewGrpcDfError(v.Code, v.Message)); e == nil {
+		if s, e := status.Convert(err).WithDetails(&commonv1.GrpcDfError{
+			Code:    v.Code,
+			Message: v.Message,
+		}); e == nil {
 			err = s.Err()
 		}
 	}

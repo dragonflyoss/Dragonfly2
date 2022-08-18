@@ -40,12 +40,12 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/digest"
-	daemonclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
+	dfdaemonclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/pkg/source"
 	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 )
 
-func Download(cfg *config.DfgetConfig, client daemonclient.DaemonClient) error {
+func Download(cfg *config.DfgetConfig, client dfdaemonclient.Client) error {
 	var (
 		ctx       = context.Background()
 		cancel    context.CancelFunc
@@ -75,14 +75,14 @@ func Download(cfg *config.DfgetConfig, client daemonclient.DaemonClient) error {
 	return downError
 }
 
-func download(ctx context.Context, client daemonclient.DaemonClient, cfg *config.DfgetConfig, wLog *logger.SugaredLoggerOnWith) error {
+func download(ctx context.Context, client dfdaemonclient.Client, cfg *config.DfgetConfig, wLog *logger.SugaredLoggerOnWith) error {
 	if cfg.Recursive {
 		return recursiveDownload(ctx, client, cfg)
 	}
 	return singleDownload(ctx, client, cfg, wLog)
 }
 
-func singleDownload(ctx context.Context, client daemonclient.DaemonClient, cfg *config.DfgetConfig, wLog *logger.SugaredLoggerOnWith) error {
+func singleDownload(ctx context.Context, client dfdaemonclient.Client, cfg *config.DfgetConfig, wLog *logger.SugaredLoggerOnWith) error {
 	hdr := parseHeader(cfg.Header)
 
 	if client == nil {
@@ -91,7 +91,7 @@ func singleDownload(ctx context.Context, client daemonclient.DaemonClient, cfg *
 
 	var (
 		start     = time.Now()
-		stream    *daemonclient.DownResultStream
+		stream    dfdaemonv1.Daemon_DownloadClient
 		result    *dfdaemonv1.DownResult
 		pb        *progressbar.ProgressBar
 		request   = newDownRequest(cfg, hdr)
@@ -295,7 +295,7 @@ func rejectRegex(u string, reject string) bool {
 }
 
 // recursiveDownload breadth-first download all resources
-func recursiveDownload(ctx context.Context, client daemonclient.DaemonClient, cfg *config.DfgetConfig) error {
+func recursiveDownload(ctx context.Context, client dfdaemonclient.Client, cfg *config.DfgetConfig) error {
 	var queue deque.Deque[*config.DfgetConfig]
 	queue.PushBack(cfg)
 	downloadMap := map[url.URL]struct{}{}

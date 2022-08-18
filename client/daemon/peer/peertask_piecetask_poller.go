@@ -30,8 +30,9 @@ import (
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/internal/dferrors"
+	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/retry"
-	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
+	dfdaemonclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 )
 
 type pieceTaskPoller struct {
@@ -165,7 +166,18 @@ func (poller *pieceTaskPoller) getPieceTasksByPeer(
 		// GetPieceTasks must be fast, so short time out is okay
 		ctx, cancel := context.WithTimeout(ptc.ctx, 4*time.Second)
 		defer cancel()
-		piecePacket, getError := dfclient.GetPieceTasks(ctx, peer, request)
+
+		client, err := dfdaemonclient.GetClient(dfnet.NetAddr{
+			Type: dfnet.TCP,
+			Addr: fmt.Sprintf("%s:%d", peer.Ip, peer.RpcPort),
+		}.GetEndpoint())
+		if err != nil {
+			ptc.Errorf("get dfdaemon client error: %s", err)
+			span.RecordError(err)
+			return nil, true, err
+		}
+
+		piecePacket, getError := client.GetPieceTasks(ctx, request)
 		// when GetPieceTasks returns err, exit retry
 		if getError != nil {
 			ptc.Errorf("get piece tasks with error: %s", getError)

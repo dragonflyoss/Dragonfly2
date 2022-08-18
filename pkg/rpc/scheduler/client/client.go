@@ -95,29 +95,6 @@ func GetClient(dynconfig config.Dynconfig, opts ...grpc.DialOption) (Client, err
 	}, nil
 }
 
-// NewBeginOfPiece creates begin of piece.
-func NewBeginOfPiece(taskID, peerID string) *schedulerv1.PieceResult {
-	return &schedulerv1.PieceResult{
-		TaskId: taskID,
-		SrcPid: peerID,
-		PieceInfo: &commonv1.PieceInfo{
-			PieceNum: common.BeginOfPiece,
-		},
-	}
-}
-
-// NewBeginOfPiece creates end of piece.
-func NewEndOfPiece(taskID, peerID string, finishedCount int32) *schedulerv1.PieceResult {
-	return &schedulerv1.PieceResult{
-		TaskId:        taskID,
-		SrcPid:        peerID,
-		FinishedCount: finishedCount,
-		PieceInfo: &commonv1.PieceInfo{
-			PieceNum: common.EndOfPiece,
-		},
-	}
-}
-
 // Client is the interface for grpc client.
 type Client interface {
 	// RegisterPeerTask registers a peer into task.
@@ -163,7 +140,14 @@ func (c *client) ReportPieceResult(ctx context.Context, req *schedulerv1.PeerTas
 		return nil, err
 	}
 
-	return stream, stream.Send(NewBeginOfPiece(req.TaskId, req.PeerId))
+	// Send begin of piece.
+	return stream, stream.Send(&schedulerv1.PieceResult{
+		TaskId: req.TaskId,
+		SrcPid: req.PeerId,
+		PieceInfo: &commonv1.PieceInfo{
+			PieceNum: common.BeginOfPiece,
+		},
+	})
 }
 
 // ReportPeerResult reports downloading result for the peer.
