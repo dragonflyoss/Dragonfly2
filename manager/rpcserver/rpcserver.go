@@ -105,6 +105,9 @@ func newServer(cfg *config.Config, database *database.Database, cache *cache.Cac
 		}
 		// load x509 cert
 		ca.Leaf, err = x509.ParseCertificate(ca.Certificate[0])
+		if err != nil {
+			return nil, err
+		}
 
 		s.ca = &ca
 
