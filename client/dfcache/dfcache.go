@@ -31,7 +31,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/basic"
-	daemonclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
+	dfdaemonclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 )
 
 // Format that's used to cast the given cid to URI.
@@ -44,7 +44,7 @@ func newCid(cid string) string {
 
 // Stat checks if the given cache entry exists in local storage and/or in P2P network, and returns
 // os.ErrNotExist if cache is not found.
-func Stat(cfg *config.DfcacheConfig, client daemonclient.DaemonClient) error {
+func Stat(cfg *config.DfcacheConfig, client dfdaemonclient.Client) error {
 	var (
 		ctx       = context.Background()
 		cancel    context.CancelFunc
@@ -77,7 +77,7 @@ func Stat(cfg *config.DfcacheConfig, client daemonclient.DaemonClient) error {
 	return statError
 }
 
-func statTask(ctx context.Context, client daemonclient.DaemonClient, cfg *config.DfcacheConfig, wLog *logger.SugaredLoggerOnWith) error {
+func statTask(ctx context.Context, client dfdaemonclient.Client, cfg *config.DfcacheConfig, wLog *logger.SugaredLoggerOnWith) error {
 	if client == nil {
 		return errors.New("stat has no daemon client")
 	}
@@ -110,7 +110,7 @@ func newStatRequest(cfg *config.DfcacheConfig) *dfdaemonv1.StatTaskRequest {
 }
 
 // Import imports the given cache into P2P network.
-func Import(cfg *config.DfcacheConfig, client daemonclient.DaemonClient) error {
+func Import(cfg *config.DfcacheConfig, client dfdaemonclient.Client) error {
 	var (
 		ctx         = context.Background()
 		cancel      context.CancelFunc
@@ -143,7 +143,7 @@ func Import(cfg *config.DfcacheConfig, client daemonclient.DaemonClient) error {
 	return importError
 }
 
-func importTask(ctx context.Context, client daemonclient.DaemonClient, cfg *config.DfcacheConfig, wLog *logger.SugaredLoggerOnWith) error {
+func importTask(ctx context.Context, client dfdaemonclient.Client, cfg *config.DfcacheConfig, wLog *logger.SugaredLoggerOnWith) error {
 	if client == nil {
 		return errors.New("import has no daemon client")
 	}
@@ -172,7 +172,7 @@ func newImportRequest(cfg *config.DfcacheConfig) *dfdaemonv1.ImportTaskRequest {
 
 // Export exports or downloads the given cache from P2P network, and return os.ErrNotExist if cache
 // doesn't exist.
-func Export(cfg *config.DfcacheConfig, client daemonclient.DaemonClient) error {
+func Export(cfg *config.DfcacheConfig, client dfdaemonclient.Client) error {
 	var (
 		ctx         = context.Background()
 		cancel      context.CancelFunc
@@ -205,7 +205,7 @@ func Export(cfg *config.DfcacheConfig, client daemonclient.DaemonClient) error {
 	return exportError
 }
 
-func exportTask(ctx context.Context, client daemonclient.DaemonClient, cfg *config.DfcacheConfig, wLog *logger.SugaredLoggerOnWith) error {
+func exportTask(ctx context.Context, client dfdaemonclient.Client, cfg *config.DfcacheConfig, wLog *logger.SugaredLoggerOnWith) error {
 	if client == nil {
 		return errors.New("export has no daemon client")
 	}
@@ -242,7 +242,7 @@ func newExportRequest(cfg *config.DfcacheConfig) *dfdaemonv1.ExportTaskRequest {
 	}
 }
 
-func Delete(cfg *config.DfcacheConfig, client daemonclient.DaemonClient) error {
+func Delete(cfg *config.DfcacheConfig, client dfdaemonclient.Client) error {
 	var (
 		ctx         = context.Background()
 		cancel      context.CancelFunc
@@ -275,7 +275,7 @@ func Delete(cfg *config.DfcacheConfig, client daemonclient.DaemonClient) error {
 	return deleteError
 }
 
-func deleteTask(ctx context.Context, client daemonclient.DaemonClient, cfg *config.DfcacheConfig, wLog *logger.SugaredLoggerOnWith) error {
+func deleteTask(ctx context.Context, client dfdaemonclient.Client, cfg *config.DfcacheConfig, wLog *logger.SugaredLoggerOnWith) error {
 	if client == nil {
 		return errors.New("delete has no daemon client")
 	}

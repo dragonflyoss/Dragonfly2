@@ -45,6 +45,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/rpc/common"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	"d7y.io/dragonfly/v2/pkg/source"
 )
@@ -1530,9 +1531,16 @@ func (pt *peerTaskConductor) done() {
 	peerResultCtx, peerResultSpan := tracer.Start(pt.ctx, config.SpanReportPeerResult)
 	defer peerResultSpan.End()
 
-	// send EOF piece result to scheduler
+	// Send EOF piece result to scheduler.
 	err := pt.sendPieceResult(
-		schedulerclient.NewEndOfPiece(pt.taskID, pt.peerID, pt.readyPieces.Settled()))
+		&schedulerv1.PieceResult{
+			TaskId:        pt.taskID,
+			SrcPid:        pt.peerID,
+			FinishedCount: pt.readyPieces.Settled(),
+			PieceInfo: &commonv1.PieceInfo{
+				PieceNum: common.EndOfPiece,
+			},
+		})
 	pt.Debugf("peer task finished, end piece result sent result: %v", err)
 
 	err = pt.peerPacketStream.CloseSend()
@@ -1585,9 +1593,15 @@ func (pt *peerTaskConductor) fail() {
 	var end = time.Now()
 	pt.Log().Errorf("peer task failed, code: %d, reason: %s", pt.failedCode, pt.failedReason)
 
-	// send EOF piece result to scheduler
-	err := pt.sendPieceResult(
-		schedulerclient.NewEndOfPiece(pt.taskID, pt.peerID, pt.readyPieces.Settled()))
+	// Send EOF piece result to scheduler.
+	err := pt.sendPieceResult(&schedulerv1.PieceResult{
+		TaskId:        pt.taskID,
+		SrcPid:        pt.peerID,
+		FinishedCount: pt.readyPieces.Settled(),
+		PieceInfo: &commonv1.PieceInfo{
+			PieceNum: common.EndOfPiece,
+		},
+	})
 	pt.Debugf("end piece result sent: %v, peer task finished", err)
 
 	err = pt.peerPacketStream.CloseSend()

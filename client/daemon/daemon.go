@@ -650,13 +650,6 @@ func (cd *clientDaemon) Stop() {
 			}
 			logger.Info("dynconfig client closed")
 		}
-
-		if cd.managerClient != nil {
-			if err := cd.managerClient.Close(); err != nil {
-				logger.Errorf("manager client failed to stop: %s", err.Error())
-			}
-			logger.Info("manager client closed")
-		}
 	})
 }
 

@@ -11,6 +11,7 @@ import (
 
 	v1 "d7y.io/api/pkg/apis/manager/v1"
 	gomock "github.com/golang/mock/gomock"
+	grpc "google.golang.org/grpc"
 )
 
 // MockClient is a mock of Client interface.
@@ -36,266 +37,337 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
 }
 
-// Close mocks base method.
-func (m *MockClient) Close() error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Close")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Close indicates an expected call of Close.
-func (mr *MockClientMockRecorder) Close() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockClient)(nil).Close))
-}
-
 // CreateModel mocks base method.
-func (m *MockClient) CreateModel(arg0 context.Context, arg1 *v1.CreateModelRequest) (*v1.Model, error) {
+func (m *MockClient) CreateModel(arg0 context.Context, arg1 *v1.CreateModelRequest, arg2 ...grpc.CallOption) (*v1.Model, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateModel", arg0, arg1)
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CreateModel", varargs...)
 	ret0, _ := ret[0].(*v1.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateModel indicates an expected call of CreateModel.
-func (mr *MockClientMockRecorder) CreateModel(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) CreateModel(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateModel", reflect.TypeOf((*MockClient)(nil).CreateModel), arg0, arg1)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateModel", reflect.TypeOf((*MockClient)(nil).CreateModel), varargs...)
 }
 
 // CreateModelVersion mocks base method.
-func (m *MockClient) CreateModelVersion(arg0 context.Context, arg1 *v1.CreateModelVersionRequest) (*v1.ModelVersion, error) {
+func (m *MockClient) CreateModelVersion(arg0 context.Context, arg1 *v1.CreateModelVersionRequest, arg2 ...grpc.CallOption) (*v1.ModelVersion, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateModelVersion", arg0, arg1)
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CreateModelVersion", varargs...)
 	ret0, _ := ret[0].(*v1.ModelVersion)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateModelVersion indicates an expected call of CreateModelVersion.
-func (mr *MockClientMockRecorder) CreateModelVersion(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) CreateModelVersion(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateModelVersion", reflect.TypeOf((*MockClient)(nil).CreateModelVersion), arg0, arg1)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateModelVersion", reflect.TypeOf((*MockClient)(nil).CreateModelVersion), varargs...)
 }
 
 // DeleteModel mocks base method.
-func (m *MockClient) DeleteModel(arg0 context.Context, arg1 *v1.DeleteModelRequest) error {
+func (m *MockClient) DeleteModel(arg0 context.Context, arg1 *v1.DeleteModelRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteModel", arg0, arg1)
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteModel", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteModel indicates an expected call of DeleteModel.
-func (mr *MockClientMockRecorder) DeleteModel(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) DeleteModel(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteModel", reflect.TypeOf((*MockClient)(nil).DeleteModel), arg0, arg1)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteModel", reflect.TypeOf((*MockClient)(nil).DeleteModel), varargs...)
 }
 
 // DeleteModelVersion mocks base method.
-func (m *MockClient) DeleteModelVersion(arg0 context.Context, arg1 *v1.DeleteModelVersionRequest) error {
+func (m *MockClient) DeleteModelVersion(arg0 context.Context, arg1 *v1.DeleteModelVersionRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteModelVersion", arg0, arg1)
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteModelVersion", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteModelVersion indicates an expected call of DeleteModelVersion.
-func (mr *MockClientMockRecorder) DeleteModelVersion(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) DeleteModelVersion(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteModelVersion", reflect.TypeOf((*MockClient)(nil).DeleteModelVersion), arg0, arg1)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteModelVersion", reflect.TypeOf((*MockClient)(nil).DeleteModelVersion), varargs...)
 }
 
 // GetModel mocks base method.
-func (m *MockClient) GetModel(arg0 context.Context, arg1 *v1.GetModelRequest) (*v1.Model, error) {
+func (m *MockClient) GetModel(arg0 context.Context, arg1 *v1.GetModelRequest, arg2 ...grpc.CallOption) (*v1.Model, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetModel", arg0, arg1)
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetModel", varargs...)
 	ret0, _ := ret[0].(*v1.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetModel indicates an expected call of GetModel.
-func (mr *MockClientMockRecorder) GetModel(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) GetModel(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModel", reflect.TypeOf((*MockClient)(nil).GetModel), arg0, arg1)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModel", reflect.TypeOf((*MockClient)(nil).GetModel), varargs...)
 }
 
 // GetModelVersion mocks base method.
-func (m *MockClient) GetModelVersion(arg0 context.Context, arg1 *v1.GetModelVersionRequest) (*v1.ModelVersion, error) {
+func (m *MockClient) GetModelVersion(arg0 context.Context, arg1 *v1.GetModelVersionRequest, arg2 ...grpc.CallOption) (*v1.ModelVersion, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetModelVersion", arg0, arg1)
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetModelVersion", varargs...)
 	ret0, _ := ret[0].(*v1.ModelVersion)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetModelVersion indicates an expected call of GetModelVersion.
-func (mr *MockClientMockRecorder) GetModelVersion(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) GetModelVersion(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelVersion", reflect.TypeOf((*MockClient)(nil).GetModelVersion), arg0, arg1)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelVersion", reflect.TypeOf((*MockClient)(nil).GetModelVersion), varargs...)
 }
 
 // GetObjectStorage mocks base method.
-func (m *MockClient) GetObjectStorage(arg0 context.Context, arg1 *v1.GetObjectStorageRequest) (*v1.ObjectStorage, error) {
+func (m *MockClient) GetObjectStorage(arg0 context.Context, arg1 *v1.GetObjectStorageRequest, arg2 ...grpc.CallOption) (*v1.ObjectStorage, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetObjectStorage", arg0, arg1)
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetObjectStorage", varargs...)
 	ret0, _ := ret[0].(*v1.ObjectStorage)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetObjectStorage indicates an expected call of GetObjectStorage.
-func (mr *MockClientMockRecorder) GetObjectStorage(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) GetObjectStorage(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectStorage", reflect.TypeOf((*MockClient)(nil).GetObjectStorage), arg0, arg1)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectStorage", reflect.TypeOf((*MockClient)(nil).GetObjectStorage), varargs...)
 }
 
 // GetScheduler mocks base method.
-func (m *MockClient) GetScheduler(arg0 context.Context, arg1 *v1.GetSchedulerRequest) (*v1.Scheduler, error) {
+func (m *MockClient) GetScheduler(arg0 context.Context, arg1 *v1.GetSchedulerRequest, arg2 ...grpc.CallOption) (*v1.Scheduler, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetScheduler", arg0, arg1)
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetScheduler", varargs...)
 	ret0, _ := ret[0].(*v1.Scheduler)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetScheduler indicates an expected call of GetScheduler.
-func (mr *MockClientMockRecorder) GetScheduler(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) GetScheduler(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScheduler", reflect.TypeOf((*MockClient)(nil).GetScheduler), arg0, arg1)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScheduler", reflect.TypeOf((*MockClient)(nil).GetScheduler), varargs...)
 }
 
 // KeepAlive mocks base method.
-func (m *MockClient) KeepAlive(arg0 time.Duration, arg1 *v1.KeepAliveRequest) {
+func (m *MockClient) KeepAlive(arg0 time.Duration, arg1 *v1.KeepAliveRequest, arg2 ...grpc.CallOption) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "KeepAlive", arg0, arg1)
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "KeepAlive", varargs...)
 }
 
 // KeepAlive indicates an expected call of KeepAlive.
-func (mr *MockClientMockRecorder) KeepAlive(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) KeepAlive(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KeepAlive", reflect.TypeOf((*MockClient)(nil).KeepAlive), arg0, arg1)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KeepAlive", reflect.TypeOf((*MockClient)(nil).KeepAlive), varargs...)
 }
 
 // ListBuckets mocks base method.
-func (m *MockClient) ListBuckets(arg0 context.Context, arg1 *v1.ListBucketsRequest) (*v1.ListBucketsResponse, error) {
+func (m *MockClient) ListBuckets(arg0 context.Context, arg1 *v1.ListBucketsRequest, arg2 ...grpc.CallOption) (*v1.ListBucketsResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListBuckets", arg0, arg1)
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ListBuckets", varargs...)
 	ret0, _ := ret[0].(*v1.ListBucketsResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListBuckets indicates an expected call of ListBuckets.
-func (mr *MockClientMockRecorder) ListBuckets(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) ListBuckets(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBuckets", reflect.TypeOf((*MockClient)(nil).ListBuckets), arg0, arg1)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBuckets", reflect.TypeOf((*MockClient)(nil).ListBuckets), varargs...)
 }
 
 // ListModelVersions mocks base method.
-func (m *MockClient) ListModelVersions(arg0 context.Context, arg1 *v1.ListModelVersionsRequest) (*v1.ListModelVersionsResponse, error) {
+func (m *MockClient) ListModelVersions(arg0 context.Context, arg1 *v1.ListModelVersionsRequest, arg2 ...grpc.CallOption) (*v1.ListModelVersionsResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListModelVersions", arg0, arg1)
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ListModelVersions", varargs...)
 	ret0, _ := ret[0].(*v1.ListModelVersionsResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListModelVersions indicates an expected call of ListModelVersions.
-func (mr *MockClientMockRecorder) ListModelVersions(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) ListModelVersions(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModelVersions", reflect.TypeOf((*MockClient)(nil).ListModelVersions), arg0, arg1)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModelVersions", reflect.TypeOf((*MockClient)(nil).ListModelVersions), varargs...)
 }
 
 // ListModels mocks base method.
-func (m *MockClient) ListModels(arg0 context.Context, arg1 *v1.ListModelsRequest) (*v1.ListModelsResponse, error) {
+func (m *MockClient) ListModels(arg0 context.Context, arg1 *v1.ListModelsRequest, arg2 ...grpc.CallOption) (*v1.ListModelsResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListModels", arg0, arg1)
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ListModels", varargs...)
 	ret0, _ := ret[0].(*v1.ListModelsResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListModels indicates an expected call of ListModels.
-func (mr *MockClientMockRecorder) ListModels(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) ListModels(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModels", reflect.TypeOf((*MockClient)(nil).ListModels), arg0, arg1)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModels", reflect.TypeOf((*MockClient)(nil).ListModels), varargs...)
 }
 
 // ListSchedulers mocks base method.
-func (m *MockClient) ListSchedulers(arg0 context.Context, arg1 *v1.ListSchedulersRequest) (*v1.ListSchedulersResponse, error) {
+func (m *MockClient) ListSchedulers(arg0 context.Context, arg1 *v1.ListSchedulersRequest, arg2 ...grpc.CallOption) (*v1.ListSchedulersResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListSchedulers", arg0, arg1)
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ListSchedulers", varargs...)
 	ret0, _ := ret[0].(*v1.ListSchedulersResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListSchedulers indicates an expected call of ListSchedulers.
-func (mr *MockClientMockRecorder) ListSchedulers(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) ListSchedulers(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSchedulers", reflect.TypeOf((*MockClient)(nil).ListSchedulers), arg0, arg1)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSchedulers", reflect.TypeOf((*MockClient)(nil).ListSchedulers), varargs...)
 }
 
 // UpdateModel mocks base method.
-func (m *MockClient) UpdateModel(arg0 context.Context, arg1 *v1.UpdateModelRequest) (*v1.Model, error) {
+func (m *MockClient) UpdateModel(arg0 context.Context, arg1 *v1.UpdateModelRequest, arg2 ...grpc.CallOption) (*v1.Model, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateModel", arg0, arg1)
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateModel", varargs...)
 	ret0, _ := ret[0].(*v1.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateModel indicates an expected call of UpdateModel.
-func (mr *MockClientMockRecorder) UpdateModel(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) UpdateModel(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateModel", reflect.TypeOf((*MockClient)(nil).UpdateModel), arg0, arg1)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateModel", reflect.TypeOf((*MockClient)(nil).UpdateModel), varargs...)
 }
 
 // UpdateModelVersion mocks base method.
-func (m *MockClient) UpdateModelVersion(arg0 context.Context, arg1 *v1.UpdateModelVersionRequest) (*v1.ModelVersion, error) {
+func (m *MockClient) UpdateModelVersion(arg0 context.Context, arg1 *v1.UpdateModelVersionRequest, arg2 ...grpc.CallOption) (*v1.ModelVersion, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateModelVersion", arg0, arg1)
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateModelVersion", varargs...)
 	ret0, _ := ret[0].(*v1.ModelVersion)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateModelVersion indicates an expected call of UpdateModelVersion.
-func (mr *MockClientMockRecorder) UpdateModelVersion(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) UpdateModelVersion(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateModelVersion", reflect.TypeOf((*MockClient)(nil).UpdateModelVersion), arg0, arg1)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateModelVersion", reflect.TypeOf((*MockClient)(nil).UpdateModelVersion), varargs...)
 }
 
 // UpdateScheduler mocks base method.
-func (m *MockClient) UpdateScheduler(arg0 context.Context, arg1 *v1.UpdateSchedulerRequest) (*v1.Scheduler, error) {
+func (m *MockClient) UpdateScheduler(arg0 context.Context, arg1 *v1.UpdateSchedulerRequest, arg2 ...grpc.CallOption) (*v1.Scheduler, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateScheduler", arg0, arg1)
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateScheduler", varargs...)
 	ret0, _ := ret[0].(*v1.Scheduler)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateScheduler indicates an expected call of UpdateScheduler.
-func (mr *MockClientMockRecorder) UpdateScheduler(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) UpdateScheduler(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateScheduler", reflect.TypeOf((*MockClient)(nil).UpdateScheduler), arg0, arg1)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateScheduler", reflect.TypeOf((*MockClient)(nil).UpdateScheduler), varargs...)
 }
 
 // UpdateSeedPeer mocks base method.
-func (m *MockClient) UpdateSeedPeer(arg0 context.Context, arg1 *v1.UpdateSeedPeerRequest) (*v1.SeedPeer, error) {
+func (m *MockClient) UpdateSeedPeer(arg0 context.Context, arg1 *v1.UpdateSeedPeerRequest, arg2 ...grpc.CallOption) (*v1.SeedPeer, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateSeedPeer", arg0, arg1)
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateSeedPeer", varargs...)
 	ret0, _ := ret[0].(*v1.SeedPeer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateSeedPeer indicates an expected call of UpdateSeedPeer.
-func (mr *MockClientMockRecorder) UpdateSeedPeer(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) UpdateSeedPeer(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSeedPeer", reflect.TypeOf((*MockClient)(nil).UpdateSeedPeer), arg0, arg1)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSeedPeer", reflect.TypeOf((*MockClient)(nil).UpdateSeedPeer), varargs...)
 }
