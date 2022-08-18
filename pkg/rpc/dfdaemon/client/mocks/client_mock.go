@@ -10,40 +10,38 @@ import (
 
 	v1 "d7y.io/api/pkg/apis/common/v1"
 	v10 "d7y.io/api/pkg/apis/dfdaemon/v1"
-	dfnet "d7y.io/dragonfly/v2/pkg/dfnet"
-	client "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 )
 
-// MockDaemonClient is a mock of DaemonClient interface.
-type MockDaemonClient struct {
+// MockClient is a mock of Client interface.
+type MockClient struct {
 	ctrl     *gomock.Controller
-	recorder *MockDaemonClientMockRecorder
+	recorder *MockClientMockRecorder
 }
 
-// MockDaemonClientMockRecorder is the mock recorder for MockDaemonClient.
-type MockDaemonClientMockRecorder struct {
-	mock *MockDaemonClient
+// MockClientMockRecorder is the mock recorder for MockClient.
+type MockClientMockRecorder struct {
+	mock *MockClient
 }
 
-// NewMockDaemonClient creates a new mock instance.
-func NewMockDaemonClient(ctrl *gomock.Controller) *MockDaemonClient {
-	mock := &MockDaemonClient{ctrl: ctrl}
-	mock.recorder = &MockDaemonClientMockRecorder{mock}
+// NewMockClient creates a new mock instance.
+func NewMockClient(ctrl *gomock.Controller) *MockClient {
+	mock := &MockClient{ctrl: ctrl}
+	mock.recorder = &MockClientMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockDaemonClient) EXPECT() *MockDaemonClientMockRecorder {
+func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
 }
 
 // CheckHealth mocks base method.
-func (m *MockDaemonClient) CheckHealth(ctx context.Context, target dfnet.NetAddr, opts ...grpc.CallOption) error {
+func (m *MockClient) CheckHealth(arg0 context.Context, arg1 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, target}
-	for _, a := range opts {
+	varargs := []interface{}{arg0}
+	for _, a := range arg1 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "CheckHealth", varargs...)
@@ -52,31 +50,17 @@ func (m *MockDaemonClient) CheckHealth(ctx context.Context, target dfnet.NetAddr
 }
 
 // CheckHealth indicates an expected call of CheckHealth.
-func (mr *MockDaemonClientMockRecorder) CheckHealth(ctx, target interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) CheckHealth(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, target}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckHealth", reflect.TypeOf((*MockDaemonClient)(nil).CheckHealth), varargs...)
-}
-
-// Close mocks base method.
-func (m *MockDaemonClient) Close() error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Close")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Close indicates an expected call of Close.
-func (mr *MockDaemonClientMockRecorder) Close() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockDaemonClient)(nil).Close))
+	varargs := append([]interface{}{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckHealth", reflect.TypeOf((*MockClient)(nil).CheckHealth), varargs...)
 }
 
 // DeleteTask mocks base method.
-func (m *MockDaemonClient) DeleteTask(ctx context.Context, req *v10.DeleteTaskRequest, opts ...grpc.CallOption) error {
+func (m *MockClient) DeleteTask(arg0 context.Context, arg1 *v10.DeleteTaskRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, req}
-	for _, a := range opts {
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "DeleteTask", varargs...)
@@ -85,37 +69,37 @@ func (m *MockDaemonClient) DeleteTask(ctx context.Context, req *v10.DeleteTaskRe
 }
 
 // DeleteTask indicates an expected call of DeleteTask.
-func (mr *MockDaemonClientMockRecorder) DeleteTask(ctx, req interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) DeleteTask(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, req}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTask", reflect.TypeOf((*MockDaemonClient)(nil).DeleteTask), varargs...)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTask", reflect.TypeOf((*MockClient)(nil).DeleteTask), varargs...)
 }
 
 // Download mocks base method.
-func (m *MockDaemonClient) Download(ctx context.Context, req *v10.DownRequest, opts ...grpc.CallOption) (*client.DownResultStream, error) {
+func (m *MockClient) Download(arg0 context.Context, arg1 *v10.DownRequest, arg2 ...grpc.CallOption) (v10.Daemon_DownloadClient, error) {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, req}
-	for _, a := range opts {
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "Download", varargs...)
-	ret0, _ := ret[0].(*client.DownResultStream)
+	ret0, _ := ret[0].(v10.Daemon_DownloadClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Download indicates an expected call of Download.
-func (mr *MockDaemonClientMockRecorder) Download(ctx, req interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) Download(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, req}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Download", reflect.TypeOf((*MockDaemonClient)(nil).Download), varargs...)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Download", reflect.TypeOf((*MockClient)(nil).Download), varargs...)
 }
 
 // ExportTask mocks base method.
-func (m *MockDaemonClient) ExportTask(ctx context.Context, req *v10.ExportTaskRequest, opts ...grpc.CallOption) error {
+func (m *MockClient) ExportTask(arg0 context.Context, arg1 *v10.ExportTaskRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, req}
-	for _, a := range opts {
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "ExportTask", varargs...)
@@ -124,17 +108,17 @@ func (m *MockDaemonClient) ExportTask(ctx context.Context, req *v10.ExportTaskRe
 }
 
 // ExportTask indicates an expected call of ExportTask.
-func (mr *MockDaemonClientMockRecorder) ExportTask(ctx, req interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) ExportTask(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, req}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportTask", reflect.TypeOf((*MockDaemonClient)(nil).ExportTask), varargs...)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportTask", reflect.TypeOf((*MockClient)(nil).ExportTask), varargs...)
 }
 
 // GetPieceTasks mocks base method.
-func (m *MockDaemonClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *v1.PieceTaskRequest, opts ...grpc.CallOption) (*v1.PiecePacket, error) {
+func (m *MockClient) GetPieceTasks(arg0 context.Context, arg1 *v1.PieceTaskRequest, arg2 ...grpc.CallOption) (*v1.PiecePacket, error) {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, addr, ptr}
-	for _, a := range opts {
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetPieceTasks", varargs...)
@@ -144,17 +128,17 @@ func (m *MockDaemonClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr
 }
 
 // GetPieceTasks indicates an expected call of GetPieceTasks.
-func (mr *MockDaemonClientMockRecorder) GetPieceTasks(ctx, addr, ptr interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) GetPieceTasks(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, addr, ptr}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPieceTasks", reflect.TypeOf((*MockDaemonClient)(nil).GetPieceTasks), varargs...)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPieceTasks", reflect.TypeOf((*MockClient)(nil).GetPieceTasks), varargs...)
 }
 
 // ImportTask mocks base method.
-func (m *MockDaemonClient) ImportTask(ctx context.Context, req *v10.ImportTaskRequest, opts ...grpc.CallOption) error {
+func (m *MockClient) ImportTask(arg0 context.Context, arg1 *v10.ImportTaskRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, req}
-	for _, a := range opts {
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "ImportTask", varargs...)
@@ -163,17 +147,17 @@ func (m *MockDaemonClient) ImportTask(ctx context.Context, req *v10.ImportTaskRe
 }
 
 // ImportTask indicates an expected call of ImportTask.
-func (mr *MockDaemonClientMockRecorder) ImportTask(ctx, req interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) ImportTask(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, req}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ImportTask", reflect.TypeOf((*MockDaemonClient)(nil).ImportTask), varargs...)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ImportTask", reflect.TypeOf((*MockClient)(nil).ImportTask), varargs...)
 }
 
 // StatTask mocks base method.
-func (m *MockDaemonClient) StatTask(ctx context.Context, req *v10.StatTaskRequest, opts ...grpc.CallOption) error {
+func (m *MockClient) StatTask(arg0 context.Context, arg1 *v10.StatTaskRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, req}
-	for _, a := range opts {
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "StatTask", varargs...)
@@ -182,17 +166,17 @@ func (m *MockDaemonClient) StatTask(ctx context.Context, req *v10.StatTaskReques
 }
 
 // StatTask indicates an expected call of StatTask.
-func (mr *MockDaemonClientMockRecorder) StatTask(ctx, req interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) StatTask(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, req}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatTask", reflect.TypeOf((*MockDaemonClient)(nil).StatTask), varargs...)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatTask", reflect.TypeOf((*MockClient)(nil).StatTask), varargs...)
 }
 
 // SyncPieceTasks mocks base method.
-func (m *MockDaemonClient) SyncPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *v1.PieceTaskRequest, opts ...grpc.CallOption) (v10.Daemon_SyncPieceTasksClient, error) {
+func (m *MockClient) SyncPieceTasks(arg0 context.Context, arg1 *v1.PieceTaskRequest, arg2 ...grpc.CallOption) (v10.Daemon_SyncPieceTasksClient, error) {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, addr, ptr}
-	for _, a := range opts {
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "SyncPieceTasks", varargs...)
@@ -202,8 +186,8 @@ func (m *MockDaemonClient) SyncPieceTasks(ctx context.Context, addr dfnet.NetAdd
 }
 
 // SyncPieceTasks indicates an expected call of SyncPieceTasks.
-func (mr *MockDaemonClientMockRecorder) SyncPieceTasks(ctx, addr, ptr interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) SyncPieceTasks(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, addr, ptr}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncPieceTasks", reflect.TypeOf((*MockDaemonClient)(nil).SyncPieceTasks), varargs...)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncPieceTasks", reflect.TypeOf((*MockClient)(nil).SyncPieceTasks), varargs...)
 }

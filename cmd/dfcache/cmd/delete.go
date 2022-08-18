@@ -45,6 +45,6 @@ func initDelete() {
 	rootCmd.AddCommand(deleteCmd)
 }
 
-func runDelete(cfg *config.DfcacheConfig, client client.DaemonClient) error {
+func runDelete(cfg *config.DfcacheConfig, client client.Client) error {
 	return dfcache.Delete(cfg, client)
 }

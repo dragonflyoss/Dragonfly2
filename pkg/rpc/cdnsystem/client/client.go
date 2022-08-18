@@ -54,7 +54,7 @@ const (
 	perRetryTimeout = 3 * time.Second
 )
 
-func GetClientByAddr(netAddr dfnet.NetAddr, options ...grpc.DialOption) (Client, error) {
+func GetClientByAddr(netAddr dfnet.NetAddr, opts ...grpc.DialOption) (Client, error) {
 	conn, err := grpc.Dial(
 		netAddr.Addr,
 		append([]grpc.DialOption{
@@ -76,19 +76,18 @@ func GetClientByAddr(netAddr dfnet.NetAddr, options ...grpc.DialOption) (Client,
 				grpc_prometheus.StreamClientInterceptor,
 				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
 			)),
-		}, options...)...,
+		}, opts...)...,
 	)
 	if err != nil {
 		return nil, err
 	}
 
 	return &client{
-		conn,
 		cdnsystemv1.NewSeederClient(conn),
 	}, nil
 }
 
-func GetClient(dynconfig config.DynconfigInterface, options ...grpc.DialOption) (Client, error) {
+func GetClient(dynconfig config.DynconfigInterface, opts ...grpc.DialOption) (Client, error) {
 	// Register resolver and balancer.
 	resolver.RegisterSeedPeer(dynconfig)
 	balancer.Register(pkgbalancer.NewConsistentHashingBuilder())
@@ -117,14 +116,13 @@ func GetClient(dynconfig config.DynconfigInterface, options ...grpc.DialOption) 
 				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
 				rpc.RefresherStreamClientInterceptor(dynconfig),
 			)),
-		}, options...)...,
+		}, opts...)...,
 	)
 	if err != nil {
 		return nil, err
 	}
 
 	return &client{
-		conn,
 		cdnsystemv1.NewSeederClient(conn),
 	}, nil
 }
@@ -143,33 +141,32 @@ type Client interface {
 
 // client provides seed peer grpc function.
 type client struct {
-	*grpc.ClientConn
 	cdnsystemv1.SeederClient
 }
 
 // ObtainSeeds triggers the seed peer to download task back-to-source..
-func (c *client) ObtainSeeds(ctx context.Context, req *cdnsystemv1.SeedRequest, options ...grpc.CallOption) (cdnsystemv1.Seeder_ObtainSeedsClient, error) {
+func (c *client) ObtainSeeds(ctx context.Context, req *cdnsystemv1.SeedRequest, opts ...grpc.CallOption) (cdnsystemv1.Seeder_ObtainSeedsClient, error) {
 	return c.SeederClient.ObtainSeeds(
 		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		req,
-		options...,
+		opts...,
 	)
 }
 
 // GetPieceTasks gets detail information of task.
-func (c *client) GetPieceTasks(ctx context.Context, req *commonv1.PieceTaskRequest, options ...grpc.CallOption) (*commonv1.PiecePacket, error) {
+func (c *client) GetPieceTasks(ctx context.Context, req *commonv1.PieceTaskRequest, opts ...grpc.CallOption) (*commonv1.PiecePacket, error) {
 	return c.SeederClient.GetPieceTasks(
 		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		req,
-		options...,
+		opts...,
 	)
 }
 
 // SyncPieceTasks syncs detail information of task.
-func (c *client) SyncPieceTasks(ctx context.Context, req *commonv1.PieceTaskRequest, options ...grpc.CallOption) (cdnsystemv1.Seeder_SyncPieceTasksClient, error) {
+func (c *client) SyncPieceTasks(ctx context.Context, req *commonv1.PieceTaskRequest, opts ...grpc.CallOption) (cdnsystemv1.Seeder_SyncPieceTasksClient, error) {
 	stream, err := c.SeederClient.SyncPieceTasks(
 		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
-		options...,
+		opts...,
 	)
 	if err != nil {
 		return nil, err

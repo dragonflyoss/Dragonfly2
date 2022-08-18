@@ -41,7 +41,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
-	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
+	dfdaemonclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 )
 
@@ -82,7 +82,7 @@ func Test_ServeDownload(t *testing.T) {
 		peerTaskManager: mockPeerTaskManager,
 	}
 	m.downloadServer = dfdaemonserver.New(m)
-	_, client := setupPeerServerAndClient(t, m, assert, m.ServeDownload)
+	client := setupPeerServerAndClient(t, m, assert, m.ServeDownload)
 	request := &dfdaemonv1.DownRequest{
 		Uuid:              uuid.Generate().String(),
 		Url:               "http://localhost/test",
@@ -151,7 +151,7 @@ func Test_ServePeer(t *testing.T) {
 		storageManager: mockStorageManger,
 	}
 	s.peerServer = dfdaemonserver.New(s)
-	port, client := setupPeerServerAndClient(t, s, assert, s.ServePeer)
+	client := setupPeerServerAndClient(t, s, assert, s.ServePeer)
 	defer s.peerServer.GracefulStop()
 
 	var tests = []struct {
@@ -205,13 +205,7 @@ func Test_ServePeer(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		response, err := client.GetPieceTasks(
-			context.Background(),
-			dfnet.NetAddr{
-				Type: dfnet.TCP,
-				Addr: fmt.Sprintf("127.0.0.1:%d", port),
-			},
-			tc.request)
+		response, err := client.GetPieceTasks(context.Background(), tc.request)
 		assert.Nil(err, "client get piece tasks grpc call should be ok")
 		assert.Equal(tc.responsePieceSize, len(response.PieceInfos))
 	}
@@ -489,14 +483,9 @@ func Test_SyncPieceTasks(t *testing.T) {
 					peerTaskManager: mockTaskManager,
 				}
 
-				port, client := setupPeerServerAndClient(t, s, assert, s.ServePeer)
-
+				client := setupPeerServerAndClient(t, s, assert, s.ServePeer)
 				syncClient, err := client.SyncPieceTasks(
 					context.Background(),
-					dfnet.NetAddr{
-						Type: dfnet.TCP,
-						Addr: fmt.Sprintf("127.0.0.1:%d", port),
-					},
 					&commonv1.PieceTaskRequest{
 						TaskId:   tc.name,
 						SrcPid:   idgen.PeerID(ip.IPv4),
@@ -558,7 +547,7 @@ func Test_SyncPieceTasks(t *testing.T) {
 	}
 }
 
-func setupPeerServerAndClient(t *testing.T, srv *server, assert *testifyassert.Assertions, serveFunc func(listener net.Listener) error) (int, dfclient.DaemonClient) {
+func setupPeerServerAndClient(t *testing.T, srv *server, assert *testifyassert.Assertions, serveFunc func(listener net.Listener) error) dfdaemonclient.Client {
 	srv.peerServer = dfdaemonserver.New(srv)
 	port, err := freeport.GetFreePort()
 	if err != nil {
@@ -573,12 +562,10 @@ func setupPeerServerAndClient(t *testing.T, srv *server, assert *testifyassert.A
 		}
 	}()
 
-	client, err := dfclient.GetClientByAddr([]dfnet.NetAddr{
-		{
-			Type: dfnet.TCP,
-			Addr: fmt.Sprintf(":%d", port),
-		},
-	})
+	client, err := dfdaemonclient.GetClient(dfnet.NetAddr{
+		Type: dfnet.TCP,
+		Addr: fmt.Sprintf(":%d", port),
+	}.GetEndpoint())
 	assert.Nil(err, "grpc dial should be ok")
-	return port, client
+	return client
 }

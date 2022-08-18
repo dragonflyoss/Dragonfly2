@@ -35,7 +35,8 @@ import (
 
 	"d7y.io/dragonfly/v2/client/config"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
+	"d7y.io/dragonfly/v2/pkg/dfnet"
+	dfdaemonclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 )
 
 type pieceTaskSyncManager struct {
@@ -69,7 +70,7 @@ type pieceTaskSynchronizerError struct {
 	err error
 }
 
-// FIXME for compatibility, sync will be called after the dfclient.GetPieceTasks deprecated and the pieceTaskPoller removed
+// FIXME for compatibility, sync will be called after the dfdaemonclient.GetPieceTasks deprecated and the pieceTaskPoller removed
 func (s *pieceTaskSyncManager) sync(pp *schedulerv1.PeerPacket, desiredPiece int32) error {
 	var (
 		peers = map[string]bool{}
@@ -161,11 +162,20 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 		delete(s.workers, dstPeer.PeerId)
 	}
 
-	client, err := dfclient.SyncPieceTasks(ctx, dstPeer, request)
+	client, err := dfdaemonclient.GetClient(dfnet.NetAddr{
+		Type: dfnet.TCP,
+		Addr: fmt.Sprintf("%s:%d", dstPeer.Ip, dstPeer.RpcPort),
+	}.GetEndpoint())
+	if err != nil {
+		s.peerTaskConductor.Errorf("get dfdaemon client error: %s, dest peer: %s", err, dstPeer.PeerId)
+		return err
+	}
+
+	stream, err := client.SyncPieceTasks(ctx, request)
 	// Refer: https://github.com/grpc/grpc-go/blob/v1.44.0/stream.go#L104
 	// When receive io.EOF, the real error should be discovered using RecvMsg, here is client.Recv() here
 	if err == io.EOF && client != nil {
-		_, err = client.Recv()
+		_, err = stream.Recv()
 	}
 	if err != nil {
 		s.peerTaskConductor.Errorf("call SyncPieceTasks error: %s, dest peer: %s", err, dstPeer.PeerId)
@@ -174,10 +184,10 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 
 	// TODO the codes.Unimplemented is received only in client.Recv()
 	// when remove legacy get piece grpc, can move this check into synchronizer.receive
-	piecePacket, err := client.Recv()
+	piecePacket, err := stream.Recv()
 	if err != nil {
 		s.peerTaskConductor.Warnf("receive from SyncPieceTasksClient error: %s, dest peer: %s", err, dstPeer.PeerId)
-		_ = client.CloseSend()
+		_ = stream.CloseSend()
 		return err
 	}
 
@@ -187,7 +197,7 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 		span:                span,
 		peerTaskConductor:   s.peerTaskConductor,
 		pieceRequestCh:      s.pieceRequestCh,
-		client:              client,
+		client:              stream,
 		dstPeer:             dstPeer,
 		error:               atomic.Value{},
 		SugaredLoggerOnWith: s.peerTaskConductor.With("targetPeerID", request.DstPid),

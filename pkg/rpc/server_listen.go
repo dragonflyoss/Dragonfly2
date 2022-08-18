@@ -43,12 +43,14 @@ func ListenWithPortRange(listen string, startPort, endPort int) (net.Listener, i
 	if endPort < startPort {
 		endPort = startPort
 	}
+
 	for port := startPort; port <= endPort; port++ {
 		logger.Debugf("start to listen port: %s:%d", listen, port)
 		listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", listen, port))
 		if err == nil && listener != nil {
 			return listener, listener.Addr().(*net.TCPAddr).Port, nil
 		}
+
 		if isErrAddr(err) {
 			logger.Warnf("listen port %s:%d is in used, sys error: %s", listen, port, err)
 			continue
