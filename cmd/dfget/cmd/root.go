@@ -226,33 +226,32 @@ func runDfget(dfgetLockPath, daemonSockPath string) error {
 	defer ff()
 
 	var (
-		daemonClient client.DaemonClient
-		err          error
+		dfdaemonClient client.Client
+		err            error
 	)
 
 	if dfgetConfig.Pattern != constants.SourcePattern {
 		logger.Info("start to check and spawn daemon")
-		if daemonClient, err = checkAndSpawnDaemon(dfgetLockPath, daemonSockPath); err != nil {
+		if dfdaemonClient, err = checkAndSpawnDaemon(dfgetLockPath, daemonSockPath); err != nil {
 			logger.Errorf("check and spawn daemon error: %v", err)
 		} else {
 			logger.Info("check and spawn daemon success")
 		}
 	}
 
-	return dfget.Download(dfgetConfig, daemonClient)
+	return dfget.Download(dfgetConfig, dfdaemonClient)
 }
 
 // checkAndSpawnDaemon do checking at three checkpoints
-func checkAndSpawnDaemon(dfgetLockPath, daemonSockPath string) (client.DaemonClient, error) {
-	target := dfnet.NetAddr{Type: dfnet.UNIX, Addr: daemonSockPath}
-	daemonClient, err := client.GetClientByAddr([]dfnet.NetAddr{target})
+func checkAndSpawnDaemon(dfgetLockPath, daemonSockPath string) (client.Client, error) {
+	dfdaemonClient, err := client.GetClient(dfnet.NetAddr{Type: dfnet.UNIX, Addr: daemonSockPath}.GetEndpoint())
 	if err != nil {
 		return nil, err
 	}
 
 	// 1.Check without lock
-	if daemonClient.CheckHealth(context.Background(), target) == nil {
-		return daemonClient, nil
+	if dfdaemonClient.CheckHealth(context.Background()) == nil {
+		return dfdaemonClient, nil
 	}
 
 	lock := flock.New(dfgetLockPath)
@@ -268,8 +267,8 @@ func checkAndSpawnDaemon(dfgetLockPath, daemonSockPath string) (client.DaemonCli
 	}()
 
 	// 2.Check with lock
-	if daemonClient.CheckHealth(context.Background(), target) == nil {
-		return daemonClient, nil
+	if dfdaemonClient.CheckHealth(context.Background()) == nil {
+		return dfdaemonClient, nil
 	}
 
 	cmd := exec.Command(os.Args[0], "daemon", "--launcher", strconv.Itoa(os.Getpid()), "--config", viper.GetString("config"))
@@ -295,10 +294,10 @@ func checkAndSpawnDaemon(dfgetLockPath, daemonSockPath string) (client.DaemonCli
 		case <-timeout:
 			return nil, errors.New("the daemon is unhealthy")
 		case <-tick.C:
-			if err = daemonClient.CheckHealth(context.Background(), target); err != nil {
+			if err = dfdaemonClient.CheckHealth(context.Background()); err != nil {
 				continue
 			}
-			return daemonClient, nil
+			return dfdaemonClient, nil
 		}
 	}
 }
