@@ -562,10 +562,11 @@ func setupPeerServerAndClient(t *testing.T, srv *server, assert *testifyassert.A
 		}
 	}()
 
-	client, err := dfdaemonclient.GetClient(dfnet.NetAddr{
+	netAddr := &dfnet.NetAddr{
 		Type: dfnet.TCP,
 		Addr: fmt.Sprintf(":%d", port),
-	}.GetEndpoint())
+	}
+	client, err := dfdaemonclient.GetClient(netAddr.String())
 	assert.Nil(err, "grpc dial should be ok")
 	return client
 }

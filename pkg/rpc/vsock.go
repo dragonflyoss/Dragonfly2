@@ -55,5 +55,5 @@ func VsockDialer(ctx context.Context, address string) (net.Conn, error) {
 
 // IsVsock returns whether the address is vsock.
 func IsVsock(target string) bool {
-	return strings.HasPrefix(target, dfnet.VsockEndpointPrefix)
+	return strings.HasPrefix(target, string(dfnet.VSOCK))
 }
