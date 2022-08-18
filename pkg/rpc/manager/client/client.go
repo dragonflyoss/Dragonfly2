@@ -53,7 +53,7 @@ const (
 )
 
 // GetClient returns manager client.
-func GetClient(target string, options ...grpc.DialOption) (Client, error) {
+func GetClient(target string, opts ...grpc.DialOption) (Client, error) {
 	conn, err := grpc.Dial(
 		target,
 		append([]grpc.DialOption{
@@ -73,15 +73,14 @@ func GetClient(target string, options ...grpc.DialOption) (Client, error) {
 				grpc_prometheus.StreamClientInterceptor,
 				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
 			)),
-		}, options...)...,
+		}, opts...)...,
 	)
 	if err != nil {
 		return nil, err
 	}
 
 	return &client{
-		ManagerClient: managerv1.NewManagerClient(conn),
-		conn:          conn,
+		managerv1.NewManagerClient(conn),
 	}, nil
 }
 
@@ -102,157 +101,153 @@ func GetClientByAddr(netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (Client,
 // Client is the interface for grpc client.
 type Client interface {
 	// Update Seed peer configuration.
-	UpdateSeedPeer(context.Context, *managerv1.UpdateSeedPeerRequest) (*managerv1.SeedPeer, error)
+	UpdateSeedPeer(context.Context, *managerv1.UpdateSeedPeerRequest, ...grpc.CallOption) (*managerv1.SeedPeer, error)
 
 	// Get Scheduler and Scheduler cluster configuration.
-	GetScheduler(context.Context, *managerv1.GetSchedulerRequest) (*managerv1.Scheduler, error)
+	GetScheduler(context.Context, *managerv1.GetSchedulerRequest, ...grpc.CallOption) (*managerv1.Scheduler, error)
 
 	// Update scheduler configuration.
-	UpdateScheduler(context.Context, *managerv1.UpdateSchedulerRequest) (*managerv1.Scheduler, error)
+	UpdateScheduler(context.Context, *managerv1.UpdateSchedulerRequest, ...grpc.CallOption) (*managerv1.Scheduler, error)
 
 	// List acitve schedulers configuration.
-	ListSchedulers(context.Context, *managerv1.ListSchedulersRequest) (*managerv1.ListSchedulersResponse, error)
+	ListSchedulers(context.Context, *managerv1.ListSchedulersRequest, ...grpc.CallOption) (*managerv1.ListSchedulersResponse, error)
 
 	// Get object storage configuration.
-	GetObjectStorage(context.Context, *managerv1.GetObjectStorageRequest) (*managerv1.ObjectStorage, error)
+	GetObjectStorage(context.Context, *managerv1.GetObjectStorageRequest, ...grpc.CallOption) (*managerv1.ObjectStorage, error)
 
 	// List buckets configuration.
-	ListBuckets(context.Context, *managerv1.ListBucketsRequest) (*managerv1.ListBucketsResponse, error)
+	ListBuckets(context.Context, *managerv1.ListBucketsRequest, ...grpc.CallOption) (*managerv1.ListBucketsResponse, error)
 
 	// List models information.
-	ListModels(context.Context, *managerv1.ListModelsRequest) (*managerv1.ListModelsResponse, error)
+	ListModels(context.Context, *managerv1.ListModelsRequest, ...grpc.CallOption) (*managerv1.ListModelsResponse, error)
 
 	// Get model information.
-	GetModel(context.Context, *managerv1.GetModelRequest) (*managerv1.Model, error)
+	GetModel(context.Context, *managerv1.GetModelRequest, ...grpc.CallOption) (*managerv1.Model, error)
 
 	// Create model information.
-	CreateModel(context.Context, *managerv1.CreateModelRequest) (*managerv1.Model, error)
+	CreateModel(context.Context, *managerv1.CreateModelRequest, ...grpc.CallOption) (*managerv1.Model, error)
 
 	// Update model information.
-	UpdateModel(context.Context, *managerv1.UpdateModelRequest) (*managerv1.Model, error)
+	UpdateModel(context.Context, *managerv1.UpdateModelRequest, ...grpc.CallOption) (*managerv1.Model, error)
 
 	// Delete model information.
-	DeleteModel(context.Context, *managerv1.DeleteModelRequest) error
+	DeleteModel(context.Context, *managerv1.DeleteModelRequest, ...grpc.CallOption) error
 
 	// List model versions information.
-	ListModelVersions(context.Context, *managerv1.ListModelVersionsRequest) (*managerv1.ListModelVersionsResponse, error)
+	ListModelVersions(context.Context, *managerv1.ListModelVersionsRequest, ...grpc.CallOption) (*managerv1.ListModelVersionsResponse, error)
 
 	// Get model version information.
-	GetModelVersion(context.Context, *managerv1.GetModelVersionRequest) (*managerv1.ModelVersion, error)
+	GetModelVersion(context.Context, *managerv1.GetModelVersionRequest, ...grpc.CallOption) (*managerv1.ModelVersion, error)
 
 	// Create model version information.
-	CreateModelVersion(context.Context, *managerv1.CreateModelVersionRequest) (*managerv1.ModelVersion, error)
+	CreateModelVersion(context.Context, *managerv1.CreateModelVersionRequest, ...grpc.CallOption) (*managerv1.ModelVersion, error)
 
 	// Update model version information.
-	UpdateModelVersion(context.Context, *managerv1.UpdateModelVersionRequest) (*managerv1.ModelVersion, error)
+	UpdateModelVersion(context.Context, *managerv1.UpdateModelVersionRequest, ...grpc.CallOption) (*managerv1.ModelVersion, error)
 
 	// Delete model version information.
-	DeleteModelVersion(context.Context, *managerv1.DeleteModelVersionRequest) error
+	DeleteModelVersion(context.Context, *managerv1.DeleteModelVersionRequest, ...grpc.CallOption) error
 
 	// KeepAlive with manager.
-	KeepAlive(time.Duration, *managerv1.KeepAliveRequest)
-
-	// Close client connect.
-	Close() error
+	KeepAlive(time.Duration, *managerv1.KeepAliveRequest, ...grpc.CallOption)
 }
 
 // client provides manager grpc function.
 type client struct {
 	managerv1.ManagerClient
-	conn *grpc.ClientConn
 }
 
 // Update SeedPeer configuration.
-func (c *client) UpdateSeedPeer(ctx context.Context, req *managerv1.UpdateSeedPeerRequest) (*managerv1.SeedPeer, error) {
-	return c.ManagerClient.UpdateSeedPeer(ctx, req)
+func (c *client) UpdateSeedPeer(ctx context.Context, req *managerv1.UpdateSeedPeerRequest, opts ...grpc.CallOption) (*managerv1.SeedPeer, error) {
+	return c.ManagerClient.UpdateSeedPeer(ctx, req, opts...)
 }
 
 // Get Scheduler and Scheduler cluster configuration.
-func (c *client) GetScheduler(ctx context.Context, req *managerv1.GetSchedulerRequest) (*managerv1.Scheduler, error) {
-	return c.ManagerClient.GetScheduler(ctx, req)
+func (c *client) GetScheduler(ctx context.Context, req *managerv1.GetSchedulerRequest, opts ...grpc.CallOption) (*managerv1.Scheduler, error) {
+	return c.ManagerClient.GetScheduler(ctx, req, opts...)
 }
 
 // Update scheduler configuration.
-func (c *client) UpdateScheduler(ctx context.Context, req *managerv1.UpdateSchedulerRequest) (*managerv1.Scheduler, error) {
-	return c.ManagerClient.UpdateScheduler(ctx, req)
+func (c *client) UpdateScheduler(ctx context.Context, req *managerv1.UpdateSchedulerRequest, opts ...grpc.CallOption) (*managerv1.Scheduler, error) {
+	return c.ManagerClient.UpdateScheduler(ctx, req, opts...)
 }
 
 // List acitve schedulers configuration.
-func (c *client) ListSchedulers(ctx context.Context, req *managerv1.ListSchedulersRequest) (*managerv1.ListSchedulersResponse, error) {
-	return c.ManagerClient.ListSchedulers(ctx, req)
+func (c *client) ListSchedulers(ctx context.Context, req *managerv1.ListSchedulersRequest, opts ...grpc.CallOption) (*managerv1.ListSchedulersResponse, error) {
+	return c.ManagerClient.ListSchedulers(ctx, req, opts...)
 }
 
 // Get object storage configuration.
-func (c *client) GetObjectStorage(ctx context.Context, req *managerv1.GetObjectStorageRequest) (*managerv1.ObjectStorage, error) {
-	return c.ManagerClient.GetObjectStorage(ctx, req)
+func (c *client) GetObjectStorage(ctx context.Context, req *managerv1.GetObjectStorageRequest, opts ...grpc.CallOption) (*managerv1.ObjectStorage, error) {
+	return c.ManagerClient.GetObjectStorage(ctx, req, opts...)
 }
 
 // List buckets configuration.
-func (c *client) ListBuckets(ctx context.Context, req *managerv1.ListBucketsRequest) (*managerv1.ListBucketsResponse, error) {
-	return c.ManagerClient.ListBuckets(ctx, req)
+func (c *client) ListBuckets(ctx context.Context, req *managerv1.ListBucketsRequest, opts ...grpc.CallOption) (*managerv1.ListBucketsResponse, error) {
+	return c.ManagerClient.ListBuckets(ctx, req, opts...)
 }
 
 // List models information.
-func (c *client) ListModels(ctx context.Context, req *managerv1.ListModelsRequest) (*managerv1.ListModelsResponse, error) {
-	return c.ManagerClient.ListModels(ctx, req)
+func (c *client) ListModels(ctx context.Context, req *managerv1.ListModelsRequest, opts ...grpc.CallOption) (*managerv1.ListModelsResponse, error) {
+	return c.ManagerClient.ListModels(ctx, req, opts...)
 }
 
 // Get model information.
-func (c *client) GetModel(ctx context.Context, req *managerv1.GetModelRequest) (*managerv1.Model, error) {
-	return c.ManagerClient.GetModel(ctx, req)
+func (c *client) GetModel(ctx context.Context, req *managerv1.GetModelRequest, opts ...grpc.CallOption) (*managerv1.Model, error) {
+	return c.ManagerClient.GetModel(ctx, req, opts...)
 
 }
 
 // Create model information.
-func (c *client) CreateModel(ctx context.Context, req *managerv1.CreateModelRequest) (*managerv1.Model, error) {
-	return c.ManagerClient.CreateModel(ctx, req)
+func (c *client) CreateModel(ctx context.Context, req *managerv1.CreateModelRequest, opts ...grpc.CallOption) (*managerv1.Model, error) {
+	return c.ManagerClient.CreateModel(ctx, req, opts...)
 }
 
 // Update model information.
-func (c *client) UpdateModel(ctx context.Context, req *managerv1.UpdateModelRequest) (*managerv1.Model, error) {
-	return c.ManagerClient.UpdateModel(ctx, req)
+func (c *client) UpdateModel(ctx context.Context, req *managerv1.UpdateModelRequest, opts ...grpc.CallOption) (*managerv1.Model, error) {
+	return c.ManagerClient.UpdateModel(ctx, req, opts...)
 
 }
 
 // Delete model information.
-func (c *client) DeleteModel(ctx context.Context, req *managerv1.DeleteModelRequest) error {
-	_, err := c.ManagerClient.DeleteModel(ctx, req)
+func (c *client) DeleteModel(ctx context.Context, req *managerv1.DeleteModelRequest, opts ...grpc.CallOption) error {
+	_, err := c.ManagerClient.DeleteModel(ctx, req, opts...)
 	return err
 }
 
 // List model versions information.
-func (c *client) ListModelVersions(ctx context.Context, req *managerv1.ListModelVersionsRequest) (*managerv1.ListModelVersionsResponse, error) {
-	return c.ManagerClient.ListModelVersions(ctx, req)
+func (c *client) ListModelVersions(ctx context.Context, req *managerv1.ListModelVersionsRequest, opts ...grpc.CallOption) (*managerv1.ListModelVersionsResponse, error) {
+	return c.ManagerClient.ListModelVersions(ctx, req, opts...)
 }
 
 // Get model version information.
-func (c *client) GetModelVersion(ctx context.Context, req *managerv1.GetModelVersionRequest) (*managerv1.ModelVersion, error) {
-	return c.ManagerClient.GetModelVersion(ctx, req)
+func (c *client) GetModelVersion(ctx context.Context, req *managerv1.GetModelVersionRequest, opts ...grpc.CallOption) (*managerv1.ModelVersion, error) {
+	return c.ManagerClient.GetModelVersion(ctx, req, opts...)
 
 }
 
 // Create model version information.
-func (c *client) CreateModelVersion(ctx context.Context, req *managerv1.CreateModelVersionRequest) (*managerv1.ModelVersion, error) {
-	return c.ManagerClient.CreateModelVersion(ctx, req)
+func (c *client) CreateModelVersion(ctx context.Context, req *managerv1.CreateModelVersionRequest, opts ...grpc.CallOption) (*managerv1.ModelVersion, error) {
+	return c.ManagerClient.CreateModelVersion(ctx, req, opts...)
 }
 
 // Update model version information.
-func (c *client) UpdateModelVersion(ctx context.Context, req *managerv1.UpdateModelVersionRequest) (*managerv1.ModelVersion, error) {
-	return c.ManagerClient.UpdateModelVersion(ctx, req)
+func (c *client) UpdateModelVersion(ctx context.Context, req *managerv1.UpdateModelVersionRequest, opts ...grpc.CallOption) (*managerv1.ModelVersion, error) {
+	return c.ManagerClient.UpdateModelVersion(ctx, req, opts...)
 
 }
 
 // Delete model version information.
-func (c *client) DeleteModelVersion(ctx context.Context, req *managerv1.DeleteModelVersionRequest) error {
-	_, err := c.ManagerClient.DeleteModelVersion(ctx, req)
+func (c *client) DeleteModelVersion(ctx context.Context, req *managerv1.DeleteModelVersionRequest, opts ...grpc.CallOption) error {
+	_, err := c.ManagerClient.DeleteModelVersion(ctx, req, opts...)
 	return err
 }
 
 // List acitve schedulers configuration.
-func (c *client) KeepAlive(interval time.Duration, keepalive *managerv1.KeepAliveRequest) {
+func (c *client) KeepAlive(interval time.Duration, keepalive *managerv1.KeepAliveRequest, opts ...grpc.CallOption) {
 retry:
 	ctx, cancel := context.WithCancel(context.Background())
-	stream, err := c.ManagerClient.KeepAlive(ctx)
+	stream, err := c.ManagerClient.KeepAlive(ctx, opts...)
 	if err != nil {
 		if status.Code(err) == codes.Canceled {
 			logger.Infof("hostname %s ip %s cluster id %d stop keepalive", keepalive.HostName, keepalive.Ip, keepalive.ClusterId)
@@ -284,9 +279,4 @@ retry:
 			}
 		}
 	}
-}
-
-// Close grpc service.
-func (c *client) Close() error {
-	return c.conn.Close()
 }
