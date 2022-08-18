@@ -259,7 +259,15 @@ func (d *dynconfig) Get() (*DynconfigData, error) {
 
 // Refresh refreshes dynconfig in cache.
 func (d *dynconfig) Refresh() error {
-	return d.Dynconfig.Refresh()
+	if err := d.Dynconfig.Refresh(); err != nil {
+		return err
+	}
+
+	if err := d.Notify(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Register allows an instance to register itself to listen/observe events.
