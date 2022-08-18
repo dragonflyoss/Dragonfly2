@@ -154,7 +154,11 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	}
 
 	// Initialize GRPC server
-	grpcServer := rpcserver.New(cfg, db, cache, searcher, objectStorage, cfg.ObjectStorage)
+	grpcServer, err := rpcserver.New(cfg, db, cache, searcher, objectStorage, cfg.ObjectStorage, "", "")
+	if err != nil {
+		return nil, err
+	}
+
 	s.grpcServer = grpcServer
 
 	// Initialize prometheus
