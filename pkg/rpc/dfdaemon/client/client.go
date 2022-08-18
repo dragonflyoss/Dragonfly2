@@ -20,188 +20,152 @@ package client
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"sync"
 	"time"
 
 	"github.com/google/uuid"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/dfnet"
-	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 )
 
-var _ DaemonClient = (*daemonClient)(nil)
+const (
+	// maxRetries is maximum number of retries.
+	maxRetries = 3
 
-func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClient, error) {
-	if len(addrs) == 0 {
-		return nil, errors.New("address list of daemon is empty")
+	// backoffWaitBetween is waiting for a fixed period of
+	// time between calls in backoff linear.
+	backoffWaitBetween = 500 * time.Millisecond
+
+	// perRetryTimeout is GRPC timeout per call (including initial call) on this call.
+	perRetryTimeout = 5 * time.Second
+)
+
+// GetClient returns dfdaemon client.
+func GetClient(target string, opts ...grpc.DialOption) (Client, error) {
+	if rpc.IsVsock(target) {
+		opts = append(opts, grpc.WithContextDialer(rpc.VsockDialer))
 	}
 
-	dialOpts, err := rpc.VsockDialerOption(addrs, opts)
+	conn, err := grpc.Dial(
+		target,
+		append([]grpc.DialOption{
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
+				otelgrpc.UnaryClientInterceptor(),
+				grpc_prometheus.UnaryClientInterceptor,
+				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
+				grpc_retry.UnaryClientInterceptor(
+					grpc_retry.WithPerRetryTimeout(perRetryTimeout),
+					grpc_retry.WithMax(maxRetries),
+					grpc_retry.WithBackoff(grpc_retry.BackoffLinear(backoffWaitBetween)),
+				),
+			)),
+			grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
+				otelgrpc.StreamClientInterceptor(),
+				grpc_prometheus.StreamClientInterceptor,
+				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
+			)),
+		}, opts...)...,
+	)
 	if err != nil {
 		return nil, err
 	}
-	dc := &daemonClient{
-		rpc.NewConnection(context.Background(), "daemon-static", addrs, []rpc.ConnOption{
-			rpc.WithConnExpireTime(60 * time.Second),
-			rpc.WithDialOption(dialOpts),
-		}),
-	}
-	return dc, nil
+
+	return &client{
+		dfdaemonv1.NewDaemonClient(conn),
+	}, nil
 }
 
-var once sync.Once
-var elasticDaemonClient *daemonClient
+// Client is the interface for grpc client.
+type Client interface {
+	// Trigger client to download file.
+	Download(context.Context, *dfdaemonv1.DownRequest, ...grpc.CallOption) (dfdaemonv1.Daemon_DownloadClient, error)
 
-func GetElasticClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClient, error) {
-	once.Do(func() {
-		elasticDaemonClient = &daemonClient{
-			rpc.NewConnection(context.Background(), "daemon-elastic", make([]dfnet.NetAddr, 0), []rpc.ConnOption{
-				rpc.WithConnExpireTime(60 * time.Second),
-				rpc.WithDialOption(opts),
-			}),
-		}
-	})
-	err := elasticDaemonClient.Connection.AddServerNodes(addrs)
-	if err != nil {
-		return nil, err
-	}
-	return elasticDaemonClient, nil
+	// Get piece tasks from other peers.
+	GetPieceTasks(context.Context, *commonv1.PieceTaskRequest, ...grpc.CallOption) (*commonv1.PiecePacket, error)
+
+	// Sync piece tasks with other peers.
+	SyncPieceTasks(context.Context, *commonv1.PieceTaskRequest, ...grpc.CallOption) (dfdaemonv1.Daemon_SyncPieceTasksClient, error)
+
+	// Check if given task exists in P2P cache system.
+	StatTask(context.Context, *dfdaemonv1.StatTaskRequest, ...grpc.CallOption) error
+
+	// Import the given file into P2P cache system.
+	ImportTask(context.Context, *dfdaemonv1.ImportTaskRequest, ...grpc.CallOption) error
+
+	// Export or download file from P2P cache system.
+	ExportTask(context.Context, *dfdaemonv1.ExportTaskRequest, ...grpc.CallOption) error
+
+	// Delete file from P2P cache system.
+	DeleteTask(context.Context, *dfdaemonv1.DeleteTaskRequest, ...grpc.CallOption) error
+
+	// Check daemon health.
+	CheckHealth(context.Context, ...grpc.CallOption) error
 }
 
-// DaemonClient see dfdaemonv1.DaemonClient
-type DaemonClient interface {
-	Download(ctx context.Context, req *dfdaemonv1.DownRequest, opts ...grpc.CallOption) (*DownResultStream, error)
-
-	GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *commonv1.PieceTaskRequest, opts ...grpc.CallOption) (*commonv1.PiecePacket, error)
-
-	SyncPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *commonv1.PieceTaskRequest, opts ...grpc.CallOption) (dfdaemonv1.Daemon_SyncPieceTasksClient, error)
-
-	CheckHealth(ctx context.Context, target dfnet.NetAddr, opts ...grpc.CallOption) error
-
-	StatTask(ctx context.Context, req *dfdaemonv1.StatTaskRequest, opts ...grpc.CallOption) error
-
-	ImportTask(ctx context.Context, req *dfdaemonv1.ImportTaskRequest, opts ...grpc.CallOption) error
-
-	ExportTask(ctx context.Context, req *dfdaemonv1.ExportTaskRequest, opts ...grpc.CallOption) error
-
-	DeleteTask(ctx context.Context, req *dfdaemonv1.DeleteTaskRequest, opts ...grpc.CallOption) error
-
-	Close() error
+// client provides dfdaemon grpc function.
+type client struct {
+	dfdaemonv1.DaemonClient
 }
 
-type daemonClient struct {
-	*rpc.Connection
-}
-
-func (dc *daemonClient) getDaemonClient(key string, stick bool) (dfdaemonv1.DaemonClient, string, error) {
-	clientConn, err := dc.Connection.GetClientConn(key, stick)
-	if err != nil {
-		return nil, "", err
-	}
-	return dfdaemonv1.NewDaemonClient(clientConn), clientConn.Target(), nil
-}
-
-func (dc *daemonClient) getDaemonClientWithTarget(target string) (dfdaemonv1.DaemonClient, error) {
-	conn, err := dc.Connection.GetClientConnByTarget(target)
-	if err != nil {
-		return nil, err
-	}
-	return dfdaemonv1.NewDaemonClient(conn), nil
-}
-
-func (dc *daemonClient) Download(ctx context.Context, req *dfdaemonv1.DownRequest, opts ...grpc.CallOption) (*DownResultStream, error) {
+// Trigger client to download file.
+func (c *client) Download(ctx context.Context, req *dfdaemonv1.DownRequest, opts ...grpc.CallOption) (dfdaemonv1.Daemon_DownloadClient, error) {
 	req.Uuid = uuid.New().String()
-	// generate taskID
-	taskID := idgen.TaskID(req.Url, req.UrlMeta)
-	return newDownResultStream(ctx, dc, taskID, req, opts)
+	return c.DaemonClient.Download(ctx, req, opts...)
 }
 
-func (dc *daemonClient) GetPieceTasks(ctx context.Context, target dfnet.NetAddr, ptr *commonv1.PieceTaskRequest, opts ...grpc.CallOption) (*commonv1.PiecePacket,
-	error) {
-	client, err := dc.getDaemonClientWithTarget(target.GetEndpoint())
+// Get piece tasks from other peers.
+func (c *client) GetPieceTasks(ctx context.Context, req *commonv1.PieceTaskRequest, opts ...grpc.CallOption) (*commonv1.PiecePacket, error) {
+	return c.DaemonClient.GetPieceTasks(ctx, req, opts...)
+}
+
+// Sync piece tasks with other peers.
+func (c *client) SyncPieceTasks(ctx context.Context, req *commonv1.PieceTaskRequest, opts ...grpc.CallOption) (dfdaemonv1.Daemon_SyncPieceTasksClient, error) {
+	stream, err := c.DaemonClient.SyncPieceTasks(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
-	return client.GetPieceTasks(ctx, ptr, opts...)
+
+	return stream, stream.Send(req)
 }
 
-func (dc *daemonClient) SyncPieceTasks(ctx context.Context, target dfnet.NetAddr, ptr *commonv1.PieceTaskRequest, opts ...grpc.CallOption) (dfdaemonv1.Daemon_SyncPieceTasksClient, error) {
-	client, err := dc.getDaemonClientWithTarget(target.GetEndpoint())
-	if err != nil {
-		return nil, err
-	}
-	syncClient, err := client.SyncPieceTasks(ctx, opts...)
-	if err != nil {
-		logger.WithTaskID(ptr.TaskId).Infof("SyncPieceTasks: invoke daemon node %s SyncPieceTasks failed: %v", target, err)
-		return nil, err
-	}
-
-	return syncClient, syncClient.Send(ptr)
-}
-
-func (dc *daemonClient) CheckHealth(ctx context.Context, target dfnet.NetAddr, opts ...grpc.CallOption) (err error) {
-	_, err = rpc.ExecuteWithRetry(func() (any, error) {
-		client, err := dc.getDaemonClientWithTarget(target.GetEndpoint())
-		if err != nil {
-			return nil, fmt.Errorf("failed to connect server %s: %v", target.GetEndpoint(), err)
-		}
-		return client.CheckHealth(ctx, new(emptypb.Empty), opts...)
-	}, 0.2, 2.0, 3, nil)
-	if err != nil {
-		logger.Infof("CheckHealth: invoke daemon node %s CheckHealth failed: %v", target, err)
-		return
-	}
-	return
-}
-
-func (dc *daemonClient) StatTask(ctx context.Context, req *dfdaemonv1.StatTaskRequest, opts ...grpc.CallOption) error {
-	// StatTask is a latency sensitive operation, so we don't retry & wait for daemon to start,
-	// we assume daemon is already running.
-	taskID := idgen.TaskID(req.Url, req.UrlMeta)
-
-	client, _, err := dc.getDaemonClient(taskID, false)
-	if err != nil {
-		return err
-	}
-	_, err = client.StatTask(ctx, req, opts...)
+// Check if given task exists in P2P cache system.
+func (c *client) StatTask(ctx context.Context, req *dfdaemonv1.StatTaskRequest, opts ...grpc.CallOption) error {
+	_, err := c.DaemonClient.StatTask(ctx, req, opts...)
 	return err
 }
 
-func (dc *daemonClient) ImportTask(ctx context.Context, req *dfdaemonv1.ImportTaskRequest, opts ...grpc.CallOption) error {
-	taskID := idgen.TaskID(req.Url, req.UrlMeta)
-	client, _, err := dc.getDaemonClient(taskID, false)
-	if err != nil {
-		return err
-	}
-	_, err = client.ImportTask(ctx, req, opts...)
+// Import the given file into P2P cache system.
+func (c *client) ImportTask(ctx context.Context, req *dfdaemonv1.ImportTaskRequest, opts ...grpc.CallOption) error {
+	_, err := c.DaemonClient.ImportTask(ctx, req, opts...)
 	return err
 }
 
-func (dc *daemonClient) ExportTask(ctx context.Context, req *dfdaemonv1.ExportTaskRequest, opts ...grpc.CallOption) error {
-	taskID := idgen.TaskID(req.Url, req.UrlMeta)
-	client, _, err := dc.getDaemonClient(taskID, false)
-	if err != nil {
-		return err
-	}
-	_, err = client.ExportTask(ctx, req, opts...)
+// Export or download file from P2P cache system.
+func (c *client) ExportTask(ctx context.Context, req *dfdaemonv1.ExportTaskRequest, opts ...grpc.CallOption) error {
+	_, err := c.DaemonClient.ExportTask(ctx, req, opts...)
 	return err
 }
 
-func (dc *daemonClient) DeleteTask(ctx context.Context, req *dfdaemonv1.DeleteTaskRequest, opts ...grpc.CallOption) error {
-	taskID := idgen.TaskID(req.Url, req.UrlMeta)
-	client, _, err := dc.getDaemonClient(taskID, false)
-	if err != nil {
-		return err
-	}
-	_, err = client.DeleteTask(ctx, req, opts...)
+// Delete file from P2P cache system.
+func (c *client) DeleteTask(ctx context.Context, req *dfdaemonv1.DeleteTaskRequest, opts ...grpc.CallOption) error {
+	_, err := c.DaemonClient.DeleteTask(ctx, req, opts...)
+	return err
+}
+
+// Check daemon health.
+func (c *client) CheckHealth(ctx context.Context, opts ...grpc.CallOption) error {
+	_, err := c.DaemonClient.CheckHealth(ctx, new(emptypb.Empty), opts...)
 	return err
 }

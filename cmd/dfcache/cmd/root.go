@@ -123,8 +123,8 @@ func runDfcacheSubcmd(cmdName string, args []string) error {
 	}
 
 	var (
-		daemonClient client.DaemonClient
-		err          error
+		dfdaemonClient client.Client
+		err            error
 	)
 
 	// Initialize daemon dfpath
@@ -146,7 +146,7 @@ func runDfcacheSubcmd(cmdName string, args []string) error {
 	ff := dependency.InitMonitor(dfcacheConfig.PProfPort, dfcacheConfig.Telemetry)
 	defer ff()
 
-	if daemonClient, err = checkDaemon(d.DaemonSockPath()); err != nil {
+	if dfdaemonClient, err = checkDaemon(d.DaemonSockPath()); err != nil {
 		logger.Errorf("check daemon error: %v", err)
 		return err
 	}
@@ -167,19 +167,19 @@ func runDfcacheSubcmd(cmdName string, args []string) error {
 		return errors.New(msg)
 	}
 
-	return runCmd(dfcacheConfig, daemonClient)
+	return runCmd(dfcacheConfig, dfdaemonClient)
 }
 
 // checkDaemon checks if daemon is running
-func checkDaemon(daemonSockPath string) (client.DaemonClient, error) {
-	target := dfnet.NetAddr{Type: dfnet.UNIX, Addr: daemonSockPath}
-	daemonClient, err := client.GetClientByAddr([]dfnet.NetAddr{target})
+func checkDaemon(daemonSockPath string) (client.Client, error) {
+	netAddr := &dfnet.NetAddr{Type: dfnet.UNIX, Addr: daemonSockPath}
+	dfdaemonClient, err := client.GetClient(netAddr.String())
 	if err != nil {
 		return nil, err
 	}
 
-	if daemonClient.CheckHealth(context.Background(), target) == nil {
-		return daemonClient, nil
+	if dfdaemonClient.CheckHealth(context.Background()) == nil {
+		return dfdaemonClient, nil
 	}
 	return nil, errors.New("daemon not running")
 }

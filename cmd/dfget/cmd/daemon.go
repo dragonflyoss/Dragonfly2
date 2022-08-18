@@ -129,9 +129,8 @@ func initDaemonDfpath(cfg *config.DaemonOption) (dfpath.Dfpath, error) {
 
 func runDaemon(d dfpath.Dfpath) error {
 	logger.Infof("Version:\n%s", version.Version())
-
-	target := dfnet.NetAddr{Type: dfnet.UNIX, Addr: d.DaemonSockPath()}
-	daemonClient, err := client.GetClientByAddr([]dfnet.NetAddr{target})
+	netAddr := &dfnet.NetAddr{Type: dfnet.UNIX, Addr: d.DaemonSockPath()}
+	daemonClient, err := client.GetClient(netAddr.String())
 	if err != nil {
 		return err
 	}
@@ -162,7 +161,7 @@ func runDaemon(d dfpath.Dfpath) error {
 		if ok, err := lock.TryLock(); err != nil {
 			return err
 		} else if !ok {
-			if daemonClient.CheckHealth(context.Background(), target) == nil {
+			if daemonClient.CheckHealth(context.Background()) == nil {
 				return errors.New("the daemon is running, so there is no need to start it again")
 			}
 		} else {

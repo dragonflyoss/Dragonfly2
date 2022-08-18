@@ -27,13 +27,14 @@ import (
 type NetworkType string
 
 const (
-	TCP   NetworkType = "tcp"
-	UNIX  NetworkType = "unix"
-	VSOCK NetworkType = "vsock"
+	// TCP represents protocol of tcp.
+	TCP NetworkType = "tcp"
 
-	TCPEndpointPrefix   string = "dns:///"
-	UnixEndpointPrefix  string = "unix://"
-	VsockEndpointPrefix string = "vsock://"
+	// TCP represents protocol of unix.
+	UNIX NetworkType = "unix"
+
+	// TCP represents protocol of vsock.
+	VSOCK NetworkType = "vsock"
 )
 
 // NetAddr is the definition structure of grpc address,
@@ -46,7 +47,8 @@ type NetAddr struct {
 	Addr string `mapstructure:"addr" yaml:"addr"`
 }
 
-func (n NetAddr) Endpoint() string {
+// String returns the endpoint of network address.
+func (n *NetAddr) String() string {
 	switch n.Type {
 	case UNIX:
 		return fmt.Sprintf("unix://%s", n.Addr)
@@ -57,10 +59,7 @@ func (n NetAddr) Endpoint() string {
 	}
 }
 
-func (n NetAddr) String() string {
-	return n.Endpoint()
-}
-
+// UnmarshalJSON parses the JSON-encoded data and stores the result in NetAddr.
 func (n *NetAddr) UnmarshalJSON(b []byte) error {
 	var v any
 	if err := json.Unmarshal(b, &v); err != nil {
@@ -82,6 +81,7 @@ func (n *NetAddr) UnmarshalJSON(b []byte) error {
 	}
 }
 
+// UnmarshalYAML parses the YAML-encoded data and stores the result in NetAddr.
 func (n *NetAddr) UnmarshalYAML(node *yaml.Node) error {
 	switch node.Kind {
 	case yaml.ScalarNode:
@@ -126,6 +126,7 @@ func (n *NetAddr) UnmarshalYAML(node *yaml.Node) error {
 	}
 }
 
+// unmarshal parses the encoded data and stores the result.
 func (n *NetAddr) unmarshal(unmarshal func(in []byte, out any) (err error), b []byte) error {
 	netAddr := struct {
 		Type NetworkType `json:"type" yaml:"type"`
@@ -138,6 +139,5 @@ func (n *NetAddr) unmarshal(unmarshal func(in []byte, out any) (err error), b []
 
 	n.Type = netAddr.Type
 	n.Addr = netAddr.Addr
-
 	return nil
 }

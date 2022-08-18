@@ -215,15 +215,6 @@ func (s *Server) Stop() {
 		logger.Info("dynconfig client closed")
 	}
 
-	// Stop manager client.
-	if s.managerClient != nil {
-		if err := s.managerClient.Close(); err != nil {
-			logger.Errorf("manager client failed to stop: %s", err.Error())
-		} else {
-			logger.Info("manager client closed")
-		}
-	}
-
 	// Clean storage.
 	if err := s.storage.Clear(); err != nil {
 		logger.Errorf("clean storage failed %s", err.Error())
