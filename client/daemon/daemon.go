@@ -507,16 +507,15 @@ func (cd *clientDaemon) Serve() error {
 			return err
 		}
 
-		g.Go(func() error {
-			logger.Info("keepalive to manager")
+		go func() {
+			logger.Info("start keepalive to manager")
 			cd.managerClient.KeepAlive(cd.Option.Scheduler.Manager.SeedPeer.KeepAlive.Interval, &managerv1.KeepAliveRequest{
 				SourceType: managerv1.SourceType_SEED_PEER_SOURCE,
 				HostName:   cd.Option.Host.Hostname,
 				Ip:         cd.Option.Host.AdvertiseIP,
 				ClusterId:  uint64(cd.Option.Scheduler.Manager.SeedPeer.ClusterID),
 			})
-			return err
-		})
+		}()
 	}
 
 	if cd.Option.AliveTime.Duration > 0 {
