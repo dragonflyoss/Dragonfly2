@@ -19,6 +19,7 @@ package dfnet
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"gopkg.in/yaml.v3"
 )
@@ -26,36 +27,39 @@ import (
 type NetworkType string
 
 const (
-	TCP   NetworkType = "tcp"
-	UNIX  NetworkType = "unix"
-	VSOCK NetworkType = "vsock"
+	// TCP represents protocol of tcp.
+	TCP NetworkType = "tcp"
 
-	TCPEndpointPrefix   string = "dns:///"
-	UnixEndpointPrefix  string = "unix://"
-	VsockEndpointPrefix string = "vsock://"
+	// TCP represents protocol of unix.
+	UNIX NetworkType = "unix"
+
+	// TCP represents protocol of vsock.
+	VSOCK NetworkType = "vsock"
 )
 
+// NetAddr is the definition structure of grpc address,
+// refer to https://github.com/grpc/grpc/blob/master/doc/naming.md.
 type NetAddr struct {
+	// Type is the type of network.
 	Type NetworkType `mapstructure:"type" yaml:"type"`
-	// see https://github.com/grpc/grpc/blob/master/doc/naming.md
+
+	// Addr is the address of network.
 	Addr string `mapstructure:"addr" yaml:"addr"`
 }
 
-func (n NetAddr) GetEndpoint() string {
+// String returns the endpoint of network address.
+func (n *NetAddr) String() string {
 	switch n.Type {
 	case UNIX:
-		return UnixEndpointPrefix + n.Addr
+		return fmt.Sprintf("unix://%s", n.Addr)
 	case VSOCK:
-		return VsockEndpointPrefix + n.Addr
+		return fmt.Sprintf("vsock://%s", n.Addr)
 	default:
-		return TCPEndpointPrefix + n.Addr
+		return fmt.Sprintf("dns:///%s", n.Addr)
 	}
 }
 
-func (n NetAddr) String() string {
-	return n.GetEndpoint()
-}
-
+// UnmarshalJSON parses the JSON-encoded data and stores the result in NetAddr.
 func (n *NetAddr) UnmarshalJSON(b []byte) error {
 	var v any
 	if err := json.Unmarshal(b, &v); err != nil {
@@ -77,6 +81,7 @@ func (n *NetAddr) UnmarshalJSON(b []byte) error {
 	}
 }
 
+// UnmarshalYAML parses the YAML-encoded data and stores the result in NetAddr.
 func (n *NetAddr) UnmarshalYAML(node *yaml.Node) error {
 	switch node.Kind {
 	case yaml.ScalarNode:
@@ -84,6 +89,7 @@ func (n *NetAddr) UnmarshalYAML(node *yaml.Node) error {
 		if err := node.Decode(&addr); err != nil {
 			return err
 		}
+
 		n.Type = TCP
 		n.Addr = addr
 		return nil
@@ -97,9 +103,11 @@ func (n *NetAddr) UnmarshalYAML(node *yaml.Node) error {
 			if err := node.Content[i].Decode(&key); err != nil {
 				return err
 			}
+
 			if err := node.Content[i+1].Decode(&value); err != nil {
 				return err
 			}
+
 			m[key] = value
 		}
 
@@ -111,35 +119,25 @@ func (n *NetAddr) UnmarshalYAML(node *yaml.Node) error {
 		if err := n.unmarshal(yaml.Unmarshal, b); err != nil {
 			return err
 		}
+
 		return nil
 	default:
 		return errors.New("invalid net addr")
 	}
 }
 
+// unmarshal parses the encoded data and stores the result.
 func (n *NetAddr) unmarshal(unmarshal func(in []byte, out any) (err error), b []byte) error {
-	nt := struct {
+	netAddr := struct {
 		Type NetworkType `json:"type" yaml:"type"`
-		Addr string      `json:"addr" yaml:"addr"` // see https://github.com/grpc/grpc/blob/master/doc/naming.md
+		Addr string      `json:"addr" yaml:"addr"`
 	}{}
 
-	if err := unmarshal(b, &nt); err != nil {
+	if err := unmarshal(b, &netAddr); err != nil {
 		return err
 	}
 
-	n.Type = nt.Type
-	n.Addr = nt.Addr
-
+	n.Type = netAddr.Type
+	n.Addr = netAddr.Addr
 	return nil
-}
-
-func Convert2NetAddr(addrs []string) []NetAddr {
-	netAddrs := make([]NetAddr, 0, len(addrs))
-	for i := range addrs {
-		netAddrs = append(netAddrs, NetAddr{
-			Type: TCP,
-			Addr: addrs[i],
-		})
-	}
-	return netAddrs
 }
