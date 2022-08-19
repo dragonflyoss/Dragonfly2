@@ -29,6 +29,7 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+	securityv1 "d7y.io/api/pkg/apis/security/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -67,6 +68,7 @@ func New(svr managerv1.ManagerServer, opts ...grpc.ServerOption) *grpc.Server {
 
 	// Register servers on grpc server.
 	managerv1.RegisterManagerServer(grpcServer, svr)
+	securityv1.RegisterCertificateServiceServer(grpcServer, svr.(securityv1.CertificateServiceServer))
 
 	// Register health on grpc server.
 	healthpb.RegisterHealthServer(grpcServer, health.NewServer())

@@ -17,7 +17,11 @@
 package rpcserver
 
 import (
+	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"io"
 	"time"
@@ -28,8 +32,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
@@ -62,14 +66,29 @@ type Server struct {
 	objectStorage objectstorage.ObjectStorage
 	// Object storage configuration.
 	objectStorageConfig *config.ObjectStorageConfig
+	// ca certificate to sign certificates
+	ca *tls.Certificate
+	// ca certificate chain
+	certChain []string
 }
 
 // New returns a new manager server from the given options.
 func New(
 	cfg *config.Config, database *database.Database, cache *cache.Cache, searcher searcher.Searcher,
-	objectStorage objectstorage.ObjectStorage, objectStorageConfig *config.ObjectStorageConfig, opts ...grpc.ServerOption,
-) *grpc.Server {
-	return managerserver.New(&Server{
+	objectStorage objectstorage.ObjectStorage, objectStorageConfig *config.ObjectStorageConfig,
+	caCertPEM string, caPrivateKeyPEM string, opts ...grpc.ServerOption,
+) (*grpc.Server, error) {
+	server, err := newServer(cfg, database, cache, searcher, objectStorage, objectStorageConfig, caCertPEM, caPrivateKeyPEM)
+	if err != nil {
+		return nil, err
+	}
+	return managerserver.New(server, opts...), nil
+}
+
+func newServer(cfg *config.Config, database *database.Database, cache *cache.Cache, searcher searcher.Searcher,
+	objectStorage objectstorage.ObjectStorage, objectStorageConfig *config.ObjectStorageConfig,
+	caCertPEM string, caPrivateKeyPEM string) (*Server, error) {
+	s := &Server{
 		config:              cfg,
 		db:                  database.DB,
 		rdb:                 database.RDB,
@@ -77,7 +96,31 @@ func New(
 		searcher:            searcher,
 		objectStorage:       objectStorage,
 		objectStorageConfig: objectStorageConfig,
-	}, opts...)
+	}
+
+	if caCertPEM != "" || caPrivateKeyPEM != "" {
+		ca, err := tls.X509KeyPair([]byte(caCertPEM), []byte(caPrivateKeyPEM))
+		if err != nil {
+			return nil, err
+		}
+		// load x509 cert
+		ca.Leaf, err = x509.ParseCertificate(ca.Certificate[0])
+		if err != nil {
+			return nil, err
+		}
+
+		s.ca = &ca
+
+		// parse all cert
+		for _, cert := range ca.Certificate {
+			var certChainPEM bytes.Buffer
+			if err = pem.Encode(&certChainPEM, &pem.Block{Type: "CERTIFICATE", Bytes: cert}); err != nil {
+				return nil, err
+			}
+			s.certChain = append(s.certChain, certChainPEM.String())
+		}
+	}
+	return s, nil
 }
 
 // Get SeedPeer and SeedPeer cluster configuration.
