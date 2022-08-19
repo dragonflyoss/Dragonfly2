@@ -59,6 +59,9 @@ type DaemonOption struct {
 	DataDir     string `mapstructure:"dataDir" yaml:"dataDir"`
 	KeepStorage bool   `mapstructure:"keepStorage" yaml:"keepStorage"`
 
+	AutoIssueCert bool       `mapstructure:"autoIssueCertificate" yaml:"autoIssueCertificate"`
+	GlobalCACert  FileString `mapstructure:"autoIssueCertificate" yaml:"autoIssueCertificate"`
+
 	Scheduler     SchedulerOption     `mapstructure:"scheduler" yaml:"scheduler"`
 	Host          HostOption          `mapstructure:"host" yaml:"host"`
 	Download      DownloadOption      `mapstructure:"download" yaml:"download"`
