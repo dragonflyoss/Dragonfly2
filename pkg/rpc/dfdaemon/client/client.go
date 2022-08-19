@@ -62,6 +62,7 @@ func GetClient(target string, opts ...grpc.DialOption) (Client, error) {
 		append([]grpc.DialOption{
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
+				rpc.ConvertErrorUnaryClientInterceptor,
 				otelgrpc.UnaryClientInterceptor(),
 				grpc_prometheus.UnaryClientInterceptor,
 				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
@@ -72,6 +73,7 @@ func GetClient(target string, opts ...grpc.DialOption) (Client, error) {
 				),
 			)),
 			grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
+				rpc.ConvertErrorStreamClientInterceptor,
 				otelgrpc.StreamClientInterceptor(),
 				grpc_prometheus.StreamClientInterceptor,
 				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
