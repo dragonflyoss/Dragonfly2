@@ -54,40 +54,80 @@ import (
 type Server struct {
 	// Manager configuration.
 	config *config.Config
+
 	// GORM instance.
 	db *gorm.DB
+
 	// Redis client instance.
 	rdb *redis.Client
+
 	// Cache instance.
 	cache *cache.Cache
+
 	// Searcher interface.
 	searcher searcher.Searcher
+
 	// Object storage interface.
 	objectStorage objectstorage.ObjectStorage
+
 	// Object storage configuration.
 	objectStorageConfig *config.ObjectStorageConfig
-	// ca certificate to sign certificates
-	ca *tls.Certificate
-	// ca certificate chain
+
+	// serverOptions is server options of grpc.
+	serverOptions []grpc.ServerOption
+
+	// cert certificates to sign certificates.
+	cert *tls.Certificate
+
+	// x509Cert certificates to sign certificates.
+	x509Cert *x509.Certificate
+
+	// certChain is PEM-encoded certificate chain.
 	certChain []string
+}
+
+// Option is a functional option for rpc server.
+type Option func(s *Server) error
+
+// WithCertificate set the root tls certificate, x509 certificate and PEM-encoded certificate chain.
+func WithCertificate(cert *tls.Certificate) Option {
+	return func(s *Server) error {
+		s.cert = cert
+
+		// Parse x509 certificate from tls certificate.
+		var err error
+		s.x509Cert, err = x509.ParseCertificate(cert.Certificate[0])
+		if err != nil {
+			return err
+		}
+
+		// Initialize PEM-encoded certificate chain from tls certificate.
+		for _, cert := range cert.Certificate {
+			var certChainPEM bytes.Buffer
+			if err = pem.Encode(&certChainPEM, &pem.Block{Type: "CERTIFICATE", Bytes: cert}); err != nil {
+				return err
+			}
+
+			s.certChain = append(s.certChain, certChainPEM.String())
+		}
+
+		return nil
+	}
+}
+
+// WithGRPCServerOptions set the server options of grpc.
+func WithGRPCServerOptions(opts []grpc.ServerOption) Option {
+	return func(s *Server) error {
+		s.serverOptions = opts
+		return nil
+	}
 }
 
 // New returns a new manager server from the given options.
 func New(
 	cfg *config.Config, database *database.Database, cache *cache.Cache, searcher searcher.Searcher,
-	objectStorage objectstorage.ObjectStorage, objectStorageConfig *config.ObjectStorageConfig,
-	caCertPEM string, caPrivateKeyPEM string, opts ...grpc.ServerOption,
-) (*grpc.Server, error) {
-	server, err := newServer(cfg, database, cache, searcher, objectStorage, objectStorageConfig, caCertPEM, caPrivateKeyPEM)
-	if err != nil {
-		return nil, err
-	}
-	return managerserver.New(server, opts...), nil
-}
-
-func newServer(cfg *config.Config, database *database.Database, cache *cache.Cache, searcher searcher.Searcher,
-	objectStorage objectstorage.ObjectStorage, objectStorageConfig *config.ObjectStorageConfig,
-	caCertPEM string, caPrivateKeyPEM string) (*Server, error) {
+	objectStorage objectstorage.ObjectStorage, objectStorageConfig *config.ObjectStorageConfig, opts ...Option,
+) (*Server, *grpc.Server, error) {
 	s := &Server{
 		config:              cfg,
 		db:                  database.DB,
@@ -98,29 +138,13 @@ func newServer(cfg *config.Config, database *database.Database, cache *cache.Cac
 		objectStorageConfig: objectStorageConfig,
 	}
 
-	if caCertPEM != "" || caPrivateKeyPEM != "" {
-		ca, err := tls.X509KeyPair([]byte(caCertPEM), []byte(caPrivateKeyPEM))
-		if err != nil {
-			return nil, err
-		}
-		// load x509 cert
-		ca.Leaf, err = x509.ParseCertificate(ca.Certificate[0])
-		if err != nil {
-			return nil, err
-		}
-
-		s.ca = &ca
-
-		// parse all cert
-		for _, cert := range ca.Certificate {
-			var certChainPEM bytes.Buffer
-			if err = pem.Encode(&certChainPEM, &pem.Block{Type: "CERTIFICATE", Bytes: cert}); err != nil {
-				return nil, err
-			}
-			s.certChain = append(s.certChain, certChainPEM.String())
+	for _, opt := range opts {
+		if err := opt(s); err != nil {
+			return nil, nil, err
 		}
 	}
-	return s, nil
+
+	return s, managerserver.New(s, s.serverOptions...), nil
 }
 
 // Get SeedPeer and SeedPeer cluster configuration.

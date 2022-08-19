@@ -34,8 +34,8 @@ import (
 	securityv1 "d7y.io/api/pkg/apis/security/v1"
 )
 
-func (s *Server) IssueCertificate(ctx context.Context, request *securityv1.CertificateRequest) (*securityv1.CertificateResponse, error) {
-	if s.ca == nil {
+func (s *Server) IssueCertificate(ctx context.Context, req *securityv1.CertificateRequest) (*securityv1.CertificateResponse, error) {
+	if s.cert == nil {
 		return nil, status.Errorf(codes.Unavailable, "ca is missing for this manager instance")
 	}
 
@@ -43,7 +43,6 @@ func (s *Server) IssueCertificate(ctx context.Context, request *securityv1.Certi
 		ip  string
 		err error
 	)
-
 	p, ok := peer.FromContext(ctx)
 	if !ok {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid grpc peer info")
@@ -58,20 +57,20 @@ func (s *Server) IssueCertificate(ctx context.Context, request *securityv1.Certi
 		}
 	}
 
-	// decode csr pem
-	block, _ := pem.Decode([]byte(request.Csr))
+	// Decode csr pem.
+	block, _ := pem.Decode([]byte(req.Csr))
 	if block == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid csr format")
 	}
 
-	// parse csr
+	// Parse csr.
 	csr, err := x509.ParseCertificateRequest(block.Bytes)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid csr format: %s", err.Error())
 	}
 
-	// check csr signature
-	// TODO check csr common name and so on
+	// Check csr signature.
+	// TODO check csr common name and so on.
 	if err = csr.CheckSignature(); err != nil {
 		return nil, err
 	}
@@ -81,9 +80,9 @@ func (s *Server) IssueCertificate(ctx context.Context, request *securityv1.Certi
 		return nil, err
 	}
 
-	// check certificate duration
+	// Check certificate duration.
 	now := time.Now()
-	duration := time.Duration(request.ValidityDuration) * time.Second
+	duration := time.Duration(req.ValidityDuration) * time.Second
 	if duration == 0 {
 		duration = time.Hour
 	}
@@ -99,14 +98,14 @@ func (s *Server) IssueCertificate(ctx context.Context, request *securityv1.Certi
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 	}
 
-	certificate, err := x509.CreateCertificate(rand.Reader, &template, s.ca.Leaf, csr.PublicKey, s.ca.PrivateKey)
+	cert, err := x509.CreateCertificate(rand.Reader, &template, s.x509Cert, csr.PublicKey, s.cert.PrivateKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate certificate, error: %s", err)
 	}
 
-	// encode into PEM format
+	// Encode into PEM format.
 	var certPEM bytes.Buffer
-	if err = pem.Encode(&certPEM, &pem.Block{Type: "CERTIFICATE", Bytes: certificate}); err != nil {
+	if err = pem.Encode(&certPEM, &pem.Block{Type: "CERTIFICATE", Bytes: cert}); err != nil {
 		return nil, err
 	}
 

@@ -21,6 +21,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
@@ -80,13 +81,15 @@ func TestIssueCertificate(t *testing.T) {
 			err = pem.Encode(&csrPEM, &pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csr})
 			require.Nilf(err, "pem.Encode should be ok")
 
-			server, err := newServer(nil,
+			ca, err := tls.X509KeyPair([]byte(caCert), []byte(caKey))
+			require.Nilf(err, "parse cert and private key should be ok")
+
+			server, _, err := New(nil,
 				&database.Database{
 					DB:  &gorm.DB{},
 					RDB: &redis.Client{},
 				},
-				nil, nil, nil, nil, caCert, caKey)
-
+				nil, nil, nil, nil, WithCertificate(&ca))
 			require.Nilf(err, "newServer should be ok")
 
 			ctx := peer.NewContext(
@@ -98,7 +101,7 @@ func TestIssueCertificate(t *testing.T) {
 					},
 				})
 
-			response, err := server.IssueCertificate(
+			resp, err := server.IssueCertificate(
 				ctx,
 				&securityv1.CertificateRequest{
 					Csr:              csrPEM.String(),
@@ -106,10 +109,10 @@ func TestIssueCertificate(t *testing.T) {
 				})
 
 			assert.Nilf(err, "IssueCertificate should be ok")
-			assert.NotNilf(response, "IssueCertificate should not be nil")
-			assert.Equal(len(response.CertificateChain), len(server.certChain)+1)
+			assert.NotNilf(resp, "IssueCertificate should not be nil")
+			assert.Equal(len(resp.CertificateChain), len(server.certChain)+1)
 
-			cert := readCert(response.CertificateChain[0])
+			cert := readCert(resp.CertificateChain[0])
 			assert.Equal(len(cert.IPAddresses), 1)
 			assert.True(cert.IPAddresses[0].Equal(net.ParseIP(tc.peerIP)))
 

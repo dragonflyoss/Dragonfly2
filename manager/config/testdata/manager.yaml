@@ -56,6 +56,11 @@ objectStorage:
   secretKey: bar
   region: baz
 
+security:
+  enable: true
+  caCert: foo
+  caKey: bar
+
 metrics:
   enable: true
   addr: :8000
