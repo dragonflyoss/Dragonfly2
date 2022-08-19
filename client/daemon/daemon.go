@@ -193,15 +193,20 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		return nil, err
 	}
 
-	pieceManager, err := peer.NewPieceManager(
-		opt.Download.PieceDownloadTimeout,
+	pmOpts := []peer.PieceManagerOption{
 		peer.WithLimiter(rate.NewLimiter(opt.Download.TotalRateLimit.Limit, int(opt.Download.TotalRateLimit.Limit))),
-		peer.WithCalculateDigest(opt.Download.CalculateDigest), peer.WithTransportOption(opt.Download.Transport),
+		peer.WithCalculateDigest(opt.Download.CalculateDigest),
+		peer.WithTransportOption(opt.Download.Transport),
 		peer.WithConcurrentOption(opt.Download.Concurrent),
-	)
+	}
+	if opt.Download.SyncPieceViaHTTPS {
+		pmOpts = append(pmOpts, peer.WithSyncPieceViaHTTPS(string(opt.GlobalCACert)))
+	}
+	pieceManager, err := peer.NewPieceManager(opt.Download.PieceDownloadTimeout, pmOpts...)
 	if err != nil {
 		return nil, err
 	}
+
 	peerTaskManager, err := peer.NewPeerTaskManager(host, pieceManager, storageManager, sched, opt.Scheduler,
 		opt.Download.PerPeerRateLimit.Limit, opt.Storage.Multiplex, opt.Download.Prefetch, opt.Download.CalculateDigest,
 		opt.Download.GetPiecesMaxRetry, opt.Download.WatchdogTimeout)

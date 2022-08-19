@@ -243,6 +243,7 @@ type DownloadOption struct {
 	Prefetch             bool              `mapstructure:"prefetch" yaml:"prefetch"`
 	WatchdogTimeout      time.Duration     `mapstructure:"watchdogTimeout" yaml:"watchdogTimeout"`
 	Concurrent           *ConcurrentOption `mapstructure:"concurrent" yaml:"concurrent"`
+	SyncPieceViaHTTPS    bool              `mapstructure:"syncPieceViaHTTPS" yaml:"syncPieceViaHTTPS"`
 }
 
 type TransportOption struct {
