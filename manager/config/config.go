@@ -45,6 +45,9 @@ type Config struct {
 
 	// Metrics configuration.
 	Metrics *MetricsConfig `yaml:"metrics" mapstructure:"metrics"`
+
+	// Security configuration.
+	Security *SecurityConfig `yaml:"security" mapstructure:"security"`
 }
 
 type ServerConfig struct {
@@ -242,6 +245,17 @@ type ObjectStorageConfig struct {
 	SecretKey string `mapstructure:"secretKey" yaml:"secretKey"`
 }
 
+type SecurityConfig struct {
+	// Enable global security.
+	Enable bool `yaml:"enable" mapstructure:"enable"`
+
+	// CACert is file path PEM-encoded certificate
+	CACert string `mapstructure:"caCert" yaml:"caCert"`
+
+	// CAKey is file path of PEM-encoded private key.
+	CAKey string `mapstructure:"caKey" yaml:"caKey"`
+}
+
 // New config instance.
 func New() *Config {
 	return &Config{
@@ -287,6 +301,9 @@ func New() *Config {
 			},
 		},
 		ObjectStorage: &ObjectStorageConfig{
+			Enable: false,
+		},
+		Security: &SecurityConfig{
 			Enable: false,
 		},
 		Metrics: &MetricsConfig{
@@ -459,6 +476,16 @@ func (cfg *Config) Validate() error {
 
 		if cfg.ObjectStorage.SecretKey == "" {
 			return errors.New("objectStorage requires parameter secretKey")
+		}
+	}
+
+	if cfg.Security != nil && cfg.Security.Enable {
+		if cfg.Security.CACert == "" {
+			return errors.New("security requires parameter caCert")
+		}
+
+		if cfg.Security.CAKey == "" {
+			return errors.New("security requires parameter caKey")
 		}
 	}
 

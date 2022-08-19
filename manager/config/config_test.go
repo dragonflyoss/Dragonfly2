@@ -98,6 +98,11 @@ func TestManagerConfig_Load(t *testing.T) {
 			SecretKey: "bar",
 			Region:    "baz",
 		},
+		Security: &SecurityConfig{
+			Enable: true,
+			CACert: "foo",
+			CAKey:  "bar",
+		},
 		Metrics: &MetricsConfig{
 			Enable:          true,
 			Addr:            ":8000",

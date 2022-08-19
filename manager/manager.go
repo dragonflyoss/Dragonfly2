@@ -18,6 +18,7 @@ package manager
 
 import (
 	"context"
+	"crypto/tls"
 	"embed"
 	"io/fs"
 	"net/http"
@@ -153,8 +154,19 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 		return nil, err
 	}
 
+	// Initialize global certificate.
+	var options []rpcserver.Option
+	if cfg.Security.Enable {
+		cert, err := tls.LoadX509KeyPair(cfg.Security.CACert, cfg.Security.CAKey)
+		if err != nil {
+			return nil, err
+		}
+
+		options = append(options, rpcserver.WithCertificate(&cert))
+	}
+
 	// Initialize GRPC server
-	grpcServer, err := rpcserver.New(cfg, db, cache, searcher, objectStorage, cfg.ObjectStorage, "", "")
+	_, grpcServer, err := rpcserver.New(cfg, db, cache, searcher, objectStorage, cfg.ObjectStorage, options...)
 	if err != nil {
 		return nil, err
 	}
