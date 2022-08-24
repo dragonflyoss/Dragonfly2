@@ -282,25 +282,28 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	}, nil
 }
 
-func loadGPRCTLSCredentials(opt config.SecurityOption, certifyClient *certify.Certify, globalCACert string) (credentials.TransportCredentials, error) {
-	// Load certificate of the CA who signed client's certificate
-	pemClientCA, err := os.ReadFile(opt.CACert)
-	if err != nil {
-		return nil, err
+func loadGPRCTLSCredentials(opt config.SecurityOption, certifyClient *certify.Certify, globalCACertPEM string) (credentials.TransportCredentials, error) {
+	certPool := x509.NewCertPool()
+
+	if opt.CACert == "" && globalCACertPEM == "" {
+		return nil, fmt.Errorf("empty client CA's certificate and glocal CA's certificate")
 	}
 
-	certPool := x509.NewCertPool()
-	if !certPool.AppendCertsFromPEM(pemClientCA) {
-		return nil, fmt.Errorf("failed to add client CA's certificate")
+	if opt.CACert != "" {
+		// Load certificate of the CA who signed client's certificate
+		if !certPool.AppendCertsFromPEM([]byte(opt.CACert)) {
+			return nil, fmt.Errorf("failed to add client CA's certificate")
+		}
 	}
-	if globalCACert != "" {
-		if !certPool.AppendCertsFromPEM(pemClientCA) {
+
+	if globalCACertPEM != "" {
+		if !certPool.AppendCertsFromPEM([]byte(globalCACertPEM)) {
 			return nil, fmt.Errorf("failed to add global CA's certificate")
 		}
 	}
 
 	// Load server's certificate and private key
-	serverCert, err := tls.LoadX509KeyPair(opt.Cert, opt.Key)
+	serverCert, err := tls.X509KeyPair([]byte(opt.Cert), []byte(opt.Key))
 	if err != nil {
 		return nil, err
 	}
@@ -373,12 +376,8 @@ func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (
 
 	tlsConfig := opt.Security.TLSConfig
 	if opt.Security.CACert != "" {
-		caCert, err := os.ReadFile(opt.Security.CACert)
-		if err != nil {
-			return nil, -1, err
-		}
 		caCertPool := x509.NewCertPool()
-		caCertPool.AppendCertsFromPEM(caCert)
+		caCertPool.AppendCertsFromPEM([]byte(opt.Security.CACert))
 		tlsConfig.ClientCAs = caCertPool
 		if opt.Security.TLSVerify {
 			tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
@@ -386,7 +385,7 @@ func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (
 	}
 
 	tlsConfig.Certificates = make([]tls.Certificate, 1)
-	tlsConfig.Certificates[0], err = tls.LoadX509KeyPair(opt.Security.Cert, opt.Security.Key)
+	tlsConfig.Certificates[0], err = tls.X509KeyPair([]byte(opt.Security.Cert), []byte(opt.Security.Key))
 	if err != nil {
 		return nil, -1, err
 	}
