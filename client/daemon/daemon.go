@@ -140,7 +140,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 				Logger:       zapadapter.New(logger.CoreLogger.Desugar()),
 			}
 
-			// issue a certificate to same realtime delay
+			// issue a certificate to reduce first time delay
 			_, err := certifyClient.GetCertificate(&tls.ClientHelloInfo{
 				ServerName: ip.IPv4,
 			})
