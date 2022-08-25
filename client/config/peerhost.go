@@ -585,6 +585,10 @@ func (p *PEMContent) UnmarshalYAML(node *yaml.Node) error {
 }
 
 func (p *PEMContent) loadPEM(content string) error {
+	if content == "" {
+		*p = PEMContent("")
+		return nil
+	}
 	// inline PEM, just return
 	if strings.HasPrefix(strings.TrimSpace(content), "-----BEGIN ") {
 		val := strings.TrimSpace(content)

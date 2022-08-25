@@ -125,7 +125,11 @@ func (um *uploadManager) Serve(listener net.Listener) error {
 
 	go func() {
 		tlsConfig := &tls.Config{
-			GetCertificate: um.certify.GetCertificate,
+			GetCertificate: func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+				// FIXME peers need pure ip cert, certify checks the ServerName, so workaround here
+				hello.ServerName = "peer"
+				return um.certify.GetCertificate(hello)
+			},
 		}
 
 		tlsListener = tls.NewListener(tlsListener, tlsConfig)

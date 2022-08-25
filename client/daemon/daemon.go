@@ -302,24 +302,28 @@ func loadGPRCTLSCredentials(opt config.SecurityOption, certifyClient *certify.Ce
 		}
 	}
 
-	// Load server's certificate and private key
-	serverCert, err := tls.X509KeyPair([]byte(opt.Cert), []byte(opt.Key))
-	if err != nil {
-		return nil, err
-	}
-
 	// Create the credentials and return it
 	if opt.TLSConfig == nil {
 		opt.TLSConfig = &tls.Config{}
 	}
 
-	opt.TLSConfig.Certificates = []tls.Certificate{serverCert}
 	opt.TLSConfig.ClientCAs = certPool
 
-	// enable auto issue certificate
-	if certifyClient != nil {
+	// Load server's certificate and private key
+	if certifyClient == nil {
+		serverCert, err := tls.X509KeyPair([]byte(opt.Cert), []byte(opt.Key))
+		if err != nil {
+			return nil, err
+		}
+		opt.TLSConfig.Certificates = []tls.Certificate{serverCert}
+	} else {
+		// enable auto issue certificate
 		opt.TLSConfig.Certificates = nil
-		opt.TLSConfig.GetCertificate = certifyClient.GetCertificate
+		opt.TLSConfig.GetCertificate = func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+			// FIXME peers need pure ip cert, certify checks the ServerName, so workaround here
+			hello.ServerName = "peer"
+			return certifyClient.GetCertificate(hello)
+		}
 	}
 
 	if opt.TLSVerify {
