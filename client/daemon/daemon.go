@@ -207,9 +207,17 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		return nil, err
 	}
 
+	var credentials credentials.TransportCredentials
+	if certifyClient != nil {
+		credentials, err = loadGlobalGPRCTLSCredentials(certifyClient, string(opt.GlobalCACert))
+		if err != nil {
+			return nil, err
+		}
+
+	}
 	peerTaskManager, err := peer.NewPeerTaskManager(host, pieceManager, storageManager, sched, opt.Scheduler,
 		opt.Download.PerPeerRateLimit.Limit, opt.Storage.Multiplex, opt.Download.Prefetch, opt.Download.CalculateDigest,
-		opt.Download.GetPiecesMaxRetry, opt.Download.WatchdogTimeout)
+		opt.Download.GetPiecesMaxRetry, opt.Download.WatchdogTimeout, credentials)
 	if err != nil {
 		return nil, err
 	}
@@ -319,11 +327,7 @@ func loadGPRCTLSCredentials(opt config.SecurityOption, certifyClient *certify.Ce
 	} else {
 		// enable auto issue certificate
 		opt.TLSConfig.Certificates = nil
-		opt.TLSConfig.GetCertificate = func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
-			// FIXME peers need pure ip cert, certify checks the ServerName, so workaround here
-			hello.ServerName = "peer"
-			return certifyClient.GetCertificate(hello)
-		}
+		opt.TLSConfig.GetCertificate = config.GetCertificate(certifyClient)
 	}
 
 	if opt.TLSVerify {
@@ -331,6 +335,26 @@ func loadGPRCTLSCredentials(opt config.SecurityOption, certifyClient *certify.Ce
 	}
 
 	return credentials.NewTLS(opt.TLSConfig), nil
+}
+
+func loadGlobalGPRCTLSCredentials(certifyClient *certify.Certify, globalCACertPEM string) (credentials.TransportCredentials, error) {
+	certPool := x509.NewCertPool()
+
+	if globalCACertPEM == "" {
+		return nil, fmt.Errorf("empty client CA's certificate and glocal CA's certificate")
+	}
+
+	if !certPool.AppendCertsFromPEM([]byte(globalCACertPEM)) {
+		return nil, fmt.Errorf("failed to add global CA's certificate")
+	}
+
+	config := &tls.Config{
+		ClientAuth:     tls.RequireAndVerifyClientCert,
+		ClientCAs:      certPool,
+		GetCertificate: config.GetCertificate(certifyClient),
+	}
+
+	return credentials.NewTLS(config), nil
 }
 
 func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (net.Listener, int, error) {
