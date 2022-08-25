@@ -17,6 +17,8 @@
 package balancer
 
 import (
+	"errors"
+
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/balancer/base"
 	"google.golang.org/grpc/grpclog"
@@ -78,10 +80,16 @@ type consistentHashingPicker struct {
 }
 
 func (p *consistentHashingPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
-	element, err := p.hashring.Get(info.Ctx.Value(ContextKey).(string))
+	taskID, ok := info.Ctx.Value(ContextKey).(string)
+	if !ok {
+		return balancer.PickResult{}, errors.New("picker can not found task id")
+	}
+
+	element, err := p.hashring.Get(taskID)
 	if err != nil {
 		return balancer.PickResult{}, err
 	}
+	logger.Infof("task %s picks connection %s", taskID, element)
 
 	return balancer.PickResult{
 		SubConn: p.subConns[element],

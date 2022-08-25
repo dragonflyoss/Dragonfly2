@@ -72,7 +72,7 @@ func (r *SchedulerResolver) Build(target resolver.Target, cc resolver.ClientConn
 func (r *SchedulerResolver) ResolveNow(resolver.ResolveNowOptions) {
 	addrs, err := r.dynconfig.GetResolveSchedulerAddrs()
 	if err != nil {
-		plogger.Errorf("get resolve addresses error %v", err)
+		plogger.Errorf("resolve addresses error %v", err)
 		return
 	}
 
