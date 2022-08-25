@@ -171,7 +171,7 @@ func (poller *pieceTaskPoller) getPieceTasksByPeer(
 			Type: dfnet.TCP,
 			Addr: fmt.Sprintf("%s:%d", peer.Ip, peer.RpcPort),
 		}
-		client, err := dfdaemonclient.GetClient(netAddr.String())
+		client, err := dfdaemonclient.GetClient(context.Background(), netAddr.String())
 		if err != nil {
 			ptc.Errorf("get dfdaemon client error: %s", err)
 			span.RecordError(err)

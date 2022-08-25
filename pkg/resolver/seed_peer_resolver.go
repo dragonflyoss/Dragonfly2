@@ -73,7 +73,7 @@ func (r *SeedPeerResolver) Build(target resolver.Target, cc resolver.ClientConn,
 func (r *SeedPeerResolver) ResolveNow(resolver.ResolveNowOptions) {
 	addrs, err := r.dynconfig.GetResolveSeedPeerAddrs()
 	if err != nil {
-		slogger.Errorf("get resolve addresses error %v", err)
+		slogger.Errorf("resolve addresses error %v", err)
 		return
 	}
 
