@@ -308,6 +308,7 @@ func New() *Config {
 		},
 		Metrics: &MetricsConfig{
 			Enable:          false,
+			Addr:            DefaultMetricsAddr,
 			EnablePeerGauge: true,
 		},
 	}
