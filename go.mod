@@ -11,7 +11,7 @@ require (
 	github.com/appleboy/gin-jwt/v2 v2.8.0
 	github.com/aws/aws-sdk-go v1.44.44
 	github.com/bits-and-blooms/bitset v1.2.2
-	github.com/casbin/casbin/v2 v2.51.2
+	github.com/casbin/casbin/v2 v2.52.2
 	github.com/casbin/gorm-adapter/v3 v3.5.0
 	github.com/colinmarc/hdfs/v2 v2.3.0
 	github.com/distribution/distribution/v3 v3.0.0-20220620080156-3e4f8a0ab147
