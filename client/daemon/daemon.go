@@ -118,7 +118,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 
 	if opt.Scheduler.Manager.Enable {
 		var err error
-		managerClient, err = managerclient.GetClientByAddr(opt.Scheduler.Manager.NetAddrs)
+		managerClient, err = managerclient.GetClientByAddr(context.Background(), opt.Scheduler.Manager.NetAddrs)
 		if err != nil {
 			return nil, err
 		}
@@ -142,7 +142,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		}
 	}
 
-	sched, err := schedulerclient.GetClient(dynconfig)
+	sched, err := schedulerclient.GetClient(context.Background(), dynconfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get schedulers: %w", err)
 	}

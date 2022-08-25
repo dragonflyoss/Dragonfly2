@@ -379,7 +379,7 @@ func setupSeederServerAndClient(t *testing.T, srv *server, sd *seeder, assert *t
 		}
 	}()
 
-	client, err := client.GetClientByAddr(dfnet.NetAddr{
+	client, err := client.GetClientByAddr(context.Background(), dfnet.NetAddr{
 		Type: dfnet.TCP,
 		Addr: fmt.Sprintf(":%d", port),
 	})
