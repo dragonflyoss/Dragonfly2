@@ -245,7 +245,7 @@ func runDfget(dfgetLockPath, daemonSockPath string) error {
 // checkAndSpawnDaemon do checking at three checkpoints
 func checkAndSpawnDaemon(dfgetLockPath, daemonSockPath string) (client.Client, error) {
 	netAddr := &dfnet.NetAddr{Type: dfnet.UNIX, Addr: daemonSockPath}
-	dfdaemonClient, err := client.GetClient(netAddr.String())
+	dfdaemonClient, err := client.GetClient(context.Background(), netAddr.String())
 	if err != nil {
 		return nil, err
 	}

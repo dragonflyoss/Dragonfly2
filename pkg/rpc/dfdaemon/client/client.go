@@ -52,12 +52,13 @@ const (
 )
 
 // GetClient returns dfdaemon client.
-func GetClient(target string, opts ...grpc.DialOption) (Client, error) {
+func GetClient(ctx context.Context, target string, opts ...grpc.DialOption) (Client, error) {
 	if rpc.IsVsock(target) {
 		opts = append(opts, grpc.WithContextDialer(rpc.VsockDialer))
 	}
 
-	conn, err := grpc.Dial(
+	conn, err := grpc.DialContext(
+		ctx,
 		target,
 		append([]grpc.DialOption{
 			grpc.WithTransportCredentials(insecure.NewCredentials()),

@@ -53,8 +53,9 @@ const (
 )
 
 // GetClient returns manager client.
-func GetClient(target string, opts ...grpc.DialOption) (Client, error) {
-	conn, err := grpc.Dial(
+func GetClient(ctx context.Context, target string, opts ...grpc.DialOption) (Client, error) {
+	conn, err := grpc.DialContext(
+		ctx,
 		target,
 		append([]grpc.DialOption{
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -85,12 +86,12 @@ func GetClient(target string, opts ...grpc.DialOption) (Client, error) {
 }
 
 // GetClientByAddr returns manager client with addresses.
-func GetClientByAddr(netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (Client, error) {
+func GetClientByAddr(ctx context.Context, netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (Client, error) {
 	for _, netAddr := range netAddrs {
 		ipReachable := reachable.New(&reachable.Config{Address: netAddr.Addr})
 		if err := ipReachable.Check(); err == nil {
 			logger.Infof("use %s address for manager grpc client", netAddr.Addr)
-			return GetClient(netAddr.Addr, opts...)
+			return GetClient(ctx, netAddr.Addr, opts...)
 		}
 		logger.Warnf("%s manager address can not reachable", netAddr.Addr)
 	}

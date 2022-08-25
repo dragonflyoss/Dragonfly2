@@ -77,7 +77,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	s := &Server{config: cfg}
 
 	// Initialize manager client.
-	managerClient, err := managerclient.GetClient(cfg.Manager.Addr)
+	managerClient, err := managerclient.GetClient(ctx, cfg.Manager.Addr)
 	if err != nil {
 		return nil, err
 	}

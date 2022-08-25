@@ -55,12 +55,13 @@ const (
 )
 
 // GetClient get scheduler clients using resolver and balancer,
-func GetClient(dynconfig config.Dynconfig, opts ...grpc.DialOption) (Client, error) {
+func GetClient(ctx context.Context, dynconfig config.Dynconfig, opts ...grpc.DialOption) (Client, error) {
 	// Register resolver and balancer.
 	resolver.RegisterScheduler(dynconfig)
 	balancer.Register(pkgbalancer.NewConsistentHashingBuilder())
 
-	conn, err := grpc.Dial(
+	conn, err := grpc.DialContext(
+		ctx,
 		resolver.SchedulerVirtualTarget,
 		append([]grpc.DialOption{
 			grpc.WithDefaultServiceConfig(pkgbalancer.BalancerServiceConfig),
