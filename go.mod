@@ -50,7 +50,6 @@ require (
 	github.com/phayes/freeport v0.0.0-20220201140144-74d24b5ae9f5
 	github.com/prometheus/client_golang v1.13.0
 	github.com/schollz/progressbar/v3 v3.8.7
-	github.com/serialx/hashring v0.0.0-20200727003509-22c0c7ab6b1b
 	github.com/shirou/gopsutil/v3 v3.22.7
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.12.0
@@ -81,7 +80,6 @@ require (
 	gorm.io/driver/postgres v1.3.8
 	gorm.io/gorm v1.23.8
 	gorm.io/plugin/soft_delete v1.1.0
-	k8s.io/apimachinery v0.24.2
 	k8s.io/component-base v0.23.3
 	moul.io/zapgorm2 v1.1.3
 	stathat.com/c/consistent v1.0.0
@@ -208,5 +206,6 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gorm.io/driver/sqlserver v1.3.2 // indirect
 	gorm.io/plugin/dbresolver v1.2.1 // indirect
+	k8s.io/apimachinery v0.24.4 // indirect
 	k8s.io/klog/v2 v2.60.1 // indirect
 )
