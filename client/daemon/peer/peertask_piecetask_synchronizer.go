@@ -166,7 +166,7 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 		Type: dfnet.TCP,
 		Addr: fmt.Sprintf("%s:%d", dstPeer.Ip, dstPeer.RpcPort),
 	}
-	client, err := dfdaemonclient.GetClient(netAddr.String())
+	client, err := dfdaemonclient.GetClient(context.Background(), netAddr.String())
 	if err != nil {
 		s.peerTaskConductor.Errorf("get dfdaemon client error: %s, dest peer: %s", err, dstPeer.PeerId)
 		return err

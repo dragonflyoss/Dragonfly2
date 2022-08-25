@@ -54,8 +54,9 @@ const (
 	perRetryTimeout = 3 * time.Second
 )
 
-func GetClientByAddr(netAddr dfnet.NetAddr, opts ...grpc.DialOption) (Client, error) {
-	conn, err := grpc.Dial(
+func GetClientByAddr(ctx context.Context, netAddr dfnet.NetAddr, opts ...grpc.DialOption) (Client, error) {
+	conn, err := grpc.DialContext(
+		ctx,
 		netAddr.Addr,
 		append([]grpc.DialOption{
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -87,12 +88,13 @@ func GetClientByAddr(netAddr dfnet.NetAddr, opts ...grpc.DialOption) (Client, er
 	}, nil
 }
 
-func GetClient(dynconfig config.DynconfigInterface, opts ...grpc.DialOption) (Client, error) {
+func GetClient(ctx context.Context, dynconfig config.DynconfigInterface, opts ...grpc.DialOption) (Client, error) {
 	// Register resolver and balancer.
 	resolver.RegisterSeedPeer(dynconfig)
 	balancer.Register(pkgbalancer.NewConsistentHashingBuilder())
 
-	conn, err := grpc.Dial(
+	conn, err := grpc.DialContext(
+		ctx,
 		resolver.SeedPeerVirtualTarget,
 		append([]grpc.DialOption{
 			grpc.WithDefaultServiceConfig(pkgbalancer.BalancerServiceConfig),
