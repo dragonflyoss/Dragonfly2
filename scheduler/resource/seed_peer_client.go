@@ -19,6 +19,7 @@
 package resource
 
 import (
+	"context"
 	"fmt"
 	reflect "reflect"
 
@@ -62,7 +63,7 @@ func newSeedPeerClient(dynconfig config.DynconfigInterface, hostManager HostMana
 	logger.Infof("initialize seed peer addresses: %#v", seedPeersToNetAddrs(config.SeedPeers))
 
 	// Initialize seed peer grpc client.
-	client, err := client.GetClient(dynconfig, opts...)
+	client, err := client.GetClient(context.Background(), dynconfig, opts...)
 	if err != nil {
 		return nil, err
 	}

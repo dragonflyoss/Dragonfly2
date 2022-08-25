@@ -130,7 +130,7 @@ func initDaemonDfpath(cfg *config.DaemonOption) (dfpath.Dfpath, error) {
 func runDaemon(d dfpath.Dfpath) error {
 	logger.Infof("Version:\n%s", version.Version())
 	netAddr := &dfnet.NetAddr{Type: dfnet.UNIX, Addr: d.DaemonSockPath()}
-	daemonClient, err := client.GetClient(netAddr.String())
+	daemonClient, err := client.GetClient(context.Background(), netAddr.String())
 	if err != nil {
 		return err
 	}
