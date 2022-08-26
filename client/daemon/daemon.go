@@ -129,7 +129,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			return nil, err
 		}
 
-		if opt.AutoIssueCert {
+		if opt.Security.AutoIssueCert {
 			certifyClient = &certify.Certify{
 				CommonName:   ip.IPv4,
 				Issuer:       issuer.NewDragonflyIssuer(managerClient),
@@ -199,8 +199,8 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		peer.WithTransportOption(opt.Download.Transport),
 		peer.WithConcurrentOption(opt.Download.Concurrent),
 	}
-	if opt.Download.SyncPieceViaHTTPS {
-		pmOpts = append(pmOpts, peer.WithSyncPieceViaHTTPS(string(opt.GlobalCACert)))
+	if opt.Download.SyncPieceViaHTTPS && opt.Scheduler.Manager.Enable {
+		pmOpts = append(pmOpts, peer.WithSyncPieceViaHTTPS(string(opt.Security.CACert)))
 	}
 	pieceManager, err := peer.NewPieceManager(opt.Download.PieceDownloadTimeout, pmOpts...)
 	if err != nil {
@@ -209,7 +209,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 
 	var credentials credentials.TransportCredentials
 	if certifyClient != nil {
-		credentials, err = loadGlobalGPRCTLSCredentials(certifyClient, string(opt.GlobalCACert))
+		credentials, err = loadGlobalGPRCTLSCredentials(certifyClient, string(opt.Security.CACert))
 		if err != nil {
 			return nil, err
 		}
@@ -225,7 +225,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	// TODO(jim): more server options
 	var downloadServerOption []grpc.ServerOption
 	if !opt.Download.DownloadGRPC.Security.Insecure {
-		tlsCredentials, err := loadGPRCTLSCredentials(opt.Download.DownloadGRPC.Security, certifyClient, string(opt.GlobalCACert))
+		tlsCredentials, err := loadGPRCTLSCredentials(opt.Download.DownloadGRPC.Security, certifyClient, string(opt.Security.CACert))
 		if err != nil {
 			return nil, err
 		}
@@ -233,7 +233,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	}
 	var peerServerOption []grpc.ServerOption
 	if !opt.Download.PeerGRPC.Security.Insecure {
-		tlsCredentials, err := loadGPRCTLSCredentials(opt.Download.PeerGRPC.Security, certifyClient, string(opt.GlobalCACert))
+		tlsCredentials, err := loadGPRCTLSCredentials(opt.Download.PeerGRPC.Security, certifyClient, string(opt.Security.CACert))
 		if err != nil {
 			return nil, err
 		}
@@ -253,9 +253,11 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	uploadOpts := []upload.Option{
 		upload.WithLimiter(rate.NewLimiter(opt.Upload.RateLimit.Limit, int(opt.Upload.RateLimit.Limit))),
 	}
-	if opt.AutoIssueCert {
+
+	if opt.Security.AutoIssueCert && opt.Scheduler.Manager.Enable {
 		uploadOpts = append(uploadOpts, upload.WithCertify(certifyClient))
 	}
+
 	uploadManager, err := upload.NewUploadManager(opt, storageManager, d.LogDir(), uploadOpts...)
 	if err != nil {
 		return nil, err
