@@ -85,7 +85,7 @@ func NewPieceManager(pieceDownloadTimeout time.Duration, opts ...PieceManagerOpt
 
 func WithCalculateDigest(enable bool) func(*pieceManager) {
 	return func(pm *pieceManager) {
-		logger.Infof("set calculateDigest to %t for piece manager", enable)
+		logger.Infof("set CalculateDigest to %t for piece manager", enable)
 		pm.calculateDigest = enable
 	}
 }

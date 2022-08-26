@@ -166,7 +166,7 @@ func (f *fileTask) syncProgress() {
 }
 
 func (f *fileTask) storeToOutput() {
-	err := f.peerTaskConductor.storageManager.Store(
+	err := f.peerTaskConductor.StorageManager.Store(
 		f.ctx,
 		&storage.StoreRequest{
 			CommonTaskRequest: storage.CommonTaskRequest{
