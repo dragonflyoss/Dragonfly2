@@ -42,10 +42,10 @@ func New(cfg *config.MetricsConfig, grpcServer *grpc.Server) *http.Server {
 }
 
 var (
-	PeerGauge = promauto.NewGauge(prometheus.GaugeOpts{
+	PeerGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: constants.MetricsNamespace,
 		Subsystem: constants.ManagerMetricsName,
 		Name:      "peer_total",
 		Help:      "Gauge of the number of peer.",
-	})
+	}, []string{"version", "commit"})
 )
