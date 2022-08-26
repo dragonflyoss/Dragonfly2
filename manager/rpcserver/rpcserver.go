@@ -498,7 +498,7 @@ func (s *Server) ListSchedulers(ctx context.Context, req *managerv1.ListSchedule
 		if err != nil {
 			log.Warnf("get peer count failed: %s", err.Error())
 		} else {
-			metrics.PeerGauge.Set(float64(count))
+			metrics.PeerGauge.WithLabelValues(req.Version, req.Commit).Set(float64(count))
 		}
 	}
 
