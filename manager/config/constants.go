@@ -36,7 +36,7 @@ const (
 	// DefaultGRPCPort is default port for grpc server.
 	DefaultGRPCPort = 65003
 
-	// DefaultRESTAddr is default port for rest server.
+	// DefaultRESTAddr is default address for rest server.
 	DefaultRESTAddr = ":8080"
 )
 
@@ -82,4 +82,9 @@ const (
 
 	// DefaultPostgresTimezone is default timezone for postgres.
 	DefaultPostgresTimezone = "UTC"
+)
+
+const (
+	// DefaultMetricsAddr is default address for metrics server.
+	DefaultMetricsAddr = ":8000"
 )

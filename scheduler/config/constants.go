@@ -119,3 +119,8 @@ const (
 	// DefaultJobRedisBackendDB is default db for redis backend.
 	DefaultJobRedisBackendDB = 2
 )
+
+const (
+	// DefaultMetricsAddr is default address for metrics server.
+	DefaultMetricsAddr = ":8000"
+)
