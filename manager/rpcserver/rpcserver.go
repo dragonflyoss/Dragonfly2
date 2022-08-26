@@ -144,7 +144,7 @@ func New(
 		}
 	}
 
-	return s, managerserver.New(s, s.serverOptions...), nil
+	return s, managerserver.New(s, s, s.serverOptions...), nil
 }
 
 // Get SeedPeer and SeedPeer cluster configuration.
