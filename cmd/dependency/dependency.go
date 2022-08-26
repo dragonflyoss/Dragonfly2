@@ -238,7 +238,7 @@ func initDecoderConfig(dc *mapstructure.DecoderConfig) {
 			reflect.TypeOf(util.Duration{}),
 			reflect.TypeOf(&config.ProxyOption{}),
 			reflect.TypeOf(config.TCPListenPortRange{}),
-			reflect.TypeOf(config.FileString("")),
+			reflect.TypeOf(config.PEMContent("")),
 			reflect.TypeOf(config.URL{}),
 			reflect.TypeOf(config.CertPool{}),
 			reflect.TypeOf(config.Regexp{}):

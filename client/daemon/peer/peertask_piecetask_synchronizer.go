@@ -26,7 +26,9 @@ import (
 
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/atomic"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
@@ -166,7 +168,16 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 		Type: dfnet.TCP,
 		Addr: fmt.Sprintf("%s:%d", dstPeer.Ip, dstPeer.RpcPort),
 	}
-	client, err := dfdaemonclient.GetClient(context.Background(), netAddr.String())
+
+	var credentialOpt grpc.DialOption
+	if s.peerTaskConductor.grpcCredentials != nil {
+		credentialOpt = grpc.WithTransportCredentials(s.peerTaskConductor.grpcCredentials)
+	} else {
+		credentialOpt = grpc.WithTransportCredentials(insecure.NewCredentials())
+	}
+
+	client, err := dfdaemonclient.GetClient(context.Background(), netAddr.String(), credentialOpt)
+
 	if err != nil {
 		s.peerTaskConductor.Errorf("get dfdaemon client error: %s, dest peer: %s", err, dstPeer.PeerId)
 		return err

@@ -32,6 +32,8 @@ import (
 	"google.golang.org/grpc/status"
 
 	securityv1 "d7y.io/api/pkg/apis/security/v1"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 func (s *Server) IssueCertificate(ctx context.Context, req *securityv1.CertificateRequest) (*securityv1.CertificateResponse, error) {
@@ -86,6 +88,8 @@ func (s *Server) IssueCertificate(ctx context.Context, req *securityv1.Certifica
 	if duration == 0 {
 		duration = time.Hour
 	}
+
+	logger.Infof("valid csr: %#v", csr.Subject)
 
 	template := x509.Certificate{
 		SerialNumber:          serial,

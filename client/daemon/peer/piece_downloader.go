@@ -20,6 +20,8 @@ package peer
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io"
 	"net"
@@ -63,8 +65,10 @@ type PieceDownloader interface {
 	DownloadPiece(context.Context, *DownloadPieceRequest) (io.Reader, io.Closer, error)
 }
 
+type PieceDownloaderOption func(*pieceDownloader) error
+
 type pieceDownloader struct {
-	transport  http.RoundTripper
+	scheme     string
 	httpClient *http.Client
 }
 
@@ -135,35 +139,25 @@ var defaultTransport http.RoundTripper = &http.Transport{
 	ExpectContinueTimeout: 2 * time.Second,
 }
 
-func NewPieceDownloader(timeout time.Duration, opts ...func(*pieceDownloader) error) (PieceDownloader, error) {
-	pd := &pieceDownloader{}
-
-	for _, opt := range opts {
-		if err := opt(pd); err != nil {
-			return nil, err
-		}
+func NewPieceDownloader(timeout time.Duration, caCertPool *x509.CertPool) PieceDownloader {
+	pd := &pieceDownloader{
+		scheme: "http",
+		httpClient: &http.Client{
+			Transport: defaultTransport,
+			Timeout:   timeout,
+		},
 	}
 
-	if pd.transport == nil {
-		pd.transport = defaultTransport
+	if caCertPool != nil {
+		pd.scheme = "https"
+		defaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{ClientCAs: caCertPool}
 	}
 
-	pd.httpClient = &http.Client{
-		Transport: pd.transport,
-		Timeout:   timeout,
-	}
-	return pd, nil
-}
-
-func WithTransport(rt http.RoundTripper) func(*pieceDownloader) error {
-	return func(d *pieceDownloader) error {
-		d.transport = rt
-		return nil
-	}
+	return pd
 }
 
 func (p *pieceDownloader) DownloadPiece(ctx context.Context, req *DownloadPieceRequest) (io.Reader, io.Closer, error) {
-	httpRequest := buildDownloadPieceHTTPRequest(ctx, req)
+	httpRequest := p.buildDownloadPieceHTTPRequest(ctx, req)
 	resp, err := p.httpClient.Do(httpRequest)
 	if err != nil {
 		logger.Errorf("task id: %s, piece num: %d, dst: %s, download piece failed: %s",
@@ -198,10 +192,10 @@ func (p *pieceDownloader) DownloadPiece(ctx context.Context, req *DownloadPieceR
 	return reader, closer, nil
 }
 
-func buildDownloadPieceHTTPRequest(ctx context.Context, d *DownloadPieceRequest) *http.Request {
+func (p *pieceDownloader) buildDownloadPieceHTTPRequest(ctx context.Context, d *DownloadPieceRequest) *http.Request {
 	// FIXME switch to https when tls enabled
 	targetURL := url.URL{
-		Scheme:   "http",
+		Scheme:   p.scheme,
 		Host:     d.DstAddr,
 		Path:     fmt.Sprintf("download/%s/%s", d.TaskID[:3], d.TaskID),
 		RawQuery: fmt.Sprintf("peerId=%s", d.DstPid),

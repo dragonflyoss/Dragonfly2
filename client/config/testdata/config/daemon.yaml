@@ -48,9 +48,9 @@ download:
   downloadGRPC:
     security:
       insecure: true
-      caCert: caCert
-      cert: cert
-      key: key
+      caCert: ./testdata/certs/ca.crt
+      cert: ./testdata/certs/sca.crt
+      key: ./testdata/certs/sca.key
       tlsVerify: true
       tlsConfig: null
     unixListen:
@@ -58,9 +58,9 @@ download:
   peerGRPC:
     security:
       insecure: true
-      caCert: caCert
-      cert: cert
-      key: key
+      caCert: ./testdata/certs/ca.crt
+      cert: ./testdata/certs/sca.crt
+      key: ./testdata/certs/sca.key
       tlsVerify: true
       tlsConfig: null
     tcpListen:
@@ -88,9 +88,9 @@ upload:
   rateLimit: 100Mi
   security:
     insecure: true
-    caCert: caCert
-    cert: cert
-    key: key
+    caCert: ./testdata/certs/ca.crt
+    cert: ./testdata/certs/sca.crt
+    key: ./testdata/certs/sca.key
     tlsVerify: true
   tcpListen:
     listen: 0.0.0.0
@@ -102,9 +102,9 @@ objectStorage:
   maxReplicas: 3
   security:
     insecure: true
-    caCert: caCert
-    cert: cert
-    key: key
+    caCert: ./testdata/certs/ca.crt
+    cert: ./testdata/certs/sca.crt
+    key: ./testdata/certs/sca.key
     tlsVerify: true
   tcpListen:
     listen: 0.0.0.0
@@ -130,9 +130,9 @@ proxy:
   maxConcurrency: 1
   security:
     insecure: true
-    caCert: caCert
-    cert: cert
-    key: key
+    caCert: ./testdata/certs/ca.crt
+    cert: ./testdata/certs/sca.crt
+    key: ./testdata/certs/sca.key
     tlsVerify: true
     tlsConfig: null
   tcpListen:
@@ -156,8 +156,8 @@ proxy:
       direct: false
       redirect: d7y.io
   hijackHTTPS:
-    cert: cert
-    key: key
+    cert: ./testdata/certs/sca.crt
+    key: ./testdata/certs/sca.key
     hosts:
       - regx: mirror.aliyuncs.com:443
         insecure: true

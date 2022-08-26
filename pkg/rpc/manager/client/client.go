@@ -34,6 +34,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+	securityv1 "d7y.io/api/pkg/apis/security/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
@@ -81,7 +82,8 @@ func GetClient(ctx context.Context, target string, opts ...grpc.DialOption) (Cli
 	}
 
 	return &client{
-		managerv1.NewManagerClient(conn),
+		ManagerClient:            managerv1.NewManagerClient(conn),
+		CertificateServiceClient: securityv1.NewCertificateServiceClient(conn),
 	}, nil
 }
 
@@ -149,6 +151,8 @@ type Client interface {
 	// Delete model version information.
 	DeleteModelVersion(context.Context, *managerv1.DeleteModelVersionRequest, ...grpc.CallOption) error
 
+	IssueCertificate(context.Context, *securityv1.CertificateRequest, ...grpc.CallOption) (*securityv1.CertificateResponse, error)
+
 	// KeepAlive with manager.
 	KeepAlive(time.Duration, *managerv1.KeepAliveRequest, ...grpc.CallOption)
 }
@@ -156,6 +160,7 @@ type Client interface {
 // client provides manager grpc function.
 type client struct {
 	managerv1.ManagerClient
+	securityv1.CertificateServiceClient
 }
 
 // Update SeedPeer configuration.
@@ -242,6 +247,10 @@ func (c *client) UpdateModelVersion(ctx context.Context, req *managerv1.UpdateMo
 func (c *client) DeleteModelVersion(ctx context.Context, req *managerv1.DeleteModelVersionRequest, opts ...grpc.CallOption) error {
 	_, err := c.ManagerClient.DeleteModelVersion(ctx, req, opts...)
 	return err
+}
+
+func (c *client) IssueCertificate(ctx context.Context, req *securityv1.CertificateRequest, opts ...grpc.CallOption) (*securityv1.CertificateResponse, error) {
+	return c.CertificateServiceClient.IssueCertificate(ctx, req, opts...)
 }
 
 // List acitve schedulers configuration.
