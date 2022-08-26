@@ -44,7 +44,7 @@ const (
 )
 
 // New returns a grpc server instance and register service on grpc server.
-func New(svr managerv1.ManagerServer, opts ...grpc.ServerOption) *grpc.Server {
+func New(managerServer managerv1.ManagerServer, securityServer securityv1.CertificateServiceServer, opts ...grpc.ServerOption) *grpc.Server {
 	limiter := rpc.NewRateLimiterInterceptor(DefaultQPS, DefaultBurst)
 
 	grpcServer := grpc.NewServer(append([]grpc.ServerOption{
@@ -67,8 +67,8 @@ func New(svr managerv1.ManagerServer, opts ...grpc.ServerOption) *grpc.Server {
 	}, opts...)...)
 
 	// Register servers on grpc server.
-	managerv1.RegisterManagerServer(grpcServer, svr)
-	securityv1.RegisterCertificateServiceServer(grpcServer, svr.(securityv1.CertificateServiceServer))
+	managerv1.RegisterManagerServer(grpcServer, managerServer)
+	securityv1.RegisterCertificateServiceServer(grpcServer, securityServer)
 
 	// Register health on grpc server.
 	healthpb.RegisterHealthServer(grpcServer, health.NewServer())
