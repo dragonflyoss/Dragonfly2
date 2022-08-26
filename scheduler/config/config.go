@@ -119,6 +119,7 @@ func New() *Config {
 		},
 		Metrics: &MetricsConfig{
 			Enable:         false,
+			Addr:           DefaultMetricsAddr,
 			EnablePeerHost: false,
 		},
 	}

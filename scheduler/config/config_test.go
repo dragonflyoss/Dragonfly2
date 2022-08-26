@@ -185,6 +185,7 @@ func TestConfig_New(t *testing.T) {
 		},
 		Metrics: &MetricsConfig{
 			Enable:         false,
+			Addr:           ":8000",
 			EnablePeerHost: false,
 		},
 	})
