@@ -59,15 +59,16 @@ type DaemonOption struct {
 	DataDir     string `mapstructure:"dataDir" yaml:"dataDir"`
 	KeepStorage bool   `mapstructure:"keepStorage" yaml:"keepStorage"`
 
-	Scheduler     SchedulerOption     `mapstructure:"scheduler" yaml:"scheduler"`
-	Host          HostOption          `mapstructure:"host" yaml:"host"`
-	Download      DownloadOption      `mapstructure:"download" yaml:"download"`
-	Proxy         *ProxyOption        `mapstructure:"proxy" yaml:"proxy"`
-	Upload        UploadOption        `mapstructure:"upload" yaml:"upload"`
-	ObjectStorage ObjectStorageOption `mapstructure:"objectStorage" yaml:"objectStorage"`
-	Storage       StorageOption       `mapstructure:"storage" yaml:"storage"`
-	Health        *HealthOption       `mapstructure:"health" yaml:"health"`
-	Reload        ReloadOption        `mapstructure:"reload" yaml:"reload"`
+	Security      GlobalSecurityOption `mapstructure:"security" yaml:"security"`
+	Scheduler     SchedulerOption      `mapstructure:"scheduler" yaml:"scheduler"`
+	Host          HostOption           `mapstructure:"host" yaml:"host"`
+	Download      DownloadOption       `mapstructure:"download" yaml:"download"`
+	Proxy         *ProxyOption         `mapstructure:"proxy" yaml:"proxy"`
+	Upload        UploadOption         `mapstructure:"upload" yaml:"upload"`
+	ObjectStorage ObjectStorageOption  `mapstructure:"objectStorage" yaml:"objectStorage"`
+	Storage       StorageOption        `mapstructure:"storage" yaml:"storage"`
+	Health        *HealthOption        `mapstructure:"health" yaml:"health"`
+	Reload        ReloadOption         `mapstructure:"reload" yaml:"reload"`
 }
 
 func NewDaemonConfig() *DaemonOption {
@@ -172,6 +173,11 @@ func ConvertPattern(p string, defaultPattern commonv1.Pattern) commonv1.Pattern 
 	return defaultPattern
 }
 
+type GlobalSecurityOption struct {
+	AutoIssueCert bool       `mapstructure:"autoIssueCert" yaml:"autoIssueCert"`
+	CACert        PEMContent `mapstructure:"caCert" yaml:"caCert"`
+}
+
 type SchedulerOption struct {
 	// Manager is to get the scheduler configuration remotely.
 	Manager ManagerOption `mapstructure:"manager" yaml:"manager"`
@@ -240,6 +246,7 @@ type DownloadOption struct {
 	Prefetch             bool              `mapstructure:"prefetch" yaml:"prefetch"`
 	WatchdogTimeout      time.Duration     `mapstructure:"watchdogTimeout" yaml:"watchdogTimeout"`
 	Concurrent           *ConcurrentOption `mapstructure:"concurrent" yaml:"concurrent"`
+	SyncPieceViaHTTPS    bool              `mapstructure:"syncPieceViaHTTPS" yaml:"syncPieceViaHTTPS"`
 }
 
 type TransportOption struct {
@@ -519,9 +526,9 @@ type UnixListenOption struct {
 type SecurityOption struct {
 	// Insecure indicate enable tls or not
 	Insecure  bool        `mapstructure:"insecure" yaml:"insecure"`
-	CACert    string      `mapstructure:"caCert" yaml:"caCert"`
-	Cert      string      `mapstructure:"cert" yaml:"cert"`
-	Key       string      `mapstructure:"key" yaml:"key"`
+	CACert    PEMContent  `mapstructure:"caCert" yaml:"caCert"`
+	Cert      PEMContent  `mapstructure:"cert" yaml:"cert"`
+	Key       PEMContent  `mapstructure:"key" yaml:"key"`
 	TLSVerify bool        `mapstructure:"tlsVerify" yaml:"tlsVerify"`
 	TLSConfig *tls.Config `mapstructure:"tlsConfig" yaml:"tlsConfig"`
 }
@@ -553,25 +560,20 @@ type ReloadOption struct {
 	Interval util.Duration `mapstructure:"interval" yaml:"interval"`
 }
 
-type FileString string
+// PEMContent supports load PEM format from file or just inline PEM format content
+type PEMContent string
 
-func (f *FileString) UnmarshalJSON(b []byte) error {
+func (p *PEMContent) UnmarshalJSON(b []byte) error {
 	var s string
 	err := json.Unmarshal(b, &s)
 	if err != nil {
 		return err
 	}
 
-	file, err := os.ReadFile(s)
-	if err != nil {
-		return err
-	}
-	val := strings.TrimSpace(string(file))
-	*f = FileString(val)
-	return nil
+	return p.loadPEM(s)
 }
 
-func (f *FileString) UnmarshalYAML(node *yaml.Node) error {
+func (p *PEMContent) UnmarshalYAML(node *yaml.Node) error {
 	var s string
 	switch node.Kind {
 	case yaml.ScalarNode:
@@ -579,22 +581,37 @@ func (f *FileString) UnmarshalYAML(node *yaml.Node) error {
 			return err
 		}
 	default:
-		return errors.New("invalid filestring")
+		return errors.New("invalid pem content")
 	}
 
-	file, err := os.ReadFile(s)
+	return p.loadPEM(s)
+}
+
+func (p *PEMContent) loadPEM(content string) error {
+	if content == "" {
+		*p = PEMContent("")
+		return nil
+	}
+	// inline PEM, just return
+	if strings.HasPrefix(strings.TrimSpace(content), "-----BEGIN ") {
+		val := strings.TrimSpace(content)
+		*p = PEMContent(val)
+		return nil
+	}
+
+	file, err := os.ReadFile(content)
 	if err != nil {
 		return err
 	}
 	val := strings.TrimSpace(string(file))
-	*f = FileString(val)
+	*p = PEMContent(val)
 	return nil
 }
 
 type tlsConfigFiles struct {
-	Cert   string     `json:"cert"`
-	Key    string     `json:"key"`
-	CACert FileString `json:"caCert"`
+	Cert   PEMContent `yaml:"cert" json:"cert"`
+	Key    PEMContent `yaml:"key" json:"key"`
+	CACert PEMContent `yaml:"caCert" json:"caCert"`
 }
 
 type TLSConfig struct {
@@ -607,11 +624,30 @@ func (t *TLSConfig) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
+
+	return t.load(&cf)
+}
+
+func (t *TLSConfig) UnmarshalYAML(node *yaml.Node) error {
+	var cf tlsConfigFiles
+	switch node.Kind {
+	case yaml.MappingNode:
+		if err := node.Decode(&cf); err != nil {
+			return err
+		}
+	default:
+		return errors.New("invalid tls config")
+	}
+
+	return t.load(&cf)
+}
+
+func (t *TLSConfig) load(cf *tlsConfigFiles) error {
 	pool := x509.NewCertPool()
 	if !pool.AppendCertsFromPEM([]byte(cf.CACert)) {
 		return errors.New("invalid CA Cert")
 	}
-	cert, err := tls.LoadX509KeyPair(cf.Cert, cf.Key)
+	cert, err := tls.X509KeyPair([]byte(cf.Cert), []byte(cf.Key))
 	if err != nil {
 		return err
 	}

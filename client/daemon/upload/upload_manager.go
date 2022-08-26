@@ -20,6 +20,7 @@ package upload
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"math"
@@ -31,7 +32,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-http-utils/headers"
+	"github.com/johanbrandhorst/certify"
 	ginprometheus "github.com/mcuadros/go-gin-prometheus"
+	"github.com/soheilhy/cmux"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"golang.org/x/time/rate"
 
@@ -66,6 +69,7 @@ type uploadManager struct {
 	*http.Server
 	*rate.Limiter
 	storageManager storage.Manager
+	certify        *certify.Certify
 }
 
 // Option is a functional option for configuring the upload manager.
@@ -75,6 +79,12 @@ type Option func(um *uploadManager)
 func WithLimiter(limiter *rate.Limiter) func(*uploadManager) {
 	return func(manager *uploadManager) {
 		manager.Limiter = limiter
+	}
+}
+
+func WithCertify(ct *certify.Certify) func(manager *uploadManager) {
+	return func(manager *uploadManager) {
+		manager.certify = ct
 	}
 }
 
@@ -97,8 +107,37 @@ func NewUploadManager(cfg *config.DaemonOption, storageManager storage.Manager, 
 }
 
 // Started upload manager server.
-func (um *uploadManager) Serve(lis net.Listener) error {
-	return um.Server.Serve(lis)
+func (um *uploadManager) Serve(listener net.Listener) error {
+	if um.certify == nil {
+		return um.Server.Serve(listener)
+	}
+
+	logger.Debugf("use http and https uploader in same listener")
+	m := cmux.New(listener)
+	httpListener := m.Match(cmux.HTTP1Fast())
+	tlsListener := m.Match(cmux.Any())
+
+	go func() {
+		if err := um.Server.Serve(httpListener); err != nil {
+			logger.Debugf("upload server exit: %s", err)
+		}
+	}()
+
+	go func() {
+		tlsConfig := &tls.Config{
+			GetCertificate: func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+				// FIXME peers need pure ip cert, certify checks the ServerName, so workaround here
+				hello.ServerName = "peer"
+				return um.certify.GetCertificate(hello)
+			},
+		}
+
+		tlsListener = tls.NewListener(tlsListener, tlsConfig)
+		if err := um.Server.Serve(tlsListener); err != nil {
+			logger.Debugf("upload server exit: %s", err)
+		}
+	}()
+	return m.Serve()
 }
 
 // Stop upload manager server.

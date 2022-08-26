@@ -18,6 +18,7 @@ package peer
 
 import (
 	"context"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"io"
@@ -58,25 +59,27 @@ type PieceManager interface {
 
 type pieceManager struct {
 	*rate.Limiter
-	pieceDownloader  PieceDownloader
-	computePieceSize func(contentLength int64) uint32
-	calculateDigest  bool
-	concurrentOption *config.ConcurrentOption
+	pieceDownloader   PieceDownloader
+	computePieceSize  func(contentLength int64) uint32
+	calculateDigest   bool
+	concurrentOption  *config.ConcurrentOption
+	syncPieceViaHTTPS bool
+	certPool          *x509.CertPool
 }
 
-func NewPieceManager(pieceDownloadTimeout time.Duration, opts ...func(*pieceManager)) (PieceManager, error) {
+type PieceManagerOption func(*pieceManager)
+
+func NewPieceManager(pieceDownloadTimeout time.Duration, opts ...PieceManagerOption) (PieceManager, error) {
 	pm := &pieceManager{
 		computePieceSize: util.ComputePieceSize,
 		calculateDigest:  true,
 	}
+
+	pm.pieceDownloader = NewPieceDownloader(pieceDownloadTimeout, pm.certPool)
 	for _, opt := range opts {
 		opt(pm)
 	}
 
-	// set default value
-	if pm.pieceDownloader == nil {
-		pm.pieceDownloader, _ = NewPieceDownloader(pieceDownloadTimeout)
-	}
 	return pm, nil
 }
 
@@ -144,6 +147,18 @@ func WithConcurrentOption(opt *config.ConcurrentOption) func(*pieceManager) {
 		if manager.concurrentOption.MaxAttempts <= 0 {
 			manager.concurrentOption.MaxAttempts = 3
 		}
+	}
+}
+
+func WithSyncPieceViaHTTPS(caCertPEM string) func(*pieceManager) {
+	return func(pm *pieceManager) {
+		logger.Infof("enable syncPieceViaHTTPS for piece manager")
+		certPool := x509.NewCertPool()
+		if !certPool.AppendCertsFromPEM([]byte(caCertPEM)) {
+			logger.Fatalf("invalid ca cert pem: %s", caCertPEM)
+		}
+		pm.syncPieceViaHTTPS = true
+		pm.certPool = certPool
 	}
 }
 
