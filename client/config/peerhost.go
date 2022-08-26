@@ -176,6 +176,7 @@ func ConvertPattern(p string, defaultPattern commonv1.Pattern) commonv1.Pattern 
 type GlobalSecurityOption struct {
 	AutoIssueCert bool       `mapstructure:"autoIssueCert" yaml:"autoIssueCert"`
 	CACert        PEMContent `mapstructure:"caCert" yaml:"caCert"`
+	TLSVerify     bool       `mapstructure:"tlsVerify" yaml:"tlsVerify"`
 }
 
 type SchedulerOption struct {
