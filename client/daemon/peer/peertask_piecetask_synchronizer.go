@@ -176,8 +176,8 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 		credentialOpt = grpc.WithTransportCredentials(insecure.NewCredentials())
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, s.peerTaskConductor.grpcDialTimeout)
-	client, err := dfdaemonclient.GetClient(ctx, netAddr.String(), credentialOpt)
+	dialCtx, cancel := context.WithTimeout(ctx, s.peerTaskConductor.grpcDialTimeout)
+	client, err := dfdaemonclient.GetClient(dialCtx, netAddr.String(), credentialOpt)
 	cancel()
 
 	if err != nil {
