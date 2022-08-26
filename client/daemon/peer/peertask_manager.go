@@ -144,6 +144,7 @@ type peerTaskManager struct {
 	getPiecesMaxRetry int
 
 	grpcCredentials credentials.TransportCredentials
+	grpcDialTimeout time.Duration
 }
 
 func NewPeerTaskManager(
@@ -158,7 +159,8 @@ func NewPeerTaskManager(
 	calculateDigest bool,
 	getPiecesMaxRetry int,
 	watchdog time.Duration,
-	grpcCredentials credentials.TransportCredentials) (TaskManager, error) {
+	grpcCredentials credentials.TransportCredentials,
+	grpcDialTimeout time.Duration) (TaskManager, error) {
 
 	ptm := &peerTaskManager{
 		host:              host,
@@ -175,6 +177,7 @@ func NewPeerTaskManager(
 		calculateDigest:   calculateDigest,
 		getPiecesMaxRetry: getPiecesMaxRetry,
 		grpcCredentials:   grpcCredentials,
+		grpcDialTimeout:   grpcDialTimeout,
 	}
 	return ptm, nil
 }

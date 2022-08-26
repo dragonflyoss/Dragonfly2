@@ -172,6 +172,7 @@ type peerTaskConductor struct {
 	sourceErrorStatus *status.Status
 
 	grpcCredentials credentials.TransportCredentials
+	grpcDialTimeout time.Duration
 }
 
 func (ptm *peerTaskManager) newPeerTaskConductor(
