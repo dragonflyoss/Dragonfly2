@@ -10,6 +10,7 @@ import (
 	time "time"
 
 	v1 "d7y.io/api/pkg/apis/manager/v1"
+	v10 "d7y.io/api/pkg/apis/security/v1"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 )
@@ -193,6 +194,26 @@ func (mr *MockClientMockRecorder) GetScheduler(arg0, arg1 interface{}, arg2 ...i
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScheduler", reflect.TypeOf((*MockClient)(nil).GetScheduler), varargs...)
+}
+
+// IssueCertificate mocks base method.
+func (m *MockClient) IssueCertificate(arg0 context.Context, arg1 *v10.CertificateRequest, arg2 ...grpc.CallOption) (*v10.CertificateResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "IssueCertificate", varargs...)
+	ret0, _ := ret[0].(*v10.CertificateResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IssueCertificate indicates an expected call of IssueCertificate.
+func (mr *MockClientMockRecorder) IssueCertificate(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IssueCertificate", reflect.TypeOf((*MockClient)(nil).IssueCertificate), varargs...)
 }
 
 // KeepAlive mocks base method.

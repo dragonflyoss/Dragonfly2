@@ -173,7 +173,7 @@ func runDfcacheSubcmd(cmdName string, args []string) error {
 // checkDaemon checks if daemon is running
 func checkDaemon(daemonSockPath string) (client.Client, error) {
 	netAddr := &dfnet.NetAddr{Type: dfnet.UNIX, Addr: daemonSockPath}
-	dfdaemonClient, err := client.GetClient(context.Background(), netAddr.String())
+	dfdaemonClient, err := client.GetInsecureClient(context.Background(), netAddr.String())
 	if err != nil {
 		return nil, err
 	}

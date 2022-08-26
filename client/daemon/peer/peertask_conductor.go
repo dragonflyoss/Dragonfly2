@@ -31,6 +31,7 @@ import (
 	"go.uber.org/atomic"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
@@ -169,6 +170,8 @@ type peerTaskConductor struct {
 	rg     *util.Range
 
 	sourceErrorStatus *status.Status
+
+	grpcCredentials credentials.TransportCredentials
 }
 
 func (ptm *peerTaskManager) newPeerTaskConductor(
@@ -241,6 +244,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 		usedTraffic:         atomic.NewUint64(0),
 		SugaredLoggerOnWith: log,
 		seed:                seed,
+		grpcCredentials:     ptm.grpcCredentials,
 
 		parent: parent,
 		rg:     rg,

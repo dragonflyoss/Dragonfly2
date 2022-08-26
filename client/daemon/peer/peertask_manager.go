@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/time/rate"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
@@ -141,6 +142,8 @@ type peerTaskManager struct {
 	calculateDigest bool
 
 	getPiecesMaxRetry int
+
+	grpcCredentials credentials.TransportCredentials
 }
 
 func NewPeerTaskManager(
@@ -154,7 +157,8 @@ func NewPeerTaskManager(
 	prefetch bool,
 	calculateDigest bool,
 	getPiecesMaxRetry int,
-	watchdog time.Duration) (TaskManager, error) {
+	watchdog time.Duration,
+	grpcCredentials credentials.TransportCredentials) (TaskManager, error) {
 
 	ptm := &peerTaskManager{
 		host:              host,
@@ -170,6 +174,7 @@ func NewPeerTaskManager(
 		watchdogTimeout:   watchdog,
 		calculateDigest:   calculateDigest,
 		getPiecesMaxRetry: getPiecesMaxRetry,
+		grpcCredentials:   grpcCredentials,
 	}
 	return ptm, nil
 }

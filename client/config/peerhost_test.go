@@ -18,7 +18,9 @@ package config
 
 import (
 	"net/url"
+	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -219,6 +221,14 @@ func TestPeerHostOption_Load(t *testing.T) {
 	proxyExp, _ := NewRegexp("blobs/sha256.*")
 	hijackExp, _ := NewRegexp("mirror.aliyuncs.com:443")
 
+	_caCert, _ := os.ReadFile("./testdata/certs/ca.crt")
+	_cert, _ := os.ReadFile("./testdata/certs/sca.crt")
+	_key, _ := os.ReadFile("./testdata/certs/sca.key")
+
+	caCert := PEMContent(strings.TrimSpace(string(_caCert)))
+	cert := PEMContent(strings.TrimSpace(string(_cert)))
+	key := PEMContent(strings.TrimSpace(string(_key)))
+
 	peerHostOption := &DaemonOption{
 		Options: base.Options{
 			Console:   true,
@@ -292,9 +302,9 @@ func TestPeerHostOption_Load(t *testing.T) {
 			DownloadGRPC: ListenOption{
 				Security: SecurityOption{
 					Insecure:  true,
-					CACert:    "caCert",
-					Cert:      "cert",
-					Key:       "key",
+					CACert:    caCert,
+					Cert:      cert,
+					Key:       key,
 					TLSVerify: true,
 					TLSConfig: nil,
 				},
@@ -306,9 +316,9 @@ func TestPeerHostOption_Load(t *testing.T) {
 			PeerGRPC: ListenOption{
 				Security: SecurityOption{
 					Insecure:  true,
-					CACert:    "caCert",
-					Cert:      "cert",
-					Key:       "key",
+					CACert:    caCert,
+					Cert:      cert,
+					Key:       key,
 					TLSVerify: true,
 					TLSConfig: nil,
 				},
@@ -351,9 +361,9 @@ func TestPeerHostOption_Load(t *testing.T) {
 			ListenOption: ListenOption{
 				Security: SecurityOption{
 					Insecure:  true,
-					CACert:    "caCert",
-					Cert:      "cert",
-					Key:       "key",
+					CACert:    caCert,
+					Cert:      cert,
+					Key:       key,
 					TLSVerify: true,
 				},
 				TCPListen: &TCPListenOption{
@@ -372,9 +382,9 @@ func TestPeerHostOption_Load(t *testing.T) {
 			ListenOption: ListenOption{
 				Security: SecurityOption{
 					Insecure:  true,
-					CACert:    "caCert",
-					Cert:      "cert",
-					Key:       "key",
+					CACert:    caCert,
+					Cert:      cert,
+					Key:       key,
 					TLSVerify: true,
 				},
 				TCPListen: &TCPListenOption{
@@ -403,9 +413,9 @@ func TestPeerHostOption_Load(t *testing.T) {
 			ListenOption: ListenOption{
 				Security: SecurityOption{
 					Insecure:  true,
-					CACert:    "caCert",
-					Cert:      "cert",
-					Key:       "key",
+					CACert:    caCert,
+					Cert:      cert,
+					Key:       key,
 					TLSVerify: true,
 				},
 				TCPListen: &TCPListenOption{
@@ -455,8 +465,8 @@ func TestPeerHostOption_Load(t *testing.T) {
 				},
 			},
 			HijackHTTPS: &HijackConfig{
-				Cert: "cert",
-				Key:  "key",
+				Cert: "./testdata/certs/sca.crt",
+				Key:  "./testdata/certs/sca.key",
 				Hosts: []*HijackHost{
 					{
 						Regx:     hijackExp,

@@ -30,10 +30,12 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/johanbrandhorst/certify"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	zapadapter "logur.dev/adapter/zap"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
@@ -54,6 +56,8 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/issuer"
+	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
@@ -92,6 +96,7 @@ type clientDaemon struct {
 	dfpath          dfpath.Dfpath
 	managerClient   managerclient.Client
 	schedulerClient schedulerclient.Client
+	certifyClient   *certify.Certify
 }
 
 func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
@@ -113,6 +118,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	var (
 		dynconfig      config.Dynconfig
 		managerClient  managerclient.Client
+		certifyClient  *certify.Certify
 		defaultPattern = config.ConvertPattern(opt.Download.DefaultPattern, commonv1.Pattern_P2P)
 	)
 
@@ -121,6 +127,27 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		managerClient, err = managerclient.GetClientByAddr(context.Background(), opt.Scheduler.Manager.NetAddrs)
 		if err != nil {
 			return nil, err
+		}
+
+		if opt.Security.AutoIssueCert {
+			certifyClient = &certify.Certify{
+				CommonName:   ip.IPv4,
+				Issuer:       issuer.NewDragonflyIssuer(managerClient),
+				RenewBefore:  time.Hour,
+				Cache:        certify.NewMemCache(), // TODO use both of MemCache and DirCache instead of single one
+				CertConfig:   nil,
+				IssueTimeout: 0,
+				Logger:       zapadapter.New(logger.CoreLogger.Desugar()),
+			}
+
+			// issue a certificate to reduce first time delay
+			_, err := certifyClient.GetCertificate(&tls.ClientHelloInfo{
+				ServerName: ip.IPv4,
+			})
+			if err != nil {
+				logger.Errorf("issue certificate error: %s", err.Error())
+				return nil, err
+			}
 		}
 
 		// New dynconfig manager client.
@@ -166,18 +193,31 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		return nil, err
 	}
 
-	pieceManager, err := peer.NewPieceManager(
-		opt.Download.PieceDownloadTimeout,
+	pmOpts := []peer.PieceManagerOption{
 		peer.WithLimiter(rate.NewLimiter(opt.Download.TotalRateLimit.Limit, int(opt.Download.TotalRateLimit.Limit))),
-		peer.WithCalculateDigest(opt.Download.CalculateDigest), peer.WithTransportOption(opt.Download.Transport),
+		peer.WithCalculateDigest(opt.Download.CalculateDigest),
+		peer.WithTransportOption(opt.Download.Transport),
 		peer.WithConcurrentOption(opt.Download.Concurrent),
-	)
+	}
+	if opt.Download.SyncPieceViaHTTPS && opt.Scheduler.Manager.Enable {
+		pmOpts = append(pmOpts, peer.WithSyncPieceViaHTTPS(string(opt.Security.CACert)))
+	}
+	pieceManager, err := peer.NewPieceManager(opt.Download.PieceDownloadTimeout, pmOpts...)
 	if err != nil {
 		return nil, err
 	}
+
+	var credentials credentials.TransportCredentials
+	if certifyClient != nil {
+		credentials, err = loadGlobalGPRCTLSCredentials(certifyClient, string(opt.Security.CACert))
+		if err != nil {
+			return nil, err
+		}
+
+	}
 	peerTaskManager, err := peer.NewPeerTaskManager(host, pieceManager, storageManager, sched, opt.Scheduler,
 		opt.Download.PerPeerRateLimit.Limit, opt.Storage.Multiplex, opt.Download.Prefetch, opt.Download.CalculateDigest,
-		opt.Download.GetPiecesMaxRetry, opt.Download.WatchdogTimeout)
+		opt.Download.GetPiecesMaxRetry, opt.Download.WatchdogTimeout, credentials)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +225,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	// TODO(jim): more server options
 	var downloadServerOption []grpc.ServerOption
 	if !opt.Download.DownloadGRPC.Security.Insecure {
-		tlsCredentials, err := loadGPRCTLSCredentials(opt.Download.DownloadGRPC.Security)
+		tlsCredentials, err := loadGPRCTLSCredentials(opt.Download.DownloadGRPC.Security, certifyClient, string(opt.Security.CACert))
 		if err != nil {
 			return nil, err
 		}
@@ -193,7 +233,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	}
 	var peerServerOption []grpc.ServerOption
 	if !opt.Download.PeerGRPC.Security.Insecure {
-		tlsCredentials, err := loadGPRCTLSCredentials(opt.Download.PeerGRPC.Security)
+		tlsCredentials, err := loadGPRCTLSCredentials(opt.Download.PeerGRPC.Security, certifyClient, string(opt.Security.CACert))
 		if err != nil {
 			return nil, err
 		}
@@ -210,8 +250,15 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		return nil, err
 	}
 
-	uploadManager, err := upload.NewUploadManager(opt, storageManager, d.LogDir(),
-		upload.WithLimiter(rate.NewLimiter(opt.Upload.RateLimit.Limit, int(opt.Upload.RateLimit.Limit))))
+	uploadOpts := []upload.Option{
+		upload.WithLimiter(rate.NewLimiter(opt.Upload.RateLimit.Limit, int(opt.Upload.RateLimit.Limit))),
+	}
+
+	if opt.Security.AutoIssueCert && opt.Scheduler.Manager.Enable {
+		uploadOpts = append(uploadOpts, upload.WithCertify(certifyClient))
+	}
+
+	uploadManager, err := upload.NewUploadManager(opt, storageManager, d.LogDir(), uploadOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -241,41 +288,75 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		dfpath:          d,
 		managerClient:   managerClient,
 		schedulerClient: sched,
+		certifyClient:   certifyClient,
 	}, nil
 }
 
-func loadGPRCTLSCredentials(opt config.SecurityOption) (credentials.TransportCredentials, error) {
-	// Load certificate of the CA who signed client's certificate
-	pemClientCA, err := os.ReadFile(opt.CACert)
-	if err != nil {
-		return nil, err
-	}
-
+func loadGPRCTLSCredentials(opt config.SecurityOption, certifyClient *certify.Certify, globalCACertPEM string) (credentials.TransportCredentials, error) {
 	certPool := x509.NewCertPool()
-	if !certPool.AppendCertsFromPEM(pemClientCA) {
-		return nil, fmt.Errorf("failed to add client CA's certificate")
+
+	if opt.CACert == "" && globalCACertPEM == "" {
+		return nil, fmt.Errorf("empty client CA's certificate and glocal CA's certificate")
 	}
 
-	// Load server's certificate and private key
-	serverCert, err := tls.LoadX509KeyPair(opt.Cert, opt.Key)
-	if err != nil {
-		return nil, err
+	if opt.CACert != "" {
+		// Load certificate of the CA who signed client's certificate
+		if !certPool.AppendCertsFromPEM([]byte(opt.CACert)) {
+			return nil, fmt.Errorf("failed to add client CA's certificate")
+		}
+	}
+
+	if globalCACertPEM != "" {
+		if !certPool.AppendCertsFromPEM([]byte(globalCACertPEM)) {
+			return nil, fmt.Errorf("failed to add global CA's certificate")
+		}
 	}
 
 	// Create the credentials and return it
 	if opt.TLSConfig == nil {
-		opt.TLSConfig = &tls.Config{
-			Certificates: []tls.Certificate{serverCert},
-			ClientAuth:   tls.RequireAndVerifyClientCert,
-			ClientCAs:    certPool,
+		opt.TLSConfig = &tls.Config{}
+	}
+
+	opt.TLSConfig.ClientCAs = certPool
+
+	// Load server's certificate and private key
+	if certifyClient == nil {
+		serverCert, err := tls.X509KeyPair([]byte(opt.Cert), []byte(opt.Key))
+		if err != nil {
+			return nil, err
 		}
-	} else {
 		opt.TLSConfig.Certificates = []tls.Certificate{serverCert}
+	} else {
+		// enable auto issue certificate
+		opt.TLSConfig.Certificates = nil
+		opt.TLSConfig.GetCertificate = config.GetCertificate(certifyClient)
+	}
+
+	if opt.TLSVerify {
 		opt.TLSConfig.ClientAuth = tls.RequireAndVerifyClientCert
-		opt.TLSConfig.ClientCAs = certPool
 	}
 
 	return credentials.NewTLS(opt.TLSConfig), nil
+}
+
+func loadGlobalGPRCTLSCredentials(certifyClient *certify.Certify, globalCACertPEM string) (credentials.TransportCredentials, error) {
+	certPool := x509.NewCertPool()
+
+	if globalCACertPEM == "" {
+		return nil, fmt.Errorf("empty client CA's certificate and glocal CA's certificate")
+	}
+
+	if !certPool.AppendCertsFromPEM([]byte(globalCACertPEM)) {
+		return nil, fmt.Errorf("failed to add global CA's certificate")
+	}
+
+	config := &tls.Config{
+		ClientAuth:     tls.RequireAndVerifyClientCert,
+		ClientCAs:      certPool,
+		GetCertificate: config.GetCertificate(certifyClient),
+	}
+
+	return credentials.NewTLS(config), nil
 }
 
 func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (net.Listener, int, error) {
@@ -325,12 +406,8 @@ func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (
 
 	tlsConfig := opt.Security.TLSConfig
 	if opt.Security.CACert != "" {
-		caCert, err := os.ReadFile(opt.Security.CACert)
-		if err != nil {
-			return nil, -1, err
-		}
 		caCertPool := x509.NewCertPool()
-		caCertPool.AppendCertsFromPEM(caCert)
+		caCertPool.AppendCertsFromPEM([]byte(opt.Security.CACert))
 		tlsConfig.ClientCAs = caCertPool
 		if opt.Security.TLSVerify {
 			tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
@@ -338,7 +415,7 @@ func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (
 	}
 
 	tlsConfig.Certificates = make([]tls.Certificate, 1)
-	tlsConfig.Certificates[0], err = tls.LoadX509KeyPair(opt.Security.Cert, opt.Security.Key)
+	tlsConfig.Certificates[0], err = tls.X509KeyPair([]byte(opt.Security.Cert), []byte(opt.Security.Key))
 	if err != nil {
 		return nil, -1, err
 	}

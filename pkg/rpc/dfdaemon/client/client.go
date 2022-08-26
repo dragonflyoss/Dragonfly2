@@ -61,7 +61,6 @@ func GetClient(ctx context.Context, target string, opts ...grpc.DialOption) (Cli
 		ctx,
 		target,
 		append([]grpc.DialOption{
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
 				rpc.ConvertErrorUnaryClientInterceptor,
 				otelgrpc.UnaryClientInterceptor(),
@@ -88,6 +87,12 @@ func GetClient(ctx context.Context, target string, opts ...grpc.DialOption) (Cli
 	return &client{
 		dfdaemonv1.NewDaemonClient(conn),
 	}, nil
+}
+
+// GetInsecureClient returns dfdaemon client.
+// FIXME use GetClient + insecure.NewCredentials instead of this function
+func GetInsecureClient(ctx context.Context, target string, opts ...grpc.DialOption) (Client, error) {
+	return GetClient(ctx, target, append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
 }
 
 // Client is the interface for grpc client.

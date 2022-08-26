@@ -17,6 +17,7 @@ require (
 	github.com/distribution/distribution/v3 v3.0.0-20220620080156-3e4f8a0ab147
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.4.0
+	github.com/fsnotify/fsnotify v1.5.4
 	github.com/gammazero/deque v0.2.0
 	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-contrib/static v0.0.1
@@ -38,6 +39,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/jarcoal/httpmock v1.2.0
+	github.com/johanbrandhorst/certify v1.9.0
 	github.com/juju/ratelimit v1.0.2
 	github.com/looplab/fsm v0.3.0
 	github.com/mcuadros/go-gin-prometheus v0.1.0
@@ -51,6 +53,7 @@ require (
 	github.com/prometheus/client_golang v1.13.0
 	github.com/schollz/progressbar/v3 v3.8.7
 	github.com/shirou/gopsutil/v3 v3.22.7
+	github.com/soheilhy/cmux v0.1.5
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.12.0
 	github.com/stretchr/testify v1.8.0
@@ -81,6 +84,7 @@ require (
 	gorm.io/gorm v1.23.8
 	gorm.io/plugin/soft_delete v1.1.0
 	k8s.io/component-base v0.23.3
+	logur.dev/adapter/zap v0.5.0
 	moul.io/zapgorm2 v1.1.3
 	stathat.com/c/consistent v1.0.0
 )
@@ -102,7 +106,6 @@ require (
 	github.com/denisenkom/go-mssqldb v0.12.2 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/envoyproxy/protoc-gen-validate v0.6.7 // indirect
-	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-echarts/go-echarts/v2 v2.2.4 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
@@ -208,4 +211,5 @@ require (
 	gorm.io/plugin/dbresolver v1.2.1 // indirect
 	k8s.io/apimachinery v0.24.4 // indirect
 	k8s.io/klog/v2 v2.60.1 // indirect
+	logur.dev/logur v0.16.1 // indirect
 )
