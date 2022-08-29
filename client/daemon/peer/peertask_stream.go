@@ -71,8 +71,8 @@ func (ptm *peerTaskManager) newStreamTask(
 	rg *util.Range) (*streamTask, error) {
 	metrics.StreamTaskCount.Add(1)
 	var limit = rate.Inf
-	if ptm.perPeerRateLimit > 0 {
-		limit = ptm.perPeerRateLimit
+	if ptm.PerPeerRateLimit > 0 {
+		limit = ptm.PerPeerRateLimit
 	}
 
 	// prefetch parent request
@@ -131,7 +131,7 @@ func (s *streamTask) Start(ctx context.Context) (io.ReadCloser, map[string]strin
 				attr[k] = v
 			}
 		}
-		rc, err := s.peerTaskConductor.peerTaskManager.storageManager.ReadAllPieces(
+		rc, err := s.peerTaskConductor.StorageManager.ReadAllPieces(
 			ctx,
 			&storage.ReadAllPiecesRequest{
 				PeerTaskMetadata: storage.PeerTaskMetadata{

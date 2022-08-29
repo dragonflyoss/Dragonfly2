@@ -251,20 +251,24 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 		},
 	}
 	ptm := &peerTaskManager{
-		calculateDigest: true,
-		host: &schedulerv1.PeerHost{
-			Ip: "127.0.0.1",
-		},
 		conductorLock:    &sync.Mutex{},
 		runningPeerTasks: sync.Map{},
-		pieceManager:     pm,
-		storageManager:   storageManager,
-		schedulerClient:  schedulerClient,
-		schedulerOption: config.SchedulerOption{
-			ScheduleTimeout: util.Duration{Duration: 10 * time.Minute},
+		TaskManagerOption: TaskManagerOption{
+			SchedulerClient: schedulerClient,
+			TaskOption: TaskOption{
+				CalculateDigest: true,
+				PeerHost: &schedulerv1.PeerHost{
+					Ip: "127.0.0.1",
+				},
+				PieceManager:   pm,
+				StorageManager: storageManager,
+				SchedulerOption: config.SchedulerOption{
+					ScheduleTimeout: util.Duration{Duration: 10 * time.Minute},
+				},
+				GRPCDialTimeout: time.Second,
+				GRPCCredentials: insecure.NewCredentials(),
+			},
 		},
-		grpcDialTimeout: time.Second,
-		grpcCredentials: insecure.NewCredentials(),
 	}
 	req := &schedulerv1.PeerTaskRequest{
 		Url: url,

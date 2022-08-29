@@ -31,6 +31,7 @@ import (
 	"go.uber.org/atomic"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
@@ -67,8 +68,9 @@ var _ Task = (*peerTaskConductor)(nil)
 
 // peerTaskConductor will fetch all pieces from other peers and send pieces info to broker
 type peerTaskConductor struct {
+	TaskOption
 	*logger.SugaredLoggerOnWith
-	ptm *peerTaskManager
+
 	// ctx is with span info for tracing
 	// we use successCh and failCh mark task success or fail
 	ctx context.Context
@@ -77,8 +79,6 @@ type peerTaskConductor struct {
 	// when back source, cancel all piece download action
 	pieceDownloadCancel context.CancelFunc
 
-	// host info about current host
-	host *schedulerv1.PeerHost
 	// request is the original PeerTaskRequest
 	request *schedulerv1.PeerTaskRequest
 
@@ -86,15 +86,10 @@ type peerTaskConductor struct {
 	needBackSource *atomic.Bool
 	seed           bool
 
-	// pieceManager will be used for downloading piece
-	pieceManager    PieceManager
-	storageManager  storage.Manager
 	peerTaskManager *peerTaskManager
 
 	storage storage.TaskStorageDriver
 
-	// schedule options
-	schedulerOption config.SchedulerOption
 	schedulerClient schedulerclient.Client
 
 	// peer task meta info
@@ -171,6 +166,21 @@ type peerTaskConductor struct {
 	sourceErrorStatus *status.Status
 }
 
+type TaskOption struct {
+	// PeerHost info about current PeerHost
+	PeerHost *schedulerv1.PeerHost
+	// PieceManager will be used for downloading piece
+	PieceManager   PieceManager
+	StorageManager storage.Manager
+	// schedule options
+	SchedulerOption config.SchedulerOption
+	CalculateDigest bool
+	GRPCCredentials credentials.TransportCredentials
+	GRPCDialTimeout time.Duration
+	// WatchdogTimeout > 0 indicates to start watch dog for every single peer task
+	WatchdogTimeout time.Duration
+}
+
 func (ptm *peerTaskManager) newPeerTaskConductor(
 	ctx context.Context,
 	request *schedulerv1.PeerTaskRequest,
@@ -181,8 +191,8 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 	// use a new context with span info
 	ctx = trace.ContextWithSpan(context.Background(), trace.SpanFromContext(ctx))
 	ctx, span := tracer.Start(ctx, config.SpanPeerTask, trace.WithSpanKind(trace.SpanKindClient))
-	span.SetAttributes(config.AttributePeerHost.String(ptm.host.Id))
-	span.SetAttributes(semconv.NetHostIPKey.String(ptm.host.Ip))
+	span.SetAttributes(config.AttributePeerHost.String(ptm.PeerHost.Id))
+	span.SetAttributes(semconv.NetHostIPKey.String(ptm.PeerHost.Ip))
 	span.SetAttributes(config.AttributePeerID.String(request.PeerId))
 	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
 
@@ -210,15 +220,12 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 	span.SetAttributes(config.AttributeTaskID.String(taskID))
 
 	ptc := &peerTaskConductor{
-		ptm:                 ptm,
+		TaskOption:          ptm.TaskOption,
+		peerTaskManager:     ptm,
+		request:             request,
 		startTime:           time.Now(),
 		ctx:                 ctx,
 		broker:              newPieceBroker(),
-		host:                ptm.host,
-		request:             request,
-		pieceManager:        ptm.pieceManager,
-		storageManager:      ptm.storageManager,
-		peerTaskManager:     ptm,
 		peerPacketReady:     make(chan bool, 1),
 		peerID:              request.PeerId,
 		taskID:              taskID,
@@ -235,19 +242,17 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 		contentLength:       atomic.NewInt64(-1),
 		totalPiece:          atomic.NewInt32(-1),
 		digest:              atomic.NewString(""),
-		schedulerOption:     ptm.schedulerOption,
 		limiter:             rate.NewLimiter(limit, int(limit)),
 		completedLength:     atomic.NewInt64(0),
 		usedTraffic:         atomic.NewUint64(0),
 		SugaredLoggerOnWith: log,
 		seed:                seed,
-
-		parent: parent,
-		rg:     rg,
+		parent:              parent,
+		rg:                  rg,
 	}
 
 	ptc.pieceTaskPoller = &pieceTaskPoller{
-		getPiecesMaxRetry: ptm.getPiecesMaxRetry,
+		getPiecesMaxRetry: ptm.GetPiecesMaxRetry,
 		peerTaskConductor: ptc,
 	}
 
@@ -261,7 +266,7 @@ func (pt *peerTaskConductor) register() error {
 	pt.Debugf("request overview, pid: %s, url: %s, filter: %s, tag: %s, range: %s, digest: %s, header: %#v",
 		pt.request.PeerId, pt.request.Url, pt.request.UrlMeta.Filter, pt.request.UrlMeta.Tag, pt.request.UrlMeta.Range, pt.request.UrlMeta.Digest, pt.request.UrlMeta.Header)
 	// trace register
-	regCtx, cancel := context.WithTimeout(pt.ctx, pt.peerTaskManager.schedulerOption.ScheduleTimeout.Duration)
+	regCtx, cancel := context.WithTimeout(pt.ctx, pt.SchedulerOption.ScheduleTimeout.Duration)
 	defer cancel()
 	regCtx, regSpan := tracer.Start(regCtx, config.SpanRegisterTask)
 
@@ -273,7 +278,7 @@ func (pt *peerTaskConductor) register() error {
 	)
 
 	pt.Infof("step 1: peer %s start to register", pt.request.PeerId)
-	pt.schedulerClient = pt.peerTaskManager.schedulerClient
+	pt.schedulerClient = pt.peerTaskManager.SchedulerClient
 
 	result, err := pt.schedulerClient.RegisterPeerTask(regCtx, pt.request)
 	regSpan.RecordError(err)
@@ -281,10 +286,10 @@ func (pt *peerTaskConductor) register() error {
 
 	if err != nil {
 		if err == context.DeadlineExceeded {
-			pt.Errorf("scheduler did not response in %s", pt.peerTaskManager.schedulerOption.ScheduleTimeout.Duration)
+			pt.Errorf("scheduler did not response in %s", pt.SchedulerOption.ScheduleTimeout.Duration)
 		}
 		pt.Errorf("step 1: peer %s register failed: %s", pt.request.PeerId, err)
-		if pt.peerTaskManager.schedulerOption.DisableAutoBackSource {
+		if pt.SchedulerOption.DisableAutoBackSource {
 			// when peer register failed, some actions need to do with peerPacketStream
 			pt.peerPacketStream = &dummyPeerPacketStream{}
 			pt.Errorf("register peer task failed: %s, peer id: %s, auto back source disabled", err, pt.request.PeerId)
@@ -494,8 +499,8 @@ func (pt *peerTaskConductor) markBackSource() {
 		MainPeer:      nil,
 		CandidatePeers: []*schedulerv1.PeerPacket_DestPeer{
 			{
-				Ip:      pt.host.Ip,
-				RpcPort: pt.host.RpcPort,
+				Ip:      pt.PeerHost.Ip,
+				RpcPort: pt.PeerHost.RpcPort,
 				PeerId:  pt.peerID,
 			},
 		},
@@ -519,7 +524,7 @@ func (pt *peerTaskConductor) backSource() {
 
 	ctx, span := tracer.Start(pt.ctx, config.SpanBackSource)
 	pt.SetContentLength(-1)
-	err := pt.pieceManager.DownloadSource(ctx, pt, pt.request, pt.rg)
+	err := pt.PieceManager.DownloadSource(ctx, pt, pt.request, pt.rg)
 	if err != nil {
 		pt.Errorf("download from source error: %s", err)
 		span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
@@ -581,7 +586,7 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 	pt.SetTotalPieces(1)
 	ctx := pt.ctx
 	var err error
-	storageDriver, err := pt.peerTaskManager.storageManager.RegisterTask(ctx,
+	storageDriver, err := pt.StorageManager.RegisterTask(ctx,
 		&storage.RegisterTaskRequest{
 			PeerTaskMetadata: storage.PeerTaskMetadata{
 				PeerID: pt.tinyData.PeerID,
@@ -865,7 +870,7 @@ func (pt *peerTaskConductor) pullSinglePiece() {
 		DstAddr: pt.singlePiece.DstAddr,
 	}
 
-	if result, err := pt.pieceManager.DownloadPiece(ctx, request); err == nil {
+	if result, err := pt.PieceManager.DownloadPiece(ctx, request); err == nil {
 		pt.reportSuccessResult(request, result)
 		pt.PublishPieceInfo(request.piece.PieceNum, request.piece.RangeSize)
 
@@ -1045,8 +1050,8 @@ func (pt *peerTaskConductor) waitFirstPeerPacket() (done bool, backSource bool) 
 		pt.span.AddEvent("back source due to scheduler says need back source")
 		pt.backSource()
 		return false, true
-	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
-		if pt.schedulerOption.DisableAutoBackSource {
+	case <-time.After(pt.SchedulerOption.ScheduleTimeout.Duration):
+		if pt.SchedulerOption.DisableAutoBackSource {
 			pt.cancel(commonv1.Code_ClientScheduleTimeout, reasonBackSourceDisabled)
 			err := fmt.Errorf("%s, auto back source disabled", pt.failedReason)
 			pt.span.RecordError(err)
@@ -1212,8 +1217,8 @@ func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPiec
 		"dest peer id: %s, piece num: %d, range start: %d, range size: %d",
 		workerID, request.DstPid, request.piece.PieceNum, request.piece.RangeStart, request.piece.RangeSize)
 	// download piece
-	// result is always not nil, pieceManager will report begin and end time
-	result, err := pt.pieceManager.DownloadPiece(ctx, request)
+	// result is always not nil, PieceManager will report begin and end time
+	result, err := pt.PieceManager.DownloadPiece(ctx, request)
 	if err != nil {
 		pt.ReportPieceResult(request, result, err)
 		span.SetAttributes(config.AttributePieceSuccess.Bool(false))
@@ -1384,7 +1389,7 @@ func (pt *peerTaskConductor) reportSuccessResult(request *DownloadPieceRequest, 
 			EndTime:       uint64(result.FinishTime),
 			Success:       true,
 			Code:          commonv1.Code_Success,
-			HostLoad:      nil, // TODO(jim): update host load
+			HostLoad:      nil, // TODO(jim): update PeerHost load
 			FinishedCount: pt.readyPieces.Settled(),
 			// TODO range_start, range_size, piece_md5, piece_offset, piece_style
 		})
@@ -1422,7 +1427,7 @@ func (pt *peerTaskConductor) reportFailResult(request *DownloadPieceRequest, res
 func (pt *peerTaskConductor) initStorage(desiredLocation string) (err error) {
 	// prepare storage
 	if pt.parent == nil {
-		pt.storage, err = pt.storageManager.RegisterTask(pt.ctx,
+		pt.storage, err = pt.StorageManager.RegisterTask(pt.ctx,
 			&storage.RegisterTaskRequest{
 				PeerTaskMetadata: storage.PeerTaskMetadata{
 					PeerID: pt.GetPeerID(),
@@ -1434,7 +1439,7 @@ func (pt *peerTaskConductor) initStorage(desiredLocation string) (err error) {
 				PieceMd5Sign:    pt.GetPieceMd5Sign(),
 			})
 	} else {
-		pt.storage, err = pt.storageManager.RegisterSubTask(pt.ctx,
+		pt.storage, err = pt.StorageManager.RegisterSubTask(pt.ctx,
 			&storage.RegisterSubTaskRequest{
 				Parent: storage.PeerTaskMetadata{
 					PeerID: pt.parent.GetPeerID(),
@@ -1551,9 +1556,9 @@ func (pt *peerTaskConductor) done() {
 		&schedulerv1.PeerResult{
 			TaskId:          pt.GetTaskID(),
 			PeerId:          pt.GetPeerID(),
-			SrcIp:           pt.host.Ip,
-			SecurityDomain:  pt.peerTaskManager.host.SecurityDomain,
-			Idc:             pt.peerTaskManager.host.Idc,
+			SrcIp:           pt.PeerHost.Ip,
+			SecurityDomain:  pt.PeerHost.SecurityDomain,
+			Idc:             pt.PeerHost.Idc,
 			Url:             pt.request.Url,
 			ContentLength:   pt.GetContentLength(),
 			Traffic:         pt.GetTraffic(),
@@ -1623,9 +1628,9 @@ func (pt *peerTaskConductor) fail() {
 	peerResult := &schedulerv1.PeerResult{
 		TaskId:          pt.GetTaskID(),
 		PeerId:          pt.GetPeerID(),
-		SrcIp:           pt.peerTaskManager.host.Ip,
-		SecurityDomain:  pt.peerTaskManager.host.SecurityDomain,
-		Idc:             pt.peerTaskManager.host.Idc,
+		SrcIp:           pt.PeerHost.Ip,
+		SecurityDomain:  pt.PeerHost.SecurityDomain,
+		Idc:             pt.PeerHost.Idc,
 		Url:             pt.request.Url,
 		ContentLength:   pt.GetContentLength(),
 		Traffic:         pt.GetTraffic(),
@@ -1668,7 +1673,7 @@ func (pt *peerTaskConductor) Validate() error {
 		return err
 	}
 
-	if !pt.peerTaskManager.calculateDigest {
+	if !pt.CalculateDigest {
 		return nil
 	}
 	err = pt.GetStorage().ValidateDigest(
