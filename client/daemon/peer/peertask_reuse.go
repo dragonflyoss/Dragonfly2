@@ -58,9 +58,9 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	)
 
 	if ptm.enabledPrefetch(request.Range) {
-		reuse = ptm.storageManager.FindCompletedSubTask(taskID)
+		reuse = ptm.StorageManager.FindCompletedSubTask(taskID)
 	} else {
-		reuse = ptm.storageManager.FindCompletedTask(taskID)
+		reuse = ptm.StorageManager.FindCompletedTask(taskID)
 	}
 
 	if reuse == nil {
@@ -70,7 +70,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 		// for ranged request, check the parent task
 		reuseRange = request.Range
 		taskID = idgen.ParentTaskID(request.Url, request.UrlMeta)
-		reuse = ptm.storageManager.FindPartialCompletedTask(taskID, reuseRange)
+		reuse = ptm.StorageManager.FindPartialCompletedTask(taskID, reuseRange)
 		if reuse == nil {
 			return nil, false
 		}
@@ -97,8 +97,8 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	}
 
 	_, span := tracer.Start(ctx, config.SpanReusePeerTask, trace.WithSpanKind(trace.SpanKindClient))
-	span.SetAttributes(config.AttributePeerHost.String(ptm.host.Id))
-	span.SetAttributes(semconv.NetHostIPKey.String(ptm.host.Ip))
+	span.SetAttributes(config.AttributePeerHost.String(ptm.PeerHost.Id))
+	span.SetAttributes(semconv.NetHostIPKey.String(ptm.PeerHost.Ip))
 	span.SetAttributes(config.AttributeTaskID.String(taskID))
 	span.SetAttributes(config.AttributePeerID.String(request.PeerId))
 	span.SetAttributes(config.AttributeReusePeerID.String(reuse.PeerID))
@@ -124,7 +124,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 			TotalPieces:    reuse.TotalPieces,
 			OriginalOffset: request.KeepOriginalOffset,
 		}
-		err = ptm.storageManager.Store(ctx, storeRequest)
+		err = ptm.StorageManager.Store(ctx, storeRequest)
 	} else {
 		err = ptm.storePartialFile(ctx, request, log, reuse, reuseRange)
 	}
@@ -169,7 +169,7 @@ func (ptm *peerTaskManager) storePartialFile(ctx context.Context, request *FileT
 		log.Errorf("open dest file error when reuse peer task: %s", err)
 		return err
 	}
-	rc, err := ptm.storageManager.ReadAllPieces(ctx,
+	rc, err := ptm.StorageManager.ReadAllPieces(ctx,
 		&storage.ReadAllPiecesRequest{PeerTaskMetadata: reuse.PeerTaskMetadata, Range: rg})
 	if err != nil {
 		log.Errorf("read pieces error when reuse peer task: %s", err)
@@ -199,9 +199,9 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 	)
 
 	if ptm.enabledPrefetch(request.Range) {
-		reuse = ptm.storageManager.FindCompletedSubTask(taskID)
+		reuse = ptm.StorageManager.FindCompletedSubTask(taskID)
 	} else {
-		reuse = ptm.storageManager.FindCompletedTask(taskID)
+		reuse = ptm.StorageManager.FindCompletedTask(taskID)
 	}
 
 	if reuse == nil {
@@ -211,7 +211,7 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 		// for ranged request, check the parent task
 		reuseRange = request.Range
 		taskID = idgen.ParentTaskID(request.URL, request.URLMeta)
-		reuse = ptm.storageManager.FindPartialCompletedTask(taskID, reuseRange)
+		reuse = ptm.StorageManager.FindPartialCompletedTask(taskID, reuseRange)
 		if reuse == nil {
 			return nil, nil, false
 		}
@@ -237,8 +237,8 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 	}
 
 	ctx, span := tracer.Start(ctx, config.SpanStreamTask, trace.WithSpanKind(trace.SpanKindClient))
-	span.SetAttributes(config.AttributePeerHost.String(ptm.host.Id))
-	span.SetAttributes(semconv.NetHostIPKey.String(ptm.host.Ip))
+	span.SetAttributes(config.AttributePeerHost.String(ptm.PeerHost.Id))
+	span.SetAttributes(semconv.NetHostIPKey.String(ptm.PeerHost.Ip))
 	span.SetAttributes(config.AttributeTaskID.String(taskID))
 	span.SetAttributes(config.AttributePeerID.String(request.PeerID))
 	span.SetAttributes(config.AttributeReusePeerID.String(reuse.PeerID))
@@ -248,7 +248,7 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 	}
 	defer span.End()
 
-	rc, err := ptm.storageManager.ReadAllPieces(ctx,
+	rc, err := ptm.StorageManager.ReadAllPieces(ctx,
 		&storage.ReadAllPiecesRequest{PeerTaskMetadata: reuse.PeerTaskMetadata, Range: reuseRange})
 	if err != nil {
 		log.Errorf("read pieces error when reuse peer task: %s", err)
@@ -257,7 +257,7 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 		return nil, nil, false
 	}
 
-	exa, err := ptm.storageManager.GetExtendAttribute(ctx, &reuse.PeerTaskMetadata)
+	exa, err := ptm.StorageManager.GetExtendAttribute(ctx, &reuse.PeerTaskMetadata)
 	if err != nil {
 		log.Errorf("get extend attribute error when reuse peer task: %s", err)
 		span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
@@ -305,9 +305,9 @@ func (ptm *peerTaskManager) tryReuseSeedPeerTask(ctx context.Context,
 	)
 
 	if ptm.enabledPrefetch(request.Range) {
-		reuse = ptm.storageManager.FindCompletedSubTask(taskID)
+		reuse = ptm.StorageManager.FindCompletedSubTask(taskID)
 	} else {
-		reuse = ptm.storageManager.FindCompletedTask(taskID)
+		reuse = ptm.StorageManager.FindCompletedTask(taskID)
 	}
 
 	if reuse == nil {
@@ -320,7 +320,7 @@ func (ptm *peerTaskManager) tryReuseSeedPeerTask(ctx context.Context,
 		// for ranged request, check the parent task
 		//reuseRange = request.Range
 		//taskID = idgen.ParentTaskID(request.Url, request.UrlMeta)
-		//reuse = ptm.storageManager.FindPartialCompletedTask(taskID, reuseRange)
+		//reuse = ptm.StorageManager.FindPartialCompletedTask(taskID, reuseRange)
 		//if reuse == nil {
 		//	return nil, false
 		//}
@@ -337,8 +337,8 @@ func (ptm *peerTaskManager) tryReuseSeedPeerTask(ctx context.Context,
 	}
 
 	ctx, span := tracer.Start(ctx, config.SpanReusePeerTask, trace.WithSpanKind(trace.SpanKindClient))
-	span.SetAttributes(config.AttributePeerHost.String(ptm.host.Id))
-	span.SetAttributes(semconv.NetHostIPKey.String(ptm.host.Ip))
+	span.SetAttributes(config.AttributePeerHost.String(ptm.PeerHost.Id))
+	span.SetAttributes(semconv.NetHostIPKey.String(ptm.PeerHost.Ip))
 	span.SetAttributes(config.AttributeTaskID.String(taskID))
 	span.SetAttributes(config.AttributePeerID.String(request.PeerId))
 	span.SetAttributes(config.AttributeReusePeerID.String(reuse.PeerID))

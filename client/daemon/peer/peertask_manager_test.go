@@ -296,26 +296,30 @@ func setupMockManager(ctrl *gomock.Controller, ts *testSpec, opt componentsOptio
 		scheduleTimeout = util.Duration{Duration: ts.scheduleTimeout}
 	}
 	ptm := &peerTaskManager{
-		calculateDigest: true,
-		host: &schedulerv1.PeerHost{
-			Ip: "127.0.0.1",
-		},
 		conductorLock:    &sync.Mutex{},
 		runningPeerTasks: sync.Map{},
-		pieceManager: &pieceManager{
-			calculateDigest: true,
-			pieceDownloader: opt.pieceDownloader,
-			computePieceSize: func(contentLength int64) uint32 {
-				return opt.pieceSize
+		TaskManagerOption: TaskManagerOption{
+			SchedulerClient: schedulerClient,
+			TaskOption: TaskOption{
+				CalculateDigest: true,
+				PeerHost: &schedulerv1.PeerHost{
+					Ip: "127.0.0.1",
+				},
+				PieceManager: &pieceManager{
+					calculateDigest: true,
+					pieceDownloader: opt.pieceDownloader,
+					computePieceSize: func(contentLength int64) uint32 {
+						return opt.pieceSize
+					},
+				},
+				StorageManager: storageManager,
+				SchedulerOption: config.SchedulerOption{
+					ScheduleTimeout: scheduleTimeout,
+				},
+				GRPCDialTimeout: time.Second,
+				GRPCCredentials: insecure.NewCredentials(),
 			},
 		},
-		storageManager:  storageManager,
-		schedulerClient: schedulerClient,
-		schedulerOption: config.SchedulerOption{
-			ScheduleTimeout: scheduleTimeout,
-		},
-		grpcDialTimeout: time.Second,
-		grpcCredentials: insecure.NewCredentials(),
 	}
 	return &mockManager{
 		testSpec:        ts,
