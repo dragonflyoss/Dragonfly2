@@ -36,6 +36,7 @@ import (
 	"go.uber.org/atomic"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
@@ -262,6 +263,8 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 		schedulerOption: config.SchedulerOption{
 			ScheduleTimeout: util.Duration{Duration: 10 * time.Minute},
 		},
+		grpcDialTimeout: time.Second,
+		grpcCredentials: insecure.NewCredentials(),
 	}
 	req := &schedulerv1.PeerTaskRequest{
 		Url: url,

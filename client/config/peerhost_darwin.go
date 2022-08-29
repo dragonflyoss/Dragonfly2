@@ -70,6 +70,7 @@ var peerHostConfig = func() *DaemonOption {
 			DefaultPattern:       PatternP2P,
 			CalculateDigest:      true,
 			PieceDownloadTimeout: 30 * time.Second,
+			GRPCDialTimeout:      10 * time.Second,
 			GetPiecesMaxRetry:    100,
 			TotalRateLimit: util.RateLimit{
 				Limit: rate.Limit(DefaultTotalDownloadLimit),

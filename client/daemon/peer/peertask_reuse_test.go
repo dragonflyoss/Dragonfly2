@@ -24,10 +24,12 @@ import (
 	"os"
 	"path"
 	"testing"
+	"time"
 
 	"github.com/go-http-utils/headers"
 	"github.com/golang/mock/gomock"
 	testifyassert "github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/credentials/insecure"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
@@ -318,9 +320,11 @@ func TestReuseFilePeerTask(t *testing.T) {
 			sm := mocks.NewMockManager(ctrl)
 			tc.storageManager(sm)
 			ptm := &peerTaskManager{
-				host:           &schedulerv1.PeerHost{},
-				enablePrefetch: tc.enablePrefetch,
-				storageManager: sm,
+				host:            &schedulerv1.PeerHost{},
+				enablePrefetch:  tc.enablePrefetch,
+				storageManager:  sm,
+				grpcDialTimeout: time.Second,
+				grpcCredentials: insecure.NewCredentials(),
 			}
 			tc.verify(ptm.tryReuseFilePeerTask(context.Background(), tc.request))
 		})
@@ -695,9 +699,11 @@ func TestReuseStreamPeerTask(t *testing.T) {
 			sm := mocks.NewMockManager(ctrl)
 			tc.storageManager(sm)
 			ptm := &peerTaskManager{
-				host:           &schedulerv1.PeerHost{},
-				enablePrefetch: tc.enablePrefetch,
-				storageManager: sm,
+				host:            &schedulerv1.PeerHost{},
+				enablePrefetch:  tc.enablePrefetch,
+				storageManager:  sm,
+				grpcDialTimeout: time.Second,
+				grpcCredentials: insecure.NewCredentials(),
 			}
 			tc.verify(ptm.tryReuseStreamPeerTask(context.Background(), tc.request))
 		})

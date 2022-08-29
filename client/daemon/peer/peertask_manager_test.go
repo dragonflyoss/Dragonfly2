@@ -40,6 +40,7 @@ import (
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
@@ -313,6 +314,8 @@ func setupMockManager(ctrl *gomock.Controller, ts *testSpec, opt componentsOptio
 		schedulerOption: config.SchedulerOption{
 			ScheduleTimeout: scheduleTimeout,
 		},
+		grpcDialTimeout: time.Second,
+		grpcCredentials: insecure.NewCredentials(),
 	}
 	return &mockManager{
 		testSpec:        ts,

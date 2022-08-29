@@ -170,13 +170,15 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 	}
 
 	var credentialOpt grpc.DialOption
-	if s.peerTaskConductor.grpcCredentials != nil {
-		credentialOpt = grpc.WithTransportCredentials(s.peerTaskConductor.grpcCredentials)
+	if s.peerTaskConductor.peerTaskManager.grpcCredentials != nil {
+		credentialOpt = grpc.WithTransportCredentials(s.peerTaskConductor.peerTaskManager.grpcCredentials)
 	} else {
 		credentialOpt = grpc.WithTransportCredentials(insecure.NewCredentials())
 	}
 
-	client, err := dfdaemonclient.GetClient(context.Background(), netAddr.String(), credentialOpt)
+	dialCtx, cancel := context.WithTimeout(ctx, s.peerTaskConductor.peerTaskManager.grpcDialTimeout)
+	client, err := dfdaemonclient.GetClient(dialCtx, netAddr.String(), credentialOpt)
+	cancel()
 
 	if err != nil {
 		s.peerTaskConductor.Errorf("get dfdaemon client error: %s, dest peer: %s", err, dstPeer.PeerId)

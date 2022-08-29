@@ -239,6 +239,7 @@ type DownloadOption struct {
 	TotalRateLimit       util.RateLimit    `mapstructure:"totalRateLimit" yaml:"totalRateLimit"`
 	PerPeerRateLimit     util.RateLimit    `mapstructure:"perPeerRateLimit" yaml:"perPeerRateLimit"`
 	PieceDownloadTimeout time.Duration     `mapstructure:"pieceDownloadTimeout" yaml:"pieceDownloadTimeout"`
+	GRPCDialTimeout      time.Duration     `mapstructure:"grpcDialTimeout" yaml:"grpcDialTimeout"`
 	DownloadGRPC         ListenOption      `mapstructure:"downloadGRPC" yaml:"downloadGRPC"`
 	PeerGRPC             ListenOption      `mapstructure:"peerGRPC" yaml:"peerGRPC"`
 	CalculateDigest      bool              `mapstructure:"calculateDigest" yaml:"calculateDigest"`
