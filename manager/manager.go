@@ -157,7 +157,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	// Initialize global certificate.
 	var options []rpcserver.Option
 	if cfg.Security.Enable {
-		cert, err := tls.LoadX509KeyPair(cfg.Security.CACert, cfg.Security.CAKey)
+		cert, err := tls.X509KeyPair([]byte(cfg.Security.CACert), []byte(cfg.Security.CAKey))
 		if err != nil {
 			return nil, err
 		}
