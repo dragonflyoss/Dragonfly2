@@ -23,18 +23,23 @@ import (
 	"github.com/johanbrandhorst/certify"
 )
 
+const (
+	// CertifyCacheDirName is dir name of certify cache.
+	CertifyCacheDirName = "certs"
+)
+
 type certifyCache struct {
 	caches []certify.Cache
 }
 
 // NewCertifyMutliCache returns a certify.Cache with multiple caches
 // Such as, cache.NewCertifyMutliCache(certify.NewMemCache(), certify.DirCache("certs"))
-// This multiple cache will get certs from mem cache first, then dir cache to avoid read from filesystem every times
+// This multiple cache will get certs from mem cache first, then dir cache to avoid read from filesystem every times.
 func NewCertifyMutliCache(caches ...certify.Cache) certify.Cache {
 	return &certifyCache{caches: caches}
 }
 
-// Get gets cert from cache one by one, if found, puts it back to all previous cachs
+// Get gets cert from cache one by one, if found, puts it back to all previous caches.
 func (c *certifyCache) Get(ctx context.Context, key string) (cert *tls.Certificate, err error) {
 	var foundCacheIdx int = -1
 	for i, cache := range c.caches {
@@ -55,7 +60,7 @@ func (c *certifyCache) Get(ctx context.Context, key string) (cert *tls.Certifica
 	return nil, certify.ErrCacheMiss
 }
 
-// Put puts cert to all caches
+// Put puts cert to all caches.
 func (c *certifyCache) Put(ctx context.Context, key string, cert *tls.Certificate) error {
 	for _, cache := range c.caches {
 		if err := cache.Put(ctx, key, cert); err != nil {
@@ -65,7 +70,7 @@ func (c *certifyCache) Put(ctx context.Context, key string, cert *tls.Certificat
 	return nil
 }
 
-// Delete deletes cert from all caches
+// Delete deletes cert from all caches.
 func (c *certifyCache) Delete(ctx context.Context, key string) error {
 	for _, cache := range c.caches {
 		if err := cache.Delete(ctx, key); err != nil {
