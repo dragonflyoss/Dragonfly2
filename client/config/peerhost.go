@@ -28,7 +28,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -40,6 +39,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	netip "d7y.io/dragonfly/v2/pkg/net/ip"
+	"d7y.io/dragonfly/v2/pkg/serialize"
 	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
@@ -174,9 +174,9 @@ func ConvertPattern(p string, defaultPattern commonv1.Pattern) commonv1.Pattern 
 }
 
 type GlobalSecurityOption struct {
-	AutoIssueCert bool       `mapstructure:"autoIssueCert" yaml:"autoIssueCert"`
-	CACert        PEMContent `mapstructure:"caCert" yaml:"caCert"`
-	TLSVerify     bool       `mapstructure:"tlsVerify" yaml:"tlsVerify"`
+	AutoIssueCert bool                 `mapstructure:"autoIssueCert" yaml:"autoIssueCert"`
+	CACert        serialize.PEMContent `mapstructure:"caCert" yaml:"caCert"`
+	TLSVerify     bool                 `mapstructure:"tlsVerify" yaml:"tlsVerify"`
 }
 
 type SchedulerOption struct {
@@ -527,12 +527,12 @@ type UnixListenOption struct {
 
 type SecurityOption struct {
 	// Insecure indicate enable tls or not
-	Insecure  bool        `mapstructure:"insecure" yaml:"insecure"`
-	CACert    PEMContent  `mapstructure:"caCert" yaml:"caCert"`
-	Cert      PEMContent  `mapstructure:"cert" yaml:"cert"`
-	Key       PEMContent  `mapstructure:"key" yaml:"key"`
-	TLSVerify bool        `mapstructure:"tlsVerify" yaml:"tlsVerify"`
-	TLSConfig *tls.Config `mapstructure:"tlsConfig" yaml:"tlsConfig"`
+	Insecure  bool                 `mapstructure:"insecure" yaml:"insecure"`
+	CACert    serialize.PEMContent `mapstructure:"caCert" yaml:"caCert"`
+	Cert      serialize.PEMContent `mapstructure:"cert" yaml:"cert"`
+	Key       serialize.PEMContent `mapstructure:"key" yaml:"key"`
+	TLSVerify bool                 `mapstructure:"tlsVerify" yaml:"tlsVerify"`
+	TLSConfig *tls.Config          `mapstructure:"tlsConfig" yaml:"tlsConfig"`
 }
 
 type StorageOption struct {
@@ -562,58 +562,10 @@ type ReloadOption struct {
 	Interval util.Duration `mapstructure:"interval" yaml:"interval"`
 }
 
-// PEMContent supports load PEM format from file or just inline PEM format content
-type PEMContent string
-
-func (p *PEMContent) UnmarshalJSON(b []byte) error {
-	var s string
-	err := json.Unmarshal(b, &s)
-	if err != nil {
-		return err
-	}
-
-	return p.loadPEM(s)
-}
-
-func (p *PEMContent) UnmarshalYAML(node *yaml.Node) error {
-	var s string
-	switch node.Kind {
-	case yaml.ScalarNode:
-		if err := node.Decode(&s); err != nil {
-			return err
-		}
-	default:
-		return errors.New("invalid pem content")
-	}
-
-	return p.loadPEM(s)
-}
-
-func (p *PEMContent) loadPEM(content string) error {
-	if content == "" {
-		*p = PEMContent("")
-		return nil
-	}
-	// inline PEM, just return
-	if strings.HasPrefix(strings.TrimSpace(content), "-----BEGIN ") {
-		val := strings.TrimSpace(content)
-		*p = PEMContent(val)
-		return nil
-	}
-
-	file, err := os.ReadFile(content)
-	if err != nil {
-		return err
-	}
-	val := strings.TrimSpace(string(file))
-	*p = PEMContent(val)
-	return nil
-}
-
 type tlsConfigFiles struct {
-	Cert   PEMContent `yaml:"cert" json:"cert"`
-	Key    PEMContent `yaml:"key" json:"key"`
-	CACert PEMContent `yaml:"caCert" json:"caCert"`
+	Cert   serialize.PEMContent `yaml:"cert" json:"cert"`
+	Key    serialize.PEMContent `yaml:"key" json:"key"`
+	CACert serialize.PEMContent `yaml:"caCert" json:"caCert"`
 }
 
 type TLSConfig struct {
