@@ -25,6 +25,7 @@ import (
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
+	"d7y.io/dragonfly/v2/pkg/serialize"
 )
 
 type Config struct {
@@ -250,10 +251,10 @@ type SecurityConfig struct {
 	Enable bool `yaml:"enable" mapstructure:"enable"`
 
 	// CACert is file path PEM-encoded certificate
-	CACert string `mapstructure:"caCert" yaml:"caCert"`
+	CACert serialize.PEMContent `mapstructure:"caCert" yaml:"caCert"`
 
 	// CAKey is file path of PEM-encoded private key.
-	CAKey string `mapstructure:"caKey" yaml:"caKey"`
+	CAKey serialize.PEMContent `mapstructure:"caKey" yaml:"caKey"`
 }
 
 // New config instance.
