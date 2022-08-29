@@ -145,13 +145,15 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			}
 
 			// issue a certificate to reduce first time delay
-			_, err := certifyClient.GetCertificate(&tls.ClientHelloInfo{
+			cert, err := certifyClient.GetCertificate(&tls.ClientHelloInfo{
 				ServerName: ip.IPv4,
 			})
 			if err != nil {
 				logger.Errorf("issue certificate error: %s", err.Error())
 				return nil, err
 			}
+			logger.Debugf("request cert from manager, common name: %s, issuer: %s",
+				cert.Leaf.Subject.CommonName, cert.Leaf.Issuer.CommonName)
 		}
 
 		// New dynconfig manager client.
@@ -356,7 +358,7 @@ func loadGPRCTLSCredentials(opt config.SecurityOption, certifyClient *certify.Ce
 		opt.TLSConfig.ClientAuth = tls.RequireAndVerifyClientCert
 	}
 
-	return credentials.NewTLS(opt.TLSConfig), nil
+	return rpc.NewMuxTransportCredentials(opt.TLSConfig), nil
 }
 
 func loadGlobalGPRCTLSCredentials(certifyClient *certify.Certify, security config.GlobalSecurityOption) (credentials.TransportCredentials, error) {
