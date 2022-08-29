@@ -220,10 +220,10 @@ func printAuthInfo(ctx context.Context) {
 				logger.Debugf("peer cert depth %d, issuer: %#v", i, pc.Issuer.CommonName)
 				logger.Debugf("peer cert depth %d, common name: %#v", i, pc.Subject.CommonName)
 				if len(pc.IPAddresses) > 0 {
-					logger.Debugf("peer cert depth %d, ip: %#v", pc.IPAddresses)
+					logger.Debugf("peer cert depth %d, ip: %#v", i, pc.IPAddresses)
 				}
 				if len(pc.DNSNames) > 0 {
-					logger.Debugf("peer cert depth %d, dns: %#v", pc.DNSNames)
+					logger.Debugf("peer cert depth %d, dns: %#v", i, pc.DNSNames)
 				}
 			}
 		}
