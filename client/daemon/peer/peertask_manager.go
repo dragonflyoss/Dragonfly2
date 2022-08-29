@@ -24,19 +24,16 @@ import (
 	"fmt"
 	"io"
 	"sync"
-	"time"
 
 	"github.com/go-http-utils/headers"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/time/rate"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
-	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/util"
@@ -121,63 +118,27 @@ func init() {
 }
 
 type peerTaskManager struct {
-	host            *schedulerv1.PeerHost
-	schedulerClient schedulerclient.Client
-	schedulerOption config.SchedulerOption
-	pieceManager    PieceManager
-	storageManager  storage.Manager
-
+	TaskManagerOption
 	conductorLock    sync.Locker
 	runningPeerTasks sync.Map
-
-	perPeerRateLimit rate.Limit
-
-	// enableMultiplex indicates to reuse the data of completed peer tasks
-	enableMultiplex bool
-	// enablePrefetch indicates to prefetch the whole files of ranged requests
-	enablePrefetch bool
-	// watchdogTimeout > 0 indicates to start watch dog for every single peer task
-	watchdogTimeout time.Duration
-
-	calculateDigest bool
-
-	getPiecesMaxRetry int
-
-	grpcCredentials credentials.TransportCredentials
-	grpcDialTimeout time.Duration
 }
 
-func NewPeerTaskManager(
-	host *schedulerv1.PeerHost,
-	pieceManager PieceManager,
-	storageManager storage.Manager,
-	schedulerClient schedulerclient.Client,
-	schedulerOption config.SchedulerOption,
-	perPeerRateLimit rate.Limit,
-	multiplex bool,
-	prefetch bool,
-	calculateDigest bool,
-	getPiecesMaxRetry int,
-	watchdog time.Duration,
-	grpcCredentials credentials.TransportCredentials,
-	grpcDialTimeout time.Duration) (TaskManager, error) {
+type TaskManagerOption struct {
+	TaskOption
+	SchedulerClient  schedulerclient.Client
+	PerPeerRateLimit rate.Limit
+	// Multiplex indicates to reuse the data of completed peer tasks
+	Multiplex bool
+	// Prefetch indicates to prefetch the whole files of ranged requests
+	Prefetch          bool
+	GetPiecesMaxRetry int
+}
 
+func NewPeerTaskManager(opt *TaskManagerOption) (TaskManager, error) {
 	ptm := &peerTaskManager{
-		host:              host,
+		TaskManagerOption: *opt,
 		runningPeerTasks:  sync.Map{},
 		conductorLock:     &sync.Mutex{},
-		pieceManager:      pieceManager,
-		storageManager:    storageManager,
-		schedulerClient:   schedulerClient,
-		schedulerOption:   schedulerOption,
-		perPeerRateLimit:  perPeerRateLimit,
-		enableMultiplex:   multiplex,
-		enablePrefetch:    prefetch,
-		watchdogTimeout:   watchdog,
-		calculateDigest:   calculateDigest,
-		getPiecesMaxRetry: getPiecesMaxRetry,
-		grpcCredentials:   grpcCredentials,
-		grpcDialTimeout:   grpcDialTimeout,
 	}
 	return ptm, nil
 }
@@ -254,14 +215,14 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 }
 
 func (ptm *peerTaskManager) enabledPrefetch(rg *util.Range) bool {
-	return ptm.enablePrefetch && rg != nil
+	return ptm.Prefetch && rg != nil
 }
 
 func (ptm *peerTaskManager) prefetchParentTask(request *schedulerv1.PeerTaskRequest, desiredLocation string) *peerTaskConductor {
 	req := &schedulerv1.PeerTaskRequest{
 		Url:         request.Url,
 		PeerId:      request.PeerId,
-		PeerHost:    ptm.host,
+		PeerHost:    ptm.PeerHost,
 		HostLoad:    request.HostLoad,
 		IsMigrating: request.IsMigrating,
 		Pattern:     request.Pattern,
@@ -282,8 +243,8 @@ func (ptm *peerTaskManager) prefetchParentTask(request *schedulerv1.PeerTaskRequ
 	req.PeerId = idgen.PeerID(req.PeerHost.Ip)
 
 	var limit = rate.Inf
-	if ptm.perPeerRateLimit > 0 {
-		limit = ptm.perPeerRateLimit
+	if ptm.PerPeerRateLimit > 0 {
+		limit = ptm.PerPeerRateLimit
 	}
 
 	logger.Infof("prefetch peer task %s/%s", taskID, req.PeerId)
@@ -300,10 +261,10 @@ func (ptm *peerTaskManager) prefetchParentTask(request *schedulerv1.PeerTaskRequ
 }
 
 func (ptm *peerTaskManager) StartFileTask(ctx context.Context, req *FileTaskRequest) (chan *FileTaskProgress, *TinyData, error) {
-	if req.KeepOriginalOffset && !ptm.enablePrefetch {
+	if req.KeepOriginalOffset && !ptm.Prefetch {
 		return nil, nil, fmt.Errorf("please enable prefetch when use original offset feature")
 	}
-	if ptm.enableMultiplex {
+	if ptm.Multiplex {
 		progress, ok := ptm.tryReuseFilePeerTask(ctx, req)
 		if ok {
 			metrics.PeerTaskCacheHitCount.Add(1)
@@ -312,8 +273,8 @@ func (ptm *peerTaskManager) StartFileTask(ctx context.Context, req *FileTaskRequ
 	}
 	// TODO ensure scheduler is ok first
 	var limit = rate.Inf
-	if ptm.perPeerRateLimit > 0 {
-		limit = ptm.perPeerRateLimit
+	if ptm.PerPeerRateLimit > 0 {
+		limit = ptm.PerPeerRateLimit
 	}
 	if req.Limit > 0 {
 		limit = rate.Limit(req.Limit)
@@ -323,7 +284,7 @@ func (ptm *peerTaskManager) StartFileTask(ctx context.Context, req *FileTaskRequ
 		return nil, nil, err
 	}
 
-	// FIXME when failed due to schedulerClient error, relocate schedulerClient and retry
+	// FIXME when failed due to SchedulerClient error, relocate SchedulerClient and retry
 	progress, err := pt.Start(ctx)
 	return progress, nil, err
 }
@@ -333,13 +294,13 @@ func (ptm *peerTaskManager) StartStreamTask(ctx context.Context, req *StreamTask
 		Url:         req.URL,
 		UrlMeta:     req.URLMeta,
 		PeerId:      req.PeerID,
-		PeerHost:    ptm.host,
+		PeerHost:    ptm.PeerHost,
 		HostLoad:    nil,
 		IsMigrating: false,
 		Pattern:     req.Pattern,
 	}
 
-	if ptm.enableMultiplex {
+	if ptm.Multiplex {
 		r, attr, ok := ptm.tryReuseStreamPeerTask(ctx, req)
 		if ok {
 			metrics.PeerTaskCacheHitCount.Add(1)
@@ -352,7 +313,7 @@ func (ptm *peerTaskManager) StartStreamTask(ctx context.Context, req *StreamTask
 		return nil, nil, err
 	}
 
-	// FIXME when failed due to schedulerClient error, relocate schedulerClient and retry
+	// FIXME when failed due to SchedulerClient error, relocate SchedulerClient and retry
 	readCloser, attribute, err := pt.Start(ctx)
 	return readCloser, attribute, err
 }
@@ -365,8 +326,8 @@ func (ptm *peerTaskManager) StartSeedTask(ctx context.Context, req *SeedTaskRequ
 	}
 
 	var limit = rate.Inf
-	if ptm.perPeerRateLimit > 0 {
-		limit = ptm.perPeerRateLimit
+	if ptm.PerPeerRateLimit > 0 {
+		limit = ptm.PerPeerRateLimit
 	}
 	if req.Limit > 0 {
 		limit = rate.Limit(req.Limit)
@@ -427,26 +388,26 @@ func (ptm *peerTaskManager) StatTask(ctx context.Context, taskID string) (*sched
 		TaskId: taskID,
 	}
 
-	return ptm.schedulerClient.StatTask(ctx, req)
+	return ptm.SchedulerClient.StatTask(ctx, req)
 }
 
 func (ptm *peerTaskManager) GetPieceManager() PieceManager {
-	return ptm.pieceManager
+	return ptm.PieceManager
 }
 
 func (ptm *peerTaskManager) AnnouncePeerTask(ctx context.Context, meta storage.PeerTaskMetadata, url string, taskType commonv1.TaskType, urlMeta *commonv1.UrlMeta) error {
-	// Check if the given task is completed in local storageManager.
-	if ptm.storageManager.FindCompletedTask(meta.TaskID) == nil {
+	// Check if the given task is completed in local StorageManager.
+	if ptm.StorageManager.FindCompletedTask(meta.TaskID) == nil {
 		return errors.New("task not found in local storage")
 	}
 
 	// Prepare AnnounceTaskRequest.
-	totalPieces, err := ptm.storageManager.GetTotalPieces(ctx, &meta)
+	totalPieces, err := ptm.StorageManager.GetTotalPieces(ctx, &meta)
 	if err != nil {
 		return err
 	}
 
-	piecePacket, err := ptm.storageManager.GetPieces(ctx, &commonv1.PieceTaskRequest{
+	piecePacket, err := ptm.StorageManager.GetPieces(ctx, &commonv1.PieceTaskRequest{
 		TaskId:   meta.TaskID,
 		DstPid:   meta.PeerID,
 		StartNum: 0,
@@ -455,15 +416,15 @@ func (ptm *peerTaskManager) AnnouncePeerTask(ctx context.Context, meta storage.P
 	if err != nil {
 		return err
 	}
-	piecePacket.DstAddr = fmt.Sprintf("%s:%d", ptm.host.Ip, ptm.host.DownPort)
+	piecePacket.DstAddr = fmt.Sprintf("%s:%d", ptm.PeerHost.Ip, ptm.PeerHost.DownPort)
 
 	// Announce peer task to scheduler
-	if err := ptm.schedulerClient.AnnounceTask(ctx, &schedulerv1.AnnounceTaskRequest{
+	if err := ptm.SchedulerClient.AnnounceTask(ctx, &schedulerv1.AnnounceTaskRequest{
 		TaskId:      meta.TaskID,
 		TaskType:    taskType,
 		Url:         url,
 		UrlMeta:     urlMeta,
-		PeerHost:    ptm.host,
+		PeerHost:    ptm.PeerHost,
 		PiecePacket: piecePacket,
 	}); err != nil {
 		return err

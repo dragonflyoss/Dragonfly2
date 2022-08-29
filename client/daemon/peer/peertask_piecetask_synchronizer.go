@@ -170,13 +170,13 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 	}
 
 	var credentialOpt grpc.DialOption
-	if s.peerTaskConductor.peerTaskManager.grpcCredentials != nil {
-		credentialOpt = grpc.WithTransportCredentials(s.peerTaskConductor.peerTaskManager.grpcCredentials)
+	if s.peerTaskConductor.GRPCCredentials != nil {
+		credentialOpt = grpc.WithTransportCredentials(s.peerTaskConductor.GRPCCredentials)
 	} else {
 		credentialOpt = grpc.WithTransportCredentials(insecure.NewCredentials())
 	}
 
-	dialCtx, cancel := context.WithTimeout(ctx, s.peerTaskConductor.peerTaskManager.grpcDialTimeout)
+	dialCtx, cancel := context.WithTimeout(ctx, s.peerTaskConductor.GRPCDialTimeout)
 	client, err := dfdaemonclient.GetClient(dialCtx, netAddr.String(), credentialOpt)
 	cancel()
 
@@ -226,7 +226,7 @@ func (s *pieceTaskSyncManager) newMultiPieceTaskSynchronizer(
 	desiredPiece int32) (legacyPeers []*schedulerv1.PeerPacket_DestPeer) {
 	s.Lock()
 	defer func() {
-		if s.peerTaskConductor.ptm.watchdogTimeout > 0 {
+		if s.peerTaskConductor.WatchdogTimeout > 0 {
 			s.resetWatchdog(destPeers[0])
 		}
 		s.Unlock()
@@ -275,7 +275,7 @@ func (s *pieceTaskSyncManager) resetWatchdog(mainPeer *schedulerv1.PeerPacket_De
 	}
 	s.watchdog.mainPeer.Store(mainPeer)
 	s.peerTaskConductor.Infof("start new watchdog")
-	go s.watchdog.watch(s.peerTaskConductor.ptm.watchdogTimeout)
+	go s.watchdog.watch(s.peerTaskConductor.WatchdogTimeout)
 }
 
 func compositePieceResult(peerTaskConductor *peerTaskConductor, destPeer *schedulerv1.PeerPacket_DestPeer, code commonv1.Code) *schedulerv1.PieceResult {

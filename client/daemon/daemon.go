@@ -218,9 +218,25 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			return nil, err
 		}
 	}
-	peerTaskManager, err := peer.NewPeerTaskManager(host, pieceManager, storageManager, sched, opt.Scheduler,
-		opt.Download.PerPeerRateLimit.Limit, opt.Storage.Multiplex, opt.Download.Prefetch, opt.Download.CalculateDigest,
-		opt.Download.GetPiecesMaxRetry, opt.Download.WatchdogTimeout, credentials, opt.Download.GRPCDialTimeout)
+
+	peerTaskManagerOption := &peer.TaskManagerOption{
+		TaskOption: peer.TaskOption{
+			PeerHost:        host,
+			SchedulerOption: opt.Scheduler,
+			PieceManager:    pieceManager,
+			StorageManager:  storageManager,
+			WatchdogTimeout: opt.Download.WatchdogTimeout,
+			CalculateDigest: opt.Download.CalculateDigest,
+			GRPCCredentials: credentials,
+			GRPCDialTimeout: opt.Download.GRPCDialTimeout,
+		},
+		SchedulerClient:   sched,
+		PerPeerRateLimit:  opt.Download.PerPeerRateLimit.Limit,
+		Multiplex:         opt.Storage.Multiplex,
+		Prefetch:          opt.Download.Prefetch,
+		GetPiecesMaxRetry: opt.Download.GetPiecesMaxRetry,
+	}
+	peerTaskManager, err := peer.NewPeerTaskManager(peerTaskManagerOption)
 	if err != nil {
 		return nil, err
 	}

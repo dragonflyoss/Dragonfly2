@@ -320,11 +320,15 @@ func TestReuseFilePeerTask(t *testing.T) {
 			sm := mocks.NewMockManager(ctrl)
 			tc.storageManager(sm)
 			ptm := &peerTaskManager{
-				host:            &schedulerv1.PeerHost{},
-				enablePrefetch:  tc.enablePrefetch,
-				storageManager:  sm,
-				grpcDialTimeout: time.Second,
-				grpcCredentials: insecure.NewCredentials(),
+				TaskManagerOption: TaskManagerOption{
+					TaskOption: TaskOption{
+						PeerHost:        &schedulerv1.PeerHost{},
+						StorageManager:  sm,
+						GRPCDialTimeout: time.Second,
+						GRPCCredentials: insecure.NewCredentials(),
+					},
+					Prefetch: tc.enablePrefetch,
+				},
 			}
 			tc.verify(ptm.tryReuseFilePeerTask(context.Background(), tc.request))
 		})
@@ -699,11 +703,15 @@ func TestReuseStreamPeerTask(t *testing.T) {
 			sm := mocks.NewMockManager(ctrl)
 			tc.storageManager(sm)
 			ptm := &peerTaskManager{
-				host:            &schedulerv1.PeerHost{},
-				enablePrefetch:  tc.enablePrefetch,
-				storageManager:  sm,
-				grpcDialTimeout: time.Second,
-				grpcCredentials: insecure.NewCredentials(),
+				TaskManagerOption: TaskManagerOption{
+					Prefetch: tc.enablePrefetch,
+					TaskOption: TaskOption{
+						PeerHost:        &schedulerv1.PeerHost{},
+						StorageManager:  sm,
+						GRPCDialTimeout: time.Second,
+						GRPCCredentials: insecure.NewCredentials(),
+					},
+				},
 			}
 			tc.verify(ptm.tryReuseStreamPeerTask(context.Background(), tc.request))
 		})
