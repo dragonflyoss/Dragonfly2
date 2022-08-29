@@ -485,7 +485,7 @@ func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, 
 
 		pt.ReportPieceResult(request, result, nil)
 		pt.PublishPieceInfo(pieceNum, uint32(result.Size))
-		if supportConcurrent {
+		if supportConcurrent && pieceNum+2 < maxPieceNum {
 			// the time unit of FinishTime and BeginTime is ns
 			speed := float64(pieceSize) / float64((result.FinishTime-result.BeginTime)/1000000)
 			if speed < float64(pm.concurrentOption.ThresholdSpeed) {

@@ -339,6 +339,7 @@ func loadGPRCTLSCredentials(opt config.SecurityOption, certifyClient *certify.Ce
 	}
 
 	opt.TLSConfig.ClientCAs = certPool
+	opt.TLSConfig.RootCAs = certPool
 
 	// Load server's certificate and private key
 	if certifyClient == nil {
@@ -349,7 +350,6 @@ func loadGPRCTLSCredentials(opt config.SecurityOption, certifyClient *certify.Ce
 		opt.TLSConfig.Certificates = []tls.Certificate{serverCert}
 	} else {
 		// enable auto issue certificate
-		opt.TLSConfig.Certificates = nil
 		opt.TLSConfig.GetCertificate = config.GetCertificate(certifyClient)
 		opt.TLSConfig.GetClientCertificate = certifyClient.GetClientCertificate
 	}
@@ -374,6 +374,7 @@ func loadGlobalGPRCTLSCredentials(certifyClient *certify.Certify, security confi
 
 	config := &tls.Config{
 		ClientCAs:            certPool,
+		RootCAs:              certPool,
 		GetCertificate:       config.GetCertificate(certifyClient),
 		GetClientCertificate: certifyClient.GetClientCertificate,
 	}

@@ -216,10 +216,15 @@ func (s *server) sendFirstPieceTasks(
 func printAuthInfo(ctx context.Context) {
 	if peerInfo, ok := grpcpeer.FromContext(ctx); ok {
 		if tlsInfo, ok := peerInfo.AuthInfo.(credentials.TLSInfo); ok {
-			for _, pc := range tlsInfo.State.PeerCertificates {
-				logger.Debugf("peer cert, issuer: %#v", pc.Issuer.CommonName)
-				logger.Debugf("peer cert, common name: %#v", pc.Subject.CommonName)
-				logger.Debugf("peer cert, ip: %#v", pc.IPAddresses)
+			for i, pc := range tlsInfo.State.PeerCertificates {
+				logger.Debugf("peer cert depth %d, issuer: %#v", i, pc.Issuer.CommonName)
+				logger.Debugf("peer cert depth %d, common name: %#v", i, pc.Subject.CommonName)
+				if len(pc.IPAddresses) > 0 {
+					logger.Debugf("peer cert depth %d, ip: %#v", pc.IPAddresses)
+				}
+				if len(pc.DNSNames) > 0 {
+					logger.Debugf("peer cert depth %d, dns: %#v", pc.DNSNames)
+				}
 			}
 		}
 	}
