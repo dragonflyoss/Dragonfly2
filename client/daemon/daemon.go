@@ -131,7 +131,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			err             error
 		)
 
-		if opt.Security.CACert != "" {
+		if opt.Security.CACert == "" {
 			grpcCredentials = insecure.NewCredentials()
 		} else {
 			grpcCredentials, err = loadManagerGPRCTLSCredentials(opt.Security)
@@ -391,7 +391,7 @@ func loadGPRCTLSCredentialsWithOptions(baseConfig *tls.Config, security config.G
 	certPool := x509.NewCertPool()
 
 	if security.CACert == "" {
-		return nil, fmt.Errorf("empty and glocal CA's certificate")
+		return nil, fmt.Errorf("empty glocal CA's certificate")
 	}
 
 	if !certPool.AppendCertsFromPEM([]byte(security.CACert)) {
