@@ -358,6 +358,10 @@ func loadGPRCTLSCredentials(opt config.SecurityOption, certifyClient *certify.Ce
 		opt.TLSConfig.ClientAuth = tls.RequireAndVerifyClientCert
 	}
 
+	if security.Force {
+		return credentials.NewTLS(opt.TLSConfig), nil
+	}
+
 	return rpc.NewMuxTransportCredentials(opt.TLSConfig, rpc.WithTLSPreferClientHandshake(security.TLSPrefer)), nil
 }
 
@@ -381,6 +385,10 @@ func loadGlobalGPRCTLSCredentials(certifyClient *certify.Certify, security confi
 
 	if security.TLSVerify {
 		config.ClientAuth = tls.RequireAndVerifyClientCert
+	}
+
+	if security.Force {
+		return credentials.NewTLS(config), nil
 	}
 
 	return rpc.NewMuxTransportCredentials(config, rpc.WithTLSPreferClientHandshake(security.TLSPrefer)), nil

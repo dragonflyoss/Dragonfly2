@@ -178,10 +178,12 @@ type GlobalSecurityOption struct {
 	AutoIssueCert bool `mapstructure:"autoIssueCert" yaml:"autoIssueCert"`
 	// CACert is the root CA certificate for all grpc tls handshake, it can be path or PEM format string
 	CACert serialize.PEMContent `mapstructure:"caCert" yaml:"caCert"`
-	// TLSPrefer indicates verify clinet cert for grpc ServerHandshake
+	// TLSPrefer indicates to verify client certificates for grpc ServerHandshake
 	TLSVerify bool `mapstructure:"tlsVerify" yaml:"tlsVerify"`
-	// TLSPrefer indicates use tls for grpc ClientHandshake
+	// TLSPrefer indicates to use tls for grpc ClientHandshake
 	TLSPrefer bool `mapstructure:"tlsPrefer" yaml:"tlsPrefer"`
+	// Force indicates to use tls for all grpc call, will drop all non-tls connections
+	Force bool `mapstructure:"force" yaml:"force"`
 }
 
 type SchedulerOption struct {
