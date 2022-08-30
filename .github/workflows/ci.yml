@@ -51,13 +51,19 @@ jobs:
   build:
     name: Build
     timeout-minutes: 10
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     needs: [test]
     steps:
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
           go-version: ${{ env.GO_VERSION }}
+
+      - name: Set up Docker
+        uses: docker-practice/actions-setup-docker@v1
 
       - name: Check out code
         uses: actions/checkout@v2
@@ -69,4 +75,5 @@ jobs:
           make build-manager-console
 
       - name: Build
-        run: make build
+        run: |-
+          make build
