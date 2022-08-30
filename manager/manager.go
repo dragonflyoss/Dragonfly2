@@ -22,10 +22,13 @@ import (
 	"embed"
 	"io/fs"
 	"net/http"
+	"path"
 	"time"
 
 	"github.com/gin-contrib/static"
+	"github.com/johanbrandhorst/certify"
 	"google.golang.org/grpc"
+	zapadapter "logur.dev/adapter/zap"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/cache"
@@ -38,7 +41,10 @@ import (
 	"d7y.io/dragonfly/v2/manager/rpcserver"
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/manager/service"
+	pkgcache "d7y.io/dragonfly/v2/pkg/cache"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
+	"d7y.io/dragonfly/v2/pkg/issuer"
+	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 )
@@ -154,7 +160,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 		return nil, err
 	}
 
-	// Initialize global certificate.
+	// Initialize signing certificate and tls credentials of grpc server.
 	var options []rpcserver.Option
 	if cfg.Security.Enable {
 		cert, err := tls.X509KeyPair([]byte(cfg.Security.CACert), []byte(cfg.Security.CAKey))
@@ -162,7 +168,30 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 			return nil, err
 		}
 
-		options = append(options, rpcserver.WithCertificate(&cert))
+		// Manager GRPC server's tls varify must be false. If ClientCAs are required for client verification,
+		// the client cannot call the IssueCertificate api.
+		transportCredentials, err := rpc.NewServerCredentialsByCertify(false, &cert, &certify.Certify{
+			CommonName:   ip.IPv4,
+			Issuer:       issuer.NewDragonflyManagerIssuer(&cert),
+			RenewBefore:  time.Hour,
+			CertConfig:   nil,
+			IssueTimeout: 0,
+			Logger:       zapadapter.New(logger.CoreLogger.Desugar()),
+			Cache: pkgcache.NewCertifyMutliCache(
+				certify.NewMemCache(),
+				certify.DirCache(path.Join(d.CacheDir(), pkgcache.CertifyCacheDirName))),
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		options = append(
+			options,
+			// Set ca certificate for issuing certificate.
+			rpcserver.WithSelfSignedCert(&cert),
+			// Set tls credentials for grpc server.
+			rpcserver.WithGRPCServerOptions([]grpc.ServerOption{grpc.Creds(transportCredentials)}),
+		)
 	}
 
 	// Initialize GRPC server
