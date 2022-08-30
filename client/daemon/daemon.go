@@ -361,11 +361,11 @@ func loadLegacyGPRCTLSCredentials(opt config.SecurityOption, certifyClient *cert
 	options := []func(c *tls.Config){
 		func(c *tls.Config) {
 			if certifyClient == nil {
-				opt.TLSConfig.Certificates = []tls.Certificate{serverCert}
+				c.Certificates = []tls.Certificate{serverCert}
 			} else {
 				// enable auto issue certificate
-				opt.TLSConfig.GetCertificate = config.GetCertificate(certifyClient)
-				opt.TLSConfig.GetClientCertificate = certifyClient.GetClientCertificate
+				c.GetCertificate = config.GetCertificate(certifyClient)
+				c.GetClientCertificate = certifyClient.GetClientCertificate
 			}
 		},
 	}
