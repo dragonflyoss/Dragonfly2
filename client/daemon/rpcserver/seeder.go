@@ -52,6 +52,10 @@ func (s *seeder) SyncPieceTasks(tasksServer cdnsystemv1.Seeder_SyncPieceTasksSer
 }
 
 func (s *seeder) ObtainSeeds(seedRequest *cdnsystemv1.SeedRequest, seedsServer cdnsystemv1.Seeder_ObtainSeedsServer) error {
+	if logger.IsDebug() {
+		printAuthInfo(seedsServer.Context())
+	}
+
 	metrics.SeedPeerConcurrentDownloadGauge.Inc()
 	defer metrics.SeedPeerConcurrentDownloadGauge.Dec()
 	metrics.SeedPeerDownloadCount.Add(1)

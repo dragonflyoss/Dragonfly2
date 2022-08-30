@@ -145,13 +145,15 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			}
 
 			// issue a certificate to reduce first time delay
-			_, err := certifyClient.GetCertificate(&tls.ClientHelloInfo{
+			cert, err := certifyClient.GetCertificate(&tls.ClientHelloInfo{
 				ServerName: ip.IPv4,
 			})
 			if err != nil {
 				logger.Errorf("issue certificate error: %s", err.Error())
 				return nil, err
 			}
+			logger.Debugf("request cert from manager, common name: %s, issuer: %s",
+				cert.Leaf.Subject.CommonName, cert.Leaf.Issuer.CommonName)
 		}
 
 		// New dynconfig manager client.
@@ -337,6 +339,7 @@ func loadGPRCTLSCredentials(opt config.SecurityOption, certifyClient *certify.Ce
 	}
 
 	opt.TLSConfig.ClientCAs = certPool
+	opt.TLSConfig.RootCAs = certPool
 
 	// Load server's certificate and private key
 	if certifyClient == nil {
@@ -347,7 +350,6 @@ func loadGPRCTLSCredentials(opt config.SecurityOption, certifyClient *certify.Ce
 		opt.TLSConfig.Certificates = []tls.Certificate{serverCert}
 	} else {
 		// enable auto issue certificate
-		opt.TLSConfig.Certificates = nil
 		opt.TLSConfig.GetCertificate = config.GetCertificate(certifyClient)
 		opt.TLSConfig.GetClientCertificate = certifyClient.GetClientCertificate
 	}
@@ -356,7 +358,15 @@ func loadGPRCTLSCredentials(opt config.SecurityOption, certifyClient *certify.Ce
 		opt.TLSConfig.ClientAuth = tls.RequireAndVerifyClientCert
 	}
 
-	return credentials.NewTLS(opt.TLSConfig), nil
+	switch security.TLSPolicy {
+	case config.TLSPolicyDefault, config.TLSPolicyPrefer:
+		return rpc.NewMuxTransportCredentials(opt.TLSConfig,
+			rpc.WithTLSPreferClientHandshake(security.TLSPolicy == config.TLSPolicyPrefer)), nil
+	case config.TLSPolicyForce:
+		return credentials.NewTLS(opt.TLSConfig), nil
+	default:
+		return nil, fmt.Errorf("invalid tlsPolicy: %s", security.TLSPolicy)
+	}
 }
 
 func loadGlobalGPRCTLSCredentials(certifyClient *certify.Certify, security config.GlobalSecurityOption) (credentials.TransportCredentials, error) {
@@ -370,17 +380,26 @@ func loadGlobalGPRCTLSCredentials(certifyClient *certify.Certify, security confi
 		return nil, fmt.Errorf("failed to add global CA's certificate")
 	}
 
-	config := &tls.Config{
+	tlsConfig := &tls.Config{
 		ClientCAs:            certPool,
+		RootCAs:              certPool,
 		GetCertificate:       config.GetCertificate(certifyClient),
 		GetClientCertificate: certifyClient.GetClientCertificate,
 	}
 
 	if security.TLSVerify {
-		config.ClientAuth = tls.RequireAndVerifyClientCert
+		tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
 	}
 
-	return credentials.NewTLS(config), nil
+	switch security.TLSPolicy {
+	case config.TLSPolicyDefault, config.TLSPolicyPrefer:
+		return rpc.NewMuxTransportCredentials(tlsConfig,
+			rpc.WithTLSPreferClientHandshake(security.TLSPolicy == config.TLSPolicyPrefer)), nil
+	case config.TLSPolicyForce:
+		return credentials.NewTLS(tlsConfig), nil
+	default:
+		return nil, fmt.Errorf("invalid tlsPolicy: %s", security.TLSPolicy)
+	}
 }
 
 func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (net.Listener, int, error) {

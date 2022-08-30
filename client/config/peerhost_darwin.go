@@ -81,7 +81,7 @@ var peerHostConfig = func() *DaemonOption {
 			DownloadGRPC: ListenOption{
 				Security: SecurityOption{
 					Insecure:  true,
-					TLSVerify: true,
+					TLSVerify: false,
 				},
 				UnixListen: &UnixListenOption{},
 			},
@@ -175,6 +175,12 @@ var peerHostConfig = func() *DaemonOption {
 			Interval: util.Duration{
 				Duration: time.Minute,
 			},
+		},
+		Security: GlobalSecurityOption{
+			AutoIssueCert: false,
+			CACert:        serialize.PEMContent(""),
+			TLSVerify:     false,
+			TLSPolicy:     TLSPolicyDefault,
 		},
 	}
 }

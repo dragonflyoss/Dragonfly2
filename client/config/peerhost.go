@@ -174,10 +174,25 @@ func ConvertPattern(p string, defaultPattern commonv1.Pattern) commonv1.Pattern 
 }
 
 type GlobalSecurityOption struct {
-	AutoIssueCert bool                 `mapstructure:"autoIssueCert" yaml:"autoIssueCert"`
-	CACert        serialize.PEMContent `mapstructure:"caCert" yaml:"caCert"`
-	TLSVerify     bool                 `mapstructure:"tlsVerify" yaml:"tlsVerify"`
+	// AutoIssueCert indicates to issue client certificates for all grpc call
+	// if AutoIssueCert is false, any other option in Security will be ignored
+	AutoIssueCert bool `mapstructure:"autoIssueCert" yaml:"autoIssueCert"`
+	// CACert is the root CA certificate for all grpc tls handshake, it can be path or PEM format string
+	CACert serialize.PEMContent `mapstructure:"caCert" yaml:"caCert"`
+	// TLSPrefer indicates to verify client certificates for grpc ServerHandshake
+	TLSVerify bool `mapstructure:"tlsVerify" yaml:"tlsVerify"`
+	// TLSPolicy controls the grpc shandshake behaviors:
+	// force: both ClientHandshake and ServerHandshake are only support tls
+	// prefer: ServerHandshake supports tls and insecure (non-tls), ClientHandshake will only support tls
+	// default or empty: ServerHandshake supports tls and insecure (non-tls), ClientHandshake will only support insecure (non-tls)
+	TLSPolicy string `mapstructure:"tlsPolicy" yaml:"tlsPolicy"`
 }
+
+const (
+	TLSPolicyForce   = "force"
+	TLSPolicyPrefer  = "prefer"
+	TLSPolicyDefault = "default"
+)
 
 type SchedulerOption struct {
 	// Manager is to get the scheduler configuration remotely.

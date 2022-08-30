@@ -215,6 +215,10 @@ func (log *SugaredLoggerOnWith) Debug(args ...any) {
 	CoreLogger.Debugw(fmt.Sprint(args...), log.withArgs...)
 }
 
+func (log *SugaredLoggerOnWith) IsDebug() bool {
+	return coreLogLevelEnabler.Enabled(zap.DebugLevel)
+}
+
 func Infof(template string, args ...any) {
 	CoreLogger.Infof(template, args...)
 }
@@ -241,6 +245,14 @@ func Error(args ...any) {
 
 func Debugf(template string, args ...any) {
 	CoreLogger.Debugf(template, args...)
+}
+
+func Debug(args ...any) {
+	CoreLogger.Debug(args...)
+}
+
+func IsDebug() bool {
+	return coreLogLevelEnabler.Enabled(zap.DebugLevel)
 }
 
 func Fatalf(template string, args ...any) {

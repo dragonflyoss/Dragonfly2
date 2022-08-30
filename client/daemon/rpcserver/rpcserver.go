@@ -38,6 +38,8 @@ import (
 	"go.uber.org/atomic"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
+	grpcpeer "google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
@@ -211,7 +213,28 @@ func (s *server) sendFirstPieceTasks(
 	return sendExistPieces(sync.Context(), log, get, request, sync, sentMap, false)
 }
 
+func printAuthInfo(ctx context.Context) {
+	if peerInfo, ok := grpcpeer.FromContext(ctx); ok {
+		if tlsInfo, ok := peerInfo.AuthInfo.(credentials.TLSInfo); ok {
+			for i, pc := range tlsInfo.State.PeerCertificates {
+				logger.Debugf("peer cert depth %d, issuer: %#v", i, pc.Issuer.CommonName)
+				logger.Debugf("peer cert depth %d, common name: %#v", i, pc.Subject.CommonName)
+				if len(pc.IPAddresses) > 0 {
+					logger.Debugf("peer cert depth %d, ip: %#v", i, pc.IPAddresses)
+				}
+				if len(pc.DNSNames) > 0 {
+					logger.Debugf("peer cert depth %d, dns: %#v", i, pc.DNSNames)
+				}
+			}
+		}
+	}
+}
+
 func (s *server) SyncPieceTasks(sync dfdaemonv1.Daemon_SyncPieceTasksServer) error {
+	if logger.IsDebug() {
+		printAuthInfo(sync.Context())
+	}
+
 	request, err := sync.Recv()
 	if err != nil {
 		logger.Errorf("receive first sync piece tasks request error: %s", err.Error())
