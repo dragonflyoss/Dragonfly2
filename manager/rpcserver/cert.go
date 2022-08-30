@@ -36,8 +36,11 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
+// defaultValidityDuration is default validity duration of certificate.
+const defaultValidityDuration = 365 * 24 * time.Hour
+
 func (s *Server) IssueCertificate(ctx context.Context, req *securityv1.CertificateRequest) (*securityv1.CertificateResponse, error) {
-	if s.cert == nil {
+	if s.selfSignedCert == nil {
 		return nil, status.Errorf(codes.Unavailable, "ca is missing for this manager instance")
 	}
 
@@ -86,7 +89,7 @@ func (s *Server) IssueCertificate(ctx context.Context, req *securityv1.Certifica
 	now := time.Now()
 	duration := time.Duration(req.ValidityDuration) * time.Second
 	if duration == 0 {
-		duration = time.Hour
+		duration = defaultValidityDuration
 	}
 
 	logger.Infof("valid csr: %#v", csr.Subject)
@@ -102,18 +105,18 @@ func (s *Server) IssueCertificate(ctx context.Context, req *securityv1.Certifica
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 	}
 
-	cert, err := x509.CreateCertificate(rand.Reader, &template, s.x509Cert, csr.PublicKey, s.cert.PrivateKey)
+	cert, err := x509.CreateCertificate(rand.Reader, &template, s.selfSignedCert.X509Cert, csr.PublicKey, s.selfSignedCert.TLSCert.PrivateKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate certificate, error: %s", err)
 	}
 
-	// Encode into PEM format.
+	// Build the certificate chain.
 	var certPEM bytes.Buffer
 	if err = pem.Encode(&certPEM, &pem.Block{Type: "CERTIFICATE", Bytes: cert}); err != nil {
 		return nil, err
 	}
 
 	return &securityv1.CertificateResponse{
-		CertificateChain: append([]string{certPEM.String()}, s.certChain...),
+		CertificateChain: append([]string{certPEM.String()}, s.selfSignedCert.PEMCertChain...),
 	}, nil
 }
