@@ -20,12 +20,14 @@ import (
 	"crypto/tls"
 
 	"github.com/johanbrandhorst/certify"
+
+	"d7y.io/dragonfly/v2/pkg/net/ip"
 )
 
 func GetCertificate(certifyClient *certify.Certify) func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 	return func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 		// FIXME peers need pure ip cert, certify checks the ServerName, so workaround here
-		hello.ServerName = "peer"
+		hello.ServerName = ip.IPv4
 		return certifyClient.GetCertificate(hello)
 	}
 }
