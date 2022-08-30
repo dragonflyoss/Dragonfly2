@@ -20,6 +20,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
+	"fmt"
 
 	"github.com/johanbrandhorst/certify"
 	"google.golang.org/grpc/credentials"
@@ -40,25 +41,31 @@ const (
 )
 
 // NewServerCredentialsByCertify returns server transport credentials by certify.
-func NewServerCredentialsByCertify(tlsVerify bool, tlsCACert *tls.Certificate, certifyClient *certify.Certify) (credentials.TransportCredentials, error) {
-	if !tlsVerify {
-		return credentials.NewTLS(&tls.Config{
-			GetCertificate: certifyClient.GetCertificate,
-		}), nil
-	}
-
-	certPool := x509.NewCertPool()
-	for _, cert := range tlsCACert.Certificate {
-		if !certPool.AppendCertsFromPEM(cert) {
-			return nil, errors.New("invalid CA Cert")
-		}
-	}
-
+func NewServerCredentialsByCertify(tlsPolicy string, tlsVerify bool, tlsCACert *tls.Certificate, certifyClient *certify.Certify) (credentials.TransportCredentials, error) {
 	tlsConfig := &tls.Config{
 		GetCertificate: certifyClient.GetCertificate,
-		ClientAuth:     tls.RequireAndVerifyClientCert,
-		ClientCAs:      certPool,
 	}
 
-	return credentials.NewTLS(tlsConfig), nil
+	switch tlsPolicy {
+	case DefaultTLSPolicy, PreferTLSPolicy:
+		return NewMuxTransportCredentials(tlsConfig,
+			WithTLSPreferClientHandshake(tlsPolicy == PreferTLSPolicy)), nil
+	case ForceTLSPolicy:
+		if !tlsVerify {
+			return credentials.NewTLS(tlsConfig), nil
+		}
+
+		certPool := x509.NewCertPool()
+		for _, cert := range tlsCACert.Certificate {
+			if !certPool.AppendCertsFromPEM(cert) {
+				return nil, errors.New("invalid CA Cert")
+			}
+		}
+
+		tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
+		tlsConfig.ClientCAs = certPool
+		return credentials.NewTLS(tlsConfig), nil
+	default:
+		return nil, fmt.Errorf("invalid tlsPolicy: %s", tlsPolicy)
+	}
 }
