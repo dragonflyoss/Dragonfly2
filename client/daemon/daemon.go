@@ -358,11 +358,15 @@ func loadGPRCTLSCredentials(opt config.SecurityOption, certifyClient *certify.Ce
 		opt.TLSConfig.ClientAuth = tls.RequireAndVerifyClientCert
 	}
 
-	if security.Force {
+	switch security.TLSPolicy {
+	case config.TLSPolicyDefault, config.TLSPolicyPrefer:
+		return rpc.NewMuxTransportCredentials(opt.TLSConfig,
+			rpc.WithTLSPreferClientHandshake(security.TLSPolicy == config.TLSPolicyPrefer)), nil
+	case config.TLSPolicyForce:
 		return credentials.NewTLS(opt.TLSConfig), nil
+	default:
+		return nil, fmt.Errorf("invalid tlsPolicy: %s", security.TLSPolicy)
 	}
-
-	return rpc.NewMuxTransportCredentials(opt.TLSConfig, rpc.WithTLSPreferClientHandshake(security.TLSPrefer)), nil
 }
 
 func loadGlobalGPRCTLSCredentials(certifyClient *certify.Certify, security config.GlobalSecurityOption) (credentials.TransportCredentials, error) {
@@ -376,7 +380,7 @@ func loadGlobalGPRCTLSCredentials(certifyClient *certify.Certify, security confi
 		return nil, fmt.Errorf("failed to add global CA's certificate")
 	}
 
-	config := &tls.Config{
+	tlsConfig := &tls.Config{
 		ClientCAs:            certPool,
 		RootCAs:              certPool,
 		GetCertificate:       config.GetCertificate(certifyClient),
@@ -384,14 +388,18 @@ func loadGlobalGPRCTLSCredentials(certifyClient *certify.Certify, security confi
 	}
 
 	if security.TLSVerify {
-		config.ClientAuth = tls.RequireAndVerifyClientCert
+		tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
 	}
 
-	if security.Force {
-		return credentials.NewTLS(config), nil
+	switch security.TLSPolicy {
+	case config.TLSPolicyDefault, config.TLSPolicyPrefer:
+		return rpc.NewMuxTransportCredentials(tlsConfig,
+			rpc.WithTLSPreferClientHandshake(security.TLSPolicy == config.TLSPolicyPrefer)), nil
+	case config.TLSPolicyForce:
+		return credentials.NewTLS(tlsConfig), nil
+	default:
+		return nil, fmt.Errorf("invalid tlsPolicy: %s", security.TLSPolicy)
 	}
-
-	return rpc.NewMuxTransportCredentials(config, rpc.WithTLSPreferClientHandshake(security.TLSPrefer)), nil
 }
 
 func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (net.Listener, int, error) {

@@ -180,7 +180,7 @@ var peerHostConfig = func() *DaemonOption {
 			AutoIssueCert: false,
 			CACert:        serialize.PEMContent(""),
 			TLSVerify:     false,
-			TLSPrefer:     true,
+			TLSPolicy:     TLSPolicyDefault,
 		},
 	}
 }
