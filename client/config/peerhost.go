@@ -188,12 +188,6 @@ type GlobalSecurityOption struct {
 	TLSPolicy string `mapstructure:"tlsPolicy" yaml:"tlsPolicy"`
 }
 
-const (
-	TLSPolicyForce   = "force"
-	TLSPolicyPrefer  = "prefer"
-	TLSPolicyDefault = "default"
-)
-
 type SchedulerOption struct {
 	// Manager is to get the scheduler configuration remotely.
 	Manager ManagerOption `mapstructure:"manager" yaml:"manager"`
