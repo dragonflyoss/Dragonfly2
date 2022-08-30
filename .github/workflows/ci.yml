@@ -51,7 +51,10 @@ jobs:
   build:
     name: Build
     timeout-minutes: 10
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     needs: [test]
     steps:
       - name: Set up Go
@@ -65,8 +68,11 @@ jobs:
           submodules: recursive
 
       - name: Build manager console assets
+        uses: docker-practice/actions-setup-docker@v1
         run: |-
           make build-manager-console
 
       - name: Build
-        run: make build
+        uses: docker-practice/actions-setup-docker@v1
+        run: |-
+          make build
