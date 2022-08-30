@@ -51,7 +51,10 @@ jobs:
   build:
     name: Build
     timeout-minutes: 10
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     needs: [test]
     steps:
       - name: Set up Go
@@ -71,4 +74,3 @@ jobs:
       - name: Build
         run: |-
           make build
-          GOOS=darwin make build
