@@ -29,6 +29,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/net/fqdn"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
+	"d7y.io/dragonfly/v2/pkg/serialize"
 )
 
 var peerHostConfig = func() *DaemonOption {
@@ -81,7 +82,7 @@ var peerHostConfig = func() *DaemonOption {
 			DownloadGRPC: ListenOption{
 				Security: SecurityOption{
 					Insecure:  true,
-					TLSVerify: true,
+					TLSVerify: false,
 				},
 				UnixListen: &UnixListenOption{},
 			},
@@ -174,6 +175,12 @@ var peerHostConfig = func() *DaemonOption {
 			Interval: util.Duration{
 				Duration: time.Minute,
 			},
+		},
+		Security: GlobalSecurityOption{
+			AutoIssueCert: false,
+			CACert:        serialize.PEMContent(""),
+			TLSVerify:     false,
+			TLSPolicy:     TLSPolicyDefault,
 		},
 	}
 }
