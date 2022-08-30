@@ -69,4 +69,6 @@ jobs:
           make build-manager-console
 
       - name: Build
-        run: make build
+        run: |-
+          make build
+          GOOS=darwin make build
