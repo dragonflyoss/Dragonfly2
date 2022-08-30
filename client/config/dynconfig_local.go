@@ -18,6 +18,7 @@ package config
 
 import (
 	"errors"
+	"net"
 	"time"
 
 	"google.golang.org/grpc/resolver"
@@ -63,8 +64,14 @@ func (d *dynconfigLocal) GetResolveSchedulerAddrs() ([]resolver.Address, error) 
 
 	resolveAddrs := []resolver.Address{}
 	for _, addr := range slices.RemoveDuplicates(addrs) {
+		host, _, err := net.SplitHostPort(addr)
+		if err != nil {
+			continue
+		}
+
 		resolveAddrs = append(resolveAddrs, resolver.Address{
-			Addr: addr,
+			ServerName: host,
+			Addr:       addr,
 		})
 	}
 

@@ -19,6 +19,7 @@ package config
 import (
 	"context"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"time"
@@ -88,8 +89,14 @@ func (d *dynconfigManager) GetResolveSchedulerAddrs() ([]resolver.Address, error
 
 	resolveAddrs := []resolver.Address{}
 	for _, addr := range slices.RemoveDuplicates(addrs) {
+		host, _, err := net.SplitHostPort(addr)
+		if err != nil {
+			continue
+		}
+
 		resolveAddrs = append(resolveAddrs, resolver.Address{
-			Addr: addr,
+			ServerName: host,
+			Addr:       addr,
 		})
 	}
 

@@ -22,6 +22,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"time"
@@ -191,8 +192,14 @@ func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 
 	resolveAddrs := []resolver.Address{}
 	for _, addr := range slices.RemoveDuplicates(addrs) {
+		host, _, err := net.SplitHostPort(addr)
+		if err != nil {
+			continue
+		}
+
 		resolveAddrs = append(resolveAddrs, resolver.Address{
-			Addr: addr,
+			ServerName: host,
+			Addr:       addr,
 		})
 	}
 
