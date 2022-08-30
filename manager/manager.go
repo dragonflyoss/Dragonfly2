@@ -162,7 +162,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 
 	// Initialize signing certificate and tls credentials of grpc server.
 	var options []rpcserver.Option
-	if cfg.Security.Enable {
+	if cfg.Security.AutoIssueCert {
 		cert, err := tls.X509KeyPair([]byte(cfg.Security.CACert), []byte(cfg.Security.CAKey))
 		if err != nil {
 			return nil, err
@@ -170,7 +170,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 
 		// Manager GRPC server's tls varify must be false. If ClientCAs are required for client verification,
 		// the client cannot call the IssueCertificate api.
-		transportCredentials, err := rpc.NewServerCredentialsByCertify(false, &cert, &certify.Certify{
+		transportCredentials, err := rpc.NewServerCredentialsByCertify(cfg.Security.TLSPolicy, false, &cert, &certify.Certify{
 			CommonName:   ip.IPv4,
 			Issuer:       issuer.NewDragonflyManagerIssuer(&cert),
 			RenewBefore:  time.Hour,
