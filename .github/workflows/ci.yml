@@ -68,9 +68,11 @@ jobs:
           submodules: recursive
 
       - name: Build manager console assets
+        uses: docker-practice/actions-setup-docker@v1
         run: |-
           make build-manager-console
 
       - name: Build
+        uses: docker-practice/actions-setup-docker@v1
         run: |-
           make build

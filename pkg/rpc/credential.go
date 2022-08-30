@@ -25,6 +25,20 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
+const (
+	// ForceTLSPolicy is both ClientHandshake and
+	// ServerHandshake are only support tls.
+	ForceTLSPolicy = "force"
+
+	// PreferTLSPolicy is ServerHandshake supports tls and
+	// insecure (non-tls), ClientHandshake will only support tls.
+	PreferTLSPolicy = "prefer"
+
+	// DefaultTLSPolicy is ServerHandshake supports tls
+	// and insecure (non-tls), ClientHandshake will only support tls.
+	DefaultTLSPolicy = "default"
+)
+
 // NewServerCredentialsByCertify returns server transport credentials by certify.
 func NewServerCredentialsByCertify(tlsVerify bool, tlsCACert *tls.Certificate, certifyClient *certify.Certify) (credentials.TransportCredentials, error) {
 	if !tlsVerify {
