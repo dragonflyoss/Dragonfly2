@@ -30,7 +30,6 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
@@ -59,7 +58,6 @@ func GetClient(ctx context.Context, target string, opts ...grpc.DialOption) (Cli
 		ctx,
 		target,
 		append([]grpc.DialOption{
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
 				otelgrpc.UnaryClientInterceptor(),
 				grpc_prometheus.UnaryClientInterceptor,
