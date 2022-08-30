@@ -61,6 +61,7 @@ func (m *muxTransportCredentials) ClientHandshake(ctx context.Context, s string,
 	if m.tlsPrefer {
 		return m.credentials.ClientHandshake(ctx, s, conn)
 	}
+
 	return conn, info{credentials.CommonAuthInfo{SecurityLevel: credentials.NoSecurity}}, nil
 }
 

@@ -99,9 +99,10 @@ func TestManagerConfig_Load(t *testing.T) {
 			Region:    "baz",
 		},
 		Security: &SecurityConfig{
-			Enable: true,
-			CACert: "foo",
-			CAKey:  "bar",
+			AutoIssueCert: true,
+			CACert:        "foo",
+			CAKey:         "bar",
+			TLSPolicy:     "force",
 		},
 		Metrics: &MetricsConfig{
 			Enable:          true,

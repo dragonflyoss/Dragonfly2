@@ -25,7 +25,9 @@ import (
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
+	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/serialize"
+	"d7y.io/dragonfly/v2/pkg/slices"
 )
 
 type Config struct {
@@ -247,14 +249,20 @@ type ObjectStorageConfig struct {
 }
 
 type SecurityConfig struct {
-	// Enable global security.
-	Enable bool `yaml:"enable" mapstructure:"enable"`
+	// AutoIssueCert indicates to issue client certificates for all grpc call.
+	AutoIssueCert bool `yaml:"autoIssueCert" mapstructure:"autoIssueCert"`
 
 	// CACert is file path PEM-encoded certificate
 	CACert serialize.PEMContent `mapstructure:"caCert" yaml:"caCert"`
 
 	// CAKey is file path of PEM-encoded private key.
 	CAKey serialize.PEMContent `mapstructure:"caKey" yaml:"caKey"`
+
+	// TLSPolicy controls the grpc shandshake behaviors:
+	// force: both ClientHandshake and ServerHandshake are only support tls
+	// prefer: ServerHandshake supports tls and insecure (non-tls), ClientHandshake will only support tls
+	// default or empty: ServerHandshake supports tls and insecure (non-tls), ClientHandshake will only support insecure (non-tls)
+	TLSPolicy string `mapstructure:"tlsPolicy" yaml:"tlsPolicy"`
 }
 
 // New config instance.
@@ -305,7 +313,8 @@ func New() *Config {
 			Enable: false,
 		},
 		Security: &SecurityConfig{
-			Enable: false,
+			AutoIssueCert: false,
+			TLSPolicy:     rpc.DefaultTLSPolicy,
 		},
 		Metrics: &MetricsConfig{
 			Enable:          false,
@@ -468,7 +477,7 @@ func (cfg *Config) Validate() error {
 			return errors.New("objectStorage requires parameter name")
 		}
 
-		if cfg.ObjectStorage.Name != objectstorage.ServiceNameS3 && cfg.ObjectStorage.Name != objectstorage.ServiceNameOSS {
+		if !slices.Contains([]string{objectstorage.ServiceNameS3, objectstorage.ServiceNameOSS}, cfg.ObjectStorage.Name) {
 			return errors.New("objectStorage requires parameter name")
 		}
 
@@ -481,13 +490,17 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	if cfg.Security != nil && cfg.Security.Enable {
+	if cfg.Security != nil && cfg.Security.AutoIssueCert {
 		if cfg.Security.CACert == "" {
 			return errors.New("security requires parameter caCert")
 		}
 
 		if cfg.Security.CAKey == "" {
 			return errors.New("security requires parameter caKey")
+		}
+
+		if !slices.Contains([]string{rpc.DefaultTLSPolicy, rpc.ForceTLSPolicy, rpc.PreferTLSPolicy}, cfg.Security.TLSPolicy) {
+			return errors.New("security requires parameter tlsPolicy")
 		}
 	}
 

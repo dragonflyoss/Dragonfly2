@@ -57,9 +57,10 @@ objectStorage:
   region: baz
 
 security:
-  enable: true
+  autoIssueCert: true
   caCert: foo
   caKey: bar
+  tlsPolicy: force
 
 metrics:
   enable: true
