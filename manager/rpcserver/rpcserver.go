@@ -50,6 +50,18 @@ import (
 	managerserver "d7y.io/dragonfly/v2/pkg/rpc/manager/server"
 )
 
+// SelfSignedCert is self signed certificate.
+type SelfSignedCert struct {
+	// TLSCert is certificate of tls.
+	TLSCert *tls.Certificate
+
+	// X509Cert is certificate of x509.
+	X509Cert *x509.Certificate
+
+	// PEMCertChain is certificate chain of pem.
+	PEMCertChain []string
+}
+
 // Server is grpc server.
 type Server struct {
 	// Manager configuration.
@@ -76,39 +88,35 @@ type Server struct {
 	// serverOptions is server options of grpc.
 	serverOptions []grpc.ServerOption
 
-	// cert certificates to sign certificates.
-	cert *tls.Certificate
-
-	// x509Cert certificates to sign certificates.
-	x509Cert *x509.Certificate
-
-	// certChain is PEM-encoded certificate chain.
-	certChain []string
+	// selfSignedCert is self signed certificate.
+	selfSignedCert *SelfSignedCert
 }
 
 // Option is a functional option for rpc server.
 type Option func(s *Server) error
 
-// WithCertificate set the root tls certificate, x509 certificate and PEM-encoded certificate chain.
-func WithCertificate(cert *tls.Certificate) Option {
+// WithCertificate set the self signed certificate for server.
+func WithSelfSignedCert(tlsCert *tls.Certificate) Option {
 	return func(s *Server) error {
-		s.cert = cert
-
-		// Parse x509 certificate from tls certificate.
-		var err error
-		s.x509Cert, err = x509.ParseCertificate(cert.Certificate[0])
+		x509CACert, err := x509.ParseCertificate(tlsCert.Certificate[0])
 		if err != nil {
 			return err
 		}
 
-		// Initialize PEM-encoded certificate chain from tls certificate.
-		for _, cert := range cert.Certificate {
-			var certChainPEM bytes.Buffer
-			if err = pem.Encode(&certChainPEM, &pem.Block{Type: "CERTIFICATE", Bytes: cert}); err != nil {
+		var pemCertChain []string
+		for _, cert := range tlsCert.Certificate {
+			var certPEM bytes.Buffer
+			if err := pem.Encode(&certPEM, &pem.Block{Type: "CERTIFICATE", Bytes: cert}); err != nil {
 				return err
 			}
 
-			s.certChain = append(s.certChain, certChainPEM.String())
+			pemCertChain = append(pemCertChain, certPEM.String())
+		}
+
+		s.selfSignedCert = &SelfSignedCert{
+			TLSCert:      tlsCert,
+			X509Cert:     x509CACert,
+			PEMCertChain: pemCertChain,
 		}
 
 		return nil

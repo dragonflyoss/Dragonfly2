@@ -89,7 +89,7 @@ func TestIssueCertificate(t *testing.T) {
 					DB:  &gorm.DB{},
 					RDB: &redis.Client{},
 				},
-				nil, nil, nil, nil, WithCertificate(&ca))
+				nil, nil, nil, nil, WithSelfSignedCert(&ca))
 			require.Nilf(err, "newServer should be ok")
 
 			ctx := peer.NewContext(
@@ -110,7 +110,7 @@ func TestIssueCertificate(t *testing.T) {
 
 			assert.Nilf(err, "IssueCertificate should be ok")
 			assert.NotNilf(resp, "IssueCertificate should not be nil")
-			assert.Equal(len(resp.CertificateChain), len(server.certChain)+1)
+			assert.Equal(len(resp.CertificateChain), 2)
 
 			cert := readCert(resp.CertificateChain[0])
 			assert.Equal(len(cert.IPAddresses), 1)
