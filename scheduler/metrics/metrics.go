@@ -147,7 +147,7 @@ var (
 		Subsystem: constants.SchedulerMetricsName,
 		Name:      "peer_task_source_error_total",
 		Help:      "Counter of the source error code number of peer task.",
-	}, []string{"tag", "protocol", "code"})
+	}, []string{"tag", "app", "protocol", "code"})
 
 	PeerTaskDownloadDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: constants.MetricsNamespace,

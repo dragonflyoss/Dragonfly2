@@ -831,10 +831,11 @@ func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task, backT
 					if d.Metadata != nil {
 						task.Log.Infof("source error: %d/%s", d.Metadata.StatusCode, d.Metadata.Status)
 						metrics.PeerTaskSourceErrorCounter.WithLabelValues(
-							task.URLMeta.Tag, proto, fmt.Sprintf("%d", d.Metadata.StatusCode)).Inc()
+							task.URLMeta.Tag, task.URLMeta.Application, proto, fmt.Sprintf("%d", d.Metadata.StatusCode)).Inc()
 					} else {
 						task.Log.Warn("source error, but no metadata found")
-						metrics.PeerTaskSourceErrorCounter.WithLabelValues(task.URLMeta.Tag, proto, "0").Inc()
+						metrics.PeerTaskSourceErrorCounter.WithLabelValues(
+							task.URLMeta.Tag, task.URLMeta.Application, proto, "0").Inc()
 					}
 					if !d.Temporary {
 						task.Log.Infof("source error is not temporary, notify other peers task aborted")
