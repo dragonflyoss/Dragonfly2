@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/url"
 	"time"
 
 	"go.opentelemetry.io/otel/trace"
@@ -729,7 +730,7 @@ func (s *Service) handlePeerSuccess(ctx context.Context, peer *resource.Peer) {
 	}
 
 	// If the peer type is tiny and back-to-source,
-	// it need to directly download the tiny file and store the data in task DirectPiece.
+	// it needs to directly download the tiny file and store the data in task DirectPiece.
 	if sizeScope == commonv1.SizeScope_TINY && len(peer.Task.DirectPiece) == 0 {
 		data, err := peer.DownloadTinyFile()
 		if err != nil {
@@ -762,7 +763,7 @@ func (s *Service) handlePeerFail(ctx context.Context, peer *resource.Peer) {
 }
 
 // handleLegacySeedPeer handles seed server's task has left,
-// but did not notify the schduler to leave the task.
+// but did not notify the scheduler to leave the task.
 func (s *Service) handleLegacySeedPeer(ctx context.Context, peer *resource.Peer) {
 	if err := peer.FSM.Event(resource.PeerEventLeave); err != nil {
 		peer.Log.Errorf("peer fsm event failed: %s", err.Error())
@@ -798,7 +799,7 @@ func (s *Service) handleTaskSuccess(ctx context.Context, task *resource.Task, re
 }
 
 // Conditions for the task to switch to the TaskStateSucceeded are:
-// 1. Seed peer downloads the resource falied.
+// 1. Seed peer downloads the resource failed.
 // 2. Dfdaemon back-to-source to download failed.
 func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task, backToSourceErr *errordetailsv1.SourceError, seedPeerErr error) {
 	// If peer back-to-source fails due to an unrecoverable error,
@@ -822,8 +823,19 @@ func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task, backT
 			for _, detail := range st.Details() {
 				switch d := detail.(type) {
 				case *errordetailsv1.SourceError:
+					var proto = "unknown"
+					if u, err := url.Parse(task.URL); err == nil {
+						proto = u.Scheme
+					}
+					// TODO currently, metrics.PeerTaskSourceErrorCounter is only updated for seed peer source error, need update for normal peer
 					if d.Metadata != nil {
 						task.Log.Infof("source error: %d/%s", d.Metadata.StatusCode, d.Metadata.Status)
+						metrics.PeerTaskSourceErrorCounter.WithLabelValues(
+							task.URLMeta.Tag, task.URLMeta.Application, proto, fmt.Sprintf("%d", d.Metadata.StatusCode)).Inc()
+					} else {
+						task.Log.Warn("source error, but no metadata found")
+						metrics.PeerTaskSourceErrorCounter.WithLabelValues(
+							task.URLMeta.Tag, task.URLMeta.Application, proto, "0").Inc()
 					}
 					if !d.Temporary {
 						task.Log.Infof("source error is not temporary, notify other peers task aborted")
