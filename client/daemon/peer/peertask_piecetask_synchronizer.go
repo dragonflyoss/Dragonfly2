@@ -28,7 +28,6 @@ import (
 	"go.uber.org/atomic"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
@@ -169,12 +168,7 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 		Addr: fmt.Sprintf("%s:%d", dstPeer.Ip, dstPeer.RpcPort),
 	}
 
-	var credentialOpt grpc.DialOption
-	if s.peerTaskConductor.GRPCCredentials != nil {
-		credentialOpt = grpc.WithTransportCredentials(s.peerTaskConductor.GRPCCredentials)
-	} else {
-		credentialOpt = grpc.WithTransportCredentials(insecure.NewCredentials())
-	}
+	credentialOpt := grpc.WithTransportCredentials(s.peerTaskConductor.GRPCCredentials)
 
 	dialCtx, cancel := context.WithTimeout(ctx, s.peerTaskConductor.GRPCDialTimeout)
 	client, err := dfdaemonclient.GetClient(dialCtx, netAddr.String(), credentialOpt)

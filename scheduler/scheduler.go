@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 
@@ -77,7 +78,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	s := &Server{config: cfg}
 
 	// Initialize manager client.
-	managerClient, err := managerclient.GetClient(ctx, cfg.Manager.Addr)
+	managerClient, err := managerclient.GetClient(ctx, cfg.Manager.Addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}

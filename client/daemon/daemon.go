@@ -36,6 +36,7 @@ import (
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	zapadapter "logur.dev/adapter/zap"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
@@ -125,8 +126,22 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	)
 
 	if opt.Scheduler.Manager.Enable {
-		var err error
-		managerClient, err = managerclient.GetClientByAddr(context.Background(), opt.Scheduler.Manager.NetAddrs)
+		var (
+			grpcCredentials credentials.TransportCredentials
+			err             error
+		)
+
+		if opt.Security.CACert == "" {
+			grpcCredentials = insecure.NewCredentials()
+		} else {
+			grpcCredentials, err = loadManagerGPRCTLSCredentials(opt.Security)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		managerClient, err = managerclient.GetClientByAddr(
+			context.Background(), opt.Scheduler.Manager.NetAddrs, grpc.WithTransportCredentials(grpcCredentials))
 		if err != nil {
 			return nil, err
 		}
@@ -175,7 +190,21 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		}
 	}
 
-	sched, err := schedulerclient.GetClient(context.Background(), dynconfig)
+	var (
+		grpcCredentials credentials.TransportCredentials
+		err             error
+	)
+
+	if certifyClient == nil {
+		grpcCredentials = insecure.NewCredentials()
+	} else {
+		grpcCredentials, err = loadGlobalGPRCTLSCredentials(certifyClient, opt.Security)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	sched, err := schedulerclient.GetClient(context.Background(), dynconfig, grpc.WithTransportCredentials(grpcCredentials))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get schedulers: %w", err)
 	}
@@ -205,20 +234,14 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		peer.WithTransportOption(opt.Download.Transport),
 		peer.WithConcurrentOption(opt.Download.Concurrent),
 	}
+
 	if opt.Download.SyncPieceViaHTTPS && opt.Scheduler.Manager.Enable {
 		pmOpts = append(pmOpts, peer.WithSyncPieceViaHTTPS(string(opt.Security.CACert)))
 	}
+
 	pieceManager, err := peer.NewPieceManager(opt.Download.PieceDownloadTimeout, pmOpts...)
 	if err != nil {
 		return nil, err
-	}
-
-	var credentials credentials.TransportCredentials
-	if certifyClient != nil {
-		credentials, err = loadGlobalGPRCTLSCredentials(certifyClient, opt.Security)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	peerTaskManagerOption := &peer.TaskManagerOption{
@@ -229,7 +252,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			StorageManager:  storageManager,
 			WatchdogTimeout: opt.Download.WatchdogTimeout,
 			CalculateDigest: opt.Download.CalculateDigest,
-			GRPCCredentials: credentials,
+			GRPCCredentials: grpcCredentials,
 			GRPCDialTimeout: opt.Download.GRPCDialTimeout,
 		},
 		SchedulerClient:   sched,
@@ -246,7 +269,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	// TODO(jim): more server options
 	var downloadServerOption []grpc.ServerOption
 	if !opt.Download.DownloadGRPC.Security.Insecure || certifyClient != nil {
-		tlsCredentials, err := loadGPRCTLSCredentials(opt.Download.DownloadGRPC.Security, certifyClient, opt.Security)
+		tlsCredentials, err := loadLegacyGPRCTLSCredentials(opt.Download.DownloadGRPC.Security, certifyClient, opt.Security)
 		if err != nil {
 			return nil, err
 		}
@@ -254,7 +277,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	}
 	var peerServerOption []grpc.ServerOption
 	if !opt.Download.PeerGRPC.Security.Insecure || certifyClient != nil {
-		tlsCredentials, err := loadGPRCTLSCredentials(opt.Download.PeerGRPC.Security, certifyClient, opt.Security)
+		tlsCredentials, err := loadLegacyGPRCTLSCredentials(opt.Download.PeerGRPC.Security, certifyClient, opt.Security)
 		if err != nil {
 			return nil, err
 		}
@@ -313,82 +336,84 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	}, nil
 }
 
-func loadGPRCTLSCredentials(opt config.SecurityOption, certifyClient *certify.Certify, security config.GlobalSecurityOption) (credentials.TransportCredentials, error) {
-	certPool := x509.NewCertPool()
+func loadLegacyGPRCTLSCredentials(opt config.SecurityOption, certifyClient *certify.Certify, security config.GlobalSecurityOption) (credentials.TransportCredentials, error) {
+	// merge all options
+	var mergedOptions = security
+	mergedOptions.CACert += "\n" + opt.CACert
+	mergedOptions.TLSVerify = opt.TLSVerify || security.TLSVerify
 
-	if opt.CACert == "" && security.CACert == "" {
-		return nil, fmt.Errorf("empty client CA's certificate and glocal CA's certificate")
-	}
-
-	if opt.CACert != "" {
-		// Load certificate of the CA who signed client's certificate
-		if !certPool.AppendCertsFromPEM([]byte(opt.CACert)) {
-			return nil, fmt.Errorf("failed to add client CA's certificate")
-		}
-	}
-
-	if security.CACert != "" {
-		if !certPool.AppendCertsFromPEM([]byte(security.CACert)) {
-			return nil, fmt.Errorf("failed to add global CA's certificate")
-		}
-	}
-
-	// Create the credentials and return it
 	if opt.TLSConfig == nil {
 		opt.TLSConfig = &tls.Config{}
 	}
 
-	opt.TLSConfig.ClientCAs = certPool
-	opt.TLSConfig.RootCAs = certPool
-
 	// Load server's certificate and private key
+	var (
+		serverCert tls.Certificate
+		err        error
+	)
 	if certifyClient == nil {
-		serverCert, err := tls.X509KeyPair([]byte(opt.Cert), []byte(opt.Key))
+		serverCert, err = tls.X509KeyPair([]byte(opt.Cert), []byte(opt.Key))
 		if err != nil {
 			return nil, err
 		}
-		opt.TLSConfig.Certificates = []tls.Certificate{serverCert}
-	} else {
-		// enable auto issue certificate
-		opt.TLSConfig.GetCertificate = config.GetCertificate(certifyClient)
-		opt.TLSConfig.GetClientCertificate = certifyClient.GetClientCertificate
 	}
 
-	if opt.TLSVerify || security.TLSVerify {
-		opt.TLSConfig.ClientAuth = tls.RequireAndVerifyClientCert
+	options := []func(c *tls.Config){
+		func(c *tls.Config) {
+			if certifyClient == nil {
+				c.Certificates = []tls.Certificate{serverCert}
+			} else {
+				// enable auto issue certificate
+				c.GetCertificate = config.GetCertificate(certifyClient)
+				c.GetClientCertificate = certifyClient.GetClientCertificate
+			}
+		},
 	}
 
-	switch security.TLSPolicy {
-	case rpc.DefaultTLSPolicy, rpc.PreferTLSPolicy:
-		return rpc.NewMuxTransportCredentials(opt.TLSConfig,
-			rpc.WithTLSPreferClientHandshake(security.TLSPolicy == rpc.PreferTLSPolicy)), nil
-	case rpc.ForceTLSPolicy:
-		return credentials.NewTLS(opt.TLSConfig), nil
-	default:
-		return nil, fmt.Errorf("invalid tlsPolicy: %s", security.TLSPolicy)
-	}
+	return loadGPRCTLSCredentialsWithOptions(opt.TLSConfig, security, options...)
 }
 
 func loadGlobalGPRCTLSCredentials(certifyClient *certify.Certify, security config.GlobalSecurityOption) (credentials.TransportCredentials, error) {
+	return loadGPRCTLSCredentialsWithOptions(nil, security, func(c *tls.Config) {
+		c.GetCertificate = config.GetCertificate(certifyClient)
+		c.GetClientCertificate = certifyClient.GetClientCertificate
+	})
+}
+
+func loadManagerGPRCTLSCredentials(security config.GlobalSecurityOption) (credentials.TransportCredentials, error) {
+	return loadGPRCTLSCredentialsWithOptions(nil, security, func(c *tls.Config) {
+		c.ClientAuth = tls.NoClientCert
+	})
+}
+
+func loadGPRCTLSCredentialsWithOptions(baseConfig *tls.Config, security config.GlobalSecurityOption,
+	opts ...func(c *tls.Config)) (credentials.TransportCredentials, error) {
 	certPool := x509.NewCertPool()
 
 	if security.CACert == "" {
-		return nil, fmt.Errorf("empty client CA's certificate and glocal CA's certificate")
+		return nil, fmt.Errorf("empty glocal CA's certificate")
 	}
 
 	if !certPool.AppendCertsFromPEM([]byte(security.CACert)) {
 		return nil, fmt.Errorf("failed to add global CA's certificate")
 	}
 
-	tlsConfig := &tls.Config{
-		ClientCAs:            certPool,
-		RootCAs:              certPool,
-		GetCertificate:       config.GetCertificate(certifyClient),
-		GetClientCertificate: certifyClient.GetClientCertificate,
+	var tlsConfig *tls.Config
+	if baseConfig == nil {
+		tlsConfig = &tls.Config{}
+	} else {
+		tlsConfig = baseConfig.Clone()
 	}
+
+	tlsConfig.RootCAs = certPool
+	tlsConfig.ClientCAs = certPool
 
 	if security.TLSVerify {
 		tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
+	}
+
+	for _, opt := range opts {
+		opt(tlsConfig)
 	}
 
 	switch security.TLSPolicy {
