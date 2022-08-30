@@ -29,6 +29,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/net/fqdn"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
+	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/serialize"
 )
 
@@ -180,7 +181,7 @@ var peerHostConfig = func() *DaemonOption {
 			AutoIssueCert: false,
 			CACert:        serialize.PEMContent(""),
 			TLSVerify:     false,
-			TLSPolicy:     TLSPolicyDefault,
+			TLSPolicy:     rpc.DefaultTLSPolicy,
 		},
 	}
 }

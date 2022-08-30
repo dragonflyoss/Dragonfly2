@@ -359,10 +359,10 @@ func loadGPRCTLSCredentials(opt config.SecurityOption, certifyClient *certify.Ce
 	}
 
 	switch security.TLSPolicy {
-	case config.TLSPolicyDefault, config.TLSPolicyPrefer:
+	case rpc.DefaultTLSPolicy, rpc.PreferTLSPolicy:
 		return rpc.NewMuxTransportCredentials(opt.TLSConfig,
-			rpc.WithTLSPreferClientHandshake(security.TLSPolicy == config.TLSPolicyPrefer)), nil
-	case config.TLSPolicyForce:
+			rpc.WithTLSPreferClientHandshake(security.TLSPolicy == rpc.PreferTLSPolicy)), nil
+	case rpc.ForceTLSPolicy:
 		return credentials.NewTLS(opt.TLSConfig), nil
 	default:
 		return nil, fmt.Errorf("invalid tlsPolicy: %s", security.TLSPolicy)
@@ -392,10 +392,10 @@ func loadGlobalGPRCTLSCredentials(certifyClient *certify.Certify, security confi
 	}
 
 	switch security.TLSPolicy {
-	case config.TLSPolicyDefault, config.TLSPolicyPrefer:
+	case rpc.DefaultTLSPolicy, rpc.PreferTLSPolicy:
 		return rpc.NewMuxTransportCredentials(tlsConfig,
-			rpc.WithTLSPreferClientHandshake(security.TLSPolicy == config.TLSPolicyPrefer)), nil
-	case config.TLSPolicyForce:
+			rpc.WithTLSPreferClientHandshake(security.TLSPolicy == rpc.PreferTLSPolicy)), nil
+	case rpc.ForceTLSPolicy:
 		return credentials.NewTLS(tlsConfig), nil
 	default:
 		return nil, fmt.Errorf("invalid tlsPolicy: %s", security.TLSPolicy)
