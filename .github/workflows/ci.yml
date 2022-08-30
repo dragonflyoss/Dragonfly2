@@ -62,17 +62,18 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
+      - name: Set up Docker
+        uses: docker-practice/actions-setup-docker@v1
+
       - name: Check out code
         uses: actions/checkout@v2
         with:
           submodules: recursive
 
       - name: Build manager console assets
-        uses: docker-practice/actions-setup-docker@v1
         run: |-
           make build-manager-console
 
       - name: Build
-        uses: docker-practice/actions-setup-docker@v1
         run: |-
           make build
