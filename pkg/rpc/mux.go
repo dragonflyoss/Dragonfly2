@@ -28,23 +28,39 @@ import (
 )
 
 const (
+	// cmux's TLS matcher read at least 3 + 1 bytes
 	tlsRecordPrefix = 4
 )
 
 type muxTransportCredentials struct {
 	credentials credentials.TransportCredentials
 	tlsMatcher  cmux.Matcher
+	tlsPrefer   bool
 }
 
-func NewMuxTransportCredentials(c *tls.Config) credentials.TransportCredentials {
-	return &muxTransportCredentials{
-		tlsMatcher:  cmux.TLS(),
-		credentials: credentials.NewTLS(c),
+func WithTLSPreferClientHandshake(prefer bool) func(m *muxTransportCredentials) {
+	return func(m *muxTransportCredentials) {
+		m.tlsPrefer = prefer
 	}
 }
 
+func NewMuxTransportCredentials(c *tls.Config, opts ...func(m *muxTransportCredentials)) credentials.TransportCredentials {
+	m := &muxTransportCredentials{
+		tlsMatcher:  cmux.TLS(),
+		credentials: credentials.NewTLS(c),
+	}
+
+	for _, opt := range opts {
+		opt(m)
+	}
+
+	return m
+}
+
 func (m *muxTransportCredentials) ClientHandshake(ctx context.Context, s string, conn net.Conn) (net.Conn, credentials.AuthInfo, error) {
-	// TODO
+	if m.tlsPrefer {
+		return m.credentials.ClientHandshake(ctx, s, conn)
+	}
 	return conn, info{credentials.CommonAuthInfo{SecurityLevel: credentials.NoSecurity}}, nil
 }
 

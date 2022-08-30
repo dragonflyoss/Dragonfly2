@@ -358,7 +358,7 @@ func loadGPRCTLSCredentials(opt config.SecurityOption, certifyClient *certify.Ce
 		opt.TLSConfig.ClientAuth = tls.RequireAndVerifyClientCert
 	}
 
-	return rpc.NewMuxTransportCredentials(opt.TLSConfig), nil
+	return rpc.NewMuxTransportCredentials(opt.TLSConfig, rpc.WithTLSPreferClientHandshake(security.TLSPrefer)), nil
 }
 
 func loadGlobalGPRCTLSCredentials(certifyClient *certify.Certify, security config.GlobalSecurityOption) (credentials.TransportCredentials, error) {
@@ -383,7 +383,7 @@ func loadGlobalGPRCTLSCredentials(certifyClient *certify.Certify, security confi
 		config.ClientAuth = tls.RequireAndVerifyClientCert
 	}
 
-	return credentials.NewTLS(config), nil
+	return rpc.NewMuxTransportCredentials(config, rpc.WithTLSPreferClientHandshake(security.TLSPrefer)), nil
 }
 
 func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (net.Listener, int, error) {

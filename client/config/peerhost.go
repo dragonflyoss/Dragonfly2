@@ -174,9 +174,14 @@ func ConvertPattern(p string, defaultPattern commonv1.Pattern) commonv1.Pattern 
 }
 
 type GlobalSecurityOption struct {
-	AutoIssueCert bool                 `mapstructure:"autoIssueCert" yaml:"autoIssueCert"`
-	CACert        serialize.PEMContent `mapstructure:"caCert" yaml:"caCert"`
-	TLSVerify     bool                 `mapstructure:"tlsVerify" yaml:"tlsVerify"`
+	// AutoIssueCert indicates to issue client certificates for all grpc call
+	AutoIssueCert bool `mapstructure:"autoIssueCert" yaml:"autoIssueCert"`
+	// CACert is the root CA certificate for all grpc tls handshake, it can be path or PEM format string
+	CACert serialize.PEMContent `mapstructure:"caCert" yaml:"caCert"`
+	// TLSPrefer indicates verify clinet cert for grpc ServerHandshake
+	TLSVerify bool `mapstructure:"tlsVerify" yaml:"tlsVerify"`
+	// TLSPrefer indicates use tls for grpc ClientHandshake
+	TLSPrefer bool `mapstructure:"tlsPrefer" yaml:"tlsPrefer"`
 }
 
 type SchedulerOption struct {
