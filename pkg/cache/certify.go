@@ -24,14 +24,8 @@ import (
 )
 
 const (
-	// SchedulerCertifyCacheDirName is dir name of scheduler certify cache.
-	SchedulerCertifyCacheDirName = "scheduler-certs"
-
-	// ManagerCertifyCacheDirName is dir name of manager certify cache.
-	ManagerCertifyCacheDirName = "manager-certs"
-
-	// DfdaemonCertifyCacheDirName is dir name of dfdaemon certify cache.
-	DfdaemonCertifyCacheDirName = "dfdaemon-certs"
+	// CertifyCacheDirName is dir name of certify cache.
+	CertifyCacheDirName = "certs"
 )
 
 type certifyCache struct {

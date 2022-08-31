@@ -37,7 +37,7 @@ import (
 )
 
 // Daemon cache file name.
-var cacheFileName = "daemon_dynconfig"
+var cacheFileName = "daemon"
 
 type dynconfigManager struct {
 	internaldynconfig.Dynconfig

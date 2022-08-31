@@ -21,6 +21,8 @@ import (
 	"path/filepath"
 
 	"go.uber.org/zap"
+
+	"d7y.io/dragonfly/v2/pkg/types"
 )
 
 type logInitMeta struct {
@@ -34,7 +36,7 @@ func InitManager(verbose, console bool, dir string) error {
 		return createConsoleLogger(verbose)
 	}
 
-	logDir := filepath.Join(dir, "manager")
+	logDir := filepath.Join(dir, types.ManagerName)
 
 	var meta = []logInitMeta{
 		{
@@ -63,7 +65,7 @@ func InitScheduler(verbose, console bool, dir string) error {
 		return createConsoleLogger(verbose)
 	}
 
-	logDir := filepath.Join(dir, "scheduler")
+	logDir := filepath.Join(dir, types.SchedulerName)
 
 	var meta = []logInitMeta{
 		{
@@ -92,7 +94,7 @@ func InitDaemon(verbose, console bool, dir string) error {
 		return createConsoleLogger(verbose)
 	}
 
-	logDir := filepath.Join(dir, "daemon")
+	logDir := filepath.Join(dir, types.DaemonName)
 
 	var meta = []logInitMeta{
 		{
@@ -117,7 +119,7 @@ func InitDfget(verbose, console bool, dir string) error {
 		return createConsoleLogger(verbose)
 	}
 
-	logDir := filepath.Join(dir, "dfget")
+	logDir := filepath.Join(dir, types.DfgetName)
 
 	var meta = []logInitMeta{
 		{
@@ -178,7 +180,7 @@ func createFileLogger(verbose bool, meta []logInitMeta, logDir string) error {
 }
 
 func InitDfcache(console bool, dir string) error {
-	logDir := filepath.Join(dir, "dfcache")
+	logDir := filepath.Join(dir, types.DfcacheName)
 
 	var meta = []logInitMeta{
 		{

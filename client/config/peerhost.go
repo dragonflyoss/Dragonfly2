@@ -39,7 +39,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	netip "d7y.io/dragonfly/v2/pkg/net/ip"
-	"d7y.io/dragonfly/v2/pkg/serialize"
+	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
@@ -178,7 +178,7 @@ type GlobalSecurityOption struct {
 	// if AutoIssueCert is false, any other option in Security will be ignored
 	AutoIssueCert bool `mapstructure:"autoIssueCert" yaml:"autoIssueCert"`
 	// CACert is the root CA certificate for all grpc tls handshake, it can be path or PEM format string
-	CACert serialize.PEMContent `mapstructure:"caCert" yaml:"caCert"`
+	CACert types.PEMContent `mapstructure:"caCert" yaml:"caCert"`
 	// TLSPrefer indicates to verify client certificates for grpc ServerHandshake
 	TLSVerify bool `mapstructure:"tlsVerify" yaml:"tlsVerify"`
 	// TLSPolicy controls the grpc shandshake behaviors:
@@ -536,12 +536,12 @@ type UnixListenOption struct {
 
 type SecurityOption struct {
 	// Insecure indicate enable tls or not
-	Insecure  bool                 `mapstructure:"insecure" yaml:"insecure"`
-	CACert    serialize.PEMContent `mapstructure:"caCert" yaml:"caCert"`
-	Cert      serialize.PEMContent `mapstructure:"cert" yaml:"cert"`
-	Key       serialize.PEMContent `mapstructure:"key" yaml:"key"`
-	TLSVerify bool                 `mapstructure:"tlsVerify" yaml:"tlsVerify"`
-	TLSConfig *tls.Config          `mapstructure:"tlsConfig" yaml:"tlsConfig"`
+	Insecure  bool             `mapstructure:"insecure" yaml:"insecure"`
+	CACert    types.PEMContent `mapstructure:"caCert" yaml:"caCert"`
+	Cert      types.PEMContent `mapstructure:"cert" yaml:"cert"`
+	Key       types.PEMContent `mapstructure:"key" yaml:"key"`
+	TLSVerify bool             `mapstructure:"tlsVerify" yaml:"tlsVerify"`
+	TLSConfig *tls.Config      `mapstructure:"tlsConfig" yaml:"tlsConfig"`
 }
 
 type StorageOption struct {
@@ -572,9 +572,9 @@ type ReloadOption struct {
 }
 
 type tlsConfigFiles struct {
-	Cert   serialize.PEMContent `yaml:"cert" json:"cert"`
-	Key    serialize.PEMContent `yaml:"key" json:"key"`
-	CACert serialize.PEMContent `yaml:"caCert" json:"caCert"`
+	Cert   types.PEMContent `yaml:"cert" json:"cert"`
+	Key    types.PEMContent `yaml:"key" json:"key"`
+	CACert types.PEMContent `yaml:"caCert" json:"caCert"`
 }
 
 type TLSConfig struct {

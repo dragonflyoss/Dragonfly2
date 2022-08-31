@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"runtime"
 	"sync"
 	"time"
@@ -55,6 +56,7 @@ import (
 	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	internaldynconfig "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/pkg/cache"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
@@ -65,6 +67,7 @@ import (
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	"d7y.io/dragonfly/v2/pkg/source"
+	"d7y.io/dragonfly/v2/pkg/types"
 )
 
 type Daemon interface {
@@ -156,7 +159,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 				Logger:       zapadapter.New(logger.CoreLogger.Desugar()),
 				Cache: cache.NewCertifyMutliCache(
 					certify.NewMemCache(),
-					certify.DirCache(path.Join(d.CacheDir(), cache.DfdaemonCertifyCacheDirName))),
+					certify.DirCache(path.Join(d.CacheDir(), cache.CertifyCacheDirName, types.DfdaemonName))),
 			}
 
 			// issue a certificate to reduce first time delay
@@ -175,7 +178,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		dynconfig, err = config.NewDynconfig(
 			config.ManagerSourceType, opt,
 			config.WithManagerClient(managerClient),
-			config.WithCacheDir(d.CacheDir()),
+			config.WithCacheDir(filepath.Join(d.CacheDir(), internaldynconfig.CacheDirName)),
 			config.WithExpireTime(opt.Scheduler.Manager.RefreshInterval),
 		)
 		if err != nil {

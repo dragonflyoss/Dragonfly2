@@ -111,6 +111,7 @@ func New(options ...Option) (Dfpath, error) {
 			workHome:       DefaultWorkHome,
 			logDir:         DefaultLogDir,
 			pluginDir:      DefaultPluginDir,
+			cacheDir:       DefaultCacheDir,
 			daemonSockPath: DefaultDownloadUnixSocketPath,
 		}
 
@@ -143,10 +144,8 @@ func New(options ...Option) (Dfpath, error) {
 		}
 
 		// Create cache directory.
-		if d.cacheDir != "" {
-			if err := os.MkdirAll(d.cacheDir, fs.FileMode(0755)); err != nil {
-				cache.err = multierror.Append(cache.err, err)
-			}
+		if err := os.MkdirAll(d.cacheDir, fs.FileMode(0755)); err != nil {
+			cache.err = multierror.Append(cache.err, err)
 		}
 
 		// Create data directory.

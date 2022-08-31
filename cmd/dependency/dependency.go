@@ -50,7 +50,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/net/fqdn"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
-	"d7y.io/dragonfly/v2/pkg/serialize"
+	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/version"
 )
@@ -239,7 +239,7 @@ func initDecoderConfig(dc *mapstructure.DecoderConfig) {
 			reflect.TypeOf(util.Duration{}),
 			reflect.TypeOf(&config.ProxyOption{}),
 			reflect.TypeOf(config.TCPListenPortRange{}),
-			reflect.TypeOf(serialize.PEMContent("")),
+			reflect.TypeOf(types.PEMContent("")),
 			reflect.TypeOf(config.URL{}),
 			reflect.TypeOf(config.CertPool{}),
 			reflect.TypeOf(config.Regexp{}):

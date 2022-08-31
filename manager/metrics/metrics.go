@@ -25,8 +25,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 
-	"d7y.io/dragonfly/v2/internal/constants"
 	"d7y.io/dragonfly/v2/manager/config"
+	"d7y.io/dragonfly/v2/pkg/types"
 )
 
 func New(cfg *config.MetricsConfig, grpcServer *grpc.Server) *http.Server {
@@ -43,8 +43,8 @@ func New(cfg *config.MetricsConfig, grpcServer *grpc.Server) *http.Server {
 
 var (
 	PeerGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.ManagerMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.ManagerMetricsName,
 		Name:      "peer_total",
 		Help:      "Gauge of the number of peer.",
 	}, []string{"version", "commit"})

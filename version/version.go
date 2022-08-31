@@ -22,7 +22,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
-	"d7y.io/dragonfly/v2/internal/constants"
+	"d7y.io/dragonfly/v2/pkg/types"
 )
 
 var (
@@ -39,7 +39,7 @@ var (
 
 var (
 	versionGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: constants.MetricsNamespace,
+		Namespace: types.MetricsNamespace,
 		Name:      "version",
 		Help:      "Version info of dragonfly components.",
 	}, []string{"major", "minor", "git_version", "git_commit", "platform", "build_time", "go_version", "go_tags", "go_gcflags"})

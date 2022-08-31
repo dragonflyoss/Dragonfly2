@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package serialize
+package types
 
 import (
 	"encoding/json"

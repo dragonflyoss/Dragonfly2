@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/johanbrandhorst/certify"
@@ -32,6 +32,7 @@ import (
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/pkg/cache"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/gc"
@@ -39,6 +40,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
+	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/job"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
@@ -117,7 +119,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 
 	// Initialize dynconfig client.
-	dynconfig, err := config.NewDynconfig(s.managerClient, d.CacheDir(), cfg)
+	dynconfig, err := config.NewDynconfig(s.managerClient, filepath.Join(d.CacheDir(), dynconfig.CacheDirName), cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +140,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 			Logger:       zapadapter.New(logger.CoreLogger.Desugar()),
 			Cache: cache.NewCertifyMutliCache(
 				certify.NewMemCache(),
-				certify.DirCache(path.Join(d.CacheDir(), cache.SchedulerCertifyCacheDirName))),
+				certify.DirCache(filepath.Join(d.CacheDir(), cache.CertifyCacheDirName, types.SchedulerName))),
 		}
 	}
 

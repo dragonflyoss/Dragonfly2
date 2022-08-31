@@ -35,6 +35,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/handlers"
 	"d7y.io/dragonfly/v2/manager/middlewares"
 	"d7y.io/dragonfly/v2/manager/service"
+	"d7y.io/dragonfly/v2/pkg/types"
 )
 
 const (
@@ -53,7 +54,7 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	// Logging to a file.
 	if !cfg.Console {
 		gin.DisableConsoleColor()
-		logDir := filepath.Join(logDir, "manager")
+		logDir := filepath.Join(logDir, types.ManagerName)
 		f, _ := os.Create(filepath.Join(logDir, GinLogFileName))
 		gin.DefaultWriter = io.MultiWriter(f)
 	}

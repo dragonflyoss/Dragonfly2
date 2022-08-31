@@ -31,7 +31,7 @@ import (
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
-	"d7y.io/dragonfly/v2/pkg/serialize"
+	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
@@ -226,9 +226,9 @@ func TestPeerHostOption_Load(t *testing.T) {
 	_cert, _ := os.ReadFile("./testdata/certs/sca.crt")
 	_key, _ := os.ReadFile("./testdata/certs/sca.key")
 
-	caCert := serialize.PEMContent(strings.TrimSpace(string(_caCert)))
-	cert := serialize.PEMContent(strings.TrimSpace(string(_cert)))
-	key := serialize.PEMContent(strings.TrimSpace(string(_key)))
+	caCert := types.PEMContent(strings.TrimSpace(string(_caCert)))
+	cert := types.PEMContent(strings.TrimSpace(string(_cert)))
+	key := types.PEMContent(strings.TrimSpace(string(_key)))
 
 	peerHostOption := &DaemonOption{
 		Options: base.Options{

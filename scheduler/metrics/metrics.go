@@ -25,7 +25,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 
-	"d7y.io/dragonfly/v2/internal/constants"
+	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
@@ -52,114 +52,114 @@ var (
 // Variables declared for metrics.
 var (
 	RegisterPeerTaskCount = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.SchedulerMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
 		Name:      "register_peer_task_total",
 		Help:      "Counter of the number of the register peer task.",
 	}, []string{"tag", "app"})
 
 	RegisterPeerTaskFailureCount = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.SchedulerMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
 		Name:      "register_peer_task_failure_total",
 		Help:      "Counter of the number of failed of the register peer task.",
 	}, []string{"tag", "app"})
 
 	DownloadCount = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.SchedulerMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
 		Name:      "download_total",
 		Help:      "Counter of the number of the downloading.",
 	}, []string{"tag", "app"})
 
 	DownloadFailureCount = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.SchedulerMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
 		Name:      "download_failure_total",
 		Help:      "Counter of the number of failed of the downloading.",
 	}, []string{"tag", "app", "type"})
 
 	StatTaskCount = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.SchedulerMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
 		Name:      "stat_task_total",
 		Help:      "Counter of the number of the stat task.",
 	})
 
 	StatTaskFailureCount = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.SchedulerMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
 		Name:      "stat_task_failure_total",
 		Help:      "Counter of the number of failed of the stat task.",
 	})
 
 	AnnounceCount = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.SchedulerMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
 		Name:      "announce_task_total",
 		Help:      "Counter of the number of the announce task.",
 	})
 
 	AnnounceFailureCount = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.SchedulerMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
 		Name:      "announce_task_failure_total",
 		Help:      "Counter of the number of failed of the announce task.",
 	})
 
 	LeaveTaskCount = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.SchedulerMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
 		Name:      "leave_task_total",
 		Help:      "Counter of the number of the leaving task.",
 	}, []string{"tag", "app"})
 
 	LeaveTaskFailureCount = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.SchedulerMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
 		Name:      "leave_task_failure_total",
 		Help:      "Counter of the number of failed of the leaving task.",
 	}, []string{"tag", "app"})
 
 	Traffic = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.SchedulerMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
 		Name:      "traffic",
 		Help:      "Counter of the number of traffic.",
 	}, []string{"tag", "app", "type"})
 
 	PeerHostTraffic = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.SchedulerMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
 		Name:      "peer_host_traffic",
 		Help:      "Counter of the number of per peer host traffic.",
 	}, []string{"tag", "app", "traffic_type", "peer_host_id", "peer_host_ip"})
 
 	PeerTaskCounter = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.SchedulerMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
 		Name:      "peer_task_total",
 		Help:      "Counter of the number of peer task.",
 	}, []string{"tag", "app", "type"})
 
 	PeerTaskSourceErrorCounter = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.SchedulerMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
 		Name:      "peer_task_source_error_total",
 		Help:      "Counter of the source error code number of peer task.",
 	}, []string{"tag", "app", "protocol", "code"})
 
 	PeerTaskDownloadDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.SchedulerMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
 		Name:      "peer_task_download_duration_milliseconds",
 		Help:      "Histogram of the time each peer task downloading.",
 		Buckets:   []float64{100, 200, 500, 1000, 1500, 2 * 1000, 3 * 1000, 5 * 1000, 10 * 1000, 20 * 1000, 60 * 1000, 120 * 1000, 300 * 1000},
 	}, []string{"tag", "app"})
 
 	ConcurrentScheduleGauge = promauto.NewGauge(prometheus.GaugeOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.SchedulerMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
 		Name:      "concurrent_schedule_total",
 		Help:      "Gauge of the number of concurrent of the scheduling.",
 	})
