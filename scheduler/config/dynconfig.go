@@ -22,7 +22,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net"
 	"os"
 	"path/filepath"
 	"time"
@@ -36,7 +35,6 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/reachable"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
-	"d7y.io/dragonfly/v2/pkg/slices"
 )
 
 var (
@@ -178,29 +176,26 @@ func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 		return nil, err
 	}
 
-	addrs := []string{}
+	var (
+		addrs        = map[string]bool{}
+		resolveAddrs = []resolver.Address{}
+	)
 	for _, seedPeer := range seedPeers {
 		addr := fmt.Sprintf("%s:%d", seedPeer.IP, seedPeer.Port)
 		r := reachable.New(&reachable.Config{Address: addr})
 		if err := r.Check(); err != nil {
 			logger.Warnf("seed peer address %s is unreachable", addr)
 		} else {
-			addrs = append(addrs, addr)
-			continue
-		}
-	}
+			if addrs[addr] {
+				continue
+			}
 
-	resolveAddrs := []resolver.Address{}
-	for _, addr := range slices.RemoveDuplicates(addrs) {
-		host, _, err := net.SplitHostPort(addr)
-		if err != nil {
-			continue
+			resolveAddrs = append(resolveAddrs, resolver.Address{
+				ServerName: seedPeer.IP,
+				Addr:       addr,
+			})
+			addrs[addr] = true
 		}
-
-		resolveAddrs = append(resolveAddrs, resolver.Address{
-			ServerName: host,
-			Addr:       addr,
-		})
 	}
 
 	return resolveAddrs, nil

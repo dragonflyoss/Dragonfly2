@@ -19,7 +19,6 @@ package config
 import (
 	"context"
 	"fmt"
-	"net"
 	"os"
 	"path/filepath"
 	"time"
@@ -35,7 +34,6 @@ import (
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/pkg/reachable"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
-	"d7y.io/dragonfly/v2/pkg/slices"
 )
 
 // Daemon cache file name.
@@ -75,29 +73,26 @@ func (d *dynconfigManager) GetResolveSchedulerAddrs() ([]resolver.Address, error
 		return nil, err
 	}
 
-	addrs := []string{}
+	var (
+		addrs        = map[string]bool{}
+		resolveAddrs = []resolver.Address{}
+	)
 	for _, scheduler := range schedulers {
 		addr := fmt.Sprintf("%s:%d", scheduler.GetIp(), scheduler.GetPort())
 		r := reachable.New(&reachable.Config{Address: addr})
 		if err := r.Check(); err != nil {
 			logger.Warnf("scheduler address %s is unreachable", addr)
 		} else {
-			addrs = append(addrs, addr)
-			continue
-		}
-	}
+			if addrs[addr] {
+				continue
+			}
 
-	resolveAddrs := []resolver.Address{}
-	for _, addr := range slices.RemoveDuplicates(addrs) {
-		host, _, err := net.SplitHostPort(addr)
-		if err != nil {
-			continue
+			resolveAddrs = append(resolveAddrs, resolver.Address{
+				ServerName: scheduler.GetIp(),
+				Addr:       addr,
+			})
+			addrs[addr] = true
 		}
-
-		resolveAddrs = append(resolveAddrs, resolver.Address{
-			ServerName: host,
-			Addr:       addr,
-		})
 	}
 
 	return resolveAddrs, nil
