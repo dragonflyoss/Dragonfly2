@@ -95,7 +95,8 @@ func fromCertifyCertConfig(commonName string, conf *certify.CertConfig) ([]byte,
 
 	template := &x509.CertificateRequest{
 		Subject: pkix.Name{
-			CommonName: commonName,
+			CommonName:   commonName,
+			Organization: defaultSubjectOrganization,
 		},
 	}
 

@@ -156,7 +156,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 				Logger:       zapadapter.New(logger.CoreLogger.Desugar()),
 				Cache: cache.NewCertifyMutliCache(
 					certify.NewMemCache(),
-					certify.DirCache(path.Join(d.CacheDir(), cache.CertifyCacheDirName))),
+					certify.DirCache(path.Join(d.CacheDir(), cache.DfdaemonCertifyCacheDirName))),
 			}
 
 			// issue a certificate to reduce first time delay

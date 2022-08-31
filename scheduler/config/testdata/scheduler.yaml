@@ -65,3 +65,9 @@ metrics:
   enable: false
   addr: ":8000"
   enablePeerHost: false
+
+security:
+  autoIssueCert: true
+  caCert: foo
+  tlsVerify: true
+  tlsPolicy: force
