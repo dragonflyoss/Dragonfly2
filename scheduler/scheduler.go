@@ -21,16 +21,23 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"path"
 	"time"
 
+	"github.com/johanbrandhorst/certify"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	zapadapter "logur.dev/adapter/zap"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/cache"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/gc"
+	"d7y.io/dragonfly/v2/pkg/issuer"
+	"d7y.io/dragonfly/v2/pkg/net/ip"
+	"d7y.io/dragonfly/v2/pkg/rpc"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/job"
@@ -77,8 +84,20 @@ type Server struct {
 func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	s := &Server{config: cfg}
 
-	// Initialize manager client.
-	managerClient, err := managerclient.GetClient(ctx, cfg.Manager.Addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	// Initialize manager client and dial options of manager grpc client.
+	managerDialOptions := []grpc.DialOption{}
+	if cfg.Security.AutoIssueCert {
+		clientTransportCredentials, err := rpc.NewClientCredentials(cfg.Security.TLSPolicy, cfg.Security.TLSVerify, nil, [][]byte{[]byte(cfg.Security.CACert)})
+		if err != nil {
+			return nil, err
+		}
+
+		managerDialOptions = append(managerDialOptions, grpc.WithTransportCredentials(clientTransportCredentials))
+	} else {
+		managerDialOptions = append(managerDialOptions, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	}
+
+	managerClient, err := managerclient.GetClient(ctx, cfg.Manager.Addr, managerDialOptions...)
 	if err != nil {
 		return nil, err
 	}
@@ -107,8 +126,36 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	// Initialize GC.
 	s.gc = gc.New(gc.WithLogger(logger.GCLogger))
 
-	// Initialize resource.
-	resource, err := resource.New(cfg, s.gc, dynconfig)
+	// Initialize certify client.
+	var certifyClient *certify.Certify
+	if cfg.Security.AutoIssueCert {
+		certifyClient = &certify.Certify{
+			CommonName:   ip.IPv4,
+			Issuer:       issuer.NewDragonflyIssuer(managerClient),
+			RenewBefore:  time.Hour,
+			CertConfig:   nil,
+			IssueTimeout: 0,
+			Logger:       zapadapter.New(logger.CoreLogger.Desugar()),
+			Cache: cache.NewCertifyMutliCache(
+				certify.NewMemCache(),
+				certify.DirCache(path.Join(d.CacheDir(), cache.SchedulerCertifyCacheDirName))),
+		}
+	}
+
+	// Initialize resource and dial options of seed peer grpc client.
+	seedPeerDialOptions := []grpc.DialOption{}
+	if certifyClient != nil {
+		clientTransportCredentials, err := rpc.NewClientCredentialsByCertify(cfg.Security.TLSPolicy, cfg.Security.TLSVerify, [][]byte{[]byte(cfg.Security.CACert)}, certifyClient)
+		if err != nil {
+			return nil, err
+		}
+
+		seedPeerDialOptions = append(seedPeerDialOptions, grpc.WithTransportCredentials(clientTransportCredentials))
+	} else {
+		seedPeerDialOptions = append(seedPeerDialOptions, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	}
+
+	resource, err := resource.New(cfg, s.gc, dynconfig, seedPeerDialOptions...)
 	if err != nil {
 		return nil, err
 	}
@@ -126,8 +173,20 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	// Initialize scheduler service.
 	service := service.New(cfg, resource, scheduler, dynconfig, s.storage)
 
-	// Initialize grpc service.
-	svr := rpcserver.New(service)
+	// Initialize grpc service and server options of scheduler grpc server.
+	schedulerServerOptions := []grpc.ServerOption{}
+	if certifyClient != nil {
+		serverTransportCredentials, err := rpc.NewServerCredentialsByCertify(cfg.Security.TLSPolicy, cfg.Security.TLSVerify, [][]byte{[]byte(cfg.Security.CACert)}, certifyClient)
+		if err != nil {
+			return nil, err
+		}
+
+		schedulerServerOptions = append(schedulerServerOptions, grpc.Creds(serverTransportCredentials))
+	} else {
+		schedulerServerOptions = append(schedulerServerOptions, grpc.Creds(insecure.NewCredentials()))
+	}
+
+	svr := rpcserver.New(service, schedulerServerOptions...)
 	s.grpcServer = svr
 
 	// Initialize job service.

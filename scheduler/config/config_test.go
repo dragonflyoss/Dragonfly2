@@ -27,6 +27,7 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/net/fqdn"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
+	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
@@ -105,6 +106,12 @@ func TestConfig_Load(t *testing.T) {
 			Enable:         false,
 			Addr:           ":8000",
 			EnablePeerHost: false,
+		},
+		Security: &SecurityConfig{
+			AutoIssueCert: true,
+			CACert:        "foo",
+			TLSVerify:     true,
+			TLSPolicy:     "force",
 		},
 	}
 
@@ -187,6 +194,12 @@ func TestConfig_New(t *testing.T) {
 			Enable:         false,
 			Addr:           ":8000",
 			EnablePeerHost: false,
+		},
+		Security: &SecurityConfig{
+			AutoIssueCert: false,
+			CACert:        "",
+			TLSVerify:     true,
+			TLSPolicy:     rpc.DefaultTLSPolicy,
 		},
 	})
 }

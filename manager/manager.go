@@ -170,7 +170,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 
 		// Manager GRPC server's tls varify must be false. If ClientCAs are required for client verification,
 		// the client cannot call the IssueCertificate api.
-		transportCredentials, err := rpc.NewServerCredentialsByCertify(cfg.Security.TLSPolicy, false, &cert, &certify.Certify{
+		transportCredentials, err := rpc.NewServerCredentialsByCertify(cfg.Security.TLSPolicy, false, cert.Certificate, &certify.Certify{
 			CommonName:   ip.IPv4,
 			Issuer:       issuer.NewDragonflyManagerIssuer(&cert),
 			RenewBefore:  time.Hour,
@@ -179,7 +179,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 			Logger:       zapadapter.New(logger.CoreLogger.Desugar()),
 			Cache: pkgcache.NewCertifyMutliCache(
 				certify.NewMemCache(),
-				certify.DirCache(path.Join(d.CacheDir(), pkgcache.CertifyCacheDirName))),
+				certify.DirCache(path.Join(d.CacheDir(), pkgcache.ManagerCertifyCacheDirName))),
 		})
 		if err != nil {
 			return nil, err

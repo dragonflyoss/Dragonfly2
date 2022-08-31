@@ -24,6 +24,8 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/resolver"
 
 	"d7y.io/dragonfly/v2/manager/model"
@@ -94,7 +96,7 @@ func TestSeedPeerClient_newSeedPeerClient(t *testing.T) {
 			hostManager := NewMockHostManager(ctl)
 			tc.mock(dynconfig.EXPECT(), hostManager.EXPECT())
 
-			_, err := newSeedPeerClient(dynconfig, hostManager)
+			_, err := newSeedPeerClient(dynconfig, hostManager, grpc.WithTransportCredentials(insecure.NewCredentials()))
 			tc.expect(t, err)
 		})
 	}
@@ -222,7 +224,7 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 			hostManager := NewMockHostManager(ctl)
 			tc.mock(dynconfig.EXPECT(), hostManager.EXPECT())
 
-			client, err := newSeedPeerClient(dynconfig, hostManager)
+			client, err := newSeedPeerClient(dynconfig, hostManager, grpc.WithTransportCredentials(insecure.NewCredentials()))
 			if err != nil {
 				t.Fatal(err)
 			}

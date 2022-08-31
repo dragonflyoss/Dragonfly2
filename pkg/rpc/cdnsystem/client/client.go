@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
-	"google.golang.org/grpc/credentials/insecure"
 
 	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
@@ -59,7 +58,6 @@ func GetClientByAddr(ctx context.Context, netAddr dfnet.NetAddr, opts ...grpc.Di
 		ctx,
 		netAddr.Addr,
 		append([]grpc.DialOption{
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
 				rpc.ConvertErrorUnaryClientInterceptor,
 				otelgrpc.UnaryClientInterceptor(),
@@ -98,7 +96,6 @@ func GetClient(ctx context.Context, dynconfig config.DynconfigInterface, opts ..
 		resolver.SeedPeerVirtualTarget,
 		append([]grpc.DialOption{
 			grpc.WithDefaultServiceConfig(pkgbalancer.BalancerServiceConfig),
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
 				rpc.ConvertErrorUnaryClientInterceptor,
 				otelgrpc.UnaryClientInterceptor(),
