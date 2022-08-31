@@ -38,7 +38,7 @@ var (
 	defaultSubjectOrganization = []string{"Dragonfly"}
 
 	// defaultIPAddresses is default ip addresses of certificate.
-	defaultIPAddresses = []net.IP{net.ParseIP(ip.IPv4), net.IPv4zero, net.ParseIP(ip.InternalIPv4)}
+	defaultIPAddresses = []net.IP{net.ParseIP(ip.IPv4)}
 
 	// defaultDNSNames is default dns names of certificate.
 	defaultDNSNames = []string{"dragonfly-manager", "dragonfly-manager.dragonfly-system.svc"}

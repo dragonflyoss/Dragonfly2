@@ -179,7 +179,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 			Logger:       zapadapter.New(logger.CoreLogger.Desugar()),
 			Cache: pkgcache.NewCertifyMutliCache(
 				certify.NewMemCache(),
-				certify.DirCache(path.Join(d.CacheDir(), pkgcache.CertifyCacheDirName))),
+				certify.DirCache(path.Join(d.CacheDir(), pkgcache.ManagerCertifyCacheDirName))),
 		})
 		if err != nil {
 			return nil, err

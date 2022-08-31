@@ -138,7 +138,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 			Logger:       zapadapter.New(logger.CoreLogger.Desugar()),
 			Cache: cache.NewCertifyMutliCache(
 				certify.NewMemCache(),
-				certify.DirCache(path.Join(d.CacheDir(), cache.CertifyCacheDirName))),
+				certify.DirCache(path.Join(d.CacheDir(), cache.SchedulerCertifyCacheDirName))),
 		}
 	}
 
