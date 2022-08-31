@@ -158,8 +158,14 @@ func (i *dragonflyManagerIssuer) Issue(ctx context.Context, commonName string, c
 		return nil, err
 	}
 
+	leaf, err := x509.ParseCertificate(cert)
+	if err != nil {
+		return nil, err
+	}
+
 	return &tls.Certificate{
 		Certificate: append([][]byte{cert}, i.tlsCACert.Certificate...),
 		PrivateKey:  pk,
+		Leaf:        leaf,
 	}, nil
 }

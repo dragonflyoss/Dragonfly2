@@ -71,7 +71,11 @@ func (d *dragonflyIssuer) Issue(ctx context.Context, commonName string, certConf
 		return nil, err
 	}
 
-	tlsCert.Leaf, _ = x509.ParseCertificate(tlsCert.Certificate[0])
+	tlsCert.Leaf, err = x509.ParseCertificate(tlsCert.Certificate[0])
+	if err != nil {
+		return nil, err
+	}
+
 	return &tlsCert, nil
 }
 
