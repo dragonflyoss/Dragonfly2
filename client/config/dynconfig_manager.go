@@ -74,25 +74,33 @@ func (d *dynconfigManager) GetResolveSchedulerAddrs() ([]resolver.Address, error
 	}
 
 	var (
-		addrs        = map[string]bool{}
-		resolveAddrs = []resolver.Address{}
+		addrs              = map[string]bool{}
+		resolveAddrs       = []resolver.Address{}
+		schedulerClusterID uint64
 	)
 	for _, scheduler := range schedulers {
+		// Check whether scheduler is in the same cluster.
+		if schedulerClusterID != 0 && schedulerClusterID != scheduler.SchedulerClusterId {
+			continue
+		}
+
 		addr := fmt.Sprintf("%s:%d", scheduler.GetIp(), scheduler.GetPort())
 		r := reachable.New(&reachable.Config{Address: addr})
 		if err := r.Check(); err != nil {
 			logger.Warnf("scheduler address %s is unreachable", addr)
-		} else {
-			if addrs[addr] {
-				continue
-			}
-
-			resolveAddrs = append(resolveAddrs, resolver.Address{
-				ServerName: scheduler.GetIp(),
-				Addr:       addr,
-			})
-			addrs[addr] = true
+			continue
 		}
+
+		if addrs[addr] {
+			continue
+		}
+
+		schedulerClusterID = scheduler.SchedulerClusterId
+		resolveAddrs = append(resolveAddrs, resolver.Address{
+			ServerName: scheduler.GetIp(),
+			Addr:       addr,
+		})
+		addrs[addr] = true
 	}
 
 	return resolveAddrs, nil
