@@ -53,7 +53,7 @@ func TestDynconfigGetResolveSchedulerAddrs_LocalSourceType(t *testing.T) {
 				assert := assert.New(t)
 				result, err := dynconfig.GetResolveSchedulerAddrs()
 				assert.NoError(err)
-				assert.EqualValues(result, []resolver.Address{{Addr: "127.0.0.1:3000"}})
+				assert.EqualValues(result, []resolver.Address{{ServerName: "127.0.0.1", Addr: "127.0.0.1:3000"}})
 			},
 		},
 		{
@@ -92,7 +92,7 @@ func TestDynconfigGetResolveSchedulerAddrs_LocalSourceType(t *testing.T) {
 				assert := assert.New(t)
 				result, err := dynconfig.GetResolveSchedulerAddrs()
 				assert.NoError(err)
-				assert.EqualValues(result, []resolver.Address{{Addr: "127.0.0.1:3000"}})
+				assert.EqualValues(result, []resolver.Address{{ServerName: "127.0.0.1", Addr: "127.0.0.1:3000"}})
 			},
 		},
 	}

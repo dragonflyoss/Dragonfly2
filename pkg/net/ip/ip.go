@@ -27,15 +27,15 @@ import (
 var IPv4 string
 
 const (
-	internalIPv4 = "127.0.0.1"
+	InternalIPv4 = "127.0.0.1"
 )
 
 func init() {
 	ip, err := externalIPv4()
 	if err != nil {
 		logger.Warnf("Failed to get IPv4 address: %s", err.Error())
-		logger.Infof("Use %s as IPv4 addr", internalIPv4)
-		IPv4 = internalIPv4
+		logger.Infof("Use %s as IPv4 addr", InternalIPv4)
+		IPv4 = InternalIPv4
 	} else {
 		IPv4 = ip
 	}

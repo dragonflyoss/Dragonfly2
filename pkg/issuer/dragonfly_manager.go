@@ -37,11 +37,8 @@ var (
 	// defaultSubjectOrganization is default organization of subject.
 	defaultSubjectOrganization = []string{"Dragonfly"}
 
-	// defaultSubjectOrganizationalUnit is default organizational unit of subject.
-	defaultSubjectOrganizationalUnit = []string{"Manager"}
-
 	// defaultIPAddresses is default ip addresses of certificate.
-	defaultIPAddresses = []net.IP{net.ParseIP(ip.IPv4)}
+	defaultIPAddresses = []net.IP{net.ParseIP(ip.IPv4), net.IPv4zero, net.ParseIP(ip.InternalIPv4)}
 
 	// defaultDNSNames is default dns names of certificate.
 	defaultDNSNames = []string{"dragonfly-manager", "dragonfly-manager.dragonfly-system.svc"}
@@ -135,9 +132,8 @@ func (i *dragonflyManagerIssuer) Issue(ctx context.Context, commonName string, c
 	template := x509.Certificate{
 		SerialNumber: serial,
 		Subject: pkix.Name{
-			CommonName:         commonName,
-			Organization:       defaultSubjectOrganization,
-			OrganizationalUnit: defaultSubjectOrganizationalUnit,
+			CommonName:   commonName,
+			Organization: defaultSubjectOrganization,
 		},
 		DNSNames:              append(certConfig.SubjectAlternativeNames, i.dnsNames...),
 		EmailAddresses:        i.emailAddresses,
@@ -155,8 +151,14 @@ func (i *dragonflyManagerIssuer) Issue(ctx context.Context, commonName string, c
 		return nil, err
 	}
 
+	leaf, err := x509.ParseCertificate(cert)
+	if err != nil {
+		return nil, err
+	}
+
 	return &tls.Certificate{
 		Certificate: append([][]byte{cert}, i.tlsCACert.Certificate...),
 		PrivateKey:  pk,
+		Leaf:        leaf,
 	}, nil
 }

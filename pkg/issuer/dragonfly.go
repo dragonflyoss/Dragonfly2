@@ -71,7 +71,11 @@ func (d *dragonflyIssuer) Issue(ctx context.Context, commonName string, certConf
 		return nil, err
 	}
 
-	tlsCert.Leaf, _ = x509.ParseCertificate(tlsCert.Certificate[0])
+	tlsCert.Leaf, err = x509.ParseCertificate(tlsCert.Certificate[0])
+	if err != nil {
+		return nil, err
+	}
+
 	return &tlsCert, nil
 }
 
@@ -91,7 +95,8 @@ func fromCertifyCertConfig(commonName string, conf *certify.CertConfig) ([]byte,
 
 	template := &x509.CertificateRequest{
 		Subject: pkix.Name{
-			CommonName: commonName,
+			CommonName:   commonName,
+			Organization: defaultSubjectOrganization,
 		},
 	}
 
