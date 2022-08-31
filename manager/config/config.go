@@ -26,8 +26,8 @@ import (
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
 	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/serialize"
 	"d7y.io/dragonfly/v2/pkg/slices"
+	"d7y.io/dragonfly/v2/pkg/types"
 )
 
 type Config struct {
@@ -56,6 +56,9 @@ type Config struct {
 type ServerConfig struct {
 	// Server name.
 	Name string `yaml:"name" mapstructure:"name"`
+
+	// Server dynamic config cache directory.
+	CacheDir string `yaml:"cacheDir" mapstructure:"cacheDir"`
 
 	// Server log directory.
 	LogDir string `yaml:"logDir" mapstructure:"logDir"`
@@ -253,10 +256,10 @@ type SecurityConfig struct {
 	AutoIssueCert bool `yaml:"autoIssueCert" mapstructure:"autoIssueCert"`
 
 	// CACert is file path PEM-encoded certificate
-	CACert serialize.PEMContent `mapstructure:"caCert" yaml:"caCert"`
+	CACert types.PEMContent `mapstructure:"caCert" yaml:"caCert"`
 
 	// CAKey is file path of PEM-encoded private key.
-	CAKey serialize.PEMContent `mapstructure:"caKey" yaml:"caKey"`
+	CAKey types.PEMContent `mapstructure:"caKey" yaml:"caKey"`
 
 	// TLSPolicy controls the grpc shandshake behaviors:
 	// force: both ClientHandshake and ServerHandshake are only support tls

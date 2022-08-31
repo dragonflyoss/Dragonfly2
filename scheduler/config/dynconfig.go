@@ -39,7 +39,7 @@ import (
 
 var (
 	// Cache filename.
-	cacheFileName = "scheduler_dynconfig"
+	cacheFileName = "scheduler"
 
 	// Notify observer interval.
 	watchInterval = 10 * time.Second

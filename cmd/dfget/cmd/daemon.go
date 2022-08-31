@@ -36,6 +36,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
+	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/version"
 )
 
@@ -75,7 +76,7 @@ it supports container engine, wget and other downloading tools through proxy fun
 		if err := logger.InitDaemon(cfg.Verbose, cfg.Console, d.LogDir()); err != nil {
 			return fmt.Errorf("init client daemon logger: %w", err)
 		}
-		logger.RedirectStdoutAndStderr(cfg.Console, path.Join(d.LogDir(), "daemon"))
+		logger.RedirectStdoutAndStderr(cfg.Console, path.Join(d.LogDir(), types.DaemonName))
 
 		return runDaemon(d)
 	},
@@ -112,11 +113,9 @@ func initDaemonDfpath(cfg *config.DaemonOption) (dfpath.Dfpath, error) {
 		options = append(options, dfpath.WithDownloadUnixSocketPath(cfg.Download.DownloadGRPC.UnixListen.Socket))
 	}
 
-	cacheDir := dfpath.DefaultCacheDir
 	if cfg.CacheDir != "" {
-		cacheDir = cfg.CacheDir
+		options = append(options, dfpath.WithCacheDir(cfg.CacheDir))
 	}
-	options = append(options, dfpath.WithCacheDir(cacheDir))
 
 	dataDir := dfpath.DefaultDataDir
 	if cfg.DataDir != "" {

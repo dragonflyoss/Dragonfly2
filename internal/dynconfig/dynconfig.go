@@ -31,6 +31,11 @@ import (
 type SourceType string
 
 const (
+	// CacheDirName is dir name of dynconfig cache.
+	CacheDirName = "dynconfig"
+)
+
+const (
 	// defaultCacheKey represents cache key of dynconfig.
 	defaultCacheKey = "dynconfig"
 )
