@@ -172,8 +172,13 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 		// Manager GRPC server's tls varify must be false. If ClientCAs are required for client verification,
 		// the client cannot call the IssueCertificate api.
 		transportCredentials, err := rpc.NewServerCredentialsByCertify(cfg.Security.TLSPolicy, false, cert.Certificate, &certify.Certify{
-			CommonName:   ip.IPv4,
-			Issuer:       issuer.NewDragonflyManagerIssuer(&cert),
+			CommonName: ip.IPv4,
+			Issuer: issuer.NewDragonflyManagerIssuer(
+				&cert,
+				issuer.WithIPAddresses(cfg.Security.CertSpec.IPAddresses),
+				issuer.WithDNSNames(cfg.Security.CertSpec.DNSNames),
+				issuer.WithValidityDuration(cfg.Security.CertSpec.ValidityDuration),
+			),
 			RenewBefore:  time.Hour,
 			CertConfig:   nil,
 			IssueTimeout: 0,
