@@ -16,7 +16,11 @@
 
 package config
 
-import "time"
+import (
+	"time"
+
+	"d7y.io/dragonfly/v2/pkg/net/ip"
+)
 
 const (
 	// DatabaseTypeMysql is database type of mysql.
@@ -87,4 +91,15 @@ const (
 const (
 	// DefaultMetricsAddr is default address for metrics server.
 	DefaultMetricsAddr = ":8000"
+)
+
+var (
+	// DefaultCertIPAddresses is default manager ip addresses of certificate.
+	DefaultCertIPAddresses = []string{ip.IPv4}
+
+	// DefaultCertDNSNames is default manager dns names of certificate.
+	DefaultCertDNSNames = []string{"dragonfly-manager", "dragonfly-manager.dragonfly-system.svc"}
+
+	// DefaultCertValidityDuration is default manager validity duration of certificate.
+	DefaultCertValidityDuration = 10 * 365 * 24 * time.Hour
 )
