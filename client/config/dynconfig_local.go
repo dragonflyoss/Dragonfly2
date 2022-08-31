@@ -59,22 +59,23 @@ func (d *dynconfigLocal) GetResolveSchedulerAddrs() ([]resolver.Address, error) 
 		r := reachable.New(&reachable.Config{Address: addr})
 		if err := r.Check(); err != nil {
 			logger.Warnf("scheduler address %s is unreachable", addr)
-		} else {
-			if addrs[addr] {
-				continue
-			}
-
-			host, _, err := net.SplitHostPort(addr)
-			if err != nil {
-				continue
-			}
-
-			resolveAddrs = append(resolveAddrs, resolver.Address{
-				ServerName: host,
-				Addr:       addr,
-			})
-			addrs[addr] = true
+			continue
 		}
+
+		if addrs[addr] {
+			continue
+		}
+
+		host, _, err := net.SplitHostPort(addr)
+		if err != nil {
+			continue
+		}
+
+		resolveAddrs = append(resolveAddrs, resolver.Address{
+			ServerName: host,
+			Addr:       addr,
+		})
+		addrs[addr] = true
 	}
 
 	return resolveAddrs, nil
