@@ -34,14 +34,8 @@ import (
 )
 
 var (
-	// defaultSubjectCommonName is default common name of subject.
-	defaultSubjectCommonName = "manager"
-
 	// defaultSubjectOrganization is default organization of subject.
 	defaultSubjectOrganization = []string{"Dragonfly"}
-
-	// defaultSubjectOrganizationalUnit is default organizational unit of subject.
-	defaultSubjectOrganizationalUnit = []string{"Manager"}
 
 	// defaultIPAddresses is default ip addresses of certificate.
 	defaultIPAddresses = []net.IP{net.ParseIP(ip.IPv4)}
@@ -138,14 +132,13 @@ func (i *dragonflyManagerIssuer) Issue(ctx context.Context, commonName string, c
 	template := x509.Certificate{
 		SerialNumber: serial,
 		Subject: pkix.Name{
-			CommonName:         defaultSubjectCommonName,
-			Organization:       defaultSubjectOrganization,
-			OrganizationalUnit: defaultSubjectOrganizationalUnit,
+			CommonName:   commonName,
+			Organization: defaultSubjectOrganization,
 		},
-		DNSNames:              i.dnsNames,
+		DNSNames:              append(certConfig.SubjectAlternativeNames, i.dnsNames...),
 		EmailAddresses:        i.emailAddresses,
-		IPAddresses:           i.ipAddresses,
-		URIs:                  i.uris,
+		IPAddresses:           append(certConfig.IPSubjectAlternativeNames, i.ipAddresses...),
+		URIs:                  append(certConfig.URISubjectAlternativeNames, i.uris...),
 		NotBefore:             now.Add(-10 * time.Minute).UTC(),
 		NotAfter:              now.Add(i.validityDuration).UTC(),
 		BasicConstraintsValid: true,

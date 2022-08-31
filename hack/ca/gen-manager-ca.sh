@@ -1,3 +1,5 @@
+#!/bin/bash
+
 cat << EOF > manager.conf
 [ ca ]
 # man ca

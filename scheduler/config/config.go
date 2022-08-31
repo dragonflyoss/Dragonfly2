@@ -23,6 +23,8 @@ import (
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/pkg/net/fqdn"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
+	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/serialize"
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
@@ -56,6 +58,9 @@ type Config struct {
 
 	// Metrics configuration.
 	Metrics *MetricsConfig `yaml:"metrics" mapstructure:"metrics"`
+
+	// Security configuration.
+	Security *SecurityConfig `yaml:"security" mapstructure:"security"`
 }
 
 // New default configuration.
@@ -121,6 +126,11 @@ func New() *Config {
 			Enable:         false,
 			Addr:           DefaultMetricsAddr,
 			EnablePeerHost: false,
+		},
+		Security: &SecurityConfig{
+			AutoIssueCert: false,
+			TLSVerify:     true,
+			TLSPolicy:     rpc.DefaultTLSPolicy,
 		},
 	}
 }
@@ -254,6 +264,12 @@ func (cfg *Config) Validate() error {
 	if cfg.Metrics != nil && cfg.Metrics.Enable {
 		if cfg.Metrics.Addr == "" {
 			return errors.New("metrics requires parameter addr")
+		}
+	}
+
+	if cfg.Security.AutoIssueCert {
+		if cfg.Security.CACert == "" {
+			return errors.New("security requires parameter caCert")
 		}
 	}
 
@@ -435,4 +451,22 @@ type MetricsConfig struct {
 
 	// Enable peer host metrics.
 	EnablePeerHost bool `yaml:"enablePeerHost" mapstructure:"enablePeerHost"`
+}
+
+type SecurityConfig struct {
+	// AutoIssueCert indicates to issue client certificates for all grpc call
+	// if AutoIssueCert is false, any other option in Security will be ignored.
+	AutoIssueCert bool `mapstructure:"autoIssueCert" yaml:"autoIssueCert"`
+
+	// CACert is the root CA certificate for all grpc tls handshake, it can be path or PEM format string.
+	CACert serialize.PEMContent `mapstructure:"caCert" yaml:"caCert"`
+
+	// TLSPrefer indicates to verify client certificates for grpc ServerHandshake.
+	TLSVerify bool `mapstructure:"tlsVerify" yaml:"tlsVerify"`
+
+	// TLSPolicy controls the grpc shandshake behaviors:
+	// force: both ClientHandshake and ServerHandshake are only support tls.
+	// prefer: ServerHandshake supports tls and insecure (non-tls), ClientHandshake will only support tls.
+	// default or empty: ServerHandshake supports tls and insecure (non-tls), ClientHandshake will only support insecure (non-tls).
+	TLSPolicy string `mapstructure:"tlsPolicy" yaml:"tlsPolicy"`
 }
