@@ -29,6 +29,8 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
@@ -382,7 +384,7 @@ func setupSeederServerAndClient(t *testing.T, srv *server, sd *seeder, assert *t
 	client, err := client.GetClientByAddr(context.Background(), dfnet.NetAddr{
 		Type: dfnet.TCP,
 		Addr: fmt.Sprintf(":%d", port),
-	})
+	}, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Fatal(err)
 	}
