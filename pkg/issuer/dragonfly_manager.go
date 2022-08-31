@@ -25,35 +25,16 @@ import (
 	"crypto/x509/pkix"
 	"math/big"
 	"net"
-	"net/url"
 	"time"
 
 	"github.com/johanbrandhorst/certify"
-
-	"d7y.io/dragonfly/v2/pkg/net/ip"
-)
-
-var (
-	// defaultSubjectOrganization is default organization of subject.
-	defaultSubjectOrganization = []string{"Dragonfly"}
-
-	// defaultIPAddresses is default ip addresses of certificate.
-	defaultIPAddresses = []net.IP{net.ParseIP(ip.IPv4)}
-
-	// defaultDNSNames is default dns names of certificate.
-	defaultDNSNames = []string{"dragonfly-manager", "dragonfly-manager.dragonfly-system.svc"}
-
-	// defaultValidityDuration is default validity duration of certificate.
-	defaultValidityDuration = 10 * 365 * 24 * time.Hour
 )
 
 // GC provides issuer function.
 type dragonflyManagerIssuer struct {
 	tlsCACert        *tls.Certificate
 	dnsNames         []string
-	emailAddresses   []string
 	ipAddresses      []net.IP
-	uris             []*url.URL
 	validityDuration time.Duration
 }
 
@@ -67,24 +48,15 @@ func WithDNSNames(dnsNames []string) Option {
 	}
 }
 
-// WithEmailAddresses set the emailAddresses for dragonflyManagerIssuer.
-func WithEmailAddresses(emailAddrs []string) Option {
-	return func(i *dragonflyManagerIssuer) {
-		i.emailAddresses = emailAddrs
-	}
-}
-
 // WithIPAddresses set the ipAddresses for dragonflyManagerIssuer.
-func WithIPAddresses(ipAddrs []net.IP) Option {
+func WithIPAddresses(rawIPAddrs []string) Option {
 	return func(i *dragonflyManagerIssuer) {
-		i.ipAddresses = ipAddrs
-	}
-}
+		var ipAddrs []net.IP
+		for _, rawIPAddr := range rawIPAddrs {
+			ipAddrs = append(ipAddrs, net.ParseIP(rawIPAddr))
+		}
 
-// WithURIs set the uris for dragonflyManagerIssuer.
-func WithURIs(uris []*url.URL) Option {
-	return func(i *dragonflyManagerIssuer) {
-		i.uris = uris
+		i.ipAddresses = ipAddrs
 	}
 }
 
@@ -98,10 +70,7 @@ func WithValidityDuration(d time.Duration) Option {
 // NewDragonflyManagerIssuer returns a new certify.Issuer instence.
 func NewDragonflyManagerIssuer(tlsCACert *tls.Certificate, opts ...Option) certify.Issuer {
 	i := &dragonflyManagerIssuer{
-		tlsCACert:        tlsCACert,
-		dnsNames:         defaultDNSNames,
-		ipAddresses:      defaultIPAddresses,
-		validityDuration: defaultValidityDuration,
+		tlsCACert: tlsCACert,
 	}
 
 	for _, opt := range opts {
@@ -136,9 +105,8 @@ func (i *dragonflyManagerIssuer) Issue(ctx context.Context, commonName string, c
 			Organization: defaultSubjectOrganization,
 		},
 		DNSNames:              append(certConfig.SubjectAlternativeNames, i.dnsNames...),
-		EmailAddresses:        i.emailAddresses,
 		IPAddresses:           append(certConfig.IPSubjectAlternativeNames, i.ipAddresses...),
-		URIs:                  append(certConfig.URISubjectAlternativeNames, i.uris...),
+		URIs:                  certConfig.URISubjectAlternativeNames,
 		NotBefore:             now.Add(-10 * time.Minute).UTC(),
 		NotAfter:              now.Add(i.validityDuration).UTC(),
 		BasicConstraintsValid: true,

@@ -266,6 +266,20 @@ type SecurityConfig struct {
 	// prefer: ServerHandshake supports tls and insecure (non-tls), ClientHandshake will only support tls
 	// default or empty: ServerHandshake supports tls and insecure (non-tls), ClientHandshake will only support insecure (non-tls)
 	TLSPolicy string `mapstructure:"tlsPolicy" yaml:"tlsPolicy"`
+
+	// CertSpec is the desired state of manager certificate.
+	CertSpec *CertSpec `mapstructure:"certSpec" yaml:"certSpec"`
+}
+
+type CertSpec struct {
+	// DNSNames is a list of dns names be set on the certificate.
+	DNSNames []string `mapstructure:"dnsNames" yaml:"dnsNames"`
+
+	// IPAddresses is a list of ip addresses be set on the certificate.
+	IPAddresses []string `mapstructure:"ipAddresses" yaml:"ipAddresses"`
+
+	// ValidityDuration is the validity duration  of certificate.
+	ValidityDuration time.Duration `mapstructure:"validityDuration" yaml:"validityDuration"`
 }
 
 // New config instance.
@@ -318,6 +332,11 @@ func New() *Config {
 		Security: &SecurityConfig{
 			AutoIssueCert: false,
 			TLSPolicy:     rpc.DefaultTLSPolicy,
+			CertSpec: &CertSpec{
+				IPAddresses:      DefaultCertIPAddresses,
+				DNSNames:         DefaultCertDNSNames,
+				ValidityDuration: DefaultCertValidityDuration,
+			},
 		},
 		Metrics: &MetricsConfig{
 			Enable:          false,
@@ -504,6 +523,22 @@ func (cfg *Config) Validate() error {
 
 		if !slices.Contains([]string{rpc.DefaultTLSPolicy, rpc.ForceTLSPolicy, rpc.PreferTLSPolicy}, cfg.Security.TLSPolicy) {
 			return errors.New("security requires parameter tlsPolicy")
+		}
+
+		if cfg.Security.CertSpec == nil {
+			return errors.New("security requires parameter certSpec")
+		}
+
+		if len(cfg.Security.CertSpec.IPAddresses) == 0 {
+			return errors.New("certSpec requires parameter ipAddresses")
+		}
+
+		if len(cfg.Security.CertSpec.DNSNames) == 0 {
+			return errors.New("certSpec requires parameter dnsNames")
+		}
+
+		if cfg.Security.CertSpec.ValidityDuration <= 0 {
+			return errors.New("certSpec requires parameter validityDuration")
 		}
 	}
 

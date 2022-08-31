@@ -62,6 +62,12 @@ security:
   caCert: foo
   caKey: bar
   tlsPolicy: force
+  certSpec:
+    ipAddresses:
+      - "127.0.0.1"
+    dnsNames:
+      - "foo"
+    validityDuration: 1000
 
 metrics:
   enable: true

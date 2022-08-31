@@ -38,6 +38,14 @@ import (
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 )
 
+var (
+	// defaultSubjectOrganization is default organization of subject.
+	defaultSubjectOrganization = []string{"Dragonfly"}
+
+	// defaultValidityDuration is default validity duration of certificate.
+	defaultValidityDuration = 180 * 24 * int64(time.Hour.Seconds())
+)
+
 type dragonflyIssuer struct {
 	client managerclient.Client
 }
@@ -55,7 +63,7 @@ func (d *dragonflyIssuer) Issue(ctx context.Context, commonName string, certConf
 
 	request := &securityv1.CertificateRequest{
 		Csr:              string(csrPEM),
-		ValidityDuration: 180 * 24 * int64(time.Hour.Seconds()),
+		ValidityDuration: defaultValidityDuration,
 	}
 
 	response, err := d.client.IssueCertificate(ctx, request)
