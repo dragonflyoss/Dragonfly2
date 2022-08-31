@@ -18,6 +18,7 @@ package config
 
 import (
 	"errors"
+	"net"
 	"time"
 
 	"google.golang.org/grpc/resolver"
@@ -26,7 +27,6 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/reachable"
-	"d7y.io/dragonfly/v2/pkg/slices"
 )
 
 var (
@@ -50,22 +50,31 @@ func newDynconfigLocal(cfg *DaemonOption) (Dynconfig, error) {
 
 // Get the dynamic schedulers resolve addrs.
 func (d *dynconfigLocal) GetResolveSchedulerAddrs() ([]resolver.Address, error) {
-	addrs := []string{}
+	var (
+		addrs        = map[string]bool{}
+		resolveAddrs = []resolver.Address{}
+	)
 	for _, schedulerAddr := range d.config.Scheduler.NetAddrs {
-		r := reachable.New(&reachable.Config{Address: schedulerAddr.Addr})
+		addr := schedulerAddr.Addr
+		r := reachable.New(&reachable.Config{Address: addr})
 		if err := r.Check(); err != nil {
-			logger.Warnf("scheduler address %s is unreachable", schedulerAddr.Addr)
+			logger.Warnf("scheduler address %s is unreachable", addr)
 		} else {
-			addrs = append(addrs, schedulerAddr.Addr)
-			continue
-		}
-	}
+			if addrs[addr] {
+				continue
+			}
 
-	resolveAddrs := []resolver.Address{}
-	for _, addr := range slices.RemoveDuplicates(addrs) {
-		resolveAddrs = append(resolveAddrs, resolver.Address{
-			Addr: addr,
-		})
+			host, _, err := net.SplitHostPort(addr)
+			if err != nil {
+				continue
+			}
+
+			resolveAddrs = append(resolveAddrs, resolver.Address{
+				ServerName: host,
+				Addr:       addr,
+			})
+			addrs[addr] = true
+		}
 	}
 
 	return resolveAddrs, nil
