@@ -47,6 +47,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
 	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/types"
 )
 
 const (
@@ -179,7 +180,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 			Logger:       zapadapter.New(logger.CoreLogger.Desugar()),
 			Cache: pkgcache.NewCertifyMutliCache(
 				certify.NewMemCache(),
-				certify.DirCache(path.Join(d.CacheDir(), pkgcache.ManagerCertifyCacheDirName))),
+				certify.DirCache(path.Join(d.CacheDir(), pkgcache.CertifyCacheDirName, types.ManagerName))),
 		})
 		if err != nil {
 			return nil, err

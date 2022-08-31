@@ -23,7 +23,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"d7y.io/dragonfly/v2/internal/constants"
+	"d7y.io/dragonfly/v2/pkg/types"
 )
 
 const (
@@ -45,120 +45,120 @@ const (
 
 var (
 	ProxyRequestCount = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.DfdaemonMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.DfdaemonMetricsName,
 		Name:      "proxy_request_total",
 		Help:      "Counter of the total proxy request.",
 	}, []string{"method"})
 
 	ProxyRequestViaDragonflyCount = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.DfdaemonMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.DfdaemonMetricsName,
 		Name:      "proxy_request_via_dragonfly_total",
 		Help:      "Counter of the total proxy request via Dragonfly.",
 	})
 
 	ProxyRequestNotViaDragonflyCount = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.DfdaemonMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.DfdaemonMetricsName,
 		Name:      "proxy_request_not_via_dragonfly_total",
 		Help:      "Counter of the total proxy request not via Dragonfly.",
 	})
 
 	ProxyRequestRunningCount = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.DfdaemonMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.DfdaemonMetricsName,
 		Name:      "proxy_request_running_total",
 		Help:      "Current running count of proxy request.",
 	}, []string{"method"})
 
 	ProxyRequestBytesCount = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.DfdaemonMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.DfdaemonMetricsName,
 		Name:      "proxy_request_bytes_total",
 		Help:      "Counter of the total byte of all proxy request.",
 	}, []string{"method"})
 
 	PeerTaskCount = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.DfdaemonMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.DfdaemonMetricsName,
 		Name:      "peer_task_total",
 		Help:      "Counter of the total peer tasks.",
 	})
 
 	PeerTaskFailedCount = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.DfdaemonMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.DfdaemonMetricsName,
 		Name:      "peer_task_failed_total",
 		Help:      "Counter of the total failed peer tasks.",
 	}, []string{"type"})
 
 	PieceTaskCount = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.DfdaemonMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.DfdaemonMetricsName,
 		Name:      "piece_task_total",
 		Help:      "Counter of the total failed piece tasks.",
 	})
 
 	PieceTaskFailedCount = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.DfdaemonMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.DfdaemonMetricsName,
 		Name:      "piece_task_failed_total",
 		Help:      "Counter of the total failed piece tasks.",
 	})
 
 	FileTaskCount = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.DfdaemonMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.DfdaemonMetricsName,
 		Name:      "file_task_total",
 		Help:      "Counter of the total file tasks.",
 	})
 
 	StreamTaskCount = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.DfdaemonMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.DfdaemonMetricsName,
 		Name:      "stream_task_total",
 		Help:      "Counter of the total stream tasks.",
 	})
 
 	SeedPeerDownloadCount = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.DfdaemonMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.DfdaemonMetricsName,
 		Name:      "seed_peer_download_total",
 		Help:      "Counter of the number of the seed peer downloading.",
 	})
 
 	SeedPeerDownloadFailureCount = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.DfdaemonMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.DfdaemonMetricsName,
 		Name:      "seed_peer_download_failure_total",
 		Help:      "Counter of the number of failed of the seed peer downloading.",
 	})
 
 	SeedPeerDownloadTraffic = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.DfdaemonMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.DfdaemonMetricsName,
 		Name:      "seed_peer_download_traffic",
 		Help:      "Counter of the number of seed peer download traffic.",
 	}, []string{"type"})
 
 	SeedPeerConcurrentDownloadGauge = promauto.NewGauge(prometheus.GaugeOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.DfdaemonMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.DfdaemonMetricsName,
 		Name:      "seed_peer_concurrent_download_total",
 		Help:      "Gauger of the number of concurrent of the seed peer downloading.",
 	})
 
 	PeerTaskCacheHitCount = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.DfdaemonMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.DfdaemonMetricsName,
 		Name:      "peer_task_cache_hit_total",
 		Help:      "Counter of the total cache hit peer tasks.",
 	})
 
 	PrefetchTaskCount = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.DfdaemonMetricsName,
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.DfdaemonMetricsName,
 		Name:      "prefetch_task_total",
 		Help:      "Counter of the total prefetched tasks.",
 	})

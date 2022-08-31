@@ -28,6 +28,7 @@ import (
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
+	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/version"
@@ -65,7 +66,7 @@ generate and maintain a P2P network during the download process, and push suitab
 		if err := logger.InitScheduler(cfg.Verbose, cfg.Console, d.LogDir()); err != nil {
 			return fmt.Errorf("init scheduler logger: %w", err)
 		}
-		logger.RedirectStdoutAndStderr(cfg.Console, path.Join(d.LogDir(), "scheduler"))
+		logger.RedirectStdoutAndStderr(cfg.Console, path.Join(d.LogDir(), types.SchedulerName))
 
 		return runScheduler(ctx, d)
 	},
@@ -97,11 +98,9 @@ func initDfpath(cfg *config.ServerConfig) (dfpath.Dfpath, error) {
 		options = append(options, dfpath.WithLogDir(cfg.LogDir))
 	}
 
-	cacheDir := dfpath.DefaultCacheDir
 	if cfg.CacheDir != "" {
-		cacheDir = cfg.CacheDir
+		options = append(options, dfpath.WithCacheDir(cfg.CacheDir))
 	}
-	options = append(options, dfpath.WithCacheDir(cacheDir))
 
 	dataDir := dfpath.DefaultDataDir
 	if cfg.DataDir != "" {
