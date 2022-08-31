@@ -24,7 +24,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/net/fqdn"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/serialize"
+	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
@@ -459,7 +459,7 @@ type SecurityConfig struct {
 	AutoIssueCert bool `mapstructure:"autoIssueCert" yaml:"autoIssueCert"`
 
 	// CACert is the root CA certificate for all grpc tls handshake, it can be path or PEM format string.
-	CACert serialize.PEMContent `mapstructure:"caCert" yaml:"caCert"`
+	CACert types.PEMContent `mapstructure:"caCert" yaml:"caCert"`
 
 	// TLSPrefer indicates to verify client certificates for grpc ServerHandshake.
 	TLSVerify bool `mapstructure:"tlsVerify" yaml:"tlsVerify"`

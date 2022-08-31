@@ -34,7 +34,6 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/dfget"
 	"d7y.io/dragonfly/v2/cmd/dependency"
-	"d7y.io/dragonfly/v2/internal/constants"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
@@ -42,6 +41,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/pkg/source"
+	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/version"
 )
@@ -230,7 +230,7 @@ func runDfget(dfgetLockPath, daemonSockPath string) error {
 		err            error
 	)
 
-	if dfgetConfig.Pattern != constants.SourcePattern {
+	if dfgetConfig.Pattern != types.SourcePattern {
 		logger.Info("start to check and spawn daemon")
 		if dfdaemonClient, err = checkAndSpawnDaemon(dfgetLockPath, daemonSockPath); err != nil {
 			logger.Errorf("check and spawn daemon error: %v", err)

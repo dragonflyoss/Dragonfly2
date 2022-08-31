@@ -29,6 +29,7 @@ import (
 	"d7y.io/dragonfly/v2/manager"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
+	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/version"
 )
 
@@ -61,7 +62,7 @@ for managing schedulers and seed peers, offering http apis and portal, etc.`,
 		if err := logger.InitManager(cfg.Verbose, cfg.Console, d.LogDir()); err != nil {
 			return fmt.Errorf("init manager logger: %w", err)
 		}
-		logger.RedirectStdoutAndStderr(cfg.Console, path.Join(d.LogDir(), "manager"))
+		logger.RedirectStdoutAndStderr(cfg.Console, path.Join(d.LogDir(), types.ManagerName))
 
 		return runManager(d)
 	},
@@ -88,6 +89,10 @@ func initDfpath(cfg *config.ServerConfig) (dfpath.Dfpath, error) {
 	var options []dfpath.Option
 	if cfg.LogDir != "" {
 		options = append(options, dfpath.WithLogDir(cfg.LogDir))
+	}
+
+	if cfg.CacheDir != "" {
+		options = append(options, dfpath.WithCacheDir(cfg.CacheDir))
 	}
 
 	return dfpath.New(options...)
