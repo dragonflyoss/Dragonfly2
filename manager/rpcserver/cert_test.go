@@ -78,10 +78,6 @@ func TestIssueCertificate(t *testing.T) {
 			csr, err := x509.CreateCertificateRequest(rand.Reader, template, pk)
 			require.Nilf(err, "CreateCertificateRequest should be ok")
 
-			var csrPEM bytes.Buffer
-			err = pem.Encode(&csrPEM, &pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csr})
-			require.Nilf(err, "pem.Encode should be ok")
-
 			ca, err := tls.X509KeyPair([]byte(caCert), []byte(caKey))
 			require.Nilf(err, "parse cert and private key should be ok")
 
@@ -105,7 +101,7 @@ func TestIssueCertificate(t *testing.T) {
 			resp, err := server.IssueCertificate(
 				ctx,
 				&securityv1.CertificateRequest{
-					Csr:            csrPEM.String(),
+					Csr:            csr,
 					ValidityPeriod: durationpb.New(time.Hour),
 				})
 

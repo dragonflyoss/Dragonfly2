@@ -20,7 +20,6 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 	"math/big"
 	"net"
@@ -58,14 +57,8 @@ func (s *Server) IssueCertificate(ctx context.Context, req *securityv1.Certifica
 		}
 	}
 
-	// Decode csr pem.
-	block, _ := pem.Decode([]byte(req.Csr))
-	if block == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid csr format")
-	}
-
 	// Parse csr.
-	csr, err := x509.ParseCertificateRequest(block.Bytes)
+	csr, err := x509.ParseCertificateRequest(req.Csr)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid csr format: %s", err.Error())
 	}
