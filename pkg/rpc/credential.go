@@ -43,7 +43,12 @@ const (
 )
 
 // NewServerCredentialsByCertify returns server transport credentials by certify.
-func NewServerCredentialsByCertify(tlsPolicy string, tlsVerify bool, clientCAs [][]byte, certifyClient *certify.Certify) (credentials.TransportCredentials, error) {
+func NewServerCredentialsByCertify(tlsPolicy string, tlsVerify bool, pemClientCAs []byte, certifyClient *certify.Certify) (credentials.TransportCredentials, error) {
+	certPool := x509.NewCertPool()
+	if !certPool.AppendCertsFromPEM(pemClientCAs) {
+		return nil, errors.New("invalid CA Cert")
+	}
+
 	tlsConfig := &tls.Config{
 		GetCertificate: func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 			if hello.ServerName == "" {
@@ -52,6 +57,11 @@ func NewServerCredentialsByCertify(tlsPolicy string, tlsVerify bool, clientCAs [
 
 			return certifyClient.GetCertificate(hello)
 		},
+		ClientCAs: certPool,
+	}
+
+	if tlsVerify {
+		tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
 	}
 
 	switch tlsPolicy {
@@ -59,19 +69,6 @@ func NewServerCredentialsByCertify(tlsPolicy string, tlsVerify bool, clientCAs [
 		return NewMuxTransportCredentials(tlsConfig,
 			WithTLSPreferClientHandshake(tlsPolicy == PreferTLSPolicy)), nil
 	case ForceTLSPolicy:
-		if !tlsVerify {
-			return credentials.NewTLS(tlsConfig), nil
-		}
-
-		certPool := x509.NewCertPool()
-		for _, cert := range clientCAs {
-			if !certPool.AppendCertsFromPEM(cert) {
-				return nil, errors.New("invalid CA Cert")
-			}
-		}
-
-		tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
-		tlsConfig.ClientCAs = certPool
 		return credentials.NewTLS(tlsConfig), nil
 	default:
 		return nil, fmt.Errorf("invalid tlsPolicy: %s", tlsPolicy)
@@ -79,13 +76,15 @@ func NewServerCredentialsByCertify(tlsPolicy string, tlsVerify bool, clientCAs [
 }
 
 // NewClientCredentialsByCertify returns client transport credentials by certify.
-func NewClientCredentialsByCertify(tlsPolicy string, tlsVerify bool, rootCAs [][]byte, certifyClient *certify.Certify) (credentials.TransportCredentials, error) {
-	tlsConfig := &tls.Config{
-		GetClientCertificate: certifyClient.GetClientCertificate,
+func NewClientCredentialsByCertify(tlsPolicy string, pemRootCAs []byte, certifyClient *certify.Certify) (credentials.TransportCredentials, error) {
+	certPool := x509.NewCertPool()
+	if !certPool.AppendCertsFromPEM(pemRootCAs) {
+		return nil, errors.New("invalid CA Cert")
 	}
 
-	if !tlsVerify {
-		tlsConfig.InsecureSkipVerify = true
+	tlsConfig := &tls.Config{
+		GetClientCertificate: certifyClient.GetClientCertificate,
+		RootCAs:              certPool,
 	}
 
 	switch tlsPolicy {
@@ -93,14 +92,6 @@ func NewClientCredentialsByCertify(tlsPolicy string, tlsVerify bool, rootCAs [][
 		return NewMuxTransportCredentials(tlsConfig,
 			WithTLSPreferClientHandshake(tlsPolicy == PreferTLSPolicy)), nil
 	case ForceTLSPolicy:
-		certPool := x509.NewCertPool()
-		for _, cert := range rootCAs {
-			if !certPool.AppendCertsFromPEM(cert) {
-				return nil, errors.New("invalid CA Cert")
-			}
-		}
-
-		tlsConfig.RootCAs = certPool
 		return credentials.NewTLS(tlsConfig), nil
 	default:
 		return nil, fmt.Errorf("invalid tlsPolicy: %s", tlsPolicy)
@@ -108,10 +99,14 @@ func NewClientCredentialsByCertify(tlsPolicy string, tlsVerify bool, rootCAs [][
 }
 
 // NewClientCredentials returns client transport credentials.
-func NewClientCredentials(tlsPolicy string, tlsVerify bool, certs []tls.Certificate, rootCAs [][]byte) (credentials.TransportCredentials, error) {
-	tlsConfig := &tls.Config{}
-	if !tlsVerify {
-		tlsConfig.InsecureSkipVerify = true
+func NewClientCredentials(tlsPolicy string, certs []tls.Certificate, pemRootCAs []byte) (credentials.TransportCredentials, error) {
+	certPool := x509.NewCertPool()
+	if !certPool.AppendCertsFromPEM(pemRootCAs) {
+		return nil, errors.New("invalid CA Cert")
+	}
+
+	tlsConfig := &tls.Config{
+		RootCAs: certPool,
 	}
 
 	if len(certs) > 0 {
@@ -123,14 +118,6 @@ func NewClientCredentials(tlsPolicy string, tlsVerify bool, certs []tls.Certific
 		return NewMuxTransportCredentials(tlsConfig,
 			WithTLSPreferClientHandshake(tlsPolicy == PreferTLSPolicy)), nil
 	case ForceTLSPolicy:
-		certPool := x509.NewCertPool()
-		for _, cert := range rootCAs {
-			if !certPool.AppendCertsFromPEM(cert) {
-				return nil, errors.New("invalid CA Cert")
-			}
-		}
-
-		tlsConfig.RootCAs = certPool
 		return credentials.NewTLS(tlsConfig), nil
 	default:
 		return nil, fmt.Errorf("invalid tlsPolicy: %s", tlsPolicy)

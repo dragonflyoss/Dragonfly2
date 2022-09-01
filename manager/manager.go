@@ -169,15 +169,13 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 			return nil, err
 		}
 
-		// Manager GRPC server's tls varify must be false. If ClientCAs are required for client verification,
-		// the client cannot call the IssueCertificate api.
-		transportCredentials, err := rpc.NewServerCredentialsByCertify(cfg.Security.TLSPolicy, false, cert.Certificate, &certify.Certify{
+		certifyClient := &certify.Certify{
 			CommonName: ip.IPv4,
 			Issuer: issuer.NewDragonflyManagerIssuer(
 				&cert,
-				issuer.WithIPAddresses(cfg.Security.CertSpec.IPAddresses),
-				issuer.WithDNSNames(cfg.Security.CertSpec.DNSNames),
-				issuer.WithValidityDuration(cfg.Security.CertSpec.ValidityDuration),
+				issuer.WithManagerIPAddresses(cfg.Security.CertSpec.IPAddresses),
+				issuer.WithManagerDNSNames(cfg.Security.CertSpec.DNSNames),
+				issuer.WithManagerValidityPeriod(cfg.Security.CertSpec.ValidityPeriod),
 			),
 			RenewBefore:  time.Hour,
 			CertConfig:   nil,
@@ -186,7 +184,19 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 			Cache: pkgcache.NewCertifyMutliCache(
 				certify.NewMemCache(),
 				certify.DirCache(path.Join(d.CacheDir(), pkgcache.CertifyCacheDirName, types.ManagerName))),
-		})
+		}
+
+		// Issue a certificate to reduce first time delay.
+		if _, err := certifyClient.GetCertificate(&tls.ClientHelloInfo{
+			ServerName: ip.IPv4,
+		}); err != nil {
+			logger.Errorf("issue certificate error: %s", err.Error())
+			return nil, err
+		}
+
+		// Manager GRPC server's tls varify must be false. If ClientCAs are required for client verification,
+		// the client cannot call the IssueCertificate api.
+		transportCredentials, err := rpc.NewServerCredentialsByCertify(cfg.Security.TLSPolicy, false, []byte(cfg.Security.CACert), certifyClient)
 		if err != nil {
 			return nil, err
 		}

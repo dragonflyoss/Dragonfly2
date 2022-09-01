@@ -105,9 +105,9 @@ func TestManagerConfig_Load(t *testing.T) {
 			CAKey:         "bar",
 			TLSPolicy:     "force",
 			CertSpec: &CertSpec{
-				IPAddresses:      []string{"127.0.0.1"},
-				DNSNames:         []string{"foo"},
-				ValidityDuration: 1000,
+				IPAddresses:    []string{"127.0.0.1"},
+				DNSNames:       []string{"foo"},
+				ValidityPeriod: 1000,
 			},
 		},
 		Metrics: &MetricsConfig{

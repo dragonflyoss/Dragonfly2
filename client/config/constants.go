@@ -94,3 +94,8 @@ const (
 	DefaultObjectStorageStartPort = 65004
 	DefaultHealthyStartPort       = 40901
 )
+
+var (
+	// DefaultCertValidityPeriod is default validity period of certificate.
+	DefaultCertValidityPeriod = 180 * 24 * time.Hour
+)

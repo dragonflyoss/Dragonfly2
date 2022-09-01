@@ -34,6 +34,7 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 	testifyrequire "github.com/stretchr/testify/require"
 	"google.golang.org/grpc/peer"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"gorm.io/gorm"
 
 	securityv1 "d7y.io/api/pkg/apis/security/v1"
@@ -77,10 +78,6 @@ func TestIssueCertificate(t *testing.T) {
 			csr, err := x509.CreateCertificateRequest(rand.Reader, template, pk)
 			require.Nilf(err, "CreateCertificateRequest should be ok")
 
-			var csrPEM bytes.Buffer
-			err = pem.Encode(&csrPEM, &pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csr})
-			require.Nilf(err, "pem.Encode should be ok")
-
 			ca, err := tls.X509KeyPair([]byte(caCert), []byte(caKey))
 			require.Nilf(err, "parse cert and private key should be ok")
 
@@ -104,8 +101,8 @@ func TestIssueCertificate(t *testing.T) {
 			resp, err := server.IssueCertificate(
 				ctx,
 				&securityv1.CertificateRequest{
-					Csr:              csrPEM.String(),
-					ValidityDuration: 0,
+					Csr:            csr,
+					ValidityPeriod: durationpb.New(time.Hour),
 				})
 
 			assert.Nilf(err, "IssueCertificate should be ok")
@@ -167,11 +164,11 @@ func genCA() (cert, key string) {
 	return
 }
 
-func readCert(certPEM string) *x509.Certificate {
-	p, _ := pem.Decode([]byte(certPEM))
-	cert, err := x509.ParseCertificate(p.Bytes)
+func readCert(der []byte) *x509.Certificate {
+	cert, err := x509.ParseCertificate(der)
 	if err != nil {
 		panic(err)
 	}
+
 	return cert
 }

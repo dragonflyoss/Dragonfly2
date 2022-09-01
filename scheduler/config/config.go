@@ -63,219 +63,6 @@ type Config struct {
 	Security *SecurityConfig `yaml:"security" mapstructure:"security"`
 }
 
-// New default configuration.
-func New() *Config {
-	return &Config{
-		Server: &ServerConfig{
-			IP:     ip.IPv4,
-			Host:   fqdn.FQDNHostname,
-			Listen: DefaultServerListen,
-			Port:   DefaultServerPort,
-		},
-		Scheduler: &SchedulerConfig{
-			Algorithm:            DefaultSchedulerAlgorithm,
-			BackSourceCount:      DefaultSchedulerBackSourceCount,
-			RetryBackSourceLimit: DefaultSchedulerRetryBackSourceLimit,
-			RetryLimit:           DefaultSchedulerRetryLimit,
-			RetryInterval:        DefaultSchedulerRetryInterval,
-			GC: &GCConfig{
-				PeerGCInterval: DefaultSchedulerPeerGCInterval,
-				PeerTTL:        DefaultSchedulerPeerTTL,
-				TaskGCInterval: DefaultSchedulerTaskGCInterval,
-				TaskTTL:        DefaultSchedulerTaskTTL,
-				HostGCInterval: DefaultSchedulerHostGCInterval,
-				HostTTL:        DefaultSchedulerHostTTL,
-			},
-			Training: &TrainingConfig{
-				Enable:               false,
-				EnableAutoRefresh:    false,
-				RefreshModelInterval: DefaultRefreshModelInterval,
-				CPU:                  DefaultCPU,
-			},
-		},
-		DynConfig: &DynConfig{
-			RefreshInterval: DefaultDynConfigRefreshInterval,
-		},
-		Host: &HostConfig{},
-		Manager: &ManagerConfig{
-			SchedulerClusterID: DefaultManagerSchedulerClusterID,
-			KeepAlive: KeepAliveConfig{
-				Interval: DefaultManagerKeepAliveInterval,
-			},
-		},
-		SeedPeer: &SeedPeerConfig{
-			Enable: true,
-		},
-		Job: &JobConfig{
-			Enable:             true,
-			GlobalWorkerNum:    DefaultJobGlobalWorkerNum,
-			SchedulerWorkerNum: DefaultJobSchedulerWorkerNum,
-			LocalWorkerNum:     DefaultJobLocalWorkerNum,
-			Redis: &RedisConfig{
-				Port:      DefaultJobRedisPort,
-				BrokerDB:  DefaultJobRedisBrokerDB,
-				BackendDB: DefaultJobRedisBackendDB,
-			},
-		},
-		Storage: &StorageConfig{
-			MaxSize:    storage.DefaultMaxSize,
-			MaxBackups: storage.DefaultMaxBackups,
-			BufferSize: storage.DefaultBufferSize,
-		},
-		Metrics: &MetricsConfig{
-			Enable:         false,
-			Addr:           DefaultMetricsAddr,
-			EnablePeerHost: false,
-		},
-		Security: &SecurityConfig{
-			AutoIssueCert: false,
-			TLSVerify:     true,
-			TLSPolicy:     rpc.DefaultTLSPolicy,
-		},
-	}
-}
-
-// Validate config parameters.
-func (cfg *Config) Validate() error {
-	if cfg.Server == nil {
-		return errors.New("server requires parameter server")
-	}
-
-	if cfg.Server.IP == "" {
-		return errors.New("server requires parameter ip")
-	}
-
-	if cfg.Server.Host == "" {
-		return errors.New("server requires parameter host")
-	}
-
-	if cfg.Server.Port <= 0 {
-		return errors.New("server requires parameter port")
-	}
-
-	if cfg.Server.Listen == "" {
-		return errors.New("server requires parameter listen")
-	}
-
-	if cfg.Scheduler.Algorithm == "" {
-		return errors.New("scheduler requires parameter algorithm")
-	}
-
-	if cfg.Scheduler.RetryLimit <= 0 {
-		return errors.New("scheduler requires parameter retryLimit")
-	}
-
-	if cfg.Scheduler.RetryInterval <= 0 {
-		return errors.New("scheduler requires parameter retryInterval")
-	}
-
-	if cfg.Scheduler.GC == nil {
-		return errors.New("scheduler requires parameter gc")
-	}
-
-	if cfg.Scheduler.GC.PeerGCInterval <= 0 {
-		return errors.New("scheduler requires parameter peerGCInterval")
-	}
-
-	if cfg.Scheduler.GC.PeerTTL <= 0 {
-		return errors.New("scheduler requires parameter peerTTL")
-	}
-
-	if cfg.Scheduler.GC.TaskGCInterval <= 0 {
-		return errors.New("scheduler requires parameter taskGCInterval")
-	}
-
-	if cfg.Scheduler.GC.TaskTTL <= 0 {
-		return errors.New("scheduler requires parameter taskTTL")
-	}
-
-	if cfg.Scheduler.Training != nil && cfg.Scheduler.Training.Enable {
-		if cfg.Scheduler.Training.CPU <= 0 {
-			return errors.New("training requires parameter cpu")
-		}
-
-		if cfg.Scheduler.Training.EnableAutoRefresh && cfg.Scheduler.Training.RefreshModelInterval <= 0 {
-			return errors.New("training requires parameter refreshModelInterval")
-		}
-	}
-
-	if cfg.DynConfig.RefreshInterval <= 0 {
-		return errors.New("dynconfig requires parameter refreshInterval")
-	}
-
-	if cfg.Manager.Addr == "" {
-		return errors.New("manager requires parameter addr")
-	}
-
-	if cfg.Manager.SchedulerClusterID == 0 {
-		return errors.New("manager requires parameter schedulerClusterID")
-	}
-
-	if cfg.Manager.KeepAlive.Interval <= 0 {
-		return errors.New("manager requires parameter keepAlive interval")
-	}
-
-	if cfg.Job != nil && cfg.Job.Enable {
-		if cfg.Job.GlobalWorkerNum == 0 {
-			return errors.New("job requires parameter globalWorkerNum")
-		}
-
-		if cfg.Job.SchedulerWorkerNum == 0 {
-			return errors.New("job requires parameter schedulerWorkerNum")
-		}
-
-		if cfg.Job.LocalWorkerNum == 0 {
-			return errors.New("job requires parameter localWorkerNum")
-		}
-
-		if cfg.Job.Redis.Host == "" {
-			return errors.New("job requires parameter redis host")
-		}
-
-		if cfg.Job.Redis.Port <= 0 {
-			return errors.New("job requires parameter redis port")
-		}
-
-		if cfg.Job.Redis.BrokerDB <= 0 {
-			return errors.New("job requires parameter redis brokerDB")
-		}
-
-		if cfg.Job.Redis.BackendDB <= 0 {
-			return errors.New("job requires parameter redis backendDB")
-		}
-	}
-
-	if cfg.Storage == nil {
-		return errors.New("server requires parameter storage")
-	}
-
-	if cfg.Storage.MaxSize <= 0 {
-		return errors.New("storage requires parameter maxSize")
-	}
-
-	if cfg.Storage.MaxBackups <= 0 {
-		return errors.New("storage requires parameter maxBackups")
-	}
-
-	if cfg.Storage.BufferSize <= 0 {
-		return errors.New("storage requires parameter bufferSize")
-	}
-
-	if cfg.Metrics != nil && cfg.Metrics.Enable {
-		if cfg.Metrics.Addr == "" {
-			return errors.New("metrics requires parameter addr")
-		}
-	}
-
-	if cfg.Security.AutoIssueCert {
-		if cfg.Security.CACert == "" {
-			return errors.New("security requires parameter caCert")
-		}
-	}
-
-	return nil
-}
-
 type ServerConfig struct {
 	// Server ip.
 	IP string `yaml:"ip" mapstructure:"ip"`
@@ -461,12 +248,244 @@ type SecurityConfig struct {
 	// CACert is the root CA certificate for all grpc tls handshake, it can be path or PEM format string.
 	CACert types.PEMContent `mapstructure:"caCert" yaml:"caCert"`
 
-	// TLSPrefer indicates to verify client certificates for grpc ServerHandshake.
+	// TLSVerify indicates to verify client certificates.
 	TLSVerify bool `mapstructure:"tlsVerify" yaml:"tlsVerify"`
 
 	// TLSPolicy controls the grpc shandshake behaviors:
 	// force: both ClientHandshake and ServerHandshake are only support tls.
 	// prefer: ServerHandshake supports tls and insecure (non-tls), ClientHandshake will only support tls.
-	// default or empty: ServerHandshake supports tls and insecure (non-tls), ClientHandshake will only support insecure (non-tls).
+	// default: ServerHandshake supports tls and insecure (non-tls), ClientHandshake will only support insecure (non-tls).
 	TLSPolicy string `mapstructure:"tlsPolicy" yaml:"tlsPolicy"`
+
+	// CertSpec is the desired state of certificate.
+	CertSpec *CertSpec `mapstructure:"certSpec" yaml:"certSpec"`
+}
+
+type CertSpec struct {
+	// ValidityPeriod is the validity period of certificate.
+	ValidityPeriod time.Duration `mapstructure:"validityPeriod" yaml:"validityPeriod"`
+}
+
+// New default configuration.
+func New() *Config {
+	return &Config{
+		Server: &ServerConfig{
+			IP:     ip.IPv4,
+			Host:   fqdn.FQDNHostname,
+			Listen: DefaultServerListen,
+			Port:   DefaultServerPort,
+		},
+		Scheduler: &SchedulerConfig{
+			Algorithm:            DefaultSchedulerAlgorithm,
+			BackSourceCount:      DefaultSchedulerBackSourceCount,
+			RetryBackSourceLimit: DefaultSchedulerRetryBackSourceLimit,
+			RetryLimit:           DefaultSchedulerRetryLimit,
+			RetryInterval:        DefaultSchedulerRetryInterval,
+			GC: &GCConfig{
+				PeerGCInterval: DefaultSchedulerPeerGCInterval,
+				PeerTTL:        DefaultSchedulerPeerTTL,
+				TaskGCInterval: DefaultSchedulerTaskGCInterval,
+				TaskTTL:        DefaultSchedulerTaskTTL,
+				HostGCInterval: DefaultSchedulerHostGCInterval,
+				HostTTL:        DefaultSchedulerHostTTL,
+			},
+			Training: &TrainingConfig{
+				Enable:               false,
+				EnableAutoRefresh:    false,
+				RefreshModelInterval: DefaultRefreshModelInterval,
+				CPU:                  DefaultCPU,
+			},
+		},
+		DynConfig: &DynConfig{
+			RefreshInterval: DefaultDynConfigRefreshInterval,
+		},
+		Host: &HostConfig{},
+		Manager: &ManagerConfig{
+			SchedulerClusterID: DefaultManagerSchedulerClusterID,
+			KeepAlive: KeepAliveConfig{
+				Interval: DefaultManagerKeepAliveInterval,
+			},
+		},
+		SeedPeer: &SeedPeerConfig{
+			Enable: true,
+		},
+		Job: &JobConfig{
+			Enable:             true,
+			GlobalWorkerNum:    DefaultJobGlobalWorkerNum,
+			SchedulerWorkerNum: DefaultJobSchedulerWorkerNum,
+			LocalWorkerNum:     DefaultJobLocalWorkerNum,
+			Redis: &RedisConfig{
+				Port:      DefaultJobRedisPort,
+				BrokerDB:  DefaultJobRedisBrokerDB,
+				BackendDB: DefaultJobRedisBackendDB,
+			},
+		},
+		Storage: &StorageConfig{
+			MaxSize:    storage.DefaultMaxSize,
+			MaxBackups: storage.DefaultMaxBackups,
+			BufferSize: storage.DefaultBufferSize,
+		},
+		Metrics: &MetricsConfig{
+			Enable:         false,
+			Addr:           DefaultMetricsAddr,
+			EnablePeerHost: false,
+		},
+		Security: &SecurityConfig{
+			AutoIssueCert: false,
+			TLSVerify:     true,
+			TLSPolicy:     rpc.PreferTLSPolicy,
+			CertSpec: &CertSpec{
+				ValidityPeriod: DefaultCertValidityPeriod,
+			},
+		},
+	}
+}
+
+// Validate config parameters.
+func (cfg *Config) Validate() error {
+	if cfg.Server == nil {
+		return errors.New("server requires parameter server")
+	}
+
+	if cfg.Server.IP == "" {
+		return errors.New("server requires parameter ip")
+	}
+
+	if cfg.Server.Host == "" {
+		return errors.New("server requires parameter host")
+	}
+
+	if cfg.Server.Port <= 0 {
+		return errors.New("server requires parameter port")
+	}
+
+	if cfg.Server.Listen == "" {
+		return errors.New("server requires parameter listen")
+	}
+
+	if cfg.Scheduler.Algorithm == "" {
+		return errors.New("scheduler requires parameter algorithm")
+	}
+
+	if cfg.Scheduler.RetryLimit <= 0 {
+		return errors.New("scheduler requires parameter retryLimit")
+	}
+
+	if cfg.Scheduler.RetryInterval <= 0 {
+		return errors.New("scheduler requires parameter retryInterval")
+	}
+
+	if cfg.Scheduler.GC == nil {
+		return errors.New("scheduler requires parameter gc")
+	}
+
+	if cfg.Scheduler.GC.PeerGCInterval <= 0 {
+		return errors.New("scheduler requires parameter peerGCInterval")
+	}
+
+	if cfg.Scheduler.GC.PeerTTL <= 0 {
+		return errors.New("scheduler requires parameter peerTTL")
+	}
+
+	if cfg.Scheduler.GC.TaskGCInterval <= 0 {
+		return errors.New("scheduler requires parameter taskGCInterval")
+	}
+
+	if cfg.Scheduler.GC.TaskTTL <= 0 {
+		return errors.New("scheduler requires parameter taskTTL")
+	}
+
+	if cfg.Scheduler.Training != nil && cfg.Scheduler.Training.Enable {
+		if cfg.Scheduler.Training.CPU <= 0 {
+			return errors.New("training requires parameter cpu")
+		}
+
+		if cfg.Scheduler.Training.EnableAutoRefresh && cfg.Scheduler.Training.RefreshModelInterval <= 0 {
+			return errors.New("training requires parameter refreshModelInterval")
+		}
+	}
+
+	if cfg.DynConfig.RefreshInterval <= 0 {
+		return errors.New("dynconfig requires parameter refreshInterval")
+	}
+
+	if cfg.Manager.Addr == "" {
+		return errors.New("manager requires parameter addr")
+	}
+
+	if cfg.Manager.SchedulerClusterID == 0 {
+		return errors.New("manager requires parameter schedulerClusterID")
+	}
+
+	if cfg.Manager.KeepAlive.Interval <= 0 {
+		return errors.New("manager requires parameter keepAlive interval")
+	}
+
+	if cfg.Job != nil && cfg.Job.Enable {
+		if cfg.Job.GlobalWorkerNum == 0 {
+			return errors.New("job requires parameter globalWorkerNum")
+		}
+
+		if cfg.Job.SchedulerWorkerNum == 0 {
+			return errors.New("job requires parameter schedulerWorkerNum")
+		}
+
+		if cfg.Job.LocalWorkerNum == 0 {
+			return errors.New("job requires parameter localWorkerNum")
+		}
+
+		if cfg.Job.Redis.Host == "" {
+			return errors.New("job requires parameter redis host")
+		}
+
+		if cfg.Job.Redis.Port <= 0 {
+			return errors.New("job requires parameter redis port")
+		}
+
+		if cfg.Job.Redis.BrokerDB <= 0 {
+			return errors.New("job requires parameter redis brokerDB")
+		}
+
+		if cfg.Job.Redis.BackendDB <= 0 {
+			return errors.New("job requires parameter redis backendDB")
+		}
+	}
+
+	if cfg.Storage == nil {
+		return errors.New("server requires parameter storage")
+	}
+
+	if cfg.Storage.MaxSize <= 0 {
+		return errors.New("storage requires parameter maxSize")
+	}
+
+	if cfg.Storage.MaxBackups <= 0 {
+		return errors.New("storage requires parameter maxBackups")
+	}
+
+	if cfg.Storage.BufferSize <= 0 {
+		return errors.New("storage requires parameter bufferSize")
+	}
+
+	if cfg.Metrics != nil && cfg.Metrics.Enable {
+		if cfg.Metrics.Addr == "" {
+			return errors.New("metrics requires parameter addr")
+		}
+	}
+
+	if cfg.Security.AutoIssueCert {
+		if cfg.Security.CACert == "" {
+			return errors.New("security requires parameter caCert")
+		}
+
+		if cfg.Security.CertSpec == nil {
+			return errors.New("security requires parameter certSpec")
+		}
+
+		if cfg.Security.CertSpec.ValidityPeriod <= 0 {
+			return errors.New("certSpec requires parameter validityPeriod")
+		}
+	}
+
+	return nil
 }

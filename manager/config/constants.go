@@ -94,12 +94,12 @@ const (
 )
 
 var (
-	// DefaultCertIPAddresses is default manager ip addresses of certificate.
+	// DefaultCertIPAddresses is default ip addresses of certificate.
 	DefaultCertIPAddresses = []string{ip.IPv4}
 
-	// DefaultCertDNSNames is default manager dns names of certificate.
-	DefaultCertDNSNames = []string{"dragonfly-manager", "dragonfly-manager.dragonfly-system.svc"}
+	// DefaultCertDNSNames is default dns names of certificate.
+	DefaultCertDNSNames = []string{"dragonfly-manager", "dragonfly-manager.dragonfly-system.svc", "dragonfly-manager.dragonfly-system.svc.cluster.local"}
 
-	// DefaultCertValidityDuration is default manager validity duration of certificate.
-	DefaultCertValidityDuration = 10 * 365 * 24 * time.Hour
+	// DefaultCertValidityPeriod is default validity period of certificate.
+	DefaultCertValidityPeriod = 10 * 365 * 24 * time.Hour
 )

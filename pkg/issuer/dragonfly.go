@@ -19,18 +19,14 @@ package issuer
 import (
 	"context"
 	"crypto"
-	"crypto/ecdsa"
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/pem"
-	"errors"
-	"strings"
 	"time"
 
 	"github.com/johanbrandhorst/certify"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	securityv1 "d7y.io/api/pkg/apis/security/v1"
 
@@ -42,61 +38,73 @@ var (
 	// defaultSubjectOrganization is default organization of subject.
 	defaultSubjectOrganization = []string{"Dragonfly"}
 
-	// defaultValidityDuration is default validity duration of certificate.
-	defaultValidityDuration = 180 * 24 * int64(time.Hour.Seconds())
+	// defaultValidityPeriod is default validity period of certificate.
+	defaultValidityPeriod time.Duration = 180 * 24 * time.Hour
 )
 
+// dragonflyIssuer provides issuer function.
 type dragonflyIssuer struct {
-	client managerclient.Client
+	client         managerclient.Client
+	validityPeriod time.Duration
 }
 
-func NewDragonflyIssuer(client managerclient.Client) certify.Issuer {
-	return &dragonflyIssuer{client: client}
+// Option is a functional option for configuring the dragonflyIssuer.
+type Option func(i *dragonflyIssuer)
+
+// WithValidityPeriod set the validityPeriod for dragonflyIssuer.
+func WithValidityPeriod(d time.Duration) Option {
+	return func(i *dragonflyIssuer) {
+		i.validityPeriod = d
+	}
 }
 
-func (d *dragonflyIssuer) Issue(ctx context.Context, commonName string, certConfig *certify.CertConfig) (*tls.Certificate, error) {
-	csrPEM, privateKeyPEM, err := fromCertifyCertConfig(commonName, certConfig)
-	if err != nil {
-		logger.Errorf("gen csr and private pem error: %s", err.Error())
-		return nil, err
+// NewDragonflyIssuer returns a new certify.Issuer instence.
+func NewDragonflyIssuer(client managerclient.Client, opts ...Option) certify.Issuer {
+	i := &dragonflyIssuer{
+		client:         client,
+		validityPeriod: defaultValidityPeriod,
 	}
 
-	request := &securityv1.CertificateRequest{
-		Csr:              string(csrPEM),
-		ValidityDuration: defaultValidityDuration,
+	for _, opt := range opts {
+		opt(i)
 	}
 
-	response, err := d.client.IssueCertificate(ctx, request)
-	if err != nil {
-		logger.Errorf("call manager IssueCertificate error: %s", err.Error())
-		return nil, err
-	}
+	return i
+}
 
-	certPEM := []byte(strings.Join(response.CertificateChain, "\n"))
-	tlsCert, err := tls.X509KeyPair(certPEM, privateKeyPEM)
-	if err != nil {
-		logger.Errorf("load x509 key pair error: %s", err.Error())
-		return nil, err
-	}
-
-	tlsCert.Leaf, err = x509.ParseCertificate(tlsCert.Certificate[0])
+// Issue returns tls Certificate of issuing.
+func (i *dragonflyIssuer) Issue(ctx context.Context, commonName string, certConfig *certify.CertConfig) (*tls.Certificate, error) {
+	csr, privateKey, err := fromCertifyCertConfig(commonName, certConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	return &tlsCert, nil
+	resp, err := i.client.IssueCertificate(ctx, &securityv1.CertificateRequest{
+		Csr:            csr,
+		ValidityPeriod: durationpb.New(i.validityPeriod),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	leaf, err := x509.ParseCertificate(resp.CertificateChain[0])
+	if err != nil {
+		return nil, err
+	}
+	logger.Debugf("issue certificate from manager, common name: %s, issuer: %s", commonName, leaf.Issuer.CommonName)
+
+	return &tls.Certificate{
+		Certificate: resp.CertificateChain,
+		PrivateKey:  privateKey,
+		Leaf:        leaf,
+	}, nil
 }
 
 // TODO this func is copied from internal package github.com/johanbrandhorst/certify@v1.9.0/internal/csr/csr.go
 // fromCertifyCertConfig creates a CSR and private key from the input config and common name.
 // It returns the CSR and private key in PEM format.
-func fromCertifyCertConfig(commonName string, conf *certify.CertConfig) ([]byte, []byte, error) {
+func fromCertifyCertConfig(commonName string, conf *certify.CertConfig) ([]byte, crypto.PrivateKey, error) {
 	pk, err := conf.KeyGenerator.Generate()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	keyPEM, err := marshal(pk)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -119,36 +127,5 @@ func fromCertifyCertConfig(commonName string, conf *certify.CertConfig) ([]byte,
 		return nil, nil, err
 	}
 
-	csrPEM := pem.EncodeToMemory(&pem.Block{
-		Type:  "CERTIFICATE REQUEST",
-		Bytes: csr,
-	})
-
-	return csrPEM, keyPEM, nil
-}
-
-// TODO this func is copied from internal package github.com/johanbrandhorst/certify@v1.9.0/internal/keys/keys.go
-// marshal a private key to PEM format.
-func marshal(pk crypto.PrivateKey) ([]byte, error) {
-	switch pk := pk.(type) {
-	case *rsa.PrivateKey:
-		keyBytes := x509.MarshalPKCS1PrivateKey(pk)
-		block := pem.Block{
-			Type:  "RSA PRIVATE KEY",
-			Bytes: keyBytes,
-		}
-		return pem.EncodeToMemory(&block), nil
-	case *ecdsa.PrivateKey:
-		keyBytes, err := x509.MarshalECPrivateKey(pk)
-		if err != nil {
-			return nil, err
-		}
-		block := pem.Block{
-			Type:  "EC PRIVATE KEY",
-			Bytes: keyBytes,
-		}
-		return pem.EncodeToMemory(&block), nil
-	}
-
-	return nil, errors.New("unsupported private key type")
+	return csr, pk, nil
 }

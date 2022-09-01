@@ -179,13 +179,20 @@ type GlobalSecurityOption struct {
 	AutoIssueCert bool `mapstructure:"autoIssueCert" yaml:"autoIssueCert"`
 	// CACert is the root CA certificate for all grpc tls handshake, it can be path or PEM format string
 	CACert types.PEMContent `mapstructure:"caCert" yaml:"caCert"`
-	// TLSPrefer indicates to verify client certificates for grpc ServerHandshake
+	// TLSVerify indicates to verify client certificates.
 	TLSVerify bool `mapstructure:"tlsVerify" yaml:"tlsVerify"`
 	// TLSPolicy controls the grpc shandshake behaviors:
 	// force: both ClientHandshake and ServerHandshake are only support tls
 	// prefer: ServerHandshake supports tls and insecure (non-tls), ClientHandshake will only support tls
-	// default or empty: ServerHandshake supports tls and insecure (non-tls), ClientHandshake will only support insecure (non-tls)
+	// default: ServerHandshake supports tls and insecure (non-tls), ClientHandshake will only support insecure (non-tls)
 	TLSPolicy string `mapstructure:"tlsPolicy" yaml:"tlsPolicy"`
+	// CertSpec is the desired state of certificate.
+	CertSpec *CertSpec `mapstructure:"certSpec" yaml:"certSpec"`
+}
+
+type CertSpec struct {
+	// ValidityPeriod is the validity period of certificate.
+	ValidityPeriod time.Duration `mapstructure:"validityPeriod" yaml:"validityPeriod"`
 }
 
 type SchedulerOption struct {

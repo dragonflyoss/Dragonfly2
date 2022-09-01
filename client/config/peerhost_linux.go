@@ -182,6 +182,9 @@ var peerHostConfig = func() *DaemonOption {
 			CACert:        types.PEMContent(""),
 			TLSVerify:     false,
 			TLSPolicy:     rpc.DefaultTLSPolicy,
+			CertSpec: &CertSpec{
+				ValidityPeriod: DefaultCertValidityPeriod,
+			},
 		},
 	}
 }

@@ -17,11 +17,9 @@
 package rpcserver
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/pem"
 	"errors"
 	"io"
 	"time"
@@ -58,8 +56,8 @@ type SelfSignedCert struct {
 	// X509Cert is certificate of x509.
 	X509Cert *x509.Certificate
 
-	// PEMCertChain is certificate chain of pem.
-	PEMCertChain []string
+	// CertChain is certificate chain of ASN.1 DER form.
+	CertChain [][]byte
 }
 
 // Server is grpc server.
@@ -103,20 +101,10 @@ func WithSelfSignedCert(tlsCert *tls.Certificate) Option {
 			return err
 		}
 
-		var pemCertChain []string
-		for _, cert := range tlsCert.Certificate {
-			var certPEM bytes.Buffer
-			if err := pem.Encode(&certPEM, &pem.Block{Type: "CERTIFICATE", Bytes: cert}); err != nil {
-				return err
-			}
-
-			pemCertChain = append(pemCertChain, certPEM.String())
-		}
-
 		s.selfSignedCert = &SelfSignedCert{
-			TLSCert:      tlsCert,
-			X509Cert:     x509CACert,
-			PEMCertChain: pemCertChain,
+			TLSCert:   tlsCert,
+			X509Cert:  x509CACert,
+			CertChain: tlsCert.Certificate,
 		}
 
 		return nil

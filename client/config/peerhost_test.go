@@ -497,6 +497,15 @@ func TestPeerHostOption_Load(t *testing.T) {
 				Duration: 180000000000,
 			},
 		},
+		Security: GlobalSecurityOption{
+			AutoIssueCert: true,
+			CACert:        "-----BEGIN CERTIFICATE-----",
+			TLSVerify:     true,
+			TLSPolicy:     "force",
+			CertSpec: &CertSpec{
+				ValidityPeriod: 1000000000,
+			},
+		},
 	}
 
 	peerHostOptionYAML := &DaemonOption{}

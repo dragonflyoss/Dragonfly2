@@ -255,19 +255,19 @@ type SecurityConfig struct {
 	// AutoIssueCert indicates to issue client certificates for all grpc call.
 	AutoIssueCert bool `yaml:"autoIssueCert" mapstructure:"autoIssueCert"`
 
-	// CACert is file path PEM-encoded certificate
+	// CACert is the CA certificate for all grpc tls handshake, it can be path or PEM format string.
 	CACert types.PEMContent `mapstructure:"caCert" yaml:"caCert"`
 
-	// CAKey is file path of PEM-encoded private key.
+	// CAKey is the CA private key, it can be path or PEM format string.
 	CAKey types.PEMContent `mapstructure:"caKey" yaml:"caKey"`
 
 	// TLSPolicy controls the grpc shandshake behaviors:
 	// force: both ClientHandshake and ServerHandshake are only support tls
 	// prefer: ServerHandshake supports tls and insecure (non-tls), ClientHandshake will only support tls
-	// default or empty: ServerHandshake supports tls and insecure (non-tls), ClientHandshake will only support insecure (non-tls)
+	// default: ServerHandshake supports tls and insecure (non-tls), ClientHandshake will only support insecure (non-tls)
 	TLSPolicy string `mapstructure:"tlsPolicy" yaml:"tlsPolicy"`
 
-	// CertSpec is the desired state of manager certificate.
+	// CertSpec is the desired state of certificate.
 	CertSpec *CertSpec `mapstructure:"certSpec" yaml:"certSpec"`
 }
 
@@ -278,8 +278,8 @@ type CertSpec struct {
 	// IPAddresses is a list of ip addresses be set on the certificate.
 	IPAddresses []string `mapstructure:"ipAddresses" yaml:"ipAddresses"`
 
-	// ValidityDuration is the validity duration  of certificate.
-	ValidityDuration time.Duration `mapstructure:"validityDuration" yaml:"validityDuration"`
+	// ValidityPeriod is the validity period  of certificate.
+	ValidityPeriod time.Duration `mapstructure:"validityPeriod" yaml:"validityPeriod"`
 }
 
 // New config instance.
@@ -331,11 +331,11 @@ func New() *Config {
 		},
 		Security: &SecurityConfig{
 			AutoIssueCert: false,
-			TLSPolicy:     rpc.DefaultTLSPolicy,
+			TLSPolicy:     rpc.PreferTLSPolicy,
 			CertSpec: &CertSpec{
-				IPAddresses:      DefaultCertIPAddresses,
-				DNSNames:         DefaultCertDNSNames,
-				ValidityDuration: DefaultCertValidityDuration,
+				IPAddresses:    DefaultCertIPAddresses,
+				DNSNames:       DefaultCertDNSNames,
+				ValidityPeriod: DefaultCertValidityPeriod,
 			},
 		},
 		Metrics: &MetricsConfig{
@@ -535,10 +535,6 @@ func (cfg *Config) Validate() error {
 
 		if len(cfg.Security.CertSpec.DNSNames) == 0 {
 			return errors.New("certSpec requires parameter dnsNames")
-		}
-
-		if cfg.Security.CertSpec.ValidityDuration <= 0 {
-			return errors.New("certSpec requires parameter validityDuration")
 		}
 	}
 
