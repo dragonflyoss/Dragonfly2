@@ -27,5 +27,5 @@ jobs:
         with:
           filesizelimit: "524288"
           exclusionPatterns: |
-            deploy/helm-charts/*
-            manager/console/*
+            deploy/helm-charts*
+            manager/console*
