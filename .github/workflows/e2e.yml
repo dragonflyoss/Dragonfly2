@@ -94,6 +94,6 @@ jobs:
         uses: actions/upload-artifact@v2
         if: always()
         with:
-          name: e2e-tests-logs
+          name: ${{ matrix.module }}-e2e-tests-logs
           path: |
             /tmp/artifact/**/*.log

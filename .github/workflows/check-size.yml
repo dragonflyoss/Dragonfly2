@@ -21,7 +21,7 @@ jobs:
           fetch-depth: 1
 
       - name: Check large files
-        uses: actionsdesk/lfs-warning@v3.1
+        uses: actionsdesk/lfs-warning@v3.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
