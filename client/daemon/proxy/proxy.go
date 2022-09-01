@@ -597,10 +597,6 @@ func (proxy *Proxy) checkWhiteList(r *http.Request) bool {
 // also changes the scheme of the given request if the matched rule has
 // UseHTTPS = true
 func (proxy *Proxy) shouldUseDragonfly(req *http.Request) bool {
-	if req.Method != http.MethodGet {
-		return false
-	}
-
 	for _, rule := range proxy.rules.Load().([]*config.ProxyRule) {
 		if rule.Match(req.URL.String()) {
 			if rule.UseHTTPS {
@@ -618,6 +614,10 @@ func (proxy *Proxy) shouldUseDragonfly(req *http.Request) bool {
 			} else if rule.Redirect != "" {
 				req.URL.Host = rule.Redirect
 				req.Host = rule.Redirect
+			}
+
+			if req.Method != http.MethodGet {
+				return false
 			}
 			return !rule.Direct
 		}
