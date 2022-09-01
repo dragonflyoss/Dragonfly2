@@ -34,6 +34,7 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 	testifyrequire "github.com/stretchr/testify/require"
 	"google.golang.org/grpc/peer"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"gorm.io/gorm"
 
 	securityv1 "d7y.io/api/pkg/apis/security/v1"
@@ -104,8 +105,8 @@ func TestIssueCertificate(t *testing.T) {
 			resp, err := server.IssueCertificate(
 				ctx,
 				&securityv1.CertificateRequest{
-					Csr:              csrPEM.String(),
-					ValidityDuration: 0,
+					Csr:            csrPEM.String(),
+					ValidityPeriod: durationpb.New(time.Hour),
 				})
 
 			assert.Nilf(err, "IssueCertificate should be ok")
@@ -167,11 +168,11 @@ func genCA() (cert, key string) {
 	return
 }
 
-func readCert(certPEM string) *x509.Certificate {
-	p, _ := pem.Decode([]byte(certPEM))
-	cert, err := x509.ParseCertificate(p.Bytes)
+func readCert(certPEM []byte) *x509.Certificate {
+	cert, err := x509.ParseCertificate(certPEM)
 	if err != nil {
 		panic(err)
 	}
+
 	return cert
 }

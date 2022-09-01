@@ -124,3 +124,8 @@ const (
 	// DefaultMetricsAddr is default address for metrics server.
 	DefaultMetricsAddr = ":8000"
 )
+
+var (
+	// DefaultCertValidityPeriod is default validity period of certificate.
+	DefaultCertValidityPeriod = 180 * 24 * time.Hour
+)

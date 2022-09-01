@@ -17,7 +17,6 @@
 package rpcserver
 
 import (
-	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/x509"
@@ -35,9 +34,6 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
-
-// defaultValidityDuration is default validity duration of certificate.
-const defaultValidityDuration = 365 * 24 * time.Hour
 
 func (s *Server) IssueCertificate(ctx context.Context, req *securityv1.CertificateRequest) (*securityv1.CertificateResponse, error) {
 	if s.selfSignedCert == nil {
@@ -79,27 +75,20 @@ func (s *Server) IssueCertificate(ctx context.Context, req *securityv1.Certifica
 	if err = csr.CheckSignature(); err != nil {
 		return nil, err
 	}
+	logger.Infof("valid csr: %#v", csr.Subject)
 
 	serial, err := rand.Int(rand.Reader, (&big.Int{}).Exp(big.NewInt(2), big.NewInt(159), nil))
 	if err != nil {
 		return nil, err
 	}
 
-	// Check certificate duration.
 	now := time.Now()
-	duration := time.Duration(req.ValidityDuration) * time.Second
-	if duration == 0 {
-		duration = defaultValidityDuration
-	}
-
-	logger.Infof("valid csr: %#v", csr.Subject)
-
 	template := x509.Certificate{
 		SerialNumber:          serial,
 		Subject:               csr.Subject,
 		IPAddresses:           []net.IP{net.ParseIP(ip)}, // only valid for peer ip
 		NotBefore:             now.Add(-10 * time.Minute).UTC(),
-		NotAfter:              now.Add(duration).UTC(),
+		NotAfter:              now.Add(req.ValidityPeriod.AsDuration()).UTC(),
 		BasicConstraintsValid: true,
 		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageDataEncipherment | x509.KeyUsageKeyEncipherment,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
@@ -110,13 +99,7 @@ func (s *Server) IssueCertificate(ctx context.Context, req *securityv1.Certifica
 		return nil, fmt.Errorf("failed to generate certificate, error: %s", err)
 	}
 
-	// Build the certificate chain.
-	var certPEM bytes.Buffer
-	if err = pem.Encode(&certPEM, &pem.Block{Type: "CERTIFICATE", Bytes: cert}); err != nil {
-		return nil, err
-	}
-
 	return &securityv1.CertificateResponse{
-		CertificateChain: append([]string{certPEM.String()}, s.selfSignedCert.PEMCertChain...),
+		CertificateChain: append([][]byte{cert}, s.selfSignedCert.PEMCertChain...),
 	}, nil
 }
