@@ -170,3 +170,11 @@ proxy:
   dumpHTTPContent: true
 reload:
   interval: 3m0s
+
+security:
+  autoIssueCert: true
+  caCert: -----BEGIN CERTIFICATE-----
+  tlsVerify: true
+  tlsPolicy: force
+  certSpec:
+    validityPeriod: 1s
