@@ -56,8 +56,8 @@ type SelfSignedCert struct {
 	// X509Cert is certificate of x509.
 	X509Cert *x509.Certificate
 
-	// PEMCertChain is certificate chain of pem.
-	PEMCertChain [][]byte
+	// CertChain is certificate chain of ASN.1 DER form.
+	CertChain [][]byte
 }
 
 // Server is grpc server.
@@ -102,9 +102,9 @@ func WithSelfSignedCert(tlsCert *tls.Certificate) Option {
 		}
 
 		s.selfSignedCert = &SelfSignedCert{
-			TLSCert:      tlsCert,
-			X509Cert:     x509CACert,
-			PEMCertChain: tlsCert.Certificate,
+			TLSCert:   tlsCert,
+			X509Cert:  x509CACert,
+			CertChain: tlsCert.Certificate,
 		}
 
 		return nil

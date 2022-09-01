@@ -168,8 +168,8 @@ func genCA() (cert, key string) {
 	return
 }
 
-func readCert(certPEM []byte) *x509.Certificate {
-	cert, err := x509.ParseCertificate(certPEM)
+func readCert(der []byte) *x509.Certificate {
+	cert, err := x509.ParseCertificate(der)
 	if err != nil {
 		panic(err)
 	}

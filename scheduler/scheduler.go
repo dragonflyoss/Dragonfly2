@@ -90,7 +90,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	// Initialize manager client and dial options of manager grpc client.
 	managerDialOptions := []grpc.DialOption{}
 	if cfg.Security.AutoIssueCert {
-		clientTransportCredentials, err := rpc.NewClientCredentials(cfg.Security.TLSPolicy, cfg.Security.TLSVerify, nil, []byte(cfg.Security.CACert))
+		clientTransportCredentials, err := rpc.NewClientCredentials(cfg.Security.TLSPolicy, nil, []byte(cfg.Security.CACert))
 		if err != nil {
 			return nil, err
 		}
@@ -156,7 +156,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	// Initialize resource and dial options of seed peer grpc client.
 	seedPeerDialOptions := []grpc.DialOption{}
 	if certifyClient != nil {
-		clientTransportCredentials, err := rpc.NewClientCredentialsByCertify(cfg.Security.TLSPolicy, cfg.Security.TLSVerify, []byte(cfg.Security.CACert), certifyClient)
+		clientTransportCredentials, err := rpc.NewClientCredentialsByCertify(cfg.Security.TLSPolicy, []byte(cfg.Security.CACert), certifyClient)
 		if err != nil {
 			return nil, err
 		}

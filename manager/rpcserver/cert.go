@@ -100,6 +100,6 @@ func (s *Server) IssueCertificate(ctx context.Context, req *securityv1.Certifica
 	}
 
 	return &securityv1.CertificateResponse{
-		CertificateChain: append([][]byte{cert}, s.selfSignedCert.PEMCertChain...),
+		CertificateChain: append([][]byte{cert}, s.selfSignedCert.CertChain...),
 	}, nil
 }

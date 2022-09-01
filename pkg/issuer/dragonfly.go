@@ -23,7 +23,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/pem"
 	"time"
 
 	"github.com/johanbrandhorst/certify"
@@ -75,13 +74,13 @@ func NewDragonflyIssuer(client managerclient.Client, opts ...Option) certify.Iss
 
 // Issue returns tls Certificate of issuing.
 func (i *dragonflyIssuer) Issue(ctx context.Context, commonName string, certConfig *certify.CertConfig) (*tls.Certificate, error) {
-	csrPEM, privateKey, err := fromCertifyCertConfig(commonName, certConfig)
+	csr, privateKey, err := fromCertifyCertConfig(commonName, certConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	resp, err := i.client.IssueCertificate(ctx, &securityv1.CertificateRequest{
-		Csr:            string(csrPEM),
+		Csr:            csr,
 		ValidityPeriod: durationpb.New(i.validityPeriod),
 	})
 	if err != nil {
@@ -128,10 +127,5 @@ func fromCertifyCertConfig(commonName string, conf *certify.CertConfig) ([]byte,
 		return nil, nil, err
 	}
 
-	csrPEM := pem.EncodeToMemory(&pem.Block{
-		Type:  "CERTIFICATE REQUEST",
-		Bytes: csr,
-	})
-
-	return csrPEM, pk, nil
+	return csr, pk, nil
 }

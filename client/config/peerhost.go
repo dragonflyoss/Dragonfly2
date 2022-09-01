@@ -179,7 +179,7 @@ type GlobalSecurityOption struct {
 	AutoIssueCert bool `mapstructure:"autoIssueCert" yaml:"autoIssueCert"`
 	// CACert is the root CA certificate for all grpc tls handshake, it can be path or PEM format string
 	CACert types.PEMContent `mapstructure:"caCert" yaml:"caCert"`
-	// TLSVerify indicates to verify certificates.
+	// TLSVerify indicates to verify client certificates.
 	TLSVerify bool `mapstructure:"tlsVerify" yaml:"tlsVerify"`
 	// TLSPolicy controls the grpc shandshake behaviors:
 	// force: both ClientHandshake and ServerHandshake are only support tls

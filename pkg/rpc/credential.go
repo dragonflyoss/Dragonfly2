@@ -76,7 +76,7 @@ func NewServerCredentialsByCertify(tlsPolicy string, tlsVerify bool, pemClientCA
 }
 
 // NewClientCredentialsByCertify returns client transport credentials by certify.
-func NewClientCredentialsByCertify(tlsPolicy string, tlsVerify bool, pemRootCAs []byte, certifyClient *certify.Certify) (credentials.TransportCredentials, error) {
+func NewClientCredentialsByCertify(tlsPolicy string, pemRootCAs []byte, certifyClient *certify.Certify) (credentials.TransportCredentials, error) {
 	certPool := x509.NewCertPool()
 	if !certPool.AppendCertsFromPEM(pemRootCAs) {
 		return nil, errors.New("invalid CA Cert")
@@ -85,10 +85,6 @@ func NewClientCredentialsByCertify(tlsPolicy string, tlsVerify bool, pemRootCAs 
 	tlsConfig := &tls.Config{
 		GetClientCertificate: certifyClient.GetClientCertificate,
 		RootCAs:              certPool,
-	}
-
-	if !tlsVerify {
-		tlsConfig.InsecureSkipVerify = true
 	}
 
 	switch tlsPolicy {
@@ -103,7 +99,7 @@ func NewClientCredentialsByCertify(tlsPolicy string, tlsVerify bool, pemRootCAs 
 }
 
 // NewClientCredentials returns client transport credentials.
-func NewClientCredentials(tlsPolicy string, tlsVerify bool, certs []tls.Certificate, pemRootCAs []byte) (credentials.TransportCredentials, error) {
+func NewClientCredentials(tlsPolicy string, certs []tls.Certificate, pemRootCAs []byte) (credentials.TransportCredentials, error) {
 	certPool := x509.NewCertPool()
 	if !certPool.AppendCertsFromPEM(pemRootCAs) {
 		return nil, errors.New("invalid CA Cert")
@@ -111,10 +107,6 @@ func NewClientCredentials(tlsPolicy string, tlsVerify bool, certs []tls.Certific
 
 	tlsConfig := &tls.Config{
 		RootCAs: certPool,
-	}
-
-	if !tlsVerify {
-		tlsConfig.InsecureSkipVerify = true
 	}
 
 	if len(certs) > 0 {
