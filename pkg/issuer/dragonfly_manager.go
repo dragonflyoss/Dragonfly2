@@ -28,28 +28,35 @@ import (
 	"time"
 
 	"github.com/johanbrandhorst/certify"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
-// GC provides issuer function.
+const (
+	// defaultManagerValidityPeriod is default manager validity period of certificate.
+	defaultManagerValidityPeriod = 10 * 365 * 24 * time.Hour
+)
+
+// dragonflyManagerIssuer provides manager issuer function.
 type dragonflyManagerIssuer struct {
-	tlsCACert        *tls.Certificate
-	dnsNames         []string
-	ipAddresses      []net.IP
-	validityDuration time.Duration
+	tlsCACert      *tls.Certificate
+	dnsNames       []string
+	ipAddresses    []net.IP
+	validityPeriod time.Duration
 }
 
-// Option is a functional option for configuring the dragonflyManagerIssuer.
-type Option func(i *dragonflyManagerIssuer)
+// ManagerOption is a functional option for configuring the dragonflyManagerIssuer.
+type ManagerOption func(i *dragonflyManagerIssuer)
 
-// WithDNSNames set the dnsNames for dragonflyManagerIssuer.
-func WithDNSNames(dnsNames []string) Option {
+// WithManagerDNSNames set the manager dnsNames for dragonflyManagerIssuer.
+func WithManagerDNSNames(dnsNames []string) ManagerOption {
 	return func(i *dragonflyManagerIssuer) {
 		i.dnsNames = dnsNames
 	}
 }
 
-// WithIPAddresses set the ipAddresses for dragonflyManagerIssuer.
-func WithIPAddresses(rawIPAddrs []string) Option {
+// WithManagerIPAddresses set the manager ipAddresses for dragonflyManagerIssuer.
+func WithManagerIPAddresses(rawIPAddrs []string) ManagerOption {
 	return func(i *dragonflyManagerIssuer) {
 		var ipAddrs []net.IP
 		for _, rawIPAddr := range rawIPAddrs {
@@ -60,17 +67,18 @@ func WithIPAddresses(rawIPAddrs []string) Option {
 	}
 }
 
-// WithValidityDuration set the validityDuration for dragonflyManagerIssuer.
-func WithValidityDuration(d time.Duration) Option {
+// WithManagerValidityPeriod set the manager validityPeriod for dragonflyManagerIssuer.
+func WithManagerValidityPeriod(d time.Duration) ManagerOption {
 	return func(i *dragonflyManagerIssuer) {
-		i.validityDuration = d
+		i.validityPeriod = d
 	}
 }
 
 // NewDragonflyManagerIssuer returns a new certify.Issuer instence.
-func NewDragonflyManagerIssuer(tlsCACert *tls.Certificate, opts ...Option) certify.Issuer {
+func NewDragonflyManagerIssuer(tlsCACert *tls.Certificate, opts ...ManagerOption) certify.Issuer {
 	i := &dragonflyManagerIssuer{
-		tlsCACert: tlsCACert,
+		tlsCACert:      tlsCACert,
+		validityPeriod: defaultManagerValidityPeriod,
 	}
 
 	for _, opt := range opts {
@@ -108,7 +116,7 @@ func (i *dragonflyManagerIssuer) Issue(ctx context.Context, commonName string, c
 		IPAddresses:           append(certConfig.IPSubjectAlternativeNames, i.ipAddresses...),
 		URIs:                  certConfig.URISubjectAlternativeNames,
 		NotBefore:             now.Add(-10 * time.Minute).UTC(),
-		NotAfter:              now.Add(i.validityDuration).UTC(),
+		NotAfter:              now.Add(i.validityPeriod).UTC(),
 		BasicConstraintsValid: true,
 		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageDataEncipherment | x509.KeyUsageKeyEncipherment,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
@@ -123,6 +131,7 @@ func (i *dragonflyManagerIssuer) Issue(ctx context.Context, commonName string, c
 	if err != nil {
 		return nil, err
 	}
+	logger.Debugf("issue certificate from manager, common name: %s, issuer: %s", commonName, leaf.Issuer.CommonName)
 
 	return &tls.Certificate{
 		Certificate: append([][]byte{cert}, i.tlsCACert.Certificate...),

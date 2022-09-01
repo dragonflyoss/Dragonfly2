@@ -67,7 +67,7 @@ security:
       - "127.0.0.1"
     dnsNames:
       - "foo"
-    validityDuration: 1000
+    validityPeriod: 1000
 
 metrics:
   enable: true

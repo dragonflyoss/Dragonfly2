@@ -71,3 +71,5 @@ security:
   caCert: foo
   tlsVerify: true
   tlsPolicy: force
+  certSpec:
+    validityPeriod: 1000

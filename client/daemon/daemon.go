@@ -152,7 +152,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		if opt.Security.AutoIssueCert {
 			certifyClient = &certify.Certify{
 				CommonName:   ip.IPv4,
-				Issuer:       issuer.NewDragonflyIssuer(managerClient),
+				Issuer:       issuer.NewDragonflyIssuer(managerClient, issuer.WithValidityPeriod(opt.Security.CertSpec.ValidityPeriod)),
 				RenewBefore:  time.Hour,
 				CertConfig:   nil,
 				IssueTimeout: 0,
@@ -163,15 +163,12 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			}
 
 			// issue a certificate to reduce first time delay
-			cert, err := certifyClient.GetCertificate(&tls.ClientHelloInfo{
+			if _, err := certifyClient.GetCertificate(&tls.ClientHelloInfo{
 				ServerName: ip.IPv4,
-			})
-			if err != nil {
+			}); err != nil {
 				logger.Errorf("issue certificate error: %s", err.Error())
 				return nil, err
 			}
-			logger.Debugf("request cert from manager, common name: %s, issuer: %s",
-				cert.Leaf.Subject.CommonName, cert.Leaf.Issuer.CommonName)
 		}
 
 		// New dynconfig manager client.

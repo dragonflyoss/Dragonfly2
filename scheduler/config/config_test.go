@@ -24,11 +24,6 @@ import (
 	"github.com/mitchellh/mapstructure"
 	testifyassert "github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
-
-	"d7y.io/dragonfly/v2/pkg/net/fqdn"
-	"d7y.io/dragonfly/v2/pkg/net/ip"
-	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
 func TestConfig_Load(t *testing.T) {
@@ -112,6 +107,9 @@ func TestConfig_Load(t *testing.T) {
 			CACert:        "foo",
 			TLSVerify:     true,
 			TLSPolicy:     "force",
+			CertSpec: &CertSpec{
+				ValidityPeriod: 1000,
+			},
 		},
 	}
 
@@ -127,79 +125,4 @@ func TestConfig_Load(t *testing.T) {
 	}
 
 	assert.EqualValues(config, schedulerConfigYAML)
-}
-
-func TestConfig_New(t *testing.T) {
-	assert := testifyassert.New(t)
-	config := New()
-
-	assert.EqualValues(config, &Config{
-		Server: &ServerConfig{
-			IP:     ip.IPv4,
-			Host:   fqdn.FQDNHostname,
-			Listen: "0.0.0.0",
-			Port:   8002,
-		},
-		Scheduler: &SchedulerConfig{
-			Algorithm:            "default",
-			BackSourceCount:      3,
-			RetryBackSourceLimit: 5,
-			RetryLimit:           10,
-			RetryInterval:        50 * time.Millisecond,
-			GC: &GCConfig{
-				PeerGCInterval: 10 * time.Minute,
-				PeerTTL:        24 * time.Hour,
-				TaskGCInterval: 10 * time.Minute,
-				TaskTTL:        24 * time.Hour,
-				HostGCInterval: 30 * time.Minute,
-				HostTTL:        48 * time.Hour,
-			},
-			Training: &TrainingConfig{
-				Enable:               false,
-				EnableAutoRefresh:    false,
-				RefreshModelInterval: 168 * time.Hour,
-				CPU:                  1,
-			},
-		},
-		DynConfig: &DynConfig{
-			RefreshInterval: 10 * time.Second,
-		},
-		Host: &HostConfig{},
-		Manager: &ManagerConfig{
-			SchedulerClusterID: 1,
-			KeepAlive: KeepAliveConfig{
-				Interval: 5 * time.Second,
-			},
-		},
-		SeedPeer: &SeedPeerConfig{
-			Enable: true,
-		},
-		Job: &JobConfig{
-			Enable:             true,
-			GlobalWorkerNum:    10,
-			SchedulerWorkerNum: 10,
-			LocalWorkerNum:     10,
-			Redis: &RedisConfig{
-				Port:      6379,
-				BrokerDB:  1,
-				BackendDB: 2,
-			},
-		},
-		Storage: &StorageConfig{
-			MaxSize:    storage.DefaultMaxSize,
-			MaxBackups: storage.DefaultMaxBackups,
-			BufferSize: storage.DefaultBufferSize,
-		},
-		Metrics: &MetricsConfig{
-			Enable:         false,
-			Addr:           ":8000",
-			EnablePeerHost: false,
-		},
-		Security: &SecurityConfig{
-			AutoIssueCert: false,
-			CACert:        "",
-			TLSVerify:     true,
-			TLSPolicy:     rpc.DefaultTLSPolicy,
-		},
-	})
 }
