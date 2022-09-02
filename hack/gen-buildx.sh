@@ -7,7 +7,7 @@ set -x
 for c in ${components}; do
   file=build/images/"${c}"/Dockerfile
   sed -i '1i# syntax=docker/dockerfile:1.3' "${file}"
-  sed -i "s#RUN make build-$c && make install-$c#RUN --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg make build-$c \&\& make install-$c#" "${file}"
+  sed -i "s#RUN make build-$c#RUN --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg make build-$c#" "${file}"
   echo $c Dockerfile:
   cat $file
 done
