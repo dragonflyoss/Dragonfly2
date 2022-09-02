@@ -1,11 +1,184 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Chore
+- update tls e2e cert ([#1626](https://github.com/dragonflyoss/Dragonfly2/issues/1626))
+
+
+<a name="v2.0.6-beta.3"></a>
+## [v2.0.6-beta.3] - 2022-09-01
+### Chore
+- workflows add tls e2e ([#1624](https://github.com/dragonflyoss/Dragonfly2/issues/1624))
+- update debug info ([#1617](https://github.com/dragonflyoss/Dragonfly2/issues/1617))
+
 ### Feat
+- add cert spec to security configuration ([#1621](https://github.com/dragonflyoss/Dragonfly2/issues/1621))
+- support mutate all proxy requests ([#1623](https://github.com/dragonflyoss/Dragonfly2/issues/1623))
+
+
+<a name="v2.0.6-beta.2"></a>
+## [v2.0.6-beta.2] - 2022-08-31
+### Feat
+- check whether scheduler is in the same cluster ([#1620](https://github.com/dragonflyoss/Dragonfly2/issues/1620))
+- manager add cert spec ([#1619](https://github.com/dragonflyoss/Dragonfly2/issues/1619))
+
+
+<a name="v2.0.6-beta.1"></a>
+## [v2.0.6-beta.1] - 2022-08-31
+### Chore
+- fix macos build ([#1609](https://github.com/dragonflyoss/Dragonfly2/issues/1609))
+- add source error metrics ([#1560](https://github.com/dragonflyoss/Dragonfly2/issues/1560))
+- update new manager ([#1597](https://github.com/dragonflyoss/Dragonfly2/issues/1597))
+- **deps:** bump gorm.io/driver/postgres from 1.3.8 to 1.3.9 ([#1608](https://github.com/dragonflyoss/Dragonfly2/issues/1608))
+- **deps:** bump github.com/aliyun/aliyun-oss-go-sdk from 2.2.4+incompatible to 2.2.5+incompatible ([#1607](https://github.com/dragonflyoss/Dragonfly2/issues/1607))
+- **deps:** bump github.com/bits-and-blooms/bitset from 1.2.2 to 1.3.0 ([#1606](https://github.com/dragonflyoss/Dragonfly2/issues/1606))
+- **deps:** bump github.com/gin-contrib/cors from 1.3.1 to 1.4.0 ([#1605](https://github.com/dragonflyoss/Dragonfly2/issues/1605))
+- **deps:** bump github.com/swaggo/gin-swagger from 1.5.1 to 1.5.2 ([#1604](https://github.com/dragonflyoss/Dragonfly2/issues/1604))
+- **deps:** bump github.com/casbin/casbin/v2 from 2.51.2 to 2.52.2 ([#1588](https://github.com/dragonflyoss/Dragonfly2/issues/1588))
+- **deps:** bump github.com/swaggo/swag from 1.8.3 to 1.8.4 ([#1590](https://github.com/dragonflyoss/Dragonfly2/issues/1590))
+- **deps:** bump k8s.io/apimachinery from 0.24.2 to 0.24.4 ([#1591](https://github.com/dragonflyoss/Dragonfly2/issues/1591))
+
+### Feat
+- add tls policy to scheduler grpc server ([#1616](https://github.com/dragonflyoss/Dragonfly2/issues/1616))
+- set tls cert leaf ([#1615](https://github.com/dragonflyoss/Dragonfly2/issues/1615))
+- resolver addr add ServerName ([#1614](https://github.com/dragonflyoss/Dragonfly2/issues/1614))
+- refactor grpc credential ([#1612](https://github.com/dragonflyoss/Dragonfly2/issues/1612))
+- add tls policy to manager grpc server ([#1611](https://github.com/dragonflyoss/Dragonfly2/issues/1611))
+- add tls policy constants ([#1610](https://github.com/dragonflyoss/Dragonfly2/issues/1610))
+- add grpc mux transport ([#1602](https://github.com/dragonflyoss/Dragonfly2/issues/1602))
+- manager init cert for grpc server ([#1603](https://github.com/dragonflyoss/Dragonfly2/issues/1603))
+- refactor peertask option ([#1600](https://github.com/dragonflyoss/Dragonfly2/issues/1600))
+- add common serialize package ([#1601](https://github.com/dragonflyoss/Dragonfly2/issues/1601))
+- add client grpc dial timeout ([#1599](https://github.com/dragonflyoss/Dragonfly2/issues/1599))
+- support multiple certify cache ([#1598](https://github.com/dragonflyoss/Dragonfly2/issues/1598))
+- PeerGauge adds version and commit labels ([#1596](https://github.com/dragonflyoss/Dragonfly2/issues/1596))
+- daemon support auto issue certificate ([#1586](https://github.com/dragonflyoss/Dragonfly2/issues/1586))
+- add default metrics address ([#1595](https://github.com/dragonflyoss/Dragonfly2/issues/1595))
+- grpc dial adds context ([#1594](https://github.com/dragonflyoss/Dragonfly2/issues/1594))
+- consistent hashing add picker log ([#1593](https://github.com/dragonflyoss/Dragonfly2/issues/1593))
+
+### Fix
+- ci actions with docker ([#1613](https://github.com/dragonflyoss/Dragonfly2/issues/1613))
+
+### Refactor
+- dfpath for certify cache dir ([#1618](https://github.com/dragonflyoss/Dragonfly2/issues/1618))
+
+
+<a name="v2.0.6-beta.0"></a>
+## [v2.0.6-beta.0] - 2022-08-19
+### Feat
+- remove golang +build tag ([#1585](https://github.com/dragonflyoss/Dragonfly2/issues/1585))
+- manager add certificate config ([#1583](https://github.com/dragonflyoss/Dragonfly2/issues/1583))
+- manager implements issue certificate grpc ([#1577](https://github.com/dragonflyoss/Dragonfly2/issues/1577))
+- dfdaemon add convert interceptor ([#1582](https://github.com/dragonflyoss/Dragonfly2/issues/1582))
+
+
+<a name="v2.0.6-alpha.3"></a>
+## [v2.0.6-alpha.3] - 2022-08-18
+### Feat
+- dynconfig refresh and notify listeners ([#1579](https://github.com/dragonflyoss/Dragonfly2/issues/1579))
+
+### Fix
+- dfdaemon can not shutdown ([#1580](https://github.com/dragonflyoss/Dragonfly2/issues/1580))
+
+### Refactor
+- dfnet package ([#1578](https://github.com/dragonflyoss/Dragonfly2/issues/1578))
+- dfdaemon client and remove rpc connection pool ([#1576](https://github.com/dragonflyoss/Dragonfly2/issues/1576))
+
+
+<a name="v2.0.6-alpha.2"></a>
+## [v2.0.6-alpha.2] - 2022-08-17
+### Chore
+- optimize source error log ([#1553](https://github.com/dragonflyoss/Dragonfly2/issues/1553))
+- **deps:** bump gorm.io/driver/mysql from 1.3.4 to 1.3.6 ([#1567](https://github.com/dragonflyoss/Dragonfly2/issues/1567))
+- **deps:** bump go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc from 0.33.0 to 0.34.0 ([#1566](https://github.com/dragonflyoss/Dragonfly2/issues/1566))
+- **deps:** bump google.golang.org/api from 0.90.0 to 0.92.0 ([#1565](https://github.com/dragonflyoss/Dragonfly2/issues/1565))
+- **deps:** bump github.com/prometheus/client_golang from 1.12.2 to 1.13.0 ([#1564](https://github.com/dragonflyoss/Dragonfly2/issues/1564))
+- **deps:** bump go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin from 0.32.0 to 0.34.0 ([#1547](https://github.com/dragonflyoss/Dragonfly2/issues/1547))
+- **deps:** bump github.com/sirupsen/logrus from 1.8.1 to 1.9.0 ([#1544](https://github.com/dragonflyoss/Dragonfly2/issues/1544))
+- **deps:** bump github.com/jarcoal/httpmock from 1.0.8 to 1.2.0 ([#1542](https://github.com/dragonflyoss/Dragonfly2/issues/1542))
+- **deps:** bump go.opentelemetry.io/otel/exporters/jaeger from 1.8.0 to 1.9.0 ([#1541](https://github.com/dragonflyoss/Dragonfly2/issues/1541))
+
+### Feat
+- add grpc client error interceptor ([#1575](https://github.com/dragonflyoss/Dragonfly2/issues/1575))
+- grpc removes MaxConnectionIdle ([#1574](https://github.com/dragonflyoss/Dragonfly2/issues/1574))
+- grpc add ratelimit ([#1572](https://github.com/dragonflyoss/Dragonfly2/issues/1572))
+- refresh dynconfig addresses when grpc requests unavailable ([#1571](https://github.com/dragonflyoss/Dragonfly2/issues/1571))
+- manager adds model and model version grpc api ([#1569](https://github.com/dragonflyoss/Dragonfly2/issues/1569))
+- dynconfig add refresh func ([#1563](https://github.com/dragonflyoss/Dragonfly2/issues/1563))
+- manager client add context ([#1562](https://github.com/dragonflyoss/Dragonfly2/issues/1562))
+- grpc add retry middleware ([#1561](https://github.com/dragonflyoss/Dragonfly2/issues/1561))
+- grpc consistent hashing ([#1554](https://github.com/dragonflyoss/Dragonfly2/issues/1554))
+- model version add training result ([#1558](https://github.com/dragonflyoss/Dragonfly2/issues/1558))
+- storage calculate the count of records ([#1557](https://github.com/dragonflyoss/Dragonfly2/issues/1557))
+- model and model version api removes auth ([#1556](https://github.com/dragonflyoss/Dragonfly2/issues/1556))
+- add seed trace ([#1549](https://github.com/dragonflyoss/Dragonfly2/issues/1549))
+- gc removes logrus ([#1548](https://github.com/dragonflyoss/Dragonfly2/issues/1548))
+- add MultiReadCloser and storage add open func ([#1546](https://github.com/dragonflyoss/Dragonfly2/issues/1546))
+- scheduler dynconfig returns more info ([#1545](https://github.com/dragonflyoss/Dragonfly2/issues/1545))
+- scheduler and manager change graceful stop timeout ([#1540](https://github.com/dragonflyoss/Dragonfly2/issues/1540))
+- schedulers create main peer record ([#1539](https://github.com/dragonflyoss/Dragonfly2/issues/1539))
+- change update model api ([#1538](https://github.com/dragonflyoss/Dragonfly2/issues/1538))
+- manager adds model and model version api ([#1530](https://github.com/dragonflyoss/Dragonfly2/issues/1530))
+- when the request has a range header, object storage is no need to  to calculate md5 ([#1534](https://github.com/dragonflyoss/Dragonfly2/issues/1534))
+
+### Fix
+- scheduler can not exit gracefully due to machinery fatal log ([#1573](https://github.com/dragonflyoss/Dragonfly2/issues/1573))
+- scheduler and manager tracing ([#1551](https://github.com/dragonflyoss/Dragonfly2/issues/1551))
+- scheduler's MainParent func ([#1550](https://github.com/dragonflyoss/Dragonfly2/issues/1550))
+
+
+<a name="v2.0.6-alpha.0"></a>
+## [v2.0.6-alpha.0] - 2022-08-04
+### Chore
+- **deps:** bump google.golang.org/grpc from 1.47.0 to 1.48.0 ([#1508](https://github.com/dragonflyoss/Dragonfly2/issues/1508))
+- **deps:** bump github.com/casbin/casbin/v2 from 2.48.0 to 2.51.2 ([#1512](https://github.com/dragonflyoss/Dragonfly2/issues/1512))
+- **deps:** bump github.com/shirou/gopsutil/v3 from 3.22.5 to 3.22.7 ([#1511](https://github.com/dragonflyoss/Dragonfly2/issues/1511))
+- **deps:** bump google.golang.org/api from 0.86.0 to 0.90.0 ([#1510](https://github.com/dragonflyoss/Dragonfly2/issues/1510))
+- **deps:** bump go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc from 0.32.0 to 0.33.0 ([#1509](https://github.com/dragonflyoss/Dragonfly2/issues/1509))
+- **deps:** bump gorm.io/driver/postgres from 1.3.7 to 1.3.8 ([#1503](https://github.com/dragonflyoss/Dragonfly2/issues/1503))
+- **deps:** bump go.opentelemetry.io/otel/exporters/jaeger from 1.7.0 to 1.8.0 ([#1506](https://github.com/dragonflyoss/Dragonfly2/issues/1506))
+- **deps:** bump github.com/swaggo/gin-swagger from 1.5.0 to 1.5.1 ([#1505](https://github.com/dragonflyoss/Dragonfly2/issues/1505))
+- **deps:** bump github.com/schollz/progressbar/v3 from 3.8.6 to 3.8.7 ([#1502](https://github.com/dragonflyoss/Dragonfly2/issues/1502))
+
+### Docs
+- add daemon-socket for daemon docs ([#1522](https://github.com/dragonflyoss/Dragonfly2/issues/1522))
+
+### Feat
+- support grpc recursive download ([#1518](https://github.com/dragonflyoss/Dragonfly2/issues/1518))
+- manager embed frontend assets ([#1523](https://github.com/dragonflyoss/Dragonfly2/issues/1523))
+- can not return peer with the same host ([#1526](https://github.com/dragonflyoss/Dragonfly2/issues/1526))
+- add daemon-socket-path ([#1521](https://github.com/dragonflyoss/Dragonfly2/issues/1521))
+- store preheat result ([#1516](https://github.com/dragonflyoss/Dragonfly2/issues/1516))
+- replace grpc package with https://github.com/dragonflyoss/api ([#1515](https://github.com/dragonflyoss/Dragonfly2/issues/1515))
+- dfdaemon add Authorization and WWWAuthenticate headers ([#1513](https://github.com/dragonflyoss/Dragonfly2/issues/1513))
+- auto switch to concurrent back source based on download speed ([#1494](https://github.com/dragonflyoss/Dragonfly2/issues/1494))
+- enable dependabot ([#1501](https://github.com/dragonflyoss/Dragonfly2/issues/1501))
+
+### Fix
+- check same peer id for sync pieces ([#1525](https://github.com/dragonflyoss/Dragonfly2/issues/1525))
+- auto switch to concurrent back source ([#1507](https://github.com/dragonflyoss/Dragonfly2/issues/1507))
+- wait first peer packet fail ([#1500](https://github.com/dragonflyoss/Dragonfly2/issues/1500))
+- one piece task sometimes backsource after succeed ([#1499](https://github.com/dragonflyoss/Dragonfly2/issues/1499))
+
+
+<a name="v2.0.5"></a>
+## [v2.0.5] - 2022-08-04
+### Chore
+- dragonfly updates version to v2.0.5 ([#1498](https://github.com/dragonflyoss/Dragonfly2/issues/1498))
+
+### Docs
+- add daemon-socket for daemon docs ([#1522](https://github.com/dragonflyoss/Dragonfly2/issues/1522))
+
+### Feat
+- add daemon-socket-path ([#1521](https://github.com/dragonflyoss/Dragonfly2/issues/1521))
 - scheduler adds filter range limit ([#1497](https://github.com/dragonflyoss/Dragonfly2/issues/1497))
 
 ### Fix
 - random vertices ([#1496](https://github.com/dragonflyoss/Dragonfly2/issues/1496))
+
+### Hotfix
+- peer with same host and manager embed assets ([#1528](https://github.com/dragonflyoss/Dragonfly2/issues/1528))
 
 
 <a name="v2.0.5-rc.0"></a>
@@ -979,14 +1152,14 @@
 - when peer state is PeerStateSucceeded, return size scope is small ([#1103](https://github.com/dragonflyoss/Dragonfly2/issues/1103))
 
 
-<a name="v2.0.2-rc.15"></a>
-## [v2.0.2-rc.15] - 2022-02-28
+<a name="v2.0.2-rc.16"></a>
+## [v2.0.2-rc.16] - 2022-02-28
 ### Feat
 - limit tree depth
 
 
-<a name="v2.0.2-rc.16"></a>
-## [v2.0.2-rc.16] - 2022-02-28
+<a name="v2.0.2-rc.15"></a>
+## [v2.0.2-rc.15] - 2022-02-28
 ### Feat
 - limit tree depth
 - update load limit ([#1097](https://github.com/dragonflyoss/Dragonfly2/issues/1097))
@@ -1998,7 +2171,15 @@
 - idgen add digest ([#243](https://github.com/dragonflyoss/Dragonfly2/issues/243))
 
 
-[Unreleased]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.5-rc.0...HEAD
+[Unreleased]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.6-beta.3...HEAD
+[v2.0.6-beta.3]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.6-beta.2...v2.0.6-beta.3
+[v2.0.6-beta.2]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.6-beta.1...v2.0.6-beta.2
+[v2.0.6-beta.1]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.6-beta.0...v2.0.6-beta.1
+[v2.0.6-beta.0]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.6-alpha.3...v2.0.6-beta.0
+[v2.0.6-alpha.3]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.6-alpha.2...v2.0.6-alpha.3
+[v2.0.6-alpha.2]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.6-alpha.0...v2.0.6-alpha.2
+[v2.0.6-alpha.0]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.5...v2.0.6-alpha.0
+[v2.0.5]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.5-rc.0...v2.0.5
 [v2.0.5-rc.0]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.5-beta.5...v2.0.5-rc.0
 [v2.0.5-beta.5]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.5-beta.4...v2.0.5-beta.5
 [v2.0.5-beta.4]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.5-beta.3...v2.0.5-beta.4
@@ -2045,9 +2226,9 @@
 [v2.0.2-rc.20]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.19...v2.0.2-rc.20
 [v2.0.2-rc.19]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.18...v2.0.2-rc.19
 [v2.0.2-rc.18]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.17...v2.0.2-rc.18
-[v2.0.2-rc.17]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.15...v2.0.2-rc.17
-[v2.0.2-rc.15]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.16...v2.0.2-rc.15
-[v2.0.2-rc.16]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.14...v2.0.2-rc.16
+[v2.0.2-rc.17]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.16...v2.0.2-rc.17
+[v2.0.2-rc.16]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.15...v2.0.2-rc.16
+[v2.0.2-rc.15]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.14...v2.0.2-rc.15
 [v2.0.2-rc.14]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.13...v2.0.2-rc.14
 [v2.0.2-rc.13]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.12...v2.0.2-rc.13
 [v2.0.2-rc.12]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.11...v2.0.2-rc.12

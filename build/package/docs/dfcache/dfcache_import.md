@@ -1,4 +1,4 @@
-% DFCACHE(1) Version v2.0.5 | Frivolous "Dfcache" Documentation
+% DFCACHE(1) Version v2.0.6 | Frivolous "Dfcache" Documentation
 
 # NAME
 
