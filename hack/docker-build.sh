@@ -13,7 +13,7 @@ IMAGES_DIR="build/images"
 BASE_IMAGE=${BASE_IMAGE:-alpine:3.16}
 
 CGO_ENABLED=${CGO_ENABLED:-0}
-GOPROXY=${GOPROXY:-`go env GOPROXY`}
+GOPROXY=${GOPROXY:-$(go env GOPROXY)}
 GOTAGS=${GOTAGS:-}
 GOGCFLAGS=${GOGCFLAGS:-}
 
@@ -27,6 +27,7 @@ fi
 docker-build() {
     name=$1
     docker build \
+      --progress plain \
       --build-arg CGO_ENABLED="${CGO_ENABLED}" \
       --build-arg GOPROXY="${GOPROXY}" \
       --build-arg GOTAGS="${GOTAGS}" \
