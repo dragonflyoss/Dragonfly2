@@ -12,9 +12,7 @@ RUN apk --no-cache add bash make gcc libc-dev git
 
 COPY . /go/src/d7y.io/dragonfly/v2
 
-RUN --mount=type=cache,target=/root/.cache/go-build \
-    --mount=type=cache,target=/go/pkg \
-    make build-scheduler && make install-scheduler
+RUN make build-scheduler && make install-scheduler
 
 FROM ${BASE_IMAGE} as health
 
