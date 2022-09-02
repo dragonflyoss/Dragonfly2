@@ -65,7 +65,7 @@ func Execute() {
 func init() {
 	// Bind more cache specific persistent flags.
 	flags := rootCmd.PersistentFlags()
-	flags.StringP("endpoint", "e", cfg.Endpoint, "endpoint of object storage service")
+	flags.StringVarP(&cfg.Endpoint, "endpoint", "e", cfg.Endpoint, "endpoint of object storage service")
 
 	// Bind common flags.
 	if err := viper.BindPFlags(flags); err != nil {
