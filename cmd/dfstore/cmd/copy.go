@@ -89,9 +89,9 @@ var copyCmd = &cobra.Command{
 func init() {
 	// Bind more cache specific persistent flags.
 	flags := copyCmd.Flags()
-	flags.String("filter", cfg.Filter, "filter is used to generate a unique task id by filtering unnecessary query params in the URL, it is separated by & character")
-	flags.IntP("mode", "m", cfg.Mode, "mode is the mode in which the backend is written, when the value is 0, it represents AsyncWriteBack, and when the value is 1, it represents WriteBack")
-	flags.Int("max-replicas", cfg.MaxReplicas, "maxReplicas is the maximum number of replicas of an object cache in seed peers")
+	flags.StringVar(&cfg.Filter, "filter", cfg.Filter, "filter is used to generate a unique task id by filtering unnecessary query params in the URL, it is separated by & character")
+	flags.IntVarP(&cfg.Mode, "mode", "m", cfg.Mode, "mode is the mode in which the backend is written, when the value is 0, it represents AsyncWriteBack, and when the value is 1, it represents WriteBack")
+	flags.IntVar(&cfg.MaxReplicas, "max-replicas", cfg.MaxReplicas, "maxReplicas is the maximum number of replicas of an object cache in seed peers")
 
 	// Bind common flags.
 	if err := viper.BindPFlags(flags); err != nil {
