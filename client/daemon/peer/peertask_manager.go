@@ -36,8 +36,9 @@ import (
 
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
-	"d7y.io/dragonfly/v2/client/util"
+	clientutl "d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
@@ -121,12 +122,15 @@ type peerTaskManager struct {
 	TaskManagerOption
 	conductorLock    sync.Locker
 	runningPeerTasks sync.Map
+	trafficShaper    TrafficShaper
 }
 
 type TaskManagerOption struct {
 	TaskOption
-	SchedulerClient  schedulerclient.Client
-	PerPeerRateLimit rate.Limit
+	SchedulerClient   schedulerclient.Client
+	PerPeerRateLimit  rate.Limit
+	TotalRateLimit    rate.Limit
+	TrafficShaperType string
 	// Multiplex indicates to reuse the data of completed peer tasks
 	Multiplex bool
 	// Prefetch indicates to prefetch the whole files of ranged requests
@@ -139,7 +143,9 @@ func NewPeerTaskManager(opt *TaskManagerOption) (TaskManager, error) {
 		TaskManagerOption: *opt,
 		runningPeerTasks:  sync.Map{},
 		conductorLock:     &sync.Mutex{},
+		trafficShaper:     NewTrafficShaper(opt.TotalRateLimit, opt.TrafficShaperType, util.ComputePieceSize),
 	}
+	ptm.trafficShaper.Start()
 	return ptm, nil
 }
 
@@ -156,7 +162,7 @@ func (ptm *peerTaskManager) getPeerTaskConductor(ctx context.Context,
 	request *schedulerv1.PeerTaskRequest,
 	limit rate.Limit,
 	parent *peerTaskConductor,
-	rg *util.Range,
+	rg *clientutl.Range,
 	desiredLocation string,
 	seed bool) (*peerTaskConductor, error) {
 	ptc, created, err := ptm.getOrCreatePeerTaskConductor(ctx, taskID, request, limit, parent, rg, desiredLocation, seed)
@@ -179,14 +185,14 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	request *schedulerv1.PeerTaskRequest,
 	limit rate.Limit,
 	parent *peerTaskConductor,
-	rg *util.Range,
+	rg *clientutl.Range,
 	desiredLocation string,
 	seed bool) (*peerTaskConductor, bool, error) {
 	if ptc, ok := ptm.findPeerTaskConductor(taskID); ok {
 		logger.Debugf("peer task found: %s/%s", ptc.taskID, ptc.peerID)
 		return ptc, false, nil
 	}
-	ptc := ptm.newPeerTaskConductor(ctx, request, limit, parent, rg, seed)
+	ptc := ptm.newPeerTaskConductor(ctx, request, ptm.trafficShaper, limit, parent, rg, seed)
 
 	ptm.conductorLock.Lock()
 	// double check
@@ -214,7 +220,7 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	return ptc, true, nil
 }
 
-func (ptm *peerTaskManager) enabledPrefetch(rg *util.Range) bool {
+func (ptm *peerTaskManager) enabledPrefetch(rg *clientutl.Range) bool {
 	return ptm.Prefetch && rg != nil
 }
 
@@ -367,12 +373,18 @@ func (ptm *peerTaskManager) Subscribe(request *commonv1.PieceTaskRequest) (*Subs
 
 func (ptm *peerTaskManager) Stop(ctx context.Context) error {
 	// TODO
+	if ptm.trafficShaper != nil {
+		ptm.trafficShaper.Stop()
+	}
 	return nil
 }
 
 func (ptm *peerTaskManager) PeerTaskDone(taskID string) {
 	logger.Debugf("delete done task %s in running tasks", taskID)
 	ptm.runningPeerTasks.Delete(taskID)
+	if ptm.trafficShaper != nil {
+		ptm.trafficShaper.RemoveTask(taskID)
+	}
 }
 
 func (ptm *peerTaskManager) IsPeerTaskRunning(taskID string) (Task, bool) {

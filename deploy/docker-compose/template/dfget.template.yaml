@@ -97,6 +97,8 @@ download:
   totalRateLimit: 200Mi
   # per peer task download limit per second
   perPeerRateLimit: 100Mi
+  # traffic shaper type
+  trafficShaperType: sampling
   # download piece timeout
   pieceDownloadTimeout: 30s
   # golang transport option

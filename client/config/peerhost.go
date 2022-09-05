@@ -254,6 +254,7 @@ type DownloadOption struct {
 	DefaultPattern       string            `mapstructure:"defaultPattern" yaml:"defaultPattern"`
 	TotalRateLimit       util.RateLimit    `mapstructure:"totalRateLimit" yaml:"totalRateLimit"`
 	PerPeerRateLimit     util.RateLimit    `mapstructure:"perPeerRateLimit" yaml:"perPeerRateLimit"`
+	TrafficShaperType    string            `mapstructure:"trafficShaperType" yaml:"trafficShaperType"`
 	PieceDownloadTimeout time.Duration     `mapstructure:"pieceDownloadTimeout" yaml:"pieceDownloadTimeout"`
 	GRPCDialTimeout      time.Duration     `mapstructure:"grpcDialTimeout" yaml:"grpcDialTimeout"`
 	DownloadGRPC         ListenOption      `mapstructure:"downloadGRPC" yaml:"downloadGRPC"`
