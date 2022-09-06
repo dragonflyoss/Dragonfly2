@@ -18,6 +18,7 @@ package balancer
 
 import (
 	"errors"
+	"fmt"
 
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/balancer/base"
@@ -63,7 +64,7 @@ func (b *consistentHashingPickerBuilder) Build(info base.PickerBuildInfo) balanc
 	hashring := consistent.New()
 	scs := make(map[string]balancer.SubConn, len(info.ReadySCs))
 	for sc, scInfo := range info.ReadySCs {
-		element := scInfo.Address.Addr + scInfo.Address.ServerName
+		element := fmt.Sprintf("%s:%s", scInfo.Address.Addr, scInfo.Address.ServerName)
 		hashring.Add(element)
 		scs[element] = sc
 	}
