@@ -34,6 +34,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/pkg/reachable"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
+	"d7y.io/dragonfly/v2/version"
 )
 
 // Daemon cache file name.
@@ -228,6 +229,8 @@ func (mc *managerClient) Get() (any, error) {
 		SourceType: managerv1.SourceType_PEER_SOURCE,
 		HostName:   mc.hostOption.Hostname,
 		Ip:         mc.hostOption.AdvertiseIP,
+		Version:    version.GitVersion,
+		Commit:     version.GitCommit,
 		HostInfo: map[string]string{
 			searcher.ConditionSecurityDomain: mc.hostOption.SecurityDomain,
 			searcher.ConditionIDC:            mc.hostOption.IDC,
