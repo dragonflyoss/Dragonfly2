@@ -45,9 +45,9 @@ host:
 # download service option
 download:
   # total download limit per second
-  totalRateLimit: 200Mi
+  totalRateLimit: 1024Mi
   # per peer task download limit per second
-  perPeerRateLimit: 20Mi
+  perPeerRateLimit: 512Mi
   # download grpc option
   downloadGRPC:
     # security option
@@ -79,7 +79,7 @@ download:
 # upload service option
 upload:
   # upload limit per second
-  rateLimit: 200Mi
+  rateLimit: 1024Mi
   security:
     insecure: true
     cacert: ""

@@ -47,9 +47,9 @@ const (
 
 // Download limit.
 const (
-	DefaultPerPeerDownloadLimit = 20 * unit.MB
-	DefaultTotalDownloadLimit   = 100 * unit.MB
-	DefaultUploadLimit          = 100 * unit.MB
+	DefaultPerPeerDownloadLimit = 512 * unit.MB
+	DefaultTotalDownloadLimit   = 1024 * unit.MB
+	DefaultUploadLimit          = 1024 * unit.MB
 	DefaultMinRate              = 20 * unit.MB
 )
 

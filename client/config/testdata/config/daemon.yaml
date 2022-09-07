@@ -43,8 +43,8 @@ download:
   calculateDigest: true
   defaultPattern: p2p
   pieceDownloadTimeout: 30s
-  totalRateLimit: 200Mi
-  perPeerRateLimit: 20Mi
+  totalRateLimit: 1024Mi
+  perPeerRateLimit: 512Mi
   downloadGRPC:
     security:
       insecure: true
@@ -85,7 +85,7 @@ download:
     maxBackoff: 1
     maxAttempts: 1
 upload:
-  rateLimit: 100Mi
+  rateLimit: 1024Mi
   security:
     insecure: true
     caCert: ./testdata/certs/ca.crt
