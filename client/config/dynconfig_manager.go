@@ -28,6 +28,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+	"d7y.io/dragonfly/v2/version"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaldynconfig "d7y.io/dragonfly/v2/internal/dynconfig"
@@ -228,6 +229,8 @@ func (mc *managerClient) Get() (any, error) {
 		SourceType: managerv1.SourceType_PEER_SOURCE,
 		HostName:   mc.hostOption.Hostname,
 		Ip:         mc.hostOption.AdvertiseIP,
+		Version:    version.GitVersion,
+		Commit:     version.GitCommit,
 		HostInfo: map[string]string{
 			searcher.ConditionSecurityDomain: mc.hostOption.SecurityDomain,
 			searcher.ConditionIDC:            mc.hostOption.IDC,
