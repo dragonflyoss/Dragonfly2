@@ -39,14 +39,14 @@ data:
         tcpListen:
           listen: 0.0.0.0
           port: 65000
-      perPeerRateLimit: 100Mi
-      totalRateLimit: 200Mi
+      perPeerRateLimit: 512Mi
+      totalRateLimit: 1024Mi
       concurrent:
         thresholdSize: 10M
         thresholdSpeed: 2M
         goroutineCount: 4
     upload:
-      rateLimit: 100Mi
+      rateLimit: 1024Mi
       security:
         insecure: true
       tcpListen:
