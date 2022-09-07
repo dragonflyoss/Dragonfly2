@@ -297,7 +297,8 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, peerTaskReq
 		peerTaskRequest.UrlMeta.Header = map[string]string{}
 	}
 	if peerTaskRequest.UrlMeta.Range != "" {
-		// FIXME in http source package, adapter will update the real range, we inject "X-Dragonfly-Range" here
+		// FIXME refactor source package, normal Range header is enough
+		// in http source package, adapter will update the real range, we inject "X-Dragonfly-Range" here
 		peerTaskRequest.UrlMeta.Header[source.Range] = peerTaskRequest.UrlMeta.Range
 	}
 
@@ -873,10 +874,10 @@ func (pm *pieceManager) downloadPieceFromSource(ctx context.Context,
 
 	// offset is the position for current peer task, if this peer task already has range
 	// we need add the start to the offset when download from source
-	rg := fmt.Sprintf("bytes=%d-%d", offset+uint64(parsedRange.Start), offset+uint64(parsedRange.Start)+uint64(size)-1)
+	rg := fmt.Sprintf("%d-%d", offset+uint64(parsedRange.Start), offset+uint64(parsedRange.Start)+uint64(size)-1)
 	// FIXME refactor source package, normal Range header is enough
 	backSourceRequest.Header.Set(source.Range, rg)
-	backSourceRequest.Header.Set(headers.Range, rg)
+	backSourceRequest.Header.Set(headers.Range, "bytes="+rg)
 	log.Debugf("piece %d back source header: %#v", num, backSourceRequest.Header)
 
 	response, err := source.Download(backSourceRequest)
