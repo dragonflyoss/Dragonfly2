@@ -229,7 +229,7 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 				task := peer.Task
 				task.StorePeer(peer)
 				peer.FSM.SetState(resource.PeerStateRunning)
-				peer.Task.BackToSourceLimit.Store(0)
+				peer.Task.BackToSourceLimit.Store(-1)
 				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(2)
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
@@ -244,7 +244,7 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 				task := peer.Task
 				task.StorePeer(peer)
 				peer.FSM.SetState(resource.PeerStateRunning)
-				peer.Task.BackToSourceLimit.Store(0)
+				peer.Task.BackToSourceLimit.Store(-1)
 				peer.StoreStream(stream)
 
 				gomock.InOrder(
@@ -264,7 +264,7 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 				task := peer.Task
 				task.StorePeer(peer)
 				peer.FSM.SetState(resource.PeerStateRunning)
-				peer.Task.BackToSourceLimit.Store(0)
+				peer.Task.BackToSourceLimit.Store(-1)
 				peer.StoreStream(stream)
 
 				gomock.InOrder(

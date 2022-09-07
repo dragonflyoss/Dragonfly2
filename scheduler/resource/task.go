@@ -400,7 +400,7 @@ func (t *Task) SizeScope() (commonv1.SizeScope, error) {
 
 // CanBackToSource represents whether peer can back-to-source.
 func (t *Task) CanBackToSource() bool {
-	return int32(t.BackToSourcePeers.Len()) < t.BackToSourceLimit.Load() && (t.Type == commonv1.TaskType_Normal || t.Type == commonv1.TaskType_DfStore)
+	return int32(t.BackToSourcePeers.Len()) <= t.BackToSourceLimit.Load() && (t.Type == commonv1.TaskType_Normal || t.Type == commonv1.TaskType_DfStore)
 }
 
 // NotifyPeers notify all peers in the task with the state code.
