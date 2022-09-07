@@ -153,7 +153,7 @@ var peerHostConfig = func() *DaemonOption {
 			TaskExpireTime: util.Duration{
 				Duration: DefaultTaskExpireTime,
 			},
-			StoreStrategy:          AdvanceLocalTaskStoreStrategy,
+			StoreStrategy:          SimpleLocalTaskStoreStrategy,
 			Multiplex:              false,
 			DiskGCThresholdPercent: 95,
 		},
