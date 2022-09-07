@@ -28,13 +28,12 @@ import (
 	"google.golang.org/grpc/status"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
-	"d7y.io/dragonfly/v2/version"
-
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaldynconfig "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/pkg/reachable"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
+	"d7y.io/dragonfly/v2/version"
 )
 
 // Daemon cache file name.
