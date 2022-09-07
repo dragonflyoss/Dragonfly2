@@ -181,8 +181,8 @@ storage:
   #                            avoid copy to output path, fast than simple strategy, but:
   #                            the output file with postfix will be the peer data for uploading to other peers
   #                            when user delete or change this file, this peer data will be corrupted
-  # default is io.d7y.storage.v2.advance
-  strategy: io.d7y.storage.v2.advance
+  # default is io.d7y.storage.v2.simple
+  strategy: io.d7y.storage.v2.simple
   # disk quota gc threshold, when the quota of all tasks exceeds the gc threshold, the oldest tasks will be reclaimed.
   diskGCThreshold: 50Gi
   # disk used percent gc threshold, when the disk used percent exceeds, the oldest tasks will be reclaimed.
