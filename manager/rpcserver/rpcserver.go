@@ -21,6 +21,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
+	"fmt"
 	"io"
 	"time"
 
@@ -44,8 +45,17 @@ import (
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/manager/types"
+	pkgcache "d7y.io/dragonfly/v2/pkg/cache"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
 	managerserver "d7y.io/dragonfly/v2/pkg/rpc/manager/server"
+)
+
+const (
+	// DefaultPeerCacheExpiration is default expiration of peer cache.
+	DefaultPeerCacheExpiration = 10 * time.Minute
+
+	// DefaultPeerCacheCleanupInterval is default cleanup interval of peer cache.
+	DefaultPeerCacheCleanupInterval = 1 * time.Minute
 )
 
 // SelfSignedCert is self signed certificate.
@@ -73,6 +83,9 @@ type Server struct {
 
 	// Cache instance.
 	cache *cache.Cache
+
+	// Peer memory cache.
+	peerCache pkgcache.Cache
 
 	// Searcher interface.
 	searcher searcher.Searcher
@@ -129,10 +142,18 @@ func New(
 		db:                  database.DB,
 		rdb:                 database.RDB,
 		cache:               cache,
+		peerCache:           pkgcache.New(DefaultPeerCacheExpiration, DefaultPeerCacheCleanupInterval),
 		searcher:            searcher,
 		objectStorage:       objectStorage,
 		objectStorageConfig: objectStorageConfig,
 	}
+
+	// Peer cache is evicted, and the metrics of the peer should be released.
+	s.peerCache.OnEvicted(func(k string, v any) {
+		if req, ok := v.(*managerv1.ListSchedulersRequest); ok {
+			metrics.PeerGauge.WithLabelValues(req.Version, req.Commit).Dec()
+		}
+	})
 
 	for _, opt := range opts {
 		if err := opt(s); err != nil {
@@ -487,21 +508,22 @@ func (s *Server) createScheduler(ctx context.Context, req *managerv1.UpdateSched
 // List acitve schedulers configuration.
 func (s *Server) ListSchedulers(ctx context.Context, req *managerv1.ListSchedulersRequest) (*managerv1.ListSchedulersResponse, error) {
 	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
+	log.Debugf("client lists schedulers, version %s, commit %s", req.Version, req.Commit)
 
 	// Count the number of the active peer.
 	if s.config.Metrics.EnablePeerGauge && req.SourceType == managerv1.SourceType_PEER_SOURCE {
-		count, err := s.getPeerCount(ctx, req)
-		if err != nil {
-			log.Warnf("get peer count failed: %s", err.Error())
-		} else {
-			metrics.PeerGauge.WithLabelValues(req.Version, req.Commit).Set(float64(count))
+		peerCacheKey := fmt.Sprintf("%s-%s", req.HostName, req.Ip)
+		if _, _, found := s.peerCache.GetWithExpiration(peerCacheKey); !found {
+			metrics.PeerGauge.WithLabelValues(req.Version, req.Commit).Inc()
 		}
+
+		s.peerCache.SetDefault(peerCacheKey, req)
 	}
 
+	// Cache hit.
 	var pbListSchedulersResponse managerv1.ListSchedulersResponse
 	cacheKey := cache.MakeSchedulersCacheKeyForPeer(req.HostName, req.Ip)
 
-	// Cache hit.
 	if err := s.cache.Get(ctx, cacheKey, &pbListSchedulersResponse); err == nil {
 		log.Infof("%s cache hit", cacheKey)
 		return &pbListSchedulersResponse, nil
@@ -578,25 +600,6 @@ func (s *Server) ListSchedulers(ctx context.Context, req *managerv1.ListSchedule
 	}
 
 	return &pbListSchedulersResponse, nil
-}
-
-// Get the number of active peers
-func (s *Server) getPeerCount(ctx context.Context, req *managerv1.ListSchedulersRequest) (int, error) {
-	cacheKey := cache.MakePeerCacheKey(req.HostName, req.Ip)
-	if err := s.rdb.Set(ctx, cacheKey, types.Peer{
-		ID:       cacheKey,
-		Hostname: req.HostName,
-		IP:       req.Ip,
-	}, cache.PeerCacheTTL).Err(); err != nil {
-		return 0, err
-	}
-
-	val, err := s.rdb.Keys(ctx, cache.MakeCacheKey(cache.PeerNamespace, "*")).Result()
-	if err != nil {
-		return 0, err
-	}
-
-	return len(val), nil
 }
 
 // Get object storage configuration.

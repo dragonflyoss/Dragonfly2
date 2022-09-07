@@ -40,11 +40,6 @@ const (
 	BucketsNamespace = "buckets"
 )
 
-const (
-	// PeerCacheTTL is the ttl for peer cache.
-	PeerCacheTTL = 30 * time.Minute
-)
-
 // Cache is cache client.
 type Cache struct {
 	*cache.Cache
