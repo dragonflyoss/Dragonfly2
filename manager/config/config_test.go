@@ -76,6 +76,7 @@ func TestManagerConfig_Load(t *testing.T) {
 			Redis: &RedisConfig{
 				Host:      "bar",
 				Password:  "bar",
+				Addrs:     []string{"foo", "bar"},
 				Port:      6379,
 				DB:        0,
 				BrokerDB:  1,
