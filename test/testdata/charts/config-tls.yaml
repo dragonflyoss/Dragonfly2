@@ -85,6 +85,12 @@ seedPeer:
       path: /tmp/artifact
   config:
     verbose: true
+    download:
+      prefetch: true
+      concurrent:
+        thresholdSize: 10M
+        thresholdSpeed: 2M
+        goroutineCount: 4
     security:
       autoIssueCert: true
       tlsVerify: true

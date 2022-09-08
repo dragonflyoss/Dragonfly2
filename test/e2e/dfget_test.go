@@ -142,6 +142,7 @@ func downloadSingleFile(ns string, pod *e2eutil.PodExec, path, url string, size 
 	} else {
 		sha256sum = append(sha256sum, "sh", "-c",
 			fmt.Sprintf("/bin/sha256sum-offset -file %s -offset %d -length %d", path, rg.Start, rg.Length))
+
 		dfget = append(dfget, "/opt/dragonfly/bin/dfget", "--disable-back-source", "-O", "/tmp/d7y.out", "-H",
 			fmt.Sprintf("Range: bytes=%d-%d", rg.Start, rg.Start+rg.Length-1), url)
 		curl = append(curl, "/usr/bin/curl", "-x", "http://127.0.0.1:65001", "-s", "--dump-header", "-", "-o", "/tmp/curl.out",

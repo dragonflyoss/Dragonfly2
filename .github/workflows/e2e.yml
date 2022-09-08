@@ -25,12 +25,17 @@ jobs:
     timeout-minutes: 30
     strategy:
       matrix:
-        module: ["normal", "tls"]
+        module: ["normal", "tls", "disable-seed-peer"]
         include:
           - module: normal
             charts-config: test/testdata/charts/config.yaml
+            skip: ""
           - module: tls
             charts-config: test/testdata/charts/config-tls.yaml
+            skip: ""
+          - module: disable-seed-peer
+            charts-config: test/testdata/charts/config-disable-seed-peer.yaml
+            skip: preheat
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -80,7 +85,7 @@ jobs:
       - name: Run E2E test
         run: |
           make build-e2e-sha256sum
-          ginkgo -v -r --race --fail-fast --cover --trace --progress test/e2e -- --feature-gates=dfget-range=true
+          ginkgo -v -r --race --fail-fast --cover --trace --progress --skip=${{ matrix.skip }} test/e2e -- --feature-gates=dfget-range=true
           cat coverprofile.out >> coverage.txt
 
       - name: Upload coverage to Codecov

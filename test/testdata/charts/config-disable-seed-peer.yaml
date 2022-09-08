@@ -21,39 +21,12 @@ scheduler:
     hostPath:
       path: /tmp/artifact
   config:
+    seedPeer:
+      enable: false
     verbose: true
 
 seedPeer:
-  image: d7yio/dfdaemon
-  tag: latest
-  replicas: 3
-  resources:
-    requests:
-      cpu: "0"
-      memory: "0"
-    limits:
-      cpu: "1"
-      memory: "1Gi"
-  extraVolumeMounts:
-  - name: logs
-    mountPath: "/var/log/dragonfly"
-    subPath: dragonfly
-  - name: artifact
-    mountPath: /tmp/artifact
-  extraVolumes:
-  - name: logs
-    emptyDir: { }
-  - name: artifact
-    hostPath:
-      path: /tmp/artifact
-  config:
-    verbose: true
-    download:
-      prefetch: true
-      concurrent:
-        thresholdSize: 10M
-        thresholdSpeed: 2M
-        goroutineCount: 4
+  enable: false
 
 dfdaemon:
   image: d7yio/dfdaemon
@@ -86,8 +59,6 @@ dfdaemon:
         thresholdSize: 10M
         thresholdSpeed: 2M
         goroutineCount: 4
-    scheduler:
-      disableAutoBackSource: true
     proxy:
       defaultFilter: "Expires&Signature&ns"
       security:

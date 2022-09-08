@@ -109,12 +109,12 @@ func (t *localSubTaskStore) WritePiece(ctx context.Context, req *WritePieceReque
 
 	// when Md5 is empty, try to get md5 from reader, it's useful for back source
 	if req.PieceMetadata.Md5 == "" {
-		t.Debugf("piece md5 not found in metadata, read from reader")
+		t.Debugf("piece %d md5 not found in metadata, read from reader", req.PieceMetadata.Num)
 		if get, ok := req.Reader.(digest.Reader); ok {
 			req.PieceMetadata.Md5 = get.Encoded()
-			t.Infof("read md5 from reader, value: %s", req.PieceMetadata.Md5)
+			t.Infof("read piece %d md5 from reader, value: %s", req.PieceMetadata.Num, req.PieceMetadata.Md5)
 		} else {
-			t.Debugf("reader is not a digest.Reader")
+			t.Warnf("piece %d reader is not a digest.Reader", req.PieceMetadata.Num)
 		}
 	}
 
