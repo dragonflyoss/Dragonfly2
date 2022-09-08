@@ -72,6 +72,7 @@ type trafficShaperComponentsOption struct {
 	tasks             []taskOption
 	pieceSize         uint32
 	pieceDownloader   PieceDownloader
+	perPeerRateLimit  rate.Limit
 	totalRateLimit    rate.Limit
 	trafficShaperType string
 	sourceClient      source.ResourceClient
@@ -232,17 +233,19 @@ func trafficShaperSetupMockManager(ctrl *gomock.Controller, ts *trafficShaperTes
 	ptm := &peerTaskManager{
 		conductorLock:    &sync.Mutex{},
 		runningPeerTasks: sync.Map{},
-		trafficShaper: NewTrafficShaper(opt.totalRateLimit, opt.trafficShaperType, func(contentLength int64) uint32 {
+		trafficShaper: NewTrafficShaper(opt.trafficShaperType, opt.totalRateLimit, func(contentLength int64) uint32 {
 			return opt.pieceSize
 		}),
 		TaskManagerOption: TaskManagerOption{
-			SchedulerClient: schedulerClient,
+			SchedulerClient:  schedulerClient,
+			PerPeerRateLimit: opt.perPeerRateLimit,
 			TaskOption: TaskOption{
 				CalculateDigest: true,
 				PeerHost: &schedulerv1.PeerHost{
 					Ip: "127.0.0.1",
 				},
 				PieceManager: &pieceManager{
+					Limiter:         rate.NewLimiter(opt.totalRateLimit, int(opt.totalRateLimit)),
 					calculateDigest: true,
 					pieceDownloader: opt.pieceDownloader,
 					computePieceSize: func(contentLength int64) uint32 {
@@ -516,6 +519,7 @@ func TestTrafficShaper_TaskSuite(t *testing.T) {
 						tasks:             tasks,
 						pieceSize:         uint32(tc.pieceSize),
 						pieceDownloader:   downloader,
+						perPeerRateLimit:  tc.perPeerRateLimit,
 						totalRateLimit:    tc.totalRateLimit,
 						trafficShaperType: trafficShaperType,
 						sourceClient:      sourceClient,

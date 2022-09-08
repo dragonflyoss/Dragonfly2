@@ -143,7 +143,7 @@ func NewPeerTaskManager(opt *TaskManagerOption) (TaskManager, error) {
 		TaskManagerOption: *opt,
 		runningPeerTasks:  sync.Map{},
 		conductorLock:     &sync.Mutex{},
-		trafficShaper:     NewTrafficShaper(opt.TotalRateLimit, opt.TrafficShaperType, util.ComputePieceSize),
+		trafficShaper:     NewTrafficShaper(opt.TrafficShaperType, opt.TotalRateLimit, util.ComputePieceSize),
 	}
 	ptm.trafficShaper.Start()
 	return ptm, nil

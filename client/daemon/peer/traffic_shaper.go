@@ -43,9 +43,11 @@ type TrafficShaper interface {
 	RemoveTask(taskID string)
 	// Record records task's used bandwidth
 	Record(taskID string, n int)
+	// GetBandwidth gets the total download bandwidth in the past second
+	GetBandwidth() int64
 }
 
-func NewTrafficShaper(totalRateLimit rate.Limit, trafficShaperType string, computePieceSize func(int64) uint32) TrafficShaper {
+func NewTrafficShaper(trafficShaperType string, totalRateLimit rate.Limit, computePieceSize func(int64) uint32) TrafficShaper {
 	var ts TrafficShaper
 	switch trafficShaperType {
 	case TypeSamplingTrafficShaper:
@@ -59,16 +61,37 @@ func NewTrafficShaper(totalRateLimit rate.Limit, trafficShaperType string, compu
 }
 
 type plainTrafficShaper struct {
+	usedBandwidth  *atomic.Int64
+	usingBandWidth *atomic.Int64
+	stopCh         chan struct{}
 }
 
 func NewPlainTrafficShaper() TrafficShaper {
-	return &plainTrafficShaper{}
+	return &plainTrafficShaper{
+		usedBandwidth:  atomic.NewInt64(0),
+		usingBandWidth: atomic.NewInt64(0),
+		stopCh:         make(chan struct{}),
+	}
 }
 
 func (ts *plainTrafficShaper) Start() {
+	go func() {
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				ts.usedBandwidth.Store(ts.usingBandWidth.Load())
+				ts.usingBandWidth.Store(0)
+			case <-ts.stopCh:
+				return
+			}
+		}
+	}()
 }
 
 func (ts *plainTrafficShaper) Stop() {
+	close(ts.stopCh)
 }
 
 func (ts *plainTrafficShaper) AddTask(_ string, _ *peerTaskConductor) {
@@ -77,7 +100,12 @@ func (ts *plainTrafficShaper) AddTask(_ string, _ *peerTaskConductor) {
 func (ts *plainTrafficShaper) RemoveTask(_ string) {
 }
 
-func (ts *plainTrafficShaper) Record(_ string, _ int) {
+func (ts *plainTrafficShaper) Record(_ string, n int) {
+	ts.usingBandWidth.Add(int64(n))
+}
+
+func (ts *plainTrafficShaper) GetBandwidth() int64 {
+	return ts.usedBandwidth.Load()
 }
 
 type taskEntry struct {
@@ -93,6 +121,8 @@ type samplingTrafficShaper struct {
 	sync.Mutex
 	computePieceSize func(int64) uint32
 	totalRateLimit   rate.Limit
+	usedBandwidth    *atomic.Int64
+	usingBandWidth   *atomic.Int64
 	tasks            map[string]*taskEntry
 	stopCh           chan struct{}
 }
@@ -103,6 +133,8 @@ func NewSamplingTrafficShaper(totalRateLimit rate.Limit, computePieceSize func(i
 		SugaredLoggerOnWith: log,
 		computePieceSize:    computePieceSize,
 		totalRateLimit:      totalRateLimit,
+		usedBandwidth:       atomic.NewInt64(0),
+		usingBandWidth:      atomic.NewInt64(0),
 		tasks:               make(map[string]*taskEntry),
 		stopCh:              make(chan struct{}),
 	}
@@ -116,6 +148,8 @@ func (ts *samplingTrafficShaper) Start() {
 		for {
 			select {
 			case <-ticker.C:
+				ts.usedBandwidth.Store(ts.usingBandWidth.Load())
+				ts.usingBandWidth.Store(0)
 				ts.updateLimit()
 			case <-ts.stopCh:
 				return
@@ -219,7 +253,12 @@ func (ts *samplingTrafficShaper) RemoveTask(taskID string) {
 }
 
 func (ts *samplingTrafficShaper) Record(taskID string, n int) {
+	ts.usingBandWidth.Add(int64(n))
 	ts.Lock()
 	ts.tasks[taskID].usedBandwidth.Add(int64(n))
 	ts.Unlock()
+}
+
+func (ts *samplingTrafficShaper) GetBandwidth() int64 {
+	return ts.usedBandwidth.Load()
 }
