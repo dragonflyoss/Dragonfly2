@@ -30,6 +30,9 @@ jobs:
           - module: normal
             charts-config: test/testdata/charts/config.yaml
             skip: ""
+          - module: concurent-back-source
+            charts-config: test/testdata/charts/config-concurent-back-source.yaml
+            skip: ""
           - module: tls
             charts-config: test/testdata/charts/config-tls.yaml
             skip: ""
