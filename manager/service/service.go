@@ -153,7 +153,7 @@ type Service interface {
 
 type service struct {
 	db            *gorm.DB
-	rdb           *redis.Client
+	rdb           redis.UniversalClient
 	cache         *cache.Cache
 	job           *job.Job
 	enforcer      *casbin.Enforcer
