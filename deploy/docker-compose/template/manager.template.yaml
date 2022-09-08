@@ -37,10 +37,13 @@ database:
   #   insecureSkipVerify: true
   # redis configure
   redis:
+    # addresses
+    addrs:
+      - "__IP__:6379"
     password: dragonfly
-    host: __IP__
-    port: 6379
     db: 0
+    brokerDB: 1
+    backendDB: 2
 # manager server cache
 # cache:
 #   # redis cache configure

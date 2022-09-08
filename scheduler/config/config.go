@@ -18,6 +18,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
@@ -213,11 +214,17 @@ type StorageConfig struct {
 }
 
 type RedisConfig struct {
-	// Server hostname.
+	// DEPRECATED: Please use the `addrs` field instead.
 	Host string `yaml:"host" mapstructure:"host"`
 
-	// Server port.
+	// DEPRECATED: Please use the `addrs` field instead.
 	Port int `yaml:"port" mapstructure:"port"`
+
+	// Server addresses.
+	Addrs []string `yaml:"addrs" mapstructure:"addrs"`
+
+	// Server username.
+	Username string `yaml:"username" mapstructure:"username"`
 
 	// Server password.
 	Password string `yaml:"password" mapstructure:"password"`
@@ -315,7 +322,6 @@ func New() *Config {
 			SchedulerWorkerNum: DefaultJobSchedulerWorkerNum,
 			LocalWorkerNum:     DefaultJobLocalWorkerNum,
 			Redis: &RedisConfig{
-				Port:      DefaultJobRedisPort,
 				BrokerDB:  DefaultJobRedisBrokerDB,
 				BackendDB: DefaultJobRedisBackendDB,
 			},
@@ -434,20 +440,18 @@ func (cfg *Config) Validate() error {
 			return errors.New("job requires parameter localWorkerNum")
 		}
 
-		if cfg.Job.Redis.Host == "" {
-			return errors.New("job requires parameter redis host")
+		if len(cfg.Job.Redis.Addrs) == 0 {
+			return errors.New("job requires parameter addrs")
 		}
 
-		if cfg.Job.Redis.Port <= 0 {
-			return errors.New("job requires parameter redis port")
-		}
+		if len(cfg.Job.Redis.Addrs) == 1 {
+			if cfg.Job.Redis.BrokerDB <= 0 {
+				return errors.New("job requires parameter redis brokerDB")
+			}
 
-		if cfg.Job.Redis.BrokerDB <= 0 {
-			return errors.New("job requires parameter redis brokerDB")
-		}
-
-		if cfg.Job.Redis.BackendDB <= 0 {
-			return errors.New("job requires parameter redis backendDB")
+			if cfg.Job.Redis.BackendDB <= 0 {
+				return errors.New("job requires parameter redis backendDB")
+			}
 		}
 	}
 
@@ -485,6 +489,15 @@ func (cfg *Config) Validate() error {
 		if cfg.Security.CertSpec.ValidityPeriod <= 0 {
 			return errors.New("certSpec requires parameter validityPeriod")
 		}
+	}
+
+	return nil
+}
+
+func (cfg *Config) Convert() error {
+	// TODO Compatible with deprecated fields host and port.
+	if cfg.Job.Redis.Host != "" && cfg.Job.Redis.Port > 0 {
+		cfg.Job.Redis.Addrs = append(cfg.Job.Redis.Addrs, fmt.Sprintf("%s:%d", cfg.Job.Redis.Host, cfg.Job.Redis.Port))
 	}
 
 	return nil

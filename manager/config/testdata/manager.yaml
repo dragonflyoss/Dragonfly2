@@ -35,6 +35,7 @@ database:
     timezone: UTC
     migrate: true
   redis:
+    addrs: [foo, bar]
     password: bar
     host: bar
     port: 6379

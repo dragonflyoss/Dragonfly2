@@ -38,7 +38,7 @@ var (
 	cfg *config.Config
 )
 
-// rootCmd represents the commonv1 command when called without any subcommands
+// rootCmd represents the commonv1 command when called without any subcommands.
 var rootCmd = &cobra.Command{
 	Use:   "scheduler",
 	Short: "the scheduler of dragonfly",
@@ -48,7 +48,12 @@ generate and maintain a P2P network during the download process, and push suitab
 	DisableAutoGenTag: true,
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Validate config
+		// Convert config.
+		if err := cfg.Convert(); err != nil {
+			return err
+		}
+
+		// Validate config.
 		if err := cfg.Validate(); err != nil {
 			return err
 		}
@@ -56,13 +61,13 @@ generate and maintain a P2P network during the download process, and push suitab
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		// Initialize dfpath
+		// Initialize dfpath.
 		d, err := initDfpath(cfg.Server)
 		if err != nil {
 			return err
 		}
 
-		// Initialize logger
+		// Initialize logger.
 		if err := logger.InitScheduler(cfg.Verbose, cfg.Console, d.LogDir()); err != nil {
 			return fmt.Errorf("init scheduler logger: %w", err)
 		}
@@ -82,9 +87,9 @@ func Execute() {
 }
 
 func init() {
-	// Initialize default scheduler config
+	// Initialize default scheduler config.
 	cfg = config.New()
-	// Initialize command and config
+	// Initialize command and config.
 	dependency.InitCommandAndConfig(rootCmd, true, cfg)
 }
 
@@ -114,7 +119,7 @@ func initDfpath(cfg *config.ServerConfig) (dfpath.Dfpath, error) {
 func runScheduler(ctx context.Context, d dfpath.Dfpath) error {
 	logger.Infof("Version:\n%s", version.Version())
 
-	// scheduler config values
+	// scheduler config values.
 	s, _ := yaml.Marshal(cfg)
 
 	logger.Infof("scheduler configuration:\n%s", string(s))

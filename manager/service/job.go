@@ -137,15 +137,15 @@ func (s *service) pollingJob(ctx context.Context, id uint, taskID string) {
 			log.Errorf("polling job failed: %#v", jobStates)
 			return nil, true, nil
 		default:
-			msg := fmt.Sprintf("unknow state %s", job.State)
-			log.Error(msg)
+			msg := fmt.Sprintf("polling job state is %s", job.State)
+			log.Info(msg)
 			return nil, false, errors.New(msg)
 		}
 	}); err != nil {
 		log.Errorf("polling job failed: %s", err.Error())
 	}
 
-	// Polling timeout and failed
+	// Polling timeout and failed.
 	if job.State != machineryv1tasks.StateSuccess && job.State != machineryv1tasks.StateFailure {
 		job := model.Job{}
 		if err := s.db.WithContext(ctx).First(&job, id).Updates(model.Job{

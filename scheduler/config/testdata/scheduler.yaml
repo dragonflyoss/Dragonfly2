@@ -50,6 +50,7 @@ job:
   schedulerWorkerNum: 1
   localWorkerNum: 5
   redis:
+    addrs: ["foo", "bar"]
     host: 127.0.0.1
     port: 6379
     password: foo

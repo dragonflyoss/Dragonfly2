@@ -37,7 +37,7 @@ var (
 	cfg *config.Config
 )
 
-// rootCmd represents the commonv1 command when called without any subcommands
+// rootCmd represents the commonv1 command when called without any subcommands.
 var rootCmd = &cobra.Command{
 	Use:   "manager",
 	Short: "The central manager of dragonfly.",
@@ -47,18 +47,23 @@ for managing schedulers and seed peers, offering http apis and portal, etc.`,
 	DisableAutoGenTag: true,
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Validate config
+		// Convert config.
+		if err := cfg.Convert(); err != nil {
+			return err
+		}
+
+		// Validate config.
 		if err := cfg.Validate(); err != nil {
 			return err
 		}
 
-		// Initialize dfpath
+		// Initialize dfpath.
 		d, err := initDfpath(cfg.Server)
 		if err != nil {
 			return err
 		}
 
-		// Initialize logger
+		// Initialize logger.
 		if err := logger.InitManager(cfg.Verbose, cfg.Console, d.LogDir()); err != nil {
 			return fmt.Errorf("init manager logger: %w", err)
 		}
@@ -78,10 +83,10 @@ func Execute() {
 }
 
 func init() {
-	// Initialize default manager config
+	// Initialize default manager config.
 	cfg = config.New()
 
-	// Initialize command and config
+	// Initialize command and config.
 	dependency.InitCommandAndConfig(rootCmd, true, cfg)
 }
 
@@ -100,7 +105,7 @@ func initDfpath(cfg *config.ServerConfig) (dfpath.Dfpath, error) {
 
 func runManager(d dfpath.Dfpath) error {
 	logger.Infof("Version:\n%s", version.Version())
-	// manager config values
+	// manager config values.
 	s, err := yaml.Marshal(cfg)
 
 	if err != nil {

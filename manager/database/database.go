@@ -37,7 +37,7 @@ const (
 
 type Database struct {
 	DB  *gorm.DB
-	RDB *redis.Client
+	RDB redis.UniversalClient
 }
 
 func New(cfg *config.Config) (*Database, error) {
