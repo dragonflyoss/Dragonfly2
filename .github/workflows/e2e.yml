@@ -25,13 +25,16 @@ jobs:
     timeout-minutes: 30
     strategy:
       matrix:
-        module: ["normal", "tls", "disable-seed-peer"]
+        module: ["normal", "concurent-back-source", "grpc-tls", "disable-seed-peer"]
         include:
           - module: normal
             charts-config: test/testdata/charts/config.yaml
             skip: ""
-          - module: tls
-            charts-config: test/testdata/charts/config-tls.yaml
+          - module: concurent-back-source
+            charts-config: test/testdata/charts/config-concurent-back-source.yaml
+            skip: ""
+          - module: grpc-tls
+            charts-config: test/testdata/charts/config-grpc-tls.yaml
             skip: ""
           - module: disable-seed-peer
             charts-config: test/testdata/charts/config-disable-seed-peer.yaml
