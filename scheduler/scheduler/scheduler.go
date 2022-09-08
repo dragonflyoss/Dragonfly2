@@ -93,7 +93,7 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 				return
 			}
 
-			if err := peer.FSM.Event(resource.PeerEventDownloadFromBackToSource); err != nil {
+			if err := peer.FSM.Event(resource.PeerEventDownloadBackToSource); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 				return
 			}

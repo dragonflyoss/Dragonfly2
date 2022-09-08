@@ -89,8 +89,8 @@ const (
 	// Peer is downloading.
 	PeerEventDownload = "Download"
 
-	// Peer is downloading from back-to-source.
-	PeerEventDownloadFromBackToSource = "DownloadFromBackToSource"
+	// Peer is downloading back-to-source.
+	PeerEventDownloadBackToSource = "DownloadBackToSource"
 
 	// Peer downloaded successfully.
 	PeerEventDownloadSucceeded = "DownloadSucceeded"
@@ -207,7 +207,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 			{Name: PeerEventRegisterSmall, Src: []string{PeerStatePending}, Dst: PeerStateReceivedSmall},
 			{Name: PeerEventRegisterNormal, Src: []string{PeerStatePending}, Dst: PeerStateReceivedNormal},
 			{Name: PeerEventDownload, Src: []string{PeerStateReceivedTiny, PeerStateReceivedSmall, PeerStateReceivedNormal}, Dst: PeerStateRunning},
-			{Name: PeerEventDownloadFromBackToSource, Src: []string{PeerStateReceivedTiny, PeerStateReceivedSmall, PeerStateReceivedNormal, PeerStateRunning}, Dst: PeerStateBackToSource},
+			{Name: PeerEventDownloadBackToSource, Src: []string{PeerStateReceivedTiny, PeerStateReceivedSmall, PeerStateReceivedNormal, PeerStateRunning}, Dst: PeerStateBackToSource},
 			{Name: PeerEventDownloadSucceeded, Src: []string{
 				// Since ReportPeerResult and ReportPieceResult are called in no order,
 				// the result may be reported after the register is successful.
@@ -240,7 +240,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
-			PeerEventDownloadFromBackToSource: func(e *fsm.Event) {
+			PeerEventDownloadBackToSource: func(e *fsm.Event) {
 				p.IsBackToSource.Store(true)
 				p.Task.BackToSourcePeers.Add(p.ID)
 
