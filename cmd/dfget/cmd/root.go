@@ -127,68 +127,68 @@ func init() {
 	// Initialize default dfget config
 	dfgetConfig = config.NewDfgetConfig()
 	// Initialize command and config
-	dependency.InitCommandAndConfig(rootCmd, false, dfgetConfig)
+	dependency.InitCommandAndConfig(rootCmd, true, dfgetConfig)
 
 	// Add flags
 	flagSet := rootCmd.Flags()
 
-	flagSet.StringP("url", "u", dfgetConfig.URL,
+	flagSet.StringVarP(&dfgetConfig.URL, "url", "u", dfgetConfig.URL,
 		"Download one file from the url, equivalent to the command's first position argument")
 
-	flagSet.StringP("output", "O", dfgetConfig.Output,
+	flagSet.StringVarP(&dfgetConfig.Output, "output", "O", dfgetConfig.Output,
 		"Destination path which is used to store the downloaded file, it must be a full path")
 
-	flagSet.Duration("timeout", dfgetConfig.Timeout, "Timeout for the downloading task, 0 is infinite")
+	flagSet.DurationVar(&dfgetConfig.Timeout, "timeout", dfgetConfig.Timeout, "Timeout for the downloading task, 0 is infinite")
 
 	flagSet.String("ratelimit", unit.Bytes(dfgetConfig.RateLimit.Limit).String(),
 		"The downloading network bandwidth limit per second in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will be parsed as Byte, 0 is infinite")
 
-	flagSet.String("digest", dfgetConfig.Digest,
+	flagSet.StringVar(&dfgetConfig.Digest, "digest", dfgetConfig.Digest,
 		"Check the integrity of the downloaded file with digest, in format of md5:xxx or sha256:yyy")
 
-	flagSet.String("tag", dfgetConfig.Tag,
+	flagSet.StringVar(&dfgetConfig.Tag, "tag", dfgetConfig.Tag,
 		"Different tags for the same url will be divided into different P2P overlay, it conflicts with --digest")
 
-	flagSet.String("filter", dfgetConfig.Filter,
+	flagSet.StringVar(&dfgetConfig.Filter, "filter", dfgetConfig.Filter,
 		"Filter the query parameters of the url, P2P overlay is the same one if the filtered url is same, "+
 			"in format of key&sign, which will filter 'key' and 'sign' query parameters")
 
-	flagSet.StringSliceP("header", "H", dfgetConfig.Header, "url header, eg: --header='Accept: *' --header='Host: abc'")
+	flagSet.StringSliceVarP(&dfgetConfig.Header, "header", "H", dfgetConfig.Header, "url header, eg: --header='Accept: *' --header='Host: abc'")
 
-	flagSet.Bool("disable-back-source", dfgetConfig.DisableBackSource,
+	flagSet.BoolVar(&dfgetConfig.DisableBackSource, "disable-back-source", dfgetConfig.DisableBackSource,
 		"Disable downloading directly from source when the daemon fails to download file")
 
-	flagSet.StringP("pattern", "p", dfgetConfig.Pattern, "The downloading pattern: p2p/seed-peer/source")
+	flagSet.StringVarP(&dfgetConfig.Pattern, "pattern", "p", dfgetConfig.Pattern, "The downloading pattern: p2p/seed-peer/source")
 
-	flagSet.BoolP("show-progress", "b", dfgetConfig.ShowProgress, "Show progress bar, it conflicts with --console")
+	flagSet.BoolVarP(&dfgetConfig.ShowProgress, "show-progress", "b", dfgetConfig.ShowProgress, "Show progress bar, it conflicts with --console")
 
-	flagSet.String("application", dfgetConfig.Application, "The caller name which is mainly used for statistics and access control")
+	flagSet.StringVar(&dfgetConfig.Application, "application", dfgetConfig.Application, "The caller name which is mainly used for statistics and access control")
 
-	flagSet.String("daemon-sock", dfgetConfig.DaemonSock, "Download socket path of daemon. In linux, default value is /var/run/dfdaemon.sock, in macos(just for testing), default value is /tmp/dfdaemon.sock")
+	flagSet.StringVar(&dfgetConfig.DaemonSock, "daemon-sock", dfgetConfig.DaemonSock, "Download socket path of daemon. In linux, default value is /var/run/dfdaemon.sock, in macos(just for testing), default value is /tmp/dfdaemon.sock")
 
-	flagSet.String("workhome", dfgetConfig.WorkHome, "Dfget working directory")
+	flagSet.StringVar(&dfgetConfig.WorkHome, "workhome", dfgetConfig.WorkHome, "Dfget working directory")
 
-	flagSet.String("logdir", dfgetConfig.LogDir, "Dfget log directory")
+	flagSet.StringVar(&dfgetConfig.LogDir, "logdir", dfgetConfig.LogDir, "Dfget log directory")
 
-	flagSet.BoolP("recursive", "r", dfgetConfig.Recursive,
+	flagSet.BoolVarP(&dfgetConfig.Recursive, "recursive", "r", dfgetConfig.Recursive,
 		"Recursively download all resources in target url, the target source client must support list action")
 
-	flagSet.Uint("level", dfgetConfig.RecursiveLevel,
+	flagSet.UintVar(&dfgetConfig.RecursiveLevel, "level", dfgetConfig.RecursiveLevel,
 		"Recursively download only. Set the maximum number of subdirectories that dfget will recurse into. Set to 0 for no limit")
 
-	flagSet.BoolP("list", "l", dfgetConfig.RecursiveList,
+	flagSet.BoolVarP(&dfgetConfig.RecursiveList, "list", "l", dfgetConfig.RecursiveList,
 		"Recursively download only. List all urls instead of downloading them.")
 
-	flagSet.String("accept-regex", dfgetConfig.RecursiveAcceptRegex,
+	flagSet.StringVar(&dfgetConfig.RecursiveAcceptRegex, "accept-regex", dfgetConfig.RecursiveAcceptRegex,
 		"Recursively download only. Specify a regular expression to accept the complete URL. In this case, you have to enclose the pattern into quotes to prevent your shell from expanding it")
 
-	flagSet.String("reject-regex", dfgetConfig.RecursiveRejectRegex,
+	flagSet.StringVar(&dfgetConfig.RecursiveRejectRegex, "reject-regex", dfgetConfig.RecursiveRejectRegex,
 		`Recursively download only. Specify a regular expression to reject the complete URL. In this case, you have to enclose the pattern into quotes to prevent your shell from expanding it`)
 
-	flagSet.Bool("original-offset", dfgetConfig.KeepOriginalOffset,
+	flagSet.BoolVar(&dfgetConfig.KeepOriginalOffset, "original-offset", dfgetConfig.KeepOriginalOffset,
 		`Range request only. Download ranged data into target file with original offset. Daemon will make a hardlink to target file. Client can download many ranged data into one file for same url. When enabled, back source in client will be disabled`)
 
-	flagSet.String("range", dfgetConfig.Range,
+	flagSet.StringVar(&dfgetConfig.Range, "range", dfgetConfig.Range,
 		`Download range. Like: 0-9, stands download 10 bytes from 0 -9, [0:9] in real url`)
 
 	// Bind cmd flags
