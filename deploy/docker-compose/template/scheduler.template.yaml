@@ -87,10 +87,9 @@ job:
   localWorkerNum: 5
   # redis configuration
   redis:
-    # host
-    host: "__IP__"
-    # port
-    port: 6379
+    # addresses
+    addrs:
+      - "__IP__:6379"
     # password
     password: dragonfly
     # brokerDB

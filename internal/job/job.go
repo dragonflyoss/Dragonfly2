@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/RichardKnop/machinery/v1"
@@ -32,8 +33,8 @@ import (
 )
 
 type Config struct {
-	Host      string
-	Port      int
+	Addrs     []string
+	Username  string
 	Password  string
 	BrokerDB  int
 	BackendDB int
@@ -49,18 +50,18 @@ func New(cfg *Config, queue Queue) (*Job, error) {
 	// Set logger
 	machineryv1log.Set(&MachineryLogger{})
 
-	broker := fmt.Sprintf("redis://%s@%s:%d/%d", cfg.Password, cfg.Host, cfg.Port, cfg.BrokerDB)
-	if err := ping(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
+	if err := ping(&redis.UniversalOptions{
+		Addrs:    cfg.Addrs,
+		Username: cfg.Username,
 		Password: cfg.Password,
 		DB:       cfg.BrokerDB,
 	}); err != nil {
 		return nil, err
 	}
 
-	backend := fmt.Sprintf("redis://%s@%s:%d/%d", cfg.Password, cfg.Host, cfg.Port, cfg.BackendDB)
-	if err := ping(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
+	if err := ping(&redis.UniversalOptions{
+		Addrs:    cfg.Addrs,
+		Username: cfg.Username,
 		Password: cfg.Password,
 		DB:       cfg.BackendDB,
 	}); err != nil {
@@ -68,9 +69,9 @@ func New(cfg *Config, queue Queue) (*Job, error) {
 	}
 
 	server, err := machinery.NewServer(&machineryv1config.Config{
-		Broker:          broker,
+		Broker:          fmt.Sprintf("redis://%s:%s@%s/%d", cfg.Username, cfg.Password, strings.Join(cfg.Addrs, ","), cfg.BrokerDB),
 		DefaultQueue:    queue.String(),
-		ResultBackend:   backend,
+		ResultBackend:   fmt.Sprintf("redis://%s:%s@%s/%d", cfg.Username, cfg.Password, strings.Join(cfg.Addrs, ","), cfg.BackendDB),
 		ResultsExpireIn: DefaultResultsExpireIn,
 		Redis: &machineryv1config.RedisConfig{
 			MaxIdle:        DefaultRedisMaxIdle,
@@ -90,8 +91,8 @@ func New(cfg *Config, queue Queue) (*Job, error) {
 	}, nil
 }
 
-func ping(options *redis.Options) error {
-	client := redis.NewClient(options)
+func ping(options *redis.UniversalOptions) error {
+	client := redis.NewUniversalClient(options)
 	return client.Ping(context.Background()).Err()
 }
 

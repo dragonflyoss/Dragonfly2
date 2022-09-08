@@ -19,6 +19,7 @@ package config
 import (
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/docker/go-connections/tlsconfig"
@@ -162,11 +163,17 @@ func (t *TLSConfig) Client() (*tls.Config, error) {
 }
 
 type RedisConfig struct {
-	// Server host.
+	// DEPRECATED: Please use the `addrs` field instead.
 	Host string `yaml:"host" mapstructure:"host"`
 
-	// Server port.
+	// DEPRECATED: Please use the `addrs` field instead.
 	Port int `yaml:"port" mapstructure:"port"`
+
+	// Server addresses.
+	Addrs []string `yaml:"addrs" mapstructure:"addrs"`
+
+	// Server username.
+	Username string `yaml:"username" mapstructure:"username"`
 
 	// Server password.
 	Password string `yaml:"password" mapstructure:"password"`
@@ -450,16 +457,22 @@ func (cfg *Config) Validate() error {
 		return errors.New("database requires parameter redis")
 	}
 
-	if cfg.Database.Redis.Host == "" {
-		return errors.New("redis requires parameter host")
+	if len(cfg.Database.Redis.Addrs) == 0 {
+		return errors.New("redis requires parameter addrs")
 	}
 
-	if cfg.Database.Redis.Port <= 0 {
-		return errors.New("redis requires parameter port")
-	}
+	if len(cfg.Database.Redis.Addrs) == 1 {
+		if cfg.Database.Redis.DB < 0 {
+			return errors.New("redis requires parameter db")
+		}
 
-	if cfg.Database.Redis.DB < 0 {
-		return errors.New("redis requires parameter db")
+		if cfg.Database.Redis.BrokerDB < 0 {
+			return errors.New("redis requires parameter brokerDB")
+		}
+
+		if cfg.Database.Redis.BackendDB < 0 {
+			return errors.New("redis requires parameter backendDB")
+		}
 	}
 
 	if cfg.Database.Redis.BrokerDB < 0 {
@@ -546,6 +559,15 @@ func (cfg *Config) Validate() error {
 		if cfg.Metrics.Addr == "" {
 			return errors.New("metrics requires parameter addr")
 		}
+	}
+
+	return nil
+}
+
+func (cfg *Config) Convert() error {
+	// TODO Compatible with deprecated fields host and port.
+	if cfg.Database.Redis.Host != "" && cfg.Database.Redis.Port > 0 {
+		cfg.Database.Redis.Addrs = append(cfg.Database.Redis.Addrs, fmt.Sprintf("%s:%d", cfg.Database.Redis.Host, cfg.Database.Redis.Port))
 	}
 
 	return nil
