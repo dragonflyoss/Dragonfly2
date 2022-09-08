@@ -28,8 +28,8 @@ type Job struct {
 
 func New(cfg *config.Config) (*Job, error) {
 	j, err := internaljob.New(&internaljob.Config{
-		Host:      cfg.Database.Redis.Host,
-		Port:      cfg.Database.Redis.Port,
+		Addrs:     cfg.Database.Redis.Addrs,
+		Username:  cfg.Database.Redis.Username,
 		Password:  cfg.Database.Redis.Password,
 		BrokerDB:  cfg.Database.Redis.BrokerDB,
 		BackendDB: cfg.Database.Redis.BackendDB,
