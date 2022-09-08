@@ -33,8 +33,8 @@ jobs:
           - module: concurent-back-source
             charts-config: test/testdata/charts/config-concurent-back-source.yaml
             skip: ""
-          - module: tls
-            charts-config: test/testdata/charts/config-tls.yaml
+          - module: grpc-tls
+            charts-config: test/testdata/charts/config-grpc-tls.yaml
             skip: ""
           - module: disable-seed-peer
             charts-config: test/testdata/charts/config-disable-seed-peer.yaml
