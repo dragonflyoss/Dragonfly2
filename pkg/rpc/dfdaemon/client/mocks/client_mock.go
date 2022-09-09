@@ -56,6 +56,20 @@ func (mr *MockClientMockRecorder) CheckHealth(arg0 interface{}, arg1 ...interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckHealth", reflect.TypeOf((*MockClient)(nil).CheckHealth), varargs...)
 }
 
+// Close mocks base method.
+func (m *MockClient) Close() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Close")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Close indicates an expected call of Close.
+func (mr *MockClientMockRecorder) Close() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockClient)(nil).Close))
+}
+
 // DeleteTask mocks base method.
 func (m *MockClient) DeleteTask(arg0 context.Context, arg1 *v10.DeleteTaskRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()

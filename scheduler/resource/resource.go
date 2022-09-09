@@ -37,11 +37,17 @@ type Resource interface {
 
 	// Task manager interface.
 	TaskManager() TaskManager
+
+	// Stop resource serivce.
+	Stop() error
 }
 
 type resource struct {
 	// seedPeer interface.
 	seedPeer SeedPeer
+
+	// Seed peer client interface.
+	seedPeerClient SeedPeerClient
 
 	// Host manager interface.
 	hostManager HostManager
@@ -84,6 +90,7 @@ func New(cfg *config.Config, gc gc.GC, dynconfig config.DynconfigInterface, opts
 			return nil, err
 		}
 
+		resource.seedPeerClient = client
 		resource.seedPeer = newSeedPeer(client, peerManager, hostManager)
 	}
 
@@ -104,4 +111,8 @@ func (r *resource) TaskManager() TaskManager {
 
 func (r *resource) PeerManager() PeerManager {
 	return r.peerManager
+}
+
+func (r *resource) Stop() error {
+	return r.seedPeerClient.Close()
 }

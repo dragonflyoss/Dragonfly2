@@ -82,7 +82,8 @@ func GetClientByAddr(ctx context.Context, netAddr dfnet.NetAddr, opts ...grpc.Di
 	}
 
 	return &client{
-		cdnsystemv1.NewSeederClient(conn),
+		SeederClient: cdnsystemv1.NewSeederClient(conn),
+		ClientConn:   conn,
 	}, nil
 }
 
@@ -122,7 +123,8 @@ func GetClient(ctx context.Context, dynconfig config.DynconfigInterface, opts ..
 	}
 
 	return &client{
-		cdnsystemv1.NewSeederClient(conn),
+		SeederClient: cdnsystemv1.NewSeederClient(conn),
+		ClientConn:   conn,
 	}, nil
 }
 
@@ -136,11 +138,15 @@ type Client interface {
 
 	// SyncPieceTasks syncs detail information of task.
 	SyncPieceTasks(context.Context, *commonv1.PieceTaskRequest, ...grpc.CallOption) (cdnsystemv1.Seeder_SyncPieceTasksClient, error)
+
+	// Close tears down the ClientConn and all underlying connections.
+	Close() error
 }
 
 // client provides seed peer grpc function.
 type client struct {
 	cdnsystemv1.SeederClient
+	*grpc.ClientConn
 }
 
 // ObtainSeeds triggers the seed peer to download task back-to-source..

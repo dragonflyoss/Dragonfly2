@@ -791,8 +791,25 @@ func (cd *clientDaemon) Stop() {
 		if cd.Option.Scheduler.Manager.Enable {
 			if err := cd.dynconfig.Stop(); err != nil {
 				logger.Errorf("dynconfig client closed failed %s", err)
+			} else {
+				logger.Info("dynconfig client closed")
 			}
-			logger.Info("dynconfig client closed")
+		}
+
+		if cd.managerClient != nil {
+			if err := cd.managerClient.Close(); err != nil {
+				logger.Errorf("manager client failed to stop: %s", err.Error())
+			} else {
+				logger.Info("manager client closed")
+			}
+		}
+
+		if cd.schedulerClient != nil {
+			if err := cd.schedulerClient.Close(); err != nil {
+				logger.Errorf("scheduler client failed to stop: %s", err.Error())
+			} else {
+				logger.Info("scheduler client closed")
+			}
 		}
 	})
 }

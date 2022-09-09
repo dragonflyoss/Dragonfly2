@@ -55,6 +55,20 @@ func (mr *MockClientMockRecorder) AnnounceTask(arg0, arg1 interface{}, arg2 ...i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AnnounceTask", reflect.TypeOf((*MockClient)(nil).AnnounceTask), varargs...)
 }
 
+// Close mocks base method.
+func (m *MockClient) Close() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Close")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Close indicates an expected call of Close.
+func (mr *MockClientMockRecorder) Close() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockClient)(nil).Close))
+}
+
 // LeaveTask mocks base method.
 func (m *MockClient) LeaveTask(arg0 context.Context, arg1 *v1.PeerTarget, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()

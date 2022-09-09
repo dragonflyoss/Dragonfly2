@@ -90,7 +90,8 @@ func GetClient(ctx context.Context, dynconfig config.Dynconfig, opts ...grpc.Dia
 	}
 
 	return &client{
-		schedulerv1.NewSchedulerClient(conn),
+		SchedulerClient: schedulerv1.NewSchedulerClient(conn),
+		ClientConn:      conn,
 	}, nil
 }
 
@@ -113,11 +114,15 @@ type Client interface {
 
 	// A peer announces that it has the announced task to other peers.
 	AnnounceTask(context.Context, *schedulerv1.AnnounceTaskRequest, ...grpc.CallOption) error
+
+	// Close tears down the ClientConn and all underlying connections.
+	Close() error
 }
 
 // client provides scheduler grpc function.
 type client struct {
 	schedulerv1.SchedulerClient
+	*grpc.ClientConn
 }
 
 // RegisterPeerTask registers a peer into task.
