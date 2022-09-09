@@ -85,7 +85,8 @@ func GetClient(ctx context.Context, target string, opts ...grpc.DialOption) (Cli
 	}
 
 	return &client{
-		dfdaemonv1.NewDaemonClient(conn),
+		DaemonClient: dfdaemonv1.NewDaemonClient(conn),
+		ClientConn:   conn,
 	}, nil
 }
 
@@ -120,11 +121,15 @@ type Client interface {
 
 	// Check daemon health.
 	CheckHealth(context.Context, ...grpc.CallOption) error
+
+	// Close tears down the ClientConn and all underlying connections.
+	Close() error
 }
 
 // client provides dfdaemon grpc function.
 type client struct {
 	dfdaemonv1.DaemonClient
+	*grpc.ClientConn
 }
 
 // Trigger client to download file.

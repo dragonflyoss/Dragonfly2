@@ -71,6 +71,9 @@ type Server struct {
 	// Manager client.
 	managerClient managerclient.Client
 
+	// Resource interface.
+	resource resource.Resource
+
 	// Dynamic config.
 	dynconfig config.DynconfigInterface
 
@@ -279,11 +282,18 @@ func (s *Server) Serve() error {
 }
 
 func (s *Server) Stop() {
-	// Stop dynconfig server.
+	// Stop dynconfig service.
 	if err := s.dynconfig.Stop(); err != nil {
-		logger.Errorf("dynconfig client closed failed %s", err.Error())
+		logger.Errorf("stop dynconfig service failed %s", err.Error())
 	} else {
-		logger.Info("dynconfig client closed")
+		logger.Info("stop dynconfig service closed")
+	}
+
+	// Stop resource service.
+	if err := s.resource.Stop(); err != nil {
+		logger.Errorf("stop resource service failed %s", err.Error())
+	} else {
+		logger.Info("stop resource service closed")
 	}
 
 	// Clean storage.
@@ -303,6 +313,15 @@ func (s *Server) Stop() {
 			logger.Errorf("metrics server failed to stop: %s", err.Error())
 		} else {
 			logger.Info("metrics server closed under request")
+		}
+	}
+
+	// Stop manager client.
+	if s.managerClient != nil {
+		if err := s.managerClient.Close(); err != nil {
+			logger.Errorf("manager client failed to stop: %s", err.Error())
+		} else {
+			logger.Info("manager client closed")
 		}
 	}
 

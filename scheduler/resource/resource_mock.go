@@ -75,6 +75,20 @@ func (mr *MockResourceMockRecorder) SeedPeer() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SeedPeer", reflect.TypeOf((*MockResource)(nil).SeedPeer))
 }
 
+// Stop mocks base method.
+func (m *MockResource) Stop() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Stop")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Stop indicates an expected call of Stop.
+func (mr *MockResourceMockRecorder) Stop() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockResource)(nil).Stop))
+}
+
 // TaskManager mocks base method.
 func (m *MockResource) TaskManager() TaskManager {
 	m.ctrl.T.Helper()
