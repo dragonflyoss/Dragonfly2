@@ -567,7 +567,7 @@ func (cfg *Config) Validate() error {
 func (cfg *Config) Convert() error {
 	// TODO Compatible with deprecated fields host and port.
 	if len(cfg.Database.Redis.Addrs) == 0 && cfg.Database.Redis.Host != "" && cfg.Database.Redis.Port > 0 {
-		cfg.Database.Redis.Addrs[0] = fmt.Sprintf("%s:%d", cfg.Database.Redis.Host, cfg.Database.Redis.Port)
+		cfg.Database.Redis.Addrs = []string{fmt.Sprintf("%s:%d", cfg.Database.Redis.Host, cfg.Database.Redis.Port)}
 	}
 
 	return nil
