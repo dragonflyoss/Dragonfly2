@@ -93,6 +93,7 @@ func WithCalculateDigest(enable bool) func(*pieceManager) {
 // WithLimiter sets upload rate limiter, the burst size must be bigger than piece size
 func WithLimiter(limiter *rate.Limiter) func(*pieceManager) {
 	return func(manager *pieceManager) {
+		logger.Infof("set download limiter %f for piece manager", limiter.Limit())
 		manager.Limiter = limiter
 	}
 }
@@ -247,7 +248,7 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 		}
 	}
 	if pm.calculateDigest {
-		pt.Log().Debugf("calculate digest")
+		pt.Log().Debugf("piece %d calculate digest", pieceNum)
 		reader, _ = digest.NewReader(reader, digest.WithLogger(pt.Log()))
 	}
 	var n int64
@@ -296,6 +297,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, peerTaskReq
 		peerTaskRequest.UrlMeta.Header = map[string]string{}
 	}
 	if peerTaskRequest.UrlMeta.Range != "" {
+		// FIXME refactor source package, normal Range header is enough
 		// in http source package, adapter will update the real range, we inject "X-Dragonfly-Range" here
 		peerTaskRequest.UrlMeta.Header[source.Range] = peerTaskRequest.UrlMeta.Range
 	}
@@ -872,8 +874,11 @@ func (pm *pieceManager) downloadPieceFromSource(ctx context.Context,
 
 	// offset is the position for current peer task, if this peer task already has range
 	// we need add the start to the offset when download from source
-	rg := fmt.Sprintf("bytes=%d-%d", offset+uint64(parsedRange.Start), offset+uint64(parsedRange.Start)+uint64(size)-1)
-	backSourceRequest.Header.Set(headers.Range, rg)
+	rg := fmt.Sprintf("%d-%d", offset+uint64(parsedRange.Start), offset+uint64(parsedRange.Start)+uint64(size)-1)
+	// FIXME refactor source package, normal Range header is enough
+	backSourceRequest.Header.Set(source.Range, rg)
+	backSourceRequest.Header.Set(headers.Range, "bytes="+rg)
+	log.Debugf("piece %d back source header: %#v", num, backSourceRequest.Header)
 
 	response, err := source.Download(backSourceRequest)
 	if err != nil {
@@ -888,7 +893,7 @@ func (pm *pieceManager) downloadPieceFromSource(ctx context.Context,
 		return err
 	}
 
-	log.Debugf("piece %d back source response ok", num)
+	log.Debugf("piece %d back source response ok, offset: %d, size: %d", num, offset, size)
 	result, md5, err := pm.processPieceFromSource(
 		pt, response.Body, parsedRange.Length, num, offset, size,
 		func(int64) (int32, int64, bool) {

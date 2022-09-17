@@ -1343,11 +1343,11 @@ func TestTask_CanBackToSource(t *testing.T) {
 			},
 		},
 		{
-			name:              "task can not commonv1-to-source",
+			name:              "task can not back-to-source",
 			id:                mockTaskID,
 			urlMeta:           mockTaskURLMeta,
 			url:               mockTaskURL,
-			backToSourceLimit: 0,
+			backToSourceLimit: -1,
 			expect: func(t *testing.T, task *Task) {
 				assert := assert.New(t)
 				assert.Equal(task.CanBackToSource(), false)

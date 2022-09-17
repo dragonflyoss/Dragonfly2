@@ -9,9 +9,9 @@ require (
 	github.com/VividCortex/mysqlerr v1.0.0
 	github.com/aliyun/aliyun-oss-go-sdk v2.2.5+incompatible
 	github.com/appleboy/gin-jwt/v2 v2.8.0
-	github.com/aws/aws-sdk-go v1.44.44
+	github.com/aws/aws-sdk-go v1.44.91
 	github.com/bits-and-blooms/bitset v1.3.0
-	github.com/casbin/casbin/v2 v2.52.2
+	github.com/casbin/casbin/v2 v2.53.2
 	github.com/casbin/gorm-adapter/v3 v3.5.0
 	github.com/colinmarc/hdfs/v2 v2.3.0
 	github.com/distribution/distribution/v3 v3.0.0-20220620080156-3e4f8a0ab147
@@ -81,7 +81,7 @@ require (
 	gorm.io/driver/mysql v1.3.6
 	gorm.io/driver/postgres v1.3.9
 	gorm.io/gorm v1.23.8
-	gorm.io/plugin/soft_delete v1.1.0
+	gorm.io/plugin/soft_delete v1.2.0
 	k8s.io/component-base v0.23.3
 	logur.dev/adapter/zap v0.5.0
 	moul.io/zapgorm2 v1.1.3

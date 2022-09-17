@@ -26,13 +26,13 @@ jobs:
           make build-manager-console
 
       - name: Check GoReleaser config
-        uses: goreleaser/goreleaser-action@v2
+        uses: goreleaser/goreleaser-action@v3
         with:
           version: latest
           args: check
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v2
+        uses: goreleaser/goreleaser-action@v3
         with:
           distribution: goreleaser
           version: latest

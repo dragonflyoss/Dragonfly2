@@ -294,10 +294,10 @@ func TestPeerHostOption_Load(t *testing.T) {
 		Download: DownloadOption{
 			DefaultPattern: PatternP2P,
 			TotalRateLimit: util.RateLimit{
-				Limit: 209715200,
+				Limit: 1024 * 1024 * 1024,
 			},
 			PerPeerRateLimit: util.RateLimit{
-				Limit: 20971520,
+				Limit: 512 * 1024 * 1024,
 			},
 			PieceDownloadTimeout: 30 * time.Second,
 			DownloadGRPC: ListenOption{
@@ -357,7 +357,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 		},
 		Upload: UploadOption{
 			RateLimit: util.RateLimit{
-				Limit: 104857600,
+				Limit: 1024 * 1024 * 1024,
 			},
 			ListenOption: ListenOption{
 				Security: SecurityOption{
