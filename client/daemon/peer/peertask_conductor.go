@@ -186,7 +186,6 @@ type TaskOption struct {
 func (ptm *peerTaskManager) newPeerTaskConductor(
 	ctx context.Context,
 	request *schedulerv1.PeerTaskRequest,
-	trafficShaper TrafficShaper,
 	limit rate.Limit,
 	parent *peerTaskConductor,
 	rg *util.Range,
@@ -245,7 +244,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 		contentLength:       atomic.NewInt64(-1),
 		totalPiece:          atomic.NewInt32(-1),
 		digest:              atomic.NewString(""),
-		trafficShaper:       trafficShaper,
+		trafficShaper:       ptm.trafficShaper,
 		limiter:             rate.NewLimiter(limit, int(limit)),
 		completedLength:     atomic.NewInt64(0),
 		usedTraffic:         atomic.NewUint64(0),
@@ -382,9 +381,7 @@ func (pt *peerTaskConductor) start() error {
 			return err
 		}
 	}
-	if pt.trafficShaper != nil {
-		pt.trafficShaper.AddTask(pt.taskID, pt)
-	}
+	pt.trafficShaper.AddTask(pt.taskID, pt)
 	go pt.broker.Start()
 	go pt.pullPieces()
 	return nil
@@ -1273,9 +1270,7 @@ func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPiec
 
 func (pt *peerTaskConductor) waitLimit(ctx context.Context, request *DownloadPieceRequest) bool {
 	_, waitSpan := tracer.Start(ctx, config.SpanWaitPieceLimit)
-	if pt.trafficShaper != nil {
-		pt.trafficShaper.Record(request.TaskID, int(request.piece.RangeSize))
-	}
+	pt.trafficShaper.Record(request.TaskID, int(request.piece.RangeSize))
 	err := pt.limiter.WaitN(pt.ctx, int(request.piece.RangeSize))
 	if err == nil {
 		waitSpan.End()

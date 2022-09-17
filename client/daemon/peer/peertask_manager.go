@@ -36,7 +36,7 @@ import (
 
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
-	clientutl "d7y.io/dragonfly/v2/client/util"
+	clientutil "d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/idgen"
@@ -162,7 +162,7 @@ func (ptm *peerTaskManager) getPeerTaskConductor(ctx context.Context,
 	request *schedulerv1.PeerTaskRequest,
 	limit rate.Limit,
 	parent *peerTaskConductor,
-	rg *clientutl.Range,
+	rg *clientutil.Range,
 	desiredLocation string,
 	seed bool) (*peerTaskConductor, error) {
 	ptc, created, err := ptm.getOrCreatePeerTaskConductor(ctx, taskID, request, limit, parent, rg, desiredLocation, seed)
@@ -185,14 +185,14 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	request *schedulerv1.PeerTaskRequest,
 	limit rate.Limit,
 	parent *peerTaskConductor,
-	rg *clientutl.Range,
+	rg *clientutil.Range,
 	desiredLocation string,
 	seed bool) (*peerTaskConductor, bool, error) {
 	if ptc, ok := ptm.findPeerTaskConductor(taskID); ok {
 		logger.Debugf("peer task found: %s/%s", ptc.taskID, ptc.peerID)
 		return ptc, false, nil
 	}
-	ptc := ptm.newPeerTaskConductor(ctx, request, ptm.trafficShaper, limit, parent, rg, seed)
+	ptc := ptm.newPeerTaskConductor(ctx, request, limit, parent, rg, seed)
 
 	ptm.conductorLock.Lock()
 	// double check
@@ -220,7 +220,7 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	return ptc, true, nil
 }
 
-func (ptm *peerTaskManager) enabledPrefetch(rg *clientutl.Range) bool {
+func (ptm *peerTaskManager) enabledPrefetch(rg *clientutil.Range) bool {
 	return ptm.Prefetch && rg != nil
 }
 
