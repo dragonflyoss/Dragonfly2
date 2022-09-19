@@ -18,8 +18,6 @@ package ip
 
 import (
 	"fmt"
-
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 var IPv6 string
@@ -31,8 +29,6 @@ const (
 func init() {
 	ip, err := externalIPv6()
 	if err != nil {
-		logger.Debugf("Failed to get IPv6 address: %s", err.Error())
-		logger.Infof("Use %s as IPv6 addr", internalIPv6)
 		IPv6 = internalIPv6
 	} else {
 		IPv6 = ip

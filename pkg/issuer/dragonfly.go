@@ -128,7 +128,7 @@ func fromCertifyCertConfig(commonName string, conf *certify.CertConfig) ([]byte,
 	if len(template.IPAddresses) == 0 {
 		template.IPAddresses = []net.IP{net.ParseIP(ip.IPv4)}
 		ipv6 := net.ParseIP(ip.IPv6)
-		if !ipv6.IsLoopback() {
+		if !ipv6.IsLoopback() && !net.IPv6zero.Equal(ipv6) {
 			template.IPAddresses = append(template.IPAddresses, ipv6)
 		}
 	}
