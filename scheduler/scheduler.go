@@ -148,7 +148,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 
 		// Issue a certificate to reduce first time delay.
 		if _, err := certifyClient.GetCertificate(&tls.ClientHelloInfo{
-			ServerName: "scheduler",
+			ServerName: cfg.Server.IP,
 		}); err != nil {
 			logger.Errorf("issue certificate error: %s", err.Error())
 			return nil, err
