@@ -732,6 +732,11 @@ func (s *Service) handlePeerSuccess(ctx context.Context, peer *resource.Peer) {
 	// If the peer type is tiny and back-to-source,
 	// it needs to directly download the tiny file and store the data in task DirectPiece.
 	if sizeScope == commonv1.SizeScope_TINY && len(peer.Task.DirectPiece) == 0 {
+		if peer.Task.ContentLength.Load() == 0 {
+			peer.Task.DirectPiece = []byte{}
+			return
+		}
+
 		data, err := peer.DownloadTinyFile()
 		if err != nil {
 			peer.Log.Errorf("download tiny task failed: %s", err.Error())

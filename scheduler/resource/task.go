@@ -383,7 +383,7 @@ func (t *Task) SizeScope() (commonv1.SizeScope, error) {
 		return -1, errors.New("invalid content length")
 	}
 
-	if t.TotalPieceCount.Load() <= 0 {
+	if t.TotalPieceCount.Load() < 0 {
 		return -1, errors.New("invalid total piece count")
 	}
 

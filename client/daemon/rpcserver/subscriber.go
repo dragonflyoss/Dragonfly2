@@ -209,7 +209,8 @@ loop:
 			s.Infof("peer task is success, send remaining pieces")
 			s.Lock()
 			// all pieces already sent
-			if s.totalPieces > -1 && nextPieceNum == uint32(s.totalPieces) {
+			// empty piece task will reach sendExistPieces to sync content length and piece count
+			if s.totalPieces > 0 && nextPieceNum == uint32(s.totalPieces) {
 				s.Unlock()
 				break loop
 			}

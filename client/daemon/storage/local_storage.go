@@ -420,7 +420,7 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *commonv1.PieceTaskR
 		ContentLength: t.ContentLength,
 		PieceMd5Sign:  t.PieceMd5Sign,
 	}
-	if t.TotalPieces > -1 && int32(req.StartNum) >= t.TotalPieces {
+	if t.TotalPieces > 0 && int32(req.StartNum) >= t.TotalPieces {
 		t.Warnf("invalid start num: %d", req.StartNum)
 	}
 	for i := int32(0); i < int32(req.Limit); i++ {
