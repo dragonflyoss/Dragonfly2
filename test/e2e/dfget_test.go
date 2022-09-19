@@ -50,18 +50,9 @@ func getFileSizes() map[string]int {
 		details = map[string]int{}
 		files   = e2eutil.GetFileList()
 	)
-	if featureGates.Enabled(featureGateEmptyFile) {
-		fmt.Printf("dfget-empty-file feature gate enabled\n")
-	} else {
-		fmt.Printf("dfget-empty-file feature gate disabled\n")
-	}
-	if featureGates.Enabled(featureGateRange) {
-		fmt.Printf("dfget-range feature gate enabled\n")
-	} else {
-		fmt.Printf("dfget-range feature gate disabled\n")
-	}
 
 	if featureGates.Enabled(featureGateEmptyFile) {
+		fmt.Printf("dfget-empty-file feature gate enabled\n")
 		files = append(files, "/tmp/empty-file")
 	}
 	for _, path := range files {
