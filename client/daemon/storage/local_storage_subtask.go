@@ -320,6 +320,10 @@ func (t *localSubTaskStore) Store(ctx context.Context, req *StoreRequest) error 
 func (t *localSubTaskStore) ValidateDigest(req *PeerTaskMetadata) error {
 	t.Lock()
 	defer t.Unlock()
+	if t.ContentLength == 0 {
+		return nil
+	}
+
 	if t.persistentMetadata.PieceMd5Sign == "" {
 		t.invalid.Store(true)
 		return ErrDigestNotSet
