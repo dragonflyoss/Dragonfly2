@@ -47,8 +47,14 @@ var _ = Describe("Download with dfget and proxy", func() {
 })
 
 func getFileSizes() map[string]int {
-	var details = map[string]int{}
-	for _, path := range e2eutil.GetFileList() {
+	var (
+		details = map[string]int{}
+		files   = e2eutil.GetFileList()
+	)
+	if featureGates.Enabled(featureGateEmptyFile) {
+		files = append(files, "/tmp/empty-file")
+	}
+	for _, path := range files {
 		out, err := e2eutil.DockerCommand("stat", "--printf=%s", path).CombinedOutput()
 		Expect(err).NotTo(HaveOccurred())
 		size, err := strconv.Atoi(string(out))
@@ -59,6 +65,12 @@ func getFileSizes() map[string]int {
 }
 
 func getRandomRange(size int) *util.Range {
+	if size == 0 {
+		return &util.Range{
+			Start:  0,
+			Length: 0,
+		}
+	}
 	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	r1 := rnd.Intn(size - 1)
 	r2 := rnd.Intn(size - 1)
