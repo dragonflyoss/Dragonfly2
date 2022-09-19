@@ -355,10 +355,16 @@ func (s *server) Download(req *dfdaemonv1.DownRequest, stream dfdaemonv1.Daemon_
 }
 
 func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRequest, stream dfdaemonv1.Daemon_DownloadServer) error {
-	if stat, err := os.Stat(req.Output); err != nil {
-		return err
-	} else if !stat.IsDir() {
-		return fmt.Errorf("target output %s must be directory", req.Output)
+	stat, err := os.Stat(req.Output)
+	if err == nil {
+		if !stat.IsDir() {
+			err = fmt.Errorf("target output %s must be directory", req.Output)
+			logger.Errorf(err.Error())
+			return status.Errorf(codes.FailedPrecondition, err.Error())
+		}
+	} else if !os.IsNotExist(err) {
+		logger.Errorf("stat %s error: %s", req.Output, err)
+		return status.Errorf(codes.FailedPrecondition, err.Error())
 	}
 
 	var queue deque.Deque[*dfdaemonv1.DownRequest]
