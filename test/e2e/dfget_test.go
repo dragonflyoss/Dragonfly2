@@ -32,16 +32,15 @@ import (
 
 var _ = Describe("Download with dfget and proxy", func() {
 	Context("dfget", func() {
-		files := getFileSizes()
 		singleDfgetTest("dfget daemon download should be ok",
 			dragonflyNamespace, "component=dfdaemon",
-			"dragonfly-dfdaemon-", "dfdaemon", files)
+			"dragonfly-dfdaemon-", "dfdaemon")
 		for i := 0; i < 3; i++ {
 			singleDfgetTest(
 				fmt.Sprintf("dfget daemon proxy-%d should be ok", i),
 				dragonflyE2ENamespace,
 				fmt.Sprintf("statefulset.kubernetes.io/pod-name=proxy-%d", i),
-				"proxy-", "proxy", files)
+				"proxy-", "proxy")
 		}
 	})
 })
@@ -51,6 +50,17 @@ func getFileSizes() map[string]int {
 		details = map[string]int{}
 		files   = e2eutil.GetFileList()
 	)
+	if featureGates.Enabled(featureGateEmptyFile) {
+		fmt.Printf("dfget-empty-file feature gate enabled\n")
+	} else {
+		fmt.Printf("dfget-empty-file feature gate disabled\n")
+	}
+	if featureGates.Enabled(featureGateRange) {
+		fmt.Printf("dfget-range feature gate enabled\n")
+	} else {
+		fmt.Printf("dfget-range feature gate disabled\n")
+	}
+
 	if featureGates.Enabled(featureGateEmptyFile) {
 		files = append(files, "/tmp/empty-file")
 	}
@@ -89,8 +99,9 @@ func getRandomRange(size int) *util.Range {
 	return rg
 }
 
-func singleDfgetTest(name, ns, label, podNamePrefix, container string, fileDetails map[string]int) {
+func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 	It(name, func() {
+		fileDetails := getFileSizes()
 		out, err := e2eutil.KubeCtlCommand("-n", ns, "get", "pod", "-l", label,
 			"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
 		podName := strings.Trim(string(out), "'")
