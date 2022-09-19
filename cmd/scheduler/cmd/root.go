@@ -28,6 +28,7 @@ import (
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
+	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -60,6 +61,11 @@ generate and maintain a P2P network during the download process, and push suitab
 		d, err := initDfpath(cfg.Server)
 		if err != nil {
 			return err
+		}
+
+		// FIXME update ipv6 in other valid and mutate function
+		if cfg.IPv6 {
+			cfg.Server.IP = ip.IPv6
 		}
 
 		// Initialize logger

@@ -21,11 +21,11 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"net"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"github.com/johanbrandhorst/certify"
 	"google.golang.org/grpc/credentials"
-
-	"d7y.io/dragonfly/v2/pkg/net/ip"
 )
 
 const (
@@ -52,7 +52,12 @@ func NewServerCredentialsByCertify(tlsPolicy string, tlsVerify bool, pemClientCA
 	tlsConfig := &tls.Config{
 		GetCertificate: func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 			if hello.ServerName == "" {
-				hello.ServerName = ip.IPv4
+				host, _, err := net.SplitHostPort(hello.Conn.LocalAddr().String())
+				if err == nil {
+					hello.ServerName = host
+				} else {
+					logger.Warnf("failed to get host from %s: %s", hello.Conn.LocalAddr().String(), err)
+				}
 			}
 
 			return certifyClient.GetCertificate(hello)

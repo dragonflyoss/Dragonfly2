@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"google.golang.org/grpc/resolver"
@@ -178,10 +179,20 @@ func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 
 	var (
 		addrs        = map[string]bool{}
-		resolveAddrs = []resolver.Address{}
+		resolveAddrs []resolver.Address
 	)
 	for _, seedPeer := range seedPeers {
-		addr := fmt.Sprintf("%s:%d", seedPeer.IP, seedPeer.Port)
+		var (
+			ip   = seedPeer.IP
+			addr string
+		)
+		// support ipv6
+		if strings.Contains(ip, ":") {
+			addr = fmt.Sprintf("[%s]:%d", ip, seedPeer.Port)
+		} else {
+			addr = fmt.Sprintf("%s:%d", ip, seedPeer.Port)
+		}
+
 		r := reachable.New(&reachable.Config{Address: addr})
 		if err := r.Check(); err != nil {
 			logger.Warnf("seed peer address %s is unreachable", addr)

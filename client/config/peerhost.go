@@ -51,7 +51,8 @@ type DaemonOption struct {
 	// when AliveTime == 0, will run infinitely
 	AliveTime  util.Duration `mapstructure:"aliveTime" yaml:"aliveTime"`
 	GCInterval util.Duration `mapstructure:"gcInterval" yaml:"gcInterval"`
-	Metrics    string        `yaml:"metrics" mapstructure:"metrics"`
+	Metrics    string        `mapstructure:"metrics" yaml:"metrics"`
+	IPv6       bool          `mapstructure:"ipv6" yaml:"ipv6"`
 
 	WorkHome    string `mapstructure:"workHome" yaml:"workHome"`
 	CacheDir    string `mapstructure:"cacheDir" yaml:"cacheDir"`
@@ -100,12 +101,17 @@ func (p *DaemonOption) Load(path string) error {
 }
 
 func (p *DaemonOption) Convert() error {
-	// AdvertiseIP
-	ip := net.ParseIP(p.Host.AdvertiseIP)
-	if ip == nil || net.IPv4zero.Equal(ip) {
-		p.Host.AdvertiseIP = netip.IPv4
+	// advertiseIP, support one of ipv4 and ipv6
+	var advertiseIP string
+	if p.IPv6 {
+		advertiseIP = netip.IPv6
 	} else {
-		p.Host.AdvertiseIP = ip.String()
+		advertiseIP = netip.IPv4
+	}
+
+	ip := net.ParseIP(p.Host.AdvertiseIP)
+	if ip == nil || net.IPv4zero.Equal(ip) || net.IPv6zero.Equal(ip) {
+		p.Host.AdvertiseIP = advertiseIP
 	}
 
 	// ScheduleTimeout should not great then AliveTime

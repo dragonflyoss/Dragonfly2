@@ -78,6 +78,7 @@ type Option func(um *uploadManager)
 // WithLimiter sets upload rate limiter, the burst size must be bigger than piece size.
 func WithLimiter(limiter *rate.Limiter) func(*uploadManager) {
 	return func(manager *uploadManager) {
+		logger.Infof("set upload limiter %f for upload manager", limiter.Limit())
 		manager.Limiter = limiter
 	}
 }

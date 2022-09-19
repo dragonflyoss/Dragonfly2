@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 	"time"
 
@@ -163,9 +164,18 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 		delete(s.workers, dstPeer.PeerId)
 	}
 
-	netAddr := &dfnet.NetAddr{
-		Type: dfnet.TCP,
-		Addr: fmt.Sprintf("%s:%d", dstPeer.Ip, dstPeer.RpcPort),
+	var netAddr *dfnet.NetAddr
+	// support ipv6
+	if strings.Contains(dstPeer.Ip, ":") {
+		netAddr = &dfnet.NetAddr{
+			Type: dfnet.TCP,
+			Addr: fmt.Sprintf("[%s]:%d", dstPeer.Ip, dstPeer.RpcPort),
+		}
+	} else {
+		netAddr = &dfnet.NetAddr{
+			Type: dfnet.TCP,
+			Addr: fmt.Sprintf("%s:%d", dstPeer.Ip, dstPeer.RpcPort),
+		}
 	}
 
 	credentialOpt := grpc.WithTransportCredentials(s.peerTaskConductor.GRPCCredentials)

@@ -38,7 +38,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/issuer"
-	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/types"
@@ -133,7 +132,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	var certifyClient *certify.Certify
 	if cfg.Security.AutoIssueCert {
 		certifyClient = &certify.Certify{
-			CommonName:   ip.IPv4,
+			CommonName:   "scheduler",
 			Issuer:       issuer.NewDragonflyIssuer(managerClient, issuer.WithValidityPeriod(cfg.Security.CertSpec.ValidityPeriod)),
 			RenewBefore:  time.Hour,
 			CertConfig:   nil,
@@ -146,7 +145,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 
 		// Issue a certificate to reduce first time delay.
 		if _, err := certifyClient.GetCertificate(&tls.ClientHelloInfo{
-			ServerName: ip.IPv4,
+			ServerName: "scheduler",
 		}); err != nil {
 			logger.Errorf("issue certificate error: %s", err.Error())
 			return nil, err

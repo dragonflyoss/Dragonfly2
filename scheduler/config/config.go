@@ -61,6 +61,8 @@ type Config struct {
 
 	// Security configuration.
 	Security *SecurityConfig `yaml:"security" mapstructure:"security"`
+
+	IPv6 bool `mapstructure:"ipv6" yaml:"ipv6"`
 }
 
 type ServerConfig struct {
