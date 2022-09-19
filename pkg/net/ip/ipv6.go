@@ -31,7 +31,7 @@ const (
 func init() {
 	ip, err := externalIPv6()
 	if err != nil {
-		logger.Warnf("Failed to get IPv6 address: %s", err.Error())
+		logger.Debugf("Failed to get IPv6 address: %s", err.Error())
 		logger.Infof("Use %s as IPv6 addr", internalIPv6)
 		IPv6 = internalIPv6
 	} else {
