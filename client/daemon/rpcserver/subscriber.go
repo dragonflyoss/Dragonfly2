@@ -83,7 +83,8 @@ func sendExistPieces(
 			log.Errorf("get piece error: %s", err)
 			return -1, err
 		}
-		if len(pp.PieceInfos) == 0 && skipSendZeroPiece {
+		// when ContentLength is zero, it's an empty file, need send metadata
+		if pp.ContentLength != 0 && len(pp.PieceInfos) == 0 && skipSendZeroPiece {
 			return pp.TotalPiece, nil
 		}
 		if err = sync.Send(pp); err != nil {
