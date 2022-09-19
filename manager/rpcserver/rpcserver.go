@@ -78,8 +78,8 @@ type Server struct {
 	// GORM instance.
 	db *gorm.DB
 
-	// Redis client instance.
-	rdb *redis.Client
+	// Redis universal client interface.
+	rdb redis.UniversalClient
 
 	// Cache instance.
 	cache *cache.Cache

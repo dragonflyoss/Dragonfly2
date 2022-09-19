@@ -110,9 +110,6 @@ const (
 	// DefaultJobGlobalWorkerNum is default local worker number for job.
 	DefaultJobLocalWorkerNum = 10
 
-	// DefaultJobRedisPort is default port for redis.
-	DefaultJobRedisPort = 6379
-
 	// DefaultJobRedisBrokerDB is default db for redis broker.
 	DefaultJobRedisBrokerDB = 1
 

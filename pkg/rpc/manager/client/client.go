@@ -82,6 +82,7 @@ func GetClient(ctx context.Context, target string, opts ...grpc.DialOption) (Cli
 	return &client{
 		ManagerClient:            managerv1.NewManagerClient(conn),
 		CertificateServiceClient: securityv1.NewCertificateServiceClient(conn),
+		ClientConn:               conn,
 	}, nil
 }
 
@@ -149,16 +150,21 @@ type Client interface {
 	// Delete model version information.
 	DeleteModelVersion(context.Context, *managerv1.DeleteModelVersionRequest, ...grpc.CallOption) error
 
+	// IssueCertificate issues certificate for client.
 	IssueCertificate(context.Context, *securityv1.CertificateRequest, ...grpc.CallOption) (*securityv1.CertificateResponse, error)
 
 	// KeepAlive with manager.
 	KeepAlive(time.Duration, *managerv1.KeepAliveRequest, ...grpc.CallOption)
+
+	// Close tears down the ClientConn and all underlying connections.
+	Close() error
 }
 
 // client provides manager grpc function.
 type client struct {
 	managerv1.ManagerClient
 	securityv1.CertificateServiceClient
+	*grpc.ClientConn
 }
 
 // Update SeedPeer configuration.

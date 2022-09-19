@@ -50,6 +50,10 @@ seedPeer:
     verbose: true
     download:
       prefetch: true
+      concurrent:
+        thresholdSize: 10M
+        thresholdSpeed: 2M
+        goroutineCount: 4
 
 dfdaemon:
   image: d7yio/dfdaemon
@@ -78,6 +82,10 @@ dfdaemon:
     metrics: 127.0.0.1:8888
     download:
       prefetch: true
+      concurrent:
+        thresholdSize: 10M
+        thresholdSpeed: 2M
+        goroutineCount: 4
     scheduler:
       disableAutoBackSource: true
     proxy:

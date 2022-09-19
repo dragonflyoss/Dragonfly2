@@ -145,7 +145,6 @@ func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *schedul
 				ContentLength:   piece.ContentLength,
 			}, nil
 		}
-
 	}
 }
 

@@ -85,6 +85,7 @@ func TestConfig_Load(t *testing.T) {
 			SchedulerWorkerNum: 1,
 			LocalWorkerNum:     5,
 			Redis: &RedisConfig{
+				Addrs:     []string{"foo", "bar"},
 				Host:      "127.0.0.1",
 				Port:      6379,
 				Password:  "foo",
