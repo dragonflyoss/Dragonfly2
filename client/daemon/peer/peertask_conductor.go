@@ -341,6 +341,11 @@ func (pt *peerTaskConductor) register() error {
 				header = result.ExtendAttribute.Header
 			}
 		case commonv1.SizeScope_EMPTY:
+			tinyData = &TinyData{
+				TaskID:  result.TaskId,
+				PeerID:  pt.request.PeerId,
+				Content: []byte{},
+			}
 			pt.span.SetAttributes(config.AttributePeerTaskSizeScope.String("empty"))
 			if result.ExtendAttribute != nil {
 				header = result.ExtendAttribute.Header
@@ -595,8 +600,8 @@ func (pt *peerTaskConductor) storeEmptyPeerTask() {
 	storageDriver, err := pt.StorageManager.RegisterTask(ctx,
 		&storage.RegisterTaskRequest{
 			PeerTaskMetadata: storage.PeerTaskMetadata{
-				PeerID: pt.tinyData.PeerID,
-				TaskID: pt.tinyData.TaskID,
+				PeerID: pt.peerID,
+				TaskID: pt.taskID,
 			},
 			DesiredLocation: "",
 			ContentLength:   0,
