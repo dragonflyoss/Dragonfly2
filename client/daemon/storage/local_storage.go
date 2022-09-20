@@ -215,7 +215,7 @@ func (t *localTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskRequest)
 		t.ContentLength = req.ContentLength
 		t.Debugf("update content length: %d", t.ContentLength)
 	}
-	if req.TotalPieces > 0 {
+	if req.TotalPieces > -1 {
 		t.TotalPieces = req.TotalPieces
 		t.Debugf("update total pieces: %d", t.TotalPieces)
 	}
