@@ -99,6 +99,22 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTas
 	if task.FSM.Is(resource.TaskStateSucceeded) && err == nil {
 		peer.Log.Info("task can be reused")
 		switch sizeScope {
+		case commonv1.SizeScope_EMPTY:
+			peer.Log.Info("task size scope is empty and return empty content directly")
+			if err := peer.FSM.Event(resource.PeerEventRegisterEmpty); err != nil {
+				msg := fmt.Sprintf("peer %s register is failed: %s", req.PeerId, err.Error())
+				peer.Log.Error(msg)
+				return nil, dferrors.New(commonv1.Code_SchedError, msg)
+			}
+
+			return &schedulerv1.RegisterResult{
+				TaskId:    task.ID,
+				TaskType:  task.Type,
+				SizeScope: commonv1.SizeScope_EMPTY,
+				DirectPiece: &schedulerv1.RegisterResult_PieceContent{
+					PieceContent: []byte{},
+				},
+			}, nil
 		case commonv1.SizeScope_TINY:
 			peer.Log.Info("task size scope is tiny and return piece content directly")
 			if len(task.DirectPiece) > 0 && int64(len(task.DirectPiece)) == task.ContentLength.Load() {
@@ -732,11 +748,6 @@ func (s *Service) handlePeerSuccess(ctx context.Context, peer *resource.Peer) {
 	// If the peer type is tiny and back-to-source,
 	// it needs to directly download the tiny file and store the data in task DirectPiece.
 	if sizeScope == commonv1.SizeScope_TINY && len(peer.Task.DirectPiece) == 0 {
-		if peer.Task.ContentLength.Load() == 0 {
-			peer.Task.DirectPiece = []byte{}
-			return
-		}
-
 		data, err := peer.DownloadTinyFile()
 		if err != nil {
 			peer.Log.Errorf("download tiny task failed: %s", err.Error())

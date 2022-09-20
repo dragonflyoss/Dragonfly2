@@ -37,6 +37,9 @@ const (
 	// Tiny file size is 128 bytes.
 	TinyFileSize = 128
 
+	// Empty file size is 0 bytes.
+	EmptyFileSize = 0
+
 	// Peer failure limit in task.
 	FailedPeerCountLimit = 200
 
@@ -385,6 +388,10 @@ func (t *Task) SizeScope() (commonv1.SizeScope, error) {
 
 	if t.TotalPieceCount.Load() < 0 {
 		return -1, errors.New("invalid total piece count")
+	}
+
+	if t.ContentLength.Load() == EmptyFileSize {
+		return commonv1.SizeScope_EMPTY, nil
 	}
 
 	if t.ContentLength.Load() <= TinyFileSize {

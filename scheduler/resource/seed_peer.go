@@ -112,8 +112,8 @@ func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *schedul
 			}
 		}
 
-		// Handle begin of piece.
 		if piece.PieceInfo != nil {
+			// Handle begin of piece.
 			if piece.PieceInfo.PieceNum == common.BeginOfPiece {
 				peer.Log.Infof("receive begin of piece from seed peer: %#v %#v", piece, piece.PieceInfo)
 				if err := peer.FSM.Event(PeerEventDownload); err != nil {

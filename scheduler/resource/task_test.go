@@ -1253,7 +1253,7 @@ func TestTask_SizeScope(t *testing.T) {
 			},
 		},
 		{
-			name:              "scope size is tiny - empty file",
+			name:              "scope size is empty",
 			id:                mockTaskID,
 			urlMeta:           mockTaskURLMeta,
 			url:               mockTaskURL,
@@ -1264,7 +1264,7 @@ func TestTask_SizeScope(t *testing.T) {
 				assert := assert.New(t)
 				sizeScope, err := task.SizeScope()
 				assert.NoError(err)
-				assert.Equal(sizeScope, commonv1.SizeScope_TINY)
+				assert.Equal(sizeScope, commonv1.SizeScope_EMPTY)
 			},
 		},
 		{
