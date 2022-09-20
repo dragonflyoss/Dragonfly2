@@ -265,6 +265,41 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			},
 		},
 		{
+			name: "task scope size is SizeScope_EMPTY",
+			req: &schedulerv1.PeerTaskRequest{
+				UrlMeta: &commonv1.UrlMeta{},
+				PeerHost: &schedulerv1.PeerHost{
+					Id: mockRawHost.Id,
+				},
+			},
+			mock: func(
+				req *schedulerv1.PeerTaskRequest, mockPeer *resource.Peer, mockSeedPeer *resource.Peer,
+				scheduler scheduler.Scheduler, res resource.Resource, hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager,
+				ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder,
+			) {
+				mockPeer.Task.FSM.SetState(resource.TaskStateSucceeded)
+				mockPeer.Task.StorePeer(mockSeedPeer)
+				gomock.InOrder(
+					mr.TaskManager().Return(taskManager).Times(1),
+					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+				)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, result *schedulerv1.RegisterResult, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(result.TaskId, peer.Task.ID)
+				assert.Equal(result.SizeScope, commonv1.SizeScope_EMPTY)
+				assert.Equal(result.DirectPiece, &schedulerv1.RegisterResult_PieceContent{
+					PieceContent: []byte{},
+				})
+				assert.Equal(peer.NeedBackToSource.Load(), false)
+			},
+		},
+		{
 			name: "task scope size is SizeScope_TINY",
 			req: &schedulerv1.PeerTaskRequest{
 				UrlMeta: &commonv1.UrlMeta{},

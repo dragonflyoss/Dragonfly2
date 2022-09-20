@@ -350,6 +350,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, peerTaskReq
 							TaskID: pt.GetTaskID(),
 						},
 						ContentLength: targetContentLength,
+						TotalPieces:   pt.GetTotalPieces(),
 						Header:        &metadata.Header,
 					})
 				if err != nil {
@@ -412,6 +413,7 @@ singleDownload:
 					TaskID: pt.GetTaskID(),
 				},
 				ContentLength: contentLength,
+				TotalPieces:   pt.GetTotalPieces(),
 				Header:        &response.Header,
 			})
 		if err != nil {
@@ -498,6 +500,7 @@ func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, 
 							TaskID: pt.GetTaskID(),
 						},
 						ContentLength: targetContentLength,
+						TotalPieces:   pt.GetTotalPieces(),
 						Header:        &metadata.Header,
 					})
 				if err != nil {

@@ -214,6 +214,11 @@ func (t *localTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskRequest)
 	if req.ContentLength > t.persistentMetadata.ContentLength {
 		t.ContentLength = req.ContentLength
 		t.Debugf("update content length: %d", t.ContentLength)
+		// update empty file TotalPieces
+		// the default req.TotalPieces is 0, need check ContentLength
+		if t.ContentLength == 0 {
+			t.TotalPieces = 0
+		}
 	}
 	if req.TotalPieces > 0 {
 		t.TotalPieces = req.TotalPieces
@@ -420,7 +425,7 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *commonv1.PieceTaskR
 		ContentLength: t.ContentLength,
 		PieceMd5Sign:  t.PieceMd5Sign,
 	}
-	if t.TotalPieces > -1 && int32(req.StartNum) >= t.TotalPieces {
+	if t.TotalPieces > 0 && int32(req.StartNum) >= t.TotalPieces {
 		t.Warnf("invalid start num: %d", req.StartNum)
 	}
 	for i := int32(0); i < int32(req.Limit); i++ {

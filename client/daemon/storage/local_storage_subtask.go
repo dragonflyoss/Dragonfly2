@@ -255,7 +255,15 @@ func (t *localSubTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskReque
 	t.parent.touch()
 	t.Lock()
 	defer t.Unlock()
-	t.persistentMetadata.ContentLength = req.ContentLength
+	if req.ContentLength > t.persistentMetadata.ContentLength {
+		t.ContentLength = req.ContentLength
+		t.Debugf("update content length: %d", t.ContentLength)
+		// update empty file TotalPieces
+		// the default req.TotalPieces is 0, need check ContentLength
+		if t.ContentLength == 0 {
+			t.TotalPieces = 0
+		}
+	}
 	if req.TotalPieces > 0 {
 		t.TotalPieces = req.TotalPieces
 		t.Debugf("update total pieces: %d", t.TotalPieces)

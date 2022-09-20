@@ -286,7 +286,7 @@ func (ptm *peerTaskManager) StartFileTask(ctx context.Context, req *FileTaskRequ
 
 	// FIXME when failed due to SchedulerClient error, relocate SchedulerClient and retry
 	progress, err := pt.Start(ctx)
-	return progress, nil, err
+	return progress, pt.peerTaskConductor.tinyData, err
 }
 
 func (ptm *peerTaskManager) StartStreamTask(ctx context.Context, req *StreamTaskRequest) (io.ReadCloser, map[string]string, error) {

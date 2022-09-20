@@ -83,7 +83,8 @@ func sendExistPieces(
 			log.Errorf("get piece error: %s", err)
 			return -1, err
 		}
-		if len(pp.PieceInfos) == 0 && skipSendZeroPiece {
+		// when ContentLength is zero, it's an empty file, need send metadata
+		if pp.ContentLength != 0 && len(pp.PieceInfos) == 0 && skipSendZeroPiece {
 			return pp.TotalPiece, nil
 		}
 		if err = sync.Send(pp); err != nil {
@@ -209,7 +210,8 @@ loop:
 			s.Infof("peer task is success, send remaining pieces")
 			s.Lock()
 			// all pieces already sent
-			if s.totalPieces > -1 && nextPieceNum == uint32(s.totalPieces) {
+			// empty piece task will reach sendExistPieces to sync content length and piece count
+			if s.totalPieces > 0 && nextPieceNum == uint32(s.totalPieces) {
 				s.Unlock()
 				break loop
 			}

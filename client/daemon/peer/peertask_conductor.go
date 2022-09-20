@@ -340,6 +340,16 @@ func (pt *peerTaskConductor) register() error {
 			if result.ExtendAttribute != nil {
 				header = result.ExtendAttribute.Header
 			}
+		case commonv1.SizeScope_EMPTY:
+			tinyData = &TinyData{
+				TaskID:  result.TaskId,
+				PeerID:  pt.request.PeerId,
+				Content: []byte{},
+			}
+			pt.span.SetAttributes(config.AttributePeerTaskSizeScope.String("empty"))
+			if result.ExtendAttribute != nil {
+				header = result.ExtendAttribute.Header
+			}
 		}
 	}
 
@@ -550,6 +560,8 @@ func (pt *peerTaskConductor) pullPieces() {
 		return
 	}
 	switch pt.sizeScope {
+	case commonv1.SizeScope_EMPTY:
+		pt.storeEmptyPeerTask()
 	case commonv1.SizeScope_TINY:
 		pt.storeTinyPeerTask()
 	case commonv1.SizeScope_SMALL:
@@ -578,6 +590,37 @@ func (pt *peerTaskConductor) pullPiecesWithP2P() {
 	}
 	go pt.pullPiecesFromPeers(pieceRequestCh)
 	pt.receivePeerPacket(pieceRequestCh)
+}
+
+func (pt *peerTaskConductor) storeEmptyPeerTask() {
+	pt.SetContentLength(0)
+	pt.SetTotalPieces(0)
+	ctx := pt.ctx
+	var err error
+	storageDriver, err := pt.StorageManager.RegisterTask(ctx,
+		&storage.RegisterTaskRequest{
+			PeerTaskMetadata: storage.PeerTaskMetadata{
+				PeerID: pt.peerID,
+				TaskID: pt.taskID,
+			},
+			DesiredLocation: "",
+			ContentLength:   0,
+			TotalPieces:     0,
+		})
+	pt.storage = storageDriver
+	if err != nil {
+		pt.Errorf("register tiny data storage failed: %s", err)
+		pt.cancel(commonv1.Code_ClientError, err.Error())
+		return
+	}
+
+	if err = pt.UpdateStorage(); err != nil {
+		pt.Errorf("update tiny data storage failed: %s", err)
+		pt.cancel(commonv1.Code_ClientError, err.Error())
+		return
+	}
+	pt.Debug("store empty metadata")
+	pt.Done()
 }
 
 func (pt *peerTaskConductor) storeTinyPeerTask() {
