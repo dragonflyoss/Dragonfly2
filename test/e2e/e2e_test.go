@@ -36,16 +36,12 @@ var (
 	featureGates     = featuregate.NewFeatureGate()
 	featureGatesFlag string
 
-	featureGateRange    featuregate.Feature = "dfget-range"
-	featureGateCommit   featuregate.Feature = "dfget-commit"
-	featureGateNoLength featuregate.Feature = "dfget-no-length"
+	featureGateRange     featuregate.Feature = "dfget-range"
+	featureGateCommit    featuregate.Feature = "dfget-commit"
+	featureGateNoLength  featuregate.Feature = "dfget-no-length"
+	featureGateEmptyFile featuregate.Feature = "dfget-empty-file"
 
 	defaultFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
-		featureGateRange: {
-			Default:       false,
-			LockToDefault: false,
-			PreRelease:    featuregate.Alpha,
-		},
 		featureGateCommit: {
 			Default:       true,
 			LockToDefault: false,
@@ -53,6 +49,16 @@ var (
 		},
 		featureGateNoLength: {
 			Default:       true,
+			LockToDefault: false,
+			PreRelease:    featuregate.Alpha,
+		},
+		featureGateRange: {
+			Default:       false,
+			LockToDefault: false,
+			PreRelease:    featuregate.Alpha,
+		},
+		featureGateEmptyFile: {
+			Default:       false,
 			LockToDefault: false,
 			PreRelease:    featuregate.Alpha,
 		},

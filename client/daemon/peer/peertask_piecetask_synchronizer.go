@@ -332,7 +332,7 @@ func (s *pieceTaskSynchronizer) dispatchPieceRequest(piecePacket *commonv1.Piece
 
 	pieceCount := len(piecePacket.PieceInfos)
 	s.Debugf("dispatch piece request, piece count: %d, dest peer: %s", pieceCount, s.dstPeer.PeerId)
-	// fix cdn return zero piece info, but with total piece count and content length
+	// peers maybe send zero piece info, but with total piece count and content length
 	if pieceCount == 0 {
 		finished := s.peerTaskConductor.isCompleted()
 		if finished {
