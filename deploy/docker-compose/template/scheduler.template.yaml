@@ -1,7 +1,9 @@
 # server scheduler instance configuration
 server:
-  # # ip
-  ip: 0.0.0.0
+  # # Advertise ip
+  advertiseIP: 127.0.0.1
+  # # Listen ip
+  listenIP: 0.0.0.0
   # # host
   # host: localhost
   # port is the ip and port scheduler server listens on.

@@ -36,7 +36,7 @@ func TestManagerConfig_Load(t *testing.T) {
 			CacheDir: "foo",
 			LogDir:   "foo",
 			GRPC: &TCPListenConfig{
-				Listen: "127.0.0.1",
+				ListenIP: "0.0.0.0",
 				PortRange: TCPListenPortRange{
 					Start: 65003,
 					End:   65003,

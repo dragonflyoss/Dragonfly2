@@ -113,7 +113,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	if _, err := s.managerClient.UpdateScheduler(context.Background(), &managerv1.UpdateSchedulerRequest{
 		SourceType:         managerv1.SourceType_SCHEDULER_SOURCE,
 		HostName:           s.config.Server.Host,
-		Ip:                 s.config.Server.IP,
+		Ip:                 s.config.Server.AdvertiseIP,
 		Port:               int32(s.config.Server.Port),
 		Idc:                s.config.Host.IDC,
 		Location:           s.config.Host.Location,
@@ -258,14 +258,14 @@ func (s *Server) Serve() error {
 			s.managerClient.KeepAlive(s.config.Manager.KeepAlive.Interval, &managerv1.KeepAliveRequest{
 				SourceType: managerv1.SourceType_SCHEDULER_SOURCE,
 				HostName:   s.config.Server.Host,
-				Ip:         s.config.Server.IP,
+				Ip:         s.config.Server.AdvertiseIP,
 				ClusterId:  uint64(s.config.Manager.SchedulerClusterID),
 			})
 		}()
 	}
 
 	// Generate GRPC limit listener.
-	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", s.config.Server.Listen, s.config.Server.Port))
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", s.config.Server.ListenIP, s.config.Server.Port))
 	if err != nil {
 		logger.Fatalf("net listener failed to start: %s", err.Error())
 	}

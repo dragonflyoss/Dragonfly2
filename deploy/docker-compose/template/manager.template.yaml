@@ -2,8 +2,8 @@
 server:
   # grpc server configure
   grpc:
-    # listen address
-    listen: 0.0.0.0
+    # listen ip
+    listenIP: 0.0.0.0
     # listen port, manager will try to listen
     # when this port is not available, manager will try next port
     port:

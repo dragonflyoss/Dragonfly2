@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/docker/go-connections/tlsconfig"
 	"github.com/go-sql-driver/mysql"
 	drivermysql "gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -82,7 +83,12 @@ func formatMysqlDSN(cfg *config.MysqlConfig) (string, error) {
 	// Support TLS connection.
 	if cfg.TLS != nil {
 		mysqlCfg.TLSConfig = "custom"
-		tls, err := cfg.TLS.Client()
+		tls, err := tlsconfig.Client(tlsconfig.Options{
+			CAFile:             cfg.TLS.CA,
+			CertFile:           cfg.TLS.Cert,
+			KeyFile:            cfg.TLS.Key,
+			InsecureSkipVerify: cfg.TLS.InsecureSkipVerify,
+		})
 		if err != nil {
 			return "", err
 		}

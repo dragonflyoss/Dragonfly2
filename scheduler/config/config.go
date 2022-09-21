@@ -65,17 +65,23 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	// Server ip.
+	// DEPRECATED: Please use the `advertiseIP` field instead.
 	IP string `yaml:"ip" mapstructure:"ip"`
 
-	// Server hostname.
-	Host string `yaml:"host" mapstructure:"host"`
-
-	// Listen stands listen interface, like: 0.0.0.0, 192.168.0.1.
+	// DEPRECATED: Please use the `listenIP` field instead.
 	Listen string `yaml:"listen" mapstructure:"listen"`
+
+	// AdvertiseIP is advertise ip.
+	AdvertiseIP string `yaml:"advertiseIP" mapstructure:"advertiseIP"`
+
+	// ListenIP is listen ip, like: 0.0.0.0, 192.168.0.1.
+	ListenIP string `yaml:"listenIP" mapstructure:"listenIP"`
 
 	// Server port.
 	Port int `yaml:"port" mapstructure:"port"`
+
+	// Server hostname.
+	Host string `yaml:"host" mapstructure:"host"`
 
 	// Server work directory.
 	WorkHome string `yaml:"workHome" mapstructure:"workHome"`
@@ -277,10 +283,10 @@ type CertSpec struct {
 func New() *Config {
 	return &Config{
 		Server: &ServerConfig{
-			IP:     ip.IPv4,
-			Host:   fqdn.FQDNHostname,
-			Listen: DefaultServerListen,
-			Port:   DefaultServerPort,
+			AdvertiseIP: ip.IPv4,
+			ListenIP:    DefaultServerListenIP,
+			Port:        DefaultServerPort,
+			Host:        fqdn.FQDNHostname,
 		},
 		Scheduler: &SchedulerConfig{
 			Algorithm:            DefaultSchedulerAlgorithm,
@@ -353,20 +359,20 @@ func (cfg *Config) Validate() error {
 		return errors.New("server requires parameter server")
 	}
 
-	if cfg.Server.IP == "" {
-		return errors.New("server requires parameter ip")
+	if cfg.Server.AdvertiseIP == "" {
+		return errors.New("server requires parameter advertiseIP")
 	}
 
-	if cfg.Server.Host == "" {
-		return errors.New("server requires parameter host")
+	if cfg.Server.ListenIP == "" {
+		return errors.New("server requires parameter listenIP")
 	}
 
 	if cfg.Server.Port <= 0 {
 		return errors.New("server requires parameter port")
 	}
 
-	if cfg.Server.Listen == "" {
-		return errors.New("server requires parameter listen")
+	if cfg.Server.Host == "" {
+		return errors.New("server requires parameter host")
 	}
 
 	if cfg.Scheduler.Algorithm == "" {
@@ -498,6 +504,16 @@ func (cfg *Config) Convert() error {
 	// TODO Compatible with deprecated fields host and port.
 	if len(cfg.Job.Redis.Addrs) == 0 && cfg.Job.Redis.Host != "" && cfg.Job.Redis.Port > 0 {
 		cfg.Job.Redis.Addrs = []string{fmt.Sprintf("%s:%d", cfg.Job.Redis.Host, cfg.Job.Redis.Port)}
+	}
+
+	// TODO Compatible with deprecated fields ip.
+	if cfg.Server.IP != "" && cfg.Server.AdvertiseIP == "" {
+		cfg.Server.AdvertiseIP = cfg.Server.IP
+	}
+
+	// TODO Compatible with deprecated fields listen.
+	if cfg.Server.Listen != "" && cfg.Server.ListenIP == "" {
+		cfg.Server.ListenIP = cfg.Server.Listen
 	}
 
 	return nil

@@ -17,12 +17,9 @@
 package config
 
 import (
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"time"
-
-	"github.com/docker/go-connections/tlsconfig"
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
@@ -152,16 +149,6 @@ type PostgresConfig struct {
 	Migrate bool `yaml:"migrate" mapstructure:"migrate"`
 }
 
-// Generate client tls config.
-func (t *TLSConfig) Client() (*tls.Config, error) {
-	return tlsconfig.Client(tlsconfig.Options{
-		CAFile:             t.CA,
-		CertFile:           t.Cert,
-		KeyFile:            t.Key,
-		InsecureSkipVerify: t.InsecureSkipVerify,
-	})
-}
-
 type RedisConfig struct {
 	// DEPRECATED: Please use the `addrs` field instead.
 	Host string `yaml:"host" mapstructure:"host"`
@@ -226,10 +213,13 @@ type MetricsConfig struct {
 }
 
 type TCPListenConfig struct {
-	// Listen is listen interface, like: 0.0.0.0, 192.168.0.1.
+	// DEPRECATED: Please use the `listenIP` field instead.
 	Listen string `mapstructure:"listen" yaml:"listen"`
 
-	// PortRange is listen port.
+	// ListenIP is listen ip, like: 0.0.0.0, 192.168.0.1.
+	ListenIP string `mapstructure:"listenIP" yaml:"listenIP"`
+
+	// Port is listen port.
 	PortRange TCPListenPortRange `yaml:"port" mapstructure:"port"`
 }
 
@@ -295,6 +285,7 @@ func New() *Config {
 		Server: &ServerConfig{
 			Name: DefaultServerName,
 			GRPC: &TCPListenConfig{
+				ListenIP: DefaultGRPCListenIP,
 				PortRange: TCPListenPortRange{
 					Start: DefaultGRPCPort,
 					End:   DefaultGRPCPort,
@@ -365,6 +356,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Server.GRPC == nil {
 		return errors.New("server requires parameter grpc")
+	}
+
+	if cfg.Server.GRPC.ListenIP == "" {
+		return errors.New("grpc requires parameter listenIP")
 	}
 
 	if cfg.Server.REST == nil {
@@ -568,6 +563,11 @@ func (cfg *Config) Convert() error {
 	// TODO Compatible with deprecated fields host and port.
 	if len(cfg.Database.Redis.Addrs) == 0 && cfg.Database.Redis.Host != "" && cfg.Database.Redis.Port > 0 {
 		cfg.Database.Redis.Addrs = []string{fmt.Sprintf("%s:%d", cfg.Database.Redis.Host, cfg.Database.Redis.Port)}
+	}
+
+	// TODO Compatible with deprecated fields listen.
+	if cfg.Server.GRPC.Listen != "" && cfg.Server.GRPC.ListenIP == "" {
+		cfg.Server.GRPC.ListenIP = cfg.Server.GRPC.Listen
 	}
 
 	return nil

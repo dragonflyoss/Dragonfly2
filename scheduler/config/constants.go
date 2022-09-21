@@ -38,8 +38,8 @@ const (
 	DefaultSchedulerFilterParentRangeLimit = 40
 )
 
-// DefaultServerListen is default listen for server.
-var DefaultServerListen = net.IPv4zero.String()
+// DefaultServerListenIP is default listen ip for server.
+var DefaultServerListenIP = net.IPv4zero.String()
 
 const (
 	// DefaultServerPort is default port for server.
