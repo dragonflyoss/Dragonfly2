@@ -252,7 +252,7 @@ func (s *Server) Serve() error {
 	}
 
 	// Generate GRPC listener
-	lis, _, err := rpc.ListenWithPortRange(s.config.Server.GRPC.Listen, s.config.Server.GRPC.PortRange.Start, s.config.Server.GRPC.PortRange.End)
+	lis, _, err := rpc.ListenWithPortRange(s.config.Server.GRPC.ListenIP, s.config.Server.GRPC.PortRange.Start, s.config.Server.GRPC.PortRange.End)
 	if err != nil {
 		logger.Fatalf("net listener failed to start: %v", err)
 	}
