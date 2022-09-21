@@ -18,18 +18,23 @@ package ip
 
 import (
 	"fmt"
+	"net"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 var IPv6 string
 
-const (
-	internalIPv6 = "::1"
+var (
+	// Ipv6 lookback address.
+	IPv6lookback = net.IPv6loopback.String()
 )
 
 func init() {
 	ip, err := externalIPv6()
 	if err != nil {
-		IPv6 = internalIPv6
+		logger.Warnf("Failed to get IPv6 address: %s, use %s as IPv6 address", err.Error(), IPv6lookback)
+		IPv6 = IPv6lookback
 	} else {
 		IPv6 = ip
 	}
@@ -48,6 +53,7 @@ func externalIPv6() (string, error) {
 		if v4 != nil {
 			continue // skip all ipv4 address
 		}
+
 		ip = ip.To16()
 		externalIPs = append(externalIPs, ip.String())
 	}
