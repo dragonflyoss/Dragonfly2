@@ -3,6 +3,7 @@ server:
   cacheDir: foo
   logDir: foo
   grpc:
+    advertiseIP: 127.0.0.1
     listenIP: 0.0.0.0
     port:
       start: 65003
