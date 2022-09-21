@@ -421,6 +421,17 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			mockHTTPSourceClient: nil,
 		},
 		{
+			name:                 "empty file - p2p",
+			taskData:             []byte{},
+			pieceParallelCount:   4,
+			pieceSize:            1024,
+			peerID:               "empty-file-peer",
+			url:                  "http://localhost/test/data",
+			sizeScope:            commonv1.SizeScope_NORMAL,
+			mockPieceDownloader:  commonPieceDownloader,
+			mockHTTPSourceClient: nil,
+		},
+		{
 			name:                "normal size scope - back source - content length",
 			runTaskTypes:        []int{taskTypeConductor, taskTypeFile, taskTypeStream, taskTypeSeed},
 			taskData:            testBytes,
@@ -557,6 +568,30 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			sizeScope:            commonv1.SizeScope_NORMAL,
 			mockPieceDownloader:  nil,
 			mockHTTPSourceClient: nil,
+		},
+		{
+			name:                "empty file peer - back source - content length",
+			runTaskTypes:        []int{taskTypeConductor, taskTypeFile, taskTypeStream, taskTypeSeed},
+			taskData:            []byte{},
+			pieceParallelCount:  4,
+			pieceSize:           1024,
+			peerID:              "empty-file-peer-back-source",
+			backSource:          true,
+			url:                 "http://localhost/test/data",
+			sizeScope:           commonv1.SizeScope_NORMAL,
+			mockPieceDownloader: nil,
+			mockHTTPSourceClient: func(t *testing.T, ctrl *gomock.Controller, rg *util.Range, taskData []byte, url string) source.ResourceClient {
+				sourceClient := sourcemocks.NewMockResourceClient(ctrl)
+				sourceClient.EXPECT().GetContentLength(source.RequestEq(url)).AnyTimes().DoAndReturn(
+					func(request *source.Request) (int64, error) {
+						return int64(len(taskData)), nil
+					})
+				sourceClient.EXPECT().Download(source.RequestEq(url)).AnyTimes().DoAndReturn(
+					func(request *source.Request) (*source.Response, error) {
+						return source.NewResponse(io.NopCloser(bytes.NewBuffer(taskData))), nil
+					})
+				return sourceClient
+			},
 		},
 	}
 

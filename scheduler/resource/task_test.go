@@ -1253,6 +1253,21 @@ func TestTask_SizeScope(t *testing.T) {
 			},
 		},
 		{
+			name:              "scope size is empty",
+			id:                mockTaskID,
+			urlMeta:           mockTaskURLMeta,
+			url:               mockTaskURL,
+			backToSourceLimit: mockTaskBackToSourceLimit,
+			contentLength:     0,
+			totalPieceCount:   0,
+			expect: func(t *testing.T, task *Task) {
+				assert := assert.New(t)
+				sizeScope, err := task.SizeScope()
+				assert.NoError(err)
+				assert.Equal(sizeScope, commonv1.SizeScope_EMPTY)
+			},
+		},
+		{
 			name:              "scope size is small",
 			id:                mockTaskID,
 			urlMeta:           mockTaskURLMeta,
@@ -1303,7 +1318,7 @@ func TestTask_SizeScope(t *testing.T) {
 			url:               mockTaskURL,
 			backToSourceLimit: mockTaskBackToSourceLimit,
 			contentLength:     TinyFileSize + 1,
-			totalPieceCount:   0,
+			totalPieceCount:   -1,
 			expect: func(t *testing.T, task *Task) {
 				assert := assert.New(t)
 				_, err := task.SizeScope()
