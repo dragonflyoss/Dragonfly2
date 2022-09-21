@@ -19,6 +19,7 @@ package scheduler
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -38,6 +39,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/issuer"
+	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/types"
@@ -264,7 +266,12 @@ func (s *Server) Serve() error {
 	}
 
 	// Generate GRPC limit listener.
-	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", s.config.Server.ListenIP, s.config.Server.Port))
+	ip, ok := ip.FormatIP(s.config.Server.ListenIP)
+	if !ok {
+		return errors.New("format ip failed")
+	}
+
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", ip, s.config.Server.Port))
 	if err != nil {
 		logger.Fatalf("net listener failed to start: %s", err.Error())
 	}

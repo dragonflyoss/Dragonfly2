@@ -34,7 +34,7 @@ var (
 func init() {
 	ip, err := externalIPv6()
 	if err != nil {
-		logger.Warnf("Failed to get IPv6 address: %s, use %s as IPv6 address", err.Error(), IPv6lookback)
+		logger.Infof("%s, use %s as IPv6 address", err.Error(), IPv6lookback)
 		IPv6 = IPv6lookback
 	} else {
 		IPv6 = ip
@@ -60,7 +60,7 @@ func externalIPv6() (string, error) {
 	}
 
 	if len(externalIPs) == 0 {
-		return "", fmt.Errorf("can not found external ipv4")
+		return "", fmt.Errorf("can not found external ipv6")
 	}
 
 	return externalIPs[0], nil

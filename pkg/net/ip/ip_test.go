@@ -27,7 +27,7 @@ import (
 func TestFormatIP(t *testing.T) {
 	ip, ok := FormatIP(net.IPv6loopback.String())
 	assert.True(t, ok)
-	assert.Equal(t, fmt.Sprintf("[%s]", ip), ip)
+	assert.Equal(t, fmt.Sprintf("[%s]", net.IPv6loopback.String()), ip)
 
 	ip, ok = FormatIP(net.IPv4zero.String())
 	assert.True(t, ok)
