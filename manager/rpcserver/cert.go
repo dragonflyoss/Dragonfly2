@@ -76,10 +76,10 @@ func (s *Server) IssueCertificate(ctx context.Context, req *securityv1.Certifica
 	}
 
 	// TODO only valid for peer ip
-	// BTW we need support both of ipv4 and ipv6
+	// BTW we need support both of ipv4 and ipv6.
 	ips := csr.IPAddresses
 	if len(ips) == 0 {
-		// add default connected ip
+		// Add default connected ip.
 		ips = []net.IP{net.ParseIP(ip)}
 	}
 

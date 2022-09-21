@@ -23,10 +23,11 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
-var IPv6 string
-
 var (
-	// Ipv6 lookback address.
+	// IPv6 is external address.
+	IPv6 string
+
+	// IPv6lookback is lookback address.
 	IPv6lookback = net.IPv6loopback.String()
 )
 
@@ -49,13 +50,13 @@ func externalIPv6() (string, error) {
 
 	var externalIPs []string
 	for _, ip := range ips {
-		v4 := ip.To4()
-		if v4 != nil {
+		ipv4 := ip.To4()
+		if ipv4 != nil {
 			continue // skip all ipv4 address
 		}
 
-		ip = ip.To16()
-		externalIPs = append(externalIPs, ip.String())
+		ipv6 := ip.To16()
+		externalIPs = append(externalIPs, ipv6.String())
 	}
 
 	if len(externalIPs) == 0 {

@@ -19,7 +19,6 @@
 package config
 
 import (
-	"net"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -28,7 +27,6 @@ import (
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/net/fqdn"
-	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/types"
 )
@@ -61,8 +59,6 @@ var peerHostConfig = func() *DaemonOption {
 		},
 		Host: HostOption{
 			Hostname:       fqdn.FQDNHostname,
-			ListenIP:       net.IPv4zero.String(),
-			AdvertiseIP:    ip.IPv4,
 			SecurityDomain: "",
 			Location:       "",
 			IDC:            "",
@@ -93,7 +89,6 @@ var peerHostConfig = func() *DaemonOption {
 					TLSVerify: true,
 				},
 				TCPListen: &TCPListenOption{
-					Listen: net.IPv4zero.String(),
 					PortRange: TCPListenPortRange{
 						Start: DefaultPeerStartPort,
 						End:   DefaultEndPort,
@@ -111,7 +106,6 @@ var peerHostConfig = func() *DaemonOption {
 					TLSVerify: false,
 				},
 				TCPListen: &TCPListenOption{
-					Listen: net.IPv4zero.String(),
 					PortRange: TCPListenPortRange{
 						Start: DefaultUploadStartPort,
 						End:   DefaultEndPort,
@@ -129,7 +123,6 @@ var peerHostConfig = func() *DaemonOption {
 					TLSVerify: true,
 				},
 				TCPListen: &TCPListenOption{
-					Listen: net.IPv4zero.String(),
 					PortRange: TCPListenPortRange{
 						Start: DefaultObjectStorageStartPort,
 						End:   DefaultEndPort,
@@ -144,7 +137,6 @@ var peerHostConfig = func() *DaemonOption {
 					TLSVerify: false,
 				},
 				TCPListen: &TCPListenOption{
-					Listen:    net.IPv4zero.String(),
 					PortRange: TCPListenPortRange{},
 				},
 			},
@@ -164,7 +156,6 @@ var peerHostConfig = func() *DaemonOption {
 					TLSVerify: false,
 				},
 				TCPListen: &TCPListenOption{
-					Listen: net.IPv4zero.String(),
 					PortRange: TCPListenPortRange{
 						Start: DefaultHealthyStartPort,
 						End:   DefaultEndPort,
@@ -186,6 +177,9 @@ var peerHostConfig = func() *DaemonOption {
 			CertSpec: &CertSpec{
 				ValidityPeriod: DefaultCertValidityPeriod,
 			},
+		},
+		Network: &NetworkOption{
+			EnableIPv6: false,
 		},
 	}
 }

@@ -19,6 +19,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"net"
 	"time"
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
@@ -63,7 +64,8 @@ type Config struct {
 	// Security configuration.
 	Security *SecurityConfig `yaml:"security" mapstructure:"security"`
 
-	IPv6 bool `mapstructure:"ipv6" yaml:"ipv6"`
+	// Network configuration.
+	Network *NetworkConfig `yaml:"network" mapstructure:"network"`
 }
 
 type ServerConfig struct {
@@ -281,14 +283,17 @@ type CertSpec struct {
 	ValidityPeriod time.Duration `mapstructure:"validityPeriod" yaml:"validityPeriod"`
 }
 
+type NetworkConfig struct {
+	// EnableIPv6 enables ipv6 for server.
+	EnableIPv6 bool `mapstructure:"enableIPv6" yaml:"enableIPv6"`
+}
+
 // New default configuration.
 func New() *Config {
 	return &Config{
 		Server: &ServerConfig{
-			AdvertiseIP: ip.IPv4,
-			ListenIP:    DefaultServerListenIP,
-			Port:        DefaultServerPort,
-			Host:        fqdn.FQDNHostname,
+			Port: DefaultServerPort,
+			Host: fqdn.FQDNHostname,
 		},
 		Scheduler: &SchedulerConfig{
 			Algorithm:            DefaultSchedulerAlgorithm,
@@ -352,13 +357,16 @@ func New() *Config {
 				ValidityPeriod: DefaultCertValidityPeriod,
 			},
 		},
+		Network: &NetworkConfig{
+			EnableIPv6: DefaultNetworkEnableIPv6,
+		},
 	}
 }
 
 // Validate config parameters.
 func (cfg *Config) Validate() error {
 	if cfg.Server == nil {
-		return errors.New("server requires parameter server")
+		return errors.New("config requires parameter server")
 	}
 
 	if cfg.Server.AdvertiseIP == "" {
@@ -375,6 +383,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Server.Host == "" {
 		return errors.New("server requires parameter host")
+	}
+
+	if cfg.Scheduler == nil {
+		return errors.New("config requires parameter scheduler")
 	}
 
 	if cfg.Scheduler.Algorithm == "" {
@@ -419,8 +431,16 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	if cfg.DynConfig == nil {
+		return errors.New("config requires parameter dynConfig")
+	}
+
 	if cfg.DynConfig.RefreshInterval <= 0 {
 		return errors.New("dynconfig requires parameter refreshInterval")
+	}
+
+	if cfg.Manager == nil {
+		return errors.New("manager requires parameter dynConfig")
 	}
 
 	if cfg.Manager.Addr == "" {
@@ -435,7 +455,11 @@ func (cfg *Config) Validate() error {
 		return errors.New("manager requires parameter keepAlive interval")
 	}
 
-	if cfg.Job != nil && cfg.Job.Enable {
+	if cfg.Job == nil {
+		return errors.New("config requires parameter job")
+	}
+
+	if cfg.Job.Enable {
 		if cfg.Job.GlobalWorkerNum == 0 {
 			return errors.New("job requires parameter globalWorkerNum")
 		}
@@ -464,7 +488,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.Storage == nil {
-		return errors.New("server requires parameter storage")
+		return errors.New("config requires parameter storage")
 	}
 
 	if cfg.Storage.MaxSize <= 0 {
@@ -479,7 +503,11 @@ func (cfg *Config) Validate() error {
 		return errors.New("storage requires parameter bufferSize")
 	}
 
-	if cfg.Metrics != nil && cfg.Metrics.Enable {
+	if cfg.Metrics == nil {
+		return errors.New("config requires parameter metrics")
+	}
+
+	if cfg.Metrics.Enable {
 		if cfg.Metrics.Addr == "" {
 			return errors.New("metrics requires parameter addr")
 		}
@@ -499,6 +527,10 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	if cfg.Network == nil {
+		return errors.New("config requires parameter network")
+	}
+
 	return nil
 }
 
@@ -516,6 +548,22 @@ func (cfg *Config) Convert() error {
 	// TODO Compatible with deprecated fields listen.
 	if cfg.Server.Listen != "" && cfg.Server.ListenIP == "" {
 		cfg.Server.ListenIP = cfg.Server.Listen
+	}
+
+	if cfg.Server.AdvertiseIP == "" {
+		if cfg.Network.EnableIPv6 {
+			cfg.Server.AdvertiseIP = ip.IPv6
+		} else {
+			cfg.Server.AdvertiseIP = ip.IPv4
+		}
+	}
+
+	if cfg.Server.ListenIP == "" {
+		if cfg.Network.EnableIPv6 {
+			cfg.Server.ListenIP = net.IPv6zero.String()
+		} else {
+			cfg.Server.ListenIP = net.IPv4zero.String()
+		}
 	}
 
 	return nil

@@ -124,13 +124,9 @@ func fromCertifyCertConfig(commonName string, conf *certify.CertConfig) ([]byte,
 		template.URIs = conf.URISubjectAlternativeNames
 	}
 
-	// add default ipv4 and ipv6 into ip sans
+	// Add default ipv4 and ipv6 into ip sans.
 	if len(template.IPAddresses) == 0 {
-		template.IPAddresses = []net.IP{net.ParseIP(ip.IPv4)}
-		ipv6 := net.ParseIP(ip.IPv6)
-		if !ipv6.IsLoopback() && !net.IPv6zero.Equal(ipv6) {
-			template.IPAddresses = append(template.IPAddresses, ipv6)
-		}
+		template.IPAddresses = []net.IP{net.ParseIP(ip.IPv4), net.ParseIP(ip.IPv6)}
 	}
 
 	csr, err := x509.CreateCertificateRequest(rand.Reader, template, pk)

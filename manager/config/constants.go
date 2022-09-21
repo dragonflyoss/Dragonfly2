@@ -17,7 +17,6 @@
 package config
 
 import (
-	"net"
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/net/ip"
@@ -33,9 +32,6 @@ const (
 	// DatabaseTypePostgres is database type of postgres.
 	DatabaseTypePostgres = "postgres"
 )
-
-// DefaultGRPCListenIP is default listen ip for grpc server.
-var DefaultGRPCListenIP = net.IPv4zero.String()
 
 const (
 	// DefaultServerName is default server name.
@@ -106,4 +102,9 @@ var (
 
 	// DefaultCertValidityPeriod is default validity period of certificate.
 	DefaultCertValidityPeriod = 10 * 365 * 24 * time.Hour
+)
+
+var (
+	// DefaultNetworkEnableIPv6 is default value of enableIPv6.
+	DefaultNetworkEnableIPv6 = false
 )

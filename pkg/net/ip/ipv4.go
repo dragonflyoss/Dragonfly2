@@ -24,10 +24,11 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
-var IPv4 string
+var (
+	// IPv4 is external address.
+	IPv4 string
 
-const (
-	// Ipv4 lookback address.
+	// IPv4lookback is lookback address.
 	IPv4lookback = "127.0.0.1"
 )
 

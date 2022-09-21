@@ -74,3 +74,6 @@ security:
   tlsPolicy: force
   certSpec:
     validityPeriod: 1000
+
+network:
+  enableIPv6: true

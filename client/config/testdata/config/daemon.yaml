@@ -32,7 +32,6 @@ scheduler:
 
 host:
   hostname: d7y.io
-  listenIP: 0.0.0.0
   advertiseIP: 0.0.0.0
   location: 0.0.0.0
   idc: d7y
@@ -178,3 +177,6 @@ security:
   tlsPolicy: force
   certSpec:
     validityPeriod: 1s
+
+network:
+  enableIPv6: true
