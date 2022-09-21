@@ -3,7 +3,7 @@ server:
   cacheDir: foo
   logDir: foo
   grpc:
-    listen: 127.0.0.1
+    listenIP: 0.0.0.0
     port:
       start: 65003
       end: 65003
