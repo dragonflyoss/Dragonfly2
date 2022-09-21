@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
+	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/slices"
@@ -62,7 +63,7 @@ type ServerConfig struct {
 	LogDir string `yaml:"logDir" mapstructure:"logDir"`
 
 	// GRPC server configuration.
-	GRPC *TCPListenConfig `yaml:"grpc" mapstructure:"grpc"`
+	GRPC *GRPCConfig `yaml:"grpc" mapstructure:"grpc"`
 
 	// REST server configuration.
 	REST *RestConfig `yaml:"rest" mapstructure:"rest"`
@@ -212,9 +213,12 @@ type MetricsConfig struct {
 	EnablePeerGauge bool `yaml:"enablePeerGauge" mapstructure:"enablePeerGauge"`
 }
 
-type TCPListenConfig struct {
+type GRPCConfig struct {
 	// DEPRECATED: Please use the `listenIP` field instead.
 	Listen string `mapstructure:"listen" yaml:"listen"`
+
+	// AdvertiseIP is advertise ip.
+	AdvertiseIP string `yaml:"advertiseIP" mapstructure:"advertiseIP"`
 
 	// ListenIP is listen ip, like: 0.0.0.0, 192.168.0.1.
 	ListenIP string `mapstructure:"listenIP" yaml:"listenIP"`
@@ -284,8 +288,9 @@ func New() *Config {
 	return &Config{
 		Server: &ServerConfig{
 			Name: DefaultServerName,
-			GRPC: &TCPListenConfig{
-				ListenIP: DefaultGRPCListenIP,
+			GRPC: &GRPCConfig{
+				AdvertiseIP: ip.IPv4,
+				ListenIP:    DefaultGRPCListenIP,
 				PortRange: TCPListenPortRange{
 					Start: DefaultGRPCPort,
 					End:   DefaultGRPCPort,
@@ -356,6 +361,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Server.GRPC == nil {
 		return errors.New("server requires parameter grpc")
+	}
+
+	if cfg.Server.GRPC.AdvertiseIP == "" {
+		return errors.New("grpc requires parameter advertiseIP")
 	}
 
 	if cfg.Server.GRPC.ListenIP == "" {

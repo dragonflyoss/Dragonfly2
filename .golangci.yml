@@ -4,7 +4,7 @@ run:
 
 linters-settings:
   gocyclo:
-    min-complexity: 60
+    min-complexity: 100
   gci:
     sections:
       - standard
