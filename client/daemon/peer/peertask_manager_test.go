@@ -699,7 +699,7 @@ func (ts *testSpec) runFileTaskTest(assert *testifyassert.Assertions, require *t
 	defer func() {
 		assert.Nil(os.Remove(output))
 	}()
-	progress, _, err := mm.peerTaskManager.StartFileTask(
+	progress, err := mm.peerTaskManager.StartFileTask(
 		context.Background(),
 		&FileTaskRequest{
 			PeerTaskRequest: schedulerv1.PeerTaskRequest{

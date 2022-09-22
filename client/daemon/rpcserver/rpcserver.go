@@ -485,32 +485,11 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemonv1.DownRequest, st
 	}
 	log := logger.With("peer", peerTask.PeerId, "component", "downloadService")
 
-	peerTaskProgress, tiny, err := s.peerTaskManager.StartFileTask(ctx, peerTask)
+	peerTaskProgress, err := s.peerTaskManager.StartFileTask(ctx, peerTask)
 	if err != nil {
 		return dferrors.New(commonv1.Code_UnknownError, fmt.Sprintf("%s", err))
 	}
-	if tiny != nil {
-		err = stream.Send(&dfdaemonv1.DownResult{
-			TaskId:          tiny.TaskID,
-			PeerId:          tiny.PeerID,
-			CompletedLength: uint64(len(tiny.Content)),
-			Done:            true,
-			Output:          req.Output,
-		})
-		if err != nil {
-			log.Infof("send download result error: %s", err.Error())
-			return err
-		}
-		log.Infof("tiny file, wrote to output")
-		if req.Uid != 0 && req.Gid != 0 {
-			if err = os.Chown(req.Output, int(req.Uid), int(req.Gid)); err != nil {
-				log.Errorf("change own failed: %s", err)
-				return err
-			}
-		}
 
-		return nil
-	}
 	for {
 		select {
 		case p, ok := <-peerTaskProgress:
