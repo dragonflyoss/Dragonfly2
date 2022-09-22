@@ -38,7 +38,7 @@ import (
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
-	netip "d7y.io/dragonfly/v2/pkg/net/ip"
+	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/pkg/unit"
 )
@@ -51,7 +51,7 @@ type DaemonOption struct {
 	// when AliveTime == 0, will run infinitely
 	AliveTime  util.Duration `mapstructure:"aliveTime" yaml:"aliveTime"`
 	GCInterval util.Duration `mapstructure:"gcInterval" yaml:"gcInterval"`
-	Metrics    string        `yaml:"metrics" mapstructure:"metrics"`
+	Metrics    string        `mapstructure:"metrics" yaml:"metrics"`
 
 	WorkHome    string `mapstructure:"workHome" yaml:"workHome"`
 	CacheDir    string `mapstructure:"cacheDir" yaml:"cacheDir"`
@@ -69,6 +69,7 @@ type DaemonOption struct {
 	Storage       StorageOption        `mapstructure:"storage" yaml:"storage"`
 	Health        *HealthOption        `mapstructure:"health" yaml:"health"`
 	Reload        ReloadOption         `mapstructure:"reload" yaml:"reload"`
+	Network       *NetworkOption       `mapstructure:"network" yaml:"network"`
 }
 
 func NewDaemonConfig() *DaemonOption {
@@ -100,12 +101,52 @@ func (p *DaemonOption) Load(path string) error {
 }
 
 func (p *DaemonOption) Convert() error {
-	// AdvertiseIP
-	ip := net.ParseIP(p.Host.AdvertiseIP)
-	if ip == nil || net.IPv4zero.Equal(ip) {
-		p.Host.AdvertiseIP = netip.IPv4
-	} else {
-		p.Host.AdvertiseIP = ip.String()
+	if p.Host.AdvertiseIP == "" {
+		if p.Network.EnableIPv6 {
+			p.Host.AdvertiseIP = ip.IPv6
+		} else {
+			p.Host.AdvertiseIP = ip.IPv4
+		}
+	}
+
+	if p.Download.PeerGRPC.TCPListen != nil && p.Download.PeerGRPC.TCPListen.Listen == "" {
+		if p.Network.EnableIPv6 {
+			p.Download.PeerGRPC.TCPListen.Listen = net.IPv6zero.String()
+		} else {
+			p.Download.PeerGRPC.TCPListen.Listen = net.IPv4zero.String()
+		}
+	}
+
+	if p.Upload.TCPListen != nil && p.Upload.TCPListen.Listen == "" {
+		if p.Network.EnableIPv6 {
+			p.Upload.TCPListen.Listen = net.IPv6zero.String()
+		} else {
+			p.Upload.TCPListen.Listen = net.IPv4zero.String()
+		}
+	}
+
+	if p.ObjectStorage.ListenOption.TCPListen != nil && p.ObjectStorage.ListenOption.TCPListen.Listen == "" {
+		if p.Network.EnableIPv6 {
+			p.ObjectStorage.ListenOption.TCPListen.Listen = net.IPv6zero.String()
+		} else {
+			p.ObjectStorage.ListenOption.TCPListen.Listen = net.IPv4zero.String()
+		}
+	}
+
+	if p.Proxy.ListenOption.TCPListen != nil && p.Proxy.ListenOption.TCPListen.Listen == "" {
+		if p.Network.EnableIPv6 {
+			p.Proxy.ListenOption.TCPListen.Listen = net.IPv6zero.String()
+		} else {
+			p.Proxy.ListenOption.TCPListen.Listen = net.IPv4zero.String()
+		}
+	}
+
+	if p.Health.ListenOption.TCPListen != nil && p.Health.ListenOption.TCPListen.Listen == "" {
+		if p.Network.EnableIPv6 {
+			p.Health.ListenOption.TCPListen.Listen = net.IPv6zero.String()
+		} else {
+			p.Health.ListenOption.TCPListen.Listen = net.IPv4zero.String()
+		}
 	}
 
 	// ScheduleTimeout should not great then AliveTime
@@ -244,8 +285,6 @@ type HostOption struct {
 	Location string `mapstructure:"location" yaml:"location"`
 	// Hostname is daemon host name
 	Hostname string `mapstructure:"hostname" yaml:"hostname"`
-	// The listen ip for all tcp services of daemon
-	ListenIP string `mapstructure:"listenIP" yaml:"listenIP"`
 	// The ip report to scheduler, normal same with listen ip
 	AdvertiseIP string `mapstructure:"advertiseIP" yaml:"advertiseIP"`
 }
@@ -869,4 +908,9 @@ type WhiteList struct {
 type BasicAuth struct {
 	Username string `json:"username" yaml:"username"`
 	Password string `json:"password" yaml:"password"`
+}
+
+type NetworkOption struct {
+	// EnableIPv6 enables ipv6 for server.
+	EnableIPv6 bool `mapstructure:"enableIPv6" yaml:"enableIPv6"`
 }

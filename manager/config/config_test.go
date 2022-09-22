@@ -117,6 +117,9 @@ func TestManagerConfig_Load(t *testing.T) {
 			Addr:            ":8000",
 			EnablePeerGauge: false,
 		},
+		Network: &NetworkConfig{
+			EnableIPv6: true,
+		},
 	}
 
 	managerConfigYAML := &Config{}

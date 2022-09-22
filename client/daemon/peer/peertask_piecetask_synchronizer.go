@@ -37,6 +37,7 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
+	"d7y.io/dragonfly/v2/pkg/net/ip"
 	dfdaemonclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 )
 
@@ -163,9 +164,14 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 		delete(s.workers, dstPeer.PeerId)
 	}
 
+	ip, ok := ip.FormatIP(dstPeer.Ip)
+	if !ok {
+		return errors.New("format ip failedformat")
+	}
+
 	netAddr := &dfnet.NetAddr{
 		Type: dfnet.TCP,
-		Addr: fmt.Sprintf("%s:%d", dstPeer.Ip, dstPeer.RpcPort),
+		Addr: fmt.Sprintf("%s:%d", ip, dstPeer.RpcPort),
 	}
 
 	credentialOpt := grpc.WithTransportCredentials(s.peerTaskConductor.GRPCCredentials)

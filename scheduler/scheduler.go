@@ -19,6 +19,7 @@ package scheduler
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -136,7 +137,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	var certifyClient *certify.Certify
 	if cfg.Security.AutoIssueCert {
 		certifyClient = &certify.Certify{
-			CommonName:   ip.IPv4,
+			CommonName:   types.SchedulerName,
 			Issuer:       issuer.NewDragonflyIssuer(managerClient, issuer.WithValidityPeriod(cfg.Security.CertSpec.ValidityPeriod)),
 			RenewBefore:  time.Hour,
 			CertConfig:   nil,
@@ -149,7 +150,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 
 		// Issue a certificate to reduce first time delay.
 		if _, err := certifyClient.GetCertificate(&tls.ClientHelloInfo{
-			ServerName: ip.IPv4,
+			ServerName: cfg.Server.AdvertiseIP,
 		}); err != nil {
 			logger.Errorf("issue certificate error: %s", err.Error())
 			return nil, err
@@ -265,7 +266,12 @@ func (s *Server) Serve() error {
 	}
 
 	// Generate GRPC limit listener.
-	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", s.config.Server.ListenIP, s.config.Server.Port))
+	ip, ok := ip.FormatIP(s.config.Server.ListenIP)
+	if !ok {
+		return errors.New("format ip failed")
+	}
+
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", ip, s.config.Server.Port))
 	if err != nil {
 		logger.Fatalf("net listener failed to start: %s", err.Error())
 	}

@@ -17,7 +17,6 @@
 package config
 
 import (
-	"net"
 	"time"
 )
 
@@ -37,9 +36,6 @@ const (
 	// DefaultSchedulerFilterParentRangeLimit is default limit the range for filter traversals.
 	DefaultSchedulerFilterParentRangeLimit = 40
 )
-
-// DefaultServerListenIP is default listen ip for server.
-var DefaultServerListenIP = net.IPv4zero.String()
 
 const (
 	// DefaultServerPort is default port for server.
@@ -125,4 +121,9 @@ const (
 var (
 	// DefaultCertValidityPeriod is default validity period of certificate.
 	DefaultCertValidityPeriod = 180 * 24 * time.Hour
+)
+
+var (
+	// DefaultNetworkEnableIPv6 is default value of enableIPv6.
+	DefaultNetworkEnableIPv6 = false
 )

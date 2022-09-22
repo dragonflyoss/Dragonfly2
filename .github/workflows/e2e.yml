@@ -12,7 +12,7 @@ on:
 
 env:
   GO_VERSION: 1.18
-  KIND_VERSION: v0.11.1
+  KIND_VERSION: v0.12.0
   CONTAINERD_VERSION: v1.5.2
   KIND_CONFIG_PATH: test/testdata/kind/config.yaml
   DRAGONFLY_CHARTS_PATH: deploy/helm-charts/charts/dragonfly
@@ -25,7 +25,7 @@ jobs:
     timeout-minutes: 30
     strategy:
       matrix:
-        module: ["normal", "concurent-back-source", "grpc-tls", "disable-seed-peer"]
+        module: ["normal", "concurent-back-source", "grpc-tls", "disable-seed-peer", "grpc-tls-ipv6", "ipv6"]
         include:
           - module: normal
             charts-config: test/testdata/charts/config.yaml
@@ -39,6 +39,12 @@ jobs:
           - module: disable-seed-peer
             charts-config: test/testdata/charts/config-disable-seed-peer.yaml
             skip: preheat
+          - module: ipv6
+            charts-config: test/testdata/charts/config-ipv6.yaml
+            skip: ""
+          - module: grpc-tls-ipv6
+            charts-config: test/testdata/charts/config-grpc-tls-ipv6.yaml
+            skip: ""
     steps:
       - name: Checkout code
         uses: actions/checkout@v3

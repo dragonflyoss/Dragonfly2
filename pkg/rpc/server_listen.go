@@ -17,6 +17,7 @@
 package rpc
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -24,6 +25,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
+	"d7y.io/dragonfly/v2/pkg/net/ip"
 )
 
 // Listen wraps net.Listen with dfnet.NetAddr
@@ -40,22 +42,27 @@ func Listen(netAddr dfnet.NetAddr) (net.Listener, error) {
 //    ListenWithPortRange("192.168.0.1", 12345, 23456)
 //    ListenWithPortRange("192.168.0.1", 0, 0) // random port
 func ListenWithPortRange(listen string, startPort, endPort int) (net.Listener, int, error) {
+	ip, ok := ip.FormatIP(listen)
+	if !ok {
+		return nil, -1, errors.New("format ip failed")
+	}
+
 	if endPort < startPort {
 		endPort = startPort
 	}
 
 	for port := startPort; port <= endPort; port++ {
-		logger.Debugf("start to listen port: %s:%d", listen, port)
-		listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", listen, port))
+		logger.Debugf("start to listen port: %s:%d", ip, port)
+		listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", ip, port))
 		if err == nil && listener != nil {
 			return listener, listener.Addr().(*net.TCPAddr).Port, nil
 		}
 
 		if isErrAddr(err) {
-			logger.Warnf("listen port %s:%d is in used, sys error: %s", listen, port, err)
+			logger.Warnf("listen port %s:%d is in used, sys error: %s", ip, port, err)
 			continue
 		} else if err != nil {
-			logger.Warnf("listen port %s:%d error: %s", listen, port, err)
+			logger.Warnf("listen port %s:%d error: %s", ip, port, err)
 			return nil, -1, err
 		}
 	}

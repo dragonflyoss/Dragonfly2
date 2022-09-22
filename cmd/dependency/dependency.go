@@ -59,7 +59,9 @@ import (
 // config is a pointer to configuration struct.
 func InitCommandAndConfig(cmd *cobra.Command, useConfigFile bool, config any) {
 	rootName := cmd.Root().Name()
-	cobra.OnInitialize(func() { initConfig(useConfigFile, rootName, config) })
+	cobra.OnInitialize(func() {
+		initConfig(useConfigFile, rootName, config)
+	})
 
 	if !cmd.HasParent() {
 		// Add common flags
