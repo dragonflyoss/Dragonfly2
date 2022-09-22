@@ -34,7 +34,7 @@ var (
 func init() {
 	ip, err := externalIPv6()
 	if err != nil {
-		logger.Infof("%s, use %s as IPv6 address", err.Error(), IPv6lookback)
+		logger.Warnf("%s, use %s as IPv6 address", err.Error(), IPv6lookback)
 		IPv6 = IPv6lookback
 	} else {
 		IPv6 = ip

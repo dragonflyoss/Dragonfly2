@@ -35,7 +35,7 @@ var (
 func init() {
 	ip, err := externalIPv4()
 	if err != nil {
-		logger.Infof("%s, use %s as IPv4 address", err.Error(), IPv4lookback)
+		logger.Warnf("%s, use %s as IPv4 address", err.Error(), IPv4lookback)
 		IPv4 = IPv4lookback
 	} else {
 		IPv4 = ip

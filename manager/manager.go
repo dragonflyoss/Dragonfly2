@@ -172,7 +172,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 			CommonName: types.ManagerName,
 			Issuer: issuer.NewDragonflyManagerIssuer(
 				&cert,
-				issuer.WithManagerIPAddresses(cfg.Security.CertSpec.IPAddresses),
+				issuer.WithManagerIPAddresses(append(cfg.Security.CertSpec.IPAddresses, cfg.Server.GRPC.AdvertiseIP)),
 				issuer.WithManagerDNSNames(cfg.Security.CertSpec.DNSNames),
 				issuer.WithManagerValidityPeriod(cfg.Security.CertSpec.ValidityPeriod),
 			),
