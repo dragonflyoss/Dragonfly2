@@ -84,13 +84,12 @@ func (mr *MockTaskManagerMockRecorder) IsPeerTaskRunning(taskID interface{}) *go
 }
 
 // StartFileTask mocks base method.
-func (m *MockTaskManager) StartFileTask(ctx context.Context, req *FileTaskRequest) (chan *FileTaskProgress, *TinyData, error) {
+func (m *MockTaskManager) StartFileTask(ctx context.Context, req *FileTaskRequest) (chan *FileTaskProgress, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StartFileTask", ctx, req)
 	ret0, _ := ret[0].(chan *FileTaskProgress)
-	ret1, _ := ret[1].(*TinyData)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // StartFileTask indicates an expected call of StartFileTask.
