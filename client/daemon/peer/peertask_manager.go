@@ -48,7 +48,7 @@ type TaskManager interface {
 	// return a progress channel for request download progress
 	// tiny stands task file is tiny and task is done
 	StartFileTask(ctx context.Context, req *FileTaskRequest) (
-		progress chan *FileTaskProgress, tiny *TinyData, err error)
+		progress chan *FileTaskProgress, err error)
 	// StartStreamTask starts a peer task with stream io
 	StartStreamTask(ctx context.Context, req *StreamTaskRequest) (
 		readCloser io.ReadCloser, attribute map[string]string, err error)
@@ -260,15 +260,15 @@ func (ptm *peerTaskManager) prefetchParentTask(request *schedulerv1.PeerTaskRequ
 	return prefetch
 }
 
-func (ptm *peerTaskManager) StartFileTask(ctx context.Context, req *FileTaskRequest) (chan *FileTaskProgress, *TinyData, error) {
+func (ptm *peerTaskManager) StartFileTask(ctx context.Context, req *FileTaskRequest) (chan *FileTaskProgress, error) {
 	if req.KeepOriginalOffset && !ptm.Prefetch {
-		return nil, nil, fmt.Errorf("please enable prefetch when use original offset feature")
+		return nil, fmt.Errorf("please enable prefetch when use original offset feature")
 	}
 	if ptm.Multiplex {
 		progress, ok := ptm.tryReuseFilePeerTask(ctx, req)
 		if ok {
 			metrics.PeerTaskCacheHitCount.Add(1)
-			return progress, nil, nil
+			return progress, nil
 		}
 	}
 	// TODO ensure scheduler is ok first
@@ -281,12 +281,12 @@ func (ptm *peerTaskManager) StartFileTask(ctx context.Context, req *FileTaskRequ
 	}
 	ctx, pt, err := ptm.newFileTask(ctx, req, limit)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// FIXME when failed due to SchedulerClient error, relocate SchedulerClient and retry
 	progress, err := pt.Start(ctx)
-	return progress, pt.peerTaskConductor.tinyData, err
+	return progress, err
 }
 
 func (ptm *peerTaskManager) StartStreamTask(ctx context.Context, req *StreamTaskRequest) (io.ReadCloser, map[string]string, error) {
