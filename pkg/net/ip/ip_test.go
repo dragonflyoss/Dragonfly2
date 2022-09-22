@@ -17,13 +17,22 @@
 package ip
 
 import (
+	"fmt"
+	"net"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestExternalIPv4(t *testing.T) {
-	ip, err := externalIPv4()
-	assert.Nil(t, err)
-	assert.NotEmpty(t, ip)
+func TestFormatIP(t *testing.T) {
+	ip, ok := FormatIP(net.IPv6loopback.String())
+	assert.True(t, ok)
+	assert.Equal(t, fmt.Sprintf("[%s]", net.IPv6loopback.String()), ip)
+
+	ip, ok = FormatIP(net.IPv4zero.String())
+	assert.True(t, ok)
+	assert.Equal(t, net.IPv4zero.String(), ip)
+
+	_, ok = FormatIP("foo")
+	assert.False(t, ok)
 }

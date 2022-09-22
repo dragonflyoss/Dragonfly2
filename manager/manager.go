@@ -44,7 +44,6 @@ import (
 	pkgcache "d7y.io/dragonfly/v2/pkg/cache"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/issuer"
-	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/types"
@@ -170,10 +169,10 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 		}
 
 		certifyClient := &certify.Certify{
-			CommonName: ip.IPv4,
+			CommonName: types.ManagerName,
 			Issuer: issuer.NewDragonflyManagerIssuer(
 				&cert,
-				issuer.WithManagerIPAddresses(cfg.Security.CertSpec.IPAddresses),
+				issuer.WithManagerIPAddresses(append(cfg.Security.CertSpec.IPAddresses, cfg.Server.GRPC.AdvertiseIP)),
 				issuer.WithManagerDNSNames(cfg.Security.CertSpec.DNSNames),
 				issuer.WithManagerValidityPeriod(cfg.Security.CertSpec.ValidityPeriod),
 			),
@@ -188,7 +187,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 
 		// Issue a certificate to reduce first time delay.
 		if _, err := certifyClient.GetCertificate(&tls.ClientHelloInfo{
-			ServerName: ip.IPv4,
+			ServerName: cfg.Server.GRPC.AdvertiseIP,
 		}); err != nil {
 			logger.Errorf("issue certificate error: %s", err.Error())
 			return nil, err

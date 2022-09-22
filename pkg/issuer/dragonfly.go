@@ -23,6 +23,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"net"
 	"time"
 
 	"github.com/johanbrandhorst/certify"
@@ -31,6 +32,7 @@ import (
 	securityv1 "d7y.io/api/pkg/apis/security/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/net/ip"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 )
 
@@ -122,6 +124,8 @@ func fromCertifyCertConfig(commonName string, conf *certify.CertConfig) ([]byte,
 		template.URIs = conf.URISubjectAlternativeNames
 	}
 
+	// Add default ipv4 and ipv6 into ip sans.
+	template.IPAddresses = []net.IP{net.ParseIP(ip.IPv4), net.ParseIP(ip.IPv6)}
 	csr, err := x509.CreateCertificateRequest(rand.Reader, template, pk)
 	if err != nil {
 		return nil, nil, err

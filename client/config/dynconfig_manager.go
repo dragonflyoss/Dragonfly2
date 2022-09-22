@@ -32,6 +32,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaldynconfig "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/manager/searcher"
+	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/reachable"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/version"
@@ -76,7 +77,7 @@ func (d *dynconfigManager) GetResolveSchedulerAddrs() ([]resolver.Address, error
 
 	var (
 		addrs              = map[string]bool{}
-		resolveAddrs       = []resolver.Address{}
+		resolveAddrs       []resolver.Address
 		schedulerClusterID uint64
 	)
 	for _, scheduler := range schedulers {
@@ -85,7 +86,12 @@ func (d *dynconfigManager) GetResolveSchedulerAddrs() ([]resolver.Address, error
 			continue
 		}
 
-		addr := fmt.Sprintf("%s:%d", scheduler.GetIp(), scheduler.GetPort())
+		ip, ok := ip.FormatIP(scheduler.GetIp())
+		if !ok {
+			continue
+		}
+
+		addr := fmt.Sprintf("%s:%d", ip, scheduler.GetPort())
 		r := reachable.New(&reachable.Config{Address: addr})
 		if err := r.Check(); err != nil {
 			logger.Warnf("scheduler address %s is unreachable", addr)

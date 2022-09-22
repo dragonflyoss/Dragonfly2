@@ -1,0 +1,370 @@
+scheduler:
+  image: d7yio/scheduler
+  tag: latest
+  replicas: 3
+  resources:
+    requests:
+      cpu: "0"
+      memory: "0"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+  extraVolumeMounts:
+  - name: logs
+    mountPath: "/var/log/"
+  - name: artifact
+    mountPath: /tmp/artifact
+  extraVolumes:
+  - name: logs
+    emptyDir: { }
+  - name: artifact
+    hostPath:
+      path: /tmp/artifact
+  config:
+    verbose: true
+    security:
+      autoIssueCert: true
+      tlsVerify: true
+      tlsPolicy: prefer
+      caCert: |-
+        -----BEGIN CERTIFICATE-----
+        MIIFlzCCA3+gAwIBAgIQN3lN+UE/341zV66jk3H1ijANBgkqhkiG9w0BAQsFADBV
+        MQswCQYDVQQGEwJDTjERMA8GA1UECBMIWmhlamlhbmcxEjAQBgNVBAoTCURyYWdv
+        bmZseTEfMB0GA1UEAxMWRHJhZ29uZmx5IFRlc3QgUm9vdCBDQTAeFw0yMjA4MzEw
+        NjM0MzFaFw00MjA4MjYwNjM0MzFaMFUxCzAJBgNVBAYTAkNOMREwDwYDVQQIEwha
+        aGVqaWFuZzESMBAGA1UEChMJRHJhZ29uZmx5MR8wHQYDVQQDExZEcmFnb25mbHkg
+        VGVzdCBSb290IENBMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA0js8
+        Vm+w+NifZQD6VJnljz/VmJ0ly+OJFlkPFLMZ/5rLitBWkpxpF5IXSC6xIB2x8oiD
+        9HgPtkhpW4GunKNngx+twUKo9SjEFqLKln8xF1FFebkT8SmC/jNtNsFn8+WxGafx
+        wVTVfN2/JBnxjLeoeL7+4gi7dlcMc6PVbsP2cazaCIjahNLKkPUQJ6oPbWuinjSL
+        JPk6OCT4dFJ4XSQkfWQCzS1xHEoyWEZjU1bYQkBLArNEXf+O1qf36vwWHTneGEWu
+        YnPAHkZVsFwdqeLI8D07EMuf0cmgHEAMJW6YzjFknKMqr3XTFAtbOYLPCa3jAgBq
+        1aYmU5Zx1O3WS+0CU26mWr6nVjFBIZRssqy0vVRrzVFFFp/XPf0HYZhbrO7zTNya
+        MDAbZXYMA4ygRwCGD7eRAWZK7DoXc7V6aO12ViIOC8++ixYc56viNlK4jc5K7O2V
+        l+rLIcQgpJmXCOEwmhRA8vX2nqiMTFqKBAxp8NzcwTtaXXDo08J+MEz44qlEycj/
+        xhmmH3BGpWsQMD7tsmsi/hcI3fXCkvnUt3Mro38Sh9d1kPmp903JzqQF9591CUjR
+        FCWsIJ1wE36IlyxxC3cQHQWrYfitKAnuUYkW0aFAqf1N1QSmbn49RXKeYrfnYB7y
+        c7mVZ1TUqBzGeyzBqL+DZvaYPKHt6wfD4JfJv8kCAwEAAaNjMGEwHQYDVR0OBBYE
+        FALmzDdEh2H6LxrLdnNkJXDhvt3QMB8GA1UdIwQYMBaAFALmzDdEh2H6LxrLdnNk
+        JXDhvt3QMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgGGMA0GCSqGSIb3
+        DQEBCwUAA4ICAQBhjDFTrrb9vDxJ+fuI+A+4h38DevZFUFxKArADH1KJ+biTvzIm
+        a1m7Cy3BG3a9gE/N4Iry4iTTAlWSsQYB/jDLDmy0DnfChSbUw19lL0xJnKYAb69C
+        dymz9vWzwPSHGDO2GeFuJdtgX3ao+1v/6L6zp36xYHwnOH3g5Zx+RcDcrEWoPj4T
+        K9HY9+SMlFZmfZziuRgyjewTfv8ANF5kwrcJ5tIu/OY8nIx7dI6/yJ+QMOcqE65e
+        UshmD5uEzeOYpCNrGwlszkEfpwLJ0yATwjj6y0lehvc5fuRCZBKjzMgkbVLSu+90
+        RkwjKYiFe59DooJqw3jLDwww3XRaRkpWSHxDODVHO3+ZaxfyoU9V6o7dxl2Ak84D
+        8GAqBjzIRou8QTplAXZqUNfuicKzWwbl571nAKPsLeK2IxsgRKRa55MX9KIkKUBP
+        9O4FayjwzDieCst853Q/K2EGnyt6PDORjT5qES2xoEgvXD1jPbqovcGG7IT1vcYp
+        EHfoyZ9vm1Bc5IesLSSKgePJQZ3F7F5IG6352HJIe7exWswczRd6RXKPBGdkRuy0
+        GNaK0xRd+YZpOFSdEoFsvfHH8KpSZb+d6dK68et5vTapxXllErdSOAM3t4fjkpQ2
+        0o9pcXXm4AFnIs/V26eOiWCv/TxfvRwhaBWmTBq/+U0UMMXRq5IEFpYMQw==
+        -----END CERTIFICATE-----
+    network:
+      enableIPv6: true
+
+seedPeer:
+  image: d7yio/dfdaemon
+  tag: latest
+  replicas: 3
+  resources:
+    requests:
+      cpu: "0"
+      memory: "0"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+  extraVolumeMounts:
+  - name: logs
+    mountPath: "/var/log/dragonfly"
+    subPath: dragonfly
+  - name: artifact
+    mountPath: /tmp/artifact
+  extraVolumes:
+  - name: logs
+    emptyDir: { }
+  - name: artifact
+    hostPath:
+      path: /tmp/artifact
+  config:
+    verbose: true
+    download:
+      prefetch: true
+      concurrent:
+        thresholdSize: 10M
+        thresholdSpeed: 2M
+        goroutineCount: 4
+    security:
+      autoIssueCert: true
+      tlsVerify: true
+      tlsPolicy: prefer
+      caCert: |-
+        -----BEGIN CERTIFICATE-----
+        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
+        -----END CERTIFICATE-----
+    network:
+      enableIPv6: true
+
+dfdaemon:
+  image: d7yio/dfdaemon
+  tag: latest
+  resources:
+    requests:
+      cpu: "0"
+      memory: "0"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+  extraVolumeMounts:
+  - name: logs
+    mountPath: "/var/log/"
+  - name: artifact
+    mountPath: /tmp/artifact
+  extraVolumes:
+  - name: logs
+    emptyDir: { }
+  - name: artifact
+    hostPath:
+      path: /tmp/artifact
+  config:
+    verbose: true
+    pprofPort: 9999
+    metrics: 127.0.0.1:8888
+    download:
+      prefetch: true
+      concurrent:
+        thresholdSize: 10M
+        thresholdSpeed: 2M
+        goroutineCount: 4
+    scheduler:
+      disableAutoBackSource: true
+    proxy:
+      defaultFilter: "Expires&Signature&ns"
+      security:
+        insecure: true
+      tcpListen:
+        namespace: /run/dragonfly/net
+        listen: 0.0.0.0
+        # if you want to change port, please update hostPort in $.Values.dfdaemon.hostPort
+        # port in configmap is generated from $.Values.dfdaemon.hostPort
+        # port: 65001
+      registryMirror:
+        url: https://index.docker.io
+      proxies:
+        - regx: blobs/sha256.*
+        - regx: file-server
+    security:
+      autoIssueCert: true
+      tlsVerify: true
+      tlsPolicy: prefer
+      caCert: |-
+        -----BEGIN CERTIFICATE-----
+        MIIFlzCCA3+gAwIBAgIQN3lN+UE/341zV66jk3H1ijANBgkqhkiG9w0BAQsFADBV
+        MQswCQYDVQQGEwJDTjERMA8GA1UECBMIWmhlamlhbmcxEjAQBgNVBAoTCURyYWdv
+        bmZseTEfMB0GA1UEAxMWRHJhZ29uZmx5IFRlc3QgUm9vdCBDQTAeFw0yMjA4MzEw
+        NjM0MzFaFw00MjA4MjYwNjM0MzFaMFUxCzAJBgNVBAYTAkNOMREwDwYDVQQIEwha
+        aGVqaWFuZzESMBAGA1UEChMJRHJhZ29uZmx5MR8wHQYDVQQDExZEcmFnb25mbHkg
+        VGVzdCBSb290IENBMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA0js8
+        Vm+w+NifZQD6VJnljz/VmJ0ly+OJFlkPFLMZ/5rLitBWkpxpF5IXSC6xIB2x8oiD
+        9HgPtkhpW4GunKNngx+twUKo9SjEFqLKln8xF1FFebkT8SmC/jNtNsFn8+WxGafx
+        wVTVfN2/JBnxjLeoeL7+4gi7dlcMc6PVbsP2cazaCIjahNLKkPUQJ6oPbWuinjSL
+        JPk6OCT4dFJ4XSQkfWQCzS1xHEoyWEZjU1bYQkBLArNEXf+O1qf36vwWHTneGEWu
+        YnPAHkZVsFwdqeLI8D07EMuf0cmgHEAMJW6YzjFknKMqr3XTFAtbOYLPCa3jAgBq
+        1aYmU5Zx1O3WS+0CU26mWr6nVjFBIZRssqy0vVRrzVFFFp/XPf0HYZhbrO7zTNya
+        MDAbZXYMA4ygRwCGD7eRAWZK7DoXc7V6aO12ViIOC8++ixYc56viNlK4jc5K7O2V
+        l+rLIcQgpJmXCOEwmhRA8vX2nqiMTFqKBAxp8NzcwTtaXXDo08J+MEz44qlEycj/
+        xhmmH3BGpWsQMD7tsmsi/hcI3fXCkvnUt3Mro38Sh9d1kPmp903JzqQF9591CUjR
+        FCWsIJ1wE36IlyxxC3cQHQWrYfitKAnuUYkW0aFAqf1N1QSmbn49RXKeYrfnYB7y
+        c7mVZ1TUqBzGeyzBqL+DZvaYPKHt6wfD4JfJv8kCAwEAAaNjMGEwHQYDVR0OBBYE
+        FALmzDdEh2H6LxrLdnNkJXDhvt3QMB8GA1UdIwQYMBaAFALmzDdEh2H6LxrLdnNk
+        JXDhvt3QMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgGGMA0GCSqGSIb3
+        DQEBCwUAA4ICAQBhjDFTrrb9vDxJ+fuI+A+4h38DevZFUFxKArADH1KJ+biTvzIm
+        a1m7Cy3BG3a9gE/N4Iry4iTTAlWSsQYB/jDLDmy0DnfChSbUw19lL0xJnKYAb69C
+        dymz9vWzwPSHGDO2GeFuJdtgX3ao+1v/6L6zp36xYHwnOH3g5Zx+RcDcrEWoPj4T
+        K9HY9+SMlFZmfZziuRgyjewTfv8ANF5kwrcJ5tIu/OY8nIx7dI6/yJ+QMOcqE65e
+        UshmD5uEzeOYpCNrGwlszkEfpwLJ0yATwjj6y0lehvc5fuRCZBKjzMgkbVLSu+90
+        RkwjKYiFe59DooJqw3jLDwww3XRaRkpWSHxDODVHO3+ZaxfyoU9V6o7dxl2Ak84D
+        8GAqBjzIRou8QTplAXZqUNfuicKzWwbl571nAKPsLeK2IxsgRKRa55MX9KIkKUBP
+        9O4FayjwzDieCst853Q/K2EGnyt6PDORjT5qES2xoEgvXD1jPbqovcGG7IT1vcYp
+        EHfoyZ9vm1Bc5IesLSSKgePJQZ3F7F5IG6352HJIe7exWswczRd6RXKPBGdkRuy0
+        GNaK0xRd+YZpOFSdEoFsvfHH8KpSZb+d6dK68et5vTapxXllErdSOAM3t4fjkpQ2
+        0o9pcXXm4AFnIs/V26eOiWCv/TxfvRwhaBWmTBq/+U0UMMXRq5IEFpYMQw==
+        -----END CERTIFICATE-----
+    network:
+      enableIPv6: true
+
+manager:
+  image: d7yio/manager
+  tag: latest
+  replicas: 1
+  resources:
+    requests:
+      cpu: "0"
+      memory: "0"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+  extraVolumeMounts:
+  - name: logs
+    mountPath: "/var/log/"
+  - name: artifact
+    mountPath: /tmp/artifact
+  extraVolumes:
+  - name: logs
+    emptyDir: { }
+  - name: artifact
+    hostPath:
+      path: /tmp/artifact
+  config:
+    verbose: true
+    security:
+      autoIssueCert: true
+      tlsPolicy: prefer
+      caCert: |-
+        -----BEGIN CERTIFICATE-----
+        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
+        Mg==
+        -----END CERTIFICATE-----
+        -----BEGIN CERTIFICATE-----
+        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
+        -----END CERTIFICATE-----
+      caKey: |-
+        -----BEGIN RSA PRIVATE KEY-----
+        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
+        -----END RSA PRIVATE KEY-----
+    network:
+      enableIPv6: true

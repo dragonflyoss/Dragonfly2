@@ -112,6 +112,9 @@ func TestConfig_Load(t *testing.T) {
 				ValidityPeriod: 1000,
 			},
 		},
+		Network: &NetworkConfig{
+			EnableIPv6: true,
+		},
 	}
 
 	schedulerConfigYAML := &Config{}

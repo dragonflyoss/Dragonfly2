@@ -288,7 +288,6 @@ func TestPeerHostOption_Load(t *testing.T) {
 			Location:       "0.0.0.0",
 			IDC:            "d7y",
 			NetTopology:    "d7y",
-			ListenIP:       "0.0.0.0",
 			AdvertiseIP:    "0.0.0.0",
 		},
 		Download: DownloadOption{
@@ -505,6 +504,9 @@ func TestPeerHostOption_Load(t *testing.T) {
 			CertSpec: &CertSpec{
 				ValidityPeriod: 1000000000,
 			},
+		},
+		Network: &NetworkOption{
+			EnableIPv6: true,
 		},
 	}
 

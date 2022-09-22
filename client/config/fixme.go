@@ -18,16 +18,24 @@ package config
 
 import (
 	"crypto/tls"
+	"net"
 
 	"github.com/johanbrandhorst/certify"
 
-	"d7y.io/dragonfly/v2/pkg/net/ip"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 func GetCertificate(certifyClient *certify.Certify) func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 	return func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 		// FIXME peers need pure ip cert, certify checks the ServerName, so workaround here
-		hello.ServerName = ip.IPv4
+		if hello.ServerName == "" {
+			host, _, err := net.SplitHostPort(hello.Conn.LocalAddr().String())
+			if err == nil {
+				hello.ServerName = host
+			} else {
+				logger.Warnf("failed to get host from %s: %s", hello.Conn.LocalAddr().String(), err)
+			}
+		}
 		return certifyClient.GetCertificate(hello)
 	}
 }

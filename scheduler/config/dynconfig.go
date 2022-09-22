@@ -33,6 +33,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	dc "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/manager/types"
+	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/reachable"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 )
@@ -178,10 +179,15 @@ func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 
 	var (
 		addrs        = map[string]bool{}
-		resolveAddrs = []resolver.Address{}
+		resolveAddrs []resolver.Address
 	)
 	for _, seedPeer := range seedPeers {
-		addr := fmt.Sprintf("%s:%d", seedPeer.IP, seedPeer.Port)
+		ip, ok := ip.FormatIP(seedPeer.IP)
+		if !ok {
+			continue
+		}
+
+		addr := fmt.Sprintf("%s:%d", ip, seedPeer.Port)
 		r := reachable.New(&reachable.Config{Address: addr})
 		if err := r.Check(); err != nil {
 			logger.Warnf("seed peer address %s is unreachable", addr)
