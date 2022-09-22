@@ -252,7 +252,6 @@ func newDownRequest(cfg *config.DfgetConfig, hdr map[string]string) *dfdaemonv1.
 func newProgressBar(max int64) *progressbar.ProgressBar {
 	return progressbar.NewOptions64(max,
 		progressbar.OptionShowBytes(true),
-		progressbar.OptionShowIts(),
 		progressbar.OptionSetPredictTime(true),
 		progressbar.OptionUseANSICodes(true),
 		progressbar.OptionEnableColorCodes(true),

@@ -75,11 +75,19 @@ func (s *Server) IssueCertificate(ctx context.Context, req *securityv1.Certifica
 		return nil, err
 	}
 
+	// TODO only valid for peer ip
+	// BTW we need support both of ipv4 and ipv6.
+	ips := csr.IPAddresses
+	if len(ips) == 0 {
+		// Add default connected ip.
+		ips = []net.IP{net.ParseIP(ip)}
+	}
+
 	now := time.Now()
 	template := x509.Certificate{
 		SerialNumber:          serial,
 		Subject:               csr.Subject,
-		IPAddresses:           []net.IP{net.ParseIP(ip)}, // only valid for peer ip
+		IPAddresses:           ips,
 		NotBefore:             now.Add(-10 * time.Minute).UTC(),
 		NotAfter:              now.Add(req.ValidityPeriod.AsDuration()).UTC(),
 		BasicConstraintsValid: true,

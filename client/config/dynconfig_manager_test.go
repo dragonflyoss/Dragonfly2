@@ -185,7 +185,7 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 				assert := assert.New(t)
 				result, err := dynconfig.GetResolveSchedulerAddrs()
 				assert.NoError(err)
-				assert.EqualValues(result, []resolver.Address{})
+				assert.EqualValues([]resolver.Address(nil), result)
 			},
 		},
 		{
@@ -314,7 +314,7 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 				assert := assert.New(t)
 				result, err := dynconfig.GetResolveSchedulerAddrs()
 				assert.NoError(err)
-				assert.EqualValues(result, []resolver.Address{})
+				assert.EqualValues([]resolver.Address(nil), result)
 			},
 		},
 	}

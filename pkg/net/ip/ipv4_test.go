@@ -16,18 +16,14 @@
 
 package ip
 
-import "net"
+import (
+	"testing"
 
-// FormatIP returns a valid textual representation of an IP address.
-func FormatIP(addr string) (string, bool) {
-	ip := net.ParseIP(addr)
-	if ip == nil {
-		return "", false
-	}
+	"github.com/stretchr/testify/assert"
+)
 
-	if ip.To4() != nil {
-		return addr, true
-	}
-
-	return "[" + addr + "]", true
+func TestExternalIPv4(t *testing.T) {
+	ip, err := externalIPv4()
+	assert.Nil(t, err)
+	assert.NotEmpty(t, ip)
 }

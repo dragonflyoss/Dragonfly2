@@ -19,6 +19,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"net"
 	"time"
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
@@ -50,6 +51,9 @@ type Config struct {
 
 	// Security configuration.
 	Security *SecurityConfig `yaml:"security" mapstructure:"security"`
+
+	// Network configuration.
+	Network *NetworkConfig `yaml:"network" mapstructure:"network"`
 }
 
 type ServerConfig struct {
@@ -283,14 +287,17 @@ type CertSpec struct {
 	ValidityPeriod time.Duration `mapstructure:"validityPeriod" yaml:"validityPeriod"`
 }
 
+type NetworkConfig struct {
+	// EnableIPv6 enables ipv6 for server.
+	EnableIPv6 bool `mapstructure:"enableIPv6" yaml:"enableIPv6"`
+}
+
 // New config instance.
 func New() *Config {
 	return &Config{
 		Server: &ServerConfig{
 			Name: DefaultServerName,
 			GRPC: &GRPCConfig{
-				AdvertiseIP: ip.IPv4,
-				ListenIP:    DefaultGRPCListenIP,
 				PortRange: TCPListenPortRange{
 					Start: DefaultGRPCPort,
 					End:   DefaultGRPCPort,
@@ -345,6 +352,9 @@ func New() *Config {
 			Enable:          false,
 			Addr:            DefaultMetricsAddr,
 			EnablePeerGauge: true,
+		},
+		Network: &NetworkConfig{
+			EnableIPv6: DefaultNetworkEnableIPv6,
 		},
 	}
 }
@@ -511,6 +521,10 @@ func (cfg *Config) Validate() error {
 		return errors.New("local requires parameter ttl")
 	}
 
+	if cfg.ObjectStorage == nil {
+		return errors.New("config requires parameter objectStorage")
+	}
+
 	if cfg.ObjectStorage != nil && cfg.ObjectStorage.Enable {
 		if cfg.ObjectStorage.Name == "" {
 			return errors.New("objectStorage requires parameter name")
@@ -529,7 +543,11 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	if cfg.Security != nil && cfg.Security.AutoIssueCert {
+	if cfg.Security == nil {
+		return errors.New("config requires parameter security")
+	}
+
+	if cfg.Security.AutoIssueCert {
 		if cfg.Security.CACert == "" {
 			return errors.New("security requires parameter caCert")
 		}
@@ -565,6 +583,10 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	if cfg.Network == nil {
+		return errors.New("config requires parameter network")
+	}
+
 	return nil
 }
 
@@ -577,6 +599,22 @@ func (cfg *Config) Convert() error {
 	// TODO Compatible with deprecated fields listen.
 	if cfg.Server.GRPC.Listen != "" && cfg.Server.GRPC.ListenIP == "" {
 		cfg.Server.GRPC.ListenIP = cfg.Server.GRPC.Listen
+	}
+
+	if cfg.Server.GRPC.AdvertiseIP == "" {
+		if cfg.Network.EnableIPv6 {
+			cfg.Server.GRPC.AdvertiseIP = ip.IPv6
+		} else {
+			cfg.Server.GRPC.AdvertiseIP = ip.IPv4
+		}
+	}
+
+	if cfg.Server.GRPC.ListenIP == "" {
+		if cfg.Network.EnableIPv6 {
+			cfg.Server.GRPC.ListenIP = net.IPv6zero.String()
+		} else {
+			cfg.Server.GRPC.ListenIP = net.IPv4zero.String()
+		}
 	}
 
 	return nil
