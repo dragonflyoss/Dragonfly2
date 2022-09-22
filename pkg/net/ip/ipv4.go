@@ -20,8 +20,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 var (
@@ -35,7 +33,6 @@ var (
 func init() {
 	ip, err := externalIPv4()
 	if err != nil {
-		logger.Warnf("%s, use %s as IPv4 address", err.Error(), IPv4lookback)
 		IPv4 = IPv4lookback
 	} else {
 		IPv4 = ip
