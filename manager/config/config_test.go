@@ -31,11 +31,11 @@ func TestManagerConfig_Load(t *testing.T) {
 	assert := testifyassert.New(t)
 
 	config := &Config{
-		Server: &ServerConfig{
+		Server: ServerConfig{
 			Name:     "foo",
 			CacheDir: "foo",
 			LogDir:   "foo",
-			GRPC: &GRPCConfig{
+			GRPC: GRPCConfig{
 				AdvertiseIP: "127.0.0.1",
 				ListenIP:    "0.0.0.0",
 				PortRange: TCPListenPortRange{
@@ -43,13 +43,13 @@ func TestManagerConfig_Load(t *testing.T) {
 					End:   65003,
 				},
 			},
-			REST: &RestConfig{
+			REST: RestConfig{
 				Addr: ":8080",
 			},
 		},
-		Database: &DatabaseConfig{
+		Database: DatabaseConfig{
 			Type: "mysql",
-			Mysql: &MysqlConfig{
+			Mysql: MysqlConfig{
 				User:      "foo",
 				Password:  "foo",
 				Host:      "foo",
@@ -64,7 +64,7 @@ func TestManagerConfig_Load(t *testing.T) {
 				},
 				Migrate: true,
 			},
-			Postgres: &PostgresConfig{
+			Postgres: PostgresConfig{
 				User:     "foo",
 				Password: "foo",
 				Host:     "foo",
@@ -74,7 +74,7 @@ func TestManagerConfig_Load(t *testing.T) {
 				Timezone: "UTC",
 				Migrate:  true,
 			},
-			Redis: &RedisConfig{
+			Redis: RedisConfig{
 				Host:      "bar",
 				Password:  "bar",
 				Addrs:     []string{"foo", "bar"},
@@ -84,16 +84,16 @@ func TestManagerConfig_Load(t *testing.T) {
 				BackendDB: 2,
 			},
 		},
-		Cache: &CacheConfig{
-			Redis: &RedisCacheConfig{
+		Cache: CacheConfig{
+			Redis: RedisCacheConfig{
 				TTL: 1000,
 			},
-			Local: &LocalCacheConfig{
+			Local: LocalCacheConfig{
 				Size: 10000,
 				TTL:  1000,
 			},
 		},
-		ObjectStorage: &ObjectStorageConfig{
+		ObjectStorage: ObjectStorageConfig{
 			Enable:    true,
 			Name:      objectstorage.ServiceNameS3,
 			Endpoint:  "127.0.0.1",
@@ -101,23 +101,23 @@ func TestManagerConfig_Load(t *testing.T) {
 			SecretKey: "bar",
 			Region:    "baz",
 		},
-		Security: &SecurityConfig{
+		Security: SecurityConfig{
 			AutoIssueCert: true,
 			CACert:        "foo",
 			CAKey:         "bar",
 			TLSPolicy:     "force",
-			CertSpec: &CertSpec{
+			CertSpec: CertSpec{
 				IPAddresses:    []string{"127.0.0.1"},
 				DNSNames:       []string{"foo"},
 				ValidityPeriod: 1000,
 			},
 		},
-		Metrics: &MetricsConfig{
+		Metrics: MetricsConfig{
 			Enable:          true,
 			Addr:            ":8000",
 			EnablePeerGauge: false,
 		},
-		Network: &NetworkConfig{
+		Network: NetworkConfig{
 			EnableIPv6: true,
 		},
 	}
