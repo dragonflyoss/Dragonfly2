@@ -63,21 +63,21 @@ func New(cfg *config.Config, gc gc.GC, dynconfig config.DynconfigInterface, opts
 	resource := &resource{}
 
 	// Initialize host manager interface.
-	hostManager, err := newHostManager(cfg.Scheduler.GC, gc)
+	hostManager, err := newHostManager(&cfg.Scheduler.GC, gc)
 	if err != nil {
 		return nil, err
 	}
 	resource.hostManager = hostManager
 
 	// Initialize task manager interface.
-	taskManager, err := newTaskManager(cfg.Scheduler.GC, gc)
+	taskManager, err := newTaskManager(&cfg.Scheduler.GC, gc)
 	if err != nil {
 		return nil, err
 	}
 	resource.taskManager = taskManager
 
 	// Initialize peer manager interface.
-	peerManager, err := newPeerManager(cfg.Scheduler.GC, gc)
+	peerManager, err := newPeerManager(&cfg.Scheduler.GC, gc)
 	if err != nil {
 		return nil, err
 	}

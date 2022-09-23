@@ -136,8 +136,8 @@ func TestResource_New(t *testing.T) {
 		{
 			name: "new resource without seed peer",
 			config: &config.Config{
-				Scheduler: &config.SchedulerConfig{
-					GC: &config.GCConfig{
+				Scheduler: config.SchedulerConfig{
+					GC: config.GCConfig{
 						PeerGCInterval: 100,
 						PeerTTL:        1000,
 						TaskGCInterval: 100,
@@ -146,7 +146,7 @@ func TestResource_New(t *testing.T) {
 						HostTTL:        1000,
 					},
 				},
-				SeedPeer: &config.SeedPeerConfig{
+				SeedPeer: config.SeedPeerConfig{
 					Enable: false,
 				},
 			},

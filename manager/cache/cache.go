@@ -49,11 +49,9 @@ type Cache struct {
 // New cache instance.
 func New(cfg *config.Config) (*Cache, error) {
 	var localCache *cache.TinyLFU
-	if cfg.Cache != nil {
-		localCache = cache.NewTinyLFU(cfg.Cache.Local.Size, cfg.Cache.Local.TTL)
-	}
+	localCache = cache.NewTinyLFU(cfg.Cache.Local.Size, cfg.Cache.Local.TTL)
 
-	rdb, err := database.NewRedis(cfg.Database.Redis)
+	rdb, err := database.NewRedis(&cfg.Database.Redis)
 	if err != nil {
 		return nil, err
 	}

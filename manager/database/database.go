@@ -60,7 +60,7 @@ func New(cfg *config.Config) (*Database, error) {
 		return nil, fmt.Errorf("invalid database type %s", cfg.Database.Type)
 	}
 
-	rdb, err := NewRedis(cfg.Database.Redis)
+	rdb, err := NewRedis(&cfg.Database.Redis)
 	if err != nil {
 		return nil, err
 	}
