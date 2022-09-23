@@ -32,10 +32,10 @@ import (
 )
 
 func newMyqsl(cfg *config.Config) (*gorm.DB, error) {
-	m := cfg.Database.Mysql
+	mysqlCfg := &cfg.Database.Mysql
 
 	// Format dsn string.
-	dsn, err := formatMysqlDSN(m)
+	dsn, err := formatMysqlDSN(mysqlCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func newMyqsl(cfg *config.Config) (*gorm.DB, error) {
 	}
 
 	// Run migration.
-	if m.Migrate {
+	if mysqlCfg.Migrate {
 		if err := migrate(db); err != nil {
 			return nil, err
 		}

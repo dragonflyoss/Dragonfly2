@@ -30,13 +30,13 @@ func TestConfig_Load(t *testing.T) {
 	assert := testifyassert.New(t)
 
 	config := &Config{
-		Scheduler: &SchedulerConfig{
+		Scheduler: SchedulerConfig{
 			Algorithm:            "default",
 			BackSourceCount:      3,
 			RetryBackSourceLimit: 2,
 			RetryLimit:           10,
 			RetryInterval:        1 * time.Second,
-			GC: &GCConfig{
+			GC: GCConfig{
 				PeerGCInterval: 1 * time.Minute,
 				PeerTTL:        5 * time.Minute,
 				TaskGCInterval: 1 * time.Minute,
@@ -44,14 +44,14 @@ func TestConfig_Load(t *testing.T) {
 				HostGCInterval: 1 * time.Minute,
 				HostTTL:        10 * time.Minute,
 			},
-			Training: &TrainingConfig{
+			Training: TrainingConfig{
 				Enable:               true,
 				EnableAutoRefresh:    true,
 				RefreshModelInterval: 1 * time.Second,
 				CPU:                  2,
 			},
 		},
-		Server: &ServerConfig{
+		Server: ServerConfig{
 			AdvertiseIP: "127.0.0.1",
 			ListenIP:    "0.0.0.0",
 			Port:        8002,
@@ -61,30 +61,30 @@ func TestConfig_Load(t *testing.T) {
 			LogDir:      "bar",
 			DataDir:     "baz",
 		},
-		DynConfig: &DynConfig{
+		DynConfig: DynConfig{
 			RefreshInterval: 5 * time.Minute,
 		},
-		Manager: &ManagerConfig{
+		Manager: ManagerConfig{
 			Addr:               "127.0.0.1:65003",
 			SchedulerClusterID: 1,
 			KeepAlive: KeepAliveConfig{
 				Interval: 5 * time.Second,
 			},
 		},
-		SeedPeer: &SeedPeerConfig{
+		SeedPeer: SeedPeerConfig{
 			Enable: true,
 		},
-		Host: &HostConfig{
+		Host: HostConfig{
 			IDC:         "foo",
 			NetTopology: "bar",
 			Location:    "baz",
 		},
-		Job: &JobConfig{
+		Job: JobConfig{
 			Enable:             true,
 			GlobalWorkerNum:    1,
 			SchedulerWorkerNum: 1,
 			LocalWorkerNum:     5,
-			Redis: &RedisConfig{
+			Redis: RedisConfig{
 				Addrs:     []string{"foo", "bar"},
 				Host:      "127.0.0.1",
 				Port:      6379,
@@ -93,26 +93,26 @@ func TestConfig_Load(t *testing.T) {
 				BackendDB: 2,
 			},
 		},
-		Storage: &StorageConfig{
+		Storage: StorageConfig{
 			MaxSize:    1,
 			MaxBackups: 1,
 			BufferSize: 1,
 		},
-		Metrics: &MetricsConfig{
+		Metrics: MetricsConfig{
 			Enable:         false,
 			Addr:           ":8000",
 			EnablePeerHost: false,
 		},
-		Security: &SecurityConfig{
+		Security: SecurityConfig{
 			AutoIssueCert: true,
 			CACert:        "foo",
 			TLSVerify:     true,
 			TLSPolicy:     "force",
-			CertSpec: &CertSpec{
+			CertSpec: CertSpec{
 				ValidityPeriod: 1000,
 			},
 		},
-		Network: &NetworkConfig{
+		Network: NetworkConfig{
 			EnableIPv6: true,
 		},
 	}
