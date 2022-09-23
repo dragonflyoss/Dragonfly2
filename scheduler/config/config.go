@@ -35,37 +35,37 @@ type Config struct {
 	base.Options `yaml:",inline" mapstructure:",squash"`
 
 	// Scheduler configuration.
-	Scheduler *SchedulerConfig `yaml:"scheduler" mapstructure:"scheduler"`
+	Scheduler SchedulerConfig `yaml:"scheduler" mapstructure:"scheduler"`
 
 	// Server configuration.
-	Server *ServerConfig `yaml:"server" mapstructure:"server"`
+	Server ServerConfig `yaml:"server" mapstructure:"server"`
 
 	// Dynconfig configuration.
-	DynConfig *DynConfig `yaml:"dynConfig" mapstructure:"dynConfig"`
+	DynConfig DynConfig `yaml:"dynConfig" mapstructure:"dynConfig"`
 
 	// Manager configuration.
-	Manager *ManagerConfig `yaml:"manager" mapstructure:"manager"`
+	Manager ManagerConfig `yaml:"manager" mapstructure:"manager"`
 
 	// SeedPeer configuration.
-	SeedPeer *SeedPeerConfig `yaml:"seedPeer" mapstructure:"seedPeer"`
+	SeedPeer SeedPeerConfig `yaml:"seedPeer" mapstructure:"seedPeer"`
 
 	// Host configuration.
-	Host *HostConfig `yaml:"host" mapstructure:"host"`
+	Host HostConfig `yaml:"host" mapstructure:"host"`
 
 	// Job configuration.
-	Job *JobConfig `yaml:"job" mapstructure:"job"`
+	Job JobConfig `yaml:"job" mapstructure:"job"`
 
 	// Storage configuration.
-	Storage *StorageConfig `yaml:"storage" mapstructure:"storage"`
+	Storage StorageConfig `yaml:"storage" mapstructure:"storage"`
 
 	// Metrics configuration.
-	Metrics *MetricsConfig `yaml:"metrics" mapstructure:"metrics"`
+	Metrics MetricsConfig `yaml:"metrics" mapstructure:"metrics"`
 
 	// Security configuration.
-	Security *SecurityConfig `yaml:"security" mapstructure:"security"`
+	Security SecurityConfig `yaml:"security" mapstructure:"security"`
 
 	// Network configuration.
-	Network *NetworkConfig `yaml:"network" mapstructure:"network"`
+	Network NetworkConfig `yaml:"network" mapstructure:"network"`
 }
 
 type ServerConfig struct {
@@ -117,10 +117,10 @@ type SchedulerConfig struct {
 	RetryInterval time.Duration `yaml:"retryInterval" mapstructure:"retryInterval"`
 
 	// Task and peer gc configuration.
-	GC *GCConfig `yaml:"gc" mapstructure:"gc"`
+	GC GCConfig `yaml:"gc" mapstructure:"gc"`
 
 	// Training configuration.
-	Training *TrainingConfig `yaml:"training" mapstructure:"training"`
+	Training TrainingConfig `yaml:"training" mapstructure:"training"`
 }
 
 type TrainingConfig struct {
@@ -208,7 +208,7 @@ type JobConfig struct {
 	LocalWorkerNum uint `yaml:"localWorkerNum" mapstructure:"localWorkerNum"`
 
 	// Redis configuration.
-	Redis *RedisConfig `yaml:"redis" mapstructure:"redis"`
+	Redis RedisConfig `yaml:"redis" mapstructure:"redis"`
 }
 
 type StorageConfig struct {
@@ -275,7 +275,7 @@ type SecurityConfig struct {
 	TLSPolicy string `mapstructure:"tlsPolicy" yaml:"tlsPolicy"`
 
 	// CertSpec is the desired state of certificate.
-	CertSpec *CertSpec `mapstructure:"certSpec" yaml:"certSpec"`
+	CertSpec CertSpec `mapstructure:"certSpec" yaml:"certSpec"`
 }
 
 type CertSpec struct {
@@ -291,17 +291,17 @@ type NetworkConfig struct {
 // New default configuration.
 func New() *Config {
 	return &Config{
-		Server: &ServerConfig{
+		Server: ServerConfig{
 			Port: DefaultServerPort,
 			Host: fqdn.FQDNHostname,
 		},
-		Scheduler: &SchedulerConfig{
+		Scheduler: SchedulerConfig{
 			Algorithm:            DefaultSchedulerAlgorithm,
 			BackSourceCount:      DefaultSchedulerBackSourceCount,
 			RetryBackSourceLimit: DefaultSchedulerRetryBackSourceLimit,
 			RetryLimit:           DefaultSchedulerRetryLimit,
 			RetryInterval:        DefaultSchedulerRetryInterval,
-			GC: &GCConfig{
+			GC: GCConfig{
 				PeerGCInterval: DefaultSchedulerPeerGCInterval,
 				PeerTTL:        DefaultSchedulerPeerTTL,
 				TaskGCInterval: DefaultSchedulerTaskGCInterval,
@@ -309,55 +309,55 @@ func New() *Config {
 				HostGCInterval: DefaultSchedulerHostGCInterval,
 				HostTTL:        DefaultSchedulerHostTTL,
 			},
-			Training: &TrainingConfig{
+			Training: TrainingConfig{
 				Enable:               false,
 				EnableAutoRefresh:    false,
 				RefreshModelInterval: DefaultRefreshModelInterval,
 				CPU:                  DefaultCPU,
 			},
 		},
-		DynConfig: &DynConfig{
+		DynConfig: DynConfig{
 			RefreshInterval: DefaultDynConfigRefreshInterval,
 		},
-		Host: &HostConfig{},
-		Manager: &ManagerConfig{
+		Host: HostConfig{},
+		Manager: ManagerConfig{
 			SchedulerClusterID: DefaultManagerSchedulerClusterID,
 			KeepAlive: KeepAliveConfig{
 				Interval: DefaultManagerKeepAliveInterval,
 			},
 		},
-		SeedPeer: &SeedPeerConfig{
+		SeedPeer: SeedPeerConfig{
 			Enable: true,
 		},
-		Job: &JobConfig{
+		Job: JobConfig{
 			Enable:             true,
 			GlobalWorkerNum:    DefaultJobGlobalWorkerNum,
 			SchedulerWorkerNum: DefaultJobSchedulerWorkerNum,
 			LocalWorkerNum:     DefaultJobLocalWorkerNum,
-			Redis: &RedisConfig{
+			Redis: RedisConfig{
 				BrokerDB:  DefaultJobRedisBrokerDB,
 				BackendDB: DefaultJobRedisBackendDB,
 			},
 		},
-		Storage: &StorageConfig{
+		Storage: StorageConfig{
 			MaxSize:    storage.DefaultMaxSize,
 			MaxBackups: storage.DefaultMaxBackups,
 			BufferSize: storage.DefaultBufferSize,
 		},
-		Metrics: &MetricsConfig{
+		Metrics: MetricsConfig{
 			Enable:         false,
 			Addr:           DefaultMetricsAddr,
 			EnablePeerHost: false,
 		},
-		Security: &SecurityConfig{
+		Security: SecurityConfig{
 			AutoIssueCert: false,
 			TLSVerify:     true,
 			TLSPolicy:     rpc.PreferTLSPolicy,
-			CertSpec: &CertSpec{
+			CertSpec: CertSpec{
 				ValidityPeriod: DefaultCertValidityPeriod,
 			},
 		},
-		Network: &NetworkConfig{
+		Network: NetworkConfig{
 			EnableIPv6: DefaultNetworkEnableIPv6,
 		},
 	}
@@ -365,10 +365,6 @@ func New() *Config {
 
 // Validate config parameters.
 func (cfg *Config) Validate() error {
-	if cfg.Server == nil {
-		return errors.New("config requires parameter server")
-	}
-
 	if cfg.Server.AdvertiseIP == "" {
 		return errors.New("server requires parameter advertiseIP")
 	}
@@ -385,10 +381,6 @@ func (cfg *Config) Validate() error {
 		return errors.New("server requires parameter host")
 	}
 
-	if cfg.Scheduler == nil {
-		return errors.New("config requires parameter scheduler")
-	}
-
 	if cfg.Scheduler.Algorithm == "" {
 		return errors.New("scheduler requires parameter algorithm")
 	}
@@ -399,10 +391,6 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Scheduler.RetryInterval <= 0 {
 		return errors.New("scheduler requires parameter retryInterval")
-	}
-
-	if cfg.Scheduler.GC == nil {
-		return errors.New("scheduler requires parameter gc")
 	}
 
 	if cfg.Scheduler.GC.PeerGCInterval <= 0 {
@@ -421,7 +409,7 @@ func (cfg *Config) Validate() error {
 		return errors.New("scheduler requires parameter taskTTL")
 	}
 
-	if cfg.Scheduler.Training != nil && cfg.Scheduler.Training.Enable {
+	if cfg.Scheduler.Training.Enable {
 		if cfg.Scheduler.Training.CPU <= 0 {
 			return errors.New("training requires parameter cpu")
 		}
@@ -431,16 +419,8 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	if cfg.DynConfig == nil {
-		return errors.New("config requires parameter dynConfig")
-	}
-
 	if cfg.DynConfig.RefreshInterval <= 0 {
 		return errors.New("dynconfig requires parameter refreshInterval")
-	}
-
-	if cfg.Manager == nil {
-		return errors.New("manager requires parameter dynConfig")
 	}
 
 	if cfg.Manager.Addr == "" {
@@ -453,10 +433,6 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Manager.KeepAlive.Interval <= 0 {
 		return errors.New("manager requires parameter keepAlive interval")
-	}
-
-	if cfg.Job == nil {
-		return errors.New("config requires parameter job")
 	}
 
 	if cfg.Job.Enable {
@@ -487,10 +463,6 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	if cfg.Storage == nil {
-		return errors.New("config requires parameter storage")
-	}
-
 	if cfg.Storage.MaxSize <= 0 {
 		return errors.New("storage requires parameter maxSize")
 	}
@@ -501,10 +473,6 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Storage.BufferSize <= 0 {
 		return errors.New("storage requires parameter bufferSize")
-	}
-
-	if cfg.Metrics == nil {
-		return errors.New("config requires parameter metrics")
 	}
 
 	if cfg.Metrics.Enable {
@@ -518,17 +486,9 @@ func (cfg *Config) Validate() error {
 			return errors.New("security requires parameter caCert")
 		}
 
-		if cfg.Security.CertSpec == nil {
-			return errors.New("security requires parameter certSpec")
-		}
-
 		if cfg.Security.CertSpec.ValidityPeriod <= 0 {
 			return errors.New("certSpec requires parameter validityPeriod")
 		}
-	}
-
-	if cfg.Network == nil {
-		return errors.New("config requires parameter network")
 	}
 
 	return nil

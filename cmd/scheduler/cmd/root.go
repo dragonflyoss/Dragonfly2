@@ -62,7 +62,7 @@ generate and maintain a P2P network during the download process, and push suitab
 		defer cancel()
 
 		// Initialize dfpath.
-		d, err := initDfpath(cfg.Server)
+		d, err := initDfpath(&cfg.Server)
 		if err != nil {
 			return err
 		}

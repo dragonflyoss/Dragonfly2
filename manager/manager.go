@@ -210,7 +210,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	}
 
 	// Initialize GRPC server
-	_, grpcServer, err := rpcserver.New(cfg, db, cache, searcher, objectStorage, cfg.ObjectStorage, options...)
+	_, grpcServer, err := rpcserver.New(cfg, db, cache, searcher, objectStorage, &cfg.ObjectStorage, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +219,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 
 	// Initialize prometheus
 	if cfg.Metrics.Enable {
-		s.metricsServer = metrics.New(cfg.Metrics, grpcServer)
+		s.metricsServer = metrics.New(&cfg.Metrics, grpcServer)
 	}
 
 	return s, nil

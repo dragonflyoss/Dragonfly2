@@ -35,11 +35,11 @@ import (
 func TestDynconfig_GetManagerSourceType(t *testing.T) {
 	mockCacheDir := t.TempDir()
 	mockConfig := &Config{
-		DynConfig: &DynConfig{},
-		Server: &ServerConfig{
+		DynConfig: DynConfig{},
+		Server: ServerConfig{
 			Host: "localhost",
 		},
-		Manager: &ManagerConfig{
+		Manager: ManagerConfig{
 			SchedulerClusterID: 1,
 		},
 	}

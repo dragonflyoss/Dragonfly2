@@ -35,25 +35,25 @@ type Config struct {
 	base.Options `yaml:",inline" mapstructure:",squash"`
 
 	// Server configuration.
-	Server *ServerConfig `yaml:"server" mapstructure:"server"`
+	Server ServerConfig `yaml:"server" mapstructure:"server"`
 
 	// Database configuration.
-	Database *DatabaseConfig `yaml:"database" mapstructure:"database"`
+	Database DatabaseConfig `yaml:"database" mapstructure:"database"`
 
 	// Cache configuration.
-	Cache *CacheConfig `yaml:"cache" mapstructure:"cache"`
+	Cache CacheConfig `yaml:"cache" mapstructure:"cache"`
 
 	// ObjectStorage configuration.
-	ObjectStorage *ObjectStorageConfig `yaml:"objectStorage" mapstructure:"objectStorage"`
+	ObjectStorage ObjectStorageConfig `yaml:"objectStorage" mapstructure:"objectStorage"`
 
 	// Metrics configuration.
-	Metrics *MetricsConfig `yaml:"metrics" mapstructure:"metrics"`
+	Metrics MetricsConfig `yaml:"metrics" mapstructure:"metrics"`
 
 	// Security configuration.
-	Security *SecurityConfig `yaml:"security" mapstructure:"security"`
+	Security SecurityConfig `yaml:"security" mapstructure:"security"`
 
 	// Network configuration.
-	Network *NetworkConfig `yaml:"network" mapstructure:"network"`
+	Network NetworkConfig `yaml:"network" mapstructure:"network"`
 }
 
 type ServerConfig struct {
@@ -67,10 +67,10 @@ type ServerConfig struct {
 	LogDir string `yaml:"logDir" mapstructure:"logDir"`
 
 	// GRPC server configuration.
-	GRPC *GRPCConfig `yaml:"grpc" mapstructure:"grpc"`
+	GRPC GRPCConfig `yaml:"grpc" mapstructure:"grpc"`
 
 	// REST server configuration.
-	REST *RestConfig `yaml:"rest" mapstructure:"rest"`
+	REST RestConfig `yaml:"rest" mapstructure:"rest"`
 }
 
 type DatabaseConfig struct {
@@ -78,13 +78,13 @@ type DatabaseConfig struct {
 	Type string `yaml:"type" mapstructure:"type"`
 
 	// Mysql configuration.
-	Mysql *MysqlConfig `yaml:"mysql" mapstructure:"mysql"`
+	Mysql MysqlConfig `yaml:"mysql" mapstructure:"mysql"`
 
 	// Postgres configuration.
-	Postgres *PostgresConfig `yaml:"postgres" mapstructure:"postgres"`
+	Postgres PostgresConfig `yaml:"postgres" mapstructure:"postgres"`
 
 	// Redis configuration.
-	Redis *RedisConfig `yaml:"redis" mapstructure:"redis"`
+	Redis RedisConfig `yaml:"redis" mapstructure:"redis"`
 }
 
 type MysqlConfig struct {
@@ -182,10 +182,10 @@ type RedisConfig struct {
 
 type CacheConfig struct {
 	// Redis cache configuration.
-	Redis *RedisCacheConfig `yaml:"redis" mapstructure:"redis"`
+	Redis RedisCacheConfig `yaml:"redis" mapstructure:"redis"`
 
 	// Local cache configuration.
-	Local *LocalCacheConfig `yaml:"local" mapstructure:"local"`
+	Local LocalCacheConfig `yaml:"local" mapstructure:"local"`
 }
 
 type RedisCacheConfig struct {
@@ -273,7 +273,7 @@ type SecurityConfig struct {
 	TLSPolicy string `mapstructure:"tlsPolicy" yaml:"tlsPolicy"`
 
 	// CertSpec is the desired state of certificate.
-	CertSpec *CertSpec `mapstructure:"certSpec" yaml:"certSpec"`
+	CertSpec CertSpec `mapstructure:"certSpec" yaml:"certSpec"`
 }
 
 type CertSpec struct {
@@ -295,65 +295,65 @@ type NetworkConfig struct {
 // New config instance.
 func New() *Config {
 	return &Config{
-		Server: &ServerConfig{
+		Server: ServerConfig{
 			Name: DefaultServerName,
-			GRPC: &GRPCConfig{
+			GRPC: GRPCConfig{
 				PortRange: TCPListenPortRange{
 					Start: DefaultGRPCPort,
 					End:   DefaultGRPCPort,
 				},
 			},
-			REST: &RestConfig{
+			REST: RestConfig{
 				Addr: DefaultRESTAddr,
 			},
 		},
-		Database: &DatabaseConfig{
+		Database: DatabaseConfig{
 			Type: DatabaseTypeMysql,
-			Mysql: &MysqlConfig{
+			Mysql: MysqlConfig{
 				Port:    DefaultMysqlPort,
 				DBName:  DefaultMysqlDBName,
 				Migrate: true,
 			},
-			Postgres: &PostgresConfig{
+			Postgres: PostgresConfig{
 				Port:     DefaultPostgresPort,
 				DBName:   DefaultPostgresDBName,
 				SSLMode:  DefaultPostgresSSLMode,
 				Timezone: DefaultPostgresTimezone,
 				Migrate:  true,
 			},
-			Redis: &RedisConfig{
+			Redis: RedisConfig{
 				DB:        DefaultRedisDB,
 				BrokerDB:  DefaultRedisBrokerDB,
 				BackendDB: DefaultRedisBackendDB,
 			},
 		},
-		Cache: &CacheConfig{
-			Redis: &RedisCacheConfig{
+		Cache: CacheConfig{
+			Redis: RedisCacheConfig{
 				TTL: DefaultRedisCacheTTL,
 			},
-			Local: &LocalCacheConfig{
+			Local: LocalCacheConfig{
 				Size: DefaultLFUCacheSize,
 				TTL:  DefaultLFUCacheTTL,
 			},
 		},
-		ObjectStorage: &ObjectStorageConfig{
+		ObjectStorage: ObjectStorageConfig{
 			Enable: false,
 		},
-		Security: &SecurityConfig{
+		Security: SecurityConfig{
 			AutoIssueCert: false,
 			TLSPolicy:     rpc.PreferTLSPolicy,
-			CertSpec: &CertSpec{
+			CertSpec: CertSpec{
 				IPAddresses:    DefaultCertIPAddresses,
 				DNSNames:       DefaultCertDNSNames,
 				ValidityPeriod: DefaultCertValidityPeriod,
 			},
 		},
-		Metrics: &MetricsConfig{
+		Metrics: MetricsConfig{
 			Enable:          false,
 			Addr:            DefaultMetricsAddr,
 			EnablePeerGauge: true,
 		},
-		Network: &NetworkConfig{
+		Network: NetworkConfig{
 			EnableIPv6: DefaultNetworkEnableIPv6,
 		},
 	}
@@ -361,16 +361,8 @@ func New() *Config {
 
 // Validate config values
 func (cfg *Config) Validate() error {
-	if cfg.Server == nil {
-		return errors.New("config requires parameter server")
-	}
-
 	if cfg.Server.Name == "" {
 		return errors.New("server requires parameter name")
-	}
-
-	if cfg.Server.GRPC == nil {
-		return errors.New("server requires parameter grpc")
 	}
 
 	if cfg.Server.GRPC.AdvertiseIP == "" {
@@ -381,23 +373,11 @@ func (cfg *Config) Validate() error {
 		return errors.New("grpc requires parameter listenIP")
 	}
 
-	if cfg.Server.REST == nil {
-		return errors.New("server requires parameter rest")
-	}
-
-	if cfg.Database == nil {
-		return errors.New("config requires parameter database")
-	}
-
 	if cfg.Database.Type == "" {
 		return errors.New("database requires parameter type")
 	}
 
 	if cfg.Database.Type == DatabaseTypeMysql || cfg.Database.Type == DatabaseTypeMariaDB {
-		if cfg.Database.Mysql == nil {
-			return errors.New("database requires parameter mysql")
-		}
-
 		if cfg.Database.Mysql.User == "" {
 			return errors.New("mysql requires parameter user")
 		}
@@ -434,10 +414,6 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.Database.Type == DatabaseTypePostgres {
-		if cfg.Database.Postgres == nil {
-			return errors.New("database requires parameter postgres")
-		}
-
 		if cfg.Database.Postgres.User == "" {
 			return errors.New("postgres requires parameter user")
 		}
@@ -467,10 +443,6 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	if cfg.Database.Redis == nil {
-		return errors.New("database requires parameter redis")
-	}
-
 	if len(cfg.Database.Redis.Addrs) == 0 {
 		return errors.New("redis requires parameter addrs")
 	}
@@ -497,20 +469,8 @@ func (cfg *Config) Validate() error {
 		return errors.New("redis requires parameter backendDB")
 	}
 
-	if cfg.Cache == nil {
-		return errors.New("config requires parameter cache")
-	}
-
-	if cfg.Cache.Redis == nil {
-		return errors.New("cache requires parameter redis")
-	}
-
 	if cfg.Cache.Redis.TTL == 0 {
 		return errors.New("redis requires parameter ttl")
-	}
-
-	if cfg.Cache.Local == nil {
-		return errors.New("cache requires parameter local")
 	}
 
 	if cfg.Cache.Local.Size == 0 {
@@ -521,11 +481,7 @@ func (cfg *Config) Validate() error {
 		return errors.New("local requires parameter ttl")
 	}
 
-	if cfg.ObjectStorage == nil {
-		return errors.New("config requires parameter objectStorage")
-	}
-
-	if cfg.ObjectStorage != nil && cfg.ObjectStorage.Enable {
+	if cfg.ObjectStorage.Enable {
 		if cfg.ObjectStorage.Name == "" {
 			return errors.New("objectStorage requires parameter name")
 		}
@@ -543,10 +499,6 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	if cfg.Security == nil {
-		return errors.New("config requires parameter security")
-	}
-
 	if cfg.Security.AutoIssueCert {
 		if cfg.Security.CACert == "" {
 			return errors.New("security requires parameter caCert")
@@ -560,10 +512,6 @@ func (cfg *Config) Validate() error {
 			return errors.New("security requires parameter tlsPolicy")
 		}
 
-		if cfg.Security.CertSpec == nil {
-			return errors.New("security requires parameter certSpec")
-		}
-
 		if len(cfg.Security.CertSpec.IPAddresses) == 0 {
 			return errors.New("certSpec requires parameter ipAddresses")
 		}
@@ -573,18 +521,10 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	if cfg.Metrics == nil {
-		return errors.New("config requires parameter metrics")
-	}
-
 	if cfg.Metrics.Enable {
 		if cfg.Metrics.Addr == "" {
 			return errors.New("metrics requires parameter addr")
 		}
-	}
-
-	if cfg.Network == nil {
-		return errors.New("config requires parameter network")
 	}
 
 	return nil

@@ -33,7 +33,7 @@ import (
 )
 
 var (
-	mockSchedulerConfig = &config.SchedulerConfig{
+	mockSchedulerConfig = config.SchedulerConfig{
 		RetryLimit:           10,
 		RetryBackSourceLimit: 3,
 		RetryInterval:        10 * time.Millisecond,

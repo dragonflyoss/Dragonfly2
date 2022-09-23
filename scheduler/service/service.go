@@ -337,7 +337,7 @@ func (s *Service) ReportPieceResult(stream schedulerv1.Scheduler_ReportPieceResu
 			s.handlePieceSuccess(ctx, peer, piece)
 
 			// Collect peer host traffic metrics.
-			if s.config.Metrics != nil && s.config.Metrics.EnablePeerHost {
+			if s.config.Metrics.Enable && s.config.Metrics.EnablePeerHost {
 				metrics.PeerHostTraffic.WithLabelValues(peer.Tag, peer.Application, metrics.PeerHostTrafficDownloadType, peer.Host.ID, peer.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
 				if parent, ok := s.resource.PeerManager().Load(piece.DstPid); ok {
 					metrics.PeerHostTraffic.WithLabelValues(peer.Tag, peer.Application, metrics.PeerHostTrafficUploadType, parent.Host.ID, parent.Host.IP).Add(float64(piece.PieceInfo.RangeSize))

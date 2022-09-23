@@ -176,7 +176,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 
 	// Initialize scheduler.
-	scheduler := scheduler.New(cfg.Scheduler, dynconfig, d.PluginDir())
+	scheduler := scheduler.New(&cfg.Scheduler, dynconfig, d.PluginDir())
 
 	// Initialize Storage.
 	storage, err := storage.New(d.DataDir())
@@ -214,7 +214,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 
 	// Initialize metrics.
 	if cfg.Metrics.Enable {
-		s.metricsServer = metrics.New(cfg.Metrics, s.grpcServer)
+		s.metricsServer = metrics.New(&cfg.Metrics, s.grpcServer)
 	}
 
 	return s, nil

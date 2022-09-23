@@ -29,10 +29,10 @@ import (
 )
 
 func newPostgres(cfg *config.Config) (*gorm.DB, error) {
-	p := cfg.Database.Postgres
+	postgresCfg := &cfg.Database.Postgres
 
 	// Format dsn string.
-	dsn := formatPostgresDSN(p)
+	dsn := formatPostgresDSN(postgresCfg)
 
 	// Connect to mysql.
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
@@ -47,7 +47,7 @@ func newPostgres(cfg *config.Config) (*gorm.DB, error) {
 	}
 
 	// Run migration.
-	if p.Migrate {
+	if postgresCfg.Migrate {
 		if err := migrate(db); err != nil {
 			return nil, err
 		}

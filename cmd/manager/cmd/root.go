@@ -58,7 +58,7 @@ for managing schedulers and seed peers, offering http apis and portal, etc.`,
 		}
 
 		// Initialize dfpath.
-		d, err := initDfpath(cfg.Server)
+		d, err := initDfpath(&cfg.Server)
 		if err != nil {
 			return err
 		}
