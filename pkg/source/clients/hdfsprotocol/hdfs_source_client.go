@@ -32,7 +32,8 @@ import (
 )
 
 const (
-	HDFSClient = "hdfs"
+	HDFSClient          = "hdfs"
+	nameNodeDefaultPort = ":8082"
 )
 
 const (
@@ -180,7 +181,14 @@ func (h *hdfsSourceClient) getHDFSClient(url *url.URL) (*hdfs.Client, error) {
 	options := hdfs.ClientOptionsFromConf(map[string]string{
 		hdfsUseDataNodeHostName: hdfsUseDataNodeHostNameValue,
 	})
-	options.Addresses = strings.Split(url.Host, ",")
+
+	if strings.Contains(url.Host, ":") {
+		options.Addresses = []string{url.Host}
+	} else {
+		// add default namenode port
+		options.Addresses = []string{url.Host + nameNodeDefaultPort}
+	}
+
 	u, err := user.Current()
 	if err != nil {
 		return nil, err
@@ -203,7 +211,7 @@ func (h *hdfsSourceClient) getHDFSClient(url *url.URL) (*hdfs.Client, error) {
 func (h *hdfsSourceClient) getHDFSClientAndPath(url *url.URL) (*hdfs.Client, string, error) {
 	client, err := h.getHDFSClient(url)
 	if err != nil {
-		return nil, "", fmt.Errorf("hdfs create client failed, url is %s", url)
+		return nil, "", fmt.Errorf("failed to create hdfs client: %s, url is %s", err.Error(), url)
 	}
 	return client, url.Path, nil
 }
