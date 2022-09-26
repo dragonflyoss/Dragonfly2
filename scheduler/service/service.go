@@ -889,7 +889,7 @@ func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task, backT
 func (s *Service) createRecord(peer *resource.Peer, peerState int, req *schedulerv1.PeerResult) {
 	parent, err := peer.MainParent()
 	if err != nil {
-		peer.Log.Warn(err)
+		peer.Log.Debug(err)
 		return
 	}
 
