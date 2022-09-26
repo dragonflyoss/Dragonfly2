@@ -33,7 +33,7 @@ import (
 
 const (
 	HDFSClient          = "hdfs"
-	namenodeDefaultPort = ":8082"
+	nameNodeDefaultPort = ":8082"
 )
 
 const (
@@ -186,7 +186,7 @@ func (h *hdfsSourceClient) getHDFSClient(url *url.URL) (*hdfs.Client, error) {
 		options.Addresses = []string{url.Host}
 	} else {
 		// add default namenode port
-		options.Addresses = []string{url.Host + namenodeDefaultPort}
+		options.Addresses = []string{url.Host + nameNodeDefaultPort}
 	}
 
 	u, err := user.Current()
