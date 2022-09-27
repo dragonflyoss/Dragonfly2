@@ -45,7 +45,7 @@ require (
 	github.com/mdlayher/vsock v1.1.1
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/montanaflynn/stats v0.6.6
-	github.com/onsi/ginkgo/v2 v2.1.6
+	github.com/onsi/ginkgo/v2 v2.2.0
 	github.com/onsi/gomega v1.20.2
 	github.com/orcaman/concurrent-map/v2 v2.0.0
 	github.com/phayes/freeport v0.0.0-20220201140144-74d24b5ae9f5
