@@ -42,10 +42,6 @@ import (
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 )
 
-func TestMain(m *testing.M) {
-	os.Exit(m.Run())
-}
-
 func TestLocalTaskStore_PutAndGetPiece(t *testing.T) {
 	assert := testifyassert.New(t)
 	testBytes, err := os.ReadFile(test.File)

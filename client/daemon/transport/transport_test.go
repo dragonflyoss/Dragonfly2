@@ -31,10 +31,6 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/test"
 )
 
-func TestMain(m *testing.M) {
-	os.Exit(m.Run())
-}
-
 func TestTransport_RoundTrip(t *testing.T) {
 	assert := testifyassert.New(t)
 	ctrl := gomock.NewController(t)
