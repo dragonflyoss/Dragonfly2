@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"os"
 	"sync"
 	"testing"
 
@@ -49,11 +48,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
-func TestMain(m *testing.M) {
-	os.Exit(m.Run())
-}
-
-func Test_New(t *testing.T) {
+func TestServer_New(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -85,7 +80,7 @@ func Test_New(t *testing.T) {
 	}
 }
 
-func Test_DeleteTask(t *testing.T) {
+func TestServer_DeleteTask(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -156,7 +151,7 @@ func Test_DeleteTask(t *testing.T) {
 	}
 }
 
-func Test_ExportTask(t *testing.T) {
+func TestServer_ExportTask(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -306,7 +301,7 @@ func Test_ExportTask(t *testing.T) {
 	}
 }
 
-func Test_ImportTask(t *testing.T) {
+func TestServer_ImportTask(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -414,7 +409,7 @@ func Test_ImportTask(t *testing.T) {
 	}
 }
 
-func Test_StatTask(t *testing.T) {
+func TestServer_StatTask(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -521,7 +516,7 @@ func Test_StatTask(t *testing.T) {
 	}
 }
 
-func Test_GetPieceTasks(t *testing.T) {
+func TestServer_GetPieceTasks(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -653,7 +648,7 @@ func Test_GetPieceTasks(t *testing.T) {
 	}
 }
 
-func Test_ServeDownload(t *testing.T) {
+func TestServer_ServeDownload(t *testing.T) {
 	assert := testifyassert.New(t)
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -717,7 +712,7 @@ func Test_ServeDownload(t *testing.T) {
 	assert.True(lastResult.Done)
 }
 
-func Test_ServePeer(t *testing.T) {
+func TestServer_ServePeer(t *testing.T) {
 	assert := testifyassert.New(t)
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -815,7 +810,7 @@ func Test_ServePeer(t *testing.T) {
 	}
 }
 
-func Test_SyncPieceTasks(t *testing.T) {
+func TestServer_SyncPieceTasks(t *testing.T) {
 	assert := testifyassert.New(t)
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
