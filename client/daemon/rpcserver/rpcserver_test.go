@@ -85,6 +85,77 @@ func Test_New(t *testing.T) {
 	}
 }
 
+func Test_DeleteTask(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	tests := []struct {
+		name   string
+		r      *dfdaemonv1.DeleteTaskRequest
+		mock   func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mockTask *mocks.MockTaskStorageDriver, mockPieceManager *peer.MockPieceManager)
+		expect func(t *testing.T, r *dfdaemonv1.DeleteTaskRequest, err error)
+	}{
+		{
+			name: "task not found, skip delete",
+			r: &dfdaemonv1.DeleteTaskRequest{
+				UrlMeta: &commonv1.UrlMeta{},
+			},
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mocktsd *mocks.MockTaskStorageDriver, mockPieceManager *peer.MockPieceManager) {
+				mockStorageManger.FindCompletedTask(gomock.Any()).Return(nil)
+			},
+			expect: func(t *testing.T, r *dfdaemonv1.DeleteTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.Nil(err)
+			},
+		},
+		{
+			name: "failed to UnregisterTask",
+			r: &dfdaemonv1.DeleteTaskRequest{
+				UrlMeta: &commonv1.UrlMeta{},
+			},
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mocktsd *mocks.MockTaskStorageDriver, mockPieceManager *peer.MockPieceManager) {
+				mockStorageManger.FindCompletedTask(gomock.Any()).Return(&storage.ReusePeerTask{})
+				mockStorageManger.UnregisterTask(gomock.Any(), gomock.Any()).Return(dferrors.ErrInvalidArgument)
+			},
+			expect: func(t *testing.T, r *dfdaemonv1.DeleteTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.Error(err)
+			},
+		},
+		{
+			name: "success",
+			r: &dfdaemonv1.DeleteTaskRequest{
+				UrlMeta: &commonv1.UrlMeta{},
+			},
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mocktsd *mocks.MockTaskStorageDriver, mockPieceManager *peer.MockPieceManager) {
+				mockStorageManger.FindCompletedTask(gomock.Any()).Return(&storage.ReusePeerTask{})
+				mockStorageManger.UnregisterTask(gomock.Any(), gomock.Any()).Return(nil)
+			},
+			expect: func(t *testing.T, r *dfdaemonv1.DeleteTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.Nil(err)
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockStorageManger := mocks.NewMockManager(ctrl)
+			mockTaskManager := peer.NewMockTaskManager(ctrl)
+			mocktsd := mocks.NewMockTaskStorageDriver(ctrl)
+			pieceManager := peer.NewMockPieceManager(ctrl)
+			tc.mock(mockStorageManger.EXPECT(), mockTaskManager.EXPECT(), mocktsd, pieceManager)
+			s := &server{
+				KeepAlive:       util.NewKeepAlive("test"),
+				peerHost:        &schedulerv1.PeerHost{},
+				storageManager:  mockStorageManger,
+				peerTaskManager: mockTaskManager,
+			}
+			_, err := s.DeleteTask(context.Background(), tc.r)
+			tc.expect(t, tc.r, err)
+		})
+	}
+}
+
 func Test_ExportTask(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
