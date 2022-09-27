@@ -37,10 +37,6 @@ import (
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 )
 
-func TestMain(m *testing.M) {
-	os.Exit(m.Run())
-}
-
 func TestUploadManager_Serve(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
