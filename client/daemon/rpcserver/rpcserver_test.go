@@ -29,6 +29,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/phayes/freeport"
 	testifyassert "github.com/stretchr/testify/assert"
+	"google.golang.org/grpc"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
@@ -38,15 +39,618 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/storage/mocks"
 	"d7y.io/dragonfly/v2/client/util"
+	utilmocks "d7y.io/dragonfly/v2/client/util/mocks"
+	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
 	dfdaemonclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
+	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
 func TestMain(m *testing.M) {
 	os.Exit(m.Run())
+}
+
+func Test_New(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	tests := []struct {
+		name   string
+		mock   func(mockKeepAlive *utilmocks.MockKeepAliveMockRecorder)
+		expect func(t *testing.T, err error)
+	}{
+		{
+			name: "init success",
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				assert.Nil(err)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockpeerHost := &schedulerv1.PeerHost{}
+			mockpeerTaskManager := peer.NewMockTaskManager(ctrl)
+			mockStorageManger := mocks.NewMockManager(ctrl)
+			var defaultPattern commonv1.Pattern = 0
+			var mockdownloadOpts []grpc.ServerOption
+			var mockpeerOpts []grpc.ServerOption
+			_, err := New(mockpeerHost, mockpeerTaskManager, mockStorageManger, defaultPattern, mockdownloadOpts, mockpeerOpts)
+			tc.expect(t, err)
+		})
+	}
+}
+
+func Test_DeleteTask(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	tests := []struct {
+		name   string
+		r      *dfdaemonv1.DeleteTaskRequest
+		mock   func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mockTask *mocks.MockTaskStorageDriver, mockPieceManager *peer.MockPieceManager)
+		expect func(t *testing.T, r *dfdaemonv1.DeleteTaskRequest, err error)
+	}{
+		{
+			name: "task not found, skip delete",
+			r: &dfdaemonv1.DeleteTaskRequest{
+				UrlMeta: &commonv1.UrlMeta{},
+			},
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mocktsd *mocks.MockTaskStorageDriver, mockPieceManager *peer.MockPieceManager) {
+				mockStorageManger.FindCompletedTask(gomock.Any()).Return(nil)
+			},
+			expect: func(t *testing.T, r *dfdaemonv1.DeleteTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.Nil(err)
+			},
+		},
+		{
+			name: "failed to UnregisterTask",
+			r: &dfdaemonv1.DeleteTaskRequest{
+				UrlMeta: &commonv1.UrlMeta{},
+			},
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mocktsd *mocks.MockTaskStorageDriver, mockPieceManager *peer.MockPieceManager) {
+				mockStorageManger.FindCompletedTask(gomock.Any()).Return(&storage.ReusePeerTask{})
+				mockStorageManger.UnregisterTask(gomock.Any(), gomock.Any()).Return(dferrors.ErrInvalidArgument)
+			},
+			expect: func(t *testing.T, r *dfdaemonv1.DeleteTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.Error(err)
+			},
+		},
+		{
+			name: "success",
+			r: &dfdaemonv1.DeleteTaskRequest{
+				UrlMeta: &commonv1.UrlMeta{},
+			},
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mocktsd *mocks.MockTaskStorageDriver, mockPieceManager *peer.MockPieceManager) {
+				mockStorageManger.FindCompletedTask(gomock.Any()).Return(&storage.ReusePeerTask{})
+				mockStorageManger.UnregisterTask(gomock.Any(), gomock.Any()).Return(nil)
+			},
+			expect: func(t *testing.T, r *dfdaemonv1.DeleteTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.Nil(err)
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockStorageManger := mocks.NewMockManager(ctrl)
+			mockTaskManager := peer.NewMockTaskManager(ctrl)
+			mocktsd := mocks.NewMockTaskStorageDriver(ctrl)
+			pieceManager := peer.NewMockPieceManager(ctrl)
+			tc.mock(mockStorageManger.EXPECT(), mockTaskManager.EXPECT(), mocktsd, pieceManager)
+			s := &server{
+				KeepAlive:       util.NewKeepAlive("test"),
+				peerHost:        &schedulerv1.PeerHost{},
+				storageManager:  mockStorageManger,
+				peerTaskManager: mockTaskManager,
+			}
+			_, err := s.DeleteTask(context.Background(), tc.r)
+			tc.expect(t, tc.r, err)
+		})
+	}
+}
+
+func Test_ExportTask(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	tests := []struct {
+		name   string
+		r      *dfdaemonv1.ExportTaskRequest
+		mock   func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mockTask *mocks.MockTaskStorageDriver, mockPieceManager *peer.MockPieceManager)
+		expect func(t *testing.T, r *dfdaemonv1.ExportTaskRequest, err error)
+	}{
+		{
+			name: "use local cache and task doesn't exist, return error",
+			r: &dfdaemonv1.ExportTaskRequest{
+				UrlMeta:   &commonv1.UrlMeta{},
+				LocalOnly: true,
+			},
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mocktsd *mocks.MockTaskStorageDriver, mockPieceManager *peer.MockPieceManager) {
+				mockStorageManger.FindCompletedTask(gomock.Any()).Return(nil)
+			},
+			expect: func(t *testing.T, r *dfdaemonv1.ExportTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.True(dferrors.CheckError(err, commonv1.Code_PeerTaskNotFound))
+			},
+		},
+		{
+			name: "task doesn't exist, return error",
+			r: &dfdaemonv1.ExportTaskRequest{
+				UrlMeta:   &commonv1.UrlMeta{},
+				LocalOnly: false,
+			},
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mocktsd *mocks.MockTaskStorageDriver, mockPieceManager *peer.MockPieceManager) {
+				mockStorageManger.FindCompletedTask(gomock.Any()).Return(nil)
+				mockTaskManager.StatTask(gomock.Any(), gomock.Any()).Return(&schedulerv1.Task{}, storage.ErrTaskNotFound)
+			},
+			expect: func(t *testing.T, r *dfdaemonv1.ExportTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.Error(err)
+			},
+		},
+		{
+			name: "task found in peers but not available for download",
+			r: &dfdaemonv1.ExportTaskRequest{
+				UrlMeta:   &commonv1.UrlMeta{},
+				LocalOnly: false,
+			},
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mocktsd *mocks.MockTaskStorageDriver, mockPieceManager *peer.MockPieceManager) {
+				mockStorageManger.FindCompletedTask(gomock.Any()).Return(nil)
+				mockTaskManager.StatTask(gomock.Any(), gomock.Any()).Return(&schedulerv1.Task{
+					State:            resource.TaskStateSucceeded,
+					HasAvailablePeer: false,
+				}, nil)
+			},
+			expect: func(t *testing.T, r *dfdaemonv1.ExportTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.True(dferrors.CheckError(err, commonv1.Code_PeerTaskNotFound))
+			},
+		},
+		{
+			name: "Task exists in peers",
+			r: &dfdaemonv1.ExportTaskRequest{
+				Url:    "http://localhost/test",
+				Output: "./testdata/file1",
+				UrlMeta: &commonv1.UrlMeta{
+					Tag: "unit test",
+				},
+				Callsystem: "",
+			},
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mocktsd *mocks.MockTaskStorageDriver, mockPieceManager *peer.MockPieceManager) {
+				mockStorageManger.FindCompletedTask(gomock.Any()).Return(nil)
+				mockTaskManager.StatTask(gomock.Any(), gomock.Any()).Return(&schedulerv1.Task{
+					State:            resource.TaskStateSucceeded,
+					HasAvailablePeer: true,
+				}, nil)
+				mockTaskManager.StartFileTask(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, req *peer.FileTaskRequest) (chan *peer.FileTaskProgress, bool, error) {
+						ch := make(chan *peer.FileTaskProgress)
+						go func() {
+							for i := 0; i <= 100; i++ {
+								ch <- &peer.FileTaskProgress{
+									State: &peer.ProgressState{
+										Success: true,
+									},
+									TaskID:          "",
+									PeerID:          "",
+									ContentLength:   100,
+									CompletedLength: int64(i),
+									PeerTaskDone:    i == 100,
+									DoneCallback:    func() {},
+								}
+							}
+							close(ch)
+						}()
+						return ch, false, nil
+					})
+			},
+			expect: func(t *testing.T, r *dfdaemonv1.ExportTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.Nil(err)
+			},
+		},
+		{
+			name: "task exists with error",
+			r: &dfdaemonv1.ExportTaskRequest{
+				UrlMeta:   &commonv1.UrlMeta{},
+				LocalOnly: false,
+			},
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mocktsd *mocks.MockTaskStorageDriver, mockPieceManager *peer.MockPieceManager) {
+				mockStorageManger.FindCompletedTask(gomock.Any()).Return(&storage.ReusePeerTask{})
+				mockStorageManger.Store(gomock.Any(), gomock.Any()).Return(storage.ErrTaskNotFound)
+			},
+			expect: func(t *testing.T, r *dfdaemonv1.ExportTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.Error(err)
+			},
+		},
+		{
+			name: "task exists with no error",
+			r: &dfdaemonv1.ExportTaskRequest{
+				UrlMeta:   &commonv1.UrlMeta{},
+				LocalOnly: false,
+			},
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mocktsd *mocks.MockTaskStorageDriver, mockPieceManager *peer.MockPieceManager) {
+				mockStorageManger.FindCompletedTask(gomock.Any()).Return(&storage.ReusePeerTask{})
+				mockStorageManger.Store(gomock.Any(), gomock.Any()).Return(nil)
+			},
+			expect: func(t *testing.T, r *dfdaemonv1.ExportTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.Nil(err)
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockStorageManger := mocks.NewMockManager(ctrl)
+			mockTaskManager := peer.NewMockTaskManager(ctrl)
+			mocktsd := mocks.NewMockTaskStorageDriver(ctrl)
+			pieceManager := peer.NewMockPieceManager(ctrl)
+			tc.mock(mockStorageManger.EXPECT(), mockTaskManager.EXPECT(), mocktsd, pieceManager)
+			s := &server{
+				KeepAlive:       util.NewKeepAlive("test"),
+				peerHost:        &schedulerv1.PeerHost{},
+				storageManager:  mockStorageManger,
+				peerTaskManager: mockTaskManager,
+			}
+			_, err := s.ExportTask(context.Background(), tc.r)
+			tc.expect(t, tc.r, err)
+		})
+	}
+}
+
+func Test_ImportTask(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	tests := []struct {
+		name   string
+		r      *dfdaemonv1.ImportTaskRequest
+		mock   func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mockTask *mocks.MockTaskStorageDriver, mockPieceManager *peer.MockPieceManager)
+		expect func(t *testing.T, r *dfdaemonv1.ImportTaskRequest, err error)
+	}{
+		{
+			name: "0. Task exists in local storage",
+			r: &dfdaemonv1.ImportTaskRequest{
+				UrlMeta: &commonv1.UrlMeta{},
+			},
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mocktsd *mocks.MockTaskStorageDriver, mockPieceManager *peer.MockPieceManager) {
+				mockStorageManger.FindCompletedTask(gomock.Any()).Return(&storage.ReusePeerTask{})
+				mockTaskManager.AnnouncePeerTask(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+			},
+			expect: func(t *testing.T, r *dfdaemonv1.ImportTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.Nil(err)
+			},
+		},
+		{
+			name: "0. Task exists in local storage with err",
+			r: &dfdaemonv1.ImportTaskRequest{
+				UrlMeta: &commonv1.UrlMeta{},
+			},
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mocktsd *mocks.MockTaskStorageDriver, mockPieceManager *peer.MockPieceManager) {
+				mockStorageManger.FindCompletedTask(gomock.Any()).Return(&storage.ReusePeerTask{})
+				mockTaskManager.AnnouncePeerTask(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(storage.ErrTaskNotFound).AnyTimes()
+			},
+			expect: func(t *testing.T, r *dfdaemonv1.ImportTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.Nil(err)
+			},
+		},
+		{
+			name: "1. Register to storageManager with err",
+			r: &dfdaemonv1.ImportTaskRequest{
+				UrlMeta: &commonv1.UrlMeta{},
+			},
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mocktsd *mocks.MockTaskStorageDriver, mockPieceManager *peer.MockPieceManager) {
+				mockStorageManger.FindCompletedTask(gomock.Any()).Return(nil)
+				mockTaskManager.AnnouncePeerTask(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(storage.ErrTaskNotFound).AnyTimes()
+				mockStorageManger.RegisterTask(gomock.Any(), gomock.Any()).Return(mocktsd, dferrors.ErrInvalidArgument)
+			},
+			expect: func(t *testing.T, r *dfdaemonv1.ImportTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.Error(err)
+			},
+		},
+		{
+			name: "2. Import task file with err",
+			r: &dfdaemonv1.ImportTaskRequest{
+				UrlMeta: &commonv1.UrlMeta{},
+			},
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mocktsd *mocks.MockTaskStorageDriver, mockPieceManager *peer.MockPieceManager) {
+				mockStorageManger.FindCompletedTask(gomock.Any()).Return(nil)
+				mockTaskManager.AnnouncePeerTask(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(storage.ErrTaskNotFound).AnyTimes()
+				mockStorageManger.RegisterTask(gomock.Any(), gomock.Any()).Return(mocktsd, nil)
+				mockTaskManager.GetPieceManager().Return(mockPieceManager)
+				mockPieceManager.EXPECT().ImportFile(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(dferrors.ErrInvalidArgument)
+			},
+			expect: func(t *testing.T, r *dfdaemonv1.ImportTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.Error(err)
+			},
+		},
+		{
+			name: "import file succeeded",
+			r: &dfdaemonv1.ImportTaskRequest{
+				UrlMeta: &commonv1.UrlMeta{},
+			},
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mocktsd *mocks.MockTaskStorageDriver, mockPieceManager *peer.MockPieceManager) {
+				mockStorageManger.FindCompletedTask(gomock.Any()).Return(nil)
+				mockTaskManager.AnnouncePeerTask(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(storage.ErrTaskNotFound).AnyTimes()
+				mockStorageManger.RegisterTask(gomock.Any(), gomock.Any()).Return(mocktsd, nil)
+				mockTaskManager.GetPieceManager().Return(mockPieceManager)
+				mockPieceManager.EXPECT().ImportFile(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				mockTaskManager.AnnouncePeerTask(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(storage.ErrTaskNotFound).AnyTimes()
+			},
+			expect: func(t *testing.T, r *dfdaemonv1.ImportTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.Nil(err)
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockStorageManger := mocks.NewMockManager(ctrl)
+			mockTaskManager := peer.NewMockTaskManager(ctrl)
+			mocktsd := mocks.NewMockTaskStorageDriver(ctrl)
+			pieceManager := peer.NewMockPieceManager(ctrl)
+			tc.mock(mockStorageManger.EXPECT(), mockTaskManager.EXPECT(), mocktsd, pieceManager)
+			s := &server{
+				KeepAlive:       util.NewKeepAlive("test"),
+				peerHost:        &schedulerv1.PeerHost{},
+				storageManager:  mockStorageManger,
+				peerTaskManager: mockTaskManager,
+			}
+			_, err := s.ImportTask(context.Background(), tc.r)
+			tc.expect(t, tc.r, err)
+		})
+	}
+}
+
+func Test_StatTask(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	tests := []struct {
+		name   string
+		r      *dfdaemonv1.StatTaskRequest
+		mock   func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mockTask *peer.MockTask)
+		expect func(t *testing.T, r *dfdaemonv1.StatTaskRequest, err error)
+	}{
+		{
+			name: "completed",
+			r: &dfdaemonv1.StatTaskRequest{
+				UrlMeta: &commonv1.UrlMeta{},
+			},
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mockTask *peer.MockTask) {
+				mockStorageManger.FindCompletedTask(gomock.Any()).Return(&storage.ReusePeerTask{})
+			},
+			expect: func(t *testing.T, r *dfdaemonv1.StatTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.Nil(err)
+			},
+		},
+		{
+			name: "stat local cache and task doesn't exist",
+			r: &dfdaemonv1.StatTaskRequest{
+				UrlMeta:   &commonv1.UrlMeta{},
+				LocalOnly: true,
+			},
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mockTask *peer.MockTask) {
+				mockStorageManger.FindCompletedTask(gomock.Any()).Return(nil)
+			},
+			expect: func(t *testing.T, r *dfdaemonv1.StatTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.True(dferrors.CheckError(err, commonv1.Code_PeerTaskNotFound))
+			},
+		},
+		{
+			name: "other peers hold the task",
+			r: &dfdaemonv1.StatTaskRequest{
+				UrlMeta:   &commonv1.UrlMeta{},
+				LocalOnly: false,
+			},
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mockTask *peer.MockTask) {
+				mockStorageManger.FindCompletedTask(gomock.Any()).Return(nil)
+				mockTaskManager.StatTask(gomock.Any(), gomock.Any()).Return(&schedulerv1.Task{}, storage.ErrTaskNotFound)
+			},
+			expect: func(t *testing.T, r *dfdaemonv1.StatTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.Error(err)
+			},
+		},
+		{
+			name: "task is in succeeded state and has available peer",
+			r: &dfdaemonv1.StatTaskRequest{
+				UrlMeta:   &commonv1.UrlMeta{},
+				LocalOnly: false,
+			},
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mockTask *peer.MockTask) {
+				mockStorageManger.FindCompletedTask(gomock.Any()).Return(nil)
+				mockTaskManager.StatTask(gomock.Any(), gomock.Any()).Return(&schedulerv1.Task{
+					State:            resource.TaskStateSucceeded,
+					HasAvailablePeer: true,
+				}, nil)
+			},
+			expect: func(t *testing.T, r *dfdaemonv1.StatTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.Nil(err)
+			},
+		},
+		{
+			name: "task is in succeeded state and has available peer",
+			r: &dfdaemonv1.StatTaskRequest{
+				UrlMeta:   &commonv1.UrlMeta{},
+				LocalOnly: false,
+			},
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mockTask *peer.MockTask) {
+				mockStorageManger.FindCompletedTask(gomock.Any()).Return(nil)
+				mockTaskManager.StatTask(gomock.Any(), gomock.Any()).Return(&schedulerv1.Task{
+					State:            resource.TaskStateSucceeded,
+					HasAvailablePeer: false,
+				}, nil)
+			},
+			expect: func(t *testing.T, r *dfdaemonv1.StatTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.True(dferrors.CheckError(err, commonv1.Code_PeerTaskNotFound))
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockStorageManger := mocks.NewMockManager(ctrl)
+			mockTaskManager := peer.NewMockTaskManager(ctrl)
+			mockTask := peer.NewMockTask(ctrl)
+			tc.mock(mockStorageManger.EXPECT(), mockTaskManager.EXPECT(), mockTask)
+			s := &server{
+				KeepAlive:       util.NewKeepAlive("test"),
+				peerHost:        &schedulerv1.PeerHost{},
+				storageManager:  mockStorageManger,
+				peerTaskManager: mockTaskManager,
+			}
+			_, err := s.StatTask(context.Background(), tc.r)
+			tc.expect(t, tc.r, err)
+		})
+	}
+}
+
+func Test_GetPieceTasks(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	tests := []struct {
+		name   string
+		mock   func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mockTask *peer.MockTask, r *commonv1.PieceTaskRequest)
+		expect func(t *testing.T, p *commonv1.PiecePacket, r *commonv1.PieceTaskRequest, err error)
+	}{
+		{
+			name: "error invalid argument",
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mockTask *peer.MockTask, r *commonv1.PieceTaskRequest) {
+				mockStorageManger.GetPieces(gomock.Any(), gomock.Any()).Return(&commonv1.PiecePacket{}, dferrors.ErrInvalidArgument)
+			},
+			expect: func(t *testing.T, p *commonv1.PiecePacket, r *commonv1.PieceTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.True(dferrors.CheckError(err, commonv1.Code_BadRequest))
+			},
+		},
+		{
+			name: "error task not found and no running task",
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mockTask *peer.MockTask, r *commonv1.PieceTaskRequest) {
+				gomock.InOrder(
+					mockStorageManger.GetPieces(gomock.Any(), gomock.Any()).Return(&commonv1.PiecePacket{}, storage.ErrTaskNotFound),
+					mockTaskManager.IsPeerTaskRunning(gomock.Any()).Return(mockTask, false),
+				)
+			},
+			expect: func(t *testing.T, p *commonv1.PiecePacket, r *commonv1.PieceTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.True(dferrors.CheckError(err, commonv1.Code_PeerTaskNotFound))
+			},
+		},
+		{
+			name: "error task not found and the running peer is the source peer",
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mockTask *peer.MockTask, r *commonv1.PieceTaskRequest) {
+				gomock.InOrder(
+					mockStorageManger.GetPieces(gomock.Any(), gomock.Any()).Return(&commonv1.PiecePacket{}, storage.ErrTaskNotFound),
+					mockTaskManager.IsPeerTaskRunning(gomock.Any()).Return(mockTask, true),
+					mockTask.EXPECT().GetPeerID().Return(r.SrcPid),
+				)
+			},
+			expect: func(t *testing.T, p *commonv1.PiecePacket, r *commonv1.PieceTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.True(dferrors.CheckError(err, commonv1.Code_PeerTaskNotFound))
+			},
+		},
+		{
+			name: "error task not found and task.GetPeerID() != request.GetDstPid() with no err",
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mockTask *peer.MockTask, r *commonv1.PieceTaskRequest) {
+				var testDstPid string = "test"
+				gomock.InOrder(
+					mockStorageManger.GetPieces(gomock.Any(), gomock.Any()).Return(&commonv1.PiecePacket{}, storage.ErrTaskNotFound),
+					mockTaskManager.IsPeerTaskRunning(gomock.Any()).Return(mockTask, true),
+					mockTask.EXPECT().GetPeerID().Return(testDstPid).AnyTimes(),
+					mockStorageManger.GetPieces(gomock.Any(), &commonv1.PieceTaskRequest{
+						SrcPid: r.SrcPid,
+						DstPid: testDstPid,
+					}).Return(&commonv1.PiecePacket{
+						DstPid: testDstPid,
+					}, nil),
+				)
+			},
+			expect: func(t *testing.T, p *commonv1.PiecePacket, r *commonv1.PieceTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.Nil(err)
+				assert.Equal(p.DstAddr, "")
+				assert.Equal(p.DstPid, "test")
+			},
+		},
+		{
+			name: "error task not found and task.GetPeerID() != request.GetDstPid() with err",
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mockTask *peer.MockTask, r *commonv1.PieceTaskRequest) {
+				var testDstPid string = "test"
+				gomock.InOrder(
+					mockStorageManger.GetPieces(gomock.Any(), gomock.Any()).Return(&commonv1.PiecePacket{}, storage.ErrTaskNotFound),
+					mockTaskManager.IsPeerTaskRunning(gomock.Any()).Return(mockTask, true),
+					mockTask.EXPECT().GetPeerID().Return(testDstPid).AnyTimes(),
+					mockStorageManger.GetPieces(gomock.Any(), gomock.Any()).Return(&commonv1.PiecePacket{}, storage.ErrTaskNotFound),
+				)
+			},
+			expect: func(t *testing.T, p *commonv1.PiecePacket, r *commonv1.PieceTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.True(dferrors.CheckError(err, commonv1.Code_PeerTaskNotFound))
+			},
+		},
+		{
+			name: "error task not found and task.GetPeerID() == request.GetDstPid()",
+			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mockTask *peer.MockTask, r *commonv1.PieceTaskRequest) {
+				gomock.InOrder(
+					mockStorageManger.GetPieces(gomock.Any(), gomock.Any()).Return(&commonv1.PiecePacket{}, storage.ErrTaskNotFound),
+					mockTaskManager.IsPeerTaskRunning(gomock.Any()).Return(mockTask, true),
+					mockTask.EXPECT().GetPeerID().Return(r.DstPid).Times(2),
+				)
+			},
+			expect: func(t *testing.T, p *commonv1.PiecePacket, r *commonv1.PieceTaskRequest, err error) {
+				assert := testifyassert.New(t)
+				assert.Nil(err)
+				assert.Equal(p, &commonv1.PiecePacket{
+					TaskId:        r.TaskId,
+					DstPid:        r.DstPid,
+					DstAddr:       "",
+					PieceInfos:    nil,
+					TotalPiece:    -1,
+					ContentLength: -1,
+					PieceMd5Sign:  "",
+				})
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockStorageManger := mocks.NewMockManager(ctrl)
+			mockTaskManager := peer.NewMockTaskManager(ctrl)
+			mockTask := peer.NewMockTask(ctrl)
+			r := commonv1.PieceTaskRequest{
+				SrcPid: idgen.PeerID(ip.IPv4),
+				DstPid: idgen.PeerID(ip.IPv4),
+			}
+			tc.mock(mockStorageManger.EXPECT(), mockTaskManager.EXPECT(), mockTask, &r)
+			s := &server{
+				KeepAlive:       util.NewKeepAlive("test"),
+				peerHost:        &schedulerv1.PeerHost{},
+				storageManager:  mockStorageManger,
+				peerTaskManager: mockTaskManager,
+			}
+			p, err := s.GetPieceTasks(context.Background(), &r)
+			tc.expect(t, p, &r, err)
+		})
+	}
 }
 
 func Test_ServeDownload(t *testing.T) {
