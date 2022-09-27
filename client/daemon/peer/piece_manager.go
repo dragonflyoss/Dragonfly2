@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination piece_manager_mock.go -source piece_manager.go -package peer
+
 package peer
 
 import (
