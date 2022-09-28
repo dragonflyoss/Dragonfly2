@@ -54,9 +54,9 @@ import (
 	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/net/http"
+	"d7y.io/dragonfly/v2/pkg/os/user"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/safe"
 	"d7y.io/dragonfly/v2/pkg/source"
@@ -796,7 +796,7 @@ func checkOutput(output string) error {
 		return fmt.Errorf("path[%s] is not absolute path", output)
 	}
 	outputDir, _ := path.Split(output)
-	if err := config.MkdirAll(outputDir, 0777, basic.UserID, basic.UserGroup); err != nil {
+	if err := config.MkdirAll(outputDir, 0777, os.Getuid(), os.Getgid()); err != nil {
 		return err
 	}
 
@@ -805,7 +805,7 @@ func checkOutput(output string) error {
 		if err := syscall.Access(dir, syscall.O_RDWR); err == nil {
 			break
 		} else if os.IsPermission(err) || dir == "/" {
-			return fmt.Errorf("user[%s] path[%s] %v", basic.Username, output, err)
+			return fmt.Errorf("user[%s] path[%s] %v", user.Username(), output, err)
 		}
 	}
 	return nil

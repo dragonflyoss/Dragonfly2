@@ -35,10 +35,10 @@ import (
 	"d7y.io/dragonfly/v2/client/dfget"
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
+	"d7y.io/dragonfly/v2/pkg/os/user"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/types"
@@ -95,7 +95,7 @@ var rootCmd = &cobra.Command{
 
 		fmt.Printf("--%s--  %s\n", start.Format("2006-01-02 15:04:05"), dfgetConfig.URL)
 		fmt.Printf("dfget version: %s\n", version.GitVersion)
-		fmt.Printf("current user: %s, default peer ip: %s\n", basic.Username, ip.IPv4)
+		fmt.Printf("current user: %s, default peer ip: %s\n", user.Username(), ip.IPv4)
 		fmt.Printf("output path: %s\n", dfgetConfig.Output)
 
 		//  do get file
