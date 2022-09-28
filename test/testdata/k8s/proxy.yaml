@@ -41,6 +41,7 @@ data:
           port: 65000
       perPeerRateLimit: 512Mi
       totalRateLimit: 1024Mi
+      trafficShaperType: sampling
       concurrent:
         thresholdSize: 10M
         thresholdSpeed: 2M
