@@ -38,7 +38,6 @@ import (
 
 	"d7y.io/dragonfly/v2/client/config"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/digest"
 	dfdaemonclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/pkg/source"
@@ -192,8 +191,8 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 	}
 
 	// change file owner
-	if err = os.Chown(target.Name(), basic.UserID, basic.UserGroup); err != nil {
-		return fmt.Errorf("change file owner to uid[%d] gid[%d]: %w", basic.UserID, basic.UserGroup, err)
+	if err = os.Chown(target.Name(), os.Getuid(), os.Getgid()); err != nil {
+		return fmt.Errorf("change file owner to uid[%d] gid[%d]: %w", os.Getuid(), os.Getgid(), err)
 	}
 
 	if err = os.Rename(target.Name(), cfg.Output); err != nil {
@@ -243,8 +242,8 @@ func newDownRequest(cfg *config.DfgetConfig, hdr map[string]string) *dfdaemonv1.
 			Application: cfg.Application,
 		},
 		Pattern:            cfg.Pattern,
-		Uid:                int64(basic.UserID),
-		Gid:                int64(basic.UserGroup),
+		Uid:                int64(os.Getuid()),
+		Gid:                int64(os.Getgid()),
 		KeepOriginalOffset: cfg.KeepOriginalOffset,
 	}
 }

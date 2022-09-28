@@ -21,10 +21,10 @@ package dfpath
 import (
 	"path/filepath"
 
-	"d7y.io/dragonfly/v2/pkg/basic"
+	"d7y.io/dragonfly/v2/pkg/os/user"
 )
 
-var DefaultWorkHome = filepath.Join(basic.HomeDir, ".dragonfly")
+var DefaultWorkHome = filepath.Join(user.HomeDir(), ".dragonfly")
 var DefaultCacheDir = filepath.Join(DefaultWorkHome, "cache")
 var DefaultConfigDir = filepath.Join(DefaultWorkHome, "config")
 var DefaultLogDir = filepath.Join(DefaultWorkHome, "logs")

@@ -30,7 +30,7 @@ import (
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/internal/dferrors"
-	"d7y.io/dragonfly/v2/pkg/basic"
+	"d7y.io/dragonfly/v2/pkg/os/user"
 	"d7y.io/dragonfly/v2/pkg/strings"
 )
 
@@ -215,7 +215,7 @@ func (cfg *CacheOption) checkOutput() error {
 	}
 
 	outputDir, _ := path.Split(cfg.Output)
-	if err := MkdirAll(outputDir, 0777, basic.UserID, basic.UserGroup); err != nil {
+	if err := MkdirAll(outputDir, 0777, os.Getuid(), os.Getgid()); err != nil {
 		return err
 	}
 
@@ -229,7 +229,7 @@ func (cfg *CacheOption) checkOutput() error {
 		if err := syscall.Access(dir, syscall.O_RDWR); err == nil {
 			break
 		} else if os.IsPermission(err) || dir == "/" {
-			return fmt.Errorf("user[%s] path[%s] %v", basic.Username, cfg.Output, err)
+			return fmt.Errorf("user[%s] path[%s] %v", user.Username(), cfg.Output, err)
 		}
 	}
 	return nil
