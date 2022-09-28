@@ -30,7 +30,6 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/basic"
 	dfdaemonclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 )
 
@@ -236,8 +235,8 @@ func newExportRequest(cfg *config.DfcacheConfig) *dfdaemonv1.ExportTaskRequest {
 		UrlMeta: &commonv1.UrlMeta{
 			Tag: cfg.Tag,
 		},
-		Uid:       int64(basic.UserID),
-		Gid:       int64(basic.UserGroup),
+		Uid:       int64(os.Getuid()),
+		Gid:       int64(os.Getgid()),
 		LocalOnly: cfg.LocalOnly,
 	}
 }
