@@ -298,6 +298,7 @@ func setupMockManager(ctrl *gomock.Controller, ts *testSpec, opt componentsOptio
 	ptm := &peerTaskManager{
 		conductorLock:    &sync.Mutex{},
 		runningPeerTasks: sync.Map{},
+		trafficShaper:    NewTrafficShaper("plain", 0, nil),
 		TaskManagerOption: TaskManagerOption{
 			SchedulerClient: schedulerClient,
 			TaskOption: TaskOption{

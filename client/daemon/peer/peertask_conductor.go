@@ -154,6 +154,8 @@ type peerTaskConductor struct {
 	requestedPiecesLock sync.RWMutex
 	// lock used by send piece result
 	sendPieceResultLock sync.Mutex
+	// trafficShaper used to automatically allocate bandwidth for every peer task
+	trafficShaper TrafficShaper
 	// limiter will be used when enable per peer task rate limit
 	limiter *rate.Limiter
 
@@ -242,6 +244,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 		contentLength:       atomic.NewInt64(-1),
 		totalPiece:          atomic.NewInt32(-1),
 		digest:              atomic.NewString(""),
+		trafficShaper:       ptm.trafficShaper,
 		limiter:             rate.NewLimiter(limit, int(limit)),
 		completedLength:     atomic.NewInt64(0),
 		usedTraffic:         atomic.NewUint64(0),
@@ -388,7 +391,7 @@ func (pt *peerTaskConductor) start() error {
 			return err
 		}
 	}
-
+	pt.trafficShaper.AddTask(pt.taskID, pt)
 	go pt.broker.Start()
 	go pt.pullPieces()
 	return nil
@@ -1310,6 +1313,7 @@ func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPiec
 
 func (pt *peerTaskConductor) waitLimit(ctx context.Context, request *DownloadPieceRequest) bool {
 	_, waitSpan := tracer.Start(ctx, config.SpanWaitPieceLimit)
+	pt.trafficShaper.Record(request.TaskID, int(request.piece.RangeSize))
 	err := pt.limiter.WaitN(pt.ctx, int(request.piece.RangeSize))
 	if err == nil {
 		waitSpan.End()
