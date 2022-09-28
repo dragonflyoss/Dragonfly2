@@ -385,15 +385,15 @@ func (s *Service) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerRes
 	if !req.Success {
 		peer.Log.Errorf("report peer failed result: %s %#v", req.Code, req)
 		if peer.FSM.Is(resource.PeerStateBackToSource) {
-			s.createRecord(peer, storage.PeerStateBackToSourceFailed, req)
 			metrics.DownloadFailureCount.WithLabelValues(peer.Tag, peer.Application, metrics.DownloadFailureBackToSourceType).Inc()
-
 			s.handleTaskFail(ctx, peer.Task, req.GetSourceError(), nil)
 			s.handlePeerFail(ctx, peer)
+
+			go s.createRecord(peer, storage.PeerStateBackToSourceFailed, req)
 			return nil
 		}
 
-		s.createRecord(peer, storage.PeerStateFailed, req)
+		go s.createRecord(peer, storage.PeerStateFailed, req)
 		metrics.DownloadFailureCount.WithLabelValues(peer.Tag, peer.Application, metrics.DownloadFailureP2PType).Inc()
 
 		s.handlePeerFail(ctx, peer)
@@ -403,14 +403,16 @@ func (s *Service) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerRes
 
 	peer.Log.Infof("report peer result: %#v", req)
 	if peer.FSM.Is(resource.PeerStateBackToSource) {
-		s.createRecord(peer, storage.PeerStateBackToSourceSucceeded, req)
 		s.handleTaskSuccess(ctx, peer.Task, req)
 		s.handlePeerSuccess(ctx, peer)
+
+		go s.createRecord(peer, storage.PeerStateBackToSourceSucceeded, req)
 		return nil
 	}
 
-	s.createRecord(peer, storage.PeerStateSucceeded, req)
 	s.handlePeerSuccess(ctx, peer)
+
+	go s.createRecord(peer, storage.PeerStateSucceeded, req)
 	return nil
 }
 
