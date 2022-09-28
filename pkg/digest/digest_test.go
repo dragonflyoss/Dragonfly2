@@ -28,8 +28,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-
-	"d7y.io/dragonfly/v2/pkg/basic"
 )
 
 func TestSha256(t *testing.T) {
@@ -56,7 +54,7 @@ func TestMd5Reader(t *testing.T) {
 
 func TestHashFile(t *testing.T) {
 	var expected = "5d41402abc4b2a76b9719d911017c592"
-	path := filepath.Join(basic.TmpDir, uuid.NewString())
+	path := filepath.Join(os.TempDir(), uuid.NewString())
 	f, err := os.OpenFile(path, syscall.O_CREAT|syscall.O_TRUNC|syscall.O_RDWR, fs.FileMode(0644))
 	assert.Nil(t, err)
 	defer f.Close()
