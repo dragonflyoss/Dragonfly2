@@ -1,24 +1,26 @@
 # current server info used for server
 server:
-  # grpc server configure
+  # GRPC server configure.
   grpc:
-    # listen ip
-    listenIP: 0.0.0.0
-    # listen port, manager will try to listen
-    # when this port is not available, manager will try next port
+    # # Advertise ip.
+    advertiseIP: __IP__
+    # # Listen ip.
+    # listenIP: 0.0.0.0
+    # Listen port.
+    # when this port is not available, manager will try next port.
     port:
       start: 65003
       end: 65003
-  # rest server configure
+  # REST server configure
   rest:
-    # stand address
+    # REST server address
     addr: :8080
 
-# database info used for server
+# Database info used for server.
 database:
-  # database type, supported types include mysql, mariadb and postgres
+  # Database type, supported types include mysql, mariadb and postgres.
   type: mysql
-  # mysql configure
+  # Mysql configure.
   mysql:
     user: dragonfly
     password: dragonfly
@@ -26,41 +28,97 @@ database:
     port: 3306
     dbname: manager
     migrate: true
+  # tlsConfig: preferred
   # tls:
-  #   # client certificate file path
+  #   # Client certificate file path.
   #   cert: /etc/ssl/certs/cert.pem
-  #   # client key file path
+  #   # Client key file path.
   #   key: /etc/ssl/private/key.pem
-  #   # ca file path
+  #   # CA file path.
   #   ca: /etc/ssl/certs/ca.pem
-  #   # whether a client verifies the server's certificate chain and host name.
+  #   # Whether a client verifies the server's certificate chain and host name.
   #   insecureSkipVerify: true
-  # redis configure
+  # Redis configure.
   redis:
-    # addresses
+    # Redis addresses.
     addrs:
       - "__IP__:6379"
+    # Redis password.
     password: dragonfly
+    # Redis DB name.
     db: 0
+    # Redis brokerDB name.
     brokerDB: 1
+    # Redis backendDB name.
     backendDB: 2
-# manager server cache
-# cache:
-#   # redis cache configure
-#   redis:
-#     # cache ttl configure
-#     ttl: 30s
-#   # local cache configure
-#   local:
-#     # lfu cache size
-#     size: 10000
-#     # cache ttl configure
-#     ttl: 30s
 
-# enable prometheus metrics
-# metrics:
-#  # metrics service address
-#  addr: ":8000"
+# Manager server cache.
+cache:
+  # Redis cache configure.
+  redis:
+    # Cache ttl configure.
+    ttl: 30s
+  # Local cache configure.
+  local:
+    # LFU cache size.
+    size: 10000
+    # Cache ttl configure.
+    ttl: 10s
+
+# Object storage service.
+objectStorage:
+  # Enable object storage.
+  enable: false
+  # Object storage name of type, it can be s3 or oss.
+  name: s3
+  # Storage region.
+  region: ''
+  # Datacenter endpoint.
+  endpoint: ''
+  # Access key id.
+  accessKey: ''
+  # Access key secret.
+  secretKey: ''
+
+# Prometheus metrics.
+metrics:
+  # Manager enable metrics service.
+  enable: false
+  # Metrics service address.
+  addr: ':8000'
+  # Enable peer gauge metrics.
+  enablePeerGauge: true
+
+security:
+  # autoIssueCert indicates to issue client certificates for all grpc call.
+  # If AutoIssueCert is false, any other option in Security will be ignored.
+  autoIssueCert: false
+  # caCert is the CA certificate for all grpc tls handshake, it can be path or PEM format string.
+  caCert: ''
+  # caKey is the CA private key, it can be path or PEM format string.
+  caKey: ''
+  # tlsPolicy controls the grpc shandshake behaviors:
+  #   force: both ClientHandshake and ServerHandshake are only support tls
+  #   prefer: ServerHandshake supports tls and insecure (non-tls), ClientHandshake will only support tls
+  #   default: ServerHandshake supports tls and insecure (non-tls), ClientHandshake will only support insecure (non-tls)
+  # Notice: If the drgaonfly service has been deployed, a two-step upgrade is required.
+  # The first step is to set tlsPolicy to default, and then upgrade the dragonfly services.
+  # The second step is to set tlsPolicy to prefer, and then completely upgrade the dragonfly services.
+  tlsPolicy: 'prefer'
+  certSpec:
+    # dnsNames is a list of dns names be set on the certificate.
+    dnsNames:
+      - 'dragonfly-manager'
+      - 'dragonfly-manager.dragonfly-system.svc'
+      - 'dragonfly-manager.dragonfly-system.svc.cluster.local'
+    # ipAddresses is a list of ip addresses be set on the certificate.
+    ipAddresses:
+    # validityPeriod is the validity period  of certificate.
+    validityPeriod: 87600h
+
+network:
+  # Enable ipv6.
+  enableIPv6: false
 
 # console shows log on console
 console: false
