@@ -30,6 +30,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -72,10 +73,11 @@ type Server interface {
 
 type server struct {
 	util.KeepAlive
-	peerHost        *schedulerv1.PeerHost
-	peerTaskManager peer.TaskManager
-	storageManager  storage.Manager
-	defaultPattern  commonv1.Pattern
+	peerHost            *schedulerv1.PeerHost
+	peerTaskManager     peer.TaskManager
+	storageManager      storage.Manager
+	defaultPattern      commonv1.Pattern
+	recursiveConcurrent int
 
 	downloadServer *grpc.Server
 	peerServer     *grpc.Server
@@ -83,14 +85,15 @@ type server struct {
 }
 
 func New(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskManager,
-	storageManager storage.Manager, defaultPattern commonv1.Pattern,
+	storageManager storage.Manager, defaultPattern commonv1.Pattern, recursiveConcurrent int,
 	downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Server, error) {
 	s := &server{
-		KeepAlive:       util.NewKeepAlive("rpc server"),
-		peerHost:        peerHost,
-		peerTaskManager: peerTaskManager,
-		storageManager:  storageManager,
-		defaultPattern:  defaultPattern,
+		KeepAlive:           util.NewKeepAlive("rpc server"),
+		peerHost:            peerHost,
+		peerTaskManager:     peerTaskManager,
+		storageManager:      storageManager,
+		defaultPattern:      defaultPattern,
+		recursiveConcurrent: recursiveConcurrent,
 	}
 
 	sd := &seeder{
@@ -367,6 +370,36 @@ func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRe
 		return status.Errorf(codes.FailedPrecondition, err.Error())
 	}
 
+	var (
+		requestCh      = make(chan *dfdaemonv1.DownRequest)
+		stopCh         = make(chan struct{})
+		wg             = sync.WaitGroup{}
+		lock           = sync.Mutex{}
+		downloadErrors []error
+	)
+	defer close(stopCh)
+
+	for i := 0; i < s.recursiveConcurrent; i++ {
+		go func(i int) {
+			for {
+				select {
+				case req := <-requestCh:
+					logger.Debugf("downloader %d start to download %s", i, req.Url)
+					if err := s.doDownload(ctx, req, stream, ""); err != nil {
+						logger.Errorf("download %#v error: %s", req, err.Error())
+						lock.Lock()
+						downloadErrors = append(downloadErrors, err)
+						lock.Unlock()
+					}
+					logger.Debugf("downloader %d completed download %s", i, req.Url)
+					wg.Done()
+				case <-stopCh:
+					return
+				}
+			}
+		}(i)
+	}
+
 	var queue deque.Deque[*dfdaemonv1.DownRequest]
 	queue.PushBack(req)
 	downloadMap := map[url.URL]struct{}{}
@@ -418,11 +451,21 @@ func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRe
 				return err
 			}
 
-			if err = s.doDownload(ctx, childReq, stream, ""); err != nil {
-				return err
-			}
+			wg.Add(1)
+			requestCh <- childReq
 		}
 	}
+
+	// wait all sent task done or error
+	wg.Wait()
+	lock.Lock()
+	if len(downloadErrors) > 0 {
+		// just return first error
+		lock.Unlock()
+		return downloadErrors[0]
+	}
+	lock.Unlock()
+
 	return nil
 }
 
