@@ -161,7 +161,7 @@ download:
       # listen: 0.0.0.0
       # Listen port, daemon will try to listen,
       # when this port is not available, daemon will try next port.
-      port: 65000
+      port: 65006
       # If want to limit upper port, please use blow format.
 #     port:
 #       start: 65000
@@ -182,7 +182,7 @@ upload:
     # listen: 0.0.0.0
     # Listen port, daemon will try to listen,
     # when this port is not available, daemon will try next port.
-    port: 65002
+    port: 65008
     # If want to limit upper port, please use blow format.
 #   port:
 #     start: 65020
@@ -224,7 +224,7 @@ storage:
   #                            the output file with postfix will be the peer data for uploading to other peers
   #                            when user delete or change this file, this peer data will be corrupted.
   # default is io.d7y.storage.v2.simple.
-  strategy: io.d7y.storage.v2.simple.
+  strategy: io.d7y.storage.v2.simple
   # Disk quota gc threshold, when the quota of all tasks exceeds the gc threshold, the oldest tasks will be reclaimed.
   diskGCThreshold: 50Gi
   # Disk used percent gc threshold, when the disk used percent exceeds, the oldest tasks will be reclaimed.
@@ -246,7 +246,7 @@ health:
     # listen: 0.0.0.0
     # Listen port, daemon will try to listen,
     # when this port is not available, daemon will try next port.
-    port: 40901
+    port: 40902
     # If want to limit upper port, please use blow format.
 #   port:
 #     start: 40901
@@ -281,7 +281,7 @@ proxy:
     # listen: 0.0.0.0
     # Listen port, daemon will try to listen,
     # when this port is not available, daemon will try next port.
-    port: 65001
+    port: 65007
     # If want to limit upper port, please use blow format.
   #   port:
   #     start: 65020
@@ -303,6 +303,8 @@ proxy:
   proxies:
     # Proxy all http image layer download requests with dfget.
     - regx: blobs/sha256.*
+    # Proxy all http image layer download requests with dfget.
+    - regx: file-server.*
     # Change http requests to some-registry to https and proxy them with dfget.
     - regx: some-registry/
       useHTTPS: true
@@ -317,28 +319,24 @@ proxy:
       redirect: http://another-registry/$1
 
   hijackHTTPS:
-    # Key pair used to hijack https requests.
-    cert: ''
-    key: ''
+    # key pair used to hijack https requests
+    cert: ""
+    key: ""
     hosts:
       - regx: mirror.aliyuncs.com:443 # regexp to match request hosts
-        # Whether to ignore https certificate errors.
+        # whether to ignore https certificate errors
         insecure: true
-        # Optional certificates if the host uses self-signed certificates.
+        # optional certificates if the host uses self-signed certificates
         certs: []
-  # Max tasks to download same time, 0 is no limit.
+  # max tasks to download same time, 0 is no limit
   maxConcurrency: 0
   whiteList:
-    # The host of the whitelist.
-    - host: ''
-      # Match whitelist hosts.
-      regx:
-      # Port that need to be added to the whitelist.
+    # the host of the whitelist
+    - host: ""
+      # match whitelist hosts
+      regx: ".*"
+      # port that need to be added to the whitelist
       ports:
-  # Setup basic auth for proxy.
-  basicAuth:
-    username: 'admin'
-    password: 'password'
 
 security:
   # autoIssueCert indicates to issue client certificates for all grpc call.

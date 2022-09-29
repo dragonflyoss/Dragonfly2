@@ -3,7 +3,7 @@ server:
   # GRPC server configure.
   grpc:
     # # Advertise ip.
-    # advertiseIP: 127.0.0.1
+    advertiseIP: __IP__
     # # Listen ip.
     # listenIP: 0.0.0.0
     # Listen port.

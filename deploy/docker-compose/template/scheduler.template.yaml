@@ -1,7 +1,7 @@
 # server scheduler instance configuration
 server:
   # # Advertise ip.
-  # advertiseIP: 127.0.0.1
+  advertiseIP: __IP__
   # # Listen ip.
   # listenIP: 0.0.0.0
   # Port is the ip and port scheduler server listens on.
@@ -110,7 +110,7 @@ job:
     # Redis username.
     username: ''
     # Redis password.
-    password: ''
+    password: dragonfly
     # Redis brokerDB name.
     brokerDB: 1
     # Redis backendDB name.

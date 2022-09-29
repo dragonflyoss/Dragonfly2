@@ -290,6 +290,8 @@ proxy:
   proxies:
     # Proxy all http image layer download requests with dfget.
     - regx: blobs/sha256.*
+    # Proxy all http image layer download requests with dfget.
+    - regx: file-server.*
     # Change http requests to some-registry to https and proxy them with dfget.
     - regx: some-registry/
       useHTTPS: true
@@ -304,28 +306,24 @@ proxy:
       redirect: http://another-registry/$1
 
   hijackHTTPS:
-    # Key pair used to hijack https requests.
-    cert: ''
-    key: ''
+    # key pair used to hijack https requests
+    cert: ""
+    key: ""
     hosts:
       - regx: mirror.aliyuncs.com:443 # regexp to match request hosts
-        # Whether to ignore https certificate errors.
+        # whether to ignore https certificate errors
         insecure: true
-        # Optional certificates if the host uses self-signed certificates.
+        # optional certificates if the host uses self-signed certificates
         certs: []
-  # Max tasks to download same time, 0 is no limit.
+  # max tasks to download same time, 0 is no limit
   maxConcurrency: 0
   whiteList:
-    # The host of the whitelist.
-    - host: ''
-      # Match whitelist hosts.
-      regx:
-      # Port that need to be added to the whitelist.
+    # the host of the whitelist
+    - host: ""
+      # match whitelist hosts
+      regx: ".*"
+      # port that need to be added to the whitelist
       ports:
-  # Setup basic auth for proxy.
-  basicAuth:
-    username: 'admin'
-    password: 'password'
 
 network:
   # Enable ipv6.
