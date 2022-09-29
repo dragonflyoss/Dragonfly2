@@ -20,6 +20,7 @@ import (
 	"fmt"
 )
 
+// HostID generates a host id.
 func HostID(hostname string, port int32) string {
 	return fmt.Sprintf("%s-%d", hostname, port)
 }

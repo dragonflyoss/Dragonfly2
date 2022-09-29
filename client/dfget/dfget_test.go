@@ -25,12 +25,12 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/pkg/digest"
-	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/source/mocks"
 )
@@ -38,11 +38,10 @@ import (
 func Test_downloadFromSource(t *testing.T) {
 	homeDir, err := os.UserHomeDir()
 	assert.Nil(t, err)
-	output := filepath.Join(homeDir, idgen.UUIDString())
+	output := filepath.Join(homeDir, uuid.New().String())
 	defer os.Remove(output)
 
-	content := idgen.UUIDString()
-
+	content := uuid.New().String()
 	sourceClient := mocks.NewMockResourceClient(gomock.NewController(t))
 	require.Nil(t, source.Register("http", sourceClient, func(request *source.Request) *source.Request {
 		return request
