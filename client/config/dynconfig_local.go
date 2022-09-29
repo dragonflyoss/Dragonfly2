@@ -113,13 +113,8 @@ func (d *dynconfigLocal) Deregister(l Observer) {
 
 // Notify publishes new events to listeners.
 func (d *dynconfigLocal) Notify() error {
-	data, err := d.Get()
-	if err != nil {
-		return err
-	}
-
 	for o := range d.observers {
-		o.OnNotify(data)
+		o.OnNotify(&DynconfigData{})
 	}
 
 	return nil

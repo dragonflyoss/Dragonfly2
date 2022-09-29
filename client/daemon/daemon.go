@@ -695,17 +695,14 @@ func (cd *clientDaemon) Serve() error {
 	}
 
 	// serve dynconfig service
-	if cd.Option.Scheduler.Manager.Enable {
-		// serve dynconfig
-		g.Go(func() error {
-			if err := cd.dynconfig.Serve(); err != nil {
-				logger.Errorf("dynconfig start failed %v", err)
-				return err
-			}
-			logger.Info("dynconfig start successfully")
-			return nil
-		})
-	}
+	g.Go(func() error {
+		if err := cd.dynconfig.Serve(); err != nil {
+			logger.Errorf("dynconfig start failed %v", err)
+			return err
+		}
+		logger.Info("dynconfig start successfully")
+		return nil
+	})
 
 	if cd.Option.Metrics != "" {
 		metricsServer := metrics.New(cd.Option.Metrics)
@@ -794,12 +791,10 @@ func (cd *clientDaemon) Stop() {
 			cd.StorageManager.CleanUp()
 		}
 
-		if cd.Option.Scheduler.Manager.Enable {
-			if err := cd.dynconfig.Stop(); err != nil {
-				logger.Errorf("dynconfig client closed failed %s", err)
-			} else {
-				logger.Info("dynconfig client closed")
-			}
+		if err := cd.dynconfig.Stop(); err != nil {
+			logger.Errorf("dynconfig client closed failed %s", err)
+		} else {
+			logger.Info("dynconfig client closed")
 		}
 
 		if cd.managerClient != nil {
