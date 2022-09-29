@@ -74,7 +74,7 @@ func TestServer_New(t *testing.T) {
 			var defaultPattern commonv1.Pattern = 0
 			var mockdownloadOpts []grpc.ServerOption
 			var mockpeerOpts []grpc.ServerOption
-			_, err := New(mockpeerHost, mockpeerTaskManager, mockStorageManger, defaultPattern, mockdownloadOpts, mockpeerOpts)
+			_, err := New(mockpeerHost, mockpeerTaskManager, mockStorageManger, defaultPattern, 16, mockdownloadOpts, mockpeerOpts)
 			tc.expect(t, err)
 		})
 	}
