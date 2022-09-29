@@ -51,12 +51,6 @@ scheduler:
   manager:
     # get scheduler list dynamically from manager
     enable: false
-    # manager service addresses
-    netAddrs:
-      - type: tcp
-        addr: __IP__:65003
-        # scheduler list refresh interval
-        refreshInterval: 5m
   # schedule timeout
   scheduleTimeout: 30s
   # when true, only scheduler says back source, daemon can back source
@@ -68,9 +62,6 @@ scheduler:
 
 # current host info used for scheduler
 host:
-  # tcp service listen address
-  # port should be set by other options
-  listenIP: 0.0.0.0
   # access ip for other peers
   # when local ip is different with access ip, advertiseIP should be set
   advertiseIP: __IP__
@@ -88,9 +79,18 @@ host:
 # download service option
 download:
   concurrent:
+    # thresholdSize indicates the threshold to download pieces concurrently.
     thresholdSize: 10M
+    # thresholdSpeed indicates the threshold download speed to download pieces concurrently.
     thresholdSpeed: 2M
+    # goroutineCount indicates the concurrent goroutine count for every task.
     goroutineCount: 4
+    # initBackoff second for every piece failed, default: 0.5.
+    initBackoff: 0.5
+    # maxBackoff second for every piece failed, default: 3.
+    maxBackoff: 3
+    # maxAttempts for every piece failed,default: 3.
+    maxAttempts: 3
   # calculate digest when transfer files, set false to save memory
   calculateDigest: true
   # total download limit per second
@@ -101,6 +101,8 @@ download:
   trafficShaperType: sampling
   # download piece timeout
   pieceDownloadTimeout: 30s
+  # When request data with range header, prefetch data not in range.
+  prefetch: false
   # golang transport option
   transportOption:
     # dial timeout
@@ -119,57 +121,83 @@ download:
     expectContinueTimeout: 2s
   # download grpc option
   downloadGRPC:
-    # security option
+    # Security option.
     security:
       insecure: true
-      cacert: ""
-      cert: ""
-      key: ""
+      cacert: ''
+      cert: ''
+      key: ''
+      tlsVerify: true
       tlsConfig: null
-    # download service listen address
-    # current, only support unix domain socket
+    # Download service listen address
+    # current, only support unix domain socket.
     unixListen:
-      # in linux, default value is /var/run/dfdaemon.sock
-      # in macos(just for testing), default value is /tmp/dfdaemon.sock
-      socket: ""
+      # In linux, default value is /var/run/dfdaemon.sock.
+      # In macos(just for testing), default value is /tmp/dfdaemon.sock.
+      socket: ''
   # peer grpc option
   # peer grpc service send pieces info to other peers
   peerGRPC:
     security:
       insecure: true
-      cacert: ""
-      cert: ""
-      key: ""
+      cacert: ''
+      cert: ''
+      key: ''
+      tlsVerify: true
     tcpListen:
-      # listen address
-      listen: 0.0.0.0
-      # listen port, daemon will try to listen
-      # when this port is not available, daemon will try next port
+      # # Listen address.
+      # listen: 0.0.0.0
+      # Listen port, daemon will try to listen,
+      # when this port is not available, daemon will try next port.
       port: 65000
-      # if want to limit upper port, please use blow format
+      # If want to limit upper port, please use blow format.
 #     port:
 #       start: 65000
 #       end: 65009
 
 # upload service option
 upload:
-  # upload limit per second
+  # Upload limit per second.
   rateLimit: 1024Mi
   security:
     insecure: true
-    cacert: ""
-    cert: ""
-    key: ""
+    cacert: ''
+    cert: ''
+    key: ''
+    tlsVerify: false
   tcpListen:
-    # listen address
-    listen: 0.0.0.0
-    # listen port, daemon will try to listen
-    # when this port is not available, daemon will try next port
+    # # Listen address.
+    # listen: 0.0.0.0
+    # Listen port, daemon will try to listen,
+    # when this port is not available, daemon will try next port.
     port: 65002
-    # if want to limit upper port, please use blow format
+    # If want to limit upper port, please use blow format.
 #   port:
 #     start: 65020
 #     end: 65029
+#
+# Object storage service.
+objectStorage:
+  # Enable object storage service.
+  enable: false
+  # Filter is used to generate a unique Task ID by
+  # filtering unnecessary query params in the URL,
+  # it is separated by & character.
+  # When filter: "Expires&Signature&ns", for example:
+  #  http://localhost/xyz?Expires=111&Signature=222&ns=docker.io and http://localhost/xyz?Expires=333&Signature=999&ns=docker.io
+  # is same task.
+  filter: 'Expires&Signature&ns'
+  # maxReplicas is the maximum number of replicas of an object cache in seed peers.
+  maxReplicas: 3
+  # Object storage service security option.
+  security:
+    insecure: true
+    tlsVerify: true
+  tcpListen:
+    # # Listen address.
+    # listen: 0.0.0.0
+    # Listen port.
+    port: 65004
 
 # peer task storage option
 storage:
@@ -193,8 +221,24 @@ storage:
   # set to ture for reusing underlying storage for same task id
   multiplex: true
 
-# proxy service config file location or detail config
-# proxy: ""
+# Health service option.
+health:
+  security:
+    insecure: true
+    cacert: ''
+    cert: ''
+    key: ''
+    tlsVerify: false
+  tcpListen:
+    # # Listen address.
+    # listen: 0.0.0.0
+    # Listen port, daemon will try to listen,
+    # when this port is not available, daemon will try next port.
+    port: 40901
+    # If want to limit upper port, please use blow format.
+#   port:
+#     start: 40901
+#     end: 40901
 
 # proxy service detail option
 proxy:
@@ -203,22 +247,29 @@ proxy:
   #  http://localhost/xyz?Expires=111&Signature=222&ns=docker.io and http://localhost/xyz?Expires=333&Signature=999&ns=docker.io
   # is same task
   defaultFilter: "Expires&Signature&ns"
+  # Tag the task.
+  # when the value of the default tag is different,
+  # the same download url can be divided into different tasks according to the tag,
+  # it is also possible to override the default tag by adding
+  # the X-Dragonfly-Tag header through the proxy.
+  defaultTag: ''
   security:
     insecure: true
-    cacert: ""
-    cert: ""
-    key: ""
+    cacert: ''
+    cert: ''
+    key: ''
+    tlsVerify: false
   tcpListen:
-    # namespace stands the linux net namespace, like /proc/1/ns/net
-    # it's useful for running daemon in pod with ip allocated and listening the special port in host net namespace
-    # Linux only
-    namespace: ""
-    # listen address
-    listen: 0.0.0.0
-    # listen port, daemon will try to listen
-    # when this port is not available, daemon will try next port
+    # namespace stands the linux net namespace, like /proc/1/ns/net.
+    # It's useful for running daemon in pod with ip allocated and listening the special port in host net namespace.
+    # Linux only.
+    namespace: ''
+    # # Listen address.
+    # listen: 0.0.0.0
+    # Listen port, daemon will try to listen,
+    # when this port is not available, daemon will try next port.
     port: 65001
-    # if want to limit upper port, please use blow format
+    # If want to limit upper port, please use blow format.
   #   port:
   #     start: 65020
   #     end: 65029
@@ -237,18 +288,20 @@ proxy:
     useProxies: false
 
   proxies:
-    # proxy all http image layer download requests with dfget
+    # Proxy all http image layer download requests with dfget.
     - regx: blobs/sha256.*
-    # change http requests to some-registry to https and proxy them with dfget
+    # Proxy all http image layer download requests with dfget.
+    - regx: file-server.*
+    # Change http requests to some-registry to https and proxy them with dfget.
     - regx: some-registry/
       useHTTPS: true
-    # proxy requests directly, without dfget
+    # Proxy requests directly, without dfget.
     - regx: no-proxy-reg
       direct: true
-    # proxy requests with redirect
+    # Proxy requests with redirect.
     - regx: some-registry
       redirect: another-registry
-    # the same with url rewrite like apache ProxyPass directive
+    # The same with url rewrite like apache ProxyPass directive.
     - regx: ^http://some-registry/(.*)
       redirect: http://another-registry/$1
 
@@ -271,3 +324,7 @@ proxy:
       regx: ".*"
       # port that need to be added to the whitelist
       ports:
+
+network:
+  # Enable ipv6.
+  enableIPv6: false
