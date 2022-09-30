@@ -120,7 +120,12 @@ func (p *peerManager) Delete(key string) {
 		p.Map.Delete(key)
 		peer.Host.DeletePeer(key)
 		peer.Task.DeletePeer(key)
+
+		if peer.Task.PeerCount() == 0 {
+			_ = peer.Task.FSM.Event(TaskEventAllPeerLeaved)
+		}
 	}
+
 }
 
 func (p *peerManager) RunGC() error {

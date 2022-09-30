@@ -72,6 +72,9 @@ const (
 
 	// Task downloaded failed
 	TaskEventDownloadFailed = "DownloadFailed"
+
+	// Task all peer leaved
+	TaskEventAllPeerLeaved = "AllPeerLeaved"
 )
 
 // Option is a functional option for task
@@ -165,6 +168,7 @@ func NewTask(id, url string, taskType int, meta *base.UrlMeta, options ...Option
 			{Name: TaskEventDownload, Src: []string{TaskStatePending, TaskStateSucceeded, TaskStateFailed}, Dst: TaskStateRunning},
 			{Name: TaskEventDownloadSucceeded, Src: []string{TaskStateRunning, TaskStateFailed}, Dst: TaskStateSucceeded},
 			{Name: TaskEventDownloadFailed, Src: []string{TaskStateRunning}, Dst: TaskStateFailed},
+			{Name: TaskEventAllPeerLeaved, Src: []string{TaskStatePending, TaskStateRunning, TaskStateSucceeded}, Dst: TaskStateFailed},
 		},
 		fsm.Callbacks{
 			TaskEventDownload: func(e *fsm.Event) {
@@ -176,6 +180,10 @@ func NewTask(id, url string, taskType int, meta *base.UrlMeta, options ...Option
 				t.Log.Infof("task state is %s", e.FSM.Current())
 			},
 			TaskEventDownloadFailed: func(e *fsm.Event) {
+				t.UpdateAt.Store(time.Now())
+				t.Log.Infof("task state is %s", e.FSM.Current())
+			},
+			TaskEventAllPeerLeaved: func(e *fsm.Event) {
 				t.UpdateAt.Store(time.Now())
 				t.Log.Infof("task state is %s", e.FSM.Current())
 			},

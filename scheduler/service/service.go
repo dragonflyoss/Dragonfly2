@@ -504,6 +504,7 @@ func (s *Service) LeaveTask(ctx context.Context, req *rpcscheduler.PeerTarget) e
 	})
 
 	s.resource.PeerManager().Delete(peer.ID)
+
 	return nil
 }
 
