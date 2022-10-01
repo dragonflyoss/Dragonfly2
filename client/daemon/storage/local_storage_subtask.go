@@ -391,6 +391,13 @@ func (t *localSubTaskStore) CanReclaim() bool {
 	return false
 }
 
+func (t *localSubTaskStore) MarkInvalid() {
+	if t.parent.Done || t.invalid.Load() {
+		return
+	}
+	t.parent.MarkInvalid()
+}
+
 func (t *localSubTaskStore) MarkReclaim() {
 	t.parent.gcCallback(CommonTaskRequest{
 		PeerID: t.PeerID,
