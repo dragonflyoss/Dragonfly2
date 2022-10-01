@@ -1641,7 +1641,7 @@ func (pt *peerTaskConductor) fail() {
 			pt.pieceTaskSyncManager.cancel()
 		}
 		// mark storage to reclaim
-		pt.StorageManager.UnregisterTask(
+		_ = pt.StorageManager.UnregisterTask(
 			pt.ctx,
 			storage.CommonTaskRequest{
 				PeerID: pt.peerID,
