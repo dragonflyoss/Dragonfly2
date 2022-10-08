@@ -19,10 +19,12 @@ package ossprotocol
 import (
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/textproto"
 	"net/url"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -44,6 +46,15 @@ const (
 )
 
 var _ source.ResourceClient = (*ossSourceClient)(nil)
+
+var (
+	// Syntax:
+	//   Content-Range: <unit> <range-start>-<range-end>/<size> -> Done
+	//   Content-Range: <unit> <range-start>-<range-end>/* -> Done
+	//   Content-Range: <unit> */<size> -> TODO
+	contentRangeRegexp            = regexp.MustCompile(`bytes (?P<Start>\d+)-(?P<End>\d+)/(?P<Length>(\d*|\*))`)
+	contentRangeRegexpLengthIndex = contentRangeRegexp.SubexpIndex("Length")
+)
 
 func init() {
 	if err := source.Register(OSSClient, NewOSSSourceClient(), adaptor); err != nil {
@@ -172,6 +183,10 @@ func (osc *ossSourceClient) Download(request *source.Request) (*source.Response,
 		objectResult.Response.Body.Close()
 		return nil, err
 	}
+	length, err := strconv.ParseInt(objectResult.Response.Headers.Get(headers.ContentLength), 10, 64)
+	if err != nil {
+		return nil, err
+	}
 	response := source.NewResponse(
 		objectResult.Response.Body,
 		source.WithExpireInfo(
@@ -179,8 +194,71 @@ func (osc *ossSourceClient) Download(request *source.Request) (*source.Response,
 				LastModified: objectResult.Response.Headers.Get(headers.LastModified),
 				ETag:         objectResult.Response.Headers.Get(headers.ETag),
 			},
-		))
+		),
+		source.WithContentLength(length),
+	)
 	return response, nil
+}
+
+func (osc *ossSourceClient) GetMetadata(request *source.Request) (*source.Metadata, error) {
+	// clone a new request to avoid change original request
+	request = adaptor(request)
+	request.Header.Set(headers.Range, "bytes=0-0")
+
+	client, err := osc.getClient(request.Header)
+	if err != nil {
+		return nil, fmt.Errorf("get oss client: %w", err)
+	}
+	bucket, err := client.Bucket(request.URL.Host)
+	if err != nil {
+		return nil, fmt.Errorf("get oss bucket %s: %w", request.URL.Host, err)
+	}
+	objectResult, err := bucket.DoGetObject(
+		&oss.GetObjectRequest{ObjectKey: request.URL.Path},
+		getOptions(request.Header),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("get oss Object %s: %w", request.URL.Path, err)
+	}
+	defer objectResult.Response.Body.Close()
+
+	var totalContentLength int64 = -1
+	cr := objectResult.Response.Headers.Get(headers.ContentRange)
+	if cr != "" {
+		matches := contentRangeRegexp.FindStringSubmatch(cr)
+		if len(matches) > contentRangeRegexpLengthIndex {
+			length := matches[contentRangeRegexpLengthIndex]
+			if length != "*" {
+				totalContentLength, err = strconv.ParseInt(length, 10, 64)
+				if err != nil {
+					return nil, fmt.Errorf("convert length from string %q error: %w", length, err)
+				}
+			}
+		}
+
+		// this server supports Range request
+		// we can discard the only one byte for reuse underlay connection
+		_, err = io.Copy(io.Discard, io.LimitReader(objectResult.Response.Body, 1))
+		if err != io.EOF && err != nil {
+			return nil, err
+		}
+	}
+
+	hdr := source.Header{}
+
+	return &source.Metadata{
+		Header:             hdr,
+		Status:             fmt.Sprintf("%d", objectResult.Response.StatusCode),
+		StatusCode:         objectResult.Response.StatusCode,
+		SupportRange:       objectResult.Response.StatusCode == http.StatusPartialContent,
+		TotalContentLength: totalContentLength,
+		Validate: func() error {
+			return source.CheckResponseCode(objectResult.Response.StatusCode, []int{http.StatusOK, http.StatusPartialContent})
+		},
+		Temporary: func() bool {
+			return true
+		},
+	}, nil
 }
 
 func (osc *ossSourceClient) GetLastModified(request *source.Request) (int64, error) {
