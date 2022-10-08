@@ -296,6 +296,7 @@ func (c *clientWrapper) IsSupportRange(request *Request) (bool, error) {
 func (c *clientWrapper) IsExpired(request *Request, info *ExpireInfo) (bool, error) {
 	return c.rc.IsExpired(c.adapter(request), info)
 }
+
 func (c *clientWrapper) Download(request *Request) (*Response, error) {
 	return c.rc.Download(c.adapter(request))
 }
@@ -389,9 +390,10 @@ func GetMetadata(request *Request) (*Metadata, error) {
 	if !ok {
 		return nil, fmt.Errorf("scheme %s: %w", request.URL.Scheme, ErrNoClientFound)
 	}
-	getter, ok := client.(*clientWrapper).rc.(ResourceMetadataGetter)
+	cw := client.(*clientWrapper)
+	getter, ok := cw.rc.(ResourceMetadataGetter)
 	if !ok {
 		return nil, fmt.Errorf("scheme %s: %w", request.URL.Scheme, ErrClientNotSupportGetMetadata)
 	}
-	return getter.GetMetadata(request)
+	return getter.GetMetadata(cw.adapter(request))
 }
