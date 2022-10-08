@@ -373,6 +373,7 @@ func List(request *Request) ([]URLEntry, error) {
 	if !ok {
 		return nil, fmt.Errorf("scheme %s: %w", request.URL.Scheme, ErrNoClientFound)
 	}
+	// invoke in-tree plugin adapter
 	if wrap, ok := client.(*clientWrapper); ok {
 		if rc, ok := wrap.rc.(ResourceLister); ok {
 			return rc.List(wrap.adapter(request))
@@ -390,10 +391,15 @@ func GetMetadata(request *Request) (*Metadata, error) {
 	if !ok {
 		return nil, fmt.Errorf("scheme %s: %w", request.URL.Scheme, ErrNoClientFound)
 	}
-	cw := client.(*clientWrapper)
-	getter, ok := cw.rc.(ResourceMetadataGetter)
+	// invoke in-tree plugin adapter
+	if wrap, ok := client.(*clientWrapper); ok {
+		if rc, ok := wrap.rc.(ResourceMetadataGetter); ok {
+			return rc.GetMetadata(wrap.adapter(request))
+		}
+	}
+	getter, ok := client.(ResourceMetadataGetter)
 	if !ok {
 		return nil, fmt.Errorf("scheme %s: %w", request.URL.Scheme, ErrClientNotSupportGetMetadata)
 	}
-	return getter.GetMetadata(cw.adapter(request))
+	return getter.GetMetadata(request)
 }
