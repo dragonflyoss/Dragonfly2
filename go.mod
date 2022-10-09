@@ -8,7 +8,7 @@ require (
 	github.com/Showmax/go-fqdn v1.0.0
 	github.com/VividCortex/mysqlerr v1.0.0
 	github.com/aliyun/aliyun-oss-go-sdk v2.2.5+incompatible
-	github.com/appleboy/gin-jwt/v2 v2.8.0
+	github.com/appleboy/gin-jwt/v2 v2.9.0
 	github.com/aws/aws-sdk-go v1.44.95
 	github.com/bits-and-blooms/bitset v1.3.0
 	github.com/casbin/casbin/v2 v2.55.1
