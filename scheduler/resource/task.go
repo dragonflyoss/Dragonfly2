@@ -39,7 +39,9 @@ const (
 
 	// Empty file size is 0 bytes.
 	EmptyFileSize = 0
+)
 
+const (
 	// Peer failure limit in task.
 	FailedPeerCountLimit = 200
 
@@ -59,6 +61,9 @@ const (
 
 	// Task has been downloaded failed.
 	TaskStateFailed = "Failed"
+
+	// Task has no peers.
+	TaskStateLeave = "Leave"
 )
 
 const (
@@ -70,6 +75,9 @@ const (
 
 	// Task downloaded failed.
 	TaskEventDownloadFailed = "DownloadFailed"
+
+	// Task leaves.
+	TaskEventLeave = "Leave"
 )
 
 // Option is a functional option for task.
@@ -156,9 +164,10 @@ func NewTask(id, url string, taskType commonv1.TaskType, meta *commonv1.UrlMeta,
 	t.FSM = fsm.NewFSM(
 		TaskStatePending,
 		fsm.Events{
-			{Name: TaskEventDownload, Src: []string{TaskStatePending, TaskStateSucceeded, TaskStateFailed}, Dst: TaskStateRunning},
-			{Name: TaskEventDownloadSucceeded, Src: []string{TaskStateRunning, TaskStateFailed}, Dst: TaskStateSucceeded},
+			{Name: TaskEventDownload, Src: []string{TaskStateLeave, TaskStatePending, TaskStateSucceeded, TaskStateFailed}, Dst: TaskStateRunning},
+			{Name: TaskEventDownloadSucceeded, Src: []string{TaskStateLeave, TaskStateRunning, TaskStateFailed}, Dst: TaskStateSucceeded},
 			{Name: TaskEventDownloadFailed, Src: []string{TaskStateRunning}, Dst: TaskStateFailed},
+			{Name: TaskEventLeave, Src: []string{TaskStatePending, TaskStateRunning, TaskStateSucceeded, TaskStateFailed}, Dst: TaskStateLeave},
 		},
 		fsm.Callbacks{
 			TaskEventDownload: func(e *fsm.Event) {
@@ -170,6 +179,10 @@ func NewTask(id, url string, taskType commonv1.TaskType, meta *commonv1.UrlMeta,
 				t.Log.Infof("task state is %s", e.FSM.Current())
 			},
 			TaskEventDownloadFailed: func(e *fsm.Event) {
+				t.UpdateAt.Store(time.Now())
+				t.Log.Infof("task state is %s", e.FSM.Current())
+			},
+			TaskEventLeave: func(e *fsm.Event) {
 				t.UpdateAt.Store(time.Now())
 				t.Log.Infof("task state is %s", e.FSM.Current())
 			},
