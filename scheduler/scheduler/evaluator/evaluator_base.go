@@ -24,6 +24,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/math"
+	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
@@ -34,8 +35,8 @@ const (
 	// Free load weight.
 	freeLoadWeight = 0.2
 
-	// Host type affinity weight.
-	hostTypeAffinityWeight = 0.2
+	// Host type weight.
+	hostTypeWeight = 0.2
 
 	// IDC affinity weight.
 	idcAffinityWeight = 0.15
@@ -86,7 +87,7 @@ func (eb *evaluatorBase) Evaluate(parent *resource.Peer, child *resource.Peer, t
 
 	return finishedPieceWeight*calculatePieceScore(parent, child, totalPieceCount) +
 		freeLoadWeight*calculateFreeLoadScore(parent.Host) +
-		hostTypeAffinityWeight*calculateHostTypeAffinityScore(parent) +
+		hostTypeWeight*calculateHostTypeScore(parent) +
 		idcAffinityWeight*calculateIDCAffinityScore(parent.Host, child.Host) +
 		netTopologyAffinityWeight*calculateMultiElementAffinityScore(parent.Host.NetTopology, child.Host.NetTopology) +
 		locationAffinityWeight*calculateMultiElementAffinityScore(parent.Host.Location, child.Host.Location)
@@ -119,8 +120,8 @@ func calculateFreeLoadScore(host *resource.Host) float64 {
 	return minScore
 }
 
-// calculateHostTypeAffinityScore 0.0~1.0 larger and better.
-func calculateHostTypeAffinityScore(peer *resource.Peer) float64 {
+// calculateHostTypeScore 0.0~1.0 larger and better.
+func calculateHostTypeScore(peer *resource.Peer) float64 {
 	// When the task is downloaded for the first time,
 	// peer will be scheduled to seed peer first,
 	// otherwise it will be scheduled to dfdaemon first.
@@ -157,8 +158,8 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 
 	// Calculate the number of multi-element matches divided by "|".
 	var score, elementLen int
-	dstElements := strings.Split(dst, "|")
-	srcElements := strings.Split(src, "|")
+	dstElements := strings.Split(dst, types.AffinitySeparator)
+	srcElements := strings.Split(src, types.AffinitySeparator)
 	elementLen = math.Min(len(dstElements), len(srcElements))
 
 	// Maximum element length is 5.
