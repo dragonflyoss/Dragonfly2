@@ -317,7 +317,13 @@ func TestTaskManager_RunGC(t *testing.T) {
 				err := taskManager.RunGC()
 				assert.NoError(err)
 
-				_, ok := taskManager.Load(mockTask.ID)
+				task, ok := taskManager.Load(mockTask.ID)
+				assert.Equal(ok, true)
+				assert.Equal(task.FSM.Current(), TaskStateLeave)
+
+				err = taskManager.RunGC()
+				assert.NoError(err)
+				_, ok = taskManager.Load(mockTask.ID)
 				assert.Equal(ok, false)
 			},
 		},
@@ -336,23 +342,7 @@ func TestTaskManager_RunGC(t *testing.T) {
 				task, ok := taskManager.Load(mockTask.ID)
 				assert.Equal(ok, true)
 				assert.Equal(task.ID, mockTask.ID)
-			},
-		},
-		{
-			name: "task state is TaskStateRunning",
-			mock: func(m *gc.MockGCMockRecorder) {
-				m.Add(gomock.Any()).Return(nil).Times(1)
-			},
-			expect: func(t *testing.T, taskManager TaskManager, mockTask *Task, mockPeer *Peer) {
-				assert := assert.New(t)
-				taskManager.Store(mockTask)
-				mockTask.FSM.SetState(TaskStateRunning)
-				err := taskManager.RunGC()
-				assert.NoError(err)
-
-				task, ok := taskManager.Load(mockTask.ID)
-				assert.Equal(ok, true)
-				assert.Equal(task.ID, mockTask.ID)
+				assert.Equal(task.FSM.Current(), TaskStatePending)
 			},
 		},
 	}
