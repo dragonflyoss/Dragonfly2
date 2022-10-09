@@ -135,6 +135,50 @@ func (osc *ossSourceClient) IsSupportRange(request *source.Request) (bool, error
 	return true, nil
 }
 
+func (osc *ossSourceClient) GetMetadata(request *source.Request) (*source.Metadata, error) {
+	request = request.Clone(request.Context())
+	request.Header.Set(headers.Range, "bytes=0-0")
+
+	client, err := osc.getClient(request.Header)
+	if err != nil {
+		return nil, fmt.Errorf("get oss client: %w", err)
+	}
+
+	bucket, err := client.Bucket(request.URL.Host)
+	if err != nil {
+		return nil, fmt.Errorf("get oss bucket %s: %w", request.URL.Host, err)
+	}
+
+	header, err := bucket.GetObjectMeta(request.URL.Path, getOptions(request.Header)...)
+	if err != nil {
+		return nil, fmt.Errorf("get oss object %s meta: %w", request.URL.Path, err)
+	}
+	totalContentLength, err := strconv.ParseInt(header.Get(oss.HTTPHeaderContentLength), 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("parse content-length str to int64: %w", err)
+	}
+
+	hdr := source.Header{}
+	for k, v := range header {
+		if len(v) > 0 {
+			hdr.Set(k, v[0])
+		}
+	}
+	return &source.Metadata{
+		Header:             hdr,
+		Status:             http.StatusText(http.StatusOK),
+		StatusCode:         http.StatusOK,
+		SupportRange:       true,
+		TotalContentLength: totalContentLength,
+		Validate: func() error {
+			return nil
+		},
+		Temporary: func() bool {
+			return false
+		},
+	}, nil
+}
+
 func (osc *ossSourceClient) IsExpired(request *source.Request, info *source.ExpireInfo) (bool, error) {
 	client, err := osc.getClient(request.Header)
 	if err != nil {

@@ -296,6 +296,7 @@ func (c *clientWrapper) IsSupportRange(request *Request) (bool, error) {
 func (c *clientWrapper) IsExpired(request *Request, info *ExpireInfo) (bool, error) {
 	return c.rc.IsExpired(c.adapter(request), info)
 }
+
 func (c *clientWrapper) Download(request *Request) (*Response, error) {
 	return c.rc.Download(c.adapter(request))
 }
@@ -372,6 +373,7 @@ func List(request *Request) ([]URLEntry, error) {
 	if !ok {
 		return nil, fmt.Errorf("scheme %s: %w", request.URL.Scheme, ErrNoClientFound)
 	}
+	// invoke in-tree plugin adapter
 	if wrap, ok := client.(*clientWrapper); ok {
 		if rc, ok := wrap.rc.(ResourceLister); ok {
 			return rc.List(wrap.adapter(request))
@@ -389,7 +391,13 @@ func GetMetadata(request *Request) (*Metadata, error) {
 	if !ok {
 		return nil, fmt.Errorf("scheme %s: %w", request.URL.Scheme, ErrNoClientFound)
 	}
-	getter, ok := client.(*clientWrapper).rc.(ResourceMetadataGetter)
+	// invoke in-tree plugin adapter
+	if wrap, ok := client.(*clientWrapper); ok {
+		if rc, ok := wrap.rc.(ResourceMetadataGetter); ok {
+			return rc.GetMetadata(wrap.adapter(request))
+		}
+	}
+	getter, ok := client.(ResourceMetadataGetter)
 	if !ok {
 		return nil, fmt.Errorf("scheme %s: %w", request.URL.Scheme, ErrClientNotSupportGetMetadata)
 	}
