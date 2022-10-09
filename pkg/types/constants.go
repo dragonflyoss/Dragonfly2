@@ -63,3 +63,8 @@ const (
 	// DfdaemonMetricsName is name of dfdaemon metrics.
 	DfdaemonMetricsName = "dfdaemon"
 )
+
+const (
+	// AffinitySeparator is separator of affinity.
+	AffinitySeparator = "|"
+)
