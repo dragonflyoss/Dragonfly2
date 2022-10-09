@@ -1640,6 +1640,13 @@ func (pt *peerTaskConductor) fail() {
 		if pt.pieceTaskSyncManager != nil {
 			pt.pieceTaskSyncManager.cancel()
 		}
+		// mark storage to reclaim
+		_ = pt.StorageManager.UnregisterTask(
+			pt.ctx,
+			storage.CommonTaskRequest{
+				PeerID: pt.peerID,
+				TaskID: pt.taskID,
+			})
 	}()
 	pt.peerTaskManager.PeerTaskDone(pt.taskID)
 	var end = time.Now()
