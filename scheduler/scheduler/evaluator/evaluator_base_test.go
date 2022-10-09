@@ -315,7 +315,7 @@ func TestEvaluatorBase_calculateFreeLoadScore(t *testing.T) {
 	}
 }
 
-func TestEvaluatorBase_calculateHostTypeAffinityScore(t *testing.T) {
+func TestEvaluatorBase_calculateHostTypeScore(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(peer *resource.Peer)
@@ -359,7 +359,7 @@ func TestEvaluatorBase_calculateHostTypeAffinityScore(t *testing.T) {
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
 			tc.mock(peer)
-			tc.expect(t, calculateHostTypeAffinityScore(peer))
+			tc.expect(t, calculateHostTypeScore(peer))
 		})
 	}
 }

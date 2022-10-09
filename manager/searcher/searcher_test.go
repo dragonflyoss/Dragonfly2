@@ -111,12 +111,22 @@ func TestSchedulerCluster(t *testing.T) {
 					},
 					IsDefault: true,
 				},
+				{
+					Name: "baz",
+					Schedulers: []model.Scheduler{
+						{
+							HostName: "baz",
+							State:    "active",
+						},
+					},
+				},
 			},
 			conditions: map[string]string{"security_domain": "domain-1"},
 			expect: func(t *testing.T, data []model.SchedulerCluster, err error) {
 				assert := assert.New(t)
 				assert.Equal(data[0].Name, "bar")
-				assert.Equal(len(data), 1)
+				assert.Equal(data[1].Name, "baz")
+				assert.Equal(len(data), 2)
 			},
 		},
 		{
@@ -710,6 +720,28 @@ func TestSchedulerCluster(t *testing.T) {
 						},
 					},
 				},
+				{
+					Name: "bae",
+					Scopes: map[string]any{
+						"idc":          "IDC-1",
+						"location":     "LOCATION-2",
+						"net_topology": "NET_TOPOLOGY-1|NET_TOPOLOGY-2",
+					},
+					SecurityGroup: model.SecurityGroup{
+						SecurityRules: []model.SecurityRule{
+							{
+								Domain: "DOMAIN-2",
+							},
+						},
+					},
+					Schedulers: []model.Scheduler{
+						{
+							HostName: "bae",
+							State:    "active",
+						},
+					},
+					IsDefault: true,
+				},
 			},
 			conditions: map[string]string{
 				"security_domain": "domain-1",
@@ -719,11 +751,12 @@ func TestSchedulerCluster(t *testing.T) {
 			},
 			expect: func(t *testing.T, data []model.SchedulerCluster, err error) {
 				assert := assert.New(t)
-				assert.Equal(data[0].Name, "bar")
-				assert.Equal(data[1].Name, "foo")
-				assert.Equal(data[2].Name, "baz")
-				assert.Equal(data[3].Name, "bax")
-				assert.Equal(len(data), 4)
+				assert.Equal(data[0].Name, "bae")
+				assert.Equal(data[1].Name, "bar")
+				assert.Equal(data[2].Name, "foo")
+				assert.Equal(data[3].Name, "baz")
+				assert.Equal(data[4].Name, "bax")
+				assert.Equal(len(data), 5)
 			},
 		},
 	}
