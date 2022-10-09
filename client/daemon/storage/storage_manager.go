@@ -20,6 +20,7 @@ package storage
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -80,6 +81,9 @@ type Reclaimer interface {
 
 	// MarkReclaim marks the storage which will be reclaimed
 	MarkReclaim()
+
+	// marks the special storage invalid, that will reclaim next gc round
+	MarkInvalid()
 
 	// Reclaim reclaims the storage
 	Reclaim() error
@@ -709,7 +713,7 @@ func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 				loadErrs = append(loadErrs, err0)
 				loadErrDirs = append(loadErrDirs, dataDir)
 				logger.With("action", "reload", "stage", "parse metadata", "taskID", taskID, "peerID", peerID).
-					Warnf("load task from disk error: %s", err0)
+					Warnf("load task from disk error: %s, data base64 encode: %s", err0, base64.StdEncoding.EncodeToString(bytes))
 				continue
 			}
 			logger.Debugf("load task %s/%s from disk, metadata %s, last access: %v, expire time: %s",
@@ -896,7 +900,7 @@ func (s *storageManager) deleteTask(meta PeerTaskMetadata) error {
 	} else {
 		s.cleanSubIndex(meta.TaskID, meta.PeerID)
 	}
-	task.(Reclaimer).MarkReclaim()
+	task.(Reclaimer).MarkInvalid()
 	return task.(Reclaimer).Reclaim()
 }
 
