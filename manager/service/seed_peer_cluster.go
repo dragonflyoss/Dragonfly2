@@ -81,13 +81,20 @@ func (s *service) UpdateSeedPeerCluster(ctx context.Context, id uint, json types
 
 	seedPeerCluster := model.SeedPeerCluster{}
 	if err := s.db.WithContext(ctx).First(&seedPeerCluster, id).Updates(model.SeedPeerCluster{
-		Name:      json.Name,
-		BIO:       json.BIO,
-		Config:    config,
-		Scopes:    scopes,
-		IsDefault: json.IsDefault,
+		Name:   json.Name,
+		BIO:    json.BIO,
+		Config: config,
+		Scopes: scopes,
 	}).Error; err != nil {
 		return nil, err
+	}
+
+	// Updates does not accept bool as false.
+	// Refer to https://stackoverflow.com/questions/56653423/gorm-doesnt-update-boolean-field-to-false.
+	if json.IsDefault != seedPeerCluster.IsDefault {
+		if err := s.db.WithContext(ctx).First(&seedPeerCluster, id).Update("is_default", json.IsDefault).Error; err != nil {
+			return nil, err
+		}
 	}
 
 	return &seedPeerCluster, nil
