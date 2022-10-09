@@ -540,7 +540,7 @@ func (s *Service) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget) er
 func (s *Service) registerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest) (*resource.Task, bool, error) {
 	task := resource.NewTask(req.TaskId, req.Url, commonv1.TaskType_Normal, req.UrlMeta, resource.WithBackToSourceLimit(int32(s.config.Scheduler.BackSourceCount)))
 	task, loaded := s.resource.TaskManager().LoadOrStore(task)
-	if loaded && !task.FSM.Is(resource.TaskStateFailed) {
+	if loaded && !task.FSM.Is(resource.TaskStateFailed) && !task.FSM.Is(resource.TaskStateLeave) {
 		task.Log.Infof("task state is %s", task.FSM.Current())
 		return task, false, nil
 	}
@@ -806,14 +806,14 @@ func (s *Service) handleTaskSuccess(ctx context.Context, task *resource.Task, re
 		return
 	}
 
+	// Update task's resource total piece count and content length.
+	task.TotalPieceCount.Store(result.TotalPieceCount)
+	task.ContentLength.Store(result.ContentLength)
+
 	if err := task.FSM.Event(resource.TaskEventDownloadSucceeded); err != nil {
 		task.Log.Errorf("task fsm event failed: %s", err.Error())
 		return
 	}
-
-	// Update task's resource total piece count and content length.
-	task.TotalPieceCount.Store(result.TotalPieceCount)
-	task.ContentLength.Store(result.ContentLength)
 }
 
 // Conditions for the task to switch to the TaskStateSucceeded are:

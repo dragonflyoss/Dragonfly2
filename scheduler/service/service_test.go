@@ -279,6 +279,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			) {
 				mockPeer.Task.FSM.SetState(resource.TaskStateSucceeded)
 				mockPeer.Task.StorePeer(mockSeedPeer)
+				mockPeer.Task.ContentLength.Store(0)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
 					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
@@ -1266,7 +1267,7 @@ func TestService_StatTask(t *testing.T) {
 				assert.EqualValues(task, &schedulerv1.Task{
 					Id:               mockTaskID,
 					Type:             commonv1.TaskType_Normal,
-					ContentLength:    0,
+					ContentLength:    -1,
 					TotalPieceCount:  0,
 					State:            resource.TaskStatePending,
 					PeerCount:        0,
@@ -1923,6 +1924,43 @@ func TestService_registerTask(t *testing.T) {
 				defer wg.Wait()
 
 				mockTask.FSM.SetState(resource.TaskStateFailed)
+				gomock.InOrder(
+					mr.TaskManager().Return(taskManager).Times(1),
+					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Any()).Return(nil, false),
+					mr.SeedPeer().Do(func() { wg.Done() }).Return(seedPeer).Times(1),
+					mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(mockPeer, &schedulerv1.PeerResult{}, nil).Times(1),
+				)
+
+				task, needBackToSource, err := svc.registerTask(context.Background(), req)
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.False(needBackToSource)
+				assert.EqualValues(mockTask, task)
+			},
+		},
+		{
+			name: "task state is TaskStateLeave",
+			config: &config.Config{
+				Scheduler: mockSchedulerConfig,
+				SeedPeer: config.SeedPeerConfig{
+					Enable: true,
+				},
+			},
+			req: &schedulerv1.PeerTaskRequest{
+				Url:     mockTaskURL,
+				UrlMeta: mockTaskURLMeta,
+				PeerHost: &schedulerv1.PeerHost{
+					Id: mockRawSeedHost.Id,
+				},
+			},
+			run: func(t *testing.T, svc *Service, req *schedulerv1.PeerTaskRequest, mockTask *resource.Task, mockPeer *resource.Peer, taskManager resource.TaskManager, hostManager resource.HostManager, seedPeer resource.SeedPeer, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder, mh *resource.MockHostManagerMockRecorder, mc *resource.MockSeedPeerMockRecorder) {
+				var wg sync.WaitGroup
+				wg.Add(2)
+				defer wg.Wait()
+
+				mockTask.FSM.SetState(resource.TaskStateLeave)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
 					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
