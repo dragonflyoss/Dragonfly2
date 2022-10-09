@@ -932,7 +932,7 @@ func (s *storageManager) diskUsageExceed() (exceed bool, bytes int64) {
 		logger.Warnf("get %s disk usage error: %s", s.storeOption.DataPath, err)
 		return false, 0
 	}
-	logger.Debugf("disk usage: %#v", usage)
+	logger.Debugf("disk usage: %+v", usage)
 	if usage.UsedPercent < s.storeOption.DiskGCThresholdPercent {
 		return false, 0
 	}
