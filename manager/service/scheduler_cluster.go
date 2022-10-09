@@ -109,9 +109,16 @@ func (s *service) UpdateSchedulerCluster(ctx context.Context, id uint, json type
 		Config:       config,
 		ClientConfig: clientConfig,
 		Scopes:       scopes,
-		IsDefault:    json.IsDefault,
 	}).Error; err != nil {
 		return nil, err
+	}
+
+	// Updates does not accept bool as false.
+	// Refer to https://stackoverflow.com/questions/56653423/gorm-doesnt-update-boolean-field-to-false.
+	if json.IsDefault != schedulerCluster.IsDefault {
+		if err := s.db.WithContext(ctx).First(&schedulerCluster, id).Update("is_default", json.IsDefault).Error; err != nil {
+			return nil, err
+		}
 	}
 
 	if json.SeedPeerClusterID > 0 {
