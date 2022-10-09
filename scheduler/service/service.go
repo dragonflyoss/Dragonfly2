@@ -806,14 +806,14 @@ func (s *Service) handleTaskSuccess(ctx context.Context, task *resource.Task, re
 		return
 	}
 
+	// Update task's resource total piece count and content length.
+	task.TotalPieceCount.Store(result.TotalPieceCount)
+	task.ContentLength.Store(result.ContentLength)
+
 	if err := task.FSM.Event(resource.TaskEventDownloadSucceeded); err != nil {
 		task.Log.Errorf("task fsm event failed: %s", err.Error())
 		return
 	}
-
-	// Update task's resource total piece count and content length.
-	task.TotalPieceCount.Store(result.TotalPieceCount)
-	task.ContentLength.Store(result.ContentLength)
 }
 
 // Conditions for the task to switch to the TaskStateSucceeded are:

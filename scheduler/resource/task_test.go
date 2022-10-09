@@ -74,7 +74,7 @@ func TestTask_NewTask(t *testing.T) {
 				assert.Equal(task.URL, mockTaskURL)
 				assert.EqualValues(task.URLMeta, mockTaskURLMeta)
 				assert.Empty(task.DirectPiece)
-				assert.Equal(task.ContentLength.Load(), int64(0))
+				assert.Equal(task.ContentLength.Load(), int64(-1))
 				assert.Equal(task.TotalPieceCount.Load(), int32(0))
 				assert.Equal(task.BackToSourceLimit.Load(), int32(200))
 				assert.Equal(task.BackToSourcePeers.Len(), uint(0))

@@ -279,6 +279,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			) {
 				mockPeer.Task.FSM.SetState(resource.TaskStateSucceeded)
 				mockPeer.Task.StorePeer(mockSeedPeer)
+				mockPeer.Task.ContentLength.Store(0)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
 					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
@@ -1266,7 +1267,7 @@ func TestService_StatTask(t *testing.T) {
 				assert.EqualValues(task, &schedulerv1.Task{
 					Id:               mockTaskID,
 					Type:             commonv1.TaskType_Normal,
-					ContentLength:    0,
+					ContentLength:    -1,
 					TotalPieceCount:  0,
 					State:            resource.TaskStatePending,
 					PeerCount:        0,
