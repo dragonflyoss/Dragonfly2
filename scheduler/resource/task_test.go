@@ -906,7 +906,7 @@ func TestTask_HasAvailablePeer(t *testing.T) {
 		expect            func(t *testing.T, task *Task, mockPeer *Peer)
 	}{
 		{
-			name:              "len available peers",
+			name:              "peer state is PeerStateSucceeded",
 			id:                mockTaskID,
 			urlMeta:           mockTaskURLMeta,
 			url:               mockTaskURL,

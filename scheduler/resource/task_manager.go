@@ -104,11 +104,21 @@ func (t *taskManager) RunGC() error {
 		task := value.(*Task)
 		elapsed := time.Since(task.UpdateAt.Load())
 
-		if elapsed > t.ttl && task.PeerCount() == 0 && !task.FSM.Is(TaskStateRunning) {
+		if elapsed > t.ttl && task.FSM.Is(TaskStateLeave) {
 			task.Log.Info("task has been reclaimed")
 			t.Delete(task.ID)
+			return true
 		}
 
+		// If there is no peer then switch the task state to TaskStateLeave.
+		if task.PeerCount() == 0 {
+			if err := task.FSM.Event(TaskEventLeave); err != nil {
+				task.Log.Errorf("task fsm event failed: %s", err.Error())
+				return true
+			}
+		}
+
+		task.Log.Info("gc causes the task to leave")
 		return true
 	})
 
