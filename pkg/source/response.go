@@ -35,8 +35,8 @@ type Response struct {
 	// Validate this response is okay to transfer in p2p network, like status 200 or 206 in http is valid to do this,
 	// otherwise return status code to original client
 	Validate func() error
-	// Temporary check the error whether the error is temporary, if is true, we can retry it later
-	Temporary func() bool
+	// Temporary indecates the error whether the error is temporary, if is true, we can retry it later
+	Temporary bool
 }
 
 func NewResponse(rc io.ReadCloser, opts ...func(*Response)) *Response {
@@ -54,9 +54,7 @@ func NewResponse(rc io.ReadCloser, opts ...func(*Response)) *Response {
 		Validate: func() error {
 			return nil
 		},
-		Temporary: func() bool {
-			return true
-		},
+		Temporary: true,
 	}
 
 	for _, opt := range opts {
@@ -103,7 +101,7 @@ func WithValidate(validate func() error) func(*Response) {
 	}
 }
 
-func WithTemporary(temporary func() bool) func(*Response) {
+func WithTemporary(temporary bool) func(*Response) {
 	return func(resp *Response) {
 		resp.Temporary = temporary
 	}

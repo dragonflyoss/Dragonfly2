@@ -173,9 +173,7 @@ func (osc *ossSourceClient) GetMetadata(request *source.Request) (*source.Metada
 		Validate: func() error {
 			return nil
 		},
-		Temporary: func() bool {
-			return true
-		},
+		Temporary: true,
 	}, nil
 }
 

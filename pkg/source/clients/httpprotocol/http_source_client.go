@@ -52,7 +52,12 @@ var (
 	contentRangeRegexp            = regexp.MustCompile(`bytes (?P<Start>\d+)-(?P<End>\d+)/(?P<Length>(\d*|\*))`)
 	contentRangeRegexpLengthIndex = contentRangeRegexp.SubexpIndex("Length")
 
-	notTemporaryStatusCode = []int{http.StatusUnauthorized, http.StatusForbidden, http.StatusNotFound, http.StatusProxyAuthRequired}
+	notTemporaryStatusCode = []int{
+		http.StatusUnauthorized,
+		http.StatusForbidden,
+		http.StatusNotFound,
+		http.StatusProxyAuthRequired,
+	}
 )
 
 func init() {
@@ -218,14 +223,7 @@ func (client *httpSourceClient) GetMetadata(request *source.Request) (*source.Me
 		Validate: func() error {
 			return source.CheckResponseCode(resp.StatusCode, []int{http.StatusOK, http.StatusPartialContent})
 		},
-		Temporary: func() bool {
-			for _, code := range notTemporaryStatusCode {
-				if code == resp.StatusCode {
-					return false
-				}
-			}
-			return false
-		},
+		Temporary: detectTemporary(resp.StatusCode),
 	}, nil
 }
 
@@ -261,14 +259,7 @@ func (client *httpSourceClient) Download(request *source.Request) (*source.Respo
 		source.WithValidate(func() error {
 			return source.CheckResponseCode(resp.StatusCode, []int{http.StatusOK, http.StatusPartialContent})
 		}),
-		source.WithTemporary(func() bool {
-			for _, code := range notTemporaryStatusCode {
-				if code == resp.StatusCode {
-					return false
-				}
-			}
-			return true
-		}),
+		source.WithTemporary(detectTemporary(resp.StatusCode)),
 		source.WithHeader(exportPassThroughHeader(resp.Header)),
 		source.WithExpireInfo(
 			source.ExpireInfo{
@@ -335,4 +326,13 @@ func exportPassThroughHeader(header http.Header) map[string]string {
 		}
 	}
 	return ph
+}
+
+func detectTemporary(statusCode int) bool {
+	for _, code := range notTemporaryStatusCode {
+		if code == statusCode {
+			return false
+		}
+	}
+	return true
 }

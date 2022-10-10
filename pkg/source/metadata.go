@@ -31,5 +31,5 @@ type Metadata struct {
 	TotalContentLength int64
 
 	Validate  func() error
-	Temporary func() bool
+	Temporary bool
 }
