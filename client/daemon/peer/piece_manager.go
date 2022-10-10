@@ -385,7 +385,7 @@ singleDownload:
 			}
 		}
 		srcErr := &errordetailsv1.SourceError{
-			Temporary: response.Temporary == nil || response.Temporary(),
+			Temporary: response.Temporary,
 			Metadata: &commonv1.ExtendAttribute{
 				Header:     hdr,
 				StatusCode: int32(response.StatusCode),
