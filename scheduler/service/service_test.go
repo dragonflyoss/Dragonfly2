@@ -154,7 +154,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				mockPeer.Task.FSM.SetState(resource.TaskStateRunning)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, false).Times(1),
+					mt.Load(gomock.Any()).Return(mockPeer.Task, true).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, result *schedulerv1.RegisterResult, err error) {
@@ -183,7 +183,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				mockPeer.Task.StorePeer(mockSeedPeer)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
+					mt.Load(gomock.Any()).Return(mockPeer.Task, true).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
@@ -217,7 +217,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				mockPeer.FSM.SetState(resource.PeerStateFailed)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
+					mt.Load(gomock.Any()).Return(mockPeer.Task, true).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
@@ -251,7 +251,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				mockPeer.Task.ContentLength.Store(-1)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
+					mt.Load(gomock.Any()).Return(mockPeer.Task, true).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
@@ -286,7 +286,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				mockPeer.Task.ContentLength.Store(0)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
+					mt.Load(gomock.Any()).Return(mockPeer.Task, true).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
@@ -325,7 +325,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				mockPeer.Task.DirectPiece = []byte{1}
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
+					mt.Load(gomock.Any()).Return(mockPeer.Task, true).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
@@ -365,7 +365,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				mockPeer.FSM.SetState(resource.PeerStateFailed)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
+					mt.Load(gomock.Any()).Return(mockPeer.Task, true).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
@@ -401,7 +401,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				mockPeer.FSM.SetState(resource.PeerStateFailed)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
+					mt.Load(gomock.Any()).Return(mockPeer.Task, true).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
@@ -437,7 +437,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				mockPeer.Task.TotalPieceCount.Store(1)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
+					mt.Load(gomock.Any()).Return(mockPeer.Task, true).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
@@ -480,7 +480,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
+					mt.Load(gomock.Any()).Return(mockPeer.Task, true).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
@@ -523,7 +523,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
+					mt.Load(gomock.Any()).Return(mockPeer.Task, true).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
@@ -565,7 +565,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
+					mt.Load(gomock.Any()).Return(mockPeer.Task, true).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
@@ -605,7 +605,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
+					mt.Load(gomock.Any()).Return(mockPeer.Task, true).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
@@ -645,7 +645,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
+					mt.Load(gomock.Any()).Return(mockPeer.Task, true).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
@@ -683,7 +683,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				mockPeer.FSM.SetState(resource.PeerStateFailed)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
+					mt.Load(gomock.Any()).Return(mockPeer.Task, true).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
@@ -718,7 +718,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				mockPeer.Task.TotalPieceCount.Store(2)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
+					mt.Load(gomock.Any()).Return(mockPeer.Task, true).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
@@ -1770,7 +1770,7 @@ func TestService_registerTask(t *testing.T) {
 				mockPeer.FSM.SetState(resource.PeerStateRunning)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
+					mt.Load(gomock.Any()).Return(mockTask, true).Times(1),
 				)
 
 				task, needBackToSource, err := svc.registerTask(context.Background(), req)
@@ -1798,7 +1798,7 @@ func TestService_registerTask(t *testing.T) {
 				mockPeer.FSM.SetState(resource.PeerStateRunning)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
+					mt.Load(gomock.Any()).Return(mockTask, true).Times(1),
 				)
 
 				task, needBackToSource, err := svc.registerTask(context.Background(), req)
@@ -1826,7 +1826,7 @@ func TestService_registerTask(t *testing.T) {
 				mockPeer.FSM.SetState(resource.PeerStateRunning)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
+					mt.Load(gomock.Any()).Return(mockTask, true).Times(1),
 				)
 
 				task, needBackToSource, err := svc.registerTask(context.Background(), req)
@@ -1859,7 +1859,9 @@ func TestService_registerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockTask, false).Times(1),
+					mt.Load(gomock.Any()).Return(mockTask, false).Times(1),
+					mr.TaskManager().Return(taskManager).Times(1),
+					mt.Store(gomock.Any()).Return().Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(nil, false).Times(1),
 					mr.SeedPeer().Do(func() { wg.Done() }).Return(seedPeer).Times(1),
@@ -1870,7 +1872,8 @@ func TestService_registerTask(t *testing.T) {
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.False(needBackToSource)
-				assert.EqualValues(mockTask, task)
+				assert.EqualValues(mockTaskURL, task.URL)
+				assert.EqualValues(mockTaskURLMeta, task.URLMeta)
 			},
 		},
 		{
@@ -1896,7 +1899,7 @@ func TestService_registerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStateFailed)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
+					mt.Load(gomock.Any()).Return(mockTask, true).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(nil, false),
 					mr.SeedPeer().Do(func() { wg.Done() }).Return(seedPeer).Times(1),
@@ -1933,7 +1936,7 @@ func TestService_registerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStateLeave)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
+					mt.Load(gomock.Any()).Return(mockTask, true).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(nil, false),
 					mr.SeedPeer().Do(func() { wg.Done() }).Return(seedPeer).Times(1),
@@ -1967,7 +1970,7 @@ func TestService_registerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStateFailed)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
+					mt.Load(gomock.Any()).Return(mockTask, true).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(mockHost, true).Times(1),
 				)
@@ -2002,7 +2005,9 @@ func TestService_registerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockTask, false).Times(1),
+					mt.Load(gomock.Any()).Return(mockTask, false).Times(1),
+					mr.TaskManager().Return(taskManager).Times(1),
+					mt.Store(gomock.Any()).Return().Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(nil, false).Times(1),
 					mr.SeedPeer().Do(func() { wg.Done() }).Return(seedPeer).Times(1),
@@ -2013,7 +2018,8 @@ func TestService_registerTask(t *testing.T) {
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.False(needBackToSource)
-				assert.EqualValues(mockTask, task)
+				assert.EqualValues(mockTaskURL, task.URL)
+				assert.EqualValues(mockTaskURLMeta, task.URLMeta)
 			},
 		},
 		{
@@ -2039,7 +2045,7 @@ func TestService_registerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStateFailed)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
+					mt.Load(gomock.Any()).Return(mockTask, true).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(nil, false).Times(1),
 					mr.SeedPeer().Do(func() { wg.Done() }).Return(seedPeer).Times(1),
@@ -2072,7 +2078,9 @@ func TestService_registerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockTask, false).Times(1),
+					mt.Load(gomock.Any()).Return(mockTask, false).Times(1),
+					mr.TaskManager().Return(taskManager).Times(1),
+					mt.Store(gomock.Any()).Return().Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(nil, false).Times(1),
 				)
@@ -2081,7 +2089,8 @@ func TestService_registerTask(t *testing.T) {
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.True(needBackToSource)
-				assert.EqualValues(mockTask, task)
+				assert.EqualValues(mockTaskURL, task.URL)
+				assert.EqualValues(mockTaskURLMeta, task.URLMeta)
 			},
 		},
 		{
@@ -2103,7 +2112,7 @@ func TestService_registerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStateFailed)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
+					mt.Load(gomock.Any()).Return(mockTask, true).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(nil, false).Times(1),
 				)
