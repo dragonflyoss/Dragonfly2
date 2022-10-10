@@ -30,6 +30,7 @@ import (
 
 	"github.com/go-http-utils/headers"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/source"
 )
 
@@ -316,6 +317,8 @@ func (client *httpSourceClient) doRequest(method string, request *source.Request
 			req.Header.Add(key, values[i])
 		}
 	}
+
+	logger.Debugf("request %s %s header: %#v", method, request.URL.String(), request.Header)
 	resp, err := client.httpClient.Do(req)
 	if err != nil {
 		return nil, err
