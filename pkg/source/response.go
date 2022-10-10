@@ -54,6 +54,9 @@ func NewResponse(rc io.ReadCloser, opts ...func(*Response)) *Response {
 		Validate: func() error {
 			return nil
 		},
+		Temporary: func() bool {
+			return true
+		},
 	}
 
 	for _, opt := range opts {

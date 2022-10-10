@@ -266,7 +266,7 @@ func (client *httpSourceClient) Download(request *source.Request) (*source.Respo
 					return false
 				}
 			}
-			return false
+			return true
 		}),
 		source.WithHeader(exportPassThroughHeader(resp.Header)),
 		source.WithExpireInfo(
