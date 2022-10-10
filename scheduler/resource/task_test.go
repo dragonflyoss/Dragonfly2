@@ -921,6 +921,36 @@ func TestTask_HasAvailablePeer(t *testing.T) {
 			},
 		},
 		{
+			name:              "peer state is PeerStateRunning",
+			id:                mockTaskID,
+			urlMeta:           mockTaskURLMeta,
+			url:               mockTaskURL,
+			backToSourceLimit: mockTaskBackToSourceLimit,
+			expect: func(t *testing.T, task *Task, mockPeer *Peer) {
+				assert := assert.New(t)
+				task.StorePeer(mockPeer)
+				mockPeer.ID = idgen.PeerID("0.0.0.0")
+				mockPeer.FSM.SetState(PeerStateRunning)
+				task.StorePeer(mockPeer)
+				assert.Equal(task.HasAvailablePeer(), true)
+			},
+		},
+		{
+			name:              "peer state is PeerStateBackToSource",
+			id:                mockTaskID,
+			urlMeta:           mockTaskURLMeta,
+			url:               mockTaskURL,
+			backToSourceLimit: mockTaskBackToSourceLimit,
+			expect: func(t *testing.T, task *Task, mockPeer *Peer) {
+				assert := assert.New(t)
+				task.StorePeer(mockPeer)
+				mockPeer.ID = idgen.PeerID("0.0.0.0")
+				mockPeer.FSM.SetState(PeerStateBackToSource)
+				task.StorePeer(mockPeer)
+				assert.Equal(task.HasAvailablePeer(), true)
+			},
+		},
+		{
 			name:              "peer does not exist",
 			id:                mockTaskID,
 			urlMeta:           mockTaskURLMeta,
