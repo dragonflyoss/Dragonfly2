@@ -28,6 +28,7 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
 	pkgtime "d7y.io/dragonfly/v2/pkg/time"
+	"d7y.io/dragonfly/v2/scheduler/metrics"
 )
 
 const (
@@ -137,6 +138,8 @@ func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *schedul
 			peer.FinishedPieces.Set(uint(piece.PieceInfo.PieceNum))
 			peer.AppendPieceCost(pkgtime.SubNano(int64(piece.EndTime), int64(piece.BeginTime)).Milliseconds())
 			task.StorePiece(piece.PieceInfo)
+
+			metrics.Traffic.WithLabelValues(peer.Tag, peer.Application, metrics.TrafficBackToSourceType).Add(float64(piece.PieceInfo.RangeSize))
 		}
 
 		// Handle end of piece.
