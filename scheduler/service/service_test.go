@@ -166,7 +166,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			},
 		},
 		{
-			name: "task state is TaskStateFailed",
+			name: "task state is TaskStateRunning and it has available peer",
 			req: &schedulerv1.PeerTaskRequest{
 				UrlMeta: &commonv1.UrlMeta{},
 				PeerHost: &schedulerv1.PeerHost{
@@ -179,6 +179,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder,
 			) {
 				mockPeer.Task.FSM.SetState(resource.TaskStateRunning)
+				mockSeedPeer.FSM.SetState(resource.PeerStateRunning)
 				mockPeer.Task.StorePeer(mockSeedPeer)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
@@ -198,7 +199,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			},
 		},
 		{
-			name: "task state is TaskStateFailed and peer state is PeerStateFailed",
+			name: "task state is TaskStateRunning and peer state is PeerStateFailed",
 			req: &schedulerv1.PeerTaskRequest{
 				UrlMeta: &commonv1.UrlMeta{},
 				PeerHost: &schedulerv1.PeerHost{
@@ -211,6 +212,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder,
 			) {
 				mockPeer.Task.FSM.SetState(resource.TaskStateRunning)
+				mockSeedPeer.FSM.SetState(resource.PeerStateRunning)
 				mockPeer.Task.StorePeer(mockSeedPeer)
 				mockPeer.FSM.SetState(resource.PeerStateFailed)
 				gomock.InOrder(
@@ -244,6 +246,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder,
 			) {
 				mockPeer.Task.FSM.SetState(resource.TaskStateSucceeded)
+				mockSeedPeer.FSM.SetState(resource.PeerStateRunning)
 				mockPeer.Task.StorePeer(mockSeedPeer)
 				mockPeer.Task.ContentLength.Store(-1)
 				gomock.InOrder(
@@ -278,6 +281,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder,
 			) {
 				mockPeer.Task.FSM.SetState(resource.TaskStateSucceeded)
+				mockSeedPeer.FSM.SetState(resource.PeerStateRunning)
 				mockPeer.Task.StorePeer(mockSeedPeer)
 				mockPeer.Task.ContentLength.Store(0)
 				gomock.InOrder(
@@ -314,6 +318,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder,
 			) {
 				mockPeer.Task.FSM.SetState(resource.TaskStateSucceeded)
+				mockSeedPeer.FSM.SetState(resource.PeerStateRunning)
 				mockPeer.Task.StorePeer(mockSeedPeer)
 				mockPeer.Task.ContentLength.Store(1)
 				mockPeer.Task.TotalPieceCount.Store(1)
@@ -352,6 +357,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder,
 			) {
 				mockPeer.Task.FSM.SetState(resource.TaskStateSucceeded)
+				mockSeedPeer.FSM.SetState(resource.PeerStateRunning)
 				mockPeer.Task.StorePeer(mockSeedPeer)
 				mockPeer.Task.ContentLength.Store(1)
 				mockPeer.Task.TotalPieceCount.Store(1)
@@ -388,6 +394,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder,
 			) {
 				mockPeer.Task.FSM.SetState(resource.TaskStateSucceeded)
+				mockSeedPeer.FSM.SetState(resource.PeerStateRunning)
 				mockPeer.Task.StorePeer(mockSeedPeer)
 				mockPeer.Task.ContentLength.Store(1)
 				mockPeer.Task.TotalPieceCount.Store(1)
@@ -424,6 +431,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder,
 			) {
 				mockPeer.Task.FSM.SetState(resource.TaskStateSucceeded)
+				mockSeedPeer.FSM.SetState(resource.PeerStateRunning)
 				mockPeer.Task.StorePeer(mockSeedPeer)
 				mockPeer.Task.ContentLength.Store(1)
 				mockPeer.Task.TotalPieceCount.Store(1)
@@ -613,46 +621,6 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			},
 		},
 		{
-			name: "task scope size is SizeScope_SMALL and add edge failed",
-			req: &schedulerv1.PeerTaskRequest{
-				UrlMeta: &commonv1.UrlMeta{},
-				PeerHost: &schedulerv1.PeerHost{
-					Id: mockRawHost.Id,
-				},
-			},
-			mock: func(
-				req *schedulerv1.PeerTaskRequest, mockPeer *resource.Peer, mockSeedPeer *resource.Peer,
-				scheduler scheduler.Scheduler, res resource.Resource, hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager,
-				ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder,
-			) {
-				mockPeer.Task.FSM.SetState(resource.TaskStateSucceeded)
-				mockPeer.Task.StorePeer(mockPeer)
-				mockPeer.Task.ContentLength.Store(129)
-				mockPeer.Task.StorePiece(&commonv1.PieceInfo{
-					PieceNum: 0,
-				})
-				mockPeer.Task.TotalPieceCount.Store(1)
-				mockSeedPeer.FSM.SetState(resource.PeerStateSucceeded)
-
-				gomock.InOrder(
-					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
-					mr.HostManager().Return(hostManager).Times(1),
-					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
-					mr.PeerManager().Return(peerManager).Times(1),
-					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
-					ms.FindParent(gomock.Any(), gomock.Any(), gomock.Any()).Return(mockSeedPeer, true).Times(1),
-				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer, result *schedulerv1.RegisterResult, err error) {
-				assert := assert.New(t)
-				assert.NoError(err)
-				assert.Equal(result.TaskId, peer.Task.ID)
-				assert.True(peer.FSM.Is(resource.PeerStateReceivedNormal))
-				assert.Equal(peer.NeedBackToSource.Load(), false)
-			},
-		},
-		{
 			name: "task scope size is SizeScope_SMALL",
 			req: &schedulerv1.PeerTaskRequest{
 				UrlMeta: &commonv1.UrlMeta{},
@@ -708,6 +676,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder,
 			) {
 				mockPeer.Task.FSM.SetState(resource.TaskStateSucceeded)
+				mockSeedPeer.FSM.SetState(resource.PeerStateRunning)
 				mockPeer.Task.StorePeer(mockSeedPeer)
 				mockPeer.Task.ContentLength.Store(129)
 				mockPeer.Task.TotalPieceCount.Store(2)
@@ -743,6 +712,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder,
 			) {
 				mockPeer.Task.FSM.SetState(resource.TaskStateSucceeded)
+				mockSeedPeer.FSM.SetState(resource.PeerStateRunning)
 				mockPeer.Task.StorePeer(mockSeedPeer)
 				mockPeer.Task.ContentLength.Store(129)
 				mockPeer.Task.TotalPieceCount.Store(2)

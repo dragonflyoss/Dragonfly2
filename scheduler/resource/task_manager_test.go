@@ -34,7 +34,6 @@ import (
 var (
 	mockTaskGCConfig = &config.GCConfig{
 		TaskGCInterval: 1 * time.Second,
-		TaskTTL:        1 * time.Microsecond,
 	}
 )
 

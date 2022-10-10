@@ -179,7 +179,8 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 
 func (eb *evaluatorBase) IsBadNode(peer *resource.Peer) bool {
 	if peer.FSM.Is(resource.PeerStateFailed) || peer.FSM.Is(resource.PeerStateLeave) || peer.FSM.Is(resource.PeerStatePending) ||
-		peer.FSM.Is(resource.PeerStateReceivedTiny) || peer.FSM.Is(resource.PeerStateReceivedSmall) || peer.FSM.Is(resource.PeerStateReceivedNormal) {
+		peer.FSM.Is(resource.PeerStateReceivedTiny) || peer.FSM.Is(resource.PeerStateReceivedSmall) ||
+		peer.FSM.Is(resource.PeerStateReceivedNormal) || peer.FSM.Is(resource.PeerStateReceivedEmpty) {
 		peer.Log.Debugf("peer is bad node because peer status is %s", peer.FSM.Current())
 		return true
 	}
