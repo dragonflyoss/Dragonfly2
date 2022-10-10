@@ -20,7 +20,6 @@ package resource
 
 import (
 	"sync"
-	"time"
 
 	pkggc "d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -53,16 +52,12 @@ type HostManager interface {
 type hostManager struct {
 	// Host sync map.
 	*sync.Map
-
-	// Host time to live.
-	ttl time.Duration
 }
 
 // New host manager interface.
 func newHostManager(cfg *config.GCConfig, gc pkggc.GC) (HostManager, error) {
 	h := &hostManager{
 		Map: &sync.Map{},
-		ttl: cfg.HostTTL,
 	}
 
 	if err := gc.Add(pkggc.Task{
@@ -101,11 +96,13 @@ func (h *hostManager) Delete(key string) {
 
 func (h *hostManager) RunGC() error {
 	h.Map.Range(func(_, value any) bool {
-		host := value.(*Host)
-		elapsed := time.Since(host.UpdateAt.Load())
+		host, ok := value.(*Host)
+		if !ok {
+			host.Log.Error("invalid host")
+			return true
+		}
 
-		if elapsed > h.ttl &&
-			host.PeerCount.Load() == 0 &&
+		if host.PeerCount.Load() == 0 &&
 			host.UploadPeerCount.Load() == 0 &&
 			host.Type == HostTypeNormal {
 			host.Log.Info("host has been reclaimed")

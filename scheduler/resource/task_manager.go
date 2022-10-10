@@ -20,7 +20,6 @@ package resource
 
 import (
 	"sync"
-	"time"
 
 	pkggc "d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -53,16 +52,12 @@ type TaskManager interface {
 type taskManager struct {
 	// Task sync map.
 	*sync.Map
-
-	// Task time to live.
-	ttl time.Duration
 }
 
 // New task manager interface.
 func newTaskManager(cfg *config.GCConfig, gc pkggc.GC) (TaskManager, error) {
 	t := &taskManager{
 		Map: &sync.Map{},
-		ttl: cfg.TaskTTL,
 	}
 
 	if err := gc.Add(pkggc.Task{
@@ -101,10 +96,14 @@ func (t *taskManager) Delete(key string) {
 
 func (t *taskManager) RunGC() error {
 	t.Map.Range(func(_, value any) bool {
-		task := value.(*Task)
-		elapsed := time.Since(task.UpdateAt.Load())
+		task, ok := value.(*Task)
+		if !ok {
+			task.Log.Error("invalid task")
+			return true
+		}
 
-		if elapsed > t.ttl && task.FSM.Is(TaskStateLeave) {
+		// If task state is TaskStateLeave, it will be reclaimed.
+		if task.FSM.Is(TaskStateLeave) {
 			task.Log.Info("task has been reclaimed")
 			t.Delete(task.ID)
 			return true
@@ -116,9 +115,10 @@ func (t *taskManager) RunGC() error {
 				task.Log.Errorf("task fsm event failed: %s", err.Error())
 				return true
 			}
+
+			task.Log.Info("task peer count is zero, causing the task to leave")
 		}
 
-		task.Log.Info("gc causes the task to leave")
 		return true
 	})
 

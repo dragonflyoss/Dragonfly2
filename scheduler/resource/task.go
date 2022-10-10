@@ -330,7 +330,9 @@ func (t *Task) HasAvailablePeer() bool {
 			continue
 		}
 
-		if peer.FSM.Is(PeerStateSucceeded) {
+		if peer.FSM.Is(PeerStateSucceeded) ||
+			peer.FSM.Is(PeerStateRunning) ||
+			peer.FSM.Is(PeerStateBackToSource) {
 			hasAvailablePeer = true
 			break
 		}
