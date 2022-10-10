@@ -73,8 +73,9 @@ type Proxy struct {
 	// cert is the certificate used to hijack https proxy requests
 	cert *tls.Certificate
 
-	// certCache is an in-memory cache store for TLS certs used in HTTPS hijack. Lazy init.
-	certCache *lru.Cache
+	// certCache is an in-memory cache store for TLS certs used in HTTPS hijack
+	certCache    *lru.Cache
+	cacheRWMutex sync.RWMutex
 
 	// directHandler are used to handle non-proxy requests
 	directHandler http.Handler
@@ -270,6 +271,7 @@ func NewProxyWithOptions(options ...Option) (*Proxy, error) {
 	proxy := &Proxy{
 		directHandler: http.NewServeMux(),
 		tracer:        otel.Tracer("dfget-daemon-proxy"),
+		certCache:     lru.New(100),
 	}
 
 	for _, opt := range options {
@@ -429,9 +431,6 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 
 	sConfig := new(tls.Config)
 	if proxy.cert.Leaf != nil && proxy.cert.Leaf.IsCA {
-		if proxy.certCache == nil { // Initialize proxy.certCache on first access. (Lazy init)
-			proxy.certCache = lru.New(100) // Default max entries size = 100
-		}
 		leafCertSpec := LeafCertSpec{
 			proxy.cert.Leaf.PublicKey,
 			proxy.cert.PrivateKey,
@@ -441,7 +440,9 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 			cConfig.ServerName = host
 			// It's assumed that `hello.ServerName` is always same as `host`, in practice.
 			cacheKey := host
+			proxy.cacheRWMutex.RLock()
 			cached, hit := proxy.certCache.Get(cacheKey)
+			proxy.cacheRWMutex.RUnlock()
 			if hit && time.Now().Before(cached.(*tls.Certificate).Leaf.NotAfter) { // If cache hit and the cert is not expired
 				logger.Debugf("TLS cert cache hit, cacheKey = <%s>", cacheKey)
 				return cached.(*tls.Certificate), nil
@@ -451,7 +452,9 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 			if err == nil {
 				// Put cert in cache only if there is no error. So all certs in cache are always valid.
 				// But certs in cache maybe expired (After 24 hours, see the default duration of generated certs)
+				proxy.cacheRWMutex.Lock()
 				proxy.certCache.Add(cacheKey, cert)
+				proxy.cacheRWMutex.Unlock()
 			}
 			// If err != nil, means unrecoverable error happened in genLeafCert(...)
 			return cert, err
