@@ -51,7 +51,7 @@ scheduler:
     # peerTTL is peer's TTL duration.
     peerTTL: 24h
     # taskGCInterval is task's gc interval.
-    taskGCInterval: 10m
+    taskGCInterval: 30m
     # hostGCInterval is host's gc interval.
     hostGCInterval: 1h
 
