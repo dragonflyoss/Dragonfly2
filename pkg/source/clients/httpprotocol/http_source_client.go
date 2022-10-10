@@ -318,7 +318,7 @@ func (client *httpSourceClient) doRequest(method string, request *source.Request
 		}
 	}
 
-	logger.Debugf("request %s %s header: %#v", method, request.URL.String(), request.Header)
+	logger.Debugf("request %s %s header: %#v", method, req.URL.String(), req.Header)
 	resp, err := client.httpClient.Do(req)
 	if err != nil {
 		return nil, err
