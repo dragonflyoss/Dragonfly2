@@ -147,14 +147,8 @@ type GCConfig struct {
 	// Task gc interval.
 	TaskGCInterval time.Duration `yaml:"taskGCInterval" mapstructure:"taskGCInterval"`
 
-	// Task time to live.
-	TaskTTL time.Duration `yaml:"taskTTL" mapstructure:"taskTTL"`
-
 	// Host gc interval.
 	HostGCInterval time.Duration `yaml:"hostGCInterval" mapstructure:"hostGCInterval"`
-
-	// Host time to live.
-	HostTTL time.Duration `yaml:"hostTTL" mapstructure:"hostTTL"`
 }
 
 type DynConfig struct {
@@ -305,9 +299,7 @@ func New() *Config {
 				PeerGCInterval: DefaultSchedulerPeerGCInterval,
 				PeerTTL:        DefaultSchedulerPeerTTL,
 				TaskGCInterval: DefaultSchedulerTaskGCInterval,
-				TaskTTL:        DefaultSchedulerTaskTTL,
 				HostGCInterval: DefaultSchedulerHostGCInterval,
-				HostTTL:        DefaultSchedulerHostTTL,
 			},
 			Training: TrainingConfig{
 				Enable:               false,
@@ -393,20 +385,20 @@ func (cfg *Config) Validate() error {
 		return errors.New("scheduler requires parameter retryInterval")
 	}
 
-	if cfg.Scheduler.GC.PeerGCInterval <= 0 {
-		return errors.New("scheduler requires parameter peerGCInterval")
-	}
-
 	if cfg.Scheduler.GC.PeerTTL <= 0 {
 		return errors.New("scheduler requires parameter peerTTL")
+	}
+
+	if cfg.Scheduler.GC.PeerGCInterval <= 0 {
+		return errors.New("scheduler requires parameter peerGCInterval")
 	}
 
 	if cfg.Scheduler.GC.TaskGCInterval <= 0 {
 		return errors.New("scheduler requires parameter taskGCInterval")
 	}
 
-	if cfg.Scheduler.GC.TaskTTL <= 0 {
-		return errors.New("scheduler requires parameter taskTTL")
+	if cfg.Scheduler.GC.HostGCInterval <= 0 {
+		return errors.New("scheduler requires parameter hostGCInterval")
 	}
 
 	if cfg.Scheduler.Training.Enable {

@@ -34,7 +34,6 @@ import (
 var (
 	mockHostGCConfig = &config.GCConfig{
 		HostGCInterval: 1 * time.Second,
-		HostTTL:        1 * time.Microsecond,
 	}
 )
 

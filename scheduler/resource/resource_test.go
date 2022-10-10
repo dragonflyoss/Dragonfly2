@@ -141,9 +141,7 @@ func TestResource_New(t *testing.T) {
 						PeerGCInterval: 100,
 						PeerTTL:        1000,
 						TaskGCInterval: 100,
-						TaskTTL:        1000,
 						HostGCInterval: 100,
-						HostTTL:        1000,
 					},
 				},
 				SeedPeer: config.SeedPeerConfig{

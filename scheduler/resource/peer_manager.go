@@ -126,19 +126,19 @@ func (p *peerManager) Delete(key string) {
 func (p *peerManager) RunGC() error {
 	p.Map.Range(func(_, value any) bool {
 		peer := value.(*Peer)
-		elapsed := time.Since(peer.UpdateAt.Load())
+
+		// If the peer state is PeerStateLeave,
+		// peer will be reclaimed.
+		if peer.FSM.Is(PeerStateLeave) {
+			p.Delete(peer.ID)
+			peer.Log.Info("peer has been reclaimed")
+			return true
+		}
 
 		// If the peer's elapsed exceeds the ttl,
 		// first set the peer state to PeerStateLeave and then delete peer.
+		elapsed := time.Since(peer.UpdateAt.Load())
 		if elapsed > p.ttl {
-			// If the status is PeerStateLeave,
-			// clear peer information.
-			if peer.FSM.Is(PeerStateLeave) {
-				p.Delete(peer.ID)
-				peer.Log.Info("peer has been reclaimed")
-				return true
-			}
-
 			// If the peer is not leave,
 			// first change the state to PeerEventLeave.
 			if err := peer.FSM.Event(PeerEventLeave); err != nil {
@@ -146,8 +146,19 @@ func (p *peerManager) RunGC() error {
 				return true
 			}
 
-			peer.Log.Info("gc causes the peer to leave")
+			peer.Log.Info("peer elapsed exceeds the ttl, causing the peer to leave")
 			return true
+		}
+
+		// If the peer's state is PeerStateFailed,
+		// first set the peer state to PeerStateLeave and then delete peer.
+		if peer.FSM.Is(PeerStateFailed) {
+			if err := peer.FSM.Event(PeerEventLeave); err != nil {
+				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
+				return true
+			}
+
+			peer.Log.Info("peer state is PeerStateFailed, causing the peer to leave")
 		}
 
 		// If no peer exists in the dag of the task,
@@ -160,12 +171,16 @@ func (p *peerManager) RunGC() error {
 		}
 
 		// If the task dag size exceeds the limit,
-		// then delete peers which state is PeerStateSucceeded and PeerStateFailed,
-		// and degree is zero.
+		// then set the peer state to PeerStateLeave which state is
+		// PeerStateSucceeded and PeerStateFailed, and degree is zero.
 		if peer.Task.PeerCount() > PeerCountLimitForTask &&
 			(peer.FSM.Is(PeerStateSucceeded) || peer.FSM.Is(PeerStateFailed)) && degree == 0 {
-			p.Delete(peer.ID)
-			peer.Log.Info("peer has been reclaimed")
+			if err := peer.FSM.Event(PeerEventLeave); err != nil {
+				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
+				return true
+			}
+
+			peer.Log.Info("task dag size exceeds the limit, causing the peer to leave")
 			return true
 		}
 

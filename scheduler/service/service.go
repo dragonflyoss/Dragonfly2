@@ -540,7 +540,8 @@ func (s *Service) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget) er
 func (s *Service) registerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest) (*resource.Task, bool, error) {
 	task := resource.NewTask(req.TaskId, req.Url, commonv1.TaskType_Normal, req.UrlMeta, resource.WithBackToSourceLimit(int32(s.config.Scheduler.BackSourceCount)))
 	task, loaded := s.resource.TaskManager().LoadOrStore(task)
-	if loaded && !task.FSM.Is(resource.TaskStateFailed) && !task.FSM.Is(resource.TaskStateLeave) {
+	if loaded && !task.FSM.Is(resource.TaskStateFailed) &&
+		!task.FSM.Is(resource.TaskStateLeave) && task.HasAvailablePeer() {
 		task.Log.Infof("task state is %s", task.FSM.Current())
 		return task, false, nil
 	}

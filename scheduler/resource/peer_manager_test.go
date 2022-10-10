@@ -365,6 +365,27 @@ func TestPeerManager_RunGC(t *testing.T) {
 			},
 		},
 		{
+			name: "peer state is PeerStateFailed",
+			gcConfig: &config.GCConfig{
+				PeerGCInterval: 1 * time.Second,
+				PeerTTL:        1 * time.Microsecond,
+			},
+			mock: func(m *gc.MockGCMockRecorder) {
+				m.Add(gomock.Any()).Return(nil).Times(1)
+			},
+			expect: func(t *testing.T, peerManager PeerManager, mockHost *Host, mockTask *Task, mockPeer *Peer) {
+				assert := assert.New(t)
+				peerManager.Store(mockPeer)
+				mockPeer.FSM.SetState(PeerStateFailed)
+				err := peerManager.RunGC()
+				assert.NoError(err)
+
+				peer, ok := peerManager.Load(mockPeer.ID)
+				assert.Equal(ok, true)
+				assert.Equal(peer.FSM.Current(), PeerStateLeave)
+			},
+		},
+		{
 			name: "peer gets degree failed",
 			gcConfig: &config.GCConfig{
 				PeerGCInterval: 1 * time.Second,
@@ -407,8 +428,9 @@ func TestPeerManager_RunGC(t *testing.T) {
 				err := peerManager.RunGC()
 				assert.NoError(err)
 
-				_, ok := peerManager.Load(mockPeer.ID)
-				assert.Equal(ok, false)
+				peer, ok := peerManager.Load(mockPeer.ID)
+				assert.Equal(ok, true)
+				assert.Equal(peer.FSM.Current(), PeerStateLeave)
 			},
 		},
 	}

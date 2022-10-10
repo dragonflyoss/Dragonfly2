@@ -59,22 +59,16 @@ const (
 	DefaultSchedulerRetryInterval = 50 * time.Millisecond
 
 	// DefaultSchedulerPeerGCInterval is default interval for peer gc.
-	DefaultSchedulerPeerGCInterval = 10 * time.Minute
+	DefaultSchedulerPeerGCInterval = 10 * time.Second
 
 	// DefaultSchedulerPeerTTL is default ttl for peer.
 	DefaultSchedulerPeerTTL = 24 * time.Hour
 
 	// DefaultSchedulerTaskGCInterval is default interval for task gc.
-	DefaultSchedulerTaskGCInterval = 10 * time.Minute
-
-	// DefaultSchedulerTaskTTL is default ttl for task.
-	DefaultSchedulerTaskTTL = 24 * time.Hour
+	DefaultSchedulerTaskGCInterval = 30 * time.Minute
 
 	// DefaultSchedulerHostGCInterval is default interval for host gc.
-	DefaultSchedulerHostGCInterval = 30 * time.Minute
-
-	// DefaultSchedulerHostTTL is default ttl for host.
-	DefaultSchedulerHostTTL = 48 * time.Hour
+	DefaultSchedulerHostGCInterval = 1 * time.Hour
 
 	// DefaultRefreshModelInterval is model refresh interval.
 	DefaultRefreshModelInterval = 168 * time.Hour
