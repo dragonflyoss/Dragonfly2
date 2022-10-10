@@ -538,12 +538,22 @@ func (s *Service) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget) er
 
 // registerTask creates a new task or reuses a previous task.
 func (s *Service) registerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest) (*resource.Task, bool, error) {
-	task := resource.NewTask(req.TaskId, req.Url, commonv1.TaskType_Normal, req.UrlMeta, resource.WithBackToSourceLimit(int32(s.config.Scheduler.BackSourceCount)))
-	task, loaded := s.resource.TaskManager().LoadOrStore(task)
-	if loaded && !task.FSM.Is(resource.TaskStateFailed) &&
-		!task.FSM.Is(resource.TaskStateLeave) && task.HasAvailablePeer() {
-		task.Log.Infof("task state is %s", task.FSM.Current())
-		return task, false, nil
+	task, loaded := s.resource.TaskManager().Load(req.TaskId)
+	if loaded {
+		// Task is the pointer, if the task already exists, the next request will
+		// update the task's Url and UrlMeta in task manager.
+		task.URL = req.Url
+		task.URLMeta = req.UrlMeta
+
+		if !task.FSM.Is(resource.TaskStateFailed) &&
+			!task.FSM.Is(resource.TaskStateLeave) && task.HasAvailablePeer() {
+			task.Log.Infof("task state is %s", task.FSM.Current())
+			return task, false, nil
+		}
+	} else {
+		// Create a task for the first time.
+		task = resource.NewTask(req.TaskId, req.Url, commonv1.TaskType_Normal, req.UrlMeta, resource.WithBackToSourceLimit(int32(s.config.Scheduler.BackSourceCount)))
+		s.resource.TaskManager().Store(task)
 	}
 
 	// Trigger task.
