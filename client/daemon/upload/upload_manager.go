@@ -26,10 +26,10 @@ import (
 	"math"
 	"net"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
+	"time"
 
+	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
 	"github.com/go-http-utils/headers"
 	"github.com/johanbrandhorst/certify"
@@ -152,19 +152,12 @@ func (um *uploadManager) initRouter(cfg *config.DaemonOption, logDir string) *gi
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	// Logging to a file
-	if !cfg.Console {
-		gin.DisableConsoleColor()
-		logDir := filepath.Join(logDir, "daemon")
-		f, _ := os.Create(filepath.Join(logDir, GinLogFileName))
-		gin.DefaultWriter = io.MultiWriter(f)
-	}
-
 	r := gin.New()
 
 	// Middleware
-	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
+	r.Use(ginzap.Ginzap(logger.GinLogger.Desugar(), time.RFC3339, true))
+	r.Use(ginzap.RecoveryWithZap(logger.GinLogger.Desugar(), true))
 
 	// Prometheus metrics
 	p := ginprometheus.NewPrometheus(PrometheusSubsystemName)

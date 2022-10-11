@@ -48,6 +48,10 @@ func InitManager(verbose, console bool, dir string) error {
 			setSugaredLoggerFunc: SetGrpcLogger,
 		},
 		{
+			fileName:             GinLogFileName,
+			setSugaredLoggerFunc: SetGinLogger,
+		},
+		{
 			fileName:             GCLogFileName,
 			setSugaredLoggerFunc: SetGCLogger,
 		},
@@ -106,6 +110,10 @@ func InitDaemon(verbose, console bool, dir string) error {
 			setSugaredLoggerFunc: SetGrpcLogger,
 		},
 		{
+			fileName:             GinLogFileName,
+			setSugaredLoggerFunc: SetGinLogger,
+		},
+		{
 			fileName:             GCLogFileName,
 			setSugaredLoggerFunc: SetGCLogger,
 		},
@@ -147,6 +155,7 @@ func createConsoleLogger(verbose bool) error {
 		sugar := log.Sugar()
 		SetCoreLogger(sugar)
 		SetGrpcLogger(sugar)
+		SetGinLogger(sugar)
 		SetGCLogger(sugar)
 		SetStorageGCLogger(sugar)
 		SetKeepAliveLogger(sugar)

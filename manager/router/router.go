@@ -17,25 +17,24 @@
 package router
 
 import (
-	"io"
 	"net/http"
-	"os"
-	"path/filepath"
+	"time"
 
 	"github.com/casbin/casbin/v2"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/static"
+	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
 	ginprometheus "github.com/mcuadros/go-gin-prometheus"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/handlers"
 	"d7y.io/dragonfly/v2/manager/middlewares"
 	"d7y.io/dragonfly/v2/manager/service"
-	"d7y.io/dragonfly/v2/pkg/types"
 )
 
 const (
@@ -43,20 +42,10 @@ const (
 	OtelServiceName         = "dragonfly-manager"
 )
 
-var GinLogFileName = "gin.log"
-
 func Init(cfg *config.Config, logDir string, service service.Service, enforcer *casbin.Enforcer, assets static.ServeFileSystem) (*gin.Engine, error) {
 	// Set mode.
 	if !cfg.Verbose {
 		gin.SetMode(gin.ReleaseMode)
-	}
-
-	// Logging to a file.
-	if !cfg.Console {
-		gin.DisableConsoleColor()
-		logDir := filepath.Join(logDir, types.ManagerName)
-		f, _ := os.Create(filepath.Join(logDir, GinLogFileName))
-		gin.DefaultWriter = io.MultiWriter(f)
 	}
 
 	r := gin.New()
@@ -82,8 +71,9 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	corsConfig.AllowAllOrigins = true
 
 	// Middleware
-	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
+	r.Use(ginzap.Ginzap(logger.GinLogger.Desugar(), time.RFC3339, true))
+	r.Use(ginzap.RecoveryWithZap(logger.GinLogger.Desugar(), true))
 	r.Use(middlewares.Error())
 	r.Use(cors.New(corsConfig))
 
