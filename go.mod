@@ -12,7 +12,7 @@ require (
 	github.com/aws/aws-sdk-go v1.44.114
 	github.com/bits-and-blooms/bitset v1.3.3
 	github.com/casbin/casbin/v2 v2.55.1
-	github.com/casbin/gorm-adapter/v3 v3.5.0
+	github.com/casbin/gorm-adapter/v3 v3.11.0
 	github.com/colinmarc/hdfs/v2 v2.3.0
 	github.com/distribution/distribution/v3 v3.0.0-20220620080156-3e4f8a0ab147
 	github.com/docker/go-connections v0.4.0
@@ -106,6 +106,8 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v0.6.8 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
+	github.com/glebarez/go-sqlite v1.16.0 // indirect
+	github.com/glebarez/sqlite v1.4.3 // indirect
 	github.com/go-echarts/go-echarts/v2 v2.2.4 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -158,7 +160,6 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
-	github.com/mattn/go-sqlite3 v1.14.12 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/mdlayher/socket v0.2.3 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
@@ -175,6 +176,7 @@ require (
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
+	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/rs/cors v1.8.2 // indirect
@@ -211,4 +213,8 @@ require (
 	k8s.io/apimachinery v0.25.2 // indirect
 	k8s.io/klog/v2 v2.70.1 // indirect
 	logur.dev/logur v0.16.1 // indirect
+	modernc.org/libc v1.15.1 // indirect
+	modernc.org/mathutil v1.4.1 // indirect
+	modernc.org/memory v1.0.7 // indirect
+	modernc.org/sqlite v1.16.0 // indirect
 )
