@@ -31,6 +31,7 @@ import (
 var (
 	CoreLogger       *zap.SugaredLogger
 	GrpcLogger       *zap.SugaredLogger
+	GinLogger        *zap.SugaredLogger
 	GCLogger         *zap.SugaredLogger
 	StorageGCLogger  *zap.SugaredLogger
 	JobLogger        *zap.SugaredLogger
@@ -49,6 +50,7 @@ func init() {
 		sugar := log.Sugar()
 		SetCoreLogger(sugar)
 		SetGrpcLogger(sugar)
+		SetGinLogger(sugar)
 		SetGCLogger(sugar)
 		SetStorageGCLogger(sugar)
 		SetKeepAliveLogger(sugar)
@@ -100,6 +102,10 @@ func SetGrpcLogger(log *zap.SugaredLogger) {
 		v = vl
 	}
 	grpclog.SetLoggerV2(&zapGrpc{GrpcLogger, v})
+}
+
+func SetGinLogger(log *zap.SugaredLogger) {
+	GinLogger = log
 }
 
 func SetJobLogger(log *zap.SugaredLogger) {
