@@ -28,6 +28,7 @@ import (
 var (
 	CoreLogFileName       = "core.log"
 	GrpcLogFileName       = "grpc.log"
+	GinLogFileName        = "gin.log"
 	GCLogFileName         = "gc.log"
 	StorageGCLogFileName  = "storage-gc.log"
 	JobLogFileName        = "job.log"
