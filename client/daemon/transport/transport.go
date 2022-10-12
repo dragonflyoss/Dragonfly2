@@ -198,11 +198,7 @@ func (rt *transport) RoundTrip(req *http.Request) (resp *http.Response, err erro
 	}
 
 	if err != nil {
-		logger.With("method", req.Method, "url", req.URL.String()).
-			Errorf("round trip error: %s", err)
-	}
-
-	if err != nil {
+		logger.With("method", req.Method, "url", req.URL.String()).Errorf("round trip error: %s", err)
 		return resp, err
 	}
 
