@@ -142,30 +142,6 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		expect func(t *testing.T, peer *resource.Peer, result *schedulerv1.RegisterResult, err error)
 	}{
 		{
-			name: "task register failed",
-			req: &schedulerv1.PeerTaskRequest{
-				UrlMeta: &commonv1.UrlMeta{},
-			},
-			mock: func(
-				req *schedulerv1.PeerTaskRequest, mockPeer *resource.Peer, mockSeedPeer *resource.Peer,
-				scheduler scheduler.Scheduler, res resource.Resource, hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager,
-				ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder,
-			) {
-				mockPeer.Task.FSM.SetState(resource.TaskStateRunning)
-				gomock.InOrder(
-					mr.TaskManager().Return(taskManager).Times(1),
-					mt.Load(gomock.Any()).Return(mockPeer.Task, true).Times(1),
-				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer, result *schedulerv1.RegisterResult, err error) {
-				assert := assert.New(t)
-				dferr, ok := err.(*dferrors.DfError)
-				assert.True(ok)
-				assert.Equal(dferr.Code, commonv1.Code_SchedTaskStatusError)
-				assert.Equal(peer.NeedBackToSource.Load(), false)
-			},
-		},
-		{
 			name: "task state is TaskStateRunning and it has available peer",
 			req: &schedulerv1.PeerTaskRequest{
 				UrlMeta: &commonv1.UrlMeta{},
@@ -1897,6 +1873,43 @@ func TestService_registerTask(t *testing.T) {
 				defer wg.Wait()
 
 				mockTask.FSM.SetState(resource.TaskStateFailed)
+				gomock.InOrder(
+					mr.TaskManager().Return(taskManager).Times(1),
+					mt.Load(gomock.Any()).Return(mockTask, true).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Any()).Return(nil, false),
+					mr.SeedPeer().Do(func() { wg.Done() }).Return(seedPeer).Times(1),
+					mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(mockPeer, &schedulerv1.PeerResult{}, nil).Times(1),
+				)
+
+				task, needBackToSource, err := svc.registerTask(context.Background(), req)
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.False(needBackToSource)
+				assert.EqualValues(mockTask, task)
+			},
+		},
+		{
+			name: "task state is TaskStateRunning and it has not available peer",
+			config: &config.Config{
+				Scheduler: mockSchedulerConfig,
+				SeedPeer: config.SeedPeerConfig{
+					Enable: true,
+				},
+			},
+			req: &schedulerv1.PeerTaskRequest{
+				Url:     mockTaskURL,
+				UrlMeta: mockTaskURLMeta,
+				PeerHost: &schedulerv1.PeerHost{
+					Id: mockRawSeedHost.Id,
+				},
+			},
+			run: func(t *testing.T, svc *Service, req *schedulerv1.PeerTaskRequest, mockTask *resource.Task, mockPeer *resource.Peer, taskManager resource.TaskManager, hostManager resource.HostManager, seedPeer resource.SeedPeer, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder, mh *resource.MockHostManagerMockRecorder, mc *resource.MockSeedPeerMockRecorder) {
+				var wg sync.WaitGroup
+				wg.Add(2)
+				defer wg.Wait()
+
+				mockTask.FSM.SetState(resource.TaskStateRunning)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
 					mt.Load(gomock.Any()).Return(mockTask, true).Times(1),

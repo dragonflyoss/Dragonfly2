@@ -556,9 +556,13 @@ func (s *Service) registerTask(ctx context.Context, req *schedulerv1.PeerTaskReq
 		s.resource.TaskManager().Store(task)
 	}
 
-	// Trigger task.
-	if err := task.FSM.Event(resource.TaskEventDownload); err != nil {
-		return nil, false, err
+	// Task state is TaskStateRunning can be registered,
+	// which will cause if the seed peer does not return begin of piece,
+	// the concurrent download of the peer may trigger multiple seed peer downloads.
+	if !task.FSM.Is(resource.TaskStateRunning) {
+		if err := task.FSM.Event(resource.TaskEventDownload); err != nil {
+			return nil, false, err
+		}
 	}
 
 	// Seed peer registers the task, then it needs to back-to-source.
