@@ -198,16 +198,14 @@ func (rt *transport) RoundTrip(req *http.Request) (resp *http.Response, err erro
 	}
 
 	if err != nil {
+		logger.With("method", req.Method, "url", req.URL.String()).Errorf("round trip error: %s", err)
 		return resp, err
 	}
 
 	if resp.ContentLength > 0 {
 		metrics.ProxyRequestBytesCount.WithLabelValues(req.Method).Add(float64(resp.ContentLength))
 	}
-	if err != nil {
-		logger.With("method", req.Method, "url", req.URL.String()).
-			Errorf("round trip error: %s", err)
-	}
+
 	rt.processDumpHTTPContent(req, resp)
 	return resp, err
 }
