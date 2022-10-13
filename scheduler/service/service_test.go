@@ -1900,18 +1900,10 @@ func TestService_registerTask(t *testing.T) {
 				},
 			},
 			run: func(t *testing.T, svc *Service, req *schedulerv1.PeerTaskRequest, mockTask *resource.Task, mockPeer *resource.Peer, taskManager resource.TaskManager, hostManager resource.HostManager, seedPeer resource.SeedPeer, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder, mh *resource.MockHostManagerMockRecorder, mc *resource.MockSeedPeerMockRecorder) {
-				var wg sync.WaitGroup
-				wg.Add(2)
-				defer wg.Wait()
-
 				mockTask.FSM.SetState(resource.TaskStateRunning)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
 					mt.Load(gomock.Any()).Return(mockTask, true).Times(1),
-					mr.HostManager().Return(hostManager).Times(1),
-					mh.Load(gomock.Any()).Return(nil, false),
-					mr.SeedPeer().Do(func() { wg.Done() }).Return(seedPeer).Times(1),
-					mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(mockPeer, &schedulerv1.PeerResult{}, nil).Times(1),
 				)
 
 				task, needBackToSource := svc.registerTask(context.Background(), req)
