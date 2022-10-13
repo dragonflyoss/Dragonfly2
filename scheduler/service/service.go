@@ -540,8 +540,7 @@ func (s *Service) registerTask(ctx context.Context, req *schedulerv1.PeerTaskReq
 		task.URL = req.Url
 		task.URLMeta = req.UrlMeta
 
-		if !task.FSM.Is(resource.TaskStateFailed) &&
-			!task.FSM.Is(resource.TaskStateLeave) && task.HasAvailablePeer() {
+		if (task.FSM.Is(resource.TaskStatePending) || task.FSM.Is(resource.TaskStateRunning) || task.FSM.Is(resource.TaskStateSucceeded)) && task.HasAvailablePeer() {
 			task.Log.Infof("task dose not need to back-to-source, because of task has available peer and state is %s", task.FSM.Current())
 			return task, false
 		}
@@ -551,14 +550,11 @@ func (s *Service) registerTask(ctx context.Context, req *schedulerv1.PeerTaskReq
 		s.resource.TaskManager().Store(task)
 	}
 
-	// Task state is TaskStateRunning can be registered,
-	// which will cause if the seed peer does not return begin of piece,
-	// the concurrent download of the peer may trigger multiple seed peer downloads.
-	if !task.FSM.Is(resource.TaskStateRunning) {
-		if err := task.FSM.Event(resource.TaskEventDownload); err != nil {
-			task.Log.Errorf("task needs to back-to-source, because of %s", err.Error())
-			return task, true
-		}
+	// If the task triggers the TaskEventDownload failed and it has no available peer,
+	// let the peer do the scheduling.
+	if err := task.FSM.Event(resource.TaskEventDownload); err != nil {
+		task.Log.Warnf("task dose not need to back-to-source, because of %s", err.Error())
+		return task, false
 	}
 
 	// Seed peer registers the task, then it needs to back-to-source.
