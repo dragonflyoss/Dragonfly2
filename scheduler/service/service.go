@@ -571,7 +571,8 @@ func (s *Service) registerTask(ctx context.Context, req *schedulerv1.PeerTaskReq
 		return task, true, nil
 	}
 
-	// Start trigger seed peer task.
+	// FIXME Need to add the condition that the seed peer grpc client is
+	// available and can be triggered back-to-source.
 	if s.config.SeedPeer.Enable {
 		if task.IsSeedPeerFailed() {
 			return task, true, nil

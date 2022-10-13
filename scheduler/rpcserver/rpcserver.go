@@ -44,7 +44,7 @@ func New(service *service.Service, opts ...grpc.ServerOption) *grpc.Server {
 
 // RegisterPeerTask registers peer and triggers seed peer download task.
 func (s *Server) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest) (*schedulerv1.RegisterResult, error) {
-	// FIXME: Scheudler will not generate task id.
+	// FIXME Scheudler will not generate task id.
 	if req.TaskId == "" {
 		req.TaskId = idgen.TaskID(req.Url, req.UrlMeta)
 	}
