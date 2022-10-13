@@ -906,6 +906,21 @@ func TestTask_HasAvailablePeer(t *testing.T) {
 		expect            func(t *testing.T, task *Task, mockPeer *Peer)
 	}{
 		{
+			name:              "peer state is PeerStatePending",
+			id:                mockTaskID,
+			urlMeta:           mockTaskURLMeta,
+			url:               mockTaskURL,
+			backToSourceLimit: mockTaskBackToSourceLimit,
+			expect: func(t *testing.T, task *Task, mockPeer *Peer) {
+				assert := assert.New(t)
+				task.StorePeer(mockPeer)
+				mockPeer.ID = idgen.PeerID("0.0.0.0")
+				mockPeer.FSM.SetState(PeerStatePending)
+				task.StorePeer(mockPeer)
+				assert.Equal(task.HasAvailablePeer(), true)
+			},
+		},
+		{
 			name:              "peer state is PeerStateSucceeded",
 			id:                mockTaskID,
 			urlMeta:           mockTaskURLMeta,
