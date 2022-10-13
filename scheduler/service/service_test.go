@@ -1749,9 +1749,8 @@ func TestService_registerTask(t *testing.T) {
 					mt.Load(gomock.Any()).Return(mockTask, true).Times(1),
 				)
 
-				task, needBackToSource, err := svc.registerTask(context.Background(), req)
+				task, needBackToSource := svc.registerTask(context.Background(), req)
 				assert := assert.New(t)
-				assert.NoError(err)
 				assert.False(needBackToSource)
 				assert.EqualValues(mockTask, task)
 			},
@@ -1777,9 +1776,8 @@ func TestService_registerTask(t *testing.T) {
 					mt.Load(gomock.Any()).Return(mockTask, true).Times(1),
 				)
 
-				task, needBackToSource, err := svc.registerTask(context.Background(), req)
+				task, needBackToSource := svc.registerTask(context.Background(), req)
 				assert := assert.New(t)
-				assert.NoError(err)
 				assert.False(needBackToSource)
 				assert.EqualValues(mockTask, task)
 			},
@@ -1805,9 +1803,8 @@ func TestService_registerTask(t *testing.T) {
 					mt.Load(gomock.Any()).Return(mockTask, true).Times(1),
 				)
 
-				task, needBackToSource, err := svc.registerTask(context.Background(), req)
+				task, needBackToSource := svc.registerTask(context.Background(), req)
 				assert := assert.New(t)
-				assert.NoError(err)
 				assert.False(needBackToSource)
 				assert.EqualValues(mockTask, task)
 			},
@@ -1844,9 +1841,8 @@ func TestService_registerTask(t *testing.T) {
 					mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(mockPeer, &schedulerv1.PeerResult{}, nil).Times(1),
 				)
 
-				task, needBackToSource, err := svc.registerTask(context.Background(), req)
+				task, needBackToSource := svc.registerTask(context.Background(), req)
 				assert := assert.New(t)
-				assert.NoError(err)
 				assert.False(needBackToSource)
 				assert.EqualValues(mockTaskURL, task.URL)
 				assert.EqualValues(mockTaskURLMeta, task.URLMeta)
@@ -1882,9 +1878,8 @@ func TestService_registerTask(t *testing.T) {
 					mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(mockPeer, &schedulerv1.PeerResult{}, nil).Times(1),
 				)
 
-				task, needBackToSource, err := svc.registerTask(context.Background(), req)
+				task, needBackToSource := svc.registerTask(context.Background(), req)
 				assert := assert.New(t)
-				assert.NoError(err)
 				assert.False(needBackToSource)
 				assert.EqualValues(mockTask, task)
 			},
@@ -1919,9 +1914,8 @@ func TestService_registerTask(t *testing.T) {
 					mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(mockPeer, &schedulerv1.PeerResult{}, nil).Times(1),
 				)
 
-				task, needBackToSource, err := svc.registerTask(context.Background(), req)
+				task, needBackToSource := svc.registerTask(context.Background(), req)
 				assert := assert.New(t)
-				assert.NoError(err)
 				assert.False(needBackToSource)
 				assert.EqualValues(mockTask, task)
 			},
@@ -1956,9 +1950,8 @@ func TestService_registerTask(t *testing.T) {
 					mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(mockPeer, &schedulerv1.PeerResult{}, nil).Times(1),
 				)
 
-				task, needBackToSource, err := svc.registerTask(context.Background(), req)
+				task, needBackToSource := svc.registerTask(context.Background(), req)
 				assert := assert.New(t)
-				assert.NoError(err)
 				assert.False(needBackToSource)
 				assert.EqualValues(mockTask, task)
 			},
@@ -1988,9 +1981,8 @@ func TestService_registerTask(t *testing.T) {
 					mh.Load(gomock.Any()).Return(mockHost, true).Times(1),
 				)
 
-				task, needBackToSource, err := svc.registerTask(context.Background(), req)
+				task, needBackToSource := svc.registerTask(context.Background(), req)
 				assert := assert.New(t)
-				assert.NoError(err)
 				assert.True(needBackToSource)
 				assert.EqualValues(mockTask, task)
 			},
@@ -2027,9 +2019,8 @@ func TestService_registerTask(t *testing.T) {
 					mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(mockPeer, &schedulerv1.PeerResult{}, errors.New("foo")).Times(1),
 				)
 
-				task, needBackToSource, err := svc.registerTask(context.Background(), req)
+				task, needBackToSource := svc.registerTask(context.Background(), req)
 				assert := assert.New(t)
-				assert.NoError(err)
 				assert.False(needBackToSource)
 				assert.EqualValues(mockTaskURL, task.URL)
 				assert.EqualValues(mockTaskURLMeta, task.URLMeta)
@@ -2065,9 +2056,8 @@ func TestService_registerTask(t *testing.T) {
 					mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(mockPeer, &schedulerv1.PeerResult{}, errors.New("foo")).Times(1),
 				)
 
-				task, needBackToSource, err := svc.registerTask(context.Background(), req)
+				task, needBackToSource := svc.registerTask(context.Background(), req)
 				assert := assert.New(t)
-				assert.NoError(err)
 				assert.False(needBackToSource)
 				assert.EqualValues(mockTask, task)
 			},
@@ -2098,9 +2088,8 @@ func TestService_registerTask(t *testing.T) {
 					mh.Load(gomock.Any()).Return(nil, false).Times(1),
 				)
 
-				task, needBackToSource, err := svc.registerTask(context.Background(), req)
+				task, needBackToSource := svc.registerTask(context.Background(), req)
 				assert := assert.New(t)
-				assert.NoError(err)
 				assert.True(needBackToSource)
 				assert.EqualValues(mockTaskURL, task.URL)
 				assert.EqualValues(mockTaskURLMeta, task.URLMeta)
@@ -2130,9 +2119,8 @@ func TestService_registerTask(t *testing.T) {
 					mh.Load(gomock.Any()).Return(nil, false).Times(1),
 				)
 
-				task, needBackToSource, err := svc.registerTask(context.Background(), req)
+				task, needBackToSource := svc.registerTask(context.Background(), req)
 				assert := assert.New(t)
-				assert.NoError(err)
 				assert.True(needBackToSource)
 				assert.EqualValues(mockTask, task)
 			},
