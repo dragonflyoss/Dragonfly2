@@ -22,6 +22,9 @@ const (
 
 	// ServiceNameOSS is name of oss storage.
 	ServiceNameOSS = "oss"
+
+	// ServiceNameOBS is name of obs storage.
+	ServiceNameOBS = "obs"
 )
 
 const (

@@ -486,7 +486,7 @@ func (cfg *Config) Validate() error {
 			return errors.New("objectStorage requires parameter name")
 		}
 
-		if !slices.Contains([]string{objectstorage.ServiceNameS3, objectstorage.ServiceNameOSS}, cfg.ObjectStorage.Name) {
+		if !slices.Contains([]string{objectstorage.ServiceNameS3, objectstorage.ServiceNameOSS, objectstorage.ServiceNameOBS}, cfg.ObjectStorage.Name) {
 			return errors.New("objectStorage requires parameter name")
 		}
 

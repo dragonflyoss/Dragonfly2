@@ -193,6 +193,19 @@ func (s *s3) IsObjectExist(ctx context.Context, bucketName, objectKey string) (b
 	return true, nil
 }
 
+// IsBucketExist returns whether the bucket exists.
+func (s *s3) IsBucketExist(ctx context.Context, bucketName string) (bool, error) {
+	_, err := s.client.HeadBucketWithContext(ctx, &awss3.HeadBucketInput{
+		Bucket: &bucketName,
+	})
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
 // GetSignURL returns sign url of object.
 func (s *s3) GetSignURL(ctx context.Context, bucketName, objectKey string, method Method, expire time.Duration) (string, error) {
 	var req *request.Request
