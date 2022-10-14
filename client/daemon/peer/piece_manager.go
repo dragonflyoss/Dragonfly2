@@ -48,6 +48,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/digest"
+	httputil "d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/retry"
 	"d7y.io/dragonfly/v2/pkg/source"
 )
@@ -327,15 +328,14 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, peerTaskReq
 			}
 			supportConcurrent = true
 			if parsedRange != nil {
-				if parsedRange.Length < 0 || parsedRange.Length > metadata.TotalContentLength-parsedRange.Start {
-					// for range like "Range: bytes=1-", complete the length in range
-					targetContentLength = metadata.TotalContentLength - parsedRange.Start
-					// update length from metadata
-					parsedRange.Length = targetContentLength
-					log.Infof("update real content length: %d", parsedRange.Length)
-				} else {
-					targetContentLength = parsedRange.Length
+				// we have the total content length, parse the real range
+				newRange, err := httputil.ParseRange(peerTaskRequest.UrlMeta.Range, uint64(metadata.TotalContentLength))
+				if err != nil {
+					log.Errorf("update task error: %s", err)
+					return err
 				}
+				parsedRange.Start = int64(newRange.StartIndex)
+				parsedRange.Length = int64(newRange.Length())
 			} else {
 				// for non-ranged request, add a dummy range
 				parsedRange = &clientutil.Range{
