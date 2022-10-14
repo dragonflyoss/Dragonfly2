@@ -23,17 +23,17 @@ import (
 	"strings"
 	"time"
 
-	huaweiObs "github.com/huaweicloud/huaweicloud-sdk-go-obs/obs"
+	huaweiobs "github.com/huaweicloud/huaweicloud-sdk-go-obs/obs"
 )
 
 type obs struct {
 	// OBS client.
-	client *huaweiObs.ObsClient
+	client *huaweiobs.ObsClient
 }
 
 // New oss instance.
 func newOBS(region, endpoint, accessKey, secretKey string) (ObjectStorage, error) {
-	client, err := huaweiObs.New(accessKey, secretKey, endpoint)
+	client, err := huaweiobs.New(accessKey, secretKey, endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("new obs client failed: %s", err)
 	}
@@ -45,8 +45,7 @@ func newOBS(region, endpoint, accessKey, secretKey string) (ObjectStorage, error
 
 // GetBucketMetadata returns metadata of bucket.
 func (o *obs) GetBucketMetadata(ctx context.Context, bucketName string) (*BucketMetadata, error) {
-	_, err := o.client.GetBucketMetadata(&huaweiObs.GetBucketMetadataInput{Bucket: bucketName})
-	if err != nil {
+	if _, err := o.client.GetBucketMetadata(&huaweiobs.GetBucketMetadataInput{Bucket: bucketName}); err != nil {
 		return nil, err
 	}
 
@@ -57,7 +56,7 @@ func (o *obs) GetBucketMetadata(ctx context.Context, bucketName string) (*Bucket
 
 // CreateBucket creates bucket of object storage.
 func (o *obs) CreateBucket(ctx context.Context, bucketName string) error {
-	_, err := o.client.CreateBucket(&huaweiObs.CreateBucketInput{Bucket: bucketName})
+	_, err := o.client.CreateBucket(&huaweiobs.CreateBucketInput{Bucket: bucketName})
 	return err
 }
 
@@ -69,7 +68,7 @@ func (o *obs) DeleteBucket(ctx context.Context, bucketName string) error {
 
 // ListBucketMetadatas list bucket meta data of object storage.
 func (o *obs) ListBucketMetadatas(ctx context.Context) ([]*BucketMetadata, error) {
-	resp, err := o.client.ListBuckets(&huaweiObs.ListBucketsInput{})
+	resp, err := o.client.ListBuckets(&huaweiobs.ListBucketsInput{})
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +86,7 @@ func (o *obs) ListBucketMetadatas(ctx context.Context) ([]*BucketMetadata, error
 
 // GetObjectMetadata returns metadata of object.
 func (o *obs) GetObjectMetadata(ctx context.Context, bucketName, objectKey string) (*ObjectMetadata, bool, error) {
-	header, err := o.client.GetObjectMetadata(&huaweiObs.GetObjectMetadataInput{Bucket: bucketName, Key: objectKey})
+	metadata, err := o.client.GetObjectMetadata(&huaweiobs.GetObjectMetadataInput{Bucket: bucketName, Key: objectKey})
 	if err != nil {
 		if strings.Contains(err.Error(), "404") {
 			return nil, false, nil
@@ -96,10 +95,12 @@ func (o *obs) GetObjectMetadata(ctx context.Context, bucketName, objectKey strin
 		return nil, false, err
 	}
 
-	input := &huaweiObs.GetObjectInput{}
-	input.Bucket = bucketName
-	input.Key = objectKey
-	object, err := o.client.GetObject(input)
+	object, err := o.client.GetObject(&huaweiobs.GetObjectInput{
+		GetObjectMetadataInput: huaweiobs.GetObjectMetadataInput{
+			Bucket: bucketName,
+			Key:    objectKey,
+		},
+	})
 	if err != nil {
 		return nil, false, err
 	}
@@ -109,68 +110,68 @@ func (o *obs) GetObjectMetadata(ctx context.Context, bucketName, objectKey strin
 		ContentDisposition: object.ContentDisposition,
 		ContentEncoding:    object.ContentEncoding,
 		ContentLanguage:    object.ContentLanguage,
-		ContentLength:      header.ContentLength,
-		ContentType:        header.ContentType,
-		ETag:               header.ETag,
-		Digest:             header.Metadata[MetaDigest],
+		ContentLength:      metadata.ContentLength,
+		ContentType:        metadata.ContentType,
+		ETag:               metadata.ETag,
+		Digest:             metadata.Metadata[MetaDigest],
 	}, true, nil
 }
 
 // GetOject returns data of object.
 func (o *obs) GetOject(ctx context.Context, bucketName, objectKey string) (io.ReadCloser, error) {
-	input := &huaweiObs.GetObjectInput{}
-	input.Bucket = bucketName
-	input.Key = objectKey
-	object, err := o.client.GetObject(input)
+	resp, err := o.client.GetObject(&huaweiobs.GetObjectInput{
+		GetObjectMetadataInput: huaweiobs.GetObjectMetadataInput{
+			Bucket: bucketName,
+			Key:    objectKey,
+		},
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	return object.Body, nil
+	return resp.Body, nil
 }
 
 // PutObject puts data of object.
 func (o *obs) PutObject(ctx context.Context, bucketName, objectKey, digest string, reader io.Reader) error {
-	input := &huaweiObs.PutObjectInput{}
-	input.Bucket = bucketName
-	input.Key = objectKey
-	input.Body = reader
+	_, err := o.client.PutObject(&huaweiobs.PutObjectInput{
+		PutObjectBasicInput: huaweiobs.PutObjectBasicInput{
+			ObjectOperationInput: huaweiobs.ObjectOperationInput{
+				Bucket: bucketName,
+				Key:    objectKey,
+				Metadata: map[string]string{
+					MetaDigest: digest,
+				},
+			},
+		},
+		Body: reader,
+	})
 
-	meta := map[string]string{}
-	meta[MetaDigest] = digest
-	input.Metadata = meta
-	_, err := o.client.PutObject(input)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // DeleteObject deletes data of object.
 func (o *obs) DeleteObject(ctx context.Context, bucketName, objectKey string) error {
-	_, err := o.client.DeleteObject(&huaweiObs.DeleteObjectInput{Bucket: bucketName, Key: objectKey})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	_, err := o.client.DeleteObject(&huaweiobs.DeleteObjectInput{Bucket: bucketName, Key: objectKey})
+	return err
 }
 
 // ListObjectMetadatas returns metadata of objects.
 func (o *obs) ListObjectMetadatas(ctx context.Context, bucketName, prefix, marker string, limit int64) ([]*ObjectMetadata, error) {
-	input := &huaweiObs.ListObjectsInput{}
-	input.Bucket = bucketName
-	input.Marker = marker
-	input.Prefix = prefix
-	input.MaxKeys = int(limit)
-	objects, err := o.client.ListObjects(input)
+	resp, err := o.client.ListObjects(&huaweiobs.ListObjectsInput{
+		ListObjsInput: huaweiobs.ListObjsInput{
+			Prefix:  prefix,
+			MaxKeys: int(limit),
+		},
+		Bucket: bucketName,
+		Marker: marker,
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	var metadatas []*ObjectMetadata
-	for _, object := range objects.Contents {
+	for _, object := range resp.Contents {
 		metadatas = append(metadatas, &ObjectMetadata{
 			Key:  object.Key,
 			ETag: object.ETag,
@@ -183,51 +184,44 @@ func (o *obs) ListObjectMetadatas(ctx context.Context, bucketName, prefix, marke
 // IsObjectExist returns whether the object exists.
 func (o *obs) IsObjectExist(ctx context.Context, bucketName, objectKey string) (bool, error) {
 	_, isExist, err := o.GetObjectMetadata(ctx, bucketName, objectKey)
-	if err != nil {
-		return false, err
-	}
+	return isExist, err
+}
 
-	if !isExist {
-		return false, nil
+// IsBucketExist returns whether the bucket exists.
+func (o *obs) IsBucketExist(ctx context.Context, bucketName string) (bool, error) {
+	if _, err := o.client.HeadBucket(bucketName); err != nil {
+		return false, err
 	}
 
 	return true, nil
 }
 
-// IsBucketExist returns whether the bucket exists.
-func (o *obs) IsBucketExist(ctx context.Context, bucketName string) (bool, error) {
-	_, err := o.client.HeadBucket(bucketName)
-
-	return err == nil, err
-}
-
 // GetSignURL returns sign url of object.
 func (o *obs) GetSignURL(ctx context.Context, bucketName, objectKey string, method Method, expire time.Duration) (string, error) {
-	var obsHTTPMethod huaweiObs.HttpMethodType
+	var obsHTTPMethod huaweiobs.HttpMethodType
 	switch method {
 	case MethodGet:
-		obsHTTPMethod = huaweiObs.HttpMethodGet
+		obsHTTPMethod = huaweiobs.HttpMethodGet
 	case MethodPut:
-		obsHTTPMethod = huaweiObs.HttpMethodPut
+		obsHTTPMethod = huaweiobs.HttpMethodPut
 	case MethodHead:
-		obsHTTPMethod = huaweiObs.HTTP_HEAD
+		obsHTTPMethod = huaweiobs.HTTP_HEAD
 	case MethodPost:
-		obsHTTPMethod = huaweiObs.HttpMethodPost
+		obsHTTPMethod = huaweiobs.HttpMethodPost
 	case MethodDelete:
-		obsHTTPMethod = huaweiObs.HTTP_DELETE
+		obsHTTPMethod = huaweiobs.HTTP_DELETE
 	default:
 		return "", fmt.Errorf("not support method %s", method)
 	}
 
-	input := &huaweiObs.CreateSignedUrlInput{}
-	input.Bucket = bucketName
-	input.Key = objectKey
-	input.Method = obsHTTPMethod
-	input.Expires = int(expire.Milliseconds() / 1000)
-	obsURL, err := o.client.CreateSignedUrl(input)
+	resp, err := o.client.CreateSignedUrl(&huaweiobs.CreateSignedUrlInput{
+		Bucket: bucketName,
+		Key:    objectKey,
+		Method: obsHTTPMethod,
+	})
 	if err != nil {
 		return "", err
 	}
 
-	return obsURL.SignedUrl, nil
+	return resp.SignedUrl, nil
 }
