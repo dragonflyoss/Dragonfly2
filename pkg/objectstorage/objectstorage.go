@@ -90,6 +90,9 @@ type ObjectStorage interface {
 	// IsObjectExist returns whether the object exists.
 	IsObjectExist(ctx context.Context, bucketName, objectKey string) (bool, error)
 
+	// IsBucketExist returns whether the bucket exists.
+	IsBucketExist(ctx context.Context, bucketName string) (bool, error)
+
 	// GetSignURL returns sign url of object.
 	GetSignURL(ctx context.Context, bucketName, objectKey string, method Method, expire time.Duration) (string, error)
 }
@@ -101,6 +104,8 @@ func New(name, region, endpoint, accessKey, secretKey string) (ObjectStorage, er
 		return newS3(region, endpoint, accessKey, secretKey)
 	case ServiceNameOSS:
 		return newOSS(region, endpoint, accessKey, secretKey)
+	case ServiceNameOBS:
+		return newOBS(region, endpoint, accessKey, secretKey)
 	}
 
 	return nil, fmt.Errorf("unknow service name %s", name)
