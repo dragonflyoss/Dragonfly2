@@ -37,6 +37,7 @@ var (
 	featureGatesFlag string
 
 	featureGateRange     featuregate.Feature = "dfget-range"
+	featureGateOpenRange featuregate.Feature = "dfget-open-range"
 	featureGateCommit    featuregate.Feature = "dfget-commit"
 	featureGateNoLength  featuregate.Feature = "dfget-no-length"
 	featureGateEmptyFile featuregate.Feature = "dfget-empty-file"
@@ -53,6 +54,11 @@ var (
 			PreRelease:    featuregate.Alpha,
 		},
 		featureGateRange: {
+			Default:       false,
+			LockToDefault: false,
+			PreRelease:    featuregate.Alpha,
+		},
+		featureGateOpenRange: {
 			Default:       false,
 			LockToDefault: false,
 			PreRelease:    featuregate.Alpha,
