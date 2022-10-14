@@ -361,7 +361,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, peerTaskReq
 					return err
 				}
 				// use concurrent piece download mode
-				return pm.concurrentDownloadSource(ctx, pt, peerTaskRequest, parsedRange, metadata, 0)
+				return pm.concurrentDownloadSource(ctx, pt, peerTaskRequest, parsedRange, 0)
 			}
 		}
 	}
@@ -405,10 +405,16 @@ singleDownload:
 		}
 	}
 	contentLength := response.ContentLength
+	// we must calculate piece size
+	pieceSize := pm.computePieceSize(contentLength)
 	if contentLength < 0 {
 		log.Warnf("can not get content length for %s", peerTaskRequest.Url)
 	} else {
 		log.Debugf("back source content length: %d", contentLength)
+
+		pt.SetContentLength(contentLength)
+		pt.SetTotalPieces(util.ComputePieceCount(contentLength, pieceSize))
+
 		err = pt.GetStorage().UpdateTask(ctx,
 			&storage.UpdateTaskRequest{
 				PeerTaskMetadata: storage.PeerTaskMetadata{
@@ -434,8 +440,6 @@ singleDownload:
 			return err
 		}
 	}
-	// we must calculate piece size
-	pieceSize := pm.computePieceSize(contentLength)
 
 	// 2. save to storage
 	// handle resource which content length is unknown
@@ -443,15 +447,17 @@ singleDownload:
 		return pm.downloadUnknownLengthSource(pt, pieceSize, reader)
 	}
 
-	return pm.downloadKnownLengthSource(ctx, pt, contentLength, pieceSize, reader, response, peerTaskRequest, parsedRange, metadata, supportConcurrent, targetContentLength)
+	if parsedRange != nil {
+		parsedRange.Length = contentLength
+		log.Infof("update range length: %d", parsedRange.Length)
+	}
+
+	return pm.downloadKnownLengthSource(ctx, pt, contentLength, pieceSize, reader, response, peerTaskRequest, parsedRange, metadata, supportConcurrent)
 }
 
-func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, contentLength int64, pieceSize uint32, reader io.Reader, response *source.Response, peerTaskRequest *schedulerv1.PeerTaskRequest, parsedRange *clientutil.Range, metadata *source.Metadata, supportConcurrent bool, targetContentLength int64) error {
+func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, contentLength int64, pieceSize uint32, reader io.Reader, response *source.Response, peerTaskRequest *schedulerv1.PeerTaskRequest, parsedRange *clientutil.Range, metadata *source.Metadata, supportConcurrent bool) error {
 	log := pt.Log()
-	maxPieceNum := util.ComputePieceCount(contentLength, pieceSize)
-	pt.SetContentLength(contentLength)
-	pt.SetTotalPieces(maxPieceNum)
-
+	maxPieceNum := pt.GetTotalPieces()
 	for pieceNum := int32(0); pieceNum < maxPieceNum; pieceNum++ {
 		size := pieceSize
 		offset := uint64(pieceNum) * uint64(pieceSize)
@@ -496,22 +502,8 @@ func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, 
 			// the time unit of FinishTime and BeginTime is ns
 			speed := float64(pieceSize) / float64((result.FinishTime-result.BeginTime)/1000000)
 			if speed < float64(pm.concurrentOption.ThresholdSpeed) {
-				err = pt.GetStorage().UpdateTask(ctx,
-					&storage.UpdateTaskRequest{
-						PeerTaskMetadata: storage.PeerTaskMetadata{
-							PeerID: pt.GetPeerID(),
-							TaskID: pt.GetTaskID(),
-						},
-						ContentLength: targetContentLength,
-						TotalPieces:   pt.GetTotalPieces(),
-						Header:        &metadata.Header,
-					})
-				if err != nil {
-					log.Errorf("update task error: %s", err)
-					return err
-				}
 				response.Body.Close()
-				return pm.concurrentDownloadSource(ctx, pt, peerTaskRequest, parsedRange, metadata, pieceNum+1)
+				return pm.concurrentDownloadSource(ctx, pt, peerTaskRequest, parsedRange, pieceNum+1)
 			}
 		}
 	}
@@ -772,7 +764,7 @@ func (pm *pieceManager) Import(ctx context.Context, ptm storage.PeerTaskMetadata
 	return nil
 }
 
-func (pm *pieceManager) concurrentDownloadSource(ctx context.Context, pt Task, peerTaskRequest *schedulerv1.PeerTaskRequest, parsedRange *clientutil.Range, metadata *source.Metadata, startPieceNum int32) error {
+func (pm *pieceManager) concurrentDownloadSource(ctx context.Context, pt Task, peerTaskRequest *schedulerv1.PeerTaskRequest, parsedRange *clientutil.Range, startPieceNum int32) error {
 	// parsedRange is always exist
 	pieceSize := pm.computePieceSize(parsedRange.Length)
 	pieceCount := util.ComputePieceCount(parsedRange.Length, pieceSize)
