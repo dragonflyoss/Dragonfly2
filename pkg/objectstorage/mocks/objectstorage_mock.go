@@ -140,6 +140,21 @@ func (mr *MockObjectStorageMockRecorder) GetSignURL(ctx, bucketName, objectKey, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignURL", reflect.TypeOf((*MockObjectStorage)(nil).GetSignURL), ctx, bucketName, objectKey, method, expire)
 }
 
+// IsBucketExist mocks base method.
+func (m *MockObjectStorage) IsBucketExist(ctx context.Context, bucketName string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsBucketExist", ctx, bucketName)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IsBucketExist indicates an expected call of IsBucketExist.
+func (mr *MockObjectStorageMockRecorder) IsBucketExist(ctx, bucketName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsBucketExist", reflect.TypeOf((*MockObjectStorage)(nil).IsBucketExist), ctx, bucketName)
+}
+
 // IsObjectExist mocks base method.
 func (m *MockObjectStorage) IsObjectExist(ctx context.Context, bucketName, objectKey string) (bool, error) {
 	m.ctrl.T.Helper()
