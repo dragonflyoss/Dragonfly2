@@ -72,6 +72,9 @@ type ObjectStorage interface {
 	// ListBucketMetadatas returns metadata of buckets.
 	ListBucketMetadatas(ctx context.Context) ([]*BucketMetadata, error)
 
+	// IsBucketExist returns whether the bucket exists.
+	IsBucketExist(ctx context.Context, bucketName string) (bool, error)
+
 	// GetObjectMetadata returns metadata of object.
 	GetObjectMetadata(ctx context.Context, bucketName, objectKey string) (*ObjectMetadata, bool, error)
 
@@ -89,9 +92,6 @@ type ObjectStorage interface {
 
 	// IsObjectExist returns whether the object exists.
 	IsObjectExist(ctx context.Context, bucketName, objectKey string) (bool, error)
-
-	// IsBucketExist returns whether the bucket exists.
-	IsBucketExist(ctx context.Context, bucketName string) (bool, error)
 
 	// GetSignURL returns sign url of object.
 	GetSignURL(ctx context.Context, bucketName, objectKey string, method Method, expire time.Duration) (string, error)
