@@ -327,13 +327,14 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, peerTaskReq
 			}
 			supportConcurrent = true
 			if parsedRange != nil {
-				if parsedRange.Length > -1 {
-					targetContentLength = parsedRange.Length
-				} else {
+				if parsedRange.Length < 0 || parsedRange.Length > metadata.TotalContentLength-parsedRange.Start {
 					// for range like "Range: bytes=1-", complete the length in range
 					targetContentLength = metadata.TotalContentLength - parsedRange.Start
 					// update length from metadata
 					parsedRange.Length = targetContentLength
+					log.Infof("update real content length: %d", parsedRange.Length)
+				} else {
+					targetContentLength = parsedRange.Length
 				}
 			} else {
 				// for non-ranged request, add a dummy range
@@ -782,7 +783,8 @@ func (pm *pieceManager) concurrentDownloadSource(ctx context.Context, pt Task, p
 	pt.SetTotalPieces(pieceCount)
 
 	con := pm.concurrentOption.GoroutineCount
-	if int(pieceCount) < con {
+	// Fix int overflow
+	if int(pieceCount) > 0 && int(pieceCount) < con {
 		con = int(pieceCount)
 	}
 

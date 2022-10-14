@@ -56,7 +56,6 @@ import (
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/os/user"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/safe"
@@ -516,15 +515,12 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemonv1.DownRequest, st
 		KeepOriginalOffset: req.KeepOriginalOffset,
 	}
 	if len(req.UrlMeta.Range) > 0 {
-		r, err := http.ParseRange(req.UrlMeta.Range, math.MaxInt)
+		r, err := util.ParseOneRange(req.UrlMeta.Range, math.MaxInt64)
 		if err != nil {
 			err = fmt.Errorf("parse range %s error: %s", req.UrlMeta.Range, err)
 			return err
 		}
-		peerTask.Range = &util.Range{
-			Start:  int64(r.StartIndex),
-			Length: int64(r.Length()),
-		}
+		peerTask.Range = &r
 	}
 	log := logger.With("peer", peerTask.PeerId, "component", "downloadService")
 
