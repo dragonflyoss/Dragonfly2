@@ -452,10 +452,10 @@ singleDownload:
 		log.Infof("update range length: %d", parsedRange.Length)
 	}
 
-	return pm.downloadKnownLengthSource(ctx, pt, contentLength, pieceSize, reader, response, peerTaskRequest, parsedRange, metadata, supportConcurrent)
+	return pm.downloadKnownLengthSource(ctx, pt, contentLength, pieceSize, reader, response, peerTaskRequest, parsedRange, supportConcurrent)
 }
 
-func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, contentLength int64, pieceSize uint32, reader io.Reader, response *source.Response, peerTaskRequest *schedulerv1.PeerTaskRequest, parsedRange *clientutil.Range, metadata *source.Metadata, supportConcurrent bool) error {
+func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, contentLength int64, pieceSize uint32, reader io.Reader, response *source.Response, peerTaskRequest *schedulerv1.PeerTaskRequest, parsedRange *clientutil.Range, supportConcurrent bool) error {
 	log := pt.Log()
 	maxPieceNum := pt.GetTotalPieces()
 	for pieceNum := int32(0); pieceNum < maxPieceNum; pieceNum++ {
