@@ -4,6 +4,8 @@ import (
 	"context"
 	"sort"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager/client"
@@ -23,6 +25,7 @@ func (w *Watcher) Serve() {
 		for {
 			select {
 			case schID := <-w.needVersion:
+				logger.Info("watcher processing ...")
 				if schID <= 0 {
 					w.modelVersion <- nil
 					continue

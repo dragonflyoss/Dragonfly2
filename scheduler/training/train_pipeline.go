@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sync"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+
 	"d7y.io/dragonfly/v2/scheduler/training/models"
 
 	"d7y.io/dragonfly/v2/pkg/pipeline"
@@ -51,14 +53,20 @@ func (t *Training) trainCall(ctx context.Context, in chan *pipeline.Request, out
 		case <-ctx.Done():
 			return fmt.Errorf("training process has been canceled")
 		case val := <-in:
+			logger.Info("start to train")
 			if val == nil {
+				logger.Info("data val is nil")
 				keyVal[LoadType] = LoadTest
 				keyVal[OutPutModel] = t.model
+				if t.model == nil {
+					logger.Info("get no model")
+				}
 				out <- &pipeline.Request{
 					KeyVal: keyVal,
 				}
 				return nil
 			}
+			logger.Info("get data val")
 			keyVal = val.KeyVal
 			err := t.Serve(val, out)
 			if err != nil {

@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"sync"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+
 	"d7y.io/dragonfly/v2/manager/types"
 
 	"github.com/sjwhitworth/golearn/base"
@@ -67,6 +69,7 @@ func (eva *Evaluating) evaCall(ctx context.Context, in chan *pipeline.Request, o
 		case <-ctx.Done():
 			return fmt.Errorf("evaluating process has been canceled")
 		case val := <-in:
+			logger.Info("start to evaluate")
 			if val == nil {
 				err := eva.eval.EvaluateCal()
 				if err != nil {
@@ -87,6 +90,7 @@ func (eva *Evaluating) evaCall(ctx context.Context, in chan *pipeline.Request, o
 					},
 					KeyVal: keyVal,
 				}
+				return nil
 			}
 			keyVal = val.KeyVal
 			err := eva.Serve(val, out)

@@ -3,6 +3,8 @@ package scheduler
 import (
 	"sort"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/scheduler/evaluator"
 	"github.com/kevwan/mapreduce/v2"
@@ -11,6 +13,7 @@ import (
 func sortNodes(candidates []*resource.Peer, eval evaluator.Evaluator, peer *resource.Peer, total int32) ([]*resource.Peer, error) {
 	switch eval.EvalType() {
 	case evaluator.MLAlgorithm:
+		logger.Info("come into model compute")
 		peers, err := compute(candidates, peer, eval, total)
 		if err != nil {
 			return nil, err
@@ -18,6 +21,7 @@ func sortNodes(candidates []*resource.Peer, eval evaluator.Evaluator, peer *reso
 		return peers, nil
 
 	default:
+		logger.Info("come into base compute")
 		baseCompute(candidates, peer, total)
 		return candidates, nil
 	}

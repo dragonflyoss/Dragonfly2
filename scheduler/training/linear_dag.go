@@ -78,17 +78,23 @@ func (lr *LinearTraining) Process() (interface{}, error) {
 		KeyVal: make(map[string]interface{}),
 		Data:   lr.storage,
 	}
-	dynconfigData, err := lr.cfg.Get()
-	if err != nil {
-		return nil, err
+	logger.Infof("storage total count is %v", lr.storage.Count())
+	// this check statement is just for test
+	if lr.cfg != nil {
+		dynconfigData, err := lr.cfg.Get()
+		if err != nil {
+			return nil, err
+		}
+		req.KeyVal[LoadType] = LoadData
+		req.KeyVal[ManagerClient] = lr.managerClient
+		req.KeyVal[DynConfigData] = dynconfigData
 	}
 	req.KeyVal[LoadType] = LoadData
-	req.KeyVal[ManagerClient] = lr.managerClient
-	req.KeyVal[DynConfigData] = dynconfigData
-	req, err = p.Exec(req, lr.graph)
+	req, err := p.Exec(req, lr.graph)
 	if err != nil {
 		return nil, err
 	}
+	logger.Infof("process data is %v", req.Data)
 	return req.Data, nil
 }
 
@@ -102,6 +108,7 @@ func (lr *LinearTraining) Serve() {
 				ticker.Stop()
 				return
 			case <-ticker.C:
+				logger.Info("training processing ...")
 				_, err := lr.Process()
 				if err != nil {
 					logger.Fatalf("linear regression error: %s", err.Error())

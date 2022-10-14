@@ -2,15 +2,16 @@ package training
 
 import (
 	"math/rand"
-	"os"
 	"testing"
 	"time"
+
+	"d7y.io/dragonfly/v2/scheduler/config"
 
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
 func TestTraining(t *testing.T) {
-	tmp := os.TempDir()
+	tmp := "/Users/wd/.dragonfly/data"
 	sto, _ := storage.New(tmp)
 	rand.Seed(time.Now().Unix())
 
@@ -21,7 +22,7 @@ func TestTraining(t *testing.T) {
 	}{
 		{
 			name:    "random record preprocess",
-			baseDir: os.TempDir(),
+			baseDir: tmp,
 			mock: func(t *testing.T) {
 				for i := 0; i < 20000; i++ {
 					record := storage.Record{
@@ -51,7 +52,7 @@ func TestTraining(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.mock(t)
-			training := NewLinearTraining(sto)
+			training := NewLinearTraining(sto, nil, nil, &config.TrainingConfig{})
 			training.Process()
 		})
 	}

@@ -6,6 +6,8 @@ import (
 	"math"
 	"time"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+
 	"d7y.io/dragonfly/v2/scheduler/storage"
 
 	"d7y.io/dragonfly/v2/pkg/pipeline"
@@ -20,6 +22,7 @@ type GetSource func(req *pipeline.Request) (*pipeline.Request, error)
 
 // GetSource actually function.
 func (ld *Loading) GetDataSource(req *pipeline.Request) (*pipeline.Request, error) {
+	logger.Info("start to get data source")
 	if ld.dataInstance.TotalDataRecordLine == 0 {
 		return nil, nil
 	}
@@ -27,7 +30,6 @@ func (ld *Loading) GetDataSource(req *pipeline.Request) (*pipeline.Request, erro
 	if err != nil {
 		return nil, err
 	}
-
 	req.KeyVal[DataInstance] = ld.dataInstance
 	return &pipeline.Request{
 		Data:   result,
@@ -45,6 +47,7 @@ func (ld *Loading) NewData(req *pipeline.Request) error {
 	ld.dataInstance = dataInstance
 
 	total := store.Count()
+	logger.Infof("storage data line is %v", total)
 	ld.dataInstance.TotalTestRecordLine = int64(math.Ceil(float64(total) * ld.dataInstance.Options.TestPercent))
 	ld.dataInstance.TotalDataRecordLine = total - ld.dataInstance.TotalTestRecordLine
 	if err != nil {
@@ -141,6 +144,7 @@ func (ld *Loading) LoadCall(ctx context.Context, in chan *pipeline.Request, out 
 		case <-ctx.Done():
 			return fmt.Errorf("training process has been canceled")
 		case val := <-in:
+			logger.Info("start to load data")
 			if val == nil {
 				return nil
 			}

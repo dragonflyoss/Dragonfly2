@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/gob"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
@@ -76,6 +78,7 @@ func (mle *MLEvaluator) LoadModel() {
 	if err != nil {
 		return
 	}
+	logger.Info("start to evaluate model, we need watcher to load model")
 	mle.needVersion <- configData.SchedulerCluster.ID
 	model, ok := <-mle.modelVersion
 	if ok {

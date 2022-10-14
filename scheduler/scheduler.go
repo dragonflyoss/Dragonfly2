@@ -21,6 +21,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"math/rand"
 	"net"
 	"net/http"
 	"path/filepath"
@@ -58,6 +59,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/service"
 	"d7y.io/dragonfly/v2/scheduler/storage"
+	sto "d7y.io/dragonfly/v2/scheduler/storage"
 )
 
 const (
@@ -187,8 +189,33 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	if err != nil {
 		return nil, err
 	}
-
+	// Initialize Storage.
+	logger.Infof("data dir is %v", d.DataDir())
 	storage, err := storage.New(d.DataDir())
+	// mock data
+	for i := 0; i < 20000; i++ {
+		record := sto.Record{
+			IP:             rand.Intn(100)%2 + 1,
+			HostName:       rand.Intn(100)%2 + 1,
+			Tag:            rand.Intn(100)%2 + 1,
+			Rate:           float64(rand.Intn(300) + 10),
+			ParentPiece:    float64(rand.Intn(240) + 14),
+			SecurityDomain: rand.Intn(100)%2 + 1,
+			IDC:            rand.Intn(100)%2 + 1,
+			NetTopology:    rand.Intn(100)%2 + 1,
+			Location:       rand.Intn(100)%2 + 1,
+			UploadRate:     float64(rand.Intn(550) + 3),
+			CreateAt:       time.Now().Unix()/7200 + rand.Int63n(10),
+			UpdateAt:       time.Now().Unix()/7200 + rand.Int63n(10),
+			ParentCreateAt: time.Now().Unix()/7200 + rand.Int63n(10),
+			ParentUpdateAt: time.Now().Unix()/7200 + rand.Int63n(10),
+		}
+		err = storage.Create(record)
+		if err != nil {
+			logger.Errorf("error is %v", err)
+		}
+	}
+	//
 	if err != nil {
 		return nil, err
 	}
@@ -217,11 +244,13 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 
 	if cfg.Scheduler.Training.Enable {
+		logger.Info("start to run scheduler")
 		s.train, err = training.NewML(storage, dynconfig, managerClient, &cfg.Scheduler.Training)
 		if err != nil {
 			return nil, err
 		}
 		// Initialize watcher
+		logger.Info("start to run watcher")
 		watcher := watcher.NewWatcher(managerClient, needVersion, modelVersion, watcher.WithEnableAutoRefresh(cfg.Scheduler.Training.EnableAutoRefresh))
 		s.watcher = watcher
 	}

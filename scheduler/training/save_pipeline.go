@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+
 	"d7y.io/dragonfly/v2/manager/types"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
@@ -21,6 +23,7 @@ type Saving struct {
 func (save *Saving) GetSource(req *pipeline.Request) (*string, error) {
 	request := req.Data.(*types.CreateModelVersionRequest)
 	if request == nil {
+		logger.Error("request get nil data")
 		return nil, fmt.Errorf("request get nil data")
 	}
 
@@ -33,6 +36,7 @@ func (save *Saving) GetSource(req *pipeline.Request) (*string, error) {
 	if mc == nil {
 		return nil, fmt.Errorf("lose keyVal ManagerClient")
 	}
+	logger.Debugf("model is %v", request.Data)
 	// TODO: check only need one model in one scheduler
 	models, err := mc.ListModels(context.Background(), &managerv1.ListModelsRequest{
 		SchedulerId: dynconfig.SchedulerCluster.ID,
@@ -92,6 +96,7 @@ func (save *Saving) SaveCall(ctx context.Context, in chan *pipeline.Request, out
 		case <-ctx.Done():
 			return fmt.Errorf("saving process has been canceled")
 		case val := <-in:
+			logger.Info("start to save")
 			if val == nil {
 				out <- &pipeline.Request{
 					Data:   mv,

@@ -128,7 +128,7 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 			peer.Log.Errorf("peer scheduling exceeds the limit %d times and return code %d", s.config.RetryLimit, commonv1.Code_SchedTaskStatusError)
 			return
 		}
-
+		logger.Info("start to schedule parent, come into new function")
 		if _, ok := s.NotifyAndFindParent(ctx, peer, blocklist); !ok {
 			n++
 			peer.Log.Infof("schedule parent %d times failed", n)
@@ -168,6 +168,7 @@ func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer
 
 	// Sort candidate parents by evaluation score.
 	taskTotalPieceCount := peer.Task.TotalPieceCount.Load()
+	logger.Infof("task piece count is %v", taskTotalPieceCount)
 	candidateParents, err := sortNodes(candidateParents, s.evaluator, peer, taskTotalPieceCount)
 	if err != nil {
 		logger.Errorf("sort nodes error, error is %s", err.Error())
@@ -250,8 +251,9 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 		candidateParents   []*resource.Peer
 		candidateParentIDs []string
 	)
-	for _, candidateParent := range peer.Task.LoadRandomPeers(uint(filterParentRangeLimit)) {
+	for id, candidateParent := range peer.Task.LoadRandomPeers(uint(filterParentRangeLimit)) {
 		// Parent length limit after filtering.
+		logger.Infof("%v candidate parent is %v", id, candidateParent.ID)
 		if len(candidateParents) >= filterParentLimit {
 			break
 		}
@@ -264,7 +266,7 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 
 		// Candidate parent can add edge with peer.
 		if !peer.Task.CanAddPeerEdge(candidateParent.ID, peer.ID) {
-			peer.Log.Debugf("can not add edge with candidate parent %s", candidateParent.ID)
+			peer.Log.Debugf("can not add edge with candidate parent %s, peerID is %s", candidateParent.ID, peer.ID)
 			continue
 		}
 

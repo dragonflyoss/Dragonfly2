@@ -243,6 +243,7 @@ func (t *Task) PeerCount() int {
 
 // AddPeerEdge adds inedges between two peers.
 func (t *Task) AddPeerEdge(fromPeer *Peer, toPeer *Peer) error {
+	logger.Infof("we make a connect between %v to %v", fromPeer.ID, toPeer.ID)
 	if err := t.DAG.AddEdge(fromPeer.ID, toPeer.ID); err != nil {
 		return err
 	}
