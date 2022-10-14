@@ -195,11 +195,13 @@ func (s *s3) IsObjectExist(ctx context.Context, bucketName, objectKey string) (b
 
 // IsBucketExist returns whether the bucket exists.
 func (s *s3) IsBucketExist(ctx context.Context, bucketName string) (bool, error) {
-	_, err := s.client.HeadBucketWithContext(ctx, &awss3.HeadBucketInput{
+	if _, err := s.client.HeadBucketWithContext(ctx, &awss3.HeadBucketInput{
 		Bucket: &bucketName,
-	})
+	}); err != nil {
+		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == awss3.ErrCodeNoSuchBucket {
+			return false, nil
+		}
 
-	if err != nil {
 		return false, err
 	}
 
