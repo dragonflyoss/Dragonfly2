@@ -96,7 +96,10 @@ jobs:
           make build-e2e-sha256sum
           # generate an empty file
           docker exec kind-control-plane touch /tmp/empty-file
-          ginkgo -v -r --race --fail-fast --cover --trace --progress --skip=${{ matrix.skip }} test/e2e -- --feature-gates=dfget-range=true --feature-gates=dfget-empty-file=true
+          ginkgo -v -r --race --fail-fast --cover --trace --progress --skip=${{ matrix.skip }} test/e2e -- \
+              --feature-gates=dfget-range=true \
+              --feature-gates=dfget-open-range=true \
+              --feature-gates=dfget-empty-file=true
           cat coverprofile.out >> coverage.txt
 
       - name: Upload coverage to Codecov
