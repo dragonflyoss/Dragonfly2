@@ -11,8 +11,8 @@ RUN apt-get update \
 ENV PATH=/go/bin:/usr/local/go/bin:$PATH
 
 ENV GOPATH=/go
-ENV GOLANG_VERSION 1.18.3
-ENV GOLANG_DOWNLOAD_URL https://golang.org/dl/go$GOLANG_VERSION.linux-amd64.tar.gz
+ENV GOLANG_VERSION 1.19
+ENV GOLANG_DOWNLOAD_URL https://golang.org/dl/go1.19.linux-amd64.tar.gz
 ENV GOLANG_DOWNLOAD_SHA256 956f8507b302ab0bb747613695cdae10af99bbd39a90cae522b7c0302cc27245
 
 ARG GOPROXY
