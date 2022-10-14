@@ -185,6 +185,11 @@ func (o *oss) IsObjectExist(ctx context.Context, bucketName, objectKey string) (
 	return bucket.IsObjectExist(objectKey)
 }
 
+// IsBucketExist returns whether the bucket exists.
+func (o *oss) IsBucketExist(ctx context.Context, bucketName string) (bool, error) {
+	return o.client.IsBucketExist(bucketName)
+}
+
 // GetSignURL returns sign url of object.
 func (o *oss) GetSignURL(ctx context.Context, bucketName, objectKey string, method Method, expire time.Duration) (string, error) {
 	var ossHTTPMethod aliyunoss.HTTPMethod
