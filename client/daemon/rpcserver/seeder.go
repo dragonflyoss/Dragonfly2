@@ -81,7 +81,7 @@ func (s *seeder) ObtainSeeds(seedRequest *cdnsystemv1.SeedRequest, seedsServer c
 	log := logger.With("peer", req.PeerId, "task", seedRequest.TaskId, "component", "seedService")
 
 	if len(req.UrlMeta.Range) > 0 {
-		r, err := clientutil.ParseOneRange(req.UrlMeta.Range, math.MaxUint64)
+		r, err := clientutil.ParseOneRange(req.UrlMeta.Range, math.MaxInt64)
 		if err != nil {
 			metrics.SeedPeerDownloadFailureCount.Add(1)
 			err = fmt.Errorf("parse range %s error: %s", req.UrlMeta.Range, err)
