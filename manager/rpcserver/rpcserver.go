@@ -513,7 +513,10 @@ func (s *Server) ListSchedulers(ctx context.Context, req *managerv1.ListSchedule
 	// Count the number of the active peer.
 	if s.config.Metrics.EnablePeerGauge && req.SourceType == managerv1.SourceType_PEER_SOURCE {
 		peerCacheKey := fmt.Sprintf("%s-%s", req.HostName, req.Ip)
-		if _, _, found := s.peerCache.GetWithExpiration(peerCacheKey); !found {
+		if data, _, found := s.peerCache.GetWithExpiration(peerCacheKey); !found {
+			metrics.PeerGauge.WithLabelValues(req.Version, req.Commit).Inc()
+		} else if cache, ok := data.(*managerv1.ListSchedulersRequest); ok && (cache.Version != req.Version || cache.Commit != req.Commit) {
+			metrics.PeerGauge.WithLabelValues(cache.Version, cache.Commit).Dec()
 			metrics.PeerGauge.WithLabelValues(req.Version, req.Commit).Inc()
 		}
 
