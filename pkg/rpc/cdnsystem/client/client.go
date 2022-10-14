@@ -48,9 +48,6 @@ const (
 	// backoffWaitBetween is waiting for a fixed period of
 	// time between calls in backoff linear.
 	backoffWaitBetween = 500 * time.Millisecond
-
-	// perRetryTimeout is GRPC timeout per call (including initial call) on this call.
-	perRetryTimeout = 3 * time.Second
 )
 
 func GetClientByAddr(ctx context.Context, netAddr dfnet.NetAddr, opts ...grpc.DialOption) (Client, error) {
@@ -64,7 +61,6 @@ func GetClientByAddr(ctx context.Context, netAddr dfnet.NetAddr, opts ...grpc.Di
 				grpc_prometheus.UnaryClientInterceptor,
 				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
 				grpc_retry.UnaryClientInterceptor(
-					grpc_retry.WithPerRetryTimeout(perRetryTimeout),
 					grpc_retry.WithMax(maxRetries),
 					grpc_retry.WithBackoff(grpc_retry.BackoffLinear(backoffWaitBetween)),
 				),
@@ -103,7 +99,6 @@ func GetClient(ctx context.Context, dynconfig config.DynconfigInterface, opts ..
 				grpc_prometheus.UnaryClientInterceptor,
 				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
 				grpc_retry.UnaryClientInterceptor(
-					grpc_retry.WithPerRetryTimeout(perRetryTimeout),
 					grpc_retry.WithMax(maxRetries),
 					grpc_retry.WithBackoff(grpc_retry.BackoffLinear(backoffWaitBetween)),
 				),
