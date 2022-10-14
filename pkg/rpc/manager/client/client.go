@@ -47,9 +47,6 @@ const (
 	// backoffWaitBetween is waiting for a fixed period of
 	// time between calls in backoff linear.
 	backoffWaitBetween = 500 * time.Millisecond
-
-	// perRetryTimeout is GRPC timeout per call (including initial call) on this call.
-	perRetryTimeout = 5 * time.Second
 )
 
 // GetClient returns manager client.
@@ -63,7 +60,6 @@ func GetClient(ctx context.Context, target string, opts ...grpc.DialOption) (Cli
 				grpc_prometheus.UnaryClientInterceptor,
 				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
 				grpc_retry.UnaryClientInterceptor(
-					grpc_retry.WithPerRetryTimeout(perRetryTimeout),
 					grpc_retry.WithMax(maxRetries),
 					grpc_retry.WithBackoff(grpc_retry.BackoffLinear(backoffWaitBetween)),
 				),
