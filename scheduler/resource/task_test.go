@@ -1447,6 +1447,63 @@ func TestTask_CanBackToSource(t *testing.T) {
 	}
 }
 
+func TestTask_CanReuseDirectPiece(t *testing.T) {
+	tests := []struct {
+		name              string
+		id                string
+		urlMeta           *commonv1.UrlMeta
+		url               string
+		backToSourceLimit int32
+		expect            func(t *testing.T, task *Task)
+	}{
+		{
+			name:              "task can reuse direct piece",
+			id:                mockTaskID,
+			urlMeta:           mockTaskURLMeta,
+			url:               mockTaskURL,
+			backToSourceLimit: 1,
+			expect: func(t *testing.T, task *Task) {
+				assert := assert.New(t)
+				task.DirectPiece = []byte{1}
+				task.ContentLength.Store(1)
+				assert.Equal(task.CanReuseDirectPiece(), true)
+			},
+		},
+		{
+			name:              "direct piece is empty",
+			id:                mockTaskID,
+			urlMeta:           mockTaskURLMeta,
+			url:               mockTaskURL,
+			backToSourceLimit: 1,
+			expect: func(t *testing.T, task *Task) {
+				assert := assert.New(t)
+				task.ContentLength.Store(1)
+				assert.Equal(task.CanReuseDirectPiece(), false)
+			},
+		},
+		{
+			name:              "content length is error",
+			id:                mockTaskID,
+			urlMeta:           mockTaskURLMeta,
+			url:               mockTaskURL,
+			backToSourceLimit: 1,
+			expect: func(t *testing.T, task *Task) {
+				assert := assert.New(t)
+				task.DirectPiece = []byte{1}
+				task.ContentLength.Store(2)
+				assert.Equal(task.CanReuseDirectPiece(), false)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			task := NewTask(tc.id, tc.url, commonv1.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
+			tc.expect(t, task)
+		})
+	}
+}
+
 func TestTask_NotifyPeers(t *testing.T) {
 	tests := []struct {
 		name string
