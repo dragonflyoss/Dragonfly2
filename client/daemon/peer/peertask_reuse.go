@@ -136,6 +136,33 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 		return nil, false
 	}
 
+	// check reuse target is valid
+	stat, err := os.Stat(request.Output)
+	if err != nil {
+		log.Errorf("stat error when reuse peer task: %s", err)
+		span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
+		span.RecordError(err)
+		return nil, false
+	}
+
+	if request.KeepOriginalOffset {
+		// KeepOriginalOffset case
+		if length > 0 && stat.Size() == 0 {
+			err = fmt.Errorf("reuse failed, output file size is zero, but target length %d is not zero", length)
+			log.Errorf(err.Error())
+			span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
+			span.RecordError(err)
+			return nil, false
+		}
+	} else if length != stat.Size() {
+		// normal case
+		err = fmt.Errorf("reuse failed, output file size %d is not same with target length %d", stat.Size(), length)
+		log.Errorf(err.Error())
+		span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
+		span.RecordError(err)
+		return nil, false
+	}
+
 	var cost = time.Since(start).Milliseconds()
 	log.Infof("reuse file peer task done, cost: %dms", cost)
 

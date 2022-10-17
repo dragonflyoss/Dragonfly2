@@ -164,7 +164,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 							PeerTaskMetadata: storage.PeerTaskMetadata{
 								TaskID: taskID,
 							},
-							ContentLength: 10,
+							ContentLength: 100,
 							TotalPieces:   0,
 							PieceMd5Sign:  "",
 						}
