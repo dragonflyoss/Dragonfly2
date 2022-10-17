@@ -516,7 +516,7 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemonv1.DownRequest, st
 		KeepOriginalOffset: req.KeepOriginalOffset,
 	}
 	if len(req.UrlMeta.Range) > 0 {
-		r, err := http.ParseRange(req.UrlMeta.Range, math.MaxInt)
+		r, err := http.ParseRange(req.UrlMeta.Range, math.MaxInt64)
 		if err != nil {
 			err = fmt.Errorf("parse range %s error: %s", req.UrlMeta.Range, err)
 			return err

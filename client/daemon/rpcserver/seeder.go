@@ -32,7 +32,7 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
-	"d7y.io/dragonfly/v2/client/util"
+	clientutil "d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/net/http"
@@ -82,14 +82,14 @@ func (s *seeder) ObtainSeeds(seedRequest *cdnsystemv1.SeedRequest, seedsServer c
 	log := logger.With("peer", req.PeerId, "task", seedRequest.TaskId, "component", "seedService")
 
 	if len(req.UrlMeta.Range) > 0 {
-		r, err := http.ParseRange(req.UrlMeta.Range, math.MaxInt)
+		r, err := http.ParseRange(req.UrlMeta.Range, math.MaxInt64)
 		if err != nil {
 			metrics.SeedPeerDownloadFailureCount.Add(1)
 			err = fmt.Errorf("parse range %s error: %s", req.UrlMeta.Range, err)
 			log.Errorf(err.Error())
 			return err
 		}
-		req.Range = &util.Range{
+		req.Range = &clientutil.Range{
 			Start:  int64(r.StartIndex),
 			Length: int64(r.Length()),
 		}
