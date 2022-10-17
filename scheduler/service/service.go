@@ -18,6 +18,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -89,183 +90,71 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTas
 	// does not have a seed peer, it will back-to-source.
 	peer.NeedBackToSource.Store(needBackToSource)
 
-	// The task state is TaskStateSucceeded and SizeScope is not invalid.
 	sizeScope, err := task.SizeScope()
-	if task.FSM.Is(resource.TaskStateSucceeded) && err == nil {
-		peer.Log.Info("task can be reused")
-		switch sizeScope {
-		case commonv1.SizeScope_EMPTY:
-			peer.Log.Info("task size scope is empty and return empty content directly")
-			if err := peer.FSM.Event(resource.PeerEventRegisterEmpty); err != nil {
-				msg := fmt.Sprintf("peer %s register is failed: %s", req.PeerId, err.Error())
-				peer.Log.Error(msg)
-				return nil, dferrors.New(commonv1.Code_SchedError, msg)
-			}
-
-			return &schedulerv1.RegisterResult{
-				TaskId:    task.ID,
-				TaskType:  task.Type,
-				SizeScope: commonv1.SizeScope_EMPTY,
-				DirectPiece: &schedulerv1.RegisterResult_PieceContent{
-					PieceContent: []byte{},
-				},
-			}, nil
-		case commonv1.SizeScope_TINY:
-			peer.Log.Info("task size scope is tiny and return piece content directly")
-			if len(task.DirectPiece) > 0 && int64(len(task.DirectPiece)) == task.ContentLength.Load() {
-				if err := peer.FSM.Event(resource.PeerEventRegisterTiny); err != nil {
-					msg := fmt.Sprintf("peer %s register is failed: %s", req.PeerId, err.Error())
-					peer.Log.Error(msg)
-					return nil, dferrors.New(commonv1.Code_SchedError, msg)
-				}
-
-				return &schedulerv1.RegisterResult{
-					TaskId:    task.ID,
-					TaskType:  task.Type,
-					SizeScope: commonv1.SizeScope_TINY,
-					DirectPiece: &schedulerv1.RegisterResult_PieceContent{
-						PieceContent: task.DirectPiece,
-					},
-				}, nil
-			}
-
-			// Fallback to commonv1.SizeScope_SMALL.
-			peer.Log.Warnf("task size scope is tiny, length of direct piece is %d and content length is %d. fall through to size scope small",
-				len(task.DirectPiece), task.ContentLength.Load())
-			fallthrough
-		case commonv1.SizeScope_SMALL:
-			peer.Log.Info("task size scope is small")
-			// There is no need to build a tree, just find the parent and return.
-			parent, ok := s.scheduler.FindParent(ctx, peer, set.NewSafeSet[string]())
-			if !ok {
-				peer.Log.Warn("task size scope is small and it can not select parent")
-				if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
-					msg := fmt.Sprintf("peer %s register is failed: %s", req.PeerId, err.Error())
-					peer.Log.Error(msg)
-					return nil, dferrors.New(commonv1.Code_SchedError, msg)
-				}
-
-				return &schedulerv1.RegisterResult{
-					TaskId:    task.ID,
-					TaskType:  task.Type,
-					SizeScope: commonv1.SizeScope_NORMAL,
-				}, nil
-			}
-
-			// When task size scope is small, parent must be downloaded successfully
-			// before returning to the parent directly.
-			if !parent.FSM.Is(resource.PeerStateSucceeded) {
-				peer.Log.Infof("task size scope is small and download state %s is not PeerStateSucceeded", parent.FSM.Current())
-				if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
-					msg := fmt.Sprintf("peer %s register is failed: %s", req.PeerId, err.Error())
-					peer.Log.Error(msg)
-					return nil, dferrors.New(commonv1.Code_SchedError, msg)
-				}
-
-				return &schedulerv1.RegisterResult{
-					TaskId:    task.ID,
-					TaskType:  task.Type,
-					SizeScope: commonv1.SizeScope_NORMAL,
-				}, nil
-			}
-
-			firstPiece, ok := task.LoadPiece(0)
-			if !ok {
-				peer.Log.Warn("task size scope is small and it can not get first piece")
-				if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
-					msg := fmt.Sprintf("peer %s register is failed: %s", req.PeerId, err.Error())
-					peer.Log.Error(msg)
-					return nil, dferrors.New(commonv1.Code_SchedError, msg)
-				}
-
-				return &schedulerv1.RegisterResult{
-					TaskId:    task.ID,
-					TaskType:  task.Type,
-					SizeScope: commonv1.SizeScope_NORMAL,
-				}, nil
-			}
-
-			// Delete inedges of peer.
-			if err := task.DeletePeerInEdges(peer.ID); err != nil {
-				msg := fmt.Sprintf("peer deletes inedges failed: %s", err.Error())
-				peer.Log.Error(msg)
-				return nil, dferrors.New(commonv1.Code_SchedError, msg)
-			}
-
-			// Add edges between parent and peer.
-			if err := task.AddPeerEdge(parent, peer); err != nil {
-				peer.Log.Warnf("peer adds edge failed: %s", err.Error())
-				if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
-					msg := fmt.Sprintf("peer %s register is failed: %s", req.PeerId, err.Error())
-					peer.Log.Error(msg)
-					return nil, dferrors.New(commonv1.Code_SchedError, msg)
-				}
-
-				return &schedulerv1.RegisterResult{
-					TaskId:    task.ID,
-					TaskType:  task.Type,
-					SizeScope: commonv1.SizeScope_NORMAL,
-				}, nil
-			}
-
-			if err := peer.FSM.Event(resource.PeerEventRegisterSmall); err != nil {
-				msg := fmt.Sprintf("peer %s register is failed: %s", req.PeerId, err.Error())
-				peer.Log.Error(msg)
-				return nil, dferrors.New(commonv1.Code_SchedError, msg)
-			}
-
-			peer.Log.Infof("schedule parent successful, replace parent to %s ", parent.ID)
-			singlePiece := &schedulerv1.SinglePiece{
-				DstPid:  parent.ID,
-				DstAddr: fmt.Sprintf("%s:%d", parent.Host.IP, parent.Host.DownloadPort),
-				PieceInfo: &commonv1.PieceInfo{
-					PieceNum:    firstPiece.PieceNum,
-					RangeStart:  firstPiece.RangeStart,
-					RangeSize:   firstPiece.RangeSize,
-					PieceMd5:    firstPiece.PieceMd5,
-					PieceOffset: firstPiece.PieceOffset,
-					PieceStyle:  firstPiece.PieceStyle,
-				},
-			}
-
-			peer.Log.Infof("task size scope is small and return single piece: %#v %#v", singlePiece, singlePiece.PieceInfo)
-			return &schedulerv1.RegisterResult{
-				TaskId:    task.ID,
-				TaskType:  task.Type,
-				SizeScope: commonv1.SizeScope_SMALL,
-				DirectPiece: &schedulerv1.RegisterResult_SinglePiece{
-					SinglePiece: singlePiece,
-				},
-			}, nil
-		default:
-			peer.Log.Info("task size scope is normal and needs to be register")
-			if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
-				msg := fmt.Sprintf("peer %s register is failed: %s", req.PeerId, err.Error())
-				peer.Log.Error(msg)
-				return nil, dferrors.New(commonv1.Code_SchedError, msg)
-			}
-
-			return &schedulerv1.RegisterResult{
-				TaskId:    task.ID,
-				TaskType:  task.Type,
-				SizeScope: commonv1.SizeScope_NORMAL,
-			}, nil
+	if err != nil || !task.FSM.Is(resource.TaskStateSucceeded) {
+		peer.Log.Infof("task can not be reused directly, because of task state is %s and %#v",
+			task.FSM.Current(), err)
+		result, err := s.registerNormalTask(ctx, peer)
+		if err != nil {
+			peer.Log.Error(err)
+			return nil, dferrors.New(commonv1.Code_SchedError, err.Error())
 		}
+
+		return result, nil
 	}
 
-	// Task is unsuccessful.
-	peer.Log.Infof("task state is %s and needs to be register", task.FSM.Current())
-	if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
-		msg := fmt.Sprintf("peer %s register is failed: %s", req.PeerId, err.Error())
-		peer.Log.Error(msg)
-		return nil, dferrors.New(commonv1.Code_SchedError, msg)
+	// The task state is TaskStateSucceeded and SizeScope is not invalid.
+	peer.Log.Info("task can be reused directly")
+	switch sizeScope {
+	case commonv1.SizeScope_EMPTY:
+		peer.Log.Info("task size scope is EMPTY")
+		result, err := s.registerEmptyTask(ctx, peer)
+		if err != nil {
+			peer.Log.Error(err)
+			return nil, dferrors.New(commonv1.Code_SchedError, err.Error())
+		}
+
+		peer.Log.Info("return empty content")
+		return result, nil
+	case commonv1.SizeScope_TINY:
+		peer.Log.Info("task size scope is TINY")
+
+		// Validate data of direct piece.
+		if !peer.Task.CanReuseDirectPiece() {
+			peer.Log.Warnf("register as normal task, because of length of direct piece is %d, content length is %d",
+				len(task.DirectPiece), task.ContentLength.Load())
+			break
+		}
+
+		result, err := s.registerTinyTask(ctx, peer)
+		if err != nil {
+			peer.Log.Warnf("register as normal task, because of %s", err.Error())
+			break
+		}
+
+		peer.Log.Info("return direct piece")
+		return result, nil
+	case commonv1.SizeScope_SMALL:
+		peer.Log.Info("task size scope is SMALL")
+		result, err := s.registerSmallTask(ctx, peer)
+		if err != nil {
+			peer.Log.Warnf("register as normal task, because of %s", err.Error())
+			break
+		}
+
+		peer.Log.Info("return the single piece")
+		return result, nil
 	}
 
-	return &schedulerv1.RegisterResult{
-		TaskId:    task.ID,
-		TaskType:  task.Type,
-		SizeScope: commonv1.SizeScope_NORMAL,
-	}, nil
+	peer.Log.Infof("task size scope is %s", sizeScope)
+	result, err := s.registerNormalTask(ctx, peer)
+	if err != nil {
+		peer.Log.Error(err)
+		return nil, dferrors.New(commonv1.Code_SchedError, err.Error())
+	}
+
+	peer.Log.Info("return the normal task")
+	return result, nil
 }
 
 // ReportPieceResult handles the piece information reported by dfdaemon.
@@ -637,6 +526,104 @@ func (s *Service) triggerSeedPeerTask(ctx context.Context, task *resource.Task) 
 	peer.Log.Info("trigger seed peer download task successfully")
 	s.handleTaskSuccess(ctx, task, endOfPiece)
 	s.handlePeerSuccess(ctx, peer)
+}
+
+// registerEmptyTask registers the empty task.
+func (s *Service) registerEmptyTask(ctx context.Context, peer *resource.Peer) (*schedulerv1.RegisterResult, error) {
+	if err := peer.FSM.Event(resource.PeerEventRegisterEmpty); err != nil {
+		return nil, err
+	}
+
+	return &schedulerv1.RegisterResult{
+		TaskId:    peer.Task.ID,
+		TaskType:  peer.Task.Type,
+		SizeScope: commonv1.SizeScope_EMPTY,
+		DirectPiece: &schedulerv1.RegisterResult_PieceContent{
+			PieceContent: []byte{},
+		},
+	}, nil
+}
+
+// registerEmptyTask registers the tiny task.
+func (s *Service) registerTinyTask(ctx context.Context, peer *resource.Peer) (*schedulerv1.RegisterResult, error) {
+	if err := peer.FSM.Event(resource.PeerEventRegisterTiny); err != nil {
+		return nil, err
+	}
+
+	return &schedulerv1.RegisterResult{
+		TaskId:    peer.Task.ID,
+		TaskType:  peer.Task.Type,
+		SizeScope: commonv1.SizeScope_TINY,
+		DirectPiece: &schedulerv1.RegisterResult_PieceContent{
+			PieceContent: peer.Task.DirectPiece,
+		},
+	}, nil
+}
+
+// registerSmallTask registers the small task.
+func (s *Service) registerSmallTask(ctx context.Context, peer *resource.Peer) (*schedulerv1.RegisterResult, error) {
+	parent, ok := s.scheduler.FindParent(ctx, peer, set.NewSafeSet[string]())
+	if !ok {
+		return nil, errors.New("can not found parent")
+	}
+
+	// When task size scope is small, parent must be downloaded successfully
+	// before returning to the parent directly.
+	if !parent.FSM.Is(resource.PeerStateSucceeded) {
+		return nil, fmt.Errorf("parent state %s is not PeerStateSucceede", parent.FSM.Current())
+	}
+
+	firstPiece, ok := peer.Task.LoadPiece(0)
+	if !ok {
+		return nil, fmt.Errorf("can not found first piece")
+	}
+
+	// Delete inedges of peer.
+	if err := peer.Task.DeletePeerInEdges(peer.ID); err != nil {
+		return nil, err
+	}
+
+	// Add edges between parent and peer.
+	if err := peer.Task.AddPeerEdge(parent, peer); err != nil {
+		return nil, err
+	}
+
+	if err := peer.FSM.Event(resource.PeerEventRegisterSmall); err != nil {
+		return nil, err
+	}
+
+	return &schedulerv1.RegisterResult{
+		TaskId:    peer.Task.ID,
+		TaskType:  peer.Task.Type,
+		SizeScope: commonv1.SizeScope_SMALL,
+		DirectPiece: &schedulerv1.RegisterResult_SinglePiece{
+			SinglePiece: &schedulerv1.SinglePiece{
+				DstPid:  parent.ID,
+				DstAddr: fmt.Sprintf("%s:%d", parent.Host.IP, parent.Host.DownloadPort),
+				PieceInfo: &commonv1.PieceInfo{
+					PieceNum:    firstPiece.PieceNum,
+					RangeStart:  firstPiece.RangeStart,
+					RangeSize:   firstPiece.RangeSize,
+					PieceMd5:    firstPiece.PieceMd5,
+					PieceOffset: firstPiece.PieceOffset,
+					PieceStyle:  firstPiece.PieceStyle,
+				},
+			},
+		},
+	}, nil
+}
+
+// registerNormalTask registers the tiny task.
+func (s *Service) registerNormalTask(ctx context.Context, peer *resource.Peer) (*schedulerv1.RegisterResult, error) {
+	if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
+		return nil, err
+	}
+
+	return &schedulerv1.RegisterResult{
+		TaskId:    peer.Task.ID,
+		TaskType:  peer.Task.Type,
+		SizeScope: commonv1.SizeScope_NORMAL,
+	}, nil
 }
 
 // handleBeginOfPiece handles begin of piece.
