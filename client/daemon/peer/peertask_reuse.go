@@ -227,7 +227,7 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 			reuse.PeerID, reuse.ContentLength, request.URLMeta.Range)
 
 		// correct range like: bytes=1024-
-		if reuseRange.Start+reuseRange.Length > reuse.ContentLength {
+		if reuseRange.Length > reuse.ContentLength-reuseRange.Start {
 			reuseRange.Length = reuse.ContentLength - reuseRange.Start
 			if reuseRange.Length < 0 {
 				return nil, nil, false

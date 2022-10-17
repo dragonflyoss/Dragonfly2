@@ -643,7 +643,7 @@ func (o *objectStorage) client() (objectstorage.ObjectStorage, error) {
 
 // parseRangeHeader uses to parse range http header for dragonfly.
 func (o *objectStorage) parseRangeHeader(rangeHeader string) ([]util.Range, error) {
-	ranges, err := util.ParseRange(rangeHeader, math.MaxInt)
+	ranges, err := util.ParseRange(rangeHeader, math.MaxInt64)
 	if err != nil {
 		return nil, err
 	}

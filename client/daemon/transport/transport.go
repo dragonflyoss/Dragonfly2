@@ -230,7 +230,7 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 
 	// Set meta range's value
 	if rangeHeader := req.Header.Get("Range"); len(rangeHeader) > 0 {
-		rgs, err := util.ParseRange(rangeHeader, math.MaxInt)
+		rgs, err := util.ParseRange(rangeHeader, math.MaxInt64)
 		if err != nil {
 			return badRequest(req, err.Error())
 		}

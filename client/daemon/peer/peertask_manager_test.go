@@ -477,7 +477,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 					func(request *source.Request) (int64, error) {
 						assert := testifyassert.New(t)
 						if rg != nil {
-							rgs, err := util.ParseRange(request.Header.Get(headers.Range), math.MaxInt)
+							rgs, err := util.ParseRange(request.Header.Get(headers.Range), math.MaxInt64)
 							assert.Nil(err)
 							assert.Equal(1, len(rgs))
 							assert.Equal(rg.String(), rgs[0].String())
@@ -488,7 +488,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 					func(request *source.Request) (*source.Response, error) {
 						assert := testifyassert.New(t)
 						if rg != nil {
-							rgs, err := util.ParseRange(request.Header.Get(headers.Range), math.MaxInt)
+							rgs, err := util.ParseRange(request.Header.Get(headers.Range), math.MaxInt64)
 							assert.Nil(err)
 							assert.Equal(1, len(rgs))
 							assert.Equal(rg.String(), rgs[0].String())

@@ -40,10 +40,11 @@ var ErrNoOverlap = errors.New("invalid range: failed to overlap")
 // ParseRange parses a Range header string as per RFC 7233.
 // ErrNoOverlap is returned if none of the ranges overlap.
 // Example:
-//   "Range": "bytes=100-200"
-//   "Range": "bytes=-50"
-//   "Range": "bytes=150-"
-//   "Range": "bytes=0-0,-1"
+//
+//	"Range": "bytes=100-200"
+//	"Range": "bytes=-50"
+//	"Range": "bytes=150-"
+//	"Range": "bytes=0-0,-1"
 //
 // copy from go/1.15.2 net/http/fs.go ParseRange
 func ParseRange(s string, size int64) ([]Range, error) {
@@ -115,8 +116,9 @@ func ParseRange(s string, size int64) ([]Range, error) {
 }
 
 // Example:
-//   "Content-Range": "bytes 100-200/1000"
-//   "Content-Range": "bytes 100-200/*"
+//
+//	"Content-Range": "bytes 100-200/1000"
+//	"Content-Range": "bytes 100-200/*"
 func GetContentRange(start, end, total int64) string {
 	// unknown total: -1
 	if total == -1 {
@@ -135,4 +137,15 @@ func MustParseRange(s string, size int64) Range {
 		panic(fmt.Sprintf("parse range length must be 1"))
 	}
 	return rs[0]
+}
+
+func ParseOneRange(s string, size int64) (Range, error) {
+	rs, err := ParseRange(s, size)
+	if err != nil {
+		return Range{}, err
+	}
+	if len(rs) != 1 {
+		return Range{}, fmt.Errorf("parse range length must be 1")
+	}
+	return rs[0], nil
 }
