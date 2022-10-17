@@ -148,6 +148,7 @@ func NewTask(id, url string, taskType commonv1.TaskType, meta *commonv1.UrlMeta,
 		URL:               url,
 		Type:              taskType,
 		URLMeta:           meta,
+		DirectPiece:       []byte{},
 		ContentLength:     atomic.NewInt64(-1),
 		TotalPieceCount:   atomic.NewInt32(0),
 		BackToSourceLimit: atomic.NewInt32(0),
@@ -421,9 +422,14 @@ func (t *Task) SizeScope() (commonv1.SizeScope, error) {
 	return commonv1.SizeScope_NORMAL, nil
 }
 
-// CanBackToSource represents whether peer can back-to-source.
+// CanBackToSource represents whether task can back-to-source.
 func (t *Task) CanBackToSource() bool {
 	return int32(t.BackToSourcePeers.Len()) <= t.BackToSourceLimit.Load() && (t.Type == commonv1.TaskType_Normal || t.Type == commonv1.TaskType_DfStore)
+}
+
+// CanReuseDirectPiece represents whether task can reuse data of direct piece.
+func (t *Task) CanReuseDirectPiece() bool {
+	return len(t.DirectPiece) > 0 && int64(len(t.DirectPiece)) == t.ContentLength.Load()
 }
 
 // NotifyPeers notify all peers in the task with the state code.

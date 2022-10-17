@@ -320,7 +320,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			},
 		},
 		{
-			name: "task scope size is SizeScope_TINY and direct piece content is empty",
+			name: "task scope size is SizeScope_TINY and direct piece content is error",
 			req: &schedulerv1.PeerTaskRequest{
 				UrlMeta: &commonv1.UrlMeta{},
 				PeerHost: &schedulerv1.PeerHost{
@@ -337,8 +337,6 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				mockPeer.Task.StorePeer(mockSeedPeer)
 				mockPeer.Task.ContentLength.Store(1)
 				mockPeer.Task.TotalPieceCount.Store(1)
-				mockPeer.Task.DirectPiece = []byte{1}
-				mockPeer.FSM.SetState(resource.PeerStateFailed)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
 					mt.Load(gomock.Any()).Return(mockPeer.Task, true).Times(1),
@@ -350,9 +348,10 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			},
 			expect: func(t *testing.T, peer *resource.Peer, result *schedulerv1.RegisterResult, err error) {
 				assert := assert.New(t)
-				dferr, ok := err.(*dferrors.DfError)
-				assert.True(ok)
-				assert.Equal(dferr.Code, commonv1.Code_SchedError)
+				assert.NoError(err)
+				assert.Equal(result.TaskId, peer.Task.ID)
+				assert.Equal(result.SizeScope, commonv1.SizeScope_NORMAL)
+				assert.True(peer.FSM.Is(resource.PeerStateReceivedNormal))
 				assert.Equal(peer.NeedBackToSource.Load(), false)
 			},
 		},
@@ -382,7 +381,6 @@ func TestService_RegisterPeerTask(t *testing.T) {
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
-					ms.FindParent(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, false).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, result *schedulerv1.RegisterResult, err error) {
@@ -390,43 +388,6 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				dferr, ok := err.(*dferrors.DfError)
 				assert.True(ok)
 				assert.Equal(dferr.Code, commonv1.Code_SchedError)
-				assert.Equal(peer.NeedBackToSource.Load(), false)
-			},
-		},
-		{
-			name: "task scope size is SizeScope_TINY and direct piece content is error",
-			req: &schedulerv1.PeerTaskRequest{
-				UrlMeta: &commonv1.UrlMeta{},
-				PeerHost: &schedulerv1.PeerHost{
-					Id: mockRawHost.Id,
-				},
-			},
-			mock: func(
-				req *schedulerv1.PeerTaskRequest, mockPeer *resource.Peer, mockSeedPeer *resource.Peer,
-				scheduler scheduler.Scheduler, res resource.Resource, hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager,
-				ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder,
-			) {
-				mockPeer.Task.FSM.SetState(resource.TaskStateSucceeded)
-				mockSeedPeer.FSM.SetState(resource.PeerStateRunning)
-				mockPeer.Task.StorePeer(mockSeedPeer)
-				mockPeer.Task.ContentLength.Store(1)
-				mockPeer.Task.TotalPieceCount.Store(1)
-				gomock.InOrder(
-					mr.TaskManager().Return(taskManager).Times(1),
-					mt.Load(gomock.Any()).Return(mockPeer.Task, true).Times(1),
-					mr.HostManager().Return(hostManager).Times(1),
-					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
-					mr.PeerManager().Return(peerManager).Times(1),
-					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
-					ms.FindParent(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, false).Times(1),
-				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer, result *schedulerv1.RegisterResult, err error) {
-				assert := assert.New(t)
-				assert.NoError(err)
-				assert.Equal(result.TaskId, peer.Task.ID)
-				assert.Equal(result.SizeScope, commonv1.SizeScope_NORMAL)
-				assert.True(peer.FSM.Is(resource.PeerStateReceivedNormal))
 				assert.Equal(peer.NeedBackToSource.Load(), false)
 			},
 		},
@@ -591,9 +552,11 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			},
 			expect: func(t *testing.T, peer *resource.Peer, result *schedulerv1.RegisterResult, err error) {
 				assert := assert.New(t)
-				dferr, ok := err.(*dferrors.DfError)
-				assert.True(ok)
-				assert.Equal(dferr.Code, commonv1.Code_SchedError)
+				assert.NoError(err)
+				assert.Equal(result.TaskId, peer.Task.ID)
+				assert.Equal(result.SizeScope, commonv1.SizeScope_NORMAL)
+				assert.True(peer.FSM.Is(resource.PeerStateReceivedNormal))
+				assert.Equal(peer.NeedBackToSource.Load(), false)
 			},
 		},
 		{
@@ -2751,7 +2714,7 @@ func TestService_handlePeerSuccess(t *testing.T) {
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
-				assert.Equal(peer.Task.DirectPiece, []byte(nil))
+				assert.Equal(peer.Task.DirectPiece, []byte{})
 				assert.True(peer.FSM.Is(resource.PeerStateSucceeded))
 			},
 		},
