@@ -118,25 +118,19 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 		Expect(err).NotTo(HaveOccurred())
 
 		for path, size := range fileDetails {
+			// skip empty file
+			if size == 0 {
+				continue
+			}
 			url1 := e2eutil.GetFileURL(path)
 			url2 := e2eutil.GetNoContentLengthFileURL(path)
 
 			// make ranged requests to invoke prefetch feature
 			if featureGates.Enabled(featureGateRange) {
 				rg1, rg2 := getRandomRange(size), getRandomRange(size)
-				rg1Range, rg2Range := rg1.String(), rg2.String()
-
-				// avoid "Range: bytes=0--1" for empty file
-				if rg1.Length == 0 {
-					rg1Range = "bytes=0-0"
-				}
-				if rg2.Length == 0 {
-					rg2Range = "bytes=0-0"
-				}
-
-				downloadSingleFile(ns, pod, path, url1, size, rg1, rg1Range)
+				downloadSingleFile(ns, pod, path, url1, size, rg1, rg1.String())
 				if featureGates.Enabled(featureGateNoLength) {
-					downloadSingleFile(ns, pod, path, url2, size, rg2, rg2Range)
+					downloadSingleFile(ns, pod, path, url2, size, rg2, rg2.String())
 				}
 
 				if featureGates.Enabled(featureGateOpenRange) {
