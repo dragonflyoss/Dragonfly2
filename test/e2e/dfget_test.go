@@ -118,28 +118,44 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 		Expect(err).NotTo(HaveOccurred())
 
 		for path, size := range fileDetails {
+			// skip empty file
+			if size == 0 {
+				continue
+			}
 			url1 := e2eutil.GetFileURL(path)
 			url2 := e2eutil.GetNoContentLengthFileURL(path)
 
 			// make ranged requests to invoke prefetch feature
 			if featureGates.Enabled(featureGateRange) {
 				rg1, rg2 := getRandomRange(size), getRandomRange(size)
-				downloadSingleFile(ns, pod, path, url1, size, rg1)
-				downloadSingleFile(ns, pod, path, url1, size, rg2)
-				// FIXME no content length cases are always failed.
-				// downloadSingleFile(ns, pod, path, url2, size, rg)
+				downloadSingleFile(ns, pod, path, url1, size, rg1, rg1.String())
+				if featureGates.Enabled(featureGateNoLength) {
+					downloadSingleFile(ns, pod, path, url2, size, rg2, rg2.String())
+				}
+
+				if featureGates.Enabled(featureGateOpenRange) {
+					rg3, rg4 := getRandomRange(size), getRandomRange(size)
+					// set target length
+					rg3.Length = int64(size) - rg3.Start
+					rg4.Length = int64(size) - rg4.Start
+
+					downloadSingleFile(ns, pod, path, url1, size, rg3, fmt.Sprintf("bytes=%d-", rg3.Start))
+					if featureGates.Enabled(featureGateNoLength) {
+						downloadSingleFile(ns, pod, path, url2, size, rg4, fmt.Sprintf("bytes=%d-", rg4.Start))
+					}
+				}
 			}
 
-			downloadSingleFile(ns, pod, path, url1, size, nil)
+			downloadSingleFile(ns, pod, path, url1, size, nil, "")
 
 			if featureGates.Enabled(featureGateNoLength) {
-				downloadSingleFile(ns, pod, path, url2, size, nil)
+				downloadSingleFile(ns, pod, path, url2, size, nil, "")
 			}
 		}
 	})
 }
 
-func downloadSingleFile(ns string, pod *e2eutil.PodExec, path, url string, size int, rg *util.Range) {
+func downloadSingleFile(ns string, pod *e2eutil.PodExec, path, url string, size int, rg *util.Range, rawRg string) {
 	var (
 		sha256sum []string
 		dfget     []string
@@ -158,23 +174,23 @@ func downloadSingleFile(ns string, pod *e2eutil.PodExec, path, url string, size 
 			fmt.Sprintf("/bin/sha256sum-offset -file %s -offset %d -length %d", path, rg.Start, rg.Length))
 
 		dfget = append(dfget, "/opt/dragonfly/bin/dfget", "--disable-back-source", "-O", "/tmp/d7y.out", "-H",
-			fmt.Sprintf("Range: bytes=%d-%d", rg.Start, rg.Start+rg.Length-1), url)
+			fmt.Sprintf("Range: %s", rawRg), url)
 		curl = append(curl, "/usr/bin/curl", "-x", "http://127.0.0.1:65001", "-s", "--dump-header", "-", "-o", "/tmp/curl.out",
-			"--header", fmt.Sprintf("Range: bytes=%d-%d", rg.Start, rg.Start+rg.Length-1), url)
+			"--header", fmt.Sprintf("Range: %s", rawRg), url)
 
 		sha256sumOffset = append(sha256sumOffset, "sh", "-c",
 			fmt.Sprintf("/bin/sha256sum-offset -file %s -offset %d -length %d",
 				"/var/lib/dragonfly/d7y.offset.out", rg.Start, rg.Length))
 		dfgetOffset = append(dfgetOffset, "/opt/dragonfly/bin/dfget", "--disable-back-source", "--original-offset", "-O", "/var/lib/dragonfly/d7y.offset.out", "-H",
-			fmt.Sprintf("Range: bytes=%d-%d", rg.Start, rg.Start+rg.Length-1), url)
+			fmt.Sprintf("Range: %s", rawRg), url)
 	}
 
 	fmt.Printf("--------------------------------------------------------------------------------\n\n")
 	if rg == nil {
 		fmt.Printf("download %s, size %d\n", url, size)
 	} else {
-		fmt.Printf("download %s, size %d, range: bytes=%d-%d/%d, target length: %d\n",
-			url, size, rg.Start, rg.Start+rg.Length-1, size, rg.Length)
+		fmt.Printf("download %s, size %d, range: %s/%d, target length: %d\n",
+			url, size, rawRg, size, rg.Length)
 	}
 	// get original file digest
 	out, err := e2eutil.DockerCommand(sha256sum...).CombinedOutput()
