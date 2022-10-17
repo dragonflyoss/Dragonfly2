@@ -124,14 +124,24 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 			// make ranged requests to invoke prefetch feature
 			if featureGates.Enabled(featureGateRange) {
 				rg1, rg2 := getRandomRange(size), getRandomRange(size)
+				rg1Range, rg2Range := rg1.String(), rg2.String()
 
-				downloadSingleFile(ns, pod, path, url1, size, rg1, rg1.String())
+				// avoid "Range: bytes=0--1" for empty file
+				if rg1.Length == 0 {
+					rg1Range = "bytes=0-0"
+				}
+				if rg2.Length == 0 {
+					rg2Range = "bytes=0-0"
+				}
+
+				downloadSingleFile(ns, pod, path, url1, size, rg1, rg1Range)
 				if featureGates.Enabled(featureGateNoLength) {
-					downloadSingleFile(ns, pod, path, url2, size, rg2, rg2.String())
+					downloadSingleFile(ns, pod, path, url2, size, rg2, rg2Range)
 				}
 
 				if featureGates.Enabled(featureGateOpenRange) {
 					rg3, rg4 := getRandomRange(size), getRandomRange(size)
+					// set target length
 					rg3.Length = int64(size) - rg3.Start
 					rg4.Length = int64(size) - rg4.Start
 
