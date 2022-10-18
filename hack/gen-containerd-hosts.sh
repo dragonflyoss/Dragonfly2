@@ -26,4 +26,6 @@ server = "https://${registry_server}"
   capabilities = ["pull", "resolve"]
   [host."${d7y_proxy}".header]
     X-Dragonfly-Registry = ["https://${registry_server}"]
+  [host."https://${registry_server}"]
+    capabilities = ["pull", "resolve"]
 EOF
