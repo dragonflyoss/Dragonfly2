@@ -10,13 +10,7 @@ RUN apk --no-cache add bash make gcc libc-dev git
 
 COPY . /go/src/d7y.io/dragonfly/v2
 
-# prepare golang dependency
-RUN ls -alh && \
-    go mod vendor && \
-    mv /go/src/d7y.io/dragonfly/v2/vendor/* /go/src/ && \
-    rmdir /go/src/d7y.io/dragonfly/v2/vendor
-
 ENV CGO_ENABLED="1"
-ENV GO111MODULE="off"
+ENV GO111MODULE="on"
 
 COPY build/plugin-builder/build.sh /
