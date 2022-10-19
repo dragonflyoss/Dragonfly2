@@ -1,8 +1,269 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+
+<a name="v2.0.7"></a>
+## [v2.0.7] - 2022-10-19
+### Fix
+- plugin builder ([#1775](https://github.com/dragonflyoss/Dragonfly2/issues/1775))
+
+
+<a name="v2.0.7-rc.0"></a>
+## [v2.0.7-rc.0] - 2022-10-18
 ### Chore
+- **deps:** bump go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc from 0.36.1 to 0.36.3 ([#1768](https://github.com/dragonflyoss/Dragonfly2/issues/1768))
+- **deps:** bump github.com/swaggo/swag from 1.8.5 to 1.8.7 ([#1773](https://github.com/dragonflyoss/Dragonfly2/issues/1773))
+- **deps:** bump k8s.io/component-base from 0.25.2 to 0.25.3 ([#1771](https://github.com/dragonflyoss/Dragonfly2/issues/1771))
+- **deps:** bump github.com/swaggo/swag from 1.8.5 to 1.8.6 ([#1770](https://github.com/dragonflyoss/Dragonfly2/issues/1770))
+- **deps:** bump github.com/casbin/casbin/v2 from 2.55.1 to 2.56.0 ([#1769](https://github.com/dragonflyoss/Dragonfly2/issues/1769))
+- **deps:** bump go.opentelemetry.io/otel/trace from 1.10.0 to 1.11.0 ([#1767](https://github.com/dragonflyoss/Dragonfly2/issues/1767))
+
+### Fix
+- add fallback registry mirror in gen-containerd-host.sh ([#1774](https://github.com/dragonflyoss/Dragonfly2/issues/1774))
+
+
+<a name="v2.0.7-beta.7"></a>
+## [v2.0.7-beta.7] - 2022-10-17
+### Chore
+- check reuse file ([#1765](https://github.com/dragonflyoss/Dragonfly2/issues/1765))
+- update golang version to 1.19 ([#1760](https://github.com/dragonflyoss/Dragonfly2/issues/1760))
+
+### Docs
+- add adopters.md ([#1759](https://github.com/dragonflyoss/Dragonfly2/issues/1759))
+
+### Feat
+- grpc_retry removes WithPerRetryTimeout ([#1763](https://github.com/dragonflyoss/Dragonfly2/issues/1763))
+- obs object storage support ([#1758](https://github.com/dragonflyoss/Dragonfly2/issues/1758))
+
+### Fix
+- open end range in concurrent back source ([#1764](https://github.com/dragonflyoss/Dragonfly2/issues/1764))
+- manager PeerGauge ([#1761](https://github.com/dragonflyoss/Dragonfly2/issues/1761))
+
+### Refactor
+- scheduler registers task ([#1766](https://github.com/dragonflyoss/Dragonfly2/issues/1766))
+- obs of objectstorage pkg ([#1762](https://github.com/dragonflyoss/Dragonfly2/issues/1762))
+
+
+<a name="v2.0.7-beta.6"></a>
+## [v2.0.7-beta.6] - 2022-10-13
+### Chore
+- update console submodule ([#1755](https://github.com/dragonflyoss/Dragonfly2/issues/1755))
+- update roundtrip log ([#1750](https://github.com/dragonflyoss/Dragonfly2/issues/1750))
+- update console submodule ([#1748](https://github.com/dragonflyoss/Dragonfly2/issues/1748))
+- change docker compose task ttl ([#1741](https://github.com/dragonflyoss/Dragonfly2/issues/1741))
+- **deps:** bump github.com/casbin/gorm-adapter/v3 from 3.5.0 to 3.11.0 ([#1745](https://github.com/dragonflyoss/Dragonfly2/issues/1745))
+- **deps:** bump github.com/schollz/progressbar/v3 from 3.8.7 to 3.11.0 ([#1746](https://github.com/dragonflyoss/Dragonfly2/issues/1746))
+- **deps:** bump go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin from 0.34.0 to 0.36.1 ([#1744](https://github.com/dragonflyoss/Dragonfly2/issues/1744))
+- **deps:** bump gorm.io/driver/postgres from 1.3.10 to 1.4.4 ([#1743](https://github.com/dragonflyoss/Dragonfly2/issues/1743))
+- **deps:** bump google.golang.org/grpc from 1.49.0 to 1.50.0 ([#1742](https://github.com/dragonflyoss/Dragonfly2/issues/1742))
+
+### Feat
+- available peer includes state is PeerStatePending ([#1756](https://github.com/dragonflyoss/Dragonfly2/issues/1756))
+- peer will back-to-source when task switch state failed ([#1754](https://github.com/dragonflyoss/Dragonfly2/issues/1754))
+- change FilterParentRangeLimit validation ([#1752](https://github.com/dragonflyoss/Dragonfly2/issues/1752))
+- task state is TaskStateRunning can be registered ([#1751](https://github.com/dragonflyoss/Dragonfly2/issues/1751))
+- gin logger rotation ([#1749](https://github.com/dragonflyoss/Dragonfly2/issues/1749))
+
+
+<a name="v2.0.7-beta.5"></a>
+## [v2.0.7-beta.5] - 2022-10-10
+### Chore
+- make lru cache safe ([#1737](https://github.com/dragonflyoss/Dragonfly2/issues/1737))
+
+### Feat
+- overwrite task url and url meta ([#1740](https://github.com/dragonflyoss/Dragonfly2/issues/1740))
+- update source temporary error logic ([#1739](https://github.com/dragonflyoss/Dragonfly2/issues/1739))
+- add seed peer back source traffic ([#1738](https://github.com/dragonflyoss/Dragonfly2/issues/1738))
+- http request content log ([#1736](https://github.com/dragonflyoss/Dragonfly2/issues/1736))
+- remove task and host gc ttl ([#1735](https://github.com/dragonflyoss/Dragonfly2/issues/1735))
+- add http request log ([#1734](https://github.com/dragonflyoss/Dragonfly2/issues/1734))
+
+### Fix
+- backsource temporary error judgement ([#1726](https://github.com/dragonflyoss/Dragonfly2/issues/1726))
+
+
+<a name="v2.0.7-beta.4"></a>
+## [v2.0.7-beta.4] - 2022-10-09
+### Chore
+- change disk usage debug log format to decimal ([#1727](https://github.com/dragonflyoss/Dragonfly2/issues/1727))
+- **deps:** bump github.com/aws/aws-sdk-go from 1.44.95 to 1.44.114 ([#1725](https://github.com/dragonflyoss/Dragonfly2/issues/1725))
+- **deps:** bump github.com/bits-and-blooms/bitset from 1.3.0 to 1.3.3 ([#1722](https://github.com/dragonflyoss/Dragonfly2/issues/1722))
+- **deps:** bump go.opentelemetry.io/otel/exporters/jaeger from 1.9.0 to 1.10.0 ([#1720](https://github.com/dragonflyoss/Dragonfly2/issues/1720))
+- **deps:** bump go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc from 0.34.0 to 0.36.1 ([#1719](https://github.com/dragonflyoss/Dragonfly2/issues/1719))
+- **deps:** bump github.com/appleboy/gin-jwt/v2 from 2.8.0 to 2.9.0 ([#1718](https://github.com/dragonflyoss/Dragonfly2/issues/1718))
+
+### Feat
+- add TaskStateLeave to task ([#1728](https://github.com/dragonflyoss/Dragonfly2/issues/1728))
+- searcher calculates cluster type ([#1729](https://github.com/dragonflyoss/Dragonfly2/issues/1729))
+- unregister failed task storage ([#1717](https://github.com/dragonflyoss/Dragonfly2/issues/1717))
+- oss get metadata ([#1724](https://github.com/dragonflyoss/Dragonfly2/issues/1724))
+- support concurrent recursive download ([#1714](https://github.com/dragonflyoss/Dragonfly2/issues/1714))
+
+### Fix
+- gorm can not update is_default field ([#1731](https://github.com/dragonflyoss/Dragonfly2/issues/1731))
+- content length is zero when task succeed ([#1732](https://github.com/dragonflyoss/Dragonfly2/issues/1732))
+
+### Refactor
+- idgen pkg ([#1715](https://github.com/dragonflyoss/Dragonfly2/issues/1715))
+
+
+<a name="v2.0.7-beta.3"></a>
+## [v2.0.7-beta.3] - 2022-09-29
+### Chore
+- **deps:** bump github.com/onsi/ginkgo/v2 from 2.1.6 to 2.2.0 ([#1705](https://github.com/dragonflyoss/Dragonfly2/issues/1705))
+- **deps:** bump google.golang.org/api from 0.94.0 to 0.97.0 ([#1709](https://github.com/dragonflyoss/Dragonfly2/issues/1709))
+- **deps:** bump k8s.io/component-base from 0.25.0 to 0.25.2 ([#1708](https://github.com/dragonflyoss/Dragonfly2/issues/1708))
+- **deps:** bump gorm.io/gorm from 1.23.9 to 1.23.10 ([#1707](https://github.com/dragonflyoss/Dragonfly2/issues/1707))
+- **deps:** bump github.com/casbin/casbin/v2 from 2.55.0 to 2.55.1 ([#1706](https://github.com/dragonflyoss/Dragonfly2/issues/1706))
+
+### Feat
+- add traffic shaper for download tasks ([#1654](https://github.com/dragonflyoss/Dragonfly2/issues/1654))
+- async create a record ([#1711](https://github.com/dragonflyoss/Dragonfly2/issues/1711))
+
+### Fix
+- docker compose config ([#1713](https://github.com/dragonflyoss/Dragonfly2/issues/1713))
+
+### Refactor
+- pkg basic ([#1712](https://github.com/dragonflyoss/Dragonfly2/issues/1712))
+
+### Test
+- remove test main ([#1710](https://github.com/dragonflyoss/Dragonfly2/issues/1710))
+- add test for daemon rpcserver ([#1704](https://github.com/dragonflyoss/Dragonfly2/issues/1704))
+
+
+<a name="v2.0.7-beta.2"></a>
+## [v2.0.7-beta.2] - 2022-09-26
+### Chore
+- update api pkg ([#1700](https://github.com/dragonflyoss/Dragonfly2/issues/1700))
+
+### Feat
+- optimize storage log ([#1703](https://github.com/dragonflyoss/Dragonfly2/issues/1703))
+
+### Fix
+- hdfs not registered ([#1702](https://github.com/dragonflyoss/Dragonfly2/issues/1702))
+
+### Refactor
+- manager and scheduler config ([#1701](https://github.com/dragonflyoss/Dragonfly2/issues/1701))
+
+
+<a name="v2.0.7-beta.1"></a>
+## [v2.0.7-beta.1] - 2022-09-22
+### Feat
+- remove ipv4 and ipv6 log ([#1699](https://github.com/dragonflyoss/Dragonfly2/issues/1699))
+- enable ipv6 in unit test ([#1698](https://github.com/dragonflyoss/Dragonfly2/issues/1698))
+- ipv6 support ([#1685](https://github.com/dragonflyoss/Dragonfly2/issues/1685))
+- update docker compose image ([#1696](https://github.com/dragonflyoss/Dragonfly2/issues/1696))
+- manager add advertiseIP ([#1695](https://github.com/dragonflyoss/Dragonfly2/issues/1695))
+
+### Fix
+- grpc download tidy file error ([#1697](https://github.com/dragonflyoss/Dragonfly2/issues/1697))
+
+### Refactor
+- listenIP and advertiseIP ([#1694](https://github.com/dragonflyoss/Dragonfly2/issues/1694))
+
+
+<a name="v2.0.7-beta.0"></a>
+## [v2.0.7-beta.0] - 2022-09-20
+### Chore
+- update download rpc check ([#1684](https://github.com/dragonflyoss/Dragonfly2/issues/1684))
+- **deps:** bump gorm.io/gorm from 1.23.8 to 1.23.9 ([#1691](https://github.com/dragonflyoss/Dragonfly2/issues/1691))
+- **deps:** bump go.opentelemetry.io/otel/sdk from 1.9.0 to 1.10.0 ([#1692](https://github.com/dragonflyoss/Dragonfly2/issues/1692))
+- **deps:** bump gorm.io/driver/postgres from 1.3.9 to 1.3.10 ([#1690](https://github.com/dragonflyoss/Dragonfly2/issues/1690))
+- **deps:** bump github.com/go-playground/validator/v10 from 10.11.0 to 10.11.1 ([#1689](https://github.com/dragonflyoss/Dragonfly2/issues/1689))
+- **deps:** bump d7y.io/api from 1.1.4 to 1.1.6 ([#1688](https://github.com/dragonflyoss/Dragonfly2/issues/1688))
+
+### Feat
+- empty file e2e ([#1687](https://github.com/dragonflyoss/Dragonfly2/issues/1687))
+- support download empty file ([#1686](https://github.com/dragonflyoss/Dragonfly2/issues/1686))
+
+
+<a name="v2.0.7-alpha.5"></a>
+## [v2.0.7-alpha.5] - 2022-09-15
+### Chore
+- **deps:** bump github.com/spf13/viper from 1.12.0 to 1.13.0 ([#1676](https://github.com/dragonflyoss/Dragonfly2/issues/1676))
+- **deps:** bump github.com/casbin/casbin/v2 from 2.53.2 to 2.55.0 ([#1679](https://github.com/dragonflyoss/Dragonfly2/issues/1679))
+- **deps:** bump k8s.io/component-base from 0.23.3 to 0.25.0 ([#1674](https://github.com/dragonflyoss/Dragonfly2/issues/1674))
+- **deps:** bump github.com/swaggo/gin-swagger from 1.5.2 to 1.5.3 ([#1673](https://github.com/dragonflyoss/Dragonfly2/issues/1673))
+- **deps:** bump github.com/aws/aws-sdk-go from 1.44.91 to 1.44.95 ([#1672](https://github.com/dragonflyoss/Dragonfly2/issues/1672))
+
+### Fix
+- manager redis config convert ([#1680](https://github.com/dragonflyoss/Dragonfly2/issues/1680))
+
+
+<a name="v2.0.7-alpha.4"></a>
+## [v2.0.7-alpha.4] - 2022-09-09
+### Feat
+- stop grpc client ([#1671](https://github.com/dragonflyoss/Dragonfly2/issues/1671))
+- change event DownloadFromBackToSource ([#1670](https://github.com/dragonflyoss/Dragonfly2/issues/1670))
+
+
+<a name="v2.0.7-alpha.3"></a>
+## [v2.0.7-alpha.3] - 2022-09-08
+### Chore
+- update helm-charts submodule version ([#1669](https://github.com/dragonflyoss/Dragonfly2/issues/1669))
+
+### Feat
+- dfget supports config file ([#1668](https://github.com/dragonflyoss/Dragonfly2/issues/1668))
+- split concurrent back source e2e ([#1666](https://github.com/dragonflyoss/Dragonfly2/issues/1666))
+
+
+<a name="v2.0.7-alpha.2"></a>
+## [v2.0.7-alpha.2] - 2022-09-08
+### Feat
+- support redis cluster ([#1667](https://github.com/dragonflyoss/Dragonfly2/issues/1667))
+
+
+<a name="v2.0.7-alpha.1"></a>
+## [v2.0.7-alpha.1] - 2022-09-08
+### Chore
+- add disable seed peer action ([#1653](https://github.com/dragonflyoss/Dragonfly2/issues/1653))
+
+
+<a name="v2.0.7-alpha.0"></a>
+## [v2.0.7-alpha.0] - 2022-09-07
+### Feat
+- source changes ResponseHeaderTimeout and ExpectContinueTimeout ([#1662](https://github.com/dragonflyoss/Dragonfly2/issues/1662))
+- change dfdaemon rate limit ([#1661](https://github.com/dragonflyoss/Dragonfly2/issues/1661))
+- set created_at and updated_at to timestamp ([#1659](https://github.com/dragonflyoss/Dragonfly2/issues/1659))
+- stat peer metrics with memory cache ([#1660](https://github.com/dragonflyoss/Dragonfly2/issues/1660))
+- change storage strategy to simple ([#1658](https://github.com/dragonflyoss/Dragonfly2/issues/1658))
+- add missing client version for ListSchedulers ([#1657](https://github.com/dragonflyoss/Dragonfly2/issues/1657))
+
+### Fix
+- task CanBackToSource func ([#1663](https://github.com/dragonflyoss/Dragonfly2/issues/1663))
+
+
+<a name="v2.0.6"></a>
+## [v2.0.6] - 2022-09-06
+### Chore
+- gitignore add .run
 - update tls e2e cert ([#1626](https://github.com/dragonflyoss/Dragonfly2/issues/1626))
+- release v2.0.6 version ([#1627](https://github.com/dragonflyoss/Dragonfly2/issues/1627))
+- dependabot add github-actions ([#1629](https://github.com/dragonflyoss/Dragonfly2/issues/1629))
+- **deps:** bump github.com/swaggo/swag from 1.8.4 to 1.8.5 ([#1636](https://github.com/dragonflyoss/Dragonfly2/issues/1636))
+- **deps:** bump go.uber.org/zap from 1.21.0 to 1.23.0 ([#1635](https://github.com/dragonflyoss/Dragonfly2/issues/1635))
+- **deps:** bump github.com/casbin/casbin/v2 from 2.52.2 to 2.53.2 ([#1644](https://github.com/dragonflyoss/Dragonfly2/issues/1644))
+- **deps:** bump go.uber.org/atomic from 1.9.0 to 1.10.0 ([#1639](https://github.com/dragonflyoss/Dragonfly2/issues/1639))
+- **deps:** bump google.golang.org/api from 0.92.0 to 0.94.0 ([#1638](https://github.com/dragonflyoss/Dragonfly2/issues/1638))
+- **deps:** bump github.com/onsi/gomega from 1.20.0 to 1.20.2 ([#1637](https://github.com/dragonflyoss/Dragonfly2/issues/1637))
+- **deps:** bump goreleaser/goreleaser-action from 2 to 3 ([#1650](https://github.com/dragonflyoss/Dragonfly2/issues/1650))
+- **deps:** bump gorm.io/plugin/soft_delete from 1.1.0 to 1.2.0 ([#1643](https://github.com/dragonflyoss/Dragonfly2/issues/1643))
+- **deps:** bump docker/setup-buildx-action from 1 to 2 ([#1634](https://github.com/dragonflyoss/Dragonfly2/issues/1634))
+- **deps:** bump actions/setup-go from 2 to 3 ([#1633](https://github.com/dragonflyoss/Dragonfly2/issues/1633))
+- **deps:** bump actions/checkout from 2 to 3 ([#1631](https://github.com/dragonflyoss/Dragonfly2/issues/1631))
+- **deps:** bump codecov/codecov-action from 1 to 3 ([#1630](https://github.com/dragonflyoss/Dragonfly2/issues/1630))
+- **deps:** bump actions/upload-artifact from 2 to 3 ([#1632](https://github.com/dragonflyoss/Dragonfly2/issues/1632))
+- **deps:** bump github.com/aws/aws-sdk-go from 1.44.44 to 1.44.91 ([#1647](https://github.com/dragonflyoss/Dragonfly2/issues/1647))
+- **deps:** bump docker/build-push-action from 2 to 3 ([#1648](https://github.com/dragonflyoss/Dragonfly2/issues/1648))
+- **deps:** bump docker/login-action from 1 to 2 ([#1649](https://github.com/dragonflyoss/Dragonfly2/issues/1649))
+
+### Feat
+- add MaxConnectionIdle to grpc keepalive ([#1655](https://github.com/dragonflyoss/Dragonfly2/issues/1655))
+- change consistent hashing element name ([#1652](https://github.com/dragonflyoss/Dragonfly2/issues/1652))
+
+### Fix
+- manager embed assets ([#1642](https://github.com/dragonflyoss/Dragonfly2/issues/1642))
+- dfstore flags invalid ([#1641](https://github.com/dragonflyoss/Dragonfly2/issues/1641))
 
 
 <a name="v2.0.6-beta.3"></a>
@@ -89,15 +350,10 @@
 <a name="v2.0.6-alpha.2"></a>
 ## [v2.0.6-alpha.2] - 2022-08-17
 ### Chore
-- optimize source error log ([#1553](https://github.com/dragonflyoss/Dragonfly2/issues/1553))
 - **deps:** bump gorm.io/driver/mysql from 1.3.4 to 1.3.6 ([#1567](https://github.com/dragonflyoss/Dragonfly2/issues/1567))
 - **deps:** bump go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc from 0.33.0 to 0.34.0 ([#1566](https://github.com/dragonflyoss/Dragonfly2/issues/1566))
 - **deps:** bump google.golang.org/api from 0.90.0 to 0.92.0 ([#1565](https://github.com/dragonflyoss/Dragonfly2/issues/1565))
 - **deps:** bump github.com/prometheus/client_golang from 1.12.2 to 1.13.0 ([#1564](https://github.com/dragonflyoss/Dragonfly2/issues/1564))
-- **deps:** bump go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin from 0.32.0 to 0.34.0 ([#1547](https://github.com/dragonflyoss/Dragonfly2/issues/1547))
-- **deps:** bump github.com/sirupsen/logrus from 1.8.1 to 1.9.0 ([#1544](https://github.com/dragonflyoss/Dragonfly2/issues/1544))
-- **deps:** bump github.com/jarcoal/httpmock from 1.0.8 to 1.2.0 ([#1542](https://github.com/dragonflyoss/Dragonfly2/issues/1542))
-- **deps:** bump go.opentelemetry.io/otel/exporters/jaeger from 1.8.0 to 1.9.0 ([#1541](https://github.com/dragonflyoss/Dragonfly2/issues/1541))
 
 ### Feat
 - add grpc client error interceptor ([#1575](https://github.com/dragonflyoss/Dragonfly2/issues/1575))
@@ -105,6 +361,33 @@
 - grpc add ratelimit ([#1572](https://github.com/dragonflyoss/Dragonfly2/issues/1572))
 - refresh dynconfig addresses when grpc requests unavailable ([#1571](https://github.com/dragonflyoss/Dragonfly2/issues/1571))
 - manager adds model and model version grpc api ([#1569](https://github.com/dragonflyoss/Dragonfly2/issues/1569))
+
+### Fix
+- scheduler can not exit gracefully due to machinery fatal log ([#1573](https://github.com/dragonflyoss/Dragonfly2/issues/1573))
+
+
+<a name="v2.0.6-alpha.1"></a>
+## [v2.0.6-alpha.1] - 2022-08-12
+### Chore
+- optimize source error log ([#1553](https://github.com/dragonflyoss/Dragonfly2/issues/1553))
+- **deps:** bump go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin from 0.32.0 to 0.34.0 ([#1547](https://github.com/dragonflyoss/Dragonfly2/issues/1547))
+- **deps:** bump github.com/sirupsen/logrus from 1.8.1 to 1.9.0 ([#1544](https://github.com/dragonflyoss/Dragonfly2/issues/1544))
+- **deps:** bump github.com/jarcoal/httpmock from 1.0.8 to 1.2.0 ([#1542](https://github.com/dragonflyoss/Dragonfly2/issues/1542))
+- **deps:** bump go.opentelemetry.io/otel/exporters/jaeger from 1.8.0 to 1.9.0 ([#1541](https://github.com/dragonflyoss/Dragonfly2/issues/1541))
+- **deps:** bump google.golang.org/grpc from 1.47.0 to 1.48.0 ([#1508](https://github.com/dragonflyoss/Dragonfly2/issues/1508))
+- **deps:** bump github.com/casbin/casbin/v2 from 2.48.0 to 2.51.2 ([#1512](https://github.com/dragonflyoss/Dragonfly2/issues/1512))
+- **deps:** bump github.com/shirou/gopsutil/v3 from 3.22.5 to 3.22.7 ([#1511](https://github.com/dragonflyoss/Dragonfly2/issues/1511))
+- **deps:** bump google.golang.org/api from 0.86.0 to 0.90.0 ([#1510](https://github.com/dragonflyoss/Dragonfly2/issues/1510))
+- **deps:** bump go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc from 0.32.0 to 0.33.0 ([#1509](https://github.com/dragonflyoss/Dragonfly2/issues/1509))
+- **deps:** bump gorm.io/driver/postgres from 1.3.7 to 1.3.8 ([#1503](https://github.com/dragonflyoss/Dragonfly2/issues/1503))
+- **deps:** bump go.opentelemetry.io/otel/exporters/jaeger from 1.7.0 to 1.8.0 ([#1506](https://github.com/dragonflyoss/Dragonfly2/issues/1506))
+- **deps:** bump github.com/swaggo/gin-swagger from 1.5.0 to 1.5.1 ([#1505](https://github.com/dragonflyoss/Dragonfly2/issues/1505))
+- **deps:** bump github.com/schollz/progressbar/v3 from 3.8.6 to 3.8.7 ([#1502](https://github.com/dragonflyoss/Dragonfly2/issues/1502))
+
+### Docs
+- add daemon-socket for daemon docs ([#1522](https://github.com/dragonflyoss/Dragonfly2/issues/1522))
+
+### Feat
 - dynconfig add refresh func ([#1563](https://github.com/dragonflyoss/Dragonfly2/issues/1563))
 - manager client add context ([#1562](https://github.com/dragonflyoss/Dragonfly2/issues/1562))
 - grpc add retry middleware ([#1561](https://github.com/dragonflyoss/Dragonfly2/issues/1561))
@@ -121,16 +404,41 @@
 - change update model api ([#1538](https://github.com/dragonflyoss/Dragonfly2/issues/1538))
 - manager adds model and model version api ([#1530](https://github.com/dragonflyoss/Dragonfly2/issues/1530))
 - when the request has a range header, object storage is no need to  to calculate md5 ([#1534](https://github.com/dragonflyoss/Dragonfly2/issues/1534))
+- support grpc recursive download ([#1518](https://github.com/dragonflyoss/Dragonfly2/issues/1518))
+- manager embed frontend assets ([#1523](https://github.com/dragonflyoss/Dragonfly2/issues/1523))
+- can not return peer with the same host ([#1526](https://github.com/dragonflyoss/Dragonfly2/issues/1526))
+- add daemon-socket-path ([#1521](https://github.com/dragonflyoss/Dragonfly2/issues/1521))
+- store preheat result ([#1516](https://github.com/dragonflyoss/Dragonfly2/issues/1516))
+- replace grpc package with https://github.com/dragonflyoss/api ([#1515](https://github.com/dragonflyoss/Dragonfly2/issues/1515))
+- dfdaemon add Authorization and WWWAuthenticate headers ([#1513](https://github.com/dragonflyoss/Dragonfly2/issues/1513))
+- auto switch to concurrent back source based on download speed ([#1494](https://github.com/dragonflyoss/Dragonfly2/issues/1494))
+- enable dependabot ([#1501](https://github.com/dragonflyoss/Dragonfly2/issues/1501))
 
 ### Fix
-- scheduler can not exit gracefully due to machinery fatal log ([#1573](https://github.com/dragonflyoss/Dragonfly2/issues/1573))
 - scheduler and manager tracing ([#1551](https://github.com/dragonflyoss/Dragonfly2/issues/1551))
 - scheduler's MainParent func ([#1550](https://github.com/dragonflyoss/Dragonfly2/issues/1550))
+- check same peer id for sync pieces ([#1525](https://github.com/dragonflyoss/Dragonfly2/issues/1525))
+- auto switch to concurrent back source ([#1507](https://github.com/dragonflyoss/Dragonfly2/issues/1507))
+- wait first peer packet fail ([#1500](https://github.com/dragonflyoss/Dragonfly2/issues/1500))
+- one piece task sometimes backsource after succeed ([#1499](https://github.com/dragonflyoss/Dragonfly2/issues/1499))
+
+
+<a name="v2.0.5"></a>
+## [v2.0.5] - 2022-08-04
+### Docs
+- add daemon-socket for daemon docs ([#1522](https://github.com/dragonflyoss/Dragonfly2/issues/1522))
+
+### Feat
+- add daemon-socket-path ([#1521](https://github.com/dragonflyoss/Dragonfly2/issues/1521))
+
+### Hotfix
+- peer with same host and manager embed assets ([#1528](https://github.com/dragonflyoss/Dragonfly2/issues/1528))
 
 
 <a name="v2.0.6-alpha.0"></a>
 ## [v2.0.6-alpha.0] - 2022-08-04
 ### Chore
+- dragonfly updates version to v2.0.5 ([#1498](https://github.com/dragonflyoss/Dragonfly2/issues/1498))
 - **deps:** bump google.golang.org/grpc from 1.47.0 to 1.48.0 ([#1508](https://github.com/dragonflyoss/Dragonfly2/issues/1508))
 - **deps:** bump github.com/casbin/casbin/v2 from 2.48.0 to 2.51.2 ([#1512](https://github.com/dragonflyoss/Dragonfly2/issues/1512))
 - **deps:** bump github.com/shirou/gopsutil/v3 from 3.22.5 to 3.22.7 ([#1511](https://github.com/dragonflyoss/Dragonfly2/issues/1511))
@@ -154,31 +462,14 @@
 - dfdaemon add Authorization and WWWAuthenticate headers ([#1513](https://github.com/dragonflyoss/Dragonfly2/issues/1513))
 - auto switch to concurrent back source based on download speed ([#1494](https://github.com/dragonflyoss/Dragonfly2/issues/1494))
 - enable dependabot ([#1501](https://github.com/dragonflyoss/Dragonfly2/issues/1501))
+- scheduler adds filter range limit ([#1497](https://github.com/dragonflyoss/Dragonfly2/issues/1497))
 
 ### Fix
 - check same peer id for sync pieces ([#1525](https://github.com/dragonflyoss/Dragonfly2/issues/1525))
 - auto switch to concurrent back source ([#1507](https://github.com/dragonflyoss/Dragonfly2/issues/1507))
 - wait first peer packet fail ([#1500](https://github.com/dragonflyoss/Dragonfly2/issues/1500))
 - one piece task sometimes backsource after succeed ([#1499](https://github.com/dragonflyoss/Dragonfly2/issues/1499))
-
-
-<a name="v2.0.5"></a>
-## [v2.0.5] - 2022-08-04
-### Chore
-- dragonfly updates version to v2.0.5 ([#1498](https://github.com/dragonflyoss/Dragonfly2/issues/1498))
-
-### Docs
-- add daemon-socket for daemon docs ([#1522](https://github.com/dragonflyoss/Dragonfly2/issues/1522))
-
-### Feat
-- add daemon-socket-path ([#1521](https://github.com/dragonflyoss/Dragonfly2/issues/1521))
-- scheduler adds filter range limit ([#1497](https://github.com/dragonflyoss/Dragonfly2/issues/1497))
-
-### Fix
 - random vertices ([#1496](https://github.com/dragonflyoss/Dragonfly2/issues/1496))
-
-### Hotfix
-- peer with same host and manager embed assets ([#1528](https://github.com/dragonflyoss/Dragonfly2/issues/1528))
 
 
 <a name="v2.0.5-rc.0"></a>
@@ -2089,13 +2380,6 @@
 - remove slidingwindow and assertutils package ([#263](https://github.com/dragonflyoss/Dragonfly2/issues/263))
 
 ### Feature
-- support mysql 5.6 ([#520](https://github.com/dragonflyoss/Dragonfly2/issues/520))
-- support customize base image ([#519](https://github.com/dragonflyoss/Dragonfly2/issues/519))
-- add kustomize yaml for deploying ([#349](https://github.com/dragonflyoss/Dragonfly2/issues/349))
-- support basic auth for proxy ([#250](https://github.com/dragonflyoss/Dragonfly2/issues/250))
-- add disk quota gc for daemon ([#215](https://github.com/dragonflyoss/Dragonfly2/issues/215))
-
-### Feature
 - enable grpc tracing ([#531](https://github.com/dragonflyoss/Dragonfly2/issues/531))
 - remove proto redundant field ([#508](https://github.com/dragonflyoss/Dragonfly2/issues/508))
 - update multiple registries support docs ([#481](https://github.com/dragonflyoss/Dragonfly2/issues/481))
@@ -2122,6 +2406,13 @@
 - remove unsafe code in client/daemon/storage ([#258](https://github.com/dragonflyoss/Dragonfly2/issues/258))
 - remove redundant configurations ([#216](https://github.com/dragonflyoss/Dragonfly2/issues/216))
 
+### Feature
+- support mysql 5.6 ([#520](https://github.com/dragonflyoss/Dragonfly2/issues/520))
+- support customize base image ([#519](https://github.com/dragonflyoss/Dragonfly2/issues/519))
+- add kustomize yaml for deploying ([#349](https://github.com/dragonflyoss/Dragonfly2/issues/349))
+- support basic auth for proxy ([#250](https://github.com/dragonflyoss/Dragonfly2/issues/250))
+- add disk quota gc for daemon ([#215](https://github.com/dragonflyoss/Dragonfly2/issues/215))
+
 ### Fix
 - proxy for stress testing tool ([#507](https://github.com/dragonflyoss/Dragonfly2/issues/507))
 - add process level for scheduler peer task status ([#435](https://github.com/dragonflyoss/Dragonfly2/issues/435))
@@ -2129,30 +2420,30 @@
 - use atomic to avoid data race in client ([#254](https://github.com/dragonflyoss/Dragonfly2/issues/254))
 
 ### Fix
-- scheduler concurrent dead lock ([#509](https://github.com/dragonflyoss/Dragonfly2/issues/509))
-- scheduler pick candidate and associate child  encounter  dead lock ([#500](https://github.com/dragonflyoss/Dragonfly2/issues/500))
-- generate proto file ([#483](https://github.com/dragonflyoss/Dragonfly2/issues/483))
-- address typo ([#468](https://github.com/dragonflyoss/Dragonfly2/issues/468))
+- update DynconfigOptions typo ([#390](https://github.com/dragonflyoss/Dragonfly2/issues/390))
 - dead lock when pt.failedPieceCh is full ([#466](https://github.com/dragonflyoss/Dragonfly2/issues/466))
+- scheduler concurrent dead lock ([#509](https://github.com/dragonflyoss/Dragonfly2/issues/509))
+- address typo ([#468](https://github.com/dragonflyoss/Dragonfly2/issues/468))
+- gc test ([#370](https://github.com/dragonflyoss/Dragonfly2/issues/370))
 - user table typo ([#453](https://github.com/dragonflyoss/Dragonfly2/issues/453))
 - log specification ([#452](https://github.com/dragonflyoss/Dragonfly2/issues/452))
-- wrong cache header ([#423](https://github.com/dragonflyoss/Dragonfly2/issues/423))
+- scheduler panic ([#356](https://github.com/dragonflyoss/Dragonfly2/issues/356))
 - close net namespace fd ([#418](https://github.com/dragonflyoss/Dragonfly2/issues/418))
 - update static cdn config
 - wrong daemon config and kubectl image tag ([#398](https://github.com/dragonflyoss/Dragonfly2/issues/398))
 - update mapsturcture decode and remove unused config ([#396](https://github.com/dragonflyoss/Dragonfly2/issues/396))
-- update DynconfigOptions typo ([#390](https://github.com/dragonflyoss/Dragonfly2/issues/390))
-- gc test ([#370](https://github.com/dragonflyoss/Dragonfly2/issues/370))
-- scheduler panic ([#356](https://github.com/dragonflyoss/Dragonfly2/issues/356))
+- generate proto file ([#483](https://github.com/dragonflyoss/Dragonfly2/issues/483))
+- scheduler pick candidate and associate child  encounter  dead lock ([#500](https://github.com/dragonflyoss/Dragonfly2/issues/500))
+- wrong cache header ([#423](https://github.com/dragonflyoss/Dragonfly2/issues/423))
 - use seederName to replace the PeerID to generate the UUID ([#355](https://github.com/dragonflyoss/Dragonfly2/issues/355))
 - check health too long when dfdaemon is unavailable ([#344](https://github.com/dragonflyoss/Dragonfly2/issues/344))
-- cfgFile nil error ([#224](https://github.com/dragonflyoss/Dragonfly2/issues/224))
+- change manager docs path ([#193](https://github.com/dragonflyoss/Dragonfly2/issues/193))
 - when load config from cdn directory in dynconfig, skip sub directories ([#310](https://github.com/dragonflyoss/Dragonfly2/issues/310))
 - Makefile and build.sh ([#309](https://github.com/dragonflyoss/Dragonfly2/issues/309))
 - ci badge ([#281](https://github.com/dragonflyoss/Dragonfly2/issues/281))
 - change peerPacketReady to buffer channel ([#256](https://github.com/dragonflyoss/Dragonfly2/issues/256))
 - cdn gc dead lock ([#231](https://github.com/dragonflyoss/Dragonfly2/issues/231))
-- change manager docs path ([#193](https://github.com/dragonflyoss/Dragonfly2/issues/193))
+- cfgFile nil error ([#224](https://github.com/dragonflyoss/Dragonfly2/issues/224))
 - **manager:** modify to config from scheduler_config in swagger yaml ([#317](https://github.com/dragonflyoss/Dragonfly2/issues/317))
 
 ### Refactor
@@ -2171,15 +2462,33 @@
 - idgen add digest ([#243](https://github.com/dragonflyoss/Dragonfly2/issues/243))
 
 
-[Unreleased]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.6-beta.3...HEAD
+[Unreleased]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.7...HEAD
+[v2.0.7]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.7-rc.0...v2.0.7
+[v2.0.7-rc.0]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.7-beta.7...v2.0.7-rc.0
+[v2.0.7-beta.7]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.7-beta.6...v2.0.7-beta.7
+[v2.0.7-beta.6]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.7-beta.5...v2.0.7-beta.6
+[v2.0.7-beta.5]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.7-beta.4...v2.0.7-beta.5
+[v2.0.7-beta.4]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.7-beta.3...v2.0.7-beta.4
+[v2.0.7-beta.3]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.7-beta.2...v2.0.7-beta.3
+[v2.0.7-beta.2]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.7-beta.1...v2.0.7-beta.2
+[v2.0.7-beta.1]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.7-beta.0...v2.0.7-beta.1
+[v2.0.7-beta.0]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.7-alpha.5...v2.0.7-beta.0
+[v2.0.7-alpha.5]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.7-alpha.4...v2.0.7-alpha.5
+[v2.0.7-alpha.4]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.7-alpha.3...v2.0.7-alpha.4
+[v2.0.7-alpha.3]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.7-alpha.2...v2.0.7-alpha.3
+[v2.0.7-alpha.2]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.7-alpha.1...v2.0.7-alpha.2
+[v2.0.7-alpha.1]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.7-alpha.0...v2.0.7-alpha.1
+[v2.0.7-alpha.0]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.6...v2.0.7-alpha.0
+[v2.0.6]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.6-beta.3...v2.0.6
 [v2.0.6-beta.3]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.6-beta.2...v2.0.6-beta.3
 [v2.0.6-beta.2]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.6-beta.1...v2.0.6-beta.2
 [v2.0.6-beta.1]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.6-beta.0...v2.0.6-beta.1
 [v2.0.6-beta.0]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.6-alpha.3...v2.0.6-beta.0
 [v2.0.6-alpha.3]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.6-alpha.2...v2.0.6-alpha.3
-[v2.0.6-alpha.2]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.6-alpha.0...v2.0.6-alpha.2
-[v2.0.6-alpha.0]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.5...v2.0.6-alpha.0
-[v2.0.5]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.5-rc.0...v2.0.5
+[v2.0.6-alpha.2]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.6-alpha.1...v2.0.6-alpha.2
+[v2.0.6-alpha.1]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.5...v2.0.6-alpha.1
+[v2.0.5]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.6-alpha.0...v2.0.5
+[v2.0.6-alpha.0]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.5-rc.0...v2.0.6-alpha.0
 [v2.0.5-rc.0]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.5-beta.5...v2.0.5-rc.0
 [v2.0.5-beta.5]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.5-beta.4...v2.0.5-beta.5
 [v2.0.5-beta.4]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.5-beta.3...v2.0.5-beta.4
