@@ -5,7 +5,7 @@ set -x
 
 export GOPATH=/go
 export CGO_ENABLED="1"
-export GO111MODULE="off"
+export GO111MODULE="on"
 
 cd /go/src/d7y.io/dragonfly/v2 || exit 1
 BUILD_TIME=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
