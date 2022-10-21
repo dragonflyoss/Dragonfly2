@@ -20,8 +20,9 @@ then please add your team and use-case to this file.
 - [Douyin Group](https://www.douyin.com/) - Large-scale image distribution.
 - [Eleme](https://www.ele.me/) - Large-scale image and file distribution.
 - [Huawei](https://huawei.com) - Large-scale image distribution.
-- [Eleme](https://www.ele.me/) - Large-scale image and file distribution.
 - [Huya](https://www.huya.com/) - Large-scale image distribution.
+- [Intel](https://www.intel.com/) - Large-scale image distribution.
+- [iFLYTEK](https://iflytek.com/) - Large-scale image and file distribution.
 - [JD](https://corporate.jd.com/) - Large-scale image distribution.
 - [JFrog](https://jfrog.com/) - Large-scale image and file distribution.
 - [Lazada](https://lazada.com) - Large-scale image and file distribution.
@@ -31,11 +32,10 @@ then please add your team and use-case to this file.
 - [Qunar](https://www.qunar.com/) - Large-scale image and file distribution.
 - [Shopee](https://shopee.com/) - Large-scale image distribution.
 - [Sougou](https://www.sogou.com/) - Large-scale image and file distribution.
+- [Vivo](https://www.vivo.com/) - Large-scale image and file distribution.
 - [Xiaomi](https://www.mi.com/global/) - Large-scale image distribution.
 - [Xperi](https://xperi.com/) - Large-scale image distribution.
 - [Yahoo](https://www.yahoo.com/) - Large-scale image and file distribution.
 - [Yipitdata](https://www.yipitdata.com/) - Large-scale image and file distribution.
 - [ZTE](https://zte.com.cn/) - Large-scale image and file distribution.
 - [ZTO EXPRESS](https://www.zto.com/) - Large-scale image and file distribution.
-- [iFLYTEK](https://iflytek.com/) - Large-scale image and file distribution.
-- [Vivo](https://www.vivo.com/) - Large-scale image and file distribution.
