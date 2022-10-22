@@ -41,11 +41,11 @@ func (e *Eval) EvaluateCal() error {
 	for i := 0; i < len(e.outArr); i++ {
 		maeSum += math.Abs(e.labelArr[i] - e.outArr[i])
 		mseSum += math.Pow(e.labelArr[i]-e.outArr[i], 2)
-		mean += e.labelArr[i]
+		mean += e.outArr[i]
 	}
 	mean = mean / float64(len(e.outArr))
 	for i := 0; i < len(e.outArr); i++ {
-		tssSum += math.Pow(e.labelArr[i]-mean, 2)
+		tssSum += math.Pow(e.outArr[i]-mean, 2)
 	}
 	e.MAE = maeSum / float64(len(e.outArr))
 	e.MSE = mseSum / float64(len(e.outArr))

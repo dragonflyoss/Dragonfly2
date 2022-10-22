@@ -20,14 +20,16 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"time"
 
+	"github.com/google/uuid"
+
 	cachev8 "github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
-	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -709,12 +711,17 @@ func (s *Server) GetModel(ctx context.Context, req *managerv1.GetModelRequest) (
 	if err := s.db.WithContext(ctx).First(&scheduler, req.SchedulerId).Error; err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
-
+	logger.Infof("getModel req model id is %v", req.ModelId)
+	logger.Infof("getModel req model schid is %v", req.SchedulerId)
 	var model types.Model
-	if err := s.rdb.Get(ctx, cache.MakeModelKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, req.ModelId)).Scan(&model); err != nil {
+	result, err := s.rdb.Get(ctx, cache.MakeModelKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, req.ModelId)).Result()
+	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
-
+	err = json.Unmarshal([]byte(result), &model)
+	if err != nil {
+		return nil, err
+	}
 	return &managerv1.Model{
 		ModelId:     model.ID,
 		Name:        model.Name,
@@ -744,7 +751,6 @@ func (s *Server) CreateModel(ctx context.Context, req *managerv1.CreateModelRequ
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}
-
 	if _, err := s.rdb.Set(ctx, cache.MakeModelKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, model.ID), &model, 0).Result(); err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
@@ -775,11 +781,9 @@ func (s *Server) UpdateModel(ctx context.Context, req *managerv1.UpdateModelRequ
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
-
 	model.VersionId = req.VersionId
 	model.UpdatedAt = timestamppb.New(time.Now())
-
-	if _, err := s.rdb.Set(ctx, cache.MakeModelKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, req.ModelId), types.Model{
+	if _, err := s.rdb.Set(ctx, cache.MakeModelKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, req.ModelId), &types.Model{
 		ID:          model.ModelId,
 		Name:        model.Name,
 		VersionID:   model.VersionId,
@@ -856,10 +860,15 @@ func (s *Server) GetModelVersion(ctx context.Context, req *managerv1.GetModelVer
 	}
 
 	var modelVersion types.ModelVersion
-	if err := s.rdb.Get(ctx, cache.MakeModelVersionKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, req.ModelId, req.VersionId)).Scan(&modelVersion); err != nil {
+	result, err := s.rdb.Get(ctx, cache.MakeModelVersionKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, req.ModelId, req.VersionId)).Result()
+	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
-
+	logger.Infof("getmodelverison get result, result is %v", result)
+	err = json.Unmarshal([]byte(result), &modelVersion)
+	if err != nil {
+		return nil, err
+	}
 	return &managerv1.ModelVersion{
 		VersionId: modelVersion.ID,
 		Data:      modelVersion.Data,

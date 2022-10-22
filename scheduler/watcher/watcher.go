@@ -2,7 +2,10 @@ package watcher
 
 import (
 	"context"
+	"encoding/json"
 	"sort"
+
+	"d7y.io/dragonfly/v2/scheduler/training/models"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 
@@ -30,27 +33,35 @@ func (w *Watcher) Serve() {
 					w.modelVersion <- nil
 					continue
 				}
+				logger.Infof("schID is %v", schID)
 				if w.EnableAutoRefresh {
+					logger.Info("EnableAutoRefresh")
 					// Set by user
 					model, err := w.mc.GetModel(context.Background(), &managerv1.GetModelRequest{
 						ModelId:     types.ModelIDEvaluator,
 						SchedulerId: schID,
 					})
 					if err != nil {
+						logger.Info("get model fail, error is %v", err)
 						w.modelVersion <- nil
 						continue
 					}
-
 					version, err := w.mc.GetModelVersion(context.Background(), &managerv1.GetModelVersionRequest{
 						SchedulerId: schID,
 						ModelId:     types.ModelIDEvaluator,
 						VersionId:   model.VersionId,
 					})
 					if err != nil {
+						logger.Infof("get modelVersion fail, error is %v", err)
 						w.modelVersion <- nil
 						continue
 					}
-
+					var data models.LinearRegression
+					err = json.Unmarshal(version.Data, &data)
+					if err != nil {
+						logger.Infof("decode error, error is %v", err)
+						return
+					}
 					w.modelVersion <- &types.ModelVersion{
 						Data: version.Data,
 						MAE:  version.Mae,
@@ -65,6 +76,7 @@ func (w *Watcher) Serve() {
 						SchedulerId: schID,
 					})
 					if err != nil {
+						logger.Info("list modelVersion fail")
 						w.modelVersion <- nil
 						continue
 					}
@@ -81,20 +93,19 @@ func (w *Watcher) Serve() {
 								RMSE: version.Rmse,
 								R2:   version.R2,
 							}
+							logger.Infof("AutoRefresh closed, model version is %v, model is %v", version.VersionId, version.Data)
 							flag = true
 							break
 						}
 					}
 
 					if !flag {
+						logger.Info("AutoRefresh closed, no modelVersion passed")
 						w.modelVersion <- nil
 					}
 				}
-
 			case <-w.done:
 				return
-
-			default:
 			}
 		}
 	}()

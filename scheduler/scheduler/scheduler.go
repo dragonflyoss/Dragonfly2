@@ -251,6 +251,7 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 		candidateParents   []*resource.Peer
 		candidateParentIDs []string
 	)
+	logger.Infof("there %v peer to be considered to add into graph", len(peer.Task.LoadRandomPeers(uint(filterParentRangeLimit))))
 	for id, candidateParent := range peer.Task.LoadRandomPeers(uint(filterParentRangeLimit)) {
 		// Parent length limit after filtering.
 		logger.Infof("%v candidate parent is %v", id, candidateParent.ID)

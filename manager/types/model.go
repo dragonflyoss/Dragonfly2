@@ -65,12 +65,12 @@ type Model struct {
 	UpdatedAt   time.Time `json:"updated_at" binding:"required"`
 }
 
-func (m *Model) MarshalBinary() ([]byte, error) {
+func (m Model) MarshalBinary() ([]byte, error) {
 	return json.Marshal(m)
 }
 
-func (m *Model) UnmarshalBinary(data []byte) error {
-	return json.Unmarshal(data, m)
+func (m Model) UnmarshalBinary(data []byte) error {
+	return json.Unmarshal(data, &m)
 }
 
 type ModelVersionParams struct {
@@ -116,10 +116,10 @@ type ModelVersion struct {
 	UpdatedAt time.Time `json:"updated_at" binding:"required"`
 }
 
-func (mv *ModelVersion) MarshalBinary() ([]byte, error) {
+func (mv ModelVersion) MarshalBinary() ([]byte, error) {
 	return json.Marshal(mv)
 }
 
-func (mv *ModelVersion) UnmarshalBinary(data []byte) error {
-	return json.Unmarshal(data, mv)
+func (mv ModelVersion) UnmarshalBinary(data []byte) error {
+	return json.Unmarshal(data, &mv)
 }

@@ -2,7 +2,6 @@ package training
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -19,13 +18,12 @@ type Training struct {
 	model *models.LinearRegression
 	to    *TrainOptions
 	*pipeline.StepInfra
+	once sync.Once
 }
-
-var once sync.Once
 
 func (t *Training) GetSource(req *pipeline.Request) error {
 	source := req.Data.(*base.DenseInstances)
-	once.Do(func() {
+	t.once.Do(func() {
 		t.model = models.NewLinearRegression()
 	})
 
@@ -33,7 +31,6 @@ func (t *Training) GetSource(req *pipeline.Request) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -51,11 +48,9 @@ func (t *Training) trainCall(ctx context.Context, in chan *pipeline.Request, out
 	for {
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("training process has been canceled")
+			return nil
 		case val := <-in:
-			logger.Info("start to train")
 			if val == nil {
-				logger.Info("data val is nil")
 				keyVal[LoadType] = LoadTest
 				keyVal[OutPutModel] = t.model
 				if t.model == nil {
@@ -66,7 +61,6 @@ func (t *Training) trainCall(ctx context.Context, in chan *pipeline.Request, out
 				}
 				return nil
 			}
-			logger.Info("get data val")
 			keyVal = val.KeyVal
 			err := t.Serve(val, out)
 			if err != nil {

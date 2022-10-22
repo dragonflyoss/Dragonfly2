@@ -127,7 +127,6 @@ func (s *service) CreateModelVersion(ctx context.Context, params types.CreateMod
 	if err := s.db.WithContext(ctx).First(&scheduler, params.SchedulerID).Error; err != nil {
 		return nil, err
 	}
-
 	modelVersion := types.ModelVersion{
 		ID:        uuid.New().String(),
 		MAE:       json.MAE,

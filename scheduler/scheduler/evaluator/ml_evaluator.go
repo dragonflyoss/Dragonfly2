@@ -2,7 +2,9 @@ package evaluator
 
 import (
 	"bytes"
-	"encoding/gob"
+	"encoding/json"
+
+	"d7y.io/dragonfly/v2/scheduler/training"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 
@@ -22,11 +24,12 @@ type MLEvaluator struct {
 	cfg          config.DynconfigInterface
 	needVersion  chan uint64
 	modelVersion chan *types.ModelVersion
-	model        *types.ModelVersion
+	Model        *types.ModelVersion
 }
 
 func (mle *MLEvaluator) Evaluate(parent *resource.Peer, peer *resource.Peer, taskPieceCount int32) float64 {
 	mle.LoadModel()
+	logger.Infof("MLEvaluator peer id is %v, MLEvaluator parent id is %v", peer.ID, parent.ID)
 	record := storage.Record{
 		Rate:           0,
 		HostType:       int(peer.Host.Type),
@@ -45,27 +48,60 @@ func (mle *MLEvaluator) Evaluate(parent *resource.Peer, peer *resource.Peer, tas
 		ParentCreateAt: parent.CreateAt.Load().UnixNano() / TimeBucketGap,
 		ParentUpdateAt: parent.UpdateAt.Load().UnixNano() / TimeBucketGap,
 	}
-	model, err := decodeModelData(mle.model.Data)
+	logger.Infof("compute HostType is %v", int(peer.Host.Type))
+	logger.Infof("compute CreateAt is %v", peer.CreateAt.Load().Unix()/TimeBucketGap)
+	logger.Infof("compute UpdateAt is %v", peer.UpdateAt.Load().Unix()/TimeBucketGap)
+	logger.Infof("compute IP is %v", strFeatureTrans(peer.Host.IP, parent.Host.IP))
+	logger.Infof("compute HostName is %v", strFeatureTrans(peer.Host.Hostname, parent.Host.Hostname))
+	logger.Infof("compute Tag is %v", strFeatureTrans(peer.Tag, parent.Tag))
+	logger.Infof("compute ParentPiece is %v", figureFeatureTrans(float64(taskPieceCount), float64(parent.Pieces.Len())))
+	logger.Infof("compute SecurityDomain is %v", strFeatureTrans(peer.Host.SecurityDomain, parent.Host.SecurityDomain))
+	logger.Infof("compute IDC is %v", strFeatureTrans(peer.Host.IDC, parent.Host.IDC))
+	logger.Infof("compute NetTopology is %v", strFeatureTrans(peer.Host.NetTopology, parent.Host.NetTopology))
+	logger.Infof("compute Location is %v", strFeatureTrans(peer.Host.Location, parent.Host.Location))
+	logger.Infof("compute UploadRate is %v", figureFeatureTrans(float64(peer.Host.FreeUploadLoad()), float64(parent.Host.FreeUploadLoad())))
+	logger.Infof("compute ParentHostType is %v", int(parent.Host.Type))
+	logger.Infof("compute ParentCreateAt is %v", parent.CreateAt.Load().UnixNano()/TimeBucketGap)
+	logger.Infof("compute ParentUpdateAt is %v", parent.UpdateAt.Load().UnixNano()/TimeBucketGap)
+	var model models.LinearRegression
+	err := json.Unmarshal(mle.Model.Data, &model)
 	if err != nil {
+		logger.Infof("decode model fail, error is %v", err)
 		return -1
 	}
-	str, err := gocsv.MarshalString(record)
+	logger.Info("decode model successful")
+	str, err := gocsv.MarshalString([]storage.Record{record})
 	if err != nil {
+		logger.Infof("marshal model fail, error is %v", err)
 		return -1
 	}
+	str = str[156:]
+	logger.Info("marshal model successful")
 	strReader := bytes.NewReader([]byte(str))
 	data, err := base.ParseCSVToInstancesFromReader(strReader, false)
 	if err != nil {
+		logger.Infof("ParseCSVToInstancesFromReader model fail, error is %v", err)
 		return -1
+	}
+	logger.Info("ParseCSVToInstancesFromReader model successful")
+	err = training.MissingValue(data)
+	if err != nil {
+		logger.Infof("missingValue model fail, error is %v", err)
+		return 0
 	}
 	out, err := model.Predict(data)
 	if err != nil {
+		logger.Infof("predict model fail, error is %v", err)
 		return -1
 	}
+	logger.Info("predict model successful")
 	attrSpec1, err := out.GetAttribute(out.AllAttributes()[0])
 	if err != nil {
+		logger.Infof("GetAttribute model fail, error is %v", err)
 		return -1
 	}
+	logger.Info("GetAttribute model successful")
+	logger.Infof("score is %v", base.UnpackBytesToFloat(out.Get(attrSpec1, 0)))
 	return base.UnpackBytesToFloat(out.Get(attrSpec1, 0))
 }
 
@@ -78,11 +114,14 @@ func (mle *MLEvaluator) LoadModel() {
 	if err != nil {
 		return
 	}
-	logger.Info("start to evaluate model, we need watcher to load model")
+	logger.Infof("start to evaluate model, we need watcher to load model, schedulerID is %v", configData.SchedulerCluster.ID)
 	mle.needVersion <- configData.SchedulerCluster.ID
 	model, ok := <-mle.modelVersion
 	if ok {
-		mle.model = model
+		logger.Info("load model function success")
+		mle.Model = model
+	} else {
+		logger.Info("fail to execute load model function")
 	}
 }
 
@@ -113,13 +152,7 @@ func figureFeatureTrans(a float64, b float64) float64 {
 }
 
 func decodeModelData(data []byte) (*models.LinearRegression, error) {
-	buf := new(bytes.Buffer)
-	buf.Write(data)
-	dec := gob.NewDecoder(buf)
-	var model models.LinearRegression
-	err := dec.Decode(&model)
-	if err != nil {
-		return nil, err
-	}
-	return &model, nil
+	var m models.LinearRegression
+	json.Unmarshal(data, &m)
+	return &m, nil
 }

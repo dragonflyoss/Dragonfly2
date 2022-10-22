@@ -52,8 +52,10 @@ func TestTraining(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.mock(t)
-			training := NewLinearTraining(sto, nil, nil, &config.TrainingConfig{})
-			training.Process()
+			for i := 0; i < 3; i++ {
+				training := NewLinearTraining(sto, nil, nil, &config.TrainingConfig{})
+				training.Process()
+			}
 		})
 	}
 }

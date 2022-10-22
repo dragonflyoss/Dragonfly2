@@ -42,12 +42,15 @@ func baseCompute(candidates []*resource.Peer, peer *resource.Peer, taskPieceCoun
 }
 
 func compute(candidates []*resource.Peer, peer *resource.Peer, eval evaluator.Evaluator, taskPieceCount int32) ([]*resource.Peer, error) {
+	logger.Infof("start to compute and sort, peerID is %v, taskPieceCount is %v, candidate one is %v", peer.ID, taskPieceCount, candidates[0].ID)
 	operators, err := mapreduce.MapReduce(func(source chan<- *resource.Peer) {
 		for _, parent := range candidates {
+			logger.Infof("put candidata into source, parent is %v", parent.ID)
 			source <- parent
 		}
 	}, func(parent *resource.Peer, writer mapreduce.Writer[*operator], cancel func(error)) {
 		// mapper
+		logger.Infof("we compute the parent score, parent id is %v, score is %v", parent.ID, eval.Evaluate(parent, peer, taskPieceCount))
 		writer.Write(&operator{peer: parent, value: eval.Evaluate(parent, peer, taskPieceCount)})
 	}, func(pipe <-chan *operator, writer mapreduce.Writer[[]*operator], cancel func(error)) {
 		// reducer
@@ -66,6 +69,9 @@ func compute(candidates []*resource.Peer, peer *resource.Peer, eval evaluator.Ev
 	var sortList []*resource.Peer
 	for _, op := range operators {
 		sortList = append(sortList, op.peer)
+	}
+	for idx, node := range sortList {
+		logger.Infof("we has the id : %v peer, the id is %v", idx, node.ID)
 	}
 	return sortList, nil
 }

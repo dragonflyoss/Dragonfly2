@@ -10,6 +10,7 @@ import (
 )
 
 type Pipeline struct {
+	// fatal error: concurrent map read and map write
 	channelStore map[string]chan *Request
 	errs         chan error
 }
@@ -98,19 +99,12 @@ func (p *Pipeline) Exec(req *Request, graph dag.DAG[StepConstruct]) (*Request, e
 		close(reqch)
 
 		result := p.handleDag(ctx, cancel, graph, reqch)
-		if result != nil {
-			for res := range result {
-				if res != nil {
-					return res, nil
-				}
-			}
-		}
 
 		select {
 		case err := <-p.errs:
 			return nil, err
-		default:
-			return nil, fmt.Errorf("unexpected error")
+		case res := <-result:
+			return res, nil
 		}
 	}
 
@@ -127,7 +121,7 @@ func (p *Pipeline) preCheck(graph dag.DAG[StepConstruct]) bool {
 func NewPipeline() *Pipeline {
 	return &Pipeline{
 		channelStore: make(map[string]chan *Request),
-		errs:         make(chan error),
+		errs:         make(chan error, 1),
 	}
 }
 

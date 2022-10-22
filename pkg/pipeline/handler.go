@@ -3,6 +3,8 @@ package pipeline
 import (
 	"context"
 	"sync"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 type StepInfra struct {
@@ -38,6 +40,7 @@ func (si *StepInfra) Exec(ctx context.Context, cancel context.CancelFunc, p *Pip
 
 		defer func(err error) {
 			if err != nil {
+				logger.Infof("error is %v", err)
 				p.errs <- err
 				cancel()
 				return
