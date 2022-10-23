@@ -49,7 +49,6 @@ func compute(candidates []*resource.Peer, peer *resource.Peer, eval evaluator.Ev
 		}
 	}, func(parent *resource.Peer, writer mapreduce.Writer[*operator], cancel func(error)) {
 		// mapper
-		logger.Infof("we compute the parent score, parent id is %v, score is %v", parent.ID, eval.Evaluate(parent, peer, taskPieceCount))
 		writer.Write(&operator{peer: parent, value: eval.Evaluate(parent, peer, taskPieceCount)})
 	}, func(pipe <-chan *operator, writer mapreduce.Writer[[]*operator], cancel func(error)) {
 		// reducer

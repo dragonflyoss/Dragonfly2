@@ -3,6 +3,7 @@ package evaluator
 import (
 	"bytes"
 	"encoding/json"
+	"sync"
 
 	"d7y.io/dragonfly/v2/scheduler/training"
 
@@ -25,9 +26,12 @@ type MLEvaluator struct {
 	needVersion  chan uint64
 	modelVersion chan *types.ModelVersion
 	Model        *types.ModelVersion
+	lock         sync.Mutex
 }
 
 func (mle *MLEvaluator) Evaluate(parent *resource.Peer, peer *resource.Peer, taskPieceCount int32) float64 {
+	mle.lock.Lock()
+	defer mle.lock.Unlock()
 	mle.LoadModel()
 	logger.Infof("MLEvaluator peer id is %v, MLEvaluator parent id is %v", peer.ID, parent.ID)
 	record := storage.Record{

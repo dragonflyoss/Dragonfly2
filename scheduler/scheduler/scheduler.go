@@ -20,7 +20,6 @@ package scheduler
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -55,8 +54,6 @@ type scheduler struct {
 
 	// Scheduler dynamic configuration.
 	dynconfig config.DynconfigInterface
-
-	mu sync.Mutex
 }
 
 func New(cfg *config.SchedulerConfig, dynconfig config.DynconfigInterface, pluginDir string, needVersion chan uint64, modelVersion chan *types.ModelVersion) Scheduler {
@@ -172,9 +169,7 @@ func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer
 	// Sort candidate parents by evaluation score.
 	taskTotalPieceCount := peer.Task.TotalPieceCount.Load()
 	logger.Infof("task piece count is %v", taskTotalPieceCount)
-	s.mu.Lock()
 	candidateParents, err := sortNodes(candidateParents, s.evaluator, peer, taskTotalPieceCount)
-	s.mu.Unlock()
 	if err != nil {
 		logger.Errorf("sort nodes error, error is %s", err.Error())
 		// Degrade to base evaluator
@@ -227,9 +222,7 @@ func (s *scheduler) FindParent(ctx context.Context, peer *resource.Peer, blockli
 
 	// Sort candidate parents by evaluation score.
 	taskTotalPieceCount := peer.Task.TotalPieceCount.Load()
-	s.mu.Lock()
 	candidateParents, err := sortNodes(candidateParents, s.evaluator, peer, taskTotalPieceCount)
-	s.mu.Unlock()
 	if err != nil {
 		logger.Errorf("sort nodes error, error is %s", err.Error())
 		// Degrade to base evaluator
