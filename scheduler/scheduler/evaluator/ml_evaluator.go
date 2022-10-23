@@ -45,8 +45,8 @@ func (mle *MLEvaluator) Evaluate(parent *resource.Peer, peer *resource.Peer, tas
 		Location:       strFeatureTrans(peer.Host.Location, parent.Host.Location),
 		UploadRate:     figureFeatureTrans(float64(peer.Host.FreeUploadLoad()), float64(parent.Host.FreeUploadLoad())),
 		ParentHostType: int(parent.Host.Type),
-		ParentCreateAt: parent.CreateAt.Load().UnixNano() / TimeBucketGap,
-		ParentUpdateAt: parent.UpdateAt.Load().UnixNano() / TimeBucketGap,
+		ParentCreateAt: parent.CreateAt.Load().Unix() / TimeBucketGap,
+		ParentUpdateAt: parent.UpdateAt.Load().Unix() / TimeBucketGap,
 	}
 	logger.Infof("compute HostType is %v", int(peer.Host.Type))
 	logger.Infof("compute CreateAt is %v", peer.CreateAt.Load().Unix()/TimeBucketGap)
@@ -61,32 +61,34 @@ func (mle *MLEvaluator) Evaluate(parent *resource.Peer, peer *resource.Peer, tas
 	logger.Infof("compute Location is %v", strFeatureTrans(peer.Host.Location, parent.Host.Location))
 	logger.Infof("compute UploadRate is %v", figureFeatureTrans(float64(peer.Host.FreeUploadLoad()), float64(parent.Host.FreeUploadLoad())))
 	logger.Infof("compute ParentHostType is %v", int(parent.Host.Type))
-	logger.Infof("compute ParentCreateAt is %v", parent.CreateAt.Load().UnixNano()/TimeBucketGap)
-	logger.Infof("compute ParentUpdateAt is %v", parent.UpdateAt.Load().UnixNano()/TimeBucketGap)
+	logger.Infof("compute ParentCreateAt is %v", parent.CreateAt.Load().Unix()/TimeBucketGap)
+	logger.Infof("compute ParentUpdateAt is %v", parent.UpdateAt.Load().Unix()/TimeBucketGap)
 	var model models.LinearRegression
 	err := json.Unmarshal(mle.Model.Data, &model)
 	if err != nil {
 		logger.Infof("decode model fail, error is %v", err)
 		return -1
 	}
-	logger.Info("decode model successful")
 	str, err := gocsv.MarshalString([]storage.Record{record})
 	if err != nil {
 		logger.Infof("marshal model fail, error is %v", err)
 		return -1
 	}
 	str = str[156:]
-	logger.Info("marshal model successful")
 	strReader := bytes.NewReader([]byte(str))
 	data, err := base.ParseCSVToInstancesFromReader(strReader, false)
 	if err != nil {
 		logger.Infof("ParseCSVToInstancesFromReader model fail, error is %v", err)
 		return -1
 	}
-	logger.Info("ParseCSVToInstancesFromReader model successful")
 	err = training.MissingValue(data)
 	if err != nil {
 		logger.Infof("missingValue model fail, error is %v", err)
+		return 0
+	}
+	err = training.PredictNormalize(data)
+	if err != nil {
+		logger.Infof("PredictNormalize model fail, error is %v", err)
 		return 0
 	}
 	out, err := model.Predict(data)
@@ -94,13 +96,11 @@ func (mle *MLEvaluator) Evaluate(parent *resource.Peer, peer *resource.Peer, tas
 		logger.Infof("predict model fail, error is %v", err)
 		return -1
 	}
-	logger.Info("predict model successful")
 	attrSpec1, err := out.GetAttribute(out.AllAttributes()[0])
 	if err != nil {
 		logger.Infof("GetAttribute model fail, error is %v", err)
 		return -1
 	}
-	logger.Info("GetAttribute model successful")
 	logger.Infof("score is %v", base.UnpackBytesToFloat(out.Get(attrSpec1, 0)))
 	return base.UnpackBytesToFloat(out.Get(attrSpec1, 0))
 }
@@ -149,10 +149,4 @@ func figureFeatureTrans(a float64, b float64) float64 {
 		return -1
 	}
 	return a / b
-}
-
-func decodeModelData(data []byte) (*models.LinearRegression, error) {
-	var m models.LinearRegression
-	json.Unmarshal(data, &m)
-	return &m, nil
 }

@@ -28,6 +28,10 @@ func (e *evaluator) IsBadNode(peer *resource.Peer) bool {
 	return true
 }
 
+func (e *evaluator) EvalType() string {
+	return "plugin"
+}
+
 func DragonflyPluginInit(option map[string]string) (any, map[string]string, error) {
 	return &evaluator{}, map[string]string{"type": "scheduler", "name": "evaluator"}, nil
 }

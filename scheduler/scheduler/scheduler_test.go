@@ -107,7 +107,7 @@ var (
 func genRegressionCoefficients() []float64 {
 	arr := make([]float64, 15)
 	for i := 0; i < 15; i++ {
-		arr[i] = 0.1
+		arr[i] = 0.01
 	}
 	return arr
 }
@@ -815,7 +815,6 @@ func TestScheduler_FindParent(t *testing.T) {
 				mockPeers[1].FinishedPieces.Set(0)
 				mockPeers[1].FinishedPieces.Set(1)
 				mockPeers[1].FinishedPieces.Set(2)
-
 				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, mockPeers []*resource.Peer, parent *resource.Peer, ok bool) {
@@ -840,7 +839,6 @@ func TestScheduler_FindParent(t *testing.T) {
 				mockPeers[1].FinishedPieces.Set(0)
 				mockPeers[1].FinishedPieces.Set(1)
 				mockPeers[1].FinishedPieces.Set(2)
-
 				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, mockPeers []*resource.Peer, parent *resource.Peer, ok bool) {
@@ -862,7 +860,6 @@ func TestScheduler_FindParent(t *testing.T) {
 				mockPeers[1].FinishedPieces.Set(0)
 				mockPeers[1].FinishedPieces.Set(1)
 				mockPeers[1].FinishedPieces.Set(2)
-
 				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, mockPeers []*resource.Peer, parent *resource.Peer, ok bool) {
@@ -893,7 +890,6 @@ func TestScheduler_FindParent(t *testing.T) {
 				mockPeers[1].FinishedPieces.Set(0)
 				mockPeers[1].FinishedPieces.Set(1)
 				mockPeers[1].FinishedPieces.Set(2)
-
 				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, mockPeers []*resource.Peer, parent *resource.Peer, ok bool) {
@@ -938,7 +934,6 @@ func TestScheduler_FindParent(t *testing.T) {
 				mockPeers[1].FinishedPieces.Set(0)
 				mockPeers[1].FinishedPieces.Set(1)
 				mockPeers[1].FinishedPieces.Set(2)
-
 				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{
 					FilterParentLimit: 3,
 				}, true).Times(1)
@@ -979,6 +974,7 @@ func TestScheduler_FindParent(t *testing.T) {
 
 			blocklist := set.NewSafeSet[string]()
 			tc.mock(peer, mockPeers, blocklist, dynconfig.EXPECT())
+			mockSchedulerConfig.Algorithm = "default"
 			scheduler := New(mockSchedulerConfig, dynconfig, mockPluginDir, nil, nil)
 			parent, ok := scheduler.FindParent(context.Background(), peer, blocklist)
 			tc.expect(t, peer, mockPeers, parent, ok)

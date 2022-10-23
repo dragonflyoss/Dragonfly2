@@ -18,6 +18,8 @@ const (
 
 	// InitSum initiate sum of accuracy.
 	InitSum = 0.0
+
+	AverageFieldSigma = 24
 )
 
 const (

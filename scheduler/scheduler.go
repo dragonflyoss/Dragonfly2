@@ -205,10 +205,10 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 			NetTopology:    rand.Intn(100)%2 + 1,
 			Location:       rand.Intn(100)%2 + 1,
 			UploadRate:     float64(rand.Intn(550) + 3),
-			CreateAt:       time.Now().Unix()/7200 + rand.Int63n(10),
-			UpdateAt:       time.Now().Unix()/7200 + rand.Int63n(10),
-			ParentCreateAt: time.Now().Unix()/7200 + rand.Int63n(10),
-			ParentUpdateAt: time.Now().Unix()/7200 + rand.Int63n(10),
+			CreateAt:       time.Now().Unix()/72000000 + rand.Int63n(10),
+			UpdateAt:       time.Now().Unix()/72000000 + rand.Int63n(10),
+			ParentCreateAt: time.Now().Unix()/72000000 + rand.Int63n(10),
+			ParentUpdateAt: time.Now().Unix()/72000000 + rand.Int63n(10),
 		}
 		err = storage.Create(record)
 		if err != nil {

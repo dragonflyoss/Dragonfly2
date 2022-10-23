@@ -43,7 +43,7 @@ func TestEvaluator_New(t *testing.T) {
 			algorithm: "ml",
 			expect: func(t *testing.T, e any) {
 				assert := assert.New(t)
-				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
+				assert.Equal(reflect.TypeOf(e).Elem().Name(), "MLEvaluator")
 			},
 		},
 		{
@@ -66,7 +66,7 @@ func TestEvaluator_New(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, New(tc.algorithm, pluginDir))
+			tc.expect(t, New(tc.algorithm, pluginDir, nil, nil, nil))
 		})
 	}
 }

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/fs"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -271,34 +272,20 @@ func TestStorage_List(t *testing.T) {
 			baseDir: os.TempDir(),
 			options: []Option{WithBufferSize(1)},
 			record: Record{
-				ID:                   "1",
-				IP:                   "127.0.0.1",
-				Hostname:             "hostname",
-				Tag:                  "tag",
-				Cost:                 1,
-				PieceCount:           1,
-				TotalPieceCount:      1,
-				ContentLength:        1,
-				SecurityDomain:       "security_domain",
-				IDC:                  "idc",
-				NetTopology:          "net_topology",
-				Location:             "location",
-				FreeUploadLoad:       1,
-				State:                PeerStateSucceeded,
-				CreateAt:             time.Now().UnixNano(),
-				UpdateAt:             time.Now().UnixNano(),
-				ParentID:             "2",
-				ParentIP:             "127.0.0.1",
-				ParentHostname:       "parent_hostname",
-				ParentTag:            "parent_tag",
-				ParentPieceCount:     1,
-				ParentSecurityDomain: "parent_security_domain",
-				ParentIDC:            "parent_idc",
-				ParentNetTopology:    "parent_net_topology",
-				ParentLocation:       "parent_location",
-				ParentFreeUploadLoad: 1,
-				ParentCreateAt:       time.Now().UnixNano(),
-				ParentUpdateAt:       time.Now().UnixNano(),
+				IP:             rand.Intn(100)%2 + 1,
+				HostName:       rand.Intn(100)%2 + 1,
+				Tag:            rand.Intn(100)%2 + 1,
+				Rate:           float64(rand.Intn(300) + 10),
+				ParentPiece:    float64(rand.Intn(240) + 14),
+				SecurityDomain: rand.Intn(100)%2 + 1,
+				IDC:            rand.Intn(100)%2 + 1,
+				NetTopology:    rand.Intn(100)%2 + 1,
+				Location:       rand.Intn(100)%2 + 1,
+				UploadRate:     float64(rand.Intn(550) + 3),
+				CreateAt:       time.Now().Unix()/7200 + rand.Int63n(10),
+				UpdateAt:       time.Now().Unix()/7200 + rand.Int63n(10),
+				ParentCreateAt: time.Now().Unix()/7200 + rand.Int63n(10),
+				ParentUpdateAt: time.Now().Unix()/7200 + rand.Int63n(10),
 			},
 			mock: func(t *testing.T, s Storage, baseDir string, record Record) {
 				if err := s.Create(record); err != nil {
@@ -331,15 +318,15 @@ func TestStorage_List(t *testing.T) {
 				}
 				defer file.Close()
 
-				if err := gocsv.MarshalWithoutHeaders([]Record{{ID: "2"}}, file); err != nil {
+				if err := gocsv.MarshalWithoutHeaders([]Record{{Tag: 2}}, file); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := s.Create(Record{ID: "1"}); err != nil {
+				if err := s.Create(Record{Tag: 1}); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := s.Create(Record{ID: "3"}); err != nil {
+				if err := s.Create(Record{Tag: 3}); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -348,8 +335,8 @@ func TestStorage_List(t *testing.T) {
 				records, err := s.List()
 				assert.NoError(err)
 				assert.Equal(len(records), 2)
-				assert.Equal(records[0].ID, "2")
-				assert.Equal(records[1].ID, "1")
+				assert.Equal(records[0].Tag, 2)
+				assert.Equal(records[1].Tag, 1)
 			},
 		},
 	}
@@ -409,34 +396,20 @@ func TestStorage_Open(t *testing.T) {
 			baseDir: os.TempDir(),
 			options: []Option{WithBufferSize(1)},
 			record: Record{
-				ID:                   "1",
-				IP:                   "127.0.0.1",
-				Hostname:             "hostname",
-				Tag:                  "tag",
-				Cost:                 1,
-				PieceCount:           1,
-				TotalPieceCount:      1,
-				ContentLength:        1,
-				SecurityDomain:       "security_domain",
-				IDC:                  "idc",
-				NetTopology:          "net_topology",
-				Location:             "location",
-				FreeUploadLoad:       1,
-				State:                PeerStateSucceeded,
-				CreateAt:             time.Now().UnixNano(),
-				UpdateAt:             time.Now().UnixNano(),
-				ParentID:             "2",
-				ParentIP:             "127.0.0.1",
-				ParentHostname:       "parent_hostname",
-				ParentTag:            "parent_tag",
-				ParentPieceCount:     1,
-				ParentSecurityDomain: "parent_security_domain",
-				ParentIDC:            "parent_idc",
-				ParentNetTopology:    "parent_net_topology",
-				ParentLocation:       "parent_location",
-				ParentFreeUploadLoad: 1,
-				ParentCreateAt:       time.Now().UnixNano(),
-				ParentUpdateAt:       time.Now().UnixNano(),
+				IP:             rand.Intn(100)%2 + 1,
+				HostName:       rand.Intn(100)%2 + 1,
+				Tag:            rand.Intn(100)%2 + 1,
+				Rate:           float64(rand.Intn(300) + 10),
+				ParentPiece:    float64(rand.Intn(240) + 14),
+				SecurityDomain: rand.Intn(100)%2 + 1,
+				IDC:            rand.Intn(100)%2 + 1,
+				NetTopology:    rand.Intn(100)%2 + 1,
+				Location:       rand.Intn(100)%2 + 1,
+				UploadRate:     float64(rand.Intn(550) + 3),
+				CreateAt:       time.Now().Unix()/7200 + rand.Int63n(10),
+				UpdateAt:       time.Now().Unix()/7200 + rand.Int63n(10),
+				ParentCreateAt: time.Now().Unix()/7200 + rand.Int63n(10),
+				ParentUpdateAt: time.Now().Unix()/7200 + rand.Int63n(10),
 			},
 			mock: func(t *testing.T, s Storage, baseDir string, record Record) {
 				if err := s.Create(record); err != nil {
@@ -474,15 +447,15 @@ func TestStorage_Open(t *testing.T) {
 				}
 				defer file.Close()
 
-				if err := gocsv.MarshalWithoutHeaders([]Record{{ID: "2"}}, file); err != nil {
+				if err := gocsv.MarshalWithoutHeaders([]Record{{Tag: 2}}, file); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := s.Create(Record{ID: "1"}); err != nil {
+				if err := s.Create(Record{Tag: 1}); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := s.Create(Record{ID: "3"}); err != nil {
+				if err := s.Create(Record{Tag: 3}); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -495,8 +468,8 @@ func TestStorage_Open(t *testing.T) {
 				err = gocsv.UnmarshalWithoutHeaders(readCloser, &records)
 				assert.NoError(err)
 				assert.Equal(len(records), 2)
-				assert.Equal(records[0].ID, "2")
-				assert.Equal(records[1].ID, "1")
+				assert.Equal(records[0].Tag, 2)
+				assert.Equal(records[1].Tag, 1)
 			},
 		},
 	}
@@ -654,11 +627,11 @@ func TestStorage_openFile(t *testing.T) {
 			baseDir: os.TempDir(),
 			options: []Option{WithMaxSize(0), WithBufferSize(1)},
 			mock: func(t *testing.T, s Storage) {
-				if err := s.Create(Record{ID: "1"}); err != nil {
+				if err := s.Create(Record{Tag: 1}); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := s.Create(Record{ID: "2"}); err != nil {
+				if err := s.Create(Record{Tag: 2}); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -675,7 +648,7 @@ func TestStorage_openFile(t *testing.T) {
 			baseDir: os.TempDir(),
 			options: []Option{WithMaxSize(0), WithMaxBackups(1), WithBufferSize(1)},
 			mock: func(t *testing.T, s Storage) {
-				if err := s.Create(Record{ID: "1"}); err != nil {
+				if err := s.Create(Record{Tag: 1}); err != nil {
 					t.Fatal(err)
 				}
 			},

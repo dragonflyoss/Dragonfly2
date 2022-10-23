@@ -2,6 +2,7 @@ package training
 
 import (
 	"io"
+	"math"
 
 	"github.com/sjwhitworth/golearn/base"
 )
@@ -103,4 +104,37 @@ func (d *Data) PreProcess(loadType string) (*base.DenseInstances, error) {
 		return nil, err
 	}
 	return instance, nil
+}
+
+func PredictNormalize(instance *base.DenseInstances) error {
+	_, row := instance.Size()
+	attributes := instance.AllAttributes()
+	maxValue := make([]float64, NormalizedFieldNum)
+	minValue := make([]float64, NormalizedFieldNum)
+	for i := 0; i < NormalizedFieldNum; i++ {
+		minValue[i] = math.MaxFloat64
+	}
+	for i := len(attributes) - NormalizedFieldNum; i < len(attributes); i++ {
+		attrSpec, _ := instance.GetAttribute(attributes[i])
+		for j := 0; j < row; j++ {
+			x := base.UnpackBytesToFloat(instance.Get(attrSpec, j))
+			minValue[i+NormalizedFieldNum-len(attributes)] = x - AverageFieldSigma
+			maxValue[i+NormalizedFieldNum-len(attributes)] = x + AverageFieldSigma
+		}
+	}
+	for i := 0; i < NormalizedFieldNum; i++ {
+		maxValue[i] = maxValue[i] - minValue[i]
+		if maxValue[i] == 0 {
+			maxValue[i] = 1
+		}
+	}
+	for i := len(attributes) - NormalizedFieldNum; i < len(attributes); i++ {
+		attrSpec, _ := instance.GetAttribute(attributes[i])
+		for j := 0; j < row; j++ {
+			x := base.UnpackBytesToFloat(instance.Get(attrSpec, j))
+			bytes := base.PackFloatToBytes((x - minValue[i+NormalizedFieldNum-len(attributes)]) / maxValue[i+NormalizedFieldNum-len(attributes)])
+			instance.Set(attrSpec, j, bytes)
+		}
+	}
+	return nil
 }
