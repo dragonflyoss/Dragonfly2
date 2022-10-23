@@ -5,6 +5,8 @@ import (
 	"math"
 	"time"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+
 	"d7y.io/dragonfly/v2/pkg/pipeline"
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
@@ -104,8 +106,11 @@ func (ld *Loading) GetTestSource(req *pipeline.Request) (*pipeline.Request, erro
 
 func (ld *Loading) ProcessTest(req *pipeline.Request, out chan *pipeline.Request) error {
 	defer func() {
-		// TODO error handle
-		ld.dataInstance.Reader.Close()
+		err := ld.dataInstance.Reader.Close()
+		if err != nil {
+			logger.Infof("close reader error, error is %v", err)
+			return
+		}
 	}()
 	ld.dataInstance = req.KeyVal[DataInstance].(*Data)
 	err := ld.Process(req, out, ld.GetTestSource)

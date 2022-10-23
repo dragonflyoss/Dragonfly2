@@ -80,8 +80,8 @@ func (w *Watcher) Serve() {
 						w.modelVersion <- nil
 						continue
 					}
-					sort.Slice(versions, func(i, j int) bool {
-						return versions.ModelVersions[i].UpdatedAt.Seconds > versions.ModelVersions[i].UpdatedAt.Seconds
+					sort.Slice(versions.ModelVersions, func(i, j int) bool {
+						return versions.ModelVersions[i].UpdatedAt.Seconds > versions.ModelVersions[j].UpdatedAt.Seconds
 					})
 					flag := false
 					for _, version := range versions.ModelVersions {
