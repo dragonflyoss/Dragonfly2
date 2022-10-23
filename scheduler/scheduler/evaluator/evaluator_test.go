@@ -17,53 +17,56 @@
 package evaluator
 
 import (
+	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEvaluator_New(t *testing.T) {
-	//pluginDir := "."
-	//tests := []struct {
-	//	name      string
-	//	algorithm string
-	//	expect    func(t *testing.T, e any)
-	//}{
-	//	{
-	//		name:      "new evaluator with default algorithm",
-	//		algorithm: "default",
-	//		expect: func(t *testing.T, e any) {
-	//			assert := assert.New(t)
-	//			assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
-	//		},
-	//	},
-	//	{
-	//		name:      "new evaluator with machine learning algorithm",
-	//		algorithm: "ml",
-	//		expect: func(t *testing.T, e any) {
-	//			assert := assert.New(t)
-	//			assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
-	//		},
-	//	},
-	//	{
-	//		name:      "new evaluator with plugin",
-	//		algorithm: "plugin",
-	//		expect: func(t *testing.T, e any) {
-	//			assert := assert.New(t)
-	//			assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
-	//		},
-	//	},
-	//	{
-	//		name:      "new evaluator with empty string",
-	//		algorithm: "",
-	//		expect: func(t *testing.T, e any) {
-	//			assert := assert.New(t)
-	//			assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
-	//		},
-	//	},
-	//}
+	pluginDir := "."
+	tests := []struct {
+		name      string
+		algorithm string
+		expect    func(t *testing.T, e any)
+	}{
+		{
+			name:      "new evaluator with default algorithm",
+			algorithm: "default",
+			expect: func(t *testing.T, e any) {
+				assert := assert.New(t)
+				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
+			},
+		},
+		{
+			name:      "new evaluator with machine learning algorithm",
+			algorithm: "ml",
+			expect: func(t *testing.T, e any) {
+				assert := assert.New(t)
+				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
+			},
+		},
+		{
+			name:      "new evaluator with plugin",
+			algorithm: "plugin",
+			expect: func(t *testing.T, e any) {
+				assert := assert.New(t)
+				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
+			},
+		},
+		{
+			name:      "new evaluator with empty string",
+			algorithm: "",
+			expect: func(t *testing.T, e any) {
+				assert := assert.New(t)
+				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
+			},
+		},
+	}
 
-	//for _, tc := range tests {
-	//	t.Run(tc.name, func(t *testing.T) {
-	//		tc.expect(t, New(tc.algorithm, pluginDir))
-	//	})
-	//}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.expect(t, New(tc.algorithm, pluginDir))
+		})
+	}
 }

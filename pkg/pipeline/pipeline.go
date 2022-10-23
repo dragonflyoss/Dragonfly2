@@ -4,14 +4,16 @@ import (
 	"context"
 	"fmt"
 
+	cmap "github.com/orcaman/concurrent-map/v2"
+
 	"d7y.io/dragonfly/v2/pkg/dag"
 
 	"golang.org/x/exp/constraints"
 )
 
 type Pipeline struct {
-	// fatal error: concurrent map read and map write
-	channelStore map[string]chan *Request
+	// TODO fatal error: concurrent map read and map write
+	channelStore cmap.ConcurrentMap[chan *Request]
 	errs         chan error
 }
 
@@ -44,7 +46,8 @@ func (p *Pipeline) handleDag(ctx context.Context, cancel context.CancelFunc, gra
 				input = append(input, fstChannel)
 			} else {
 				for _, parent := range vertex.Parents.Values() {
-					input = append(input, p.channelStore[parent.ID])
+					parentOut, _ := p.channelStore.Get(parent.ID)
+					input = append(input, parentOut)
 				}
 			}
 
@@ -55,7 +58,7 @@ func (p *Pipeline) handleDag(ctx context.Context, cancel context.CancelFunc, gra
 			// handle the last step
 			out := max(1, int(vertex.Children.Len()))
 			ctx = context.WithValue(ctx, OutDegree, out)
-			p.channelStore[vertex.ID] = make(chan *Request, out)
+			p.channelStore.Set(vertex.ID, make(chan *Request, out))
 
 			go s.Exec(ctx, cancel, p, input...)
 
@@ -75,7 +78,8 @@ func (p *Pipeline) handleDag(ctx context.Context, cancel context.CancelFunc, gra
 			return nil
 		default:
 			for _, v := range graph.GetSinkVertices() {
-				return p.channelStore[v.ID]
+				last, _ := p.channelStore.Get(v.ID)
+				return last
 			}
 		}
 	}
@@ -120,7 +124,7 @@ func (p *Pipeline) preCheck(graph dag.DAG[StepConstruct]) bool {
 
 func NewPipeline() *Pipeline {
 	return &Pipeline{
-		channelStore: make(map[string]chan *Request),
+		channelStore: cmap.New[chan *Request](),
 		errs:         make(chan error, 1),
 	}
 }

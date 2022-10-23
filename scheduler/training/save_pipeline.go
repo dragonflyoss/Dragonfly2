@@ -1,8 +1,17 @@
 package training
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"math/rand"
+	"time"
+
+	"d7y.io/dragonfly/v2/scheduler/storage"
+	models2 "d7y.io/dragonfly/v2/scheduler/training/models"
+	"github.com/gocarina/gocsv"
+	"github.com/sjwhitworth/golearn/base"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 
@@ -36,58 +45,58 @@ func (save *Saving) GetSource(req *pipeline.Request) (*string, error) {
 		return nil, fmt.Errorf("lose keyVal ManagerClient")
 	}
 
-	//var modelTest models2.LinearRegression
-	//json.Unmarshal(request.Data, &modelTest)
-	//record := storage.Record{
-	//	IP:             rand.Intn(100)%2 + 1,
-	//	HostName:       rand.Intn(100)%2 + 1,
-	//	Tag:            rand.Intn(100)%2 + 1,
-	//	Rate:           float64(rand.Intn(300) + 10),
-	//	ParentPiece:    float64(rand.Intn(240) + 14),
-	//	SecurityDomain: rand.Intn(100)%2 + 1,
-	//	IDC:            rand.Intn(100)%2 + 1,
-	//	NetTopology:    rand.Intn(100)%2 + 1,
-	//	Location:       rand.Intn(100)%2 + 1,
-	//	UploadRate:     float64(rand.Intn(550) + 3),
-	//	CreateAt:       time.Now().Unix()/7200 + rand.Int63n(10),
-	//	UpdateAt:       time.Now().Unix()/7200 + rand.Int63n(10),
-	//	ParentCreateAt: time.Now().Unix()/7200 + rand.Int63n(10),
-	//	ParentUpdateAt: time.Now().Unix()/7200 + rand.Int63n(10),
-	//}
-	//str, err := gocsv.MarshalString([]storage.Record{record})
-	//if err != nil {
-	//	logger.Infof("marshal model fail, error is %v", err)
-	//}
-	//// TODO
-	//str = str[156:]
-	//strReader := bytes.NewReader([]byte(str))
-	//data1, err := base.ParseCSVToInstancesFromReader(strReader, false)
-	//if err != nil {
-	//	logger.Infof("ParseCSVToInstancesFromReader model fail, error is %v", err)
-	//}
-	//MissingValue(data1)
-	//arr := make([]float64, 15)
-	//for i := 0; i < 15; i++ {
-	//	attrSpec2, _ := data1.GetAttribute(data1.AllAttributes()[i])
-	//	arr[i] = base.UnpackBytesToFloat(data1.Get(attrSpec2, 0))
-	//}
-	////Normalize(data1, false)
-	//
-	//for i := 0; i < 15; i++ {
-	//	attrSpec2, _ := data1.GetAttribute(data1.AllAttributes()[i])
-	//	arr[i] = base.UnpackBytesToFloat(data1.Get(attrSpec2, 0))
-	//}
-	//
-	//out, err := modelTest.Predict(data1)
-	//if err != nil {
-	//	logger.Infof("predict model fail, error is %v", err)
-	//}
-	//attrSpec1, err := out.GetAttribute(out.AllAttributes()[0])
-	//if err != nil {
-	//	logger.Infof("GetAttribute model fail, error is %v", err)
-	//}
-	//score := base.UnpackBytesToFloat(out.Get(attrSpec1, 0))
-	//logger.Infof("score is %v", score)
+	var modelTest models2.LinearRegression
+	json.Unmarshal(request.Data, &modelTest)
+	record := storage.Record{
+		IP:             rand.Intn(100)%2 + 1,
+		HostName:       rand.Intn(100)%2 + 1,
+		Tag:            rand.Intn(100)%2 + 1,
+		Rate:           float64(rand.Intn(300) + 10),
+		ParentPiece:    float64(rand.Intn(240) + 14),
+		SecurityDomain: rand.Intn(100)%2 + 1,
+		IDC:            rand.Intn(100)%2 + 1,
+		NetTopology:    rand.Intn(100)%2 + 1,
+		Location:       rand.Intn(100)%2 + 1,
+		UploadRate:     float64(rand.Intn(550) + 3),
+		CreateAt:       time.Now().Unix()/7200 + rand.Int63n(10),
+		UpdateAt:       time.Now().Unix()/7200 + rand.Int63n(10),
+		ParentCreateAt: time.Now().Unix()/7200 + rand.Int63n(10),
+		ParentUpdateAt: time.Now().Unix()/7200 + rand.Int63n(10),
+	}
+	str, err := gocsv.MarshalString([]storage.Record{record})
+	if err != nil {
+		logger.Infof("marshal model fail, error is %v", err)
+	}
+	// TODO
+	str = str[156:]
+	strReader := bytes.NewReader([]byte(str))
+	data1, err := base.ParseCSVToInstancesFromReader(strReader, false)
+	if err != nil {
+		logger.Infof("ParseCSVToInstancesFromReader model fail, error is %v", err)
+	}
+	MissingValue(data1)
+	arr := make([]float64, 15)
+	for i := 0; i < 15; i++ {
+		attrSpec2, _ := data1.GetAttribute(data1.AllAttributes()[i])
+		arr[i] = base.UnpackBytesToFloat(data1.Get(attrSpec2, 0))
+	}
+	//Normalize(data1, false)
+
+	for i := 0; i < 15; i++ {
+		attrSpec2, _ := data1.GetAttribute(data1.AllAttributes()[i])
+		arr[i] = base.UnpackBytesToFloat(data1.Get(attrSpec2, 0))
+	}
+
+	out, err := modelTest.Predict(data1)
+	if err != nil {
+		logger.Infof("predict model fail, error is %v", err)
+	}
+	attrSpec1, err := out.GetAttribute(out.AllAttributes()[0])
+	if err != nil {
+		logger.Infof("GetAttribute model fail, error is %v", err)
+	}
+	score := base.UnpackBytesToFloat(out.Get(attrSpec1, 0))
+	logger.Infof("score is %v", score)
 	// TODO: check only need one model in one scheduler
 	models, err := mc.ListModels(context.Background(), &managerv1.ListModelsRequest{
 		SchedulerId: dynconfig.SchedulerCluster.ID,
@@ -119,8 +128,9 @@ func (save *Saving) GetSource(req *pipeline.Request) (*string, error) {
 		Mae:         request.MAE,
 		Mse:         request.MSE,
 		Rmse:        request.RMSE,
-		R2:          -request.R2,
+		R2:          request.R2,
 	})
+	logger.Infof("R2 values is %v", request.R2)
 	if err != nil {
 		logger.Infof("create modelversion fail, error is %v", err)
 		return nil, err

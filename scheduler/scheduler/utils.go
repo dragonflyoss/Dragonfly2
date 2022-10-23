@@ -45,7 +45,7 @@ func compute(candidates []*resource.Peer, peer *resource.Peer, eval evaluator.Ev
 	logger.Infof("start to compute and sort, peerID is %v, taskPieceCount is %v, candidate one is %v", peer.ID, taskPieceCount, candidates[0].ID)
 	operators, err := mapreduce.MapReduce(func(source chan<- *resource.Peer) {
 		for _, parent := range candidates {
-			logger.Infof("put candidata into source, parent is %v", parent.ID)
+			logger.Infof("put candidate into source, parent is %v", parent.ID)
 			source <- parent
 		}
 	}, func(parent *resource.Peer, writer mapreduce.Writer[*operator], cancel func(error)) {

@@ -94,7 +94,6 @@ func (lr *LinearTraining) Process() (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	logger.Infof("process data is %v", req.Data)
 	return req.Data, nil
 }
 

@@ -50,7 +50,7 @@ func (si *StepInfra) Exec(ctx context.Context, cancel context.CancelFunc, p *Pip
 
 	outNum := ctx.Value(OutDegree).(int)
 	stepName := ctx.Value(StepName).(string)
-	multiStream := p.channelStore[stepName]
+	multiStream, _ := p.channelStore.Get(stepName)
 
 	var src *Request
 	for {
