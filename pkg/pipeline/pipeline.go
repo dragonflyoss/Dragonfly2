@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	cmap "github.com/orcaman/concurrent-map/v2"
@@ -12,7 +13,6 @@ import (
 )
 
 type Pipeline struct {
-	// TODO fatal error: concurrent map read and map write
 	channelStore cmap.ConcurrentMap[chan *Request]
 	errs         chan error
 }
@@ -112,7 +112,7 @@ func (p *Pipeline) Exec(req *Request, graph dag.DAG[StepConstruct]) (*Request, e
 		}
 	}
 
-	return nil, fmt.Errorf("dag dont match requirements")
+	return nil, errors.New("dag dont match requirements")
 }
 
 func (p *Pipeline) preCheck(graph dag.DAG[StepConstruct]) bool {

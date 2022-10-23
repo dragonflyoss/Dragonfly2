@@ -172,7 +172,9 @@ func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer
 	// Sort candidate parents by evaluation score.
 	taskTotalPieceCount := peer.Task.TotalPieceCount.Load()
 	logger.Infof("task piece count is %v", taskTotalPieceCount)
+	s.mu.Lock()
 	candidateParents, err := sortNodes(candidateParents, s.evaluator, peer, taskTotalPieceCount)
+	s.mu.Unlock()
 	if err != nil {
 		logger.Errorf("sort nodes error, error is %s", err.Error())
 		// Degrade to base evaluator
