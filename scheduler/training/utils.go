@@ -98,7 +98,7 @@ func MissingValue(instances *base.DenseInstances) error {
 			x := base.UnpackBytesToFloat(instances.Get(attrSpec, i))
 			if x != -1 && effectiveData[j] == -1 {
 				effectiveData[j] = x
-				counter += 1
+				counter++
 			}
 		}
 		if counter == cal-1 {
