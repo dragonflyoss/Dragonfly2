@@ -26,10 +26,9 @@ import (
 	"io"
 	"time"
 
-	"github.com/google/uuid"
-
 	cachev8 "github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

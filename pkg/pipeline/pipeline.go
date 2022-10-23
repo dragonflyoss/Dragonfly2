@@ -19,9 +19,11 @@ type Pipeline struct {
 
 type StepConstruct func() Step
 
+type contextVal int
+
 const (
-	OutDegree = "out_degree"
-	StepName  = "step_name"
+	OutDegree contextVal = iota
+	StepName
 )
 
 func (p *Pipeline) handleDag(ctx context.Context, cancel context.CancelFunc, graph dag.DAG[StepConstruct], fstChannel chan *Request) chan *Request {

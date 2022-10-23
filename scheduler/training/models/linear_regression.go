@@ -5,9 +5,8 @@ import (
 	"errors"
 	"math/rand"
 
-	"github.com/mitchellh/mapstructure"
-
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"github.com/mitchellh/mapstructure"
 
 	"github.com/sjwhitworth/golearn/base"
 )

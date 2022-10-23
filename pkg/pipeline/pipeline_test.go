@@ -41,49 +41,133 @@ func mockPlusEquation() Step {
 
 func mockNoParallelGraph() dag.DAG[StepConstruct] {
 	graph := dag.NewDAG[StepConstruct]()
-	graph.AddVertex("PlusOne", mockPlusEquation)
-	graph.AddVertex("PlusTwo", mockPlusEquation)
-	graph.AddEdge("PlusOne", "PlusTwo")
+	err := graph.AddVertex("PlusOne", mockPlusEquation)
+	if err != nil {
+		return nil
+	}
+	err = graph.AddVertex("PlusTwo", mockPlusEquation)
+	if err != nil {
+		return nil
+	}
+	err = graph.AddEdge("PlusOne", "PlusTwo")
+	if err != nil {
+		return nil
+	}
 	return graph
 }
 
 func mockParallelGraph() dag.DAG[StepConstruct] {
 	graph := dag.NewDAG[StepConstruct]()
-	graph.AddVertex("PlusOne", mockPlusEquation)
-	graph.AddVertex("PlusTwo", mockPlusEquation)
-	graph.AddVertex("PlusThree", mockPlusEquation)
-	graph.AddVertex("PlusFour", mockPlusEquation)
-	graph.AddVertex("PlusFive", mockPlusEquation)
-	graph.AddVertex("PlusSix", mockPlusEquation)
-	graph.AddVertex("PlusSeven", mockPlusEquation)
-	graph.AddEdge("PlusOne", "PlusTwo")
-	graph.AddEdge("PlusOne", "PlusThree")
-	graph.AddEdge("PlusOne", "PlusFour")
-	graph.AddEdge("PlusTwo", "PlusFive")
-	graph.AddEdge("PlusThree", "PlusFive")
-	graph.AddEdge("PlusFour", "PlusSix")
-	graph.AddEdge("PlusFive", "PlusSeven")
-	graph.AddEdge("PlusSix", "PlusSeven")
+	err := graph.AddVertex("PlusOne", mockPlusEquation)
+	if err != nil {
+		return nil
+	}
+	err = graph.AddVertex("PlusTwo", mockPlusEquation)
+	if err != nil {
+		return nil
+	}
+	err = graph.AddVertex("PlusThree", mockPlusEquation)
+	if err != nil {
+		return nil
+	}
+	err = graph.AddVertex("PlusFour", mockPlusEquation)
+	if err != nil {
+		return nil
+	}
+	err = graph.AddVertex("PlusFive", mockPlusEquation)
+	if err != nil {
+		return nil
+	}
+	err = graph.AddVertex("PlusSix", mockPlusEquation)
+	if err != nil {
+		return nil
+	}
+	err = graph.AddVertex("PlusSeven", mockPlusEquation)
+	if err != nil {
+		return nil
+	}
+	err = graph.AddEdge("PlusOne", "PlusTwo")
+	if err != nil {
+		return nil
+	}
+	err = graph.AddEdge("PlusOne", "PlusThree")
+	if err != nil {
+		return nil
+	}
+	err = graph.AddEdge("PlusOne", "PlusFour")
+	if err != nil {
+		return nil
+	}
+	err = graph.AddEdge("PlusTwo", "PlusFive")
+	if err != nil {
+		return nil
+	}
+	err = graph.AddEdge("PlusThree", "PlusFive")
+	if err != nil {
+		return nil
+	}
+	err = graph.AddEdge("PlusFour", "PlusSix")
+	if err != nil {
+		return nil
+	}
+	err = graph.AddEdge("PlusFive", "PlusSeven")
+	if err != nil {
+		return nil
+	}
+	err = graph.AddEdge("PlusSix", "PlusSeven")
+	if err != nil {
+		return nil
+	}
 	return graph
 }
 
 func mockMoreThanOneSouceGraph() dag.DAG[StepConstruct] {
 	graph := dag.NewDAG[StepConstruct]()
-	graph.AddVertex("PlusOne", mockPlusEquation)
-	graph.AddVertex("PlusTwo", mockPlusEquation)
-	graph.AddVertex("PlusThree", mockPlusEquation)
-	graph.AddEdge("PlusOne", "PlusThree")
-	graph.AddEdge("PlusTwo", "PlusThree")
+	err := graph.AddVertex("PlusOne", mockPlusEquation)
+	if err != nil {
+		return nil
+	}
+	err = graph.AddVertex("PlusTwo", mockPlusEquation)
+	if err != nil {
+		return nil
+	}
+	err = graph.AddVertex("PlusThree", mockPlusEquation)
+	if err != nil {
+		return nil
+	}
+	err = graph.AddEdge("PlusOne", "PlusThree")
+	if err != nil {
+		return nil
+	}
+	err = graph.AddEdge("PlusTwo", "PlusThree")
+	if err != nil {
+		return nil
+	}
 	return graph
 }
 
 func mockMoreThanOneOutGraph() dag.DAG[StepConstruct] {
 	graph := dag.NewDAG[StepConstruct]()
-	graph.AddVertex("PlusOne", mockPlusEquation)
-	graph.AddVertex("PlusTwo", mockPlusEquation)
-	graph.AddVertex("PlusThree", mockPlusEquation)
-	graph.AddEdge("PlusOne", "PlusTwo")
-	graph.AddEdge("PlusOne", "PlusThree")
+	err := graph.AddVertex("PlusOne", mockPlusEquation)
+	if err != nil {
+		return nil
+	}
+	err = graph.AddVertex("PlusTwo", mockPlusEquation)
+	if err != nil {
+		return nil
+	}
+	err = graph.AddVertex("PlusThree", mockPlusEquation)
+	if err != nil {
+		return nil
+	}
+	err = graph.AddEdge("PlusOne", "PlusTwo")
+	if err != nil {
+		return nil
+	}
+	err = graph.AddEdge("PlusOne", "PlusThree")
+	if err != nil {
+		return nil
+	}
 	return graph
 }
 
@@ -127,9 +211,18 @@ func mockErrorEquation() Step {
 
 func mockTestErrorGraph() dag.DAG[StepConstruct] {
 	graph := dag.NewDAG[StepConstruct]()
-	graph.AddVertex("TestErrorOne", mockErrorEquation)
-	graph.AddVertex("TestErrorTwo", mockErrorEquation)
-	graph.AddEdge("TestErrorOne", "TestErrorTwo")
+	err := graph.AddVertex("TestErrorOne", mockErrorEquation)
+	if err != nil {
+		return nil
+	}
+	err = graph.AddVertex("TestErrorTwo", mockErrorEquation)
+	if err != nil {
+		return nil
+	}
+	err = graph.AddEdge("TestErrorOne", "TestErrorTwo")
+	if err != nil {
+		return nil
+	}
 	return graph
 }
 
@@ -185,7 +278,7 @@ func TestPipelineHandleDag(t *testing.T) {
 		},
 		{
 			name: "test dag with more than one out",
-			g:    mockMoreThanOneSouceGraph(),
+			g:    mockMoreThanOneOutGraph(),
 			req:  &Request{Data: 0},
 			expect: func(t *testing.T, out *Request, err error) {
 				assert := assert.New(t)

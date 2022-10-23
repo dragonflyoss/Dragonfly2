@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"sync"
 
-	"d7y.io/dragonfly/v2/manager/types"
-
 	"github.com/sjwhitworth/golearn/base"
 
+	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/scheduler/training/models"
 
 	"d7y.io/dragonfly/v2/pkg/pipeline"
@@ -18,7 +17,7 @@ type Evaluating struct {
 	eval  *Eval
 	model *models.LinearRegression
 	*pipeline.StepInfra
-	once sync.Once
+	once *sync.Once
 }
 
 func (eva *Evaluating) GetSource(req *pipeline.Request) error {

@@ -46,7 +46,10 @@ func (save *Saving) GetSource(req *pipeline.Request) (*string, error) {
 	}
 
 	var modelTest models2.LinearRegression
-	json.Unmarshal(request.Data, &modelTest)
+	err := json.Unmarshal(request.Data, &modelTest)
+	if err != nil {
+		return nil, err
+	}
 	record := storage.Record{
 		IP:             rand.Intn(100)%2 + 1,
 		HostName:       rand.Intn(100)%2 + 1,
@@ -74,7 +77,10 @@ func (save *Saving) GetSource(req *pipeline.Request) (*string, error) {
 	if err != nil {
 		logger.Infof("ParseCSVToInstancesFromReader model fail, error is %v", err)
 	}
-	MissingValue(data1)
+	err = MissingValue(data1)
+	if err != nil {
+		return nil, err
+	}
 	arr := make([]float64, 15)
 	for i := 0; i < 15; i++ {
 		attrSpec2, _ := data1.GetAttribute(data1.AllAttributes()[i])

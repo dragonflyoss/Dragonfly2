@@ -18,7 +18,7 @@ type Training struct {
 	model *models.LinearRegression
 	to    *TrainOptions
 	*pipeline.StepInfra
-	once sync.Once
+	once *sync.Once
 }
 
 func (t *Training) GetSource(req *pipeline.Request) error {

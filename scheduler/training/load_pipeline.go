@@ -5,9 +5,8 @@ import (
 	"math"
 	"time"
 
-	"d7y.io/dragonfly/v2/scheduler/storage"
-
 	"d7y.io/dragonfly/v2/pkg/pipeline"
+	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
 type Loading struct {

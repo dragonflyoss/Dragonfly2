@@ -118,15 +118,15 @@ func (w *Watcher) satisfyStandard(version *managerv1.ModelVersion) bool {
 	return true
 }
 
-type WatcherOptionFunc func(options *Watcher)
+type OptionFunc func(options *Watcher)
 
-func WithStandard(standard *types.ModelVersion) WatcherOptionFunc {
+func WithStandard(standard *types.ModelVersion) OptionFunc {
 	return func(options *Watcher) {
 		options.standard = standard
 	}
 }
 
-func WithEnableAutoRefresh(EnableAutoRefresh bool) WatcherOptionFunc {
+func WithEnableAutoRefresh(EnableAutoRefresh bool) OptionFunc {
 	return func(options *Watcher) {
 		options.EnableAutoRefresh = EnableAutoRefresh
 	}
@@ -137,7 +137,7 @@ func (w *Watcher) Stop() {
 }
 
 // NewWatcher watcher is responsible for receive model load signal, and then send the model to evaluator
-func NewWatcher(mc client.Client, nv chan uint64, mv chan *types.ModelVersion, options ...WatcherOptionFunc) *Watcher {
+func NewWatcher(mc client.Client, nv chan uint64, mv chan *types.ModelVersion, options ...OptionFunc) *Watcher {
 	w := &Watcher{
 		needVersion:  nv,
 		modelVersion: mv,
