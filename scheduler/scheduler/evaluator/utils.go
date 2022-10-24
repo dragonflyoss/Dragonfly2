@@ -3,9 +3,10 @@ package evaluator
 import (
 	"math/big"
 
+	"github.com/montanaflynn/stats"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/scheduler/resource"
-	"github.com/montanaflynn/stats"
 )
 
 func NormalIsBadNode(peer *resource.Peer) bool {

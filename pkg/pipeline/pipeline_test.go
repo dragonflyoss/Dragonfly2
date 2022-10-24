@@ -6,9 +6,9 @@ import (
 	"reflect"
 	"testing"
 
-	"d7y.io/dragonfly/v2/pkg/dag"
-
 	"github.com/stretchr/testify/assert"
+
+	"d7y.io/dragonfly/v2/pkg/dag"
 )
 
 type PlusOne struct {

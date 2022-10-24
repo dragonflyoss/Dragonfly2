@@ -5,7 +5,6 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
-
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 

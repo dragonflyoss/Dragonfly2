@@ -5,13 +5,11 @@ import (
 	"encoding/json"
 	"sort"
 
-	"d7y.io/dragonfly/v2/scheduler/training/models"
-
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager/client"
+	"d7y.io/dragonfly/v2/scheduler/training/models"
 )
 
 type Watcher struct {

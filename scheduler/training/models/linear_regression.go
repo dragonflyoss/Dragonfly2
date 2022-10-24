@@ -5,10 +5,10 @@ import (
 	"errors"
 	"math/rand"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"github.com/mitchellh/mapstructure"
-
 	"github.com/sjwhitworth/golearn/base"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 // LinearRegression linear regression model struct.

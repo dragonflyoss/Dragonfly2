@@ -27,20 +27,12 @@ import (
 	"path/filepath"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/types"
-
 	"github.com/johanbrandhorst/certify"
-
-	"d7y.io/dragonfly/v2/scheduler/watcher"
-
-	"d7y.io/dragonfly/v2/scheduler/training"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	zapadapter "logur.dev/adapter/zap"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
-
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dynconfig"
 	models "d7y.io/dragonfly/v2/manager/types"
@@ -51,6 +43,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
+	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/job"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
@@ -60,6 +53,8 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/service"
 	"d7y.io/dragonfly/v2/scheduler/storage"
 	sto "d7y.io/dragonfly/v2/scheduler/storage"
+	"d7y.io/dragonfly/v2/scheduler/training"
+	"d7y.io/dragonfly/v2/scheduler/watcher"
 )
 
 const (

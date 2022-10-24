@@ -6,10 +6,9 @@ import (
 	"fmt"
 
 	cmap "github.com/orcaman/concurrent-map/v2"
+	"golang.org/x/exp/constraints"
 
 	"d7y.io/dragonfly/v2/pkg/dag"
-
-	"golang.org/x/exp/constraints"
 )
 
 type Pipeline struct {

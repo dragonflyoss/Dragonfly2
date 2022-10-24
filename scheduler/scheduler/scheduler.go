@@ -22,12 +22,10 @@ import (
 	"context"
 	"time"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-
-	"d7y.io/dragonfly/v2/manager/types"
-
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"

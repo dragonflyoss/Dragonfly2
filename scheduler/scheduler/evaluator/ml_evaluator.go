@@ -5,17 +5,16 @@ import (
 	"encoding/json"
 	"sync"
 
-	"d7y.io/dragonfly/v2/scheduler/training"
+	"github.com/gocarina/gocsv"
+	"github.com/sjwhitworth/golearn/base"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/storage"
+	"d7y.io/dragonfly/v2/scheduler/training"
 	"d7y.io/dragonfly/v2/scheduler/training/models"
-	"github.com/gocarina/gocsv"
-	"github.com/sjwhitworth/golearn/base"
 )
 
 // TimeBucketGap time gap between the prior bucket and the next bucket.

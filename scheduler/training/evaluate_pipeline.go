@@ -8,9 +8,8 @@ import (
 	"github.com/sjwhitworth/golearn/base"
 
 	"d7y.io/dragonfly/v2/manager/types"
-	"d7y.io/dragonfly/v2/scheduler/training/models"
-
 	"d7y.io/dragonfly/v2/pkg/pipeline"
+	"d7y.io/dragonfly/v2/scheduler/training/models"
 )
 
 type Evaluating struct {
