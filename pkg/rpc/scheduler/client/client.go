@@ -88,6 +88,7 @@ func GetClient(ctx context.Context, dynconfig config.Dynconfig, opts ...grpc.Dia
 	return &client{
 		SchedulerClient: schedulerv1.NewSchedulerClient(conn),
 		ClientConn:      conn,
+		Dynconfig:       dynconfig,
 	}, nil
 }
 
@@ -105,6 +106,9 @@ type Client interface {
 	// LeaveTask makes the peer leaving from task.
 	LeaveTask(context.Context, *schedulerv1.PeerTarget, ...grpc.CallOption) error
 
+	// LeaveTasks makes the peers leaving from task.
+	LeaveTasks(context.Context, *schedulerv1.LeaveTasksRequest, ...grpc.CallOption) error
+
 	// Checks if any peer has the given task.
 	StatTask(context.Context, *schedulerv1.StatTaskRequest, ...grpc.CallOption) (*schedulerv1.Task, error)
 
@@ -119,6 +123,7 @@ type Client interface {
 type client struct {
 	schedulerv1.SchedulerClient
 	*grpc.ClientConn
+	config.Dynconfig
 }
 
 // RegisterPeerTask registers a peer into task.
@@ -168,6 +173,47 @@ func (c *client) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget, opt
 		req,
 		opts...,
 	)
+
+	return err
+}
+
+// LeaveTasks makes the peers leaving from task.
+func (c *client) LeaveTasks(ctx context.Context, req *schedulerv1.LeaveTasksRequest, opts ...grpc.CallOption) error {
+	resolveSchedulerAddrs, err := c.GetResolveSchedulerAddrs()
+	if err != nil {
+		return err
+	}
+
+	for _, resolveSchedulerAddr := range resolveSchedulerAddrs {
+		conn, err := grpc.DialContext(
+			ctx,
+			resolveSchedulerAddr.Addr,
+			[]grpc.DialOption{
+				grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
+					otelgrpc.UnaryClientInterceptor(),
+					grpc_prometheus.UnaryClientInterceptor,
+					grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
+				)),
+				grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
+					otelgrpc.StreamClientInterceptor(),
+					grpc_prometheus.StreamClientInterceptor,
+					grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
+				)),
+			}...,
+		)
+		if err != nil {
+			logger.Error(err)
+			continue
+		}
+
+		if _, err := schedulerv1.NewSchedulerClient(conn).LeaveTasks(ctx, req, opts...); err != nil {
+			conn.Close()
+			logger.Error(err)
+			continue
+		}
+
+		conn.Close()
+	}
 
 	return err
 }

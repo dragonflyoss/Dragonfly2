@@ -80,11 +80,12 @@ func New(
 
 // RegisterPeerTask registers peer and triggers seed peer download task.
 func (s *Service) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest) (*schedulerv1.RegisterResult, error) {
+	logger.WithTaskAndPeerID(req.TaskId, req.PeerId).Infof("register peer task request: %#v %#v %#v",
+		req, req.UrlMeta, req.HostLoad)
 	// Register task and trigger seed peer download task.
 	task, needBackToSource := s.registerTask(ctx, req)
 	host := s.registerHost(ctx, req.PeerHost)
 	peer := s.registerPeer(ctx, req.PeerId, task, host, req.UrlMeta.Tag, req.UrlMeta.Application)
-	peer.Log.Infof("register peer task request: %#v %#v %#v", req, req.UrlMeta, req.HostLoad)
 
 	// When the peer registers for the first time and
 	// does not have a seed peer, it will back-to-source.
@@ -417,6 +418,20 @@ func (s *Service) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget) er
 	}
 
 	s.resource.PeerManager().Delete(peer.ID)
+	return nil
+}
+
+// LeaveTasks makes the peers unschedulable.
+func (s *Service) LeaveTasks(ctx context.Context, req *schedulerv1.LeaveTasksRequest) error {
+	logger.Infof("leave task %#v, peer %#v", req.TaskIds, req.PeerIds)
+	for _, peerID := range req.PeerIds {
+		if err := s.LeaveTask(ctx, &schedulerv1.PeerTarget{
+			PeerId: peerID,
+		}); err != nil {
+			logger.Errorf("leave peer %s failed: %s", peerID, err)
+		}
+	}
+
 	return nil
 }
 

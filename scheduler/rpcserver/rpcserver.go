@@ -110,3 +110,8 @@ func (s *Server) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTask
 func (s *Server) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget) (*empty.Empty, error) {
 	return new(empty.Empty), s.service.LeaveTask(ctx, req)
 }
+
+// LeaveTasks makes the peers unschedulable.
+func (s *Server) LeaveTasks(ctx context.Context, req *schedulerv1.LeaveTasksRequest) (*empty.Empty, error) {
+	return new(empty.Empty), s.service.LeaveTasks(ctx, req)
+}
