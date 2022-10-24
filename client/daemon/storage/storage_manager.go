@@ -901,6 +901,7 @@ func (s *storageManager) deleteTask(meta PeerTaskMetadata) error {
 		s.cleanSubIndex(meta.TaskID, meta.PeerID)
 	}
 	task.(Reclaimer).MarkInvalid()
+	task.(Reclaimer).MarkReclaim()
 	return task.(Reclaimer).Reclaim()
 }
 
