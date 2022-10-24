@@ -53,7 +53,6 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/service"
 	"d7y.io/dragonfly/v2/scheduler/storage"
-	sto "d7y.io/dragonfly/v2/scheduler/storage"
 	"d7y.io/dragonfly/v2/scheduler/training"
 	"d7y.io/dragonfly/v2/scheduler/watcher"
 )
@@ -187,10 +186,10 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 	// Initialize Storage.
 	logger.Infof("data dir is %v", d.DataDir())
-	storage, err := storage.New(d.DataDir())
+	sto, err := storage.New(d.DataDir())
 	// mock data
 	for i := 0; i < 20000; i++ {
-		record := sto.Record{
+		record := storage.Record{
 			IP:             rand.Intn(100)%2 + 1,
 			HostName:       rand.Intn(100)%2 + 1,
 			Tag:            rand.Intn(100)%2 + 1,
@@ -206,7 +205,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 			ParentCreateAt: time.Now().Unix()/72000000 + rand.Int63n(10),
 			ParentUpdateAt: time.Now().Unix()/72000000 + rand.Int63n(10),
 		}
-		err = storage.Create(record)
+		err = sto.Create(record)
 		if err != nil {
 			logger.Errorf("error is %v", err)
 		}
@@ -215,7 +214,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	if err != nil {
 		return nil, err
 	}
-	s.storage = storage
+	s.storage = sto
 
 	needVersion := make(chan uint64, 1)
 	modelVersion := make(chan *models.ModelVersion, 1)
@@ -241,7 +240,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 
 	if cfg.Scheduler.Training.Enable {
 		logger.Info("start to run scheduler")
-		s.train, err = training.NewML(storage, dynconfig, managerClient, &cfg.Scheduler.Training)
+		s.train, err = training.NewML(sto, dynconfig, managerClient, &cfg.Scheduler.Training)
 		if err != nil {
 			return nil, err
 		}
