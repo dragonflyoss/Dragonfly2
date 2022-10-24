@@ -26,18 +26,15 @@ import (
 	"testing"
 	"time"
 
-	"d7y.io/dragonfly/v2/scheduler/training/models"
-	"github.com/sjwhitworth/golearn/base"
-
-	"d7y.io/api/pkg/apis/scheduler/v1/mocks"
-
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
+	"github.com/sjwhitworth/golearn/base"
 	"github.com/stretchr/testify/assert"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
+	"d7y.io/api/pkg/apis/scheduler/v1/mocks"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/idgen"
@@ -45,6 +42,7 @@ import (
 	configmocks "d7y.io/dragonfly/v2/scheduler/config/mocks"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/scheduler/evaluator"
+	"d7y.io/dragonfly/v2/scheduler/training/models"
 )
 
 var (

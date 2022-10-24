@@ -36,6 +36,9 @@ func (ld *Loading) GetDataSource(req *pipeline.Request) (*pipeline.Request, erro
 func (ld *Loading) NewData(req *pipeline.Request) error {
 	store := req.Data.(storage.Storage)
 	reader, err := store.Open()
+	if err != nil {
+		return err
+	}
 	dataInstance, err := New(reader)
 	if err != nil {
 		return err

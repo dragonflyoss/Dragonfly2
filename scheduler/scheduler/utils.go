@@ -3,11 +3,11 @@ package scheduler
 import (
 	"sort"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"github.com/kevwan/mapreduce/v2"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/scheduler/evaluator"
-	"github.com/kevwan/mapreduce/v2"
 )
 
 func sortNodes(candidates []*resource.Peer, eval evaluator.Evaluator, peer *resource.Peer, total int32) ([]*resource.Peer, error) {
