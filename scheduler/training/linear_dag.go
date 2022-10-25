@@ -77,22 +77,18 @@ func (lr *LinearTraining) Process() (interface{}, error) {
 		Data:   lr.storage,
 	}
 	logger.Infof("storage total count is %v", lr.storage.Count())
-	// this check statement is just for test
-	if lr.cfg != nil {
-		dynconfigData, err := lr.cfg.Get()
-		if err != nil {
-			return nil, err
-		}
-		req.KeyVal[LoadType] = LoadData
-		req.KeyVal[ManagerClient] = lr.managerClient
-		req.KeyVal[DynConfigData] = dynconfigData
-	}
-	req.KeyVal[LoadType] = LoadData
-	req, err := p.Exec(req, lr.graph)
+	dynconfigData, err := lr.cfg.Get()
 	if err != nil {
 		return nil, err
 	}
-	return req.Data, nil
+	req.KeyVal[LoadType] = LoadData
+	req.KeyVal[ManagerClient] = lr.managerClient
+	req.KeyVal[DynConfigData] = dynconfigData
+	res, err := p.Exec(req, lr.graph)
+	if err != nil {
+		return nil, err
+	}
+	return res.Data, nil
 }
 
 func (lr *LinearTraining) Serve() {

@@ -21,7 +21,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"math/rand"
 	"net"
 	"net/http"
 	"path/filepath"
@@ -185,32 +184,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		return nil, err
 	}
 	// Initialize Storage.
-	logger.Infof("data dir is %v", d.DataDir())
 	sto, err := storage.New(d.DataDir())
-	// mock data
-	for i := 0; i < 20000; i++ {
-		record := storage.Record{
-			IP:             rand.Intn(100)%2 + 1,
-			HostName:       rand.Intn(100)%2 + 1,
-			Tag:            rand.Intn(100)%2 + 1,
-			Rate:           float64(rand.Intn(300) + 10),
-			ParentPiece:    float64(rand.Intn(240) + 14),
-			SecurityDomain: rand.Intn(100)%2 + 1,
-			IDC:            rand.Intn(100)%2 + 1,
-			NetTopology:    rand.Intn(100)%2 + 1,
-			Location:       rand.Intn(100)%2 + 1,
-			UploadRate:     float64(rand.Intn(550) + 3),
-			CreateAt:       time.Now().Unix()/72000000 + rand.Int63n(10),
-			UpdateAt:       time.Now().Unix()/72000000 + rand.Int63n(10),
-			ParentCreateAt: time.Now().Unix()/72000000 + rand.Int63n(10),
-			ParentUpdateAt: time.Now().Unix()/72000000 + rand.Int63n(10),
-		}
-		err = sto.Create(record)
-		if err != nil {
-			logger.Errorf("error is %v", err)
-		}
-	}
-	//
 	if err != nil {
 		return nil, err
 	}
