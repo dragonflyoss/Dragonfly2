@@ -69,6 +69,25 @@ func (mr *MockClientMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockClient)(nil).Close))
 }
 
+// LeaveHost mocks base method.
+func (m *MockClient) LeaveHost(arg0 context.Context, arg1 *v1.LeaveHostRequest, arg2 ...grpc.CallOption) error {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "LeaveHost", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// LeaveHost indicates an expected call of LeaveHost.
+func (mr *MockClientMockRecorder) LeaveHost(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LeaveHost", reflect.TypeOf((*MockClient)(nil).LeaveHost), varargs...)
+}
+
 // LeaveTask mocks base method.
 func (m *MockClient) LeaveTask(arg0 context.Context, arg1 *v1.PeerTarget, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
