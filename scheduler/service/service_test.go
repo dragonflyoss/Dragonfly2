@@ -2320,7 +2320,7 @@ func TestService_registerHost(t *testing.T) {
 			expect: func(t *testing.T, host *resource.Host) {
 				assert := assert.New(t)
 				assert.Equal(host.ID, mockRawHost.Id)
-				assert.Equal(host.UploadLoadLimit.Load(), int32(10))
+				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(10))
 			},
 		},
 		{
@@ -2654,8 +2654,6 @@ func TestService_handlePieceSuccess(t *testing.T) {
 }
 
 func TestService_handlePieceFail(t *testing.T) {
-	mockHost := resource.NewHost(mockRawHost)
-	mockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 
 	tests := []struct {
 		name   string
@@ -2672,15 +2670,14 @@ func TestService_handlePieceFail(t *testing.T) {
 				SeedPeer:  config.SeedPeerConfig{Enable: true},
 				Metrics:   config.MetricsConfig{EnablePeerHost: true},
 			},
-			piece:  &schedulerv1.PieceResult{},
-			peer:   resource.NewPeer(mockPeerID, mockTask, mockHost),
-			parent: resource.NewPeer(mockSeedPeerID, mockTask, mockHost),
+			piece: &schedulerv1.PieceResult{},
 			run: func(t *testing.T, svc *Service, peer *resource.Peer, parent *resource.Peer, piece *schedulerv1.PieceResult, peerManager resource.PeerManager, seedPeer resource.SeedPeer, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockSeedPeerMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateBackToSource)
 
 				svc.handlePieceFail(context.Background(), peer, piece)
 				assert := assert.New(t)
 				assert.True(peer.FSM.Is(resource.PeerStateBackToSource))
+				assert.Equal(parent.Host.UploadFailedCount.Load(), int64(0))
 			},
 		},
 		{
@@ -2694,8 +2691,6 @@ func TestService_handlePieceFail(t *testing.T) {
 				Code:   commonv1.Code_ClientWaitPieceReady,
 				DstPid: mockSeedPeerID,
 			},
-			peer:   resource.NewPeer(mockPeerID, mockTask, mockHost),
-			parent: resource.NewPeer(mockSeedPeerID, mockTask, mockHost),
 			run: func(t *testing.T, svc *Service, peer *resource.Peer, parent *resource.Peer, piece *schedulerv1.PieceResult, peerManager resource.PeerManager, seedPeer resource.SeedPeer, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockSeedPeerMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				blocklist := set.NewSafeSet[string]()
@@ -2709,6 +2704,7 @@ func TestService_handlePieceFail(t *testing.T) {
 				svc.handlePieceFail(context.Background(), peer, piece)
 				assert := assert.New(t)
 				assert.True(peer.FSM.Is(resource.PeerStateRunning))
+				assert.Equal(parent.Host.UploadFailedCount.Load(), int64(0))
 			},
 		},
 		{
@@ -2722,8 +2718,6 @@ func TestService_handlePieceFail(t *testing.T) {
 				Code:   commonv1.Code_PeerTaskNotFound,
 				DstPid: mockSeedPeerID,
 			},
-			peer:   resource.NewPeer(mockPeerID, mockTask, mockHost),
-			parent: resource.NewPeer(mockSeedPeerID, mockTask, mockHost),
 			run: func(t *testing.T, svc *Service, peer *resource.Peer, parent *resource.Peer, piece *schedulerv1.PieceResult, peerManager resource.PeerManager, seedPeer resource.SeedPeer, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockSeedPeerMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				parent.FSM.SetState(resource.PeerStateRunning)
@@ -2739,6 +2733,7 @@ func TestService_handlePieceFail(t *testing.T) {
 				assert := assert.New(t)
 				assert.True(peer.FSM.Is(resource.PeerStateRunning))
 				assert.True(parent.FSM.Is(resource.PeerStateFailed))
+				assert.Equal(parent.Host.UploadFailedCount.Load(), int64(1))
 			},
 		},
 		{
@@ -2752,8 +2747,6 @@ func TestService_handlePieceFail(t *testing.T) {
 				Code:   commonv1.Code_ClientPieceNotFound,
 				DstPid: mockSeedPeerID,
 			},
-			peer:   resource.NewPeer(mockPeerID, mockTask, mockHost),
-			parent: resource.NewPeer(mockSeedPeerID, mockTask, mockHost),
 			run: func(t *testing.T, svc *Service, peer *resource.Peer, parent *resource.Peer, piece *schedulerv1.PieceResult, peerManager resource.PeerManager, seedPeer resource.SeedPeer, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockSeedPeerMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				peer.Host.Type = resource.HostTypeNormal
@@ -2768,6 +2761,7 @@ func TestService_handlePieceFail(t *testing.T) {
 				svc.handlePieceFail(context.Background(), peer, piece)
 				assert := assert.New(t)
 				assert.True(peer.FSM.Is(resource.PeerStateRunning))
+				assert.Equal(parent.Host.UploadFailedCount.Load(), int64(1))
 			},
 		},
 		{
@@ -2781,8 +2775,6 @@ func TestService_handlePieceFail(t *testing.T) {
 				Code:   commonv1.Code_ClientPieceRequestFail,
 				DstPid: mockSeedPeerID,
 			},
-			peer:   resource.NewPeer(mockPeerID, mockTask, mockHost),
-			parent: resource.NewPeer(mockSeedPeerID, mockTask, mockHost),
 			run: func(t *testing.T, svc *Service, peer *resource.Peer, parent *resource.Peer, piece *schedulerv1.PieceResult, peerManager resource.PeerManager, seedPeer resource.SeedPeer, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockSeedPeerMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				parent.FSM.SetState(resource.PeerStateRunning)
@@ -2798,6 +2790,7 @@ func TestService_handlePieceFail(t *testing.T) {
 				assert := assert.New(t)
 				assert.True(peer.FSM.Is(resource.PeerStateRunning))
 				assert.True(parent.FSM.Is(resource.PeerStateRunning))
+				assert.Equal(parent.Host.UploadFailedCount.Load(), int64(1))
 			},
 		},
 		{
@@ -2811,8 +2804,6 @@ func TestService_handlePieceFail(t *testing.T) {
 				Code:   commonv1.Code_ClientPieceRequestFail,
 				DstPid: mockSeedPeerID,
 			},
-			peer:   resource.NewPeer(mockPeerID, mockTask, mockHost),
-			parent: resource.NewPeer(mockSeedPeerID, mockTask, mockHost),
 			run: func(t *testing.T, svc *Service, peer *resource.Peer, parent *resource.Peer, piece *schedulerv1.PieceResult, peerManager resource.PeerManager, seedPeer resource.SeedPeer, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockSeedPeerMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				parent.FSM.SetState(resource.PeerStateRunning)
@@ -2828,6 +2819,7 @@ func TestService_handlePieceFail(t *testing.T) {
 				assert := assert.New(t)
 				assert.True(peer.FSM.Is(resource.PeerStateRunning))
 				assert.True(parent.FSM.Is(resource.PeerStateRunning))
+				assert.Equal(parent.Host.UploadFailedCount.Load(), int64(1))
 			},
 		},
 	}
@@ -2841,10 +2833,14 @@ func TestService_handlePieceFail(t *testing.T) {
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			storage := storagemocks.NewMockStorage(ctl)
 			peerManager := resource.NewMockPeerManager(ctl)
+			mockHost := resource.NewHost(mockRawHost)
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
+			parent := resource.NewPeer(mockSeedPeerID, mockTask, mockHost)
 			seedPeer := resource.NewMockSeedPeer(ctl)
 			svc := New(tc.config, res, scheduler, dynconfig, storage)
 
-			tc.run(t, svc, tc.peer, tc.parent, tc.piece, peerManager, seedPeer, scheduler.EXPECT(), res.EXPECT(), peerManager.EXPECT(), seedPeer.EXPECT())
+			tc.run(t, svc, peer, parent, tc.piece, peerManager, seedPeer, scheduler.EXPECT(), res.EXPECT(), peerManager.EXPECT(), seedPeer.EXPECT())
 		})
 	}
 }

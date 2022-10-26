@@ -104,8 +104,8 @@ func seed(cfg *config.Config, db *gorm.DB) error {
 				"filter_parent_range_limit": schedulerconfig.DefaultSchedulerFilterParentRangeLimit,
 			},
 			ClientConfig: map[string]any{
-				"load_limit":     schedulerconfig.DefaultClientLoadLimit,
-				"parallel_count": schedulerconfig.DefaultClientParallelCount,
+				"load_limit":     schedulerconfig.DefaultPeerConcurrentUploadLimit,
+				"parallel_count": schedulerconfig.DefaultPeerParallelCount,
 			},
 			Scopes:    map[string]any{},
 			IsDefault: true,
@@ -126,7 +126,7 @@ func seed(cfg *config.Config, db *gorm.DB) error {
 			},
 			Name: DefaultSeedPeerClusterName,
 			Config: map[string]any{
-				"load_limit": schedulerconfig.DefaultSeedPeerLoadLimit,
+				"load_limit": schedulerconfig.DefaultSeedPeerConcurrentUploadLimit,
 			},
 			IsDefault: true,
 		}).Error; err != nil {

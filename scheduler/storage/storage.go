@@ -118,8 +118,8 @@ type Record struct {
 	// Example: country|province|...
 	Location string `csv:"location"`
 
-	// FreeUploadLoad is free upload load of host.
-	FreeUploadLoad int32 `csv:"freeUpoladLoad"`
+	// FreeUploadCount is free upload count of host.
+	FreeUploadCount int32 `csv:"freeUpoladLoad"`
 
 	// State is the download state of the peer.
 	State int `csv:"state"`
@@ -162,8 +162,8 @@ type Record struct {
 	// Example: country|province|...
 	ParentLocation string `csv:"parentLocation"`
 
-	// ParentFreeUploadLoad is parent free upload load of host.
-	ParentFreeUploadLoad int32 `csv:"parentFreeUploadLoad"`
+	// ParentFreeUploadCount is parent free upload count of host.
+	ParentFreeUploadCount int32 `csv:"parentFreeUploadCount"`
 
 	// ParentHostType is parent host type.
 	ParentHostType int `csv:"parentHostType"`
