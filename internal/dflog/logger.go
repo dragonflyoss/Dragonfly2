@@ -21,6 +21,7 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -316,6 +317,7 @@ func RedirectStdoutAndStderr(console bool, logDir string) {
 	} else if err := unix.Dup2(int(stdout.Fd()), int(os.Stdout.Fd())); err != nil {
 		Warnf("redirect stdout error: %s", err)
 	}
+	fmt.Fprintf(os.Stdout, "stdout redirect at %v\n", time.Now())
 
 	// Redirect stderr to stderr.log file.
 	stderrPath := path.Join(logDir, "stderr.log")
@@ -324,4 +326,6 @@ func RedirectStdoutAndStderr(console bool, logDir string) {
 	} else if err := unix.Dup2(int(stderr.Fd()), int(os.Stderr.Fd())); err != nil {
 		Warnf("redirect stderr error: %s", err)
 	}
+
+	fmt.Fprintf(os.Stderr, "stderr redirect at %v\n", time.Now())
 }
