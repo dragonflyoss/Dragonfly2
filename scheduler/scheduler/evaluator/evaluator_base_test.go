@@ -117,7 +117,7 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(0.9))
+				assert.Equal(score, float64(0.9249999999999999))
 			},
 		},
 		{
@@ -132,7 +132,7 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(0.9))
+				assert.Equal(score, float64(0.9249999999999999))
 			},
 		},
 		{
@@ -147,7 +147,7 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(0.9))
+				assert.Equal(score, float64(0.9249999999999999))
 			},
 		},
 	}
@@ -278,7 +278,59 @@ func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
 	}
 }
 
-func TestEvaluatorBase_calculateFreeLoadScore(t *testing.T) {
+func TestEvaluatorBase_calculatehostUploadSuccessScore(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(host *resource.Host)
+		expect func(t *testing.T, score float64)
+	}{
+		{
+			name: "UploadFailedCount is larger than UploadCount",
+			mock: func(host *resource.Host) {
+				host.UploadCount.Add(1)
+				host.UploadFailedCount.Add(2)
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.Equal(score, float64(0))
+			},
+		},
+		{
+			name: "UploadFailedCount and UploadCount is zero",
+			mock: func(host *resource.Host) {
+				host.UploadCount.Add(0)
+				host.UploadFailedCount.Add(0)
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.Equal(score, float64(1))
+			},
+		},
+		{
+			name: "UploadCount is larger than UploadFailedCount",
+			mock: func(host *resource.Host) {
+				host.UploadCount.Add(2)
+				host.UploadFailedCount.Add(1)
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.Equal(score, float64(0.5))
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			host := resource.NewHost(mockRawHost)
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockPeer := resource.NewPeer(mockPeerID, mockTask, host)
+			tc.mock(host)
+			tc.expect(t, calculateParentHostUploadSuccessScore(mockPeer))
+		})
+	}
+}
+
+func TestEvaluatorBase_calculateFreeUploadScore(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(host *resource.Host, mockPeer *resource.Peer)
@@ -287,7 +339,7 @@ func TestEvaluatorBase_calculateFreeLoadScore(t *testing.T) {
 		{
 			name: "host peers is not empty",
 			mock: func(host *resource.Host, mockPeer *resource.Peer) {
-				mockPeer.Host.UploadPeerCount.Add(1)
+				mockPeer.Host.ConcurrentUploadCount.Add(1)
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
@@ -310,7 +362,7 @@ func TestEvaluatorBase_calculateFreeLoadScore(t *testing.T) {
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := resource.NewPeer(mockPeerID, mockTask, host)
 			tc.mock(host, mockPeer)
-			tc.expect(t, calculateFreeLoadScore(host))
+			tc.expect(t, calculateFreeUploadScore(host))
 		})
 	}
 }

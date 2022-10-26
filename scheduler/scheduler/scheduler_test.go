@@ -496,7 +496,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 				mockPeer.FSM.SetState(resource.PeerStateRunning)
 				peer.Task.StorePeer(peer)
 				peer.Task.StorePeer(mockPeer)
-				mockPeer.Host.UploadLoadLimit.Store(0)
+				mockPeer.Host.ConcurrentUploadLimit.Store(0)
 
 				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1)
 			},
@@ -703,7 +703,7 @@ func TestScheduler_FindParent(t *testing.T) {
 				mockPeers[0].FSM.SetState(resource.PeerStateRunning)
 				peer.Task.StorePeer(peer)
 				peer.Task.StorePeer(mockPeers[0])
-				mockPeers[0].Host.UploadLoadLimit.Store(0)
+				mockPeers[0].Host.ConcurrentUploadLimit.Store(0)
 
 				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1)
 			},

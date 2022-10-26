@@ -487,7 +487,7 @@ func (s *Service) registerHost(ctx context.Context, rawHost *schedulerv1.PeerHos
 		// Get scheduler cluster client config by manager.
 		var options []resource.HostOption
 		if clientConfig, ok := s.dynconfig.GetSchedulerClusterClientConfig(); ok && clientConfig.LoadLimit > 0 {
-			options = append(options, resource.WithUploadLoadLimit(int32(clientConfig.LoadLimit)))
+			options = append(options, resource.WithConcurrentUploadLimit(int32(clientConfig.LoadLimit)))
 		}
 
 		host = resource.NewHost(rawHost, options...)
@@ -699,10 +699,13 @@ func (s *Service) handlePieceFail(ctx context.Context, peer *resource.Peer, piec
 	parent, loaded := s.resource.PeerManager().Load(piece.DstPid)
 	if !loaded {
 		peer.Log.Errorf("reschedule parent because of peer can not found parent %s", piece.DstPid)
-		peer.BlockPeers.Add(piece.DstPid)
-		s.scheduler.ScheduleParent(ctx, peer, peer.BlockPeers)
+		peer.BlockParents.Add(piece.DstPid)
+		s.scheduler.ScheduleParent(ctx, peer, peer.BlockParents)
 		return
 	}
+
+	// host upload failed and UploadErrorCount needs to be increased.
+	parent.Host.UploadFailedCount.Inc()
 
 	// It’s not a case of back-to-source downloading failed,
 	// to help peer to reschedule the parent node.
@@ -738,8 +741,8 @@ func (s *Service) handlePieceFail(ctx context.Context, peer *resource.Peer, piec
 	}
 
 	peer.Log.Infof("reschedule parent because of peer receive failed piece")
-	peer.BlockPeers.Add(parent.ID)
-	s.scheduler.ScheduleParent(ctx, peer, peer.BlockPeers)
+	peer.BlockParents.Add(parent.ID)
+	s.scheduler.ScheduleParent(ctx, peer, peer.BlockParents)
 }
 
 // handlePeerSuccess handles successful peer.
@@ -784,7 +787,7 @@ func (s *Service) handlePeerFail(ctx context.Context, peer *resource.Peer) {
 	// Reschedule a new parent to children of peer to exclude the current failed peer.
 	for _, child := range peer.Children() {
 		child.Log.Infof("reschedule parent because of parent peer %s is failed", peer.ID)
-		s.scheduler.ScheduleParent(ctx, child, child.BlockPeers)
+		s.scheduler.ScheduleParent(ctx, child, child.BlockParents)
 	}
 }
 
@@ -799,7 +802,7 @@ func (s *Service) handleLegacySeedPeer(ctx context.Context, peer *resource.Peer)
 	// Reschedule a new parent to children of peer to exclude the current failed peer.
 	for _, child := range peer.Children() {
 		child.Log.Infof("reschedule parent because of parent peer %s is failed", peer.ID)
-		s.scheduler.ScheduleParent(ctx, child, child.BlockPeers)
+		s.scheduler.ScheduleParent(ctx, child, child.BlockParents)
 	}
 
 	s.resource.PeerManager().Delete(peer.ID)
@@ -904,36 +907,36 @@ func (s *Service) createRecord(peer *resource.Peer, peerState int, req *schedule
 	}
 
 	record := storage.Record{
-		ID:                   peer.ID,
-		IP:                   peer.Host.IP,
-		Hostname:             peer.Host.Hostname,
-		Tag:                  peer.Tag,
-		Cost:                 req.Cost,
-		PieceCount:           int32(peer.FinishedPieces.Count()),
-		TotalPieceCount:      peer.Task.TotalPieceCount.Load(),
-		ContentLength:        peer.Task.ContentLength.Load(),
-		SecurityDomain:       peer.Host.SecurityDomain,
-		IDC:                  peer.Host.IDC,
-		NetTopology:          peer.Host.NetTopology,
-		Location:             peer.Host.Location,
-		FreeUploadLoad:       peer.Host.FreeUploadLoad(),
-		State:                peerState,
-		HostType:             int(peer.Host.Type),
-		CreateAt:             peer.CreateAt.Load().UnixNano(),
-		UpdateAt:             peer.UpdateAt.Load().UnixNano(),
-		ParentID:             parent.ID,
-		ParentIP:             parent.Host.IP,
-		ParentHostname:       parent.Host.Hostname,
-		ParentTag:            parent.Tag,
-		ParentPieceCount:     int32(parent.FinishedPieces.Count()),
-		ParentSecurityDomain: parent.Host.SecurityDomain,
-		ParentIDC:            parent.Host.IDC,
-		ParentNetTopology:    parent.Host.NetTopology,
-		ParentLocation:       parent.Host.Location,
-		ParentFreeUploadLoad: parent.Host.FreeUploadLoad(),
-		ParentHostType:       int(parent.Host.Type),
-		ParentCreateAt:       parent.CreateAt.Load().UnixNano(),
-		ParentUpdateAt:       parent.UpdateAt.Load().UnixNano(),
+		ID:                    peer.ID,
+		IP:                    peer.Host.IP,
+		Hostname:              peer.Host.Hostname,
+		Tag:                   peer.Tag,
+		Cost:                  req.Cost,
+		PieceCount:            int32(peer.FinishedPieces.Count()),
+		TotalPieceCount:       peer.Task.TotalPieceCount.Load(),
+		ContentLength:         peer.Task.ContentLength.Load(),
+		SecurityDomain:        peer.Host.SecurityDomain,
+		IDC:                   peer.Host.IDC,
+		NetTopology:           peer.Host.NetTopology,
+		Location:              peer.Host.Location,
+		FreeUploadCount:       peer.Host.FreeUploadCount(),
+		State:                 peerState,
+		HostType:              int(peer.Host.Type),
+		CreateAt:              peer.CreateAt.Load().UnixNano(),
+		UpdateAt:              peer.UpdateAt.Load().UnixNano(),
+		ParentID:              parent.ID,
+		ParentIP:              parent.Host.IP,
+		ParentHostname:        parent.Host.Hostname,
+		ParentTag:             parent.Tag,
+		ParentPieceCount:      int32(parent.FinishedPieces.Count()),
+		ParentSecurityDomain:  parent.Host.SecurityDomain,
+		ParentIDC:             parent.Host.IDC,
+		ParentNetTopology:     parent.Host.NetTopology,
+		ParentLocation:        parent.Host.Location,
+		ParentFreeUploadCount: parent.Host.FreeUploadCount(),
+		ParentHostType:        int(parent.Host.Type),
+		ParentCreateAt:        parent.CreateAt.Load().UnixNano(),
+		ParentUpdateAt:        parent.UpdateAt.Load().UnixNano(),
 	}
 
 	if err := s.storage.Create(record); err != nil {

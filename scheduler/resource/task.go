@@ -247,7 +247,8 @@ func (t *Task) AddPeerEdge(fromPeer *Peer, toPeer *Peer) error {
 		return err
 	}
 
-	fromPeer.Host.UploadPeerCount.Inc()
+	fromPeer.Host.ConcurrentUploadCount.Inc()
+	fromPeer.Host.UploadCount.Inc()
 	return nil
 }
 
@@ -263,7 +264,7 @@ func (t *Task) DeletePeerInEdges(key string) error {
 			continue
 		}
 
-		parent.Value.Host.UploadPeerCount.Dec()
+		parent.Value.Host.ConcurrentUploadCount.Dec()
 	}
 
 	vertex.DeleteInEdges()
@@ -282,7 +283,7 @@ func (t *Task) DeletePeerOutEdges(key string) error {
 		return errors.New("vertex value is nil")
 	}
 
-	peer.Host.UploadPeerCount.Sub(int32(vertex.Children.Len()))
+	peer.Host.ConcurrentUploadCount.Sub(int32(vertex.Children.Len()))
 	vertex.DeleteOutEdges()
 	return nil
 }
