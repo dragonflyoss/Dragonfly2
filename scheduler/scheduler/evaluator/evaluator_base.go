@@ -30,22 +30,25 @@ import (
 
 const (
 	// Finished piece weight.
-	finishedPieceWeight float64 = 0.3
+	finishedPieceWeight float64 = 0.2
 
-	// Free load weight.
-	freeLoadWeight = 0.2
+	// Parent's host upload success weight.
+	parentHostUploadSuccessWeight = 0.2
+
+	// Free upload weight.
+	freeUploadWeight = 0.15
 
 	// Host type weight.
-	hostTypeWeight = 0.2
+	hostTypeWeight = 0.15
 
 	// IDC affinity weight.
-	idcAffinityWeight = 0.15
+	idcAffinityWeight = 0.1
 
 	// NetTopology affinity weight.
 	netTopologyAffinityWeight = 0.1
 
 	// Location affinity weight.
-	locationAffinityWeight = 0.05
+	locationAffinityWeight = 0.1
 )
 
 const (
@@ -86,7 +89,8 @@ func (eb *evaluatorBase) Evaluate(parent *resource.Peer, child *resource.Peer, t
 	}
 
 	return finishedPieceWeight*calculatePieceScore(parent, child, totalPieceCount) +
-		freeLoadWeight*calculateFreeLoadScore(parent.Host) +
+		parentHostUploadSuccessWeight*calculateParentHostUploadSuccessScore(parent) +
+		freeUploadWeight*calculateFreeUploadScore(parent.Host) +
 		hostTypeWeight*calculateHostTypeScore(parent) +
 		idcAffinityWeight*calculateIDCAffinityScore(parent.Host, child.Host) +
 		netTopologyAffinityWeight*calculateMultiElementAffinityScore(parent.Host.NetTopology, child.Host.NetTopology) +
@@ -109,12 +113,28 @@ func calculatePieceScore(parent *resource.Peer, child *resource.Peer, totalPiece
 	return float64(parentFinishedPieceCount) - float64(childFinishedPieceCount)
 }
 
-// calculateFreeLoadScore 0.0~1.0 larger and better.
-func calculateFreeLoadScore(host *resource.Host) float64 {
-	uploadLoadLimit := host.UploadLoadLimit.Load()
-	freeUploadLoad := host.FreeUploadLoad()
-	if uploadLoadLimit > 0 && freeUploadLoad > 0 {
-		return float64(freeUploadLoad) / float64(uploadLoadLimit)
+// calculateParentHostUploadSuccessScore 0.0~unlimited larger and better.
+func calculateParentHostUploadSuccessScore(peer *resource.Peer) float64 {
+	uploadCount := peer.Host.UploadCount.Load()
+	uploadFailedCount := peer.Host.UploadFailedCount.Load()
+	if uploadCount < uploadFailedCount {
+		return minScore
+	}
+
+	// Host has not been scheduled, then it is scheduled first.
+	if uploadCount == 0 && uploadFailedCount == 0 {
+		return maxScore
+	}
+
+	return float64(uploadCount-uploadFailedCount) / float64(uploadCount)
+}
+
+// calculateFreeUploadScore 0.0~1.0 larger and better.
+func calculateFreeUploadScore(host *resource.Host) float64 {
+	ConcurrentUploadLimit := host.ConcurrentUploadLimit.Load()
+	freeUploadCount := host.FreeUploadCount()
+	if ConcurrentUploadLimit > 0 && freeUploadCount > 0 {
+		return float64(freeUploadCount) / float64(ConcurrentUploadLimit)
 	}
 
 	return minScore

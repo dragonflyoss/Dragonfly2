@@ -103,7 +103,7 @@ func (h *hostManager) RunGC() error {
 		}
 
 		if host.PeerCount.Load() == 0 &&
-			host.UploadPeerCount.Load() == 0 &&
+			host.ConcurrentUploadCount.Load() == 0 &&
 			host.Type == HostTypeNormal {
 			host.Log.Info("host has been reclaimed")
 			h.Delete(host.ID)
