@@ -111,7 +111,13 @@ func (s *Server) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget) (*e
 	return new(empty.Empty), s.service.LeaveTask(ctx, req)
 }
 
-// LeaveTasks makes the peers unschedulable.
-func (s *Server) LeaveTasks(ctx context.Context, req *schedulerv1.LeaveTasksRequest) (*empty.Empty, error) {
-	return new(empty.Empty), s.service.LeaveTasks(ctx, req)
+// LeaveHost releases host in scheduler.
+func (s *Server) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostRequest) (*empty.Empty, error) {
+	metrics.LeaveHostCount.Inc()
+	if err := s.service.LeaveHost(ctx, req); err != nil {
+		metrics.LeaveHostFailureCount.Inc()
+		return new(empty.Empty), err
+	}
+
+	return new(empty.Empty), nil
 }

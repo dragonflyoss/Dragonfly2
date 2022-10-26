@@ -164,7 +164,7 @@ func (s *Service) ReportPieceResult(stream schedulerv1.Scheduler_ReportPieceResu
 	var (
 		peer        *resource.Peer
 		initialized bool
-		ok          bool
+		loaded      bool
 	)
 
 	for {
@@ -188,8 +188,8 @@ func (s *Service) ReportPieceResult(stream schedulerv1.Scheduler_ReportPieceResu
 			initialized = true
 
 			// Get peer from peer manager.
-			peer, ok = s.resource.PeerManager().Load(piece.SrcPid)
-			if !ok {
+			peer, loaded = s.resource.PeerManager().Load(piece.SrcPid)
+			if !loaded {
 				msg := fmt.Sprintf("peer %s not found", piece.SrcPid)
 				logger.Error(msg)
 				return dferrors.New(commonv1.Code_SchedPeerNotFound, msg)
@@ -224,7 +224,7 @@ func (s *Service) ReportPieceResult(stream schedulerv1.Scheduler_ReportPieceResu
 			// Collect peer host traffic metrics.
 			if s.config.Metrics.Enable && s.config.Metrics.EnablePeerHost {
 				metrics.PeerHostTraffic.WithLabelValues(peer.Tag, peer.Application, metrics.PeerHostTrafficDownloadType, peer.Host.ID, peer.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
-				if parent, ok := s.resource.PeerManager().Load(piece.DstPid); ok {
+				if parent, loaded := s.resource.PeerManager().Load(piece.DstPid); loaded {
 					metrics.PeerHostTraffic.WithLabelValues(peer.Tag, peer.Application, metrics.PeerHostTrafficUploadType, parent.Host.ID, parent.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
 				} else {
 					peer.Log.Warnf("dst peer %s not found for piece %#v %#v", piece.DstPid, piece, piece.PieceInfo)
@@ -259,8 +259,8 @@ func (s *Service) ReportPieceResult(stream schedulerv1.Scheduler_ReportPieceResu
 
 // ReportPeerResult handles peer result reported by dfdaemon.
 func (s *Service) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult) error {
-	peer, ok := s.resource.PeerManager().Load(req.PeerId)
-	if !ok {
+	peer, loaded := s.resource.PeerManager().Load(req.PeerId)
+	if !loaded {
 		msg := fmt.Sprintf("report peer result and peer %s is not exists", req.PeerId)
 		logger.Error(msg)
 		return dferrors.New(commonv1.Code_SchedPeerNotFound, msg)
@@ -392,17 +392,17 @@ func (s *Service) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTas
 	return nil
 }
 
-// LeaveTask makes the peer unschedulable.
+// LeaveTask releases peer in scheduler.
 func (s *Service) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget) error {
-	peer, ok := s.resource.PeerManager().Load(req.PeerId)
-	if !ok {
-		msg := fmt.Sprintf("leave task and peer %s is not exists", req.PeerId)
+	peer, loaded := s.resource.PeerManager().Load(req.PeerId)
+	if !loaded {
+		msg := fmt.Sprintf("peer %s not found", req.PeerId)
 		logger.Error(msg)
 		return dferrors.New(commonv1.Code_SchedPeerNotFound, msg)
 	}
 	metrics.LeaveTaskCount.WithLabelValues(peer.Tag, peer.Application).Inc()
 
-	peer.Log.Infof("leave task: %#v", req)
+	peer.Log.Infof("leave peer: %#v", req)
 	if err := peer.FSM.Event(resource.PeerEventLeave); err != nil {
 		metrics.LeaveTaskFailureCount.WithLabelValues(peer.Tag, peer.Application).Inc()
 
@@ -411,26 +411,20 @@ func (s *Service) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget) er
 		return dferrors.New(commonv1.Code_SchedTaskStatusError, msg)
 	}
 
-	// Reschedule a new parent to children of peer to exclude the current leave peer.
-	for _, child := range peer.Children() {
-		child.Log.Infof("schedule parent because of parent peer %s is leaving", peer.ID)
-		s.scheduler.ScheduleParent(ctx, child, child.BlockPeers)
-	}
-
-	s.resource.PeerManager().Delete(peer.ID)
 	return nil
 }
 
-// LeaveTasks makes the peers unschedulable.
-func (s *Service) LeaveTasks(ctx context.Context, req *schedulerv1.LeaveTasksRequest) error {
-	logger.Infof("leave task %#v, peer %#v", req.TaskIds, req.PeerIds)
-	for _, peerID := range req.PeerIds {
-		if err := s.LeaveTask(ctx, &schedulerv1.PeerTarget{
-			PeerId: peerID,
-		}); err != nil {
-			logger.Errorf("leave peer %s failed: %s", peerID, err)
-		}
+// LeaveHost releases host in scheduler.
+func (s *Service) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostRequest) error {
+	host, loaded := s.resource.HostManager().Load(req.Id)
+	if !loaded {
+		msg := fmt.Sprintf("host %s not found", req.Id)
+		logger.Error(msg)
+		return dferrors.New(commonv1.Code_BadRequest, msg)
 	}
+
+	host.Log.Infof("leave host: %#v", req)
+	host.LeavePeers()
 
 	return nil
 }
@@ -488,8 +482,8 @@ func (s *Service) registerTask(ctx context.Context, req *schedulerv1.PeerTaskReq
 
 // registerHost creates a new host or reuses a previous host.
 func (s *Service) registerHost(ctx context.Context, rawHost *schedulerv1.PeerHost) *resource.Host {
-	host, ok := s.resource.HostManager().Load(rawHost.Id)
-	if !ok {
+	host, loaded := s.resource.HostManager().Load(rawHost.Id)
+	if !loaded {
 		// Get scheduler cluster client config by manager.
 		var options []resource.HostOption
 		if clientConfig, ok := s.dynconfig.GetSchedulerClusterClientConfig(); ok && clientConfig.LoadLimit > 0 {
@@ -588,8 +582,8 @@ func (s *Service) registerSmallTask(ctx context.Context, peer *resource.Peer) (*
 		return nil, fmt.Errorf("parent state %s is not PeerStateSucceede", parent.FSM.Current())
 	}
 
-	firstPiece, ok := peer.Task.LoadPiece(0)
-	if !ok {
+	firstPiece, loaded := peer.Task.LoadPiece(0)
+	if !loaded {
 		return nil, fmt.Errorf("can not found first piece")
 	}
 
@@ -702,9 +696,9 @@ func (s *Service) handlePieceFail(ctx context.Context, peer *resource.Peer, piec
 	}
 
 	// If parent can not found, reschedule parent.
-	parent, ok := s.resource.PeerManager().Load(piece.DstPid)
-	if !ok {
-		peer.Log.Errorf("schedule parent because of peer can not found parent %s", piece.DstPid)
+	parent, loaded := s.resource.PeerManager().Load(piece.DstPid)
+	if !loaded {
+		peer.Log.Errorf("reschedule parent because of peer can not found parent %s", piece.DstPid)
 		peer.BlockPeers.Add(piece.DstPid)
 		s.scheduler.ScheduleParent(ctx, peer, peer.BlockPeers)
 		return
@@ -743,7 +737,7 @@ func (s *Service) handlePieceFail(ctx context.Context, peer *resource.Peer, piec
 		return
 	}
 
-	peer.Log.Infof("schedule parent because of peer receive failed piece")
+	peer.Log.Infof("reschedule parent because of peer receive failed piece")
 	peer.BlockPeers.Add(parent.ID)
 	s.scheduler.ScheduleParent(ctx, peer, peer.BlockPeers)
 }
@@ -789,7 +783,7 @@ func (s *Service) handlePeerFail(ctx context.Context, peer *resource.Peer) {
 
 	// Reschedule a new parent to children of peer to exclude the current failed peer.
 	for _, child := range peer.Children() {
-		child.Log.Infof("schedule parent because of parent peer %s is failed", peer.ID)
+		child.Log.Infof("reschedule parent because of parent peer %s is failed", peer.ID)
 		s.scheduler.ScheduleParent(ctx, child, child.BlockPeers)
 	}
 }
@@ -804,7 +798,7 @@ func (s *Service) handleLegacySeedPeer(ctx context.Context, peer *resource.Peer)
 
 	// Reschedule a new parent to children of peer to exclude the current failed peer.
 	for _, child := range peer.Children() {
-		child.Log.Infof("schedule parent because of parent peer %s is failed", peer.ID)
+		child.Log.Infof("reschedule parent because of parent peer %s is failed", peer.ID)
 		s.scheduler.ScheduleParent(ctx, child, child.BlockPeers)
 	}
 

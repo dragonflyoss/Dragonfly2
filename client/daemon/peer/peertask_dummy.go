@@ -48,7 +48,7 @@ func (d *dummySchedulerClient) LeaveTask(ctx context.Context, target *schedulerv
 	return nil
 }
 
-func (d *dummySchedulerClient) LeaveTasks(ctx context.Context, target *schedulerv1.LeaveTasksRequest, option ...grpc.CallOption) error {
+func (d *dummySchedulerClient) LeaveHost(ctx context.Context, target *schedulerv1.LeaveHostRequest, option ...grpc.CallOption) error {
 	return nil
 }
 
