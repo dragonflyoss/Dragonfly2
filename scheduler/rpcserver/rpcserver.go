@@ -110,3 +110,14 @@ func (s *Server) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTask
 func (s *Server) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget) (*empty.Empty, error) {
 	return new(empty.Empty), s.service.LeaveTask(ctx, req)
 }
+
+// LeaveHost releases host in scheduler.
+func (s *Server) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostRequest) (*empty.Empty, error) {
+	metrics.LeaveHostCount.Inc()
+	if err := s.service.LeaveHost(ctx, req); err != nil {
+		metrics.LeaveHostFailureCount.Inc()
+		return new(empty.Empty), err
+	}
+
+	return new(empty.Empty), nil
+}

@@ -20,6 +20,7 @@ package client
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -27,6 +28,7 @@ import (
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
 
@@ -88,6 +90,7 @@ func GetClient(ctx context.Context, dynconfig config.Dynconfig, opts ...grpc.Dia
 	return &client{
 		SchedulerClient: schedulerv1.NewSchedulerClient(conn),
 		ClientConn:      conn,
+		Dynconfig:       dynconfig,
 	}, nil
 }
 
@@ -102,8 +105,11 @@ type Client interface {
 	// ReportPeerResult reports downloading result for the peer.
 	ReportPeerResult(context.Context, *schedulerv1.PeerResult, ...grpc.CallOption) error
 
-	// LeaveTask makes the peer leaving from task.
+	// LeaveHost releases peer in scheduler.
 	LeaveTask(context.Context, *schedulerv1.PeerTarget, ...grpc.CallOption) error
+
+	// LeaveHost releases host in scheduler.
+	LeaveHost(context.Context, *schedulerv1.LeaveHostRequest, ...grpc.CallOption) error
 
 	// Checks if any peer has the given task.
 	StatTask(context.Context, *schedulerv1.StatTaskRequest, ...grpc.CallOption) (*schedulerv1.Task, error)
@@ -119,6 +125,7 @@ type Client interface {
 type client struct {
 	schedulerv1.SchedulerClient
 	*grpc.ClientConn
+	config.Dynconfig
 }
 
 // RegisterPeerTask registers a peer into task.
@@ -161,7 +168,7 @@ func (c *client) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResu
 	return err
 }
 
-// LeaveTask makes the peer leaving from task.
+// LeaveTask releases peer in scheduler.
 func (c *client) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget, opts ...grpc.CallOption) error {
 	_, err := c.SchedulerClient.LeaveTask(
 		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
@@ -169,6 +176,58 @@ func (c *client) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget, opt
 		opts...,
 	)
 
+	return err
+}
+
+// LeaveHost releases host in all schedulers.
+func (c *client) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostRequest, opts ...grpc.CallOption) error {
+	schedulers, err := c.GetResolveSchedulerAddrs()
+	if err != nil {
+		return err
+	}
+
+	var wg sync.WaitGroup
+	for _, scheduler := range schedulers {
+		wg.Add(1)
+		go func(addr string) {
+			defer wg.Done()
+			if err := c.leaveHost(trace.ContextWithSpan(context.Background(), trace.SpanFromContext(ctx)), addr, req, opts...); err != nil {
+				logger.Error(err)
+				return
+			}
+
+			logger.Infof("leave host %s", req.Id)
+		}(scheduler.Addr)
+	}
+
+	wg.Wait()
+	return nil
+}
+
+// leaveHost releases host in scheduler.
+func (c *client) leaveHost(ctx context.Context, addr string, req *schedulerv1.LeaveHostRequest, opts ...grpc.CallOption) error {
+	conn, err := grpc.DialContext(
+		ctx,
+		addr,
+		[]grpc.DialOption{
+			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
+				rpc.ConvertErrorUnaryClientInterceptor,
+				otelgrpc.UnaryClientInterceptor(),
+				grpc_prometheus.UnaryClientInterceptor,
+				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
+				grpc_retry.UnaryClientInterceptor(
+					grpc_retry.WithMax(maxRetries),
+					grpc_retry.WithBackoff(grpc_retry.BackoffLinear(backoffWaitBetween)),
+				),
+			)),
+		}...,
+	)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	_, err = schedulerv1.NewSchedulerClient(conn).LeaveHost(ctx, req, opts...)
 	return err
 }
 
