@@ -347,7 +347,7 @@ func TestHostManager_RunGC(t *testing.T) {
 				hostManager.Store(mockHost)
 				mockHost.StorePeer(mockPeer)
 				mockHost.PeerCount.Add(0)
-				mockHost.UploadPeerCount.Add(1)
+				mockHost.ConcurrentUploadCount.Add(1)
 				err := hostManager.RunGC()
 				assert.NoError(err)
 

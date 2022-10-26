@@ -118,7 +118,7 @@ func seedPeersToHosts(seedPeers []*config.SeedPeer) map[string]*Host {
 	for _, seedPeer := range seedPeers {
 		options := []HostOption{WithHostType(seedPeerTypeToHostType(seedPeer.Type))}
 		if config, ok := seedPeer.GetSeedPeerClusterConfig(); ok && config.LoadLimit > 0 {
-			options = append(options, WithUploadLoadLimit(int32(config.LoadLimit)))
+			options = append(options, WithConcurrentUploadLimit(int32(config.LoadLimit)))
 		}
 
 		id := idgen.HostID(seedPeer.Hostname, seedPeer.Port)

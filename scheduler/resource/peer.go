@@ -158,8 +158,8 @@ type Peer struct {
 	// Host is peer host.
 	Host *Host
 
-	// BlockPeers is bad peer ids.
-	BlockPeers set.SafeSet[string]
+	// BlockParents is bad parents ids.
+	BlockParents set.SafeSet[string]
 
 	// NeedBackToSource needs downloaded from source.
 	//
@@ -197,7 +197,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 		Stream:           &atomic.Value{},
 		Task:             task,
 		Host:             host,
-		BlockPeers:       set.NewSafeSet[string](),
+		BlockParents:     set.NewSafeSet[string](),
 		NeedBackToSource: atomic.NewBool(false),
 		IsBackToSource:   atomic.NewBool(false),
 		CreateAt:         atomic.NewTime(time.Now()),

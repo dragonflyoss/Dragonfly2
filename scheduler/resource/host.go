@@ -47,10 +47,10 @@ const (
 // HostOption is a functional option for configuring the host.
 type HostOption func(h *Host) *Host
 
-// WithUploadLoadLimit sets host's UploadLoadLimit.
-func WithUploadLoadLimit(limit int32) HostOption {
+// WithConcurrentUploadLimit sets host's ConcurrentUploadLimit.
+func WithConcurrentUploadLimit(limit int32) HostOption {
 	return func(h *Host) *Host {
-		h.UploadLoadLimit.Store(limit)
+		h.ConcurrentUploadLimit.Store(limit)
 		return h
 	}
 }
@@ -96,11 +96,17 @@ type Host struct {
 	// Example: country|province|...
 	Location string
 
-	// UploadLoadLimit is upload load limit count.
-	UploadLoadLimit *atomic.Int32
+	// ConcurrentUploadLimit is concurrent upload limit count.
+	ConcurrentUploadLimit *atomic.Int32
 
-	// UploadPeerCount is upload peer count.
-	UploadPeerCount *atomic.Int32
+	// ConcurrentUploadCount is concurrent upload count.
+	ConcurrentUploadCount *atomic.Int32
+
+	// UploadCount is total upload count.
+	UploadCount *atomic.Int64
+
+	// UploadFailedCount is upload failed count.
+	UploadFailedCount *atomic.Int64
 
 	// Peer sync map.
 	Peers *sync.Map
@@ -121,23 +127,25 @@ type Host struct {
 // New host instance.
 func NewHost(rawHost *schedulerv1.PeerHost, options ...HostOption) *Host {
 	h := &Host{
-		ID:              rawHost.Id,
-		Type:            HostTypeNormal,
-		IP:              rawHost.Ip,
-		Hostname:        rawHost.HostName,
-		Port:            rawHost.RpcPort,
-		DownloadPort:    rawHost.DownPort,
-		SecurityDomain:  rawHost.SecurityDomain,
-		IDC:             rawHost.Idc,
-		NetTopology:     rawHost.NetTopology,
-		Location:        rawHost.Location,
-		UploadLoadLimit: atomic.NewInt32(config.DefaultClientLoadLimit),
-		UploadPeerCount: atomic.NewInt32(0),
-		Peers:           &sync.Map{},
-		PeerCount:       atomic.NewInt32(0),
-		CreateAt:        atomic.NewTime(time.Now()),
-		UpdateAt:        atomic.NewTime(time.Now()),
-		Log:             logger.WithHostID(rawHost.Id),
+		ID:                    rawHost.Id,
+		Type:                  HostTypeNormal,
+		IP:                    rawHost.Ip,
+		Hostname:              rawHost.HostName,
+		Port:                  rawHost.RpcPort,
+		DownloadPort:          rawHost.DownPort,
+		SecurityDomain:        rawHost.SecurityDomain,
+		IDC:                   rawHost.Idc,
+		NetTopology:           rawHost.NetTopology,
+		Location:              rawHost.Location,
+		ConcurrentUploadLimit: atomic.NewInt32(config.DefaultPeerConcurrentUploadLimit),
+		ConcurrentUploadCount: atomic.NewInt32(0),
+		UploadCount:           atomic.NewInt64(0),
+		UploadFailedCount:     atomic.NewInt64(0),
+		Peers:                 &sync.Map{},
+		PeerCount:             atomic.NewInt32(0),
+		CreateAt:              atomic.NewTime(time.Now()),
+		UpdateAt:              atomic.NewTime(time.Now()),
+		Log:                   logger.WithHostID(rawHost.Id),
 	}
 
 	for _, opt := range options {
@@ -189,7 +197,7 @@ func (h *Host) LeavePeers() {
 	})
 }
 
-// FreeUploadLoad return free upload load of host.
-func (h *Host) FreeUploadLoad() int32 {
-	return h.UploadLoadLimit.Load() - h.UploadPeerCount.Load()
+// FreeUploadCount return free upload count of host.
+func (h *Host) FreeUploadCount() int32 {
+	return h.ConcurrentUploadLimit.Load() - h.ConcurrentUploadCount.Load()
 }

@@ -302,9 +302,9 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 		}
 
 		// Candidate parent's free upload is empty.
-		if candidateParent.Host.FreeUploadLoad() <= 0 {
-			peer.Log.Debugf("candidate parent %s is not selected because its free upload is empty, upload limit is %d, upload peer count is %d",
-				candidateParent.ID, candidateParent.Host.UploadLoadLimit.Load(), candidateParent.Host.UploadPeerCount.Load())
+		if candidateParent.Host.FreeUploadCount() <= 0 {
+			peer.Log.Debugf("candidate parent %s is not selected because its free upload is empty, upload limit is %d, upload count is %d",
+				candidateParent.ID, candidateParent.Host.ConcurrentUploadLimit.Load(), candidateParent.Host.ConcurrentUploadCount.Load())
 			continue
 		}
 
@@ -318,7 +318,7 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 
 // Construct peer successful packet.
 func constructSuccessPeerPacket(dynconfig config.DynconfigInterface, peer *resource.Peer, parent *resource.Peer, candidateParents []*resource.Peer) *schedulerv1.PeerPacket {
-	parallelCount := config.DefaultClientParallelCount
+	parallelCount := config.DefaultPeerParallelCount
 	if config, ok := dynconfig.GetSchedulerClusterClientConfig(); ok && config.ParallelCount > 0 {
 		parallelCount = int(config.ParallelCount)
 	}

@@ -76,7 +76,7 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.Location, mockRawHost.Location)
 				assert.Equal(host.IDC, mockRawHost.Idc)
 				assert.Equal(host.NetTopology, mockRawHost.NetTopology)
-				assert.Equal(host.UploadLoadLimit.Load(), int32(config.DefaultClientLoadLimit))
+				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(config.DefaultPeerConcurrentUploadLimit))
 				assert.Equal(host.PeerCount.Load(), int32(0))
 				assert.NotEqual(host.CreateAt.Load(), 0)
 				assert.NotEqual(host.UpdateAt.Load(), 0)
@@ -99,7 +99,7 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.Location, mockRawSeedHost.Location)
 				assert.Equal(host.IDC, mockRawSeedHost.Idc)
 				assert.Equal(host.NetTopology, mockRawSeedHost.NetTopology)
-				assert.Equal(host.UploadLoadLimit.Load(), int32(config.DefaultClientLoadLimit))
+				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(config.DefaultPeerConcurrentUploadLimit))
 				assert.Equal(host.PeerCount.Load(), int32(0))
 				assert.NotEqual(host.CreateAt.Load(), 0)
 				assert.NotEqual(host.UpdateAt.Load(), 0)
@@ -109,7 +109,7 @@ func TestHost_NewHost(t *testing.T) {
 		{
 			name:    "new host and set upload loadlimit",
 			rawHost: mockRawHost,
-			options: []HostOption{WithUploadLoadLimit(200)},
+			options: []HostOption{WithConcurrentUploadLimit(200)},
 			expect: func(t *testing.T, host *Host) {
 				assert := assert.New(t)
 				assert.Equal(host.ID, mockRawHost.Id)
@@ -122,7 +122,7 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.Location, mockRawHost.Location)
 				assert.Equal(host.IDC, mockRawHost.Idc)
 				assert.Equal(host.NetTopology, mockRawHost.NetTopology)
-				assert.Equal(host.UploadLoadLimit.Load(), int32(200))
+				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(200))
 				assert.Equal(host.PeerCount.Load(), int32(0))
 				assert.NotEqual(host.CreateAt.Load(), 0)
 				assert.NotEqual(host.UpdateAt.Load(), 0)
@@ -324,7 +324,7 @@ func TestHost_LeavePeers(t *testing.T) {
 	}
 }
 
-func TestHost_FreeUploadLoad(t *testing.T) {
+func TestHost_FreeUploadCount(t *testing.T) {
 	tests := []struct {
 		name    string
 		rawHost *schedulerv1.PeerHost
@@ -341,16 +341,16 @@ func TestHost_FreeUploadLoad(t *testing.T) {
 				mockPeer.Task.StorePeer(mockPeer)
 				err := mockPeer.Task.AddPeerEdge(mockSeedPeer, mockPeer)
 				assert.NoError(err)
-				assert.Equal(host.FreeUploadLoad(), int32(config.DefaultClientLoadLimit-1))
+				assert.Equal(host.FreeUploadCount(), int32(config.DefaultPeerConcurrentUploadLimit-1))
 				err = mockTask.DeletePeerInEdges(mockPeer.ID)
 				assert.NoError(err)
-				assert.Equal(host.FreeUploadLoad(), int32(config.DefaultClientLoadLimit))
+				assert.Equal(host.FreeUploadCount(), int32(config.DefaultPeerConcurrentUploadLimit))
 				err = mockPeer.Task.AddPeerEdge(mockSeedPeer, mockPeer)
 				assert.NoError(err)
-				assert.Equal(host.FreeUploadLoad(), int32(config.DefaultClientLoadLimit-1))
+				assert.Equal(host.FreeUploadCount(), int32(config.DefaultPeerConcurrentUploadLimit-1))
 				err = mockTask.DeletePeerOutEdges(mockSeedPeer.ID)
 				assert.NoError(err)
-				assert.Equal(host.FreeUploadLoad(), int32(config.DefaultClientLoadLimit))
+				assert.Equal(host.FreeUploadCount(), int32(config.DefaultPeerConcurrentUploadLimit))
 			},
 		},
 		{
@@ -358,7 +358,7 @@ func TestHost_FreeUploadLoad(t *testing.T) {
 			rawHost: mockRawHost,
 			expect: func(t *testing.T, host *Host, mockTask *Task, mockPeer *Peer) {
 				assert := assert.New(t)
-				assert.Equal(host.FreeUploadLoad(), int32(config.DefaultClientLoadLimit))
+				assert.Equal(host.FreeUploadCount(), int32(config.DefaultPeerConcurrentUploadLimit))
 			},
 		},
 	}

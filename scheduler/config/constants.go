@@ -21,14 +21,14 @@ import (
 )
 
 const (
-	// DefaultSeedPeerLoadLimit is default number for seed peer load limit.
-	DefaultSeedPeerLoadLimit = 300
+	// DefaultSeedPeerConcurrentUploadLimit is default number for seed peer concurrent upload limit.
+	DefaultSeedPeerConcurrentUploadLimit = 300
 
-	// DefaultClientLoadLimit is default number for client load limit.
-	DefaultClientLoadLimit = 50
+	// DefaultPeerConcurrentUploadLimit is default number for peer concurrent upload limit.
+	DefaultPeerConcurrentUploadLimit = 50
 
-	// DefaultClientParallelCount is default number for pieces to download in parallel.
-	DefaultClientParallelCount = 4
+	// DefaultPeerParallelCount is default number for pieces to download in parallel.
+	DefaultPeerParallelCount = 4
 
 	// DefaultSchedulerFilterParentLimit is default limit the number for filter traversals.
 	DefaultSchedulerFilterParentLimit = 4
