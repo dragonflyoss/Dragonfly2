@@ -28,7 +28,6 @@ import (
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
 
@@ -191,7 +190,7 @@ func (c *client) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostReques
 		wg.Add(1)
 		go func(addr string) {
 			defer wg.Done()
-			if err := c.leaveHost(trace.ContextWithSpan(context.Background(), trace.SpanFromContext(ctx)), addr, req, opts...); err != nil {
+			if err := c.leaveHost(ctx, addr, req, opts...); err != nil {
 				logger.Error(err)
 				return
 			}
