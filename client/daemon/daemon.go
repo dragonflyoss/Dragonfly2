@@ -765,7 +765,8 @@ func (cd *clientDaemon) Serve() error {
 func (cd *clientDaemon) Stop() {
 	cd.once.Do(func() {
 		close(cd.done)
-		if cd.schedulerClient != nil {
+		// when KeepStorage is true, should not leave host
+		if !cd.Option.KeepStorage && cd.schedulerClient != nil {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 			defer cancel()
 			if err := cd.schedulerClient.LeaveHost(ctx, &schedulerv1.LeaveHostRequest{Id: cd.schedPeerHost.Id}); err != nil {
