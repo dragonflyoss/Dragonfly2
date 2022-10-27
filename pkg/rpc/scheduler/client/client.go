@@ -51,7 +51,6 @@ const (
 	backoffWaitBetween = 500 * time.Millisecond
 )
 
-// GetClient get scheduler clients using resolver and balancer,
 func GetClient(ctx context.Context, dynconfig config.Dynconfig, opts ...grpc.DialOption) (Client, error) {
 	// Register resolver and balancer.
 	resolver.RegisterScheduler(dynconfig)
@@ -90,6 +89,7 @@ func GetClient(ctx context.Context, dynconfig config.Dynconfig, opts ...grpc.Dia
 		SchedulerClient: schedulerv1.NewSchedulerClient(conn),
 		ClientConn:      conn,
 		Dynconfig:       dynconfig,
+		dialOptions:     opts,
 	}, nil
 }
 
@@ -125,6 +125,7 @@ type client struct {
 	schedulerv1.SchedulerClient
 	*grpc.ClientConn
 	config.Dynconfig
+	dialOptions []grpc.DialOption
 }
 
 // RegisterPeerTask registers a peer into task.
@@ -208,7 +209,7 @@ func (c *client) leaveHost(ctx context.Context, addr string, req *schedulerv1.Le
 	conn, err := grpc.DialContext(
 		ctx,
 		addr,
-		[]grpc.DialOption{
+		append([]grpc.DialOption{
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
 				rpc.ConvertErrorUnaryClientInterceptor,
 				otelgrpc.UnaryClientInterceptor(),
@@ -219,7 +220,7 @@ func (c *client) leaveHost(ctx context.Context, addr string, req *schedulerv1.Le
 					grpc_retry.WithBackoff(grpc_retry.BackoffLinear(backoffWaitBetween)),
 				),
 			)),
-		}...,
+		}, c.dialOptions...)...,
 	)
 	if err != nil {
 		return err
