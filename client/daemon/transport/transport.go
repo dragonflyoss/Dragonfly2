@@ -222,7 +222,7 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 	url := req.URL.String()
 	peerID := rt.peerIDGenerator.PeerID()
 	log := logger.With("peer", peerID, "component", "transport")
-	log.Infof("start download with url: %s", url)
+	log.Infof("start download with url: %s, header: %#v", url, req.Header)
 
 	// Init meta value
 	meta := &commonv1.UrlMeta{Header: map[string]string{}}
