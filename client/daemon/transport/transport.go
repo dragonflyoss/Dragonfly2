@@ -268,7 +268,7 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 		},
 	)
 	if err != nil {
-		log.Errorf("start steam task error: %v", err)
+		log.Errorf("start stream task error: %v", err)
 		// check underlay status code
 		if st, ok := status.FromError(err); ok {
 			for _, detail := range st.Details() {

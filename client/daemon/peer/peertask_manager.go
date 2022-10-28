@@ -59,7 +59,7 @@ type TaskManager interface {
 
 	Subscribe(request *commonv1.PieceTaskRequest) (*SubscribeResponse, bool)
 
-	IsPeerTaskRunning(taskID string) (Task, bool)
+	IsPeerTaskRunning(taskID string, peerID string) (Task, bool)
 
 	// StatTask checks whether the given task exists in P2P network
 	StatTask(ctx context.Context, taskID string) (*schedulerv1.Task, error)
@@ -136,6 +136,7 @@ type TaskManagerOption struct {
 	// Prefetch indicates to prefetch the whole files of ranged requests
 	Prefetch          bool
 	GetPiecesMaxRetry int
+	SplitRunningTasks bool
 }
 
 func NewPeerTaskManager(opt *TaskManagerOption) (TaskManager, error) {
@@ -149,8 +150,8 @@ func NewPeerTaskManager(opt *TaskManagerOption) (TaskManager, error) {
 	return ptm, nil
 }
 
-func (ptm *peerTaskManager) findPeerTaskConductor(taskID string) (*peerTaskConductor, bool) {
-	pt, ok := ptm.runningPeerTasks.Load(taskID)
+func (ptm *peerTaskManager) findPeerTaskConductor(key string) (*peerTaskConductor, bool) {
+	pt, ok := ptm.runningPeerTasks.Load(key)
 	if !ok {
 		return nil, false
 	}
@@ -165,10 +166,24 @@ func (ptm *peerTaskManager) getPeerTaskConductor(ctx context.Context,
 	rg *clientutil.Range,
 	desiredLocation string,
 	seed bool) (*peerTaskConductor, error) {
-	ptc, created, err := ptm.getOrCreatePeerTaskConductor(ctx, taskID, request, limit, parent, rg, desiredLocation, seed)
+	var (
+		ptc     *peerTaskConductor
+		created bool
+		err     error
+	)
+
+	if ptm.SplitRunningTasks {
+		ptc, created, err = ptm.createSplitedPeerTaskConductor(
+			ctx, taskID, request, limit, parent, rg, desiredLocation, seed)
+	} else {
+		ptc, created, err = ptm.getOrCreatePeerTaskConductor(
+			ctx, taskID, request, limit, parent, rg, desiredLocation, seed)
+	}
+
 	if err != nil {
 		return nil, err
 	}
+
 	if created {
 		if err = ptc.start(); err != nil {
 			return nil, err
@@ -210,6 +225,30 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	ptm.conductorLock.Unlock()
 	metrics.PeerTaskCount.Add(1)
 	logger.Debugf("peer task created: %s/%s", ptc.taskID, ptc.peerID)
+
+	err := ptc.initStorage(desiredLocation)
+	if err != nil {
+		ptc.Errorf("init storage error: %s", err)
+		ptc.cancelNotRegisterred(commonv1.Code_ClientError, err.Error())
+		return nil, false, err
+	}
+	return ptc, true, nil
+}
+
+func (ptm *peerTaskManager) createSplitedPeerTaskConductor(
+	ctx context.Context,
+	taskID string,
+	request *schedulerv1.PeerTaskRequest,
+	limit rate.Limit,
+	parent *peerTaskConductor,
+	rg *clientutil.Range,
+	desiredLocation string,
+	seed bool) (*peerTaskConductor, bool, error) {
+	ptc := ptm.newPeerTaskConductor(ctx, request, limit, parent, rg, seed)
+
+	ptm.runningPeerTasks.Store(taskID+"/"+ptc.peerID, ptc)
+	metrics.PeerTaskCount.Add(1)
+	logger.Debugf("standalone peer task created: %s/%s", ptc.taskID, ptc.peerID)
 
 	err := ptc.initStorage(desiredLocation)
 	if err != nil {
@@ -355,8 +394,15 @@ type SubscribeResponse struct {
 	FailReason       func() error
 }
 
+func (ptm *peerTaskManager) getRunningTaskKey(taskID, peerID string) string {
+	if ptm.SplitRunningTasks {
+		return taskID + "/" + peerID
+	}
+	return taskID
+}
+
 func (ptm *peerTaskManager) Subscribe(request *commonv1.PieceTaskRequest) (*SubscribeResponse, bool) {
-	ptc, ok := ptm.findPeerTaskConductor(request.TaskId)
+	ptc, ok := ptm.findPeerTaskConductor(ptm.getRunningTaskKey(request.TaskId, request.DstPid))
 	if !ok {
 		return nil, false
 	}
@@ -379,16 +425,17 @@ func (ptm *peerTaskManager) Stop(ctx context.Context) error {
 	return nil
 }
 
-func (ptm *peerTaskManager) PeerTaskDone(taskID string) {
-	logger.Debugf("delete done task %s in running tasks", taskID)
-	ptm.runningPeerTasks.Delete(taskID)
+func (ptm *peerTaskManager) PeerTaskDone(taskID, peerID string) {
+	key := ptm.getRunningTaskKey(taskID, peerID)
+	logger.Debugf("delete done task %s in running tasks", key)
+	ptm.runningPeerTasks.Delete(key)
 	if ptm.trafficShaper != nil {
-		ptm.trafficShaper.RemoveTask(taskID)
+		ptm.trafficShaper.RemoveTask(key)
 	}
 }
 
-func (ptm *peerTaskManager) IsPeerTaskRunning(taskID string) (Task, bool) {
-	ptc, ok := ptm.runningPeerTasks.Load(taskID)
+func (ptm *peerTaskManager) IsPeerTaskRunning(taskID, peerID string) (Task, bool) {
+	ptc, ok := ptm.runningPeerTasks.Load(ptm.getRunningTaskKey(taskID, peerID))
 	if ok {
 		return ptc.(*peerTaskConductor), ok
 	}
