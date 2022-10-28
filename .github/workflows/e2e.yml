@@ -45,6 +45,9 @@ jobs:
           - module: grpc-tls-ipv6
             charts-config: test/testdata/charts/config-grpc-tls-ipv6.yaml
             skip: ""
+          - module: split-running-tasks
+            charts-config: test/testdata/charts/config-split-running-tasks
+            skip: ""
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
