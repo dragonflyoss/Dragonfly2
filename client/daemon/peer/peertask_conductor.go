@@ -391,11 +391,8 @@ func (pt *peerTaskConductor) start() error {
 			return err
 		}
 	}
-	if pt.peerTaskManager.SplitRunningTasks {
-		pt.trafficShaper.AddTask(pt.taskID+"/"+pt.peerID, pt)
-	} else {
-		pt.trafficShaper.AddTask(pt.taskID, pt)
-	}
+
+	pt.trafficShaper.AddTask(pt.peerTaskManager.getRunningTaskKey(pt.taskID, pt.peerID), pt)
 	go pt.broker.Start()
 	go pt.pullPieces()
 	return nil
@@ -1317,11 +1314,7 @@ func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPiec
 
 func (pt *peerTaskConductor) waitLimit(ctx context.Context, request *DownloadPieceRequest) bool {
 	_, waitSpan := tracer.Start(ctx, config.SpanWaitPieceLimit)
-	if pt.peerTaskManager.SplitRunningTasks {
-		pt.trafficShaper.Record(request.TaskID+"/"+request.PeerID, int(request.piece.RangeSize))
-	} else {
-		pt.trafficShaper.Record(request.TaskID, int(request.piece.RangeSize))
-	}
+	pt.trafficShaper.Record(pt.peerTaskManager.getRunningTaskKey(request.TaskID, request.PeerID), int(request.piece.RangeSize))
 	err := pt.limiter.WaitN(pt.ctx, int(request.piece.RangeSize))
 	if err == nil {
 		waitSpan.End()

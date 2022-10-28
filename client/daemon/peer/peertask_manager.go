@@ -394,8 +394,15 @@ type SubscribeResponse struct {
 	FailReason       func() error
 }
 
+func (ptm *peerTaskManager) getRunningTaskKey(taskID, peerID string) string {
+	if ptm.SplitRunningTasks {
+		return taskID + "/" + peerID
+	}
+	return taskID
+}
+
 func (ptm *peerTaskManager) Subscribe(request *commonv1.PieceTaskRequest) (*SubscribeResponse, bool) {
-	ptc, ok := ptm.findPeerTaskConductor(request.TaskId)
+	ptc, ok := ptm.findPeerTaskConductor(ptm.getRunningTaskKey(request.TaskId, request.DstPid))
 	if !ok {
 		return nil, false
 	}
@@ -419,12 +426,7 @@ func (ptm *peerTaskManager) Stop(ctx context.Context) error {
 }
 
 func (ptm *peerTaskManager) PeerTaskDone(taskID, peerID string) {
-	var key string
-	if ptm.SplitRunningTasks {
-		key = taskID + "/" + peerID
-	} else {
-		key = taskID
-	}
+	key := ptm.getRunningTaskKey(taskID, peerID)
 	logger.Debugf("delete done task %s in running tasks", key)
 	ptm.runningPeerTasks.Delete(key)
 	if ptm.trafficShaper != nil {
@@ -433,13 +435,7 @@ func (ptm *peerTaskManager) PeerTaskDone(taskID, peerID string) {
 }
 
 func (ptm *peerTaskManager) IsPeerTaskRunning(taskID, peerID string) (Task, bool) {
-	var key string
-	if ptm.SplitRunningTasks {
-		key = taskID + "/" + peerID
-	} else {
-		key = taskID
-	}
-	ptc, ok := ptm.runningPeerTasks.Load(key)
+	ptc, ok := ptm.runningPeerTasks.Load(ptm.getRunningTaskKey(taskID, peerID))
 	if ok {
 		return ptc.(*peerTaskConductor), ok
 	}
