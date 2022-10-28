@@ -391,7 +391,11 @@ func (pt *peerTaskConductor) start() error {
 			return err
 		}
 	}
-	pt.trafficShaper.AddTask(pt.taskID, pt)
+	if pt.peerTaskManager.SplitRunningTasks {
+		pt.trafficShaper.AddTask(pt.taskID+"/"+pt.peerID, pt)
+	} else {
+		pt.trafficShaper.AddTask(pt.taskID, pt)
+	}
 	go pt.broker.Start()
 	go pt.pullPieces()
 	return nil
@@ -484,7 +488,7 @@ func (pt *peerTaskConductor) cancelNotRegisterred(code commonv1.Code, reason str
 
 		metrics.PeerTaskFailedCount.WithLabelValues(metrics.FailTypeInit).Add(1)
 
-		pt.peerTaskManager.PeerTaskDone(pt.taskID)
+		pt.peerTaskManager.PeerTaskDone(pt.taskID, pt.peerID)
 		pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
 		pt.span.SetAttributes(config.AttributePeerTaskCode.Int(int(pt.failedCode)))
 		pt.span.SetAttributes(config.AttributePeerTaskMessage.String(pt.failedReason))
@@ -1313,7 +1317,11 @@ func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPiec
 
 func (pt *peerTaskConductor) waitLimit(ctx context.Context, request *DownloadPieceRequest) bool {
 	_, waitSpan := tracer.Start(ctx, config.SpanWaitPieceLimit)
-	pt.trafficShaper.Record(request.TaskID, int(request.piece.RangeSize))
+	if pt.peerTaskManager.SplitRunningTasks {
+		pt.trafficShaper.Record(request.TaskID+"/"+request.PeerID, int(request.piece.RangeSize))
+	} else {
+		pt.trafficShaper.Record(request.TaskID, int(request.piece.RangeSize))
+	}
 	err := pt.limiter.WaitN(pt.ctx, int(request.piece.RangeSize))
 	if err == nil {
 		waitSpan.End()
@@ -1579,7 +1587,7 @@ func (pt *peerTaskConductor) done() {
 		metrics.PeerTaskFailedCount.WithLabelValues(metrics.FailTypeP2P).Add(1)
 	}
 
-	pt.peerTaskManager.PeerTaskDone(pt.taskID)
+	pt.peerTaskManager.PeerTaskDone(pt.taskID, pt.peerID)
 	peerResultCtx, peerResultSpan := tracer.Start(pt.ctx, config.SpanReportPeerResult)
 	defer peerResultSpan.End()
 
@@ -1648,7 +1656,7 @@ func (pt *peerTaskConductor) fail() {
 				TaskID: pt.taskID,
 			})
 	}()
-	pt.peerTaskManager.PeerTaskDone(pt.taskID)
+	pt.peerTaskManager.PeerTaskDone(pt.taskID, pt.peerID)
 	var end = time.Now()
 	pt.Log().Errorf("peer task failed, code: %d, reason: %s", pt.failedCode, pt.failedReason)
 
