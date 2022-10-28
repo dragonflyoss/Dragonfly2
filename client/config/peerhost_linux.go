@@ -98,6 +98,7 @@ var peerHostConfig = func() *DaemonOption {
 					},
 				},
 			},
+			SplitRunningTasks: false,
 		},
 		Upload: UploadOption{
 			RateLimit: util.RateLimit{
