@@ -25,7 +25,7 @@ jobs:
     timeout-minutes: 30
     strategy:
       matrix:
-        module: ["normal", "concurent-back-source", "grpc-tls", "disable-seed-peer", "grpc-tls-ipv6", "ipv6"]
+        module: ["normal", "concurent-back-source", "grpc-tls", "disable-seed-peer", "grpc-tls-ipv6", "ipv6", "split-running-tasks"]
         include:
           - module: normal
             charts-config: test/testdata/charts/config.yaml
@@ -44,6 +44,9 @@ jobs:
             skip: ""
           - module: grpc-tls-ipv6
             charts-config: test/testdata/charts/config-grpc-tls-ipv6.yaml
+            skip: ""
+          - module: split-running-tasks
+            charts-config: test/testdata/charts/config-split-running-tasks.yaml
             skip: ""
     steps:
       - name: Checkout code

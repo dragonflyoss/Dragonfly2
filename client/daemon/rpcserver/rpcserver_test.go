@@ -540,7 +540,7 @@ func TestServer_GetPieceTasks(t *testing.T) {
 			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mockTask *peer.MockTask, r *commonv1.PieceTaskRequest) {
 				gomock.InOrder(
 					mockStorageManger.GetPieces(gomock.Any(), gomock.Any()).Return(&commonv1.PiecePacket{}, storage.ErrTaskNotFound),
-					mockTaskManager.IsPeerTaskRunning(gomock.Any()).Return(mockTask, false),
+					mockTaskManager.IsPeerTaskRunning(gomock.Any(), gomock.Any()).Return(mockTask, false),
 				)
 			},
 			expect: func(t *testing.T, p *commonv1.PiecePacket, r *commonv1.PieceTaskRequest, err error) {
@@ -553,7 +553,7 @@ func TestServer_GetPieceTasks(t *testing.T) {
 			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mockTask *peer.MockTask, r *commonv1.PieceTaskRequest) {
 				gomock.InOrder(
 					mockStorageManger.GetPieces(gomock.Any(), gomock.Any()).Return(&commonv1.PiecePacket{}, storage.ErrTaskNotFound),
-					mockTaskManager.IsPeerTaskRunning(gomock.Any()).Return(mockTask, true),
+					mockTaskManager.IsPeerTaskRunning(gomock.Any(), gomock.Any()).Return(mockTask, true),
 					mockTask.EXPECT().GetPeerID().Return(r.SrcPid),
 				)
 			},
@@ -568,7 +568,7 @@ func TestServer_GetPieceTasks(t *testing.T) {
 				var testDstPid string = "test"
 				gomock.InOrder(
 					mockStorageManger.GetPieces(gomock.Any(), gomock.Any()).Return(&commonv1.PiecePacket{}, storage.ErrTaskNotFound),
-					mockTaskManager.IsPeerTaskRunning(gomock.Any()).Return(mockTask, true),
+					mockTaskManager.IsPeerTaskRunning(gomock.Any(), gomock.Any()).Return(mockTask, true),
 					mockTask.EXPECT().GetPeerID().Return(testDstPid).AnyTimes(),
 					mockStorageManger.GetPieces(gomock.Any(), &commonv1.PieceTaskRequest{
 						SrcPid: r.SrcPid,
@@ -591,7 +591,7 @@ func TestServer_GetPieceTasks(t *testing.T) {
 				var testDstPid string = "test"
 				gomock.InOrder(
 					mockStorageManger.GetPieces(gomock.Any(), gomock.Any()).Return(&commonv1.PiecePacket{}, storage.ErrTaskNotFound),
-					mockTaskManager.IsPeerTaskRunning(gomock.Any()).Return(mockTask, true),
+					mockTaskManager.IsPeerTaskRunning(gomock.Any(), gomock.Any()).Return(mockTask, true),
 					mockTask.EXPECT().GetPeerID().Return(testDstPid).AnyTimes(),
 					mockStorageManger.GetPieces(gomock.Any(), gomock.Any()).Return(&commonv1.PiecePacket{}, storage.ErrTaskNotFound),
 				)
@@ -606,7 +606,7 @@ func TestServer_GetPieceTasks(t *testing.T) {
 			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mockTask *peer.MockTask, r *commonv1.PieceTaskRequest) {
 				gomock.InOrder(
 					mockStorageManger.GetPieces(gomock.Any(), gomock.Any()).Return(&commonv1.PiecePacket{}, storage.ErrTaskNotFound),
-					mockTaskManager.IsPeerTaskRunning(gomock.Any()).Return(mockTask, true),
+					mockTaskManager.IsPeerTaskRunning(gomock.Any(), gomock.Any()).Return(mockTask, true),
 					mockTask.EXPECT().GetPeerID().Return(r.DstPid).Times(2),
 				)
 			},

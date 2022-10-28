@@ -12,7 +12,7 @@ import (
 	v1 "d7y.io/api/pkg/apis/common/v1"
 	v10 "d7y.io/api/pkg/apis/scheduler/v1"
 	storage "d7y.io/dragonfly/v2/client/daemon/storage"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
+	dflog "d7y.io/dragonfly/v2/internal/dflog"
 	gomock "github.com/golang/mock/gomock"
 	status "google.golang.org/grpc/status"
 )
@@ -69,18 +69,18 @@ func (mr *MockTaskManagerMockRecorder) GetPieceManager() *gomock.Call {
 }
 
 // IsPeerTaskRunning mocks base method.
-func (m *MockTaskManager) IsPeerTaskRunning(taskID string) (Task, bool) {
+func (m *MockTaskManager) IsPeerTaskRunning(taskID, peerID string) (Task, bool) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsPeerTaskRunning", taskID)
+	ret := m.ctrl.Call(m, "IsPeerTaskRunning", taskID, peerID)
 	ret0, _ := ret[0].(Task)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 
 // IsPeerTaskRunning indicates an expected call of IsPeerTaskRunning.
-func (mr *MockTaskManagerMockRecorder) IsPeerTaskRunning(taskID interface{}) *gomock.Call {
+func (mr *MockTaskManagerMockRecorder) IsPeerTaskRunning(taskID, peerID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsPeerTaskRunning", reflect.TypeOf((*MockTaskManager)(nil).IsPeerTaskRunning), taskID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsPeerTaskRunning", reflect.TypeOf((*MockTaskManager)(nil).IsPeerTaskRunning), taskID, peerID)
 }
 
 // StartFileTask mocks base method.
@@ -322,10 +322,10 @@ func (mr *MockTaskMockRecorder) GetTraffic() *gomock.Call {
 }
 
 // Log mocks base method.
-func (m *MockTask) Log() *logger.SugaredLoggerOnWith {
+func (m *MockTask) Log() *dflog.SugaredLoggerOnWith {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Log")
-	ret0, _ := ret[0].(*logger.SugaredLoggerOnWith)
+	ret0, _ := ret[0].(*dflog.SugaredLoggerOnWith)
 	return ret0
 }
 
@@ -431,10 +431,10 @@ func (m *MockLogger) EXPECT() *MockLoggerMockRecorder {
 }
 
 // Log mocks base method.
-func (m *MockLogger) Log() *logger.SugaredLoggerOnWith {
+func (m *MockLogger) Log() *dflog.SugaredLoggerOnWith {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Log")
-	ret0, _ := ret[0].(*logger.SugaredLoggerOnWith)
+	ret0, _ := ret[0].(*dflog.SugaredLoggerOnWith)
 	return ret0
 }
 

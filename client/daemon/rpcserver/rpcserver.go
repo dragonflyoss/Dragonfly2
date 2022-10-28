@@ -135,7 +135,7 @@ func (s *server) GetPieceTasks(ctx context.Context, request *commonv1.PieceTaskR
 		}
 
 		// check whether dst peer is not running
-		task, ok := s.peerTaskManager.IsPeerTaskRunning(request.TaskId)
+		task, ok := s.peerTaskManager.IsPeerTaskRunning(request.TaskId, request.DstPid)
 		if !ok {
 			// 1. no running task
 			code = commonv1.Code_PeerTaskNotFound

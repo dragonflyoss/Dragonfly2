@@ -262,6 +262,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		Multiplex:         opt.Storage.Multiplex,
 		Prefetch:          opt.Download.Prefetch,
 		GetPiecesMaxRetry: opt.Download.GetPiecesMaxRetry,
+		SplitRunningTasks: opt.Download.SplitRunningTasks,
 	}
 	peerTaskManager, err := peer.NewPeerTaskManager(peerTaskManagerOption)
 	if err != nil {

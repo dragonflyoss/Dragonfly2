@@ -306,6 +306,7 @@ type DownloadOption struct {
 	Concurrent           *ConcurrentOption   `mapstructure:"concurrent" yaml:"concurrent"`
 	RecursiveConcurrent  RecursiveConcurrent `mapstructure:"recursiveConcurrent" yaml:"recursiveConcurrent"`
 	SyncPieceViaHTTPS    bool                `mapstructure:"syncPieceViaHTTPS" yaml:"syncPieceViaHTTPS"`
+	SplitRunningTasks    bool                `mapstructure:"splitRunningTasks" yaml:"splitRunningTasks"`
 }
 
 type TransportOption struct {
