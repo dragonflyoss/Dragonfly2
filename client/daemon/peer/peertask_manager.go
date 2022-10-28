@@ -150,8 +150,8 @@ func NewPeerTaskManager(opt *TaskManagerOption) (TaskManager, error) {
 	return ptm, nil
 }
 
-func (ptm *peerTaskManager) findPeerTaskConductor(taskID string) (*peerTaskConductor, bool) {
-	pt, ok := ptm.runningPeerTasks.Load(taskID)
+func (ptm *peerTaskManager) findPeerTaskConductor(key string) (*peerTaskConductor, bool) {
+	pt, ok := ptm.runningPeerTasks.Load(key)
 	if !ok {
 		return nil, false
 	}
