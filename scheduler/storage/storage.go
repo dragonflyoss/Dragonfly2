@@ -165,6 +165,12 @@ type Record struct {
 	// ParentFreeUploadCount is parent free upload count of host.
 	ParentFreeUploadCount int32 `csv:"parentFreeUploadCount"`
 
+	// ParentUploadCount is parent total upload count.
+	ParentUploadCount int64
+
+	// ParentUploadFailedCount is parent upload failed count.
+	ParentUploadFailedCount int64
+
 	// ParentHostType is parent host type.
 	ParentHostType int `csv:"parentHostType"`
 
