@@ -259,7 +259,6 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 					p.Log.Errorf("delete peer inedges failed: %s", err.Error())
 				}
 
-				p.Host.DeletePeer(p.ID)
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
@@ -273,7 +272,6 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 				}
 
 				p.Task.PeerFailedCount.Store(0)
-				p.Host.DeletePeer(p.ID)
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
@@ -287,7 +285,6 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 					p.Log.Errorf("delete peer inedges failed: %s", err.Error())
 				}
 
-				p.Host.DeletePeer(p.ID)
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
@@ -296,7 +293,6 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 					p.Log.Errorf("delete peer inedges failed: %s", err.Error())
 				}
 
-				p.Host.DeletePeer(p.ID)
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 		},
