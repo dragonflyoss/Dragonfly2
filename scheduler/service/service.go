@@ -416,6 +416,7 @@ func (s *Service) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget) er
 
 // LeaveHost releases host in scheduler.
 func (s *Service) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostRequest) error {
+	logger.Infof("leave host: %#v", req)
 	host, loaded := s.resource.HostManager().Load(req.Id)
 	if !loaded {
 		msg := fmt.Sprintf("host %s not found", req.Id)
@@ -423,9 +424,7 @@ func (s *Service) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostReque
 		return dferrors.New(commonv1.Code_BadRequest, msg)
 	}
 
-	host.Log.Infof("leave host: %#v", req)
 	host.LeavePeers()
-
 	return nil
 }
 
