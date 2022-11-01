@@ -48,7 +48,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/montanaflynn/stats v0.6.6
 	github.com/onsi/ginkgo/v2 v2.4.0
-	github.com/onsi/gomega v1.22.1
+	github.com/onsi/gomega v1.23.0
 	github.com/orcaman/concurrent-map/v2 v2.0.0
 	github.com/phayes/freeport v0.0.0-20220201140144-74d24b5ae9f5
 	github.com/prometheus/client_golang v1.13.0
