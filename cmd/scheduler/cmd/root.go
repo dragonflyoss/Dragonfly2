@@ -107,6 +107,10 @@ func initDfpath(cfg *config.ServerConfig) (dfpath.Dfpath, error) {
 		options = append(options, dfpath.WithCacheDir(cfg.CacheDir))
 	}
 
+	if cfg.PluginDir != "" {
+		options = append(options, dfpath.WithPluginDir(cfg.PluginDir))
+	}
+
 	dataDir := dfpath.DefaultDataDir
 	if cfg.DataDir != "" {
 		dataDir = cfg.DataDir
