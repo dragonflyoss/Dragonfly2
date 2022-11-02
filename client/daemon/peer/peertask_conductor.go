@@ -201,23 +201,21 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 	taskID := idgen.TaskID(request.Url, request.UrlMeta)
 	request.TaskId = taskID
 
+	// init log with values
 	var (
 		log     *logger.SugaredLoggerOnWith
 		traceID = span.SpanContext().TraceID()
 	)
 
-	if traceID.IsValid() {
-		log = logger.With(
-			"peer", request.PeerId,
-			"task", taskID,
-			"component", "PeerTask",
-			"trace", traceID.String())
-	} else {
-		log = logger.With(
-			"peer", request.PeerId,
-			"task", taskID,
-			"component", "PeerTask")
+	logKV := []any{
+		"peer", request.PeerId,
+		"task", taskID,
+		"component", "PeerTask",
 	}
+	if traceID.IsValid() {
+		logKV = append(logKV, "trace", traceID.String())
+	}
+	log = logger.With(logKV...)
 
 	span.SetAttributes(config.AttributeTaskID.String(taskID))
 

@@ -32,7 +32,9 @@ import (
 	"time"
 
 	"github.com/go-http-utils/headers"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/status"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
@@ -159,6 +161,12 @@ func WithDumpHTTPContent(b bool) Option {
 	}
 }
 
+var tracer trace.Tracer
+
+func init() {
+	tracer = otel.Tracer("dfget-transport")
+}
+
 // New constructs a new instance of a RoundTripper with additional options.
 func New(options ...Option) (http.RoundTripper, error) {
 	rt := &transport{
@@ -221,7 +229,17 @@ func NeedUseDragonfly(req *http.Request) bool {
 func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Response, error) {
 	url := req.URL.String()
 	peerID := rt.peerIDGenerator.PeerID()
-	log := logger.With("peer", peerID, "component", "transport")
+
+	ctx, span := tracer.Start(ctx, config.SpanDownloadRPC, trace.WithSpanKind(trace.SpanKindClient))
+	defer span.End()
+	logKV := []any{
+		"peer", peerID, "component", "transport",
+	}
+	if span.SpanContext().TraceID().IsValid() {
+		logKV = append(logKV, "trace", span.SpanContext().TraceID().String())
+	}
+	log := logger.With(logKV...)
+
 	log.Infof("start download with url: %s, header: %#v", url, req.Header)
 
 	// Init meta value
@@ -232,6 +250,7 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 	if rangeHeader := req.Header.Get("Range"); len(rangeHeader) > 0 {
 		rgs, err := util.ParseRange(rangeHeader, math.MaxInt64)
 		if err != nil {
+			span.RecordError(err)
 			return badRequest(req, err.Error())
 		}
 		if len(rgs) > 1 {
