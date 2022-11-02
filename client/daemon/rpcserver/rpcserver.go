@@ -400,7 +400,11 @@ func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRe
 		}(i)
 	}
 
-	var queue deque.Deque[*dfdaemonv1.DownRequest]
+	var (
+		queue            deque.Deque[*dfdaemonv1.DownRequest]
+		start            = time.Now()
+		listMilliseconds int64
+	)
 	queue.PushBack(req)
 	downloadMap := map[url.URL]struct{}{}
 	for {
@@ -420,11 +424,15 @@ func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRe
 		}
 		downloadMap[*request.URL] = struct{}{}
 
+		listStart := time.Now()
 		urlEntries, err := source.List(request)
 		if err != nil {
 			logger.Errorf("url [%v] source lister error: %v", request.URL, err)
 			return err
 		}
+		cost := time.Now().Sub(listStart).Milliseconds()
+		listMilliseconds += cost
+		logger.Infof("list dir %s cost: %dms", request.URL, cost)
 
 		for _, urlEntry := range urlEntries {
 			childReq := copyDownRequest(parentReq) //create new req
@@ -464,6 +472,8 @@ func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRe
 		lock.Unlock()
 		return downloadErrors[0]
 	}
+
+	logger.Infof("list dirs cost: %dms, download cost: %dms", listMilliseconds, time.Now().Sub(start).Milliseconds())
 	lock.Unlock()
 
 	return nil
