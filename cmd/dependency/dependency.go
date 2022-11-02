@@ -264,9 +264,6 @@ func initJaegerTracer(otelOption base.TelemetryOption) (func(), error) {
 		tp := sdktrace.NewTracerProvider(
 			sdktrace.WithSampler(sdktrace.NeverSample()),
 		)
-
-		// Register our TracerProvider as the global so any imported
-		// instrumentation in the future will default to using it.
 		otel.SetTracerProvider(tp)
 		otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 		return func() {}, nil
