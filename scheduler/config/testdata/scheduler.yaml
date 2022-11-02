@@ -3,10 +3,11 @@ server:
   listenIP: 0.0.0.0
   port: 8002
   host: foo
-  workHome: home
+  workHome: foo
   cacheDir: foo
-  logDir: bar
-  dataDir: baz
+  logDir: foo
+  pluginDir: foo
+  dataDir: foo
 
 scheduler:
   algorithm: default

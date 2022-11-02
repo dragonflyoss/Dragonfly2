@@ -32,9 +32,11 @@ func TestManagerConfig_Load(t *testing.T) {
 
 	config := &Config{
 		Server: ServerConfig{
-			Name:     "foo",
-			CacheDir: "foo",
-			LogDir:   "foo",
+			Name:      "foo",
+			WorkHome:  "foo",
+			CacheDir:  "foo",
+			LogDir:    "foo",
+			PluginDir: "foo",
 			GRPC: GRPCConfig{
 				AdvertiseIP: "127.0.0.1",
 				ListenIP:    "0.0.0.0",

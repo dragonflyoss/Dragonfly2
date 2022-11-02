@@ -56,6 +56,7 @@ type DaemonOption struct {
 	WorkHome    string `mapstructure:"workHome" yaml:"workHome"`
 	CacheDir    string `mapstructure:"cacheDir" yaml:"cacheDir"`
 	LogDir      string `mapstructure:"logDir" yaml:"logDir"`
+	PluginDir   string `mapstructure:"pluginDir" yaml:"pluginDir"`
 	DataDir     string `mapstructure:"dataDir" yaml:"dataDir"`
 	KeepStorage bool   `mapstructure:"keepStorage" yaml:"keepStorage"`
 

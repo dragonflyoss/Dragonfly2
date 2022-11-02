@@ -60,11 +60,17 @@ type ServerConfig struct {
 	// Server name.
 	Name string `yaml:"name" mapstructure:"name"`
 
+	// Server work directory.
+	WorkHome string `yaml:"workHome" mapstructure:"workHome"`
+
 	// Server dynamic config cache directory.
 	CacheDir string `yaml:"cacheDir" mapstructure:"cacheDir"`
 
 	// Server log directory.
 	LogDir string `yaml:"logDir" mapstructure:"logDir"`
+
+	// Server plugin directory.
+	PluginDir string `yaml:"pluginDir" mapstructure:"pluginDir"`
 
 	// GRPC server configuration.
 	GRPC GRPCConfig `yaml:"grpc" mapstructure:"grpc"`

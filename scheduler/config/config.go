@@ -96,6 +96,9 @@ type ServerConfig struct {
 	// Server log directory.
 	LogDir string `yaml:"logDir" mapstructure:"logDir"`
 
+	// Server plugin directory.
+	PluginDir string `yaml:"pluginDir" mapstructure:"pluginDir"`
+
 	// Server storage data directory.
 	DataDir string `yaml:"dataDir" mapstructure:"dataDir"`
 }
