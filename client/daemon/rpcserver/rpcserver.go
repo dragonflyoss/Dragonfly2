@@ -36,6 +36,8 @@ import (
 
 	"github.com/gammazero/deque"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/atomic"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -82,6 +84,12 @@ type server struct {
 	downloadServer *grpc.Server
 	peerServer     *grpc.Server
 	uploadAddr     string
+}
+
+var tracer trace.Tracer
+
+func init() {
+	tracer = otel.Tracer("dfget-rpcserver")
 }
 
 func New(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskManager,
@@ -358,12 +366,20 @@ func (s *server) Download(req *dfdaemonv1.DownRequest, stream dfdaemonv1.Daemon_
 }
 
 func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRequest, stream dfdaemonv1.Daemon_DownloadServer) error {
-	// generate a correlation id for every download task
-	correlationID := uuid.New().String()
-	ctx = context.WithValue(ctx, config.ContextCorrelationKey, correlationID)
-	log := logger.With(
-		"correlationID", correlationID,
-	)
+	ctx, span := tracer.Start(ctx, config.SpanDownloadRPC, trace.WithSpanKind(trace.SpanKindClient))
+	defer span.End()
+
+	traceID := span.SpanContext().TraceID()
+	logKV := []any{
+		"recursive", req.Url,
+		"action", "RecursiveDownload",
+	}
+	if traceID.IsValid() {
+		logKV = append(logKV, "trace", traceID.String())
+	}
+
+	log := logger.With(logKV...)
+
 	stat, err := os.Stat(req.Output)
 	if err == nil {
 		if !stat.IsDir() {
@@ -387,10 +403,13 @@ func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRe
 
 	for i := 0; i < s.recursiveConcurrent; i++ {
 		go func(i int) {
-			dLog := logger.With(
-				"correlationID", correlationID,
-				"downloader", fmt.Sprintf("%d", i),
-			)
+			logKV := []any{
+				"recursiveDownloader", fmt.Sprintf("%d", i),
+			}
+			if traceID.IsValid() {
+				logKV = append(logKV, "trace", traceID.String())
+			}
+			dLog := logger.With(logKV...)
 			for {
 				select {
 				case req := <-requestCh:
@@ -399,6 +418,7 @@ func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRe
 						dLog.Errorf("download %#v error: %s", req, err.Error())
 						lock.Lock()
 						downloadErrors = append(downloadErrors, err)
+						span.RecordError(err)
 						lock.Unlock()
 					}
 					dLog.Debugf("downloader %d completed download %s", i, req.Url)
@@ -426,6 +446,7 @@ func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRe
 		request, err := source.NewRequestWithContext(ctx, parentReq.Url, parentReq.UrlMeta.Header)
 		if err != nil {
 			log.Errorf("generate url [%v] request error: %v", request.URL, err)
+			span.RecordError(err)
 			return err
 		}
 
@@ -439,6 +460,7 @@ func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRe
 		urlEntries, err := source.List(request)
 		if err != nil {
 			log.Errorf("url [%v] source lister error: %v", request.URL, err)
+			span.RecordError(err)
 			return err
 		}
 		cost := time.Now().Sub(listStart).Milliseconds()
@@ -462,11 +484,13 @@ func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRe
 			// validate new request
 			if err = childReq.Validate(); err != nil {
 				log.Errorf("validate %#v failed: %s", childReq, err)
+				span.RecordError(err)
 				return err
 			}
 
 			if err = checkOutput(childReq.Output); err != nil {
 				log.Errorf("check output %#v failed: %s", childReq, err)
+				span.RecordError(err)
 				return err
 			}
 

@@ -17,7 +17,6 @@
 package config
 
 import (
-	"context"
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/unit"
@@ -100,16 +99,3 @@ var (
 	// DefaultCertValidityPeriod is default validity period of certificate.
 	DefaultCertValidityPeriod = 180 * 24 * time.Hour
 )
-
-type ContextKey string
-
-const (
-	ContextCorrelationKey ContextKey = "correlation-id"
-)
-
-func CorrelationID(ctx context.Context) (string, bool) {
-	if id, ok := ctx.Value(ContextCorrelationKey).(string); ok {
-		return id, ok
-	}
-	return "", false
-}

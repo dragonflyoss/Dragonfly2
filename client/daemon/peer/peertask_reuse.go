@@ -80,8 +80,9 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 		"peer", request.PeerId,
 		"task", taskID,
 	}
-	if correlationID, ok := config.CorrelationID(ctx); ok {
-		logKV = append(logKV, "correlationID", correlationID)
+
+	if spanContext := trace.SpanFromContext(ctx).SpanContext(); spanContext.TraceID().IsValid() {
+		logKV = append(logKV, "trace", spanContext.TraceID().String())
 	}
 
 	if reuseRange == nil {
@@ -257,8 +258,8 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 		"peer", request.PeerID,
 		"task", taskID,
 	}
-	if correlationID, ok := config.CorrelationID(ctx); ok {
-		logKV = append(logKV, "correlationID", correlationID)
+	if spanContext := trace.SpanFromContext(ctx).SpanContext(); spanContext.TraceID().IsValid() {
+		logKV = append(logKV, "trace", spanContext.TraceID().String())
 	}
 
 	if reuseRange == nil {

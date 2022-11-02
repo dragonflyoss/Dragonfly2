@@ -215,9 +215,6 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 	if traceID.IsValid() {
 		logKV = append(logKV, "trace", traceID.String())
 	}
-	if correlationID, ok := config.CorrelationID(ctx); ok {
-		logKV = append(logKV, "correlationID", correlationID)
-	}
 	log = logger.With(logKV...)
 
 	span.SetAttributes(config.AttributeTaskID.String(taskID))
