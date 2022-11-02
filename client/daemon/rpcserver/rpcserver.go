@@ -36,6 +36,8 @@ import (
 
 	"github.com/gammazero/deque"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/atomic"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -82,6 +84,12 @@ type server struct {
 	downloadServer *grpc.Server
 	peerServer     *grpc.Server
 	uploadAddr     string
+}
+
+var tracer trace.Tracer
+
+func init() {
+	tracer = otel.Tracer("dfget-rpcserver")
 }
 
 func New(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskManager,
@@ -358,15 +366,29 @@ func (s *server) Download(req *dfdaemonv1.DownRequest, stream dfdaemonv1.Daemon_
 }
 
 func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRequest, stream dfdaemonv1.Daemon_DownloadServer) error {
+	ctx, span := tracer.Start(ctx, config.SpanDownloadRPC, trace.WithSpanKind(trace.SpanKindClient))
+	defer span.End()
+
+	traceID := span.SpanContext().TraceID()
+	logKV := []any{
+		"recursive", req.Url,
+		"action", "RecursiveDownload",
+	}
+	if traceID.IsValid() {
+		logKV = append(logKV, "trace", traceID.String())
+	}
+
+	log := logger.With(logKV...)
+
 	stat, err := os.Stat(req.Output)
 	if err == nil {
 		if !stat.IsDir() {
 			err = fmt.Errorf("target output %s must be directory", req.Output)
-			logger.Errorf(err.Error())
+			log.Errorf(err.Error())
 			return status.Errorf(codes.FailedPrecondition, err.Error())
 		}
 	} else if !os.IsNotExist(err) {
-		logger.Errorf("stat %s error: %s", req.Output, err)
+		log.Errorf("stat %s error: %s", req.Output, err)
 		return status.Errorf(codes.FailedPrecondition, err.Error())
 	}
 
@@ -381,17 +403,25 @@ func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRe
 
 	for i := 0; i < s.recursiveConcurrent; i++ {
 		go func(i int) {
+			logKV := []any{
+				"recursiveDownloader", fmt.Sprintf("%d", i),
+			}
+			if traceID.IsValid() {
+				logKV = append(logKV, "trace", traceID.String())
+			}
+			dLog := logger.With(logKV...)
 			for {
 				select {
 				case req := <-requestCh:
-					logger.Debugf("downloader %d start to download %s", i, req.Url)
+					dLog.Debugf("downloader %d start to download %s", i, req.Url)
 					if err := s.doDownload(ctx, req, stream, ""); err != nil {
-						logger.Errorf("download %#v error: %s", req, err.Error())
+						dLog.Errorf("download %#v error: %s", req, err.Error())
 						lock.Lock()
 						downloadErrors = append(downloadErrors, err)
+						span.RecordError(err)
 						lock.Unlock()
 					}
-					logger.Debugf("downloader %d completed download %s", i, req.Url)
+					dLog.Debugf("downloader %d completed download %s", i, req.Url)
 					wg.Done()
 				case <-stopCh:
 					return
@@ -415,6 +445,8 @@ func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRe
 		parentReq := queue.PopFront()
 		request, err := source.NewRequestWithContext(ctx, parentReq.Url, parentReq.UrlMeta.Header)
 		if err != nil {
+			log.Errorf("generate url [%v] request error: %v", request.URL, err)
+			span.RecordError(err)
 			return err
 		}
 
@@ -427,21 +459,22 @@ func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRe
 		listStart := time.Now()
 		urlEntries, err := source.List(request)
 		if err != nil {
-			logger.Errorf("url [%v] source lister error: %v", request.URL, err)
+			log.Errorf("url [%v] source lister error: %v", request.URL, err)
+			span.RecordError(err)
 			return err
 		}
 		cost := time.Now().Sub(listStart).Milliseconds()
 		listMilliseconds += cost
-		logger.Infof("list dir %s cost: %dms", request.URL, cost)
+		log.Infof("list dir %s cost: %dms", request.URL, cost)
 
 		for _, urlEntry := range urlEntries {
 			childReq := copyDownRequest(parentReq) //create new req
 			childReq.Output = path.Join(parentReq.Output, urlEntry.Name)
-			logger.Infof("target output: %s", strings.TrimPrefix(childReq.Output, req.Output))
+			log.Infof("target output: %s", strings.TrimPrefix(childReq.Output, req.Output))
 
 			u := urlEntry.URL
 			childReq.Url = u.String()
-			logger.Infof("download %s to %s", childReq.Url, childReq.Output)
+			log.Infof("download %s to %s", childReq.Url, childReq.Output)
 
 			if urlEntry.IsDir {
 				queue.PushBack(childReq)
@@ -450,12 +483,14 @@ func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRe
 
 			// validate new request
 			if err = childReq.Validate(); err != nil {
-				logger.Errorf("validate %#v failed: %s", childReq, err)
+				log.Errorf("validate %#v failed: %s", childReq, err)
+				span.RecordError(err)
 				return err
 			}
 
 			if err = checkOutput(childReq.Output); err != nil {
-				logger.Errorf("check output %#v failed: %s", childReq, err)
+				log.Errorf("check output %#v failed: %s", childReq, err)
+				span.RecordError(err)
 				return err
 			}
 
@@ -473,7 +508,7 @@ func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRe
 		return downloadErrors[0]
 	}
 
-	logger.Infof("list dirs cost: %dms, download cost: %dms", listMilliseconds, time.Now().Sub(start).Milliseconds())
+	log.Infof("list dirs cost: %dms, download cost: %dms", listMilliseconds, time.Now().Sub(start).Milliseconds())
 	lock.Unlock()
 
 	return nil

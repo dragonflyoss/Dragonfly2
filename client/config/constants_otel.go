@@ -50,6 +50,8 @@ const (
 	SpanStreamTask        = "stream-task"
 	SpanSeedTask          = "seed-task"
 	SpanPeerTask          = "peer-task"
+	SpanDownloadRPC       = "download-rpc"
+	SpanTransport         = "transport"
 	SpanReusePeerTask     = "reuse-peer-task"
 	SpanRegisterTask      = "register"
 	SpanReportPeerResult  = "report-peer-result"

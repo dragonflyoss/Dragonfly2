@@ -116,14 +116,12 @@ func InitMonitor(pprofPort int, otelOption base.TelemetryOption) func() {
 		}()
 	}
 
-	if otelOption.Jaeger != "" {
-		ff, err := initJaegerTracer(otelOption)
-		if err != nil {
-			logger.Warnf("init jaeger tracer error: %v", err)
-		}
-
-		fc <- ff
+	ff, err := initJaegerTracer(otelOption)
+	if err != nil {
+		logger.Warnf("init jaeger tracer error: %v", err)
+		return func() {}
 	}
+	fc <- ff
 
 	return func() {
 		logger.Infof("do %d monitor finalizer", len(fc))
@@ -261,6 +259,16 @@ func initDecoderConfig(dc *mapstructure.DecoderConfig) {
 
 // initTracer creates a new trace provider instance and registers it as global trace provider.
 func initJaegerTracer(otelOption base.TelemetryOption) (func(), error) {
+	// currently, only support jaeger, otherwise just keeps the context of the caller but does not record spans.
+	if otelOption.Jaeger == "" {
+		tp := sdktrace.NewTracerProvider(
+			sdktrace.WithSampler(sdktrace.NeverSample()),
+		)
+		otel.SetTracerProvider(tp)
+		otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+		return func() {}, nil
+	}
+
 	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(otelOption.Jaeger)))
 	if err != nil {
 		return nil, err
