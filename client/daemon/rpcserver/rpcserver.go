@@ -398,6 +398,7 @@ func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRe
 		wg             = sync.WaitGroup{}
 		lock           = sync.Mutex{}
 		downloadErrors []error
+		sender         = &sequentialResultSender{realSender: stream}
 	)
 	defer close(stopCh)
 
@@ -414,7 +415,7 @@ func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRe
 				select {
 				case req := <-requestCh:
 					dLog.Debugf("downloader %d start to download %s", i, req.Url)
-					if err := s.doDownload(ctx, req, stream, ""); err != nil {
+					if err := s.doDownload(ctx, req, sender, ""); err != nil {
 						dLog.Errorf("download %#v error: %s", req, err.Error())
 						lock.Lock()
 						downloadErrors = append(downloadErrors, err)
@@ -536,7 +537,22 @@ type ResultSender interface {
 	Send(*dfdaemonv1.DownResult) error
 }
 
+type sequentialResultSender struct {
+	realSender ResultSender
+	sync.Mutex
+}
+
+func (s *sequentialResultSender) Send(result *dfdaemonv1.DownResult) error {
+	s.Lock()
+	err := s.realSender.Send(result)
+	s.Unlock()
+	return err
+}
+
 func (s *server) doDownload(ctx context.Context, req *dfdaemonv1.DownRequest, stream ResultSender, peerID string) error {
+	ctx, span := tracer.Start(ctx, config.SpanDownloadRPC, trace.WithSpanKind(trace.SpanKindClient))
+	defer span.End()
+
 	if req.UrlMeta == nil {
 		req.UrlMeta = &commonv1.UrlMeta{}
 	}
@@ -571,7 +587,16 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemonv1.DownRequest, st
 			Length: int64(r.Length()),
 		}
 	}
-	log := logger.With("peer", peerTask.PeerId, "component", "downloadService")
+
+	traceID := span.SpanContext().TraceID()
+	logKV := []any{
+		"peer", peerTask.PeerId,
+		"component", "downloadService",
+	}
+	if traceID.IsValid() {
+		logKV = append(logKV, "trace", traceID.String())
+	}
+	log := logger.With(logKV...)
 
 	peerTaskProgress, err := s.peerTaskManager.StartFileTask(ctx, peerTask)
 	if err != nil {
