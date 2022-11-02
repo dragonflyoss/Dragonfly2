@@ -116,12 +116,12 @@ func InitMonitor(pprofPort int, otelOption base.TelemetryOption) func() {
 		}()
 	}
 
-	if ff, err := initJaegerTracer(otelOption); err != nil {
+	ff, err := initJaegerTracer(otelOption)
+	if err != nil {
 		logger.Warnf("init jaeger tracer error: %v", err)
 		return func() {}
-	} else {
-		fc <- ff
 	}
+	fc <- ff
 
 	return func() {
 		logger.Infof("do %d monitor finalizer", len(fc))
