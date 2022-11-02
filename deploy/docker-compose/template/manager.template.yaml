@@ -15,6 +15,22 @@ server:
   rest:
     # REST server address
     addr: :8080
+  # WorkHome is working directory.
+  # In linux, default value is /usr/local/dragonfly.
+  # In macos(just for testing), default value is /Users/$USER/.dragonfly.
+  workHome: ''
+  # logDir is the log directory.
+  # In linux, default value is /var/log/dragonfly.
+  # In macos(just for testing), default value is /Users/$USER/.dragonfly/logs.
+  logDir: ''
+  # cacheDir is dynconfig cache directory.
+  # In linux, default value is /var/cache/dragonfly.
+  # In macos(just for testing), default value is /Users/$USER/.dragonfly/cache.
+  cacheDir: ''
+  # pluginDir is the plugin directory.
+  # In linux, default value is /usr/local/dragonfly/plugins.
+  # In macos(just for testing), default value is /Users/$USER/.dragonfly/plugins.
+  pluginDir: ''
 
 # Database info used for server.
 database:

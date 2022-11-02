@@ -105,16 +105,20 @@ func initDaemonDfpath(cfg *config.DaemonOption) (dfpath.Dfpath, error) {
 		options = append(options, dfpath.WithWorkHome(cfg.WorkHome))
 	}
 
+	if cfg.CacheDir != "" {
+		options = append(options, dfpath.WithCacheDir(cfg.CacheDir))
+	}
+
 	if cfg.LogDir != "" {
 		options = append(options, dfpath.WithLogDir(cfg.LogDir))
 	}
 
-	if cfg.Download.DownloadGRPC.UnixListen.Socket != "" {
-		options = append(options, dfpath.WithDownloadUnixSocketPath(cfg.Download.DownloadGRPC.UnixListen.Socket))
+	if cfg.PluginDir != "" {
+		options = append(options, dfpath.WithPluginDir(cfg.PluginDir))
 	}
 
-	if cfg.CacheDir != "" {
-		options = append(options, dfpath.WithCacheDir(cfg.CacheDir))
+	if cfg.Download.DownloadGRPC.UnixListen.Socket != "" {
+		options = append(options, dfpath.WithDownloadUnixSocketPath(cfg.Download.DownloadGRPC.UnixListen.Socket))
 	}
 
 	dataDir := dfpath.DefaultDataDir

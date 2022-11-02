@@ -1,7 +1,9 @@
 server:
   name: foo
+  workHome: foo
   cacheDir: foo
   logDir: foo
+  pluginDir: foo
   grpc:
     advertiseIP: 127.0.0.1
     listenIP: 0.0.0.0
