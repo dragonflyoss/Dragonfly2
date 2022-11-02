@@ -76,13 +76,23 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 		}
 	}
 
+	logKV := []any{
+		"peer", request.PeerId,
+		"task", taskID,
+	}
+
+	if spanContext := trace.SpanFromContext(ctx).SpanContext(); spanContext.TraceID().IsValid() {
+		logKV = append(logKV, "trace", spanContext.TraceID().String())
+	}
+
 	if reuseRange == nil {
-		log = logger.With("peer", request.PeerId, "task", taskID, "component", "reuseFilePeerTask")
+		logKV = append(logKV, "component", "reuseFilePeerTask")
+		log = logger.With(logKV...)
 		log.Infof("reuse from peer task: %s, total size: %d", reuse.PeerID, reuse.ContentLength)
 		length = reuse.ContentLength
 	} else {
-		log = logger.With("peer", request.PeerId, "task", taskID, "range", request.UrlMeta.Range,
-			"component", "reuseRangeFilePeerTask")
+		logKV = append(logKV, "range", request.UrlMeta.Range, "component", "reuseRangeFilePeerTask")
+		log = logger.With(logKV...)
 		log.Infof("reuse partial data from peer task: %s, total size: %d, range: %s",
 			reuse.PeerID, reuse.ContentLength, request.UrlMeta.Range)
 
@@ -244,12 +254,22 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 		}
 	}
 
+	logKV := []any{
+		"peer", request.PeerID,
+		"task", taskID,
+	}
+	if spanContext := trace.SpanFromContext(ctx).SpanContext(); spanContext.TraceID().IsValid() {
+		logKV = append(logKV, "trace", spanContext.TraceID().String())
+	}
+
 	if reuseRange == nil {
-		log = logger.With("peer", request.PeerID, "task", taskID, "component", "reuseStreamPeerTask")
+		logKV = append(logKV, "component", "reuseStreamPeerTask")
+		log = logger.With(logKV...)
 		log.Infof("reuse from peer task: %s, total size: %d", reuse.PeerID, reuse.ContentLength)
 		length = reuse.ContentLength
 	} else {
-		log = logger.With("peer", request.PeerID, "task", taskID, "component", "reuseRangeStreamPeerTask")
+		logKV = append(logKV, "component", "reuseRangeStreamPeerTask")
+		log = logger.With(logKV...)
 		log.Infof("reuse partial data from peer task: %s, total size: %d, range: %s",
 			reuse.PeerID, reuse.ContentLength, request.URLMeta.Range)
 
