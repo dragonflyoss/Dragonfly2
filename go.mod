@@ -17,7 +17,7 @@ require (
 	github.com/distribution/distribution/v3 v3.0.0-20220620080156-3e4f8a0ab147
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.4.0
-	github.com/gammazero/deque v0.2.0
+	github.com/gammazero/deque v0.2.1
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-contrib/static v0.0.1
 	github.com/gin-contrib/zap v0.1.0
