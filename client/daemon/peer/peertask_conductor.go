@@ -73,7 +73,8 @@ type peerTaskConductor struct {
 
 	// ctx is with span info for tracing
 	// we use successCh and failCh mark task success or fail
-	ctx context.Context
+	ctx       context.Context
+	ctxCancel context.CancelFunc
 	// piece download uses this context
 	pieceDownloadCtx context.Context
 	// when back source, cancel all piece download action
@@ -219,12 +220,14 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 
 	span.SetAttributes(config.AttributeTaskID.String(taskID))
 
+	ctx, cancel := context.WithCancel(ctx)
 	ptc := &peerTaskConductor{
 		TaskOption:          ptm.TaskOption,
 		peerTaskManager:     ptm,
 		request:             request,
 		startTime:           time.Now(),
 		ctx:                 ctx,
+		ctxCancel:           cancel,
 		broker:              newPieceBroker(),
 		peerPacketReady:     make(chan bool, 1),
 		peerID:              request.PeerId,
@@ -1537,6 +1540,7 @@ func (pt *peerTaskConductor) done() {
 		if pt.pieceTaskSyncManager != nil {
 			pt.pieceTaskSyncManager.cancel()
 		}
+		pt.ctxCancel()
 	}()
 	var (
 		cost    = time.Since(pt.startTime).Milliseconds()
@@ -1646,6 +1650,7 @@ func (pt *peerTaskConductor) fail() {
 				PeerID: pt.peerID,
 				TaskID: pt.taskID,
 			})
+		pt.ctxCancel()
 	}()
 	pt.peerTaskManager.PeerTaskDone(pt.taskID, pt.peerID)
 	var end = time.Now()
