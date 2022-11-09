@@ -54,7 +54,8 @@ type pieceTaskSyncManager struct {
 type pieceTaskSynchronizer struct {
 	*logger.SugaredLoggerOnWith
 	span              trace.Span
-	client            dfdaemonv1.Daemon_SyncPieceTasksClient
+	syncPiecesStream  dfdaemonv1.Daemon_SyncPieceTasksClient
+	grpcClient        dfdaemonclient.Client
 	dstPeer           *schedulerv1.PeerPacket_DestPeer
 	error             atomic.Value
 	peerTaskConductor *peerTaskConductor
@@ -177,7 +178,7 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 	credentialOpt := grpc.WithTransportCredentials(s.peerTaskConductor.GRPCCredentials)
 
 	dialCtx, cancel := context.WithTimeout(ctx, s.peerTaskConductor.GRPCDialTimeout)
-	client, err := dfdaemonclient.GetClient(dialCtx, netAddr.String(), credentialOpt)
+	grpcClient, err := dfdaemonclient.GetClient(dialCtx, netAddr.String(), credentialOpt)
 	cancel()
 
 	if err != nil {
@@ -185,10 +186,10 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 		return err
 	}
 
-	stream, err := client.SyncPieceTasks(ctx, request)
+	stream, err := grpcClient.SyncPieceTasks(ctx, request)
 	// Refer: https://github.com/grpc/grpc-go/blob/v1.44.0/stream.go#L104
 	// When receive io.EOF, the real error should be discovered using RecvMsg, here is client.Recv() here
-	if err == io.EOF && client != nil {
+	if err == io.EOF && grpcClient != nil {
 		_, err = stream.Recv()
 	}
 	if err != nil {
@@ -211,7 +212,8 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 		span:                span,
 		peerTaskConductor:   s.peerTaskConductor,
 		pieceRequestCh:      s.pieceRequestCh,
-		client:              stream,
+		syncPiecesStream:    stream,
+		grpcClient:          grpcClient,
 		dstPeer:             dstPeer,
 		error:               atomic.Value{},
 		SugaredLoggerOnWith: s.peerTaskConductor.With("targetPeerID", request.DstPid),
@@ -325,9 +327,14 @@ func (s *pieceTaskSyncManager) cancel() {
 }
 
 func (s *pieceTaskSynchronizer) close() {
-	if err := s.client.CloseSend(); err != nil {
+	if err := s.syncPiecesStream.CloseSend(); err != nil {
 		s.error.Store(&pieceTaskSynchronizerError{err})
 		s.Debugf("close send error: %s, dest peer: %s", err, s.dstPeer.PeerId)
+		s.span.RecordError(err)
+	}
+	if err := s.grpcClient.Close(); err != nil {
+		s.error.Store(&pieceTaskSynchronizerError{err})
+		s.Debugf("close grpc client error: %s, dest peer: %s", err, s.dstPeer.PeerId)
 		s.span.RecordError(err)
 	}
 	s.span.End()
@@ -379,7 +386,7 @@ func (s *pieceTaskSynchronizer) receive(piecePacket *commonv1.PiecePacket) {
 	var err error
 	for {
 		s.dispatchPieceRequest(piecePacket)
-		piecePacket, err = s.client.Recv()
+		piecePacket, err = s.syncPiecesStream.Recv()
 		if err != nil {
 			break
 		}
@@ -405,7 +412,7 @@ func (s *pieceTaskSynchronizer) acquire(request *commonv1.PieceTaskRequest) erro
 		return err
 	}
 	request.DstPid = s.dstPeer.PeerId
-	err := s.client.Send(request)
+	err := s.syncPiecesStream.Send(request)
 	s.span.AddEvent(fmt.Sprintf("send piece #%d request", request.StartNum))
 	if err != nil {
 		// send should always ok
