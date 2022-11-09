@@ -680,6 +680,11 @@ func (s *Service) handlePieceSuccess(ctx context.Context, peer *resource.Peer, p
 	peer.FinishedPieces.Set(uint(piece.PieceInfo.PieceNum))
 	peer.AppendPieceCost(pkgtime.SubNano(int64(piece.EndTime), int64(piece.BeginTime)).Milliseconds())
 
+	// When the piece is downloaded successfully,
+	// peer.UpdateAt needs to be updated to prevent
+	// the peer from being GC during the download process.
+	peer.UpdateAt.Store(time.Now())
+
 	// When the peer downloads back-to-source,
 	// piece downloads successfully updates the task piece info.
 	if peer.FSM.Is(resource.PeerStateBackToSource) {
