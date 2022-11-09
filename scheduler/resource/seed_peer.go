@@ -139,7 +139,12 @@ func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *schedul
 			peer.AppendPieceCost(pkgtime.SubNano(int64(piece.EndTime), int64(piece.BeginTime)).Milliseconds())
 			task.StorePiece(piece.PieceInfo)
 
-			metrics.Traffic.WithLabelValues(peer.Tag, peer.Application, metrics.TrafficBackToSourceType).Add(float64(piece.PieceInfo.RangeSize))
+			// Statistical traffic metrics.
+			trafficType := metrics.TrafficBackToSourceType
+			if piece.Reuse {
+				trafficType = metrics.TrafficP2PType
+			}
+			metrics.Traffic.WithLabelValues(peer.Tag, peer.Application, trafficType).Add(float64(piece.PieceInfo.RangeSize))
 		}
 
 		// Handle end of piece.
