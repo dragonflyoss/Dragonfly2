@@ -172,9 +172,9 @@ func (p *peerManager) RunGC() error {
 
 		// If the task dag size exceeds the limit,
 		// then set the peer state to PeerStateLeave which state is
-		// PeerStateSucceeded and PeerStateFailed, and degree is zero.
+		// PeerStateSucceeded, and degree is zero.
 		if peer.Task.PeerCount() > PeerCountLimitForTask &&
-			(peer.FSM.Is(PeerStateSucceeded) || peer.FSM.Is(PeerStateFailed)) && degree == 0 {
+			peer.FSM.Is(PeerStateSucceeded) && degree == 0 {
 			if err := peer.FSM.Event(PeerEventLeave); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 				return true
