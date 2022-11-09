@@ -741,6 +741,20 @@ func (s *Service) handlePieceFail(ctx context.Context, peer *resource.Peer, piec
 	// Peer state is PeerStateRunning will be rescheduled.
 	if !peer.FSM.Is(resource.PeerStateRunning) {
 		peer.Log.Infof("peer can not be rescheduled because peer state is %s", peer.FSM.Current())
+
+		// Returns an scheduling error if the peer
+		// state is not PeerStateRunning.
+		stream, ok := peer.LoadStream()
+		if !ok {
+			peer.Log.Error("load stream failed")
+			return
+		}
+
+		if err := stream.Send(&schedulerv1.PeerPacket{Code: commonv1.Code_SchedError}); err != nil {
+			peer.Log.Errorf("send packet failed: %s", err.Error())
+			return
+		}
+
 		return
 	}
 
