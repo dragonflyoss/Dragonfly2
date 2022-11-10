@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/gammazero/deque"
+	"github.com/go-http-utils/headers"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 
@@ -35,7 +36,8 @@ import (
 var (
 	_                        ResourceClient = (*ListMetadataClient)(nil)
 	ListMetadataScheme                      = "d7ylist"
-	ListMetadataOriginScheme                = "X-Dragonfly-Origin-Scheme"
+	ListMetadataOriginScheme                = "X-Dragonfly-List-Origin-Scheme"
+	ListMetadataExpire                      = "X-Dragonfly-List-Expire"
 	tracer                   trace.Tracer
 )
 
@@ -151,9 +153,11 @@ func (lm *ListMetadataClient) Download(request *Request) (*Response, error) {
 	}
 	data, _ := json.Marshal(metadata)
 	return &Response{
-		Status:        "OK",
-		StatusCode:    http.StatusOK,
-		Header:        nil,
+		Status:     "OK",
+		StatusCode: http.StatusOK,
+		Header: Header(map[string][]string{
+			headers.Expires: {request.Header.Get(ListMetadataExpire)},
+		}),
 		Body:          io.NopCloser(bytes.NewBuffer(data)),
 		ContentLength: int64(len(data)),
 		Validate: func() error {
