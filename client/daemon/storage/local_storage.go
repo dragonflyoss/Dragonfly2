@@ -44,9 +44,7 @@ type localTaskStore struct {
 
 	sync.RWMutex
 
-	dataDir string
-
-	metadataFile     *os.File
+	dataDir          string
 	metadataFilePath string
 
 	expireTime    time.Duration
