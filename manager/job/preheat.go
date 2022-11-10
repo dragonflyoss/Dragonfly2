@@ -100,7 +100,7 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []model.Schedule
 	queues := getSchedulerQueues(schedulers)
 
 	// Generate download files
-	var files []*internaljob.PreheatRequest
+	var files []internaljob.PreheatRequest
 	switch PreheatType(json.Type) {
 	case PreheatImageType:
 		// Parse image manifest url
@@ -114,7 +114,7 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []model.Schedule
 			return nil, err
 		}
 	case PreheatFileType:
-		files = []*internaljob.PreheatRequest{
+		files = []internaljob.PreheatRequest{
 			{
 				URL:     url,
 				Tag:     tag,
@@ -126,14 +126,11 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []model.Schedule
 		return nil, errors.New("unknow preheat type")
 	}
 
-	for _, f := range files {
-		logger.Infof("preheat %s file url: %v queues: %v", json.URL, f.URL, queues)
-	}
-
+	logger.Infof("preheat %s queues: %v, files: %#v", json.URL, queues, files)
 	return p.createGroupJob(ctx, files, queues)
 }
 
-func (p *preheat) createGroupJob(ctx context.Context, files []*internaljob.PreheatRequest, queues []internaljob.Queue) (*internaljob.GroupJobState, error) {
+func (p *preheat) createGroupJob(ctx context.Context, files []internaljob.PreheatRequest, queues []internaljob.Queue) (*internaljob.GroupJobState, error) {
 	signatures := []*machineryv1tasks.Signature{}
 	var urls []string
 	for i := range files {
@@ -173,7 +170,7 @@ func (p *preheat) createGroupJob(ctx context.Context, files []*internaljob.Prehe
 	}, nil
 }
 
-func (p *preheat) getLayers(ctx context.Context, url, tag, filter string, header http.Header, image *preheatImage) ([]*internaljob.PreheatRequest, error) {
+func (p *preheat) getLayers(ctx context.Context, url, tag, filter string, header http.Header, image *preheatImage) ([]internaljob.PreheatRequest, error) {
 	ctx, span := tracer.Start(ctx, config.SpanGetLayers, trace.WithSpanKind(trace.SpanKindProducer))
 	defer span.End()
 
@@ -234,7 +231,7 @@ func (p *preheat) getManifests(ctx context.Context, url string, header http.Head
 	return resp, nil
 }
 
-func (p *preheat) parseLayers(resp *http.Response, url, tag, filter string, header http.Header, image *preheatImage) ([]*internaljob.PreheatRequest, error) {
+func (p *preheat) parseLayers(resp *http.Response, url, tag, filter string, header http.Header, image *preheatImage) ([]internaljob.PreheatRequest, error) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -245,10 +242,10 @@ func (p *preheat) parseLayers(resp *http.Response, url, tag, filter string, head
 		return nil, err
 	}
 
-	var layers []*internaljob.PreheatRequest
+	var layers []internaljob.PreheatRequest
 	for _, v := range manifest.References() {
 		digest := v.Digest.String()
-		layer := &internaljob.PreheatRequest{
+		layer := internaljob.PreheatRequest{
 			URL:     layerURL(image.protocol, image.domain, image.name, digest),
 			Tag:     tag,
 			Filter:  filter,

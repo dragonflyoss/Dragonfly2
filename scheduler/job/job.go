@@ -145,55 +145,54 @@ func (j *job) preheat(ctx context.Context, req string) error {
 		return errors.New("scheduler has disabled seed peer")
 	}
 
-	request := &internaljob.PreheatRequest{}
-	if err := internaljob.UnmarshalRequest(req, request); err != nil {
+	preheat := &internaljob.PreheatRequest{}
+	if err := internaljob.UnmarshalRequest(req, preheat); err != nil {
 		logger.Errorf("unmarshal request err: %s, request body: %s", err.Error(), req)
 		return err
 	}
 
-	if err := validator.New().Struct(request); err != nil {
-		logger.Errorf("url %s validate failed: %s", request.URL, err.Error())
+	if err := validator.New().Struct(preheat); err != nil {
+		logger.Errorf("preheat %s validate failed: %s", preheat.URL, err.Error())
 		return err
 	}
 
 	urlMeta := &commonv1.UrlMeta{
-		Header: request.Headers,
-		Tag:    request.Tag,
-		Filter: request.Filter,
-		Digest: request.Digest,
+		Header: preheat.Headers,
+		Tag:    preheat.Tag,
+		Filter: preheat.Filter,
+		Digest: preheat.Digest,
 	}
-	if request.Headers != nil {
-		if r, ok := request.Headers[headers.Range]; ok {
+	if preheat.Headers != nil {
+		if r, ok := preheat.Headers[headers.Range]; ok {
 			// Range in dragonfly is without "bytes=".
 			urlMeta.Range = strings.TrimLeft(r, "bytes=")
 		}
 	}
 
-	taskID := idgen.TaskID(request.URL, urlMeta)
-
 	// Trigger seed peer download seeds.
-	log := logger.WithTaskIDAndURL(taskID, request.URL)
+	taskID := idgen.TaskID(preheat.URL, urlMeta)
+	log := logger.WithTaskIDAndURL(taskID, preheat.URL)
 	log.Infof("preheat %s headers: %#v, tag: %s, range: %s, filter: %s, digest: %s",
-		request.URL, urlMeta.Header, urlMeta.Tag, urlMeta.Range, urlMeta.Filter, urlMeta.Digest)
+		preheat.URL, urlMeta.Header, urlMeta.Tag, urlMeta.Range, urlMeta.Filter, urlMeta.Digest)
 	stream, err := j.resource.SeedPeer().Client().ObtainSeeds(ctx, &cdnsystemv1.SeedRequest{
 		TaskId:  taskID,
-		Url:     request.URL,
+		Url:     preheat.URL,
 		UrlMeta: urlMeta,
 	})
 	if err != nil {
-		log.Errorf("preheat failed: %s", err.Error())
+		log.Errorf("preheat %s failed: %s", preheat.URL, err.Error())
 		return err
 	}
 
 	for {
 		piece, err := stream.Recv()
 		if err != nil {
-			log.Errorf("preheat recive piece failed: %s", err.Error())
+			log.Errorf("preheat %s recive piece failed: %s", preheat.URL, err.Error())
 			return err
 		}
 
 		if piece.Done == true {
-			log.Info("preheat succeeded")
+			log.Infof("preheat %s succeeded", preheat.URL)
 			return nil
 		}
 	}
