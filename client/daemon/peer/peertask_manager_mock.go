@@ -12,7 +12,7 @@ import (
 	v1 "d7y.io/api/pkg/apis/common/v1"
 	v10 "d7y.io/api/pkg/apis/scheduler/v1"
 	storage "d7y.io/dragonfly/v2/client/daemon/storage"
-	dflog "d7y.io/dragonfly/v2/internal/dflog"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	gomock "github.com/golang/mock/gomock"
 	status "google.golang.org/grpc/status"
 )
@@ -322,10 +322,10 @@ func (mr *MockTaskMockRecorder) GetTraffic() *gomock.Call {
 }
 
 // Log mocks base method.
-func (m *MockTask) Log() *dflog.SugaredLoggerOnWith {
+func (m *MockTask) Log() *logger.SugaredLoggerOnWith {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Log")
-	ret0, _ := ret[0].(*dflog.SugaredLoggerOnWith)
+	ret0, _ := ret[0].(*logger.SugaredLoggerOnWith)
 	return ret0
 }
 
@@ -431,10 +431,10 @@ func (m *MockLogger) EXPECT() *MockLoggerMockRecorder {
 }
 
 // Log mocks base method.
-func (m *MockLogger) Log() *dflog.SugaredLoggerOnWith {
+func (m *MockLogger) Log() *logger.SugaredLoggerOnWith {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Log")
-	ret0, _ := ret[0].(*dflog.SugaredLoggerOnWith)
+	ret0, _ := ret[0].(*logger.SugaredLoggerOnWith)
 	return ret0
 }
 
