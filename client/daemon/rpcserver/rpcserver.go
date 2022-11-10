@@ -415,44 +415,8 @@ func (s *server) recursiveDownloadWithP2PMetadata(
 	traceID trace.TraceID,
 	req *dfdaemonv1.DownRequest,
 	stream dfdaemonv1.Daemon_DownloadServer) error {
-	var (
-		requestCh      = make(chan *dfdaemonv1.DownRequest)
-		stopCh         = make(chan struct{})
-		wg             = sync.WaitGroup{}
-		lock           = sync.Mutex{}
-		downloadErrors []error
-		sender         = &sequentialResultSender{realSender: stream}
-	)
+	requestCh, stopCh, wg, downloadErrors := s.startDownloadWorkers(ctx, span, traceID, stream)
 	defer close(stopCh)
-
-	for i := 0; i < s.recursiveConcurrent; i++ {
-		go func(i int) {
-			logKV := []any{
-				"recursiveDownloader", fmt.Sprintf("%d", i),
-			}
-			if traceID.IsValid() {
-				logKV = append(logKV, "trace", traceID.String())
-			}
-			dLog := logger.With(logKV...)
-			for {
-				select {
-				case req := <-requestCh:
-					dLog.Debugf("downloader %d start to download %s", i, req.Url)
-					if err := s.download(ctx, req, sender, ""); err != nil {
-						dLog.Errorf("download %#v error: %s", req, err.Error())
-						lock.Lock()
-						downloadErrors = append(downloadErrors, err)
-						span.RecordError(err)
-						lock.Unlock()
-					}
-					dLog.Debugf("downloader %d completed download %s", i, req.Url)
-					wg.Done()
-				case <-stopCh:
-					return
-				}
-			}
-		}(i)
-	}
 
 	listMetadata := source.ListMetadata{}
 	purl, err := url.Parse(req.Url)
@@ -495,8 +459,9 @@ func (s *server) recursiveDownloadWithP2PMetadata(
 	}
 
 	for _, urlEntry := range listMetadata.URLEntries {
-		childReq := copyDownRequest(req) //create new req
-		// TODO update correct output
+		// create new req
+		childReq := copyDownRequest(req)
+		// update correct output
 		childReq.Output = path.Join(req.Output, strings.TrimLeft(urlEntry.URL.Path, purl.Path))
 		log.Infof("target output: %s", strings.TrimPrefix(childReq.Output, req.Output))
 
@@ -525,36 +490,32 @@ func (s *server) recursiveDownloadWithP2PMetadata(
 		requestCh <- childReq
 	}
 
-	// wait all sent task done or error
+	// wait all sent tasks done or error
 	wg.Wait()
-	lock.Lock()
 	if len(downloadErrors) > 0 {
 		// just return first error
-		lock.Unlock()
 		return downloadErrors[0]
 	}
-	lock.Unlock()
 
 	return nil
 }
 
-func (s *server) recursiveDownloadWithDirectMetadata(
+func (s *server) startDownloadWorkers(
 	ctx context.Context,
-	log *logger.SugaredLoggerOnWith,
 	span trace.Span,
 	traceID trace.TraceID,
-	req *dfdaemonv1.DownRequest,
-	stream dfdaemonv1.Daemon_DownloadServer) error {
+	stream dfdaemonv1.Daemon_DownloadServer) (
+	requestCh chan *dfdaemonv1.DownRequest,
+	stopCh chan struct{},
+	wg *sync.WaitGroup,
+	downloadErrors []error,
+) {
+	requestCh = make(chan *dfdaemonv1.DownRequest)
+	stopCh = make(chan struct{})
+	wg = &sync.WaitGroup{}
 
-	var (
-		requestCh      = make(chan *dfdaemonv1.DownRequest)
-		stopCh         = make(chan struct{})
-		wg             = sync.WaitGroup{}
-		lock           = sync.Mutex{}
-		downloadErrors []error
-		sender         = &sequentialResultSender{realSender: stream}
-	)
-	defer close(stopCh)
+	lock := sync.Mutex{}
+	sender := &sequentialResultSender{realSender: stream}
 
 	for i := 0; i < s.recursiveConcurrent; i++ {
 		go func(i int) {
@@ -584,12 +545,26 @@ func (s *server) recursiveDownloadWithDirectMetadata(
 			}
 		}(i)
 	}
+	return requestCh, stopCh, wg, downloadErrors
+}
+
+func (s *server) recursiveDownloadWithDirectMetadata(
+	ctx context.Context,
+	log *logger.SugaredLoggerOnWith,
+	span trace.Span,
+	traceID trace.TraceID,
+	req *dfdaemonv1.DownRequest,
+	stream dfdaemonv1.Daemon_DownloadServer) error {
 
 	var (
 		queue            deque.Deque[*dfdaemonv1.DownRequest]
 		start            = time.Now()
 		listMilliseconds int64
 	)
+
+	requestCh, stopCh, wg, downloadErrors := s.startDownloadWorkers(ctx, span, traceID, stream)
+	defer close(stopCh)
+
 	queue.PushBack(req)
 	downloadMap := map[url.URL]struct{}{}
 	for {
@@ -654,18 +629,14 @@ func (s *server) recursiveDownloadWithDirectMetadata(
 		}
 	}
 
-	// wait all sent task done or error
+	// wait all sent tasks done or error
 	wg.Wait()
-	lock.Lock()
 	if len(downloadErrors) > 0 {
 		// just return first error
-		lock.Unlock()
 		return downloadErrors[0]
 	}
 
 	log.Infof("list dirs cost: %dms, download cost: %dms", listMilliseconds, time.Now().Sub(start).Milliseconds())
-	lock.Unlock()
-
 	return nil
 }
 
