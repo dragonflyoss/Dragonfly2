@@ -462,7 +462,7 @@ func (s *server) recursiveDownloadWithP2PMetadata(
 		// create new req
 		childReq := copyDownRequest(req)
 		// update correct output
-		childReq.Output = path.Join(req.Output, strings.TrimLeft(urlEntry.URL.Path, purl.Path))
+		childReq.Output = path.Join(req.Output, strings.TrimPrefix(urlEntry.URL.Path, purl.Path))
 		log.Infof("target output: %s", strings.TrimPrefix(childReq.Output, req.Output))
 
 		u := urlEntry.URL
