@@ -41,6 +41,7 @@ var (
 	featureGateCommit    featuregate.Feature = "dfget-commit"
 	featureGateNoLength  featuregate.Feature = "dfget-no-length"
 	featureGateEmptyFile featuregate.Feature = "dfget-empty-file"
+	featureGateRecursive featuregate.Feature = "dfget-recursive"
 
 	defaultFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 		featureGateCommit: {
@@ -64,6 +65,11 @@ var (
 			PreRelease:    featuregate.Alpha,
 		},
 		featureGateEmptyFile: {
+			Default:       false,
+			LockToDefault: false,
+			PreRelease:    featuregate.Alpha,
+		},
+		featureGateRecursive: {
 			Default:       false,
 			LockToDefault: false,
 			PreRelease:    featuregate.Alpha,
