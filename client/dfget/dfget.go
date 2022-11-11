@@ -303,6 +303,7 @@ func recursiveDownload(ctx context.Context, client dfdaemonclient.Client, cfg *c
 		}
 		parentCfg := queue.PopFront()
 		if parentCfg.RecursiveLevel == 0 {
+			logger.Infof("%s recursive level reached, skip", parentCfg.URL)
 			continue
 		}
 		parentCfg.RecursiveLevel--
@@ -328,11 +329,11 @@ func recursiveDownload(ctx context.Context, client dfdaemonclient.Client, cfg *c
 			childCfg.URL = u.String()
 
 			if !accept(childCfg.URL, childCfg.RecursiveAcceptRegex, childCfg.RecursiveRejectRegex) {
-				logger.Debugf("url %s is not accepted, skip", childCfg.URL)
+				logger.Infof("url %s is not accepted, skip", childCfg.URL)
 				continue
 			}
 
-			logger.Debugf("download %s to %s", childCfg.URL, childCfg.Output)
+			logger.Infof("download %s to %s", childCfg.URL, childCfg.Output)
 			if !urlEntry.IsDir {
 				if childCfg.RecursiveList {
 					continue
@@ -349,7 +350,6 @@ func recursiveDownload(ctx context.Context, client dfdaemonclient.Client, cfg *c
 			} else {
 				queue.PushBack(&childCfg)
 			}
-
 		}
 	}
 	return nil
