@@ -44,9 +44,7 @@ type localTaskStore struct {
 
 	sync.RWMutex
 
-	dataDir string
-
-	metadataFile     *os.File
+	dataDir          string
 	metadataFilePath string
 
 	expireTime    time.Duration
@@ -587,10 +585,6 @@ func (t *localTaskStore) reclaimData() error {
 }
 
 func (t *localTaskStore) reclaimMeta() error {
-	if err := t.metadataFile.Close(); err != nil {
-		t.Warnf("close task meta data %q error: %s", t.metadataFilePath, err)
-		return err
-	}
 	t.Infof("start gc task metadata")
 	if err := os.Remove(t.metadataFilePath); err != nil && !os.IsNotExist(err) {
 		t.Warnf("remove task meta data %q error: %s", t.metadataFilePath, err)
@@ -607,11 +601,12 @@ func (t *localTaskStore) saveMetadata() error {
 	if err != nil {
 		return err
 	}
-	_, err = t.metadataFile.Seek(0, io.SeekStart)
+	metadata, err := os.OpenFile(t.metadataFilePath, os.O_CREATE|os.O_RDWR, defaultFileMode)
 	if err != nil {
 		return err
 	}
-	_, err = t.metadataFile.Write(data)
+	defer metadata.Close()
+	_, err = metadata.Write(data)
 	if err != nil {
 		t.Errorf("save metadata error: %s", err)
 	}
