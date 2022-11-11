@@ -65,17 +65,28 @@ spec:
               if [ -f /tmp/prepare-ok ]; then
                 exit 0
               fi
+
               # download binary
               curl https://dl.min.io/client/mc/release/linux-amd64/mc > /bin/mc
               chmod +x /bin/mc
+
               # config
               mc config host add local http://127.0.0.1:9000 root password
+
               # create a new bucket
               mc mb local/minio-test-bucket
+
               # copy test data
               mc cp --recursive /usr local/minio-test-bucket/dragonfly-test
+
+              # mc cp will skip empty folders, so sync back all files
+              mkdir -p /host/tmp/minio-test-bucket/dragonfly-test
+              mc cp --recursive local/minio-test-bucket/dragonfly-test/usr /host/tmp/minio-test-bucket/dragonfly-test
+
               # generate sha256sum
-              chroot /host bash -c "cd /minio/data/minio-test-bucket/dragonfly-test; find . -type f | sort | xargs -n 1 sha256sum | tee /tmp/dragonfly-test.sha256sum.txt"
+              chroot /host bash -c "cd /tmp/minio-test-bucket/dragonfly-test; \
+                  find . -type f | sort | xargs -n 1 sha256sum | tee /tmp/dragonfly-test.sha256sum.txt"
+
               touch /tmp/prepare-ok
           initialDelaySeconds: 5
           periodSeconds: 60
