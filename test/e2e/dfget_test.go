@@ -214,6 +214,11 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 		Expect(err).NotTo(HaveOccurred())
 		sha256sum2 := strings.TrimSpace(string(out))
 
+		if sha256sum1 != sha256sum2 {
+			fmt.Printf("sha256sum miss match\nsha256sum1: %s\nsha256sum2: %s\n",
+				strings.Split(string(sha256sum1), "\n")[:10],
+				strings.Split(string(sha256sum2), "\n")[:10])
+		}
 		// ensure same sha256sum
 		Expect(sha256sum1).To(Equal(sha256sum2))
 	})
