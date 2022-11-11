@@ -101,7 +101,7 @@ jobs:
           # generate an empty file
           docker exec kind-control-plane touch /tmp/empty-file
           ginkgo -v -r --race --fail-fast --cover --trace --progress --skip=${{ matrix.skip }} test/e2e -- \
-              --feature-gates=dfget-range=true,dfget-open-range=true,dfget-empty-file=true
+              --feature-gates=dfget-range=true,dfget-open-range=true,dfget-empty-file=true,dfget-recursive=true
           cat coverprofile.out >> coverage.txt
 
       - name: Upload coverage to Codecov
