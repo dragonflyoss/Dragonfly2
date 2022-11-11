@@ -214,9 +214,9 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 		Expect(err).NotTo(HaveOccurred())
 		sha256sum2 := strings.TrimSpace(string(out))
 
-		fmt.Printf("sha256sum1: %s\nsha256sum2: %s\n",
-			strings.Split(string(sha256sum1), "\n")[:10],
-			strings.Split(string(sha256sum2), "\n")[:10])
+		fmt.Printf("sha256sum1(10 lines): %s\nsha256sum2(10 lines): %s\n",
+			strings.Join(strings.Split(string(sha256sum1), "\n")[:10], "\n"),
+			strings.Join(strings.Split(string(sha256sum2), "\n")[:10], "\n"))
 		// ensure same sha256sum
 		Expect(sha256sum1).To(Equal(sha256sum2))
 	})
@@ -274,6 +274,9 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 		Expect(err).NotTo(HaveOccurred())
 		sha256sum2 := strings.TrimSpace(string(out))
 
+		fmt.Printf("sha256sum1(10 lines): %s\nsha256sum2(10 lines): %s\n",
+			strings.Join(strings.Split(string(sha256sum1), "\n")[:10], "\n"),
+			strings.Join(strings.Split(string(sha256sum2), "\n")[:10], "\n"))
 		// ensure same sha256sum
 		Expect(sha256sum1).To(Equal(sha256sum2))
 	})
