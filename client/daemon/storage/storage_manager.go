@@ -415,11 +415,6 @@ func (s *storageManager) CreateTask(req *RegisterTaskRequest) (TaskStorageDriver
 		return nil, err
 	}
 	t.touch()
-	metadata, err := os.OpenFile(t.metadataFilePath, os.O_CREATE|os.O_RDWR, defaultFileMode)
-	if err != nil {
-		return nil, err
-	}
-	t.metadataFile = metadata
 
 	// fallback to simple strategy for proxy
 	if req.DesiredLocation == "" {
@@ -693,21 +688,24 @@ func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 			}
 			t.touch()
 
-			if t.metadataFile, err = os.Open(t.metadataFilePath); err != nil {
+			metadataFile, err := os.Open(t.metadataFilePath)
+			if err != nil {
 				loadErrs = append(loadErrs, err)
 				loadErrDirs = append(loadErrDirs, dataDir)
 				logger.With("action", "reload", "stage", "read metadata", "taskID", taskID, "peerID", peerID).
 					Warnf("open task metadata error: %s", err)
 				continue
 			}
-			bytes, err0 := io.ReadAll(t.metadataFile)
+			bytes, err0 := io.ReadAll(metadataFile)
 			if err0 != nil {
+				metadataFile.Close()
 				loadErrs = append(loadErrs, err0)
 				loadErrDirs = append(loadErrDirs, dataDir)
 				logger.With("action", "reload", "stage", "read metadata", "taskID", taskID, "peerID", peerID).
 					Warnf("load task from disk error: %s", err0)
 				continue
 			}
+			metadataFile.Close()
 
 			if err0 = json.Unmarshal(bytes, &t.persistentMetadata); err0 != nil {
 				loadErrs = append(loadErrs, err0)

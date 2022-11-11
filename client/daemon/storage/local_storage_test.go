@@ -336,15 +336,15 @@ func TestLocalTaskStore_StoreTaskData_Simple(t *testing.T) {
 
 	matadata, err := os.OpenFile(meta, os.O_RDWR|os.O_CREATE, defaultFileMode)
 	assert.Nil(err, "open test meta data")
-	defer matadata.Close()
+	matadata.Close()
 	ts := localTaskStore{
 		SugaredLoggerOnWith: logger.With("test", "localTaskStore"),
 		persistentMetadata: persistentMetadata{
 			TaskID:       "test",
 			DataFilePath: src,
 		},
-		dataDir:      test.DataDir,
-		metadataFile: matadata,
+		dataDir:          test.DataDir,
+		metadataFilePath: meta,
 	}
 	ts.lastAccess.Store(time.Now().UnixNano())
 	err = ts.Store(context.Background(), &StoreRequest{
