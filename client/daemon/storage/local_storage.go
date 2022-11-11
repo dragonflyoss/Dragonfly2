@@ -484,17 +484,17 @@ func (t *localTaskStore) CanReclaim() bool {
 		return true
 	}
 	now := time.Now()
-	if t.Header == nil {
-		// task soft cache time reached
-		access := time.Unix(0, t.lastAccess.Load())
-		reclaim := access.Add(t.expireTime).Before(now)
-		t.Debugf("reclaim check, last access: %v, reclaim: %v", access, reclaim)
+	// task soft cache time reached
+	access := time.Unix(0, t.lastAccess.Load())
+	reclaim := access.Add(t.expireTime).Before(now)
+	t.Debugf("reclaim check, last access: %v, reclaim: %v", access, reclaim)
+	if reclaim || t.Header == nil {
 		return reclaim
 	}
 
 	// task hard cache time reached
 	if expire := t.Header.Get(headers.Expires); expire != "" {
-		t.Debugf("Expire header: %s", expire)
+		t.Debugf("reclaim check Expire header: %s", expire)
 		expireTime, err := time.Parse(source.ExpireLayout, expire)
 		if err == nil && now.After(expireTime) {
 			t.Debugf("Expire header time reached")
