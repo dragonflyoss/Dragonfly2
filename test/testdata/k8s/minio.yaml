@@ -77,7 +77,9 @@ spec:
               mc mb local/minio-test-bucket
 
               # copy test data
-              mc cp --recursive /usr local/minio-test-bucket/dragonfly-test
+              for dir in bin lib64 libexec sbin; do
+                mc cp --recursive /usr/$dir local/minio-test-bucket/dragonfly-test/usr
+              done
 
               # mc cp will skip empty folders, so sync back all files
               mkdir -p /host/tmp/minio-test-bucket/dragonfly-test
