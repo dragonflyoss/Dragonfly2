@@ -182,7 +182,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 				"/opt/dragonfly/bin/dfget",
 				"--disable-back-source",
 				"--recursive",
-				"--level=0",
+				"--level=100",
 				"-H", "awsEndpoint: http://minio.dragonfly-e2e.svc:9000",
 				"-H", "awsRegion: us-west-1",
 				"-H", "awsAccessKeyID: root",
@@ -214,7 +214,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 		Expect(err).NotTo(HaveOccurred())
 		sha256sum2 := strings.TrimSpace(string(out))
 
-		fmt.Printf("sha256sum1(10 lines): %s\nsha256sum2(10 lines): %s\n",
+		fmt.Printf("sha256sum1(10 lines):\n%s\nsha256sum2(10 lines):\n%s\n",
 			strings.Join(strings.Split(string(sha256sum1), "\n")[:10], "\n"),
 			strings.Join(strings.Split(string(sha256sum2), "\n")[:10], "\n"))
 		// ensure same sha256sum
@@ -274,7 +274,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 		Expect(err).NotTo(HaveOccurred())
 		sha256sum2 := strings.TrimSpace(string(out))
 
-		fmt.Printf("sha256sum1(10 lines): %s\nsha256sum2(10 lines): %s\n",
+		fmt.Printf("sha256sum1(10 lines):\n%s\nsha256sum2(10 lines):\n%s\n",
 			strings.Join(strings.Split(string(sha256sum1), "\n")[:10], "\n"),
 			strings.Join(strings.Split(string(sha256sum2), "\n")[:10], "\n"))
 		// ensure same sha256sum

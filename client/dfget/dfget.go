@@ -307,11 +307,13 @@ func recursiveDownload(ctx context.Context, client dfdaemonclient.Client, cfg *c
 			break
 		}
 		parentCfg := queue.PopFront()
-		if !skipLevel && parentCfg.RecursiveLevel == 0 {
-			logger.Infof("%s recursive level reached, skip", parentCfg.URL)
-			continue
+		if !skipLevel {
+			if parentCfg.RecursiveLevel == 0 {
+				logger.Infof("%s recursive level reached, skip", parentCfg.URL)
+				continue
+			}
+			parentCfg.RecursiveLevel--
 		}
-		parentCfg.RecursiveLevel--
 		request, err := source.NewRequestWithContext(ctx, parentCfg.URL, parseHeader(parentCfg.Header))
 		if err != nil {
 			return err
