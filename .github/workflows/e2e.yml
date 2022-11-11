@@ -49,6 +49,9 @@ jobs:
           - module: split-running-tasks
             charts-config: test/testdata/charts/config-split-running-tasks.yaml
             skip: ""
+          - module: cache-list-metadata
+            charts-config: test/testdata/charts/config-cache-list-metadata.yaml
+            skip: ""
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -95,6 +98,7 @@ jobs:
           kubectl wait po proxy-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
           kubectl wait po proxy-1 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
           kubectl wait po proxy-2 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
+          kubectl wait po minio-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
 
       - name: Run E2E test
         run: |
