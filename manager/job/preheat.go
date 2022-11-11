@@ -33,6 +33,7 @@ import (
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/distribution/distribution/v3"
 	"github.com/distribution/distribution/v3/manifest/schema2"
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 
@@ -126,16 +127,11 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []model.Schedule
 		return nil, errors.New("unknow preheat type")
 	}
 
-	logger.Infof("preheat %s queues: %v, files: %#v", json.URL, queues, files)
 	return p.createGroupJob(ctx, files, queues)
 }
 
 func (p *preheat) createGroupJob(ctx context.Context, files []internaljob.PreheatRequest, queues []internaljob.Queue) (*internaljob.GroupJobState, error) {
-	signatures := []*machineryv1tasks.Signature{}
-	var urls []string
-	for i := range files {
-		urls = append(urls, files[i].URL)
-	}
+	var signatures []*machineryv1tasks.Signature
 	for _, queue := range queues {
 		for _, file := range files {
 			args, err := internaljob.MarshalRequest(file)
@@ -145,24 +141,30 @@ func (p *preheat) createGroupJob(ctx context.Context, files []internaljob.Prehea
 			}
 
 			signatures = append(signatures, &machineryv1tasks.Signature{
+				UUID:       fmt.Sprintf("task_%s", uuid.New().String()),
 				Name:       internaljob.PreheatJob,
 				RoutingKey: queue.String(),
 				Args:       args,
 			})
 		}
 	}
-	group, err := machineryv1tasks.NewGroup(signatures...)
 
+	group, err := machineryv1tasks.NewGroup(signatures...)
 	if err != nil {
 		return nil, err
 	}
 
+	var tasks []machineryv1tasks.Signature
+	for _, signature := range signatures {
+		tasks = append(tasks, *signature)
+	}
+
+	logger.Infof("create preheat group %s in queues %v, tasks: %#v", group.GroupUUID, queues, tasks)
 	if _, err := p.job.Server.SendGroupWithContext(ctx, group, 0); err != nil {
-		logger.Error("create preheat group job failed", err)
+		logger.Errorf("create preheat group %s failed", group.GroupUUID, err)
 		return nil, err
 	}
 
-	logger.Infof("create preheat group job successfully, group uuid: %s， urls: %s", group.GroupUUID, urls)
 	return &internaljob.GroupJobState{
 		GroupUUID: group.GroupUUID,
 		State:     machineryv1tasks.StatePending,

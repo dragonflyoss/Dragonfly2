@@ -98,21 +98,21 @@ func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheat
 	return &job, nil
 }
 
-func (s *service) pollingJob(ctx context.Context, id uint, taskID string) {
+func (s *service) pollingJob(ctx context.Context, id uint, groupID string) {
 	var (
 		job model.Job
-		log = logger.WithTaskAndJobID(taskID, fmt.Sprint(id))
+		log = logger.WithGroupAndJobID(groupID, fmt.Sprint(id))
 	)
-	if _, _, err := retry.Run(ctx, 5, 10, 120, func() (any, bool, error) {
-		groupJob, err := s.job.GetGroupJobState(taskID)
+	if _, _, err := retry.Run(ctx, 5, 10, 480, func() (any, bool, error) {
+		groupJob, err := s.job.GetGroupJobState(groupID)
 		if err != nil {
-			log.Errorf("polling job failed: %s", err.Error())
+			log.Errorf("polling group failed: %s", err.Error())
 			return nil, false, err
 		}
 
 		result, err := structure.StructToMap(groupJob)
 		if err != nil {
-			log.Errorf("polling job failed: %s", err.Error())
+			log.Errorf("polling group failed: %s", err.Error())
 			return nil, false, err
 		}
 
@@ -120,21 +120,16 @@ func (s *service) pollingJob(ctx context.Context, id uint, taskID string) {
 			State:  groupJob.State,
 			Result: result,
 		}).Error; err != nil {
-			log.Errorf("polling job failed: %s", err.Error())
+			log.Errorf("polling group failed: %s", err.Error())
 			return nil, true, err
 		}
 
 		switch job.State {
 		case machineryv1tasks.StateSuccess:
-			log.Info("polling job success")
+			log.Info("polling group succeeded")
 			return nil, true, nil
 		case machineryv1tasks.StateFailure:
-			var jobStates []machineryv1tasks.TaskState
-			for _, jobState := range groupJob.JobStates {
-				jobStates = append(jobStates, *jobState)
-			}
-
-			log.Errorf("polling job failed: %#v", jobStates)
+			log.Error("polling group failed")
 			return nil, true, nil
 		default:
 			msg := fmt.Sprintf("polling job state is %s", job.State)
@@ -142,7 +137,7 @@ func (s *service) pollingJob(ctx context.Context, id uint, taskID string) {
 			return nil, false, errors.New(msg)
 		}
 	}); err != nil {
-		log.Errorf("polling job failed: %s", err.Error())
+		log.Errorf("polling group failed: %s", err.Error())
 	}
 
 	// Polling timeout and failed.
@@ -151,9 +146,9 @@ func (s *service) pollingJob(ctx context.Context, id uint, taskID string) {
 		if err := s.db.WithContext(ctx).First(&job, id).Updates(model.Job{
 			State: machineryv1tasks.StateFailure,
 		}).Error; err != nil {
-			log.Errorf("polling job failed: %s", err.Error())
+			log.Errorf("polling group failed: %s", err.Error())
 		}
-		log.Error("polling job timeout")
+		log.Error("polling group timeout")
 	}
 }
 

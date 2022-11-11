@@ -30,6 +30,8 @@ import (
 	machineryv1log "github.com/RichardKnop/machinery/v1/log"
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/go-redis/redis/v8"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 type Config struct {
@@ -112,43 +114,45 @@ type GroupJobState struct {
 	JobStates []*machineryv1tasks.TaskState
 }
 
-func (t *Job) GetGroupJobState(groupUUID string) (*GroupJobState, error) {
-	jobStates, err := t.Server.GetBackend().GroupTaskStates(groupUUID, 0)
+func (t *Job) GetGroupJobState(groupID string) (*GroupJobState, error) {
+	taskStates, err := t.Server.GetBackend().GroupTaskStates(groupID, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(jobStates) == 0 {
-		return nil, errors.New("empty group job")
+	if len(taskStates) == 0 {
+		return nil, errors.New("empty group")
 	}
 
-	for _, jobState := range jobStates {
-		if jobState.IsFailure() {
+	for _, taskState := range taskStates {
+		if taskState.IsFailure() {
+			logger.WithGroupAndTaskID(groupID, taskState.TaskUUID).Errorf("task is failed: %#v", taskState)
 			return &GroupJobState{
-				GroupUUID: groupUUID,
+				GroupUUID: groupID,
 				State:     machineryv1tasks.StateFailure,
-				CreatedAt: jobState.CreatedAt,
-				JobStates: jobStates,
+				CreatedAt: taskState.CreatedAt,
+				JobStates: taskStates,
 			}, nil
 		}
 	}
 
-	for _, jobState := range jobStates {
-		if !jobState.IsSuccess() {
+	for _, taskState := range taskStates {
+		if !taskState.IsSuccess() {
+			logger.WithGroupAndTaskID(groupID, taskState.TaskUUID).Infof("task is not succeeded: %#v", taskState)
 			return &GroupJobState{
-				GroupUUID: groupUUID,
+				GroupUUID: groupID,
 				State:     machineryv1tasks.StatePending,
-				CreatedAt: jobState.CreatedAt,
-				JobStates: jobStates,
+				CreatedAt: taskState.CreatedAt,
+				JobStates: taskStates,
 			}, nil
 		}
 	}
 
 	return &GroupJobState{
-		GroupUUID: groupUUID,
+		GroupUUID: groupID,
 		State:     machineryv1tasks.StateSuccess,
-		CreatedAt: jobStates[0].CreatedAt,
-		JobStates: jobStates,
+		CreatedAt: taskStates[0].CreatedAt,
+		JobStates: taskStates,
 	}, nil
 }
 

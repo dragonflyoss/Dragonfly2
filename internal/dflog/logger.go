@@ -153,9 +153,15 @@ func WithHostnameAndIP(hostname, ip string) *SugaredLoggerOnWith {
 	}
 }
 
-func WithTaskAndJobID(taskID, jobID string) *SugaredLoggerOnWith {
+func WithGroupAndJobID(taskID, jobID string) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
-		withArgs: []any{"taskID", taskID, "jobID", jobID},
+		withArgs: []any{"groupID", taskID, "jobID", jobID},
+	}
+}
+
+func WithGroupAndTaskID(groupID, taskID string) *SugaredLoggerOnWith {
+	return &SugaredLoggerOnWith{
+		withArgs: []any{"groupID", groupID, "taskID", taskID},
 	}
 }
 
