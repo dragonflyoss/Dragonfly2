@@ -299,6 +299,11 @@ build-e2e-sha256sum:
 	@GOOS=linux GOARCH=amd64 go build -o /tmp/sha256sum-offset test/tools/sha256sum-offset/main.go
 .PHONY: build-e2e-sha256sum
 
+# Generate e2e download grpc test binary
+build-e2e-download-grpc-test:
+	@GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o /tmp/download-grpc-test test/tools/download-grpc-test/main.go
+.PHONY: build-e2e-download-grpc-test
+
 # Run unittests
 test:
 	@go test -v -race -short ${PKG_LIST}
@@ -322,12 +327,12 @@ install-e2e-test:
 .PHONY: install-e2e-test
 
 # Run E2E tests
-e2e-test: install-e2e-test build-e2e-sha256sum
+e2e-test: install-e2e-test build-e2e-sha256sum build-e2e-download-grpc-test
 	@ginkgo -v -r --race --fail-fast --cover --trace --progress test/e2e
 .PHONY: e2e-test
 
 # Run E2E tests with coverage
-e2e-test-coverage: install-e2e-test build-e2e-sha256sum
+e2e-test-coverage: install-e2e-test build-e2e-sha256sum build-e2e-download-grpc-test
 	@ginkgo -v -r --race --fail-fast --cover --trace --progress test/e2e
 	@cat coverprofile.out >> coverage.txt
 .PHONY: e2e-test-coverage
@@ -418,6 +423,7 @@ help:
 	@echo "make build-manager-server           build manager server"
 	@echo "make build-manager-console          build manager console"
 	@echo "make build-e2e-sha256sum            build sha256sum test tool"
+	@echo "make build-e2e-download-grpc-test   build download grpc test tool"
 	@echo "make install-dfget                  install dfget"
 	@echo "make install-scheduler              install scheduler"
 	@echo "make install-manager                install manager"

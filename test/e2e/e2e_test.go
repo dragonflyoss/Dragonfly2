@@ -191,6 +191,14 @@ var _ = BeforeSuite(func() {
 		}
 		Expect(err).NotTo(HaveOccurred())
 	}
+
+	if featureGates.Enabled(featureGateRecursive) {
+		out, err := e2eutil.DockerCopy("/bin/", "/tmp/download-grpc-test").CombinedOutput()
+		if err != nil {
+			fmt.Println(string(out))
+		}
+		Expect(err).NotTo(HaveOccurred())
+	}
 })
 
 // TestE2E is the root of e2e test function

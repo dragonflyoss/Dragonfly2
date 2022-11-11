@@ -156,7 +156,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 			}
 		}
 	})
-	It(name+" - recursive", Label("download", "recursive"), func() {
+	It(name+" - recursive with dfget", Label("download", "recursive", "dfget"), func() {
 		if !featureGates.Enabled(featureGateRecursive) {
 			fmt.Println("feature gate recursive is disable, skip")
 		}
@@ -204,6 +204,62 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 
 		// calculate downloaded files sha256sum
 		out, err = pod.Command("/bin/sh", "-c", `cd /var/lib/dragonfly-test && find . -type f | sort | xargs -n 1 sha256sum`).CombinedOutput()
+		Expect(err).NotTo(HaveOccurred())
+		sha256sum1 := strings.TrimSpace(string(out))
+
+		// get the original sha256sum in minio pod
+		minioPod := e2eutil.NewPodExec("dragonfly-e2e", "minio-0", "minio")
+		out, err = minioPod.Command("cat", "/host/tmp/dragonfly-test.sha256sum.txt").CombinedOutput()
+		Expect(err).NotTo(HaveOccurred())
+		sha256sum2 := strings.TrimSpace(string(out))
+
+		// ensure same sha256sum
+		Expect(sha256sum1).To(Equal(sha256sum2))
+	})
+
+	It(name+" - recursive with grpc", Label("download", "recursive", "grpc"), func() {
+		if !featureGates.Enabled(featureGateRecursive) {
+			fmt.Println("feature gate recursive is disable, skip")
+		}
+
+		// prepaired data in minio pod
+		// test bucket minio-test-bucket
+		// test path /dragonfly-test/usr
+		// test subdirs (no empty dirs)
+		// sha256sum txt: /host/tmp/dragonfly-test.sha256sum.txt
+		subDirs := []string{"bin", "lib", "lib64", "libexec", "sbin", "share"}
+
+		out, err := e2eutil.KubeCtlCommand("-n", ns, "get", "pod", "-l", label,
+			"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
+		podName := strings.Trim(string(out), "'")
+		Expect(err).NotTo(HaveOccurred())
+		fmt.Println("test in pod: " + podName)
+		pod := e2eutil.NewPodExec(ns, podName, container)
+
+		// copy test tools into container
+		out, err = e2eutil.KubeCtlCommand("-n", ns, "cp", "-c", container, "/tmp/download-grpc-test",
+			fmt.Sprintf("%s:/bin/", podName)).CombinedOutput()
+		if err != nil {
+			fmt.Println(string(out))
+		}
+		Expect(err).NotTo(HaveOccurred())
+
+		for _, dir := range subDirs {
+			dfget := []string{"/bin/download-grpc-test", "-sub-dir", dir}
+
+			// recursive download file via dfget
+			start := time.Now()
+			out, err = pod.Command(dfget...).CombinedOutput()
+			end := time.Now()
+			fmt.Println(string(out))
+			Expect(err).NotTo(HaveOccurred())
+
+			// slow download
+			Expect(end.Sub(start).Seconds() < 90.0).To(Equal(true))
+		}
+
+		// calculate downloaded files sha256sum
+		out, err = pod.Command("/bin/sh", "-c", `cd /var/lib/dragonfly-grpc-test && find . -type f | sort | xargs -n 1 sha256sum`).CombinedOutput()
 		Expect(err).NotTo(HaveOccurred())
 		sha256sum1 := strings.TrimSpace(string(out))
 
