@@ -294,6 +294,11 @@ func rejectRegex(u string, reject string) bool {
 
 // recursiveDownload breadth-first download all resources
 func recursiveDownload(ctx context.Context, client dfdaemonclient.Client, cfg *config.DfgetConfig) error {
+	// if recursive level is 0, skip recursive level check
+	var skipLevel bool
+	if cfg.RecursiveLevel == 0 {
+		skipLevel = true
+	}
 	var queue deque.Deque[*config.DfgetConfig]
 	queue.PushBack(cfg)
 	downloadMap := map[url.URL]struct{}{}
@@ -302,7 +307,7 @@ func recursiveDownload(ctx context.Context, client dfdaemonclient.Client, cfg *c
 			break
 		}
 		parentCfg := queue.PopFront()
-		if parentCfg.RecursiveLevel == 0 {
+		if !skipLevel && parentCfg.RecursiveLevel == 0 {
 			logger.Infof("%s recursive level reached, skip", parentCfg.URL)
 			continue
 		}

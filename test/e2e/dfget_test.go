@@ -57,6 +57,9 @@ func getFileSizes() map[string]int {
 	}
 	for _, path := range files {
 		out, err := e2eutil.DockerCommand("stat", "--printf=%s", path).CombinedOutput()
+		if err != nil {
+			fmt.Printf("stat %s erro: %s, stdout: %s", path, err, string(out))
+		}
 		Expect(err).NotTo(HaveOccurred())
 		size, err := strconv.Atoi(string(out))
 		Expect(err).NotTo(HaveOccurred())
@@ -91,7 +94,7 @@ func getRandomRange(size int) *util.Range {
 }
 
 func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
-	It(name, func() {
+	It(name, Label("download", "normal"), func() {
 		fileDetails := getFileSizes()
 		out, err := e2eutil.KubeCtlCommand("-n", ns, "get", "pod", "-l", label,
 			"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
@@ -153,7 +156,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 			}
 		}
 	})
-	It(name+" - recursive", func() {
+	It(name+" - recursive", Label("download", "recursive"), func() {
 		if !featureGates.Enabled(featureGateRecursive) {
 			fmt.Println("feature gate recursive is disable, skip")
 		}
@@ -175,13 +178,16 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 		for _, dir := range subDirs {
 			var dfget []string
 			dfget = append(dfget,
-				"/opt/dragonfly/bin/dfget", "--disable-back-source",
+				"/opt/dragonfly/bin/dfget",
+				"--disable-back-source",
+				"--recursive",
+				"--level=0",
 				"-H", "awsEndpoint: http://minio.dragonfly-e2e.svc:9000",
 				"-H", "awsRegion: us-west-1",
 				"-H", "awsAccessKeyID: root",
 				"-H", "awsSecretAccessKey: password",
 				"-H", "awsS3ForcePathStyle: true",
-				"-O", fmt.Sprintf("/tmp/d7y/usr/%s", dir),
+				"-O", fmt.Sprintf("/var/lib/dragonfly-test/usr/%s", dir),
 				fmt.Sprintf("s3://minio-test-bucket/dragonfly-test/usr/%s", dir),
 			)
 
@@ -193,17 +199,17 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 			Expect(err).NotTo(HaveOccurred())
 
 			// slow download
-			Expect(end.Sub(start).Seconds() < 30.0).To(Equal(true))
+			Expect(end.Sub(start).Seconds() < 90.0).To(Equal(true))
 		}
 
 		// calculate downloaded files sha256sum
-		out, err = pod.Command("/bin/sh", "-c", `cd /tmp/d7y && find . -type f | sort | xargs -n 1 sha256sum`).CombinedOutput()
+		out, err = pod.Command("/bin/sh", "-c", `cd /var/lib/dragonfly-test && find . -type f | sort | xargs -n 1 sha256sum`).CombinedOutput()
 		Expect(err).NotTo(HaveOccurred())
 		sha256sum1 := strings.TrimSpace(string(out))
 
 		// get the original sha256sum in minio pod
 		minioPod := e2eutil.NewPodExec("dragonfly-e2e", "minio-0", "minio")
-		out, err = minioPod.Command("cat /host/tmp/dragonfly-test.sha256sum.txt").CombinedOutput()
+		out, err = minioPod.Command("cat", "/host/tmp/dragonfly-test.sha256sum.txt").CombinedOutput()
 		Expect(err).NotTo(HaveOccurred())
 		sha256sum2 := strings.TrimSpace(string(out))
 
