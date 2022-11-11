@@ -159,6 +159,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 	It(name+" - recursive with dfget", Label("download", "recursive", "dfget"), func() {
 		if !featureGates.Enabled(featureGateRecursive) {
 			fmt.Println("feature gate recursive is disable, skip")
+			return
 		}
 
 		// prepaired data in minio pod
@@ -220,6 +221,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 	It(name+" - recursive with grpc", Label("download", "recursive", "grpc"), func() {
 		if !featureGates.Enabled(featureGateRecursive) {
 			fmt.Println("feature gate recursive is disable, skip")
+			return
 		}
 
 		// prepaired data in minio pod
