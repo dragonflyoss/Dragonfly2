@@ -28,6 +28,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-http-utils/headers"
 	"go.uber.org/atomic"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
@@ -36,6 +37,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/digest"
+	"d7y.io/dragonfly/v2/pkg/source"
 )
 
 type localTaskStore struct {
@@ -475,13 +477,32 @@ func (t *localTaskStore) GetExtendAttribute(ctx context.Context, req *PeerTaskMe
 }
 
 func (t *localTaskStore) CanReclaim() bool {
+	// task is invalid
 	if t.invalid.Load() {
 		return true
 	}
+	now := time.Now()
+	// task soft cache time reached
 	access := time.Unix(0, t.lastAccess.Load())
-	reclaim := access.Add(t.expireTime).Before(time.Now())
+	reclaim := access.Add(t.expireTime).Before(now)
 	t.Debugf("reclaim check, last access: %v, reclaim: %v", access, reclaim)
-	return reclaim
+	if reclaim || t.Header == nil {
+		return reclaim
+	}
+
+	// task hard cache time reached
+	if expire := t.Header.Get(headers.Expires); expire != "" {
+		t.Debugf("reclaim check Expire header: %s", expire)
+		expireTime, err := time.Parse(source.ExpireLayout, expire)
+		if err == nil && now.After(expireTime) {
+			t.Debugf("Expire header time reached")
+			return true
+		}
+		if err != nil {
+			t.Errorf("parse Expire header error: %s", err)
+		}
+	}
+	return false
 }
 
 func (t *localTaskStore) MarkInvalid() {

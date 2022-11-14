@@ -288,7 +288,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	}
 
 	rpcManager, err := rpcserver.New(host, peerTaskManager, storageManager, defaultPattern,
-		opt.Download.RecursiveConcurrent.GoroutineCount, downloadServerOption, peerServerOption)
+		opt.Download.RecursiveConcurrent.GoroutineCount, opt.Download.CacheRecursiveMetadata, downloadServerOption, peerServerOption)
 	if err != nil {
 		return nil, err
 	}

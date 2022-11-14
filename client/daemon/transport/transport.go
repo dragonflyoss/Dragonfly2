@@ -230,7 +230,7 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 	url := req.URL.String()
 	peerID := rt.peerIDGenerator.PeerID()
 
-	ctx, span := tracer.Start(ctx, config.SpanDownloadRPC, trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := tracer.Start(ctx, config.SpanTransport, trace.WithSpanKind(trace.SpanKindClient))
 	defer span.End()
 	logKV := []any{
 		"peer", peerID, "component", "transport",

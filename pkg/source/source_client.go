@@ -46,6 +46,9 @@ var (
 	// ErrClientNotSupportList represents the source client not support list action
 	ErrClientNotSupportList = errors.New("source client not support list")
 
+	// ErrClientNotSupportContentLength represents the source client not support get content length action
+	ErrClientNotSupportContentLength = errors.New("source client not support get content length")
+
 	// ErrClientNotSupportGetMetadata represents the source client not support get metadata
 	ErrClientNotSupportGetMetadata = errors.New("source client not support get metadata")
 )
@@ -136,6 +139,8 @@ type URLEntry struct {
 	Name string
 	// IsDir reports whether the entry describes a directory.
 	IsDir bool
+	// Entry attribute, like oss md5 and expire time
+	Attribute map[string]string
 }
 
 // ResourceLister defines the interface to list all downloadable resources in request url

@@ -20,6 +20,7 @@ package rpcserver
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -75,15 +76,17 @@ type Server interface {
 
 type server struct {
 	util.KeepAlive
-	peerHost            *schedulerv1.PeerHost
-	peerTaskManager     peer.TaskManager
-	storageManager      storage.Manager
-	defaultPattern      commonv1.Pattern
-	recursiveConcurrent int
+	peerHost        *schedulerv1.PeerHost
+	peerTaskManager peer.TaskManager
+	storageManager  storage.Manager
+	defaultPattern  commonv1.Pattern
 
 	downloadServer *grpc.Server
 	peerServer     *grpc.Server
 	uploadAddr     string
+
+	recursiveConcurrent    int
+	cacheRecursiveMetadata time.Duration
 }
 
 var tracer trace.Tracer
@@ -93,15 +96,18 @@ func init() {
 }
 
 func New(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskManager,
-	storageManager storage.Manager, defaultPattern commonv1.Pattern, recursiveConcurrent int,
+	storageManager storage.Manager, defaultPattern commonv1.Pattern,
+	recursiveConcurrent int, cacheRecursiveMetadata time.Duration,
 	downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Server, error) {
 	s := &server{
-		KeepAlive:           util.NewKeepAlive("rpc server"),
-		peerHost:            peerHost,
-		peerTaskManager:     peerTaskManager,
-		storageManager:      storageManager,
-		defaultPattern:      defaultPattern,
-		recursiveConcurrent: recursiveConcurrent,
+		KeepAlive:       util.NewKeepAlive("rpc server"),
+		peerHost:        peerHost,
+		peerTaskManager: peerTaskManager,
+		storageManager:  storageManager,
+		defaultPattern:  defaultPattern,
+
+		recursiveConcurrent:    recursiveConcurrent,
+		cacheRecursiveMetadata: cacheRecursiveMetadata,
 	}
 
 	sd := &seeder{
@@ -360,13 +366,13 @@ func (s *server) Download(req *dfdaemonv1.DownRequest, stream dfdaemonv1.Daemon_
 	s.Keep()
 	ctx := stream.Context()
 	if req.Recursive {
-		return s.doRecursiveDownload(ctx, req, stream)
+		return s.recursiveDownload(ctx, req, stream)
 	}
-	return s.doDownload(ctx, req, stream, "")
+	return s.download(ctx, req, stream, "")
 }
 
-func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRequest, stream dfdaemonv1.Daemon_DownloadServer) error {
-	ctx, span := tracer.Start(ctx, config.SpanDownloadRPC, trace.WithSpanKind(trace.SpanKindClient))
+func (s *server) recursiveDownload(ctx context.Context, req *dfdaemonv1.DownRequest, stream dfdaemonv1.Daemon_DownloadServer) error {
+	ctx, span := tracer.Start(ctx, config.SpanRecursiveDownload, trace.WithSpanKind(trace.SpanKindClient))
 	defer span.End()
 
 	traceID := span.SpanContext().TraceID()
@@ -392,15 +398,124 @@ func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRe
 		return status.Errorf(codes.FailedPrecondition, err.Error())
 	}
 
-	var (
-		requestCh      = make(chan *dfdaemonv1.DownRequest)
-		stopCh         = make(chan struct{})
-		wg             = sync.WaitGroup{}
-		lock           = sync.Mutex{}
-		downloadErrors []error
-		sender         = &sequentialResultSender{realSender: stream}
-	)
+	// only try to cache metadata when cacheRecursiveMetadata is setted
+	if s.cacheRecursiveMetadata > 0 {
+		if err := s.recursiveDownloadWithP2PMetadata(ctx, log, span, traceID, req, stream); err == nil {
+			return nil
+		}
+	}
+
+	return s.recursiveDownloadWithDirectMetadata(ctx, log, span, traceID, req, stream)
+}
+
+func (s *server) recursiveDownloadWithP2PMetadata(
+	ctx context.Context,
+	log *logger.SugaredLoggerOnWith,
+	span trace.Span,
+	traceID trace.TraceID,
+	req *dfdaemonv1.DownRequest,
+	stream dfdaemonv1.Daemon_DownloadServer) error {
+	requestCh, stopCh, wg, downloadErrors := s.startDownloadWorkers(ctx, span, traceID, stream)
 	defer close(stopCh)
+
+	listMetadata := source.ListMetadata{}
+	purl, err := url.Parse(req.Url)
+	if err != nil {
+		return err
+	}
+	urlMeta := commonv1.UrlMeta{
+		Digest:      req.UrlMeta.Digest,
+		Tag:         req.UrlMeta.Tag,
+		Filter:      req.UrlMeta.Filter,
+		Header:      req.UrlMeta.Header,
+		Application: req.UrlMeta.Application,
+	}
+	// set original scheme
+	urlMeta.Header[source.ListMetadataOriginScheme] = purl.Scheme
+	// update url scheme
+	purl.Scheme = source.ListMetadataScheme
+	// update cache expire time
+	urlMeta.Header[source.ListMetadataExpire] = time.Now().Add(s.cacheRecursiveMetadata).Format(source.ExpireLayout)
+
+	rc, _, err := s.peerTaskManager.StartStreamTask(ctx, &peer.StreamTaskRequest{
+		URL:     purl.String(),
+		URLMeta: &urlMeta,
+		PeerID:  idgen.PeerID(s.peerHost.Ip),
+		Pattern: config.ConvertPattern(req.Pattern, s.defaultPattern),
+	})
+	if err != nil {
+		log.Errorf("start stream task for metadata error: %s", err)
+		span.RecordError(err)
+		return err
+	}
+	defer rc.Close()
+
+	dec := json.NewDecoder(rc)
+	err = dec.Decode(&listMetadata)
+	if err != nil {
+		log.Errorf("load metadata error: %s", err)
+		span.RecordError(err)
+		return err
+	}
+
+	for _, urlEntry := range listMetadata.URLEntries {
+		// create new req
+		childReq := copyDownRequest(req)
+		// update correct output
+		childReq.Output = path.Join(req.Output, strings.TrimPrefix(urlEntry.URL.Path, purl.Path))
+		log.Infof("target output: %s", strings.TrimPrefix(childReq.Output, req.Output))
+
+		u := urlEntry.URL
+		childReq.Url = u.String()
+		log.Infof("download %s to %s", childReq.Url, childReq.Output)
+
+		if urlEntry.IsDir {
+			continue
+		}
+
+		// validate new request
+		if err := childReq.Validate(); err != nil {
+			log.Errorf("validate %#v failed: %s", childReq, err)
+			span.RecordError(err)
+			return err
+		}
+
+		if err := checkOutput(childReq.Output); err != nil {
+			log.Errorf("check output %#v failed: %s", childReq, err)
+			span.RecordError(err)
+			return err
+		}
+
+		wg.Add(1)
+		requestCh <- childReq
+	}
+
+	// wait all sent tasks done or error
+	wg.Wait()
+	if len(downloadErrors) > 0 {
+		// just return first error
+		return downloadErrors[0]
+	}
+
+	return nil
+}
+
+func (s *server) startDownloadWorkers(
+	ctx context.Context,
+	span trace.Span,
+	traceID trace.TraceID,
+	stream dfdaemonv1.Daemon_DownloadServer) (
+	requestCh chan *dfdaemonv1.DownRequest,
+	stopCh chan struct{},
+	wg *sync.WaitGroup,
+	downloadErrors []error,
+) {
+	requestCh = make(chan *dfdaemonv1.DownRequest)
+	stopCh = make(chan struct{})
+	wg = &sync.WaitGroup{}
+
+	lock := sync.Mutex{}
+	sender := &sequentialResultSender{realSender: stream}
 
 	for i := 0; i < s.recursiveConcurrent; i++ {
 		go func(i int) {
@@ -415,7 +530,7 @@ func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRe
 				select {
 				case req := <-requestCh:
 					dLog.Debugf("downloader %d start to download %s", i, req.Url)
-					if err := s.doDownload(ctx, req, sender, ""); err != nil {
+					if err := s.download(ctx, req, sender, ""); err != nil {
 						dLog.Errorf("download %#v error: %s", req, err.Error())
 						lock.Lock()
 						downloadErrors = append(downloadErrors, err)
@@ -430,12 +545,26 @@ func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRe
 			}
 		}(i)
 	}
+	return requestCh, stopCh, wg, downloadErrors
+}
+
+func (s *server) recursiveDownloadWithDirectMetadata(
+	ctx context.Context,
+	log *logger.SugaredLoggerOnWith,
+	span trace.Span,
+	traceID trace.TraceID,
+	req *dfdaemonv1.DownRequest,
+	stream dfdaemonv1.Daemon_DownloadServer) error {
 
 	var (
 		queue            deque.Deque[*dfdaemonv1.DownRequest]
 		start            = time.Now()
 		listMilliseconds int64
 	)
+
+	requestCh, stopCh, wg, downloadErrors := s.startDownloadWorkers(ctx, span, traceID, stream)
+	defer close(stopCh)
+
 	queue.PushBack(req)
 	downloadMap := map[url.URL]struct{}{}
 	for {
@@ -500,18 +629,14 @@ func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRe
 		}
 	}
 
-	// wait all sent task done or error
+	// wait all sent tasks done or error
 	wg.Wait()
-	lock.Lock()
 	if len(downloadErrors) > 0 {
 		// just return first error
-		lock.Unlock()
 		return downloadErrors[0]
 	}
 
 	log.Infof("list dirs cost: %dms, download cost: %dms", listMilliseconds, time.Now().Sub(start).Milliseconds())
-	lock.Unlock()
-
 	return nil
 }
 
@@ -549,8 +674,8 @@ func (s *sequentialResultSender) Send(result *dfdaemonv1.DownResult) error {
 	return err
 }
 
-func (s *server) doDownload(ctx context.Context, req *dfdaemonv1.DownRequest, stream ResultSender, peerID string) error {
-	ctx, span := tracer.Start(ctx, config.SpanDownloadRPC, trace.WithSpanKind(trace.SpanKindClient))
+func (s *server) download(ctx context.Context, req *dfdaemonv1.DownRequest, stream ResultSender, peerID string) error {
+	ctx, span := tracer.Start(ctx, config.SpanDownload, trace.WithSpanKind(trace.SpanKindClient))
 	defer span.End()
 
 	if req.UrlMeta == nil {
@@ -868,7 +993,7 @@ func (s *simpleResultSender) Send(result *dfdaemonv1.DownResult) error {
 
 func call(ctx context.Context, peerID string, sender ResultSender, s *server, req *dfdaemonv1.DownRequest, errChan chan error) {
 	err := safe.Call(func() {
-		if err := s.doDownload(ctx, req, sender, peerID); err != nil {
+		if err := s.download(ctx, req, sender, peerID); err != nil {
 			errChan <- err
 		}
 	})
