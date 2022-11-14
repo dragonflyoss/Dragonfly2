@@ -145,7 +145,7 @@ func NewHost(rawHost *schedulerv1.PeerHost, options ...HostOption) *Host {
 		PeerCount:             atomic.NewInt32(0),
 		CreateAt:              atomic.NewTime(time.Now()),
 		UpdateAt:              atomic.NewTime(time.Now()),
-		Log:                   logger.WithHostID(rawHost.Id),
+		Log:                   logger.WithHost(rawHost.Id, rawHost.HostName, rawHost.Ip),
 	}
 
 	for _, opt := range options {
@@ -187,12 +187,12 @@ func (h *Host) LeavePeers() {
 			return true
 		}
 
+		peer.Log.Info("host leaves peers, causing the peer to leave")
 		if err := peer.FSM.Event(PeerEventLeave); err != nil {
 			peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 			return true
 		}
 
-		h.Log.Infof("peer %s has been left", peer.ID)
 		return true
 	})
 }
