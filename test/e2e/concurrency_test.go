@@ -27,7 +27,7 @@ import (
 
 var _ = Describe("Download concurrency", func() {
 	Context("ab", func() {
-		It("concurrent 100 should be ok", func() {
+		It("concurrent 100 should be ok", Label("concurrent", "100"), func() {
 			url := e2eutil.GetFileURL(hostnameFilePath)
 			fmt.Println("download url " + url)
 
@@ -36,7 +36,7 @@ var _ = Describe("Download concurrency", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("concurrent 200 should be ok", func() {
+		It("concurrent 200 should be ok", Label("concurrent", "200"), func() {
 			url := e2eutil.GetFileURL(hostnameFilePath)
 			fmt.Println("download url " + url)
 
@@ -45,7 +45,7 @@ var _ = Describe("Download concurrency", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("concurrent 500 should be ok", func() {
+		It("concurrent 500 should be ok", Label("concurrent", "500"), func() {
 			url := e2eutil.GetFileURL(hostnameFilePath)
 			fmt.Println("download url " + url)
 
@@ -54,7 +54,7 @@ var _ = Describe("Download concurrency", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("concurrent 1000 should be ok", func() {
+		It("concurrent 1000 should be ok", Label("concurrent", "1000"), func() {
 			url := e2eutil.GetFileURL(hostnameFilePath)
 			fmt.Println("download url " + url)
 

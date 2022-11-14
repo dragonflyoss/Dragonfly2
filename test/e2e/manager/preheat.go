@@ -40,7 +40,7 @@ import (
 
 var _ = Describe("Preheat with manager", func() {
 	Context("preheat", func() {
-		It("preheat files should be ok", func() {
+		It("preheat files should be ok", Label("preheat", "file"), func() {
 			var seedPeerPods [3]*e2eutil.PodExec
 			for i := 0; i < 3; i++ {
 				seedPeerPods[i] = getSeedPeerExec(i)
@@ -89,7 +89,7 @@ var _ = Describe("Preheat with manager", func() {
 			}
 		})
 
-		It("preheat image should be ok", func() {
+		It("preheat image should be ok", Label("preheat", "image"), func() {
 			url := "https://index.docker.io/v2/dragonflyoss/busybox/manifests/1.35.0"
 			fmt.Println("download image: " + url)
 

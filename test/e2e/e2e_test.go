@@ -41,6 +41,7 @@ var (
 	featureGateCommit    featuregate.Feature = "dfget-commit"
 	featureGateNoLength  featuregate.Feature = "dfget-no-length"
 	featureGateEmptyFile featuregate.Feature = "dfget-empty-file"
+	featureGateRecursive featuregate.Feature = "dfget-recursive"
 
 	defaultFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 		featureGateCommit: {
@@ -64,6 +65,11 @@ var (
 			PreRelease:    featuregate.Alpha,
 		},
 		featureGateEmptyFile: {
+			Default:       false,
+			LockToDefault: false,
+			PreRelease:    featuregate.Alpha,
+		},
+		featureGateRecursive: {
 			Default:       false,
 			LockToDefault: false,
 			PreRelease:    featuregate.Alpha,
@@ -180,6 +186,14 @@ var _ = BeforeSuite(func() {
 
 	if featureGates.Enabled(featureGateRange) {
 		out, err := e2eutil.DockerCopy("/bin/", "/tmp/sha256sum-offset").CombinedOutput()
+		if err != nil {
+			fmt.Println(string(out))
+		}
+		Expect(err).NotTo(HaveOccurred())
+	}
+
+	if featureGates.Enabled(featureGateRecursive) {
+		out, err := e2eutil.DockerCopy("/bin/", "/tmp/download-grpc-test").CombinedOutput()
 		if err != nil {
 			fmt.Println(string(out))
 		}
