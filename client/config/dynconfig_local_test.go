@@ -69,9 +69,8 @@ func TestDynconfigGetResolveSchedulerAddrs_LocalSourceType(t *testing.T) {
 			},
 			expect: func(t *testing.T, dynconfig Dynconfig, config *DaemonOption) {
 				assert := assert.New(t)
-				result, err := dynconfig.GetResolveSchedulerAddrs()
-				assert.NoError(err)
-				assert.EqualValues(result, []resolver.Address{})
+				_, err := dynconfig.GetResolveSchedulerAddrs()
+				assert.EqualError(err, "can not found available scheduler addresses")
 			},
 		},
 		{

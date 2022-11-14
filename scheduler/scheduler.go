@@ -313,6 +313,12 @@ func (s *Server) Stop() {
 	s.gc.Stop()
 	logger.Info("gc closed")
 
+	// Stop Job.
+	if s.config.Job.Enable {
+		s.job.Stop()
+		logger.Info("job service closed")
+	}
+
 	// Stop metrics server.
 	if s.metricsServer != nil {
 		if err := s.metricsServer.Shutdown(context.Background()); err != nil {

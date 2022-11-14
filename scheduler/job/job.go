@@ -22,6 +22,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/RichardKnop/machinery/v1"
 	"github.com/go-http-utils/headers"
@@ -35,6 +36,11 @@ import (
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
+)
+
+const (
+	// preheatTimeout is timeout of preheating.
+	preheatTimeout = 20 * time.Minute
 )
 
 type Job interface {
@@ -141,6 +147,9 @@ func (j *job) Stop() {
 }
 
 func (j *job) preheat(ctx context.Context, req string) error {
+	ctx, cancel := context.WithTimeout(ctx, preheatTimeout)
+	defer cancel()
+
 	if !j.config.SeedPeer.Enable {
 		return errors.New("scheduler has disabled seed peer")
 	}

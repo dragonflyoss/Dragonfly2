@@ -92,13 +92,13 @@ const (
 
 const (
 	// DefaultJobGlobalWorkerNum is default global worker number for job.
-	DefaultJobGlobalWorkerNum = 10
+	DefaultJobGlobalWorkerNum = 500
 
 	// DefaultJobSchedulerWorkerNum is default scheduler worker number for job.
-	DefaultJobSchedulerWorkerNum = 10
+	DefaultJobSchedulerWorkerNum = 500
 
 	// DefaultJobGlobalWorkerNum is default local worker number for job.
-	DefaultJobLocalWorkerNum = 10
+	DefaultJobLocalWorkerNum = 1000
 
 	// DefaultJobRedisBrokerDB is default db for redis broker.
 	DefaultJobRedisBrokerDB = 1

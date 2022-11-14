@@ -21,6 +21,7 @@ package config
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -203,6 +204,10 @@ func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 			Addr:       addr,
 		})
 		addrs[addr] = true
+	}
+
+	if len(resolveAddrs) == 0 {
+		return nil, errors.New("can not found available seed peer addresses")
 	}
 
 	return resolveAddrs, nil

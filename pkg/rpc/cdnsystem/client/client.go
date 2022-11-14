@@ -42,6 +42,9 @@ import (
 )
 
 const (
+	// contextTimeout is timeout of grpc invoke.
+	contextTimeout = 2 * time.Minute
+
 	// maxRetries is maximum number of retries.
 	maxRetries = 3
 
@@ -155,6 +158,9 @@ func (c *client) ObtainSeeds(ctx context.Context, req *cdnsystemv1.SeedRequest, 
 
 // GetPieceTasks gets detail information of task.
 func (c *client) GetPieceTasks(ctx context.Context, req *commonv1.PieceTaskRequest, opts ...grpc.CallOption) (*commonv1.PiecePacket, error) {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	return c.SeederClient.GetPieceTasks(
 		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		req,

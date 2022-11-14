@@ -18,6 +18,7 @@ package config
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -108,6 +109,10 @@ func (d *dynconfigManager) GetResolveSchedulerAddrs() ([]resolver.Address, error
 			Addr:       addr,
 		})
 		addrs[addr] = true
+	}
+
+	if len(resolveAddrs) == 0 {
+		return nil, errors.New("can not found available scheduler addresses")
 	}
 
 	return resolveAddrs, nil

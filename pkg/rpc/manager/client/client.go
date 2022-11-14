@@ -41,6 +41,9 @@ import (
 )
 
 const (
+	// contextTimeout is timeout of grpc invoke.
+	contextTimeout = 2 * time.Minute
+
 	// maxRetries is maximum number of retries.
 	maxRetries = 3
 
@@ -165,91 +168,141 @@ type client struct {
 
 // Update SeedPeer configuration.
 func (c *client) UpdateSeedPeer(ctx context.Context, req *managerv1.UpdateSeedPeerRequest, opts ...grpc.CallOption) (*managerv1.SeedPeer, error) {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	return c.ManagerClient.UpdateSeedPeer(ctx, req, opts...)
 }
 
 // Get Scheduler and Scheduler cluster configuration.
 func (c *client) GetScheduler(ctx context.Context, req *managerv1.GetSchedulerRequest, opts ...grpc.CallOption) (*managerv1.Scheduler, error) {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	return c.ManagerClient.GetScheduler(ctx, req, opts...)
 }
 
 // Update scheduler configuration.
 func (c *client) UpdateScheduler(ctx context.Context, req *managerv1.UpdateSchedulerRequest, opts ...grpc.CallOption) (*managerv1.Scheduler, error) {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	return c.ManagerClient.UpdateScheduler(ctx, req, opts...)
 }
 
 // List acitve schedulers configuration.
 func (c *client) ListSchedulers(ctx context.Context, req *managerv1.ListSchedulersRequest, opts ...grpc.CallOption) (*managerv1.ListSchedulersResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	return c.ManagerClient.ListSchedulers(ctx, req, opts...)
 }
 
 // Get object storage configuration.
 func (c *client) GetObjectStorage(ctx context.Context, req *managerv1.GetObjectStorageRequest, opts ...grpc.CallOption) (*managerv1.ObjectStorage, error) {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	return c.ManagerClient.GetObjectStorage(ctx, req, opts...)
 }
 
 // List buckets configuration.
 func (c *client) ListBuckets(ctx context.Context, req *managerv1.ListBucketsRequest, opts ...grpc.CallOption) (*managerv1.ListBucketsResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	return c.ManagerClient.ListBuckets(ctx, req, opts...)
 }
 
 // List models information.
 func (c *client) ListModels(ctx context.Context, req *managerv1.ListModelsRequest, opts ...grpc.CallOption) (*managerv1.ListModelsResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	return c.ManagerClient.ListModels(ctx, req, opts...)
 }
 
 // Get model information.
 func (c *client) GetModel(ctx context.Context, req *managerv1.GetModelRequest, opts ...grpc.CallOption) (*managerv1.Model, error) {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	return c.ManagerClient.GetModel(ctx, req, opts...)
 
 }
 
 // Create model information.
 func (c *client) CreateModel(ctx context.Context, req *managerv1.CreateModelRequest, opts ...grpc.CallOption) (*managerv1.Model, error) {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	return c.ManagerClient.CreateModel(ctx, req, opts...)
 }
 
 // Update model information.
 func (c *client) UpdateModel(ctx context.Context, req *managerv1.UpdateModelRequest, opts ...grpc.CallOption) (*managerv1.Model, error) {
-	return c.ManagerClient.UpdateModel(ctx, req, opts...)
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
 
+	return c.ManagerClient.UpdateModel(ctx, req, opts...)
 }
 
 // Delete model information.
 func (c *client) DeleteModel(ctx context.Context, req *managerv1.DeleteModelRequest, opts ...grpc.CallOption) error {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	_, err := c.ManagerClient.DeleteModel(ctx, req, opts...)
 	return err
 }
 
 // List model versions information.
 func (c *client) ListModelVersions(ctx context.Context, req *managerv1.ListModelVersionsRequest, opts ...grpc.CallOption) (*managerv1.ListModelVersionsResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	return c.ManagerClient.ListModelVersions(ctx, req, opts...)
 }
 
 // Get model version information.
 func (c *client) GetModelVersion(ctx context.Context, req *managerv1.GetModelVersionRequest, opts ...grpc.CallOption) (*managerv1.ModelVersion, error) {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	return c.ManagerClient.GetModelVersion(ctx, req, opts...)
 
 }
 
 // Create model version information.
 func (c *client) CreateModelVersion(ctx context.Context, req *managerv1.CreateModelVersionRequest, opts ...grpc.CallOption) (*managerv1.ModelVersion, error) {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	return c.ManagerClient.CreateModelVersion(ctx, req, opts...)
 }
 
 // Update model version information.
 func (c *client) UpdateModelVersion(ctx context.Context, req *managerv1.UpdateModelVersionRequest, opts ...grpc.CallOption) (*managerv1.ModelVersion, error) {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	return c.ManagerClient.UpdateModelVersion(ctx, req, opts...)
 
 }
 
 // Delete model version information.
 func (c *client) DeleteModelVersion(ctx context.Context, req *managerv1.DeleteModelVersionRequest, opts ...grpc.CallOption) error {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	_, err := c.ManagerClient.DeleteModelVersion(ctx, req, opts...)
 	return err
 }
 
 func (c *client) IssueCertificate(ctx context.Context, req *securityv1.CertificateRequest, opts ...grpc.CallOption) (*securityv1.CertificateResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	return c.CertificateServiceClient.IssueCertificate(ctx, req, opts...)
 }
 

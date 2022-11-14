@@ -49,6 +49,20 @@ func (mr *MockSeedPeerMockRecorder) Client() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Client", reflect.TypeOf((*MockSeedPeer)(nil).Client))
 }
 
+// Stop mocks base method.
+func (m *MockSeedPeer) Stop() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Stop")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Stop indicates an expected call of Stop.
+func (mr *MockSeedPeerMockRecorder) Stop() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockSeedPeer)(nil).Stop))
+}
+
 // TriggerTask mocks base method.
 func (m *MockSeedPeer) TriggerTask(arg0 context.Context, arg1 *Task) (*Peer, *v1.PeerResult, error) {
 	m.ctrl.T.Helper()

@@ -58,8 +58,8 @@ const (
 )
 
 const (
-	// Timeout is the default timeout of http client.
-	timeout = 1 * time.Minute
+	// defaultHTTPRequesttimeout is the default timeout of http client.
+	defaultHTTPRequesttimeout = 1 * time.Minute
 )
 
 var accessURLPattern, _ = regexp.Compile("^(.*)://(.*)/v2/(.*)/manifests/(.*)")
@@ -219,7 +219,7 @@ func (p *preheat) getManifests(ctx context.Context, url string, header http.Head
 	req.Header.Add("Accept", schema2.MediaTypeManifest)
 
 	client := &http.Client{
-		Timeout: timeout,
+		Timeout: defaultHTTPRequesttimeout,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
@@ -275,7 +275,7 @@ func getAuthToken(ctx context.Context, header http.Header) (string, error) {
 	}
 
 	client := &http.Client{
-		Timeout: timeout,
+		Timeout: defaultHTTPRequesttimeout,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},

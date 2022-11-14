@@ -78,6 +78,10 @@ func (d *dynconfigLocal) GetResolveSchedulerAddrs() ([]resolver.Address, error) 
 		addrs[addr] = true
 	}
 
+	if len(resolveAddrs) == 0 {
+		return nil, errors.New("can not found available scheduler addresses")
+	}
+
 	return resolveAddrs, nil
 }
 
