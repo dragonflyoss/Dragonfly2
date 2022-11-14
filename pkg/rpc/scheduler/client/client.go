@@ -43,6 +43,9 @@ import (
 )
 
 const (
+	// contextTimeout is timeout of grpc invoke.
+	contextTimeout = 2 * time.Minute
+
 	// maxRetries is maximum number of retries.
 	maxRetries = 3
 
@@ -130,6 +133,9 @@ type client struct {
 
 // RegisterPeerTask registers a peer into task.
 func (c *client) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, opts ...grpc.CallOption) (*schedulerv1.RegisterResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	return c.SchedulerClient.RegisterPeerTask(
 		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		req,
@@ -170,6 +176,9 @@ func (c *client) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResu
 
 // LeaveTask releases peer in scheduler.
 func (c *client) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget, opts ...grpc.CallOption) error {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	_, err := c.SchedulerClient.LeaveTask(
 		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		req,
@@ -206,6 +215,9 @@ func (c *client) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostReques
 
 // leaveHost releases host in scheduler.
 func (c *client) leaveHost(ctx context.Context, addr string, req *schedulerv1.LeaveHostRequest, opts ...grpc.CallOption) error {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	conn, err := grpc.DialContext(
 		ctx,
 		addr,
@@ -233,6 +245,9 @@ func (c *client) leaveHost(ctx context.Context, addr string, req *schedulerv1.Le
 
 // Checks if any peer has the given task.
 func (c *client) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest, opts ...grpc.CallOption) (*schedulerv1.Task, error) {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	return c.SchedulerClient.StatTask(
 		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		req,
@@ -242,6 +257,9 @@ func (c *client) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest,
 
 // A peer announces that it has the announced task to other peers.
 func (c *client) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequest, opts ...grpc.CallOption) error {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	_, err := c.SchedulerClient.AnnounceTask(
 		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		req,

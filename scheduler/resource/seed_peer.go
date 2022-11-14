@@ -50,6 +50,9 @@ type SeedPeer interface {
 
 	// Client returns grpc client of seed peer.
 	Client() SeedPeerClient
+
+	// Stop seed peer serivce.
+	Stop() error
 }
 
 type seedPeer struct {
@@ -197,4 +200,9 @@ func (s *seedPeer) initSeedPeer(task *Task, ps *cdnsystemv1.PieceSeed) (*Peer, e
 // Client is seed peer grpc client.
 func (s *seedPeer) Client() SeedPeerClient {
 	return s.client
+}
+
+// Stop seed peer serivce.
+func (s *seedPeer) Stop() error {
+	return s.client.Close()
 }
