@@ -1,0 +1,116 @@
+---
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dragonfly-e2e
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  namespace: dragonfly-e2e
+spec:
+  selector:
+    app: dragonfly
+    component: minio
+  type: ClusterIP
+  ports:
+  - name: minio
+    port: 9000
+    protocol: TCP
+    targetPort: 9000
+
+---
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: minio
+  namespace: dragonfly-e2e
+spec:
+  serviceName: minio
+  selector:
+    matchLabels:
+      app: dragonfly
+      component: minio
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: dragonfly
+        component: minio
+    spec:
+      containers:
+      - name: minio
+        # Pull image with dragonfly
+        image: minio/minio:latest
+        imagePullPolicy: "IfNotPresent"
+        command:
+        - /opt/bin/minio
+        - server
+        - --config-dir
+        - /minio/config
+        - --console-address
+        - ":9001"
+        - /minio/data
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - |-
+              if [ -f /tmp/prepare-ok ]; then
+                exit 0
+              fi
+
+              # download binary
+              curl https://dl.min.io/client/mc/release/linux-amd64/mc > /bin/mc
+              chmod +x /bin/mc
+
+              # config
+              mc config host add local http://127.0.0.1:9000 root password
+
+              # create a new bucket
+              mc mb local/minio-test-bucket
+
+              # copy test data
+              for dir in bin lib64 libexec sbin; do
+                mc cp --recursive /usr/$dir local/minio-test-bucket/dragonfly-test/usr
+              done
+
+              # mc cp will skip empty folders, so sync back all files
+              mkdir -p /host/tmp/minio-test-bucket/dragonfly-test
+              mc cp --recursive local/minio-test-bucket/dragonfly-test/usr /host/tmp/minio-test-bucket/dragonfly-test
+
+              # generate sha256sum
+              chroot /host bash -c "cd /tmp/minio-test-bucket/dragonfly-test; \
+                  find . -type f | sort | xargs -n 1 sha256sum | tee /tmp/dragonfly-test.sha256sum.txt"
+
+              touch /tmp/prepare-ok
+          initialDelaySeconds: 5
+          periodSeconds: 60
+          timeoutSeconds: 180
+        env:
+        - name: MINIO_ROOT_USER
+          value: root
+        - name: MINIO_ROOT_PASSWORD
+          value: "password"
+        ports:
+        - containerPort: 9000
+        - containerPort: 9001
+        volumeMounts:
+        - name: files
+          mountPath: /minio
+        - name: host
+          mountPath: /host
+      volumes:
+      - name: files
+        hostPath:
+          type: DirectoryOrCreate
+          path: /minio
+      - name: host
+        hostPath:
+          path: /

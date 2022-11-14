@@ -8,6 +8,7 @@ KIND_CONFIG_PATH="test/testdata/kind/config.yaml"
 CHARTS_CONFIG_PATH="test/testdata/charts/config.yaml"
 FILE_SERVER_CONFIG_PATH="test/testdata/k8s/file-server.yaml"
 PROXY_SERVER_CONFIG_PATH="test/testdata/k8s/proxy.yaml"
+MINIO_SERVER_CONFIG_PATH="test/testdata/k8s/minio.yaml"
 CHARTS_PATH="deploy/helm-charts/charts/dragonfly"
 NAMESPACE="dragonfly-system"
 E2E_NAMESPACE="dragonfly-e2e"
@@ -34,7 +35,7 @@ install-helm() {
       curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | sh
   fi
 
-  helm install --wait --timeout 10m --dependency-update --create-namespace --namespace ${NAMESPACE} -f ${CHARTS_CONFIG_PATH} dragonfly ${CHARTS_PATH}
+  helm upgrade --install --wait --timeout 10m --dependency-update --create-namespace --namespace ${NAMESPACE} -f ${CHARTS_CONFIG_PATH} dragonfly ${CHARTS_PATH}
 }
 
 install-file-server() {
@@ -57,6 +58,13 @@ install-proxy-server() {
     --timeout=10m
   kubectl wait --namespace ${E2E_NAMESPACE} \
     --for=condition=ready pod proxy-2 \
+    --timeout=10m
+}
+
+install-minio-server() {
+  kubectl apply -f ${MINIO_SERVER_CONFIG_PATH}
+  kubectl wait --namespace ${E2E_NAMESPACE} \
+    --for=condition=ready pod minio-0 \
     --timeout=10m
 }
 
@@ -102,6 +110,9 @@ main() {
 
   print_step_info "start install proxy server"
   install-proxy-server
+
+  print_step_info "start install minio server"
+  install-minio-server
 
   print_step_info "start install ginkgo"
   install-ginkgo
