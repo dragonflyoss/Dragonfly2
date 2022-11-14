@@ -26,9 +26,13 @@ const (
 	Range           = "X-Dragonfly-Range" // startIndex-endIndex
 )
 
-const LastModifiedLayout = "Mon, 02 Jan 2006 15:04:05 GMT"
+const (
+	LastModifiedLayout = "Mon, 02 Jan 2006 15:04:05 GMT"
+	ExpireLayout       = "Mon, 02 Jan 2006 15:04:05 GMT"
+)
 
 type ExpireInfo struct {
+	Expire       string // Mon, 02 Jan 2006 15:04:05 GMT
 	LastModified string // Mon, 02 Jan 2006 15:04:05 GMT
 	ETag         string
 }
