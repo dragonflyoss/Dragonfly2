@@ -18,6 +18,7 @@ env:
   DRAGONFLY_CHARTS_PATH: deploy/helm-charts/charts/dragonfly
   DRAGONFLY_FILE_SERVER_PATH: test/testdata/k8s/file-server.yaml
   DRAGONFLY_PROXY_SERVER_PATH: test/testdata/k8s/proxy.yaml
+  DRAGONFLY_MINIO_SERVER_PATH: test/testdata/k8s/minio.yaml
 
 jobs:
   e2e_tests:
@@ -25,7 +26,16 @@ jobs:
     timeout-minutes: 30
     strategy:
       matrix:
-        module: ["normal", "concurent-back-source", "grpc-tls", "disable-seed-peer", "grpc-tls-ipv6", "ipv6", "split-running-tasks"]
+        module: 
+          - "normal"
+          - "concurent-back-source"
+          - "grpc-tls"
+          - "disable-seed-peer"
+          - "grpc-tls-ipv6"
+          - "ipv6"
+          - "split-running-tasks"
+          # TODO enable the follow module after this PR merged https://github.com/dragonflyoss/Dragonfly2/pull/1822
+          # - "cache-list-metadata"
         include:
           - module: normal
             charts-config: test/testdata/charts/config.yaml
@@ -48,6 +58,9 @@ jobs:
           - module: split-running-tasks
             charts-config: test/testdata/charts/config-split-running-tasks.yaml
             skip: ""
+          # - module: cache-list-metadata
+          #   charts-config: test/testdata/charts/config-cache-list-metadata.yaml
+          #   skip: ""
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -88,20 +101,23 @@ jobs:
           helm install --wait --timeout 10m --dependency-update --create-namespace --namespace dragonfly-system -f ${{ matrix.charts-config }} dragonfly ${{ env.DRAGONFLY_CHARTS_PATH }}
           kubectl apply -f ${{ env.DRAGONFLY_FILE_SERVER_PATH }}
           kubectl apply -f ${{ env.DRAGONFLY_PROXY_SERVER_PATH }}
+          kubectl apply -f ${{ env.DRAGONFLY_MINIO_SERVER_PATH }}
           kubectl wait po file-server-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
           kubectl wait po file-server-no-content-length-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
           kubectl wait po proxy-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
           kubectl wait po proxy-1 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
           kubectl wait po proxy-2 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
+          kubectl wait po minio-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
 
       - name: Run E2E test
         run: |
           set -x
           make build-e2e-sha256sum
+          make build-e2e-download-grpc-test
           # generate an empty file
           docker exec kind-control-plane touch /tmp/empty-file
           ginkgo -v -r --race --fail-fast --cover --trace --progress --skip=${{ matrix.skip }} test/e2e -- \
-              --feature-gates=dfget-range=true,dfget-open-range=true,dfget-empty-file=true
+              --feature-gates=dfget-range=true,dfget-open-range=true,dfget-empty-file=true,dfget-recursive=true
           cat coverprofile.out >> coverage.txt
 
       - name: Upload coverage to Codecov
