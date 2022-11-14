@@ -91,10 +91,10 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTas
 	// does not have a seed peer, it will back-to-source.
 	peer.NeedBackToSource.Store(needBackToSource)
 
-	sizeScope, err := task.SizeScope()
-	if err != nil || !task.FSM.Is(resource.TaskStateSucceeded) {
-		peer.Log.Infof("task can not be reused directly, because of task state is %s and %#v",
-			task.FSM.Current(), err)
+	if !task.FSM.Is(resource.TaskStateSucceeded) {
+		peer.Log.Infof("task can not be reused directly, because of task state is %s",
+			task.FSM.Current())
+
 		result, err := s.registerNormalTask(ctx, peer)
 		if err != nil {
 			peer.Log.Error(err)
@@ -102,6 +102,12 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTas
 		}
 
 		return result, nil
+	}
+
+	// If SizeScope is invalid, then register as SizeScope_NORMAL.
+	sizeScope, err := task.SizeScope()
+	if err != nil {
+		peer.Log.Warnf("scope size is invalid: %s", err.Error())
 	}
 
 	// The task state is TaskStateSucceeded and SizeScope is not invalid.
