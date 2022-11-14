@@ -80,7 +80,7 @@ func New(
 
 // RegisterPeerTask registers peer and triggers seed peer download task.
 func (s *Service) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest) (*schedulerv1.RegisterResult, error) {
-	logger.WithTaskAndPeerID(req.TaskId, req.PeerId).Infof("register peer task request: %#v %#v %#v",
+	logger.WithPeer(req.PeerHost.Id, req.TaskId, req.PeerId).Infof("register peer task request: %#v %#v %#v",
 		req, req.UrlMeta, req.HostLoad)
 	// Register task and trigger seed peer download task.
 	task, needBackToSource := s.registerTask(ctx, req)
@@ -402,7 +402,7 @@ func (s *Service) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget) er
 	}
 	metrics.LeaveTaskCount.WithLabelValues(peer.Tag, peer.Application).Inc()
 
-	peer.Log.Infof("leave peer: %#v", req)
+	peer.Log.Infof("client releases peer, causing the peer to leave: %#v", req)
 	if err := peer.FSM.Event(resource.PeerEventLeave); err != nil {
 		metrics.LeaveTaskFailureCount.WithLabelValues(peer.Tag, peer.Application).Inc()
 
@@ -812,6 +812,7 @@ func (s *Service) handlePeerFail(ctx context.Context, peer *resource.Peer) {
 // handleLegacySeedPeer handles seed server's task has left,
 // but did not notify the scheduler to leave the task.
 func (s *Service) handleLegacySeedPeer(ctx context.Context, peer *resource.Peer) {
+	peer.Log.Info("peer is legacy seed peer, causing the peer to leave")
 	if err := peer.FSM.Event(resource.PeerEventLeave); err != nil {
 		peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 		return
@@ -822,8 +823,6 @@ func (s *Service) handleLegacySeedPeer(ctx context.Context, peer *resource.Peer)
 		child.Log.Infof("reschedule parent because of parent peer %s is failed", peer.ID)
 		s.scheduler.ScheduleParent(ctx, child, child.BlockParents)
 	}
-
-	s.resource.PeerManager().Delete(peer.ID)
 }
 
 // Conditions for the task to switch to the TaskStateSucceeded are:

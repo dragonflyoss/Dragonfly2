@@ -202,7 +202,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 		IsBackToSource:   atomic.NewBool(false),
 		CreateAt:         atomic.NewTime(time.Now()),
 		UpdateAt:         atomic.NewTime(time.Now()),
-		Log:              logger.WithTaskAndPeerID(task.ID, id),
+		Log:              logger.WithPeer(host.ID, task.ID, id),
 	}
 
 	// Initialize state machine.

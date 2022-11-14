@@ -171,7 +171,7 @@ func (j *job) preheat(ctx context.Context, req string) error {
 
 	// Trigger seed peer download seeds.
 	taskID := idgen.TaskID(preheat.URL, urlMeta)
-	log := logger.WithTaskIDAndURL(taskID, preheat.URL)
+	log := logger.WithTask(taskID, preheat.URL)
 	log.Infof("preheat %s headers: %#v, tag: %s, range: %s, filter: %s, digest: %s",
 		preheat.URL, urlMeta.Header, urlMeta.Tag, urlMeta.Range, urlMeta.Filter, urlMeta.Digest)
 	stream, err := j.resource.SeedPeer().Client().ObtainSeeds(ctx, &cdnsystemv1.SeedRequest{

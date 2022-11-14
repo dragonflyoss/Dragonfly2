@@ -158,7 +158,7 @@ func NewTask(id, url string, taskType commonv1.TaskType, meta *commonv1.UrlMeta,
 		PeerFailedCount:   atomic.NewInt32(0),
 		CreateAt:          atomic.NewTime(time.Now()),
 		UpdateAt:          atomic.NewTime(time.Now()),
-		Log:               logger.WithTaskIDAndURL(id, url),
+		Log:               logger.WithTask(id, url),
 	}
 
 	// Initialize state machine.
