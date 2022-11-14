@@ -42,7 +42,7 @@ var (
 )
 
 func init() {
-	tracer = otel.Tracer("dfget-rpcserver")
+	tracer = otel.Tracer("back-source")
 
 	lmc := &ListMetadataClient{}
 

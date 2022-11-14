@@ -256,7 +256,7 @@ func (s *s3SourceClient) isDirectory(client *s3.S3, request *source.Request) (bo
 		request.Context(),
 		&s3.ListObjectsV2Input{
 			Bucket:    aws.String(request.URL.Host),
-			Prefix:    aws.String(addTrailingSlash(request.URL.Path)),
+			Prefix:    aws.String(uPath),
 			MaxKeys:   aws.Int64(1),
 			Delimiter: &delimiter,
 		})
