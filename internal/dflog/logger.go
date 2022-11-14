@@ -123,9 +123,21 @@ func With(args ...any) *SugaredLoggerOnWith {
 	}
 }
 
-func WithHostID(hostID string) *SugaredLoggerOnWith {
+func WithPeer(hostID, taskID, peerID string) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
-		withArgs: []any{"hostID", hostID},
+		withArgs: []any{"hostID", hostID, "taskID", taskID, "peerID", peerID},
+	}
+}
+
+func WithTask(taskID, url string) *SugaredLoggerOnWith {
+	return &SugaredLoggerOnWith{
+		withArgs: []any{"taskID", taskID, "url", url},
+	}
+}
+
+func WithHost(hostID, hostname, ip string) *SugaredLoggerOnWith {
+	return &SugaredLoggerOnWith{
+		withArgs: []any{"hostID", hostID, "hostname", hostname, "ip", ip},
 	}
 }
 
@@ -138,12 +150,6 @@ func WithTaskID(taskID string) *SugaredLoggerOnWith {
 func WithTaskAndPeerID(taskID, peerID string) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
 		withArgs: []any{"taskID", taskID, "peerID", peerID},
-	}
-}
-
-func WithTaskIDAndURL(taskID, url string) *SugaredLoggerOnWith {
-	return &SugaredLoggerOnWith{
-		withArgs: []any{"taskID", taskID, "url", url},
 	}
 }
 
