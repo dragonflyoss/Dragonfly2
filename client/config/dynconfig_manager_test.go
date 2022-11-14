@@ -183,9 +183,8 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 			},
 			expect: func(t *testing.T, dynconfig Dynconfig, data *DynconfigData) {
 				assert := assert.New(t)
-				result, err := dynconfig.GetResolveSchedulerAddrs()
-				assert.NoError(err)
-				assert.EqualValues([]resolver.Address(nil), result)
+				_, err := dynconfig.GetResolveSchedulerAddrs()
+				assert.EqualError(err, "can not found available scheduler addresses")
 			},
 		},
 		{
@@ -312,9 +311,8 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 			},
 			expect: func(t *testing.T, dynconfig Dynconfig, data *DynconfigData) {
 				assert := assert.New(t)
-				result, err := dynconfig.GetResolveSchedulerAddrs()
-				assert.NoError(err)
-				assert.EqualValues([]resolver.Address(nil), result)
+				_, err := dynconfig.GetResolveSchedulerAddrs()
+				assert.EqualError(err, "can not found available scheduler addresses")
 			},
 		},
 	}

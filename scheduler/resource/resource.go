@@ -46,9 +46,6 @@ type resource struct {
 	// seedPeer interface.
 	seedPeer SeedPeer
 
-	// Seed peer client interface.
-	seedPeerClient SeedPeerClient
-
 	// Host manager interface.
 	hostManager HostManager
 
@@ -57,6 +54,9 @@ type resource struct {
 
 	// Task manager interface.
 	taskManager TaskManager
+
+	// Scheduler config.
+	config *config.Config
 }
 
 func New(cfg *config.Config, gc gc.GC, dynconfig config.DynconfigInterface, opts ...grpc.DialOption) (Resource, error) {
@@ -90,7 +90,6 @@ func New(cfg *config.Config, gc gc.GC, dynconfig config.DynconfigInterface, opts
 			return nil, err
 		}
 
-		resource.seedPeerClient = client
 		resource.seedPeer = newSeedPeer(client, peerManager, hostManager)
 	}
 
@@ -114,5 +113,9 @@ func (r *resource) PeerManager() PeerManager {
 }
 
 func (r *resource) Stop() error {
-	return r.seedPeerClient.Close()
+	if r.config.SeedPeer.Enable {
+		return r.seedPeer.Stop()
+	}
+
+	return nil
 }

@@ -40,6 +40,9 @@ import (
 )
 
 const (
+	// contextTimeout is timeout of grpc invoke.
+	contextTimeout = 2 * time.Minute
+
 	// maxRetries is maximum number of retries.
 	maxRetries = 3
 
@@ -136,6 +139,9 @@ func (c *client) Download(ctx context.Context, req *dfdaemonv1.DownRequest, opts
 
 // Get piece tasks from other peers.
 func (c *client) GetPieceTasks(ctx context.Context, req *commonv1.PieceTaskRequest, opts ...grpc.CallOption) (*commonv1.PiecePacket, error) {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	return c.DaemonClient.GetPieceTasks(ctx, req, opts...)
 }
 
@@ -151,6 +157,9 @@ func (c *client) SyncPieceTasks(ctx context.Context, req *commonv1.PieceTaskRequ
 
 // Check if given task exists in P2P cache system.
 func (c *client) StatTask(ctx context.Context, req *dfdaemonv1.StatTaskRequest, opts ...grpc.CallOption) error {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	_, err := c.DaemonClient.StatTask(ctx, req, opts...)
 	return err
 }
@@ -169,12 +178,18 @@ func (c *client) ExportTask(ctx context.Context, req *dfdaemonv1.ExportTaskReque
 
 // Delete file from P2P cache system.
 func (c *client) DeleteTask(ctx context.Context, req *dfdaemonv1.DeleteTaskRequest, opts ...grpc.CallOption) error {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	_, err := c.DaemonClient.DeleteTask(ctx, req, opts...)
 	return err
 }
 
 // Check daemon health.
 func (c *client) CheckHealth(ctx context.Context, opts ...grpc.CallOption) error {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	_, err := c.DaemonClient.CheckHealth(ctx, new(emptypb.Empty), opts...)
 	return err
 }
