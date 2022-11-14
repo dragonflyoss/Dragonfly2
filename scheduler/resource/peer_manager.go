@@ -141,24 +141,23 @@ func (p *peerManager) RunGC() error {
 		if elapsed > p.ttl {
 			// If the peer is not leave,
 			// first change the state to PeerEventLeave.
+			peer.Log.Info("peer elapsed exceeds the ttl, causing the peer to leave")
 			if err := peer.FSM.Event(PeerEventLeave); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 				return true
 			}
 
-			peer.Log.Info("peer elapsed exceeds the ttl, causing the peer to leave")
 			return true
 		}
 
 		// If the peer's state is PeerStateFailed,
 		// first set the peer state to PeerStateLeave and then delete peer.
 		if peer.FSM.Is(PeerStateFailed) {
+			peer.Log.Info("peer state is PeerStateFailed, causing the peer to leave")
 			if err := peer.FSM.Event(PeerEventLeave); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 				return true
 			}
-
-			peer.Log.Info("peer state is PeerStateFailed, causing the peer to leave")
 		}
 
 		// If no peer exists in the dag of the task,
@@ -175,12 +174,12 @@ func (p *peerManager) RunGC() error {
 		// PeerStateSucceeded, and degree is zero.
 		if peer.Task.PeerCount() > PeerCountLimitForTask &&
 			peer.FSM.Is(PeerStateSucceeded) && degree == 0 {
+			peer.Log.Info("task dag size exceeds the limit, causing the peer to leave")
 			if err := peer.FSM.Event(PeerEventLeave); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 				return true
 			}
 
-			peer.Log.Info("task dag size exceeds the limit, causing the peer to leave")
 			return true
 		}
 
