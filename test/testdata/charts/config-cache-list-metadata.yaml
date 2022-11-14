@@ -78,7 +78,8 @@ dfdaemon:
     metrics: 127.0.0.1:8888
     download:
       prefetch: true
-      recursiveConcurrent: 30
+      recursiveConcurrent:
+        goroutineCount: 30
       cacheRecursiveMetadata: 10m
     scheduler:
       disableAutoBackSource: true

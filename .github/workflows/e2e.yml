@@ -34,8 +34,7 @@ jobs:
           - "grpc-tls-ipv6"
           - "ipv6"
           - "split-running-tasks"
-          # TODO enable the follow module after this PR merged https://github.com/dragonflyoss/Dragonfly2/pull/1822
-          # - "cache-list-metadata"
+          - "cache-list-metadata"
         include:
           - module: normal
             charts-config: test/testdata/charts/config.yaml
@@ -58,9 +57,9 @@ jobs:
           - module: split-running-tasks
             charts-config: test/testdata/charts/config-split-running-tasks.yaml
             skip: ""
-          # - module: cache-list-metadata
-          #   charts-config: test/testdata/charts/config-cache-list-metadata.yaml
-          #   skip: ""
+          - module: cache-list-metadata
+            charts-config: test/testdata/charts/config-cache-list-metadata.yaml
+            skip: ""
     steps:
       - name: Checkout code
         uses: actions/checkout@v3

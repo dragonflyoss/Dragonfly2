@@ -21,6 +21,8 @@ var (
 )
 
 func main() {
+	flag.Parse()
+
 	dialer := func(ctx context.Context, addr string) (net.Conn, error) {
 		return net.Dial("unix", addr)
 	}
@@ -49,7 +51,7 @@ func main() {
 	request := dfdaemonv1.DownRequest{
 		Uuid:              "95305fa2-138b-4466-acec-62865ab6403c",
 		Url:               "s3://minio-test-bucket/dragonfly-test/usr/" + *subDir,
-		Output:            "/var/lib/dragonfly-grpc-test/usr" + *subDir,
+		Output:            "/var/lib/dragonfly-grpc-test/usr/" + *subDir,
 		Recursive:         true, // recursive download
 		Timeout:           0,
 		Limit:             0,
