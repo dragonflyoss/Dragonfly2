@@ -24,9 +24,9 @@ import (
 	// nolint
 	_ "d7y.io/dragonfly/v2/manager/model"
 	// nolint
-	_ "d7y.io/dragonfly/v2/pkg/objectstorage"
-
 	"d7y.io/dragonfly/v2/manager/types"
+	// nolint
+	_ "d7y.io/dragonfly/v2/pkg/objectstorage"
 )
 
 // @Summary Create Bucket

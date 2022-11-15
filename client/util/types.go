@@ -29,9 +29,9 @@ import (
 
 // RateLimit is a wrapper for rate.Limit, support json and yaml unmarshal function
 // yaml example 1:
-//   rate_limit: 2097152 # 2MiB
+// rate_limit: 2097152 # 2MiB
 // yaml example 2:
-//   rate_limit: 2MiB
+// rate_limit: 2MiB
 type RateLimit struct {
 	rate.Limit
 }

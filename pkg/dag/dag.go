@@ -86,7 +86,7 @@ type DAG[T comparable] interface {
 // dag provides directed acyclic graph function.
 type dag[T comparable] struct {
 	mu       sync.RWMutex
-	vertices cmap.ConcurrentMap[*Vertex[T]]
+	vertices cmap.ConcurrentMap[string, *Vertex[T]]
 }
 
 // New returns a new DAG interface.
