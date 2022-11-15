@@ -232,7 +232,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 		// test path /dragonfly-test/usr
 		// test subdirs (no empty dirs)
 		// sha256sum txt: /host/tmp/dragonfly-test.sha256sum.txt
-		subDirs := []string{"bin", "lib", "lib64", "libexec", "sbin", "share"}
+		subDirs := []string{"bin", "lib64", "libexec", "sbin"}
 
 		out, err := e2eutil.KubeCtlCommand("-n", ns, "get", "pod", "-l", label,
 			"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
