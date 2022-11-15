@@ -261,7 +261,7 @@ func (osc *ossSourceClient) List(request *source.Request) (urls []source.URLEntr
 	if !isDir {
 		return []source.URLEntry{buildURLEntry(false, request.URL)}, nil
 	}
-	// list all files
+	// list all files and subdirectory
 	path := addTrailingSlash(request.URL.Path)
 	prefix := oss.Prefix(path)
 	marker := oss.Marker("")
