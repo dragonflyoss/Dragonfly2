@@ -30,17 +30,17 @@ import (
 
 // Listen wraps net.Listen with dfnet.NetAddr
 // Example:
-//    Listen(dfnet.NetAddr{Type: dfnet.UNIX, Addr: "/var/run/df.sock"})
-//    Listen(dfnet.NetAddr{Type: dfnet.TCP, Addr: ":12345"})
+// Listen(dfnet.NetAddr{Type: dfnet.UNIX, Addr: "/var/run/df.sock"})
+// Listen(dfnet.NetAddr{Type: dfnet.TCP, Addr: ":12345"})
 func Listen(netAddr dfnet.NetAddr) (net.Listener, error) {
 	return net.Listen(string(netAddr.Type), netAddr.Addr)
 }
 
 // ListenWithPortRange tries to listen a port between startPort and endPort, return net.Listener and listen port
 // Example:
-//    ListenWithPortRange("0.0.0.0", 12345, 23456)
-//    ListenWithPortRange("192.168.0.1", 12345, 23456)
-//    ListenWithPortRange("192.168.0.1", 0, 0) // random port
+// ListenWithPortRange("0.0.0.0", 12345, 23456)
+// ListenWithPortRange("192.168.0.1", 12345, 23456)
+// ListenWithPortRange("192.168.0.1", 0, 0) // random port
 func ListenWithPortRange(listen string, startPort, endPort int) (net.Listener, int, error) {
 	ip, ok := ip.FormatIP(listen)
 	if !ok {
