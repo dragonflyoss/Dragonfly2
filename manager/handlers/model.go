@@ -19,10 +19,11 @@ package handlers
 import (
 	"net/http"
 
-	_ "d7y.io/dragonfly/v2/manager/model" // nolint
-	"d7y.io/dragonfly/v2/manager/types"
-
 	"github.com/gin-gonic/gin"
+
+	// nolint
+	_ "d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/types"
 )
 
 // @Summary Create Model
