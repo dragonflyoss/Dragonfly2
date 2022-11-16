@@ -19,11 +19,8 @@ package source
 import "net/textproto"
 
 const (
-	LastModified    = "X-Dragonfly-Last-Modified"
-	IfModifiedSince = "X-Dragonfly-If-Modified-Since"
-	ETag            = "X-Dragonfly-ETag"
-	IfNoneMatch     = "X-Dragonfly-If-None-Match"
-	Range           = "X-Dragonfly-Range" // startIndex-endIndex
+	// Range is different with HTTP Range, it's without "bytes=" prefix
+	Range = "X-Dragonfly-Range" // startIndex-endIndex
 )
 
 const (

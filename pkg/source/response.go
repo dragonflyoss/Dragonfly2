@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/go-http-utils/headers"
 )
 
 const (
@@ -84,13 +86,17 @@ func WithHeader(header map[string]string) func(*Response) {
 	}
 }
 
+// WithExpireInfo is used for no-http resource client to set expire info
 func WithExpireInfo(info ExpireInfo) func(*Response) {
 	return func(resp *Response) {
 		if len(info.LastModified) > 0 {
-			resp.Header.Set(LastModified, info.LastModified)
+			resp.Header.Set(headers.LastModified, info.LastModified)
 		}
 		if len(info.ETag) > 0 {
-			resp.Header.Set(ETag, info.ETag)
+			resp.Header.Set(headers.ETag, info.ETag)
+		}
+		if len(info.Expire) > 0 {
+			resp.Header.Set(headers.Expires, info.Expire)
 		}
 	}
 }
@@ -109,8 +115,9 @@ func WithTemporary(temporary bool) func(*Response) {
 
 func (resp *Response) ExpireInfo() ExpireInfo {
 	return ExpireInfo{
-		LastModified: resp.Header.Get(LastModified),
-		ETag:         resp.Header.Get(ETag),
+		LastModified: resp.Header.Get(headers.LastModified),
+		ETag:         resp.Header.Get(headers.ETag),
+		Expire:       resp.Header.Get(headers.Expires),
 	}
 }
 

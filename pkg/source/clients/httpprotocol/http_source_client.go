@@ -111,14 +111,6 @@ func Adapter(request *source.Request) *source.Request {
 		clonedRequest.Header.Set(headers.Range, fmt.Sprintf("bytes=%s", request.Header.Get(source.Range)))
 		clonedRequest.Header.Del(source.Range)
 	}
-	if request.Header.Get(source.LastModified) != "" {
-		clonedRequest.Header.Set(headers.LastModified, request.Header.Get(source.LastModified))
-		clonedRequest.Header.Del(source.LastModified)
-	}
-	if request.Header.Get(source.ETag) != "" {
-		clonedRequest.Header.Set(headers.ETag, request.Header.Get(source.ETag))
-		clonedRequest.Header.Del(source.ETag)
-	}
 	return clonedRequest
 }
 
