@@ -57,14 +57,6 @@ func adaptor(request *source.Request) *source.Request {
 		clonedRequest.Header.Set(oss.HTTPHeaderRange, fmt.Sprintf("bytes=%s", request.Header.Get(source.Range)))
 		clonedRequest.Header.Del(source.Range)
 	}
-	if request.Header.Get(source.LastModified) != "" {
-		clonedRequest.Header.Set(oss.HTTPHeaderLastModified, request.Header.Get(source.LastModified))
-		clonedRequest.Header.Del(source.LastModified)
-	}
-	if request.Header.Get(source.ETag) != "" {
-		clonedRequest.Header.Set(oss.HTTPHeaderEtag, request.Header.Get(source.ETag))
-		clonedRequest.Header.Del(source.ETag)
-	}
 	clonedRequest.URL.Path = strings.TrimPrefix(clonedRequest.URL.Path, "/")
 	return clonedRequest
 }
@@ -365,7 +357,6 @@ func buildURLEntry(isDir bool, url *url.URL) source.URLEntry {
 	}
 	_, name := filepath.Split(url.Path)
 	return source.URLEntry{URL: url, Name: name, IsDir: false}
-
 }
 
 func addLeadingSlash(s string) string {
