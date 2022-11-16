@@ -435,7 +435,8 @@ func (s *server) recursiveDownloadWithP2PMetadata(
 	// update url scheme
 	purl.Scheme = source.ListMetadataScheme
 	// update cache expire time
-	urlMeta.Header[source.ListMetadataExpire] = time.Now().Add(s.cacheRecursiveMetadata).Format(source.ExpireLayout)
+	// The target format is GMT time, need convert to UTC time first
+	urlMeta.Header[source.ListMetadataExpire] = time.Now().Add(s.cacheRecursiveMetadata).UTC().Format(source.ExpireLayout)
 
 	rc, _, err := s.peerTaskManager.StartStreamTask(ctx, &peer.StreamTaskRequest{
 		URL:     purl.String(),

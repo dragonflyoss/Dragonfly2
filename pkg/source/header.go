@@ -16,7 +16,10 @@
 
 package source
 
-import "net/textproto"
+import (
+	"net/http"
+	"net/textproto"
+)
 
 const (
 	// Range is different with HTTP Range, it's without "bytes=" prefix
@@ -24,8 +27,8 @@ const (
 )
 
 const (
-	LastModifiedLayout = "Mon, 02 Jan 2006 15:04:05 GMT"
-	ExpireLayout       = "Mon, 02 Jan 2006 15:04:05 GMT"
+	LastModifiedLayout = http.TimeFormat
+	ExpireLayout       = http.TimeFormat
 )
 
 type ExpireInfo struct {
