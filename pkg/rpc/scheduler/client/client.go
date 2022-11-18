@@ -57,7 +57,8 @@ const (
 func GetClient(ctx context.Context, dynconfig config.Dynconfig, opts ...grpc.DialOption) (Client, error) {
 	// Register resolver and balancer.
 	resolver.RegisterScheduler(dynconfig)
-	balancer.Register(pkgbalancer.NewConsistentHashingBuilder())
+	builder, pickerBuilder := pkgbalancer.NewConsistentHashingBuilder()
+	balancer.Register(builder)
 
 	conn, err := grpc.DialContext(
 		ctx,
@@ -89,10 +90,11 @@ func GetClient(ctx context.Context, dynconfig config.Dynconfig, opts ...grpc.Dia
 	}
 
 	return &client{
-		SchedulerClient: schedulerv1.NewSchedulerClient(conn),
-		ClientConn:      conn,
-		Dynconfig:       dynconfig,
-		dialOptions:     opts,
+		SchedulerClient:                schedulerv1.NewSchedulerClient(conn),
+		ClientConn:                     conn,
+		Dynconfig:                      dynconfig,
+		dialOptions:                    opts,
+		ConsistentHashingPickerBuilder: pickerBuilder,
 	}, nil
 }
 
@@ -129,6 +131,7 @@ type client struct {
 	*grpc.ClientConn
 	config.Dynconfig
 	dialOptions []grpc.DialOption
+	*pkgbalancer.ConsistentHashingPickerBuilder
 }
 
 // RegisterPeerTask registers a peer into task.
@@ -190,57 +193,35 @@ func (c *client) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget, opt
 
 // LeaveHost releases host in all schedulers.
 func (c *client) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostRequest, opts ...grpc.CallOption) error {
-	schedulers, err := c.GetResolveSchedulerAddrs()
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
+	circle, err := c.GetCircle()
 	if err != nil {
 		return err
 	}
 
 	var wg sync.WaitGroup
-	for _, scheduler := range schedulers {
+	for _, key := range circle {
 		wg.Add(1)
-		go func(addr string) {
+		go func(virtualTaskID string) {
 			defer wg.Done()
-			if err := c.leaveHost(ctx, addr, req, opts...); err != nil {
+
+			if err := c.LeaveHost(
+				context.WithValue(ctx, pkgbalancer.ContextKey, virtualTaskID),
+				req,
+				opts...,
+			); err != nil {
 				logger.Error(err)
 				return
 			}
 
 			logger.Infof("leave host %s", req.Id)
-		}(scheduler.Addr)
+		}(key)
 	}
 
 	wg.Wait()
 	return nil
-}
-
-// leaveHost releases host in scheduler.
-func (c *client) leaveHost(ctx context.Context, addr string, req *schedulerv1.LeaveHostRequest, opts ...grpc.CallOption) error {
-	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
-	defer cancel()
-
-	conn, err := grpc.DialContext(
-		ctx,
-		addr,
-		append([]grpc.DialOption{
-			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
-				rpc.ConvertErrorUnaryClientInterceptor,
-				otelgrpc.UnaryClientInterceptor(),
-				grpc_prometheus.UnaryClientInterceptor,
-				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
-				grpc_retry.UnaryClientInterceptor(
-					grpc_retry.WithMax(maxRetries),
-					grpc_retry.WithBackoff(grpc_retry.BackoffLinear(backoffWaitBetween)),
-				),
-			)),
-		}, c.dialOptions...)...,
-	)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
-	_, err = schedulerv1.NewSchedulerClient(conn).LeaveHost(ctx, req, opts...)
-	return err
 }
 
 // Checks if any peer has the given task.
