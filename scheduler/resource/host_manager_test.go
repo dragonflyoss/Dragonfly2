@@ -363,7 +363,7 @@ func TestHostManager_RunGC(t *testing.T) {
 			},
 			expect: func(t *testing.T, hostManager HostManager, mockHost *Host, mockPeer *Peer) {
 				assert := assert.New(t)
-				mockSeedHost := NewHost(mockRawSeedHost, WithHostType(HostTypeSuperSeed))
+				mockSeedHost := NewHost(mockRawSeedHost)
 				hostManager.Store(mockSeedHost)
 				err := hostManager.RunGC()
 				assert.NoError(err)

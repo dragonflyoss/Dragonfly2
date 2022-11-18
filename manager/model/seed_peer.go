@@ -21,12 +21,6 @@ const (
 	SeedPeerStateInactive = "inactive"
 )
 
-const (
-	SeedPeerTypeSuperSeed  = "super"
-	SeedPeerTypeStrongSeed = "strong"
-	SeedPeerTypeWeakSeed   = "weak"
-)
-
 type SeedPeer struct {
 	Model
 	HostName          string          `gorm:"column:host_name;type:varchar(256);index:uk_seed_peer,unique;not null;comment:hostname" json:"host_name"`

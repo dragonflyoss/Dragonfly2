@@ -29,6 +29,7 @@ import (
 	"d7y.io/api/pkg/apis/scheduler/v1/mocks"
 
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/types"
 )
 
 var (
@@ -1037,7 +1038,7 @@ func TestTask_LoadSeedPeer(t *testing.T) {
 			name: "load latest seed peer",
 			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockSeedPeer *Peer) {
 				assert := assert.New(t)
-				mockPeer.Host.Type = HostTypeSuperSeed
+				mockPeer.Host.Type = types.HostTypeSuperSeed
 				task.StorePeer(mockPeer)
 				task.StorePeer(mockSeedPeer)
 
@@ -1071,7 +1072,7 @@ func TestTask_LoadSeedPeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			mockSeedHost := NewHost(mockRawSeedHost, WithHostType(HostTypeSuperSeed))
+			mockSeedHost := NewHost(mockRawSeedHost)
 			task := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, task, mockHost)
 			mockSeedPeer := NewPeer(mockSeedPeerID, task, mockSeedHost)
@@ -1134,7 +1135,7 @@ func TestTask_IsSeedPeerFailed(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			mockSeedHost := NewHost(mockRawSeedHost, WithHostType(HostTypeSuperSeed))
+			mockSeedHost := NewHost(mockRawSeedHost)
 			task := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, task, mockHost)
 			mockSeedPeer := NewPeer(mockSeedPeerID, task, mockSeedHost)
