@@ -89,7 +89,8 @@ func GetClientByAddr(ctx context.Context, netAddr dfnet.NetAddr, opts ...grpc.Di
 func GetClient(ctx context.Context, dynconfig config.DynconfigInterface, opts ...grpc.DialOption) (Client, error) {
 	// Register resolver and balancer.
 	resolver.RegisterSeedPeer(dynconfig)
-	balancer.Register(pkgbalancer.NewConsistentHashingBuilder())
+	builder, pickerBuilder := pkgbalancer.NewConsistentHashingBuilder()
+	balancer.Register(builder)
 
 	conn, err := grpc.DialContext(
 		ctx,
@@ -121,8 +122,9 @@ func GetClient(ctx context.Context, dynconfig config.DynconfigInterface, opts ..
 	}
 
 	return &client{
-		SeederClient: cdnsystemv1.NewSeederClient(conn),
-		ClientConn:   conn,
+		SeederClient:                   cdnsystemv1.NewSeederClient(conn),
+		ClientConn:                     conn,
+		ConsistentHashingPickerBuilder: pickerBuilder,
 	}, nil
 }
 
@@ -145,6 +147,7 @@ type Client interface {
 type client struct {
 	cdnsystemv1.SeederClient
 	*grpc.ClientConn
+	*pkgbalancer.ConsistentHashingPickerBuilder
 }
 
 // ObtainSeeds triggers the seed peer to download task back-to-source..
