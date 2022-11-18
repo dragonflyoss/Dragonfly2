@@ -415,6 +415,7 @@ func (s *server) recursiveDownloadWithP2PMetadata(
 	traceID trace.TraceID,
 	req *dfdaemonv1.DownRequest,
 	stream dfdaemonv1.Daemon_DownloadServer) error {
+
 	requestCh, stopCh, wg, downloadErrors := s.startDownloadWorkers(ctx, span, traceID, stream)
 	defer close(stopCh)
 
@@ -493,9 +494,9 @@ func (s *server) recursiveDownloadWithP2PMetadata(
 
 	// wait all sent tasks done or error
 	wg.Wait()
-	if len(downloadErrors) > 0 {
+	if len(downloadErrors()) > 0 {
 		// just return first error
-		return downloadErrors[0]
+		return downloadErrors()[0]
 	}
 
 	return nil
@@ -509,11 +510,16 @@ func (s *server) startDownloadWorkers(
 	requestCh chan *dfdaemonv1.DownRequest,
 	stopCh chan struct{},
 	wg *sync.WaitGroup,
-	downloadErrors []error,
+	getDownloadErrors func() []error,
 ) {
+	var downloadErrors []error
+
 	requestCh = make(chan *dfdaemonv1.DownRequest)
 	stopCh = make(chan struct{})
 	wg = &sync.WaitGroup{}
+	getDownloadErrors = func() []error {
+		return downloadErrors
+	}
 
 	lock := sync.Mutex{}
 	sender := &sequentialResultSender{realSender: stream}
@@ -546,7 +552,7 @@ func (s *server) startDownloadWorkers(
 			}
 		}(i)
 	}
-	return requestCh, stopCh, wg, downloadErrors
+	return requestCh, stopCh, wg, getDownloadErrors
 }
 
 func (s *server) recursiveDownloadWithDirectMetadata(
@@ -632,9 +638,9 @@ func (s *server) recursiveDownloadWithDirectMetadata(
 
 	// wait all sent tasks done or error
 	wg.Wait()
-	if len(downloadErrors) > 0 {
+	if len(downloadErrors()) > 0 {
 		// just return first error
-		return downloadErrors[0]
+		return downloadErrors()[0]
 	}
 
 	log.Infof("list dirs cost: %dms, download cost: %dms", listMilliseconds, time.Now().Sub(start).Milliseconds())
