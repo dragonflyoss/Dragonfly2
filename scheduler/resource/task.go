@@ -31,6 +31,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/dag"
+	"d7y.io/dragonfly/v2/pkg/types"
 )
 
 const (
@@ -353,7 +354,7 @@ func (t *Task) LoadSeedPeer() (*Peer, bool) {
 			continue
 		}
 
-		if peer.Host.Type != HostTypeNormal {
+		if peer.Host.Type != types.HostTypeNormal {
 			peers = append(peers, peer)
 		}
 	}

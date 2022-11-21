@@ -36,6 +36,25 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
 }
 
+// AnnounceHost mocks base method.
+func (m *MockClient) AnnounceHost(arg0 context.Context, arg1 *v1.AnnounceHostRequest, arg2 ...grpc.CallOption) error {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "AnnounceHost", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AnnounceHost indicates an expected call of AnnounceHost.
+func (mr *MockClientMockRecorder) AnnounceHost(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AnnounceHost", reflect.TypeOf((*MockClient)(nil).AnnounceHost), varargs...)
+}
+
 // AnnounceTask mocks base method.
 func (m *MockClient) AnnounceTask(arg0 context.Context, arg1 *v1.AnnounceTaskRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
