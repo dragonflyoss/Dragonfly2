@@ -24,9 +24,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/resolver"
-	"google.golang.org/grpc/status"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 
@@ -53,7 +51,7 @@ type dynconfigManager struct {
 func newDynconfigManager(cfg *DaemonOption, rawManagerClient managerclient.Client, cacheDir string, expire time.Duration) (Dynconfig, error) {
 	cachePath := filepath.Join(cacheDir, cacheFileName)
 	d, err := internaldynconfig.New(
-		newManagerClient(rawManagerClient, cfg.Host),
+		newManagerClient(rawManagerClient, cfg),
 		cachePath,
 		expire,
 	)
@@ -224,53 +222,52 @@ func (d *dynconfigManager) Stop() error {
 
 type managerClient struct {
 	managerclient.Client
-	hostOption HostOption
+	config *DaemonOption
 }
 
 // New the manager client used by dynconfig.
-func newManagerClient(client managerclient.Client, hostOption HostOption) internaldynconfig.ManagerClient {
+func newManagerClient(client managerclient.Client, cfg *DaemonOption) internaldynconfig.ManagerClient {
 	return &managerClient{
-		Client:     client,
-		hostOption: hostOption,
+		Client: client,
+		config: cfg,
 	}
 }
 
 func (mc *managerClient) Get() (any, error) {
 	listSchedulersResp, err := mc.ListSchedulers(context.Background(), &managerv1.ListSchedulersRequest{
 		SourceType: managerv1.SourceType_PEER_SOURCE,
-		HostName:   mc.hostOption.Hostname,
-		Ip:         mc.hostOption.AdvertiseIP,
+		HostName:   mc.config.Host.Hostname,
+		Ip:         mc.config.Host.AdvertiseIP,
 		Version:    version.GitVersion,
 		Commit:     version.GitCommit,
 		HostInfo: map[string]string{
-			searcher.ConditionSecurityDomain: mc.hostOption.SecurityDomain,
-			searcher.ConditionIDC:            mc.hostOption.IDC,
-			searcher.ConditionNetTopology:    mc.hostOption.NetTopology,
-			searcher.ConditionLocation:       mc.hostOption.Location,
+			searcher.ConditionSecurityDomain: mc.config.Host.SecurityDomain,
+			searcher.ConditionIDC:            mc.config.Host.IDC,
+			searcher.ConditionNetTopology:    mc.config.Host.NetTopology,
+			searcher.ConditionLocation:       mc.config.Host.Location,
 		},
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	getObjectStorageResp, err := mc.GetObjectStorage(context.Background(), &managerv1.GetObjectStorageRequest{
-		SourceType: managerv1.SourceType_PEER_SOURCE,
-		HostName:   mc.hostOption.Hostname,
-		Ip:         mc.hostOption.AdvertiseIP,
-	})
-	if err != nil {
-		if s, ok := status.FromError(err); ok &&
-			(s.Code() == codes.NotFound || s.Code() == codes.Unimplemented) {
-			return DynconfigData{
-				Schedulers: listSchedulersResp.Schedulers,
-			}, nil
+	if mc.config.ObjectStorage.Enable {
+		getObjectStorageResp, err := mc.GetObjectStorage(context.Background(), &managerv1.GetObjectStorageRequest{
+			SourceType: managerv1.SourceType_PEER_SOURCE,
+			HostName:   mc.config.Host.Hostname,
+			Ip:         mc.config.Host.AdvertiseIP,
+		})
+		if err != nil {
+			return nil, err
 		}
 
-		return nil, err
+		return DynconfigData{
+			Schedulers:    listSchedulersResp.Schedulers,
+			ObjectStorage: getObjectStorageResp,
+		}, nil
 	}
 
 	return DynconfigData{
-		Schedulers:    listSchedulersResp.Schedulers,
-		ObjectStorage: getObjectStorageResp,
+		Schedulers: listSchedulersResp.Schedulers,
 	}, nil
 }

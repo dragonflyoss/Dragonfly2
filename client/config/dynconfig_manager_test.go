@@ -61,6 +61,9 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 				Host: HostOption{
 					Hostname: "foo",
 				},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
+				},
 			},
 			data: &DynconfigData{
 				Schedulers: []*managerv1.Scheduler{
@@ -102,6 +105,9 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 			config: &DaemonOption{
 				Host: HostOption{
 					Hostname: "foo",
+				},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
 				},
 			},
 			data: &DynconfigData{
@@ -149,6 +155,9 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 				Host: HostOption{
 					Hostname: "foo",
 				},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
+				},
 			},
 			data: &DynconfigData{
 				Schedulers: []*managerv1.Scheduler{
@@ -193,6 +202,9 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 			config: &DaemonOption{
 				Host: HostOption{
 					Hostname: "foo",
+				},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
 				},
 			},
 			data: &DynconfigData{
@@ -244,6 +256,9 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 				Host: HostOption{
 					Hostname: "foo",
 				},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
+				},
 			},
 			data: &DynconfigData{
 				Schedulers: []*managerv1.Scheduler{
@@ -288,6 +303,9 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 			config: &DaemonOption{
 				Host: HostOption{
 					Hostname: "foo",
+				},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
 				},
 			},
 			data: &DynconfigData{
@@ -361,6 +379,9 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 				Host: HostOption{
 					Hostname: "foo",
 				},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
+				},
 			},
 			data: &DynconfigData{
 				Schedulers: []*managerv1.Scheduler{
@@ -406,6 +427,9 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 				Host: HostOption{
 					Hostname: "foo",
 				},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
+				},
 			},
 			data: &DynconfigData{
 				Schedulers: []*managerv1.Scheduler{
@@ -449,11 +473,59 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 			},
 		},
 		{
+			name:   "disable object storage",
+			expire: 10 * time.Millisecond,
+			config: &DaemonOption{
+				Host: HostOption{
+					Hostname: "foo",
+				},
+				ObjectStorage: ObjectStorageOption{
+					Enable: false,
+				},
+			},
+			data: &DynconfigData{
+				Schedulers: []*managerv1.Scheduler{
+					{
+						HostName: "foo",
+					},
+				},
+			},
+			sleep: func() {
+				time.Sleep(100 * time.Millisecond)
+			},
+			cleanFileCache: func(t *testing.T) {
+				if err := os.Remove(mockCachePath); err != nil {
+					t.Fatal(err)
+				}
+			},
+			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
+				gomock.InOrder(
+					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
+					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{
+						Schedulers: []*managerv1.Scheduler{
+							{
+								HostName: data.Schedulers[0].HostName,
+							},
+						},
+					}, nil).Times(1),
+				)
+			},
+			expect: func(t *testing.T, dynconfig Dynconfig, data *DynconfigData) {
+				assert := assert.New(t)
+				result, err := dynconfig.Get()
+				assert.NoError(err)
+				assert.EqualValues(result, data)
+			},
+		},
+		{
 			name:   "list schedulers error",
 			expire: 10 * time.Millisecond,
 			config: &DaemonOption{
 				Host: HostOption{
 					Hostname: "foo",
+				},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
 				},
 			},
 			data: &DynconfigData{
@@ -503,6 +575,9 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 				Host: HostOption{
 					Hostname: "foo",
 				},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
+				},
 			},
 			data: &DynconfigData{
 				Schedulers: []*managerv1.Scheduler{
@@ -551,6 +626,9 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 			config: &DaemonOption{
 				Host: HostOption{
 					Hostname: "foo",
+				},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
 				},
 			},
 			data: &DynconfigData{
@@ -603,6 +681,9 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 							HostName: data.Schedulers[0].HostName,
 						},
 					},
+					ObjectStorage: &managerv1.ObjectStorage{
+						Name: data.ObjectStorage.Name,
+					},
 				})
 			},
 		},
@@ -612,6 +693,9 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 			config: &DaemonOption{
 				Host: HostOption{
 					Hostname: "foo",
+				},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
 				},
 			},
 			data: &DynconfigData{
@@ -687,6 +771,9 @@ func TestDynconfigGetSchedulers_ManagerSourceType(t *testing.T) {
 				Host: HostOption{
 					Hostname: "foo",
 				},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
+				},
 			},
 			data: &DynconfigData{
 				Schedulers: []*managerv1.Scheduler{
@@ -726,6 +813,9 @@ func TestDynconfigGetSchedulers_ManagerSourceType(t *testing.T) {
 			config: &DaemonOption{
 				Host: HostOption{
 					Hostname: "foo",
+				},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
 				},
 			},
 			data: &DynconfigData{
@@ -771,6 +861,9 @@ func TestDynconfigGetSchedulers_ManagerSourceType(t *testing.T) {
 				Host: HostOption{
 					Hostname: "foo",
 				},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
+				},
 			},
 			data: &DynconfigData{
 				Schedulers: []*managerv1.Scheduler{
@@ -813,6 +906,9 @@ func TestDynconfigGetSchedulers_ManagerSourceType(t *testing.T) {
 			config: &DaemonOption{
 				Host: HostOption{
 					Hostname: "foo",
+				},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
 				},
 			},
 			data: &DynconfigData{
@@ -887,6 +983,9 @@ func TestDynconfigGetObjectStorage_ManagerSourceType(t *testing.T) {
 				Host: HostOption{
 					Hostname: "foo",
 				},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
+				},
 			},
 			data: &DynconfigData{
 				ObjectStorage: &managerv1.ObjectStorage{
@@ -920,6 +1019,9 @@ func TestDynconfigGetObjectStorage_ManagerSourceType(t *testing.T) {
 			config: &DaemonOption{
 				Host: HostOption{
 					Hostname: "foo",
+				},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
 				},
 			},
 			data: &DynconfigData{
@@ -959,6 +1061,9 @@ func TestDynconfigGetObjectStorage_ManagerSourceType(t *testing.T) {
 				Host: HostOption{
 					Hostname: "foo",
 				},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
+				},
 			},
 			data: &DynconfigData{
 				ObjectStorage: &managerv1.ObjectStorage{
@@ -997,6 +1102,9 @@ func TestDynconfigGetObjectStorage_ManagerSourceType(t *testing.T) {
 				Host: HostOption{
 					Hostname: "foo",
 				},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
+				},
 			},
 			data: &DynconfigData{
 				ObjectStorage: &managerv1.ObjectStorage{
@@ -1025,7 +1133,9 @@ func TestDynconfigGetObjectStorage_ManagerSourceType(t *testing.T) {
 				assert := assert.New(t)
 				result, err := dynconfig.GetObjectStorage()
 				assert.NoError(err)
-				assert.EqualValues(result, (*managerv1.ObjectStorage)(nil))
+				assert.EqualValues(result, &managerv1.ObjectStorage{
+					Name: data.ObjectStorage.Name,
+				})
 			},
 		},
 		{
@@ -1034,6 +1144,9 @@ func TestDynconfigGetObjectStorage_ManagerSourceType(t *testing.T) {
 			config: &DaemonOption{
 				Host: HostOption{
 					Hostname: "foo",
+				},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
 				},
 			},
 			data: &DynconfigData{
