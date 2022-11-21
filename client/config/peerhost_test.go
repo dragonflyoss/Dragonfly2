@@ -29,7 +29,6 @@ import (
 
 	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
-	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/pkg/unit"
@@ -265,7 +264,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 				RefreshInterval: 5 * time.Minute,
 				SeedPeer: SeedPeerOption{
 					Enable:    false,
-					Type:      model.SeedPeerTypeStrongSeed,
+					Type:      types.HostTypeStrongSeedName,
 					ClusterID: 2,
 					KeepAlive: KeepAliveOption{
 						Interval: 10 * time.Second,

@@ -26,21 +26,41 @@ import (
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
 var (
-	mockRawHost = &schedulerv1.PeerHost{
-		Id:             idgen.HostID("hostname", 8003),
-		Ip:             "127.0.0.1",
-		RpcPort:        8003,
-		DownPort:       8001,
-		HostName:       "hostname",
-		SecurityDomain: "security_domain",
-		Location:       "location",
-		Idc:            "idc",
-		NetTopology:    "net_topology",
+	mockRawSeedHost = &schedulerv1.AnnounceHostRequest{
+		Id:           idgen.HostID("hostname", 8003),
+		Type:         types.HostTypeSuperSeedName,
+		Ip:           "127.0.0.1",
+		Port:         8003,
+		DownloadPort: 8001,
+		Hostname:     "hostname",
+		Network: &schedulerv1.Network{
+			SecurityDomain: "security_domain",
+			Location:       "location",
+			Idc:            "idc",
+			NetTopology:    "net_topology",
+		},
 	}
+
+	mockRawHost = &schedulerv1.AnnounceHostRequest{
+		Id:           idgen.HostID("hostname", 8003),
+		Type:         types.HostTypeNormalName,
+		Ip:           "127.0.0.1",
+		Port:         8003,
+		DownloadPort: 8001,
+		Hostname:     "hostname",
+		Network: &schedulerv1.Network{
+			SecurityDomain: "security_domain",
+			Location:       "location",
+			Idc:            "idc",
+			NetTopology:    "net_topology",
+		},
+	}
+
 	mockTaskURLMeta = &commonv1.UrlMeta{
 		Digest: "digest",
 		Tag:    "tag",
@@ -50,6 +70,7 @@ var (
 			"content-length": "100",
 		},
 	}
+
 	mockTaskBackToSourceLimit int32 = 200
 	mockTaskURL                     = "http://example.com/foo"
 	mockTaskID                      = idgen.TaskID(mockTaskURL, mockTaskURLMeta)
@@ -78,11 +99,6 @@ func TestEvaluatorBase_NewEvaluatorBase(t *testing.T) {
 }
 
 func TestEvaluatorBase_Evaluate(t *testing.T) {
-	parentMockHost := resource.NewHost(mockRawHost)
-	parentMockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
-	childMockHost := resource.NewHost(mockRawHost)
-	childMockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
-
 	tests := []struct {
 		name            string
 		parent          *resource.Peer
@@ -92,13 +108,17 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 		expect          func(t *testing.T, score float64)
 	}{
 		{
-			name:            "security domain is not the same",
-			parent:          resource.NewPeer(idgen.PeerID("127.0.0.1"), parentMockTask, parentMockHost),
-			child:           resource.NewPeer(idgen.PeerID("127.0.0.1"), childMockTask, childMockHost),
+			name: "security domain is not the same",
+			parent: resource.NewPeer(idgen.PeerID("127.0.0.1"),
+				resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit)),
+				resource.NewHost(mockRawSeedHost)),
+			child: resource.NewPeer(idgen.PeerID("127.0.0.1"),
+				resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit)),
+				resource.NewHost(mockRawHost)),
 			totalPieceCount: 1,
 			mock: func(parent *resource.Peer, child *resource.Peer) {
-				parent.Host.SecurityDomain = "foo"
-				child.Host.SecurityDomain = "bar"
+				parent.Host.Network.SecurityDomain = "foo"
+				child.Host.Network.SecurityDomain = "bar"
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
@@ -106,48 +126,60 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 			},
 		},
 		{
-			name:            "security domain is same",
-			parent:          resource.NewPeer(idgen.PeerID("127.0.0.1"), parentMockTask, parentMockHost),
-			child:           resource.NewPeer(idgen.PeerID("127.0.0.1"), childMockTask, childMockHost),
+			name: "security domain is same",
+			parent: resource.NewPeer(idgen.PeerID("127.0.0.1"),
+				resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit)),
+				resource.NewHost(mockRawSeedHost)),
+			child: resource.NewPeer(idgen.PeerID("127.0.0.1"),
+				resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit)),
+				resource.NewHost(mockRawHost)),
 			totalPieceCount: 1,
 			mock: func(parent *resource.Peer, child *resource.Peer) {
-				parent.Host.SecurityDomain = "bac"
-				child.Host.SecurityDomain = "bac"
+				parent.Host.Network.SecurityDomain = "bac"
+				child.Host.Network.SecurityDomain = "bac"
 				parent.FinishedPieces.Set(0)
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(0.9249999999999999))
+				assert.Equal(score, float64(0.85))
 			},
 		},
 		{
-			name:            "parent security domain is empty",
-			parent:          resource.NewPeer(idgen.PeerID("127.0.0.1"), parentMockTask, parentMockHost),
-			child:           resource.NewPeer(idgen.PeerID("127.0.0.1"), childMockTask, childMockHost),
+			name: "parent security domain is empty",
+			parent: resource.NewPeer(idgen.PeerID("127.0.0.1"),
+				resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit)),
+				resource.NewHost(mockRawSeedHost)),
+			child: resource.NewPeer(idgen.PeerID("127.0.0.1"),
+				resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit)),
+				resource.NewHost(mockRawHost)),
 			totalPieceCount: 1,
 			mock: func(parent *resource.Peer, child *resource.Peer) {
-				parent.Host.SecurityDomain = ""
-				child.Host.SecurityDomain = "baz"
+				parent.Host.Network.SecurityDomain = ""
+				child.Host.Network.SecurityDomain = "baz"
 				parent.FinishedPieces.Set(0)
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(0.9249999999999999))
+				assert.Equal(score, float64(0.85))
 			},
 		},
 		{
-			name:            "child security domain is empty",
-			parent:          resource.NewPeer(idgen.PeerID("127.0.0.1"), parentMockTask, parentMockHost),
-			child:           resource.NewPeer(idgen.PeerID("127.0.0.1"), childMockTask, childMockHost),
+			name: "child security domain is empty",
+			parent: resource.NewPeer(idgen.PeerID("127.0.0.1"),
+				resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit)),
+				resource.NewHost(mockRawSeedHost)),
+			child: resource.NewPeer(idgen.PeerID("127.0.0.1"),
+				resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit)),
+				resource.NewHost(mockRawHost)),
 			totalPieceCount: 1,
 			mock: func(parent *resource.Peer, child *resource.Peer) {
-				parent.Host.SecurityDomain = "baz"
-				child.Host.SecurityDomain = ""
+				parent.Host.Network.SecurityDomain = "baz"
+				child.Host.Network.SecurityDomain = ""
 				parent.FinishedPieces.Set(0)
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(0.9249999999999999))
+				assert.Equal(score, float64(0.85))
 			},
 		},
 	}
@@ -385,7 +417,7 @@ func TestEvaluatorBase_calculateHostTypeScore(t *testing.T) {
 			name: "host is seed peer but peer state is PeerStateSucceeded",
 			mock: func(peer *resource.Peer) {
 				peer.FSM.SetState(resource.PeerStateSucceeded)
-				peer.Host.Type = resource.HostTypeSuperSeed
+				peer.Host.Type = types.HostTypeSuperSeed
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
@@ -396,7 +428,7 @@ func TestEvaluatorBase_calculateHostTypeScore(t *testing.T) {
 			name: "host is seed peer but peer state is PeerStateRunning",
 			mock: func(peer *resource.Peer) {
 				peer.FSM.SetState(resource.PeerStateRunning)
-				peer.Host.Type = resource.HostTypeSuperSeed
+				peer.Host.Type = types.HostTypeSuperSeed
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
@@ -425,8 +457,8 @@ func TestEvaluatorBase_calculateIDCAffinityScore(t *testing.T) {
 		{
 			name: "idc is empty",
 			mock: func(dstHost *resource.Host, srcHost *resource.Host) {
-				dstHost.IDC = ""
-				srcHost.IDC = ""
+				dstHost.Network.Idc = ""
+				srcHost.Network.Idc = ""
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
@@ -436,7 +468,7 @@ func TestEvaluatorBase_calculateIDCAffinityScore(t *testing.T) {
 		{
 			name: "dst host idc is empty",
 			mock: func(dstHost *resource.Host, srcHost *resource.Host) {
-				dstHost.IDC = ""
+				dstHost.Network.Idc = ""
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
@@ -446,7 +478,7 @@ func TestEvaluatorBase_calculateIDCAffinityScore(t *testing.T) {
 		{
 			name: "src host idc is empty",
 			mock: func(dstHost *resource.Host, srcHost *resource.Host) {
-				srcHost.IDC = ""
+				srcHost.Network.Idc = ""
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
@@ -456,8 +488,8 @@ func TestEvaluatorBase_calculateIDCAffinityScore(t *testing.T) {
 		{
 			name: "idc is not the same",
 			mock: func(dstHost *resource.Host, srcHost *resource.Host) {
-				dstHost.IDC = "foo"
-				srcHost.IDC = "bar"
+				dstHost.Network.Idc = "foo"
+				srcHost.Network.Idc = "bar"
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
@@ -467,8 +499,8 @@ func TestEvaluatorBase_calculateIDCAffinityScore(t *testing.T) {
 		{
 			name: "idc is the same",
 			mock: func(dstHost *resource.Host, srcHost *resource.Host) {
-				dstHost.IDC = "example"
-				srcHost.IDC = "example"
+				dstHost.Network.Idc = "example"
+				srcHost.Network.Idc = "example"
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
@@ -480,9 +512,9 @@ func TestEvaluatorBase_calculateIDCAffinityScore(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			dstHost := resource.NewHost(mockRawHost)
-			srcHost := resource.NewHost(mockRawHost)
+			srcHost := resource.NewHost(mockRawSeedHost)
 			tc.mock(dstHost, srcHost)
-			tc.expect(t, calculateIDCAffinityScore(dstHost, srcHost))
+			tc.expect(t, calculateIDCAffinityScore(dstHost.Network.Idc, srcHost.Network.Idc))
 		})
 	}
 }

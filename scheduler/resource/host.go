@@ -25,23 +25,8 @@ import (
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
-)
-
-type HostType int
-
-const (
-	// HostTypeNormal is the normal type of host.
-	HostTypeNormal HostType = iota
-
-	// HostTypeSuperSeed is the super seed type of host.
-	HostTypeSuperSeed
-
-	// HostTypeStrongSeed is the strong seed type of host.
-	HostTypeStrongSeed
-
-	// HostTypeWeakSeed is the weak seed type of host.
-	HostTypeWeakSeed
 )
 
 // HostOption is a functional option for configuring the host.
@@ -55,26 +40,18 @@ func WithConcurrentUploadLimit(limit int32) HostOption {
 	}
 }
 
-// WithHostType sets host's type.
-func WithHostType(hostType HostType) HostOption {
-	return func(h *Host) *Host {
-		h.Type = hostType
-		return h
-	}
-}
-
 type Host struct {
 	// ID is host id.
 	ID string
 
 	// Type is host type.
-	Type HostType
-
-	// IP is host ip.
-	IP string
+	Type types.HostType
 
 	// Hostname is host name.
 	Hostname string
+
+	// IP is host ip.
+	IP string
 
 	// Port is grpc service port.
 	Port int32
@@ -82,19 +59,35 @@ type Host struct {
 	// DownloadPort is piece downloading port.
 	DownloadPort int32
 
-	// SecurityDomain is security domain of host.
-	SecurityDomain string
+	// Host OS.
+	OS string
 
-	// IDC is internet data center of host.
-	IDC string
+	// Host platform.
+	Platform string
 
-	// NetTopology is network topology of host.
-	// Example: switch|router|...
-	NetTopology string
+	// Host platform family.
+	PlatformFamily string
 
-	// Location is location of host.
-	// Example: country|province|...
-	Location string
+	// Host platform version.
+	PlatformVersion string
+
+	// Host kernel version.
+	KernelVersion string
+
+	// CPU Stat.
+	CPU *schedulerv1.CPU
+
+	// Memory Stat.
+	Memory *schedulerv1.Memory
+
+	// Network Stat.
+	Network *schedulerv1.Network
+
+	// Dist Stat.
+	Disk *schedulerv1.Disk
+
+	// Build information.
+	Build *schedulerv1.Build
 
 	// ConcurrentUploadLimit is concurrent upload limit count.
 	ConcurrentUploadLimit *atomic.Int32
@@ -125,18 +118,24 @@ type Host struct {
 }
 
 // New host instance.
-func NewHost(rawHost *schedulerv1.PeerHost, options ...HostOption) *Host {
+func NewHost(req *schedulerv1.AnnounceHostRequest, options ...HostOption) *Host {
 	h := &Host{
-		ID:                    rawHost.Id,
-		Type:                  HostTypeNormal,
-		IP:                    rawHost.Ip,
-		Hostname:              rawHost.HostName,
-		Port:                  rawHost.RpcPort,
-		DownloadPort:          rawHost.DownPort,
-		SecurityDomain:        rawHost.SecurityDomain,
-		IDC:                   rawHost.Idc,
-		NetTopology:           rawHost.NetTopology,
-		Location:              rawHost.Location,
+		ID:                    req.Id,
+		Type:                  types.ParseHostType(req.Type),
+		IP:                    req.Ip,
+		Hostname:              req.Hostname,
+		Port:                  req.Port,
+		DownloadPort:          req.DownloadPort,
+		OS:                    req.Os,
+		Platform:              req.Platform,
+		PlatformFamily:        req.PlatformFamily,
+		PlatformVersion:       req.PlatformVersion,
+		KernelVersion:         req.KernelVersion,
+		CPU:                   req.Cpu,
+		Memory:                req.Memory,
+		Network:               req.Network,
+		Disk:                  req.Disk,
+		Build:                 req.Build,
 		ConcurrentUploadLimit: atomic.NewInt32(config.DefaultPeerConcurrentUploadLimit),
 		ConcurrentUploadCount: atomic.NewInt32(0),
 		UploadCount:           atomic.NewInt64(0),
@@ -145,7 +144,7 @@ func NewHost(rawHost *schedulerv1.PeerHost, options ...HostOption) *Host {
 		PeerCount:             atomic.NewInt32(0),
 		CreateAt:              atomic.NewTime(time.Now()),
 		UpdateAt:              atomic.NewTime(time.Now()),
-		Log:                   logger.WithHost(rawHost.Id, rawHost.HostName, rawHost.Ip),
+		Log:                   logger.WithHost(req.Id, req.Hostname, req.Ip),
 	}
 
 	for _, opt := range options {

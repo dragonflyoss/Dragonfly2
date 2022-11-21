@@ -28,10 +28,10 @@ import (
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
+	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
@@ -68,19 +68,17 @@ func newSeedPeerClient(dynconfig config.DynconfigInterface, hostManager HostMana
 		return nil, err
 	}
 
-	// Initialize seed hosts.
-	for _, host := range seedPeersToHosts(config.SeedPeers) {
-		hostManager.Store(host)
-	}
-
-	dc := &seedPeerClient{
+	sc := &seedPeerClient{
 		hostManager: hostManager,
 		Client:      client,
 		data:        config,
 	}
 
-	dynconfig.Register(dc)
-	return dc, nil
+	// Initialize seed peers for host manager.
+	sc.updateSeedPeersForHostManager(config.SeedPeers)
+
+	dynconfig.Register(sc)
+	return sc, nil
 }
 
 // Dynamic config notify function.
@@ -94,16 +92,15 @@ func (sc *seedPeerClient) OnNotify(data *config.DynconfigData) {
 	diffSeedPeers := diffSeedPeers(sc.data.SeedPeers, data.SeedPeers)
 	for _, seedPeer := range diffSeedPeers {
 		id := idgen.HostID(seedPeer.Hostname, seedPeer.Port)
+		logger.Infof("host %s has been reclaimed, because of seed peer ip is changed", id)
 		if host, ok := sc.hostManager.Load(id); ok {
 			host.LeavePeers()
 			sc.hostManager.Delete(id)
 		}
 	}
 
-	// Update seed host in host manager.
-	for _, host := range seedPeersToHosts(data.SeedPeers) {
-		sc.hostManager.Store(host)
-	}
+	// Update seed peers for host manager.
+	sc.updateSeedPeersForHostManager(data.SeedPeers)
 
 	// Update dynamic data.
 	sc.data = data
@@ -112,43 +109,55 @@ func (sc *seedPeerClient) OnNotify(data *config.DynconfigData) {
 	logger.Infof("addresses have been updated: %#v", seedPeersToNetAddrs(data.SeedPeers))
 }
 
-// seedPeersToHosts coverts []*config.SeedPeer to map[string]*Host.
-func seedPeersToHosts(seedPeers []*config.SeedPeer) map[string]*Host {
-	hosts := map[string]*Host{}
+// updateSeedPeersForHostManager updates seed peers for host manager.
+func (sc *seedPeerClient) updateSeedPeersForHostManager(seedPeers []*config.SeedPeer) {
 	for _, seedPeer := range seedPeers {
-		options := []HostOption{WithHostType(seedPeerTypeToHostType(seedPeer.Type))}
-		if config, ok := seedPeer.GetSeedPeerClusterConfig(); ok && config.LoadLimit > 0 {
-			options = append(options, WithConcurrentUploadLimit(int32(config.LoadLimit)))
+		var concurrentUploadLimit int32
+		if config, ok := seedPeer.GetSeedPeerClusterConfig(); ok {
+			concurrentUploadLimit = int32(config.LoadLimit)
 		}
 
 		id := idgen.HostID(seedPeer.Hostname, seedPeer.Port)
-		hosts[id] = NewHost(&schedulerv1.PeerHost{
-			Id:          id,
-			Ip:          seedPeer.IP,
-			RpcPort:     seedPeer.Port,
-			DownPort:    seedPeer.DownloadPort,
-			HostName:    seedPeer.Hostname,
-			Idc:         seedPeer.IDC,
+		seedPeerHost, loaded := sc.hostManager.Load(id)
+		if !loaded {
+			var options []HostOption
+			if concurrentUploadLimit > 0 {
+				options = append(options, WithConcurrentUploadLimit(concurrentUploadLimit))
+			}
+
+			sc.hostManager.Store(NewHost(&schedulerv1.AnnounceHostRequest{
+				Id:           id,
+				Type:         types.HostTypeSuperSeedName,
+				Ip:           seedPeer.IP,
+				Hostname:     seedPeer.Hostname,
+				Port:         seedPeer.Port,
+				DownloadPort: seedPeer.DownloadPort,
+				Network: &schedulerv1.Network{
+					Location:    seedPeer.Location,
+					Idc:         seedPeer.IDC,
+					NetTopology: seedPeer.NetTopology,
+				},
+			}, options...))
+			continue
+		}
+
+		seedPeerHost.IP = seedPeer.IP
+		seedPeerHost.Type = types.HostTypeSuperSeed
+		seedPeerHost.Hostname = seedPeer.Hostname
+		seedPeerHost.Port = seedPeer.Port
+		seedPeerHost.DownloadPort = seedPeer.DownloadPort
+		seedPeerHost.Network = &schedulerv1.Network{
 			Location:    seedPeer.Location,
+			Idc:         seedPeer.IDC,
 			NetTopology: seedPeer.NetTopology,
-		}, options...)
+		}
+
+		if concurrentUploadLimit > 0 {
+			seedPeerHost.ConcurrentUploadLimit.Store(concurrentUploadLimit)
+		}
 	}
 
-	return hosts
-}
-
-// seedPeerTypeToHostType coverts seed peer type to HostType.
-func seedPeerTypeToHostType(seedPeerType string) HostType {
-	switch seedPeerType {
-	case model.SeedPeerTypeSuperSeed:
-		return HostTypeSuperSeed
-	case model.SeedPeerTypeStrongSeed:
-		return HostTypeStrongSeed
-	case model.SeedPeerTypeWeakSeed:
-		return HostTypeWeakSeed
-	}
-
-	return HostTypeWeakSeed
+	return
 }
 
 // seedPeersToNetAddrs coverts []*config.SeedPeer to []dfnet.NetAddr.

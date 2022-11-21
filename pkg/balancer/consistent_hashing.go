@@ -70,17 +70,17 @@ func (b *ConsistentHashingPickerBuilder) Build(info base.PickerBuildInfo) balanc
 	}
 
 	// Build hashring and init sub connections map.
-	hashring := consistent.New()
+	b.hashring = consistent.New()
 	scs := make(map[string]balancer.SubConn, len(info.ReadySCs))
 	for sc, scInfo := range info.ReadySCs {
 		element := fmt.Sprintf("%s:%s", scInfo.Address.Addr, scInfo.Address.ServerName)
-		hashring.Add(element)
+		b.hashring.Add(element)
 		scs[element] = sc
 	}
 
 	return &consistentHashingPicker{
 		subConns: scs,
-		hashring: hashring,
+		hashring: b.hashring,
 	}
 }
 

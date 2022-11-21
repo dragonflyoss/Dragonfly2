@@ -80,11 +80,35 @@ func NewEvaluatorBase() Evaluator {
 
 // The larger the value after evaluation, the higher the priority.
 func (eb *evaluatorBase) Evaluate(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
+	var (
+		parentSecurityDomain string
+		childSecurityDomain  string
+		parentNetTopology    string
+		childNetTopology     string
+		parentLocation       string
+		childLocation        string
+		parentIDC            string
+		childIDC             string
+	)
+	if parent.Host.Network != nil {
+		parentSecurityDomain = parent.Host.Network.SecurityDomain
+		parentNetTopology = parent.Host.Network.NetTopology
+		parentLocation = parent.Host.Network.Location
+		parentIDC = parent.Host.Network.Idc
+	}
+
+	if child.Host.Network != nil {
+		childSecurityDomain = child.Host.Network.SecurityDomain
+		childNetTopology = child.Host.Network.NetTopology
+		childLocation = child.Host.Network.Location
+		childIDC = child.Host.Network.Idc
+	}
+
 	// If the SecurityDomain of hosts exists but is not equal,
 	// it cannot be scheduled as a parent.
-	if parent.Host.SecurityDomain != "" &&
-		child.Host.SecurityDomain != "" &&
-		parent.Host.SecurityDomain != child.Host.SecurityDomain {
+	if parentSecurityDomain != "" &&
+		childSecurityDomain != "" &&
+		parent.Host.Network.SecurityDomain != child.Host.Network.SecurityDomain {
 		return minScore
 	}
 
@@ -92,9 +116,9 @@ func (eb *evaluatorBase) Evaluate(parent *resource.Peer, child *resource.Peer, t
 		parentHostUploadSuccessWeight*calculateParentHostUploadSuccessScore(parent) +
 		freeUploadWeight*calculateFreeUploadScore(parent.Host) +
 		hostTypeWeight*calculateHostTypeScore(parent) +
-		idcAffinityWeight*calculateIDCAffinityScore(parent.Host, child.Host) +
-		netTopologyAffinityWeight*calculateMultiElementAffinityScore(parent.Host.NetTopology, child.Host.NetTopology) +
-		locationAffinityWeight*calculateMultiElementAffinityScore(parent.Host.Location, child.Host.Location)
+		idcAffinityWeight*calculateIDCAffinityScore(parentIDC, childIDC) +
+		netTopologyAffinityWeight*calculateMultiElementAffinityScore(parentNetTopology, childNetTopology) +
+		locationAffinityWeight*calculateMultiElementAffinityScore(parentLocation, childLocation)
 }
 
 // calculatePieceScore 0.0~unlimited larger and better.
@@ -145,7 +169,7 @@ func calculateHostTypeScore(peer *resource.Peer) float64 {
 	// When the task is downloaded for the first time,
 	// peer will be scheduled to seed peer first,
 	// otherwise it will be scheduled to dfdaemon first.
-	if peer.Host.Type != resource.HostTypeNormal {
+	if peer.Host.Type != types.HostTypeNormal {
 		if peer.FSM.Is(resource.PeerStateReceivedNormal) ||
 			peer.FSM.Is(resource.PeerStateRunning) {
 			return maxScore
@@ -158,8 +182,8 @@ func calculateHostTypeScore(peer *resource.Peer) float64 {
 }
 
 // calculateIDCAffinityScore 0.0~1.0 larger and better.
-func calculateIDCAffinityScore(dst, src *resource.Host) float64 {
-	if dst.IDC != "" && src.IDC != "" && dst.IDC == src.IDC {
+func calculateIDCAffinityScore(dst, src string) float64 {
+	if dst != "" && src != "" && dst == src {
 		return maxScore
 	}
 

@@ -25,39 +25,46 @@ import (
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
 var (
-	mockRawHost = &schedulerv1.PeerHost{
-		Id:             idgen.HostID("hostname", 8003),
-		Ip:             "127.0.0.1",
-		RpcPort:        8003,
-		DownPort:       8001,
-		HostName:       "hostname",
-		SecurityDomain: "security_domain",
-		Location:       "location",
-		Idc:            "idc",
-		NetTopology:    "net_topology",
+	mockRawHost = &schedulerv1.AnnounceHostRequest{
+		Id:           idgen.HostID("hostname", 8003),
+		Type:         types.HostTypeNormalName,
+		Ip:           "127.0.0.1",
+		Port:         8003,
+		DownloadPort: 8001,
+		Hostname:     "hostname",
+		Network: &schedulerv1.Network{
+			SecurityDomain: "security_domain",
+			Location:       "location",
+			Idc:            "idc",
+			NetTopology:    "net_topology",
+		},
 	}
 
-	mockRawSeedHost = &schedulerv1.PeerHost{
-		Id:             idgen.HostID("hostname_seed", 8003),
-		Ip:             "127.0.0.1",
-		RpcPort:        8003,
-		DownPort:       8001,
-		HostName:       "hostname_seed",
-		SecurityDomain: "security_domain",
-		Location:       "location",
-		Idc:            "idc",
-		NetTopology:    "net_topology",
+	mockRawSeedHost = &schedulerv1.AnnounceHostRequest{
+		Id:           idgen.HostID("hostname_seed", 8003),
+		Type:         types.HostTypeSuperSeedName,
+		Ip:           "127.0.0.1",
+		Port:         8003,
+		DownloadPort: 8001,
+		Hostname:     "hostname_seed",
+		Network: &schedulerv1.Network{
+			SecurityDomain: "security_domain",
+			Location:       "location",
+			Idc:            "idc",
+			NetTopology:    "net_topology",
+		},
 	}
 )
 
 func TestHost_NewHost(t *testing.T) {
 	tests := []struct {
 		name    string
-		rawHost *schedulerv1.PeerHost
+		rawHost *schedulerv1.AnnounceHostRequest
 		options []HostOption
 		expect  func(t *testing.T, host *Host)
 	}{
@@ -67,15 +74,15 @@ func TestHost_NewHost(t *testing.T) {
 			expect: func(t *testing.T, host *Host) {
 				assert := assert.New(t)
 				assert.Equal(host.ID, mockRawHost.Id)
-				assert.Equal(host.Type, HostTypeNormal)
+				assert.Equal(host.Type, types.HostTypeNormal)
 				assert.Equal(host.IP, mockRawHost.Ip)
-				assert.Equal(host.Port, mockRawHost.RpcPort)
-				assert.Equal(host.DownloadPort, mockRawHost.DownPort)
-				assert.Equal(host.Hostname, mockRawHost.HostName)
-				assert.Equal(host.SecurityDomain, mockRawHost.SecurityDomain)
-				assert.Equal(host.Location, mockRawHost.Location)
-				assert.Equal(host.IDC, mockRawHost.Idc)
-				assert.Equal(host.NetTopology, mockRawHost.NetTopology)
+				assert.Equal(host.Port, mockRawHost.Port)
+				assert.Equal(host.DownloadPort, mockRawHost.DownloadPort)
+				assert.Equal(host.Hostname, mockRawHost.Hostname)
+				assert.Equal(host.Network.SecurityDomain, mockRawHost.Network.SecurityDomain)
+				assert.Equal(host.Network.Location, mockRawHost.Network.Location)
+				assert.Equal(host.Network.Idc, mockRawHost.Network.Idc)
+				assert.Equal(host.Network.NetTopology, mockRawHost.Network.NetTopology)
 				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(config.DefaultPeerConcurrentUploadLimit))
 				assert.Equal(host.PeerCount.Load(), int32(0))
 				assert.NotEqual(host.CreateAt.Load(), 0)
@@ -86,19 +93,18 @@ func TestHost_NewHost(t *testing.T) {
 		{
 			name:    "new seed host",
 			rawHost: mockRawSeedHost,
-			options: []HostOption{WithHostType(HostTypeSuperSeed)},
 			expect: func(t *testing.T, host *Host) {
 				assert := assert.New(t)
 				assert.Equal(host.ID, mockRawSeedHost.Id)
-				assert.Equal(host.Type, HostTypeSuperSeed)
+				assert.Equal(host.Type, types.HostTypeSuperSeed)
 				assert.Equal(host.IP, mockRawSeedHost.Ip)
-				assert.Equal(host.Port, mockRawSeedHost.RpcPort)
-				assert.Equal(host.DownloadPort, mockRawSeedHost.DownPort)
-				assert.Equal(host.Hostname, mockRawSeedHost.HostName)
-				assert.Equal(host.SecurityDomain, mockRawSeedHost.SecurityDomain)
-				assert.Equal(host.Location, mockRawSeedHost.Location)
-				assert.Equal(host.IDC, mockRawSeedHost.Idc)
-				assert.Equal(host.NetTopology, mockRawSeedHost.NetTopology)
+				assert.Equal(host.Port, mockRawSeedHost.Port)
+				assert.Equal(host.DownloadPort, mockRawSeedHost.DownloadPort)
+				assert.Equal(host.Hostname, mockRawSeedHost.Hostname)
+				assert.Equal(host.Network.SecurityDomain, mockRawSeedHost.Network.SecurityDomain)
+				assert.Equal(host.Network.Location, mockRawSeedHost.Network.Location)
+				assert.Equal(host.Network.Idc, mockRawSeedHost.Network.Idc)
+				assert.Equal(host.Network.NetTopology, mockRawSeedHost.Network.NetTopology)
 				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(config.DefaultPeerConcurrentUploadLimit))
 				assert.Equal(host.PeerCount.Load(), int32(0))
 				assert.NotEqual(host.CreateAt.Load(), 0)
@@ -113,15 +119,15 @@ func TestHost_NewHost(t *testing.T) {
 			expect: func(t *testing.T, host *Host) {
 				assert := assert.New(t)
 				assert.Equal(host.ID, mockRawHost.Id)
-				assert.Equal(host.Type, HostTypeNormal)
+				assert.Equal(host.Type, types.HostTypeNormal)
 				assert.Equal(host.IP, mockRawHost.Ip)
-				assert.Equal(host.Port, mockRawHost.RpcPort)
-				assert.Equal(host.DownloadPort, mockRawHost.DownPort)
-				assert.Equal(host.Hostname, mockRawHost.HostName)
-				assert.Equal(host.SecurityDomain, mockRawHost.SecurityDomain)
-				assert.Equal(host.Location, mockRawHost.Location)
-				assert.Equal(host.IDC, mockRawHost.Idc)
-				assert.Equal(host.NetTopology, mockRawHost.NetTopology)
+				assert.Equal(host.Port, mockRawHost.Port)
+				assert.Equal(host.DownloadPort, mockRawHost.DownloadPort)
+				assert.Equal(host.Hostname, mockRawHost.Hostname)
+				assert.Equal(host.Network.SecurityDomain, mockRawHost.Network.SecurityDomain)
+				assert.Equal(host.Network.Location, mockRawHost.Network.Location)
+				assert.Equal(host.Network.Idc, mockRawHost.Network.Idc)
+				assert.Equal(host.Network.NetTopology, mockRawHost.Network.NetTopology)
 				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(200))
 				assert.Equal(host.PeerCount.Load(), int32(0))
 				assert.NotEqual(host.CreateAt.Load(), 0)
@@ -141,7 +147,7 @@ func TestHost_NewHost(t *testing.T) {
 func TestHost_LoadPeer(t *testing.T) {
 	tests := []struct {
 		name    string
-		rawHost *schedulerv1.PeerHost
+		rawHost *schedulerv1.AnnounceHostRequest
 		peerID  string
 		options []HostOption
 		expect  func(t *testing.T, peer *Peer, ok bool)
@@ -192,7 +198,7 @@ func TestHost_LoadPeer(t *testing.T) {
 func TestHost_StorePeer(t *testing.T) {
 	tests := []struct {
 		name    string
-		rawHost *schedulerv1.PeerHost
+		rawHost *schedulerv1.AnnounceHostRequest
 		peerID  string
 		options []HostOption
 		expect  func(t *testing.T, peer *Peer, ok bool)
@@ -235,7 +241,7 @@ func TestHost_StorePeer(t *testing.T) {
 func TestHost_DeletePeer(t *testing.T) {
 	tests := []struct {
 		name    string
-		rawHost *schedulerv1.PeerHost
+		rawHost *schedulerv1.AnnounceHostRequest
 		peerID  string
 		options []HostOption
 		expect  func(t *testing.T, host *Host)
@@ -279,7 +285,7 @@ func TestHost_DeletePeer(t *testing.T) {
 func TestHost_LeavePeers(t *testing.T) {
 	tests := []struct {
 		name    string
-		rawHost *schedulerv1.PeerHost
+		rawHost *schedulerv1.AnnounceHostRequest
 		options []HostOption
 		expect  func(t *testing.T, host *Host, mockPeer *Peer)
 	}{
@@ -327,7 +333,7 @@ func TestHost_LeavePeers(t *testing.T) {
 func TestHost_FreeUploadCount(t *testing.T) {
 	tests := []struct {
 		name    string
-		rawHost *schedulerv1.PeerHost
+		rawHost *schedulerv1.AnnounceHostRequest
 		options []HostOption
 		expect  func(t *testing.T, host *Host, mockTask *Task, mockPeer *Peer)
 	}{

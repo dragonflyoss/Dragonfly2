@@ -27,6 +27,7 @@ import (
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
 	"d7y.io/dragonfly/v2/pkg/container/set"
+	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/scheduler/evaluator"
@@ -294,7 +295,7 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 		// 3. parent has been succeeded.
 		// 4. parent is seed peer.
 		isBackToSource := candidateParent.IsBackToSource.Load()
-		if candidateParent.Host.Type == resource.HostTypeNormal && inDegree == 0 && !isBackToSource &&
+		if candidateParent.Host.Type == types.HostTypeNormal && inDegree == 0 && !isBackToSource &&
 			!candidateParent.FSM.Is(resource.PeerStateSucceeded) {
 			peer.Log.Debugf("candidate parent %s is not selected, because its download state is %d %d %t %s",
 				candidateParent.ID, inDegree, int(candidateParent.Host.Type), isBackToSource, candidateParent.FSM.Current())

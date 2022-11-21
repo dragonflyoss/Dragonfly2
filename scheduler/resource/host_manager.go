@@ -22,6 +22,7 @@ import (
 	"sync"
 
 	pkggc "d7y.io/dragonfly/v2/pkg/gc"
+	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
@@ -104,7 +105,7 @@ func (h *hostManager) RunGC() error {
 
 		if host.PeerCount.Load() == 0 &&
 			host.ConcurrentUploadCount.Load() == 0 &&
-			host.Type == HostTypeNormal {
+			host.Type == types.HostTypeNormal {
 			host.Log.Info("host has been reclaimed")
 			h.Delete(host.ID)
 		}

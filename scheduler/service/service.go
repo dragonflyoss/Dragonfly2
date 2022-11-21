@@ -36,6 +36,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
 	pkgtime "d7y.io/dragonfly/v2/pkg/time"
+	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
 	"d7y.io/dragonfly/v2/scheduler/resource"
@@ -307,27 +308,6 @@ func (s *Service) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerRes
 	return nil
 }
 
-// StatTask checks the current state of the task.
-func (s *Service) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest) (*schedulerv1.Task, error) {
-	task, loaded := s.resource.TaskManager().Load(req.TaskId)
-	if !loaded {
-		msg := fmt.Sprintf("task %s not found", req.TaskId)
-		logger.Info(msg)
-		return nil, dferrors.New(commonv1.Code_PeerTaskNotFound, msg)
-	}
-
-	task.Log.Debug("task has been found")
-	return &schedulerv1.Task{
-		Id:               task.ID,
-		Type:             task.Type,
-		ContentLength:    task.ContentLength.Load(),
-		TotalPieceCount:  task.TotalPieceCount.Load(),
-		State:            task.FSM.Current(),
-		PeerCount:        int32(task.PeerCount()),
-		HasAvailablePeer: task.HasAvailablePeer(),
-	}, nil
-}
-
 // AnnounceTask informs scheduler a peer has completed task.
 func (s *Service) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequest) error {
 	taskID := req.TaskId
@@ -398,6 +378,27 @@ func (s *Service) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTas
 	return nil
 }
 
+// StatTask checks the current state of the task.
+func (s *Service) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest) (*schedulerv1.Task, error) {
+	task, loaded := s.resource.TaskManager().Load(req.TaskId)
+	if !loaded {
+		msg := fmt.Sprintf("task %s not found", req.TaskId)
+		logger.Info(msg)
+		return nil, dferrors.New(commonv1.Code_PeerTaskNotFound, msg)
+	}
+
+	task.Log.Debug("task has been found")
+	return &schedulerv1.Task{
+		Id:               task.ID,
+		Type:             task.Type,
+		ContentLength:    task.ContentLength.Load(),
+		TotalPieceCount:  task.TotalPieceCount.Load(),
+		State:            task.FSM.Current(),
+		PeerCount:        int32(task.PeerCount()),
+		HasAvailablePeer: task.HasAvailablePeer(),
+	}, nil
+}
+
 // LeaveTask releases peer in scheduler.
 func (s *Service) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget) error {
 	peer, loaded := s.resource.PeerManager().Load(req.PeerId)
@@ -417,6 +418,51 @@ func (s *Service) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget) er
 		return dferrors.New(commonv1.Code_SchedTaskStatusError, msg)
 	}
 
+	return nil
+}
+
+// AnnounceHost announces host to scheduler.
+func (s *Service) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequest) error {
+	// Get scheduler cluster client config by manager.
+	var concurrentUploadLimit int32
+	if clientConfig, ok := s.dynconfig.GetSchedulerClusterClientConfig(); ok {
+		concurrentUploadLimit = int32(clientConfig.LoadLimit)
+	}
+
+	host, loaded := s.resource.HostManager().Load(req.Id)
+	if !loaded {
+		var options []resource.HostOption
+		if concurrentUploadLimit > 0 {
+			options = append(options, resource.WithConcurrentUploadLimit(concurrentUploadLimit))
+		}
+
+		host = resource.NewHost(req, options...)
+		s.resource.HostManager().Store(host)
+		host.Log.Infof("announce new host: %#v", req)
+		return nil
+	}
+
+	host.Type = types.ParseHostType(req.Type)
+	host.IP = req.Ip
+	host.Hostname = req.Hostname
+	host.Port = req.Port
+	host.DownloadPort = req.DownloadPort
+	host.OS = req.Os
+	host.Platform = req.Platform
+	host.PlatformFamily = req.PlatformFamily
+	host.PlatformVersion = req.PlatformVersion
+	host.KernelVersion = req.KernelVersion
+	host.CPU = req.Cpu
+	host.Memory = req.Memory
+	host.Network = req.Network
+	host.Disk = req.Disk
+	host.Build = req.Build
+
+	if concurrentUploadLimit > 0 {
+		host.ConcurrentUploadLimit.Store(concurrentUploadLimit)
+	}
+
+	host.Log.Debugf("announce host: %#v", req)
 	return nil
 }
 
@@ -462,7 +508,7 @@ func (s *Service) registerTask(ctx context.Context, req *schedulerv1.PeerTaskReq
 
 	// Seed peer registers the task, then it needs to back-to-source.
 	host, loaded := s.resource.HostManager().Load(req.PeerHost.Id)
-	if loaded && host.Type != resource.HostTypeNormal {
+	if loaded && host.Type != types.HostTypeNormal {
 		task.Log.Infof("task needs to back-to-source, because of host can be loaded and type is %d", host.Type)
 		return task, true
 	}
@@ -486,8 +532,8 @@ func (s *Service) registerTask(ctx context.Context, req *schedulerv1.PeerTaskReq
 }
 
 // registerHost creates a new host or reuses a previous host.
-func (s *Service) registerHost(ctx context.Context, rawHost *schedulerv1.PeerHost) *resource.Host {
-	host, loaded := s.resource.HostManager().Load(rawHost.Id)
+func (s *Service) registerHost(ctx context.Context, peerHost *schedulerv1.PeerHost) *resource.Host {
+	host, loaded := s.resource.HostManager().Load(peerHost.Id)
 	if !loaded {
 		// Get scheduler cluster client config by manager.
 		var options []resource.HostOption
@@ -495,7 +541,20 @@ func (s *Service) registerHost(ctx context.Context, rawHost *schedulerv1.PeerHos
 			options = append(options, resource.WithConcurrentUploadLimit(int32(clientConfig.LoadLimit)))
 		}
 
-		host = resource.NewHost(rawHost, options...)
+		host = resource.NewHost(&schedulerv1.AnnounceHostRequest{
+			Id:           peerHost.Id,
+			Type:         types.HostTypeNormalName,
+			Ip:           peerHost.Ip,
+			Hostname:     peerHost.HostName,
+			Port:         peerHost.RpcPort,
+			DownloadPort: peerHost.DownPort,
+			Network: &schedulerv1.Network{
+				SecurityDomain: peerHost.SecurityDomain,
+				Location:       peerHost.Location,
+				Idc:            peerHost.Idc,
+				NetTopology:    peerHost.NetTopology,
+			},
+		}, options...)
 		s.resource.HostManager().Store(host)
 		host.Log.Info("create new host")
 		return host
@@ -729,7 +788,7 @@ func (s *Service) handlePieceFail(ctx context.Context, peer *resource.Peer, piec
 		// Dfdaemon downloading piece data from parent returns http error code 404.
 		// If the parent is not a seed peer, reschedule parent for peer.
 		// If the parent is a seed peer, scheduler need to trigger seed peer to download again.
-		if parent.Host.Type == resource.HostTypeNormal {
+		if parent.Host.Type == types.HostTypeNormal {
 			peer.Log.Infof("parent %s host type is normal", piece.DstPid)
 			break
 		}
@@ -938,10 +997,6 @@ func (s *Service) createRecord(peer *resource.Peer, peerState int, req *schedule
 		PieceCount:              int32(peer.FinishedPieces.Count()),
 		TotalPieceCount:         peer.Task.TotalPieceCount.Load(),
 		ContentLength:           peer.Task.ContentLength.Load(),
-		SecurityDomain:          peer.Host.SecurityDomain,
-		IDC:                     peer.Host.IDC,
-		NetTopology:             peer.Host.NetTopology,
-		Location:                peer.Host.Location,
 		FreeUploadCount:         peer.Host.FreeUploadCount(),
 		State:                   peerState,
 		HostType:                int(peer.Host.Type),
@@ -952,10 +1007,6 @@ func (s *Service) createRecord(peer *resource.Peer, peerState int, req *schedule
 		ParentHostname:          parent.Host.Hostname,
 		ParentTag:               parent.Tag,
 		ParentPieceCount:        int32(parent.FinishedPieces.Count()),
-		ParentSecurityDomain:    parent.Host.SecurityDomain,
-		ParentIDC:               parent.Host.IDC,
-		ParentNetTopology:       parent.Host.NetTopology,
-		ParentLocation:          parent.Host.Location,
 		ParentFreeUploadCount:   parent.Host.FreeUploadCount(),
 		ParentUploadCount:       parent.Host.UploadCount.Load(),
 		ParentUploadFailedCount: parent.Host.UploadFailedCount.Load(),

@@ -28,8 +28,8 @@ import (
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 
-	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
+	"d7y.io/dragonfly/v2/pkg/types"
 )
 
 func TestDynconfig_GetManagerSourceType(t *testing.T) {
@@ -76,7 +76,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 						{
 							Id:           1,
 							HostName:     "bar",
-							Type:         model.SeedPeerTypeSuperSeed,
+							Type:         types.HostTypeStrongSeedName,
 							Idc:          "idc",
 							NetTopology:  "net_topology",
 							Location:     "location",
@@ -113,7 +113,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 						{
 							ID:           1,
 							Hostname:     "bar",
-							Type:         model.SeedPeerTypeSuperSeed,
+							Type:         types.HostTypeStrongSeedName,
 							IDC:          "idc",
 							NetTopology:  "net_topology",
 							Location:     "location",
@@ -162,7 +162,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 							{
 								Id:           1,
 								HostName:     "bar",
-								Type:         model.SeedPeerTypeSuperSeed,
+								Type:         types.HostTypeSuperSeedName,
 								Idc:          "idc",
 								NetTopology:  "net_topology",
 								Location:     "location",
@@ -201,7 +201,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 						{
 							ID:           1,
 							Hostname:     "bar",
-							Type:         model.SeedPeerTypeSuperSeed,
+							Type:         types.HostTypeSuperSeedName,
 							IDC:          "idc",
 							NetTopology:  "net_topology",
 							Location:     "location",

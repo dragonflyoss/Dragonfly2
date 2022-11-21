@@ -83,6 +83,17 @@ func (s *Server) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResu
 	return new(empty.Empty), s.service.ReportPeerResult(ctx, req)
 }
 
+// AnnounceTask informs scheduler a peer has completed task.
+func (s *Server) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequest) (*empty.Empty, error) {
+	metrics.AnnounceTaskCount.Inc()
+	if err := s.service.AnnounceTask(ctx, req); err != nil {
+		metrics.AnnounceTaskFailureCount.Inc()
+		return new(empty.Empty), err
+	}
+
+	return new(empty.Empty), nil
+}
+
 // StatTask checks if the given task exists.
 func (s *Server) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest) (*schedulerv1.Task, error) {
 	metrics.StatTaskCount.Inc()
@@ -95,20 +106,21 @@ func (s *Server) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest)
 	return task, nil
 }
 
-// AnnounceTask informs scheduler a peer has completed task.
-func (s *Server) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequest) (*empty.Empty, error) {
-	metrics.AnnounceCount.Inc()
-	if err := s.service.AnnounceTask(ctx, req); err != nil {
-		metrics.AnnounceFailureCount.Inc()
+// LeaveTask makes the peer unschedulable.
+func (s *Server) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget) (*empty.Empty, error) {
+	return new(empty.Empty), s.service.LeaveTask(ctx, req)
+}
+
+// AnnounceHost announces host to scheduler.
+func (s *Server) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequest) (*empty.Empty, error) {
+	metrics.AnnounceHostCount.WithLabelValues(req.Hostname, req.Ip, req.Os, req.Platform, req.PlatformFamily, req.PlatformVersion,
+		req.KernelVersion, req.Build.GitVersion, req.Build.GitCommit, req.Build.GoVersion, req.Build.Platform).Inc()
+	if err := s.service.AnnounceHost(ctx, req); err != nil {
+		metrics.AnnounceHostFailureCount.Inc()
 		return new(empty.Empty), err
 	}
 
 	return new(empty.Empty), nil
-}
-
-// LeaveTask makes the peer unschedulable.
-func (s *Server) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget) (*empty.Empty, error) {
-	return new(empty.Empty), s.service.LeaveTask(ctx, req)
 }
 
 // LeaveHost releases host in scheduler.

@@ -73,3 +73,62 @@ func (p *PEMContent) loadPEM(content string) error {
 	*p = PEMContent(val)
 	return nil
 }
+
+// HostType is the type of host.
+type HostType int
+
+const (
+	// HostTypeNormal is the normal type of host.
+	HostTypeNormal HostType = iota
+
+	// HostTypeSuperSeed is the super seed type of host.
+	HostTypeSuperSeed
+
+	// HostTypeStrongSeed is the strong seed type of host.
+	HostTypeStrongSeed
+
+	// HostTypeWeakSeed is the weak seed type of host.
+	HostTypeWeakSeed
+)
+
+const (
+	// HostTypeNormalName is the name of normal host type.
+	HostTypeNormalName = "normal"
+
+	// HostTypeSuperSeedName is the name of super host type.
+	HostTypeSuperSeedName = "super"
+
+	// HostTypeStrongSeedName is the name of strong host type.
+	HostTypeStrongSeedName = "strong"
+
+	// HostTypeWeakSeedName is the name of weak host type.
+	HostTypeWeakSeedName = "weak"
+)
+
+// Name returns the name of host type.
+func (h *HostType) Name() string {
+	switch *h {
+	case HostTypeSuperSeed:
+		return HostTypeSuperSeedName
+	case HostTypeStrongSeed:
+		return HostTypeStrongSeedName
+	case HostTypeWeakSeed:
+		return HostTypeWeakSeedName
+	}
+
+	return HostTypeNormalName
+}
+
+// ParseHostType parses host type by name.
+func ParseHostType(name string) HostType {
+	switch name {
+	case HostTypeSuperSeedName:
+		return HostTypeSuperSeed
+	case HostTypeStrongSeedName:
+		return HostTypeStrongSeed
+	case HostTypeWeakSeedName:
+		return HostTypeWeakSeed
+	}
+
+	return HostTypeNormal
+}
