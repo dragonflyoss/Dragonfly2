@@ -51,6 +51,9 @@ func TestDynconfigNewDynconfig_ManagerSourceType(t *testing.T) {
 				Host: HostOption{
 					Hostname: "foo",
 				},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
+				},
 			},
 			cleanFileCache: func(t *testing.T) {
 				if err := os.Remove(mockCachePath); err != nil {
@@ -73,6 +76,9 @@ func TestDynconfigNewDynconfig_ManagerSourceType(t *testing.T) {
 			expire: 10 * time.Millisecond,
 			config: &DaemonOption{
 				Host: HostOption{},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
+				},
 			},
 			cleanFileCache: func(t *testing.T) {
 				if err := os.Remove(mockCachePath); err != nil {
@@ -95,6 +101,9 @@ func TestDynconfigNewDynconfig_ManagerSourceType(t *testing.T) {
 			expire: 10 * time.Millisecond,
 			config: &DaemonOption{
 				Host: HostOption{},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
+				},
 			},
 			cleanFileCache: func(t *testing.T) {},
 			mock: func(m *mocks.MockClientMockRecorder) {
@@ -110,6 +119,9 @@ func TestDynconfigNewDynconfig_ManagerSourceType(t *testing.T) {
 			expire: 10 * time.Millisecond,
 			config: &DaemonOption{
 				Host: HostOption{},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
+				},
 			},
 			cleanFileCache: func(t *testing.T) {},
 			mock: func(m *mocks.MockClientMockRecorder) {
@@ -128,12 +140,11 @@ func TestDynconfigNewDynconfig_ManagerSourceType(t *testing.T) {
 			expire: 10 * time.Millisecond,
 			config: &DaemonOption{
 				Host: HostOption{},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
+				},
 			},
-			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(mockCachePath); err != nil {
-					t.Fatal(err)
-				}
-			},
+			cleanFileCache: func(t *testing.T) {},
 			mock: func(m *mocks.MockClientMockRecorder) {
 				gomock.InOrder(
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
@@ -142,7 +153,7 @@ func TestDynconfigNewDynconfig_ManagerSourceType(t *testing.T) {
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				assert.NoError(err)
+				assert.Error(err)
 			},
 		},
 	}
