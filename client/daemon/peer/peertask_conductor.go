@@ -1036,14 +1036,14 @@ func (pt *peerTaskConductor) updateMetadata(piecePacket *commonv1.PiecePacket) {
 	if piecePacket.TotalPiece > pt.GetTotalPieces() {
 		metadataChanged = true
 		pt.SetTotalPieces(piecePacket.TotalPiece)
-		pt.Debugf("update total piece count: %d", piecePacket.TotalPiece)
+		pt.Debugf("update total piece count: %d, dst peer %s", piecePacket.TotalPiece, piecePacket.DstPid)
 	}
 
 	// update digest
 	if len(piecePacket.PieceMd5Sign) > 0 && len(pt.GetPieceMd5Sign()) == 0 {
 		metadataChanged = true
 		pt.SetPieceMd5Sign(piecePacket.PieceMd5Sign)
-		pt.Debugf("update digest: %s", piecePacket.PieceMd5Sign)
+		pt.Debugf("update digest: %s, dst peer %s", piecePacket.PieceMd5Sign, piecePacket.DstPid)
 	}
 
 	// update content length
@@ -1051,13 +1051,13 @@ func (pt *peerTaskConductor) updateMetadata(piecePacket *commonv1.PiecePacket) {
 		metadataChanged = true
 		pt.SetContentLength(piecePacket.ContentLength)
 		pt.span.SetAttributes(config.AttributeTaskContentLength.Int64(piecePacket.ContentLength))
-		pt.Debugf("update content length: %d", piecePacket.ContentLength)
+		pt.Debugf("update content length: %d, dst peer %s", piecePacket.ContentLength, piecePacket.DstPid)
 	}
 
 	if piecePacket.ExtendAttribute != nil && len(piecePacket.ExtendAttribute.Header) > 0 && pt.GetHeader() == nil {
 		metadataChanged = true
 		pt.SetHeader(piecePacket.ExtendAttribute.Header)
-		pt.Debugf("update response header: %#v", piecePacket.ExtendAttribute.Header)
+		pt.Debugf("update response header: %#v, dst peer %s", piecePacket.ExtendAttribute.Header, piecePacket.DstPid)
 	}
 
 	if metadataChanged {
