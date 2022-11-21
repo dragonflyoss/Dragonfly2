@@ -607,12 +607,8 @@ func (s *Server) ListSchedulers(ctx context.Context, req *managerv1.ListSchedule
 
 // Get object storage configuration.
 func (s *Server) GetObjectStorage(ctx context.Context, req *managerv1.GetObjectStorageRequest) (*managerv1.ObjectStorage, error) {
-	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
-
 	if !s.objectStorageConfig.Enable {
-		msg := "object storage is disabled"
-		log.Debug(msg)
-		return nil, status.Error(codes.NotFound, msg)
+		return nil, status.Error(codes.NotFound, "object storage is disabled")
 	}
 
 	return &managerv1.ObjectStorage{
