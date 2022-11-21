@@ -515,7 +515,7 @@ func TestPeer_DownloadTinyFile(t *testing.T) {
 			}
 
 			mockRawHost.Ip = ip
-			mockRawHost.DownPort = int32(port)
+			mockRawHost.DownloadPort = int32(port)
 			mockHost := NewHost(mockRawHost)
 			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer = NewPeer(mockPeerID, mockTask, mockHost)

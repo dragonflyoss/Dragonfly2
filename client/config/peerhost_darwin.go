@@ -24,7 +24,6 @@ import (
 	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/client/util"
-	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/net/fqdn"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -42,7 +41,7 @@ var peerHostConfig = func() *DaemonOption {
 				RefreshInterval: 5 * time.Minute,
 				SeedPeer: SeedPeerOption{
 					Enable:    false,
-					Type:      model.SeedPeerTypeSuperSeed,
+					Type:      types.HostTypeSuperSeedName,
 					ClusterID: 1,
 					KeepAlive: KeepAliveOption{
 						Interval: 5 * time.Second,

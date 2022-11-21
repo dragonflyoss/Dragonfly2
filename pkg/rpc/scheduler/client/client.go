@@ -109,17 +109,20 @@ type Client interface {
 	// ReportPeerResult reports downloading result for the peer.
 	ReportPeerResult(context.Context, *schedulerv1.PeerResult, ...grpc.CallOption) error
 
-	// LeaveHost releases peer in scheduler.
-	LeaveTask(context.Context, *schedulerv1.PeerTarget, ...grpc.CallOption) error
-
-	// LeaveHost releases host in scheduler.
-	LeaveHost(context.Context, *schedulerv1.LeaveHostRequest, ...grpc.CallOption) error
+	// A peer announces that it has the announced task to other peers.
+	AnnounceTask(context.Context, *schedulerv1.AnnounceTaskRequest, ...grpc.CallOption) error
 
 	// Checks if any peer has the given task.
 	StatTask(context.Context, *schedulerv1.StatTaskRequest, ...grpc.CallOption) (*schedulerv1.Task, error)
 
-	// A peer announces that it has the announced task to other peers.
-	AnnounceTask(context.Context, *schedulerv1.AnnounceTaskRequest, ...grpc.CallOption) error
+	// LeaveTask releases peer in scheduler.
+	LeaveTask(context.Context, *schedulerv1.PeerTarget, ...grpc.CallOption) error
+
+	// AnnounceHost announces host to scheduler.
+	AnnounceHost(context.Context, *schedulerv1.AnnounceHostRequest, ...grpc.CallOption) error
+
+	// LeaveHost releases host in scheduler.
+	LeaveHost(context.Context, *schedulerv1.LeaveHostRequest, ...grpc.CallOption) error
 
 	// Close tears down the ClientConn and all underlying connections.
 	Close() error
@@ -177,51 +180,18 @@ func (c *client) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResu
 	return err
 }
 
-// LeaveTask releases peer in scheduler.
-func (c *client) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget, opts ...grpc.CallOption) error {
+// A peer announces that it has the announced task to other peers.
+func (c *client) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequest, opts ...grpc.CallOption) error {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	_, err := c.SchedulerClient.LeaveTask(
+	_, err := c.SchedulerClient.AnnounceTask(
 		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		req,
 		opts...,
 	)
 
 	return err
-}
-
-// LeaveHost releases host in all schedulers.
-func (c *client) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostRequest, opts ...grpc.CallOption) error {
-	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
-	defer cancel()
-
-	circle, err := c.GetCircle()
-	if err != nil {
-		return err
-	}
-
-	var wg sync.WaitGroup
-	for _, key := range circle {
-		wg.Add(1)
-		go func(virtualTaskID string) {
-			defer wg.Done()
-
-			if err := c.LeaveHost(
-				context.WithValue(ctx, pkgbalancer.ContextKey, virtualTaskID),
-				req,
-				opts...,
-			); err != nil {
-				logger.Error(err)
-				return
-			}
-
-			logger.Infof("leave host %s", req.Id)
-		}(key)
-	}
-
-	wg.Wait()
-	return nil
 }
 
 // Checks if any peer has the given task.
@@ -236,16 +206,84 @@ func (c *client) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest,
 	)
 }
 
-// A peer announces that it has the announced task to other peers.
-func (c *client) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequest, opts ...grpc.CallOption) error {
+// LeaveTask releases peer in scheduler.
+func (c *client) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget, opts ...grpc.CallOption) error {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	_, err := c.SchedulerClient.AnnounceTask(
+	_, err := c.SchedulerClient.LeaveTask(
 		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		req,
 		opts...,
 	)
 
 	return err
+}
+
+// AnnounceHost announces host to scheduler.
+func (c *client) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequest, opts ...grpc.CallOption) error {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
+	circle, err := c.GetCircle()
+	if err != nil {
+		return err
+	}
+	logger.Debugf("announce host circle is %#v", circle)
+
+	var wg sync.WaitGroup
+	for _, virtualTaskID := range circle {
+		wg.Add(1)
+		go func(taskID string) {
+			defer wg.Done()
+
+			if _, err := c.SchedulerClient.AnnounceHost(
+				context.WithValue(ctx, pkgbalancer.ContextKey, taskID),
+				req,
+				opts...,
+			); err != nil {
+				logger.Error(err)
+				return
+			}
+
+			logger.Debugf("announce host %s", req.Id)
+		}(virtualTaskID)
+	}
+
+	wg.Wait()
+	return err
+}
+
+// LeaveHost releases host in all schedulers.
+func (c *client) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostRequest, opts ...grpc.CallOption) error {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
+	circle, err := c.GetCircle()
+	if err != nil {
+		return err
+	}
+	logger.Infof("leave host circle is %#v", circle)
+
+	var wg sync.WaitGroup
+	for _, virtualTaskID := range circle {
+		wg.Add(1)
+		go func(taskID string) {
+			defer wg.Done()
+
+			if _, err := c.SchedulerClient.LeaveHost(
+				context.WithValue(ctx, pkgbalancer.ContextKey, taskID),
+				req,
+				opts...,
+			); err != nil {
+				logger.Error(err)
+				return
+			}
+
+			logger.Infof("leave host %s", req.Id)
+		}(virtualTaskID)
+	}
+
+	wg.Wait()
+	return nil
 }
