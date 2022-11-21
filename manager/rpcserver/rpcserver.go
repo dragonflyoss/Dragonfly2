@@ -166,17 +166,18 @@ func New(
 
 // Get SeedPeer and SeedPeer cluster configuration.
 func (s *Server) GetSeedPeer(ctx context.Context, req *managerv1.GetSeedPeerRequest) (*managerv1.SeedPeer, error) {
-	var pbSeedPeer managerv1.SeedPeer
+	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
 	cacheKey := cache.MakeSeedPeerCacheKey(uint(req.SeedPeerClusterId), req.HostName, req.Ip)
 
 	// Cache hit.
+	var pbSeedPeer managerv1.SeedPeer
 	if err := s.cache.Get(ctx, cacheKey, &pbSeedPeer); err == nil {
-		logger.Infof("%s cache hit", cacheKey)
+		log.Debugf("%s cache hit", cacheKey)
 		return &pbSeedPeer, nil
 	}
 
 	// Cache miss.
-	logger.Infof("%s cache miss", cacheKey)
+	log.Debugf("%s cache miss", cacheKey)
 	seedPeer := model.SeedPeer{}
 	if err := s.db.WithContext(ctx).Preload("SeedPeerCluster").Preload("SeedPeerCluster.SchedulerClusters.Schedulers", &model.Scheduler{
 		State: model.SchedulerStateActive,
@@ -240,7 +241,7 @@ func (s *Server) GetSeedPeer(ctx context.Context, req *managerv1.GetSeedPeerRequ
 		Value: &pbSeedPeer,
 		TTL:   s.cache.TTL,
 	}); err != nil {
-		logger.Warnf("storage cache failed: %v", err)
+		log.Warn(err)
 	}
 
 	return &pbSeedPeer, nil
@@ -248,6 +249,7 @@ func (s *Server) GetSeedPeer(ctx context.Context, req *managerv1.GetSeedPeerRequ
 
 // Update SeedPeer configuration.
 func (s *Server) UpdateSeedPeer(ctx context.Context, req *managerv1.UpdateSeedPeerRequest) (*managerv1.SeedPeer, error) {
+	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
 	seedPeer := model.SeedPeer{}
 	if err := s.db.WithContext(ctx).First(&seedPeer, model.SeedPeer{
 		HostName:          req.HostName,
@@ -277,7 +279,7 @@ func (s *Server) UpdateSeedPeer(ctx context.Context, req *managerv1.UpdateSeedPe
 		ctx,
 		cache.MakeSeedPeerCacheKey(seedPeer.SeedPeerClusterID, seedPeer.HostName, seedPeer.IP),
 	); err != nil {
-		logger.Warnf("%s refresh keepalive status failed in seed peer cluster %d", seedPeer.HostName, seedPeer.SeedPeerClusterID)
+		log.Warn(err)
 	}
 
 	return &managerv1.SeedPeer{
@@ -333,17 +335,18 @@ func (s *Server) createSeedPeer(ctx context.Context, req *managerv1.UpdateSeedPe
 
 // Get Scheduler and Scheduler cluster configuration.
 func (s *Server) GetScheduler(ctx context.Context, req *managerv1.GetSchedulerRequest) (*managerv1.Scheduler, error) {
-	var pbScheduler managerv1.Scheduler
+	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
 	cacheKey := cache.MakeSchedulerCacheKey(uint(req.SchedulerClusterId), req.HostName, req.Ip)
 
 	// Cache hit.
+	var pbScheduler managerv1.Scheduler
 	if err := s.cache.Get(ctx, cacheKey, &pbScheduler); err == nil {
-		logger.Infof("%s cache hit", cacheKey)
+		log.Debugf("%s cache hit", cacheKey)
 		return &pbScheduler, nil
 	}
 
 	// Cache miss.
-	logger.Infof("%s cache miss", cacheKey)
+	log.Debugf("%s cache miss", cacheKey)
 	scheduler := model.Scheduler{}
 	if err := s.db.WithContext(ctx).Preload("SchedulerCluster").Preload("SchedulerCluster.SeedPeerClusters.SeedPeers", &model.SeedPeer{
 		State: model.SeedPeerStateActive,
@@ -426,7 +429,7 @@ func (s *Server) GetScheduler(ctx context.Context, req *managerv1.GetSchedulerRe
 		Value: &pbScheduler,
 		TTL:   s.cache.TTL,
 	}); err != nil {
-		logger.Warnf("cache storage failed: %v", err)
+		log.Warn(err)
 	}
 
 	return &pbScheduler, nil
@@ -434,6 +437,7 @@ func (s *Server) GetScheduler(ctx context.Context, req *managerv1.GetSchedulerRe
 
 // Update scheduler configuration.
 func (s *Server) UpdateScheduler(ctx context.Context, req *managerv1.UpdateSchedulerRequest) (*managerv1.Scheduler, error) {
+	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
 	scheduler := model.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, model.Scheduler{
 		HostName:           req.HostName,
@@ -460,7 +464,7 @@ func (s *Server) UpdateScheduler(ctx context.Context, req *managerv1.UpdateSched
 		ctx,
 		cache.MakeSchedulerCacheKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP),
 	); err != nil {
-		logger.Warnf("%s refresh keepalive status failed in scheduler cluster %d", scheduler.HostName, scheduler.SchedulerClusterID)
+		log.Warn(err)
 	}
 
 	return &managerv1.Scheduler{
@@ -508,7 +512,7 @@ func (s *Server) createScheduler(ctx context.Context, req *managerv1.UpdateSched
 // List acitve schedulers configuration.
 func (s *Server) ListSchedulers(ctx context.Context, req *managerv1.ListSchedulersRequest) (*managerv1.ListSchedulersResponse, error) {
 	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
-	log.Debugf("client lists schedulers, version %s, commit %s", req.Version, req.Commit)
+	log.Debugf("list schedulers, version %s, commit %s", req.Version, req.Commit)
 
 	// Count the number of the active peer.
 	if s.config.Metrics.EnablePeerGauge && req.SourceType == managerv1.SourceType_PEER_SOURCE {
@@ -528,25 +532,25 @@ func (s *Server) ListSchedulers(ctx context.Context, req *managerv1.ListSchedule
 	cacheKey := cache.MakeSchedulersCacheKeyForPeer(req.HostName, req.Ip)
 
 	if err := s.cache.Get(ctx, cacheKey, &pbListSchedulersResponse); err == nil {
-		log.Infof("%s cache hit", cacheKey)
+		log.Debugf("%s cache hit", cacheKey)
 		return &pbListSchedulersResponse, nil
 	}
 
 	// Cache miss.
-	log.Infof("%s cache miss", cacheKey)
+	log.Debugf("%s cache miss", cacheKey)
 	var schedulerClusters []model.SchedulerCluster
 	if err := s.db.WithContext(ctx).Preload("SecurityGroup.SecurityRules").Preload("SeedPeerClusters.SeedPeers", "state = ?", "active").Preload("Schedulers", "state = ?", "active").Find(&schedulerClusters).Error; err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	// Search optimal scheduler clusters.
-	log.Infof("list scheduler clusters %v with hostInfo %#v", getSchedulerClusterNames(schedulerClusters), req.HostInfo)
+	log.Debugf("list scheduler clusters %v with hostInfo %#v", getSchedulerClusterNames(schedulerClusters), req.HostInfo)
 	schedulerClusters, err := s.searcher.FindSchedulerClusters(ctx, schedulerClusters, req)
 	if err != nil {
 		log.Error(err)
 		return nil, status.Error(codes.NotFound, "scheduler cluster not found")
 	}
-	log.Infof("find matching scheduler cluster %v", getSchedulerClusterNames(schedulerClusters))
+	log.Debugf("find matching scheduler cluster %v", getSchedulerClusterNames(schedulerClusters))
 
 	schedulers := []model.Scheduler{}
 	for _, schedulerCluster := range schedulerClusters {
@@ -599,7 +603,7 @@ func (s *Server) ListSchedulers(ctx context.Context, req *managerv1.ListSchedule
 		Value: &pbListSchedulersResponse,
 		TTL:   s.cache.TTL,
 	}); err != nil {
-		log.Warnf("storage cache failed: %v", err)
+		log.Warn(err)
 	}
 
 	return &pbListSchedulersResponse, nil
@@ -607,12 +611,8 @@ func (s *Server) ListSchedulers(ctx context.Context, req *managerv1.ListSchedule
 
 // Get object storage configuration.
 func (s *Server) GetObjectStorage(ctx context.Context, req *managerv1.GetObjectStorageRequest) (*managerv1.ObjectStorage, error) {
-	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
-
 	if !s.objectStorageConfig.Enable {
-		msg := "object storage is disabled"
-		log.Debug(msg)
-		return nil, status.Error(codes.NotFound, msg)
+		return nil, status.Error(codes.NotFound, "object storage is disabled")
 	}
 
 	return &managerv1.ObjectStorage{
@@ -626,28 +626,24 @@ func (s *Server) GetObjectStorage(ctx context.Context, req *managerv1.GetObjectS
 
 // List buckets configuration.
 func (s *Server) ListBuckets(ctx context.Context, req *managerv1.ListBucketsRequest) (*managerv1.ListBucketsResponse, error) {
-	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
-
 	if !s.objectStorageConfig.Enable {
-		msg := "object storage is disabled"
-		log.Debug(msg)
-		return nil, status.Error(codes.NotFound, msg)
+		return nil, status.Error(codes.NotFound, "object storage is disabled")
 	}
 
+	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
 	var pbListBucketsResponse managerv1.ListBucketsResponse
 	cacheKey := cache.MakeBucketsCacheKey(s.objectStorageConfig.Name)
 
 	// Cache hit.
 	if err := s.cache.Get(ctx, cacheKey, &pbListBucketsResponse); err == nil {
-		log.Infof("%s cache hit", cacheKey)
+		log.Debugf("%s cache hit", cacheKey)
 		return &pbListBucketsResponse, nil
 	}
 
 	// Cache miss.
-	log.Infof("%s cache miss", cacheKey)
+	log.Debugf("%s cache miss", cacheKey)
 	buckets, err := s.objectStorage.ListBucketMetadatas(ctx)
 	if err != nil {
-		log.Errorf("list bucket metadatas failed: %s", err.Error())
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
@@ -665,7 +661,7 @@ func (s *Server) ListBuckets(ctx context.Context, req *managerv1.ListBucketsRequ
 		Value: &pbListBucketsResponse,
 		TTL:   s.cache.TTL,
 	}); err != nil {
-		log.Warnf("storage cache failed: %v", err)
+		log.Warn(err)
 	}
 
 	return &pbListBucketsResponse, nil
@@ -986,14 +982,16 @@ func (s *Server) DeleteModelVersion(ctx context.Context, req *managerv1.DeleteMo
 func (s *Server) KeepAlive(stream managerv1.Manager_KeepAliveServer) error {
 	req, err := stream.Recv()
 	if err != nil {
-		logger.Errorf("keepalive failed for the first time: %v", err)
+		logger.Errorf("keepalive failed for the first time: %s", err.Error())
 		return status.Error(codes.Unknown, err.Error())
 	}
 	hostName := req.HostName
 	ip := req.Ip
 	sourceType := req.SourceType
 	clusterID := uint(req.ClusterId)
-	logger.Infof("%s keepalive successfully for the first time in cluster %d", hostName, clusterID)
+
+	log := logger.WithHostnameAndIP(hostName, ip)
+	log.Infof("keepalive for the first time in cluster %d", clusterID)
 
 	// Initialize active scheduler.
 	if sourceType == managerv1.SourceType_SCHEDULER_SOURCE {
@@ -1011,7 +1009,7 @@ func (s *Server) KeepAlive(stream managerv1.Manager_KeepAliveServer) error {
 			context.TODO(),
 			cache.MakeSchedulerCacheKey(clusterID, hostName, ip),
 		); err != nil {
-			logger.Warnf("%s refresh keepalive status failed in scheduler cluster %d", hostName, clusterID)
+			log.Warnf("refresh keepalive status failed in scheduler cluster %d", clusterID)
 		}
 	}
 
@@ -1031,7 +1029,7 @@ func (s *Server) KeepAlive(stream managerv1.Manager_KeepAliveServer) error {
 			context.TODO(),
 			cache.MakeSeedPeerCacheKey(clusterID, hostName, ip),
 		); err != nil {
-			logger.Warnf("%s refresh keepalive status failed in seed peer cluster %d", hostName, clusterID)
+			log.Warnf("refresh keepalive status failed in seed peer cluster %d", clusterID)
 		}
 	}
 
@@ -1054,7 +1052,7 @@ func (s *Server) KeepAlive(stream managerv1.Manager_KeepAliveServer) error {
 					context.TODO(),
 					cache.MakeSchedulerCacheKey(clusterID, hostName, ip),
 				); err != nil {
-					logger.Warnf("%s refresh keepalive status failed in scheduler cluster %d", hostName, clusterID)
+					log.Warnf("refresh keepalive status failed in scheduler cluster %d", clusterID)
 				}
 			}
 
@@ -1074,20 +1072,20 @@ func (s *Server) KeepAlive(stream managerv1.Manager_KeepAliveServer) error {
 					context.TODO(),
 					cache.MakeSeedPeerCacheKey(clusterID, hostName, ip),
 				); err != nil {
-					logger.Warnf("%s refresh keepalive status failed in seed peer cluster %d", hostName, clusterID)
+					log.Warnf("refresh keepalive status failed in seed peer cluster %d", clusterID)
 				}
 			}
 
 			if err == io.EOF {
-				logger.Infof("%s close keepalive in cluster %d", hostName, clusterID)
+				log.Infof("keepalive closed in cluster %d", clusterID)
 				return nil
 			}
 
-			logger.Errorf("%s keepalive failed in cluster %d: %v", hostName, clusterID, err)
+			log.Errorf("keepalive failed in cluster %d: %s", clusterID, err.Error())
 			return status.Error(codes.Unknown, err.Error())
 		}
 
-		logger.Debugf("%s type of %s send keepalive request in cluster %d", sourceType, hostName, clusterID)
+		log.Debugf("keepalive in cluster %d", clusterID)
 	}
 }
 
