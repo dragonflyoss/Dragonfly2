@@ -31,8 +31,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	zapadapter "logur.dev/adapter/zap"
 
-	managerv1 "d7y.io/api/pkg/apis/manager/v1"
-
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/pkg/cache"
@@ -43,6 +41,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/types"
+	"d7y.io/dragonfly/v2/scheduler/announcer"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/job"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
@@ -81,14 +80,14 @@ type Server struct {
 	// Async job.
 	job job.Job
 
-	// Storage service.
+	// Storage interface.
 	storage storage.Storage
 
-	// GC server.
-	gc gc.GC
+	// Announcer interface.
+	announcer announcer.Announcer
 
-	// Closed when done.
-	done chan struct{}
+	// GC service.
+	gc gc.GC
 }
 
 func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
@@ -113,18 +112,12 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 	s.managerClient = managerClient
 
-	// Register to manager.
-	if _, err := s.managerClient.UpdateScheduler(context.Background(), &managerv1.UpdateSchedulerRequest{
-		SourceType:         managerv1.SourceType_SCHEDULER_SOURCE,
-		HostName:           s.config.Server.Host,
-		Ip:                 s.config.Server.AdvertiseIP,
-		Port:               int32(s.config.Server.Port),
-		Idc:                s.config.Host.IDC,
-		Location:           s.config.Host.Location,
-		SchedulerClusterId: uint64(s.config.Manager.SchedulerClusterID),
-	}); err != nil {
-		logger.Fatalf("register to manager failed %s", err.Error())
+	// Initialize announcer.
+	announcer, err := announcer.New(cfg, s.managerClient)
+	if err != nil {
+		return nil, err
 	}
+	s.announcer = announcer
 
 	// Initialize dynconfig client.
 	dynconfig, err := config.NewDynconfig(s.managerClient, filepath.Join(d.CacheDir(), dynconfig.CacheDirName), cfg)
@@ -155,7 +148,6 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		if _, err := certifyClient.GetCertificate(&tls.ClientHelloInfo{
 			ServerName: cfg.Server.AdvertiseIP,
 		}); err != nil {
-			logger.Errorf("issue certificate error: %s", err.Error())
 			return nil, err
 		}
 	}
@@ -173,10 +165,12 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		seedPeerDialOptions = append(seedPeerDialOptions, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
+	// Initialize resource.
 	resource, err := resource.New(cfg, s.gc, dynconfig, seedPeerDialOptions...)
 	if err != nil {
 		return nil, err
 	}
+	s.resource = resource
 
 	// Initialize scheduler.
 	scheduler := scheduler.New(&cfg.Scheduler, dynconfig, d.PluginDir())
@@ -224,7 +218,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 }
 
 func (s *Server) Serve() error {
-	// Serve dynConfig.
+	// Serve dynconfig.
 	go func() {
 		if err := s.dynconfig.Serve(); err != nil {
 			logger.Fatalf("dynconfig start failed %s", err.Error())
@@ -233,7 +227,7 @@ func (s *Server) Serve() error {
 	}()
 
 	// Serve GC.
-	s.gc.Serve()
+	s.gc.Start()
 	logger.Info("gc start successfully")
 
 	// Serve Job.
@@ -255,18 +249,13 @@ func (s *Server) Serve() error {
 		}()
 	}
 
-	if s.managerClient != nil {
-		// scheduler keepalive with manager.
-		go func() {
-			logger.Info("start keepalive to manager")
-			s.managerClient.KeepAlive(s.config.Manager.KeepAlive.Interval, &managerv1.KeepAliveRequest{
-				SourceType: managerv1.SourceType_SCHEDULER_SOURCE,
-				HostName:   s.config.Server.Host,
-				Ip:         s.config.Server.AdvertiseIP,
-				ClusterId:  uint64(s.config.Manager.SchedulerClusterID),
-			}, s.done)
-		}()
-	}
+	// Serve announcer.
+	go func() {
+		if err := s.announcer.Serve(); err != nil {
+			logger.Fatalf("announcer start failed %s", err.Error())
+		}
+		logger.Info("announcer start successfully")
+	}()
 
 	// Generate GRPC limit listener.
 	ip, ok := ip.FormatIP(s.config.Server.ListenIP)
@@ -291,21 +280,18 @@ func (s *Server) Serve() error {
 }
 
 func (s *Server) Stop() {
-	// Closed when done.
-	close(s.done)
-
-	// Stop dynconfig service.
+	// Stop dynconfig.
 	if err := s.dynconfig.Stop(); err != nil {
-		logger.Errorf("stop dynconfig service failed %s", err.Error())
+		logger.Errorf("stop dynconfig failed %s", err.Error())
 	} else {
-		logger.Info("stop dynconfig service closed")
+		logger.Info("stop dynconfig closed")
 	}
 
-	// Stop resource service.
+	// Stop resource.
 	if err := s.resource.Stop(); err != nil {
-		logger.Errorf("stop resource service failed %s", err.Error())
+		logger.Errorf("stop resource failed %s", err.Error())
 	} else {
-		logger.Info("stop resource service closed")
+		logger.Info("stop resource closed")
 	}
 
 	// Clean storage.
@@ -319,12 +305,6 @@ func (s *Server) Stop() {
 	s.gc.Stop()
 	logger.Info("gc closed")
 
-	// Stop Job.
-	if s.config.Job.Enable {
-		s.job.Stop()
-		logger.Info("job service closed")
-	}
-
 	// Stop metrics server.
 	if s.metricsServer != nil {
 		if err := s.metricsServer.Shutdown(context.Background()); err != nil {
@@ -332,6 +312,13 @@ func (s *Server) Stop() {
 		} else {
 			logger.Info("metrics server closed under request")
 		}
+	}
+
+	// Stop announcer.
+	if err := s.announcer.Stop(); err != nil {
+		logger.Errorf("stop announcer failed %s", err.Error())
+	} else {
+		logger.Info("stop announcer closed")
 	}
 
 	// Stop manager client.

@@ -60,7 +60,7 @@ type resource struct {
 }
 
 func New(cfg *config.Config, gc gc.GC, dynconfig config.DynconfigInterface, opts ...grpc.DialOption) (Resource, error) {
-	resource := &resource{}
+	resource := &resource{config: cfg}
 
 	// Initialize host manager interface.
 	hostManager, err := newHostManager(&cfg.Scheduler.GC, gc)
