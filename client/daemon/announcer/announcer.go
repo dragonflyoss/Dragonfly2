@@ -124,28 +124,24 @@ func (a *announcer) announceToScheduler() error {
 	}
 
 	// Announce to scheduler.
-	go func() {
-		tick := time.NewTicker(a.config.Announcer.SchedulerInterval)
-		for {
-			select {
-			case <-tick.C:
-				req, err := a.newAnnounceHostRequest()
-				if err != nil {
-					logger.Error(err)
-					break
-				}
-
-				if err := a.schedulerClient.AnnounceHost(context.Background(), req); err != nil {
-					logger.Error(err)
-					break
-				}
-			case <-a.done:
-				return
+	tick := time.NewTicker(a.config.Announcer.SchedulerInterval)
+	for {
+		select {
+		case <-tick.C:
+			req, err := a.newAnnounceHostRequest()
+			if err != nil {
+				logger.Error(err)
+				break
 			}
-		}
-	}()
 
-	return nil
+			if err := a.schedulerClient.AnnounceHost(context.Background(), req); err != nil {
+				logger.Error(err)
+				break
+			}
+		case <-a.done:
+			return nil
+		}
+	}
 }
 
 // newAnnounceHostRequest returns announce host request.

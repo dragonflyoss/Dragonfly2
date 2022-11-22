@@ -45,7 +45,6 @@ const (
 
 type Job interface {
 	Serve()
-	Stop()
 }
 
 type job struct {
@@ -138,12 +137,6 @@ func (j *job) Serve() {
 			}
 		}
 	}()
-}
-
-func (j *job) Stop() {
-	j.globalJob.Worker.Quit()
-	j.schedulerJob.Worker.Quit()
-	j.localJob.Worker.Quit()
 }
 
 func (j *job) preheat(ctx context.Context, req string) error {
