@@ -51,7 +51,7 @@ require (
 	github.com/onsi/gomega v1.24.1
 	github.com/orcaman/concurrent-map/v2 v2.0.1
 	github.com/phayes/freeport v0.0.0-20220201140144-74d24b5ae9f5
-	github.com/prometheus/client_golang v1.13.0
+	github.com/prometheus/client_golang v1.14.0
 	github.com/schollz/progressbar/v3 v3.11.0
 	github.com/shirou/gopsutil/v3 v3.22.10
 	github.com/soheilhy/cmux v0.1.5
@@ -175,7 +175,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c // indirect
-	github.com/prometheus/client_model v0.2.0 // indirect
+	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
