@@ -231,19 +231,19 @@ func (mr *MockClientMockRecorder) IssueCertificate(arg0, arg1 interface{}, arg2 
 }
 
 // KeepAlive mocks base method.
-func (m *MockClient) KeepAlive(arg0 time.Duration, arg1 *v1.KeepAliveRequest, arg2 ...grpc.CallOption) {
+func (m *MockClient) KeepAlive(arg0 time.Duration, arg1 *v1.KeepAliveRequest, arg2 <-chan struct{}, arg3 ...grpc.CallOption) {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{arg0, arg1}
-	for _, a := range arg2 {
+	varargs := []interface{}{arg0, arg1, arg2}
+	for _, a := range arg3 {
 		varargs = append(varargs, a)
 	}
 	m.ctrl.Call(m, "KeepAlive", varargs...)
 }
 
 // KeepAlive indicates an expected call of KeepAlive.
-func (mr *MockClientMockRecorder) KeepAlive(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) KeepAlive(arg0, arg1, arg2 interface{}, arg3 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	varargs := append([]interface{}{arg0, arg1, arg2}, arg3...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KeepAlive", reflect.TypeOf((*MockClient)(nil).KeepAlive), varargs...)
 }
 

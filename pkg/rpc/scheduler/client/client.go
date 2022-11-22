@@ -229,7 +229,6 @@ func (c *client) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHost
 	if err != nil {
 		return err
 	}
-	logger.Debugf("announce host circle is %#v", circle)
 
 	var wg sync.WaitGroup
 	for _, virtualTaskID := range circle {
@@ -245,8 +244,6 @@ func (c *client) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHost
 				logger.Error(err)
 				return
 			}
-
-			logger.Debugf("announce host %s", req.Id)
 		}(virtualTaskID)
 	}
 
