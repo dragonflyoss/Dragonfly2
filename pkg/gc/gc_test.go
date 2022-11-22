@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGCAdd(t *testing.T) {
+func TestGC_Add(t *testing.T) {
 	tests := []struct {
 		name   string
 		task   Task
@@ -100,7 +100,7 @@ func TestGCAdd(t *testing.T) {
 	}
 }
 
-func TestGCRun(t *testing.T) {
+func TestGC_Run(t *testing.T) {
 	tests := []struct {
 		name string
 		task Task
@@ -189,7 +189,7 @@ func TestGCRun(t *testing.T) {
 	}
 }
 
-func TestGCRunAll(t *testing.T) {
+func TestGC_RunAll(t *testing.T) {
 	tests := []struct {
 		name  string
 		task1 Task
@@ -274,7 +274,7 @@ func TestGCRunAll(t *testing.T) {
 	}
 }
 
-func TestGCServe(t *testing.T) {
+func TestGC_Start(t *testing.T) {
 	ctl := gomock.NewController(t)
 	mockLogger := NewMockLogger(ctl)
 	mockRunner := NewMockRunner(ctl)
@@ -297,6 +297,6 @@ func TestGCServe(t *testing.T) {
 		wg.Done()
 	}).Times(1)
 
-	gc.Serve()
+	gc.Start()
 	gc.Stop()
 }
