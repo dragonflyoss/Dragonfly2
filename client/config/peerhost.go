@@ -71,6 +71,7 @@ type DaemonOption struct {
 	Health        *HealthOption        `mapstructure:"health" yaml:"health"`
 	Reload        ReloadOption         `mapstructure:"reload" yaml:"reload"`
 	Network       *NetworkOption       `mapstructure:"network" yaml:"network"`
+	Announcer     AnnouncerOption      `mapstructure:"announcer" yaml:"announcer"`
 }
 
 func NewDaemonConfig() *DaemonOption {
@@ -924,4 +925,9 @@ type BasicAuth struct {
 type NetworkOption struct {
 	// EnableIPv6 enables ipv6 for server.
 	EnableIPv6 bool `mapstructure:"enableIPv6" yaml:"enableIPv6"`
+}
+
+type AnnouncerOption struct {
+	// SchedulerInterval is the interval of announcing scheduler.
+	SchedulerInterval time.Duration `mapstructure:"schedulerInterval" yaml:"schedulerInterval"`
 }

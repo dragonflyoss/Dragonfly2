@@ -990,8 +990,8 @@ func (s *Server) KeepAlive(stream managerv1.Manager_KeepAliveServer) error {
 	sourceType := req.SourceType
 	clusterID := uint(req.ClusterId)
 
-	log := logger.WithHostnameAndIP(hostName, ip)
-	log.Infof("keepalive for the first time in cluster %d", clusterID)
+	log := logger.WithKeepAlive(hostName, ip, sourceType.Enum().String(), req.ClusterId)
+	log.Info("keepalive for the first time")
 
 	// Initialize active scheduler.
 	if sourceType == managerv1.SourceType_SCHEDULER_SOURCE {
@@ -1009,7 +1009,7 @@ func (s *Server) KeepAlive(stream managerv1.Manager_KeepAliveServer) error {
 			context.TODO(),
 			cache.MakeSchedulerCacheKey(clusterID, hostName, ip),
 		); err != nil {
-			log.Warnf("refresh keepalive status failed in scheduler cluster %d", clusterID)
+			log.Warnf("refresh keepalive status failed: %s", err.Error())
 		}
 	}
 
@@ -1029,7 +1029,7 @@ func (s *Server) KeepAlive(stream managerv1.Manager_KeepAliveServer) error {
 			context.TODO(),
 			cache.MakeSeedPeerCacheKey(clusterID, hostName, ip),
 		); err != nil {
-			log.Warnf("refresh keepalive status failed in seed peer cluster %d", clusterID)
+			log.Warnf("refresh keepalive status failed: %s", err.Error())
 		}
 	}
 
@@ -1052,7 +1052,7 @@ func (s *Server) KeepAlive(stream managerv1.Manager_KeepAliveServer) error {
 					context.TODO(),
 					cache.MakeSchedulerCacheKey(clusterID, hostName, ip),
 				); err != nil {
-					log.Warnf("refresh keepalive status failed in scheduler cluster %d", clusterID)
+					log.Warnf("refresh keepalive status failed: %s", err.Error())
 				}
 			}
 
@@ -1072,20 +1072,18 @@ func (s *Server) KeepAlive(stream managerv1.Manager_KeepAliveServer) error {
 					context.TODO(),
 					cache.MakeSeedPeerCacheKey(clusterID, hostName, ip),
 				); err != nil {
-					log.Warnf("refresh keepalive status failed in seed peer cluster %d", clusterID)
+					log.Warnf("refresh keepalive status failed: %s", err.Error())
 				}
 			}
 
 			if err == io.EOF {
-				log.Infof("keepalive closed in cluster %d", clusterID)
+				log.Info("keepalive closed")
 				return nil
 			}
 
-			log.Errorf("keepalive failed in cluster %d: %s", clusterID, err.Error())
+			log.Errorf("keepalive failed: %s", err.Error())
 			return status.Error(codes.Unknown, err.Error())
 		}
-
-		log.Debugf("keepalive in cluster %d", clusterID)
 	}
 }
 

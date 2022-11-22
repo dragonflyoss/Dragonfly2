@@ -113,7 +113,7 @@ func (s *Server) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget) (*e
 
 // AnnounceHost announces host to scheduler.
 func (s *Server) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequest) (*empty.Empty, error) {
-	metrics.AnnounceHostCount.WithLabelValues(req.Hostname, req.Ip, req.Os, req.Platform, req.PlatformFamily, req.PlatformVersion,
+	metrics.AnnounceHostCount.WithLabelValues(req.Os, req.Platform, req.PlatformFamily, req.PlatformVersion,
 		req.KernelVersion, req.Build.GitVersion, req.Build.GitCommit, req.Build.GoVersion, req.Build.Platform).Inc()
 	if err := s.service.AnnounceHost(ctx, req); err != nil {
 		metrics.AnnounceHostFailureCount.Inc()
