@@ -184,5 +184,8 @@ var peerHostConfig = func() *DaemonOption {
 		Network: &NetworkOption{
 			EnableIPv6: false,
 		},
+		Announcer: AnnouncerOption{
+			SchedulerInterval: DefaultAnnouncerSchedulerInterval,
+		},
 	}
 }

@@ -181,3 +181,6 @@ security:
 
 network:
   enableIPv6: true
+
+announcer:
+  schedulerInterval: 1s

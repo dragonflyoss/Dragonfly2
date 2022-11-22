@@ -99,3 +99,8 @@ var (
 	// DefaultCertValidityPeriod is default validity period of certificate.
 	DefaultCertValidityPeriod = 180 * 24 * time.Hour
 )
+
+var (
+	// DefaultAnnouncerSchedulerInterval is default interface of announcing scheduler.
+	DefaultAnnouncerSchedulerInterval = 30 * time.Second
+)

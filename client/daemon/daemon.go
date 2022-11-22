@@ -41,10 +41,10 @@ import (
 	zapadapter "logur.dev/adapter/zap"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
 	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/client/daemon/announcer"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/objectstorage"
@@ -103,6 +103,7 @@ type clientDaemon struct {
 	managerClient   managerclient.Client
 	schedulerClient schedulerclient.Client
 	certifyClient   *certify.Certify
+	announcer       announcer.Announcer
 }
 
 func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
@@ -204,7 +205,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		}
 	}
 
-	sched, err := schedulerclient.GetClient(context.Background(), dynconfig, grpc.WithTransportCredentials(grpcCredentials))
+	schedulerClient, err := schedulerclient.GetClient(context.Background(), dynconfig, grpc.WithTransportCredentials(grpcCredentials))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get schedulers: %w", err)
 	}
@@ -212,7 +213,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	// Storage.Option.DataPath is same with Daemon DataDir
 	opt.Storage.DataPath = d.DataDir()
 	gcCallback := func(request storage.CommonTaskRequest) {
-		er := sched.LeaveTask(context.Background(), &schedulerv1.PeerTarget{
+		er := schedulerClient.LeaveTask(context.Background(), &schedulerv1.PeerTarget{
 			TaskId: request.TaskID,
 			PeerId: request.PeerID,
 		})
@@ -255,7 +256,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			GRPCCredentials: grpcCredentials,
 			GRPCDialTimeout: opt.Download.GRPCDialTimeout,
 		},
-		SchedulerClient:   sched,
+		SchedulerClient:   schedulerClient,
 		PerPeerRateLimit:  opt.Download.PerPeerRateLimit.Limit,
 		TotalRateLimit:    opt.Download.TotalRateLimit.Limit,
 		TrafficShaperType: opt.Download.TrafficShaperType,
@@ -335,7 +336,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		dynconfig:       dynconfig,
 		dfpath:          d,
 		managerClient:   managerClient,
-		schedulerClient: sched,
+		schedulerClient: schedulerClient,
 		certifyClient:   certifyClient,
 	}, nil
 }
@@ -649,23 +650,19 @@ func (cd *clientDaemon) Serve() error {
 		})
 	}
 
-	// enable seed peer mode
-	if cd.managerClient != nil && cd.Option.Scheduler.Manager.SeedPeer.Enable {
-		logger.Info("announce to manager")
-		if err := cd.announceSeedPeer(); err != nil {
-			return err
-		}
-
-		go func() {
-			logger.Info("start keepalive to manager")
-			cd.managerClient.KeepAlive(cd.Option.Scheduler.Manager.SeedPeer.KeepAlive.Interval, &managerv1.KeepAliveRequest{
-				SourceType: managerv1.SourceType_SEED_PEER_SOURCE,
-				HostName:   cd.Option.Host.Hostname,
-				Ip:         cd.Option.Host.AdvertiseIP,
-				ClusterId:  uint64(cd.Option.Scheduler.Manager.SeedPeer.ClusterID),
-			})
-		}()
+	// serve announcer
+	var announcerOptions []announcer.Option
+	if cd.managerClient != nil {
+		announcerOptions = append(announcerOptions, announcer.WithManagerClient(cd.managerClient))
 	}
+	cd.announcer = announcer.New(&cd.Option, cd.schedPeerHost.Id, cd.schedPeerHost.RpcPort,
+		cd.schedPeerHost.DownPort, cd.schedulerClient, announcerOptions...)
+	go func() {
+		logger.Info("serve announcer")
+		if err := cd.announcer.Serve(); err != nil {
+			logger.Fatalf("failed to serve for announcer: %v", err)
+		}
+	}()
 
 	if cd.Option.AliveTime.Duration > 0 {
 		g.Go(func() error {
@@ -808,6 +805,10 @@ func (cd *clientDaemon) Stop() {
 			cd.StorageManager.CleanUp()
 		}
 
+		if err := cd.announcer.Stop(); err != nil {
+			logger.Errorf("announcer stop failed %s", err)
+		}
+
 		if err := cd.dynconfig.Stop(); err != nil {
 			logger.Errorf("dynconfig client closed failed %s", err)
 		} else {
@@ -822,32 +823,6 @@ func (cd *clientDaemon) Stop() {
 			}
 		}
 	})
-}
-
-// announceSeedPeer announces seed peer to manager.
-func (cd *clientDaemon) announceSeedPeer() error {
-	var objectStoragePort int32
-	if cd.Option.ObjectStorage.Enable {
-		objectStoragePort = int32(cd.Option.ObjectStorage.TCPListen.PortRange.Start)
-	}
-
-	if _, err := cd.managerClient.UpdateSeedPeer(context.Background(), &managerv1.UpdateSeedPeerRequest{
-		SourceType:        managerv1.SourceType_SEED_PEER_SOURCE,
-		HostName:          cd.Option.Host.Hostname,
-		Type:              cd.Option.Scheduler.Manager.SeedPeer.Type,
-		Idc:               cd.Option.Host.IDC,
-		NetTopology:       cd.Option.Host.NetTopology,
-		Location:          cd.Option.Host.Location,
-		Ip:                cd.Option.Host.AdvertiseIP,
-		Port:              cd.schedPeerHost.RpcPort,
-		DownloadPort:      cd.schedPeerHost.DownPort,
-		ObjectStoragePort: objectStoragePort,
-		SeedPeerClusterId: uint64(cd.Option.Scheduler.Manager.SeedPeer.ClusterID),
-	}); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (cd *clientDaemon) ExportTaskManager() peer.TaskManager {

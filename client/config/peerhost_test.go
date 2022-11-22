@@ -508,6 +508,9 @@ func TestPeerHostOption_Load(t *testing.T) {
 		Network: &NetworkOption{
 			EnableIPv6: true,
 		},
+		Announcer: AnnouncerOption{
+			SchedulerInterval: 1000000000,
+		},
 	}
 
 	peerHostOptionYAML := &DaemonOption{}

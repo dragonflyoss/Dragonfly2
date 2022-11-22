@@ -462,7 +462,6 @@ func (s *Service) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHos
 		host.ConcurrentUploadLimit.Store(concurrentUploadLimit)
 	}
 
-	host.Log.Debugf("announce host: %#v", req)
 	return nil
 }
 

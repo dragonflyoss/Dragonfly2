@@ -112,7 +112,7 @@ var (
 		Subsystem: types.SchedulerMetricsName,
 		Name:      "announce_host_total",
 		Help:      "Counter of the number of the announce host.",
-	}, []string{"hostname", "ip", "os", "platform", "platform_family", "platform_version",
+	}, []string{"os", "platform", "platform_family", "platform_version",
 		"kernel_version", "git_version", "git_commit", "go_version", "build_platform"})
 
 	AnnounceHostFailureCount = promauto.NewCounter(prometheus.CounterOpts{
