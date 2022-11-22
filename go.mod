@@ -84,7 +84,7 @@ require (
 	gorm.io/driver/postgres v1.4.5
 	gorm.io/gorm v1.24.1-0.20221019064659-5dd2bb482755
 	gorm.io/plugin/soft_delete v1.2.0
-	k8s.io/component-base v0.25.3
+	k8s.io/component-base v0.25.4
 	logur.dev/adapter/zap v0.5.0
 	moul.io/zapgorm2 v1.1.3
 	stathat.com/c/consistent v1.0.0
@@ -213,7 +213,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gorm.io/driver/sqlserver v1.4.1 // indirect
 	gorm.io/plugin/dbresolver v1.3.0 // indirect
-	k8s.io/apimachinery v0.25.3 // indirect
+	k8s.io/apimachinery v0.25.4 // indirect
 	k8s.io/klog/v2 v2.70.1 // indirect
 	logur.dev/logur v0.16.1 // indirect
 )
