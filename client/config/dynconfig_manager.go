@@ -189,15 +189,7 @@ func (d *dynconfigManager) Serve() error {
 		return err
 	}
 
-	go d.watch()
-
-	return nil
-}
-
-// watch the dynconfig events.
-func (d *dynconfigManager) watch() {
 	tick := time.NewTicker(watchInterval)
-
 	for {
 		select {
 		case <-tick.C:
@@ -205,9 +197,13 @@ func (d *dynconfigManager) watch() {
 				logger.Error("dynconfig notify failed", err)
 			}
 		case <-d.done:
-			return
+			return nil
 		}
 	}
+}
+
+// watch the dynconfig events.
+func (d *dynconfigManager) watch() {
 }
 
 // Stop the dynconfig listening service.

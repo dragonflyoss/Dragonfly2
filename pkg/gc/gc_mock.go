@@ -73,16 +73,16 @@ func (mr *MockGCMockRecorder) RunAll() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RunAll", reflect.TypeOf((*MockGC)(nil).RunAll))
 }
 
-// Serve mocks base method.
-func (m *MockGC) Serve() {
+// Start mocks base method.
+func (m *MockGC) Start() {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Serve")
+	m.ctrl.Call(m, "Start")
 }
 
-// Serve indicates an expected call of Serve.
-func (mr *MockGCMockRecorder) Serve() *gomock.Call {
+// Start indicates an expected call of Start.
+func (mr *MockGCMockRecorder) Start() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Serve", reflect.TypeOf((*MockGC)(nil).Serve))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockGC)(nil).Start))
 }
 
 // Stop mocks base method.

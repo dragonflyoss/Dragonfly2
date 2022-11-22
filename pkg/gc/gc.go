@@ -35,8 +35,8 @@ type GC interface {
 	// Run all registered GC tasks.
 	RunAll()
 
-	// Serve running the GC task.
-	Serve()
+	// Start running the GC task.
+	Start()
 
 	// Stop running the GC task.
 	Stop()
@@ -97,7 +97,7 @@ func (g gc) RunAll() {
 	g.runAll()
 }
 
-func (g gc) Serve() {
+func (g gc) Start() {
 	g.tasks.Range(func(k, v any) bool {
 		go func() {
 			task := v.(Task)
