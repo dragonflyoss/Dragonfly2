@@ -36,7 +36,7 @@ var (
 type dynconfigLocal struct {
 	config    *DaemonOption
 	observers map[Observer]struct{}
-	done      chan bool
+	done      chan struct{}
 }
 
 // newDynconfigLocal returns a new local dynconfig instence.
@@ -44,7 +44,7 @@ func newDynconfigLocal(cfg *DaemonOption) (Dynconfig, error) {
 	return &dynconfigLocal{
 		config:    cfg,
 		observers: map[Observer]struct{}{},
-		done:      make(chan bool),
+		done:      make(chan struct{}),
 	}, nil
 }
 

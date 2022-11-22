@@ -46,7 +46,7 @@ type GC interface {
 type gc struct {
 	tasks  *sync.Map
 	logger Logger
-	done   chan bool
+	done   chan struct{}
 }
 
 // Option is a functional option for configuring the GC.
@@ -64,7 +64,7 @@ func New(options ...Option) GC {
 	g := &gc{
 		tasks:  &sync.Map{},
 		logger: &gcLogger{},
-		done:   make(chan bool),
+		done:   make(chan struct{}),
 	}
 
 	for _, opt := range options {

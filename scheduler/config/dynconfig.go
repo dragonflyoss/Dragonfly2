@@ -142,7 +142,7 @@ type Observer interface {
 type dynconfig struct {
 	dc.Dynconfig
 	observers map[Observer]struct{}
-	done      chan bool
+	done      chan struct{}
 	cachePath string
 }
 
@@ -151,7 +151,7 @@ func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, cfg *C
 	cachePath := filepath.Join(cacheDir, cacheFileName)
 	d := &dynconfig{
 		observers: map[Observer]struct{}{},
-		done:      make(chan bool),
+		done:      make(chan struct{}),
 		cachePath: cachePath,
 	}
 
