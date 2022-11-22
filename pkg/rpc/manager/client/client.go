@@ -153,7 +153,7 @@ type Client interface {
 	IssueCertificate(context.Context, *securityv1.CertificateRequest, ...grpc.CallOption) (*securityv1.CertificateResponse, error)
 
 	// KeepAlive with manager.
-	KeepAlive(time.Duration, *managerv1.KeepAliveRequest, ...grpc.CallOption)
+	KeepAlive(time.Duration, *managerv1.KeepAliveRequest, <-chan struct{}, ...grpc.CallOption)
 
 	// Close tears down the ClientConn and all underlying connections.
 	Close() error
@@ -307,13 +307,14 @@ func (c *client) IssueCertificate(ctx context.Context, req *securityv1.Certifica
 }
 
 // List acitve schedulers configuration.
-func (c *client) KeepAlive(interval time.Duration, keepalive *managerv1.KeepAliveRequest, opts ...grpc.CallOption) {
+func (c *client) KeepAlive(interval time.Duration, keepalive *managerv1.KeepAliveRequest, done <-chan struct{}, opts ...grpc.CallOption) {
+	log := logger.WithKeepAlive(keepalive.HostName, keepalive.Ip, keepalive.SourceType.Enum().String(), keepalive.ClusterId)
 retry:
 	ctx, cancel := context.WithCancel(context.Background())
 	stream, err := c.ManagerClient.KeepAlive(ctx, opts...)
 	if err != nil {
 		if status.Code(err) == codes.Canceled {
-			logger.Infof("hostname %s ip %s cluster id %d stop keepalive", keepalive.HostName, keepalive.Ip, keepalive.ClusterId)
+			log.Info("keepalive canceled")
 			cancel()
 			return
 		}
@@ -334,12 +335,16 @@ retry:
 				ClusterId:  keepalive.ClusterId,
 			}); err != nil {
 				if _, err := stream.CloseAndRecv(); err != nil {
-					logger.Errorf("hostname %s ip %s cluster id %d close and recv stream failed: %v", keepalive.HostName, keepalive.Ip, keepalive.ClusterId, err)
+					log.Infof("recv stream failed: %s", err.Error())
 				}
 
 				cancel()
 				goto retry
 			}
+		case <-done:
+			log.Info("keepalive done")
+			cancel()
+			return
 		}
 	}
 }

@@ -86,6 +86,9 @@ type Server struct {
 
 	// GC server.
 	gc gc.GC
+
+	// Closed when done.
+	done chan struct{}
 }
 
 func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
@@ -261,7 +264,7 @@ func (s *Server) Serve() error {
 				HostName:   s.config.Server.Host,
 				Ip:         s.config.Server.AdvertiseIP,
 				ClusterId:  uint64(s.config.Manager.SchedulerClusterID),
-			})
+			}, s.done)
 		}()
 	}
 
@@ -288,6 +291,9 @@ func (s *Server) Serve() error {
 }
 
 func (s *Server) Stop() {
+	// Closed when done.
+	close(s.done)
+
 	// Stop dynconfig service.
 	if err := s.dynconfig.Stop(); err != nil {
 		logger.Errorf("stop dynconfig service failed %s", err.Error())
