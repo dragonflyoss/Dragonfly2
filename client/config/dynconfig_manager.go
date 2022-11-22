@@ -43,7 +43,7 @@ var cacheFileName = "daemon"
 type dynconfigManager struct {
 	internaldynconfig.Dynconfig
 	observers map[Observer]struct{}
-	done      chan bool
+	done      chan struct{}
 	cachePath string
 }
 
@@ -61,7 +61,7 @@ func newDynconfigManager(cfg *DaemonOption, rawManagerClient managerclient.Clien
 
 	return &dynconfigManager{
 		observers: map[Observer]struct{}{},
-		done:      make(chan bool),
+		done:      make(chan struct{}),
 		cachePath: cachePath,
 		Dynconfig: d,
 	}, nil
