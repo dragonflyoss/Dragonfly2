@@ -981,14 +981,16 @@ func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task, backT
 
 // createRecord stores peer download records.
 func (s *Service) createRecord(peer *resource.Peer, peerState string, req *schedulerv1.PeerResult) {
-	var parents []storage.Parent
+	var parentRecords []storage.Parent
 	for _, parent := range peer.Parents() {
-		parents = append(parents, storage.Parent{
+		parentRecord := storage.Parent{
 			ID:          parent.ID,
 			Tag:         parent.Tag,
 			Application: parent.Application,
 			State:       parent.FSM.Current(),
 			Cost:        req.Cost,
+			CreateAt:    parent.CreateAt.Load().UnixNano(),
+			UpdateAt:    parent.UpdateAt.Load().UnixNano(),
 			Host: storage.Host{
 				ID:                    parent.Host.ID,
 				Type:                  parent.Host.Type.Name(),
@@ -1005,62 +1007,77 @@ func (s *Service) createRecord(peer *resource.Peer, peerState string, req *sched
 				ConcurrentUploadCount: parent.Host.ConcurrentUploadCount.Load(),
 				UploadCount:           parent.Host.UploadCount.Load(),
 				UploadFailedCount:     parent.Host.UploadFailedCount.Load(),
-				CPU: storage.CPU{
-					LogicalCount:   parent.Host.CPU.LogicalCount,
-					PhysicalCount:  parent.Host.CPU.PhysicalCount,
-					Percent:        parent.Host.CPU.Percent,
-					ProcessPercent: parent.Host.CPU.ProcessPercent,
-					Times: storage.CPUTimes{
-						User:      parent.Host.CPU.Times.User,
-						System:    parent.Host.CPU.Times.System,
-						Idle:      parent.Host.CPU.Times.Idle,
-						Nice:      parent.Host.CPU.Times.Nice,
-						Iowait:    parent.Host.CPU.Times.Iowait,
-						Irq:       parent.Host.CPU.Times.Irq,
-						Softirq:   parent.Host.CPU.Times.Softirq,
-						Steal:     parent.Host.CPU.Times.Steal,
-						Guest:     parent.Host.CPU.Times.Guest,
-						GuestNice: parent.Host.CPU.Times.GuestNice,
-					},
-				},
-				Memory: storage.Memory{
-					Total:              parent.Host.Memory.Total,
-					Available:          parent.Host.Memory.Available,
-					Used:               parent.Host.Memory.Used,
-					UsedPercent:        parent.Host.Memory.UsedPercent,
-					ProcessUsedPercent: parent.Host.Memory.ProcessUsedPercent,
-					Free:               parent.Host.Memory.Free,
-				},
-				Network: storage.Network{
-					TCPConnectionCount:       parent.Host.Network.TcpConnectionCount,
-					UploadTCPConnectionCount: parent.Host.Network.UploadTcpConnectionCount,
-					SecurityDomain:           parent.Host.Network.SecurityDomain,
-					Location:                 parent.Host.Network.Location,
-					IDC:                      parent.Host.Network.Idc,
-					NetTopology:              parent.Host.Network.NetTopology,
-				},
-				Disk: storage.Disk{
-					Total:             parent.Host.Disk.Total,
-					Free:              parent.Host.Disk.Free,
-					Used:              parent.Host.Disk.Used,
-					UsedPercent:       parent.Host.Disk.UsedPercent,
-					InodesTotal:       parent.Host.Disk.InodesTotal,
-					InodesUsed:        parent.Host.Disk.InodesUsed,
-					InodesFree:        parent.Host.Disk.InodesFree,
-					InodesUsedPercent: parent.Host.Disk.InodesUsedPercent,
-				},
-				Build: storage.Build{
-					GitVersion: parent.Host.Build.GitVersion,
-					GitCommit:  parent.Host.Build.GitCommit,
-					GoVersion:  parent.Host.Build.GoVersion,
-					Platform:   parent.Host.Build.Platform,
-				},
-				CreateAt: parent.Host.CreateAt.Load().UnixNano(),
-				UpdateAt: parent.Host.UpdateAt.Load().UnixNano(),
+				CreateAt:              parent.Host.CreateAt.Load().UnixNano(),
+				UpdateAt:              parent.Host.UpdateAt.Load().UnixNano(),
 			},
-			CreateAt: parent.CreateAt.Load().UnixNano(),
-			UpdateAt: parent.UpdateAt.Load().UnixNano(),
-		})
+		}
+
+		if parent.Host.CPU != nil {
+			parentRecord.Host.CPU = storage.CPU{
+				LogicalCount:   parent.Host.CPU.LogicalCount,
+				PhysicalCount:  parent.Host.CPU.PhysicalCount,
+				Percent:        parent.Host.CPU.Percent,
+				ProcessPercent: parent.Host.CPU.ProcessPercent,
+				Times: storage.CPUTimes{
+					User:      parent.Host.CPU.Times.User,
+					System:    parent.Host.CPU.Times.System,
+					Idle:      parent.Host.CPU.Times.Idle,
+					Nice:      parent.Host.CPU.Times.Nice,
+					Iowait:    parent.Host.CPU.Times.Iowait,
+					Irq:       parent.Host.CPU.Times.Irq,
+					Softirq:   parent.Host.CPU.Times.Softirq,
+					Steal:     parent.Host.CPU.Times.Steal,
+					Guest:     parent.Host.CPU.Times.Guest,
+					GuestNice: parent.Host.CPU.Times.GuestNice,
+				},
+			}
+		}
+
+		if parent.Host.Memory != nil {
+			parentRecord.Host.Memory = storage.Memory{
+				Total:              parent.Host.Memory.Total,
+				Available:          parent.Host.Memory.Available,
+				Used:               parent.Host.Memory.Used,
+				UsedPercent:        parent.Host.Memory.UsedPercent,
+				ProcessUsedPercent: parent.Host.Memory.ProcessUsedPercent,
+				Free:               parent.Host.Memory.Free,
+			}
+		}
+
+		if parent.Host.Network != nil {
+			parentRecord.Host.Network = storage.Network{
+				TCPConnectionCount:       parent.Host.Network.TcpConnectionCount,
+				UploadTCPConnectionCount: parent.Host.Network.UploadTcpConnectionCount,
+				SecurityDomain:           parent.Host.Network.SecurityDomain,
+				Location:                 parent.Host.Network.Location,
+				IDC:                      parent.Host.Network.Idc,
+				NetTopology:              parent.Host.Network.NetTopology,
+			}
+		}
+
+		if parent.Host.Disk != nil {
+			parentRecord.Host.Disk = storage.Disk{
+				Total:             parent.Host.Disk.Total,
+				Free:              parent.Host.Disk.Free,
+				Used:              parent.Host.Disk.Used,
+				UsedPercent:       parent.Host.Disk.UsedPercent,
+				InodesTotal:       parent.Host.Disk.InodesTotal,
+				InodesUsed:        parent.Host.Disk.InodesUsed,
+				InodesFree:        parent.Host.Disk.InodesFree,
+				InodesUsedPercent: parent.Host.Disk.InodesUsedPercent,
+			}
+		}
+
+		if parent.Host.Build != nil {
+			parentRecord.Host.Build = storage.Build{
+				GitVersion: parent.Host.Build.GitVersion,
+				GitCommit:  parent.Host.Build.GitCommit,
+				GoVersion:  parent.Host.Build.GoVersion,
+				Platform:   parent.Host.Build.Platform,
+			}
+		}
+
+		parentRecords = append(parentRecords, parentRecord)
 	}
 
 	record := storage.Record{
@@ -1069,6 +1086,9 @@ func (s *Service) createRecord(peer *resource.Peer, peerState string, req *sched
 		Application: peer.Application,
 		State:       peerState,
 		Cost:        req.Cost,
+		Parents:     parentRecords,
+		CreateAt:    peer.CreateAt.Load().UnixNano(),
+		UpdateAt:    peer.UpdateAt.Load().UnixNano(),
 		Task: storage.Task{
 			ID:                    peer.Task.ID,
 			URL:                   peer.Task.URL,
@@ -1097,62 +1117,74 @@ func (s *Service) createRecord(peer *resource.Peer, peerState string, req *sched
 			ConcurrentUploadCount: peer.Host.ConcurrentUploadCount.Load(),
 			UploadCount:           peer.Host.UploadCount.Load(),
 			UploadFailedCount:     peer.Host.UploadFailedCount.Load(),
-			CPU: storage.CPU{
-				LogicalCount:   peer.Host.CPU.LogicalCount,
-				PhysicalCount:  peer.Host.CPU.PhysicalCount,
-				Percent:        peer.Host.CPU.Percent,
-				ProcessPercent: peer.Host.CPU.ProcessPercent,
-				Times: storage.CPUTimes{
-					User:      peer.Host.CPU.Times.User,
-					System:    peer.Host.CPU.Times.System,
-					Idle:      peer.Host.CPU.Times.Idle,
-					Nice:      peer.Host.CPU.Times.Nice,
-					Iowait:    peer.Host.CPU.Times.Iowait,
-					Irq:       peer.Host.CPU.Times.Irq,
-					Softirq:   peer.Host.CPU.Times.Softirq,
-					Steal:     peer.Host.CPU.Times.Steal,
-					Guest:     peer.Host.CPU.Times.Guest,
-					GuestNice: peer.Host.CPU.Times.GuestNice,
-				},
-			},
-			Memory: storage.Memory{
-				Total:              peer.Host.Memory.Total,
-				Available:          peer.Host.Memory.Available,
-				Used:               peer.Host.Memory.Used,
-				UsedPercent:        peer.Host.Memory.UsedPercent,
-				ProcessUsedPercent: peer.Host.Memory.ProcessUsedPercent,
-				Free:               peer.Host.Memory.Free,
-			},
-			Network: storage.Network{
-				TCPConnectionCount:       peer.Host.Network.TcpConnectionCount,
-				UploadTCPConnectionCount: peer.Host.Network.UploadTcpConnectionCount,
-				SecurityDomain:           peer.Host.Network.SecurityDomain,
-				Location:                 peer.Host.Network.Location,
-				IDC:                      peer.Host.Network.Idc,
-				NetTopology:              peer.Host.Network.NetTopology,
-			},
-			Disk: storage.Disk{
-				Total:             peer.Host.Disk.Total,
-				Free:              peer.Host.Disk.Free,
-				Used:              peer.Host.Disk.Used,
-				UsedPercent:       peer.Host.Disk.UsedPercent,
-				InodesTotal:       peer.Host.Disk.InodesTotal,
-				InodesUsed:        peer.Host.Disk.InodesUsed,
-				InodesFree:        peer.Host.Disk.InodesFree,
-				InodesUsedPercent: peer.Host.Disk.InodesUsedPercent,
-			},
-			Build: storage.Build{
-				GitVersion: peer.Host.Build.GitVersion,
-				GitCommit:  peer.Host.Build.GitCommit,
-				GoVersion:  peer.Host.Build.GoVersion,
-				Platform:   peer.Host.Build.Platform,
-			},
-			CreateAt: peer.Host.CreateAt.Load().UnixNano(),
-			UpdateAt: peer.Host.UpdateAt.Load().UnixNano(),
+			CreateAt:              peer.Host.CreateAt.Load().UnixNano(),
+			UpdateAt:              peer.Host.UpdateAt.Load().UnixNano(),
 		},
-		Parents:  parents,
-		CreateAt: peer.CreateAt.Load().UnixNano(),
-		UpdateAt: peer.UpdateAt.Load().UnixNano(),
+	}
+
+	if peer.Host.CPU != nil {
+		record.Host.CPU = storage.CPU{
+			LogicalCount:   peer.Host.CPU.LogicalCount,
+			PhysicalCount:  peer.Host.CPU.PhysicalCount,
+			Percent:        peer.Host.CPU.Percent,
+			ProcessPercent: peer.Host.CPU.ProcessPercent,
+			Times: storage.CPUTimes{
+				User:      peer.Host.CPU.Times.User,
+				System:    peer.Host.CPU.Times.System,
+				Idle:      peer.Host.CPU.Times.Idle,
+				Nice:      peer.Host.CPU.Times.Nice,
+				Iowait:    peer.Host.CPU.Times.Iowait,
+				Irq:       peer.Host.CPU.Times.Irq,
+				Softirq:   peer.Host.CPU.Times.Softirq,
+				Steal:     peer.Host.CPU.Times.Steal,
+				Guest:     peer.Host.CPU.Times.Guest,
+				GuestNice: peer.Host.CPU.Times.GuestNice,
+			},
+		}
+	}
+
+	if peer.Host.Memory != nil {
+		record.Host.Memory = storage.Memory{
+			Total:              peer.Host.Memory.Total,
+			Available:          peer.Host.Memory.Available,
+			Used:               peer.Host.Memory.Used,
+			UsedPercent:        peer.Host.Memory.UsedPercent,
+			ProcessUsedPercent: peer.Host.Memory.ProcessUsedPercent,
+			Free:               peer.Host.Memory.Free,
+		}
+	}
+
+	if peer.Host.Network != nil {
+		record.Host.Network = storage.Network{
+			TCPConnectionCount:       peer.Host.Network.TcpConnectionCount,
+			UploadTCPConnectionCount: peer.Host.Network.UploadTcpConnectionCount,
+			SecurityDomain:           peer.Host.Network.SecurityDomain,
+			Location:                 peer.Host.Network.Location,
+			IDC:                      peer.Host.Network.Idc,
+			NetTopology:              peer.Host.Network.NetTopology,
+		}
+	}
+
+	if peer.Host.Disk != nil {
+		record.Host.Disk = storage.Disk{
+			Total:             peer.Host.Disk.Total,
+			Free:              peer.Host.Disk.Free,
+			Used:              peer.Host.Disk.Used,
+			UsedPercent:       peer.Host.Disk.UsedPercent,
+			InodesTotal:       peer.Host.Disk.InodesTotal,
+			InodesUsed:        peer.Host.Disk.InodesUsed,
+			InodesFree:        peer.Host.Disk.InodesFree,
+			InodesUsedPercent: peer.Host.Disk.InodesUsedPercent,
+		}
+	}
+
+	if peer.Host.Build != nil {
+		record.Host.Build = storage.Build{
+			GitVersion: peer.Host.Build.GitVersion,
+			GitCommit:  peer.Host.Build.GitCommit,
+			GoVersion:  peer.Host.Build.GoVersion,
+			Platform:   peer.Host.Build.Platform,
+		}
 	}
 
 	if err := s.storage.Create(record); err != nil {
