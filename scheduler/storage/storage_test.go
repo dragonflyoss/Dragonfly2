@@ -31,6 +31,117 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var (
+	mockTask = Task{
+		ID:                    "1",
+		URL:                   "example.com",
+		Type:                  "normal",
+		ContentLength:         2048,
+		TotalPieceCount:       1,
+		BackToSourceLimit:     10,
+		BackToSourcePeerCount: 2,
+		State:                 "Succeeded",
+		CreateAt:              time.Now().UnixNano(),
+		UpdateAt:              time.Now().UnixNano(),
+	}
+
+	mockHost = Host{
+		ID:                    "2",
+		Type:                  "normal",
+		Hostname:              "localhost",
+		IP:                    "127.0.0.1",
+		Port:                  8080,
+		DownloadPort:          8081,
+		OS:                    "linux",
+		Platform:              "ubuntu",
+		PlatformFamily:        "debian",
+		PlatformVersion:       "1.0.0",
+		KernelVersion:         "1.0.0",
+		ConcurrentUploadLimit: 100,
+		ConcurrentUploadCount: 40,
+		UploadCount:           20,
+		UploadFailedCount:     3,
+		CPU: CPU{
+			LogicalCount:   24,
+			PhysicalCount:  12,
+			Percent:        0.8,
+			ProcessPercent: 0.4,
+			Times: CPUTimes{
+				User:      100,
+				System:    101,
+				Idle:      102,
+				Nice:      103,
+				Iowait:    104,
+				Irq:       105,
+				Softirq:   106,
+				Steal:     107,
+				Guest:     108,
+				GuestNice: 109,
+			},
+		},
+		Memory: Memory{
+			Total:              20,
+			Available:          19,
+			Used:               16,
+			UsedPercent:        0.7,
+			ProcessUsedPercent: 0.2,
+			Free:               15,
+		},
+		Network: Network{
+			TCPConnectionCount:       400,
+			UploadTCPConnectionCount: 200,
+			SecurityDomain:           "product",
+			Location:                 "china",
+			IDC:                      "e1",
+			NetTopology:              "s1|s2",
+		},
+		Disk: Disk{
+			Total:             100,
+			Free:              88,
+			Used:              56,
+			UsedPercent:       0.9,
+			InodesTotal:       200,
+			InodesUsed:        180,
+			InodesFree:        160,
+			InodesUsedPercent: 0.6,
+		},
+		Build: Build{
+			GitVersion: "3.0.0",
+			GitCommit:  "2bf4d5e",
+			GoVersion:  "1.19",
+			Platform:   "linux",
+		},
+		CreateAt: time.Now().UnixNano(),
+		UpdateAt: time.Now().UnixNano(),
+	}
+
+	mockParent = Parent{
+		ID:          "3",
+		Tag:         "m",
+		Application: "db",
+		State:       "Succeeded",
+		Cost:        1000,
+		Host:        mockHost,
+		CreateAt:    time.Now().UnixNano(),
+		UpdateAt:    time.Now().UnixNano(),
+	}
+
+	mockParents = append(make([]Parent, 19), mockParent)
+
+	mockRecord = Record{
+		ID:          "4",
+		Tag:         "d",
+		Application: "mq",
+		State:       "Succeeded",
+		Cost:        1000,
+		Task:        mockTask,
+		Host:        mockHost,
+		Parents:     mockParents,
+		CreateAt:    time.Now().UnixNano(),
+		UpdateAt:    time.Now().UnixNano(),
+	}
+)
+
 func TestStorage_New(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -270,38 +381,7 @@ func TestStorage_List(t *testing.T) {
 			name:    "list records of a file",
 			baseDir: os.TempDir(),
 			options: []Option{WithBufferSize(1)},
-			record: Record{
-				ID:                      "1",
-				IP:                      "127.0.0.1",
-				Hostname:                "hostname",
-				Tag:                     "tag",
-				Cost:                    1,
-				PieceCount:              1,
-				TotalPieceCount:         1,
-				ContentLength:           1,
-				SecurityDomain:          "security_domain",
-				IDC:                     "idc",
-				NetTopology:             "net_topology",
-				Location:                "location",
-				FreeUploadCount:         1,
-				State:                   PeerStateSucceeded,
-				CreateAt:                time.Now().UnixNano(),
-				UpdateAt:                time.Now().UnixNano(),
-				ParentID:                "2",
-				ParentIP:                "127.0.0.1",
-				ParentHostname:          "parent_hostname",
-				ParentTag:               "parent_tag",
-				ParentPieceCount:        1,
-				ParentSecurityDomain:    "parent_security_domain",
-				ParentIDC:               "parent_idc",
-				ParentNetTopology:       "parent_net_topology",
-				ParentLocation:          "parent_location",
-				ParentFreeUploadCount:   1,
-				ParentUploadCount:       1,
-				ParentUploadFailedCount: 1,
-				ParentCreateAt:          time.Now().UnixNano(),
-				ParentUpdateAt:          time.Now().UnixNano(),
-			},
+			record:  mockRecord,
 			mock: func(t *testing.T, s Storage, baseDir string, record Record) {
 				if err := s.Create(record); err != nil {
 					t.Fatal(err)
@@ -410,36 +490,7 @@ func TestStorage_Open(t *testing.T) {
 			name:    "open storage with records of a file",
 			baseDir: os.TempDir(),
 			options: []Option{WithBufferSize(1)},
-			record: Record{
-				ID:                    "1",
-				IP:                    "127.0.0.1",
-				Hostname:              "hostname",
-				Tag:                   "tag",
-				Cost:                  1,
-				PieceCount:            1,
-				TotalPieceCount:       1,
-				ContentLength:         1,
-				SecurityDomain:        "security_domain",
-				IDC:                   "idc",
-				NetTopology:           "net_topology",
-				Location:              "location",
-				FreeUploadCount:       1,
-				State:                 PeerStateSucceeded,
-				CreateAt:              time.Now().UnixNano(),
-				UpdateAt:              time.Now().UnixNano(),
-				ParentID:              "2",
-				ParentIP:              "127.0.0.1",
-				ParentHostname:        "parent_hostname",
-				ParentTag:             "parent_tag",
-				ParentPieceCount:      1,
-				ParentSecurityDomain:  "parent_security_domain",
-				ParentIDC:             "parent_idc",
-				ParentNetTopology:     "parent_net_topology",
-				ParentLocation:        "parent_location",
-				ParentFreeUploadCount: 1,
-				ParentCreateAt:        time.Now().UnixNano(),
-				ParentUpdateAt:        time.Now().UnixNano(),
-			},
+			record:  mockRecord,
 			mock: func(t *testing.T, s Storage, baseDir string, record Record) {
 				if err := s.Create(record); err != nil {
 					t.Fatal(err)
