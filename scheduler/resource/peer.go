@@ -18,7 +18,6 @@ package resource
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -353,38 +352,6 @@ func (p *Peer) Parents() []*Peer {
 	}
 
 	return parents
-}
-
-// MainParent returns the parent whose
-// peer has downloaded the most pieces.
-func (p *Peer) MainParent() (*Peer, error) {
-	var (
-		parents       = map[string]int{}
-		maxPieceCount = 0
-		mainParentID  string
-	)
-
-	for _, piece := range p.Pieces.Values() {
-		if piece.DstPid != "" {
-			parents[piece.DstPid]++
-		}
-
-		if parents[piece.DstPid] > maxPieceCount {
-			mainParentID = piece.DstPid
-			maxPieceCount = parents[piece.DstPid]
-		}
-	}
-
-	if mainParentID == "" {
-		return nil, errors.New("can not found main parent")
-	}
-
-	parent, err := p.Task.DAG.GetVertex(mainParentID)
-	if err != nil {
-		return nil, err
-	}
-
-	return parent.Value, nil
 }
 
 // Children returns children of peer.
