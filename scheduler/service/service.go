@@ -234,7 +234,9 @@ func (s *Service) ReportPieceResult(stream schedulerv1.Scheduler_ReportPieceResu
 				if parent, loaded := s.resource.PeerManager().Load(piece.DstPid); loaded {
 					metrics.PeerHostTraffic.WithLabelValues(peer.Tag, peer.Application, metrics.PeerHostTrafficUploadType, parent.Host.ID, parent.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
 				} else {
-					peer.Log.Warnf("dst peer %s not found for piece %#v %#v", piece.DstPid, piece, piece.PieceInfo)
+					if piece.DstPid != "" { // not backSource piece
+						peer.Log.Warnf("dst peer %s not found for piece %#v %#v", piece.DstPid, piece, piece.PieceInfo)
+					}
 				}
 			}
 
@@ -748,6 +750,11 @@ func (s *Service) handlePieceSuccess(ctx context.Context, peer *resource.Peer, p
 	// peer.UpdateAt needs to be updated to prevent
 	// the peer from being GC during the download process.
 	peer.UpdateAt.Store(time.Now())
+	if piece.DstPid != "" {
+		if destPeer, ok := s.resource.PeerManager().Load(piece.DstPid); ok {
+			destPeer.UpdateAt.Store(time.Now())
+		}
+	}
 
 	// When the peer downloads back-to-source,
 	// piece downloads successfully updates the task piece info.
