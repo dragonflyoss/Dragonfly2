@@ -58,16 +58,16 @@ const (
 
 const (
 	// Peer has been downloaded successfully.
-	PeerStateSucceeded = iota
+	PeerStateSucceeded = "Succeeded"
 
 	// Peer has been downloaded failed.
-	PeerStateFailed
+	PeerStateFailed = "Failed"
 
 	// Peer has been back-to-source downloaded successfully.
-	PeerStateBackToSourceSucceeded
+	PeerStateBackToSourceSucceeded = "BackToSourceSucceeded"
 
 	// Peer has been back-to-source downloaded failed.
-	PeerStateBackToSourceFailed
+	PeerStateBackToSourceFailed = "BackToSourceFailed"
 )
 
 const (
@@ -77,109 +77,6 @@ const (
 	// backupTimeFormat is the timestamp format of backup filename.
 	backupTimeFormat = "2006-01-02T15-04-05.000"
 )
-
-// Record contains content for record.
-type Record struct {
-	// ID is peer id.
-	ID string `csv:"id"`
-
-	// IP is host ip.
-	IP string `csv:"ip"`
-
-	// Hostname is host name.
-	Hostname string `csv:"hostname"`
-
-	// Tag is peer tag.
-	Tag string `csv:"tag"`
-
-	// Cost is the task download time(millisecond).
-	Cost uint32 `csv:"cost"`
-
-	// PieceCount is total piece count.
-	PieceCount int32 `csv:"pieceCount"`
-
-	// TotalPieceCount is total piece count.
-	TotalPieceCount int32 `csv:"totalPieceCount"`
-
-	// ContentLength is task total content length.
-	ContentLength int64 `csv:"contentLength"`
-
-	// SecurityDomain is security domain of host.
-	SecurityDomain string `csv:"securityDomain"`
-
-	// IDC is internet data center of host.
-	IDC string `csv:"idc"`
-
-	// NetTopology is network topology of host.
-	// Example: switch|router|...
-	NetTopology string `csv:"netTopology"`
-
-	// Location is location of host.
-	// Example: country|province|...
-	Location string `csv:"location"`
-
-	// FreeUploadCount is free upload count of host.
-	FreeUploadCount int32 `csv:"freeUpoladLoad"`
-
-	// State is the download state of the peer.
-	State int `csv:"state"`
-
-	// HostType is peer host type.
-	HostType int `csv:"hostType"`
-
-	// CreateAt is peer create nanosecond time.
-	CreateAt int64 `csv:"createAt"`
-
-	// UpdateAt is peer update nanosecond time.
-	UpdateAt int64 `csv:"updateAt"`
-
-	// ParentID is parent peer id.
-	ParentID string `csv:"parentID"`
-
-	// ParentIP is parent host ip.
-	ParentIP string `csv:"parentIP"`
-
-	// ParentHostname is parent hostname.
-	ParentHostname string `csv:"parentHostname"`
-
-	// ParentTag is parent peer tag.
-	ParentTag string `csv:"parentTag"`
-
-	// ParentPieceCount is parent total piece count.
-	ParentPieceCount int32 `csv:"parentPieceCount"`
-
-	// ParentSecurityDomain is parent security domain of host.
-	ParentSecurityDomain string `csv:"parentSecurityDomain"`
-
-	// ParentIDC is parent internet data center of host.
-	ParentIDC string `csv:"parentIDC"`
-
-	// ParentNetTopology is parent network topology of host.
-	// Example: switch|router|...
-	ParentNetTopology string `csv:"parentNetTopology"`
-
-	// ParentLocation is parent location of host.
-	// Example: country|province|...
-	ParentLocation string `csv:"parentLocation"`
-
-	// ParentFreeUploadCount is parent free upload count of host.
-	ParentFreeUploadCount int32 `csv:"parentFreeUploadCount"`
-
-	// ParentUploadCount is parent total upload count.
-	ParentUploadCount int64
-
-	// ParentUploadFailedCount is parent upload failed count.
-	ParentUploadFailedCount int64
-
-	// ParentHostType is parent host type.
-	ParentHostType int `csv:"parentHostType"`
-
-	// ParentCreateAt is parent peer create nanosecond time.
-	ParentCreateAt int64 `csv:"parentCreateAt"`
-
-	// ParentUpdateAt is parent peer update nanosecond time.
-	ParentUpdateAt int64 `csv:"parentUpdateAt"`
-}
 
 // Storage is the interface used for storage.
 type Storage interface {

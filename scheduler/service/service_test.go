@@ -51,6 +51,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/scheduler/mocks"
+	"d7y.io/dragonfly/v2/scheduler/storage"
 	storagemocks "d7y.io/dragonfly/v2/scheduler/storage/mocks"
 )
 
@@ -62,6 +63,61 @@ var (
 		BackSourceCount:      int(mockTaskBackToSourceLimit),
 	}
 
+	mockHostCPU = &schedulerv1.CPU{
+		LogicalCount:   24,
+		PhysicalCount:  12,
+		Percent:        0.8,
+		ProcessPercent: 0.4,
+		Times: &schedulerv1.CPUTimes{
+			User:      100,
+			System:    101,
+			Idle:      102,
+			Nice:      103,
+			Iowait:    104,
+			Irq:       105,
+			Softirq:   106,
+			Steal:     107,
+			Guest:     108,
+			GuestNice: 109,
+		},
+	}
+
+	mockHostMemory = &schedulerv1.Memory{
+		Total:              20,
+		Available:          19,
+		Used:               16,
+		UsedPercent:        0.7,
+		ProcessUsedPercent: 0.2,
+		Free:               15,
+	}
+
+	mockHostNetwork = &schedulerv1.Network{
+		TcpConnectionCount:       400,
+		UploadTcpConnectionCount: 200,
+		SecurityDomain:           "product",
+		Location:                 "china",
+		Idc:                      "e1",
+		NetTopology:              "s1|s2",
+	}
+
+	mockHostDisk = &schedulerv1.Disk{
+		Total:             100,
+		Free:              88,
+		Used:              56,
+		UsedPercent:       0.9,
+		InodesTotal:       200,
+		InodesUsed:        180,
+		InodesFree:        160,
+		InodesUsedPercent: 0.6,
+	}
+
+	mockHostBuild = &schedulerv1.Build{
+		GitVersion: "3.0.0",
+		GitCommit:  "2bf4d5e",
+		GoVersion:  "1.19",
+		Platform:   "linux",
+	}
+
 	mockRawHost = &schedulerv1.AnnounceHostRequest{
 		Id:           idgen.HostID("hostname", 8003),
 		Type:         pkgtypes.HostTypeNormalName,
@@ -69,12 +125,11 @@ var (
 		Port:         8003,
 		DownloadPort: 8001,
 		Hostname:     "hostname",
-		Network: &schedulerv1.Network{
-			SecurityDomain: "security_domain",
-			Location:       "location",
-			Idc:            "idc",
-			NetTopology:    "net_topology",
-		},
+		Cpu:          mockHostCPU,
+		Memory:       mockHostMemory,
+		Network:      mockHostNetwork,
+		Disk:         mockHostDisk,
+		Build:        mockHostBuild,
 	}
 
 	mockRawSeedHost = &schedulerv1.AnnounceHostRequest{
@@ -84,12 +139,11 @@ var (
 		Port:         8003,
 		DownloadPort: 8001,
 		Hostname:     "hostname",
-		Network: &schedulerv1.Network{
-			SecurityDomain: "security_domain",
-			Location:       "location",
-			Idc:            "idc",
-			NetTopology:    "net_topology",
-		},
+		Cpu:          mockHostCPU,
+		Memory:       mockHostMemory,
+		Network:      mockHostNetwork,
+		Disk:         mockHostDisk,
+		Build:        mockHostBuild,
 	}
 
 	mockPeerHost = &schedulerv1.PeerHost{
@@ -979,19 +1033,20 @@ func TestService_ReportPeerResult(t *testing.T) {
 	tests := []struct {
 		name string
 		req  *schedulerv1.PeerResult
-		mock func(
+		run  func(
+			t *testing.T, peer *resource.Peer, req *schedulerv1.PeerResult, svc *Service,
 			mockPeer *resource.Peer,
 			res resource.Resource, peerManager resource.PeerManager,
 			mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
 		)
-		expect func(t *testing.T, peer *resource.Peer, err error)
 	}{
 		{
 			name: "peer not found",
 			req: &schedulerv1.PeerResult{
 				PeerId: mockPeerID,
 			},
-			mock: func(
+			run: func(
+				t *testing.T, peer *resource.Peer, req *schedulerv1.PeerResult, svc *Service,
 				mockPeer *resource.Peer,
 				res resource.Resource, peerManager resource.PeerManager,
 				mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
@@ -1000,9 +1055,9 @@ func TestService_ReportPeerResult(t *testing.T) {
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(nil, false).Times(1),
 				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer, err error) {
+
 				assert := assert.New(t)
+				err := svc.ReportPeerResult(context.Background(), req)
 				dferr, ok := err.(*dferrors.DfError)
 				assert.True(ok)
 				assert.Equal(dferr.Code, commonv1.Code_SchedPeerNotFound)
@@ -1014,19 +1069,25 @@ func TestService_ReportPeerResult(t *testing.T) {
 				Success: false,
 				PeerId:  mockPeerID,
 			},
-			mock: func(
+			run: func(
+				t *testing.T, peer *resource.Peer, req *schedulerv1.PeerResult, svc *Service,
 				mockPeer *resource.Peer,
 				res resource.Resource, peerManager resource.PeerManager,
 				mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
 			) {
+				var wg sync.WaitGroup
+				wg.Add(1)
+				defer wg.Wait()
+
 				mockPeer.FSM.SetState(resource.PeerStateFailed)
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
+					ms.Create(gomock.Any()).Do(func(record storage.Record) { wg.Done() }).Return(nil).Times(1),
 				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer, err error) {
+
 				assert := assert.New(t)
+				err := svc.ReportPeerResult(context.Background(), req)
 				assert.NoError(err)
 			},
 		},
@@ -1036,19 +1097,25 @@ func TestService_ReportPeerResult(t *testing.T) {
 				Success: false,
 				PeerId:  mockPeerID,
 			},
-			mock: func(
+			run: func(
+				t *testing.T, peer *resource.Peer, req *schedulerv1.PeerResult, svc *Service,
 				mockPeer *resource.Peer,
 				res resource.Resource, peerManager resource.PeerManager,
 				mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
 			) {
+				var wg sync.WaitGroup
+				wg.Add(1)
+				defer wg.Wait()
+
 				mockPeer.FSM.SetState(resource.PeerStateBackToSource)
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
+					ms.Create(gomock.Any()).Do(func(record storage.Record) { wg.Done() }).Return(nil).Times(1),
 				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer, err error) {
+
 				assert := assert.New(t)
+				err := svc.ReportPeerResult(context.Background(), req)
 				assert.NoError(err)
 			},
 		},
@@ -1058,19 +1125,25 @@ func TestService_ReportPeerResult(t *testing.T) {
 				Success: true,
 				PeerId:  mockPeerID,
 			},
-			mock: func(
+			run: func(
+				t *testing.T, peer *resource.Peer, req *schedulerv1.PeerResult, svc *Service,
 				mockPeer *resource.Peer,
 				res resource.Resource, peerManager resource.PeerManager,
 				mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
 			) {
+				var wg sync.WaitGroup
+				wg.Add(1)
+				defer wg.Wait()
+
 				mockPeer.FSM.SetState(resource.PeerStateFailed)
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
+					ms.Create(gomock.Any()).Do(func(record storage.Record) { wg.Done() }).Return(nil).Times(1),
 				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer, err error) {
+
 				assert := assert.New(t)
+				err := svc.ReportPeerResult(context.Background(), req)
 				assert.NoError(err)
 			},
 		},
@@ -1080,19 +1153,25 @@ func TestService_ReportPeerResult(t *testing.T) {
 				Success: true,
 				PeerId:  mockPeerID,
 			},
-			mock: func(
+			run: func(
+				t *testing.T, peer *resource.Peer, req *schedulerv1.PeerResult, svc *Service,
 				mockPeer *resource.Peer,
 				res resource.Resource, peerManager resource.PeerManager,
 				mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
 			) {
+				var wg sync.WaitGroup
+				wg.Add(1)
+				defer wg.Wait()
+
 				mockPeer.FSM.SetState(resource.PeerStateBackToSource)
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
+					ms.Create(gomock.Any()).Do(func(record storage.Record) { wg.Done() }).Return(nil).Times(1),
 				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer, err error) {
+
 				assert := assert.New(t)
+				err := svc.ReportPeerResult(context.Background(), req)
 				assert.NoError(err)
 			},
 		},
@@ -1102,19 +1181,25 @@ func TestService_ReportPeerResult(t *testing.T) {
 				Success: true,
 				PeerId:  mockPeerID,
 			},
-			mock: func(
+			run: func(
+				t *testing.T, peer *resource.Peer, req *schedulerv1.PeerResult, svc *Service,
 				mockPeer *resource.Peer,
 				res resource.Resource, peerManager resource.PeerManager,
 				mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
 			) {
+				var wg sync.WaitGroup
+				wg.Add(1)
+				defer wg.Wait()
+
 				mockPeer.FSM.SetState(resource.PeerStateBackToSource)
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
+					ms.Create(gomock.Any()).Do(func(record storage.Record) { wg.Done() }).Return(nil).Times(1),
 				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer, err error) {
+
 				assert := assert.New(t)
+				err := svc.ReportPeerResult(context.Background(), req)
 				assert.NoError(err)
 			},
 		},
@@ -1124,19 +1209,25 @@ func TestService_ReportPeerResult(t *testing.T) {
 				Success: true,
 				PeerId:  mockPeerID,
 			},
-			mock: func(
+			run: func(
+				t *testing.T, peer *resource.Peer, req *schedulerv1.PeerResult, svc *Service,
 				mockPeer *resource.Peer,
 				res resource.Resource, peerManager resource.PeerManager,
 				mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
 			) {
-				mockPeer.FSM.SetState(resource.PeerStateFailed)
+				var wg sync.WaitGroup
+				wg.Add(1)
+				defer wg.Wait()
+
+				mockPeer.FSM.SetState(resource.PeerStateBackToSource)
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
+					ms.Create(gomock.Any()).Do(func(record storage.Record) { wg.Done() }).Return(nil).Times(1),
 				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer, err error) {
+
 				assert := assert.New(t)
+				err := svc.ReportPeerResult(context.Background(), req)
 				assert.NoError(err)
 			},
 		},
@@ -1156,8 +1247,7 @@ func TestService_ReportPeerResult(t *testing.T) {
 			mockHost := resource.NewHost(mockRawHost)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := resource.NewPeer(mockPeerID, mockTask, mockHost)
-			tc.mock(mockPeer, res, peerManager, res.EXPECT(), peerManager.EXPECT(), storage.EXPECT())
-			tc.expect(t, mockPeer, svc.ReportPeerResult(context.Background(), tc.req))
+			tc.run(t, mockPeer, tc.req, svc, mockPeer, res, peerManager, res.EXPECT(), peerManager.EXPECT(), storage.EXPECT())
 		})
 	}
 }
