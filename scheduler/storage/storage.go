@@ -38,17 +38,6 @@ import (
 )
 
 const (
-	// DefaultMaxSize is the default maximum size of record file.
-	DefaultMaxSize = 100
-
-	// DefaultMaxBackups is the default maximum count of backup.
-	DefaultMaxBackups = 10
-
-	// DefaultBufferSize is the default size of buffer container.
-	DefaultBufferSize = 100
-)
-
-const (
 	// RecordFilePrefix is prefix of record file name.
 	RecordFilePrefix = "record"
 
@@ -108,46 +97,16 @@ type storage struct {
 	mu         *sync.RWMutex
 }
 
-// Option is a functional option for configuring the Storage.
-type Option func(s *storage)
-
-// WithMaxSize sets the maximum size in megabytes of storage file.
-func WithMaxSize(maxSize int) Option {
-	return func(s *storage) {
-		s.maxSize = int64(maxSize * megabyte)
-	}
-}
-
-// WithMaxBackups sets the maximum number of storage files to retain.
-func WithMaxBackups(maxBackups int) Option {
-	return func(s *storage) {
-		s.maxBackups = maxBackups
-	}
-}
-
-// WithCacheSize sets the size of buffer container,
-// if the buffer is full, write all the records in the buffer to the file.
-func WithBufferSize(bufferSize int) Option {
-	return func(s *storage) {
-		s.bufferSize = bufferSize
-		s.buffer = make([]Record, 0, bufferSize)
-	}
-}
-
 // New returns a new Storage instence.
-func New(baseDir string, options ...Option) (Storage, error) {
+func New(baseDir string, maxSize, maxBackups, bufferSize int) (Storage, error) {
 	s := &storage{
 		baseDir:    baseDir,
 		filename:   filepath.Join(baseDir, fmt.Sprintf("%s.%s", RecordFilePrefix, RecordFileExt)),
-		maxSize:    DefaultMaxSize * megabyte,
-		maxBackups: DefaultMaxBackups,
-		buffer:     make([]Record, 0, DefaultBufferSize),
-		bufferSize: DefaultBufferSize,
+		maxSize:    int64(maxSize * megabyte),
+		maxBackups: maxBackups,
+		buffer:     make([]Record, 0, bufferSize),
+		bufferSize: bufferSize,
 		mu:         &sync.RWMutex{},
-	}
-
-	for _, opt := range options {
-		opt(s)
 	}
 
 	file, err := os.OpenFile(s.filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)

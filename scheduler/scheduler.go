@@ -178,9 +178,9 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	// Initialize Storage.
 	storage, err := storage.New(
 		d.DataDir(),
-		storage.WithMaxSize(cfg.Storage.MaxSize),
-		storage.WithMaxBackups(cfg.Storage.MaxBackups),
-		storage.WithBufferSize(cfg.Storage.BufferSize),
+		cfg.Storage.MaxSize,
+		cfg.Storage.MaxBackups,
+		cfg.Storage.BufferSize,
 	)
 	if err != nil {
 		return nil, err
