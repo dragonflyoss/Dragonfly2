@@ -176,7 +176,12 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	scheduler := scheduler.New(&cfg.Scheduler, dynconfig, d.PluginDir())
 
 	// Initialize Storage.
-	storage, err := storage.New(d.DataDir())
+	storage, err := storage.New(
+		d.DataDir(),
+		cfg.Storage.MaxSize,
+		cfg.Storage.MaxBackups,
+		cfg.Storage.BufferSize,
+	)
 	if err != nil {
 		return nil, err
 	}
