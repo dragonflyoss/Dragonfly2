@@ -25,6 +25,7 @@ then please add your team and use-case to this file.
 - [iFLYTEK](https://iflytek.com/) - Large-scale image and file distribution.
 - [JD](https://corporate.jd.com/) - Large-scale image distribution.
 - [JFrog](https://jfrog.com/) - Large-scale image and file distribution.
+- [Kuaishou](https://kuaishou.com/) - Large-scale image distribution.
 - [Lazada](https://lazada.com) - Large-scale image and file distribution.
 - [Meituan](https://about.meituan.com/) - Large-scale image distribution.
 - [NetEase](https://www.neteasegames.com/) - Large-scale image and file distribution.
