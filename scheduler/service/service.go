@@ -233,15 +233,13 @@ func (s *Service) ReportPieceResult(stream schedulerv1.Scheduler_ReportPieceResu
 				metrics.PeerHostTraffic.WithLabelValues(peer.Tag, peer.Application, metrics.PeerHostTrafficDownloadType, peer.Host.ID, peer.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
 				if parent, loaded := s.resource.PeerManager().Load(piece.DstPid); loaded {
 					metrics.PeerHostTraffic.WithLabelValues(peer.Tag, peer.Application, metrics.PeerHostTrafficUploadType, parent.Host.ID, parent.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
-				} else {
-					if piece.DstPid != "" { // not backSource piece
-						peer.Log.Warnf("dst peer %s not found for piece %#v %#v", piece.DstPid, piece, piece.PieceInfo)
-					}
+				} else if !resource.IsPieceBackToSource(piece) {
+					peer.Log.Warnf("dst peer %s not found for piece %#v %#v", piece.DstPid, piece, piece.PieceInfo)
 				}
 			}
 
 			// Collect traffic metrics.
-			if piece.DstPid != "" {
+			if !resource.IsPieceBackToSource(piece) {
 				metrics.Traffic.WithLabelValues(peer.Tag, peer.Application, metrics.TrafficP2PType).Add(float64(piece.PieceInfo.RangeSize))
 			} else {
 				metrics.Traffic.WithLabelValues(peer.Tag, peer.Application, metrics.TrafficBackToSourceType).Add(float64(piece.PieceInfo.RangeSize))
@@ -747,11 +745,15 @@ func (s *Service) handlePieceSuccess(ctx context.Context, peer *resource.Peer, p
 	peer.AppendPieceCost(pkgtime.SubNano(int64(piece.EndTime), int64(piece.BeginTime)).Milliseconds())
 
 	// When the piece is downloaded successfully,
-	// peer.UpdateAt needs to be updated to prevent
-	// the peer from being GC during the download process.
+	// peer's UpdateAt needs to be updated
+	// to prevent the peer from being GC during the download process.
 	peer.UpdateAt.Store(time.Now())
-	if piece.DstPid != "" {
-		if destPeer, ok := s.resource.PeerManager().Load(piece.DstPid); ok {
+
+	// When the piece is downloaded successfully,
+	// dst peer's UpdateAt needs to be updated
+	// to prevent the dst peer from being GC during the download process.
+	if !resource.IsPieceBackToSource(piece) {
+		if destPeer, loaded := s.resource.PeerManager().Load(piece.DstPid); loaded {
 			destPeer.UpdateAt.Store(time.Now())
 		}
 	}
