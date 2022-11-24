@@ -29,6 +29,8 @@ import (
 
 	"github.com/gocarina/gocsv"
 	"github.com/stretchr/testify/assert"
+
+	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
 var (
@@ -146,81 +148,21 @@ func TestStorage_New(t *testing.T) {
 	tests := []struct {
 		name    string
 		baseDir string
-		options []Option
 		expect  func(t *testing.T, s Storage, err error)
 	}{
 		{
 			name:    "new storage",
 			baseDir: os.TempDir(),
-			options: []Option{},
 			expect: func(t *testing.T, s Storage, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(reflect.TypeOf(s).Elem().Name(), "storage")
-				assert.Equal(s.(*storage).maxSize, int64(DefaultMaxSize*megabyte))
-				assert.Equal(s.(*storage).maxBackups, DefaultMaxBackups)
-				assert.Equal(s.(*storage).bufferSize, DefaultBufferSize)
-				assert.Equal(cap(s.(*storage).buffer), DefaultBufferSize)
+				assert.Equal(s.(*storage).maxSize, int64(config.DefaultStorageMaxSize*megabyte))
+				assert.Equal(s.(*storage).maxBackups, config.DefaultStorageMaxBackups)
+				assert.Equal(s.(*storage).bufferSize, config.DefaultStorageBufferSize)
+				assert.Equal(cap(s.(*storage).buffer), config.DefaultStorageBufferSize)
 				assert.Equal(len(s.(*storage).buffer), 0)
 				assert.Equal(s.(*storage).count, int64(0))
-
-				if err := s.Clear(); err != nil {
-					t.Fatal(err)
-				}
-			},
-		},
-		{
-			name:    "new storage with maxSize",
-			baseDir: os.TempDir(),
-			options: []Option{WithMaxSize(1)},
-			expect: func(t *testing.T, s Storage, err error) {
-				assert := assert.New(t)
-				assert.NoError(err)
-				assert.Equal(reflect.TypeOf(s).Elem().Name(), "storage")
-				assert.Equal(s.(*storage).maxSize, int64(1*megabyte))
-				assert.Equal(s.(*storage).maxBackups, DefaultMaxBackups)
-				assert.Equal(s.(*storage).bufferSize, DefaultBufferSize)
-				assert.Equal(cap(s.(*storage).buffer), DefaultBufferSize)
-				assert.Equal(len(s.(*storage).buffer), 0)
-
-				if err := s.Clear(); err != nil {
-					t.Fatal(err)
-				}
-			},
-		},
-		{
-			name:    "new storage with maxBackups",
-			baseDir: os.TempDir(),
-			options: []Option{WithMaxBackups(1)},
-			expect: func(t *testing.T, s Storage, err error) {
-				assert := assert.New(t)
-				assert.NoError(err)
-				assert.Equal(reflect.TypeOf(s).Elem().Name(), "storage")
-				assert.Equal(s.(*storage).maxSize, int64(DefaultMaxSize*megabyte))
-				assert.Equal(s.(*storage).maxBackups, 1)
-				assert.Equal(s.(*storage).bufferSize, DefaultBufferSize)
-				assert.Equal(cap(s.(*storage).buffer), DefaultBufferSize)
-				assert.Equal(len(s.(*storage).buffer), 0)
-
-				if err := s.Clear(); err != nil {
-					t.Fatal(err)
-				}
-			},
-		},
-		{
-			name:    "new storage with bufferSize",
-			baseDir: os.TempDir(),
-			options: []Option{WithBufferSize(1)},
-			expect: func(t *testing.T, s Storage, err error) {
-				assert := assert.New(t)
-				assert.NoError(err)
-				assert.Equal(reflect.TypeOf(s).Elem().Name(), "storage")
-				assert.Equal(s.(*storage).maxSize, int64(DefaultMaxSize*megabyte))
-				assert.Equal(s.(*storage).maxBackups, DefaultMaxBackups)
-				assert.Equal(s.(*storage).bufferSize, 1)
-				assert.Equal(cap(s.(*storage).buffer), 1)
-				assert.Equal(len(s.(*storage).buffer), 0)
-				assert.Equal(len(s.(*storage).buffer), 0)
 
 				if err := s.Clear(); err != nil {
 					t.Fatal(err)
@@ -230,7 +172,6 @@ func TestStorage_New(t *testing.T) {
 		{
 			name:    "new storage failed",
 			baseDir: "/foo",
-			options: []Option{WithMaxBackups(100)},
 			expect: func(t *testing.T, s Storage, err error) {
 				assert := assert.New(t)
 				assert.Error(err)
@@ -240,7 +181,7 @@ func TestStorage_New(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s, err := New(tc.baseDir, tc.options...)
+			s, err := New(tc.baseDir, config.DefaultStorageMaxSize, config.DefaultStorageMaxBackups, config.DefaultStorageBufferSize)
 			tc.expect(t, s, err)
 		})
 	}
@@ -248,17 +189,17 @@ func TestStorage_New(t *testing.T) {
 
 func TestStorage_Create(t *testing.T) {
 	tests := []struct {
-		name    string
-		baseDir string
-		options []Option
-		mock    func(s Storage)
-		expect  func(t *testing.T, s Storage, baseDir string)
+		name       string
+		baseDir    string
+		bufferSize int
+		mock       func(s Storage)
+		expect     func(t *testing.T, s Storage, baseDir string)
 	}{
 		{
-			name:    "create record",
-			baseDir: os.TempDir(),
-			options: []Option{WithBufferSize(1)},
-			mock:    func(s Storage) {},
+			name:       "create record",
+			baseDir:    os.TempDir(),
+			bufferSize: 1,
+			mock:       func(s Storage) {},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
 				err := s.Create(Record{})
@@ -267,9 +208,9 @@ func TestStorage_Create(t *testing.T) {
 			},
 		},
 		{
-			name:    "create record without buffer",
-			baseDir: os.TempDir(),
-			options: []Option{WithBufferSize(0)},
+			name:       "create record without buffer",
+			baseDir:    os.TempDir(),
+			bufferSize: 0,
 			mock: func(s Storage) {
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
@@ -280,9 +221,9 @@ func TestStorage_Create(t *testing.T) {
 			},
 		},
 		{
-			name:    "write record to file",
-			baseDir: os.TempDir(),
-			options: []Option{WithBufferSize(1)},
+			name:       "write record to file",
+			baseDir:    os.TempDir(),
+			bufferSize: 1,
 			mock: func(s Storage) {
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
@@ -295,9 +236,9 @@ func TestStorage_Create(t *testing.T) {
 			},
 		},
 		{
-			name:    "open file failed",
-			baseDir: os.TempDir(),
-			options: []Option{WithBufferSize(0)},
+			name:       "open file failed",
+			baseDir:    os.TempDir(),
+			bufferSize: 0,
 			mock: func(s Storage) {
 				s.(*storage).baseDir = "foo"
 			},
@@ -312,7 +253,7 @@ func TestStorage_Create(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s, err := New(tc.baseDir, tc.options...)
+			s, err := New(tc.baseDir, config.DefaultStorageMaxSize, config.DefaultStorageMaxBackups, tc.bufferSize)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -328,18 +269,18 @@ func TestStorage_Create(t *testing.T) {
 
 func TestStorage_List(t *testing.T) {
 	tests := []struct {
-		name    string
-		baseDir string
-		options []Option
-		record  Record
-		mock    func(t *testing.T, s Storage, baseDir string, record Record)
-		expect  func(t *testing.T, s Storage, baseDir string, record Record)
+		name       string
+		baseDir    string
+		bufferSize int
+		record     Record
+		mock       func(t *testing.T, s Storage, baseDir string, record Record)
+		expect     func(t *testing.T, s Storage, baseDir string, record Record)
 	}{
 		{
-			name:    "empty csv file given",
-			baseDir: os.TempDir(),
-			options: []Option{},
-			mock:    func(t *testing.T, s Storage, baseDir string, record Record) {},
+			name:       "empty csv file given",
+			baseDir:    os.TempDir(),
+			bufferSize: config.DefaultStorageBufferSize,
+			mock:       func(t *testing.T, s Storage, baseDir string, record Record) {},
 			expect: func(t *testing.T, s Storage, baseDir string, record Record) {
 				assert := assert.New(t)
 				_, err := s.List()
@@ -347,9 +288,9 @@ func TestStorage_List(t *testing.T) {
 			},
 		},
 		{
-			name:    "get file infos failed",
-			baseDir: os.TempDir(),
-			options: []Option{},
+			name:       "get file infos failed",
+			baseDir:    os.TempDir(),
+			bufferSize: config.DefaultStorageBufferSize,
 			mock: func(t *testing.T, s Storage, baseDir string, record Record) {
 				s.(*storage).baseDir = "bae"
 			},
@@ -361,9 +302,9 @@ func TestStorage_List(t *testing.T) {
 			},
 		},
 		{
-			name:    "open file failed",
-			baseDir: os.TempDir(),
-			options: []Option{},
+			name:       "open file failed",
+			baseDir:    os.TempDir(),
+			bufferSize: config.DefaultStorageBufferSize,
 			mock: func(t *testing.T, s Storage, baseDir string, record Record) {
 				file, err := os.OpenFile(filepath.Join(baseDir, "record-test.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0300)
 				if err != nil {
@@ -378,10 +319,10 @@ func TestStorage_List(t *testing.T) {
 			},
 		},
 		{
-			name:    "list records of a file",
-			baseDir: os.TempDir(),
-			options: []Option{WithBufferSize(1)},
-			record:  mockRecord,
+			name:       "list records of a file",
+			baseDir:    os.TempDir(),
+			bufferSize: 1,
+			record:     mockRecord,
 			mock: func(t *testing.T, s Storage, baseDir string, record Record) {
 				if err := s.Create(record); err != nil {
 					t.Fatal(err)
@@ -402,10 +343,10 @@ func TestStorage_List(t *testing.T) {
 			},
 		},
 		{
-			name:    "list records of multi files",
-			baseDir: os.TempDir(),
-			options: []Option{WithBufferSize(1)},
-			record:  Record{},
+			name:       "list records of multi files",
+			baseDir:    os.TempDir(),
+			bufferSize: 1,
+			record:     Record{},
 			mock: func(t *testing.T, s Storage, baseDir string, record Record) {
 				file, err := os.OpenFile(filepath.Join(baseDir, "record-test.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 				if err != nil {
@@ -438,7 +379,7 @@ func TestStorage_List(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s, err := New(tc.baseDir, tc.options...)
+			s, err := New(tc.baseDir, config.DefaultStorageMaxSize, config.DefaultStorageMaxBackups, tc.bufferSize)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -454,18 +395,18 @@ func TestStorage_List(t *testing.T) {
 
 func TestStorage_Open(t *testing.T) {
 	tests := []struct {
-		name    string
-		baseDir string
-		options []Option
-		record  Record
-		mock    func(t *testing.T, s Storage, baseDir string, record Record)
-		expect  func(t *testing.T, s Storage, baseDir string, record Record)
+		name       string
+		baseDir    string
+		bufferSize int
+		record     Record
+		mock       func(t *testing.T, s Storage, baseDir string, record Record)
+		expect     func(t *testing.T, s Storage, baseDir string, record Record)
 	}{
 		{
-			name:    "open storage withempty csv file given",
-			baseDir: os.TempDir(),
-			options: []Option{},
-			mock:    func(t *testing.T, s Storage, baseDir string, record Record) {},
+			name:       "open storage withempty csv file given",
+			baseDir:    os.TempDir(),
+			bufferSize: config.DefaultStorageBufferSize,
+			mock:       func(t *testing.T, s Storage, baseDir string, record Record) {},
 			expect: func(t *testing.T, s Storage, baseDir string, record Record) {
 				assert := assert.New(t)
 				_, err := s.Open()
@@ -473,9 +414,9 @@ func TestStorage_Open(t *testing.T) {
 			},
 		},
 		{
-			name:    "open file infos failed",
-			baseDir: os.TempDir(),
-			options: []Option{},
+			name:       "open file infos failed",
+			baseDir:    os.TempDir(),
+			bufferSize: config.DefaultStorageBufferSize,
 			mock: func(t *testing.T, s Storage, baseDir string, record Record) {
 				s.(*storage).baseDir = "bas"
 			},
@@ -487,10 +428,10 @@ func TestStorage_Open(t *testing.T) {
 			},
 		},
 		{
-			name:    "open storage with records of a file",
-			baseDir: os.TempDir(),
-			options: []Option{WithBufferSize(1)},
-			record:  mockRecord,
+			name:       "open storage with records of a file",
+			baseDir:    os.TempDir(),
+			bufferSize: 1,
+			record:     mockRecord,
 			mock: func(t *testing.T, s Storage, baseDir string, record Record) {
 				if err := s.Create(record); err != nil {
 					t.Fatal(err)
@@ -516,10 +457,10 @@ func TestStorage_Open(t *testing.T) {
 			},
 		},
 		{
-			name:    "open storage with records of multi files",
-			baseDir: os.TempDir(),
-			options: []Option{WithBufferSize(1)},
-			record:  Record{},
+			name:       "open storage with records of multi files",
+			baseDir:    os.TempDir(),
+			bufferSize: 1,
+			record:     Record{},
 			mock: func(t *testing.T, s Storage, baseDir string, record Record) {
 				file, err := os.OpenFile(filepath.Join(baseDir, "record-test.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 				if err != nil {
@@ -556,7 +497,7 @@ func TestStorage_Open(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s, err := New(tc.baseDir, tc.options...)
+			s, err := New(tc.baseDir, config.DefaultStorageMaxSize, config.DefaultStorageMaxBackups, tc.bufferSize)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -574,14 +515,12 @@ func TestStorage_Clear(t *testing.T) {
 	tests := []struct {
 		name    string
 		baseDir string
-		options []Option
 		mock    func(s Storage)
 		expect  func(t *testing.T, s Storage, baseDir string)
 	}{
 		{
 			name:    "clear file",
 			baseDir: os.TempDir(),
-			options: []Option{},
 			mock:    func(s Storage) {},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
@@ -602,7 +541,6 @@ func TestStorage_Clear(t *testing.T) {
 		{
 			name:    "open file failed",
 			baseDir: os.TempDir(),
-			options: []Option{},
 			mock: func(s Storage) {
 				s.(*storage).baseDir = "baz"
 			},
@@ -618,7 +556,7 @@ func TestStorage_Clear(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s, err := New(tc.baseDir, tc.options...)
+			s, err := New(tc.baseDir, config.DefaultStorageMaxSize, config.DefaultStorageMaxBackups, config.DefaultStorageBufferSize)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -633,14 +571,12 @@ func TestStorage_create(t *testing.T) {
 	tests := []struct {
 		name    string
 		baseDir string
-		options []Option
 		mock    func(s Storage)
 		expect  func(t *testing.T, s Storage, baseDir string)
 	}{
 		{
 			name:    "create record",
 			baseDir: os.TempDir(),
-			options: []Option{},
 			mock:    func(s Storage) {},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
@@ -651,7 +587,6 @@ func TestStorage_create(t *testing.T) {
 		{
 			name:    "open file failed",
 			baseDir: os.TempDir(),
-			options: []Option{},
 			mock: func(s Storage) {
 				s.(*storage).baseDir = "foo"
 			},
@@ -666,7 +601,7 @@ func TestStorage_create(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s, err := New(tc.baseDir, tc.options...)
+			s, err := New(tc.baseDir, config.DefaultStorageMaxSize, config.DefaultStorageMaxBackups, config.DefaultStorageBufferSize)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -682,16 +617,21 @@ func TestStorage_create(t *testing.T) {
 
 func TestStorage_openFile(t *testing.T) {
 	tests := []struct {
-		name    string
-		baseDir string
-		options []Option
-		mock    func(t *testing.T, s Storage)
-		expect  func(t *testing.T, s Storage, baseDir string)
+		name       string
+		baseDir    string
+		maxSize    int
+		maxBackups int
+
+		bufferSize int
+		mock       func(t *testing.T, s Storage)
+		expect     func(t *testing.T, s Storage, baseDir string)
 	}{
 		{
-			name:    "open file failed",
-			baseDir: os.TempDir(),
-			options: []Option{},
+			name:       "open file failed",
+			baseDir:    os.TempDir(),
+			maxSize:    config.DefaultStorageMaxSize,
+			maxBackups: config.DefaultStorageMaxBackups,
+			bufferSize: config.DefaultStorageBufferSize,
 			mock: func(t *testing.T, s Storage) {
 				s.(*storage).baseDir = "bat"
 			},
@@ -703,9 +643,11 @@ func TestStorage_openFile(t *testing.T) {
 			},
 		},
 		{
-			name:    "open new record file",
-			baseDir: os.TempDir(),
-			options: []Option{WithMaxSize(0), WithBufferSize(1)},
+			name:       "open new record file",
+			baseDir:    os.TempDir(),
+			maxSize:    0,
+			maxBackups: config.DefaultStorageMaxBackups,
+			bufferSize: 1,
 			mock: func(t *testing.T, s Storage) {
 				if err := s.Create(Record{ID: "1"}); err != nil {
 					t.Fatal(err)
@@ -724,9 +666,11 @@ func TestStorage_openFile(t *testing.T) {
 			},
 		},
 		{
-			name:    "remove record file",
-			baseDir: os.TempDir(),
-			options: []Option{WithMaxSize(0), WithMaxBackups(1), WithBufferSize(1)},
+			name:       "remove record file",
+			baseDir:    os.TempDir(),
+			maxSize:    0,
+			maxBackups: 1,
+			bufferSize: 1,
 			mock: func(t *testing.T, s Storage) {
 				if err := s.Create(Record{ID: "1"}); err != nil {
 					t.Fatal(err)
@@ -744,7 +688,7 @@ func TestStorage_openFile(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s, err := New(tc.baseDir, tc.options...)
+			s, err := New(tc.baseDir, tc.maxSize, tc.maxBackups, tc.bufferSize)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -760,7 +704,7 @@ func TestStorage_openFile(t *testing.T) {
 
 func TestStorage_backupFilename(t *testing.T) {
 	baseDir := os.TempDir()
-	s, err := New(baseDir)
+	s, err := New(baseDir, config.DefaultStorageMaxSize, config.DefaultStorageMaxBackups, config.DefaultStorageBufferSize)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -779,14 +723,12 @@ func TestStorage_backups(t *testing.T) {
 	tests := []struct {
 		name    string
 		baseDir string
-		options []Option
 		mock    func(t *testing.T, s Storage)
 		expect  func(t *testing.T, s Storage, baseDir string)
 	}{
 		{
 			name:    "open file failed",
 			baseDir: os.TempDir(),
-			options: []Option{},
 			mock: func(t *testing.T, s Storage) {
 				s.(*storage).baseDir = "bar"
 			},
@@ -803,7 +745,6 @@ func TestStorage_backups(t *testing.T) {
 		{
 			name:    "not found record file",
 			baseDir: os.TempDir(),
-			options: []Option{},
 			mock:    func(t *testing.T, s Storage) {},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
@@ -819,7 +760,7 @@ func TestStorage_backups(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s, err := New(tc.baseDir, tc.options...)
+			s, err := New(tc.baseDir, config.DefaultStorageMaxSize, config.DefaultStorageMaxBackups, config.DefaultStorageBufferSize)
 			if err != nil {
 				t.Fatal(err)
 			}
