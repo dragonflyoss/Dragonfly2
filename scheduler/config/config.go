@@ -27,7 +27,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/types"
-	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
 type Config struct {
@@ -335,9 +334,9 @@ func New() *Config {
 			},
 		},
 		Storage: StorageConfig{
-			MaxSize:    storage.DefaultMaxSize,
-			MaxBackups: storage.DefaultMaxBackups,
-			BufferSize: storage.DefaultBufferSize,
+			MaxSize:    DefaultStorageMaxSize,
+			MaxBackups: DefaultStorageMaxBackups,
+			BufferSize: DefaultStorageBufferSize,
 		},
 		Metrics: MetricsConfig{
 			Enable:         false,

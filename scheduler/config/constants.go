@@ -121,3 +121,14 @@ var (
 	// DefaultNetworkEnableIPv6 is default value of enableIPv6.
 	DefaultNetworkEnableIPv6 = false
 )
+
+const (
+	// DefaultStorageMaxSize is the default maximum size of record file.
+	DefaultStorageMaxSize = 100
+
+	// DefaultStorageMaxBackups is the default maximum count of backup.
+	DefaultStorageMaxBackups = 10
+
+	// DefaultStorageBufferSize is the default size of buffer container.
+	DefaultStorageBufferSize = 100
+)
