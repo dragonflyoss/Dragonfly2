@@ -46,20 +46,6 @@ const (
 )
 
 const (
-	// Peer has been downloaded successfully.
-	PeerStateSucceeded = "Succeeded"
-
-	// Peer has been downloaded failed.
-	PeerStateFailed = "Failed"
-
-	// Peer has been back-to-source downloaded successfully.
-	PeerStateBackToSourceSucceeded = "BackToSourceSucceeded"
-
-	// Peer has been back-to-source downloaded failed.
-	PeerStateBackToSourceFailed = "BackToSourceFailed"
-)
-
-const (
 	// megabyte is the converted factor of MaxSize and bytes.
 	megabyte = 1024 * 1024
 
