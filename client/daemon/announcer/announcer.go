@@ -120,7 +120,7 @@ func (a *announcer) announceToScheduler() error {
 	}
 
 	if err := a.schedulerClient.AnnounceHost(context.Background(), req); err != nil {
-		return err
+		logger.Errorf("announce for the first time failed: %s", err.Error())
 	}
 
 	// Announce to scheduler.

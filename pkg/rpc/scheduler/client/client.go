@@ -20,7 +20,6 @@ package client
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -28,6 +27,7 @@ import (
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
 
@@ -230,25 +230,23 @@ func (c *client) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHost
 		return err
 	}
 
-	var wg sync.WaitGroup
+	eg, _ := errgroup.WithContext(ctx)
 	for _, virtualTaskID := range circle {
-		wg.Add(1)
-		go func(taskID string) {
-			defer wg.Done()
-
+		virtualTaskID := virtualTaskID
+		eg.Go(func() error {
 			if _, err := c.SchedulerClient.AnnounceHost(
-				context.WithValue(ctx, pkgbalancer.ContextKey, taskID),
+				context.WithValue(ctx, pkgbalancer.ContextKey, virtualTaskID),
 				req,
 				opts...,
 			); err != nil {
-				logger.Error(err)
-				return
+				return err
 			}
-		}(virtualTaskID)
+
+			return nil
+		})
 	}
 
-	wg.Wait()
-	return err
+	return eg.Wait()
 }
 
 // LeaveHost releases host in all schedulers.
@@ -262,25 +260,21 @@ func (c *client) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostReques
 	}
 	logger.Infof("leave host circle is %#v", circle)
 
-	var wg sync.WaitGroup
+	eg, _ := errgroup.WithContext(ctx)
 	for _, virtualTaskID := range circle {
-		wg.Add(1)
-		go func(taskID string) {
-			defer wg.Done()
-
+		virtualTaskID := virtualTaskID
+		eg.Go(func() error {
 			if _, err := c.SchedulerClient.LeaveHost(
-				context.WithValue(ctx, pkgbalancer.ContextKey, taskID),
+				context.WithValue(ctx, pkgbalancer.ContextKey, virtualTaskID),
 				req,
 				opts...,
 			); err != nil {
-				logger.Error(err)
-				return
+				return err
 			}
 
-			logger.Infof("leave host %s", req.Id)
-		}(virtualTaskID)
+			return nil
+		})
 	}
 
-	wg.Wait()
-	return nil
+	return eg.Wait()
 }
