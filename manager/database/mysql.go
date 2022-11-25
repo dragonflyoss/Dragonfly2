@@ -31,6 +31,17 @@ import (
 	"d7y.io/dragonfly/v2/manager/config"
 )
 
+const (
+	// defaultMysqlDialTimeout is dial timeout of mysql.
+	defaultMysqlDialTimeout = 1 * time.Minute
+
+	// defaultMysqlReadTimeout is I/O read timeout of mysql.
+	defaultMysqlReadTimeout = 2 * time.Minute
+
+	// defaultMysqlWriteTimeout is I/O write timeout of mysql.
+	defaultMysqlWriteTimeout = 2 * time.Minute
+)
+
 func newMyqsl(cfg *config.Config) (*gorm.DB, error) {
 	mysqlCfg := &cfg.Database.Mysql
 
@@ -78,6 +89,9 @@ func formatMysqlDSN(cfg *config.MysqlConfig) (string, error) {
 		AllowNativePasswords: true,
 		ParseTime:            true,
 		InterpolateParams:    true,
+		Timeout:              defaultMysqlDialTimeout,
+		ReadTimeout:          defaultMysqlReadTimeout,
+		WriteTimeout:         defaultMysqlWriteTimeout,
 	}
 
 	// Support TLS connection.
