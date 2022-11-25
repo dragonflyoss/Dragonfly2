@@ -279,14 +279,14 @@ func (s *Service) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerRes
 		peer.Log.Errorf("report peer failed result: %s %#v", req.Code, req)
 		if peer.FSM.Is(resource.PeerStateBackToSource) {
 			metrics.DownloadFailureCount.WithLabelValues(peer.Tag, peer.Application, metrics.DownloadFailureBackToSourceType).Inc()
-			go s.createRecord(peer, parents, storage.PeerStateBackToSourceFailed, req)
+			go s.createRecord(peer, parents, req)
 			s.handleTaskFail(ctx, peer.Task, req.GetSourceError(), nil)
 			s.handlePeerFail(ctx, peer)
 			return nil
 		}
 
 		metrics.DownloadFailureCount.WithLabelValues(peer.Tag, peer.Application, metrics.DownloadFailureP2PType).Inc()
-		go s.createRecord(peer, parents, storage.PeerStateFailed, req)
+		go s.createRecord(peer, parents, req)
 		s.handlePeerFail(ctx, peer)
 		return nil
 	}
@@ -294,13 +294,13 @@ func (s *Service) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerRes
 
 	peer.Log.Infof("report peer result: %#v", req)
 	if peer.FSM.Is(resource.PeerStateBackToSource) {
-		go s.createRecord(peer, parents, storage.PeerStateBackToSourceSucceeded, req)
+		go s.createRecord(peer, parents, req)
 		s.handleTaskSuccess(ctx, peer.Task, req)
 		s.handlePeerSuccess(ctx, peer)
 		return nil
 	}
 
-	go s.createRecord(peer, parents, storage.PeerStateSucceeded, req)
+	go s.createRecord(peer, parents, req)
 	s.handlePeerSuccess(ctx, peer)
 	return nil
 }
@@ -986,7 +986,7 @@ func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task, backT
 }
 
 // createRecord stores peer download records.
-func (s *Service) createRecord(peer *resource.Peer, parents []*resource.Peer, peerState string, req *schedulerv1.PeerResult) {
+func (s *Service) createRecord(peer *resource.Peer, parents []*resource.Peer, req *schedulerv1.PeerResult) {
 	var parentRecords []storage.Parent
 	for _, parent := range parents {
 		parentRecord := storage.Parent{
@@ -1090,7 +1090,7 @@ func (s *Service) createRecord(peer *resource.Peer, parents []*resource.Peer, pe
 		ID:          peer.ID,
 		Tag:         peer.Tag,
 		Application: peer.Application,
-		State:       peerState,
+		State:       peer.FSM.Current(),
 		Cost:        req.Cost,
 		Parents:     parentRecords,
 		CreateAt:    peer.CreateAt.Load().UnixNano(),
