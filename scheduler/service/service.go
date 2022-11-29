@@ -197,9 +197,11 @@ func (s *Service) ReportPieceResult(stream schedulerv1.Scheduler_ReportPieceResu
 			// Get peer from peer manager.
 			peer, loaded = s.resource.PeerManager().Load(piece.SrcPid)
 			if !loaded {
+				// If the scheduler cannot find the peer,
+				// then the peer has not been registered in this scheduler.
 				msg := fmt.Sprintf("peer %s not found", piece.SrcPid)
 				logger.Error(msg)
-				return dferrors.New(commonv1.Code_SchedPeerNotFound, msg)
+				return dferrors.New(commonv1.Code_SchedReregister, msg)
 			}
 
 			// Peer setting stream.
