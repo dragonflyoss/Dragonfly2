@@ -864,7 +864,7 @@ func TestService_ReportPieceResult(t *testing.T) {
 				assert := assert.New(t)
 				dferr, ok := err.(*dferrors.DfError)
 				assert.True(ok)
-				assert.Equal(dferr.Code, commonv1.Code_SchedPeerNotFound)
+				assert.Equal(dferr.Code, commonv1.Code_SchedReregister)
 			},
 		},
 		{
