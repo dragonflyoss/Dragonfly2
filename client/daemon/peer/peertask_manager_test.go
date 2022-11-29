@@ -190,8 +190,13 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 		sent       = make(chan struct{}, 1)
 	)
 	sent <- struct{}{}
+	var reregistered bool
 	pps.EXPECT().Recv().AnyTimes().DoAndReturn(
 		func() (*schedulerv1.PeerPacket, error) {
+			if opt.reregister && !reregistered {
+				reregistered = true
+				return nil, dferrors.New(commonv1.Code_SchedReregister, "reregister")
+			}
 			if len(opt.peerPacketDelay) > delayCount {
 				if delay := opt.peerPacketDelay[delayCount]; delay > 0 {
 					time.Sleep(delay)
@@ -255,14 +260,9 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 				DirectPiece: nil,
 			}, nil
 		})
-	var reregistered bool
 	sched.EXPECT().ReportPieceResult(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, ptr *schedulerv1.PeerTaskRequest, opts ...grpc.CallOption) (
 			schedulerv1.Scheduler_ReportPieceResultClient, error) {
-			if opt.reregister && !reregistered {
-				reregistered = true
-				return nil, dferrors.New(commonv1.Code_SchedReregister, "reregister")
-			}
 			return pps, nil
 		})
 	sched.EXPECT().ReportPeerResult(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
