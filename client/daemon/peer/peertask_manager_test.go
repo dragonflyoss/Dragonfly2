@@ -84,6 +84,7 @@ type componentsOption struct {
 	scope              commonv1.SizeScope
 	content            []byte
 	getPieceTasks      bool
+	reregister         bool
 }
 
 func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOption) (
@@ -254,9 +255,14 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 				DirectPiece: nil,
 			}, nil
 		})
+	var reregistered bool
 	sched.EXPECT().ReportPieceResult(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, ptr *schedulerv1.PeerTaskRequest, opts ...grpc.CallOption) (
 			schedulerv1.Scheduler_ReportPieceResultClient, error) {
+			if opt.reregister && !reregistered {
+				reregistered = true
+				return nil, dferrors.New(commonv1.Code_SchedReregister, "reregister")
+			}
 			return pps, nil
 		})
 	sched.EXPECT().ReportPeerResult(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
@@ -349,6 +355,7 @@ type testSpec struct {
 	peerID             string
 	url                string
 	legacyFeature      bool
+	reregister         bool
 	// when urlGenerator is not nil, use urlGenerator instead url
 	// it's useful for httptest server
 	urlGenerator func(ts *testSpec) string
@@ -398,6 +405,18 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			sizeScope:            commonv1.SizeScope_NORMAL,
 			mockPieceDownloader:  commonPieceDownloader,
 			mockHTTPSourceClient: nil,
+		},
+		{
+			name:                 "normal size scope - p2p - reregister",
+			taskData:             testBytes,
+			pieceParallelCount:   4,
+			pieceSize:            1024,
+			peerID:               "normal-size-peer",
+			url:                  "http://localhost/test/data",
+			sizeScope:            commonv1.SizeScope_NORMAL,
+			mockPieceDownloader:  commonPieceDownloader,
+			mockHTTPSourceClient: nil,
+			reregister:           true,
 		},
 		{
 			name:                 "small size scope - p2p",
@@ -663,6 +682,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 							peerPacketDelay:    tc.peerPacketDelay,
 							backSource:         tc.backSource,
 							getPieceTasks:      tc.legacyFeature,
+							reregister:         tc.reregister,
 						}
 						// keep peer task running in enough time to check "getOrCreatePeerTaskConductor" always return same
 						if tc.taskType == taskTypeConductor {
