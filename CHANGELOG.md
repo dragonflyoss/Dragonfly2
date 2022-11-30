@@ -2,8 +2,193 @@
 ## [Unreleased]
 
 
+<a name="v2.0.8"></a>
+## [v2.0.8] - 2022-11-30
+### Chore
+- **deps:** bump github.com/huaweicloud/huaweicloud-sdk-go-obs from 3.21.12+incompatible to 3.22.11+incompatible ([#1872](https://github.com/dragonflyoss/Dragonfly2/issues/1872))
+- **deps:** bump github.com/onsi/ginkgo/v2 from 2.5.0 to 2.5.1 ([#1871](https://github.com/dragonflyoss/Dragonfly2/issues/1871))
+
+### Feat
+- release v2.0.8
+- support reregister peer task in client ([#1876](https://github.com/dragonflyoss/Dragonfly2/issues/1876))
+- if the scheduler cannot find the peer, then return Code_SchedReregister to dfdaemon ([#1875](https://github.com/dragonflyoss/Dragonfly2/issues/1875))
+
+
+<a name="v2.0.8-rc.3"></a>
+## [v2.0.8-rc.3] - 2022-11-25
+### Feat
+- change announcer validation ([#1869](https://github.com/dragonflyoss/Dragonfly2/issues/1869))
+- add mysql read and write timeout ([#1868](https://github.com/dragonflyoss/Dragonfly2/issues/1868))
+
+
+<a name="v2.0.8-rc.2"></a>
+## [v2.0.8-rc.2] - 2022-11-25
+### Chore
+- add Kuaishou to ADOPTERS.md ([#1866](https://github.com/dragonflyoss/Dragonfly2/issues/1866))
+
+### Feat
+- store parent information ([#1867](https://github.com/dragonflyoss/Dragonfly2/issues/1867))
+- remove MainParent from peer and add IsPieceBackToSource to piece
+
+### Fix
+- [scheduler]  destPeer keepalive when downloaded by other peer ([#1865](https://github.com/dragonflyoss/Dragonfly2/issues/1865))
+
+
+<a name="v2.0.8-rc.1"></a>
+## [v2.0.8-rc.1] - 2022-11-24
+### Feat
+- scheduler supports storage config ([#1864](https://github.com/dragonflyoss/Dragonfly2/issues/1864))
+- store peer download information ([#1863](https://github.com/dragonflyoss/Dragonfly2/issues/1863))
+- manager changes filterParentLimit value ([#1859](https://github.com/dragonflyoss/Dragonfly2/issues/1859))
+
+
+<a name="v2.0.8-rc.0"></a>
+## [v2.0.8-rc.0] - 2022-11-22
+### Chore
+- update dst peer log ([#1844](https://github.com/dragonflyoss/Dragonfly2/issues/1844))
+- update e2e test ([#1839](https://github.com/dragonflyoss/Dragonfly2/issues/1839))
+- remove unused code ([#1838](https://github.com/dragonflyoss/Dragonfly2/issues/1838))
+- **deps:** bump github.com/aws/aws-sdk-go from 1.44.121 to 1.44.143 ([#1853](https://github.com/dragonflyoss/Dragonfly2/issues/1853))
+- **deps:** bump github.com/prometheus/client_golang from 1.13.0 to 1.14.0 ([#1851](https://github.com/dragonflyoss/Dragonfly2/issues/1851))
+- **deps:** bump github.com/aliyun/aliyun-oss-go-sdk from 2.2.5+incompatible to 2.2.6+incompatible ([#1849](https://github.com/dragonflyoss/Dragonfly2/issues/1849))
+- **deps:** bump github.com/bits-and-blooms/bitset from 1.3.3 to 1.4.0 ([#1848](https://github.com/dragonflyoss/Dragonfly2/issues/1848))
+- **deps:** bump k8s.io/component-base from 0.25.3 to 0.25.4 ([#1847](https://github.com/dragonflyoss/Dragonfly2/issues/1847))
+- **deps:** bump github.com/onsi/gomega from 1.23.0 to 1.24.1 ([#1832](https://github.com/dragonflyoss/Dragonfly2/issues/1832))
+- **deps:** bump github.com/onsi/ginkgo/v2 from 2.4.0 to 2.5.0 ([#1836](https://github.com/dragonflyoss/Dragonfly2/issues/1836))
+- **deps:** bump github.com/mdlayher/vsock from 1.1.1 to 1.2.0 ([#1834](https://github.com/dragonflyoss/Dragonfly2/issues/1834))
+
+### Feat
+- optimize gc package ([#1855](https://github.com/dragonflyoss/Dragonfly2/issues/1855))
+- add announcer to scheduler ([#1854](https://github.com/dragonflyoss/Dragonfly2/issues/1854))
+- add announcer to dfdameon ([#1852](https://github.com/dragonflyoss/Dragonfly2/issues/1852))
+- when dfdaemon disable object storage, dynconfig can't fetch manager ([#1845](https://github.com/dragonflyoss/Dragonfly2/issues/1845))
+- optimize manager log ([#1846](https://github.com/dragonflyoss/Dragonfly2/issues/1846))
+- scheduler adds announce host handler ([#1843](https://github.com/dragonflyoss/Dragonfly2/issues/1843))
+- call all nodes in consistent hashing and reuse grpc connection ([#1842](https://github.com/dragonflyoss/Dragonfly2/issues/1842))
+- update concurrent-map version ([#1837](https://github.com/dragonflyoss/Dragonfly2/issues/1837))
+
+### Fix
+- recursive download always return none error ([#1841](https://github.com/dragonflyoss/Dragonfly2/issues/1841))
+- expire header timezone ([#1840](https://github.com/dragonflyoss/Dragonfly2/issues/1840))
+
+
+<a name="v2.0.8-beta.3"></a>
+## [v2.0.8-beta.3] - 2022-11-14
+### Chore
+- enable cache list metadata e2e ([#1829](https://github.com/dragonflyoss/Dragonfly2/issues/1829))
+
+### Feat
+- optimize scope size is error ([#1831](https://github.com/dragonflyoss/Dragonfly2/issues/1831))
+- add timeout grpc and job ([#1830](https://github.com/dragonflyoss/Dragonfly2/issues/1830))
+
+
+<a name="v2.0.8-beta.2"></a>
+## [v2.0.8-beta.2] - 2022-11-14
+### Feat
+- optimize peer log ([#1828](https://github.com/dragonflyoss/Dragonfly2/issues/1828))
+- optional save list metadata to p2p ([#1822](https://github.com/dragonflyoss/Dragonfly2/issues/1822))
+- add s3 resource client and recursive e2e test ([#1826](https://github.com/dragonflyoss/Dragonfly2/issues/1826))
+
+
+<a name="v2.0.8-beta.1"></a>
+## [v2.0.8-beta.1] - 2022-11-11
+### Chore
+- daemon avoid alway open metadata files ([#1823](https://github.com/dragonflyoss/Dragonfly2/issues/1823))
+
+### Feat
+- optimize preheat log ([#1827](https://github.com/dragonflyoss/Dragonfly2/issues/1827))
+- seed peer reuses traffic ([#1825](https://github.com/dragonflyoss/Dragonfly2/issues/1825))
+- optimize preheat ([#1824](https://github.com/dragonflyoss/Dragonfly2/issues/1824))
+
+
+<a name="v2.0.8-beta.0"></a>
+## [v2.0.8-beta.0] - 2022-11-09
+### Chore
+- close out of use client grpc conn ([#1817](https://github.com/dragonflyoss/Dragonfly2/issues/1817))
+- make SendMsg in doRecursiveDownload safe ([#1806](https://github.com/dragonflyoss/Dragonfly2/issues/1806))
+- **deps:** bump go.opentelemetry.io/otel/exporters/jaeger from 1.10.0 to 1.11.1 ([#1813](https://github.com/dragonflyoss/Dragonfly2/issues/1813))
+- **deps:** bump github.com/shirou/gopsutil/v3 from 3.22.9 to 3.22.10 ([#1812](https://github.com/dragonflyoss/Dragonfly2/issues/1812))
+- **deps:** bump go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin from 0.36.1 to 0.36.4 ([#1811](https://github.com/dragonflyoss/Dragonfly2/issues/1811))
+- **deps:** bump github.com/gammazero/deque from 0.2.0 to 0.2.1 ([#1810](https://github.com/dragonflyoss/Dragonfly2/issues/1810))
+
+### Feat
+- returns an scheduling error if the peer state is not PeerStateRunning ([#1821](https://github.com/dragonflyoss/Dragonfly2/issues/1821))
+- optimize peer gc ([#1819](https://github.com/dragonflyoss/Dragonfly2/issues/1819))
+- peer.UpdateAt needs to be updated during download process ([#1818](https://github.com/dragonflyoss/Dragonfly2/issues/1818))
+- statistical the traffic of reused peer ([#1816](https://github.com/dragonflyoss/Dragonfly2/issues/1816))
+- add workHome and pluginDir to configuration ([#1807](https://github.com/dragonflyoss/Dragonfly2/issues/1807))
+
+### Fix
+- otel goroutine leak ([#1815](https://github.com/dragonflyoss/Dragonfly2/issues/1815))
+
+
+<a name="v2.0.8-alpha.4"></a>
+## [v2.0.8-alpha.4] - 2022-11-02
+### Feat
+- add workHome and pluginDir to configuration
+- add otel trace in log ([#1804](https://github.com/dragonflyoss/Dragonfly2/issues/1804))
+
+
+<a name="v2.0.8-alpha.3"></a>
+## [v2.0.8-alpha.3] - 2022-11-02
+### Fix
+- gorm-adaptor pkg version ([#1805](https://github.com/dragonflyoss/Dragonfly2/issues/1805))
+
+
+<a name="v2.0.8-alpha.2"></a>
+## [v2.0.8-alpha.2] - 2022-11-02
+### Chore
+- add list log in rpc download ([#1802](https://github.com/dragonflyoss/Dragonfly2/issues/1802))
+
+
+<a name="v2.0.8-alpha.1"></a>
+## [v2.0.8-alpha.1] - 2022-11-01
+### Chore
+- **deps:** bump gorm.io/driver/mysql from 1.4.1 to 1.4.3 ([#1799](https://github.com/dragonflyoss/Dragonfly2/issues/1799))
+- **deps:** bump google.golang.org/api from 0.97.0 to 0.101.0 ([#1800](https://github.com/dragonflyoss/Dragonfly2/issues/1800))
+- **deps:** bump github.com/onsi/gomega from 1.22.1 to 1.23.0 ([#1798](https://github.com/dragonflyoss/Dragonfly2/issues/1798))
+- **deps:** bump gorm.io/driver/postgres from 1.4.4 to 1.4.5 ([#1797](https://github.com/dragonflyoss/Dragonfly2/issues/1797))
+- **deps:** bump github.com/spf13/cobra from 1.5.0 to 1.6.1 ([#1796](https://github.com/dragonflyoss/Dragonfly2/issues/1796))
+
+### Feat
+- add leave host logger ([#1801](https://github.com/dragonflyoss/Dragonfly2/issues/1801))
+- scheduler's record adds ParentUploadCount and ParentUploadFailedCount ([#1795](https://github.com/dragonflyoss/Dragonfly2/issues/1795))
+
+### Fix
+- leave host ([#1803](https://github.com/dragonflyoss/Dragonfly2/issues/1803))
+
+
+<a name="v2.0.8-alpha.0"></a>
+## [v2.0.8-alpha.0] - 2022-10-28
+### Chore
+- add timestamp to stdout&stderr ([#1781](https://github.com/dragonflyoss/Dragonfly2/issues/1781))
+- update grpc api proto verison ([#1779](https://github.com/dragonflyoss/Dragonfly2/issues/1779))
+- add intel to ADOPTERS.md ([#1778](https://github.com/dragonflyoss/Dragonfly2/issues/1778))
+- update helm-charts submodule
+- **deps:** bump github.com/onsi/ginkgo/v2 from 2.2.0 to 2.4.0 ([#1787](https://github.com/dragonflyoss/Dragonfly2/issues/1787))
+- **deps:** bump github.com/casbin/gorm-adapter/v3 from 3.11.0 to 3.12.1 ([#1786](https://github.com/dragonflyoss/Dragonfly2/issues/1786))
+- **deps:** bump github.com/aws/aws-sdk-go from 1.44.114 to 1.44.121 ([#1785](https://github.com/dragonflyoss/Dragonfly2/issues/1785))
+- **deps:** bump github.com/shirou/gopsutil/v3 from 3.22.7 to 3.22.9 ([#1784](https://github.com/dragonflyoss/Dragonfly2/issues/1784))
+- **deps:** bump go.opentelemetry.io/otel from 1.11.0 to 1.11.1 ([#1783](https://github.com/dragonflyoss/Dragonfly2/issues/1783))
+
+### Feat
+- support split running tasks ([#1794](https://github.com/dragonflyoss/Dragonfly2/issues/1794))
+- add download header log ([#1793](https://github.com/dragonflyoss/Dragonfly2/issues/1793))
+- grpc scheduler client dial options ([#1792](https://github.com/dragonflyoss/Dragonfly2/issues/1792))
+- daemon call leaveHost when exit ([#1788](https://github.com/dragonflyoss/Dragonfly2/issues/1788))
+- add calculateParentHostUploadSuccessScore to scheduler ([#1789](https://github.com/dragonflyoss/Dragonfly2/issues/1789))
+- add LeaveHost handler ([#1780](https://github.com/dragonflyoss/Dragonfly2/issues/1780))
+
+### Fix
+- daemon don't leaveHost when keepStorage=true ([#1790](https://github.com/dragonflyoss/Dragonfly2/issues/1790))
+- did not call scheduler leave tasks in forceGC ([#1782](https://github.com/dragonflyoss/Dragonfly2/issues/1782))
+
+
 <a name="v2.0.7"></a>
 ## [v2.0.7] - 2022-10-19
+### Chore
+- release v2.0.7 ([#1776](https://github.com/dragonflyoss/Dragonfly2/issues/1776))
+
 ### Fix
 - plugin builder ([#1775](https://github.com/dragonflyoss/Dragonfly2/issues/1775))
 
@@ -616,11 +801,11 @@
 - dfstore closes writer ([#1424](https://github.com/dragonflyoss/Dragonfly2/issues/1424))
 
 
-<a name="v2.0.4-rc.1"></a>
-## [v2.0.4-rc.1] - 2022-06-30
-
 <a name="v2.0.4-rc.2"></a>
 ## [v2.0.4-rc.2] - 2022-06-30
+
+<a name="v2.0.4-rc.1"></a>
+## [v2.0.4-rc.1] - 2022-06-30
 ### Feat
 - use put object action ([#1422](https://github.com/dragonflyoss/Dragonfly2/issues/1422))
 - GetObjectInput add range field ([#1421](https://github.com/dragonflyoss/Dragonfly2/issues/1421))
@@ -1443,14 +1628,14 @@
 - when peer state is PeerStateSucceeded, return size scope is small ([#1103](https://github.com/dragonflyoss/Dragonfly2/issues/1103))
 
 
-<a name="v2.0.2-rc.16"></a>
-## [v2.0.2-rc.16] - 2022-02-28
+<a name="v2.0.2-rc.15"></a>
+## [v2.0.2-rc.15] - 2022-02-28
 ### Feat
 - limit tree depth
 
 
-<a name="v2.0.2-rc.15"></a>
-## [v2.0.2-rc.15] - 2022-02-28
+<a name="v2.0.2-rc.16"></a>
+## [v2.0.2-rc.16] - 2022-02-28
 ### Feat
 - limit tree depth
 - update load limit ([#1097](https://github.com/dragonflyoss/Dragonfly2/issues/1097))
@@ -1529,11 +1714,11 @@
 - when cdn download failed, scheduler should set cdn peer state PeerStateFailed ([#1067](https://github.com/dragonflyoss/Dragonfly2/issues/1067))
 
 
-<a name="v2.0.2-rc.6"></a>
-## [v2.0.2-rc.6] - 2022-02-14
-
 <a name="v2.0.2-rc.5"></a>
 ## [v2.0.2-rc.5] - 2022-02-14
+
+<a name="v2.0.2-rc.6"></a>
+## [v2.0.2-rc.6] - 2022-02-14
 ### Chore
 - enable range feature gate in e2e ([#1059](https://github.com/dragonflyoss/Dragonfly2/issues/1059))
 - add content length for fast stream peer task ([#1061](https://github.com/dragonflyoss/Dragonfly2/issues/1061))
@@ -2462,7 +2647,21 @@
 - idgen add digest ([#243](https://github.com/dragonflyoss/Dragonfly2/issues/243))
 
 
-[Unreleased]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.7...HEAD
+[Unreleased]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.8...HEAD
+[v2.0.8]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.8-rc.3...v2.0.8
+[v2.0.8-rc.3]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.8-rc.2...v2.0.8-rc.3
+[v2.0.8-rc.2]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.8-rc.1...v2.0.8-rc.2
+[v2.0.8-rc.1]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.8-rc.0...v2.0.8-rc.1
+[v2.0.8-rc.0]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.8-beta.3...v2.0.8-rc.0
+[v2.0.8-beta.3]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.8-beta.2...v2.0.8-beta.3
+[v2.0.8-beta.2]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.8-beta.1...v2.0.8-beta.2
+[v2.0.8-beta.1]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.8-beta.0...v2.0.8-beta.1
+[v2.0.8-beta.0]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.8-alpha.4...v2.0.8-beta.0
+[v2.0.8-alpha.4]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.8-alpha.3...v2.0.8-alpha.4
+[v2.0.8-alpha.3]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.8-alpha.2...v2.0.8-alpha.3
+[v2.0.8-alpha.2]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.8-alpha.1...v2.0.8-alpha.2
+[v2.0.8-alpha.1]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.8-alpha.0...v2.0.8-alpha.1
+[v2.0.8-alpha.0]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.7...v2.0.8-alpha.0
 [v2.0.7]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.7-rc.0...v2.0.7
 [v2.0.7-rc.0]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.7-beta.7...v2.0.7-rc.0
 [v2.0.7-beta.7]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.7-beta.6...v2.0.7-beta.7
@@ -2501,9 +2700,9 @@
 [v2.0.5-alpha.1]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.5-alpha.0...v2.0.5-alpha.1
 [v2.0.5-alpha.0]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.4...v2.0.5-alpha.0
 [v2.0.4]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.4-rc.3...v2.0.4
-[v2.0.4-rc.3]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.4-rc.1...v2.0.4-rc.3
-[v2.0.4-rc.1]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.4-rc.2...v2.0.4-rc.1
-[v2.0.4-rc.2]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.4-rc.0...v2.0.4-rc.2
+[v2.0.4-rc.3]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.4-rc.2...v2.0.4-rc.3
+[v2.0.4-rc.2]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.4-rc.1...v2.0.4-rc.2
+[v2.0.4-rc.1]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.4-rc.0...v2.0.4-rc.1
 [v2.0.4-rc.0]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.4-beta.2...v2.0.4-rc.0
 [v2.0.4-beta.2]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.4-beta.1...v2.0.4-beta.2
 [v2.0.4-beta.1]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.4-beta.0...v2.0.4-beta.1
@@ -2535,9 +2734,9 @@
 [v2.0.2-rc.20]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.19...v2.0.2-rc.20
 [v2.0.2-rc.19]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.18...v2.0.2-rc.19
 [v2.0.2-rc.18]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.17...v2.0.2-rc.18
-[v2.0.2-rc.17]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.16...v2.0.2-rc.17
-[v2.0.2-rc.16]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.15...v2.0.2-rc.16
-[v2.0.2-rc.15]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.14...v2.0.2-rc.15
+[v2.0.2-rc.17]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.15...v2.0.2-rc.17
+[v2.0.2-rc.15]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.16...v2.0.2-rc.15
+[v2.0.2-rc.16]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.14...v2.0.2-rc.16
 [v2.0.2-rc.14]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.13...v2.0.2-rc.14
 [v2.0.2-rc.13]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.12...v2.0.2-rc.13
 [v2.0.2-rc.12]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.11...v2.0.2-rc.12
@@ -2545,9 +2744,9 @@
 [v2.0.2-rc.10]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.9...v2.0.2-rc.10
 [v2.0.2-rc.9]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.8...v2.0.2-rc.9
 [v2.0.2-rc.8]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.7...v2.0.2-rc.8
-[v2.0.2-rc.7]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.6...v2.0.2-rc.7
-[v2.0.2-rc.6]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.5...v2.0.2-rc.6
-[v2.0.2-rc.5]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.4...v2.0.2-rc.5
+[v2.0.2-rc.7]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.5...v2.0.2-rc.7
+[v2.0.2-rc.5]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.6...v2.0.2-rc.5
+[v2.0.2-rc.6]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.4...v2.0.2-rc.6
 [v2.0.2-rc.4]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.3...v2.0.2-rc.4
 [v2.0.2-rc.3]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.2...v2.0.2-rc.3
 [v2.0.2-rc.2]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.1...v2.0.2-rc.2
