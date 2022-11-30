@@ -738,7 +738,12 @@ loop:
 			break loop
 		}
 		if err != nil {
-			pt.confirmReceivePeerPacketError(err)
+			// some errors, like commonv1.Code_SchedReregister, after reregister success,
+			// we can continue receive peer packet from the new scheduler
+			cont := pt.confirmReceivePeerPacketError(err)
+			if cont {
+				continue
+			}
 			if !firstPacketReceived {
 				firstPeerSpan.RecordError(err)
 			}
@@ -833,12 +838,12 @@ func (pt *peerTaskConductor) updateSynchronizer(lastNum int32, p *schedulerv1.Pe
 	return desiredPiece
 }
 
-func (pt *peerTaskConductor) confirmReceivePeerPacketError(err error) {
+func (pt *peerTaskConductor) confirmReceivePeerPacketError(err error) (cont bool) {
 	select {
 	case <-pt.successCh:
-		return
+		return false
 	case <-pt.failCh:
-		return
+		return false
 	default:
 	}
 	var (
@@ -846,19 +851,30 @@ func (pt *peerTaskConductor) confirmReceivePeerPacketError(err error) {
 		failedReason string
 	)
 	de, ok := err.(*dferrors.DfError)
-	if ok && de.Code == commonv1.Code_SchedNeedBackSource {
-		pt.markBackSource()
-		pt.Infof("receive back source code")
-		return
-	} else if ok && de.Code != commonv1.Code_SchedNeedBackSource {
-		failedCode = de.Code
-		failedReason = de.Message
-		pt.Errorf("receive peer packet failed: %s", pt.failedReason)
+	if ok {
+		switch de.Code {
+		case commonv1.Code_SchedNeedBackSource:
+			pt.markBackSource()
+			pt.Infof("receive back source code")
+			return false
+		case commonv1.Code_SchedReregister:
+			pt.Infof("receive reregister code")
+			rerr := pt.register()
+			if rerr == nil {
+				pt.Infof("reregister ok")
+				return true
+			}
+			pt.Errorf("reregister to scheduler error:%s", err)
+		default:
+			failedCode = de.Code
+			failedReason = de.Message
+			pt.Errorf("receive peer packet failed: %s", pt.failedReason)
+		}
 	} else {
 		pt.Errorf("receive peer packet failed: %s", err)
 	}
 	pt.cancel(failedCode, failedReason)
-	return
+	return false
 }
 
 func (pt *peerTaskConductor) isExitPeerPacketCode(pp *schedulerv1.PeerPacket) bool {
