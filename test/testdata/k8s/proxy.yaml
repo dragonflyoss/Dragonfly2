@@ -20,13 +20,6 @@ data:
         refreshInterval: 5m
       scheduleTimeout: 30s
       disableAutoBackSource: true
-    host:
-      advertiseIP: 0.0.0.0
-      idc: ""
-      listenIP: 0.0.0.0
-      location: ""
-      netTopology: ""
-      securityDomain: ""
     download:
       prefetch: true
       calculateDigest: true
