@@ -62,8 +62,8 @@ func TestPeer_NewPeer(t *testing.T) {
 				assert.Equal(peer.FSM.Current(), PeerStatePending)
 				assert.EqualValues(peer.Task, mockTask)
 				assert.EqualValues(peer.Host, mockHost)
-				assert.NotEqual(peer.CreateAt.Load(), 0)
-				assert.NotEqual(peer.UpdateAt.Load(), 0)
+				assert.NotEqual(peer.CreatedAt.Load(), 0)
+				assert.NotEqual(peer.UpdatedAt.Load(), 0)
 				assert.NotNil(peer.Log)
 			},
 		},
@@ -83,8 +83,8 @@ func TestPeer_NewPeer(t *testing.T) {
 				assert.Equal(peer.FSM.Current(), PeerStatePending)
 				assert.EqualValues(peer.Task, mockTask)
 				assert.EqualValues(peer.Host, mockHost)
-				assert.NotEqual(peer.CreateAt.Load(), 0)
-				assert.NotEqual(peer.UpdateAt.Load(), 0)
+				assert.NotEqual(peer.CreatedAt.Load(), 0)
+				assert.NotEqual(peer.UpdatedAt.Load(), 0)
 				assert.NotNil(peer.Log)
 			},
 		},

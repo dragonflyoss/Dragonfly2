@@ -42,11 +42,11 @@ type Task struct {
 	// State is the download state of the task.
 	State string `csv:"state"`
 
-	// CreateAt is peer create nanosecond time.
-	CreateAt int64 `csv:"createAt"`
+	// CreatedAt is peer create nanosecond time.
+	CreatedAt int64 `csv:"createdAt"`
 
-	// UpdateAt is peer update nanosecond time.
-	UpdateAt int64 `csv:"updateAt"`
+	// UpdatedAt is peer update nanosecond time.
+	UpdatedAt int64 `csv:"updatedAt"`
 }
 
 // Host contains content for host.
@@ -111,11 +111,11 @@ type Host struct {
 	// Build information.
 	Build Build `csv:"build"`
 
-	// CreateAt is peer create nanosecond time.
-	CreateAt int64 `csv:"createAt"`
+	// CreatedAt is peer create nanosecond time.
+	CreatedAt int64 `csv:"createdAt"`
 
-	// UpdateAt is peer update nanosecond time.
-	UpdateAt int64 `csv:"updateAt"`
+	// UpdatedAt is peer update nanosecond time.
+	UpdatedAt int64 `csv:"updatedAt"`
 }
 
 // CPU contains content for cpu.
@@ -273,11 +273,11 @@ type Parent struct {
 	// Host is peer host.
 	Host Host `csv:"host"`
 
-	// CreateAt is peer create nanosecond time.
-	CreateAt int64 `csv:"createAt"`
+	// CreatedAt is peer create nanosecond time.
+	CreatedAt int64 `csv:"createdAt"`
 
-	// UpdateAt is peer update nanosecond time.
-	UpdateAt int64 `csv:"updateAt"`
+	// UpdatedAt is peer update nanosecond time.
+	UpdatedAt int64 `csv:"updatedAt"`
 }
 
 // Record contains content for record.
@@ -306,9 +306,9 @@ type Record struct {
 	// Parents is peer parents.
 	Parents []Parent `csv:"parents" csv[]:"20"`
 
-	// CreateAt is peer create nanosecond time.
-	CreateAt int64 `csv:"createAt"`
+	// CreatedAt is peer create nanosecond time.
+	CreatedAt int64 `csv:"createdAt"`
 
-	// UpdateAt is peer update nanosecond time.
-	UpdateAt int64 `csv:"updateAt"`
+	// UpdatedAt is peer update nanosecond time.
+	UpdatedAt int64 `csv:"updatedAt"`
 }

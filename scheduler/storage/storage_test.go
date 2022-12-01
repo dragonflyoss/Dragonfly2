@@ -43,8 +43,8 @@ var (
 		BackToSourceLimit:     10,
 		BackToSourcePeerCount: 2,
 		State:                 "Succeeded",
-		CreateAt:              time.Now().UnixNano(),
-		UpdateAt:              time.Now().UnixNano(),
+		CreatedAt:             time.Now().UnixNano(),
+		UpdatedAt:             time.Now().UnixNano(),
 	}
 
 	mockHost = Host{
@@ -113,8 +113,8 @@ var (
 			GoVersion:  "1.19",
 			Platform:   "linux",
 		},
-		CreateAt: time.Now().UnixNano(),
-		UpdateAt: time.Now().UnixNano(),
+		CreatedAt: time.Now().UnixNano(),
+		UpdatedAt: time.Now().UnixNano(),
 	}
 
 	mockParent = Parent{
@@ -124,8 +124,8 @@ var (
 		State:       "Succeeded",
 		Cost:        1000,
 		Host:        mockHost,
-		CreateAt:    time.Now().UnixNano(),
-		UpdateAt:    time.Now().UnixNano(),
+		CreatedAt:   time.Now().UnixNano(),
+		UpdatedAt:   time.Now().UnixNano(),
 	}
 
 	mockParents = append(make([]Parent, 19), mockParent)
@@ -139,8 +139,8 @@ var (
 		Task:        mockTask,
 		Host:        mockHost,
 		Parents:     mockParents,
-		CreateAt:    time.Now().UnixNano(),
-		UpdateAt:    time.Now().UnixNano(),
+		CreatedAt:   time.Now().UnixNano(),
+		UpdatedAt:   time.Now().UnixNano(),
 	}
 )
 

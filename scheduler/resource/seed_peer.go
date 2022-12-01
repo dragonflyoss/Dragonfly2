@@ -142,9 +142,10 @@ func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *schedul
 			peer.AppendPieceCost(pkgtime.SubNano(int64(piece.EndTime), int64(piece.BeginTime)).Milliseconds())
 
 			// When the piece is downloaded successfully,
-			// peer.UpdateAt needs to be updated to prevent
+			// peer.UpdatedAt needs to be updated to prevent
 			// the peer from being GC during the download process.
-			peer.UpdateAt.Store(time.Now())
+			peer.UpdatedAt.Store(time.Now())
+			peer.PieceUpdatedAt.Store(time.Now())
 			task.StorePiece(piece.PieceInfo)
 
 			// Statistical traffic metrics.

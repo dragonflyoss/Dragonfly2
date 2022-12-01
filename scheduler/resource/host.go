@@ -107,11 +107,11 @@ type Host struct {
 	// PeerCount is peer count.
 	PeerCount *atomic.Int32
 
-	// CreateAt is host create time.
-	CreateAt *atomic.Time
+	// CreatedAt is host create time.
+	CreatedAt *atomic.Time
 
-	// UpdateAt is host update time.
-	UpdateAt *atomic.Time
+	// UpdatedAt is host update time.
+	UpdatedAt *atomic.Time
 
 	// Host log.
 	Log *logger.SugaredLoggerOnWith
@@ -142,8 +142,8 @@ func NewHost(req *schedulerv1.AnnounceHostRequest, options ...HostOption) *Host 
 		UploadFailedCount:     atomic.NewInt64(0),
 		Peers:                 &sync.Map{},
 		PeerCount:             atomic.NewInt32(0),
-		CreateAt:              atomic.NewTime(time.Now()),
-		UpdateAt:              atomic.NewTime(time.Now()),
+		CreatedAt:             atomic.NewTime(time.Now()),
+		UpdatedAt:             atomic.NewTime(time.Now()),
 		Log:                   logger.WithHost(req.Id, req.Hostname, req.Ip),
 	}
 
