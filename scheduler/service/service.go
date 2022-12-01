@@ -744,16 +744,17 @@ func (s *Service) handlePieceSuccess(ctx context.Context, peer *resource.Peer, p
 	peer.AppendPieceCost(pkgtime.SubNano(int64(piece.EndTime), int64(piece.BeginTime)).Milliseconds())
 
 	// When the piece is downloaded successfully,
-	// peer's UpdateAt needs to be updated
+	// peer's UpdatedAt needs to be updated
 	// to prevent the peer from being GC during the download process.
-	peer.UpdateAt.Store(time.Now())
+	peer.UpdatedAt.Store(time.Now())
+	peer.PieceUpdatedAt.Store(time.Now())
 
 	// When the piece is downloaded successfully,
-	// dst peer's UpdateAt needs to be updated
+	// dst peer's UpdatedAt needs to be updated
 	// to prevent the dst peer from being GC during the download process.
 	if !resource.IsPieceBackToSource(piece) {
 		if destPeer, loaded := s.resource.PeerManager().Load(piece.DstPid); loaded {
-			destPeer.UpdateAt.Store(time.Now())
+			destPeer.UpdatedAt.Store(time.Now())
 		}
 	}
 
@@ -997,8 +998,8 @@ func (s *Service) createRecord(peer *resource.Peer, parents []*resource.Peer, re
 			Application: parent.Application,
 			State:       parent.FSM.Current(),
 			Cost:        req.Cost,
-			CreateAt:    parent.CreateAt.Load().UnixNano(),
-			UpdateAt:    parent.UpdateAt.Load().UnixNano(),
+			CreatedAt:   parent.CreatedAt.Load().UnixNano(),
+			UpdatedAt:   parent.UpdatedAt.Load().UnixNano(),
 			Host: storage.Host{
 				ID:                    parent.Host.ID,
 				Type:                  parent.Host.Type.Name(),
@@ -1015,8 +1016,8 @@ func (s *Service) createRecord(peer *resource.Peer, parents []*resource.Peer, re
 				ConcurrentUploadCount: parent.Host.ConcurrentUploadCount.Load(),
 				UploadCount:           parent.Host.UploadCount.Load(),
 				UploadFailedCount:     parent.Host.UploadFailedCount.Load(),
-				CreateAt:              parent.Host.CreateAt.Load().UnixNano(),
-				UpdateAt:              parent.Host.UpdateAt.Load().UnixNano(),
+				CreatedAt:             parent.Host.CreatedAt.Load().UnixNano(),
+				UpdatedAt:             parent.Host.UpdatedAt.Load().UnixNano(),
 			},
 		}
 
@@ -1095,8 +1096,8 @@ func (s *Service) createRecord(peer *resource.Peer, parents []*resource.Peer, re
 		State:       peer.FSM.Current(),
 		Cost:        req.Cost,
 		Parents:     parentRecords,
-		CreateAt:    peer.CreateAt.Load().UnixNano(),
-		UpdateAt:    peer.UpdateAt.Load().UnixNano(),
+		CreatedAt:   peer.CreatedAt.Load().UnixNano(),
+		UpdatedAt:   peer.UpdatedAt.Load().UnixNano(),
 		Task: storage.Task{
 			ID:                    peer.Task.ID,
 			URL:                   peer.Task.URL,
@@ -1106,8 +1107,8 @@ func (s *Service) createRecord(peer *resource.Peer, parents []*resource.Peer, re
 			BackToSourceLimit:     peer.Task.BackToSourceLimit.Load(),
 			BackToSourcePeerCount: int32(peer.Task.BackToSourcePeers.Len()),
 			State:                 peer.Task.FSM.Current(),
-			CreateAt:              peer.Task.CreateAt.Load().UnixNano(),
-			UpdateAt:              peer.Task.UpdateAt.Load().UnixNano(),
+			CreatedAt:             peer.Task.CreatedAt.Load().UnixNano(),
+			UpdatedAt:             peer.Task.UpdatedAt.Load().UnixNano(),
 		},
 		Host: storage.Host{
 			ID:                    peer.Host.ID,
@@ -1125,8 +1126,8 @@ func (s *Service) createRecord(peer *resource.Peer, parents []*resource.Peer, re
 			ConcurrentUploadCount: peer.Host.ConcurrentUploadCount.Load(),
 			UploadCount:           peer.Host.UploadCount.Load(),
 			UploadFailedCount:     peer.Host.UploadFailedCount.Load(),
-			CreateAt:              peer.Host.CreateAt.Load().UnixNano(),
-			UpdateAt:              peer.Host.UpdateAt.Load().UnixNano(),
+			CreatedAt:             peer.Host.CreatedAt.Load().UnixNano(),
+			UpdatedAt:             peer.Host.UpdatedAt.Load().UnixNano(),
 		},
 	}
 
