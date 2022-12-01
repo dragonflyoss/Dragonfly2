@@ -50,13 +50,15 @@ scheduler:
   retryInterval: 50ms
   # GC metadata configuration.
   gc:
-    # peerGCInterval is peer's gc interval.
+    # pieceDownloadTimeout is the timeout of downloading piece.
+    pieceDownloadTimeout: 30m
+    # peerGCInterval is the interval of peer gc.
     peerGCInterval: 10s
-    # peerTTL is peer's TTL duration.
+    # peerTTL is the ttl of peer.
     peerTTL: 24h
-    # taskGCInterval is task's gc interval.
+    # taskGCInterval is the interval of task gc.
     taskGCInterval: 30m
-    # hostGCInterval is host's gc interval.
+    # hostGCInterval is the interval of host gc.
     hostGCInterval: 1h
 
 # Dynamic data configuration.
