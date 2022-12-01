@@ -319,8 +319,9 @@ func TestPeerManager_RunGC(t *testing.T) {
 		{
 			name: "peer leave",
 			gcConfig: &config.GCConfig{
-				PeerGCInterval: 1 * time.Second,
-				PeerTTL:        1 * time.Microsecond,
+				PieceDownloadTimeout: 5 * time.Minute,
+				PeerGCInterval:       1 * time.Second,
+				PeerTTL:              1 * time.Microsecond,
 			},
 			mock: func(m *gc.MockGCMockRecorder) {
 				m.Add(gomock.Any()).Return(nil).Times(1)
@@ -338,10 +339,67 @@ func TestPeerManager_RunGC(t *testing.T) {
 			},
 		},
 		{
+			name: "peer download piece timeout and peer state is PeerStateRunning",
+			gcConfig: &config.GCConfig{
+				PieceDownloadTimeout: 1 * time.Microsecond,
+				PeerGCInterval:       1 * time.Second,
+				PeerTTL:              5 * time.Minute,
+			},
+			mock: func(m *gc.MockGCMockRecorder) {
+				m.Add(gomock.Any()).Return(nil).Times(1)
+			},
+			expect: func(t *testing.T, peerManager PeerManager, mockHost *Host, mockTask *Task, mockPeer *Peer) {
+				assert := assert.New(t)
+				peerManager.Store(mockPeer)
+				mockPeer.FSM.SetState(PeerStateRunning)
+				err := peerManager.RunGC()
+				assert.NoError(err)
+
+				peer, ok := peerManager.Load(mockPeer.ID)
+				assert.Equal(ok, true)
+				assert.Equal(peer.FSM.Current(), PeerStateLeave)
+
+				err = peerManager.RunGC()
+				assert.NoError(err)
+
+				_, ok = peerManager.Load(mockPeer.ID)
+				assert.Equal(ok, false)
+			},
+		},
+		{
+			name: "peer download piece timeout and peer state is PeerStateBackToSource",
+			gcConfig: &config.GCConfig{
+				PieceDownloadTimeout: 1 * time.Microsecond,
+				PeerGCInterval:       1 * time.Second,
+				PeerTTL:              5 * time.Minute,
+			},
+			mock: func(m *gc.MockGCMockRecorder) {
+				m.Add(gomock.Any()).Return(nil).Times(1)
+			},
+			expect: func(t *testing.T, peerManager PeerManager, mockHost *Host, mockTask *Task, mockPeer *Peer) {
+				assert := assert.New(t)
+				peerManager.Store(mockPeer)
+				mockPeer.FSM.SetState(PeerStateBackToSource)
+				err := peerManager.RunGC()
+				assert.NoError(err)
+
+				peer, ok := peerManager.Load(mockPeer.ID)
+				assert.Equal(ok, true)
+				assert.Equal(peer.FSM.Current(), PeerStateLeave)
+
+				err = peerManager.RunGC()
+				assert.NoError(err)
+
+				_, ok = peerManager.Load(mockPeer.ID)
+				assert.Equal(ok, false)
+			},
+		},
+		{
 			name: "peer reclaimed",
 			gcConfig: &config.GCConfig{
-				PeerGCInterval: 1 * time.Second,
-				PeerTTL:        1 * time.Microsecond,
+				PieceDownloadTimeout: 5 * time.Minute,
+				PeerGCInterval:       1 * time.Second,
+				PeerTTL:              1 * time.Microsecond,
 			},
 			mock: func(m *gc.MockGCMockRecorder) {
 				m.Add(gomock.Any()).Return(nil).Times(1)
@@ -367,8 +425,9 @@ func TestPeerManager_RunGC(t *testing.T) {
 		{
 			name: "peer state is PeerStateFailed",
 			gcConfig: &config.GCConfig{
-				PeerGCInterval: 1 * time.Second,
-				PeerTTL:        1 * time.Microsecond,
+				PieceDownloadTimeout: 5 * time.Minute,
+				PeerGCInterval:       1 * time.Second,
+				PeerTTL:              1 * time.Microsecond,
 			},
 			mock: func(m *gc.MockGCMockRecorder) {
 				m.Add(gomock.Any()).Return(nil).Times(1)
@@ -388,8 +447,9 @@ func TestPeerManager_RunGC(t *testing.T) {
 		{
 			name: "peer gets degree failed",
 			gcConfig: &config.GCConfig{
-				PeerGCInterval: 1 * time.Second,
-				PeerTTL:        1 * time.Hour,
+				PieceDownloadTimeout: 5 * time.Minute,
+				PeerGCInterval:       1 * time.Second,
+				PeerTTL:              1 * time.Hour,
 			},
 			mock: func(m *gc.MockGCMockRecorder) {
 				m.Add(gomock.Any()).Return(nil).Times(1)
@@ -410,8 +470,9 @@ func TestPeerManager_RunGC(t *testing.T) {
 		{
 			name: "peer reclaimed with PeerCountLimitForTask",
 			gcConfig: &config.GCConfig{
-				PeerGCInterval: 1 * time.Second,
-				PeerTTL:        1 * time.Hour,
+				PieceDownloadTimeout: 5 * time.Minute,
+				PeerGCInterval:       1 * time.Second,
+				PeerTTL:              1 * time.Hour,
 			},
 			mock: func(m *gc.MockGCMockRecorder) {
 				m.Add(gomock.Any()).Return(nil).Times(1)

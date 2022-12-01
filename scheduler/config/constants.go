@@ -58,6 +58,9 @@ const (
 	// DefaultSchedulerRetryInterval is default retry interval for scheduler.
 	DefaultSchedulerRetryInterval = 50 * time.Millisecond
 
+	// DefaultSchedulerPieceDownloadTimeout is default timeout of downloading piece.
+	DefaultSchedulerPieceDownloadTimeout = 30 * time.Minute
+
 	// DefaultSchedulerPeerGCInterval is default interval for peer gc.
 	DefaultSchedulerPeerGCInterval = 10 * time.Second
 

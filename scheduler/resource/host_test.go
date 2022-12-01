@@ -85,8 +85,8 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.Network.NetTopology, mockRawHost.Network.NetTopology)
 				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(config.DefaultPeerConcurrentUploadLimit))
 				assert.Equal(host.PeerCount.Load(), int32(0))
-				assert.NotEqual(host.CreateAt.Load(), 0)
-				assert.NotEqual(host.UpdateAt.Load(), 0)
+				assert.NotEqual(host.CreatedAt.Load(), 0)
+				assert.NotEqual(host.UpdatedAt.Load(), 0)
 				assert.NotNil(host.Log)
 			},
 		},
@@ -107,8 +107,8 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.Network.NetTopology, mockRawSeedHost.Network.NetTopology)
 				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(config.DefaultPeerConcurrentUploadLimit))
 				assert.Equal(host.PeerCount.Load(), int32(0))
-				assert.NotEqual(host.CreateAt.Load(), 0)
-				assert.NotEqual(host.UpdateAt.Load(), 0)
+				assert.NotEqual(host.CreatedAt.Load(), 0)
+				assert.NotEqual(host.UpdatedAt.Load(), 0)
 				assert.NotNil(host.Log)
 			},
 		},
@@ -130,8 +130,8 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.Network.NetTopology, mockRawHost.Network.NetTopology)
 				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(200))
 				assert.Equal(host.PeerCount.Load(), int32(0))
-				assert.NotEqual(host.CreateAt.Load(), 0)
-				assert.NotEqual(host.UpdateAt.Load(), 0)
+				assert.NotEqual(host.CreatedAt.Load(), 0)
+				assert.NotEqual(host.UpdatedAt.Load(), 0)
 				assert.NotNil(host.Log)
 			},
 		},

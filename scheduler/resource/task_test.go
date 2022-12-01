@@ -82,8 +82,8 @@ func TestTask_NewTask(t *testing.T) {
 				assert.Equal(task.FSM.Current(), TaskStatePending)
 				assert.Empty(task.Pieces)
 				assert.Equal(task.PeerCount(), 0)
-				assert.NotEqual(task.CreateAt.Load(), 0)
-				assert.NotEqual(task.UpdateAt.Load(), 0)
+				assert.NotEqual(task.CreatedAt.Load(), 0)
+				assert.NotEqual(task.UpdatedAt.Load(), 0)
 				assert.NotNil(task.Log)
 			},
 		},
@@ -1042,8 +1042,8 @@ func TestTask_LoadSeedPeer(t *testing.T) {
 				task.StorePeer(mockPeer)
 				task.StorePeer(mockSeedPeer)
 
-				mockPeer.UpdateAt.Store(time.Now())
-				mockSeedPeer.UpdateAt.Store(time.Now().Add(1 * time.Second))
+				mockPeer.UpdatedAt.Store(time.Now())
+				mockSeedPeer.UpdatedAt.Store(time.Now().Add(1 * time.Second))
 
 				peer, ok := task.LoadSeedPeer()
 				assert.True(ok)
@@ -1124,7 +1124,7 @@ func TestTask_IsSeedPeerFailed(t *testing.T) {
 				assert := assert.New(t)
 				task.StorePeer(mockPeer)
 				task.StorePeer(mockSeedPeer)
-				mockSeedPeer.CreateAt.Store(time.Now().Add(-SeedPeerFailedTimeout))
+				mockSeedPeer.CreatedAt.Store(time.Now().Add(-SeedPeerFailedTimeout))
 				mockSeedPeer.FSM.SetState(PeerStateFailed)
 
 				assert.False(task.IsSeedPeerFailed())

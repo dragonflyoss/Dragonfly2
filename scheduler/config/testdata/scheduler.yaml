@@ -16,6 +16,7 @@ scheduler:
   retryLimit: 10
   retryInterval: 1000000000
   gc:
+    pieceDownloadTimeout: 60000000000
     peerGCInterval: 60000000000
     peerTTL: 300000000000
     taskGCInterval: 60000000000

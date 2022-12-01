@@ -54,19 +54,23 @@ type peerManager struct {
 	// Peer sync map.
 	*sync.Map
 
-	// Peer time to live.
+	// ttl is time to live of peer.
 	ttl time.Duration
 
-	// Peer mutex.
+	// pieceDownloadTimeout is timeout of downloading piece.
+	pieceDownloadTimeout time.Duration
+
+	// mu is peer mutex.
 	mu *sync.Mutex
 }
 
 // New peer manager interface.
 func newPeerManager(cfg *config.GCConfig, gc pkggc.GC) (PeerManager, error) {
 	p := &peerManager{
-		Map: &sync.Map{},
-		ttl: cfg.PeerTTL,
-		mu:  &sync.Mutex{},
+		Map:                  &sync.Map{},
+		ttl:                  cfg.PeerTTL,
+		pieceDownloadTimeout: cfg.PieceDownloadTimeout,
+		mu:                   &sync.Mutex{},
 	}
 
 	if err := gc.Add(pkggc.Task{
@@ -125,7 +129,11 @@ func (p *peerManager) Delete(key string) {
 
 func (p *peerManager) RunGC() error {
 	p.Map.Range(func(_, value any) bool {
-		peer := value.(*Peer)
+		peer, ok := value.(*Peer)
+		if !ok {
+			peer.Log.Warn("invalid peer")
+			return true
+		}
 
 		// If the peer state is PeerStateLeave,
 		// peer will be reclaimed.
@@ -135,12 +143,25 @@ func (p *peerManager) RunGC() error {
 			return true
 		}
 
+		// If the peer's elapsed of downloading piece exceeds the pieceDownloadTimeout,
+		// then sets the peer state to PeerStateLeave and then delete peer.
+		if peer.FSM.Is(PeerStateRunning) || peer.FSM.Is(PeerStateBackToSource) {
+			elapsed := time.Since(peer.PieceUpdatedAt.Load())
+			if elapsed > p.pieceDownloadTimeout {
+				peer.Log.Info("peer elapsed exceeds the timeout of downloading piece, causing the peer to leave")
+				if err := peer.FSM.Event(PeerEventLeave); err != nil {
+					peer.Log.Errorf("peer fsm event failed: %s", err.Error())
+					return true
+				}
+
+				return true
+			}
+		}
+
 		// If the peer's elapsed exceeds the ttl,
-		// first set the peer state to PeerStateLeave and then delete peer.
-		elapsed := time.Since(peer.UpdateAt.Load())
+		// then set the peer state to PeerStateLeave and then delete peer.
+		elapsed := time.Since(peer.UpdatedAt.Load())
 		if elapsed > p.ttl {
-			// If the peer is not leave,
-			// first change the state to PeerEventLeave.
 			peer.Log.Info("peer elapsed exceeds the ttl, causing the peer to leave")
 			if err := peer.FSM.Event(PeerEventLeave); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
@@ -151,7 +172,7 @@ func (p *peerManager) RunGC() error {
 		}
 
 		// If the peer's state is PeerStateFailed,
-		// first set the peer state to PeerStateLeave and then delete peer.
+		// then set the peer state to PeerStateLeave and then delete peer.
 		if peer.FSM.Is(PeerStateFailed) {
 			peer.Log.Info("peer state is PeerStateFailed, causing the peer to leave")
 			if err := peer.FSM.Event(PeerEventLeave); err != nil {

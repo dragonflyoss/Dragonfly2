@@ -132,11 +132,11 @@ type Task struct {
 	// if one peer succeeds, the value is reset to zero.
 	PeerFailedCount *atomic.Int32
 
-	// CreateAt is task create time.
-	CreateAt *atomic.Time
+	// CreatedAt is task create time.
+	CreatedAt *atomic.Time
 
-	// UpdateAt is task update time.
-	UpdateAt *atomic.Time
+	// UpdatedAt is task update time.
+	UpdatedAt *atomic.Time
 
 	// Task log.
 	Log *logger.SugaredLoggerOnWith
@@ -157,8 +157,8 @@ func NewTask(id, url string, taskType commonv1.TaskType, meta *commonv1.UrlMeta,
 		Pieces:            &sync.Map{},
 		DAG:               dag.NewDAG[*Peer](),
 		PeerFailedCount:   atomic.NewInt32(0),
-		CreateAt:          atomic.NewTime(time.Now()),
-		UpdateAt:          atomic.NewTime(time.Now()),
+		CreatedAt:         atomic.NewTime(time.Now()),
+		UpdatedAt:         atomic.NewTime(time.Now()),
 		Log:               logger.WithTask(id, url),
 	}
 
@@ -173,19 +173,19 @@ func NewTask(id, url string, taskType commonv1.TaskType, meta *commonv1.UrlMeta,
 		},
 		fsm.Callbacks{
 			TaskEventDownload: func(e *fsm.Event) {
-				t.UpdateAt.Store(time.Now())
+				t.UpdatedAt.Store(time.Now())
 				t.Log.Infof("task state is %s", e.FSM.Current())
 			},
 			TaskEventDownloadSucceeded: func(e *fsm.Event) {
-				t.UpdateAt.Store(time.Now())
+				t.UpdatedAt.Store(time.Now())
 				t.Log.Infof("task state is %s", e.FSM.Current())
 			},
 			TaskEventDownloadFailed: func(e *fsm.Event) {
-				t.UpdateAt.Store(time.Now())
+				t.UpdatedAt.Store(time.Now())
 				t.Log.Infof("task state is %s", e.FSM.Current())
 			},
 			TaskEventLeave: func(e *fsm.Event) {
-				t.UpdateAt.Store(time.Now())
+				t.UpdatedAt.Store(time.Now())
 				t.Log.Infof("task state is %s", e.FSM.Current())
 			},
 		},
@@ -362,7 +362,7 @@ func (t *Task) LoadSeedPeer() (*Peer, bool) {
 	sort.Slice(
 		peers,
 		func(i, j int) bool {
-			return peers[i].UpdateAt.Load().After(peers[j].UpdateAt.Load())
+			return peers[i].UpdatedAt.Load().After(peers[j].UpdatedAt.Load())
 		},
 	)
 
@@ -376,7 +376,7 @@ func (t *Task) LoadSeedPeer() (*Peer, bool) {
 // IsSeedPeerFailed returns whether the seed peer in the task failed.
 func (t *Task) IsSeedPeerFailed() bool {
 	seedPeer, ok := t.LoadSeedPeer()
-	return ok && seedPeer.FSM.Is(PeerStateFailed) && time.Since(seedPeer.CreateAt.Load()) < SeedPeerFailedTimeout
+	return ok && seedPeer.FSM.Is(PeerStateFailed) && time.Since(seedPeer.CreatedAt.Load()) < SeedPeerFailedTimeout
 }
 
 // LoadPiece return piece for a key.
