@@ -140,16 +140,19 @@ type TrainingConfig struct {
 }
 
 type GCConfig struct {
-	// Peer gc interval.
+	// PieceDownloadTimeout is timout of downloading piece.
+	PieceDownloadTimeout time.Duration `yaml:"pieceDownloadTimeout" mapstructure:"pieceDownloadTimeout"`
+
+	// PeerGCInterval is interval of peer gc.
 	PeerGCInterval time.Duration `yaml:"peerGCInterval" mapstructure:"peerGCInterval"`
 
-	// Peer time to live.
+	// PeerTTL is time to live of peer.
 	PeerTTL time.Duration `yaml:"peerTTL" mapstructure:"peerTTL"`
 
-	// Task gc interval.
+	// TaskGCInterval is interval of task gc.
 	TaskGCInterval time.Duration `yaml:"taskGCInterval" mapstructure:"taskGCInterval"`
 
-	// Host gc interval.
+	// HostGCInterval is interval of host gc.
 	HostGCInterval time.Duration `yaml:"hostGCInterval" mapstructure:"hostGCInterval"`
 }
 
@@ -298,10 +301,11 @@ func New() *Config {
 			RetryLimit:           DefaultSchedulerRetryLimit,
 			RetryInterval:        DefaultSchedulerRetryInterval,
 			GC: GCConfig{
-				PeerGCInterval: DefaultSchedulerPeerGCInterval,
-				PeerTTL:        DefaultSchedulerPeerTTL,
-				TaskGCInterval: DefaultSchedulerTaskGCInterval,
-				HostGCInterval: DefaultSchedulerHostGCInterval,
+				PieceDownloadTimeout: DefaultSchedulerPieceDownloadTimeout,
+				PeerGCInterval:       DefaultSchedulerPeerGCInterval,
+				PeerTTL:              DefaultSchedulerPeerTTL,
+				TaskGCInterval:       DefaultSchedulerTaskGCInterval,
+				HostGCInterval:       DefaultSchedulerHostGCInterval,
 			},
 			Training: TrainingConfig{
 				Enable:               false,
@@ -385,6 +389,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Scheduler.RetryInterval <= 0 {
 		return errors.New("scheduler requires parameter retryInterval")
+	}
+
+	if cfg.Scheduler.GC.PieceDownloadTimeout <= 0 {
+		return errors.New("scheduler requires parameter pieceDownloadTimeout")
 	}
 
 	if cfg.Scheduler.GC.PeerTTL <= 0 {

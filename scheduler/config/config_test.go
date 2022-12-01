@@ -37,10 +37,11 @@ func TestConfig_Load(t *testing.T) {
 			RetryLimit:           10,
 			RetryInterval:        1 * time.Second,
 			GC: GCConfig{
-				PeerGCInterval: 1 * time.Minute,
-				PeerTTL:        5 * time.Minute,
-				TaskGCInterval: 1 * time.Minute,
-				HostGCInterval: 1 * time.Minute,
+				PieceDownloadTimeout: 1 * time.Minute,
+				PeerGCInterval:       1 * time.Minute,
+				PeerTTL:              5 * time.Minute,
+				TaskGCInterval:       1 * time.Minute,
+				HostGCInterval:       1 * time.Minute,
 			},
 			Training: TrainingConfig{
 				Enable:               true,

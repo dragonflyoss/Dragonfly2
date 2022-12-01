@@ -174,11 +174,14 @@ type Peer struct {
 	// IsBackToSource is set to true.
 	IsBackToSource *atomic.Bool
 
-	// CreateAt is peer create time.
-	CreateAt *atomic.Time
+	// PieceUpdatedAt is piece update time.
+	PieceUpdatedAt *atomic.Time
 
-	// UpdateAt is peer update time.
-	UpdateAt *atomic.Time
+	// CreatedAt is peer create time.
+	CreatedAt *atomic.Time
+
+	// UpdatedAt is peer update time.
+	UpdatedAt *atomic.Time
 
 	// Peer log.
 	Log *logger.SugaredLoggerOnWith
@@ -199,8 +202,9 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 		BlockParents:     set.NewSafeSet[string](),
 		NeedBackToSource: atomic.NewBool(false),
 		IsBackToSource:   atomic.NewBool(false),
-		CreateAt:         atomic.NewTime(time.Now()),
-		UpdateAt:         atomic.NewTime(time.Now()),
+		PieceUpdatedAt:   atomic.NewTime(time.Now()),
+		CreatedAt:        atomic.NewTime(time.Now()),
+		UpdatedAt:        atomic.NewTime(time.Now()),
 		Log:              logger.WithPeer(host.ID, task.ID, id),
 	}
 
@@ -231,23 +235,23 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 		},
 		fsm.Callbacks{
 			PeerEventRegisterEmpty: func(e *fsm.Event) {
-				p.UpdateAt.Store(time.Now())
+				p.UpdatedAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 			PeerEventRegisterTiny: func(e *fsm.Event) {
-				p.UpdateAt.Store(time.Now())
+				p.UpdatedAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 			PeerEventRegisterSmall: func(e *fsm.Event) {
-				p.UpdateAt.Store(time.Now())
+				p.UpdatedAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 			PeerEventRegisterNormal: func(e *fsm.Event) {
-				p.UpdateAt.Store(time.Now())
+				p.UpdatedAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 			PeerEventDownload: func(e *fsm.Event) {
-				p.UpdateAt.Store(time.Now())
+				p.UpdatedAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 			PeerEventDownloadBackToSource: func(e *fsm.Event) {
@@ -258,7 +262,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 					p.Log.Errorf("delete peer inedges failed: %s", err.Error())
 				}
 
-				p.UpdateAt.Store(time.Now())
+				p.UpdatedAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 			PeerEventDownloadSucceeded: func(e *fsm.Event) {
@@ -271,7 +275,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 				}
 
 				p.Task.PeerFailedCount.Store(0)
-				p.UpdateAt.Store(time.Now())
+				p.UpdatedAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 			PeerEventDownloadFailed: func(e *fsm.Event) {
@@ -284,7 +288,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 					p.Log.Errorf("delete peer inedges failed: %s", err.Error())
 				}
 
-				p.UpdateAt.Store(time.Now())
+				p.UpdatedAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 			PeerEventLeave: func(e *fsm.Event) {
@@ -292,6 +296,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 					p.Log.Errorf("delete peer inedges failed: %s", err.Error())
 				}
 
+				p.Task.BackToSourcePeers.Delete(p.ID)
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 		},
