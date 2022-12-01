@@ -38,8 +38,8 @@ var (
 )
 
 const (
-	defaultRotateMaxSize    = 100
-	defaultRotateMaxBackups = 10
+	defaultRotateMaxSize    = 1024
+	defaultRotateMaxBackups = 20
 	defaultRotateMaxAge     = 7
 )
 
