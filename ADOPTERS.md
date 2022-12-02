@@ -10,6 +10,7 @@ then please add your team and use-case to this file.
 - [Amap](https://mobile.amap.com/) - Large-scale image and file distribution.
 - [Ant Group](https://www.antgroup.com/) - Large-scale image and file distribution.
 - [Autohome](https://www.autohome.com.cn/) - Large-scale image distribution.
+- [Baidu](https://www.baidu.com/) - Large-scale image and file distribution.
 - [Bilibili](https://www.bilibili.com/) - Large-scale image distribution.
 - [Cainiao](https://global.cainiao.com/) - Large-scale image and file distribution.
 - [China Mobile](https://www.chinamobileltd.com/) - Large-scale image and file distribution.
