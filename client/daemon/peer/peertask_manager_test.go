@@ -85,6 +85,8 @@ type componentsOption struct {
 	content            []byte
 	getPieceTasks      bool
 	reregister         bool
+	registerMaxRetry   int
+	autoBackSource     bool
 }
 
 func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOption) (
@@ -223,8 +225,16 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 	pps.EXPECT().CloseSend().AnyTimes()
 
 	sched := schedulerclientmocks.NewMockClient(ctrl)
+	var retryRegister int
 	sched.EXPECT().RegisterPeerTask(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, ptr *schedulerv1.PeerTaskRequest, opts ...grpc.CallOption) (*schedulerv1.RegisterResult, error) {
+			if opt.autoBackSource {
+				return nil, fmt.Errorf("auto backsource test")
+			}
+			if opt.registerMaxRetry > 1 && retryRegister < opt.registerMaxRetry-1 {
+				retryRegister++
+				return nil, fmt.Errorf("retry register test")
+			}
 			switch opt.scope {
 			case commonv1.SizeScope_TINY:
 				return &schedulerv1.RegisterResult{
@@ -301,12 +311,16 @@ func setupMockManager(ctrl *gomock.Controller, ts *testSpec, opt componentsOptio
 	if ts.scheduleTimeout > 0 {
 		scheduleTimeout = util.Duration{Duration: ts.scheduleTimeout}
 	}
+	if opt.registerMaxRetry == 0 {
+		opt.registerMaxRetry = 1
+	}
 	ptm := &peerTaskManager{
 		conductorLock:    &sync.Mutex{},
 		runningPeerTasks: sync.Map{},
 		trafficShaper:    NewTrafficShaper("plain", 0, nil),
 		TaskManagerOption: TaskManagerOption{
-			SchedulerClient: schedulerClient,
+			SchedulerClient:  schedulerClient,
+			RegisterMaxRetry: opt.registerMaxRetry,
 			TaskOption: TaskOption{
 				CalculateDigest: true,
 				PeerHost: &schedulerv1.PeerHost{
@@ -321,7 +335,8 @@ func setupMockManager(ctrl *gomock.Controller, ts *testSpec, opt componentsOptio
 				},
 				StorageManager: storageManager,
 				SchedulerOption: config.SchedulerOption{
-					ScheduleTimeout: scheduleTimeout,
+					ScheduleTimeout:       scheduleTimeout,
+					DisableAutoBackSource: !opt.autoBackSource,
 				},
 				GRPCDialTimeout: time.Second,
 				GRPCCredentials: insecure.NewCredentials(),
@@ -356,6 +371,8 @@ type testSpec struct {
 	url                string
 	legacyFeature      bool
 	reregister         bool
+	registerMaxRetry   int
+	autoBackSource     bool
 	// when urlGenerator is not nil, use urlGenerator instead url
 	// it's useful for httptest server
 	urlGenerator func(ts *testSpec) string
@@ -407,7 +424,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			mockHTTPSourceClient: nil,
 		},
 		{
-			name:                 "normal size scope - p2p - reregister",
+			name:                 "normal size scope - p2p - reregister when receive peer packet",
 			taskData:             testBytes,
 			pieceParallelCount:   4,
 			pieceSize:            1024,
@@ -417,6 +434,41 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			mockPieceDownloader:  commonPieceDownloader,
 			mockHTTPSourceClient: nil,
 			reregister:           true,
+		},
+		{
+			name:                 "normal size scope - p2p - retry register when register failed",
+			taskData:             testBytes,
+			pieceParallelCount:   4,
+			pieceSize:            1024,
+			peerID:               "normal-size-peer",
+			url:                  "http://localhost/test/data",
+			sizeScope:            commonv1.SizeScope_NORMAL,
+			mockPieceDownloader:  commonPieceDownloader,
+			mockHTTPSourceClient: nil,
+			registerMaxRetry:     3,
+		},
+		{
+			name:                "normal size scope - p2p - register error and auto back source",
+			taskData:            testBytes,
+			pieceParallelCount:  4,
+			pieceSize:           1024,
+			peerID:              "normal-size-peer",
+			url:                 "http://localhost/test/data",
+			sizeScope:           commonv1.SizeScope_NORMAL,
+			autoBackSource:      true,
+			mockPieceDownloader: nil,
+			mockHTTPSourceClient: func(t *testing.T, ctrl *gomock.Controller, rg *util.Range, taskData []byte, url string) source.ResourceClient {
+				sourceClient := sourcemocks.NewMockResourceClient(ctrl)
+				sourceClient.EXPECT().GetContentLength(source.RequestEq(url)).AnyTimes().DoAndReturn(
+					func(request *source.Request) (int64, error) {
+						return int64(len(taskData)), nil
+					})
+				sourceClient.EXPECT().Download(source.RequestEq(url)).AnyTimes().DoAndReturn(
+					func(request *source.Request) (*source.Response, error) {
+						return source.NewResponse(io.NopCloser(bytes.NewBuffer(taskData))), nil
+					})
+				return sourceClient
+			},
 		},
 		{
 			name:                 "small size scope - p2p",
@@ -683,6 +735,8 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 							backSource:         tc.backSource,
 							getPieceTasks:      tc.legacyFeature,
 							reregister:         tc.reregister,
+							registerMaxRetry:   tc.registerMaxRetry,
+							autoBackSource:     tc.autoBackSource,
 						}
 						// keep peer task running in enough time to check "getOrCreatePeerTaskConductor" always return same
 						if tc.taskType == taskTypeConductor {

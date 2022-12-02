@@ -69,6 +69,7 @@ var peerHostConfig = func() *DaemonOption {
 			PieceDownloadTimeout: 30 * time.Second,
 			GRPCDialTimeout:      10 * time.Second,
 			GetPiecesMaxRetry:    100,
+			RegisterMaxRetry:     3,
 			RecursiveConcurrent: RecursiveConcurrent{
 				GoroutineCount: 32,
 			},

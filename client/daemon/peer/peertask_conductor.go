@@ -284,8 +284,24 @@ func (pt *peerTaskConductor) register() error {
 	pt.Infof("step 1: peer %s start to register", pt.request.PeerId)
 	pt.schedulerClient = pt.peerTaskManager.SchedulerClient
 
-	result, err := pt.schedulerClient.RegisterPeerTask(regCtx, pt.request)
-	regSpan.RecordError(err)
+	var (
+		result *schedulerv1.RegisterResult
+		err    error
+	)
+	retry := pt.peerTaskManager.RegisterMaxRetry
+
+	for i := 0; i < retry; i++ {
+		result, err = pt.schedulerClient.RegisterPeerTask(regCtx, pt.request)
+		if err != nil {
+			regSpan.RecordError(err)
+			if i+1 == retry {
+				pt.Warnf("register failed max retry reached")
+			} else {
+				pt.Warnf("register failed: %s, retry: %d/%d", err, i+1, retry)
+			}
+			continue
+		}
+	}
 	regSpan.End()
 
 	if err != nil {
@@ -739,7 +755,7 @@ loop:
 		}
 		if err != nil {
 			// some errors, like commonv1.Code_SchedReregister, after reregister success,
-			// we can continue receive peer packet from the new scheduler
+			// we can continue to receive peer packet from the new scheduler
 			cont := pt.confirmReceivePeerPacketError(err)
 			if cont {
 				continue
@@ -859,12 +875,13 @@ func (pt *peerTaskConductor) confirmReceivePeerPacketError(err error) (cont bool
 			return false
 		case commonv1.Code_SchedReregister:
 			pt.Infof("receive reregister code")
-			rerr := pt.register()
-			if rerr == nil {
+			regErr := pt.register()
+			if regErr == nil {
 				pt.Infof("reregister ok")
 				return true
 			}
-			pt.Errorf("reregister to scheduler error:%s", err)
+			pt.Errorf("reregister to scheduler error: %s", regErr)
+			fallthrough
 		default:
 			failedCode = de.Code
 			failedReason = de.Message

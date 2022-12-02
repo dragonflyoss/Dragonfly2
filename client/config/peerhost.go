@@ -303,6 +303,7 @@ type DownloadOption struct {
 	CalculateDigest      bool              `mapstructure:"calculateDigest" yaml:"calculateDigest"`
 	Transport            *TransportOption  `mapstructure:"transportOption" yaml:"transportOption"`
 	GetPiecesMaxRetry    int               `mapstructure:"getPiecesMaxRetry" yaml:"getPiecesMaxRetry"`
+	RegisterMaxRetry     int               `mapstructure:"registerMaxRetry" yaml:"registerMaxRetry"`
 	Prefetch             bool              `mapstructure:"prefetch" yaml:"prefetch"`
 	WatchdogTimeout      time.Duration     `mapstructure:"watchdogTimeout" yaml:"watchdogTimeout"`
 	Concurrent           *ConcurrentOption `mapstructure:"concurrent" yaml:"concurrent"`

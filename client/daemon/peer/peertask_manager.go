@@ -137,6 +137,7 @@ type TaskManagerOption struct {
 	Prefetch          bool
 	GetPiecesMaxRetry int
 	SplitRunningTasks bool
+	RegisterMaxRetry  int
 }
 
 func NewPeerTaskManager(opt *TaskManagerOption) (TaskManager, error) {
