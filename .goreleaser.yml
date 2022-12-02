@@ -22,6 +22,8 @@ builds:
       - -X d7y.io/dragonfly/v2/version.BuildTime={{ .Date }}
       - -X "d7y.io/dragonfly/v2/version.Gotags=none"
       - -X "d7y.io/dragonfly/v2/version.Gogcflags=none"
+    env:
+      - CGO_ENABLED=0
 
   - main: ./cmd/dfcache
     id: dfcache
@@ -40,6 +42,8 @@ builds:
       - -X d7y.io/dragonfly/v2/version.BuildTime={{ .Date }}
       - -X "d7y.io/dragonfly/v2/version.Gotags=none"
       - -X "d7y.io/dragonfly/v2/version.Gogcflags=none"
+    env:
+      - CGO_ENABLED=0
 
   - main: ./cmd/dfstore
     id: dfstore
@@ -58,6 +62,8 @@ builds:
       - -X d7y.io/dragonfly/v2/version.BuildTime={{ .Date }}
       - -X "d7y.io/dragonfly/v2/version.Gotags=none"
       - -X "d7y.io/dragonfly/v2/version.Gogcflags=none"
+    env:
+    - CGO_ENABLED=0
 
   - main: ./cmd/scheduler
     id: scheduler
@@ -76,6 +82,8 @@ builds:
       - -X d7y.io/dragonfly/v2/version.BuildTime={{ .Date }}
       - -X "d7y.io/dragonfly/v2/version.Gotags=none"
       - -X "d7y.io/dragonfly/v2/version.Gogcflags=none"
+    env:
+    - CGO_ENABLED=0
 
   - main: ./cmd/manager
     id: manager
@@ -94,6 +102,8 @@ builds:
       - -X d7y.io/dragonfly/v2/version.BuildTime={{ .Date }}
       - -X "d7y.io/dragonfly/v2/version.Gotags=none"
       - -X "d7y.io/dragonfly/v2/version.Gogcflags=none"
+    env:
+    - CGO_ENABLED=0
 
 archives:
   - name_template: "dragonfly-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
