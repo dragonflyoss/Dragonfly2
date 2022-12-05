@@ -1,6 +1,6 @@
 basePath: /api/v1
 definitions:
-  model.Application:
+  d7y_io_dragonfly_v2_manager_model.Application:
     properties:
       bio:
         type: string
@@ -12,14 +12,6 @@ definitions:
         type: integer
       name:
         type: string
-      scheduler_clusters:
-        items:
-          $ref: '#/definitions/model.SchedulerCluster'
-        type: array
-      seed_peer_clusters:
-        items:
-          $ref: '#/definitions/model.SeedPeerCluster'
-        type: array
       state:
         type: string
       updated_at:
@@ -27,11 +19,11 @@ definitions:
       url:
         type: string
       user:
-        $ref: '#/definitions/model.User'
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.User'
       user_id:
         type: integer
     type: object
-  model.Config:
+  d7y_io_dragonfly_v2_manager_model.Config:
     properties:
       bio:
         type: string
@@ -48,14 +40,13 @@ definitions:
       value:
         type: string
     type: object
-  model.JSONMap:
-    additionalProperties:
-      type: any
+  d7y_io_dragonfly_v2_manager_model.JSONMap:
+    additionalProperties: {}
     type: object
-  model.Job:
+  d7y_io_dragonfly_v2_manager_model.Job:
     properties:
       args:
-        $ref: '#/definitions/model.JSONMap'
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.JSONMap'
       bio:
         type: string
       created_at:
@@ -63,14 +54,14 @@ definitions:
       id:
         type: integer
       result:
-        $ref: '#/definitions/model.JSONMap'
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.JSONMap'
       scheduler_clusters:
         items:
-          $ref: '#/definitions/model.SchedulerCluster'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SchedulerCluster'
         type: array
       seed_peer_clusters:
         items:
-          $ref: '#/definitions/model.SeedPeerCluster'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeerCluster'
         type: array
       state:
         type: string
@@ -83,7 +74,7 @@ definitions:
       user_id:
         type: integer
     type: object
-  model.Oauth:
+  d7y_io_dragonfly_v2_manager_model.Oauth:
     properties:
       bio:
         type: string
@@ -102,7 +93,7 @@ definitions:
       updated_at:
         type: string
     type: object
-  model.Scheduler:
+  d7y_io_dragonfly_v2_manager_model.Scheduler:
     properties:
       created_at:
         type: string
@@ -127,16 +118,14 @@ definitions:
       updated_at:
         type: string
     type: object
-  model.SchedulerCluster:
+  d7y_io_dragonfly_v2_manager_model.SchedulerCluster:
     properties:
-      application_id:
-        type: integer
       bio:
         type: string
       client_config:
-        $ref: '#/definitions/model.JSONMap'
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.JSONMap'
       config:
-        $ref: '#/definitions/model.JSONMap'
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.JSONMap'
       created_at:
         type: string
       id:
@@ -145,22 +134,22 @@ definitions:
         type: boolean
       jobs:
         items:
-          $ref: '#/definitions/model.Job'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.Job'
         type: array
       name:
         type: string
       scopes:
-        $ref: '#/definitions/model.JSONMap'
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.JSONMap'
       security_group_id:
         type: integer
       seed_peer_clusters:
         items:
-          $ref: '#/definitions/model.SeedPeerCluster'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeerCluster'
         type: array
       updated_at:
         type: string
     type: object
-  model.SecurityGroup:
+  d7y_io_dragonfly_v2_manager_model.SecurityGroup:
     properties:
       bio:
         type: string
@@ -172,12 +161,12 @@ definitions:
         type: string
       security_rules:
         items:
-          $ref: '#/definitions/model.SecurityRule'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityRule'
         type: array
       updated_at:
         type: string
     type: object
-  model.SecurityRule:
+  d7y_io_dragonfly_v2_manager_model.SecurityRule:
     properties:
       bio:
         type: string
@@ -193,12 +182,12 @@ definitions:
         type: string
       security_groups:
         items:
-          $ref: '#/definitions/model.SecurityGroup'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityGroup'
         type: array
       updated_at:
         type: string
     type: object
-  model.SeedPeer:
+  d7y_io_dragonfly_v2_manager_model.SeedPeer:
     properties:
       created_at:
         type: string
@@ -229,14 +218,12 @@ definitions:
       updated_at:
         type: string
     type: object
-  model.SeedPeerCluster:
+  d7y_io_dragonfly_v2_manager_model.SeedPeerCluster:
     properties:
-      application_id:
-        type: integer
       bio:
         type: string
       config:
-        $ref: '#/definitions/model.JSONMap'
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.JSONMap'
       created_at:
         type: string
       id:
@@ -245,22 +232,22 @@ definitions:
         type: boolean
       jobs:
         items:
-          $ref: '#/definitions/model.Job'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.Job'
         type: array
       name:
         type: string
       scheduler_clusters:
         items:
-          $ref: '#/definitions/model.SchedulerCluster'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SchedulerCluster'
         type: array
       scopes:
-        $ref: '#/definitions/model.JSONMap'
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.JSONMap'
       security_group_id:
         type: integer
       updated_at:
         type: string
     type: object
-  model.User:
+  d7y_io_dragonfly_v2_manager_model.User:
     properties:
       avatar:
         type: string
@@ -283,16 +270,7 @@ definitions:
       updated_at:
         type: string
     type: object
-  objectstorage.BucketMetadata:
-    properties:
-      createAt:
-        description: CreateAt is bucket create time.
-        type: string
-      name:
-        description: Name is bucket name.
-        type: string
-    type: object
-  rbac.Permission:
+  d7y_io_dragonfly_v2_manager_permission_rbac.Permission:
     properties:
       action:
         enum:
@@ -305,7 +283,7 @@ definitions:
     - action
     - object
     type: object
-  types.AddPermissionForRoleRequest:
+  d7y_io_dragonfly_v2_manager_types.AddPermissionForRoleRequest:
     properties:
       action:
         enum:
@@ -318,7 +296,7 @@ definitions:
     - action
     - object
     type: object
-  types.CreateApplicationRequest:
+  d7y_io_dragonfly_v2_manager_types.CreateApplicationRequest:
     properties:
       bio:
         type: string
@@ -339,14 +317,14 @@ definitions:
     - name
     - user_id
     type: object
-  types.CreateBucketRequest:
+  d7y_io_dragonfly_v2_manager_types.CreateBucketRequest:
     properties:
       name:
         type: string
     required:
     - name
     type: object
-  types.CreateConfigRequest:
+  d7y_io_dragonfly_v2_manager_types.CreateConfigRequest:
     properties:
       bio:
         type: string
@@ -361,17 +339,15 @@ definitions:
     - user_id
     - value
     type: object
-  types.CreateJobRequest:
+  d7y_io_dragonfly_v2_manager_types.CreateJobRequest:
     properties:
       args:
-        additionalProperties:
-          type: any
+        additionalProperties: {}
         type: object
       bio:
         type: string
       result:
-        additionalProperties:
-          type: any
+        additionalProperties: {}
         type: object
       scheduler_cluster_ids:
         items:
@@ -388,7 +364,7 @@ definitions:
     required:
     - type
     type: object
-  types.CreateModelRequest:
+  d7y_io_dragonfly_v2_manager_types.CreateModelRequest:
     properties:
       hostname:
         type: string
@@ -400,8 +376,6 @@ definitions:
         type: string
       name:
         type: string
-      scheduler_id:
-        type: integer
       version_id:
         type: string
     required:
@@ -409,10 +383,9 @@ definitions:
     - id
     - ip
     - name
-    - scheduler_id
     - version_id
     type: object
-  types.CreateModelVersionRequest:
+  d7y_io_dragonfly_v2_manager_types.CreateModelVersionRequest:
     properties:
       data:
         items:
@@ -433,7 +406,7 @@ definitions:
     - r2
     - rmse
     type: object
-  types.CreateOauthRequest:
+  d7y_io_dragonfly_v2_manager_types.CreateOauthRequest:
     properties:
       bio:
         type: string
@@ -453,11 +426,11 @@ definitions:
     - client_secret
     - name
     type: object
-  types.CreateRoleRequest:
+  d7y_io_dragonfly_v2_manager_types.CreateRoleRequest:
     properties:
       permissions:
         items:
-          $ref: '#/definitions/rbac.Permission'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_permission_rbac.Permission'
         type: array
       role:
         type: string
@@ -465,20 +438,20 @@ definitions:
     - permissions
     - role
     type: object
-  types.CreateSchedulerClusterRequest:
+  d7y_io_dragonfly_v2_manager_types.CreateSchedulerClusterRequest:
     properties:
       bio:
         type: string
       client_config:
-        $ref: '#/definitions/types.SchedulerClusterClientConfig'
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterClientConfig'
       config:
-        $ref: '#/definitions/types.SchedulerClusterConfig'
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterConfig'
       is_default:
         type: boolean
       name:
         type: string
       scopes:
-        $ref: '#/definitions/types.SchedulerClusterScopes'
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes'
       security_group_id:
         type: integer
       seed_peer_cluster_id:
@@ -488,7 +461,7 @@ definitions:
     - config
     - name
     type: object
-  types.CreateSchedulerRequest:
+  d7y_io_dragonfly_v2_manager_types.CreateSchedulerRequest:
     properties:
       host_name:
         type: string
@@ -510,7 +483,7 @@ definitions:
     - port
     - scheduler_cluster_id
     type: object
-  types.CreateSecurityGroupRequest:
+  d7y_io_dragonfly_v2_manager_types.CreateSecurityGroupRequest:
     properties:
       bio:
         type: string
@@ -519,7 +492,7 @@ definitions:
     required:
     - name
     type: object
-  types.CreateSecurityRuleRequest:
+  d7y_io_dragonfly_v2_manager_types.CreateSecurityRuleRequest:
     properties:
       bio:
         type: string
@@ -533,23 +506,23 @@ definitions:
     - domain
     - name
     type: object
-  types.CreateSeedPeerClusterRequest:
+  d7y_io_dragonfly_v2_manager_types.CreateSeedPeerClusterRequest:
     properties:
       bio:
         type: string
       config:
-        $ref: '#/definitions/types.SeedPeerClusterConfig'
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig'
       is_default:
         type: boolean
       name:
         type: string
       scopes:
-        $ref: '#/definitions/types.SeedPeerClusterScopes'
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterScopes'
     required:
     - config
     - name
     type: object
-  types.CreateSeedPeerRequest:
+  d7y_io_dragonfly_v2_manager_types.CreateSeedPeerRequest:
     properties:
       download_port:
         type: integer
@@ -583,7 +556,7 @@ definitions:
     - seed_peer_cluster_id
     - type
     type: object
-  types.CreateV1PreheatRequest:
+  d7y_io_dragonfly_v2_manager_types.CreateV1PreheatRequest:
     properties:
       filter:
         type: string
@@ -602,12 +575,12 @@ definitions:
     - type
     - url
     type: object
-  types.CreateV1PreheatResponse:
+  d7y_io_dragonfly_v2_manager_types.CreateV1PreheatResponse:
     properties:
       id:
         type: string
     type: object
-  types.DeletePermissionForRoleRequest:
+  d7y_io_dragonfly_v2_manager_types.DeletePermissionForRoleRequest:
     properties:
       action:
         enum:
@@ -620,7 +593,7 @@ definitions:
     - action
     - object
     type: object
-  types.GetV1PreheatResponse:
+  d7y_io_dragonfly_v2_manager_types.GetV1PreheatResponse:
     properties:
       finishTime:
         type: string
@@ -631,7 +604,7 @@ definitions:
       status:
         type: string
     type: object
-  types.Model:
+  d7y_io_dragonfly_v2_manager_types.Model:
     properties:
       create_at:
         type: string
@@ -659,7 +632,7 @@ definitions:
     - updated_at
     - version_id
     type: object
-  types.ModelVersion:
+  d7y_io_dragonfly_v2_manager_types.ModelVersion:
     properties:
       create_at:
         type: string
@@ -689,7 +662,7 @@ definitions:
     - rmse
     - updated_at
     type: object
-  types.ResetPasswordRequest:
+  d7y_io_dragonfly_v2_manager_types.ResetPasswordRequest:
     properties:
       new_password:
         maxLength: 20
@@ -703,7 +676,7 @@ definitions:
     - new_password
     - old_password
     type: object
-  types.SchedulerClusterClientConfig:
+  d7y_io_dragonfly_v2_manager_types.SchedulerClusterClientConfig:
     properties:
       load_limit:
         maximum: 2000
@@ -714,18 +687,18 @@ definitions:
         minimum: 1
         type: integer
     type: object
-  types.SchedulerClusterConfig:
+  d7y_io_dragonfly_v2_manager_types.SchedulerClusterConfig:
     properties:
       filter_parent_limit:
-        maximum: 100
+        maximum: 20
         minimum: 1
         type: integer
       filter_parent_range_limit:
         maximum: 1000
-        minimum: 1
+        minimum: 10
         type: integer
     type: object
-  types.SchedulerClusterScopes:
+  d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes:
     properties:
       idc:
         type: string
@@ -734,14 +707,14 @@ definitions:
       net_topology:
         type: string
     type: object
-  types.SeedPeerClusterConfig:
+  d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig:
     properties:
       load_limit:
         maximum: 5000
         minimum: 1
         type: integer
     type: object
-  types.SeedPeerClusterScopes:
+  d7y_io_dragonfly_v2_manager_types.SeedPeerClusterScopes:
     properties:
       idc:
         type: string
@@ -750,7 +723,7 @@ definitions:
       net_topology:
         type: string
     type: object
-  types.SignUpRequest:
+  d7y_io_dragonfly_v2_manager_types.SignUpRequest:
     properties:
       avatar:
         type: string
@@ -775,7 +748,7 @@ definitions:
     - name
     - password
     type: object
-  types.UpdateApplicationRequest:
+  d7y_io_dragonfly_v2_manager_types.UpdateApplicationRequest:
     properties:
       bio:
         type: string
@@ -795,7 +768,7 @@ definitions:
     required:
     - user_id
     type: object
-  types.UpdateConfigRequest:
+  d7y_io_dragonfly_v2_manager_types.UpdateConfigRequest:
     properties:
       bio:
         type: string
@@ -806,14 +779,14 @@ definitions:
       value:
         type: string
     type: object
-  types.UpdateJobRequest:
+  d7y_io_dragonfly_v2_manager_types.UpdateJobRequest:
     properties:
       bio:
         type: string
       user_id:
         type: integer
     type: object
-  types.UpdateModelRequest:
+  d7y_io_dragonfly_v2_manager_types.UpdateModelRequest:
     properties:
       hostname:
         type: string
@@ -824,7 +797,7 @@ definitions:
       version_id:
         type: string
     type: object
-  types.UpdateModelVersionRequest:
+  d7y_io_dragonfly_v2_manager_types.UpdateModelVersionRequest:
     properties:
       data:
         items:
@@ -839,7 +812,7 @@ definitions:
       rmse:
         type: number
     type: object
-  types.UpdateOauthRequest:
+  d7y_io_dragonfly_v2_manager_types.UpdateOauthRequest:
     properties:
       bio:
         type: string
@@ -855,26 +828,26 @@ definitions:
       redirect_url:
         type: string
     type: object
-  types.UpdateSchedulerClusterRequest:
+  d7y_io_dragonfly_v2_manager_types.UpdateSchedulerClusterRequest:
     properties:
       bio:
         type: string
       client_config:
-        $ref: '#/definitions/types.SchedulerClusterClientConfig'
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterClientConfig'
       config:
-        $ref: '#/definitions/types.SchedulerClusterConfig'
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterConfig'
       is_default:
         type: boolean
       name:
         type: string
       scopes:
-        $ref: '#/definitions/types.SchedulerClusterScopes'
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes'
       security_group_id:
         type: integer
       seed_peer_cluster_id:
         type: integer
     type: object
-  types.UpdateSchedulerRequest:
+  d7y_io_dragonfly_v2_manager_types.UpdateSchedulerRequest:
     properties:
       idc:
         type: string
@@ -891,14 +864,14 @@ definitions:
       scheduler_id:
         type: integer
     type: object
-  types.UpdateSecurityGroupRequest:
+  d7y_io_dragonfly_v2_manager_types.UpdateSecurityGroupRequest:
     properties:
       bio:
         type: string
       name:
         type: string
     type: object
-  types.UpdateSecurityRuleRequest:
+  d7y_io_dragonfly_v2_manager_types.UpdateSecurityRuleRequest:
     properties:
       bio:
         type: string
@@ -909,20 +882,20 @@ definitions:
       proxy_domain:
         type: string
     type: object
-  types.UpdateSeedPeerClusterRequest:
+  d7y_io_dragonfly_v2_manager_types.UpdateSeedPeerClusterRequest:
     properties:
       bio:
         type: string
       config:
-        $ref: '#/definitions/types.SeedPeerClusterConfig'
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig'
       is_default:
         type: boolean
       name:
         type: string
       scopes:
-        $ref: '#/definitions/types.SeedPeerClusterScopes'
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterScopes'
     type: object
-  types.UpdateSeedPeerRequest:
+  d7y_io_dragonfly_v2_manager_types.UpdateSeedPeerRequest:
     properties:
       download_port:
         type: integer
@@ -947,7 +920,7 @@ definitions:
         - weak
         type: string
     type: object
-  types.UpdateUserRequest:
+  d7y_io_dragonfly_v2_manager_types.UpdateUserRequest:
     properties:
       avatar:
         type: string
@@ -958,6 +931,15 @@ definitions:
       location:
         type: string
       phone:
+        type: string
+    type: object
+  d7y_io_dragonfly_v2_pkg_objectstorage.BucketMetadata:
+    properties:
+      createAt:
+        description: CreateAt is bucket create time.
+        type: string
+      name:
+        description: Name is bucket name.
         type: string
     type: object
 host: localhost:8080
@@ -997,14 +979,14 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.Application'
+              $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.Application'
             type: array
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get Applications
       tags:
       - Application
@@ -1018,20 +1000,20 @@ paths:
         name: Application
         required: true
         schema:
-          $ref: '#/definitions/types.CreateApplicationRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.CreateApplicationRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Application'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.Application'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Create Application
       tags:
       - Application
@@ -1050,13 +1032,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Destroy Application
       tags:
       - Application
@@ -1076,13 +1058,13 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Application'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.Application'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get Application
       tags:
       - Application
@@ -1101,139 +1083,21 @@ paths:
         name: Application
         required: true
         schema:
-          $ref: '#/definitions/types.UpdateApplicationRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateApplicationRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Application'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.Application'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Update Application
-      tags:
-      - Application
-  /applications/{id}/scheduler-clusters/{scheduler_cluster_id}:
-    delete:
-      consumes:
-      - application/json
-      description: Delete Scheduler to Application
-      parameters:
-      - description: id
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: scheduler cluster id
-        in: path
-        name: scheduler_cluster_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: ""
-        "400":
-          description: ""
-        "404":
-          description: ""
-        "500":
-          description: ""
-      summary: Delete Scheduler to Application
-      tags:
-      - Application
-    put:
-      consumes:
-      - application/json
-      description: Add Scheduler to Application
-      parameters:
-      - description: id
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: scheduler cluster id
-        in: path
-        name: scheduler_cluster_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: ""
-        "400":
-          description: ""
-        "404":
-          description: ""
-        "500":
-          description: ""
-      summary: Add Scheduler to Application
-      tags:
-      - Application
-  /applications/{id}/seed-peer-clusters/{seed_peer_cluster_id}:
-    delete:
-      consumes:
-      - application/json
-      description: Delete SeedPeer to Application
-      parameters:
-      - description: id
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: seed peer cluster id
-        in: path
-        name: seed_peer_cluster_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: ""
-        "400":
-          description: ""
-        "404":
-          description: ""
-        "500":
-          description: ""
-      summary: Delete SeedPeer to Application
-      tags:
-      - Application
-    put:
-      consumes:
-      - application/json
-      description: Add SeedPeer to Application
-      parameters:
-      - description: id
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: seed peer cluster id
-        in: path
-        name: seed_peer_cluster_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: ""
-        "400":
-          description: ""
-        "404":
-          description: ""
-        "500":
-          description: ""
-      summary: Add SeedPeer to Application
       tags:
       - Application
   /buckets:
@@ -1248,14 +1112,14 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/objectstorage.BucketMetadata'
+              $ref: '#/definitions/d7y_io_dragonfly_v2_pkg_objectstorage.BucketMetadata'
             type: array
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get Buckets
       tags:
       - Bucket
@@ -1269,18 +1133,18 @@ paths:
         name: Bucket
         required: true
         schema:
-          $ref: '#/definitions/types.CreateBucketRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.CreateBucketRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Create Bucket
       tags:
       - Bucket
@@ -1299,13 +1163,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Destroy Bucket
       tags:
       - Bucket
@@ -1325,13 +1189,13 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/objectstorage.BucketMetadata'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_pkg_objectstorage.BucketMetadata'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get Bucket
       tags:
       - Bucket
@@ -1362,14 +1226,14 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.Config'
+              $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.Config'
             type: array
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get Configs
       tags:
       - Config
@@ -1383,20 +1247,20 @@ paths:
         name: Config
         required: true
         schema:
-          $ref: '#/definitions/types.CreateConfigRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.CreateConfigRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Config'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.Config'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Create Config
       tags:
       - Config
@@ -1415,13 +1279,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Destroy Config
       tags:
       - Config
@@ -1441,13 +1305,13 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Config'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.Config'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get Config
       tags:
       - Config
@@ -1466,20 +1330,20 @@ paths:
         name: Config
         required: true
         schema:
-          $ref: '#/definitions/types.UpdateConfigRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateConfigRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Config'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.Config'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Update Config
       tags:
       - Config
@@ -1492,13 +1356,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get Health
       tags:
       - Health
@@ -1529,14 +1393,14 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.Job'
+              $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.Job'
             type: array
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get Jobs
       tags:
       - Job
@@ -1550,20 +1414,20 @@ paths:
         name: Job
         required: true
         schema:
-          $ref: '#/definitions/types.CreateJobRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.CreateJobRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Job'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.Job'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Create Job
       tags:
       - Job
@@ -1582,13 +1446,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Destroy Job
       tags:
       - Job
@@ -1608,13 +1472,13 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Job'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.Job'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get Job
       tags:
       - Job
@@ -1633,20 +1497,20 @@ paths:
         name: Job
         required: true
         schema:
-          $ref: '#/definitions/types.UpdateJobRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateJobRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Job'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.Job'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Update Job
       tags:
       - Job
@@ -1677,14 +1541,14 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.Oauth'
+              $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.Oauth'
             type: array
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get Oauths
       tags:
       - Oauth
@@ -1698,20 +1562,20 @@ paths:
         name: Oauth
         required: true
         schema:
-          $ref: '#/definitions/types.CreateOauthRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.CreateOauthRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Oauth'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.Oauth'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Create Oauth
       tags:
       - Oauth
@@ -1730,13 +1594,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Destroy Oauth
       tags:
       - Oauth
@@ -1756,13 +1620,13 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Oauth'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.Oauth'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get Oauth
       tags:
       - Oauth
@@ -1781,20 +1645,20 @@ paths:
         name: Oauth
         required: true
         schema:
-          $ref: '#/definitions/types.UpdateOauthRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateOauthRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Oauth'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.Oauth'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Update Oauth
       tags:
       - Oauth
@@ -1813,11 +1677,11 @@ paths:
               type: string
             type: array
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get Peers
       tags:
       - Peer
@@ -1831,12 +1695,12 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/rbac.Permission'
+              $ref: '#/definitions/d7y_io_dragonfly_v2_manager_permission_rbac.Permission'
             type: array
         "400":
-          description: ""
+          description: Bad Request
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get Permissions
       tags:
       - Permission
@@ -1851,20 +1715,20 @@ paths:
         name: Preheat
         required: true
         schema:
-          $ref: '#/definitions/types.CreateV1PreheatRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.CreateV1PreheatRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/types.CreateV1PreheatResponse'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.CreateV1PreheatResponse'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Create V1 Preheat
       tags:
       - Preheat
@@ -1885,13 +1749,13 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/types.GetV1PreheatResponse'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.GetV1PreheatResponse'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get V1 Preheat
       tags:
       - Preheat
@@ -1904,11 +1768,11 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get Roles
       tags:
       - Role
@@ -1922,16 +1786,16 @@ paths:
         name: Role
         required: true
         schema:
-          $ref: '#/definitions/types.CreateRoleRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.CreateRoleRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Create Role
       tags:
       - Role
@@ -1950,11 +1814,11 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Destroy Role
       tags:
       - Role
@@ -1972,11 +1836,11 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get Role
       tags:
       - Role
@@ -1991,7 +1855,7 @@ paths:
         name: Permission
         required: true
         schema:
-          $ref: '#/definitions/types.DeletePermissionForRoleRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.DeletePermissionForRoleRequest'
       - description: role
         in: path
         name: role
@@ -2001,11 +1865,11 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Update Role
       tags:
       - Role
@@ -2019,7 +1883,7 @@ paths:
         name: Permission
         required: true
         schema:
-          $ref: '#/definitions/types.AddPermissionForRoleRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.AddPermissionForRoleRequest'
       - description: role
         in: path
         name: role
@@ -2029,11 +1893,11 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Add Permission For Role
       tags:
       - Role
@@ -2064,14 +1928,14 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.SchedulerCluster'
+              $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SchedulerCluster'
             type: array
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get SchedulerClusters
       tags:
       - SchedulerCluster
@@ -2085,20 +1949,20 @@ paths:
         name: SchedulerCluster
         required: true
         schema:
-          $ref: '#/definitions/types.CreateSchedulerClusterRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.CreateSchedulerClusterRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.SchedulerCluster'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SchedulerCluster'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Create SchedulerCluster
       tags:
       - SchedulerCluster
@@ -2117,13 +1981,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Destroy SchedulerCluster
       tags:
       - SchedulerCluster
@@ -2143,13 +2007,13 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.SchedulerCluster'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SchedulerCluster'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get SchedulerCluster
       tags:
       - SchedulerCluster
@@ -2168,20 +2032,20 @@ paths:
         name: SchedulerCluster
         required: true
         schema:
-          $ref: '#/definitions/types.UpdateSchedulerClusterRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateSchedulerClusterRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.SchedulerCluster'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SchedulerCluster'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Update SchedulerCluster
       tags:
       - SchedulerCluster
@@ -2205,13 +2069,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Add Scheduler to schedulerCluster
       tags:
       - SchedulerCluster
@@ -2242,14 +2106,14 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.Scheduler'
+              $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.Scheduler'
             type: array
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get Schedulers
       tags:
       - Scheduler
@@ -2263,20 +2127,20 @@ paths:
         name: Scheduler
         required: true
         schema:
-          $ref: '#/definitions/types.CreateSchedulerRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.CreateSchedulerRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Scheduler'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.Scheduler'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Create Scheduler
       tags:
       - Scheduler
@@ -2295,13 +2159,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Destroy Scheduler
       tags:
       - Scheduler
@@ -2321,13 +2185,13 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Scheduler'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.Scheduler'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get Scheduler
       tags:
       - Scheduler
@@ -2346,20 +2210,20 @@ paths:
         name: Scheduler
         required: true
         schema:
-          $ref: '#/definitions/types.UpdateSchedulerRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateSchedulerRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Scheduler'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.Scheduler'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Update Scheduler
       tags:
       - Scheduler
@@ -2381,14 +2245,14 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/types.Model'
+              $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.Model'
             type: array
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get Models
       tags:
       - Model
@@ -2407,20 +2271,20 @@ paths:
         name: Model
         required: true
         schema:
-          $ref: '#/definitions/types.CreateModelRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.CreateModelRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/types.Model'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.Model'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Create Model
       tags:
       - Model
@@ -2444,13 +2308,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Destroy Model
       tags:
       - Model
@@ -2475,13 +2339,13 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/types.Model'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.Model'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get Model
       tags:
       - Model
@@ -2508,14 +2372,14 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/types.ModelVersion'
+              $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.ModelVersion'
             type: array
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get Model Versions
       tags:
       - Model
@@ -2539,20 +2403,20 @@ paths:
         name: ModelVersion
         required: true
         schema:
-          $ref: '#/definitions/types.CreateModelVersionRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.CreateModelVersionRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/types.ModelVersion'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.ModelVersion'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Create Model Version
       tags:
       - Model
@@ -2581,13 +2445,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Destroy Model Version
       tags:
       - Model
@@ -2617,13 +2481,13 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/types.ModelVersion'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.ModelVersion'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get Model Version
       tags:
       - Model
@@ -2648,20 +2512,20 @@ paths:
         name: Model
         required: true
         schema:
-          $ref: '#/definitions/types.UpdateModelRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateModelRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/types.Model'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.Model'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Update Model
       tags:
       - Model
@@ -2691,20 +2555,20 @@ paths:
         name: ModelVersion
         required: true
         schema:
-          $ref: '#/definitions/types.UpdateModelVersionRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateModelVersionRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/types.ModelVersion'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.ModelVersion'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Update Model Version
       tags:
       - Model
@@ -2735,14 +2599,14 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.SecurityGroup'
+              $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityGroup'
             type: array
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get SecurityGroups
       tags:
       - SecurityGroup
@@ -2756,20 +2620,20 @@ paths:
         name: SecurityGroup
         required: true
         schema:
-          $ref: '#/definitions/types.CreateSecurityGroupRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.CreateSecurityGroupRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.SecurityGroup'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityGroup'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Create SecurityGroup
       tags:
       - SecurityGroup
@@ -2790,13 +2654,13 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.SecurityGroup'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityGroup'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get SecurityGroup
       tags:
       - SecurityGroup
@@ -2815,20 +2679,20 @@ paths:
         name: SecurityGroup
         required: true
         schema:
-          $ref: '#/definitions/types.UpdateSecurityGroupRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateSecurityGroupRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.SecurityGroup'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityGroup'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Update SecurityGroup
       tags:
       - SecurityGroup
@@ -2852,13 +2716,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Add Scheduler to SecurityGroup
       tags:
       - SecurityGroup
@@ -2882,13 +2746,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Destroy SecurityRule to SecurityGroup
       tags:
       - SecurityGroup
@@ -2911,13 +2775,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Add SecurityRule to SecurityGroup
       tags:
       - SecurityGroup
@@ -2941,13 +2805,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Add SeedPeer to SecurityGroup
       tags:
       - SecurityGroup
@@ -2978,14 +2842,14 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.SecurityRule'
+              $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityRule'
             type: array
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get SecurityRules
       tags:
       - SecurityRule
@@ -2999,20 +2863,20 @@ paths:
         name: SecurityRule
         required: true
         schema:
-          $ref: '#/definitions/types.CreateSecurityRuleRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.CreateSecurityRuleRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.SecurityRule'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityRule'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Create SecurityRule
       tags:
       - SecurityRule
@@ -3033,13 +2897,13 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.SecurityRule'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityRule'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get SecurityRule
       tags:
       - SecurityRule
@@ -3058,20 +2922,20 @@ paths:
         name: SecurityRule
         required: true
         schema:
-          $ref: '#/definitions/types.UpdateSecurityRuleRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateSecurityRuleRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.SecurityRule'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityRule'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Update SecurityRule
       tags:
       - SecurityRule
@@ -3090,13 +2954,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Destroy SecurityGroup
       tags:
       - SecurityGroup
@@ -3115,13 +2979,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Destroy SecurityRule
       tags:
       - SecurityRule
@@ -3152,14 +3016,14 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.SeedPeerCluster'
+              $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeerCluster'
             type: array
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get SeedPeerClusters
       tags:
       - SeedPeerCluster
@@ -3173,20 +3037,20 @@ paths:
         name: SeedPeerCluster
         required: true
         schema:
-          $ref: '#/definitions/types.CreateSeedPeerClusterRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.CreateSeedPeerClusterRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.SeedPeerCluster'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeerCluster'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Create SeedPeerCluster
       tags:
       - SeedPeerCluster
@@ -3205,13 +3069,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Destroy SeedPeerCluster
       tags:
       - SeedPeerCluster
@@ -3231,13 +3095,13 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.SeedPeerCluster'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeerCluster'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get SeedPeerCluster
       tags:
       - SeedPeerCluster
@@ -3256,20 +3120,20 @@ paths:
         name: SeedPeerCluster
         required: true
         schema:
-          $ref: '#/definitions/types.UpdateSeedPeerClusterRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateSeedPeerClusterRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.SeedPeerCluster'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeerCluster'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Update SeedPeerCluster
       tags:
       - SeedPeerCluster
@@ -3293,13 +3157,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Add SchedulerCluster to SeedPeerCluster
       tags:
       - SeedPeerCluster
@@ -3323,13 +3187,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Add Instance to SeedPeerCluster
       tags:
       - SeedPeerCluster
@@ -3360,14 +3224,14 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.SeedPeer'
+              $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeer'
             type: array
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get SeedPeers
       tags:
       - SeedPeer
@@ -3381,20 +3245,20 @@ paths:
         name: SeedPeer
         required: true
         schema:
-          $ref: '#/definitions/types.CreateSeedPeerRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.CreateSeedPeerRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.SeedPeer'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeer'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Create SeedPeer
       tags:
       - SeedPeer
@@ -3413,13 +3277,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Destroy SeedPeer
       tags:
       - SeedPeer
@@ -3439,13 +3303,13 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.SeedPeer'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeer'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get SeedPeer
       tags:
       - SeedPeer
@@ -3464,20 +3328,20 @@ paths:
         name: SeedPeer
         required: true
         schema:
-          $ref: '#/definitions/types.UpdateSeedPeerRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateSeedPeerRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.SeedPeer'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeer'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Update SeedPeer
       tags:
       - SeedPeer
@@ -3496,13 +3360,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Oauth Signin
       tags:
       - User
@@ -3522,13 +3386,13 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Oauth Signin Callback
       tags:
       - Oauth
@@ -3543,18 +3407,18 @@ paths:
         name: User
         required: true
         schema:
-          $ref: '#/definitions/types.SignUpRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SignUpRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.User'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.User'
         "400":
-          description: ""
+          description: Bad Request
         "500":
-          description: ""
+          description: Internal Server Error
       summary: SignUp user
       tags:
       - User
@@ -3585,14 +3449,14 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.User'
+              $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.User'
             type: array
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get Users
       tags:
       - User
@@ -3613,13 +3477,13 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.User'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.User'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get User
       tags:
       - User
@@ -3638,20 +3502,20 @@ paths:
         name: User
         required: true
         schema:
-          $ref: '#/definitions/types.UpdateUserRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateUserRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.User'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.User'
         "400":
-          description: ""
+          description: Bad Request
         "404":
-          description: ""
+          description: Not Found
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Update User
       tags:
       - User
@@ -3666,16 +3530,16 @@ paths:
         name: User
         required: true
         schema:
-          $ref: '#/definitions/types.ResetPasswordRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.ResetPasswordRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Reset Password For User
       tags:
       - User
@@ -3698,9 +3562,9 @@ paths:
               type: string
             type: array
         "400":
-          description: ""
+          description: Bad Request
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Get User Roles
       tags:
       - User
@@ -3724,11 +3588,11 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Delete Role For User
       tags:
       - Users
@@ -3751,11 +3615,11 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
         "400":
-          description: ""
+          description: Bad Request
         "500":
-          description: ""
+          description: Internal Server Error
       summary: Add Role For User
       tags:
       - Users
