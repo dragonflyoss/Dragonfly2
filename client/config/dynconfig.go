@@ -22,6 +22,7 @@ import (
 	"errors"
 	"time"
 
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/resolver"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
@@ -80,10 +81,11 @@ type Dynconfig interface {
 }
 
 type dynconfig struct {
-	sourceType    SourceType
-	managerClient managerclient.Client
-	cacheDir      string
-	expire        time.Duration
+	sourceType           SourceType
+	managerClient        managerclient.Client
+	cacheDir             string
+	expire               time.Duration
+	transportCredentials credentials.TransportCredentials
 }
 
 type Observer interface {
@@ -91,11 +93,11 @@ type Observer interface {
 	OnNotify(*DynconfigData)
 }
 
-// Option is a functional option for configuring the dynconfig.
-type Option func(d *dynconfig) error
+// DynconfigOption is a functional option for configuring the dynconfig.
+type DynconfigOption func(d *dynconfig) error
 
 // WithManagerClient set the manager client.
-func WithManagerClient(c managerclient.Client) Option {
+func WithManagerClient(c managerclient.Client) DynconfigOption {
 	return func(d *dynconfig) error {
 		d.managerClient = c
 		return nil
@@ -103,7 +105,7 @@ func WithManagerClient(c managerclient.Client) Option {
 }
 
 // WithCacheDir set the cache dir.
-func WithCacheDir(dir string) Option {
+func WithCacheDir(dir string) DynconfigOption {
 	return func(d *dynconfig) error {
 		d.cacheDir = dir
 		return nil
@@ -111,15 +113,24 @@ func WithCacheDir(dir string) Option {
 }
 
 // WithExpireTime set the expire time for cache.
-func WithExpireTime(e time.Duration) Option {
+func WithExpireTime(e time.Duration) DynconfigOption {
 	return func(d *dynconfig) error {
 		d.expire = e
 		return nil
 	}
 }
 
+// WithTransportCredentials returns a DialOption which configures a connection
+// level security credentials (e.g., TLS/SSL).
+func WithTransportCredentials(creds credentials.TransportCredentials) DynconfigOption {
+	return func(d *dynconfig) error {
+		d.transportCredentials = creds
+		return nil
+	}
+}
+
 // New returns a new dynconfig interface.
-func NewDynconfig(sourceType SourceType, cfg *DaemonOption, options ...Option) (Dynconfig, error) {
+func NewDynconfig(sourceType SourceType, cfg *DaemonOption, options ...DynconfigOption) (Dynconfig, error) {
 	d := &dynconfig{
 		sourceType: sourceType,
 	}
@@ -140,7 +151,7 @@ func NewDynconfig(sourceType SourceType, cfg *DaemonOption, options ...Option) (
 	)
 	switch sourceType {
 	case ManagerSourceType:
-		di, err = newDynconfigManager(cfg, d.managerClient, d.cacheDir, d.expire)
+		di, err = newDynconfigManager(cfg, d.managerClient, d.cacheDir, d.expire, d.transportCredentials)
 		if err != nil {
 			return nil, err
 		}

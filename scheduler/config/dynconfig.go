@@ -27,6 +27,10 @@ import (
 	"path/filepath"
 	"time"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/resolver"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
@@ -35,7 +39,7 @@ import (
 	dc "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
-	"d7y.io/dragonfly/v2/pkg/reachable"
+	healthclient "d7y.io/dragonfly/v2/pkg/rpc/health/client"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 )
 
@@ -141,18 +145,37 @@ type Observer interface {
 
 type dynconfig struct {
 	dc.Dynconfig
-	observers map[Observer]struct{}
-	done      chan struct{}
-	cachePath string
+	observers            map[Observer]struct{}
+	done                 chan struct{}
+	cachePath            string
+	transportCredentials credentials.TransportCredentials
+}
+
+// DynconfigOption is a functional option for configuring the dynconfig.
+type DynconfigOption func(d *dynconfig) error
+
+// WithTransportCredentials returns a DialOption which configures a connection
+// level security credentials (e.g., TLS/SSL).
+func WithTransportCredentials(creds credentials.TransportCredentials) DynconfigOption {
+	return func(d *dynconfig) error {
+		d.transportCredentials = creds
+		return nil
+	}
 }
 
 // NewDynconfig returns a new dynconfig instence.
-func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, cfg *Config) (DynconfigInterface, error) {
+func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, cfg *Config, options ...DynconfigOption) (DynconfigInterface, error) {
 	cachePath := filepath.Join(cacheDir, cacheFileName)
 	d := &dynconfig{
 		observers: map[Observer]struct{}{},
 		done:      make(chan struct{}),
 		cachePath: cachePath,
+	}
+
+	for _, opt := range options {
+		if err := opt(d); err != nil {
+			return nil, err
+		}
 	}
 
 	if rawManagerClient != nil {
@@ -189,9 +212,21 @@ func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 		}
 
 		addr := fmt.Sprintf("%s:%d", ip, seedPeer.Port)
-		r := reachable.New(&reachable.Config{Address: addr})
-		if err := r.Check(); err != nil {
-			logger.Warnf("seed peer address %s is unreachable", addr)
+		dialOptions := []grpc.DialOption{}
+		if d.transportCredentials != nil {
+			dialOptions = append(dialOptions, grpc.WithTransportCredentials(d.transportCredentials))
+		} else {
+			dialOptions = append(dialOptions, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		}
+
+		healthClient, err := healthclient.GetClient(context.Background(), addr, dialOptions...)
+		if err != nil {
+			logger.Errorf("get health client %s failed: %s", addr, err.Error())
+			continue
+		}
+
+		if err := healthClient.Check(context.Background(), &healthpb.HealthCheckRequest{}); err != nil {
+			logger.Errorf("seed peer address %s is unreachable: %s", addr, err.Error())
 			continue
 		}
 

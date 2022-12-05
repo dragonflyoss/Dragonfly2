@@ -81,11 +81,11 @@ const (
 	TaskEventLeave = "Leave"
 )
 
-// Option is a functional option for task.
-type Option func(task *Task)
+// TaskOption is a functional option for task.
+type TaskOption func(task *Task)
 
 // WithBackToSourceLimit set BackToSourceLimit for task.
-func WithBackToSourceLimit(limit int32) Option {
+func WithBackToSourceLimit(limit int32) TaskOption {
 	return func(task *Task) {
 		task.BackToSourceLimit.Add(limit)
 	}
@@ -143,7 +143,7 @@ type Task struct {
 }
 
 // New task instance.
-func NewTask(id, url string, taskType commonv1.TaskType, meta *commonv1.UrlMeta, options ...Option) *Task {
+func NewTask(id, url string, taskType commonv1.TaskType, meta *commonv1.UrlMeta, options ...TaskOption) *Task {
 	t := &Task{
 		ID:                id,
 		URL:               url,
