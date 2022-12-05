@@ -23,8 +23,6 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/resolver"
 
 	"d7y.io/dragonfly/v2/pkg/gc"
@@ -169,7 +167,7 @@ func TestResource_New(t *testing.T) {
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			tc.mock(gc.EXPECT(), dynconfig.EXPECT())
 
-			resource, err := New(tc.config, gc, dynconfig, grpc.WithTransportCredentials(insecure.NewCredentials()))
+			resource, err := New(tc.config, gc, dynconfig, WithTransportCredentials(nil))
 			tc.expect(t, resource, err)
 		})
 	}

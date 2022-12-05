@@ -123,7 +123,6 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	}
 
 	var (
-		dynconfig      config.Dynconfig
 		managerClient  managerclient.Client
 		certifyClient  *certify.Certify
 		defaultPattern = config.ConvertPattern(opt.Download.DefaultPattern, commonv1.Pattern_P2P)
@@ -171,35 +170,36 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 				return nil, err
 			}
 		}
-
-		// New dynconfig manager client.
-		dynconfig, err = config.NewDynconfig(
-			config.ManagerSourceType, opt,
-			config.WithManagerClient(managerClient),
-			config.WithCacheDir(filepath.Join(d.CacheDir(), internaldynconfig.CacheDirName)),
-			config.WithExpireTime(opt.Scheduler.Manager.RefreshInterval),
-		)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		// New dynconfig local client.
-		var err error
-		dynconfig, err = config.NewDynconfig(config.LocalSourceType, opt)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	var (
 		grpcCredentials credentials.TransportCredentials
 		err             error
 	)
-
 	if certifyClient == nil {
 		grpcCredentials = insecure.NewCredentials()
 	} else {
 		grpcCredentials, err = loadGlobalGPRCTLSCredentials(certifyClient, opt.Security)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// New dynconfig manager client.
+	var dynconfig config.Dynconfig
+	if managerClient != nil {
+		dynconfig, err = config.NewDynconfig(
+			config.ManagerSourceType, opt,
+			config.WithManagerClient(managerClient),
+			config.WithCacheDir(filepath.Join(d.CacheDir(), internaldynconfig.CacheDirName)),
+			config.WithExpireTime(opt.Scheduler.Manager.RefreshInterval),
+			config.WithTransportCredentials(grpcCredentials),
+		)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		dynconfig, err = config.NewDynconfig(config.LocalSourceType, opt)
 		if err != nil {
 			return nil, err
 		}
