@@ -33,7 +33,7 @@ func (s *service) CreateApplication(ctx context.Context, json types.CreateApplic
 		State:             json.State,
 	}
 
-	if err := s.db.WithContext(ctx).Preload("SeedPeerClusters").Preload("SchedulerClusters").Preload("User").Create(&application).Error; err != nil {
+	if err := s.db.WithContext(ctx).Preload("User").Create(&application).Error; err != nil {
 		return nil, err
 	}
 
@@ -55,7 +55,7 @@ func (s *service) DestroyApplication(ctx context.Context, id uint) error {
 
 func (s *service) UpdateApplication(ctx context.Context, id uint, json types.UpdateApplicationRequest) (*model.Application, error) {
 	application := model.Application{}
-	if err := s.db.WithContext(ctx).Preload("SeedPeerClusters").Preload("SchedulerClusters").Preload("User").First(&application, id).Updates(model.Application{
+	if err := s.db.WithContext(ctx).Preload("User").First(&application, id).Updates(model.Application{
 		Name:              json.Name,
 		DownloadRateLimit: json.DownloadRateLimit,
 		URL:               json.URL,
@@ -71,7 +71,7 @@ func (s *service) UpdateApplication(ctx context.Context, id uint, json types.Upd
 
 func (s *service) GetApplication(ctx context.Context, id uint) (*model.Application, error) {
 	application := model.Application{}
-	if err := s.db.WithContext(ctx).Preload("SeedPeerClusters").Preload("SchedulerClusters").Preload("User").First(&application, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Preload("User").First(&application, id).Error; err != nil {
 		return nil, err
 	}
 
@@ -81,81 +81,9 @@ func (s *service) GetApplication(ctx context.Context, id uint) (*model.Applicati
 func (s *service) GetApplications(ctx context.Context, q types.GetApplicationsQuery) ([]model.Application, int64, error) {
 	var count int64
 	applications := []model.Application{}
-	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Preload("SeedPeerClusters").Preload("SchedulerClusters").Preload("User").Find(&applications).Limit(-1).Offset(-1).Count(&count).Error; err != nil {
+	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Preload("User").Find(&applications).Limit(-1).Offset(-1).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 
 	return applications, count, nil
-}
-
-func (s *service) AddSchedulerClusterToApplication(ctx context.Context, id, schedulerClusterID uint) error {
-	application := model.Application{}
-	if err := s.db.WithContext(ctx).First(&application, id).Error; err != nil {
-		return err
-	}
-
-	schedulerCluster := model.SchedulerCluster{}
-	if err := s.db.WithContext(ctx).First(&schedulerCluster, schedulerClusterID).Error; err != nil {
-		return err
-	}
-
-	if err := s.db.WithContext(ctx).Model(&application).Association("SchedulerClusters").Append(&schedulerCluster); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s *service) DeleteSchedulerClusterToApplication(ctx context.Context, id, schedulerClusterID uint) error {
-	application := model.Application{}
-	if err := s.db.WithContext(ctx).First(&application, id).Error; err != nil {
-		return err
-	}
-
-	schedulerCluster := model.SchedulerCluster{}
-	if err := s.db.WithContext(ctx).First(&schedulerCluster, schedulerClusterID).Error; err != nil {
-		return err
-	}
-
-	if err := s.db.Model(&application).Association("SchedulerClusters").Delete(&schedulerCluster); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s *service) AddSeedPeerClusterToApplication(ctx context.Context, id, seedPeerClusterID uint) error {
-	application := model.Application{}
-	if err := s.db.WithContext(ctx).First(&application, id).Error; err != nil {
-		return err
-	}
-
-	seedPeerCluster := model.SeedPeerCluster{}
-	if err := s.db.WithContext(ctx).First(&seedPeerCluster, seedPeerClusterID).Error; err != nil {
-		return err
-	}
-
-	if err := s.db.WithContext(ctx).Model(&application).Association("SeedPeerClusters").Append(&seedPeerCluster); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s *service) DeleteSeedPeerClusterToApplication(ctx context.Context, id, seedPeerClusterID uint) error {
-	application := model.Application{}
-	if err := s.db.WithContext(ctx).First(&application, id).Error; err != nil {
-		return err
-	}
-
-	seedPeerCluster := model.SeedPeerCluster{}
-	if err := s.db.WithContext(ctx).First(&seedPeerCluster, seedPeerClusterID).Error; err != nil {
-		return err
-	}
-
-	if err := s.db.Model(&application).Association("SeedPeerClusters").Delete(&seedPeerCluster); err != nil {
-		return err
-	}
-
-	return nil
 }
