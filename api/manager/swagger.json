@@ -53,18 +53,18 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.Application"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Application"
                             }
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -87,7 +87,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.CreateApplicationRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.CreateApplicationRequest"
                         }
                     }
                 ],
@@ -95,17 +95,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Application"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Application"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -136,17 +136,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Application"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Application"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -173,16 +173,16 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -212,7 +212,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.UpdateApplicationRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateApplicationRequest"
                         }
                     }
                 ],
@@ -220,193 +220,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Application"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Application"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
-                    }
-                }
-            }
-        },
-        "/applications/{id}/scheduler-clusters/{scheduler_cluster_id}": {
-            "put": {
-                "description": "Add Scheduler to Application",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Application"
-                ],
-                "summary": "Add Scheduler to Application",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "scheduler cluster id",
-                        "name": "scheduler_cluster_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": ""
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            },
-            "delete": {
-                "description": "Delete Scheduler to Application",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Application"
-                ],
-                "summary": "Delete Scheduler to Application",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "scheduler cluster id",
-                        "name": "scheduler_cluster_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": ""
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            }
-        },
-        "/applications/{id}/seed-peer-clusters/{seed_peer_cluster_id}": {
-            "put": {
-                "description": "Add SeedPeer to Application",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Application"
-                ],
-                "summary": "Add SeedPeer to Application",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "seed peer cluster id",
-                        "name": "seed_peer_cluster_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": ""
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            },
-            "delete": {
-                "description": "Delete SeedPeer to Application",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Application"
-                ],
-                "summary": "Delete SeedPeer to Application",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "seed peer cluster id",
-                        "name": "seed_peer_cluster_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": ""
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -430,18 +254,18 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/objectstorage.BucketMetadata"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_pkg_objectstorage.BucketMetadata"
                             }
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -464,22 +288,22 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.CreateBucketRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.CreateBucketRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -510,17 +334,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/objectstorage.BucketMetadata"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_pkg_objectstorage.BucketMetadata"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -547,16 +371,16 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -600,18 +424,18 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.Config"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Config"
                             }
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -634,7 +458,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.CreateConfigRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.CreateConfigRequest"
                         }
                     }
                 ],
@@ -642,17 +466,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Config"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Config"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -683,17 +507,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Config"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Config"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -720,16 +544,16 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -759,7 +583,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.UpdateConfigRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateConfigRequest"
                         }
                     }
                 ],
@@ -767,17 +591,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Config"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Config"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -797,16 +621,16 @@
                 "summary": "Get Health",
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -850,18 +674,18 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.Job"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Job"
                             }
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -884,7 +708,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.CreateJobRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.CreateJobRequest"
                         }
                     }
                 ],
@@ -892,17 +716,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Job"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Job"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -933,17 +757,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Job"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Job"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -970,16 +794,16 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -1009,7 +833,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.UpdateJobRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateJobRequest"
                         }
                     }
                 ],
@@ -1017,17 +841,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Job"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Job"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -1071,18 +895,18 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.Oauth"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Oauth"
                             }
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -1105,7 +929,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.CreateOauthRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.CreateOauthRequest"
                         }
                     }
                 ],
@@ -1113,17 +937,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Oauth"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Oauth"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -1154,17 +978,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Oauth"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Oauth"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -1191,16 +1015,16 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -1230,7 +1054,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.UpdateOauthRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateOauthRequest"
                         }
                     }
                 ],
@@ -1238,17 +1062,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Oauth"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Oauth"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -1277,13 +1101,13 @@
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -1304,15 +1128,15 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/rbac.Permission"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_permission_rbac.Permission"
                             }
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -1337,7 +1161,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.CreateV1PreheatRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.CreateV1PreheatRequest"
                         }
                     }
                 ],
@@ -1345,17 +1169,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/types.CreateV1PreheatResponse"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.CreateV1PreheatResponse"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -1386,17 +1210,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/types.GetV1PreheatResponse"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.GetV1PreheatResponse"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -1416,13 +1240,13 @@
                 "summary": "Get Roles",
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -1445,19 +1269,19 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.CreateRoleRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.CreateRoleRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -1486,13 +1310,13 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -1519,13 +1343,13 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -1550,7 +1374,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.AddPermissionForRoleRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.AddPermissionForRoleRequest"
                         }
                     },
                     {
@@ -1563,13 +1387,13 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -1592,7 +1416,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.DeletePermissionForRoleRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.DeletePermissionForRoleRequest"
                         }
                     },
                     {
@@ -1605,13 +1429,13 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -1655,18 +1479,18 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.SchedulerCluster"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SchedulerCluster"
                             }
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -1689,7 +1513,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.CreateSchedulerClusterRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.CreateSchedulerClusterRequest"
                         }
                     }
                 ],
@@ -1697,17 +1521,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.SchedulerCluster"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SchedulerCluster"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -1738,17 +1562,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.SchedulerCluster"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SchedulerCluster"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -1775,16 +1599,16 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -1814,7 +1638,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.UpdateSchedulerClusterRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateSchedulerClusterRequest"
                         }
                     }
                 ],
@@ -1822,17 +1646,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.SchedulerCluster"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SchedulerCluster"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -1868,16 +1692,16 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -1921,18 +1745,18 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.Scheduler"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Scheduler"
                             }
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -1955,7 +1779,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.CreateSchedulerRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.CreateSchedulerRequest"
                         }
                     }
                 ],
@@ -1963,17 +1787,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Scheduler"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Scheduler"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -2004,17 +1828,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Scheduler"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Scheduler"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -2041,16 +1865,16 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -2080,7 +1904,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.UpdateSchedulerRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateSchedulerRequest"
                         }
                     }
                 ],
@@ -2088,17 +1912,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Scheduler"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Scheduler"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -2131,18 +1955,18 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/types.Model"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.Model"
                             }
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -2172,7 +1996,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.CreateModelRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.CreateModelRequest"
                         }
                     }
                 ],
@@ -2180,17 +2004,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/types.Model"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.Model"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -2228,17 +2052,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/types.Model"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.Model"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -2272,16 +2096,16 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -2321,18 +2145,18 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/types.ModelVersion"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.ModelVersion"
                             }
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -2369,7 +2193,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.CreateModelVersionRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.CreateModelVersionRequest"
                         }
                     }
                 ],
@@ -2377,17 +2201,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/types.ModelVersion"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.ModelVersion"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -2432,17 +2256,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/types.ModelVersion"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.ModelVersion"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -2483,16 +2307,16 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -2531,7 +2355,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.UpdateModelRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateModelRequest"
                         }
                     }
                 ],
@@ -2539,17 +2363,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/types.Model"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.Model"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -2595,7 +2419,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.UpdateModelVersionRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateModelVersionRequest"
                         }
                     }
                 ],
@@ -2603,17 +2427,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/types.ModelVersion"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.ModelVersion"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -2657,18 +2481,18 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.SecurityGroup"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityGroup"
                             }
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -2691,7 +2515,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.CreateSecurityGroupRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.CreateSecurityGroupRequest"
                         }
                     }
                 ],
@@ -2699,17 +2523,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.SecurityGroup"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityGroup"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -2740,17 +2564,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.SecurityGroup"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityGroup"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -2780,7 +2604,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.UpdateSecurityGroupRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateSecurityGroupRequest"
                         }
                     }
                 ],
@@ -2788,17 +2612,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.SecurityGroup"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityGroup"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -2834,16 +2658,16 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -2879,16 +2703,16 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -2922,16 +2746,16 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -2967,16 +2791,16 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -3020,18 +2844,18 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.SecurityRule"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityRule"
                             }
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -3054,7 +2878,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.CreateSecurityRuleRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.CreateSecurityRuleRequest"
                         }
                     }
                 ],
@@ -3062,17 +2886,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.SecurityRule"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityRule"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -3103,17 +2927,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.SecurityRule"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityRule"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -3143,7 +2967,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.UpdateSecurityRuleRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateSecurityRuleRequest"
                         }
                     }
                 ],
@@ -3151,17 +2975,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.SecurityRule"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityRule"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -3190,16 +3014,16 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -3228,16 +3052,16 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -3281,18 +3105,18 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.SeedPeerCluster"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeerCluster"
                             }
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -3315,7 +3139,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.CreateSeedPeerClusterRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.CreateSeedPeerClusterRequest"
                         }
                     }
                 ],
@@ -3323,17 +3147,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.SeedPeerCluster"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeerCluster"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -3364,17 +3188,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.SeedPeerCluster"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeerCluster"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -3401,16 +3225,16 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -3440,7 +3264,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.UpdateSeedPeerClusterRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateSeedPeerClusterRequest"
                         }
                     }
                 ],
@@ -3448,17 +3272,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.SeedPeerCluster"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeerCluster"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -3494,16 +3318,16 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -3539,16 +3363,16 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -3592,18 +3416,18 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.SeedPeer"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeer"
                             }
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -3626,7 +3450,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.CreateSeedPeerRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.CreateSeedPeerRequest"
                         }
                     }
                 ],
@@ -3634,17 +3458,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.SeedPeer"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeer"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -3675,17 +3499,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.SeedPeer"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeer"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -3712,16 +3536,16 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -3751,7 +3575,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.UpdateSeedPeerRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateSeedPeerRequest"
                         }
                     }
                 ],
@@ -3759,17 +3583,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.SeedPeer"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeer"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -3798,16 +3622,16 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -3837,16 +3661,16 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -3871,7 +3695,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.SignUpRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SignUpRequest"
                         }
                     }
                 ],
@@ -3879,14 +3703,14 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.User"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.User"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -3930,18 +3754,18 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.User"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.User"
                             }
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -3972,17 +3796,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.User"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.User"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -4012,7 +3836,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.UpdateUserRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateUserRequest"
                         }
                     }
                 ],
@@ -4020,17 +3844,17 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.User"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.User"
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "404": {
-                        "description": ""
+                        "description": "Not Found"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -4055,19 +3879,19 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.ResetPasswordRequest"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.ResetPasswordRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -4102,10 +3926,10 @@
                         }
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -4141,13 +3965,13 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -4181,20 +4005,20 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     },
                     "400": {
-                        "description": ""
+                        "description": "Bad Request"
                     },
                     "500": {
-                        "description": ""
+                        "description": "Internal Server Error"
                     }
                 }
             }
         }
     },
     "definitions": {
-        "model.Application": {
+        "d7y_io_dragonfly_v2_manager_model.Application": {
             "type": "object",
             "properties": {
                 "bio": {
@@ -4212,18 +4036,6 @@
                 "name": {
                     "type": "string"
                 },
-                "scheduler_clusters": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.SchedulerCluster"
-                    }
-                },
-                "seed_peer_clusters": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.SeedPeerCluster"
-                    }
-                },
                 "state": {
                     "type": "string"
                 },
@@ -4234,14 +4046,14 @@
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/model.User"
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.User"
                 },
                 "user_id": {
                     "type": "integer"
                 }
             }
         },
-        "model.Config": {
+        "d7y_io_dragonfly_v2_manager_model.Config": {
             "type": "object",
             "properties": {
                 "bio": {
@@ -4267,17 +4079,15 @@
                 }
             }
         },
-        "model.JSONMap": {
+        "d7y_io_dragonfly_v2_manager_model.JSONMap": {
             "type": "object",
-            "additionalProperties": {
-                "type": "any"
-            }
+            "additionalProperties": {}
         },
-        "model.Job": {
+        "d7y_io_dragonfly_v2_manager_model.Job": {
             "type": "object",
             "properties": {
                 "args": {
-                    "$ref": "#/definitions/model.JSONMap"
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.JSONMap"
                 },
                 "bio": {
                     "type": "string"
@@ -4289,18 +4099,18 @@
                     "type": "integer"
                 },
                 "result": {
-                    "$ref": "#/definitions/model.JSONMap"
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.JSONMap"
                 },
                 "scheduler_clusters": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/model.SchedulerCluster"
+                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SchedulerCluster"
                     }
                 },
                 "seed_peer_clusters": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/model.SeedPeerCluster"
+                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeerCluster"
                     }
                 },
                 "state": {
@@ -4320,7 +4130,7 @@
                 }
             }
         },
-        "model.Oauth": {
+        "d7y_io_dragonfly_v2_manager_model.Oauth": {
             "type": "object",
             "properties": {
                 "bio": {
@@ -4349,7 +4159,7 @@
                 }
             }
         },
-        "model.Scheduler": {
+        "d7y_io_dragonfly_v2_manager_model.Scheduler": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -4387,20 +4197,17 @@
                 }
             }
         },
-        "model.SchedulerCluster": {
+        "d7y_io_dragonfly_v2_manager_model.SchedulerCluster": {
             "type": "object",
             "properties": {
-                "application_id": {
-                    "type": "integer"
-                },
                 "bio": {
                     "type": "string"
                 },
                 "client_config": {
-                    "$ref": "#/definitions/model.JSONMap"
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.JSONMap"
                 },
                 "config": {
-                    "$ref": "#/definitions/model.JSONMap"
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.JSONMap"
                 },
                 "created_at": {
                     "type": "string"
@@ -4414,14 +4221,14 @@
                 "jobs": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/model.Job"
+                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Job"
                     }
                 },
                 "name": {
                     "type": "string"
                 },
                 "scopes": {
-                    "$ref": "#/definitions/model.JSONMap"
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.JSONMap"
                 },
                 "security_group_id": {
                     "type": "integer"
@@ -4429,7 +4236,7 @@
                 "seed_peer_clusters": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/model.SeedPeerCluster"
+                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeerCluster"
                     }
                 },
                 "updated_at": {
@@ -4437,7 +4244,7 @@
                 }
             }
         },
-        "model.SecurityGroup": {
+        "d7y_io_dragonfly_v2_manager_model.SecurityGroup": {
             "type": "object",
             "properties": {
                 "bio": {
@@ -4455,7 +4262,7 @@
                 "security_rules": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/model.SecurityRule"
+                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityRule"
                     }
                 },
                 "updated_at": {
@@ -4463,7 +4270,7 @@
                 }
             }
         },
-        "model.SecurityRule": {
+        "d7y_io_dragonfly_v2_manager_model.SecurityRule": {
             "type": "object",
             "properties": {
                 "bio": {
@@ -4487,7 +4294,7 @@
                 "security_groups": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/model.SecurityGroup"
+                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityGroup"
                     }
                 },
                 "updated_at": {
@@ -4495,7 +4302,7 @@
                 }
             }
         },
-        "model.SeedPeer": {
+        "d7y_io_dragonfly_v2_manager_model.SeedPeer": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -4542,17 +4349,14 @@
                 }
             }
         },
-        "model.SeedPeerCluster": {
+        "d7y_io_dragonfly_v2_manager_model.SeedPeerCluster": {
             "type": "object",
             "properties": {
-                "application_id": {
-                    "type": "integer"
-                },
                 "bio": {
                     "type": "string"
                 },
                 "config": {
-                    "$ref": "#/definitions/model.JSONMap"
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.JSONMap"
                 },
                 "created_at": {
                     "type": "string"
@@ -4566,7 +4370,7 @@
                 "jobs": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/model.Job"
+                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Job"
                     }
                 },
                 "name": {
@@ -4575,11 +4379,11 @@
                 "scheduler_clusters": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/model.SchedulerCluster"
+                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SchedulerCluster"
                     }
                 },
                 "scopes": {
-                    "$ref": "#/definitions/model.JSONMap"
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.JSONMap"
                 },
                 "security_group_id": {
                     "type": "integer"
@@ -4589,7 +4393,7 @@
                 }
             }
         },
-        "model.User": {
+        "d7y_io_dragonfly_v2_manager_model.User": {
             "type": "object",
             "properties": {
                 "avatar": {
@@ -4624,20 +4428,7 @@
                 }
             }
         },
-        "objectstorage.BucketMetadata": {
-            "type": "object",
-            "properties": {
-                "createAt": {
-                    "description": "CreateAt is bucket create time.",
-                    "type": "string"
-                },
-                "name": {
-                    "description": "Name is bucket name.",
-                    "type": "string"
-                }
-            }
-        },
-        "rbac.Permission": {
+        "d7y_io_dragonfly_v2_manager_permission_rbac.Permission": {
             "type": "object",
             "required": [
                 "action",
@@ -4656,7 +4447,7 @@
                 }
             }
         },
-        "types.AddPermissionForRoleRequest": {
+        "d7y_io_dragonfly_v2_manager_types.AddPermissionForRoleRequest": {
             "type": "object",
             "required": [
                 "action",
@@ -4675,7 +4466,7 @@
                 }
             }
         },
-        "types.CreateApplicationRequest": {
+        "d7y_io_dragonfly_v2_manager_types.CreateApplicationRequest": {
             "type": "object",
             "required": [
                 "name",
@@ -4706,7 +4497,7 @@
                 }
             }
         },
-        "types.CreateBucketRequest": {
+        "d7y_io_dragonfly_v2_manager_types.CreateBucketRequest": {
             "type": "object",
             "required": [
                 "name"
@@ -4717,7 +4508,7 @@
                 }
             }
         },
-        "types.CreateConfigRequest": {
+        "d7y_io_dragonfly_v2_manager_types.CreateConfigRequest": {
             "type": "object",
             "required": [
                 "name",
@@ -4739,7 +4530,7 @@
                 }
             }
         },
-        "types.CreateJobRequest": {
+        "d7y_io_dragonfly_v2_manager_types.CreateJobRequest": {
             "type": "object",
             "required": [
                 "type"
@@ -4747,18 +4538,14 @@
             "properties": {
                 "args": {
                     "type": "object",
-                    "additionalProperties": {
-                        "type": "any"
-                    }
+                    "additionalProperties": {}
                 },
                 "bio": {
                     "type": "string"
                 },
                 "result": {
                     "type": "object",
-                    "additionalProperties": {
-                        "type": "any"
-                    }
+                    "additionalProperties": {}
                 },
                 "scheduler_cluster_ids": {
                     "type": "array",
@@ -4780,14 +4567,13 @@
                 }
             }
         },
-        "types.CreateModelRequest": {
+        "d7y_io_dragonfly_v2_manager_types.CreateModelRequest": {
             "type": "object",
             "required": [
                 "hostname",
                 "id",
                 "ip",
                 "name",
-                "scheduler_id",
                 "version_id"
             ],
             "properties": {
@@ -4806,15 +4592,12 @@
                 "name": {
                     "type": "string"
                 },
-                "scheduler_id": {
-                    "type": "integer"
-                },
                 "version_id": {
                     "type": "string"
                 }
             }
         },
-        "types.CreateModelVersionRequest": {
+        "d7y_io_dragonfly_v2_manager_types.CreateModelVersionRequest": {
             "type": "object",
             "required": [
                 "data",
@@ -4844,7 +4627,7 @@
                 }
             }
         },
-        "types.CreateOauthRequest": {
+        "d7y_io_dragonfly_v2_manager_types.CreateOauthRequest": {
             "type": "object",
             "required": [
                 "client_id",
@@ -4873,7 +4656,7 @@
                 }
             }
         },
-        "types.CreateRoleRequest": {
+        "d7y_io_dragonfly_v2_manager_types.CreateRoleRequest": {
             "type": "object",
             "required": [
                 "permissions",
@@ -4883,7 +4666,7 @@
                 "permissions": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/rbac.Permission"
+                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_permission_rbac.Permission"
                     }
                 },
                 "role": {
@@ -4891,7 +4674,7 @@
                 }
             }
         },
-        "types.CreateSchedulerClusterRequest": {
+        "d7y_io_dragonfly_v2_manager_types.CreateSchedulerClusterRequest": {
             "type": "object",
             "required": [
                 "client_config",
@@ -4903,10 +4686,10 @@
                     "type": "string"
                 },
                 "client_config": {
-                    "$ref": "#/definitions/types.SchedulerClusterClientConfig"
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterClientConfig"
                 },
                 "config": {
-                    "$ref": "#/definitions/types.SchedulerClusterConfig"
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterConfig"
                 },
                 "is_default": {
                     "type": "boolean"
@@ -4915,7 +4698,7 @@
                     "type": "string"
                 },
                 "scopes": {
-                    "$ref": "#/definitions/types.SchedulerClusterScopes"
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes"
                 },
                 "security_group_id": {
                     "type": "integer"
@@ -4925,7 +4708,7 @@
                 }
             }
         },
-        "types.CreateSchedulerRequest": {
+        "d7y_io_dragonfly_v2_manager_types.CreateSchedulerRequest": {
             "type": "object",
             "required": [
                 "host_name",
@@ -4957,7 +4740,7 @@
                 }
             }
         },
-        "types.CreateSecurityGroupRequest": {
+        "d7y_io_dragonfly_v2_manager_types.CreateSecurityGroupRequest": {
             "type": "object",
             "required": [
                 "name"
@@ -4971,7 +4754,7 @@
                 }
             }
         },
-        "types.CreateSecurityRuleRequest": {
+        "d7y_io_dragonfly_v2_manager_types.CreateSecurityRuleRequest": {
             "type": "object",
             "required": [
                 "domain",
@@ -4992,7 +4775,7 @@
                 }
             }
         },
-        "types.CreateSeedPeerClusterRequest": {
+        "d7y_io_dragonfly_v2_manager_types.CreateSeedPeerClusterRequest": {
             "type": "object",
             "required": [
                 "config",
@@ -5003,7 +4786,7 @@
                     "type": "string"
                 },
                 "config": {
-                    "$ref": "#/definitions/types.SeedPeerClusterConfig"
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig"
                 },
                 "is_default": {
                     "type": "boolean"
@@ -5012,11 +4795,11 @@
                     "type": "string"
                 },
                 "scopes": {
-                    "$ref": "#/definitions/types.SeedPeerClusterScopes"
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterScopes"
                 }
             }
         },
-        "types.CreateSeedPeerRequest": {
+        "d7y_io_dragonfly_v2_manager_types.CreateSeedPeerRequest": {
             "type": "object",
             "required": [
                 "download_port",
@@ -5064,7 +4847,7 @@
                 }
             }
         },
-        "types.CreateV1PreheatRequest": {
+        "d7y_io_dragonfly_v2_manager_types.CreateV1PreheatRequest": {
             "type": "object",
             "required": [
                 "type",
@@ -5092,7 +4875,7 @@
                 }
             }
         },
-        "types.CreateV1PreheatResponse": {
+        "d7y_io_dragonfly_v2_manager_types.CreateV1PreheatResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -5100,7 +4883,7 @@
                 }
             }
         },
-        "types.DeletePermissionForRoleRequest": {
+        "d7y_io_dragonfly_v2_manager_types.DeletePermissionForRoleRequest": {
             "type": "object",
             "required": [
                 "action",
@@ -5119,7 +4902,7 @@
                 }
             }
         },
-        "types.GetV1PreheatResponse": {
+        "d7y_io_dragonfly_v2_manager_types.GetV1PreheatResponse": {
             "type": "object",
             "properties": {
                 "finishTime": {
@@ -5136,7 +4919,7 @@
                 }
             }
         },
-        "types.Model": {
+        "d7y_io_dragonfly_v2_manager_types.Model": {
             "type": "object",
             "required": [
                 "create_at",
@@ -5175,7 +4958,7 @@
                 }
             }
         },
-        "types.ModelVersion": {
+        "d7y_io_dragonfly_v2_manager_types.ModelVersion": {
             "type": "object",
             "required": [
                 "create_at",
@@ -5217,7 +5000,7 @@
                 }
             }
         },
-        "types.ResetPasswordRequest": {
+        "d7y_io_dragonfly_v2_manager_types.ResetPasswordRequest": {
             "type": "object",
             "required": [
                 "new_password",
@@ -5236,7 +5019,7 @@
                 }
             }
         },
-        "types.SchedulerClusterClientConfig": {
+        "d7y_io_dragonfly_v2_manager_types.SchedulerClusterClientConfig": {
             "type": "object",
             "properties": {
                 "load_limit": {
@@ -5251,22 +5034,22 @@
                 }
             }
         },
-        "types.SchedulerClusterConfig": {
+        "d7y_io_dragonfly_v2_manager_types.SchedulerClusterConfig": {
             "type": "object",
             "properties": {
                 "filter_parent_limit": {
                     "type": "integer",
-                    "maximum": 100,
+                    "maximum": 20,
                     "minimum": 1
                 },
                 "filter_parent_range_limit": {
                     "type": "integer",
                     "maximum": 1000,
-                    "minimum": 1
+                    "minimum": 10
                 }
             }
         },
-        "types.SchedulerClusterScopes": {
+        "d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes": {
             "type": "object",
             "properties": {
                 "idc": {
@@ -5280,7 +5063,7 @@
                 }
             }
         },
-        "types.SeedPeerClusterConfig": {
+        "d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig": {
             "type": "object",
             "properties": {
                 "load_limit": {
@@ -5290,7 +5073,7 @@
                 }
             }
         },
-        "types.SeedPeerClusterScopes": {
+        "d7y_io_dragonfly_v2_manager_types.SeedPeerClusterScopes": {
             "type": "object",
             "properties": {
                 "idc": {
@@ -5304,7 +5087,7 @@
                 }
             }
         },
-        "types.SignUpRequest": {
+        "d7y_io_dragonfly_v2_manager_types.SignUpRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -5339,7 +5122,7 @@
                 }
             }
         },
-        "types.UpdateApplicationRequest": {
+        "d7y_io_dragonfly_v2_manager_types.UpdateApplicationRequest": {
             "type": "object",
             "required": [
                 "user_id"
@@ -5369,7 +5152,7 @@
                 }
             }
         },
-        "types.UpdateConfigRequest": {
+        "d7y_io_dragonfly_v2_manager_types.UpdateConfigRequest": {
             "type": "object",
             "properties": {
                 "bio": {
@@ -5386,7 +5169,7 @@
                 }
             }
         },
-        "types.UpdateJobRequest": {
+        "d7y_io_dragonfly_v2_manager_types.UpdateJobRequest": {
             "type": "object",
             "properties": {
                 "bio": {
@@ -5397,7 +5180,7 @@
                 }
             }
         },
-        "types.UpdateModelRequest": {
+        "d7y_io_dragonfly_v2_manager_types.UpdateModelRequest": {
             "type": "object",
             "properties": {
                 "hostname": {
@@ -5414,7 +5197,7 @@
                 }
             }
         },
-        "types.UpdateModelVersionRequest": {
+        "d7y_io_dragonfly_v2_manager_types.UpdateModelVersionRequest": {
             "type": "object",
             "properties": {
                 "data": {
@@ -5437,7 +5220,7 @@
                 }
             }
         },
-        "types.UpdateOauthRequest": {
+        "d7y_io_dragonfly_v2_manager_types.UpdateOauthRequest": {
             "type": "object",
             "properties": {
                 "bio": {
@@ -5461,17 +5244,17 @@
                 }
             }
         },
-        "types.UpdateSchedulerClusterRequest": {
+        "d7y_io_dragonfly_v2_manager_types.UpdateSchedulerClusterRequest": {
             "type": "object",
             "properties": {
                 "bio": {
                     "type": "string"
                 },
                 "client_config": {
-                    "$ref": "#/definitions/types.SchedulerClusterClientConfig"
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterClientConfig"
                 },
                 "config": {
-                    "$ref": "#/definitions/types.SchedulerClusterConfig"
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterConfig"
                 },
                 "is_default": {
                     "type": "boolean"
@@ -5480,7 +5263,7 @@
                     "type": "string"
                 },
                 "scopes": {
-                    "$ref": "#/definitions/types.SchedulerClusterScopes"
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes"
                 },
                 "security_group_id": {
                     "type": "integer"
@@ -5490,7 +5273,7 @@
                 }
             }
         },
-        "types.UpdateSchedulerRequest": {
+        "d7y_io_dragonfly_v2_manager_types.UpdateSchedulerRequest": {
             "type": "object",
             "properties": {
                 "idc": {
@@ -5516,7 +5299,7 @@
                 }
             }
         },
-        "types.UpdateSecurityGroupRequest": {
+        "d7y_io_dragonfly_v2_manager_types.UpdateSecurityGroupRequest": {
             "type": "object",
             "properties": {
                 "bio": {
@@ -5527,7 +5310,7 @@
                 }
             }
         },
-        "types.UpdateSecurityRuleRequest": {
+        "d7y_io_dragonfly_v2_manager_types.UpdateSecurityRuleRequest": {
             "type": "object",
             "properties": {
                 "bio": {
@@ -5544,14 +5327,14 @@
                 }
             }
         },
-        "types.UpdateSeedPeerClusterRequest": {
+        "d7y_io_dragonfly_v2_manager_types.UpdateSeedPeerClusterRequest": {
             "type": "object",
             "properties": {
                 "bio": {
                     "type": "string"
                 },
                 "config": {
-                    "$ref": "#/definitions/types.SeedPeerClusterConfig"
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig"
                 },
                 "is_default": {
                     "type": "boolean"
@@ -5560,11 +5343,11 @@
                     "type": "string"
                 },
                 "scopes": {
-                    "$ref": "#/definitions/types.SeedPeerClusterScopes"
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterScopes"
                 }
             }
         },
-        "types.UpdateSeedPeerRequest": {
+        "d7y_io_dragonfly_v2_manager_types.UpdateSeedPeerRequest": {
             "type": "object",
             "properties": {
                 "download_port": {
@@ -5601,7 +5384,7 @@
                 }
             }
         },
-        "types.UpdateUserRequest": {
+        "d7y_io_dragonfly_v2_manager_types.UpdateUserRequest": {
             "type": "object",
             "properties": {
                 "avatar": {
@@ -5617,6 +5400,19 @@
                     "type": "string"
                 },
                 "phone": {
+                    "type": "string"
+                }
+            }
+        },
+        "d7y_io_dragonfly_v2_pkg_objectstorage.BucketMetadata": {
+            "type": "object",
+            "properties": {
+                "createAt": {
+                    "description": "CreateAt is bucket create time.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Name is bucket name.",
                     "type": "string"
                 }
             }
