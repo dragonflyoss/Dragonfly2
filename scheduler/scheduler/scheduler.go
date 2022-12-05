@@ -74,10 +74,10 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 		default:
 		}
 
-		// If the scheduling exceeds the RetryBackSourceLimit or peer needs back-to-source,
+		// If the scheduling exceeds the RetryBackToSourceLimit or peer needs back-to-source,
 		// peer will download the task back-to-source.
 		needBackToSource := peer.NeedBackToSource.Load()
-		if (n >= s.config.RetryBackSourceLimit || needBackToSource) &&
+		if (n >= s.config.RetryBackToSourceLimit || needBackToSource) &&
 			peer.Task.CanBackToSource() {
 			stream, ok := peer.LoadStream()
 			if !ok {

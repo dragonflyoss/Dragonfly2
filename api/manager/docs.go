@@ -4034,22 +4034,13 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
-                "download_rate_limit": {
-                    "type": "integer"
-                },
                 "id": {
                     "type": "integer"
                 },
                 "name": {
                     "type": "string"
                 },
-                "state": {
-                    "type": "string"
-                },
                 "updated_at": {
-                    "type": "string"
-                },
-                "url": {
                     "type": "string"
                 },
                 "user": {
@@ -4483,20 +4474,7 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
-                "download_rate_limit": {
-                    "type": "integer"
-                },
                 "name": {
-                    "type": "string"
-                },
-                "state": {
-                    "type": "string",
-                    "enum": [
-                        "enable",
-                        "disable"
-                    ]
-                },
-                "url": {
                     "type": "string"
                 },
                 "user_id": {
@@ -5138,20 +5116,7 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
-                "download_rate_limit": {
-                    "type": "integer"
-                },
                 "name": {
-                    "type": "string"
-                },
-                "state": {
-                    "type": "string",
-                    "enum": [
-                        "enable",
-                        "disable"
-                    ]
-                },
-                "url": {
                     "type": "string"
                 },
                 "user_id": {

@@ -45,11 +45,11 @@ import (
 var (
 	mockPluginDir       = "plugin_dir"
 	mockSchedulerConfig = &config.SchedulerConfig{
-		RetryLimit:           2,
-		RetryBackSourceLimit: 1,
-		RetryInterval:        10 * time.Millisecond,
-		BackSourceCount:      int(mockTaskBackToSourceLimit),
-		Algorithm:            evaluator.DefaultAlgorithm,
+		RetryLimit:             2,
+		RetryBackToSourceLimit: 1,
+		RetryInterval:          10 * time.Millisecond,
+		BackToSourceCount:      int(mockTaskBackToSourceLimit),
+		Algorithm:              evaluator.DefaultAlgorithm,
 	}
 
 	mockRawHost = &schedulerv1.AnnounceHostRequest{
@@ -219,7 +219,7 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 			},
 		},
 		{
-			name: "schedule exceeds RetryBackSourceLimit and peer stream load failed",
+			name: "schedule exceeds RetryBackToSourceLimit and peer stream load failed",
 			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, mr *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				task := peer.Task
 				task.StorePeer(peer)
