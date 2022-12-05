@@ -92,11 +92,11 @@ var (
 		},
 	}
 
-	mockTaskBackToSourceLimit int32 = 200
-	mockTaskURL                     = "http://example.com/foo"
-	mockTaskID                      = idgen.TaskID(mockTaskURL, mockTaskURLMeta)
-	mockPeerID                      = idgen.PeerID("127.0.0.1")
-	mockSeedPeerID                  = idgen.SeedPeerID("127.0.0.1")
+	mockTaskBackToSourceLimit uint32 = 200
+	mockTaskURL                      = "http://example.com/foo"
+	mockTaskID                       = idgen.TaskID(mockTaskURL, mockTaskURLMeta)
+	mockPeerID                       = idgen.PeerID("127.0.0.1")
+	mockSeedPeerID                   = idgen.SeedPeerID("127.0.0.1")
 )
 
 func TestScheduler_New(t *testing.T) {

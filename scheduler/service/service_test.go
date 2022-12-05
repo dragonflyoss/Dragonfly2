@@ -168,12 +168,12 @@ var (
 		},
 	}
 
-	mockTaskURL                     = "http://example.com/foo"
-	mockTaskBackToSourceLimit int32 = 200
-	mockTaskID                      = idgen.TaskID(mockTaskURL, mockTaskURLMeta)
-	mockPeerID                      = idgen.PeerID("127.0.0.1")
-	mockSeedPeerID                  = idgen.SeedPeerID("127.0.0.1")
-	mockURL                         = "d7y://foo"
+	mockTaskURL                      = "http://example.com/foo"
+	mockTaskBackToSourceLimit uint32 = 200
+	mockTaskID                       = idgen.TaskID(mockTaskURL, mockTaskURLMeta)
+	mockPeerID                       = idgen.PeerID("127.0.0.1")
+	mockSeedPeerID                   = idgen.SeedPeerID("127.0.0.1")
+	mockURL                          = "d7y://foo"
 )
 
 func TestService_New(t *testing.T) {

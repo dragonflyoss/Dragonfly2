@@ -106,8 +106,8 @@ type SchedulerConfig struct {
 	// Scheduling algorithm used by the scheduler.
 	Algorithm string `yaml:"algorithm" mapstructure:"algorithm"`
 
-	// Single task allows the client to back-to-source count.
-	BackSourceCount int `yaml:"backSourceCount" mapstructure:"backSourceCount"`
+	// BackSourceCount allows single task back-to-source count.
+	BackSourceCount uint32 `yaml:"backSourceCount" mapstructure:"backSourceCount"`
 
 	// Retry scheduling back-to-source limit times.
 	RetryBackSourceLimit int `yaml:"retryBackSourceLimit" mapstructure:"retryBackSourceLimit"`
@@ -381,6 +381,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Scheduler.Algorithm == "" {
 		return errors.New("scheduler requires parameter algorithm")
+	}
+
+	if cfg.Scheduler.BackSourceCount == 0 {
+		return errors.New("scheduler requires parameter backSourceCount")
 	}
 
 	if cfg.Scheduler.RetryLimit <= 0 {

@@ -42,10 +42,10 @@ var (
 			"content-length": "100",
 		},
 	}
-	mockTaskBackToSourceLimit int32 = 200
-	mockTaskURL                     = "http://example.com/foo"
-	mockTaskID                      = idgen.TaskID(mockTaskURL, mockTaskURLMeta)
-	mockPieceInfo                   = &commonv1.PieceInfo{
+	mockTaskBackToSourceLimit uint32 = 200
+	mockTaskURL                      = "http://example.com/foo"
+	mockTaskID                       = idgen.TaskID(mockTaskURL, mockTaskURLMeta)
+	mockPieceInfo                    = &commonv1.PieceInfo{
 		PieceNum:    1,
 		RangeStart:  0,
 		RangeSize:   100,

@@ -85,7 +85,7 @@ const (
 type TaskOption func(task *Task)
 
 // WithBackToSourceLimit set BackToSourceLimit for task.
-func WithBackToSourceLimit(limit int32) TaskOption {
+func WithBackToSourceLimit(limit uint32) TaskOption {
 	return func(task *Task) {
 		task.BackToSourceLimit.Add(limit)
 	}
@@ -114,7 +114,7 @@ type Task struct {
 	TotalPieceCount *atomic.Int32
 
 	// BackToSourceLimit is back-to-source limit.
-	BackToSourceLimit *atomic.Int32
+	BackToSourceLimit *atomic.Uint32
 
 	// BackToSourcePeers is back-to-source sync map.
 	BackToSourcePeers set.SafeSet[string]
@@ -152,7 +152,7 @@ func NewTask(id, url string, taskType commonv1.TaskType, meta *commonv1.UrlMeta,
 		DirectPiece:       []byte{},
 		ContentLength:     atomic.NewInt64(-1),
 		TotalPieceCount:   atomic.NewInt32(0),
-		BackToSourceLimit: atomic.NewInt32(0),
+		BackToSourceLimit: atomic.NewUint32(0),
 		BackToSourcePeers: set.NewSafeSet[string](),
 		Pieces:            &sync.Map{},
 		DAG:               dag.NewDAG[*Peer](),
@@ -426,7 +426,7 @@ func (t *Task) SizeScope() (commonv1.SizeScope, error) {
 
 // CanBackToSource represents whether task can back-to-source.
 func (t *Task) CanBackToSource() bool {
-	return int32(t.BackToSourcePeers.Len()) <= t.BackToSourceLimit.Load() && (t.Type == commonv1.TaskType_Normal || t.Type == commonv1.TaskType_DfStore)
+	return uint32(t.BackToSourcePeers.Len()) <= t.BackToSourceLimit.Load() && (t.Type == commonv1.TaskType_Normal || t.Type == commonv1.TaskType_DfStore)
 }
 
 // CanReuseDirectPiece represents whether task can reuse data of direct piece.
