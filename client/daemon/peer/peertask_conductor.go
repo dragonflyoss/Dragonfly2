@@ -859,12 +859,13 @@ func (pt *peerTaskConductor) confirmReceivePeerPacketError(err error) (cont bool
 			return false
 		case commonv1.Code_SchedReregister:
 			pt.Infof("receive reregister code")
-			rerr := pt.register()
-			if rerr == nil {
+			regErr := pt.register()
+			if regErr == nil {
 				pt.Infof("reregister ok")
 				return true
 			}
-			pt.Errorf("reregister to scheduler error:%s", err)
+			pt.Errorf("reregister to scheduler error: %s", regErr)
+			fallthrough
 		default:
 			failedCode = de.Code
 			failedReason = de.Message
