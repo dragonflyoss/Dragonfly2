@@ -25,12 +25,9 @@ import (
 
 func (s *service) CreateApplication(ctx context.Context, json types.CreateApplicationRequest) (*model.Application, error) {
 	application := model.Application{
-		Name:              json.Name,
-		DownloadRateLimit: json.DownloadRateLimit,
-		URL:               json.URL,
-		UserID:            json.UserID,
-		BIO:               json.BIO,
-		State:             json.State,
+		Name:   json.Name,
+		UserID: json.UserID,
+		BIO:    json.BIO,
 	}
 
 	if err := s.db.WithContext(ctx).Preload("User").Create(&application).Error; err != nil {
@@ -56,12 +53,9 @@ func (s *service) DestroyApplication(ctx context.Context, id uint) error {
 func (s *service) UpdateApplication(ctx context.Context, id uint, json types.UpdateApplicationRequest) (*model.Application, error) {
 	application := model.Application{}
 	if err := s.db.WithContext(ctx).Preload("User").First(&application, id).Updates(model.Application{
-		Name:              json.Name,
-		DownloadRateLimit: json.DownloadRateLimit,
-		URL:               json.URL,
-		State:             json.State,
-		BIO:               json.BIO,
-		UserID:            json.UserID,
+		Name:   json.Name,
+		BIO:    json.BIO,
+		UserID: json.UserID,
 	}).Error; err != nil {
 		return nil, err
 	}
