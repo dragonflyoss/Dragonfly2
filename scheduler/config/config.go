@@ -103,22 +103,28 @@ type ServerConfig struct {
 }
 
 type SchedulerConfig struct {
-	// Scheduling algorithm used by the scheduler.
+	// Algorithm is scheduling algorithm used by the scheduler.
 	Algorithm string `yaml:"algorithm" mapstructure:"algorithm"`
 
-	// Single task allows the client to back-to-source count.
+	// DEPRECATED: Please use the `backToSourceCount` field instead.
 	BackSourceCount int `yaml:"backSourceCount" mapstructure:"backSourceCount"`
 
-	// Retry scheduling back-to-source limit times.
+	// DEPRECATED: Please use the `retryBackToSourceLimit` field instead.
 	RetryBackSourceLimit int `yaml:"retryBackSourceLimit" mapstructure:"retryBackSourceLimit"`
 
-	// Retry scheduling limit times.
+	// BackToSourceCount is single task allows the peer to back-to-source count.
+	BackToSourceCount int `yaml:"backToSourceCount" mapstructure:"backToSourceCount"`
+
+	// RetryBackToSourceLimit reaches the limit, then the peer back-to-source.
+	RetryBackToSourceLimit int `yaml:"retryBackToSourceLimit" mapstructure:"retryBackToSourceLimit"`
+
+	// RetryLimit reaches the limit, then scheduler returns scheduling failed.
 	RetryLimit int `yaml:"retryLimit" mapstructure:"retryLimit"`
 
-	// Retry scheduling interval.
+	// RetryInterval is scheduling interval.
 	RetryInterval time.Duration `yaml:"retryInterval" mapstructure:"retryInterval"`
 
-	// Task and peer gc configuration.
+	// GC configuration.
 	GC GCConfig `yaml:"gc" mapstructure:"gc"`
 
 	// Training configuration.
@@ -295,11 +301,11 @@ func New() *Config {
 			Host: fqdn.FQDNHostname,
 		},
 		Scheduler: SchedulerConfig{
-			Algorithm:            DefaultSchedulerAlgorithm,
-			BackSourceCount:      DefaultSchedulerBackSourceCount,
-			RetryBackSourceLimit: DefaultSchedulerRetryBackSourceLimit,
-			RetryLimit:           DefaultSchedulerRetryLimit,
-			RetryInterval:        DefaultSchedulerRetryInterval,
+			Algorithm:              DefaultSchedulerAlgorithm,
+			BackToSourceCount:      DefaultSchedulerBackToSourceCount,
+			RetryBackToSourceLimit: DefaultSchedulerRetryBackToSourceLimit,
+			RetryLimit:             DefaultSchedulerRetryLimit,
+			RetryInterval:          DefaultSchedulerRetryInterval,
 			GC: GCConfig{
 				PieceDownloadTimeout: DefaultSchedulerPieceDownloadTimeout,
 				PeerGCInterval:       DefaultSchedulerPeerGCInterval,
@@ -383,8 +389,12 @@ func (cfg *Config) Validate() error {
 		return errors.New("scheduler requires parameter algorithm")
 	}
 
-	if cfg.Scheduler.BackSourceCount == 0 {
-		return errors.New("scheduler requires parameter backSourceCount")
+	if cfg.Scheduler.BackToSourceCount == 0 {
+		return errors.New("scheduler requires parameter backToSourceCount")
+	}
+
+	if cfg.Scheduler.RetryBackToSourceLimit == 0 {
+		return errors.New("scheduler requires parameter retryBackToSourceLimit")
 	}
 
 	if cfg.Scheduler.RetryLimit <= 0 {
@@ -501,6 +511,16 @@ func (cfg *Config) Validate() error {
 }
 
 func (cfg *Config) Convert() error {
+	// TODO Compatible with deprecated fields backSourceCount.
+	if cfg.Scheduler.BackSourceCount != 0 {
+		cfg.Scheduler.BackToSourceCount = cfg.Scheduler.BackSourceCount
+	}
+
+	// TODO Compatible with deprecated fields retryBackSourceLimit.
+	if cfg.Scheduler.RetryBackSourceLimit != 0 {
+		cfg.Scheduler.RetryBackToSourceLimit = cfg.Scheduler.RetryBackSourceLimit
+	}
+
 	// TODO Compatible with deprecated fields host and port.
 	if len(cfg.Job.Redis.Addrs) == 0 && cfg.Job.Redis.Host != "" && cfg.Job.Redis.Port > 0 {
 		cfg.Job.Redis.Addrs = []string{fmt.Sprintf("%s:%d", cfg.Job.Redis.Host, cfg.Job.Redis.Port)}
