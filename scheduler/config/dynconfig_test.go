@@ -234,7 +234,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 			tc.mock(mockManagerClient.EXPECT())
 
 			mockConfig.DynConfig.RefreshInterval = tc.refreshInterval
-			d, err := NewDynconfig(mockManagerClient, mockCacheDir, mockConfig)
+			d, err := NewDynconfig(mockManagerClient, mockCacheDir, mockConfig, WithTransportCredentials(nil))
 			if err != nil {
 				t.Fatal(err)
 			}

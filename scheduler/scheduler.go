@@ -28,6 +28,7 @@ import (
 
 	"github.com/johanbrandhorst/certify"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	zapadapter "logur.dev/adapter/zap"
 
@@ -119,18 +120,11 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 	s.announcer = announcer
 
-	// Initialize dynconfig client.
-	dynconfig, err := config.NewDynconfig(s.managerClient, filepath.Join(d.CacheDir(), dynconfig.CacheDirName), cfg)
-	if err != nil {
-		return nil, err
-	}
-	s.dynconfig = dynconfig
-
-	// Initialize GC.
-	s.gc = gc.New(gc.WithLogger(logger.GCLogger))
-
 	// Initialize certify client.
-	var certifyClient *certify.Certify
+	var (
+		certifyClient              *certify.Certify
+		clientTransportCredentials credentials.TransportCredentials
+	)
 	if cfg.Security.AutoIssueCert {
 		certifyClient = &certify.Certify{
 			CommonName:   types.SchedulerName,
@@ -144,6 +138,11 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 				certify.DirCache(filepath.Join(d.CacheDir(), cache.CertifyCacheDirName, types.SchedulerName))),
 		}
 
+		clientTransportCredentials, err = rpc.NewClientCredentialsByCertify(cfg.Security.TLSPolicy, []byte(cfg.Security.CACert), certifyClient)
+		if err != nil {
+			return nil, err
+		}
+
 		// Issue a certificate to reduce first time delay.
 		if _, err := certifyClient.GetCertificate(&tls.ClientHelloInfo{
 			ServerName: cfg.Server.AdvertiseIP,
@@ -152,21 +151,18 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		}
 	}
 
-	// Initialize resource and dial options of seed peer grpc client.
-	seedPeerDialOptions := []grpc.DialOption{}
-	if certifyClient != nil {
-		clientTransportCredentials, err := rpc.NewClientCredentialsByCertify(cfg.Security.TLSPolicy, []byte(cfg.Security.CACert), certifyClient)
-		if err != nil {
-			return nil, err
-		}
-
-		seedPeerDialOptions = append(seedPeerDialOptions, grpc.WithTransportCredentials(clientTransportCredentials))
-	} else {
-		seedPeerDialOptions = append(seedPeerDialOptions, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	// Initialize dynconfig client.
+	dynconfig, err := config.NewDynconfig(s.managerClient, filepath.Join(d.CacheDir(), dynconfig.CacheDirName), cfg, config.WithTransportCredentials(clientTransportCredentials))
+	if err != nil {
+		return nil, err
 	}
+	s.dynconfig = dynconfig
+
+	// Initialize GC.
+	s.gc = gc.New(gc.WithLogger(logger.GCLogger))
 
 	// Initialize resource.
-	resource, err := resource.New(cfg, s.gc, dynconfig, seedPeerDialOptions...)
+	resource, err := resource.New(cfg, s.gc, dynconfig, resource.WithTransportCredentials(clientTransportCredentials))
 	if err != nil {
 		return nil, err
 	}
