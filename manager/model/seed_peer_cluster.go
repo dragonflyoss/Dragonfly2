@@ -25,8 +25,6 @@ type SeedPeerCluster struct {
 	IsDefault         bool               `gorm:"column:is_default;not null;default:false;comment:default seed peer cluster" json:"is_default"`
 	SchedulerClusters []SchedulerCluster `gorm:"many2many:seed_peer_cluster_scheduler_cluster;" json:"scheduler_clusters"`
 	SeedPeers         []SeedPeer         `json:"-"`
-	ApplicationID     uint               `gorm:"comment:application id" json:"application_id"`
-	Application       Application        `json:"-"`
 	SecurityGroupID   uint               `gorm:"comment:security group id" json:"security_group_id"`
 	SecurityGroup     SecurityGroup      `json:"-"`
 	Jobs              []Job              `gorm:"many2many:job_seed_peer_cluster;" json:"jobs"`
