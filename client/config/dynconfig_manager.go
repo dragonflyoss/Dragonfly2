@@ -24,6 +24,10 @@ import (
 	"path/filepath"
 	"time"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/resolver"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
@@ -32,7 +36,7 @@ import (
 	internaldynconfig "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
-	"d7y.io/dragonfly/v2/pkg/reachable"
+	healthclient "d7y.io/dragonfly/v2/pkg/rpc/health/client"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/version"
 )
@@ -42,13 +46,14 @@ var cacheFileName = "daemon"
 
 type dynconfigManager struct {
 	internaldynconfig.Dynconfig
-	observers map[Observer]struct{}
-	done      chan struct{}
-	cachePath string
+	observers            map[Observer]struct{}
+	done                 chan struct{}
+	cachePath            string
+	transportCredentials credentials.TransportCredentials
 }
 
 // newDynconfigManager returns a new manager dynconfig instence.
-func newDynconfigManager(cfg *DaemonOption, rawManagerClient managerclient.Client, cacheDir string, expire time.Duration) (Dynconfig, error) {
+func newDynconfigManager(cfg *DaemonOption, rawManagerClient managerclient.Client, cacheDir string, expire time.Duration, creds credentials.TransportCredentials) (Dynconfig, error) {
 	cachePath := filepath.Join(cacheDir, cacheFileName)
 	d, err := internaldynconfig.New(
 		newManagerClient(rawManagerClient, cfg),
@@ -60,10 +65,11 @@ func newDynconfigManager(cfg *DaemonOption, rawManagerClient managerclient.Clien
 	}
 
 	return &dynconfigManager{
-		observers: map[Observer]struct{}{},
-		done:      make(chan struct{}),
-		cachePath: cachePath,
-		Dynconfig: d,
+		observers:            map[Observer]struct{}{},
+		done:                 make(chan struct{}),
+		cachePath:            cachePath,
+		Dynconfig:            d,
+		transportCredentials: creds,
 	}, nil
 }
 
@@ -91,9 +97,21 @@ func (d *dynconfigManager) GetResolveSchedulerAddrs() ([]resolver.Address, error
 		}
 
 		addr := fmt.Sprintf("%s:%d", ip, scheduler.GetPort())
-		r := reachable.New(&reachable.Config{Address: addr})
-		if err := r.Check(); err != nil {
-			logger.Warnf("scheduler address %s is unreachable", addr)
+		dialOptions := []grpc.DialOption{}
+		if d.transportCredentials != nil {
+			dialOptions = append(dialOptions, grpc.WithTransportCredentials(d.transportCredentials))
+		} else {
+			dialOptions = append(dialOptions, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		}
+
+		healthClient, err := healthclient.GetClient(context.Background(), addr, dialOptions...)
+		if err != nil {
+			logger.Errorf("get health client %s failed: %s", addr, err.Error())
+			continue
+		}
+
+		if err := healthClient.Check(context.Background(), &healthpb.HealthCheckRequest{}); err != nil {
+			logger.Errorf("scheduler address %s is unreachable: %s", addr, err.Error())
 			continue
 		}
 
