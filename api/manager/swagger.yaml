@@ -6,17 +6,11 @@ definitions:
         type: string
       created_at:
         type: string
-      download_rate_limit:
-        type: integer
       id:
         type: integer
       name:
         type: string
-      state:
-        type: string
       updated_at:
-        type: string
-      url:
         type: string
       user:
         $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.User'
@@ -300,16 +294,7 @@ definitions:
     properties:
       bio:
         type: string
-      download_rate_limit:
-        type: integer
       name:
-        type: string
-      state:
-        enum:
-        - enable
-        - disable
-        type: string
-      url:
         type: string
       user_id:
         type: integer
@@ -752,16 +737,7 @@ definitions:
     properties:
       bio:
         type: string
-      download_rate_limit:
-        type: integer
       name:
-        type: string
-      state:
-        enum:
-        - enable
-        - disable
-        type: string
-      url:
         type: string
       user_id:
         type: integer

@@ -493,7 +493,7 @@ func (s *Service) registerTask(ctx context.Context, req *schedulerv1.PeerTaskReq
 		}
 	} else {
 		// Create a task for the first time.
-		task = resource.NewTask(req.TaskId, req.Url, commonv1.TaskType_Normal, req.UrlMeta, resource.WithBackToSourceLimit(int32(s.config.Scheduler.BackSourceCount)))
+		task = resource.NewTask(req.TaskId, req.Url, commonv1.TaskType_Normal, req.UrlMeta, resource.WithBackToSourceLimit(int32(s.config.Scheduler.BackToSourceCount)))
 		s.resource.TaskManager().Store(task)
 	}
 

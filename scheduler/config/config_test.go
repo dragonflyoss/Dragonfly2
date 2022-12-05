@@ -31,11 +31,11 @@ func TestConfig_Load(t *testing.T) {
 
 	config := &Config{
 		Scheduler: SchedulerConfig{
-			Algorithm:            "default",
-			BackSourceCount:      3,
-			RetryBackSourceLimit: 2,
-			RetryLimit:           10,
-			RetryInterval:        1 * time.Second,
+			Algorithm:              "default",
+			BackToSourceCount:      3,
+			RetryBackToSourceLimit: 2,
+			RetryLimit:             10,
+			RetryInterval:          1 * time.Second,
 			GC: GCConfig{
 				PieceDownloadTimeout: 1 * time.Minute,
 				PeerGCInterval:       1 * time.Minute,

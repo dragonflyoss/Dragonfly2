@@ -57,10 +57,10 @@ import (
 
 var (
 	mockSchedulerConfig = config.SchedulerConfig{
-		RetryLimit:           10,
-		RetryBackSourceLimit: 3,
-		RetryInterval:        10 * time.Millisecond,
-		BackSourceCount:      int(mockTaskBackToSourceLimit),
+		RetryLimit:             10,
+		RetryBackToSourceLimit: 3,
+		RetryInterval:          10 * time.Millisecond,
+		BackToSourceCount:      int(mockTaskBackToSourceLimit),
 	}
 
 	mockHostCPU = &schedulerv1.CPU{

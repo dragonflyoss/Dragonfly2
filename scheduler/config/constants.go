@@ -46,11 +46,11 @@ const (
 	// DefaultSchedulerAlgorithm is default algorithm for scheduler.
 	DefaultSchedulerAlgorithm = "default"
 
-	// DefaultSchedulerBackSourceCount is default back-to-source count for scheduler.
-	DefaultSchedulerBackSourceCount = 3
+	// DefaultSchedulerBackToSourceCount is default back-to-source count for scheduler.
+	DefaultSchedulerBackToSourceCount = 3
 
-	// DefaultSchedulerRetryBackSourceLimit is default retry back-to-source limit for scheduler.
-	DefaultSchedulerRetryBackSourceLimit = 5
+	// DefaultSchedulerRetryBackToSourceLimit is default retry back-to-source limit for scheduler.
+	DefaultSchedulerRetryBackToSourceLimit = 5
 
 	// DefaultSchedulerRetryLimit is default retry limit for scheduler.
 	DefaultSchedulerRetryLimit = 10

@@ -11,8 +11,8 @@ server:
 
 scheduler:
   algorithm: default
-  backSourceCount: 3
-  retryBackSourceLimit: 2
+  backToSourceCount: 3
+  retryBackToSourceLimit: 2
   retryLimit: 10
   retryInterval: 1000000000
   gc:
