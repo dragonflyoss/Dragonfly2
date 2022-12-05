@@ -383,6 +383,10 @@ func (cfg *Config) Validate() error {
 		return errors.New("scheduler requires parameter algorithm")
 	}
 
+	if cfg.Scheduler.BackSourceCount == 0 {
+		return errors.New("scheduler requires parameter backSourceCount")
+	}
+
 	if cfg.Scheduler.RetryLimit <= 0 {
 		return errors.New("scheduler requires parameter retryLimit")
 	}
