@@ -164,10 +164,6 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	cs.PATCH(":id", h.UpdateApplication)
 	cs.GET(":id", h.GetApplication)
 	cs.GET("", h.GetApplications)
-	cs.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToApplication)
-	cs.DELETE(":id/scheduler-clusters/:scheduler_cluster_id", h.DeleteSchedulerClusterToApplication)
-	cs.PUT(":id/seed-peer-clusters/:seed_peer_cluster_id", h.AddSeedPeerClusterToApplication)
-	cs.DELETE(":id/seed-peer-clusters/:seed_peer_cluster_id", h.DeleteSeedPeerClusterToApplication)
 
 	// Seed Peer Cluster
 	spc := apiv1.Group("/seed-peer-clusters", jwt.MiddlewareFunc(), rbac)

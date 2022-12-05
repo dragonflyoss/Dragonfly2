@@ -18,13 +18,11 @@ package model
 
 type Application struct {
 	Model
-	Name              string             `gorm:"column:name;type:varchar(256);index:uk_application_name,unique;not null;comment:name" json:"name"`
-	DownloadRateLimit uint               `gorm:"column:download_rate_limit;comment:download rate limit" json:"download_rate_limit"`
-	URL               string             `gorm:"column:url;not null;comment:url" json:"url"`
-	State             string             `gorm:"column:state;type:varchar(256);default:'enable';comment:state" json:"state"`
-	BIO               string             `gorm:"column:bio;type:varchar(1024);comment:biography" json:"bio"`
-	UserID            uint               `gorm:"comment:user id" json:"user_id"`
-	User              User               `json:"user"`
-	SeedPeerClusters  []SeedPeerCluster  `json:"seed_peer_clusters"`
-	SchedulerClusters []SchedulerCluster `json:"scheduler_clusters"`
+	Name              string `gorm:"column:name;type:varchar(256);index:uk_application_name,unique;not null;comment:name" json:"name"`
+	DownloadRateLimit uint   `gorm:"column:download_rate_limit;comment:download rate limit" json:"download_rate_limit"`
+	URL               string `gorm:"column:url;not null;comment:url" json:"url"`
+	State             string `gorm:"column:state;type:varchar(256);default:'enable';comment:state" json:"state"`
+	BIO               string `gorm:"column:bio;type:varchar(1024);comment:biography" json:"bio"`
+	UserID            uint   `gorm:"comment:user id" json:"user_id"`
+	User              User   `json:"user"`
 }

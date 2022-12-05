@@ -20,26 +20,6 @@ type ApplicationParams struct {
 	ID uint `uri:"id" binding:"required"`
 }
 
-type AddSchedulerClusterToApplicationParams struct {
-	ID                 uint `uri:"id" binding:"required"`
-	SchedulerClusterID uint `uri:"scheduler_cluster_id" binding:"required"`
-}
-
-type DeleteSchedulerClusterToApplicationParams struct {
-	ID                 uint `uri:"id" binding:"required"`
-	SchedulerClusterID uint `uri:"scheduler_cluster_id" binding:"required"`
-}
-
-type AddSeedPeerClusterToApplicationParams struct {
-	ID                uint `uri:"id" binding:"required"`
-	SeedPeerClusterID uint `uri:"seed_peer_cluster_id" binding:"required"`
-}
-
-type DeleteSeedPeerClusterToApplicationParams struct {
-	ID                uint `uri:"id" binding:"required"`
-	SeedPeerClusterID uint `uri:"seed_peer_cluster_id" binding:"required"`
-}
-
 type CreateApplicationRequest struct {
 	Name              string `json:"name" binding:"required"`
 	BIO               string `json:"bio" binding:"omitempty"`

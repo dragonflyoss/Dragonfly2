@@ -133,10 +133,6 @@ type Service interface {
 	UpdateApplication(context.Context, uint, types.UpdateApplicationRequest) (*model.Application, error)
 	GetApplication(context.Context, uint) (*model.Application, error)
 	GetApplications(context.Context, types.GetApplicationsQuery) ([]model.Application, int64, error)
-	AddSchedulerClusterToApplication(context.Context, uint, uint) error
-	DeleteSchedulerClusterToApplication(context.Context, uint, uint) error
-	AddSeedPeerClusterToApplication(context.Context, uint, uint) error
-	DeleteSeedPeerClusterToApplication(context.Context, uint, uint) error
 
 	CreateModel(context.Context, types.CreateModelParams, types.CreateModelRequest) (*types.Model, error)
 	DestroyModel(context.Context, types.ModelParams) error
