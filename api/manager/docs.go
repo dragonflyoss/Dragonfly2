@@ -4040,7 +4040,13 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "priority": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.JSONMap"
+                },
                 "updated_at": {
+                    "type": "string"
+                },
+                "url": {
                     "type": "string"
                 },
                 "user": {
@@ -4468,6 +4474,8 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "name",
+                "priority",
+                "url",
                 "user_id"
             ],
             "properties": {
@@ -4475,6 +4483,12 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "priority": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.PriorityConfig"
+                },
+                "url": {
                     "type": "string"
                 },
                 "user_id": {
@@ -4985,6 +4999,25 @@ const docTemplate = `{
                 }
             }
         },
+        "d7y_io_dragonfly_v2_manager_types.PriorityConfig": {
+            "type": "object",
+            "required": [
+                "value"
+            ],
+            "properties": {
+                "urls": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.URLConfig"
+                    }
+                },
+                "value": {
+                    "type": "integer",
+                    "maximum": 20,
+                    "minimum": 0
+                }
+            }
+        },
         "d7y_io_dragonfly_v2_manager_types.ResetPasswordRequest": {
             "type": "object",
             "required": [
@@ -5107,6 +5140,23 @@ const docTemplate = `{
                 }
             }
         },
+        "d7y_io_dragonfly_v2_manager_types.URLConfig": {
+            "type": "object",
+            "required": [
+                "regex",
+                "value"
+            ],
+            "properties": {
+                "regex": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "integer",
+                    "maximum": 20,
+                    "minimum": 0
+                }
+            }
+        },
         "d7y_io_dragonfly_v2_manager_types.UpdateApplicationRequest": {
             "type": "object",
             "required": [
@@ -5117,6 +5167,12 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "priority": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.PriorityConfig"
+                },
+                "url": {
                     "type": "string"
                 },
                 "user_id": {
