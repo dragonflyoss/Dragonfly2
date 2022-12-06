@@ -5008,7 +5008,7 @@ const docTemplate = `{
                 "urls": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.URLConfig"
+                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.URLPriorityConfig"
                     }
                 },
                 "value": {
@@ -5140,7 +5140,7 @@ const docTemplate = `{
                 }
             }
         },
-        "d7y_io_dragonfly_v2_manager_types.URLConfig": {
+        "d7y_io_dragonfly_v2_manager_types.URLPriorityConfig": {
             "type": "object",
             "required": [
                 "regex",

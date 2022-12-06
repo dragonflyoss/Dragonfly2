@@ -661,7 +661,7 @@ definitions:
     properties:
       urls:
         items:
-          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.URLConfig'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.URLPriorityConfig'
         type: array
       value:
         maximum: 20
@@ -756,7 +756,7 @@ definitions:
     - name
     - password
     type: object
-  d7y_io_dragonfly_v2_manager_types.URLConfig:
+  d7y_io_dragonfly_v2_manager_types.URLPriorityConfig:
     properties:
       regex:
         type: string

@@ -16,38 +16,6 @@
 
 package types
 
-const (
-	// PriorityLevel0 represents the download task is forbidden,
-	// and an error code is returned during the registration.
-	PriorityLevel0 = iota
-
-	// PriorityLevel1 represents when the task is downloaded for the first time,
-	// allow peers to download from the other peers,
-	// but not back-to-source. When the task is not downloaded for
-	// the first time, it is scheduled normally.
-	PriorityLevel1
-
-	// PriorityLevel2 represents when the task is downloaded for the first time,
-	// the normal peer is first to download back-to-source.
-	// When the task is not downloaded for the first time, it is scheduled normally.
-	PriorityLevel2
-
-	// PriorityLevel3 represents when the task is downloaded for the first time,
-	// the weak peer is first triggered to back-to-source.
-	// When the task is not downloaded for the first time, it is scheduled normally.
-	PriorityLevel3
-
-	// PriorityLevel4 represents when the task is downloaded for the first time,
-	// the strong peer is first triggered to back-to-source.
-	// When the task is not downloaded for the first time, it is scheduled normally.
-	PriorityLevel4
-
-	// PriorityLevel4 represents when the task is downloaded for the first time,
-	// the super peer is first triggered to back-to-source.
-	// When the task is not downloaded for the first time, it is scheduled normally.
-	PriorityLevel5
-)
-
 type ApplicationParams struct {
 	ID uint `uri:"id" binding:"required"`
 }
@@ -75,11 +43,11 @@ type GetApplicationsQuery struct {
 }
 
 type PriorityConfig struct {
-	Value *int        `yaml:"value" mapstructure:"value" json:"value" binding:"required,gte=0,lte=20"`
-	URLs  []URLConfig `yaml:"urls" mapstructure:"urls" json:"urls" binding:"omitempty"`
+	Value *int                `yaml:"value" mapstructure:"value" json:"value" binding:"required,gte=0,lte=20"`
+	URLs  []URLPriorityConfig `yaml:"urls" mapstructure:"urls" json:"urls" binding:"omitempty"`
 }
 
-type URLConfig struct {
+type URLPriorityConfig struct {
 	Regex string `yaml:"regex" mapstructure:"regex" json:"regex" binding:"required"`
 	Value int    `yaml:"value" mapstructure:"value" json:"value" binding:"required,gte=0,lte=20"`
 }
