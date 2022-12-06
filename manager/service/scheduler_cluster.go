@@ -87,19 +87,31 @@ func (s *service) DestroySchedulerCluster(ctx context.Context, id uint) error {
 }
 
 func (s *service) UpdateSchedulerCluster(ctx context.Context, id uint, json types.UpdateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
-	config, err := structure.StructToMap(json.Config)
-	if err != nil {
-		return nil, err
+	var (
+		config map[string]any
+		err    error
+	)
+	if json.Config != nil {
+		config, err = structure.StructToMap(json.Config)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	clientConfig, err := structure.StructToMap(json.ClientConfig)
-	if err != nil {
-		return nil, err
+	var clientConfig map[string]any
+	if json.ClientConfig != nil {
+		clientConfig, err = structure.StructToMap(json.ClientConfig)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	scopes, err := structure.StructToMap(json.Scopes)
-	if err != nil {
-		return nil, err
+	var scopes map[string]any
+	if json.Scopes != nil {
+		scopes, err = structure.StructToMap(json.Scopes)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	schedulerCluster := model.SchedulerCluster{}

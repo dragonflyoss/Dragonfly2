@@ -17,7 +17,7 @@
 package types
 
 const (
-	// Server is boot.
+	// IsBootConfigName represents server is boot.
 	IsBootConfigName = "is_boot"
 )
 
