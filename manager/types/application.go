@@ -75,11 +75,11 @@ type GetApplicationsQuery struct {
 }
 
 type PriorityConfig struct {
-	Value *int        `yaml:"value" mapstructure:"value" json:"value" binding:"required,gte=0,lte=20"`
-	URLs  []URLConfig `yaml:"urls" mapstructure:"urls" json:"urls" binding:"omitempty"`
+	Value *int                `yaml:"value" mapstructure:"value" json:"value" binding:"required,gte=0,lte=20"`
+	URLs  []URLPriorityConfig `yaml:"urls" mapstructure:"urls" json:"urls" binding:"omitempty"`
 }
 
-type URLConfig struct {
+type URLPriorityConfig struct {
 	Regex string `yaml:"regex" mapstructure:"regex" json:"regex" binding:"required"`
 	Value int    `yaml:"value" mapstructure:"value" json:"value" binding:"required,gte=0,lte=20"`
 }
