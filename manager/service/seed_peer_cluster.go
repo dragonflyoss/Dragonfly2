@@ -69,14 +69,23 @@ func (s *service) DestroySeedPeerCluster(ctx context.Context, id uint) error {
 }
 
 func (s *service) UpdateSeedPeerCluster(ctx context.Context, id uint, json types.UpdateSeedPeerClusterRequest) (*model.SeedPeerCluster, error) {
-	config, err := structure.StructToMap(json.Config)
-	if err != nil {
-		return nil, err
+	var (
+		config map[string]any
+		err    error
+	)
+	if json.Config != nil {
+		config, err = structure.StructToMap(json.Config)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	scopes, err := structure.StructToMap(json.Scopes)
-	if err != nil {
-		return nil, err
+	var scopes map[string]any
+	if json.Scopes != nil {
+		scopes, err = structure.StructToMap(json.Scopes)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	seedPeerCluster := model.SeedPeerCluster{}
