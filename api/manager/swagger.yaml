@@ -10,7 +10,11 @@ definitions:
         type: integer
       name:
         type: string
+      priority:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.JSONMap'
       updated_at:
+        type: string
+      url:
         type: string
       user:
         $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.User'
@@ -296,10 +300,16 @@ definitions:
         type: string
       name:
         type: string
+      priority:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.PriorityConfig'
+      url:
+        type: string
       user_id:
         type: integer
     required:
     - name
+    - priority
+    - url
     - user_id
     type: object
   d7y_io_dragonfly_v2_manager_types.CreateBucketRequest:
@@ -647,6 +657,19 @@ definitions:
     - rmse
     - updated_at
     type: object
+  d7y_io_dragonfly_v2_manager_types.PriorityConfig:
+    properties:
+      urls:
+        items:
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.URLConfig'
+        type: array
+      value:
+        maximum: 20
+        minimum: 0
+        type: integer
+    required:
+    - value
+    type: object
   d7y_io_dragonfly_v2_manager_types.ResetPasswordRequest:
     properties:
       new_password:
@@ -733,11 +756,27 @@ definitions:
     - name
     - password
     type: object
+  d7y_io_dragonfly_v2_manager_types.URLConfig:
+    properties:
+      regex:
+        type: string
+      value:
+        maximum: 20
+        minimum: 0
+        type: integer
+    required:
+    - regex
+    - value
+    type: object
   d7y_io_dragonfly_v2_manager_types.UpdateApplicationRequest:
     properties:
       bio:
         type: string
       name:
+        type: string
+      priority:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.PriorityConfig'
+      url:
         type: string
       user_id:
         type: integer

@@ -18,8 +18,10 @@ package model
 
 type Application struct {
 	Model
-	Name   string `gorm:"column:name;type:varchar(256);index:uk_application_name,unique;not null;comment:name" json:"name"`
-	BIO    string `gorm:"column:bio;type:varchar(1024);comment:biography" json:"bio"`
-	UserID uint   `gorm:"comment:user id" json:"user_id"`
-	User   User   `json:"user"`
+	Name     string  `gorm:"column:name;type:varchar(256);index:uk_application_name,unique;not null;comment:name" json:"name"`
+	URL      string  `gorm:"column:url;not null;comment:url" json:"url"`
+	BIO      string  `gorm:"column:bio;type:varchar(1024);comment:biography" json:"bio"`
+	Priority JSONMap `gorm:"column:priority;not null;comment:download priority" json:"priority"`
+	UserID   uint    `gorm:"comment:user id" json:"user_id"`
+	User     User    `json:"user"`
 }
