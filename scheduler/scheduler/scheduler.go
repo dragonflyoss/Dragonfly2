@@ -236,7 +236,7 @@ func (s *scheduler) FindParent(ctx context.Context, peer *resource.Peer, blockli
 func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.SafeSet[string]) []*resource.Peer {
 	filterParentLimit := config.DefaultSchedulerFilterParentLimit
 	filterParentRangeLimit := config.DefaultSchedulerFilterParentRangeLimit
-	if config, ok := s.dynconfig.GetSchedulerClusterConfig(); ok {
+	if config, err := s.dynconfig.GetSchedulerClusterConfig(); err == nil {
 		if config.FilterParentLimit > 0 {
 			filterParentLimit = int(config.FilterParentLimit)
 		}
@@ -320,7 +320,7 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 // Construct peer successful packet.
 func constructSuccessPeerPacket(dynconfig config.DynconfigInterface, peer *resource.Peer, parent *resource.Peer, candidateParents []*resource.Peer) *schedulerv1.PeerPacket {
 	parallelCount := config.DefaultPeerParallelCount
-	if config, ok := dynconfig.GetSchedulerClusterClientConfig(); ok && config.ParallelCount > 0 {
+	if config, err := dynconfig.GetSchedulerClusterClientConfig(); err == nil && config.ParallelCount > 0 {
 		parallelCount = int(config.ParallelCount)
 	}
 

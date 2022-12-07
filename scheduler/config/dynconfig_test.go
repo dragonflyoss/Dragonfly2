@@ -97,47 +97,85 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 						ClientConfig: []byte{1},
 					},
 				}, nil).Times(1)
+				m.ListApplications(gomock.Any(), gomock.Any()).Return(&managerv1.ListApplicationsResponse{
+					Applications: []*managerv1.Application{
+						{
+							Id:   1,
+							Name: "foo",
+							Url:  "example.com",
+							Bio:  "bar",
+							Priority: &managerv1.ApplicationPriority{
+								Value: managerv1.Priority_Level0,
+								Urls: []*managerv1.URLPriority{
+									{
+										Regex: "blobs*",
+										Value: managerv1.Priority_Level1,
+									},
+								},
+							},
+						},
+					},
+				}, nil).Times(1)
 			},
 			expect: func(t *testing.T, data *DynconfigData, err error) {
 				assert := assert.New(t)
 				assert.EqualValues(data, &DynconfigData{
-					ID:          1,
-					Hostname:    "foo",
-					Idc:         "idc",
-					Location:    "location",
-					NetTopology: "net_topology",
-					IP:          "127.0.0.1",
-					Port:        8002,
-					State:       "active",
-					SeedPeers: []*SeedPeer{
-						{
-							ID:           1,
-							Hostname:     "bar",
-							Type:         types.HostTypeStrongSeedName,
-							IDC:          "idc",
-							NetTopology:  "net_topology",
-							Location:     "location",
-							IP:           "127.0.0.1",
-							Port:         8001,
-							DownloadPort: 8003,
-							SeedPeerCluster: &SeedPeerCluster{
-								ID:     1,
-								Name:   "baz",
-								Config: []byte{1},
+					Scheduler: &managerv1.Scheduler{
+						Id:          1,
+						HostName:    "foo",
+						Idc:         "idc",
+						Location:    "location",
+						NetTopology: "net_topology",
+						Ip:          "127.0.0.1",
+						Port:        8002,
+						State:       "active",
+						SeedPeers: []*managerv1.SeedPeer{
+							{
+								Id:           1,
+								HostName:     "bar",
+								Type:         types.HostTypeStrongSeedName,
+								Idc:          "idc",
+								NetTopology:  "net_topology",
+								Location:     "location",
+								Ip:           "127.0.0.1",
+								Port:         8001,
+								DownloadPort: 8003,
+								SeedPeerCluster: &managerv1.SeedPeerCluster{
+									Id:     1,
+									Name:   "baz",
+									Config: []byte{1},
+								},
 							},
 						},
+						SchedulerCluster: &managerv1.SchedulerCluster{
+							Id:           1,
+							Name:         "bas",
+							Config:       []byte{1},
+							ClientConfig: []byte{1},
+						},
 					},
-					SchedulerCluster: &SchedulerCluster{
-						ID:           1,
-						Name:         "bas",
-						Config:       []byte{1},
-						ClientConfig: []byte{1},
+					Applications: []*managerv1.Application{
+						{
+							Id:   1,
+							Name: "foo",
+							Url:  "example.com",
+							Bio:  "bar",
+							Priority: &managerv1.ApplicationPriority{
+								Value: managerv1.Priority_Level0,
+								Urls: []*managerv1.URLPriority{
+									{
+										Regex: "blobs*",
+										Value: managerv1.Priority_Level1,
+									},
+								},
+							},
+						},
 					},
 				})
 			},
 		},
 		{
-			name:            "refresh dynconfig",
+			name:            "get scheduler error",
 			refreshInterval: 10 * time.Millisecond,
 			cleanFileCache: func(t *testing.T) {
 				if err := os.Remove(mockCachePath); err != nil {
@@ -183,43 +221,241 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 							ClientConfig: []byte{1},
 						},
 					}, nil).Times(1),
+					m.ListApplications(gomock.Any(), gomock.Any()).Return(&managerv1.ListApplicationsResponse{
+						Applications: []*managerv1.Application{
+							{
+								Id:   1,
+								Name: "foo",
+								Url:  "example.com",
+								Bio:  "bar",
+								Priority: &managerv1.ApplicationPriority{
+									Value: managerv1.Priority_Level0,
+									Urls: []*managerv1.URLPriority{
+										{
+											Regex: "blobs*",
+											Value: managerv1.Priority_Level1,
+										},
+									},
+								},
+							},
+						},
+					}, nil).Times(1),
 					m.GetScheduler(gomock.Any(), gomock.Any()).Return(nil, errors.New("foo")).Times(1),
 				)
 			},
 			expect: func(t *testing.T, data *DynconfigData, err error) {
 				assert := assert.New(t)
 				assert.EqualValues(data, &DynconfigData{
-					ID:          1,
-					Hostname:    "foo",
-					Idc:         "idc",
-					Location:    "location",
-					NetTopology: "net_topology",
-					IP:          "127.0.0.1",
-					Port:        8002,
-					State:       "active",
-					SeedPeers: []*SeedPeer{
+					Scheduler: &managerv1.Scheduler{
+						Id:          1,
+						HostName:    "foo",
+						Idc:         "idc",
+						Location:    "location",
+						NetTopology: "net_topology",
+						Ip:          "127.0.0.1",
+						Port:        8002,
+						State:       "active",
+						SeedPeers: []*managerv1.SeedPeer{
+							{
+								Id:           1,
+								HostName:     "bar",
+								Type:         types.HostTypeSuperSeedName,
+								Idc:          "idc",
+								NetTopology:  "net_topology",
+								Location:     "location",
+								Ip:           "127.0.0.1",
+								Port:         8001,
+								DownloadPort: 8003,
+								SeedPeerCluster: &managerv1.SeedPeerCluster{
+									Id:     1,
+									Name:   "baz",
+									Config: []byte{1},
+								},
+							},
+						},
+						SchedulerCluster: &managerv1.SchedulerCluster{
+							Id:           1,
+							Name:         "bas",
+							Config:       []byte{1},
+							ClientConfig: []byte{1},
+						},
+					},
+					Applications: []*managerv1.Application{
 						{
-							ID:           1,
-							Hostname:     "bar",
-							Type:         types.HostTypeSuperSeedName,
-							IDC:          "idc",
-							NetTopology:  "net_topology",
-							Location:     "location",
-							IP:           "127.0.0.1",
-							Port:         8001,
-							DownloadPort: 8003,
-							SeedPeerCluster: &SeedPeerCluster{
-								ID:     1,
-								Name:   "baz",
-								Config: []byte{1},
+							Id:   1,
+							Name: "foo",
+							Url:  "example.com",
+							Bio:  "bar",
+							Priority: &managerv1.ApplicationPriority{
+								Value: managerv1.Priority_Level0,
+								Urls: []*managerv1.URLPriority{
+									{
+										Regex: "blobs*",
+										Value: managerv1.Priority_Level1,
+									},
+								},
 							},
 						},
 					},
-					SchedulerCluster: &SchedulerCluster{
-						ID:           1,
-						Name:         "bas",
-						Config:       []byte{1},
-						ClientConfig: []byte{1},
+				})
+			},
+		},
+		{
+			name:            "list application error",
+			refreshInterval: 10 * time.Millisecond,
+			cleanFileCache: func(t *testing.T) {
+				if err := os.Remove(mockCachePath); err != nil {
+					t.Fatal(err)
+				}
+			},
+			sleep: func() {
+				time.Sleep(100 * time.Millisecond)
+			},
+			mock: func(m *mocks.MockClientMockRecorder) {
+				gomock.InOrder(
+					m.GetScheduler(gomock.Any(), gomock.Any()).Return(&managerv1.Scheduler{
+						Id:          1,
+						HostName:    "foo",
+						Idc:         "idc",
+						Location:    "location",
+						NetTopology: "net_topology",
+						Ip:          "127.0.0.1",
+						Port:        8002,
+						State:       "active",
+						SeedPeers: []*managerv1.SeedPeer{
+							{
+								Id:           1,
+								HostName:     "bar",
+								Type:         types.HostTypeSuperSeedName,
+								Idc:          "idc",
+								NetTopology:  "net_topology",
+								Location:     "location",
+								Ip:           "127.0.0.1",
+								Port:         8001,
+								DownloadPort: 8003,
+								SeedPeerCluster: &managerv1.SeedPeerCluster{
+									Id:     1,
+									Name:   "baz",
+									Config: []byte{1},
+								},
+							},
+						},
+						SchedulerCluster: &managerv1.SchedulerCluster{
+							Id:           1,
+							Name:         "bas",
+							Config:       []byte{1},
+							ClientConfig: []byte{1},
+						},
+					}, nil).Times(1),
+					m.ListApplications(gomock.Any(), gomock.Any()).Return(&managerv1.ListApplicationsResponse{
+						Applications: []*managerv1.Application{
+							{
+								Id:   1,
+								Name: "foo",
+								Url:  "example.com",
+								Bio:  "bar",
+								Priority: &managerv1.ApplicationPriority{
+									Value: managerv1.Priority_Level0,
+									Urls: []*managerv1.URLPriority{
+										{
+											Regex: "blobs*",
+											Value: managerv1.Priority_Level1,
+										},
+									},
+								},
+							},
+						},
+					}, nil).Times(1),
+					m.GetScheduler(gomock.Any(), gomock.Any()).Return(&managerv1.Scheduler{
+						Id:          1,
+						HostName:    "foo",
+						Idc:         "idc",
+						Location:    "location",
+						NetTopology: "net_topology",
+						Ip:          "127.0.0.1",
+						Port:        8002,
+						State:       "active",
+						SeedPeers: []*managerv1.SeedPeer{
+							{
+								Id:           1,
+								HostName:     "bar",
+								Type:         types.HostTypeSuperSeedName,
+								Idc:          "idc",
+								NetTopology:  "net_topology",
+								Location:     "location",
+								Ip:           "127.0.0.1",
+								Port:         8001,
+								DownloadPort: 8003,
+								SeedPeerCluster: &managerv1.SeedPeerCluster{
+									Id:     1,
+									Name:   "baz",
+									Config: []byte{1},
+								},
+							},
+						},
+						SchedulerCluster: &managerv1.SchedulerCluster{
+							Id:           1,
+							Name:         "bas",
+							Config:       []byte{1},
+							ClientConfig: []byte{1},
+						},
+					}, nil).Times(1),
+					m.ListApplications(gomock.Any(), gomock.Any()).Return(nil, errors.New("foo")).Times(1),
+				)
+			},
+			expect: func(t *testing.T, data *DynconfigData, err error) {
+				assert := assert.New(t)
+				assert.EqualValues(data, &DynconfigData{
+					Scheduler: &managerv1.Scheduler{
+						Id:          1,
+						HostName:    "foo",
+						Idc:         "idc",
+						Location:    "location",
+						NetTopology: "net_topology",
+						Ip:          "127.0.0.1",
+						Port:        8002,
+						State:       "active",
+						SeedPeers: []*managerv1.SeedPeer{
+							{
+								Id:           1,
+								HostName:     "bar",
+								Type:         types.HostTypeSuperSeedName,
+								Idc:          "idc",
+								NetTopology:  "net_topology",
+								Location:     "location",
+								Ip:           "127.0.0.1",
+								Port:         8001,
+								DownloadPort: 8003,
+								SeedPeerCluster: &managerv1.SeedPeerCluster{
+									Id:     1,
+									Name:   "baz",
+									Config: []byte{1},
+								},
+							},
+						},
+						SchedulerCluster: &managerv1.SchedulerCluster{
+							Id:           1,
+							Name:         "bas",
+							Config:       []byte{1},
+							ClientConfig: []byte{1},
+						},
+					},
+					Applications: []*managerv1.Application{
+						{
+							Id:   1,
+							Name: "foo",
+							Url:  "example.com",
+							Bio:  "bar",
+							Priority: &managerv1.ApplicationPriority{
+								Value: managerv1.Priority_Level0,
+								Urls: []*managerv1.URLPriority{
+									{
+										Regex: "blobs*",
+										Value: managerv1.Priority_Level1,
+									},
+								},
+							},
+						},
 					},
 				})
 			},

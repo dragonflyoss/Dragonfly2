@@ -2421,7 +2421,7 @@ func TestService_registerHost(t *testing.T) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockRawHost.Id)).Return(nil, false).Times(1),
-					md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{LoadLimit: 10}, true).Times(1),
+					md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{LoadLimit: 10}, nil).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Store(gomock.Any()).Return().Times(1),
 				)
@@ -2443,7 +2443,7 @@ func TestService_registerHost(t *testing.T) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockRawHost.Id)).Return(nil, false).Times(1),
-					md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{}, false).Times(1),
+					md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{}, errors.New("foo")).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Store(gomock.Any()).Return().Times(1),
 				)

@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -632,7 +633,7 @@ func (s *Server) ListBuckets(ctx context.Context, req *managerv1.ListBucketsRequ
 
 	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
 	var pbListBucketsResponse managerv1.ListBucketsResponse
-	cacheKey := cache.MakeBucketsCacheKey(s.objectStorageConfig.Name)
+	cacheKey := cache.MakeBucketCacheKey(s.objectStorageConfig.Name)
 
 	// Cache hit.
 	if err := s.cache.Get(ctx, cacheKey, &pbListBucketsResponse); err == nil {
@@ -976,6 +977,71 @@ func (s *Server) DeleteModelVersion(ctx context.Context, req *managerv1.DeleteMo
 	}
 
 	return nil, nil
+}
+
+// List applications configuration.
+func (s *Server) ListApplications(ctx context.Context, req *managerv1.ListApplicationsRequest) (*managerv1.ListApplicationsResponse, error) {
+	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
+
+	// Cache hit.
+	var pbListApplicationsResponse managerv1.ListApplicationsResponse
+	cacheKey := cache.MakeApplicationsCacheKey()
+	if err := s.cache.Get(ctx, cacheKey, &pbListApplicationsResponse); err == nil {
+		log.Debugf("%s cache hit", cacheKey)
+		return &pbListApplicationsResponse, nil
+	}
+
+	// Cache miss.
+	log.Debugf("%s cache miss", cacheKey)
+	var applications []model.Application
+	if err := s.db.WithContext(ctx).Find(&applications).Error; err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	for _, application := range applications {
+		b, err := application.Priority.MarshalJSON()
+		if err != nil {
+			log.Warn(err)
+			continue
+		}
+
+		var priority types.PriorityConfig
+		if err := json.Unmarshal(b, &priority); err != nil {
+			log.Warn(err)
+			continue
+		}
+
+		var pbURLPriorities []*managerv1.URLPriority
+		for _, url := range priority.URLs {
+			pbURLPriorities = append(pbURLPriorities, &managerv1.URLPriority{
+				Regex: url.Regex,
+				Value: managerv1.Priority(url.Value),
+			})
+		}
+
+		pbListApplicationsResponse.Applications = append(pbListApplicationsResponse.Applications, &managerv1.Application{
+			Id:   uint64(application.ID),
+			Name: application.Name,
+			Url:  application.URL,
+			Bio:  application.BIO,
+			Priority: &managerv1.ApplicationPriority{
+				Value: managerv1.Priority(*priority.Value),
+				Urls:  pbURLPriorities,
+			},
+		})
+	}
+
+	// Cache data.
+	if err := s.cache.Once(&cachev8.Item{
+		Ctx:   ctx,
+		Key:   cacheKey,
+		Value: &pbListApplicationsResponse,
+		TTL:   s.cache.TTL,
+	}); err != nil {
+		log.Warn(err)
+	}
+
+	return &pbListApplicationsResponse, nil
 }
 
 // KeepAlive with manager.

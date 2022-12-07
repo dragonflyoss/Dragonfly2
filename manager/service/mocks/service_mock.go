@@ -69,20 +69,6 @@ func (mr *MockServiceMockRecorder) AddRoleForUser(arg0, arg1 interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddRoleForUser", reflect.TypeOf((*MockService)(nil).AddRoleForUser), arg0, arg1)
 }
 
-// AddSchedulerClusterToApplication mocks base method.
-func (m *MockService) AddSchedulerClusterToApplication(arg0 context.Context, arg1, arg2 uint) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddSchedulerClusterToApplication", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// AddSchedulerClusterToApplication indicates an expected call of AddSchedulerClusterToApplication.
-func (mr *MockServiceMockRecorder) AddSchedulerClusterToApplication(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSchedulerClusterToApplication", reflect.TypeOf((*MockService)(nil).AddSchedulerClusterToApplication), arg0, arg1, arg2)
-}
-
 // AddSchedulerClusterToSecurityGroup mocks base method.
 func (m *MockService) AddSchedulerClusterToSecurityGroup(arg0 context.Context, arg1, arg2 uint) error {
 	m.ctrl.T.Helper()
@@ -137,20 +123,6 @@ func (m *MockService) AddSecurityRuleToSecurityGroup(arg0 context.Context, arg1,
 func (mr *MockServiceMockRecorder) AddSecurityRuleToSecurityGroup(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSecurityRuleToSecurityGroup", reflect.TypeOf((*MockService)(nil).AddSecurityRuleToSecurityGroup), arg0, arg1, arg2)
-}
-
-// AddSeedPeerClusterToApplication mocks base method.
-func (m *MockService) AddSeedPeerClusterToApplication(arg0 context.Context, arg1, arg2 uint) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddSeedPeerClusterToApplication", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// AddSeedPeerClusterToApplication indicates an expected call of AddSeedPeerClusterToApplication.
-func (mr *MockServiceMockRecorder) AddSeedPeerClusterToApplication(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSeedPeerClusterToApplication", reflect.TypeOf((*MockService)(nil).AddSeedPeerClusterToApplication), arg0, arg1, arg2)
 }
 
 // AddSeedPeerClusterToSecurityGroup mocks base method.
@@ -432,34 +404,6 @@ func (m *MockService) DeleteRoleForUser(arg0 context.Context, arg1 types.DeleteR
 func (mr *MockServiceMockRecorder) DeleteRoleForUser(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRoleForUser", reflect.TypeOf((*MockService)(nil).DeleteRoleForUser), arg0, arg1)
-}
-
-// DeleteSchedulerClusterToApplication mocks base method.
-func (m *MockService) DeleteSchedulerClusterToApplication(arg0 context.Context, arg1, arg2 uint) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteSchedulerClusterToApplication", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteSchedulerClusterToApplication indicates an expected call of DeleteSchedulerClusterToApplication.
-func (mr *MockServiceMockRecorder) DeleteSchedulerClusterToApplication(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSchedulerClusterToApplication", reflect.TypeOf((*MockService)(nil).DeleteSchedulerClusterToApplication), arg0, arg1, arg2)
-}
-
-// DeleteSeedPeerClusterToApplication mocks base method.
-func (m *MockService) DeleteSeedPeerClusterToApplication(arg0 context.Context, arg1, arg2 uint) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteSeedPeerClusterToApplication", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteSeedPeerClusterToApplication indicates an expected call of DeleteSeedPeerClusterToApplication.
-func (mr *MockServiceMockRecorder) DeleteSeedPeerClusterToApplication(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSeedPeerClusterToApplication", reflect.TypeOf((*MockService)(nil).DeleteSeedPeerClusterToApplication), arg0, arg1, arg2)
 }
 
 // DestroyApplication mocks base method.

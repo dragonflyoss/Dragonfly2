@@ -424,7 +424,7 @@ func (s *Service) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget) er
 func (s *Service) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequest) error {
 	// Get scheduler cluster client config by manager.
 	var concurrentUploadLimit int32
-	if clientConfig, ok := s.dynconfig.GetSchedulerClusterClientConfig(); ok {
+	if clientConfig, err := s.dynconfig.GetSchedulerClusterClientConfig(); err == nil {
 		concurrentUploadLimit = int32(clientConfig.LoadLimit)
 	}
 
@@ -535,7 +535,7 @@ func (s *Service) registerHost(ctx context.Context, peerHost *schedulerv1.PeerHo
 	if !loaded {
 		// Get scheduler cluster client config by manager.
 		var options []resource.HostOption
-		if clientConfig, ok := s.dynconfig.GetSchedulerClusterClientConfig(); ok && clientConfig.LoadLimit > 0 {
+		if clientConfig, err := s.dynconfig.GetSchedulerClusterClientConfig(); err == nil && clientConfig.LoadLimit > 0 {
 			options = append(options, resource.WithConcurrentUploadLimit(int32(clientConfig.LoadLimit)))
 		}
 
