@@ -25,6 +25,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/resolver"
 
+	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+
 	"d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	configmocks "d7y.io/dragonfly/v2/scheduler/config/mocks"
@@ -44,7 +46,13 @@ func TestResource_New(t *testing.T) {
 				gomock.InOrder(
 					gc.Add(gomock.Any()).Return(nil).Times(3),
 					dynconfig.Get().Return(&config.DynconfigData{
-						SeedPeers: []*config.SeedPeer{{ID: 1}},
+						Scheduler: &managerv1.Scheduler{
+							SeedPeers: []*managerv1.SeedPeer{
+								{
+									Id: 1,
+								},
+							},
+						},
 					}, nil).Times(1),
 					dynconfig.Register(gomock.Any()).Return().Times(1),
 					dynconfig.GetResolveSeedPeerAddrs().Return([]resolver.Address{}, nil).Times(1),
@@ -119,7 +127,9 @@ func TestResource_New(t *testing.T) {
 				gomock.InOrder(
 					gc.Add(gomock.Any()).Return(nil).Times(3),
 					dynconfig.Get().Return(&config.DynconfigData{
-						SeedPeers: []*config.SeedPeer{},
+						Scheduler: &managerv1.Scheduler{
+							SeedPeers: []*managerv1.SeedPeer{},
+						},
 					}, nil).Times(1),
 					dynconfig.Register(gomock.Any()).Return().Times(1),
 					dynconfig.GetResolveSeedPeerAddrs().Return([]resolver.Address{}, nil).Times(1),

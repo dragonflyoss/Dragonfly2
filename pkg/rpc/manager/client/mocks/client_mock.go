@@ -247,6 +247,26 @@ func (mr *MockClientMockRecorder) KeepAlive(arg0, arg1, arg2 interface{}, arg3 .
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KeepAlive", reflect.TypeOf((*MockClient)(nil).KeepAlive), varargs...)
 }
 
+// ListApplications mocks base method.
+func (m *MockClient) ListApplications(arg0 context.Context, arg1 *v1.ListApplicationsRequest, arg2 ...grpc.CallOption) (*v1.ListApplicationsResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ListApplications", varargs...)
+	ret0, _ := ret[0].(*v1.ListApplicationsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListApplications indicates an expected call of ListApplications.
+func (mr *MockClientMockRecorder) ListApplications(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListApplications", reflect.TypeOf((*MockClient)(nil).ListApplications), varargs...)
+}
+
 // ListBuckets mocks base method.
 func (m *MockClient) ListBuckets(arg0 context.Context, arg1 *v1.ListBucketsRequest, arg2 ...grpc.CallOption) (*v1.ListBucketsResponse, error) {
 	m.ctrl.T.Helper()

@@ -25,6 +25,7 @@ import (
 
 	"google.golang.org/grpc"
 
+	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -50,6 +51,9 @@ type seedPeerClient struct {
 	// hostManager is host manager.
 	hostManager HostManager
 
+	// dynconfig is dynconfig interface.
+	dynconfig config.DynconfigInterface
+
 	// data is dynconfig data.
 	data *config.DynconfigData
 }
@@ -60,7 +64,7 @@ func newSeedPeerClient(dynconfig config.DynconfigInterface, hostManager HostMana
 	if err != nil {
 		return nil, err
 	}
-	logger.Infof("initialize seed peer addresses: %#v", seedPeersToNetAddrs(config.SeedPeers))
+	logger.Infof("initialize seed peer addresses: %#v", seedPeersToNetAddrs(config.Scheduler.SeedPeers))
 
 	// Initialize seed peer grpc client.
 	client, err := client.GetClient(context.Background(), dynconfig, opts...)
@@ -71,11 +75,12 @@ func newSeedPeerClient(dynconfig config.DynconfigInterface, hostManager HostMana
 	sc := &seedPeerClient{
 		hostManager: hostManager,
 		Client:      client,
+		dynconfig:   dynconfig,
 		data:        config,
 	}
 
 	// Initialize seed peers for host manager.
-	sc.updateSeedPeersForHostManager(config.SeedPeers)
+	sc.updateSeedPeersForHostManager(config.Scheduler.SeedPeers)
 
 	dynconfig.Register(sc)
 	return sc, nil
@@ -89,9 +94,9 @@ func (sc *seedPeerClient) OnNotify(data *config.DynconfigData) {
 
 	// If only the ip of the seed peer is changed,
 	// the seed peer needs to be cleared.
-	diffSeedPeers := diffSeedPeers(sc.data.SeedPeers, data.SeedPeers)
+	diffSeedPeers := diffSeedPeers(sc.data.Scheduler.SeedPeers, data.Scheduler.SeedPeers)
 	for _, seedPeer := range diffSeedPeers {
-		id := idgen.HostID(seedPeer.Hostname, seedPeer.Port)
+		id := idgen.HostID(seedPeer.HostName, seedPeer.Port)
 		logger.Infof("host %s has been reclaimed, because of seed peer ip is changed", id)
 		if host, ok := sc.hostManager.Load(id); ok {
 			host.LeavePeers()
@@ -100,24 +105,24 @@ func (sc *seedPeerClient) OnNotify(data *config.DynconfigData) {
 	}
 
 	// Update seed peers for host manager.
-	sc.updateSeedPeersForHostManager(data.SeedPeers)
+	sc.updateSeedPeersForHostManager(data.Scheduler.SeedPeers)
 
 	// Update dynamic data.
 	sc.data = data
 
 	// Update grpc seed peer addresses.
-	logger.Infof("addresses have been updated: %#v", seedPeersToNetAddrs(data.SeedPeers))
+	logger.Infof("addresses have been updated: %#v", seedPeersToNetAddrs(data.Scheduler.SeedPeers))
 }
 
 // updateSeedPeersForHostManager updates seed peers for host manager.
-func (sc *seedPeerClient) updateSeedPeersForHostManager(seedPeers []*config.SeedPeer) {
+func (sc *seedPeerClient) updateSeedPeersForHostManager(seedPeers []*managerv1.SeedPeer) {
 	for _, seedPeer := range seedPeers {
 		var concurrentUploadLimit int32
-		if config, ok := seedPeer.GetSeedPeerClusterConfig(); ok {
+		if config, err := config.GetSeedPeerClusterConfigBySeedPeer(seedPeer); err == nil {
 			concurrentUploadLimit = int32(config.LoadLimit)
 		}
 
-		id := idgen.HostID(seedPeer.Hostname, seedPeer.Port)
+		id := idgen.HostID(seedPeer.HostName, seedPeer.Port)
 		seedPeerHost, loaded := sc.hostManager.Load(id)
 		if !loaded {
 			var options []HostOption
@@ -128,27 +133,27 @@ func (sc *seedPeerClient) updateSeedPeersForHostManager(seedPeers []*config.Seed
 			sc.hostManager.Store(NewHost(&schedulerv1.AnnounceHostRequest{
 				Id:           id,
 				Type:         types.HostTypeSuperSeedName,
-				Ip:           seedPeer.IP,
-				Hostname:     seedPeer.Hostname,
+				Ip:           seedPeer.Ip,
+				Hostname:     seedPeer.HostName,
 				Port:         seedPeer.Port,
 				DownloadPort: seedPeer.DownloadPort,
 				Network: &schedulerv1.Network{
 					Location:    seedPeer.Location,
-					Idc:         seedPeer.IDC,
+					Idc:         seedPeer.Idc,
 					NetTopology: seedPeer.NetTopology,
 				},
 			}, options...))
 			continue
 		}
 
-		seedPeerHost.IP = seedPeer.IP
+		seedPeerHost.IP = seedPeer.Ip
 		seedPeerHost.Type = types.HostTypeSuperSeed
-		seedPeerHost.Hostname = seedPeer.Hostname
+		seedPeerHost.Hostname = seedPeer.HostName
 		seedPeerHost.Port = seedPeer.Port
 		seedPeerHost.DownloadPort = seedPeer.DownloadPort
 		seedPeerHost.Network = &schedulerv1.Network{
 			Location:    seedPeer.Location,
-			Idc:         seedPeer.IDC,
+			Idc:         seedPeer.Idc,
 			NetTopology: seedPeer.NetTopology,
 		}
 
@@ -161,12 +166,12 @@ func (sc *seedPeerClient) updateSeedPeersForHostManager(seedPeers []*config.Seed
 }
 
 // seedPeersToNetAddrs coverts []*config.SeedPeer to []dfnet.NetAddr.
-func seedPeersToNetAddrs(seedPeers []*config.SeedPeer) []dfnet.NetAddr {
+func seedPeersToNetAddrs(seedPeers []*managerv1.SeedPeer) []dfnet.NetAddr {
 	netAddrs := make([]dfnet.NetAddr, 0, len(seedPeers))
 	for _, seedPeer := range seedPeers {
 		netAddrs = append(netAddrs, dfnet.NetAddr{
 			Type: dfnet.TCP,
-			Addr: fmt.Sprintf("%s:%d", seedPeer.IP, seedPeer.Port),
+			Addr: fmt.Sprintf("%s:%d", seedPeer.Ip, seedPeer.Port),
 		})
 	}
 
@@ -174,12 +179,12 @@ func seedPeersToNetAddrs(seedPeers []*config.SeedPeer) []dfnet.NetAddr {
 }
 
 // diffSeedPeers find out different seed peers.
-func diffSeedPeers(sx []*config.SeedPeer, sy []*config.SeedPeer) []*config.SeedPeer {
+func diffSeedPeers(sx []*managerv1.SeedPeer, sy []*managerv1.SeedPeer) []*managerv1.SeedPeer {
 	// Get seedPeers with the same HostID but different IP.
-	var diff []*config.SeedPeer
+	var diff []*managerv1.SeedPeer
 	for _, x := range sx {
 		for _, y := range sy {
-			if x.Hostname != y.Hostname {
+			if x.HostName != y.HostName {
 				continue
 			}
 
@@ -187,7 +192,7 @@ func diffSeedPeers(sx []*config.SeedPeer, sy []*config.SeedPeer) []*config.SeedP
 				continue
 			}
 
-			if x.IP == y.IP {
+			if x.Ip == y.Ip {
 				continue
 			}
 
@@ -199,7 +204,7 @@ func diffSeedPeers(sx []*config.SeedPeer, sy []*config.SeedPeer) []*config.SeedP
 	for _, x := range sx {
 		found := false
 		for _, y := range sy {
-			if idgen.HostID(x.Hostname, x.Port) == idgen.HostID(y.Hostname, y.Port) {
+			if idgen.HostID(x.HostName, x.Port) == idgen.HostID(y.HostName, y.Port) {
 				found = true
 				break
 			}

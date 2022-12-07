@@ -28,10 +28,12 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/resolver"
+	"google.golang.org/grpc/status"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 
@@ -52,71 +54,27 @@ var (
 )
 
 type DynconfigData struct {
-	ID               uint64            `yaml:"id" mapstructure:"id" json:"id"`
-	Hostname         string            `yaml:"hostname" mapstructure:"hostname" json:"host_name"`
-	Idc              string            `yaml:"idc" mapstructure:"idc" json:"idc"`
-	Location         string            `yaml:"location" mapstructure:"location" json:"location"`
-	NetTopology      string            `yaml:"netTopology" mapstructure:"netTopology" json:"net_topology"`
-	IP               string            `yaml:"ip" mapstructure:"ip" json:"ip"`
-	Port             int32             `yaml:"port" mapstructure:"port" json:"port"`
-	State            string            `yaml:"state" mapstructure:"state" json:"state"`
-	SeedPeers        []*SeedPeer       `yaml:"seedPeers" mapstructure:"seedPeers" json:"seed_peers"`
-	SchedulerCluster *SchedulerCluster `yaml:"schedulerCluster" mapstructure:"schedulerCluster" json:"scheduler_cluster"`
-}
-
-type SeedPeer struct {
-	ID              uint             `yaml:"id" mapstructure:"id" json:"id"`
-	Hostname        string           `yaml:"hostname" mapstructure:"hostname" json:"host_name"`
-	Type            string           `yaml:"type" mapstructure:"type" json:"type"`
-	IDC             string           `yaml:"idc" mapstructure:"idc" json:"idc"`
-	NetTopology     string           `yaml:"netTopology" mapstructure:"netTopology" json:"net_topology"`
-	Location        string           `yaml:"location" mapstructure:"location" json:"location"`
-	IP              string           `yaml:"ip" mapstructure:"ip" json:"ip"`
-	Port            int32            `yaml:"port" mapstructure:"port" json:"port"`
-	DownloadPort    int32            `yaml:"downloadPort" mapstructure:"downloadPort" json:"download_port"`
-	SeedPeerCluster *SeedPeerCluster `yaml:"seedPeerCluster" mapstructure:"seedPeerCluster" json:"seed_peer_cluster"`
-}
-
-func (c *SeedPeer) GetSeedPeerClusterConfig() (types.SeedPeerClusterConfig, bool) {
-	if c.SeedPeerCluster == nil {
-		return types.SeedPeerClusterConfig{}, false
-	}
-
-	var config types.SeedPeerClusterConfig
-	if err := json.Unmarshal(c.SeedPeerCluster.Config, &config); err != nil {
-		return types.SeedPeerClusterConfig{}, false
-	}
-
-	return config, true
-}
-
-type SeedPeerCluster struct {
-	ID     uint64 `yaml:"id" mapstructure:"id" json:"id"`
-	Name   string `yaml:"name" mapstructure:"name" json:"name"`
-	Config []byte `yaml:"config" mapstructure:"config" json:"config"`
-}
-
-type SchedulerCluster struct {
-	ID           uint64 `yaml:"id" mapstructure:"id" json:"id"`
-	Name         string `yaml:"name" mapstructure:"name" json:"name"`
-	Config       []byte `yaml:"config" mapstructure:"config" json:"config"`
-	ClientConfig []byte `yaml:"clientConfig" mapstructure:"clientConfig" json:"client_config"`
+	Scheduler    *managerv1.Scheduler
+	Applications []*managerv1.Application
 }
 
 type DynconfigInterface interface {
-	// Get the dynamic schedulers resolve addrs.
+	// GetResolveSeedPeerAddrs returns the dynamic schedulers resolve addrs.
 	GetResolveSeedPeerAddrs() ([]resolver.Address, error)
 
-	// Get the dynamic seed peers config from manager.
-	GetSeedPeers() ([]*SeedPeer, error)
+	// GetApplications returns the applications config from manager.
+	GetApplications() ([]*managerv1.Application, error)
 
-	// Get the scheduler cluster config.
-	GetSchedulerClusterConfig() (types.SchedulerClusterConfig, bool)
+	// GetSeedPeers returns the dynamic seed peers config from manager.
+	GetSeedPeers() ([]*managerv1.SeedPeer, error)
 
-	// Get the client config.
-	GetSchedulerClusterClientConfig() (types.SchedulerClusterClientConfig, bool)
+	// GetSchedulerClusterConfig returns the scheduler cluster config.
+	GetSchedulerClusterConfig() (types.SchedulerClusterConfig, error)
 
-	// Get the dynamic config from manager.
+	// GetSchedulerClusterClientConfig returns the client config.
+	GetSchedulerClusterClientConfig() (types.SchedulerClusterClientConfig, error)
+
+	// Get returns the dynamic config from manager.
 	Get() (*DynconfigData, error)
 
 	// Refresh refreshes dynconfig in cache.
@@ -194,7 +152,7 @@ func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, cfg *C
 	return d, nil
 }
 
-// Get the dynamic schedulers resolve addrs.
+// GetResolveSeedPeerAddrs returns the dynamic schedulers resolve addrs.
 func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 	seedPeers, err := d.GetSeedPeers()
 	if err != nil {
@@ -206,7 +164,7 @@ func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 		resolveAddrs []resolver.Address
 	)
 	for _, seedPeer := range seedPeers {
-		ip, ok := ip.FormatIP(seedPeer.IP)
+		ip, ok := ip.FormatIP(seedPeer.Ip)
 		if !ok {
 			continue
 		}
@@ -235,7 +193,7 @@ func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 		}
 
 		resolveAddrs = append(resolveAddrs, resolver.Address{
-			ServerName: seedPeer.IP,
+			ServerName: seedPeer.Ip,
 			Addr:       addr,
 		})
 		addrs[addr] = true
@@ -248,52 +206,62 @@ func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 	return resolveAddrs, nil
 }
 
-// Get the dynamic seed peers config from manager.
-func (d *dynconfig) GetSeedPeers() ([]*SeedPeer, error) {
+// GetApplications returns the applications config from manager.
+func (d *dynconfig) GetApplications() ([]*managerv1.Application, error) {
 	data, err := d.Get()
 	if err != nil {
 		return nil, err
 	}
 
-	return data.SeedPeers, nil
+	return data.Applications, nil
 }
 
-// Get the scheduler cluster config.
-func (d *dynconfig) GetSchedulerClusterConfig() (types.SchedulerClusterConfig, bool) {
+// GetSeedPeers returns the dynamic seed peers config from manager.
+func (d *dynconfig) GetSeedPeers() ([]*managerv1.SeedPeer, error) {
 	data, err := d.Get()
 	if err != nil {
-		return types.SchedulerClusterConfig{}, false
+		return nil, err
 	}
 
-	if data.SchedulerCluster == nil {
-		return types.SchedulerClusterConfig{}, false
+	return data.Scheduler.SeedPeers, nil
+}
+
+// GetSchedulerClusterConfig returns the scheduler cluster config.
+func (d *dynconfig) GetSchedulerClusterConfig() (types.SchedulerClusterConfig, error) {
+	data, err := d.Get()
+	if err != nil {
+		return types.SchedulerClusterConfig{}, err
+	}
+
+	if data.Scheduler.SchedulerCluster == nil {
+		return types.SchedulerClusterConfig{}, errors.New("invalid scheduler cluster")
 	}
 
 	var config types.SchedulerClusterConfig
-	if err := json.Unmarshal(data.SchedulerCluster.Config, &config); err != nil {
-		return types.SchedulerClusterConfig{}, false
+	if err := json.Unmarshal(data.Scheduler.SchedulerCluster.Config, &config); err != nil {
+		return types.SchedulerClusterConfig{}, err
 	}
 
-	return config, true
+	return config, nil
 }
 
-// Get the client config.
-func (d *dynconfig) GetSchedulerClusterClientConfig() (types.SchedulerClusterClientConfig, bool) {
+// GetSchedulerClusterClientConfig returns the client config.
+func (d *dynconfig) GetSchedulerClusterClientConfig() (types.SchedulerClusterClientConfig, error) {
 	data, err := d.Get()
 	if err != nil {
-		return types.SchedulerClusterClientConfig{}, false
+		return types.SchedulerClusterClientConfig{}, err
 	}
 
-	if data.SchedulerCluster == nil {
-		return types.SchedulerClusterClientConfig{}, false
+	if data.Scheduler.SchedulerCluster == nil {
+		return types.SchedulerClusterClientConfig{}, errors.New("invalid scheduler cluster")
 	}
 
 	var config types.SchedulerClusterClientConfig
-	if err := json.Unmarshal(data.SchedulerCluster.ClientConfig, &config); err != nil {
-		return types.SchedulerClusterClientConfig{}, false
+	if err := json.Unmarshal(data.Scheduler.SchedulerCluster.ClientConfig, &config); err != nil {
+		return types.SchedulerClusterClientConfig{}, err
 	}
 
-	return config, true
+	return config, nil
 }
 
 // Get the dynamic config from manager.
@@ -387,15 +355,53 @@ func newManagerClient(client managerclient.Client, cfg *Config) dc.ManagerClient
 }
 
 func (mc *managerClient) Get() (any, error) {
-	scheduler, err := mc.GetScheduler(context.Background(), &managerv1.GetSchedulerRequest{
+	getSchedulerResp, err := mc.GetScheduler(context.Background(), &managerv1.GetSchedulerRequest{
 		SourceType:         managerv1.SourceType_SCHEDULER_SOURCE,
 		HostName:           mc.config.Server.Host,
-		Ip:                 mc.config.Server.IP,
+		Ip:                 mc.config.Server.AdvertiseIP,
 		SchedulerClusterId: uint64(mc.config.Manager.SchedulerClusterID),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return scheduler, nil
+	listApplicationsResp, err := mc.ListApplications(context.Background(), &managerv1.ListApplicationsRequest{
+		SourceType: managerv1.SourceType_SCHEDULER_SOURCE,
+		HostName:   mc.config.Server.Host,
+		Ip:         mc.config.Server.AdvertiseIP,
+	})
+	if err != nil {
+		// TODO Compatible with old version manager.
+		if s, ok := status.FromError(err); ok && s.Code() == codes.Unimplemented {
+			return DynconfigData{
+				Scheduler:    getSchedulerResp,
+				Applications: nil,
+			}, nil
+		}
+
+		return nil, err
+	}
+
+	return DynconfigData{
+		Scheduler:    getSchedulerResp,
+		Applications: listApplicationsResp.Applications,
+	}, nil
+}
+
+// GetSeedPeerClusterConfigBySeedPeer returns the seed peer cluster config by seed peer.
+func GetSeedPeerClusterConfigBySeedPeer(seedPeer *managerv1.SeedPeer) (types.SeedPeerClusterConfig, error) {
+	if seedPeer == nil {
+		return types.SeedPeerClusterConfig{}, errors.New("invalid seed peer")
+	}
+
+	if seedPeer.SeedPeerCluster == nil {
+		return types.SeedPeerClusterConfig{}, errors.New("invalid seed peer cluster")
+	}
+
+	var config types.SeedPeerClusterConfig
+	if err := json.Unmarshal(seedPeer.SeedPeerCluster.Config, &config); err != nil {
+		return types.SeedPeerClusterConfig{}, err
+	}
+
+	return config, nil
 }
