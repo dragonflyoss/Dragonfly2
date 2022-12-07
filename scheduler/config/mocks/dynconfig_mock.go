@@ -7,6 +7,7 @@ package mocks
 import (
 	reflect "reflect"
 
+	v1 "d7y.io/api/pkg/apis/manager/v1"
 	types "d7y.io/dragonfly/v2/manager/types"
 	config "d7y.io/dragonfly/v2/scheduler/config"
 	gomock "github.com/golang/mock/gomock"
@@ -63,6 +64,21 @@ func (mr *MockDynconfigInterfaceMockRecorder) Get() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockDynconfigInterface)(nil).Get))
 }
 
+// GetApplications mocks base method.
+func (m *MockDynconfigInterface) GetApplications() ([]*v1.Application, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetApplications")
+	ret0, _ := ret[0].([]*v1.Application)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetApplications indicates an expected call of GetApplications.
+func (mr *MockDynconfigInterfaceMockRecorder) GetApplications() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetApplications", reflect.TypeOf((*MockDynconfigInterface)(nil).GetApplications))
+}
+
 // GetResolveSeedPeerAddrs mocks base method.
 func (m *MockDynconfigInterface) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 	m.ctrl.T.Helper()
@@ -79,11 +95,11 @@ func (mr *MockDynconfigInterfaceMockRecorder) GetResolveSeedPeerAddrs() *gomock.
 }
 
 // GetSchedulerClusterClientConfig mocks base method.
-func (m *MockDynconfigInterface) GetSchedulerClusterClientConfig() (types.SchedulerClusterClientConfig, bool) {
+func (m *MockDynconfigInterface) GetSchedulerClusterClientConfig() (types.SchedulerClusterClientConfig, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSchedulerClusterClientConfig")
 	ret0, _ := ret[0].(types.SchedulerClusterClientConfig)
-	ret1, _ := ret[1].(bool)
+	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
@@ -94,11 +110,11 @@ func (mr *MockDynconfigInterfaceMockRecorder) GetSchedulerClusterClientConfig() 
 }
 
 // GetSchedulerClusterConfig mocks base method.
-func (m *MockDynconfigInterface) GetSchedulerClusterConfig() (types.SchedulerClusterConfig, bool) {
+func (m *MockDynconfigInterface) GetSchedulerClusterConfig() (types.SchedulerClusterConfig, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSchedulerClusterConfig")
 	ret0, _ := ret[0].(types.SchedulerClusterConfig)
-	ret1, _ := ret[1].(bool)
+	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
@@ -109,10 +125,10 @@ func (mr *MockDynconfigInterfaceMockRecorder) GetSchedulerClusterConfig() *gomoc
 }
 
 // GetSeedPeers mocks base method.
-func (m *MockDynconfigInterface) GetSeedPeers() ([]*config.SeedPeer, error) {
+func (m *MockDynconfigInterface) GetSeedPeers() ([]*v1.SeedPeer, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSeedPeers")
-	ret0, _ := ret[0].([]*config.SeedPeer)
+	ret0, _ := ret[0].([]*v1.SeedPeer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

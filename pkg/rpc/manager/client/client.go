@@ -149,11 +149,14 @@ type Client interface {
 	// Delete model version information.
 	DeleteModelVersion(context.Context, *managerv1.DeleteModelVersionRequest, ...grpc.CallOption) error
 
-	// IssueCertificate issues certificate for client.
-	IssueCertificate(context.Context, *securityv1.CertificateRequest, ...grpc.CallOption) (*securityv1.CertificateResponse, error)
+	// List applications configuration.
+	ListApplications(context.Context, *managerv1.ListApplicationsRequest, ...grpc.CallOption) (*managerv1.ListApplicationsResponse, error)
 
 	// KeepAlive with manager.
 	KeepAlive(time.Duration, *managerv1.KeepAliveRequest, <-chan struct{}, ...grpc.CallOption)
+
+	// IssueCertificate issues certificate for client.
+	IssueCertificate(context.Context, *securityv1.CertificateRequest, ...grpc.CallOption) (*securityv1.CertificateResponse, error)
 
 	// Close tears down the ClientConn and all underlying connections.
 	Close() error
@@ -299,11 +302,12 @@ func (c *client) DeleteModelVersion(ctx context.Context, req *managerv1.DeleteMo
 	return err
 }
 
-func (c *client) IssueCertificate(ctx context.Context, req *securityv1.CertificateRequest, opts ...grpc.CallOption) (*securityv1.CertificateResponse, error) {
+// List applications configuration.
+func (c *client) ListApplications(ctx context.Context, req *managerv1.ListApplicationsRequest, opts ...grpc.CallOption) (*managerv1.ListApplicationsResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	return c.CertificateServiceClient.IssueCertificate(ctx, req, opts...)
+	return c.ManagerClient.ListApplications(ctx, req, opts...)
 }
 
 // List acitve schedulers configuration.
@@ -347,4 +351,12 @@ retry:
 			return
 		}
 	}
+}
+
+// IssueCertificate issues certificate for client.
+func (c *client) IssueCertificate(ctx context.Context, req *securityv1.CertificateRequest, opts ...grpc.CallOption) (*securityv1.CertificateResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
+	return c.CertificateServiceClient.IssueCertificate(ctx, req, opts...)
 }
