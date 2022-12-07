@@ -36,6 +36,9 @@ const (
 	// Scheduler prefix of cache key.
 	SchedulerNamespace = "schedulers"
 
+	// Applications prefix of cache key.
+	ApplicationsNamespace = "applications"
+
 	// Buckets prefix of cache key.
 	BucketsNamespace = "buckets"
 )
@@ -67,9 +70,14 @@ func New(cfg *config.Config) (*Cache, error) {
 	}, nil
 }
 
+// Make namespace cache key.
+func MakeNamespaceCacheKey(namespace string) string {
+	return fmt.Sprintf("manager:%s", namespace)
+}
+
 // Make cache key.
 func MakeCacheKey(namespace string, id string) string {
-	return fmt.Sprintf("manager:%s:%s", namespace, id)
+	return fmt.Sprintf("%s:%s", MakeNamespaceCacheKey(namespace), id)
 }
 
 // Make cache key for seed peer.
@@ -92,8 +100,13 @@ func MakeSchedulersCacheKeyForPeer(hostname, ip string) string {
 	return MakeCacheKey(PeerNamespace, fmt.Sprintf("%s-%s:schedulers", hostname, ip))
 }
 
-// Make cache key for buckets.
-func MakeBucketsCacheKey(name string) string {
+// Make applications cache key.
+func MakeApplicationsCacheKey() string {
+	return MakeNamespaceCacheKey(ApplicationsNamespace)
+}
+
+// Make cache key for bucket.
+func MakeBucketCacheKey(name string) string {
 	return MakeCacheKey(BucketsNamespace, name)
 }
 
