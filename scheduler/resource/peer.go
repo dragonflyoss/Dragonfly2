@@ -424,14 +424,14 @@ func (p *Peer) GetPriority(dynconfig config.DynconfigInterface) managerv1.Priori
 	pbApplications, err := dynconfig.GetApplications()
 	if err != nil {
 		p.Log.Warn(err)
-		return managerv1.Priority_LEVEL5
+		return managerv1.Priority_LEVEL0
 	}
 
 	// If manager has no applications,
-	// then return Priority_LEVEL5.
+	// then return Priority_LEVEL0.
 	if len(pbApplications) == 0 {
 		p.Log.Info("can not found applications")
-		return managerv1.Priority_LEVEL5
+		return managerv1.Priority_LEVEL0
 	}
 
 	// Find peer application.
@@ -444,17 +444,17 @@ func (p *Peer) GetPriority(dynconfig config.DynconfigInterface) managerv1.Priori
 	}
 
 	// If no application matches peer application,
-	// then return Priority_LEVEL5.
+	// then return Priority_LEVEL0.
 	if application == nil {
 		p.Log.Info("can not found matching application")
-		return managerv1.Priority_LEVEL5
+		return managerv1.Priority_LEVEL0
 	}
 
 	// If application has no priority,
-	// then return Priority_LEVEL5.
+	// then return Priority_LEVEL0.
 	if application.Priority == nil {
 		p.Log.Info("can not found priority")
-		return managerv1.Priority_LEVEL5
+		return managerv1.Priority_LEVEL0
 	}
 
 	// Match url priority first.

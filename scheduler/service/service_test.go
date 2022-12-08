@@ -251,7 +251,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			},
 		},
 		{
-			name: "task state is TaskStatePending and priority is Priority_LEVEL0",
+			name: "task state is TaskStatePending and priority is Priority_LEVEL1",
 			req: &schedulerv1.PeerTaskRequest{
 				UrlMeta: &commonv1.UrlMeta{},
 				PeerHost: &schedulerv1.PeerHost{
@@ -277,7 +277,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 						{
 							Name: "baz",
 							Priority: &managerv1.ApplicationPriority{
-								Value: managerv1.Priority_LEVEL0,
+								Value: managerv1.Priority_LEVEL1,
 							},
 						},
 					}, nil).Times(1),
@@ -2057,7 +2057,7 @@ func TestService_triggerTask(t *testing.T) {
 				mockSeedPeer.FSM.SetState(resource.PeerStateRunning)
 				mockTask.StorePeer(mockSeedPeer)
 
-				err := svc.triggerTask(context.Background(), mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(mockTask.FSM.Current(), resource.TaskStateRunning)
@@ -2073,7 +2073,7 @@ func TestService_triggerTask(t *testing.T) {
 				mockSeedPeer.FSM.SetState(resource.PeerStateRunning)
 				mockTask.StorePeer(mockSeedPeer)
 
-				err := svc.triggerTask(context.Background(), mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(mockTask.FSM.Current(), resource.TaskStateSucceeded)
@@ -2088,7 +2088,7 @@ func TestService_triggerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStateFailed)
 				mockHost.Type = pkgtypes.HostTypeSuperSeed
 
-				err := svc.triggerTask(context.Background(), mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(mockPeer.NeedBackToSource.Load(), true)
@@ -2104,7 +2104,7 @@ func TestService_triggerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
 				mockHost.Type = pkgtypes.HostTypeStrongSeed
 
-				err := svc.triggerTask(context.Background(), mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(mockPeer.NeedBackToSource.Load(), true)
@@ -2120,7 +2120,7 @@ func TestService_triggerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStateRunning)
 				mockHost.Type = pkgtypes.HostTypeWeakSeed
 
-				err := svc.triggerTask(context.Background(), mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(mockPeer.NeedBackToSource.Load(), true)
@@ -2136,7 +2136,7 @@ func TestService_triggerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStateSucceeded)
 				mockHost.Type = pkgtypes.HostTypeStrongSeed
 
-				err := svc.triggerTask(context.Background(), mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(mockPeer.NeedBackToSource.Load(), true)
@@ -2152,7 +2152,7 @@ func TestService_triggerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStateLeave)
 				mockHost.Type = pkgtypes.HostTypeStrongSeed
 
-				err := svc.triggerTask(context.Background(), mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(mockPeer.NeedBackToSource.Load(), true)
@@ -2160,7 +2160,7 @@ func TestService_triggerTask(t *testing.T) {
 			},
 		},
 		{
-			name: "priority is Priority_LEVEL5 and seed peer is enabled",
+			name: "priority is Priority_LEVEL6 and seed peer is enabled",
 			config: &config.Config{
 				Scheduler: mockSchedulerConfig,
 				SeedPeer: config.SeedPeerConfig{
@@ -2174,14 +2174,13 @@ func TestService_triggerTask(t *testing.T) {
 				wg.Add(2)
 				defer wg.Wait()
 
-				mockTask.FSM.SetState(resource.TaskStateFailed)
 				gomock.InOrder(
 					md.GetApplications().Return(nil, errors.New("foo")).Times(1),
 					mr.SeedPeer().Do(func() { wg.Done() }).Return(seedPeer).Times(1),
 					mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(mockPeer, &schedulerv1.PeerResult{}, nil).Times(1),
 				)
 
-				err := svc.triggerTask(context.Background(), mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(mockPeer.NeedBackToSource.Load(), false)
@@ -2189,7 +2188,7 @@ func TestService_triggerTask(t *testing.T) {
 			},
 		},
 		{
-			name: "priority is Priority_LEVEL5 and seed peer downloads failed",
+			name: "priority is Priority_LEVEL6 and seed peer downloads failed",
 			config: &config.Config{
 				Scheduler: mockSchedulerConfig,
 				SeedPeer: config.SeedPeerConfig{
@@ -2201,10 +2200,37 @@ func TestService_triggerTask(t *testing.T) {
 				mockSeedPeer.FSM.SetState(resource.PeerStateFailed)
 				mockTask.StorePeer(mockSeedPeer)
 
-				mockTask.FSM.SetState(resource.TaskStateFailed)
 				md.GetApplications().Return(nil, errors.New("foo")).Times(1)
 
-				err := svc.triggerTask(context.Background(), mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(mockPeer.NeedBackToSource.Load(), true)
+				assert.Equal(mockTask.FSM.Current(), resource.TaskStateRunning)
+			},
+		},
+		{
+			name: "priority is Priority_LEVEL5",
+			config: &config.Config{
+				Scheduler: mockSchedulerConfig,
+				SeedPeer: config.SeedPeerConfig{
+					Enable: true,
+				},
+			},
+			run: func(t *testing.T, svc *Service, mockTask *resource.Task, mockHost *resource.Host, mockPeer *resource.Peer, mockSeedPeer *resource.Peer, dynconfig config.DynconfigInterface, seedPeer resource.SeedPeer, mr *resource.MockResourceMockRecorder, mc *resource.MockSeedPeerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				mockTask.FSM.SetState(resource.TaskStatePending)
+				mockPeer.Application = "bas"
+
+				md.GetApplications().Return([]*managerv1.Application{
+					{
+						Name: "bas",
+						Priority: &managerv1.ApplicationPriority{
+							Value: managerv1.Priority_LEVEL5,
+						},
+					},
+				}, nil).Times(1)
+
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(mockPeer.NeedBackToSource.Load(), true)
@@ -2223,7 +2249,6 @@ func TestService_triggerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
 				mockPeer.Application = "bas"
 
-				mockTask.FSM.SetState(resource.TaskStateFailed)
 				md.GetApplications().Return([]*managerv1.Application{
 					{
 						Name: "bas",
@@ -2233,7 +2258,7 @@ func TestService_triggerTask(t *testing.T) {
 					},
 				}, nil).Times(1)
 
-				err := svc.triggerTask(context.Background(), mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(mockPeer.NeedBackToSource.Load(), true)
@@ -2250,19 +2275,18 @@ func TestService_triggerTask(t *testing.T) {
 			},
 			run: func(t *testing.T, svc *Service, mockTask *resource.Task, mockHost *resource.Host, mockPeer *resource.Peer, mockSeedPeer *resource.Peer, dynconfig config.DynconfigInterface, seedPeer resource.SeedPeer, mr *resource.MockResourceMockRecorder, mc *resource.MockSeedPeerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
-				mockPeer.Application = "bas"
+				mockPeer.Application = "bae"
 
-				mockTask.FSM.SetState(resource.TaskStateFailed)
 				md.GetApplications().Return([]*managerv1.Application{
 					{
-						Name: "bas",
+						Name: "bae",
 						Priority: &managerv1.ApplicationPriority{
 							Value: managerv1.Priority_LEVEL3,
 						},
 					},
 				}, nil).Times(1)
 
-				err := svc.triggerTask(context.Background(), mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(mockPeer.NeedBackToSource.Load(), true)
@@ -2281,7 +2305,6 @@ func TestService_triggerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
 				mockPeer.Application = "bae"
 
-				mockTask.FSM.SetState(resource.TaskStateFailed)
 				md.GetApplications().Return([]*managerv1.Application{
 					{
 						Name: "bae",
@@ -2291,11 +2314,9 @@ func TestService_triggerTask(t *testing.T) {
 					},
 				}, nil).Times(1)
 
-				err := svc.triggerTask(context.Background(), mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
-				assert.NoError(err)
-				assert.Equal(mockPeer.NeedBackToSource.Load(), true)
-				assert.Equal(mockTask.FSM.Current(), resource.TaskStateRunning)
+				assert.Error(err)
 			},
 		},
 		{
@@ -2308,19 +2329,18 @@ func TestService_triggerTask(t *testing.T) {
 			},
 			run: func(t *testing.T, svc *Service, mockTask *resource.Task, mockHost *resource.Host, mockPeer *resource.Peer, mockSeedPeer *resource.Peer, dynconfig config.DynconfigInterface, seedPeer resource.SeedPeer, mr *resource.MockResourceMockRecorder, mc *resource.MockSeedPeerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
-				mockPeer.Application = "bae"
+				mockPeer.Application = "bat"
 
-				mockTask.FSM.SetState(resource.TaskStateFailed)
 				md.GetApplications().Return([]*managerv1.Application{
 					{
-						Name: "bae",
+						Name: "bat",
 						Priority: &managerv1.ApplicationPriority{
 							Value: managerv1.Priority_LEVEL1,
 						},
 					},
 				}, nil).Times(1)
 
-				err := svc.triggerTask(context.Background(), mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.Error(err)
 			},
@@ -2337,19 +2357,57 @@ func TestService_triggerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
 				mockPeer.Application = "bat"
 
-				mockTask.FSM.SetState(resource.TaskStateFailed)
-				md.GetApplications().Return([]*managerv1.Application{
-					{
-						Name: "bat",
-						Priority: &managerv1.ApplicationPriority{
-							Value: managerv1.Priority_LEVEL0,
-						},
-					},
-				}, nil).Times(1)
+				var wg sync.WaitGroup
+				wg.Add(2)
+				defer wg.Wait()
 
-				err := svc.triggerTask(context.Background(), mockTask, mockHost, mockPeer, dynconfig)
+				gomock.InOrder(
+					md.GetApplications().Return([]*managerv1.Application{
+						{
+							Name: "bat",
+							Priority: &managerv1.ApplicationPriority{
+								Value: managerv1.Priority_LEVEL0,
+							},
+						},
+					}, nil).Times(1),
+					mr.SeedPeer().Do(func() { wg.Done() }).Return(seedPeer).Times(1),
+					mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(mockPeer, &schedulerv1.PeerResult{}, nil).Times(1),
+				)
+
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
-				assert.Error(err)
+				assert.NoError(err)
+				assert.Equal(mockPeer.NeedBackToSource.Load(), false)
+				assert.Equal(mockTask.FSM.Current(), resource.TaskStateRunning)
+			},
+		},
+		{
+			name: "register priority is Priority_LEVEL6 and seed peer is enabled",
+			config: &config.Config{
+				Scheduler: mockSchedulerConfig,
+				SeedPeer: config.SeedPeerConfig{
+					Enable: true,
+				},
+			},
+			run: func(t *testing.T, svc *Service, mockTask *resource.Task, mockHost *resource.Host, mockPeer *resource.Peer, mockSeedPeer *resource.Peer, dynconfig config.DynconfigInterface, seedPeer resource.SeedPeer, mr *resource.MockResourceMockRecorder, mc *resource.MockSeedPeerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				mockTask.FSM.SetState(resource.TaskStatePending)
+
+				var wg sync.WaitGroup
+				wg.Add(2)
+				defer wg.Wait()
+
+				gomock.InOrder(
+					mr.SeedPeer().Do(func() { wg.Done() }).Return(seedPeer).Times(1),
+					mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(mockPeer, &schedulerv1.PeerResult{}, nil).Times(1),
+				)
+
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{
+					Priority: managerv1.Priority_LEVEL6,
+				}, mockTask, mockHost, mockPeer, dynconfig)
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(mockPeer.NeedBackToSource.Load(), false)
+				assert.Equal(mockTask.FSM.Current(), resource.TaskStateRunning)
 			},
 		},
 	}

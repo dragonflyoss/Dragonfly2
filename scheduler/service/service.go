@@ -91,7 +91,7 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTas
 	peer := s.storePeer(ctx, req.PeerId, task, host, req.UrlMeta.Tag, req.UrlMeta.Application)
 
 	// Trigger the first download of the task.
-	if err := s.triggerTask(ctx, task, host, peer, s.dynconfig); err != nil {
+	if err := s.triggerTask(ctx, req, task, host, peer, s.dynconfig); err != nil {
 		peer.Log.Error(err)
 		s.handleRegisterFailure(ctx, peer)
 		return nil, dferrors.New(commonv1.Code_SchedForbidden, err.Error())
@@ -487,7 +487,7 @@ func (s *Service) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostReque
 }
 
 // triggerTask triggers the first download of the task.
-func (s *Service) triggerTask(ctx context.Context, task *resource.Task, host *resource.Host, peer *resource.Peer, dynconfig config.DynconfigInterface) error {
+func (s *Service) triggerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, task *resource.Task, host *resource.Host, peer *resource.Peer, dynconfig config.DynconfigInterface) error {
 	// If task has available peer, peer does not need to be triggered.
 	blocklist := set.NewSafeSet[string]()
 	blocklist.Add(peer.ID)
@@ -515,28 +515,36 @@ func (s *Service) triggerTask(ctx context.Context, task *resource.Task, host *re
 	}
 
 	// The first download is triggered according to
-	// the different priorities of the peer.
-	priority := peer.GetPriority(dynconfig)
+	// the different priorities of the peer and
+	// priority of the RegisterPeerTask parameter is
+	// higher than parameter of the application.
+	var priority managerv1.Priority
+	if req.Priority != managerv1.Priority_LEVEL0 {
+		priority = req.Priority
+	} else {
+		priority = peer.GetPriority(dynconfig)
+	}
 	peer.Log.Infof("peer priority is %d", priority)
+
 	switch priority {
-	case managerv1.Priority_LEVEL5:
+	case managerv1.Priority_LEVEL6, managerv1.Priority_LEVEL0:
 		if s.config.SeedPeer.Enable && !task.IsSeedPeerFailed() {
 			go s.triggerSeedPeerTask(ctx, task)
 			return nil
 		}
 		fallthrough
+	case managerv1.Priority_LEVEL5:
+		fallthrough
 	case managerv1.Priority_LEVEL4:
 		fallthrough
 	case managerv1.Priority_LEVEL3:
-		fallthrough
-	case managerv1.Priority_LEVEL2:
-		peer.Log.Infof("peer back-to-source, because of hitting priority %d", managerv1.Priority_LEVEL2)
+		peer.Log.Infof("peer back-to-source, because of hitting priority %d", managerv1.Priority_LEVEL3)
 		peer.NeedBackToSource.Store(true)
 		return nil
+	case managerv1.Priority_LEVEL2:
+		return fmt.Errorf("priority is %d and no available peers", managerv1.Priority_LEVEL2)
 	case managerv1.Priority_LEVEL1:
-		return fmt.Errorf("priority is %d and no available peers", managerv1.Priority_LEVEL1)
-	case managerv1.Priority_LEVEL0:
-		return fmt.Errorf("priority is %d", managerv1.Priority_LEVEL0)
+		return fmt.Errorf("priority is %d", managerv1.Priority_LEVEL1)
 	}
 
 	peer.Log.Infof("peer back-to-source, because of peer has invalid priority %d", priority)
