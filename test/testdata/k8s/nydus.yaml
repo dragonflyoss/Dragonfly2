@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nydus-pod
+spec:
+  containers:
+    - name: nginx
+      image: ghcr.io/dragonflyoss/image-service/nginx:nydus-latest
+      imagePullPolicy: Always
+      command: ["sh", "-c"]
+      args:
+        - tail -f /dev/null

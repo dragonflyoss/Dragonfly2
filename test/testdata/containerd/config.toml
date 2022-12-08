@@ -6,7 +6,7 @@ version = 2
 
 [plugins."io.containerd.grpc.v1.cri".containerd]
   # save disk space when using a single snapshotter
-  discard_unpacked_layers = true
+  discard_unpacked_layers = false
   # explicitly use default snapshotter so we can sed it in entrypoint
   snapshotter = "overlayfs"
   # explicit default here, as we're configuring it below

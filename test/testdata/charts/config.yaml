@@ -119,3 +119,7 @@ manager:
       path: /tmp/artifact
   config:
     verbose: true
+
+containerRuntime:
+  containerd:
+    enable: true
