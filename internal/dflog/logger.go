@@ -147,6 +147,12 @@ func WithTaskID(taskID string) *SugaredLoggerOnWith {
 	}
 }
 
+func WithHostID(hostID string) *SugaredLoggerOnWith {
+	return &SugaredLoggerOnWith{
+		withArgs: []any{"hostID", hostID},
+	}
+}
+
 func WithKeepAlive(hostname, ip, sourceType string, clusterID uint64) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
 		withArgs: []any{"hostname", hostname, "ip", ip, "sourceType", sourceType, "clusterID", clusterID},

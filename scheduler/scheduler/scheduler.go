@@ -77,6 +77,7 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 		// If the scheduling exceeds the RetryBackToSourceLimit or peer needs back-to-source,
 		// peer will download the task back-to-source.
 		needBackToSource := peer.NeedBackToSource.Load()
+		peer.Log.Infof("peer needs to back-to-source: %t", needBackToSource)
 		if (n >= s.config.RetryBackToSourceLimit || needBackToSource) &&
 			peer.Task.CanBackToSource() {
 			stream, ok := peer.LoadStream()
@@ -84,13 +85,11 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 				peer.Log.Error("load stream failed")
 				return
 			}
-
-			peer.Log.Infof("peer downloads back-to-source, scheduling %d times, peer need back-to-source %t",
-				n, needBackToSource)
+			peer.Log.Infof("schedule peer back-to-source in %d times", n)
 
 			// Notify peer back-to-source.
 			if err := stream.Send(&schedulerv1.PeerPacket{Code: commonv1.Code_SchedNeedBackSource}); err != nil {
-				peer.Log.Errorf("send packet failed: %s", err.Error())
+				peer.Log.Error(err)
 				return
 			}
 
@@ -121,23 +120,23 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 
 			// Notify peer schedule failed.
 			if err := stream.Send(&schedulerv1.PeerPacket{Code: commonv1.Code_SchedTaskStatusError}); err != nil {
-				peer.Log.Errorf("send packet failed: %s", err.Error())
+				peer.Log.Error(err)
 				return
 			}
-			peer.Log.Errorf("peer scheduling exceeds the limit %d times and return code %d", s.config.RetryLimit, commonv1.Code_SchedTaskStatusError)
+			peer.Log.Errorf("peer scheduling exceeds the limit %d times", s.config.RetryLimit)
 			return
 		}
 
 		if _, ok := s.NotifyAndFindParent(ctx, peer, blocklist); !ok {
 			n++
-			peer.Log.Infof("schedule parent %d times failed", n)
+			peer.Log.Infof("schedule parent failed in %d times ", n)
 
 			// Sleep to avoid hot looping.
 			time.Sleep(s.config.RetryInterval)
 			continue
 		}
 
-		peer.Log.Infof("schedule parent %d times successfully", n+1)
+		peer.Log.Infof("schedule parent successfully in %d times", n+1)
 		return
 	}
 }
@@ -205,8 +204,7 @@ func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer
 		return []*resource.Peer{}, false
 	}
 
-	peer.Log.Infof("schedule parent successful, replace parent to %s and candidate parents is %v",
-		parentIDs[0], parentIDs[1:])
+	peer.Log.Infof("schedule candidate parents is %#v", parentIDs)
 	return candidateParents, true
 }
 
@@ -228,7 +226,7 @@ func (s *scheduler) FindParent(ctx context.Context, peer *resource.Peer, blockli
 		},
 	)
 
-	peer.Log.Infof("find parent %s successful", candidateParents[0].ID)
+	peer.Log.Infof("schedule candidate parent is %s", candidateParents[0].ID)
 	return candidateParents[0], true
 }
 
@@ -258,13 +256,13 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 
 		// Candidate parent is in blocklist.
 		if blocklist.Contains(candidateParent.ID) {
-			peer.Log.Debugf("candidate parent %s is not selected because it is in blocklist", candidateParent.ID)
+			peer.Log.Debugf("parent %s is not selected because it is in blocklist", candidateParent.ID)
 			continue
 		}
 
 		// Candidate parent can add edge with peer.
 		if !peer.Task.CanAddPeerEdge(candidateParent.ID, peer.ID) {
-			peer.Log.Debugf("can not add edge with candidate parent %s", candidateParent.ID)
+			peer.Log.Debugf("can not add edge with parent %s", candidateParent.ID)
 			continue
 		}
 
@@ -272,20 +270,20 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 		// because dfdaemon cannot handle the situation
 		// where two tasks are downloading and downloading each other.
 		if peer.Host.ID == candidateParent.Host.ID {
-			peer.Log.Debugf("candidate parent %s host %s is the same as peer host", candidateParent.ID, candidateParent.Host.ID)
+			peer.Log.Debugf("parent %s host %s is the same as peer host", candidateParent.ID, candidateParent.Host.ID)
 			continue
 		}
 
 		// Candidate parent is bad node.
 		if s.evaluator.IsBadNode(candidateParent) {
-			peer.Log.Debugf("candidate parent %s is not selected because it is bad node", candidateParent.ID)
+			peer.Log.Debugf("parent %s is not selected because it is bad node", candidateParent.ID)
 			continue
 		}
 
 		// Candidate parent can not find in dag.
 		inDegree, err := peer.Task.PeerInDegree(candidateParent.ID)
 		if err != nil {
-			peer.Log.Debugf("can not find candidate parent %s vertex in dag", candidateParent.ID)
+			peer.Log.Debugf("can not find parent %s vertex in dag", candidateParent.ID)
 			continue
 		}
 
@@ -297,14 +295,14 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 		isBackToSource := candidateParent.IsBackToSource.Load()
 		if candidateParent.Host.Type == types.HostTypeNormal && inDegree == 0 && !isBackToSource &&
 			!candidateParent.FSM.Is(resource.PeerStateSucceeded) {
-			peer.Log.Debugf("candidate parent %s is not selected, because its download state is %d %d %t %s",
+			peer.Log.Debugf("parent %s is not selected, because its download state is %d %d %t %s",
 				candidateParent.ID, inDegree, int(candidateParent.Host.Type), isBackToSource, candidateParent.FSM.Current())
 			continue
 		}
 
 		// Candidate parent's free upload is empty.
 		if candidateParent.Host.FreeUploadCount() <= 0 {
-			peer.Log.Debugf("candidate parent %s is not selected because its free upload is empty, upload limit is %d, upload count is %d",
+			peer.Log.Debugf("parent %s is not selected because its free upload is empty, upload limit is %d, upload count is %d",
 				candidateParent.ID, candidateParent.Host.ConcurrentUploadLimit.Load(), candidateParent.Host.ConcurrentUploadCount.Load())
 			continue
 		}
@@ -313,7 +311,7 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 		candidateParentIDs = append(candidateParentIDs, candidateParent.ID)
 	}
 
-	peer.Log.Infof("candidate parents include %#v", candidateParentIDs)
+	peer.Log.Infof("filter candidate parents is %#v", candidateParentIDs)
 	return candidateParents
 }
 

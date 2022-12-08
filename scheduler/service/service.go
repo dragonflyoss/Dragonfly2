@@ -29,6 +29,7 @@ import (
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	errordetailsv1 "d7y.io/api/pkg/apis/errordetails/v1"
+	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
@@ -83,22 +84,28 @@ func New(
 func (s *Service) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest) (*schedulerv1.RegisterResult, error) {
 	logger.WithPeer(req.PeerHost.Id, req.TaskId, req.PeerId).Infof("register peer task request: %#v %#v %#v",
 		req, req.UrlMeta, req.HostLoad)
-	// Register task and trigger seed peer download task.
-	task, needBackToSource := s.registerTask(ctx, req)
-	host := s.registerHost(ctx, req.PeerHost)
-	peer := s.registerPeer(ctx, req.PeerId, task, host, req.UrlMeta.Tag, req.UrlMeta.Application)
 
-	// When the peer registers for the first time and
-	// does not have a seed peer, it will back-to-source.
-	peer.NeedBackToSource.Store(needBackToSource)
+	// Store resource.
+	task := s.storeTask(ctx, req, commonv1.TaskType_Normal)
+	host := s.storeHost(ctx, req.PeerHost)
+	peer := s.storePeer(ctx, req.PeerId, task, host, req.UrlMeta.Tag, req.UrlMeta.Application)
 
+	// Trigger the first download of the task.
+	if err := s.triggerTask(ctx, task, host, peer, s.dynconfig); err != nil {
+		peer.Log.Error(err)
+		s.handleRegisterFailure(ctx, peer)
+		return nil, dferrors.New(commonv1.Code_SchedForbidden, err.Error())
+	}
+
+	// If the task does not succeed, it is scheduled as a normal task.
 	if !task.FSM.Is(resource.TaskStateSucceeded) {
-		peer.Log.Infof("task can not be reused directly, because of task state is %s",
+		peer.Log.Infof("register as normal task, because of task state is %s",
 			task.FSM.Current())
 
 		result, err := s.registerNormalTask(ctx, peer)
 		if err != nil {
 			peer.Log.Error(err)
+			s.handleRegisterFailure(ctx, peer)
 			return nil, dferrors.New(commonv1.Code_SchedError, err.Error())
 		}
 
@@ -110,23 +117,20 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTas
 	if err != nil {
 		peer.Log.Warnf("scope size is invalid: %s", err.Error())
 	}
+	peer.Log.Infof("task size scope is %s", sizeScope)
 
 	// The task state is TaskStateSucceeded and SizeScope is not invalid.
-	peer.Log.Info("task can be reused directly")
 	switch sizeScope {
 	case commonv1.SizeScope_EMPTY:
-		peer.Log.Info("task size scope is EMPTY")
 		result, err := s.registerEmptyTask(ctx, peer)
 		if err != nil {
 			peer.Log.Error(err)
+			s.handleRegisterFailure(ctx, peer)
 			return nil, dferrors.New(commonv1.Code_SchedError, err.Error())
 		}
 
-		peer.Log.Info("return empty content")
 		return result, nil
 	case commonv1.SizeScope_TINY:
-		peer.Log.Info("task size scope is TINY")
-
 		// Validate data of direct piece.
 		if !peer.Task.CanReuseDirectPiece() {
 			peer.Log.Warnf("register as normal task, because of length of direct piece is %d, content length is %d",
@@ -140,28 +144,25 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTas
 			break
 		}
 
-		peer.Log.Info("return direct piece")
 		return result, nil
 	case commonv1.SizeScope_SMALL:
-		peer.Log.Info("task size scope is SMALL")
 		result, err := s.registerSmallTask(ctx, peer)
 		if err != nil {
 			peer.Log.Warnf("register as normal task, because of %s", err.Error())
 			break
 		}
 
-		peer.Log.Info("return the single piece")
 		return result, nil
 	}
 
-	peer.Log.Infof("task size scope is %s", sizeScope)
 	result, err := s.registerNormalTask(ctx, peer)
 	if err != nil {
 		peer.Log.Error(err)
+		s.handleRegisterFailure(ctx, peer)
 		return nil, dferrors.New(commonv1.Code_SchedError, err.Error())
 	}
 
-	peer.Log.Info("return the normal task")
+	peer.Log.Info("register as normal task, because of invalid size scope")
 	return result, nil
 }
 
@@ -187,7 +188,8 @@ func (s *Service) ReportPieceResult(stream schedulerv1.Scheduler_ReportPieceResu
 			if err == io.EOF {
 				return nil
 			}
-			logger.Errorf("receive piece %#v error: %s", piece, err.Error())
+
+			logger.Errorf("receive piece failed: %s", err.Error())
 			return err
 		}
 
@@ -227,7 +229,7 @@ func (s *Service) ReportPieceResult(stream schedulerv1.Scheduler_ReportPieceResu
 
 		// Handle piece download successfully.
 		if piece.Success {
-			peer.Log.Infof("receive piece: %#v %#v", piece, piece.PieceInfo)
+			peer.Log.Infof("receive success piece: %#v %#v", piece, piece.PieceInfo)
 			s.handlePieceSuccess(ctx, peer, piece)
 
 			// Collect peer host traffic metrics.
@@ -236,7 +238,7 @@ func (s *Service) ReportPieceResult(stream schedulerv1.Scheduler_ReportPieceResu
 				if parent, loaded := s.resource.PeerManager().Load(piece.DstPid); loaded {
 					metrics.PeerHostTraffic.WithLabelValues(peer.Tag, peer.Application, metrics.PeerHostTrafficUploadType, parent.Host.ID, parent.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
 				} else if !resource.IsPieceBackToSource(piece) {
-					peer.Log.Warnf("dst peer %s not found for piece %#v %#v", piece.DstPid, piece, piece.PieceInfo)
+					peer.Log.Warnf("dst peer %s not found", piece.DstPid)
 				}
 			}
 
@@ -252,13 +254,13 @@ func (s *Service) ReportPieceResult(stream schedulerv1.Scheduler_ReportPieceResu
 		// Handle piece download code.
 		if piece.Code != commonv1.Code_Success {
 			if piece.Code == commonv1.Code_ClientWaitPieceReady {
-				peer.Log.Debugf("receive piece code %d and wait for dfdaemon piece ready", piece.Code)
+				peer.Log.Debug("receive wait piece")
 				continue
 			}
 
 			// Handle piece download failed.
 			peer.Log.Errorf("receive failed piece: %#v", piece)
-			s.handlePieceFail(ctx, peer, piece)
+			s.handlePieceFailure(ctx, peer, piece)
 			continue
 		}
 
@@ -268,9 +270,11 @@ func (s *Service) ReportPieceResult(stream schedulerv1.Scheduler_ReportPieceResu
 
 // ReportPeerResult handles peer result reported by dfdaemon.
 func (s *Service) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult) error {
+	logger.WithTaskAndPeerID(req.TaskId, req.PeerId).Infof("report peer result request: %#v", req)
+
 	peer, loaded := s.resource.PeerManager().Load(req.PeerId)
 	if !loaded {
-		msg := fmt.Sprintf("report peer result and peer %s is not exists", req.PeerId)
+		msg := fmt.Sprintf("peer %s not found", req.PeerId)
 		logger.Error(msg)
 		return dferrors.New(commonv1.Code_SchedPeerNotFound, msg)
 	}
@@ -278,23 +282,23 @@ func (s *Service) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerRes
 
 	parents := peer.Parents()
 	if !req.Success {
-		peer.Log.Errorf("report peer failed result: %s %#v", req.Code, req)
+		peer.Log.Error("report failed peer")
 		if peer.FSM.Is(resource.PeerStateBackToSource) {
 			metrics.DownloadFailureCount.WithLabelValues(peer.Tag, peer.Application, metrics.DownloadFailureBackToSourceType).Inc()
 			go s.createRecord(peer, parents, req)
-			s.handleTaskFail(ctx, peer.Task, req.GetSourceError(), nil)
-			s.handlePeerFail(ctx, peer)
+			s.handleTaskFailure(ctx, peer.Task, req.GetSourceError(), nil)
+			s.handlePeerFailure(ctx, peer)
 			return nil
 		}
 
 		metrics.DownloadFailureCount.WithLabelValues(peer.Tag, peer.Application, metrics.DownloadFailureP2PType).Inc()
 		go s.createRecord(peer, parents, req)
-		s.handlePeerFail(ctx, peer)
+		s.handlePeerFailure(ctx, peer)
 		return nil
 	}
 	metrics.PeerTaskDownloadDuration.WithLabelValues(peer.Tag, peer.Application).Observe(float64(req.Cost))
 
-	peer.Log.Infof("report peer result: %#v", req)
+	peer.Log.Info("report success peer")
 	if peer.FSM.Is(resource.PeerStateBackToSource) {
 		go s.createRecord(peer, parents, req)
 		s.handleTaskSuccess(ctx, peer.Task, req)
@@ -309,14 +313,16 @@ func (s *Service) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerRes
 
 // AnnounceTask informs scheduler a peer has completed task.
 func (s *Service) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequest) error {
+	logger.WithPeer(req.PeerHost.Id, req.TaskId, req.PiecePacket.DstPid).Infof("announce task request: %#v %#v %#v %#v",
+		req, req.UrlMeta, req.PeerHost, req.PiecePacket,
+	)
+
 	taskID := req.TaskId
 	peerID := req.PiecePacket.DstPid
-
 	task := resource.NewTask(taskID, req.Url, req.TaskType, req.UrlMeta)
 	task, _ = s.resource.TaskManager().LoadOrStore(task)
-	host := s.registerHost(ctx, req.PeerHost)
-	peer := s.registerPeer(ctx, peerID, task, host, req.UrlMeta.Tag, req.UrlMeta.Application)
-	peer.Log.Infof("announce peer task request: %#v %#v %#v %#v", req, req.UrlMeta, req.PeerHost, req.PiecePacket)
+	host := s.storeHost(ctx, req.PeerHost)
+	peer := s.storePeer(ctx, peerID, task, host, req.UrlMeta.Tag, req.UrlMeta.Application)
 
 	// If the task state is not TaskStateSucceeded,
 	// advance the task state to TaskStateSucceeded.
@@ -379,6 +385,8 @@ func (s *Service) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTas
 
 // StatTask checks the current state of the task.
 func (s *Service) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest) (*schedulerv1.Task, error) {
+	logger.WithTaskID(req.TaskId).Infof("stat task request: %#v", req)
+
 	task, loaded := s.resource.TaskManager().Load(req.TaskId)
 	if !loaded {
 		msg := fmt.Sprintf("task %s not found", req.TaskId)
@@ -386,7 +394,6 @@ func (s *Service) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest
 		return nil, dferrors.New(commonv1.Code_PeerTaskNotFound, msg)
 	}
 
-	task.Log.Debug("task has been found")
 	return &schedulerv1.Task{
 		Id:               task.ID,
 		Type:             task.Type,
@@ -394,12 +401,14 @@ func (s *Service) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest
 		TotalPieceCount:  task.TotalPieceCount.Load(),
 		State:            task.FSM.Current(),
 		PeerCount:        int32(task.PeerCount()),
-		HasAvailablePeer: task.HasAvailablePeer(),
+		HasAvailablePeer: task.HasAvailablePeer(set.NewSafeSet[string]()),
 	}, nil
 }
 
 // LeaveTask releases peer in scheduler.
 func (s *Service) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget) error {
+	logger.WithTaskAndPeerID(req.TaskId, req.PeerId).Infof("leave task request: %#v", req)
+
 	peer, loaded := s.resource.PeerManager().Load(req.PeerId)
 	if !loaded {
 		msg := fmt.Sprintf("peer %s not found", req.PeerId)
@@ -408,10 +417,8 @@ func (s *Service) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget) er
 	}
 	metrics.LeaveTaskCount.WithLabelValues(peer.Tag, peer.Application).Inc()
 
-	peer.Log.Infof("client releases peer, causing the peer to leave: %#v", req)
 	if err := peer.FSM.Event(resource.PeerEventLeave); err != nil {
 		metrics.LeaveTaskFailureCount.WithLabelValues(peer.Tag, peer.Application).Inc()
-
 		msg := fmt.Sprintf("peer fsm event failed: %s", err.Error())
 		peer.Log.Error(msg)
 		return dferrors.New(commonv1.Code_SchedTaskStatusError, msg)
@@ -466,7 +473,8 @@ func (s *Service) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHos
 
 // LeaveHost releases host in scheduler.
 func (s *Service) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostRequest) error {
-	logger.Infof("leave host: %#v", req)
+	logger.WithHostID(req.Id).Infof("leave host request: %#v", req)
+
 	host, loaded := s.resource.HostManager().Load(req.Id)
 	if !loaded {
 		msg := fmt.Sprintf("host %s not found", req.Id)
@@ -478,59 +486,102 @@ func (s *Service) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostReque
 	return nil
 }
 
-// registerTask creates a new task or reuses a previous task.
-func (s *Service) registerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest) (*resource.Task, bool) {
-	task, loaded := s.resource.TaskManager().Load(req.TaskId)
-	if loaded {
-		// Task is the pointer, if the task already exists, the next request will
-		// update the task's Url and UrlMeta in task manager.
-		task.URL = req.Url
-		task.URLMeta = req.UrlMeta
-
-		if (task.FSM.Is(resource.TaskStatePending) || task.FSM.Is(resource.TaskStateRunning) || task.FSM.Is(resource.TaskStateSucceeded)) && task.HasAvailablePeer() {
-			task.Log.Infof("task dose not need to back-to-source, because of task has available peer and state is %s", task.FSM.Current())
-			return task, false
-		}
-	} else {
-		// Create a task for the first time.
-		task = resource.NewTask(req.TaskId, req.Url, commonv1.TaskType_Normal, req.UrlMeta, resource.WithBackToSourceLimit(int32(s.config.Scheduler.BackToSourceCount)))
-		s.resource.TaskManager().Store(task)
+// triggerTask triggers the first download of the task.
+func (s *Service) triggerTask(ctx context.Context, task *resource.Task, host *resource.Host, peer *resource.Peer, dynconfig config.DynconfigInterface) error {
+	// If task has available peer, peer does not need to be triggered.
+	blocklist := set.NewSafeSet[string]()
+	blocklist.Add(peer.ID)
+	if (task.FSM.Is(resource.TaskStateRunning) ||
+		task.FSM.Is(resource.TaskStateSucceeded)) &&
+		task.HasAvailablePeer(blocklist) {
+		peer.Log.Info("peer does not need to trigger")
+		return nil
 	}
 
 	// If the task triggers the TaskEventDownload failed and it has no available peer,
 	// let the peer do the scheduling.
-	if err := task.FSM.Event(resource.TaskEventDownload); err != nil {
-		task.Log.Warnf("task dose not need to back-to-source, because of %s", err.Error())
-		return task, false
-	}
-
-	// Seed peer registers the task, then it needs to back-to-source.
-	host, loaded := s.resource.HostManager().Load(req.PeerHost.Id)
-	if loaded && host.Type != types.HostTypeNormal {
-		task.Log.Infof("task needs to back-to-source, because of host can be loaded and type is %d", host.Type)
-		return task, true
-	}
-
-	// FIXME Need to add the condition that the seed peer grpc client is
-	// available and can be triggered back-to-source.
-	if s.config.SeedPeer.Enable {
-		if task.IsSeedPeerFailed() {
-			task.Log.Info("task needs to back-to-source, because of seed peer is failed")
-			return task, true
+	if !task.FSM.Is(resource.TaskStateRunning) {
+		if err := task.FSM.Event(resource.TaskEventDownload); err != nil {
+			peer.Log.Errorf("task fsm event failed: %s", err.Error())
+			return err
 		}
-
-		go s.triggerSeedPeerTask(ctx, task)
-		task.Log.Info("task dose not need to back-to-source, because of seed peer has been triggered")
-		return task, false
 	}
 
-	// Task need to back-to-source.
-	task.Log.Info("task needs to back-to-source, because of seed peer disabled")
-	return task, true
+	// If host type is not HostTypeNormal, then it needs to back-to-source.
+	if host.Type != types.HostTypeNormal {
+		peer.Log.Infof("peer back-to-source, because of host type is %d", host.Type)
+		peer.NeedBackToSource.Store(true)
+		return nil
+	}
+
+	// The first download is triggered according to
+	// the different priorities of the peer.
+	priority := peer.GetPriority(dynconfig)
+	peer.Log.Infof("peer priority is %d", priority)
+	switch priority {
+	case managerv1.Priority_LEVEL5:
+		if s.config.SeedPeer.Enable && !task.IsSeedPeerFailed() {
+			go s.triggerSeedPeerTask(ctx, task)
+			return nil
+		}
+		fallthrough
+	case managerv1.Priority_LEVEL4:
+		fallthrough
+	case managerv1.Priority_LEVEL3:
+		fallthrough
+	case managerv1.Priority_LEVEL2:
+		peer.Log.Infof("peer back-to-source, because of hitting priority %d", managerv1.Priority_LEVEL2)
+		peer.NeedBackToSource.Store(true)
+		return nil
+	case managerv1.Priority_LEVEL1:
+		return fmt.Errorf("priority is %d and no available peers", managerv1.Priority_LEVEL1)
+	case managerv1.Priority_LEVEL0:
+		return fmt.Errorf("priority is %d", managerv1.Priority_LEVEL0)
+	}
+
+	peer.Log.Infof("peer back-to-source, because of peer has invalid priority %d", priority)
+	peer.NeedBackToSource.Store(true)
+	return nil
 }
 
-// registerHost creates a new host or reuses a previous host.
-func (s *Service) registerHost(ctx context.Context, peerHost *schedulerv1.PeerHost) *resource.Host {
+// triggerSeedPeerTask starts to trigger seed peer task.
+func (s *Service) triggerSeedPeerTask(ctx context.Context, task *resource.Task) {
+	task.Log.Info("trigger seed peer")
+	peer, endOfPiece, err := s.resource.SeedPeer().TriggerTask(
+		trace.ContextWithSpan(context.Background(), trace.SpanFromContext(ctx)), task)
+	if err != nil {
+		task.Log.Errorf("trigger seed peer failed: %s", err.Error())
+		s.handleTaskFailure(ctx, task, nil, err)
+		return
+	}
+
+	// Update the task status first to help peer scheduling evaluation and scoring.
+	peer.Log.Info("trigger seed peer successfully")
+	s.handleTaskSuccess(ctx, task, endOfPiece)
+	s.handlePeerSuccess(ctx, peer)
+}
+
+// storeTask stores a new task or reuses a previous task.
+func (s *Service) storeTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, taskType commonv1.TaskType) *resource.Task {
+	task, loaded := s.resource.TaskManager().Load(req.TaskId)
+	if !loaded {
+		// Create a task for the first time.
+		task = resource.NewTask(req.TaskId, req.Url, taskType, req.UrlMeta, resource.WithBackToSourceLimit(int32(s.config.Scheduler.BackToSourceCount)))
+		s.resource.TaskManager().Store(task)
+		task.Log.Info("create new task")
+		return task
+	}
+
+	// Task is the pointer, if the task already exists, the next request will
+	// update the task's Url and UrlMeta in task manager.
+	task.URL = req.Url
+	task.URLMeta = req.UrlMeta
+	task.Log.Info("task already exists")
+	return task
+}
+
+// storeHost stores a new host or reuses a previous host.
+func (s *Service) storeHost(ctx context.Context, peerHost *schedulerv1.PeerHost) *resource.Host {
 	host, loaded := s.resource.HostManager().Load(peerHost.Id)
 	if !loaded {
 		// Get scheduler cluster client config by manager.
@@ -562,8 +613,8 @@ func (s *Service) registerHost(ctx context.Context, peerHost *schedulerv1.PeerHo
 	return host
 }
 
-// registerPeer creates a new peer or reuses a previous peer.
-func (s *Service) registerPeer(ctx context.Context, peerID string, task *resource.Task, host *resource.Host, tag, application string) *resource.Peer {
+// storePeer stores a new peer or reuses a previous peer.
+func (s *Service) storePeer(ctx context.Context, peerID string, task *resource.Task, host *resource.Host, tag, application string) *resource.Peer {
 	var options []resource.PeerOption
 	if tag != "" {
 		options = append(options, resource.WithTag(tag))
@@ -578,25 +629,8 @@ func (s *Service) registerPeer(ctx context.Context, peerID string, task *resourc
 		return peer
 	}
 
-	peer.Log.Infof("peer already exists, state %s", peer.FSM.Current())
+	peer.Log.Info("peer already exists")
 	return peer
-}
-
-// triggerSeedPeerTask starts to trigger seed peer task.
-func (s *Service) triggerSeedPeerTask(ctx context.Context, task *resource.Task) {
-	task.Log.Infof("trigger seed peer download task and task status is %s", task.FSM.Current())
-	peer, endOfPiece, err := s.resource.SeedPeer().TriggerTask(
-		trace.ContextWithSpan(context.Background(), trace.SpanFromContext(ctx)), task)
-	if err != nil {
-		task.Log.Errorf("trigger seed peer download task failed: %s", err.Error())
-		s.handleTaskFail(ctx, task, nil, err)
-		return
-	}
-
-	// Update the task status first to help peer scheduling evaluation and scoring.
-	peer.Log.Info("trigger seed peer download task successfully")
-	s.handleTaskSuccess(ctx, task, endOfPiece)
-	s.handlePeerSuccess(ctx, peer)
 }
 
 // registerEmptyTask registers the empty task.
@@ -635,18 +669,18 @@ func (s *Service) registerTinyTask(ctx context.Context, peer *resource.Peer) (*s
 func (s *Service) registerSmallTask(ctx context.Context, peer *resource.Peer) (*schedulerv1.RegisterResult, error) {
 	parent, ok := s.scheduler.FindParent(ctx, peer, set.NewSafeSet[string]())
 	if !ok {
-		return nil, errors.New("can not found parent")
+		return nil, errors.New("parent not found")
 	}
 
 	// When task size scope is small, parent must be downloaded successfully
 	// before returning to the parent directly.
 	if !parent.FSM.Is(resource.PeerStateSucceeded) {
-		return nil, fmt.Errorf("parent state %s is not PeerStateSucceede", parent.FSM.Current())
+		return nil, fmt.Errorf("parent state is %s", parent.FSM.Current())
 	}
 
 	firstPiece, loaded := peer.Task.LoadPiece(0)
 	if !loaded {
-		return nil, fmt.Errorf("can not found first piece")
+		return nil, fmt.Errorf("first piece not found")
 	}
 
 	// Delete inedges of peer.
@@ -697,17 +731,28 @@ func (s *Service) registerNormalTask(ctx context.Context, peer *resource.Peer) (
 	}, nil
 }
 
+// handleRegisterFailure handles failure of register.
+func (s *Service) handleRegisterFailure(ctx context.Context, peer *resource.Peer) {
+	if err := peer.FSM.Event(resource.PeerEventLeave); err != nil {
+		peer.Log.Error(err)
+	}
+
+	s.resource.PeerManager().Delete(peer.ID)
+	return
+}
+
 // handleBeginOfPiece handles begin of piece.
 func (s *Service) handleBeginOfPiece(ctx context.Context, peer *resource.Peer) {
-	switch peer.FSM.Current() {
+	state := peer.FSM.Current()
+	peer.Log.Infof("peer state is %s", state)
+
+	switch state {
 	case resource.PeerStateBackToSource:
 		// Back to the source download process, peer directly returns.
-		peer.Log.Info("peer downloads back-to-source when receive the begin of piece")
 		return
 	case resource.PeerStateReceivedTiny:
 		// When the task is tiny,
 		// the peer has already returned to piece data when registering.
-		peer.Log.Info("file type is tiny, peer has already returned to piece data when registering")
 		if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
 			peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 			return
@@ -715,7 +760,6 @@ func (s *Service) handleBeginOfPiece(ctx context.Context, peer *resource.Peer) {
 	case resource.PeerStateReceivedSmall:
 		// When the task is small,
 		// the peer has already returned to the parent when registering.
-		peer.Log.Info("file type is small, peer has already returned to the parent when registering")
 		if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
 			peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 			return
@@ -726,10 +770,8 @@ func (s *Service) handleBeginOfPiece(ctx context.Context, peer *resource.Peer) {
 			return
 		}
 
-		peer.Log.Infof("schedule parent because of peer receive begin of piece")
 		s.scheduler.ScheduleParent(ctx, peer, set.NewSafeSet[string]())
 	default:
-		peer.Log.Warnf("peer state is %s when receive the begin of piece", peer.FSM.Current())
 	}
 }
 
@@ -765,8 +807,8 @@ func (s *Service) handlePieceSuccess(ctx context.Context, peer *resource.Peer, p
 	}
 }
 
-// handlePieceFail handles failed piece.
-func (s *Service) handlePieceFail(ctx context.Context, peer *resource.Peer, piece *schedulerv1.PieceResult) {
+// handlePieceFailure handles failed piece.
+func (s *Service) handlePieceFailure(ctx context.Context, peer *resource.Peer, piece *schedulerv1.PieceResult) {
 	// Failed to download piece back-to-source.
 	if peer.FSM.Is(resource.PeerStateBackToSource) {
 		return
@@ -775,7 +817,7 @@ func (s *Service) handlePieceFail(ctx context.Context, peer *resource.Peer, piec
 	// If parent can not found, reschedule parent.
 	parent, loaded := s.resource.PeerManager().Load(piece.DstPid)
 	if !loaded {
-		peer.Log.Errorf("reschedule parent because of peer can not found parent %s", piece.DstPid)
+		peer.Log.Errorf("parent %s not found", piece.DstPid)
 		peer.BlockParents.Add(piece.DstPid)
 		s.scheduler.ScheduleParent(ctx, peer, peer.BlockParents)
 		return
@@ -786,7 +828,10 @@ func (s *Service) handlePieceFail(ctx context.Context, peer *resource.Peer, piec
 
 	// It’s not a case of back-to-source downloading failed,
 	// to help peer to reschedule the parent node.
-	switch piece.Code {
+	code := piece.Code
+	peer.Log.Infof("piece error code is %s", code)
+
+	switch code {
 	case commonv1.Code_PeerTaskNotFound:
 		if err := parent.FSM.Event(resource.PeerEventDownloadFailed); err != nil {
 			peer.Log.Errorf("peer fsm event failed: %s", err.Error())
@@ -813,7 +858,7 @@ func (s *Service) handlePieceFail(ctx context.Context, peer *resource.Peer, piec
 
 	// Peer state is PeerStateRunning will be rescheduled.
 	if !peer.FSM.Is(resource.PeerStateRunning) {
-		peer.Log.Infof("peer can not be rescheduled because peer state is %s", peer.FSM.Current())
+		peer.Log.Infof("peer state is %s and can not be rescheduled", peer.FSM.Current())
 
 		// Returns an scheduling error if the peer
 		// state is not PeerStateRunning.
@@ -824,14 +869,14 @@ func (s *Service) handlePieceFail(ctx context.Context, peer *resource.Peer, piec
 		}
 
 		if err := stream.Send(&schedulerv1.PeerPacket{Code: commonv1.Code_SchedError}); err != nil {
-			peer.Log.Errorf("send packet failed: %s", err.Error())
+			peer.Log.Error(err)
 			return
 		}
 
 		return
 	}
 
-	peer.Log.Infof("reschedule parent because of peer receive failed piece")
+	peer.Log.Infof("reschedule parent because of failed piece")
 	peer.BlockParents.Add(parent.ID)
 	s.scheduler.ScheduleParent(ctx, peer, peer.BlockParents)
 }
@@ -845,7 +890,7 @@ func (s *Service) handlePeerSuccess(ctx context.Context, peer *resource.Peer) {
 
 	sizeScope, err := peer.Task.SizeScope()
 	if err != nil {
-		peer.Log.Errorf("get task size scope failed: %s", err.Error())
+		peer.Log.Error(err)
 		return
 	}
 
@@ -868,8 +913,8 @@ func (s *Service) handlePeerSuccess(ctx context.Context, peer *resource.Peer) {
 	}
 }
 
-// handlePeerFail handles failed peer.
-func (s *Service) handlePeerFail(ctx context.Context, peer *resource.Peer) {
+// handlePeerFailure handles failed peer.
+func (s *Service) handlePeerFailure(ctx context.Context, peer *resource.Peer) {
 	if err := peer.FSM.Event(resource.PeerEventDownloadFailed); err != nil {
 		peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 		return
@@ -885,7 +930,6 @@ func (s *Service) handlePeerFail(ctx context.Context, peer *resource.Peer) {
 // handleLegacySeedPeer handles seed server's task has left,
 // but did not notify the scheduler to leave the task.
 func (s *Service) handleLegacySeedPeer(ctx context.Context, peer *resource.Peer) {
-	peer.Log.Info("peer is legacy seed peer, causing the peer to leave")
 	if err := peer.FSM.Event(resource.PeerEventLeave); err != nil {
 		peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 		return
@@ -920,7 +964,7 @@ func (s *Service) handleTaskSuccess(ctx context.Context, task *resource.Task, re
 // Conditions for the task to switch to the TaskStateSucceeded are:
 // 1. Seed peer downloads the resource failed.
 // 2. Dfdaemon back-to-source to download failed.
-func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task, backToSourceErr *errordetailsv1.SourceError, seedPeerErr error) {
+func (s *Service) handleTaskFailure(ctx context.Context, task *resource.Task, backToSourceErr *errordetailsv1.SourceError, seedPeerErr error) {
 	// If peer back-to-source fails due to an unrecoverable error,
 	// notify other peers of the failure,
 	// and return the source metadata to peer.
@@ -946,18 +990,17 @@ func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task, backT
 					if u, err := url.Parse(task.URL); err == nil {
 						proto = u.Scheme
 					}
+
+					task.Log.Infof("source error: %#v", d)
 					// TODO currently, metrics.PeerTaskSourceErrorCounter is only updated for seed peer source error, need update for normal peer
 					if d.Metadata != nil {
-						task.Log.Infof("source error: %d/%s", d.Metadata.StatusCode, d.Metadata.Status)
 						metrics.PeerTaskSourceErrorCounter.WithLabelValues(
 							task.URLMeta.Tag, task.URLMeta.Application, proto, fmt.Sprintf("%d", d.Metadata.StatusCode)).Inc()
 					} else {
-						task.Log.Warn("source error, but no metadata found")
 						metrics.PeerTaskSourceErrorCounter.WithLabelValues(
 							task.URLMeta.Tag, task.URLMeta.Application, proto, "0").Inc()
 					}
 					if !d.Temporary {
-						task.Log.Infof("source error is not temporary, notify other peers task aborted")
 						task.NotifyPeers(&schedulerv1.PeerPacket{
 							Code: commonv1.Code_BackToSourceAborted,
 							Errordetails: &schedulerv1.PeerPacket_SourceError{

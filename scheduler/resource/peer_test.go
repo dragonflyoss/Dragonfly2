@@ -17,6 +17,7 @@
 package resource
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -30,11 +31,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	"d7y.io/api/pkg/apis/scheduler/v1/mocks"
 
 	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	configmocks "d7y.io/dragonfly/v2/scheduler/config/mocks"
 )
 
 var (
@@ -452,6 +455,121 @@ func TestPeer_DownloadTinyFile(t *testing.T) {
 			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer = NewPeer(mockPeerID, mockTask, mockHost)
 			tc.expect(t, peer)
+		})
+	}
+}
+
+func TestPeer_GetPriority(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(peer *Peer, md *configmocks.MockDynconfigInterfaceMockRecorder)
+		expect func(t *testing.T, priority managerv1.Priority)
+	}{
+		{
+			name: "get applications failed",
+			mock: func(peer *Peer, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				md.GetApplications().Return(nil, errors.New("bas")).Times(1)
+			},
+			expect: func(t *testing.T, priority managerv1.Priority) {
+				assert := assert.New(t)
+				assert.Equal(priority, managerv1.Priority_LEVEL5)
+			},
+		},
+		{
+			name: "can not found applications",
+			mock: func(peer *Peer, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				md.GetApplications().Return([]*managerv1.Application{}, nil).Times(1)
+			},
+			expect: func(t *testing.T, priority managerv1.Priority) {
+				assert := assert.New(t)
+				assert.Equal(priority, managerv1.Priority_LEVEL5)
+			},
+		},
+		{
+			name: "can not found matching application",
+			mock: func(peer *Peer, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				md.GetApplications().Return([]*managerv1.Application{
+					{
+						Name: "baw",
+					},
+				}, nil).Times(1)
+			},
+			expect: func(t *testing.T, priority managerv1.Priority) {
+				assert := assert.New(t)
+				assert.Equal(priority, managerv1.Priority_LEVEL5)
+			},
+		},
+		{
+			name: "can not found priority",
+			mock: func(peer *Peer, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.Application = "bae"
+				md.GetApplications().Return([]*managerv1.Application{
+					{
+						Name: "bae",
+					},
+				}, nil).Times(1)
+			},
+			expect: func(t *testing.T, priority managerv1.Priority) {
+				assert := assert.New(t)
+				assert.Equal(priority, managerv1.Priority_LEVEL5)
+			},
+		},
+		{
+			name: "match the priority of application",
+			mock: func(peer *Peer, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.Application = "baz"
+				md.GetApplications().Return([]*managerv1.Application{
+					{
+						Name: "baz",
+						Priority: &managerv1.ApplicationPriority{
+							Value: managerv1.Priority_LEVEL0,
+						},
+					},
+				}, nil).Times(1)
+			},
+			expect: func(t *testing.T, priority managerv1.Priority) {
+				assert := assert.New(t)
+				assert.Equal(priority, managerv1.Priority_LEVEL0)
+			},
+		},
+		{
+			name: "match the priority of url",
+			mock: func(peer *Peer, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.Application = "bak"
+				peer.Task.URL = "example.com"
+				md.GetApplications().Return([]*managerv1.Application{
+					{
+						Name: "bak",
+						Priority: &managerv1.ApplicationPriority{
+							Value: managerv1.Priority_LEVEL0,
+							Urls: []*managerv1.URLPriority{
+								{
+									Regex: "am",
+									Value: managerv1.Priority_LEVEL1,
+								},
+							},
+						},
+					},
+				}, nil).Times(1)
+			},
+			expect: func(t *testing.T, priority managerv1.Priority) {
+				assert := assert.New(t)
+				assert.Equal(priority, managerv1.Priority_LEVEL1)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
+
+			mockHost := NewHost(mockRawHost)
+			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			peer := NewPeer(mockPeerID, mockTask, mockHost)
+			tc.mock(peer, dynconfig.EXPECT())
+			tc.expect(t, peer.GetPriority(dynconfig))
 		})
 	}
 }

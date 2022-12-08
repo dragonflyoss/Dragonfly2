@@ -22,6 +22,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"time"
 
 	"github.com/bits-and-blooms/bitset"
@@ -29,10 +30,12 @@ import (
 	"github.com/looplab/fsm"
 	"go.uber.org/atomic"
 
+	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
+	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
 const (
@@ -414,4 +417,58 @@ func (p *Peer) DownloadTinyFile() ([]byte, error) {
 	}
 
 	return io.ReadAll(resp.Body)
+}
+
+// GetPriority returns priority of peer.
+func (p *Peer) GetPriority(dynconfig config.DynconfigInterface) managerv1.Priority {
+	pbApplications, err := dynconfig.GetApplications()
+	if err != nil {
+		p.Log.Warn(err)
+		return managerv1.Priority_LEVEL5
+	}
+
+	// If manager has no applications,
+	// then return Priority_LEVEL5.
+	if len(pbApplications) == 0 {
+		p.Log.Info("can not found applications")
+		return managerv1.Priority_LEVEL5
+	}
+
+	// Find peer application.
+	var application *managerv1.Application
+	for _, pbApplication := range pbApplications {
+		if p.Application == pbApplication.Name {
+			application = pbApplication
+			break
+		}
+	}
+
+	// If no application matches peer application,
+	// then return Priority_LEVEL5.
+	if application == nil {
+		p.Log.Info("can not found matching application")
+		return managerv1.Priority_LEVEL5
+	}
+
+	// If application has no priority,
+	// then return Priority_LEVEL5.
+	if application.Priority == nil {
+		p.Log.Info("can not found priority")
+		return managerv1.Priority_LEVEL5
+	}
+
+	// Match url priority first.
+	for _, url := range application.Priority.Urls {
+		matched, err := regexp.MatchString(url.Regex, p.Task.URL)
+		if err != nil {
+			p.Log.Warn(err)
+			continue
+		}
+
+		if matched {
+			return url.Value
+		}
+	}
+
+	return application.Priority.Value
 }

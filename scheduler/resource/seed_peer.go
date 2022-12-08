@@ -183,11 +183,8 @@ func (s *seedPeer) initSeedPeer(task *Task, ps *cdnsystemv1.PieceSeed) (*Peer, e
 		return nil, fmt.Errorf("can not find host id: %s", ps.HostId)
 	}
 
-	// New seed peer.
+	// New and store seed peer.
 	peer = NewPeer(ps.PeerId, task, host, WithTag(SeedTag), WithApplication(SeedApplication))
-	peer.Log.Info("new seed peer successfully")
-
-	// Store seed peer.
 	s.peerManager.Store(peer)
 	peer.Log.Info("seed peer has been stored")
 
