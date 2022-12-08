@@ -28,6 +28,7 @@ import (
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	"d7y.io/api/pkg/apis/scheduler/v1/mocks"
 
+	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/types"
 )
@@ -935,6 +936,22 @@ func TestTask_HasAvailablePeer(t *testing.T) {
 		expect            func(t *testing.T, task *Task, mockPeer *Peer)
 	}{
 		{
+			name:              "blocklist includes peer",
+			id:                mockTaskID,
+			urlMeta:           mockTaskURLMeta,
+			url:               mockTaskURL,
+			backToSourceLimit: mockTaskBackToSourceLimit,
+			expect: func(t *testing.T, task *Task, mockPeer *Peer) {
+				assert := assert.New(t)
+				mockPeer.FSM.SetState(PeerStatePending)
+				task.StorePeer(mockPeer)
+
+				blocklist := set.NewSafeSet[string]()
+				blocklist.Add(mockPeer.ID)
+				assert.Equal(task.HasAvailablePeer(blocklist), false)
+			},
+		},
+		{
 			name:              "peer state is PeerStatePending",
 			id:                mockTaskID,
 			urlMeta:           mockTaskURLMeta,
@@ -946,7 +963,7 @@ func TestTask_HasAvailablePeer(t *testing.T) {
 				mockPeer.ID = idgen.PeerID("0.0.0.0")
 				mockPeer.FSM.SetState(PeerStatePending)
 				task.StorePeer(mockPeer)
-				assert.Equal(task.HasAvailablePeer(), true)
+				assert.Equal(task.HasAvailablePeer(set.NewSafeSet[string]()), true)
 			},
 		},
 		{
@@ -961,7 +978,7 @@ func TestTask_HasAvailablePeer(t *testing.T) {
 				mockPeer.ID = idgen.PeerID("0.0.0.0")
 				mockPeer.FSM.SetState(PeerStateSucceeded)
 				task.StorePeer(mockPeer)
-				assert.Equal(task.HasAvailablePeer(), true)
+				assert.Equal(task.HasAvailablePeer(set.NewSafeSet[string]()), true)
 			},
 		},
 		{
@@ -976,7 +993,7 @@ func TestTask_HasAvailablePeer(t *testing.T) {
 				mockPeer.ID = idgen.PeerID("0.0.0.0")
 				mockPeer.FSM.SetState(PeerStateRunning)
 				task.StorePeer(mockPeer)
-				assert.Equal(task.HasAvailablePeer(), true)
+				assert.Equal(task.HasAvailablePeer(set.NewSafeSet[string]()), true)
 			},
 		},
 		{
@@ -991,7 +1008,7 @@ func TestTask_HasAvailablePeer(t *testing.T) {
 				mockPeer.ID = idgen.PeerID("0.0.0.0")
 				mockPeer.FSM.SetState(PeerStateBackToSource)
 				task.StorePeer(mockPeer)
-				assert.Equal(task.HasAvailablePeer(), true)
+				assert.Equal(task.HasAvailablePeer(set.NewSafeSet[string]()), true)
 			},
 		},
 		{
@@ -1002,7 +1019,7 @@ func TestTask_HasAvailablePeer(t *testing.T) {
 			backToSourceLimit: mockTaskBackToSourceLimit,
 			expect: func(t *testing.T, task *Task, mockPeer *Peer) {
 				assert := assert.New(t)
-				assert.Equal(task.HasAvailablePeer(), false)
+				assert.Equal(task.HasAvailablePeer(set.NewSafeSet[string]()), false)
 			},
 		},
 	}

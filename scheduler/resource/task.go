@@ -325,11 +325,15 @@ func (t *Task) PeerOutDegree(key string) (int, error) {
 }
 
 // HasAvailablePeer returns whether there is an available peer.
-func (t *Task) HasAvailablePeer() bool {
+func (t *Task) HasAvailablePeer(blocklist set.SafeSet[string]) bool {
 	var hasAvailablePeer bool
 	for _, vertex := range t.DAG.GetVertices() {
 		peer := vertex.Value
 		if peer == nil {
+			continue
+		}
+
+		if blocklist.Contains(peer.ID) {
 			continue
 		}
 
@@ -375,8 +379,8 @@ func (t *Task) LoadSeedPeer() (*Peer, bool) {
 
 // IsSeedPeerFailed returns whether the seed peer in the task failed.
 func (t *Task) IsSeedPeerFailed() bool {
-	seedPeer, ok := t.LoadSeedPeer()
-	return ok && seedPeer.FSM.Is(PeerStateFailed) && time.Since(seedPeer.CreatedAt.Load()) < SeedPeerFailedTimeout
+	seedPeer, loaded := t.LoadSeedPeer()
+	return loaded && seedPeer.FSM.Is(PeerStateFailed) && time.Since(seedPeer.CreatedAt.Load()) < SeedPeerFailedTimeout
 }
 
 // LoadPiece return piece for a key.
