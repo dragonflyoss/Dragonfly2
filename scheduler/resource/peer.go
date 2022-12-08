@@ -148,6 +148,9 @@ type Peer struct {
 	// pieceCosts is piece downloaded time.
 	pieceCosts []int64
 
+	// Cost is the cost of download.
+	Cost time.Duration
+
 	// Stream is grpc stream instance.
 	Stream *atomic.Value
 
