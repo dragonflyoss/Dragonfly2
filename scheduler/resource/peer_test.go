@@ -472,7 +472,7 @@ func TestPeer_GetPriority(t *testing.T) {
 			},
 			expect: func(t *testing.T, priority managerv1.Priority) {
 				assert := assert.New(t)
-				assert.Equal(priority, managerv1.Priority_LEVEL5)
+				assert.Equal(priority, managerv1.Priority_LEVEL0)
 			},
 		},
 		{
@@ -482,7 +482,7 @@ func TestPeer_GetPriority(t *testing.T) {
 			},
 			expect: func(t *testing.T, priority managerv1.Priority) {
 				assert := assert.New(t)
-				assert.Equal(priority, managerv1.Priority_LEVEL5)
+				assert.Equal(priority, managerv1.Priority_LEVEL0)
 			},
 		},
 		{
@@ -496,7 +496,7 @@ func TestPeer_GetPriority(t *testing.T) {
 			},
 			expect: func(t *testing.T, priority managerv1.Priority) {
 				assert := assert.New(t)
-				assert.Equal(priority, managerv1.Priority_LEVEL5)
+				assert.Equal(priority, managerv1.Priority_LEVEL0)
 			},
 		},
 		{
@@ -511,7 +511,7 @@ func TestPeer_GetPriority(t *testing.T) {
 			},
 			expect: func(t *testing.T, priority managerv1.Priority) {
 				assert := assert.New(t)
-				assert.Equal(priority, managerv1.Priority_LEVEL5)
+				assert.Equal(priority, managerv1.Priority_LEVEL0)
 			},
 		},
 		{
@@ -522,14 +522,14 @@ func TestPeer_GetPriority(t *testing.T) {
 					{
 						Name: "baz",
 						Priority: &managerv1.ApplicationPriority{
-							Value: managerv1.Priority_LEVEL0,
+							Value: managerv1.Priority_LEVEL1,
 						},
 					},
 				}, nil).Times(1)
 			},
 			expect: func(t *testing.T, priority managerv1.Priority) {
 				assert := assert.New(t)
-				assert.Equal(priority, managerv1.Priority_LEVEL0)
+				assert.Equal(priority, managerv1.Priority_LEVEL1)
 			},
 		},
 		{
@@ -541,11 +541,11 @@ func TestPeer_GetPriority(t *testing.T) {
 					{
 						Name: "bak",
 						Priority: &managerv1.ApplicationPriority{
-							Value: managerv1.Priority_LEVEL0,
+							Value: managerv1.Priority_LEVEL1,
 							Urls: []*managerv1.URLPriority{
 								{
 									Regex: "am",
-									Value: managerv1.Priority_LEVEL1,
+									Value: managerv1.Priority_LEVEL2,
 								},
 							},
 						},
@@ -554,7 +554,7 @@ func TestPeer_GetPriority(t *testing.T) {
 			},
 			expect: func(t *testing.T, priority managerv1.Priority) {
 				assert := assert.New(t)
-				assert.Equal(priority, managerv1.Priority_LEVEL1)
+				assert.Equal(priority, managerv1.Priority_LEVEL2)
 			},
 		},
 	}
