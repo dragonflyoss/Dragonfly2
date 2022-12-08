@@ -627,6 +627,7 @@ func (s *Service) storePeer(ctx context.Context, peerID string, task *resource.T
 	if tag != "" {
 		options = append(options, resource.WithTag(tag))
 	}
+
 	if application != "" {
 		options = append(options, resource.WithApplication(application))
 	}
@@ -897,7 +898,7 @@ func (s *Service) handlePeerSuccess(ctx context.Context, peer *resource.Peer) {
 	}
 
 	// Update peer cost of downloading.
-	peer.Cost = time.Since(peer.CreatedAt.Load())
+	peer.Cost.Store(time.Since(peer.CreatedAt.Load()))
 
 	// If the peer type is tiny and back-to-source,
 	// it needs to directly download the tiny file and store the data in task DirectPiece.
@@ -1051,7 +1052,7 @@ func (s *Service) createRecord(peer *resource.Peer, parents []*resource.Peer, re
 			Tag:              parent.Tag,
 			Application:      parent.Application,
 			State:            parent.FSM.Current(),
-			Cost:             parent.Cost.Nanoseconds(),
+			Cost:             parent.Cost.Load().Nanoseconds(),
 			UploadPieceCount: 0,
 			CreatedAt:        parent.CreatedAt.Load().UnixNano(),
 			UpdatedAt:        parent.UpdatedAt.Load().UnixNano(),
@@ -1155,7 +1156,7 @@ func (s *Service) createRecord(peer *resource.Peer, parents []*resource.Peer, re
 		Tag:         peer.Tag,
 		Application: peer.Application,
 		State:       peer.FSM.Current(),
-		Cost:        peer.Cost.Nanoseconds(),
+		Cost:        peer.Cost.Load().Nanoseconds(),
 		Parents:     parentRecords,
 		CreatedAt:   peer.CreatedAt.Load().UnixNano(),
 		UpdatedAt:   peer.UpdatedAt.Load().UnixNano(),
