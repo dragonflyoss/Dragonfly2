@@ -1,0 +1,26 @@
+name: nydus-snapshotter
+pullPolicy: Always
+hostNetwork: true
+resources:
+  requests:
+    cpu: "0"
+    memory: "0"
+  limits:
+    cpu: "1"
+    memory: "1Gi"
+
+dragonfly:
+  enable: true
+  mirrorConfig:
+    host: "http://127.0.0.1:65001"
+    auth_through: false
+    headers:
+      "X-Dragonfly-Registry": "https://ghcr.io"
+    ping_url: "http://127.0.0.1:40901/server/ping"
+
+
+containerRuntime:
+  initContainerImage: ghcr.io/liubin/toml-cli:v0.0.7
+  containerd:
+    enable: true
+    configFile: "/etc/containerd/config.toml"
