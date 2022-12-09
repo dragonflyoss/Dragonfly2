@@ -51,6 +51,7 @@ job:
   localWorkerNum: 5
   redis:
     addrs: ["foo", "bar"]
+    masterName: "baz"
     host: 127.0.0.1
     port: 6379
     password: foo

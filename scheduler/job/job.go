@@ -57,11 +57,12 @@ type job struct {
 
 func New(cfg *config.Config, resource resource.Resource) (Job, error) {
 	redisConfig := &internaljob.Config{
-		Addrs:     cfg.Job.Redis.Addrs,
-		Username:  cfg.Job.Redis.Username,
-		Password:  cfg.Job.Redis.Password,
-		BrokerDB:  cfg.Job.Redis.BrokerDB,
-		BackendDB: cfg.Job.Redis.BackendDB,
+		Addrs:      cfg.Job.Redis.Addrs,
+		MasterName: cfg.Job.Redis.MasterName,
+		Username:   cfg.Job.Redis.Username,
+		Password:   cfg.Job.Redis.Password,
+		BrokerDB:   cfg.Job.Redis.BrokerDB,
+		BackendDB:  cfg.Job.Redis.BackendDB,
 	}
 
 	globalJob, err := internaljob.New(redisConfig, internaljob.GlobalQueue)
