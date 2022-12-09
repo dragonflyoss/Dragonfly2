@@ -79,22 +79,24 @@ jobs:
           kubectl wait po nydus-pod --for=condition=ready --timeout=1m
           kubectl delete -f test/testdata/k8s/nydus.yaml
       - name: Dump logs
-        if: ${{ failure() }}
+        if: always()
         continue-on-error: true
         run: |
+          log_dir="/tmp/nydus-log"
+          mkdir $log_dir
           export ns=nydus-system
-          echo "============ debug nydus pods: ============"
-          for p in `kubectl -n $ns get pods --no-headers -o custom-columns=NAME:metadata.name`; do kubectl -n $ns get pod $p -o yaml; done
-          for p in `kubectl -n $ns get pods --no-headers -o custom-columns=NAME:metadata.name`; do kubectl -n $ns describe pod $p; done
+          for p in `kubectl -n $ns get pods --no-headers -o custom-columns=NAME:metadata.name`; do kubectl -n $ns get pod $p -o yaml >> $log_dir/nydus-pods.log; done
+          for p in `kubectl -n $ns get pods --no-headers -o custom-columns=NAME:metadata.name`; do kubectl -n $ns describe pod $p  >> $log_dir/nydus-pods.log; done
 
-          echo "============ debug kind containerd config ============"
-          docker exec kind-control-plane cat /etc/containerd/config.toml
-          docker exec kind-control-plane containerd config dump
-          echo "============ debug kind containerd log ============"
-          docker exec kind-control-plane journalctl -u containerd
+          docker exec kind-control-plane cat /etc/containerd/config.toml >> $log_dir/containerd-config.toml
+          docker exec kind-control-plane containerd config dump >> $log_dir/containerd-config-dump.toml
 
-          echo "============ debug nydus snapshotter log: ============"
-          for p in `kubectl -n $ns get pods --no-headers -o custom-columns=NAME:metadata.name`; do kubectl -n $ns logs $p -c nydus-snapshotter || echo "failed to get snapshotter log"; done
-
-          echo "============ debug kind kubelet log ============"
-          docker exec kind-control-plane journalctl -u kubelet
+          docker exec kind-control-plane journalctl -u containerd >> $log_dir/containerd.log
+          docker exec kind-control-plane journalctl -u kubelet >> $log_dir/kubelet.log
+      - name: Upload Logs
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: nydus-e2e-tests-logs
+          path: |
+            /tmp/nydus-log
