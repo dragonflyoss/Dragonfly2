@@ -27,10 +27,11 @@ import (
 func NewRedis(cfg *config.RedisConfig) (redis.UniversalClient, error) {
 	redis.SetLogger(&redisLogger{})
 	client := redis.NewUniversalClient(&redis.UniversalOptions{
-		Addrs:    cfg.Addrs,
-		DB:       cfg.DB,
-		Username: cfg.Username,
-		Password: cfg.Password,
+		Addrs:      cfg.Addrs,
+		MasterName: cfg.MasterName,
+		DB:         cfg.DB,
+		Username:   cfg.Username,
+		Password:   cfg.Password,
 	})
 
 	if err := client.Ping(context.Background()).Err(); err != nil {
