@@ -1251,34 +1251,6 @@ func TestService_ReportPeerResult(t *testing.T) {
 			},
 		},
 		{
-			name: "receive peer success, and peer state is PeerStateBackToSource",
-			req: &schedulerv1.PeerResult{
-				Success: true,
-				PeerId:  mockPeerID,
-			},
-			run: func(
-				t *testing.T, peer *resource.Peer, req *schedulerv1.PeerResult, svc *Service,
-				mockPeer *resource.Peer,
-				res resource.Resource, peerManager resource.PeerManager,
-				mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
-			) {
-				var wg sync.WaitGroup
-				wg.Add(1)
-				defer wg.Wait()
-
-				mockPeer.FSM.SetState(resource.PeerStateBackToSource)
-				gomock.InOrder(
-					mr.PeerManager().Return(peerManager).Times(1),
-					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
-					ms.Create(gomock.Any()).Do(func(record storage.Record) { wg.Done() }).Return(nil).Times(1),
-				)
-
-				assert := assert.New(t)
-				err := svc.ReportPeerResult(context.Background(), req)
-				assert.NoError(err)
-			},
-		},
-		{
 			name: "receive peer success and create record failed",
 			req: &schedulerv1.PeerResult{
 				Success: true,
@@ -3106,6 +3078,7 @@ func TestService_handlePeerSuccess(t *testing.T) {
 				assert := assert.New(t)
 				assert.Equal(peer.Task.DirectPiece, []byte{1})
 				assert.True(peer.FSM.Is(resource.PeerStateSucceeded))
+				assert.NotEmpty(peer.Cost.Load().Nanoseconds())
 			},
 		},
 		{
@@ -3119,6 +3092,7 @@ func TestService_handlePeerSuccess(t *testing.T) {
 				assert := assert.New(t)
 				assert.Equal(peer.Task.DirectPiece, []byte{})
 				assert.True(peer.FSM.Is(resource.PeerStateSucceeded))
+				assert.NotEmpty(peer.Cost.Load().Nanoseconds())
 			},
 		},
 		{
@@ -3130,6 +3104,7 @@ func TestService_handlePeerSuccess(t *testing.T) {
 				assert := assert.New(t)
 				assert.Empty(peer.Task.DirectPiece)
 				assert.True(peer.FSM.Is(resource.PeerStateSucceeded))
+				assert.NotEmpty(peer.Cost.Load().Nanoseconds())
 			},
 		},
 		{
@@ -3143,6 +3118,7 @@ func TestService_handlePeerSuccess(t *testing.T) {
 				assert := assert.New(t)
 				assert.Empty(peer.Task.DirectPiece)
 				assert.True(peer.FSM.Is(resource.PeerStateSucceeded))
+				assert.NotEmpty(peer.Cost.Load().Nanoseconds())
 			},
 		},
 		{
@@ -3155,6 +3131,7 @@ func TestService_handlePeerSuccess(t *testing.T) {
 				assert := assert.New(t)
 				assert.Empty(peer.Task.DirectPiece)
 				assert.True(peer.FSM.Is(resource.PeerStateSucceeded))
+				assert.NotEmpty(peer.Cost.Load().Nanoseconds())
 			},
 		},
 	}

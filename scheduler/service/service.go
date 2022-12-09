@@ -627,6 +627,7 @@ func (s *Service) storePeer(ctx context.Context, peerID string, task *resource.T
 	if tag != "" {
 		options = append(options, resource.WithTag(tag))
 	}
+
 	if application != "" {
 		options = append(options, resource.WithApplication(application))
 	}
@@ -896,14 +897,17 @@ func (s *Service) handlePeerSuccess(ctx context.Context, peer *resource.Peer) {
 		return
 	}
 
+	// Update peer cost of downloading.
+	peer.Cost.Store(time.Since(peer.CreatedAt.Load()))
+
+	// If the peer type is tiny and back-to-source,
+	// it needs to directly download the tiny file and store the data in task DirectPiece.
 	sizeScope, err := peer.Task.SizeScope()
 	if err != nil {
 		peer.Log.Error(err)
 		return
 	}
 
-	// If the peer type is tiny and back-to-source,
-	// it needs to directly download the tiny file and store the data in task DirectPiece.
 	if sizeScope == commonv1.SizeScope_TINY && len(peer.Task.DirectPiece) == 0 {
 		data, err := peer.DownloadTinyFile()
 		if err != nil {
@@ -954,14 +958,14 @@ func (s *Service) handleLegacySeedPeer(ctx context.Context, peer *resource.Peer)
 // 1. Seed peer downloads the resource successfully.
 // 2. Dfdaemon back-to-source to download successfully.
 // 3. Peer announces it has the task.
-func (s *Service) handleTaskSuccess(ctx context.Context, task *resource.Task, result *schedulerv1.PeerResult) {
+func (s *Service) handleTaskSuccess(ctx context.Context, task *resource.Task, req *schedulerv1.PeerResult) {
 	if task.FSM.Is(resource.TaskStateSucceeded) {
 		return
 	}
 
-	// Update task's resource total piece count and content length.
-	task.TotalPieceCount.Store(result.TotalPieceCount)
-	task.ContentLength.Store(result.ContentLength)
+	// Update task total piece count and content length.
+	task.TotalPieceCount.Store(req.TotalPieceCount)
+	task.ContentLength.Store(req.ContentLength)
 
 	if err := task.FSM.Event(resource.TaskEventDownloadSucceeded); err != nil {
 		task.Log.Errorf("task fsm event failed: %s", err.Error())
@@ -1044,13 +1048,14 @@ func (s *Service) createRecord(peer *resource.Peer, parents []*resource.Peer, re
 	var parentRecords []storage.Parent
 	for _, parent := range parents {
 		parentRecord := storage.Parent{
-			ID:          parent.ID,
-			Tag:         parent.Tag,
-			Application: parent.Application,
-			State:       parent.FSM.Current(),
-			Cost:        req.Cost,
-			CreatedAt:   parent.CreatedAt.Load().UnixNano(),
-			UpdatedAt:   parent.UpdatedAt.Load().UnixNano(),
+			ID:               parent.ID,
+			Tag:              parent.Tag,
+			Application:      parent.Application,
+			State:            parent.FSM.Current(),
+			Cost:             parent.Cost.Load().Nanoseconds(),
+			UploadPieceCount: 0,
+			CreatedAt:        parent.CreatedAt.Load().UnixNano(),
+			UpdatedAt:        parent.UpdatedAt.Load().UnixNano(),
 			Host: storage.Host{
 				ID:                    parent.Host.ID,
 				Type:                  parent.Host.Type.Name(),
@@ -1137,6 +1142,12 @@ func (s *Service) createRecord(peer *resource.Peer, parents []*resource.Peer, re
 			}
 		}
 
+		for _, piece := range peer.Pieces.Values() {
+			if piece.DstPid == parent.ID {
+				parentRecord.UploadPieceCount++
+			}
+		}
+
 		parentRecords = append(parentRecords, parentRecord)
 	}
 
@@ -1145,7 +1156,7 @@ func (s *Service) createRecord(peer *resource.Peer, parents []*resource.Peer, re
 		Tag:         peer.Tag,
 		Application: peer.Application,
 		State:       peer.FSM.Current(),
-		Cost:        req.Cost,
+		Cost:        peer.Cost.Load().Nanoseconds(),
 		Parents:     parentRecords,
 		CreatedAt:   peer.CreatedAt.Load().UnixNano(),
 		UpdatedAt:   peer.UpdatedAt.Load().UnixNano(),
@@ -1244,6 +1255,12 @@ func (s *Service) createRecord(peer *resource.Peer, parents []*resource.Peer, re
 			GitCommit:  peer.Host.Build.GitCommit,
 			GoVersion:  peer.Host.Build.GoVersion,
 			Platform:   peer.Host.Build.Platform,
+		}
+	}
+
+	if req.Code != commonv1.Code_Success {
+		record.Error = storage.Error{
+			Code: req.Code.String(),
 		}
 	}
 

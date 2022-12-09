@@ -148,6 +148,9 @@ type Peer struct {
 	// pieceCosts is piece downloaded time.
 	pieceCosts []int64
 
+	// Cost is the cost of downloading.
+	Cost *atomic.Duration
+
 	// Stream is grpc stream instance.
 	Stream *atomic.Value
 
@@ -199,6 +202,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 		Pieces:           set.NewSafeSet[*schedulerv1.PieceResult](),
 		FinishedPieces:   &bitset.BitSet{},
 		pieceCosts:       []int64{},
+		Cost:             atomic.NewDuration(0),
 		Stream:           &atomic.Value{},
 		Task:             task,
 		Host:             host,
