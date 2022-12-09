@@ -35,11 +35,12 @@ import (
 )
 
 type Config struct {
-	Addrs     []string
-	Username  string
-	Password  string
-	BrokerDB  int
-	BackendDB int
+	Addrs      []string
+	MasterName string
+	Username   string
+	Password   string
+	BrokerDB   int
+	BackendDB  int
 }
 
 type Job struct {
@@ -53,19 +54,21 @@ func New(cfg *Config, queue Queue) (*Job, error) {
 	machineryv1log.Set(&MachineryLogger{})
 
 	if err := ping(&redis.UniversalOptions{
-		Addrs:    cfg.Addrs,
-		Username: cfg.Username,
-		Password: cfg.Password,
-		DB:       cfg.BrokerDB,
+		Addrs:      cfg.Addrs,
+		MasterName: cfg.MasterName,
+		Username:   cfg.Username,
+		Password:   cfg.Password,
+		DB:         cfg.BrokerDB,
 	}); err != nil {
 		return nil, err
 	}
 
 	if err := ping(&redis.UniversalOptions{
-		Addrs:    cfg.Addrs,
-		Username: cfg.Username,
-		Password: cfg.Password,
-		DB:       cfg.BackendDB,
+		Addrs:      cfg.Addrs,
+		MasterName: cfg.MasterName,
+		Username:   cfg.Username,
+		Password:   cfg.Password,
+		DB:         cfg.BackendDB,
 	}); err != nil {
 		return nil, err
 	}
@@ -76,6 +79,7 @@ func New(cfg *Config, queue Queue) (*Job, error) {
 		ResultBackend:   fmt.Sprintf("redis://%s:%s@%s/%d", cfg.Username, cfg.Password, strings.Join(cfg.Addrs, ","), cfg.BackendDB),
 		ResultsExpireIn: DefaultResultsExpireIn,
 		Redis: &machineryv1config.RedisConfig{
+			MasterName:     cfg.MasterName,
 			MaxIdle:        DefaultRedisMaxIdle,
 			IdleTimeout:    DefaultRedisIdleTimeout,
 			ReadTimeout:    DefaultRedisReadTimeout,

@@ -235,19 +235,22 @@ type RedisConfig struct {
 	// DEPRECATED: Please use the `addrs` field instead.
 	Port int `yaml:"port" mapstructure:"port"`
 
-	// Server addresses.
+	// Addrs is server addresses.
 	Addrs []string `yaml:"addrs" mapstructure:"addrs"`
 
-	// Server username.
+	// MasterName is the sentinel master name.
+	MasterName string `yaml:"masterName" mapstructure:"masterName"`
+
+	// Username is server username.
 	Username string `yaml:"username" mapstructure:"username"`
 
-	// Server password.
+	// Password is server password.
 	Password string `yaml:"password" mapstructure:"password"`
 
-	// Broker database name.
+	// BrokerDB is broker database name.
 	BrokerDB int `yaml:"brokerDB" mapstructure:"brokerDB"`
 
-	// Backend database name.
+	// BackendDB is backend database name.
 	BackendDB int `yaml:"backendDB" mapstructure:"backendDB"`
 }
 

@@ -39,6 +39,7 @@ database:
     migrate: true
   redis:
     addrs: [foo, bar]
+    masterName: "baz"
     password: bar
     host: bar
     port: 6379
