@@ -16,6 +16,8 @@
 
 package storage
 
+import "time"
+
 // Task contains content for task.
 type Task struct {
 	// ID is task id.
@@ -267,8 +269,11 @@ type Parent struct {
 	// State is the download state of the peer.
 	State string `csv:"state"`
 
-	// Cost is the task download time(millisecond).
-	Cost uint32 `csv:"cost"`
+	// Cost is the task download duration of nanosecond.
+	Cost int64 `csv:"cost"`
+
+	// UploadPieceCount is upload piece count.
+	UploadPieceCount int32 `csv:"uploadPieceCount"`
 
 	// Host is peer host.
 	Host Host `csv:"host"`
@@ -278,6 +283,16 @@ type Parent struct {
 
 	// UpdatedAt is peer update nanosecond time.
 	UpdatedAt int64 `csv:"updatedAt"`
+}
+
+// Error contains content for error.
+type Error struct {
+	time.Duration
+	// Code is the code of error.
+	Code string `csv:"code"`
+
+	// Message is the message of error.
+	Message string `csv:"message"`
 }
 
 // Record contains content for record.
@@ -294,8 +309,11 @@ type Record struct {
 	// State is the download state of the peer.
 	State string `csv:"state"`
 
-	// Cost is the task download time(millisecond).
-	Cost uint32 `csv:"cost"`
+	// Error is the details of error.
+	Error Error `csv:"error"`
+
+	// Cost is the task download duration of nanosecond.
+	Cost int64 `csv:"cost"`
 
 	// Task is peer task.
 	Task Task `csv:"task"`

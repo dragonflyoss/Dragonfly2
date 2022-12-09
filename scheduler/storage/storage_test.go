@@ -118,14 +118,15 @@ var (
 	}
 
 	mockParent = Parent{
-		ID:          "3",
-		Tag:         "m",
-		Application: "db",
-		State:       "Succeeded",
-		Cost:        1000,
-		Host:        mockHost,
-		CreatedAt:   time.Now().UnixNano(),
-		UpdatedAt:   time.Now().UnixNano(),
+		ID:               "3",
+		Tag:              "m",
+		Application:      "db",
+		State:            "Succeeded",
+		Cost:             1000,
+		UploadPieceCount: 10,
+		Host:             mockHost,
+		CreatedAt:        time.Now().UnixNano(),
+		UpdatedAt:        time.Now().UnixNano(),
 	}
 
 	mockParents = append(make([]Parent, 19), mockParent)
@@ -135,12 +136,16 @@ var (
 		Tag:         "d",
 		Application: "mq",
 		State:       "Succeeded",
-		Cost:        1000,
-		Task:        mockTask,
-		Host:        mockHost,
-		Parents:     mockParents,
-		CreatedAt:   time.Now().UnixNano(),
-		UpdatedAt:   time.Now().UnixNano(),
+		Error: Error{
+			Code:    "unknow",
+			Message: "unknow",
+		},
+		Cost:      1000,
+		Task:      mockTask,
+		Host:      mockHost,
+		Parents:   mockParents,
+		CreatedAt: time.Now().UnixNano(),
+		UpdatedAt: time.Now().UnixNano(),
 	}
 )
 
