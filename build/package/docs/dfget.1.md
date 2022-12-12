@@ -30,7 +30,7 @@ functionality, such as network bandwidth limit, transmission encryption and so o
       --logdir string         Dfget log directory
       --original-offset       Range request only. Download ranged data into target file with original offset. Daemon will make a hardlink to target file. Client can download many ranged data into one file for same url. When enabled, back source in client will be disabled
   -O, --output string         Destination path which is used to store the downloaded file, it must be a full path
-  -p, --pattern string        The downloading pattern: p2p/seed-peer/source
+  -P, --priority string       Scheduler will schedule task according to priority
       --pprof-port int        listen port for pprof, 0 represents random port (default -1)
       --range string          Download range. Like: 0-9, stands download 10 bytes from 0 -9, [0:9] in real url
       --ratelimit string      The downloading network bandwidth limit per second in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will be parsed as Byte, 0 is infinite (default "100.0MB")
