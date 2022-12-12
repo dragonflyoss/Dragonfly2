@@ -37,7 +37,6 @@ import (
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	errordetailsv1 "d7y.io/api/pkg/apis/errordetails/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
-	"d7y.io/dragonfly/v2/pkg/container/ring"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
@@ -45,6 +44,7 @@ import (
 	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/container/ring"
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
