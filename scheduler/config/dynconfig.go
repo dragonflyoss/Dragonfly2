@@ -371,12 +371,22 @@ func (mc *managerClient) Get() (any, error) {
 		Ip:         mc.config.Server.AdvertiseIP,
 	})
 	if err != nil {
-		// TODO Compatible with old version manager.
-		if s, ok := status.FromError(err); ok && s.Code() == codes.Unimplemented {
-			return DynconfigData{
-				Scheduler:    getSchedulerResp,
-				Applications: nil,
-			}, nil
+		if s, ok := status.FromError(err); ok {
+			// TODO Compatible with old version manager.
+			if s.Code() == codes.Unimplemented {
+				return DynconfigData{
+					Scheduler:    getSchedulerResp,
+					Applications: nil,
+				}, nil
+			}
+
+			// Handle application not found.
+			if s.Code() == codes.NotFound {
+				return DynconfigData{
+					Scheduler:    getSchedulerResp,
+					Applications: nil,
+				}, nil
+			}
 		}
 
 		return nil, err

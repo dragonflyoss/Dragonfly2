@@ -996,6 +996,10 @@ func (s *Server) ListApplications(ctx context.Context, req *managerv1.ListApplic
 	log.Debugf("%s cache miss", cacheKey)
 	var applications []model.Application
 	if err := s.db.WithContext(ctx).Find(&applications).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
