@@ -463,16 +463,16 @@ func TestPeer_GetPriority(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(peer *Peer, md *configmocks.MockDynconfigInterfaceMockRecorder)
-		expect func(t *testing.T, priority managerv1.Priority)
+		expect func(t *testing.T, priority commonv1.Priority)
 	}{
 		{
 			name: "get applications failed",
 			mock: func(peer *Peer, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				md.GetApplications().Return(nil, errors.New("bas")).Times(1)
 			},
-			expect: func(t *testing.T, priority managerv1.Priority) {
+			expect: func(t *testing.T, priority commonv1.Priority) {
 				assert := assert.New(t)
-				assert.Equal(priority, managerv1.Priority_LEVEL0)
+				assert.Equal(priority, commonv1.Priority_LEVEL0)
 			},
 		},
 		{
@@ -480,9 +480,9 @@ func TestPeer_GetPriority(t *testing.T) {
 			mock: func(peer *Peer, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				md.GetApplications().Return([]*managerv1.Application{}, nil).Times(1)
 			},
-			expect: func(t *testing.T, priority managerv1.Priority) {
+			expect: func(t *testing.T, priority commonv1.Priority) {
 				assert := assert.New(t)
-				assert.Equal(priority, managerv1.Priority_LEVEL0)
+				assert.Equal(priority, commonv1.Priority_LEVEL0)
 			},
 		},
 		{
@@ -494,9 +494,9 @@ func TestPeer_GetPriority(t *testing.T) {
 					},
 				}, nil).Times(1)
 			},
-			expect: func(t *testing.T, priority managerv1.Priority) {
+			expect: func(t *testing.T, priority commonv1.Priority) {
 				assert := assert.New(t)
-				assert.Equal(priority, managerv1.Priority_LEVEL0)
+				assert.Equal(priority, commonv1.Priority_LEVEL0)
 			},
 		},
 		{
@@ -509,9 +509,9 @@ func TestPeer_GetPriority(t *testing.T) {
 					},
 				}, nil).Times(1)
 			},
-			expect: func(t *testing.T, priority managerv1.Priority) {
+			expect: func(t *testing.T, priority commonv1.Priority) {
 				assert := assert.New(t)
-				assert.Equal(priority, managerv1.Priority_LEVEL0)
+				assert.Equal(priority, commonv1.Priority_LEVEL0)
 			},
 		},
 		{
@@ -522,14 +522,14 @@ func TestPeer_GetPriority(t *testing.T) {
 					{
 						Name: "baz",
 						Priority: &managerv1.ApplicationPriority{
-							Value: managerv1.Priority_LEVEL1,
+							Value: commonv1.Priority_LEVEL1,
 						},
 					},
 				}, nil).Times(1)
 			},
-			expect: func(t *testing.T, priority managerv1.Priority) {
+			expect: func(t *testing.T, priority commonv1.Priority) {
 				assert := assert.New(t)
-				assert.Equal(priority, managerv1.Priority_LEVEL1)
+				assert.Equal(priority, commonv1.Priority_LEVEL1)
 			},
 		},
 		{
@@ -541,20 +541,20 @@ func TestPeer_GetPriority(t *testing.T) {
 					{
 						Name: "bak",
 						Priority: &managerv1.ApplicationPriority{
-							Value: managerv1.Priority_LEVEL1,
+							Value: commonv1.Priority_LEVEL1,
 							Urls: []*managerv1.URLPriority{
 								{
 									Regex: "am",
-									Value: managerv1.Priority_LEVEL2,
+									Value: commonv1.Priority_LEVEL2,
 								},
 							},
 						},
 					},
 				}, nil).Times(1)
 			},
-			expect: func(t *testing.T, priority managerv1.Priority) {
+			expect: func(t *testing.T, priority commonv1.Priority) {
 				assert := assert.New(t)
-				assert.Equal(priority, managerv1.Priority_LEVEL2)
+				assert.Equal(priority, commonv1.Priority_LEVEL2)
 			},
 		},
 	}
