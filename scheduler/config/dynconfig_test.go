@@ -26,6 +26,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 
 	"d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
@@ -105,11 +106,11 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 							Url:  "example.com",
 							Bio:  "bar",
 							Priority: &managerv1.ApplicationPriority{
-								Value: managerv1.Priority_LEVEL1,
+								Value: commonv1.Priority_LEVEL1,
 								Urls: []*managerv1.URLPriority{
 									{
 										Regex: "blobs*",
-										Value: managerv1.Priority_LEVEL1,
+										Value: commonv1.Priority_LEVEL1,
 									},
 								},
 							},
@@ -161,11 +162,11 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 							Url:  "example.com",
 							Bio:  "bar",
 							Priority: &managerv1.ApplicationPriority{
-								Value: managerv1.Priority_LEVEL1,
+								Value: commonv1.Priority_LEVEL1,
 								Urls: []*managerv1.URLPriority{
 									{
 										Regex: "blobs*",
-										Value: managerv1.Priority_LEVEL1,
+										Value: commonv1.Priority_LEVEL1,
 									},
 								},
 							},
@@ -229,11 +230,11 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 								Url:  "example.com",
 								Bio:  "bar",
 								Priority: &managerv1.ApplicationPriority{
-									Value: managerv1.Priority_LEVEL1,
+									Value: commonv1.Priority_LEVEL1,
 									Urls: []*managerv1.URLPriority{
 										{
 											Regex: "blobs*",
-											Value: managerv1.Priority_LEVEL1,
+											Value: commonv1.Priority_LEVEL1,
 										},
 									},
 								},
@@ -287,11 +288,11 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 							Url:  "example.com",
 							Bio:  "bar",
 							Priority: &managerv1.ApplicationPriority{
-								Value: managerv1.Priority_LEVEL1,
+								Value: commonv1.Priority_LEVEL1,
 								Urls: []*managerv1.URLPriority{
 									{
 										Regex: "blobs*",
-										Value: managerv1.Priority_LEVEL1,
+										Value: commonv1.Priority_LEVEL1,
 									},
 								},
 							},
@@ -355,11 +356,11 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 								Url:  "example.com",
 								Bio:  "bar",
 								Priority: &managerv1.ApplicationPriority{
-									Value: managerv1.Priority_LEVEL1,
+									Value: commonv1.Priority_LEVEL1,
 									Urls: []*managerv1.URLPriority{
 										{
 											Regex: "blobs*",
-											Value: managerv1.Priority_LEVEL1,
+											Value: commonv1.Priority_LEVEL1,
 										},
 									},
 								},
@@ -447,11 +448,11 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 							Url:  "example.com",
 							Bio:  "bar",
 							Priority: &managerv1.ApplicationPriority{
-								Value: managerv1.Priority_LEVEL1,
+								Value: commonv1.Priority_LEVEL1,
 								Urls: []*managerv1.URLPriority{
 									{
 										Regex: "blobs*",
-										Value: managerv1.Priority_LEVEL1,
+										Value: commonv1.Priority_LEVEL1,
 									},
 								},
 							},

@@ -36,6 +36,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -1015,7 +1016,7 @@ func (s *Server) ListApplications(ctx context.Context, req *managerv1.ListApplic
 		for _, url := range priority.URLs {
 			pbURLPriorities = append(pbURLPriorities, &managerv1.URLPriority{
 				Regex: url.Regex,
-				Value: managerv1.Priority(url.Value),
+				Value: commonv1.Priority(url.Value),
 			})
 		}
 
@@ -1025,7 +1026,7 @@ func (s *Server) ListApplications(ctx context.Context, req *managerv1.ListApplic
 			Url:  application.URL,
 			Bio:  application.BIO,
 			Priority: &managerv1.ApplicationPriority{
-				Value: managerv1.Priority(*priority.Value),
+				Value: commonv1.Priority(*priority.Value),
 				Urls:  pbURLPriorities,
 			},
 		})

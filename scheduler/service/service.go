@@ -29,7 +29,6 @@ import (
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	errordetailsv1 "d7y.io/api/pkg/apis/errordetails/v1"
-	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
@@ -518,33 +517,33 @@ func (s *Service) triggerTask(ctx context.Context, req *schedulerv1.PeerTaskRequ
 	// the different priorities of the peer and
 	// priority of the RegisterPeerTask parameter is
 	// higher than parameter of the application.
-	var priority managerv1.Priority
-	if req.Priority != managerv1.Priority_LEVEL0 {
-		priority = req.Priority
+	var priority commonv1.Priority
+	if req.UrlMeta.Priority != commonv1.Priority_LEVEL0 {
+		priority = req.UrlMeta.Priority
 	} else {
 		priority = peer.GetPriority(dynconfig)
 	}
 	peer.Log.Infof("peer priority is %d", priority)
 
 	switch priority {
-	case managerv1.Priority_LEVEL6, managerv1.Priority_LEVEL0:
+	case commonv1.Priority_LEVEL6, commonv1.Priority_LEVEL0:
 		if s.config.SeedPeer.Enable && !task.IsSeedPeerFailed() {
 			go s.triggerSeedPeerTask(ctx, task)
 			return nil
 		}
 		fallthrough
-	case managerv1.Priority_LEVEL5:
+	case commonv1.Priority_LEVEL5:
 		fallthrough
-	case managerv1.Priority_LEVEL4:
+	case commonv1.Priority_LEVEL4:
 		fallthrough
-	case managerv1.Priority_LEVEL3:
-		peer.Log.Infof("peer back-to-source, because of hitting priority %d", managerv1.Priority_LEVEL3)
+	case commonv1.Priority_LEVEL3:
+		peer.Log.Infof("peer back-to-source, because of hitting priority %d", commonv1.Priority_LEVEL3)
 		peer.NeedBackToSource.Store(true)
 		return nil
-	case managerv1.Priority_LEVEL2:
-		return fmt.Errorf("priority is %d and no available peers", managerv1.Priority_LEVEL2)
-	case managerv1.Priority_LEVEL1:
-		return fmt.Errorf("priority is %d", managerv1.Priority_LEVEL1)
+	case commonv1.Priority_LEVEL2:
+		return fmt.Errorf("priority is %d and no available peers", commonv1.Priority_LEVEL2)
+	case commonv1.Priority_LEVEL1:
+		return fmt.Errorf("priority is %d", commonv1.Priority_LEVEL1)
 	}
 
 	peer.Log.Infof("peer back-to-source, because of peer has invalid priority %d", priority)

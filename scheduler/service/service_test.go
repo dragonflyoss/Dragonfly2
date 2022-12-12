@@ -160,10 +160,11 @@ var (
 	}
 
 	mockTaskURLMeta = &commonv1.UrlMeta{
-		Digest: "digest",
-		Tag:    "tag",
-		Range:  "range",
-		Filter: "filter",
+		Digest:   "digest",
+		Tag:      "tag",
+		Range:    "range",
+		Filter:   "filter",
+		Priority: commonv1.Priority_LEVEL0,
 		Header: map[string]string{
 			"content-length": "100",
 		},
@@ -219,7 +220,9 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task state is TaskStateRunning and it has available peer",
 			req: &schedulerv1.PeerTaskRequest{
-				UrlMeta: &commonv1.UrlMeta{},
+				UrlMeta: &commonv1.UrlMeta{
+					Priority: commonv1.Priority_LEVEL0,
+				},
 				PeerHost: &schedulerv1.PeerHost{
 					Id: mockRawHost.Id,
 				},
@@ -253,7 +256,9 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task state is TaskStatePending and priority is Priority_LEVEL1",
 			req: &schedulerv1.PeerTaskRequest{
-				UrlMeta: &commonv1.UrlMeta{},
+				UrlMeta: &commonv1.UrlMeta{
+					Priority: commonv1.Priority_LEVEL0,
+				},
 				PeerHost: &schedulerv1.PeerHost{
 					Id: mockRawHost.Id,
 				},
@@ -277,7 +282,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 						{
 							Name: "baz",
 							Priority: &managerv1.ApplicationPriority{
-								Value: managerv1.Priority_LEVEL1,
+								Value: commonv1.Priority_LEVEL1,
 							},
 						},
 					}, nil).Times(1),
@@ -296,7 +301,9 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task state is TaskStateRunning and peer state is PeerStateFailed",
 			req: &schedulerv1.PeerTaskRequest{
-				UrlMeta: &commonv1.UrlMeta{},
+				UrlMeta: &commonv1.UrlMeta{
+					Priority: commonv1.Priority_LEVEL0,
+				},
 				PeerHost: &schedulerv1.PeerHost{
 					Id: mockRawHost.Id,
 				},
@@ -334,7 +341,9 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "get task scope size failed",
 			req: &schedulerv1.PeerTaskRequest{
-				UrlMeta: &commonv1.UrlMeta{},
+				UrlMeta: &commonv1.UrlMeta{
+					Priority: commonv1.Priority_LEVEL0,
+				},
 				PeerHost: &schedulerv1.PeerHost{
 					Id: mockRawHost.Id,
 				},
@@ -370,7 +379,9 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_EMPTY",
 			req: &schedulerv1.PeerTaskRequest{
-				UrlMeta: &commonv1.UrlMeta{},
+				UrlMeta: &commonv1.UrlMeta{
+					Priority: commonv1.Priority_LEVEL0,
+				},
 				PeerHost: &schedulerv1.PeerHost{
 					Id: mockRawHost.Id,
 				},
@@ -408,7 +419,9 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_TINY",
 			req: &schedulerv1.PeerTaskRequest{
-				UrlMeta: &commonv1.UrlMeta{},
+				UrlMeta: &commonv1.UrlMeta{
+					Priority: commonv1.Priority_LEVEL0,
+				},
 				PeerHost: &schedulerv1.PeerHost{
 					Id: mockRawHost.Id,
 				},
@@ -448,7 +461,9 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_TINY and direct piece content is error",
 			req: &schedulerv1.PeerTaskRequest{
-				UrlMeta: &commonv1.UrlMeta{},
+				UrlMeta: &commonv1.UrlMeta{
+					Priority: commonv1.Priority_LEVEL0,
+				},
 				PeerHost: &schedulerv1.PeerHost{
 					Id: mockRawHost.Id,
 				},
@@ -485,7 +500,9 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_TINY and direct piece content is error, peer state is PeerStateFailed",
 			req: &schedulerv1.PeerTaskRequest{
-				UrlMeta: &commonv1.UrlMeta{},
+				UrlMeta: &commonv1.UrlMeta{
+					Priority: commonv1.Priority_LEVEL0,
+				},
 				PeerHost: &schedulerv1.PeerHost{
 					Id: mockRawHost.Id,
 				},
@@ -525,7 +542,9 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_SMALL and load piece error, parent state is PeerStateRunning",
 			req: &schedulerv1.PeerTaskRequest{
-				UrlMeta: &commonv1.UrlMeta{},
+				UrlMeta: &commonv1.UrlMeta{
+					Priority: commonv1.Priority_LEVEL0,
+				},
 				PeerHost: &schedulerv1.PeerHost{
 					Id: mockRawHost.Id,
 				},
@@ -569,7 +588,9 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_SMALL and load piece error, peer state is PeerStateFailed",
 			req: &schedulerv1.PeerTaskRequest{
-				UrlMeta: &commonv1.UrlMeta{},
+				UrlMeta: &commonv1.UrlMeta{
+					Priority: commonv1.Priority_LEVEL0,
+				},
 				PeerHost: &schedulerv1.PeerHost{
 					Id: mockRawHost.Id,
 				},
@@ -615,7 +636,9 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_SMALL and peer state is PeerStateFailed",
 			req: &schedulerv1.PeerTaskRequest{
-				UrlMeta: &commonv1.UrlMeta{},
+				UrlMeta: &commonv1.UrlMeta{
+					Priority: commonv1.Priority_LEVEL0,
+				},
 				PeerHost: &schedulerv1.PeerHost{
 					Id: mockRawHost.Id,
 				},
@@ -661,7 +684,9 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_SMALL and vetex not found",
 			req: &schedulerv1.PeerTaskRequest{
-				UrlMeta: &commonv1.UrlMeta{},
+				UrlMeta: &commonv1.UrlMeta{
+					Priority: commonv1.Priority_LEVEL0,
+				},
 				PeerHost: &schedulerv1.PeerHost{
 					Id: mockRawHost.Id,
 				},
@@ -703,7 +728,9 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_SMALL",
 			req: &schedulerv1.PeerTaskRequest{
-				UrlMeta: &commonv1.UrlMeta{},
+				UrlMeta: &commonv1.UrlMeta{
+					Priority: commonv1.Priority_LEVEL0,
+				},
 				PeerHost: &schedulerv1.PeerHost{
 					Id: mockRawHost.Id,
 				},
@@ -746,7 +773,9 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_NORMAL and peer state is PeerStateFailed",
 			req: &schedulerv1.PeerTaskRequest{
-				UrlMeta: &commonv1.UrlMeta{},
+				UrlMeta: &commonv1.UrlMeta{
+					Priority: commonv1.Priority_LEVEL0,
+				},
 				PeerHost: &schedulerv1.PeerHost{
 					Id: mockRawHost.Id,
 				},
@@ -786,7 +815,9 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_NORMAL",
 			req: &schedulerv1.PeerTaskRequest{
-				UrlMeta: &commonv1.UrlMeta{},
+				UrlMeta: &commonv1.UrlMeta{
+					Priority: commonv1.Priority_LEVEL0,
+				},
 				PeerHost: &schedulerv1.PeerHost{
 					Id: mockRawHost.Id,
 				},
@@ -1373,9 +1404,11 @@ func TestService_AnnounceTask(t *testing.T) {
 		{
 			name: "task state is TaskStateSucceeded and peer state is PeerStateSucceeded",
 			req: &schedulerv1.AnnounceTaskRequest{
-				TaskId:  mockTaskID,
-				Url:     mockURL,
-				UrlMeta: &commonv1.UrlMeta{},
+				TaskId: mockTaskID,
+				Url:    mockURL,
+				UrlMeta: &commonv1.UrlMeta{
+					Priority: commonv1.Priority_LEVEL0,
+				},
 				PeerHost: &schedulerv1.PeerHost{
 					Id: mockRawHost.Id,
 				},
@@ -1409,9 +1442,11 @@ func TestService_AnnounceTask(t *testing.T) {
 		{
 			name: "task state is TaskStatePending and peer state is PeerStateSucceeded",
 			req: &schedulerv1.AnnounceTaskRequest{
-				TaskId:   mockTaskID,
-				Url:      mockURL,
-				UrlMeta:  &commonv1.UrlMeta{},
+				TaskId: mockTaskID,
+				Url:    mockURL,
+				UrlMeta: &commonv1.UrlMeta{
+					Priority: commonv1.Priority_LEVEL0,
+				},
 				PeerHost: mockPeerHost,
 				PiecePacket: &commonv1.PiecePacket{
 					PieceInfos:    []*commonv1.PieceInfo{{PieceNum: 1, DownloadCost: 1}},
@@ -1452,9 +1487,11 @@ func TestService_AnnounceTask(t *testing.T) {
 		{
 			name: "task state is TaskStateFailed and peer state is PeerStateSucceeded",
 			req: &schedulerv1.AnnounceTaskRequest{
-				TaskId:   mockTaskID,
-				Url:      mockURL,
-				UrlMeta:  &commonv1.UrlMeta{},
+				TaskId: mockTaskID,
+				Url:    mockURL,
+				UrlMeta: &commonv1.UrlMeta{
+					Priority: commonv1.Priority_LEVEL0,
+				},
 				PeerHost: mockPeerHost,
 				PiecePacket: &commonv1.PiecePacket{
 					PieceInfos:    []*commonv1.PieceInfo{{PieceNum: 1, DownloadCost: 1}},
@@ -1495,9 +1532,11 @@ func TestService_AnnounceTask(t *testing.T) {
 		{
 			name: "task state is TaskStatePending and peer state is PeerStatePending",
 			req: &schedulerv1.AnnounceTaskRequest{
-				TaskId:   mockTaskID,
-				Url:      mockURL,
-				UrlMeta:  &commonv1.UrlMeta{},
+				TaskId: mockTaskID,
+				Url:    mockURL,
+				UrlMeta: &commonv1.UrlMeta{
+					Priority: commonv1.Priority_LEVEL0,
+				},
 				PeerHost: mockPeerHost,
 				PiecePacket: &commonv1.PiecePacket{
 					PieceInfos:    []*commonv1.PieceInfo{{PieceNum: 1, DownloadCost: 1}},
@@ -1538,9 +1577,11 @@ func TestService_AnnounceTask(t *testing.T) {
 		{
 			name: "task state is TaskStatePending and peer state is PeerStateReceivedNormal",
 			req: &schedulerv1.AnnounceTaskRequest{
-				TaskId:   mockTaskID,
-				Url:      mockURL,
-				UrlMeta:  &commonv1.UrlMeta{},
+				TaskId: mockTaskID,
+				Url:    mockURL,
+				UrlMeta: &commonv1.UrlMeta{
+					Priority: commonv1.Priority_LEVEL0,
+				},
 				PeerHost: mockPeerHost,
 				PiecePacket: &commonv1.PiecePacket{
 					PieceInfos:    []*commonv1.PieceInfo{{PieceNum: 1, DownloadCost: 1}},
@@ -2029,7 +2070,11 @@ func TestService_triggerTask(t *testing.T) {
 				mockSeedPeer.FSM.SetState(resource.PeerStateRunning)
 				mockTask.StorePeer(mockSeedPeer)
 
-				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{
+					UrlMeta: &commonv1.UrlMeta{
+						Priority: commonv1.Priority_LEVEL0,
+					},
+				}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(mockTask.FSM.Current(), resource.TaskStateRunning)
@@ -2045,7 +2090,11 @@ func TestService_triggerTask(t *testing.T) {
 				mockSeedPeer.FSM.SetState(resource.PeerStateRunning)
 				mockTask.StorePeer(mockSeedPeer)
 
-				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{
+					UrlMeta: &commonv1.UrlMeta{
+						Priority: commonv1.Priority_LEVEL0,
+					},
+				}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(mockTask.FSM.Current(), resource.TaskStateSucceeded)
@@ -2060,7 +2109,11 @@ func TestService_triggerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStateFailed)
 				mockHost.Type = pkgtypes.HostTypeSuperSeed
 
-				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{
+					UrlMeta: &commonv1.UrlMeta{
+						Priority: commonv1.Priority_LEVEL0,
+					},
+				}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(mockPeer.NeedBackToSource.Load(), true)
@@ -2076,7 +2129,11 @@ func TestService_triggerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
 				mockHost.Type = pkgtypes.HostTypeStrongSeed
 
-				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{
+					UrlMeta: &commonv1.UrlMeta{
+						Priority: commonv1.Priority_LEVEL0,
+					},
+				}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(mockPeer.NeedBackToSource.Load(), true)
@@ -2092,7 +2149,11 @@ func TestService_triggerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStateRunning)
 				mockHost.Type = pkgtypes.HostTypeWeakSeed
 
-				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{
+					UrlMeta: &commonv1.UrlMeta{
+						Priority: commonv1.Priority_LEVEL0,
+					},
+				}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(mockPeer.NeedBackToSource.Load(), true)
@@ -2108,7 +2169,11 @@ func TestService_triggerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStateSucceeded)
 				mockHost.Type = pkgtypes.HostTypeStrongSeed
 
-				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{
+					UrlMeta: &commonv1.UrlMeta{
+						Priority: commonv1.Priority_LEVEL0,
+					},
+				}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(mockPeer.NeedBackToSource.Load(), true)
@@ -2124,7 +2189,11 @@ func TestService_triggerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStateLeave)
 				mockHost.Type = pkgtypes.HostTypeStrongSeed
 
-				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{
+					UrlMeta: &commonv1.UrlMeta{
+						Priority: commonv1.Priority_LEVEL0,
+					},
+				}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(mockPeer.NeedBackToSource.Load(), true)
@@ -2152,7 +2221,11 @@ func TestService_triggerTask(t *testing.T) {
 					mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(mockPeer, &schedulerv1.PeerResult{}, nil).Times(1),
 				)
 
-				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{
+					UrlMeta: &commonv1.UrlMeta{
+						Priority: commonv1.Priority_LEVEL0,
+					},
+				}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(mockPeer.NeedBackToSource.Load(), false)
@@ -2174,7 +2247,11 @@ func TestService_triggerTask(t *testing.T) {
 
 				md.GetApplications().Return(nil, errors.New("foo")).Times(1)
 
-				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{
+					UrlMeta: &commonv1.UrlMeta{
+						Priority: commonv1.Priority_LEVEL0,
+					},
+				}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(mockPeer.NeedBackToSource.Load(), true)
@@ -2197,12 +2274,16 @@ func TestService_triggerTask(t *testing.T) {
 					{
 						Name: "bas",
 						Priority: &managerv1.ApplicationPriority{
-							Value: managerv1.Priority_LEVEL5,
+							Value: commonv1.Priority_LEVEL5,
 						},
 					},
 				}, nil).Times(1)
 
-				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{
+					UrlMeta: &commonv1.UrlMeta{
+						Priority: commonv1.Priority_LEVEL0,
+					},
+				}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(mockPeer.NeedBackToSource.Load(), true)
@@ -2225,12 +2306,16 @@ func TestService_triggerTask(t *testing.T) {
 					{
 						Name: "bas",
 						Priority: &managerv1.ApplicationPriority{
-							Value: managerv1.Priority_LEVEL4,
+							Value: commonv1.Priority_LEVEL4,
 						},
 					},
 				}, nil).Times(1)
 
-				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{
+					UrlMeta: &commonv1.UrlMeta{
+						Priority: commonv1.Priority_LEVEL0,
+					},
+				}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(mockPeer.NeedBackToSource.Load(), true)
@@ -2253,12 +2338,16 @@ func TestService_triggerTask(t *testing.T) {
 					{
 						Name: "bae",
 						Priority: &managerv1.ApplicationPriority{
-							Value: managerv1.Priority_LEVEL3,
+							Value: commonv1.Priority_LEVEL3,
 						},
 					},
 				}, nil).Times(1)
 
-				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{
+					UrlMeta: &commonv1.UrlMeta{
+						Priority: commonv1.Priority_LEVEL0,
+					},
+				}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(mockPeer.NeedBackToSource.Load(), true)
@@ -2281,12 +2370,16 @@ func TestService_triggerTask(t *testing.T) {
 					{
 						Name: "bae",
 						Priority: &managerv1.ApplicationPriority{
-							Value: managerv1.Priority_LEVEL2,
+							Value: commonv1.Priority_LEVEL2,
 						},
 					},
 				}, nil).Times(1)
 
-				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{
+					UrlMeta: &commonv1.UrlMeta{
+						Priority: commonv1.Priority_LEVEL0,
+					},
+				}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.Error(err)
 			},
@@ -2307,12 +2400,16 @@ func TestService_triggerTask(t *testing.T) {
 					{
 						Name: "bat",
 						Priority: &managerv1.ApplicationPriority{
-							Value: managerv1.Priority_LEVEL1,
+							Value: commonv1.Priority_LEVEL1,
 						},
 					},
 				}, nil).Times(1)
 
-				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{
+					UrlMeta: &commonv1.UrlMeta{
+						Priority: commonv1.Priority_LEVEL0,
+					},
+				}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.Error(err)
 			},
@@ -2338,7 +2435,7 @@ func TestService_triggerTask(t *testing.T) {
 						{
 							Name: "bat",
 							Priority: &managerv1.ApplicationPriority{
-								Value: managerv1.Priority_LEVEL0,
+								Value: commonv1.Priority_LEVEL0,
 							},
 						},
 					}, nil).Times(1),
@@ -2346,7 +2443,11 @@ func TestService_triggerTask(t *testing.T) {
 					mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(mockPeer, &schedulerv1.PeerResult{}, nil).Times(1),
 				)
 
-				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{}, mockTask, mockHost, mockPeer, dynconfig)
+				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{
+					UrlMeta: &commonv1.UrlMeta{
+						Priority: commonv1.Priority_LEVEL0,
+					},
+				}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(mockPeer.NeedBackToSource.Load(), false)
@@ -2374,7 +2475,9 @@ func TestService_triggerTask(t *testing.T) {
 				)
 
 				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{
-					Priority: managerv1.Priority_LEVEL6,
+					UrlMeta: &commonv1.UrlMeta{
+						Priority: commonv1.Priority_LEVEL6,
+					},
 				}, mockTask, mockHost, mockPeer, dynconfig)
 				assert := assert.New(t)
 				assert.NoError(err)
@@ -2416,9 +2519,11 @@ func TestService_storeTask(t *testing.T) {
 		{
 			name: "task already exists",
 			req: &schedulerv1.PeerTaskRequest{
-				TaskId:   mockTaskID,
-				Url:      "https://example.com",
-				UrlMeta:  &commonv1.UrlMeta{},
+				TaskId: mockTaskID,
+				Url:    "https://example.com",
+				UrlMeta: &commonv1.UrlMeta{
+					Priority: commonv1.Priority_LEVEL0,
+				},
 				PeerHost: mockPeerHost,
 			},
 			taskType: commonv1.TaskType_Normal,
@@ -2439,9 +2544,11 @@ func TestService_storeTask(t *testing.T) {
 		{
 			name: "task does not exist",
 			req: &schedulerv1.PeerTaskRequest{
-				TaskId:   mockTaskID,
-				Url:      "https://example.com",
-				UrlMeta:  &commonv1.UrlMeta{},
+				TaskId: mockTaskID,
+				Url:    "https://example.com",
+				UrlMeta: &commonv1.UrlMeta{
+					Priority: commonv1.Priority_LEVEL0,
+				},
 				PeerHost: mockPeerHost,
 			},
 			taskType: commonv1.TaskType_DfCache,
@@ -2581,8 +2688,10 @@ func TestService_storePeer(t *testing.T) {
 		{
 			name: "peer already exists",
 			req: &schedulerv1.PeerTaskRequest{
-				PeerId:  mockPeerID,
-				UrlMeta: &commonv1.UrlMeta{},
+				PeerId: mockPeerID,
+				UrlMeta: &commonv1.UrlMeta{
+					Priority: commonv1.Priority_LEVEL0,
+				},
 			},
 			mock: func(mockPeer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
 				gomock.InOrder(
@@ -2599,8 +2708,10 @@ func TestService_storePeer(t *testing.T) {
 		{
 			name: "peer does not exists",
 			req: &schedulerv1.PeerTaskRequest{
-				PeerId:  mockPeerID,
-				UrlMeta: &commonv1.UrlMeta{},
+				PeerId: mockPeerID,
+				UrlMeta: &commonv1.UrlMeta{
+					Priority: commonv1.Priority_LEVEL0,
+				},
 			},
 			mock: func(mockPeer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
 				gomock.InOrder(
