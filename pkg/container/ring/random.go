@@ -17,36 +17,13 @@
 package ring
 
 import (
-	"math"
 	"math/rand"
-	"sync"
 	"time"
 )
-
-type Queue[T any] interface {
-	Enqueue(value *T)
-	Dequeue() (value *T, ok bool)
-	Close()
-}
-
-type sequence[T any] struct {
-	locker  sync.Locker
-	enqCond *sync.Cond
-	deqCond *sync.Cond
-	closed  bool
-
-	queue      []*T
-	head, tail uint64
-	cap, mask  uint64
-}
 
 type random[T any] struct {
 	*sequence[T]
 	seed *rand.Rand
-}
-
-func NewSequence[T any](exponent int) Queue[T] {
-	return newSequence[T](exponent)
 }
 
 func NewRandom[T any](exponent int) Queue[T] {
@@ -54,84 +31,6 @@ func NewRandom[T any](exponent int) Queue[T] {
 		sequence: newSequence[T](exponent),
 		seed:     rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
-}
-
-func newSequence[T any](exponent int) *sequence[T] {
-	capacity := uint64(math.Exp2(float64(exponent)))
-	locker := &sync.Mutex{}
-	return &sequence[T]{
-		locker: locker,
-		enqCond: &sync.Cond{
-			L: locker,
-		},
-		deqCond: &sync.Cond{
-			L: locker,
-		},
-		queue: make([]*T, capacity),
-		head:  uint64(0),
-		tail:  uint64(0),
-		cap:   capacity,
-		mask:  capacity - 1,
-	}
-}
-
-func (seq *sequence[T]) Enqueue(value *T) {
-	seq.locker.Lock()
-
-entry:
-	if seq.closed {
-		seq.locker.Unlock()
-		return
-	}
-
-	if seq.isFull() {
-		seq.enqCond.Wait()
-		goto entry
-	}
-
-	newTail := (seq.tail + 1) & seq.mask
-	seq.tail = newTail
-	seq.queue[newTail] = value
-
-	seq.deqCond.Signal()
-	seq.locker.Unlock()
-}
-
-func (seq *sequence[T]) Dequeue() (value *T, ok bool) {
-	seq.locker.Lock()
-entry:
-	if seq.closed {
-		seq.locker.Unlock()
-		return nil, false
-	}
-
-	if seq.isEmpty() {
-		seq.deqCond.Wait()
-		goto entry
-	}
-	newHead := (seq.head + 1) & seq.mask
-	seq.head = newHead
-	val := seq.queue[newHead]
-
-	seq.enqCond.Signal()
-	seq.locker.Unlock()
-	return val, true
-}
-
-func (seq *sequence[T]) Close() {
-	seq.locker.Lock()
-	seq.closed = true
-	seq.enqCond.Broadcast()
-	seq.deqCond.Broadcast()
-	seq.locker.Unlock()
-}
-
-func (seq *sequence[T]) isEmpty() bool {
-	return seq.head == seq.tail
-}
-
-func (seq *sequence[T]) isFull() bool {
-	return seq.tail-seq.head == seq.cap-1 || seq.head-seq.tail == 1
 }
 
 func (r *random[T]) Enqueue(value *T) {
