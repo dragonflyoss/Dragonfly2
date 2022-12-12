@@ -67,15 +67,19 @@ type ClientOption struct {
 	// Tag identify download task, it is available merely when md5 param not exist.
 	Tag string `yaml:"tag,omitempty" mapstructure:"tag,omitempty"`
 
-	// Application application name that executes dfget.
+	// Application name that executes dfget.
 	Application string `yaml:"application,omitempty" mapstructure:"application,omitempty"`
 
 	// DaemonSock is daemon download socket path.
 	DaemonSock string `yaml:"daemonSock,omitempty" mapstructure:"daemon-sock,omitempty"`
 
+	// Deprecated: use Priority instead
 	// Pattern download pattern, must be 'p2p' or 'seed-peer' or 'source',
 	// default:`p2p`.
 	Pattern string `yaml:"pattern,omitempty" mapstructure:"pattern,omitempty"`
+
+	// Priority scheduler will schedule tasks according to priority
+	Priority int32 `yaml:"priority,omitempty" mapstructure:"priority,omitempty"`
 
 	// CA certificate to verify when supernode interact with the source.
 	Cacerts []string `yaml:"cacert,omitempty" mapstructure:"cacert,omitempty"`

@@ -16,7 +16,9 @@
 
 package http
 
-import "net/http"
+import (
+	"net/http"
+)
 
 // HeaderToMap coverts request headers to map[string]string.
 func HeaderToMap(header http.Header) map[string]string {

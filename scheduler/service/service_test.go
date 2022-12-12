@@ -2210,13 +2210,21 @@ func TestService_triggerTask(t *testing.T) {
 			},
 			run: func(t *testing.T, svc *Service, mockTask *resource.Task, mockHost *resource.Host, mockPeer *resource.Peer, mockSeedPeer *resource.Peer, dynconfig config.DynconfigInterface, seedPeer resource.SeedPeer, mr *resource.MockResourceMockRecorder, mc *resource.MockSeedPeerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
+				mockPeer.Application = "baw"
 
 				var wg sync.WaitGroup
 				wg.Add(2)
 				defer wg.Wait()
 
 				gomock.InOrder(
-					md.GetApplications().Return(nil, errors.New("foo")).Times(1),
+					md.GetApplications().Return([]*managerv1.Application{
+						{
+							Name: "baw",
+							Priority: &managerv1.ApplicationPriority{
+								Value: commonv1.Priority_LEVEL6,
+							},
+						},
+					}, nil).Times(1),
 					mr.SeedPeer().Do(func() { wg.Done() }).Return(seedPeer).Times(1),
 					mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(mockPeer, &schedulerv1.PeerResult{}, nil).Times(1),
 				)
@@ -2464,6 +2472,7 @@ func TestService_triggerTask(t *testing.T) {
 			},
 			run: func(t *testing.T, svc *Service, mockTask *resource.Task, mockHost *resource.Host, mockPeer *resource.Peer, mockSeedPeer *resource.Peer, dynconfig config.DynconfigInterface, seedPeer resource.SeedPeer, mr *resource.MockResourceMockRecorder, mc *resource.MockSeedPeerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
+				mockPeer.Task.URLMeta.Priority = commonv1.Priority_LEVEL6
 
 				var wg sync.WaitGroup
 				wg.Add(2)
