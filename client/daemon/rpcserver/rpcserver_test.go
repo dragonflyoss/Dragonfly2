@@ -215,7 +215,6 @@ func TestServer_ExportTask(t *testing.T) {
 				UrlMeta: &commonv1.UrlMeta{
 					Tag: "unit test",
 				},
-				Callsystem: "",
 			},
 			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mocktsd *mocks.MockTaskStorageDriver, mockPieceManager *peer.MockPieceManager) {
 				mockStorageManger.FindCompletedTask(gomock.Any()).Return(nil)
@@ -689,7 +688,6 @@ func TestServer_ServeDownload(t *testing.T) {
 		UrlMeta: &commonv1.UrlMeta{
 			Tag: "unit test",
 		},
-		Callsystem: "",
 	}
 	down, err := client.Download(context.Background(), request)
 	assert.Nil(err, "client download grpc call should be ok")

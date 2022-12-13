@@ -74,9 +74,8 @@ func (s *seeder) ObtainSeeds(seedRequest *cdnsystemv1.SeedRequest, seedsServer c
 			HostLoad:    nil,
 			IsMigrating: false,
 		},
-		Limit:      0,
-		Callsystem: "",
-		Range:      nil, // following code will update Range
+		Limit: 0,
+		Range: nil, // following code will update Range
 	}
 
 	log := logger.With("peer", req.PeerId, "task", seedRequest.TaskId, "component", "seedService")

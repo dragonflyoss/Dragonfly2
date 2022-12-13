@@ -652,7 +652,6 @@ func copyDownRequest(req *dfdaemonv1.DownRequest) *dfdaemonv1.DownRequest {
 		Limit:              req.Limit,
 		DisableBackSource:  req.DisableBackSource,
 		UrlMeta:            req.UrlMeta,
-		Callsystem:         req.Callsystem,
 		Uid:                req.Uid,
 		Gid:                req.Gid,
 		KeepOriginalOffset: req.KeepOriginalOffset,
@@ -699,7 +698,6 @@ func (s *server) download(ctx context.Context, req *dfdaemonv1.DownRequest, stre
 		Output:             req.Output,
 		Limit:              req.Limit,
 		DisableBackSource:  req.DisableBackSource,
-		Callsystem:         req.Callsystem,
 		KeepOriginalOffset: req.KeepOriginalOffset,
 	}
 	if len(req.UrlMeta.Range) > 0 {
@@ -953,7 +951,6 @@ func (s *server) exportFromPeers(ctx context.Context, log *logger.SugaredLoggerO
 		Limit:             req.Limit,
 		DisableBackSource: true,
 		UrlMeta:           req.UrlMeta,
-		Callsystem:        req.Callsystem,
 		Uid:               req.Uid,
 		Gid:               req.Gid,
 	}
