@@ -25,6 +25,8 @@ const (
 	HeaderDragonflyTag = "X-Dragonfly-Tag"
 	// HeaderDragonflyApplication is used for statistics and traffic control
 	HeaderDragonflyApplication = "X-Dragonfly-Application"
+	// HeaderDragonflyPriority scheduler will schedule tasks according to priority
+	HeaderDragonflyPriority = "X-Dragonfly-Priority"
 	// HeaderDragonflyRegistry is used for dynamic registry mirrors.
 	HeaderDragonflyRegistry = "X-Dragonfly-Registry"
 	// HeaderDragonflyObjectMetaDigest is used for digest of object storage.
