@@ -49,9 +49,6 @@ type CacheOption struct {
 	// Timeout operation timeout(second).
 	Timeout time.Duration `yaml:"timeout,omitempty" mapstructure:"timeout,omitempty"`
 
-	// CallSystem optional system name
-	CallSystem string `yaml:"callSystem,omitempty" mapstructure:"callSystem,omitempty"`
-
 	// LogDir is log directory of dfcache.
 	LogDir string `yaml:"logDir,omitempty" mapstructure:"logDir,omitempty"`
 

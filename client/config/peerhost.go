@@ -36,7 +36,6 @@ import (
 
 	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/types"
@@ -193,27 +192,7 @@ func (p *DaemonOption) Validate() error {
 		return errors.New("reload interval too short, must great than 1 second")
 	}
 
-	switch p.Download.DefaultPattern {
-	case PatternP2P, PatternSeedPeer, PatternSource:
-	default:
-		return errors.New("available pattern: p2p, seed-peer, source")
-	}
 	return nil
-}
-
-func ConvertPattern(p string, defaultPattern commonv1.Pattern) commonv1.Pattern {
-	switch p {
-	case PatternP2P:
-		return commonv1.Pattern_P2P
-	case PatternSeedPeer:
-		return commonv1.Pattern_SEED_PEER
-	case PatternSource:
-		return commonv1.Pattern_SOURCE
-	case "":
-		return defaultPattern
-	}
-	logger.Warnf("unknown pattern, use default pattern: %s", commonv1.Pattern_name[int32(defaultPattern)])
-	return defaultPattern
 }
 
 type GlobalSecurityOption struct {
@@ -292,7 +271,6 @@ type HostOption struct {
 }
 
 type DownloadOption struct {
-	DefaultPattern       string            `mapstructure:"defaultPattern" yaml:"defaultPattern"`
 	TotalRateLimit       util.RateLimit    `mapstructure:"totalRateLimit" yaml:"totalRateLimit"`
 	PerPeerRateLimit     util.RateLimit    `mapstructure:"perPeerRateLimit" yaml:"perPeerRateLimit"`
 	TrafficShaperType    string            `mapstructure:"trafficShaperType" yaml:"trafficShaperType"`

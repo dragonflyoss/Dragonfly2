@@ -71,10 +71,9 @@ func TestServer_New(t *testing.T) {
 			mockpeerHost := &schedulerv1.PeerHost{}
 			mockpeerTaskManager := peer.NewMockTaskManager(ctrl)
 			mockStorageManger := mocks.NewMockManager(ctrl)
-			var defaultPattern commonv1.Pattern = 0
 			var mockdownloadOpts []grpc.ServerOption
 			var mockpeerOpts []grpc.ServerOption
-			_, err := New(mockpeerHost, mockpeerTaskManager, mockStorageManger, defaultPattern, 16, 0, mockdownloadOpts, mockpeerOpts)
+			_, err := New(mockpeerHost, mockpeerTaskManager, mockStorageManger, 16, 0, mockdownloadOpts, mockpeerOpts)
 			tc.expect(t, err)
 		})
 	}
@@ -216,7 +215,6 @@ func TestServer_ExportTask(t *testing.T) {
 				UrlMeta: &commonv1.UrlMeta{
 					Tag: "unit test",
 				},
-				Callsystem: "",
 			},
 			mock: func(mockStorageManger *mocks.MockManagerMockRecorder, mockTaskManager *peer.MockTaskManagerMockRecorder, mocktsd *mocks.MockTaskStorageDriver, mockPieceManager *peer.MockPieceManager) {
 				mockStorageManger.FindCompletedTask(gomock.Any()).Return(nil)
@@ -690,8 +688,6 @@ func TestServer_ServeDownload(t *testing.T) {
 		UrlMeta: &commonv1.UrlMeta{
 			Tag: "unit test",
 		},
-		Pattern:    "p2p",
-		Callsystem: "",
 	}
 	down, err := client.Download(context.Background(), request)
 	assert.Nil(err, "client download grpc call should be ok")

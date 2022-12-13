@@ -69,8 +69,6 @@ func main() {
 				"awsS3ForcePathStyle": "true",
 			},
 		},
-		Pattern:            "",
-		Callsystem:         "",
 		Uid:                1000, // target uid
 		Gid:                1000, // target gid
 		KeepOriginalOffset: false,

@@ -39,7 +39,6 @@ type FileTaskRequest struct {
 	Output             string
 	Limit              float64
 	DisableBackSource  bool
-	Callsystem         string
 	Range              *util.Range
 	KeepOriginalOffset bool
 }
@@ -63,8 +62,6 @@ type fileTask struct {
 
 	// disableBackSource indicates not back source when failed
 	disableBackSource bool
-	pattern           string
-	callsystem        string
 }
 
 type ProgressState struct {
@@ -113,7 +110,6 @@ func (ptm *peerTaskManager) newFileTask(
 		progressCh:        make(chan *FileTaskProgress),
 		progressStopCh:    make(chan bool),
 		disableBackSource: request.DisableBackSource,
-		callsystem:        request.Callsystem,
 	}
 	return ctx, pt, nil
 }

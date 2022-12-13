@@ -40,7 +40,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	zapadapter "logur.dev/adapter/zap"
 
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
 	"d7y.io/dragonfly/v2/client/config"
@@ -123,9 +122,8 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	}
 
 	var (
-		managerClient  managerclient.Client
-		certifyClient  *certify.Certify
-		defaultPattern = config.ConvertPattern(opt.Download.DefaultPattern, commonv1.Pattern_P2P)
+		managerClient managerclient.Client
+		certifyClient *certify.Certify
 	)
 
 	if opt.Scheduler.Manager.Enable {
@@ -288,13 +286,13 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		peerServerOption = append(peerServerOption, grpc.Creds(tlsCredentials))
 	}
 
-	rpcManager, err := rpcserver.New(host, peerTaskManager, storageManager, defaultPattern,
+	rpcManager, err := rpcserver.New(host, peerTaskManager, storageManager,
 		opt.Download.RecursiveConcurrent.GoroutineCount, opt.Download.CacheRecursiveMetadata, downloadServerOption, peerServerOption)
 	if err != nil {
 		return nil, err
 	}
 
-	proxyManager, err := proxy.NewProxyManager(host, peerTaskManager, defaultPattern, opt.Proxy)
+	proxyManager, err := proxy.NewProxyManager(host, peerTaskManager, opt.Proxy)
 	if err != nil {
 		return nil, err
 	}

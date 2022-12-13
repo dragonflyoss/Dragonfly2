@@ -40,17 +40,6 @@ const (
 )
 
 const (
-	// SourcePattern is back-to-source download pattern.
-	SourcePattern = "source"
-
-	// SeedPeerPattern is seed peer download pattern.
-	SeedPeerPattern = "seed-peer"
-
-	// P2PPattern is p2p download pattern.
-	P2PPattern = "p2p"
-)
-
-const (
 	// MetricsNamespace is namespace of metrics.
 	MetricsNamespace = "dragonfly"
 

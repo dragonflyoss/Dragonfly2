@@ -776,9 +776,8 @@ func (ts *testSpec) runSeedTaskTest(_ *testifyassert.Assertions, require *testif
 				HostLoad:    nil,
 				IsMigrating: false,
 			},
-			Limit:      0,
-			Callsystem: "",
-			Range:      nil,
+			Limit: 0,
+			Range: nil,
 		})
 
 	require.Nil(err, "start seed peer task")

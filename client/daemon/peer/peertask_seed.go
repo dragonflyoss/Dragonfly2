@@ -31,9 +31,8 @@ import (
 
 type SeedTaskRequest struct {
 	schedulerv1.PeerTaskRequest
-	Limit      float64
-	Callsystem string
-	Range      *util.Range
+	Limit float64
+	Range *util.Range
 }
 
 type SeedTaskResponse struct {

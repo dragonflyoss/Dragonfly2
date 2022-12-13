@@ -64,7 +64,6 @@ var peerHostConfig = func() *DaemonOption {
 			NetTopology:    "",
 		},
 		Download: DownloadOption{
-			DefaultPattern:       PatternP2P,
 			CalculateDigest:      true,
 			PieceDownloadTimeout: 30 * time.Second,
 			GRPCDialTimeout:      10 * time.Second,

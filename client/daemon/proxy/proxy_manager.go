@@ -32,7 +32,6 @@ import (
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
 	"d7y.io/dragonfly/v2/client/config"
@@ -60,7 +59,7 @@ type proxyManager struct {
 
 var _ Manager = (*proxyManager)(nil)
 
-func NewProxyManager(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskManager, defaultPattern commonv1.Pattern, proxyOption *config.ProxyOption) (Manager, error) {
+func NewProxyManager(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskManager, proxyOption *config.ProxyOption) (Manager, error) {
 	// proxy is option, when nil, just disable it
 	if proxyOption == nil {
 		logger.Infof("proxy config is empty, disabled")
@@ -82,7 +81,6 @@ func NewProxyManager(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskMa
 		WithDefaultTag(proxyOption.DefaultTag),
 		WithDefaultApplication(proxyOption.DefaultApplication),
 		WithDefaultPriority(proxyOption.DefaultPriority),
-		WithDefaultPattern(defaultPattern),
 		WithBasicAuth(proxyOption.BasicAuth),
 		WithDumpHTTPContent(proxyOption.DumpHTTPContent),
 	}
