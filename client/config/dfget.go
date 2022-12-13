@@ -73,11 +73,6 @@ type ClientOption struct {
 	// DaemonSock is daemon download socket path.
 	DaemonSock string `yaml:"daemonSock,omitempty" mapstructure:"daemon-sock,omitempty"`
 
-	// Deprecated: use Priority instead
-	// Pattern download pattern, must be 'p2p' or 'seed-peer' or 'source',
-	// default:`p2p`.
-	Pattern string `yaml:"pattern,omitempty" mapstructure:"pattern,omitempty"`
-
 	// Priority scheduler will schedule tasks according to priority
 	Priority int32 `yaml:"priority,omitempty" mapstructure:"priority,omitempty"`
 

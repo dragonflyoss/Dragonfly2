@@ -63,7 +63,6 @@ type fileTask struct {
 
 	// disableBackSource indicates not back source when failed
 	disableBackSource bool
-	pattern           string
 	callsystem        string
 }
 

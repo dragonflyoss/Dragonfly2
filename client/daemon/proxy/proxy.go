@@ -104,9 +104,6 @@ type Proxy struct {
 	// defaultApplication is used when http request without X-Dragonfly-Application Header
 	defaultApplication string
 
-	// DEPRECATED
-	defaultPattern commonv1.Pattern
-
 	// defaultPriority is used for scheduling
 	defaultPriority commonv1.Priority
 
@@ -245,14 +242,6 @@ func WithDefaultApplication(t string) Option {
 func WithDefaultPriority(priority commonv1.Priority) Option {
 	return func(p *Proxy) *Proxy {
 		p.defaultPriority = priority
-		return p
-	}
-}
-
-// WithDefaultPattern sets default pattern for downloading
-func WithDefaultPattern(pattern commonv1.Pattern) Option {
-	return func(p *Proxy) *Proxy {
-		p.defaultPattern = pattern
 		return p
 	}
 }
@@ -527,7 +516,6 @@ func (proxy *Proxy) newTransport(tlsConfig *tls.Config) http.RoundTripper {
 		transport.WithTLS(tlsConfig),
 		transport.WithCondition(proxy.shouldUseDragonfly),
 		transport.WithDefaultFilter(proxy.defaultFilter),
-		transport.WithDefaultPattern(proxy.defaultPattern),
 		transport.WithDefaultTag(proxy.defaultTag),
 		transport.WithDefaultApplication(proxy.defaultApplication),
 		transport.WithDefaultPriority(proxy.defaultPriority),
