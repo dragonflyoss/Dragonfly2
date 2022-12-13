@@ -72,9 +72,6 @@ type transport struct {
 	// defaultFilter is used when http request without X-Dragonfly-Filter Header
 	defaultFilter string
 
-	// defaultFilter is used for registering steam task
-	defaultPattern commonv1.Pattern
-
 	// defaultTag is used when http request without X-Dragonfly-Tag Header
 	defaultTag string
 
@@ -129,14 +126,6 @@ func WithCondition(c func(r *http.Request) bool) Option {
 func WithDefaultFilter(f string) Option {
 	return func(rt *transport) *transport {
 		rt.defaultFilter = f
-		return rt
-	}
-}
-
-// WithDefaultPattern sets default pattern
-func WithDefaultPattern(pattern commonv1.Pattern) Option {
-	return func(rt *transport) *transport {
-		rt.defaultPattern = pattern
 		return rt
 	}
 }
