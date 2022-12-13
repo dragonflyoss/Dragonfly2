@@ -995,12 +995,16 @@ func (s *Server) ListApplications(ctx context.Context, req *managerv1.ListApplic
 	// Cache miss.
 	log.Debugf("%s cache miss", cacheKey)
 	var applications []model.Application
-	if err := s.db.WithContext(ctx).Find(&applications).Error; err != nil {
+	if err := s.db.WithContext(ctx).Find(&applications, "priority != ?", "").Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, status.Error(codes.NotFound, err.Error())
 		}
 
 		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	if len(applications) == 0 {
+		return nil, status.Error(codes.NotFound, "application not found")
 	}
 
 	for _, application := range applications {

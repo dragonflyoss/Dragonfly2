@@ -43,6 +43,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/net/ip"
 	healthclient "d7y.io/dragonfly/v2/pkg/rpc/health/client"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
+	"d7y.io/dragonfly/v2/pkg/slices"
 )
 
 var (
@@ -373,15 +374,7 @@ func (mc *managerClient) Get() (any, error) {
 	if err != nil {
 		if s, ok := status.FromError(err); ok {
 			// TODO Compatible with old version manager.
-			if s.Code() == codes.Unimplemented {
-				return DynconfigData{
-					Scheduler:    getSchedulerResp,
-					Applications: nil,
-				}, nil
-			}
-
-			// Handle application not found.
-			if s.Code() == codes.NotFound {
+			if slices.Contains([]codes.Code{codes.Unimplemented, codes.NotFound}, s.Code()) {
 				return DynconfigData{
 					Scheduler:    getSchedulerResp,
 					Applications: nil,
