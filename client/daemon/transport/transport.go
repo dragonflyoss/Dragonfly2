@@ -81,6 +81,9 @@ type transport struct {
 	// defaultTag is used when http request without X-Dragonfly-Tag Header
 	defaultApplication string
 
+	// defaultPriority is used when http request without X-Dragonfly-Priority Header
+	defaultPriority commonv1.Priority
+
 	// dumpHTTPContent indicates to dump http request header and response header
 	dumpHTTPContent bool
 
@@ -152,6 +155,15 @@ func WithDefaultApplication(b string) Option {
 		rt.defaultApplication = b
 		return rt
 	}
+}
+
+// WithDefaultPriority sets default Priority for http requests with X-Dragonfly-Priority Header
+func WithDefaultPriority(p commonv1.Priority) Option {
+	return func(rt *transport) *transport {
+		rt.defaultPriority = p
+		return rt
+	}
+
 }
 
 func WithDumpHTTPContent(b bool) Option {
@@ -268,6 +280,12 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 	filter := nethttp.PickHeader(req.Header, config.HeaderDragonflyFilter, rt.defaultFilter)
 	tag := nethttp.PickHeader(req.Header, config.HeaderDragonflyTag, rt.defaultTag)
 	application := nethttp.PickHeader(req.Header, config.HeaderDragonflyApplication, rt.defaultApplication)
+	var priority = rt.defaultPriority
+	priorityString := nethttp.PickHeader(req.Header, config.HeaderDragonflyPriority, fmt.Sprintf("%d", rt.defaultPriority))
+	priorityInt, err := strconv.ParseInt(priorityString, 10, 32)
+	if err == nil {
+		priority = commonv1.Priority(priorityInt)
+	}
 
 	// Delete hop-by-hop headers
 	delHopHeaders(req.Header)
@@ -276,6 +294,7 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 	meta.Tag = tag
 	meta.Filter = filter
 	meta.Application = application
+	meta.Priority = priority
 
 	body, attr, err := rt.peerTaskManager.StartStreamTask(
 		ctx,

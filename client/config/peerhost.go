@@ -346,16 +346,17 @@ type RecursiveConcurrent struct {
 type ProxyOption struct {
 	// WARNING: when add more option, please update ProxyOption.unmarshal function
 	ListenOption       `mapstructure:",squash" yaml:",inline"`
-	BasicAuth          *BasicAuth      `mapstructure:"basicAuth" yaml:"basicAuth"`
-	DefaultFilter      string          `mapstructure:"defaultFilter" yaml:"defaultFilter"`
-	DefaultTag         string          `mapstructure:"defaultTag" yaml:"defaultTag"`
-	DefaultApplication string          `mapstructure:"defaultApplication" yaml:"defaultApplication"`
-	MaxConcurrency     int64           `mapstructure:"maxConcurrency" yaml:"maxConcurrency"`
-	RegistryMirror     *RegistryMirror `mapstructure:"registryMirror" yaml:"registryMirror"`
-	WhiteList          []*WhiteList    `mapstructure:"whiteList" yaml:"whiteList"`
-	ProxyRules         []*ProxyRule    `mapstructure:"proxies" yaml:"proxies"`
-	HijackHTTPS        *HijackConfig   `mapstructure:"hijackHTTPS" yaml:"hijackHTTPS"`
-	DumpHTTPContent    bool            `mapstructure:"dumpHTTPContent" yaml:"dumpHTTPContent"`
+	BasicAuth          *BasicAuth        `mapstructure:"basicAuth" yaml:"basicAuth"`
+	DefaultFilter      string            `mapstructure:"defaultFilter" yaml:"defaultFilter"`
+	DefaultTag         string            `mapstructure:"defaultTag" yaml:"defaultTag"`
+	DefaultApplication string            `mapstructure:"defaultApplication" yaml:"defaultApplication"`
+	DefaultPriority    commonv1.Priority `mapstructure:"defaultPriority" yaml:"defaultPriority"`
+	MaxConcurrency     int64             `mapstructure:"maxConcurrency" yaml:"maxConcurrency"`
+	RegistryMirror     *RegistryMirror   `mapstructure:"registryMirror" yaml:"registryMirror"`
+	WhiteList          []*WhiteList      `mapstructure:"whiteList" yaml:"whiteList"`
+	ProxyRules         []*ProxyRule      `mapstructure:"proxies" yaml:"proxies"`
+	HijackHTTPS        *HijackConfig     `mapstructure:"hijackHTTPS" yaml:"hijackHTTPS"`
+	DumpHTTPContent    bool              `mapstructure:"dumpHTTPContent" yaml:"dumpHTTPContent"`
 	// ExtraRegistryMirrors add more mirror for different ports
 	ExtraRegistryMirrors []*RegistryMirror `mapstructure:"extraRegistryMirrors" yaml:"extraRegistryMirrors"`
 }

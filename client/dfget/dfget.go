@@ -240,6 +240,7 @@ func newDownRequest(cfg *config.DfgetConfig, hdr map[string]string) *dfdaemonv1.
 			Filter:      cfg.Filter,
 			Header:      hdr,
 			Application: cfg.Application,
+			Priority:    commonv1.Priority(cfg.Priority),
 		},
 		Pattern:            cfg.Pattern,
 		Uid:                int64(os.Getuid()),
