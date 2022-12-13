@@ -291,7 +291,6 @@ func TestPeerHostOption_Load(t *testing.T) {
 			AdvertiseIP:    "0.0.0.0",
 		},
 		Download: DownloadOption{
-			DefaultPattern: PatternP2P,
 			TotalRateLimit: util.RateLimit{
 				Limit: 1024 * 1024 * 1024,
 			},

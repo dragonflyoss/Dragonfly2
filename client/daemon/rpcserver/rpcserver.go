@@ -79,7 +79,6 @@ type server struct {
 	peerHost        *schedulerv1.PeerHost
 	peerTaskManager peer.TaskManager
 	storageManager  storage.Manager
-	defaultPattern  commonv1.Pattern
 
 	downloadServer *grpc.Server
 	peerServer     *grpc.Server
@@ -96,15 +95,13 @@ func init() {
 }
 
 func New(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskManager,
-	storageManager storage.Manager, defaultPattern commonv1.Pattern,
-	recursiveConcurrent int, cacheRecursiveMetadata time.Duration,
+	storageManager storage.Manager, recursiveConcurrent int, cacheRecursiveMetadata time.Duration,
 	downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Server, error) {
 	s := &server{
 		KeepAlive:       util.NewKeepAlive("rpc server"),
 		peerHost:        peerHost,
 		peerTaskManager: peerTaskManager,
 		storageManager:  storageManager,
-		defaultPattern:  defaultPattern,
 
 		recursiveConcurrent:    recursiveConcurrent,
 		cacheRecursiveMetadata: cacheRecursiveMetadata,
@@ -443,7 +440,6 @@ func (s *server) recursiveDownloadWithP2PMetadata(
 		URL:     purl.String(),
 		URLMeta: &urlMeta,
 		PeerID:  idgen.PeerID(s.peerHost.Ip),
-		Pattern: config.ConvertPattern(req.Pattern, s.defaultPattern),
 	})
 	if err != nil {
 		log.Errorf("start stream task for metadata error: %s", err)
@@ -656,8 +652,6 @@ func copyDownRequest(req *dfdaemonv1.DownRequest) *dfdaemonv1.DownRequest {
 		Limit:              req.Limit,
 		DisableBackSource:  req.DisableBackSource,
 		UrlMeta:            req.UrlMeta,
-		Pattern:            req.Pattern,
-		Callsystem:         req.Callsystem,
 		Uid:                req.Uid,
 		Gid:                req.Gid,
 		KeepOriginalOffset: req.KeepOriginalOffset,
@@ -700,12 +694,10 @@ func (s *server) download(ctx context.Context, req *dfdaemonv1.DownRequest, stre
 			UrlMeta:  req.UrlMeta,
 			PeerId:   peerID,
 			PeerHost: s.peerHost,
-			Pattern:  config.ConvertPattern(req.Pattern, s.defaultPattern),
 		},
 		Output:             req.Output,
 		Limit:              req.Limit,
 		DisableBackSource:  req.DisableBackSource,
-		Callsystem:         req.Callsystem,
 		KeepOriginalOffset: req.KeepOriginalOffset,
 	}
 	if len(req.UrlMeta.Range) > 0 {
@@ -959,8 +951,6 @@ func (s *server) exportFromPeers(ctx context.Context, log *logger.SugaredLoggerO
 		Limit:             req.Limit,
 		DisableBackSource: true,
 		UrlMeta:           req.UrlMeta,
-		Pattern:           "",
-		Callsystem:        req.Callsystem,
 		Uid:               req.Uid,
 		Gid:               req.Gid,
 	}

@@ -38,13 +38,6 @@ const (
 	ForceNotBackSourceAddition    = 1000
 )
 
-// Download pattern.
-const (
-	PatternP2P      = "p2p"
-	PatternSeedPeer = "seed-peer"
-	PatternSource   = "source"
-)
-
 // Download limit.
 const (
 	DefaultPerPeerDownloadLimit = 512 * unit.MB
