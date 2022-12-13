@@ -37,6 +37,7 @@ var dfgetConfig = ClientOption{
 	Tag:               "",
 	Application:       "",
 	Pattern:           "",
+	Priority:          0,
 	Cacerts:           nil,
 	Filter:            "",
 	Header:            nil,

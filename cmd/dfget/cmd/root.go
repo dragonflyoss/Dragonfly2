@@ -159,6 +159,11 @@ func init() {
 		"Disable downloading directly from source when the daemon fails to download file")
 
 	flagSet.StringP("pattern", "p", dfgetConfig.Pattern, "The downloading pattern: p2p/seed-peer/source")
+	if err := flagSet.MarkDeprecated("pattern", "please use --priority instead"); err != nil {
+		panic(err)
+	}
+
+	flagSet.Int32P("priority", "P", dfgetConfig.Priority, "Scheduler will schedule task according to priority")
 
 	flagSet.BoolP("show-progress", "b", dfgetConfig.ShowProgress, "Show progress bar, it conflicts with --console")
 

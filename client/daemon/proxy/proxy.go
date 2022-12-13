@@ -104,8 +104,11 @@ type Proxy struct {
 	// defaultApplication is used when http request without X-Dragonfly-Application Header
 	defaultApplication string
 
-	// defaultFilter is used for registering steam task
+	// DEPRECATED
 	defaultPattern commonv1.Pattern
+
+	// defaultPriority is used for scheduling
+	defaultPriority commonv1.Priority
 
 	// tracer is used for telemetry
 	tracer trace.Tracer
@@ -234,6 +237,14 @@ func WithDefaultTag(t string) Option {
 func WithDefaultApplication(t string) Option {
 	return func(p *Proxy) *Proxy {
 		p.defaultApplication = t
+		return p
+	}
+}
+
+// WithDefaultPriority sets default priority for http requests without X-Dragonfly-Priority Header
+func WithDefaultPriority(priority commonv1.Priority) Option {
+	return func(p *Proxy) *Proxy {
+		p.defaultPriority = priority
 		return p
 	}
 }
@@ -519,6 +530,7 @@ func (proxy *Proxy) newTransport(tlsConfig *tls.Config) http.RoundTripper {
 		transport.WithDefaultPattern(proxy.defaultPattern),
 		transport.WithDefaultTag(proxy.defaultTag),
 		transport.WithDefaultApplication(proxy.defaultApplication),
+		transport.WithDefaultPriority(proxy.defaultPriority),
 		transport.WithDumpHTTPContent(proxy.dumpHTTPContent),
 	)
 	return rt
@@ -534,6 +546,7 @@ func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
 		transport.WithDefaultFilter(proxy.defaultFilter),
 		transport.WithDefaultTag(proxy.defaultTag),
 		transport.WithDefaultApplication(proxy.defaultApplication),
+		transport.WithDefaultPriority(proxy.defaultPriority),
 		transport.WithDumpHTTPContent(proxy.dumpHTTPContent),
 	)
 	if err != nil {
