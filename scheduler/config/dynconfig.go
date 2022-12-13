@@ -25,6 +25,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
+	"sync"
 	"time"
 
 	"google.golang.org/grpc"
@@ -63,11 +65,20 @@ type DynconfigInterface interface {
 	// GetResolveSeedPeerAddrs returns the dynamic schedulers resolve addrs.
 	GetResolveSeedPeerAddrs() ([]resolver.Address, error)
 
+	// GetScheduler returns the scheduler config from manager.
+	GetScheduler() (*managerv1.Scheduler, error)
+
 	// GetApplications returns the applications config from manager.
 	GetApplications() ([]*managerv1.Application, error)
 
+	// GetApplication returns the application config from manager.
+	GetApplication(string) (*managerv1.Application, error)
+
 	// GetSeedPeers returns the dynamic seed peers config from manager.
 	GetSeedPeers() ([]*managerv1.SeedPeer, error)
+
+	// GetSchedulerCluster returns the the scheduler cluster config from manager.
+	GetSchedulerCluster() (*managerv1.SchedulerCluster, error)
 
 	// GetSchedulerClusterConfig returns the scheduler cluster config.
 	GetSchedulerClusterConfig() (types.SchedulerClusterConfig, error)
@@ -103,10 +114,12 @@ type Observer interface {
 }
 
 type dynconfig struct {
-	dc.Dynconfig
+	dc.Dynconfig[DynconfigData]
 	observers            map[Observer]struct{}
 	done                 chan struct{}
 	cachePath            string
+	rawApplication       []*managerv1.Application
+	application          *sync.Map
 	transportCredentials credentials.TransportCredentials
 }
 
@@ -126,9 +139,10 @@ func WithTransportCredentials(creds credentials.TransportCredentials) DynconfigO
 func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, cfg *Config, options ...DynconfigOption) (DynconfigInterface, error) {
 	cachePath := filepath.Join(cacheDir, cacheFileName)
 	d := &dynconfig{
-		observers: map[Observer]struct{}{},
-		done:      make(chan struct{}),
-		cachePath: cachePath,
+		observers:   map[Observer]struct{}{},
+		done:        make(chan struct{}),
+		cachePath:   cachePath,
+		application: &sync.Map{},
 	}
 
 	for _, opt := range options {
@@ -138,7 +152,7 @@ func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, cfg *C
 	}
 
 	if rawManagerClient != nil {
-		client, err := dc.New(
+		client, err := dc.New[DynconfigData](
 			newManagerClient(rawManagerClient, cfg),
 			cachePath,
 			cfg.DynConfig.RefreshInterval,
@@ -153,7 +167,7 @@ func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, cfg *C
 	return d, nil
 }
 
-// GetResolveSeedPeerAddrs returns the dynamic schedulers resolve addrs.
+// GetResolveSeedPeerAddrs returns the the schedulers resolve addrs.
 func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 	seedPeers, err := d.GetSeedPeers()
 	if err != nil {
@@ -201,10 +215,24 @@ func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 	}
 
 	if len(resolveAddrs) == 0 {
-		return nil, errors.New("can not found available seed peer addresses")
+		return nil, errors.New("available seed peer not found")
 	}
 
 	return resolveAddrs, nil
+}
+
+// GetScheduler returns the scheduler config from manager.
+func (d *dynconfig) GetScheduler() (*managerv1.Scheduler, error) {
+	data, err := d.Get()
+	if err != nil {
+		return nil, err
+	}
+
+	if data.Scheduler == nil {
+		return nil, errors.New("invalid scheduler")
+	}
+
+	return data.Scheduler, nil
 }
 
 // GetApplications returns the applications config from manager.
@@ -214,32 +242,95 @@ func (d *dynconfig) GetApplications() ([]*managerv1.Application, error) {
 		return nil, err
 	}
 
+	if data.Applications == nil {
+		return nil, errors.New("invalid applications")
+	}
+
+	if len(data.Applications) == 0 {
+		return nil, errors.New("application not found")
+	}
+
 	return data.Applications, nil
 }
 
-// GetSeedPeers returns the dynamic seed peers config from manager.
-func (d *dynconfig) GetSeedPeers() ([]*managerv1.SeedPeer, error) {
+// GetApplication returns the application config from manager.
+func (d *dynconfig) GetApplication(name string) (*managerv1.Application, error) {
 	data, err := d.Get()
 	if err != nil {
 		return nil, err
 	}
 
-	return data.Scheduler.SeedPeers, nil
+	if data.Applications == nil {
+		return nil, errors.New("invalid applications")
+	}
+
+	if len(data.Applications) == 0 {
+		return nil, errors.New("application not found")
+	}
+
+	if reflect.DeepEqual(data.Applications, d.rawApplication) {
+		application, found := d.application.Load(name)
+		if !found {
+			return nil, errors.New("application not found")
+		}
+
+		return application.(*managerv1.Application), nil
+	}
+
+	for _, application := range data.Applications {
+		d.application.Store(application.Name, application)
+	}
+	d.rawApplication = data.Applications
+
+	application, found := d.application.Load(name)
+	if !found {
+		return nil, errors.New("application not found")
+	}
+
+	return application.(*managerv1.Application), nil
+}
+
+// GetSeedPeers returns the the seed peers config from manager.
+func (d *dynconfig) GetSeedPeers() ([]*managerv1.SeedPeer, error) {
+	scheduler, err := d.GetScheduler()
+	if err != nil {
+		return nil, err
+	}
+
+	if scheduler.SeedPeers == nil {
+		return nil, errors.New("invalid seed peers")
+	}
+
+	if len(scheduler.SeedPeers) == 0 {
+		return nil, errors.New("seed peer not found ")
+	}
+
+	return scheduler.SeedPeers, nil
+}
+
+// GetSchedulerCluster returns the the scheduler cluster config from manager.
+func (d *dynconfig) GetSchedulerCluster() (*managerv1.SchedulerCluster, error) {
+	scheduler, err := d.GetScheduler()
+	if err != nil {
+		return nil, err
+	}
+
+	if scheduler.SchedulerCluster == nil {
+		return nil, errors.New("invalid scheduler cluster")
+	}
+
+	return scheduler.SchedulerCluster, nil
 }
 
 // GetSchedulerClusterConfig returns the scheduler cluster config.
 func (d *dynconfig) GetSchedulerClusterConfig() (types.SchedulerClusterConfig, error) {
-	data, err := d.Get()
+	schedulerCluster, err := d.GetSchedulerCluster()
 	if err != nil {
 		return types.SchedulerClusterConfig{}, err
 	}
 
-	if data.Scheduler.SchedulerCluster == nil {
-		return types.SchedulerClusterConfig{}, errors.New("invalid scheduler cluster")
-	}
-
 	var config types.SchedulerClusterConfig
-	if err := json.Unmarshal(data.Scheduler.SchedulerCluster.Config, &config); err != nil {
+	if err := json.Unmarshal(schedulerCluster.Config, &config); err != nil {
 		return types.SchedulerClusterConfig{}, err
 	}
 
@@ -248,31 +339,17 @@ func (d *dynconfig) GetSchedulerClusterConfig() (types.SchedulerClusterConfig, e
 
 // GetSchedulerClusterClientConfig returns the client config.
 func (d *dynconfig) GetSchedulerClusterClientConfig() (types.SchedulerClusterClientConfig, error) {
-	data, err := d.Get()
+	schedulerCluster, err := d.GetSchedulerCluster()
 	if err != nil {
 		return types.SchedulerClusterClientConfig{}, err
 	}
 
-	if data.Scheduler.SchedulerCluster == nil {
-		return types.SchedulerClusterClientConfig{}, errors.New("invalid scheduler cluster")
-	}
-
 	var config types.SchedulerClusterClientConfig
-	if err := json.Unmarshal(data.Scheduler.SchedulerCluster.ClientConfig, &config); err != nil {
+	if err := json.Unmarshal(schedulerCluster.ClientConfig, &config); err != nil {
 		return types.SchedulerClusterClientConfig{}, err
 	}
 
 	return config, nil
-}
-
-// Get the dynamic config from manager.
-func (d *dynconfig) Get() (*DynconfigData, error) {
-	var config DynconfigData
-	if err := d.Unmarshal(&config); err != nil {
-		return nil, err
-	}
-
-	return &config, nil
 }
 
 // Refresh refreshes dynconfig in cache.

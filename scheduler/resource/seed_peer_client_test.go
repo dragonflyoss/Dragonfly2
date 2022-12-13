@@ -65,7 +65,7 @@ func TestSeedPeerClient_newSeedPeerClient(t *testing.T) {
 		{
 			name: "new seed peer client failed because of dynconfig get error data",
 			mock: func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder) {
-				dynconfig.Get().Return(nil, errors.New("foo")).Times(1)
+				dynconfig.Get().Return(&config.DynconfigData{}, errors.New("foo")).Times(1)
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)

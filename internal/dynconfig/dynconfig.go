@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/mitchellh/mapstructure"
+	"go.uber.org/atomic"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/cache"
@@ -40,62 +41,54 @@ const (
 	defaultCacheKey = "dynconfig"
 )
 
-type Dynconfig interface {
-	// Unmarshal unmarshals the config into a Struct. Make sure that the tags
-	// on the fields of the structure are properly set.
-	Unmarshal(rawVal any) error
+type Dynconfig[T any] interface {
+	// Get raw dynamic config.
+	Get() (*T, error)
 
 	// Refresh refreshes dynconfig in cache.
 	Refresh() error
 }
 
-type dynconfig struct {
+type dynconfig[T any] struct {
 	cache     cache.Cache
 	client    ManagerClient
 	cachePath string
+	data      *atomic.Pointer[T]
 	expire    time.Duration
 }
 
 // New returns a new dynconfig instance.
-func New(client ManagerClient, cachePath string, expire time.Duration) (Dynconfig, error) {
-	d := &dynconfig{
+func New[T any](client ManagerClient, cachePath string, expire time.Duration) (Dynconfig[T], error) {
+	d := &dynconfig[T]{
 		cache:     cache.New(expire, cache.NoCleanup),
 		cachePath: cachePath,
+		data:      atomic.NewPointer[T](nil),
 		expire:    expire,
 		client:    client,
 	}
 
-	if err := d.cache.LoadFile(d.cachePath); err != nil {
-		if err := d.load(); err != nil {
-			return nil, err
-		}
+	if err := d.load(); err != nil {
+		return nil, err
 	}
 
 	return d, nil
 }
 
-// Unmarshal unmarshals the config into a Struct. Make sure that the tags
-// on the fields of the structure are properly set.
-func (d *dynconfig) Unmarshal(rawVal any) error {
-	dynconfig, err := d.get()
-	if err != nil {
-		return errors.New("can't find the cached data")
-	}
-
-	return decode(dynconfig, defaultDecoderConfig(rawVal))
-}
-
 // Refresh refreshes dynconfig in cache.
-func (d *dynconfig) Refresh() error {
+func (d *dynconfig[T]) Refresh() error {
 	return d.load()
 }
 
 // Get dynamic config.
-func (d *dynconfig) get() (any, error) {
+func (d *dynconfig[T]) Get() (*T, error) {
+	// If load is abnormal, data can be nil.
+	if d.data.Load() == nil {
+		return nil, errors.New("invalid data")
+	}
+
 	// Cache has not expired.
-	dynconfig, _, found := d.cache.GetWithExpiration(defaultCacheKey)
-	if found {
-		return dynconfig, nil
+	if _, _, found := d.cache.GetWithExpiration(defaultCacheKey); found {
+		return d.data.Load(), nil
 	}
 
 	// Cache has expired, refresh and ignore client request error.
@@ -103,31 +96,33 @@ func (d *dynconfig) get() (any, error) {
 		logger.Warn("reload failed ", err)
 	}
 
-	dynconfig, ok := d.cache.Get(defaultCacheKey)
-	if !ok {
-		return nil, errors.New("can't find the cached data")
+	if _, found := d.cache.Get(defaultCacheKey); found {
+		return d.data.Load(), nil
 	}
 
-	return dynconfig, nil
+	return nil, errors.New("cache not found")
 }
 
 // Load dynamic config from manager.
-func (d *dynconfig) load() error {
-	dynconfig, err := d.client.Get()
+func (d *dynconfig[T]) load() error {
+	rawData, err := d.client.Get()
 	if err != nil {
 		return err
 	}
 
-	d.cache.Set(defaultCacheKey, dynconfig, d.expire)
+	var data T
+	if err := decode(rawData, defaultDecoderConfig(&data)); err != nil {
+		return err
+	}
+	d.data.Store(&data)
+
+	d.cache.Set(defaultCacheKey, rawData, d.expire)
 	if err := d.cache.SaveFile(d.cachePath); err != nil {
 		return err
 	}
+
 	return nil
 }
-
-// A DecoderConfigOption can be passed to dynconfig Unmarshal to configure
-// mapstructure.DecoderConfig options.
-type DecoderConfigOption func(*mapstructure.DecoderConfig)
 
 // defaultDecoderConfig returns default mapstructure.DecoderConfig with support
 // of time.Duration values & string slices.
