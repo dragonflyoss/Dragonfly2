@@ -432,13 +432,6 @@ func (p *Peer) GetPriority(dynconfig config.DynconfigInterface) commonv1.Priorit
 		return commonv1.Priority_LEVEL0
 	}
 
-	// If manager has no applications,
-	// then return Priority_LEVEL0.
-	if len(pbApplications) == 0 {
-		p.Log.Info("can not found applications")
-		return commonv1.Priority_LEVEL0
-	}
-
 	// Find peer application.
 	var application *managerv1.Application
 	for _, pbApplication := range pbApplications {
