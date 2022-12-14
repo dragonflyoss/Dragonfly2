@@ -25,8 +25,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
-	"sync"
 	"time"
 
 	"google.golang.org/grpc"
@@ -70,9 +68,6 @@ type DynconfigInterface interface {
 
 	// GetApplications returns the applications config from manager.
 	GetApplications() ([]*managerv1.Application, error)
-
-	// GetApplication returns the application config from manager.
-	GetApplication(string) (*managerv1.Application, error)
 
 	// GetSeedPeers returns the dynamic seed peers config from manager.
 	GetSeedPeers() ([]*managerv1.SeedPeer, error)
@@ -118,8 +113,6 @@ type dynconfig struct {
 	observers            map[Observer]struct{}
 	done                 chan struct{}
 	cachePath            string
-	rawApplication       []*managerv1.Application
-	application          *sync.Map
 	transportCredentials credentials.TransportCredentials
 }
 
@@ -139,10 +132,9 @@ func WithTransportCredentials(creds credentials.TransportCredentials) DynconfigO
 func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, cfg *Config, options ...DynconfigOption) (DynconfigInterface, error) {
 	cachePath := filepath.Join(cacheDir, cacheFileName)
 	d := &dynconfig{
-		observers:   map[Observer]struct{}{},
-		done:        make(chan struct{}),
-		cachePath:   cachePath,
-		application: &sync.Map{},
+		observers: map[Observer]struct{}{},
+		done:      make(chan struct{}),
+		cachePath: cachePath,
 	}
 
 	for _, opt := range options {
@@ -251,43 +243,6 @@ func (d *dynconfig) GetApplications() ([]*managerv1.Application, error) {
 	}
 
 	return data.Applications, nil
-}
-
-// GetApplication returns the application config from manager.
-func (d *dynconfig) GetApplication(name string) (*managerv1.Application, error) {
-	data, err := d.Get()
-	if err != nil {
-		return nil, err
-	}
-
-	if data.Applications == nil {
-		return nil, errors.New("invalid applications")
-	}
-
-	if len(data.Applications) == 0 {
-		return nil, errors.New("application not found")
-	}
-
-	if reflect.DeepEqual(data.Applications, d.rawApplication) {
-		application, found := d.application.Load(name)
-		if !found {
-			return nil, errors.New("application not found")
-		}
-
-		return application.(*managerv1.Application), nil
-	}
-
-	for _, application := range data.Applications {
-		d.application.Store(application.Name, application)
-	}
-	d.rawApplication = data.Applications
-
-	application, found := d.application.Load(name)
-	if !found {
-		return nil, errors.New("application not found")
-	}
-
-	return application.(*managerv1.Application), nil
 }
 
 // GetSeedPeers returns the the seed peers config from manager.
