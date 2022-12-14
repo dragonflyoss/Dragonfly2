@@ -94,6 +94,36 @@ func (mr *MockDynconfigInterfaceMockRecorder) GetResolveSeedPeerAddrs() *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResolveSeedPeerAddrs", reflect.TypeOf((*MockDynconfigInterface)(nil).GetResolveSeedPeerAddrs))
 }
 
+// GetScheduler mocks base method.
+func (m *MockDynconfigInterface) GetScheduler() (*v1.Scheduler, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetScheduler")
+	ret0, _ := ret[0].(*v1.Scheduler)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetScheduler indicates an expected call of GetScheduler.
+func (mr *MockDynconfigInterfaceMockRecorder) GetScheduler() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScheduler", reflect.TypeOf((*MockDynconfigInterface)(nil).GetScheduler))
+}
+
+// GetSchedulerCluster mocks base method.
+func (m *MockDynconfigInterface) GetSchedulerCluster() (*v1.SchedulerCluster, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSchedulerCluster")
+	ret0, _ := ret[0].(*v1.SchedulerCluster)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSchedulerCluster indicates an expected call of GetSchedulerCluster.
+func (mr *MockDynconfigInterfaceMockRecorder) GetSchedulerCluster() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchedulerCluster", reflect.TypeOf((*MockDynconfigInterface)(nil).GetSchedulerCluster))
+}
+
 // GetSchedulerClusterClientConfig mocks base method.
 func (m *MockDynconfigInterface) GetSchedulerClusterClientConfig() (types.SchedulerClusterClientConfig, error) {
 	m.ctrl.T.Helper()

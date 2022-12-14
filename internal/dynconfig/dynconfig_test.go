@@ -38,7 +38,7 @@ type SchedulerOption struct {
 	Name string
 }
 
-func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
+func TestDynconfig_Get(t *testing.T) {
 	schedulerName := "scheduler"
 	cachePath, err := mockCachePath()
 	if err != nil {
@@ -48,20 +48,14 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 	tests := []struct {
 		name           string
 		expire         time.Duration
-		dynconfig      TestDynconfig
 		sleep          func()
 		cleanFileCache func(t *testing.T)
 		mock           func(m *mocks.MockManagerClientMockRecorder)
-		expect         func(t *testing.T, data any)
+		run            func(t *testing.T, d Dynconfig[TestDynconfig])
 	}{
 		{
-			name:   "unmarshals dynconfig success without file cache",
-			expire: 20 * time.Millisecond,
-			dynconfig: TestDynconfig{
-				Scheduler: SchedulerOption{
-					Name: schedulerName,
-				},
-			},
+			name:           "get config success without file cache",
+			expire:         1 * time.Millisecond,
 			sleep:          func() {},
 			cleanFileCache: func(t *testing.T) {},
 			mock: func(m *mocks.MockManagerClientMockRecorder) {
@@ -76,14 +70,11 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 
 				m.Get().Return(d, nil).AnyTimes()
 			},
-			expect: func(t *testing.T, data any) {
+			run: func(t *testing.T, d Dynconfig[TestDynconfig]) {
 				assert := assert.New(t)
-				var d TestDynconfig
-				if err := mapstructure.Decode(data, &d); err != nil {
-					t.Error(err)
-				}
-
-				assert.EqualValues(d, TestDynconfig{
+				data, err := d.Get()
+				assert.NoError(err)
+				assert.EqualValues(data, &TestDynconfig{
 					Scheduler: SchedulerOption{
 						Name: schedulerName,
 					},
@@ -91,13 +82,42 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 			},
 		},
 		{
-			name:   "unmarshals expire dynconfig with file cache",
-			expire: 20 * time.Millisecond,
-			dynconfig: TestDynconfig{
-				Scheduler: SchedulerOption{
-					Name: schedulerName,
-				},
+			name:   "get expire config with file cache",
+			expire: 1 * time.Millisecond,
+			sleep: func() {
+				time.Sleep(30 * time.Millisecond)
 			},
+			cleanFileCache: func(t *testing.T) {
+				if err := os.Remove(cachePath); err != nil {
+					t.Fatal(err)
+				}
+			},
+			mock: func(m *mocks.MockManagerClientMockRecorder) {
+				var d map[string]any
+				if err := mapstructure.Decode(TestDynconfig{
+					Scheduler: SchedulerOption{
+						Name: "foo",
+					},
+				}, &d); err != nil {
+					t.Error(err)
+				}
+
+				m.Get().Return(d, nil).Times(2)
+			},
+			run: func(t *testing.T, d Dynconfig[TestDynconfig]) {
+				assert := assert.New(t)
+				data, err := d.Get()
+				assert.NoError(err)
+				assert.EqualValues(data, &TestDynconfig{
+					Scheduler: SchedulerOption{
+						Name: "foo",
+					},
+				})
+			},
+		},
+		{
+			name:   "get config failed",
+			expire: 1 * time.Millisecond,
 			sleep: func() {
 				time.Sleep(30 * time.Millisecond)
 			},
@@ -116,11 +136,16 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 					t.Error(err)
 				}
 
-				m.Get().Return(d, nil).Times(1)
+				gomock.InOrder(
+					m.Get().Return(d, nil).Times(1),
+					m.Get().Return(nil, errors.New("manager serivce error")).Times(1),
+				)
 			},
-			expect: func(t *testing.T, data any) {
+			run: func(t *testing.T, d Dynconfig[TestDynconfig]) {
 				assert := assert.New(t)
-				assert.EqualValues(data, TestDynconfig{
+				data, err := d.Get()
+				assert.NoError(err)
+				assert.EqualValues(data, &TestDynconfig{
 					Scheduler: SchedulerOption{
 						Name: schedulerName,
 					},
@@ -128,16 +153,9 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 			},
 		},
 		{
-			name:   "unmarshals manager config failed",
-			expire: 20 * time.Millisecond,
-			dynconfig: TestDynconfig{
-				Scheduler: SchedulerOption{
-					Name: schedulerName,
-				},
-			},
-			sleep: func() {
-				time.Sleep(30 * time.Millisecond)
-			},
+			name:   "get config with file cache",
+			expire: 10 * time.Second,
+			sleep:  func() {},
 			cleanFileCache: func(t *testing.T) {
 				if err := os.Remove(cachePath); err != nil {
 					t.Fatal(err)
@@ -154,11 +172,166 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 				}
 
 				m.Get().Return(d, nil).Times(1)
-				m.Get().Return(nil, errors.New("manager serivce error")).Times(1)
 			},
-			expect: func(t *testing.T, data any) {
+			run: func(t *testing.T, d Dynconfig[TestDynconfig]) {
 				assert := assert.New(t)
-				assert.EqualValues(data, TestDynconfig{
+				data, err := d.Get()
+				assert.NoError(err)
+				assert.EqualValues(data, &TestDynconfig{
+					Scheduler: SchedulerOption{
+						Name: schedulerName,
+					},
+				})
+
+				data, err = d.Get()
+				assert.NoError(err)
+				assert.EqualValues(data, &TestDynconfig{
+					Scheduler: SchedulerOption{
+						Name: schedulerName,
+					},
+				})
+			},
+		},
+		{
+			name:   "config is changed",
+			expire: 20 * time.Millisecond,
+			sleep: func() {
+				time.Sleep(30 * time.Millisecond)
+			},
+			cleanFileCache: func(t *testing.T) {
+				if err := os.Remove(cachePath); err != nil {
+					t.Fatal(err)
+				}
+			},
+			mock: func(m *mocks.MockManagerClientMockRecorder) {
+				var df map[string]any
+				if err := mapstructure.Decode(TestDynconfig{
+					Scheduler: SchedulerOption{
+						Name: schedulerName,
+					},
+				}, &df); err != nil {
+					t.Error(err)
+				}
+
+				var ds map[string]any
+				if err := mapstructure.Decode(TestDynconfig{
+					Scheduler: SchedulerOption{
+						Name: "foo",
+					},
+				}, &ds); err != nil {
+					t.Error(err)
+				}
+
+				gomock.InOrder(
+					m.Get().Return(df, nil).Times(2),
+					m.Get().Return(ds, nil).Times(1),
+				)
+			},
+			run: func(t *testing.T, d Dynconfig[TestDynconfig]) {
+				assert := assert.New(t)
+				data, err := d.Get()
+				assert.NoError(err)
+				assert.EqualValues(data, &TestDynconfig{
+					Scheduler: SchedulerOption{
+						Name: schedulerName,
+					},
+				})
+
+				data, err = d.Get()
+				assert.NoError(err)
+				assert.EqualValues(data, &TestDynconfig{
+					Scheduler: SchedulerOption{
+						Name: schedulerName,
+					},
+				})
+
+				time.Sleep(30 * time.Millisecond)
+				data, err = d.Get()
+				assert.NoError(err)
+				assert.EqualValues(data, &TestDynconfig{
+					Scheduler: SchedulerOption{
+						Name: "foo",
+					},
+				})
+			},
+		},
+		{
+			name:   "config is not changed",
+			expire: 1 * time.Millisecond,
+			sleep: func() {
+				time.Sleep(30 * time.Millisecond)
+			},
+			cleanFileCache: func(t *testing.T) {
+				if err := os.Remove(cachePath); err != nil {
+					t.Fatal(err)
+				}
+			},
+			mock: func(m *mocks.MockManagerClientMockRecorder) {
+				var df map[string]any
+				if err := mapstructure.Decode(TestDynconfig{
+					Scheduler: SchedulerOption{
+						Name: schedulerName,
+					},
+				}, &df); err != nil {
+					t.Error(err)
+				}
+
+				m.Get().Return(df, nil).Times(3)
+			},
+			run: func(t *testing.T, d Dynconfig[TestDynconfig]) {
+				assert := assert.New(t)
+				data, err := d.Get()
+				assert.NoError(err)
+				assert.EqualValues(data, &TestDynconfig{
+					Scheduler: SchedulerOption{
+						Name: schedulerName,
+					},
+				})
+
+				time.Sleep(30 * time.Millisecond)
+				data, err = d.Get()
+				assert.NoError(err)
+				assert.EqualValues(data, &TestDynconfig{
+					Scheduler: SchedulerOption{
+						Name: schedulerName,
+					},
+				})
+			},
+		},
+		{
+			name:   "config is not changed and cache is not expired",
+			expire: 10 * time.Second,
+			sleep:  func() {},
+			cleanFileCache: func(t *testing.T) {
+				if err := os.Remove(cachePath); err != nil {
+					t.Fatal(err)
+				}
+			},
+			mock: func(m *mocks.MockManagerClientMockRecorder) {
+				var df map[string]any
+				if err := mapstructure.Decode(TestDynconfig{
+					Scheduler: SchedulerOption{
+						Name: schedulerName,
+					},
+				}, &df); err != nil {
+					t.Error(err)
+				}
+
+				m.Get().Return(df, nil).Times(1)
+			},
+			run: func(t *testing.T, d Dynconfig[TestDynconfig]) {
+				assert := assert.New(t)
+				data, err := d.Get()
+				assert.NoError(err)
+				assert.EqualValues(data, &TestDynconfig{
+					Scheduler: SchedulerOption{
+						Name: schedulerName,
+					},
+				})
+
+				data, err = d.Get()
+				assert.NoError(err)
+				assert.EqualValues(data, &TestDynconfig{
 					Scheduler: SchedulerOption{
 						Name: schedulerName,
 					},
@@ -174,18 +347,13 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 			mockManagerClient := mocks.NewMockManagerClient(ctl)
 			tc.mock(mockManagerClient.EXPECT())
 
-			d, err := New(mockManagerClient, cachePath, tc.expire)
+			d, err := New[TestDynconfig](mockManagerClient, cachePath, tc.expire)
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			tc.sleep()
-			var data TestDynconfig
-			if err := d.Unmarshal(&data); err != nil {
-				t.Fatal(err)
-			}
-
-			tc.expect(t, data)
+			tc.run(t, d)
 			tc.cleanFileCache(t)
 		})
 	}
