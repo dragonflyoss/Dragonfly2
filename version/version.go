@@ -18,11 +18,6 @@ package version
 
 import (
 	"fmt"
-
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
-
-	"d7y.io/dragonfly/v2/pkg/types"
 )
 
 var (
@@ -36,18 +31,6 @@ var (
 	Gotags     = "unknown"
 	Gogcflags  = "unknown"
 )
-
-var (
-	versionGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: types.MetricsNamespace,
-		Name:      "version",
-		Help:      "Version info of dragonfly components.",
-	}, []string{"major", "minor", "git_version", "git_commit", "platform", "build_time", "go_version", "go_tags", "go_gcflags"})
-)
-
-func init() {
-	versionGauge.WithLabelValues(Major, Minor, GitVersion, GitCommit, Platform, BuildTime, GoVersion, Gotags, Gogcflags).Set(1)
-}
 
 func Version() string {
 	return fmt.Sprintf("Major: %s, Minor: %s, GitVersion: %s, GitCommit: %s, Platform: %s, BuildTime: %s, GoVersion: %s, Gotags: %s, Gogcflags: %s", Major,
