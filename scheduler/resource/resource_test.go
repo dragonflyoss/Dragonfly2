@@ -110,7 +110,7 @@ func TestResource_New(t *testing.T) {
 			mock: func(mg *gc.MockGCMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
 					mg.Add(gomock.Any()).Return(nil).Times(3),
-					md.Get().Return(nil, errors.New("foo")).Times(1),
+					md.Get().Return(&config.DynconfigData{}, errors.New("foo")).Times(1),
 				)
 			},
 			expect: func(t *testing.T, resource Resource, err error) {

@@ -11,30 +11,45 @@ import (
 )
 
 // MockDynconfig is a mock of Dynconfig interface.
-type MockDynconfig struct {
+type MockDynconfig[T any] struct {
 	ctrl     *gomock.Controller
-	recorder *MockDynconfigMockRecorder
+	recorder *MockDynconfigMockRecorder[T]
 }
 
 // MockDynconfigMockRecorder is the mock recorder for MockDynconfig.
-type MockDynconfigMockRecorder struct {
-	mock *MockDynconfig
+type MockDynconfigMockRecorder[T any] struct {
+	mock *MockDynconfig[T]
 }
 
 // NewMockDynconfig creates a new mock instance.
-func NewMockDynconfig(ctrl *gomock.Controller) *MockDynconfig {
-	mock := &MockDynconfig{ctrl: ctrl}
-	mock.recorder = &MockDynconfigMockRecorder{mock}
+func NewMockDynconfig[T any](ctrl *gomock.Controller) *MockDynconfig[T] {
+	mock := &MockDynconfig[T]{ctrl: ctrl}
+	mock.recorder = &MockDynconfigMockRecorder[T]{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockDynconfig) EXPECT() *MockDynconfigMockRecorder {
+func (m *MockDynconfig[T]) EXPECT() *MockDynconfigMockRecorder[T] {
 	return m.recorder
 }
 
+// Get mocks base method.
+func (m *MockDynconfig[T]) Get() (*T, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get")
+	ret0, _ := ret[0].(*T)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockDynconfigMockRecorder[T]) Get() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockDynconfig[T])(nil).Get))
+}
+
 // Refresh mocks base method.
-func (m *MockDynconfig) Refresh() error {
+func (m *MockDynconfig[T]) Refresh() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Refresh")
 	ret0, _ := ret[0].(error)
@@ -42,21 +57,7 @@ func (m *MockDynconfig) Refresh() error {
 }
 
 // Refresh indicates an expected call of Refresh.
-func (mr *MockDynconfigMockRecorder) Refresh() *gomock.Call {
+func (mr *MockDynconfigMockRecorder[T]) Refresh() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Refresh", reflect.TypeOf((*MockDynconfig)(nil).Refresh))
-}
-
-// Unmarshal mocks base method.
-func (m *MockDynconfig) Unmarshal(rawVal any) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Unmarshal", rawVal)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Unmarshal indicates an expected call of Unmarshal.
-func (mr *MockDynconfigMockRecorder) Unmarshal(rawVal interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unmarshal", reflect.TypeOf((*MockDynconfig)(nil).Unmarshal), rawVal)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Refresh", reflect.TypeOf((*MockDynconfig[T])(nil).Refresh))
 }

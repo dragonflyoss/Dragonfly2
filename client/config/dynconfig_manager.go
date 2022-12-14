@@ -45,7 +45,7 @@ import (
 var cacheFileName = "daemon"
 
 type dynconfigManager struct {
-	internaldynconfig.Dynconfig
+	internaldynconfig.Dynconfig[DynconfigData]
 	observers            map[Observer]struct{}
 	done                 chan struct{}
 	cachePath            string
@@ -55,7 +55,7 @@ type dynconfigManager struct {
 // newDynconfigManager returns a new manager dynconfig instence.
 func newDynconfigManager(cfg *DaemonOption, rawManagerClient managerclient.Client, cacheDir string, expire time.Duration, creds credentials.TransportCredentials) (Dynconfig, error) {
 	cachePath := filepath.Join(cacheDir, cacheFileName)
-	d, err := internaldynconfig.New(
+	d, err := internaldynconfig.New[DynconfigData](
 		newManagerClient(rawManagerClient, cfg),
 		cachePath,
 		expire,
@@ -141,6 +141,14 @@ func (d *dynconfigManager) GetSchedulers() ([]*managerv1.Scheduler, error) {
 		return nil, err
 	}
 
+	if data.Schedulers == nil {
+		return nil, errors.New("invalid scheudlers")
+	}
+
+	if len(data.Schedulers) == 0 {
+		return nil, errors.New("schedulers not found")
+	}
+
 	return data.Schedulers, nil
 }
 
@@ -151,17 +159,11 @@ func (d *dynconfigManager) GetObjectStorage() (*managerv1.ObjectStorage, error) 
 		return nil, err
 	}
 
-	return data.ObjectStorage, nil
-}
-
-// Get the dynamic config from manager.
-func (d *dynconfigManager) Get() (*DynconfigData, error) {
-	var data DynconfigData
-	if err := d.Unmarshal(&data); err != nil {
-		return nil, err
+	if data.ObjectStorage == nil {
+		return nil, errors.New("invalid object storage")
 	}
 
-	return &data, nil
+	return data.ObjectStorage, nil
 }
 
 // Refresh refreshes dynconfig in cache.
