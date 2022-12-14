@@ -24,6 +24,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"d7y.io/dragonfly/v2/pkg/types"
+	"d7y.io/dragonfly/v2/version"
 )
 
 const (
@@ -43,6 +44,7 @@ const (
 	SeedPeerDownloadTypeBackToSource = "back_to_source"
 )
 
+// Variables declared for metrics.
 var (
 	ProxyRequestCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
@@ -162,12 +164,20 @@ var (
 		Name:      "prefetch_task_total",
 		Help:      "Counter of the total prefetched tasks.",
 	})
+
+	VersionGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.DfdaemonMetricsName,
+		Name:      "version",
+		Help:      "Version info of the service.",
+	}, []string{"major", "minor", "git_version", "git_commit", "platform", "build_time", "go_version", "go_tags", "go_gcflags"})
 )
 
 func New(addr string) *http.Server {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
 
+	VersionGauge.WithLabelValues(version.Major, version.Minor, version.GitVersion, version.GitCommit, version.Platform, version.BuildTime, version.GoVersion, version.Gotags, version.Gogcflags).Set(1)
 	return &http.Server{
 		Addr:    addr,
 		Handler: mux,
