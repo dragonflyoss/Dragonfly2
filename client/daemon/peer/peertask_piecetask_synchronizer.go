@@ -36,6 +36,7 @@ import (
 
 	"d7y.io/dragonfly/v2/client/config"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/container/ring"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
 	dfdaemonclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
@@ -46,7 +47,7 @@ type pieceTaskSyncManager struct {
 	ctx               context.Context
 	ctxCancel         context.CancelFunc
 	peerTaskConductor *peerTaskConductor
-	pieceRequestCh    chan *DownloadPieceRequest
+	pieceRequestQueue ring.Queue[DownloadPieceRequest]
 	workers           map[string]*pieceTaskSynchronizer
 	watchdog          *synchronizerWatchdog
 }
@@ -59,7 +60,7 @@ type pieceTaskSynchronizer struct {
 	dstPeer           *schedulerv1.PeerPacket_DestPeer
 	error             atomic.Value
 	peerTaskConductor *peerTaskConductor
-	pieceRequestCh    chan *DownloadPieceRequest
+	pieceRequestQueue ring.Queue[DownloadPieceRequest]
 }
 
 type synchronizerWatchdog struct {
@@ -156,7 +157,7 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 		Limit:    16,
 	}
 	if worker, ok := s.workers[dstPeer.PeerId]; ok {
-		// worker is okay, keep it go on
+		// worker is okay, keep it going on
 		if worker.error.Load() == nil {
 			s.peerTaskConductor.Infof("reuse PieceTaskSynchronizer %s", dstPeer.PeerId)
 			return nil
@@ -211,7 +212,7 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 	synchronizer := &pieceTaskSynchronizer{
 		span:                span,
 		peerTaskConductor:   s.peerTaskConductor,
-		pieceRequestCh:      s.pieceRequestCh,
+		pieceRequestQueue:   s.pieceRequestQueue,
 		syncPiecesStream:    stream,
 		grpcClient:          grpcClient,
 		dstPeer:             dstPeer,
@@ -318,6 +319,7 @@ func (s *pieceTaskSyncManager) acquire(request *commonv1.PieceTaskRequest) (atte
 
 func (s *pieceTaskSyncManager) cancel() {
 	s.ctxCancel()
+	s.pieceRequestQueue.Close()
 	s.Lock()
 	for _, p := range s.workers {
 		p.close()
@@ -371,13 +373,16 @@ func (s *pieceTaskSynchronizer) dispatchPieceRequest(piecePacket *commonv1.Piece
 			DstPid:  piecePacket.DstPid,
 			DstAddr: piecePacket.DstAddr,
 		}
+
+		s.pieceRequestQueue.Enqueue(req)
+		s.span.AddEvent(fmt.Sprintf("send piece #%d request to piece download queue", piece.PieceNum))
+
 		select {
-		case s.pieceRequestCh <- req:
-			s.span.AddEvent(fmt.Sprintf("send piece #%d request to piece download queue", piece.PieceNum))
 		case <-s.peerTaskConductor.successCh:
 			s.Infof("peer task success, stop dispatch piece request, dest peer: %s", s.dstPeer.PeerId)
 		case <-s.peerTaskConductor.failCh:
 			s.Warnf("peer task fail, stop dispatch piece request, dest peer: %s", s.dstPeer.PeerId)
+		default:
 		}
 	}
 }
