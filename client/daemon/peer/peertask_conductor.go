@@ -44,6 +44,7 @@ import (
 	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/container/ring"
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
@@ -581,8 +582,7 @@ func (pt *peerTaskConductor) pullPieces() {
 func (pt *peerTaskConductor) pullPiecesWithP2P() {
 	var (
 		// keep same size with pt.failedPieceCh for avoiding deadlock
-		pieceBufferSize = uint32(config.DefaultPieceChanSize)
-		pieceRequestCh  = make(chan *DownloadPieceRequest, pieceBufferSize)
+		pieceRequestQueue = ring.NewRandom[DownloadPieceRequest](config.DefaultPieceQueueExponent)
 	)
 	ctx, cancel := context.WithCancel(pt.ctx)
 
@@ -590,11 +590,11 @@ func (pt *peerTaskConductor) pullPiecesWithP2P() {
 		ctx:               ctx,
 		ctxCancel:         cancel,
 		peerTaskConductor: pt,
-		pieceRequestCh:    pieceRequestCh,
+		pieceRequestQueue: pieceRequestQueue,
 		workers:           map[string]*pieceTaskSynchronizer{},
 	}
-	go pt.pullPiecesFromPeers(pieceRequestCh)
-	pt.receivePeerPacket(pieceRequestCh)
+	go pt.pullPiecesFromPeers(pieceRequestQueue)
+	pt.receivePeerPacket(pieceRequestQueue)
 }
 
 func (pt *peerTaskConductor) storeEmptyPeerTask() {
@@ -695,7 +695,7 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 	pt.PublishPieceInfo(0, uint32(contentLength))
 }
 
-func (pt *peerTaskConductor) receivePeerPacket(pieceRequestCh chan *DownloadPieceRequest) {
+func (pt *peerTaskConductor) receivePeerPacket(pieceRequestQueue ring.Queue[DownloadPieceRequest]) {
 	var (
 		lastNotReadyPiece   int32 = 0
 		peerPacket          *schedulerv1.PeerPacket
@@ -785,7 +785,7 @@ loop:
 			trace.WithAttributes(config.AttributeMainPeer.String(peerPacket.MainPeer.PeerId)))
 
 		if !firstPacketReceived {
-			pt.initDownloadPieceWorkers(peerPacket.ParallelCount, pieceRequestCh)
+			pt.initDownloadPieceWorkers(peerPacket.ParallelCount, pieceRequestQueue)
 			firstPeerSpan.SetAttributes(config.AttributeMainPeer.String(peerPacket.MainPeer.PeerId))
 			firstPeerSpan.End()
 		}
@@ -956,7 +956,7 @@ func (pt *peerTaskConductor) pullSinglePiece() {
 }
 
 // Deprecated
-func (pt *peerTaskConductor) pullPiecesFromPeers(pieceRequestCh chan *DownloadPieceRequest) {
+func (pt *peerTaskConductor) pullPiecesFromPeers(pieceRequestQueue ring.Queue[DownloadPieceRequest]) {
 	if ok, backSource := pt.waitFirstPeerPacket(); !ok {
 		if backSource {
 			return
@@ -1025,7 +1025,7 @@ loop:
 		pt.updateMetadata(piecePacket)
 
 		// 3. dispatch piece request to all workers
-		pt.dispatchPieceRequest(pieceRequestCh, piecePacket)
+		pt.dispatchPieceRequest(pieceRequestQueue, piecePacket)
 
 		// 4. get next not request piece
 		if num, ok = pt.getNextPieceNum(num); ok {
@@ -1085,12 +1085,12 @@ func (pt *peerTaskConductor) updateMetadata(piecePacket *commonv1.PiecePacket) {
 	}
 }
 
-func (pt *peerTaskConductor) initDownloadPieceWorkers(count int32, pieceRequestCh chan *DownloadPieceRequest) {
+func (pt *peerTaskConductor) initDownloadPieceWorkers(count int32, pieceRequestQueue ring.Queue[DownloadPieceRequest]) {
 	if count < 1 {
 		count = 4
 	}
 	for i := int32(0); i < count; i++ {
-		go pt.downloadPieceWorker(i, pieceRequestCh)
+		go pt.downloadPieceWorker(i, pieceRequestQueue)
 	}
 }
 
@@ -1156,7 +1156,7 @@ func (pt *peerTaskConductor) waitAvailablePeerPacket() (int32, bool) {
 }
 
 // Deprecated
-func (pt *peerTaskConductor) dispatchPieceRequest(pieceRequestCh chan *DownloadPieceRequest, piecePacket *commonv1.PiecePacket) {
+func (pt *peerTaskConductor) dispatchPieceRequest(pieceRequestQueue ring.Queue[DownloadPieceRequest], piecePacket *commonv1.PiecePacket) {
 	pieceCount := len(piecePacket.PieceInfos)
 	pt.Debugf("dispatch piece request, piece count: %d", pieceCount)
 	// fix cdn return zero piece info, but with total piece count and content length
@@ -1184,12 +1184,18 @@ func (pt *peerTaskConductor) dispatchPieceRequest(pieceRequestCh chan *DownloadP
 			DstPid:  piecePacket.DstPid,
 			DstAddr: piecePacket.DstAddr,
 		}
+
+		pieceRequestQueue.Enqueue(req)
+		msg := fmt.Sprintf("send piece #%d request to piece download queue", piece.PieceNum)
+		pt.span.AddEvent(msg)
+		pt.Infof(msg)
+
 		select {
-		case pieceRequestCh <- req:
 		case <-pt.successCh:
 			pt.Infof("peer task success, stop dispatch piece request")
 		case <-pt.failCh:
 			pt.Warnf("peer task fail, stop dispatch piece request")
+		default:
 		}
 	}
 }
@@ -1224,18 +1230,22 @@ wait:
 	}
 }
 
-func (pt *peerTaskConductor) downloadPieceWorker(id int32, requests chan *DownloadPieceRequest) {
+func (pt *peerTaskConductor) downloadPieceWorker(id int32, requests ring.Queue[DownloadPieceRequest]) {
 	for {
-		select {
-		case request := <-requests:
-			pt.readyPiecesLock.RLock()
-			if pt.readyPieces.IsSet(request.piece.PieceNum) {
-				pt.readyPiecesLock.RUnlock()
-				pt.Log().Debugf("piece %d is already downloaded, skip", request.piece.PieceNum)
-				continue
-			}
+		request, ok := requests.Dequeue()
+		if !ok {
+			pt.Infof("piece download queue cancelled, peer download worker #%d exit", id)
+			return
+		}
+		pt.readyPiecesLock.RLock()
+		if pt.readyPieces.IsSet(request.piece.PieceNum) {
 			pt.readyPiecesLock.RUnlock()
-			pt.downloadPiece(id, request)
+			pt.Log().Debugf("piece %d is already downloaded, skip", request.piece.PieceNum)
+			continue
+		}
+		pt.readyPiecesLock.RUnlock()
+		pt.downloadPiece(id, request)
+		select {
 		case <-pt.pieceDownloadCtx.Done():
 			pt.Infof("piece download cancelled, peer download worker #%d exit", id)
 			return
@@ -1245,6 +1255,7 @@ func (pt *peerTaskConductor) downloadPieceWorker(id int32, requests chan *Downlo
 		case <-pt.failCh:
 			pt.Errorf("peer task fail, peer download worker #%d exit", id)
 			return
+		default:
 		}
 	}
 }
