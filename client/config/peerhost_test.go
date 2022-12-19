@@ -502,6 +502,8 @@ func TestPeerHostOption_Load(t *testing.T) {
 			TLSVerify:     true,
 			TLSPolicy:     "force",
 			CertSpec: &CertSpec{
+				DNSNames:       []string{"foo"},
+				IPAddresses:    []net.IP{net.IPv4zero},
 				ValidityPeriod: 1000000000,
 			},
 		},

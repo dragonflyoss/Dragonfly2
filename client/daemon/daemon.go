@@ -149,10 +149,13 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 
 		if opt.Security.AutoIssueCert {
 			certifyClient = &certify.Certify{
-				CommonName:   ip.IPv4.String(),
-				Issuer:       issuer.NewDragonflyIssuer(managerClient, issuer.WithValidityPeriod(opt.Security.CertSpec.ValidityPeriod)),
-				RenewBefore:  time.Hour,
-				CertConfig:   nil,
+				CommonName:  ip.IPv4.String(),
+				Issuer:      issuer.NewDragonflyIssuer(managerClient, issuer.WithValidityPeriod(opt.Security.CertSpec.ValidityPeriod)),
+				RenewBefore: time.Hour,
+				CertConfig: &certify.CertConfig{
+					SubjectAlternativeNames:   opt.Security.CertSpec.DNSNames,
+					IPSubjectAlternativeNames: append(opt.Security.CertSpec.IPAddresses, opt.Host.AdvertiseIP),
+				},
 				IssueTimeout: 0,
 				Logger:       zapadapter.New(logger.CoreLogger.Desugar()),
 				Cache: cache.NewCertifyMutliCache(

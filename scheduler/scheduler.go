@@ -127,10 +127,13 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	)
 	if cfg.Security.AutoIssueCert {
 		certifyClient = &certify.Certify{
-			CommonName:   types.SchedulerName,
-			Issuer:       issuer.NewDragonflyIssuer(managerClient, issuer.WithValidityPeriod(cfg.Security.CertSpec.ValidityPeriod)),
-			RenewBefore:  time.Hour,
-			CertConfig:   nil,
+			CommonName:  types.SchedulerName,
+			Issuer:      issuer.NewDragonflyIssuer(managerClient, issuer.WithValidityPeriod(cfg.Security.CertSpec.ValidityPeriod)),
+			RenewBefore: time.Hour,
+			CertConfig: &certify.CertConfig{
+				SubjectAlternativeNames:   cfg.Security.CertSpec.DNSNames,
+				IPSubjectAlternativeNames: append(cfg.Security.CertSpec.IPAddresses, cfg.Server.AdvertiseIP),
+			},
 			IssueTimeout: 0,
 			Logger:       zapadapter.New(logger.CoreLogger.Desugar()),
 			Cache: cache.NewCertifyMutliCache(
