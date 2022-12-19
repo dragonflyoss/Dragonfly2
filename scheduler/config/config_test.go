@@ -17,11 +17,11 @@
 package config
 
 import (
+	"net"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/mitchellh/mapstructure"
 	testifyassert "github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
 )
@@ -35,24 +35,24 @@ func TestConfig_Load(t *testing.T) {
 			BackToSourceCount:      3,
 			RetryBackToSourceLimit: 2,
 			RetryLimit:             10,
-			RetryInterval:          1 * time.Second,
+			RetryInterval:          10 * time.Second,
 			GC: GCConfig{
-				PieceDownloadTimeout: 1 * time.Minute,
-				PeerGCInterval:       1 * time.Minute,
-				PeerTTL:              5 * time.Minute,
-				TaskGCInterval:       1 * time.Minute,
+				PieceDownloadTimeout: 5 * time.Second,
+				PeerGCInterval:       10 * time.Second,
+				PeerTTL:              60 * time.Second,
+				TaskGCInterval:       30 * time.Second,
 				HostGCInterval:       1 * time.Minute,
 			},
 			Training: TrainingConfig{
 				Enable:               true,
 				EnableAutoRefresh:    true,
-				RefreshModelInterval: 1 * time.Second,
+				RefreshModelInterval: 10 * time.Second,
 				CPU:                  2,
 			},
 		},
 		Server: ServerConfig{
-			AdvertiseIP: "127.0.0.1",
-			ListenIP:    "0.0.0.0",
+			AdvertiseIP: net.ParseIP("127.0.0.1"),
+			ListenIP:    net.ParseIP("0.0.0.0"),
 			Port:        8002,
 			Host:        "foo",
 			WorkHome:    "foo",
@@ -62,7 +62,7 @@ func TestConfig_Load(t *testing.T) {
 			DataDir:     "foo",
 		},
 		DynConfig: DynConfig{
-			RefreshInterval: 5 * time.Minute,
+			RefreshInterval: 10 * time.Second,
 		},
 		Manager: ManagerConfig{
 			Addr:               "127.0.0.1:65003",
@@ -110,7 +110,7 @@ func TestConfig_Load(t *testing.T) {
 			TLSVerify:     true,
 			TLSPolicy:     "force",
 			CertSpec: CertSpec{
-				ValidityPeriod: 1000,
+				ValidityPeriod: 10 * time.Minute,
 			},
 		},
 		Network: NetworkConfig{
@@ -120,14 +120,9 @@ func TestConfig_Load(t *testing.T) {
 
 	schedulerConfigYAML := &Config{}
 	contentYAML, _ := os.ReadFile("./testdata/scheduler.yaml")
-	var dataYAML map[string]any
-	if err := yaml.Unmarshal(contentYAML, &dataYAML); err != nil {
+	if err := yaml.Unmarshal(contentYAML, &schedulerConfigYAML); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := mapstructure.Decode(dataYAML, &schedulerConfigYAML); err != nil {
-		t.Fatal(err)
-	}
-
-	assert.EqualValues(config, schedulerConfigYAML)
+	assert.EqualValues(schedulerConfigYAML, config)
 }

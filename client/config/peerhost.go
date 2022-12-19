@@ -102,7 +102,7 @@ func (p *DaemonOption) Load(path string) error {
 }
 
 func (p *DaemonOption) Convert() error {
-	if p.Host.AdvertiseIP == "" {
+	if p.Host.AdvertiseIP == nil {
 		if p.Network.EnableIPv6 {
 			p.Host.AdvertiseIP = ip.IPv6
 		} else {
@@ -267,7 +267,7 @@ type HostOption struct {
 	// Hostname is daemon host name
 	Hostname string `mapstructure:"hostname" yaml:"hostname"`
 	// The ip report to scheduler, normal same with listen ip
-	AdvertiseIP string `mapstructure:"advertiseIP" yaml:"advertiseIP"`
+	AdvertiseIP net.IP `mapstructure:"advertiseIP" yaml:"advertiseIP"`
 }
 
 type DownloadOption struct {

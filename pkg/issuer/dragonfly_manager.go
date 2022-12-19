@@ -56,13 +56,8 @@ func WithManagerDNSNames(dnsNames []string) ManagerOption {
 }
 
 // WithManagerIPAddresses set the manager ipAddresses for dragonflyManagerIssuer.
-func WithManagerIPAddresses(rawIPAddrs []string) ManagerOption {
+func WithManagerIPAddresses(ipAddrs []net.IP) ManagerOption {
 	return func(i *dragonflyManagerIssuer) {
-		var ipAddrs []net.IP
-		for _, rawIPAddr := range rawIPAddrs {
-			ipAddrs = append(ipAddrs, net.ParseIP(rawIPAddr))
-		}
-
 		i.ipAddresses = ipAddrs
 	}
 }

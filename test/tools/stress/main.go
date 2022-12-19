@@ -128,7 +128,7 @@ loop:
 }
 
 func debug() {
-	debugAddr := fmt.Sprintf("%s:%d", ip.IPv4, 18066)
+	debugAddr := fmt.Sprintf("%s:%d", ip.IPv4.String(), 18066)
 	viewer.SetConfiguration(viewer.WithAddr(debugAddr))
 	if err := statsview.New().Start(); err != nil {
 		log.Println("stat view start failed", err)
