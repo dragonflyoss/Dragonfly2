@@ -287,6 +287,12 @@ type SecurityConfig struct {
 }
 
 type CertSpec struct {
+	// DNSNames is a list of dns names be set on the certificate.
+	DNSNames []string `mapstructure:"dnsNames" yaml:"dnsNames"`
+
+	// IPAddresses is a list of ip addresses be set on the certificate.
+	IPAddresses []net.IP `mapstructure:"ipAddresses" yaml:"ipAddresses"`
+
 	// ValidityPeriod is the validity period of certificate.
 	ValidityPeriod time.Duration `mapstructure:"validityPeriod" yaml:"validityPeriod"`
 }
@@ -361,6 +367,8 @@ func New() *Config {
 			TLSVerify:     true,
 			TLSPolicy:     rpc.PreferTLSPolicy,
 			CertSpec: CertSpec{
+				DNSNames:       DefaultCertDNSNames,
+				IPAddresses:    DefaultCertIPAddresses,
 				ValidityPeriod: DefaultCertValidityPeriod,
 			},
 		},
@@ -503,6 +511,14 @@ func (cfg *Config) Validate() error {
 	if cfg.Security.AutoIssueCert {
 		if cfg.Security.CACert == "" {
 			return errors.New("security requires parameter caCert")
+		}
+
+		if len(cfg.Security.CertSpec.IPAddresses) == 0 {
+			return errors.New("certSpec requires parameter ipAddresses")
+		}
+
+		if len(cfg.Security.CertSpec.DNSNames) == 0 {
+			return errors.New("certSpec requires parameter dnsNames")
 		}
 
 		if cfg.Security.CertSpec.ValidityPeriod <= 0 {

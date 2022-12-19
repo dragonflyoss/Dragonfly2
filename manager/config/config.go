@@ -352,8 +352,8 @@ func New() *Config {
 			AutoIssueCert: false,
 			TLSPolicy:     rpc.PreferTLSPolicy,
 			CertSpec: CertSpec{
-				IPAddresses:    DefaultCertIPAddresses,
 				DNSNames:       DefaultCertDNSNames,
+				IPAddresses:    DefaultCertIPAddresses,
 				ValidityPeriod: DefaultCertValidityPeriod,
 			},
 		},

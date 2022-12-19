@@ -74,6 +74,10 @@ security:
   tlsVerify: true
   tlsPolicy: force
   certSpec:
+    dnsNames:
+      - foo
+    ipAddresses:
+      - 0.0.0.0
     validityPeriod: 10m
 
 network:

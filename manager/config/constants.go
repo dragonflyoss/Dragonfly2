@@ -96,7 +96,7 @@ const (
 
 var (
 	// DefaultCertIPAddresses is default ip addresses of certificate.
-	DefaultCertIPAddresses = []net.IP{ip.IPv4}
+	DefaultCertIPAddresses = []net.IP{ip.IPv4, ip.IPv6}
 
 	// DefaultCertDNSNames is default dns names of certificate.
 	DefaultCertDNSNames = []string{"dragonfly-manager", "dragonfly-manager.dragonfly-system.svc", "dragonfly-manager.dragonfly-system.svc.cluster.local"}

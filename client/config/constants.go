@@ -17,8 +17,10 @@
 package config
 
 import (
+	"net"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
@@ -90,6 +92,16 @@ const (
 )
 
 var (
+	// DefaultCertIPAddresses is default ip addresses of certificate.
+	DefaultCertIPAddresses = []net.IP{ip.IPv4, ip.IPv6}
+
+	// DefaultCertDNSNames is default dns names of certificate.
+	DefaultCertDNSNames = []string{"dragonfly-peer", "dragonfly-peer.dragonfly-system.svc", "dragonfly-peer.dragonfly-system.svc.cluster.local",
+		"dragonfly-seed-peer", "dragonfly-seed-peer.dragonfly-system.svc", "dragonfly-seed-peer.dragonfly-system.svc.cluster.local",
+		"dragonfly-proxy", "dragonfly-proxy.dragonfly-system.svc", "dragonfly-proxy.dragonfly-system.svc.cluster.local",
+		"dragonfly-dfdaemon", "dragonfly-dfdaemon.dragonfly-system.svc", "dragonfly-dfdaemon.dragonfly-system.svc.cluster.local",
+	}
+
 	// DefaultCertValidityPeriod is default validity period of certificate.
 	DefaultCertValidityPeriod = 180 * 24 * time.Hour
 )

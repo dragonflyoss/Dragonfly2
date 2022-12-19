@@ -172,12 +172,13 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 			CommonName: types.ManagerName,
 			Issuer: issuer.NewDragonflyManagerIssuer(
 				&cert,
-				issuer.WithManagerIPAddresses(append(cfg.Security.CertSpec.IPAddresses, cfg.Server.GRPC.AdvertiseIP)),
-				issuer.WithManagerDNSNames(cfg.Security.CertSpec.DNSNames),
 				issuer.WithManagerValidityPeriod(cfg.Security.CertSpec.ValidityPeriod),
 			),
-			RenewBefore:  time.Hour,
-			CertConfig:   nil,
+			RenewBefore: time.Hour,
+			CertConfig: &certify.CertConfig{
+				SubjectAlternativeNames:   cfg.Security.CertSpec.DNSNames,
+				IPSubjectAlternativeNames: append(cfg.Security.CertSpec.IPAddresses, cfg.Server.GRPC.AdvertiseIP),
+			},
 			IssueTimeout: 0,
 			Logger:       zapadapter.New(logger.CoreLogger.Desugar()),
 			Cache: pkgcache.NewCertifyMutliCache(

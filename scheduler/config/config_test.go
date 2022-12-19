@@ -110,6 +110,8 @@ func TestConfig_Load(t *testing.T) {
 			TLSVerify:     true,
 			TLSPolicy:     "force",
 			CertSpec: CertSpec{
+				DNSNames:       []string{"foo"},
+				IPAddresses:    []net.IP{net.IPv4zero},
 				ValidityPeriod: 10 * time.Minute,
 			},
 		},

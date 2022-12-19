@@ -111,8 +111,8 @@ func TestManagerConfig_Load(t *testing.T) {
 			CAKey:         "bar",
 			TLSPolicy:     "force",
 			CertSpec: CertSpec{
-				IPAddresses:    []net.IP{net.IPv4zero},
 				DNSNames:       []string{"foo"},
+				IPAddresses:    []net.IP{net.IPv4zero},
 				ValidityPeriod: 1 * time.Second,
 			},
 		},

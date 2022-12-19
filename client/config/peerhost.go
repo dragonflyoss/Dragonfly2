@@ -192,6 +192,24 @@ func (p *DaemonOption) Validate() error {
 		return errors.New("reload interval too short, must great than 1 second")
 	}
 
+	if p.Security.AutoIssueCert {
+		if p.Security.CACert == "" {
+			return errors.New("security requires parameter caCert")
+		}
+
+		if len(p.Security.CertSpec.IPAddresses) == 0 {
+			return errors.New("certSpec requires parameter ipAddresses")
+		}
+
+		if len(p.Security.CertSpec.DNSNames) == 0 {
+			return errors.New("certSpec requires parameter dnsNames")
+		}
+
+		if p.Security.CertSpec.ValidityPeriod <= 0 {
+			return errors.New("certSpec requires parameter validityPeriod")
+		}
+	}
+
 	return nil
 }
 
@@ -213,6 +231,10 @@ type GlobalSecurityOption struct {
 }
 
 type CertSpec struct {
+	// DNSNames is a list of dns names be set on the certificate.
+	DNSNames []string `mapstructure:"dnsNames" yaml:"dnsNames"`
+	// IPAddresses is a list of ip addresses be set on the certificate.
+	IPAddresses []net.IP `mapstructure:"ipAddresses" yaml:"ipAddresses"`
 	// ValidityPeriod is the validity period of certificate.
 	ValidityPeriod time.Duration `mapstructure:"validityPeriod" yaml:"validityPeriod"`
 }
