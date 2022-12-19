@@ -108,7 +108,7 @@ func New(cfg *config.DaemonOption, dynconfig config.Dynconfig, peerTaskManager p
 		dynconfig:       dynconfig,
 		peerTaskManager: peerTaskManager,
 		storageManager:  storageManager,
-		peerIDGenerator: peer.NewPeerIDGenerator(cfg.Host.AdvertiseIP),
+		peerIDGenerator: peer.NewPeerIDGenerator(cfg.Host.AdvertiseIP.String()),
 	}
 
 	router := o.initRouter(cfg, logDir)
@@ -542,7 +542,7 @@ func (o *objectStorage) importObjectToSeedPeers(ctx context.Context, bucketName,
 	var seedPeerHosts []string
 	for _, scheduler := range schedulers {
 		for _, seedPeer := range scheduler.SeedPeers {
-			if o.config.Host.AdvertiseIP != seedPeer.Ip && seedPeer.ObjectStoragePort > 0 {
+			if o.config.Host.AdvertiseIP.String() != seedPeer.Ip && seedPeer.ObjectStoragePort > 0 {
 				seedPeerHosts = append(seedPeerHosts, fmt.Sprintf("%s:%d", seedPeer.Ip, seedPeer.ObjectStoragePort))
 			}
 		}

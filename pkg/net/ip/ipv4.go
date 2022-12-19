@@ -24,10 +24,10 @@ import (
 
 var (
 	// IPv4 is external address.
-	IPv4 string
+	IPv4 net.IP
 
 	// IPv4lookback is lookback address.
-	IPv4lookback = "127.0.0.1"
+	IPv4lookback = net.ParseIP("127.0.0.1")
 )
 
 func init() {
@@ -40,23 +40,23 @@ func init() {
 }
 
 // externalIPv4 returns the available IPv4.
-func externalIPv4() (string, error) {
+func externalIPv4() (net.IP, error) {
 	ips, err := ipAddrs()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	var externalIPs []string
+	var externalIPs []net.IP
 	for _, ip := range ips {
 		ip = ip.To4()
 		if ip == nil {
 			continue // not an ipv4 address
 		}
-		externalIPs = append(externalIPs, ip.String())
+		externalIPs = append(externalIPs, ip)
 	}
 
 	if len(externalIPs) == 0 {
-		return "", fmt.Errorf("can not found external ipv4")
+		return nil, fmt.Errorf("can not found external ipv4")
 	}
 
 	return externalIPs[0], nil

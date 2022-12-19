@@ -17,10 +17,11 @@
 package config
 
 import (
+	"net"
 	"os"
 	"testing"
+	"time"
 
-	"github.com/mitchellh/mapstructure"
 	testifyassert "github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
 
@@ -38,8 +39,8 @@ func TestManagerConfig_Load(t *testing.T) {
 			LogDir:    "foo",
 			PluginDir: "foo",
 			GRPC: GRPCConfig{
-				AdvertiseIP: "127.0.0.1",
-				ListenIP:    "0.0.0.0",
+				AdvertiseIP: net.IPv4zero,
+				ListenIP:    net.IPv4zero,
 				PortRange: TCPListenPortRange{
 					Start: 65003,
 					End:   65003,
@@ -89,11 +90,11 @@ func TestManagerConfig_Load(t *testing.T) {
 		},
 		Cache: CacheConfig{
 			Redis: RedisCacheConfig{
-				TTL: 1000,
+				TTL: 1 * time.Second,
 			},
 			Local: LocalCacheConfig{
 				Size: 10000,
-				TTL:  1000,
+				TTL:  1 * time.Second,
 			},
 		},
 		ObjectStorage: ObjectStorageConfig{
@@ -110,9 +111,9 @@ func TestManagerConfig_Load(t *testing.T) {
 			CAKey:         "bar",
 			TLSPolicy:     "force",
 			CertSpec: CertSpec{
-				IPAddresses:    []string{"127.0.0.1"},
+				IPAddresses:    []net.IP{net.IPv4zero},
 				DNSNames:       []string{"foo"},
-				ValidityPeriod: 1000,
+				ValidityPeriod: 1 * time.Second,
 			},
 		},
 		Metrics: MetricsConfig{
@@ -127,12 +128,7 @@ func TestManagerConfig_Load(t *testing.T) {
 
 	managerConfigYAML := &Config{}
 	contentYAML, _ := os.ReadFile("./testdata/manager.yaml")
-	var dataYAML map[string]any
-	if err := yaml.Unmarshal(contentYAML, &dataYAML); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := mapstructure.Decode(dataYAML, &managerConfigYAML); err != nil {
+	if err := yaml.Unmarshal(contentYAML, &managerConfigYAML); err != nil {
 		t.Fatal(err)
 	}
 

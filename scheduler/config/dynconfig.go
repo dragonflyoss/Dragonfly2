@@ -391,7 +391,7 @@ func (mc *managerClient) Get() (any, error) {
 	getSchedulerResp, err := mc.GetScheduler(context.Background(), &managerv1.GetSchedulerRequest{
 		SourceType:         managerv1.SourceType_SCHEDULER_SOURCE,
 		HostName:           mc.config.Server.Host,
-		Ip:                 mc.config.Server.AdvertiseIP,
+		Ip:                 mc.config.Server.AdvertiseIP.String(),
 		SchedulerClusterId: uint64(mc.config.Manager.SchedulerClusterID),
 	})
 	if err != nil {
@@ -401,7 +401,7 @@ func (mc *managerClient) Get() (any, error) {
 	listApplicationsResp, err := mc.ListApplications(context.Background(), &managerv1.ListApplicationsRequest{
 		SourceType: managerv1.SourceType_SCHEDULER_SOURCE,
 		HostName:   mc.config.Server.Host,
-		Ip:         mc.config.Server.AdvertiseIP,
+		Ip:         mc.config.Server.AdvertiseIP.String(),
 	})
 	if err != nil {
 		if s, ok := status.FromError(err); ok {
