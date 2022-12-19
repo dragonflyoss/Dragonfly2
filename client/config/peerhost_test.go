@@ -17,6 +17,7 @@
 package config
 
 import (
+	"net"
 	"net/url"
 	"os"
 	"reflect"
@@ -288,7 +289,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 			Location:       "0.0.0.0",
 			IDC:            "d7y",
 			NetTopology:    "d7y",
-			AdvertiseIP:    "0.0.0.0",
+			AdvertiseIP:    net.IPv4zero,
 		},
 		Download: DownloadOption{
 			TotalRateLimit: util.RateLimit{

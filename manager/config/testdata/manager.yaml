@@ -5,7 +5,7 @@ server:
   logDir: foo
   pluginDir: foo
   grpc:
-    advertiseIP: 127.0.0.1
+    advertiseIP: 0.0.0.0
     listenIP: 0.0.0.0
     port:
       start: 65003
@@ -39,7 +39,7 @@ database:
     migrate: true
   redis:
     addrs: [foo, bar]
-    masterName: "baz"
+    masterName: baz
     password: bar
     host: bar
     port: 6379
@@ -49,10 +49,10 @@ database:
 
 cache:
   redis:
-    ttl: 1000
+    ttl: 1s
   local:
     size: 10000
-    ttl: 1000
+    ttl: 1s
 
 objectStorage:
   enable: true
@@ -64,15 +64,15 @@ objectStorage:
 
 security:
   autoIssueCert: true
-  caCert: foo
-  caKey: bar
+  caCert: testdata/ca.crt
+  caKey: testdata/ca.key
   tlsPolicy: force
   certSpec:
     ipAddresses:
-      - "127.0.0.1"
+      - 0.0.0.0
     dnsNames:
-      - "foo"
-    validityPeriod: 1000
+      - foo
+    validityPeriod: 1s
 
 metrics:
   enable: true

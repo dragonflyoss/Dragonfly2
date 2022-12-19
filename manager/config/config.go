@@ -231,10 +231,10 @@ type GRPCConfig struct {
 	Listen string `mapstructure:"listen" yaml:"listen"`
 
 	// AdvertiseIP is advertise ip.
-	AdvertiseIP string `yaml:"advertiseIP" mapstructure:"advertiseIP"`
+	AdvertiseIP net.IP `yaml:"advertiseIP" mapstructure:"advertiseIP"`
 
 	// ListenIP is listen ip, like: 0.0.0.0, 192.168.0.1.
-	ListenIP string `mapstructure:"listenIP" yaml:"listenIP"`
+	ListenIP net.IP `mapstructure:"listenIP" yaml:"listenIP"`
 
 	// Port is listen port.
 	PortRange TCPListenPortRange `yaml:"port" mapstructure:"port"`
@@ -290,7 +290,7 @@ type CertSpec struct {
 	DNSNames []string `mapstructure:"dnsNames" yaml:"dnsNames"`
 
 	// IPAddresses is a list of ip addresses be set on the certificate.
-	IPAddresses []string `mapstructure:"ipAddresses" yaml:"ipAddresses"`
+	IPAddresses []net.IP `mapstructure:"ipAddresses" yaml:"ipAddresses"`
 
 	// ValidityPeriod is the validity period  of certificate.
 	ValidityPeriod time.Duration `mapstructure:"validityPeriod" yaml:"validityPeriod"`
@@ -374,11 +374,11 @@ func (cfg *Config) Validate() error {
 		return errors.New("server requires parameter name")
 	}
 
-	if cfg.Server.GRPC.AdvertiseIP == "" {
+	if cfg.Server.GRPC.AdvertiseIP == nil {
 		return errors.New("grpc requires parameter advertiseIP")
 	}
 
-	if cfg.Server.GRPC.ListenIP == "" {
+	if cfg.Server.GRPC.ListenIP == nil {
 		return errors.New("grpc requires parameter listenIP")
 	}
 
@@ -546,11 +546,11 @@ func (cfg *Config) Convert() error {
 	}
 
 	// TODO Compatible with deprecated fields listen.
-	if cfg.Server.GRPC.Listen != "" && cfg.Server.GRPC.ListenIP == "" {
-		cfg.Server.GRPC.ListenIP = cfg.Server.GRPC.Listen
+	if cfg.Server.GRPC.Listen != "" && cfg.Server.GRPC.ListenIP == nil {
+		cfg.Server.GRPC.ListenIP = net.ParseIP(cfg.Server.GRPC.Listen)
 	}
 
-	if cfg.Server.GRPC.AdvertiseIP == "" {
+	if cfg.Server.GRPC.AdvertiseIP == nil {
 		if cfg.Network.EnableIPv6 {
 			cfg.Server.GRPC.AdvertiseIP = ip.IPv6
 		} else {
@@ -558,11 +558,11 @@ func (cfg *Config) Convert() error {
 		}
 	}
 
-	if cfg.Server.GRPC.ListenIP == "" {
+	if cfg.Server.GRPC.ListenIP == nil {
 		if cfg.Network.EnableIPv6 {
-			cfg.Server.GRPC.ListenIP = net.IPv6zero.String()
+			cfg.Server.GRPC.ListenIP = net.IPv6zero
 		} else {
-			cfg.Server.GRPC.ListenIP = net.IPv4zero.String()
+			cfg.Server.GRPC.ListenIP = net.IPv4zero
 		}
 	}
 

@@ -75,10 +75,10 @@ type ServerConfig struct {
 	Listen string `yaml:"listen" mapstructure:"listen"`
 
 	// AdvertiseIP is advertise ip.
-	AdvertiseIP string `yaml:"advertiseIP" mapstructure:"advertiseIP"`
+	AdvertiseIP net.IP `yaml:"advertiseIP" mapstructure:"advertiseIP"`
 
 	// ListenIP is listen ip, like: 0.0.0.0, 192.168.0.1.
-	ListenIP string `yaml:"listenIP" mapstructure:"listenIP"`
+	ListenIP net.IP `yaml:"listenIP" mapstructure:"listenIP"`
 
 	// Server port.
 	Port int `yaml:"port" mapstructure:"port"`
@@ -372,11 +372,11 @@ func New() *Config {
 
 // Validate config parameters.
 func (cfg *Config) Validate() error {
-	if cfg.Server.AdvertiseIP == "" {
+	if cfg.Server.AdvertiseIP == nil {
 		return errors.New("server requires parameter advertiseIP")
 	}
 
-	if cfg.Server.ListenIP == "" {
+	if cfg.Server.ListenIP == nil {
 		return errors.New("server requires parameter listenIP")
 	}
 
@@ -530,16 +530,16 @@ func (cfg *Config) Convert() error {
 	}
 
 	// TODO Compatible with deprecated fields ip.
-	if cfg.Server.IP != "" && cfg.Server.AdvertiseIP == "" {
-		cfg.Server.AdvertiseIP = cfg.Server.IP
+	if cfg.Server.IP != "" && cfg.Server.AdvertiseIP == nil {
+		cfg.Server.AdvertiseIP = net.ParseIP(cfg.Server.IP)
 	}
 
 	// TODO Compatible with deprecated fields listen.
-	if cfg.Server.Listen != "" && cfg.Server.ListenIP == "" {
-		cfg.Server.ListenIP = cfg.Server.Listen
+	if cfg.Server.Listen != "" && cfg.Server.ListenIP == nil {
+		cfg.Server.ListenIP = net.ParseIP(cfg.Server.Listen)
 	}
 
-	if cfg.Server.AdvertiseIP == "" {
+	if cfg.Server.AdvertiseIP == nil {
 		if cfg.Network.EnableIPv6 {
 			cfg.Server.AdvertiseIP = ip.IPv6
 		} else {
@@ -547,11 +547,11 @@ func (cfg *Config) Convert() error {
 		}
 	}
 
-	if cfg.Server.ListenIP == "" {
+	if cfg.Server.ListenIP == nil {
 		if cfg.Network.EnableIPv6 {
-			cfg.Server.ListenIP = net.IPv6zero.String()
+			cfg.Server.ListenIP = net.IPv6zero
 		} else {
-			cfg.Server.ListenIP = net.IPv4zero.String()
+			cfg.Server.ListenIP = net.IPv4zero
 		}
 	}
 

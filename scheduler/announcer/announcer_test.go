@@ -18,6 +18,7 @@ package announcer
 
 import (
 	"errors"
+	"net"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -39,7 +40,7 @@ func TestAnnouncer_New(t *testing.T) {
 			config: &config.Config{
 				Server: config.ServerConfig{
 					Host:        "localhost",
-					AdvertiseIP: "127.0.0.1",
+					AdvertiseIP: net.ParseIP("127.0.0.1"),
 					Port:        8080,
 				},
 				Host: config.HostConfig{
@@ -67,7 +68,7 @@ func TestAnnouncer_New(t *testing.T) {
 			config: &config.Config{
 				Server: config.ServerConfig{
 					Host:        "localhost",
-					AdvertiseIP: "127.0.0.1",
+					AdvertiseIP: net.ParseIP("127.0.0.1"),
 					Port:        8080,
 				},
 				Host: config.HostConfig{

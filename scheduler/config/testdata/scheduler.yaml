@@ -14,21 +14,21 @@ scheduler:
   backToSourceCount: 3
   retryBackToSourceLimit: 2
   retryLimit: 10
-  retryInterval: 1000000000
+  retryInterval: 10s
   gc:
-    pieceDownloadTimeout: 60000000000
-    peerGCInterval: 60000000000
-    peerTTL: 300000000000
-    taskGCInterval: 60000000000
-    hostGCInterval: 60000000000
+    pieceDownloadTimeout: 5s
+    peerGCInterval: 10s
+    peerTTL: 60s
+    taskGCInterval: 30s
+    hostGCInterval: 1m
   training:
     enable: true
     enableAutoRefresh: true
-    refreshModelInterval: 1000000000
+    refreshModelInterval: 10s
     cpu: 2
 
-dynconfig:
-  refreshInterval: 300000000000
+dynConfig:
+  refreshInterval: 10s
 
 host:
   idc: foo
@@ -39,7 +39,7 @@ manager:
   addr: 127.0.0.1:65003
   schedulerClusterID: 1
   keepAlive:
-    interval: 5000000000
+    interval: 5s
 
 seedPeer:
   enable: true
@@ -70,11 +70,11 @@ metrics:
 
 security:
   autoIssueCert: true
-  caCert: foo
+  caCert: testdata/ca.crt
   tlsVerify: true
   tlsPolicy: force
   certSpec:
-    validityPeriod: 1000
+    validityPeriod: 10m
 
 network:
   enableIPv6: true

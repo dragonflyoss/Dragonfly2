@@ -23,10 +23,10 @@ import (
 
 var (
 	// IPv6 is external address.
-	IPv6 string
+	IPv6 net.IP
 
 	// IPv6lookback is lookback address.
-	IPv6lookback = net.IPv6loopback.String()
+	IPv6lookback = net.IPv6loopback
 )
 
 func init() {
@@ -39,13 +39,13 @@ func init() {
 }
 
 // externalIPv6 returns the available IPv6.
-func externalIPv6() (string, error) {
+func externalIPv6() (net.IP, error) {
 	ips, err := ipAddrs()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	var externalIPs []string
+	var externalIPs []net.IP
 	for _, ip := range ips {
 		ipv4 := ip.To4()
 		if ipv4 != nil {
@@ -53,11 +53,11 @@ func externalIPv6() (string, error) {
 		}
 
 		ipv6 := ip.To16()
-		externalIPs = append(externalIPs, ipv6.String())
+		externalIPs = append(externalIPs, ipv6)
 	}
 
 	if len(externalIPs) == 0 {
-		return "", fmt.Errorf("can not found external ipv6")
+		return nil, fmt.Errorf("can not found external ipv6")
 	}
 
 	return externalIPs[0], nil

@@ -187,7 +187,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 
 		// Issue a certificate to reduce first time delay.
 		if _, err := certifyClient.GetCertificate(&tls.ClientHelloInfo{
-			ServerName: cfg.Server.GRPC.AdvertiseIP,
+			ServerName: cfg.Server.GRPC.AdvertiseIP.String(),
 		}); err != nil {
 			logger.Errorf("issue certificate error: %s", err.Error())
 			return nil, err
@@ -251,7 +251,7 @@ func (s *Server) Serve() error {
 	}
 
 	// Generate GRPC listener
-	lis, _, err := rpc.ListenWithPortRange(s.config.Server.GRPC.ListenIP, s.config.Server.GRPC.PortRange.Start, s.config.Server.GRPC.PortRange.End)
+	lis, _, err := rpc.ListenWithPortRange(s.config.Server.GRPC.ListenIP.String(), s.config.Server.GRPC.PortRange.Start, s.config.Server.GRPC.PortRange.End)
 	if err != nil {
 		logger.Fatalf("net listener failed to start: %v", err)
 	}

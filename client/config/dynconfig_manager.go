@@ -253,7 +253,7 @@ func (mc *managerClient) Get() (any, error) {
 	listSchedulersResp, err := mc.ListSchedulers(context.Background(), &managerv1.ListSchedulersRequest{
 		SourceType: managerv1.SourceType_PEER_SOURCE,
 		HostName:   mc.config.Host.Hostname,
-		Ip:         mc.config.Host.AdvertiseIP,
+		Ip:         mc.config.Host.AdvertiseIP.String(),
 		Version:    version.GitVersion,
 		Commit:     version.GitCommit,
 		HostInfo: map[string]string{
@@ -271,7 +271,7 @@ func (mc *managerClient) Get() (any, error) {
 		getObjectStorageResp, err := mc.GetObjectStorage(context.Background(), &managerv1.GetObjectStorageRequest{
 			SourceType: managerv1.SourceType_PEER_SOURCE,
 			HostName:   mc.config.Host.Hostname,
-			Ip:         mc.config.Host.AdvertiseIP,
+			Ip:         mc.config.Host.AdvertiseIP.String(),
 		})
 		if err != nil {
 			return nil, err

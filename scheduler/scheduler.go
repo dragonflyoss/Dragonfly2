@@ -145,7 +145,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 
 		// Issue a certificate to reduce first time delay.
 		if _, err := certifyClient.GetCertificate(&tls.ClientHelloInfo{
-			ServerName: cfg.Server.AdvertiseIP,
+			ServerName: cfg.Server.AdvertiseIP.String(),
 		}); err != nil {
 			return nil, err
 		}
@@ -259,7 +259,7 @@ func (s *Server) Serve() error {
 	}()
 
 	// Generate GRPC limit listener.
-	ip, ok := ip.FormatIP(s.config.Server.ListenIP)
+	ip, ok := ip.FormatIP(s.config.Server.ListenIP.String())
 	if !ok {
 		return errors.New("format ip failed")
 	}

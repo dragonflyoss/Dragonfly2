@@ -224,7 +224,7 @@ func (a *announcer) newAnnounceHostRequest() (*schedulerv1.AnnounceHostRequest, 
 		Id:              a.hostID,
 		Type:            hostType,
 		Hostname:        a.config.Host.Hostname,
-		Ip:              a.config.Host.AdvertiseIP,
+		Ip:              a.config.Host.AdvertiseIP.String(),
 		Port:            a.daemonPort,
 		DownloadPort:    a.daemonDownloadPort,
 		Os:              h.OS,
@@ -301,7 +301,7 @@ func (a *announcer) announceToManager() error {
 			Idc:               a.config.Host.IDC,
 			NetTopology:       a.config.Host.NetTopology,
 			Location:          a.config.Host.Location,
-			Ip:                a.config.Host.AdvertiseIP,
+			Ip:                a.config.Host.AdvertiseIP.String(),
 			Port:              a.daemonPort,
 			DownloadPort:      a.daemonDownloadPort,
 			ObjectStoragePort: objectStoragePort,
@@ -316,7 +316,7 @@ func (a *announcer) announceToManager() error {
 		a.managerClient.KeepAlive(a.config.Scheduler.Manager.SeedPeer.KeepAlive.Interval, &managerv1.KeepAliveRequest{
 			SourceType: managerv1.SourceType_SEED_PEER_SOURCE,
 			HostName:   a.config.Host.Hostname,
-			Ip:         a.config.Host.AdvertiseIP,
+			Ip:         a.config.Host.AdvertiseIP.String(),
 			ClusterId:  uint64(a.config.Scheduler.Manager.SeedPeer.ClusterID),
 		}, a.done)
 	}()
