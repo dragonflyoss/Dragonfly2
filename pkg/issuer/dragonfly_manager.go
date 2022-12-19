@@ -24,7 +24,6 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"math/big"
-	"net"
 	"time"
 
 	"github.com/johanbrandhorst/certify"
@@ -40,27 +39,11 @@ const (
 // dragonflyManagerIssuer provides manager issuer function.
 type dragonflyManagerIssuer struct {
 	tlsCACert      *tls.Certificate
-	dnsNames       []string
-	ipAddresses    []net.IP
 	validityPeriod time.Duration
 }
 
 // ManagerOption is a functional option for configuring the dragonflyManagerIssuer.
 type ManagerOption func(i *dragonflyManagerIssuer)
-
-// WithManagerDNSNames set the manager dnsNames for dragonflyManagerIssuer.
-func WithManagerDNSNames(dnsNames []string) ManagerOption {
-	return func(i *dragonflyManagerIssuer) {
-		i.dnsNames = dnsNames
-	}
-}
-
-// WithManagerIPAddresses set the manager ipAddresses for dragonflyManagerIssuer.
-func WithManagerIPAddresses(ipAddrs []net.IP) ManagerOption {
-	return func(i *dragonflyManagerIssuer) {
-		i.ipAddresses = ipAddrs
-	}
-}
 
 // WithManagerValidityPeriod set the manager validityPeriod for dragonflyManagerIssuer.
 func WithManagerValidityPeriod(d time.Duration) ManagerOption {
@@ -107,8 +90,8 @@ func (i *dragonflyManagerIssuer) Issue(ctx context.Context, commonName string, c
 			CommonName:   commonName,
 			Organization: defaultSubjectOrganization,
 		},
-		DNSNames:              append(certConfig.SubjectAlternativeNames, i.dnsNames...),
-		IPAddresses:           append(certConfig.IPSubjectAlternativeNames, i.ipAddresses...),
+		DNSNames:              certConfig.SubjectAlternativeNames,
+		IPAddresses:           certConfig.IPSubjectAlternativeNames,
 		URIs:                  certConfig.URISubjectAlternativeNames,
 		NotBefore:             now.Add(-10 * time.Minute).UTC(),
 		NotAfter:              now.Add(i.validityPeriod).UTC(),

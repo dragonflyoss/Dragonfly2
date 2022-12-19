@@ -177,6 +177,8 @@ var peerHostConfig = func() *DaemonOption {
 			TLSVerify:     false,
 			TLSPolicy:     rpc.DefaultTLSPolicy,
 			CertSpec: &CertSpec{
+				DNSNames:       DefaultCertDNSNames,
+				IPAddresses:    DefaultCertIPAddresses,
 				ValidityPeriod: DefaultCertValidityPeriod,
 			},
 		},

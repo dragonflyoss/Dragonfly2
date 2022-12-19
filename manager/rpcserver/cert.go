@@ -87,7 +87,10 @@ func (s *Server) IssueCertificate(ctx context.Context, req *securityv1.Certifica
 	template := x509.Certificate{
 		SerialNumber:          serial,
 		Subject:               csr.Subject,
+		DNSNames:              csr.DNSNames,
+		EmailAddresses:        csr.EmailAddresses,
 		IPAddresses:           ips,
+		URIs:                  csr.URIs,
 		NotBefore:             now.Add(-10 * time.Minute).UTC(),
 		NotAfter:              now.Add(req.ValidityPeriod.AsDuration()).UTC(),
 		BasicConstraintsValid: true,

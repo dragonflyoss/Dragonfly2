@@ -68,10 +68,10 @@ security:
   caKey: testdata/ca.key
   tlsPolicy: force
   certSpec:
-    ipAddresses:
-      - 0.0.0.0
     dnsNames:
       - foo
+    ipAddresses:
+      - 0.0.0.0
     validityPeriod: 1s
 
 metrics:
