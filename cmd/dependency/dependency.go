@@ -282,7 +282,7 @@ func initJaegerTracer(otelOption base.TelemetryOption) (func(), error) {
 		sdktrace.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
 			semconv.ServiceNameKey.String(otelOption.ServiceName),
-			semconv.ServiceInstanceIDKey.String(fmt.Sprintf("%s|%s", fqdn.FQDNHostname, ip.IPv4)),
+			semconv.ServiceInstanceIDKey.String(fmt.Sprintf("%s|%s", fqdn.FQDNHostname, ip.IPv4.String())),
 			semconv.ServiceNamespaceKey.String("dragonfly"),
 			semconv.ServiceVersionKey.String(version.GitVersion))),
 	)

@@ -59,7 +59,7 @@ func New(cfg *config.Config, managerClient managerclient.Client) (Announcer, err
 	if _, err := a.managerClient.UpdateScheduler(context.Background(), &managerv1.UpdateSchedulerRequest{
 		SourceType:         managerv1.SourceType_SCHEDULER_SOURCE,
 		HostName:           a.config.Server.Host,
-		Ip:                 a.config.Server.AdvertiseIP,
+		Ip:                 a.config.Server.AdvertiseIP.String(),
 		Port:               int32(a.config.Server.Port),
 		Idc:                a.config.Host.IDC,
 		Location:           a.config.Host.Location,
@@ -94,7 +94,7 @@ func (a *announcer) announceToManager() error {
 	a.managerClient.KeepAlive(a.config.Manager.KeepAlive.Interval, &managerv1.KeepAliveRequest{
 		SourceType: managerv1.SourceType_SCHEDULER_SOURCE,
 		HostName:   a.config.Server.Host,
-		Ip:         a.config.Server.AdvertiseIP,
+		Ip:         a.config.Server.AdvertiseIP.String(),
 		ClusterId:  uint64(a.config.Manager.SchedulerClusterID),
 	}, a.done)
 

@@ -111,7 +111,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 
 	host := &schedulerv1.PeerHost{
 		Id:             idgen.HostID(opt.Host.Hostname, int32(opt.Download.PeerGRPC.TCPListen.PortRange.Start)),
-		Ip:             opt.Host.AdvertiseIP,
+		Ip:             opt.Host.AdvertiseIP.String(),
 		RpcPort:        int32(opt.Download.PeerGRPC.TCPListen.PortRange.Start),
 		DownPort:       0,
 		HostName:       opt.Host.Hostname,
@@ -149,7 +149,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 
 		if opt.Security.AutoIssueCert {
 			certifyClient = &certify.Certify{
-				CommonName:   ip.IPv4,
+				CommonName:   ip.IPv4.String(),
 				Issuer:       issuer.NewDragonflyIssuer(managerClient, issuer.WithValidityPeriod(opt.Security.CertSpec.ValidityPeriod)),
 				RenewBefore:  time.Hour,
 				CertConfig:   nil,
@@ -162,7 +162,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 
 			// issue a certificate to reduce first time delay
 			if _, err := certifyClient.GetCertificate(&tls.ClientHelloInfo{
-				ServerName: ip.IPv4,
+				ServerName: ip.IPv4.String(),
 			}); err != nil {
 				logger.Errorf("issue certificate error: %s", err.Error())
 				return nil, err
