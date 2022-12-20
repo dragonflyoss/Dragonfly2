@@ -93,7 +93,7 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 				return
 			}
 
-			if err := peer.FSM.Event(resource.PeerEventDownloadBackToSource); err != nil {
+			if err := peer.FSM.Event(ctx, resource.PeerEventDownloadBackToSource); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 				return
 			}
@@ -101,7 +101,7 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 			// If the task state is TaskStateFailed,
 			// peer back-to-source and reset task state to TaskStateRunning.
 			if peer.Task.FSM.Is(resource.TaskStateFailed) {
-				if err := peer.Task.FSM.Event(resource.TaskEventDownload); err != nil {
+				if err := peer.Task.FSM.Event(ctx, resource.TaskEventDownload); err != nil {
 					peer.Task.Log.Errorf("task fsm event failed: %s", err.Error())
 					return
 				}
