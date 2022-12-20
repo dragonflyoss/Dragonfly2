@@ -63,8 +63,6 @@ const (
 	failedReasonNotSet = "unknown"
 )
 
-var errPeerPacketChanged = errors.New("peer packet changed")
-
 var _ Task = (*peerTaskConductor)(nil)
 
 // peerTaskConductor will fetch all pieces from other peers and send pieces info to broker
