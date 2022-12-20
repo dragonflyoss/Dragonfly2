@@ -75,29 +75,39 @@ type pieceTaskSynchronizerError struct {
 }
 
 // FIXME for compatibility, sync will be called after the dfdaemonclient.GetPieceTasks deprecated and the pieceTaskPoller removed
-func (s *pieceTaskSyncManager) sync(pp *schedulerv1.PeerPacket, desiredPiece int32) error {
+func (s *pieceTaskSyncManager) syncPeers(destPeers []*schedulerv1.PeerPacket_DestPeer, desiredPiece int32) error {
+	s.Lock()
+	defer func() {
+		if s.peerTaskConductor.WatchdogTimeout > 0 {
+			s.resetWatchdog(destPeers[0])
+		}
+		s.Unlock()
+	}()
+
 	var (
 		peers = map[string]bool{}
 		errs  []error
 	)
-	peers[pp.MainPeer.PeerId] = true
+
 	// TODO if the worker failed, reconnect and retry
-	s.Lock()
-	defer s.Unlock()
-	if _, ok := s.workers[pp.MainPeer.PeerId]; !ok {
-		err := s.newPieceTaskSynchronizer(s.ctx, pp.MainPeer, desiredPiece)
-		if err != nil {
-			s.peerTaskConductor.Errorf("main peer SyncPieceTasks error: %s", err)
-			errs = append(errs, err)
-		}
-	}
-	for _, p := range pp.CandidatePeers {
-		peers[p.PeerId] = true
-		if _, ok := s.workers[p.PeerId]; !ok {
-			err := s.newPieceTaskSynchronizer(s.ctx, p, desiredPiece)
-			if err != nil {
-				s.peerTaskConductor.Errorf("candidate peer SyncPieceTasks error: %s", err)
-				errs = append(errs, err)
+	for _, peer := range destPeers {
+		peers[peer.PeerId] = true
+		if _, ok := s.workers[peer.PeerId]; !ok {
+			err := s.newPieceTaskSynchronizer(s.ctx, peer, desiredPiece)
+			if err == nil {
+				s.peerTaskConductor.Infof("connected to peer: %s", peer.PeerId)
+				continue
+			}
+
+			// other errors, report to scheduler
+			if errors.Is(err, context.DeadlineExceeded) {
+				// connect timeout error, report to scheduler to get more available peers
+				s.reportInvalidPeer(peer, commonv1.Code_ClientConnectionError)
+				s.peerTaskConductor.Infof("connect peer %s with error: %s", peer.PeerId, err)
+			} else {
+				// other errors, report to scheduler to get more available peers
+				s.reportInvalidPeer(peer, commonv1.Code_ClientPieceRequestFail)
+				s.peerTaskConductor.Errorf("connect peer %s error: %s", peer.PeerId, err)
 			}
 		}
 	}
@@ -222,47 +232,6 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 	s.workers[dstPeer.PeerId] = synchronizer
 	go synchronizer.receive(piecePacket)
 	return nil
-}
-
-func (s *pieceTaskSyncManager) newMultiPieceTaskSynchronizer(
-	destPeers []*schedulerv1.PeerPacket_DestPeer,
-	desiredPiece int32) (legacyPeers []*schedulerv1.PeerPacket_DestPeer) {
-	s.Lock()
-	defer func() {
-		if s.peerTaskConductor.WatchdogTimeout > 0 {
-			s.resetWatchdog(destPeers[0])
-		}
-		s.Unlock()
-	}()
-
-	for _, peer := range destPeers {
-		err := s.newPieceTaskSynchronizer(s.ctx, peer, desiredPiece)
-		if err == nil {
-			s.peerTaskConductor.Infof("connected to peer: %s", peer.PeerId)
-			continue
-		}
-		// when err is codes.Unimplemented, fallback to legacy get piece grpc
-		stat, ok := status.FromError(err)
-		if ok && stat.Code() == codes.Unimplemented {
-			// for legacy peers, when get pieces error, will report the error
-			s.peerTaskConductor.Warnf("connect peer %s error: %s, fallback to legacy get piece grpc", peer.PeerId, err)
-			legacyPeers = append(legacyPeers, peer)
-			continue
-		}
-
-		// other errors, report to scheduler
-		if errors.Is(err, context.DeadlineExceeded) {
-			// connect timeout error, report to scheduler to get more available peers
-			s.reportInvalidPeer(peer, commonv1.Code_ClientConnectionError)
-			s.peerTaskConductor.Infof("connect to peer %s with error: %s, peer is invalid, skip legacy grpc", peer.PeerId, err)
-		} else {
-			// other errors, report to scheduler to get more available peers
-			s.reportInvalidPeer(peer, commonv1.Code_ClientPieceRequestFail)
-			s.peerTaskConductor.Errorf("connect peer %s error: %s, not codes.Unimplemented", peer.PeerId, err)
-		}
-	}
-	s.cleanStaleWorker(destPeers)
-	return legacyPeers
 }
 
 func (s *pieceTaskSyncManager) resetWatchdog(mainPeer *schedulerv1.PeerPacket_DestPeer) {
