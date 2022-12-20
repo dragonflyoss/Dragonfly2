@@ -428,7 +428,7 @@ func (p *Peer) DownloadTinyFile() ([]byte, error) {
 func (p *Peer) GetPriority(dynconfig config.DynconfigInterface) commonv1.Priority {
 	pbApplications, err := dynconfig.GetApplications()
 	if err != nil {
-		p.Log.Warn(err)
+		p.Log.Info(err)
 		return commonv1.Priority_LEVEL0
 	}
 
