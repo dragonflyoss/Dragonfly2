@@ -98,7 +98,7 @@ func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *schedul
 			// If the peer initialization succeeds and the download fails,
 			// set peer status is PeerStateFailed.
 			if peer != nil {
-				if err := peer.FSM.Event(PeerEventDownloadFailed); err != nil {
+				if err := peer.FSM.Event(ctx, PeerEventDownloadFailed); err != nil {
 					return nil, nil, err
 				}
 			}
@@ -110,7 +110,7 @@ func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *schedul
 			initialized = true
 
 			// Initialize seed peer.
-			peer, err = s.initSeedPeer(task, piece)
+			peer, err = s.initSeedPeer(ctx, task, piece)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -120,7 +120,7 @@ func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *schedul
 			// Handle begin of piece.
 			if piece.PieceInfo.PieceNum == common.BeginOfPiece {
 				peer.Log.Infof("receive begin of piece from seed peer: %#v %#v", piece, piece.PieceInfo)
-				if err := peer.FSM.Event(PeerEventDownload); err != nil {
+				if err := peer.FSM.Event(ctx, PeerEventDownload); err != nil {
 					return nil, nil, err
 				}
 
@@ -168,7 +168,7 @@ func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *schedul
 }
 
 // Initialize seed peer.
-func (s *seedPeer) initSeedPeer(task *Task, ps *cdnsystemv1.PieceSeed) (*Peer, error) {
+func (s *seedPeer) initSeedPeer(ctx context.Context, task *Task, ps *cdnsystemv1.PieceSeed) (*Peer, error) {
 	// Load peer from manager.
 	peer, ok := s.peerManager.Load(ps.PeerId)
 	if ok {
@@ -188,7 +188,7 @@ func (s *seedPeer) initSeedPeer(task *Task, ps *cdnsystemv1.PieceSeed) (*Peer, e
 	s.peerManager.Store(peer)
 	peer.Log.Info("seed peer has been stored")
 
-	if err := peer.FSM.Event(PeerEventRegisterNormal); err != nil {
+	if err := peer.FSM.Event(ctx, PeerEventRegisterNormal); err != nil {
 		return nil, err
 	}
 

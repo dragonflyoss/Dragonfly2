@@ -242,27 +242,27 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 			}, Dst: PeerStateLeave},
 		},
 		fsm.Callbacks{
-			PeerEventRegisterEmpty: func(e *fsm.Event) {
+			PeerEventRegisterEmpty: func(ctx context.Context, e *fsm.Event) {
 				p.UpdatedAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
-			PeerEventRegisterTiny: func(e *fsm.Event) {
+			PeerEventRegisterTiny: func(ctx context.Context, e *fsm.Event) {
 				p.UpdatedAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
-			PeerEventRegisterSmall: func(e *fsm.Event) {
+			PeerEventRegisterSmall: func(ctx context.Context, e *fsm.Event) {
 				p.UpdatedAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
-			PeerEventRegisterNormal: func(e *fsm.Event) {
+			PeerEventRegisterNormal: func(ctx context.Context, e *fsm.Event) {
 				p.UpdatedAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
-			PeerEventDownload: func(e *fsm.Event) {
+			PeerEventDownload: func(ctx context.Context, e *fsm.Event) {
 				p.UpdatedAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
-			PeerEventDownloadBackToSource: func(e *fsm.Event) {
+			PeerEventDownloadBackToSource: func(ctx context.Context, e *fsm.Event) {
 				p.IsBackToSource.Store(true)
 				p.Task.BackToSourcePeers.Add(p.ID)
 
@@ -273,7 +273,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 				p.UpdatedAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
-			PeerEventDownloadSucceeded: func(e *fsm.Event) {
+			PeerEventDownloadSucceeded: func(ctx context.Context, e *fsm.Event) {
 				if e.Src == PeerStateBackToSource {
 					p.Task.BackToSourcePeers.Delete(p.ID)
 				}
@@ -286,7 +286,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 				p.UpdatedAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
-			PeerEventDownloadFailed: func(e *fsm.Event) {
+			PeerEventDownloadFailed: func(ctx context.Context, e *fsm.Event) {
 				if e.Src == PeerStateBackToSource {
 					p.Task.PeerFailedCount.Inc()
 					p.Task.BackToSourcePeers.Delete(p.ID)
@@ -299,7 +299,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 				p.UpdatedAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
-			PeerEventLeave: func(e *fsm.Event) {
+			PeerEventLeave: func(ctx context.Context, e *fsm.Event) {
 				if err := p.Task.DeletePeerInEdges(p.ID); err != nil {
 					p.Log.Errorf("delete peer inedges failed: %s", err.Error())
 				}
@@ -428,7 +428,7 @@ func (p *Peer) DownloadTinyFile() ([]byte, error) {
 func (p *Peer) GetPriority(dynconfig config.DynconfigInterface) commonv1.Priority {
 	pbApplications, err := dynconfig.GetApplications()
 	if err != nil {
-		p.Log.Warn(err)
+		p.Log.Info(err)
 		return commonv1.Priority_LEVEL0
 	}
 

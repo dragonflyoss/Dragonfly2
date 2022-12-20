@@ -17,6 +17,7 @@
 package resource
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -187,7 +188,7 @@ func (h *Host) LeavePeers() {
 		}
 
 		peer.Log.Info("host leaves peers, causing the peer to leave")
-		if err := peer.FSM.Event(PeerEventLeave); err != nil {
+		if err := peer.FSM.Event(context.Background(), PeerEventLeave); err != nil {
 			peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 			return true
 		}

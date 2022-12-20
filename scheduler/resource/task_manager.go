@@ -19,6 +19,7 @@
 package resource
 
 import (
+	"context"
 	"sync"
 
 	pkggc "d7y.io/dragonfly/v2/pkg/gc"
@@ -111,7 +112,7 @@ func (t *taskManager) RunGC() error {
 
 		// If there is no peer then switch the task state to TaskStateLeave.
 		if task.PeerCount() == 0 {
-			if err := task.FSM.Event(TaskEventLeave); err != nil {
+			if err := task.FSM.Event(context.Background(), TaskEventLeave); err != nil {
 				task.Log.Errorf("task fsm event failed: %s", err.Error())
 				return true
 			}

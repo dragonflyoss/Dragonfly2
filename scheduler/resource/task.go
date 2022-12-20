@@ -17,6 +17,7 @@
 package resource
 
 import (
+	"context"
 	"errors"
 	"sort"
 	"sync"
@@ -172,19 +173,19 @@ func NewTask(id, url string, taskType commonv1.TaskType, meta *commonv1.UrlMeta,
 			{Name: TaskEventLeave, Src: []string{TaskStatePending, TaskStateRunning, TaskStateSucceeded, TaskStateFailed}, Dst: TaskStateLeave},
 		},
 		fsm.Callbacks{
-			TaskEventDownload: func(e *fsm.Event) {
+			TaskEventDownload: func(ctx context.Context, e *fsm.Event) {
 				t.UpdatedAt.Store(time.Now())
 				t.Log.Infof("task state is %s", e.FSM.Current())
 			},
-			TaskEventDownloadSucceeded: func(e *fsm.Event) {
+			TaskEventDownloadSucceeded: func(ctx context.Context, e *fsm.Event) {
 				t.UpdatedAt.Store(time.Now())
 				t.Log.Infof("task state is %s", e.FSM.Current())
 			},
-			TaskEventDownloadFailed: func(e *fsm.Event) {
+			TaskEventDownloadFailed: func(ctx context.Context, e *fsm.Event) {
 				t.UpdatedAt.Store(time.Now())
 				t.Log.Infof("task state is %s", e.FSM.Current())
 			},
-			TaskEventLeave: func(e *fsm.Event) {
+			TaskEventLeave: func(ctx context.Context, e *fsm.Event) {
 				t.UpdatedAt.Store(time.Now())
 				t.Log.Infof("task state is %s", e.FSM.Current())
 			},
@@ -458,7 +459,7 @@ func (t *Task) NotifyPeers(peerPacket *schedulerv1.PeerPacket, event string) {
 			}
 			t.Log.Infof("task notify peer %s code %s", peer.ID, peerPacket.Code)
 
-			if err := peer.FSM.Event(event); err != nil {
+			if err := peer.FSM.Event(context.Background(), event); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 				continue
 			}

@@ -327,7 +327,7 @@ func (s *Service) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTas
 	// advance the task state to TaskStateSucceeded.
 	if !task.FSM.Is(resource.TaskStateSucceeded) {
 		if task.FSM.Can(resource.TaskEventDownload) {
-			if err := task.FSM.Event(resource.TaskEventDownload); err != nil {
+			if err := task.FSM.Event(ctx, resource.TaskEventDownload); err != nil {
 				msg := fmt.Sprintf("task fsm event failed: %s", err.Error())
 				peer.Log.Error(msg)
 				return dferrors.New(commonv1.Code_SchedError, msg)
@@ -359,7 +359,7 @@ func (s *Service) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTas
 	// advance the peer state to PeerStateSucceeded.
 	if !peer.FSM.Is(resource.PeerStateSucceeded) {
 		if peer.FSM.Is(resource.PeerStatePending) {
-			if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
+			if err := peer.FSM.Event(ctx, resource.PeerEventRegisterNormal); err != nil {
 				msg := fmt.Sprintf("peer fsm event failed: %s", err.Error())
 				peer.Log.Error(msg)
 				return dferrors.New(commonv1.Code_SchedError, msg)
@@ -369,7 +369,7 @@ func (s *Service) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTas
 		if peer.FSM.Is(resource.PeerStateReceivedTiny) ||
 			peer.FSM.Is(resource.PeerStateReceivedSmall) ||
 			peer.FSM.Is(resource.PeerStateReceivedNormal) {
-			if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
+			if err := peer.FSM.Event(ctx, resource.PeerEventDownload); err != nil {
 				msg := fmt.Sprintf("peer fsm event failed: %s", err.Error())
 				peer.Log.Error(msg)
 				return dferrors.New(commonv1.Code_SchedError, msg)
@@ -416,7 +416,7 @@ func (s *Service) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget) er
 	}
 	metrics.LeaveTaskCount.WithLabelValues(peer.Tag, peer.Application).Inc()
 
-	if err := peer.FSM.Event(resource.PeerEventLeave); err != nil {
+	if err := peer.FSM.Event(ctx, resource.PeerEventLeave); err != nil {
 		metrics.LeaveTaskFailureCount.WithLabelValues(peer.Tag, peer.Application).Inc()
 		msg := fmt.Sprintf("peer fsm event failed: %s", err.Error())
 		peer.Log.Error(msg)
@@ -500,7 +500,7 @@ func (s *Service) triggerTask(ctx context.Context, req *schedulerv1.PeerTaskRequ
 	// If the task triggers the TaskEventDownload failed and it has no available peer,
 	// let the peer do the scheduling.
 	if !task.FSM.Is(resource.TaskStateRunning) {
-		if err := task.FSM.Event(resource.TaskEventDownload); err != nil {
+		if err := task.FSM.Event(ctx, resource.TaskEventDownload); err != nil {
 			peer.Log.Errorf("task fsm event failed: %s", err.Error())
 			return err
 		}
@@ -643,7 +643,7 @@ func (s *Service) storePeer(ctx context.Context, peerID string, task *resource.T
 
 // registerEmptyTask registers the empty task.
 func (s *Service) registerEmptyTask(ctx context.Context, peer *resource.Peer) (*schedulerv1.RegisterResult, error) {
-	if err := peer.FSM.Event(resource.PeerEventRegisterEmpty); err != nil {
+	if err := peer.FSM.Event(ctx, resource.PeerEventRegisterEmpty); err != nil {
 		return nil, err
 	}
 
@@ -659,7 +659,7 @@ func (s *Service) registerEmptyTask(ctx context.Context, peer *resource.Peer) (*
 
 // registerEmptyTask registers the tiny task.
 func (s *Service) registerTinyTask(ctx context.Context, peer *resource.Peer) (*schedulerv1.RegisterResult, error) {
-	if err := peer.FSM.Event(resource.PeerEventRegisterTiny); err != nil {
+	if err := peer.FSM.Event(ctx, resource.PeerEventRegisterTiny); err != nil {
 		return nil, err
 	}
 
@@ -701,7 +701,7 @@ func (s *Service) registerSmallTask(ctx context.Context, peer *resource.Peer) (*
 		return nil, err
 	}
 
-	if err := peer.FSM.Event(resource.PeerEventRegisterSmall); err != nil {
+	if err := peer.FSM.Event(ctx, resource.PeerEventRegisterSmall); err != nil {
 		return nil, err
 	}
 
@@ -728,7 +728,7 @@ func (s *Service) registerSmallTask(ctx context.Context, peer *resource.Peer) (*
 
 // registerNormalTask registers the tiny task.
 func (s *Service) registerNormalTask(ctx context.Context, peer *resource.Peer) (*schedulerv1.RegisterResult, error) {
-	if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
+	if err := peer.FSM.Event(ctx, resource.PeerEventRegisterNormal); err != nil {
 		return nil, err
 	}
 
@@ -741,7 +741,7 @@ func (s *Service) registerNormalTask(ctx context.Context, peer *resource.Peer) (
 
 // handleRegisterFailure handles failure of register.
 func (s *Service) handleRegisterFailure(ctx context.Context, peer *resource.Peer) {
-	if err := peer.FSM.Event(resource.PeerEventLeave); err != nil {
+	if err := peer.FSM.Event(ctx, resource.PeerEventLeave); err != nil {
 		peer.Log.Error(err)
 	}
 
@@ -761,19 +761,19 @@ func (s *Service) handleBeginOfPiece(ctx context.Context, peer *resource.Peer) {
 	case resource.PeerStateReceivedTiny:
 		// When the task is tiny,
 		// the peer has already returned to piece data when registering.
-		if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
+		if err := peer.FSM.Event(ctx, resource.PeerEventDownload); err != nil {
 			peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 			return
 		}
 	case resource.PeerStateReceivedSmall:
 		// When the task is small,
 		// the peer has already returned to the parent when registering.
-		if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
+		if err := peer.FSM.Event(ctx, resource.PeerEventDownload); err != nil {
 			peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 			return
 		}
 	case resource.PeerStateReceivedNormal:
-		if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
+		if err := peer.FSM.Event(ctx, resource.PeerEventDownload); err != nil {
 			peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 			return
 		}
@@ -841,7 +841,7 @@ func (s *Service) handlePieceFailure(ctx context.Context, peer *resource.Peer, p
 
 	switch code {
 	case commonv1.Code_PeerTaskNotFound:
-		if err := parent.FSM.Event(resource.PeerEventDownloadFailed); err != nil {
+		if err := parent.FSM.Event(ctx, resource.PeerEventDownloadFailed); err != nil {
 			peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 			break
 		}
@@ -891,7 +891,7 @@ func (s *Service) handlePieceFailure(ctx context.Context, peer *resource.Peer, p
 
 // handlePeerSuccess handles successful peer.
 func (s *Service) handlePeerSuccess(ctx context.Context, peer *resource.Peer) {
-	if err := peer.FSM.Event(resource.PeerEventDownloadSucceeded); err != nil {
+	if err := peer.FSM.Event(ctx, resource.PeerEventDownloadSucceeded); err != nil {
 		peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 		return
 	}
@@ -926,7 +926,7 @@ func (s *Service) handlePeerSuccess(ctx context.Context, peer *resource.Peer) {
 
 // handlePeerFailure handles failed peer.
 func (s *Service) handlePeerFailure(ctx context.Context, peer *resource.Peer) {
-	if err := peer.FSM.Event(resource.PeerEventDownloadFailed); err != nil {
+	if err := peer.FSM.Event(ctx, resource.PeerEventDownloadFailed); err != nil {
 		peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 		return
 	}
@@ -941,7 +941,7 @@ func (s *Service) handlePeerFailure(ctx context.Context, peer *resource.Peer) {
 // handleLegacySeedPeer handles seed server's task has left,
 // but did not notify the scheduler to leave the task.
 func (s *Service) handleLegacySeedPeer(ctx context.Context, peer *resource.Peer) {
-	if err := peer.FSM.Event(resource.PeerEventLeave); err != nil {
+	if err := peer.FSM.Event(ctx, resource.PeerEventLeave); err != nil {
 		peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 		return
 	}
@@ -966,7 +966,7 @@ func (s *Service) handleTaskSuccess(ctx context.Context, task *resource.Task, re
 	task.TotalPieceCount.Store(req.TotalPieceCount)
 	task.ContentLength.Store(req.ContentLength)
 
-	if err := task.FSM.Event(resource.TaskEventDownloadSucceeded); err != nil {
+	if err := task.FSM.Event(ctx, resource.TaskEventDownloadSucceeded); err != nil {
 		task.Log.Errorf("task fsm event failed: %s", err.Error())
 		return
 	}
@@ -1036,7 +1036,7 @@ func (s *Service) handleTaskFailure(ctx context.Context, task *resource.Task, ba
 		return
 	}
 
-	if err := task.FSM.Event(resource.TaskEventDownloadFailed); err != nil {
+	if err := task.FSM.Event(ctx, resource.TaskEventDownloadFailed); err != nil {
 		task.Log.Errorf("task fsm event failed: %s", err.Error())
 		return
 	}
