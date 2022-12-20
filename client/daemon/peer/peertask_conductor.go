@@ -111,8 +111,6 @@ type peerTaskConductor struct {
 	// peerPacketStream stands schedulerclient.PeerPacketStream from scheduler
 	peerPacketStream schedulerv1.Scheduler_ReportPieceResultClient
 	legacyPeerCount  *atomic.Int64
-	// peerPacketReady will receive a ready signal for peerPacket ready
-	peerPacketReady chan bool
 	// pieceTaskSyncManager syncs piece task from other peers
 	pieceTaskSyncManager *pieceTaskSyncManager
 
@@ -665,6 +663,7 @@ func (pt *peerTaskConductor) receivePeerPacket(pieceRequestQueue ring.Queue[Down
 		peerPacket          *schedulerv1.PeerPacket
 		err                 error
 		firstPacketReceived bool
+		firstPacketDone     = make(chan bool)
 	)
 	// only record first schedule result
 	// other schedule result will record as an event in peer task span
@@ -684,6 +683,8 @@ func (pt *peerTaskConductor) receivePeerPacket(pieceRequestQueue ring.Queue[Down
 			pt.Fail()
 		}
 	}()
+
+	go pt.waitFirstPeerPacket(firstPacketDone)
 loop:
 	for {
 		select {
@@ -703,7 +704,7 @@ loop:
 		}
 		if err != nil {
 			// some errors, like commonv1.Code_SchedReregister, after reregister success,
-			// we can continue receive peer packet from the new scheduler
+			// we can continue to receive peer packet from the new scheduler
 			cont := pt.confirmReceivePeerPacketError(err)
 			if cont {
 				continue
@@ -758,16 +759,7 @@ loop:
 		if !firstPacketReceived {
 			// trigger legacy get piece once to avoid first schedule timeout
 			firstPacketReceived = true
-		}
-
-		select {
-		case <-pt.successCh:
-			pt.Infof("peer task success, stop wait peer packet from scheduler")
-			break loop
-		case <-pt.failCh:
-			pt.Errorf("peer task fail, stop wait peer packet from scheduler")
-			break loop
-		default:
+			close(firstPacketDone)
 		}
 	}
 }
@@ -952,40 +944,30 @@ func (pt *peerTaskConductor) initDownloadPieceWorkers(count int32, pieceRequestQ
 	}
 }
 
-// TODO ScheduleTimeout feature in sync peers
-func (pt *peerTaskConductor) waitFirstPeerPacket() (done bool, backSource bool) {
+func (pt *peerTaskConductor) waitFirstPeerPacket(done chan bool) {
 	// wait first available peer
 	select {
 	case <-pt.successCh:
 		pt.Infof("peer task succeed, no need to wait first peer")
-		return true, false
+		return
 	case <-pt.failCh:
 		pt.Warnf("peer task failed, no need to wait first peer")
-		return true, false
-	//case _, ok := <-pt.peerPacketReady:
-	//	if ok {
-	//		// preparePieceTasksByPeer func already send piece result with error
-	//		pt.Infof("new peer client ready, scheduler time cost: %dus, peer count: %d",
-	//			time.Since(pt.startTime).Microseconds(), len(pt.peerPacket.Load().(*schedulerv1.PeerPacket).CandidatePeers))
-	//		return true, false
-	//	}
-	//	// when scheduler says commonv1.Code_SchedNeedBackSource, receivePeerPacket will close pt.peerPacketReady
-	//	pt.Infof("start download from source due to commonv1.Code_SchedNeedBackSource")
-	//	pt.span.AddEvent("back source due to scheduler says need back source")
-	//	pt.backSource()
-	//	return false, true
+		return
+	case <-done:
+		pt.Debugf("first peer packet received")
+		return
 	case <-time.After(pt.SchedulerOption.ScheduleTimeout.Duration):
 		if pt.SchedulerOption.DisableAutoBackSource {
 			pt.cancel(commonv1.Code_ClientScheduleTimeout, reasonBackSourceDisabled)
 			err := fmt.Errorf("%s, auto back source disabled", pt.failedReason)
 			pt.span.RecordError(err)
 			pt.Errorf(err.Error())
-			return false, false
+			return
 		}
 		pt.Warnf("start download from source due to %s", reasonScheduleTimeout)
 		pt.span.AddEvent("back source due to schedule timeout")
 		pt.forceBackSource()
-		return false, true
+		return
 	}
 }
 

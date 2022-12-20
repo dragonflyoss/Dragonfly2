@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"runtime"
 	"strings"
@@ -551,30 +553,30 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 				return sourceClient
 			},
 		},
-		//{
-		//	name:               "normal size scope - schedule timeout - auto back source",
-		//	taskData:           testBytes,
-		//	pieceParallelCount: 4,
-		//	pieceSize:          1024,
-		//	peerID:             "normal-size-peer-schedule-timeout",
-		//	peerPacketDelay:    []time.Duration{time.Second},
-		//	scheduleTimeout:    time.Nanosecond,
-		//	urlGenerator: func(ts *testSpec) string {
-		//		server := httptest.NewServer(http.HandlerFunc(
-		//			func(w http.ResponseWriter, r *http.Request) {
-		//				n, err := w.Write(testBytes)
-		//				assert.Nil(err)
-		//				assert.Equal(len(ts.taskData), n)
-		//			}))
-		//		ts.cleanUp = append(ts.cleanUp, func() {
-		//			server.Close()
-		//		})
-		//		return server.URL
-		//	},
-		//	sizeScope:            commonv1.SizeScope_NORMAL,
-		//	mockPieceDownloader:  nil,
-		//	mockHTTPSourceClient: nil,
-		//},
+		{
+			name:               "normal size scope - schedule timeout - auto back source",
+			taskData:           testBytes,
+			pieceParallelCount: 4,
+			pieceSize:          1024,
+			peerID:             "normal-size-peer-schedule-timeout",
+			peerPacketDelay:    []time.Duration{time.Second},
+			scheduleTimeout:    time.Nanosecond,
+			urlGenerator: func(ts *testSpec) string {
+				server := httptest.NewServer(http.HandlerFunc(
+					func(w http.ResponseWriter, r *http.Request) {
+						n, err := w.Write(testBytes)
+						assert.Nil(err)
+						assert.Equal(len(ts.taskData), n)
+					}))
+				ts.cleanUp = append(ts.cleanUp, func() {
+					server.Close()
+				})
+				return server.URL
+			},
+			sizeScope:            commonv1.SizeScope_NORMAL,
+			mockPieceDownloader:  nil,
+			mockHTTPSourceClient: nil,
+		},
 		{
 			name:                "empty file peer - back source - content length",
 			runTaskTypes:        []int{taskTypeConductor, taskTypeFile, taskTypeStream, taskTypeSeed},
