@@ -395,7 +395,7 @@ func (s *server) recursiveDownload(ctx context.Context, req *dfdaemonv1.DownRequ
 		return status.Errorf(codes.FailedPrecondition, err.Error())
 	}
 
-	// only try to cache metadata when cacheRecursiveMetadata is setted
+	// only try to cache metadata when cacheRecursiveMetadata is set
 	if s.cacheRecursiveMetadata > 0 {
 		if err := s.recursiveDownloadWithP2PMetadata(ctx, log, span, traceID, req, stream); err == nil {
 			return nil
@@ -456,6 +456,7 @@ func (s *server) recursiveDownloadWithP2PMetadata(
 		return err
 	}
 
+loop:
 	for _, urlEntry := range listMetadata.URLEntries {
 		// create new req
 		childReq := copyDownRequest(req)
@@ -485,7 +486,14 @@ func (s *server) recursiveDownloadWithP2PMetadata(
 		}
 
 		wg.Add(1)
-		requestCh <- childReq
+		select {
+		case requestCh <- childReq:
+		case <-ctx.Done():
+			// request did not send, call Done to rollback
+			wg.Done()
+			log.Warnf("receive context done: %s", ctx.Err())
+			break loop
+		}
 	}
 
 	// wait all sent tasks done or error
@@ -600,6 +608,7 @@ func (s *server) recursiveDownloadWithDirectMetadata(
 		listMilliseconds += cost
 		log.Infof("list dir %s cost: %dms", request.URL, cost)
 
+	loop:
 		for _, urlEntry := range urlEntries {
 			childReq := copyDownRequest(parentReq) //create new req
 			childReq.Output = path.Join(parentReq.Output, urlEntry.Name)
@@ -628,7 +637,15 @@ func (s *server) recursiveDownloadWithDirectMetadata(
 			}
 
 			wg.Add(1)
-			requestCh <- childReq
+
+			select {
+			case requestCh <- childReq:
+			case <-ctx.Done():
+				// request did not send, call Done to rollback
+				wg.Done()
+				log.Warnf("receive context done: %s", ctx.Err())
+				break loop
+			}
 		}
 	}
 
