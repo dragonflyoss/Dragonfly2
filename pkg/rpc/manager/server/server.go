@@ -30,6 +30,7 @@ import (
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/keepalive"
+	"google.golang.org/grpc/reflection"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 	securityv1 "d7y.io/api/pkg/apis/security/v1"
@@ -85,9 +86,14 @@ func New(managerServer managerv1.ManagerServer, securityServer securityv1.Certif
 
 	// Register servers on grpc server.
 	managerv1.RegisterManagerServer(grpcServer, managerServer)
+
+	// Register security on grpc server.
 	securityv1.RegisterCertificateServiceServer(grpcServer, securityServer)
 
 	// Register health on grpc server.
 	healthpb.RegisterHealthServer(grpcServer, health.NewServer())
+
+	// Register reflection on grpc server.
+	reflection.Register(grpcServer)
 	return grpcServer
 }
