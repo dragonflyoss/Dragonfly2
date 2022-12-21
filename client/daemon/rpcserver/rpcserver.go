@@ -397,9 +397,11 @@ func (s *server) recursiveDownload(ctx context.Context, req *dfdaemonv1.DownRequ
 
 	// only try to cache metadata when cacheRecursiveMetadata is set
 	if s.cacheRecursiveMetadata > 0 {
-		if err := s.recursiveDownloadWithP2PMetadata(ctx, log, span, traceID, req, stream); err == nil {
+		log.Infof("start to download with p2p metadata")
+		if err = s.recursiveDownloadWithP2PMetadata(ctx, log, span, traceID, req, stream); err == nil {
 			return nil
 		}
+		log.Warnf("download with p2p metadata failed, fallback to direct metadata")
 	}
 
 	return s.recursiveDownloadWithDirectMetadata(ctx, log, span, traceID, req, stream)
@@ -455,6 +457,7 @@ func (s *server) recursiveDownloadWithP2PMetadata(
 		span.RecordError(err)
 		return err
 	}
+	log.Infof("url entries count: %d", len(listMetadata.URLEntries))
 
 loop:
 	for _, urlEntry := range listMetadata.URLEntries {
@@ -497,6 +500,7 @@ loop:
 	}
 
 	// wait all sent tasks done or error
+	log.Info("all request sent, wait all tasks processed")
 	wg.Wait()
 	if len(downloadErrors()) > 0 {
 		// just return first error
