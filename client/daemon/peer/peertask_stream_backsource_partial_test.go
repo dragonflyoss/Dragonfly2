@@ -127,7 +127,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 			return err
 		}
 		for {
-			request, err = s.Recv()
+			_, err = s.Recv()
 			if err == io.EOF {
 				break
 			}
