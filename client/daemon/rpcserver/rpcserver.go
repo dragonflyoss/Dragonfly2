@@ -628,7 +628,15 @@ func (s *server) recursiveDownloadWithDirectMetadata(
 			}
 
 			wg.Add(1)
-			requestCh <- childReq
+
+			select {
+			case requestCh <- childReq:
+			case <-ctx.Done():
+				// request did not send, call Done to rollback
+				wg.Done()
+				log.Warnf("receive context done: %s", ctx.Err())
+				break
+			}
 		}
 	}
 
