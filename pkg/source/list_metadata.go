@@ -132,7 +132,7 @@ func (lm *ListMetadataClient) Download(request *Request) (*Response, error) {
 		}
 		cost := time.Now().Sub(listStart).Milliseconds()
 		listMilliseconds += cost
-		log.Infof("list dir %s cost: %dms, entries(include dir): %d", request.URL, cost, len(urlEntries))
+		log.Infof("list dir %s cost: %dms, entries(include dir): %d", parentReq.URL, cost, len(urlEntries))
 
 		for _, urlEntry := range urlEntries {
 			if urlEntry.IsDir {
