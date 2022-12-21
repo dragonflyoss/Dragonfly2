@@ -35,9 +35,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/atomic"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/status"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
@@ -99,8 +97,45 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 			TotalPiece:    pieceCount,
 		}, nil
 	})
-	daemon.EXPECT().SyncPieceTasks(gomock.Any()).AnyTimes().DoAndReturn(func(arg0 dfdaemonv1.Daemon_SyncPieceTasksServer) error {
-		return status.Error(codes.Unimplemented, "TODO")
+	daemon.EXPECT().SyncPieceTasks(gomock.Any()).AnyTimes().DoAndReturn(func(s dfdaemonv1.Daemon_SyncPieceTasksServer) error {
+		request, err := s.Recv()
+		if err != nil {
+			return err
+		}
+		var tasks []*commonv1.PieceInfo
+		// only return first piece
+		if request.StartNum == 0 {
+			tasks = append(tasks,
+				&commonv1.PieceInfo{
+					PieceNum:    int32(request.StartNum),
+					RangeStart:  uint64(0),
+					RangeSize:   opt.pieceSize,
+					PieceMd5:    digest.MD5FromBytes(testBytes[0:opt.pieceSize]),
+					PieceOffset: 0,
+					PieceStyle:  0,
+				})
+		}
+		pp := &commonv1.PiecePacket{
+			PieceMd5Sign:  digest.SHA256FromStrings(piecesMd5...),
+			TaskId:        request.TaskId,
+			DstPid:        "peer-x",
+			PieceInfos:    tasks,
+			ContentLength: opt.contentLength,
+			TotalPiece:    pieceCount,
+		}
+		if err = s.Send(pp); err != nil {
+			return err
+		}
+		for {
+			_, err = s.Recv()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 	ln, _ := rpc.Listen(dfnet.NetAddr{
 		Type: "tcp",

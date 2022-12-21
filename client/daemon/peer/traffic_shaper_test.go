@@ -132,10 +132,29 @@ func trafficShaperSetupPeerTaskManagerComponents(ctrl *gomock.Controller, opt tr
 	}
 	daemon.EXPECT().GetPieceTasks(gomock.Any(), gomock.Any()).AnyTimes().
 		DoAndReturn(func(ctx context.Context, request *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error) {
-			return genPiecePacket(request), nil
+			return nil, status.Error(codes.Unimplemented, "TODO")
 		})
-	daemon.EXPECT().SyncPieceTasks(gomock.Any()).AnyTimes().DoAndReturn(func(arg0 dfdaemonv1.Daemon_SyncPieceTasksServer) error {
-		return status.Error(codes.Unimplemented, "TODO")
+	daemon.EXPECT().SyncPieceTasks(gomock.Any()).AnyTimes().DoAndReturn(func(s dfdaemonv1.Daemon_SyncPieceTasksServer) error {
+		request, err := s.Recv()
+		if err != nil {
+			return err
+		}
+		if err = s.Send(genPiecePacket(request)); err != nil {
+			return err
+		}
+		for {
+			request, err = s.Recv()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				return err
+			}
+			if err = s.Send(genPiecePacket(request)); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 	ln, _ := rpc.Listen(dfnet.NetAddr{
 		Type: "tcp",
