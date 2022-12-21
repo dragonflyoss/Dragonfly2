@@ -919,6 +919,13 @@ func (pt *peerTaskConductor) updateMetadata(piecePacket *commonv1.PiecePacket) {
 		pt.SetContentLength(piecePacket.ContentLength)
 		pt.span.SetAttributes(config.AttributeTaskContentLength.Int64(piecePacket.ContentLength))
 		pt.Debugf("update content length: %d, dst peer %s", piecePacket.ContentLength, piecePacket.DstPid)
+	} else if piecePacket.ContentLength > -1 && piecePacket.ContentLength != pt.GetContentLength() {
+		// corrupt data check
+		reason := fmt.Sprintf("corrupt data - content length did not match, current: %d, from piece packet: %d",
+			pt.GetContentLength(), piecePacket.ContentLength)
+		pt.Errorf(reason)
+		pt.cancel(commonv1.Code_ClientError, reason)
+		return
 	}
 
 	if piecePacket.ExtendAttribute != nil && len(piecePacket.ExtendAttribute.Header) > 0 && pt.GetHeader() == nil {
@@ -1098,6 +1105,15 @@ func (pt *peerTaskConductor) waitLimit(ctx context.Context, request *DownloadPie
 func (pt *peerTaskConductor) isCompleted() bool {
 	if pt.completedLength.Load() == pt.GetContentLength() {
 		pt.Infof("completed content length: %d", pt.completedLength.Load())
+		return true
+	}
+
+	// corrupt data check and avoid hang for mismatch completed length
+	if pt.readyPieces.Settled() == pt.totalPiece.Load() {
+		msg := fmt.Sprintf("corrupt data - ready piece count %d seems finished, but completed length %d is not match with content length: %d",
+			pt.totalPiece.Load(), pt.completedLength.Load(), pt.GetContentLength())
+		pt.Errorf(msg)
+		pt.cancel(commonv1.Code_ClientError, msg)
 		return true
 	}
 
