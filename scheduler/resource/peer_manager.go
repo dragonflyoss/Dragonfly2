@@ -19,6 +19,7 @@
 package resource
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -149,7 +150,7 @@ func (p *peerManager) RunGC() error {
 			elapsed := time.Since(peer.PieceUpdatedAt.Load())
 			if elapsed > p.pieceDownloadTimeout {
 				peer.Log.Info("peer elapsed exceeds the timeout of downloading piece, causing the peer to leave")
-				if err := peer.FSM.Event(PeerEventLeave); err != nil {
+				if err := peer.FSM.Event(context.Background(), PeerEventLeave); err != nil {
 					peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 					return true
 				}
@@ -163,7 +164,7 @@ func (p *peerManager) RunGC() error {
 		elapsed := time.Since(peer.UpdatedAt.Load())
 		if elapsed > p.ttl {
 			peer.Log.Info("peer elapsed exceeds the ttl, causing the peer to leave")
-			if err := peer.FSM.Event(PeerEventLeave); err != nil {
+			if err := peer.FSM.Event(context.Background(), PeerEventLeave); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 				return true
 			}
@@ -175,7 +176,7 @@ func (p *peerManager) RunGC() error {
 		// then set the peer state to PeerStateLeave and then delete peer.
 		if peer.FSM.Is(PeerStateFailed) {
 			peer.Log.Info("peer state is PeerStateFailed, causing the peer to leave")
-			if err := peer.FSM.Event(PeerEventLeave); err != nil {
+			if err := peer.FSM.Event(context.Background(), PeerEventLeave); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 				return true
 			}
@@ -196,7 +197,7 @@ func (p *peerManager) RunGC() error {
 		if peer.Task.PeerCount() > PeerCountLimitForTask &&
 			peer.FSM.Is(PeerStateSucceeded) && degree == 0 {
 			peer.Log.Info("task dag size exceeds the limit, causing the peer to leave")
-			if err := peer.FSM.Event(PeerEventLeave); err != nil {
+			if err := peer.FSM.Event(context.Background(), PeerEventLeave); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 				return true
 			}
