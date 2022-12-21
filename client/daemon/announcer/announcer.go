@@ -309,17 +309,17 @@ func (a *announcer) announceToManager() error {
 		}); err != nil {
 			return err
 		}
-	}
 
-	// Start keepalive to manager.
-	go func() {
-		a.managerClient.KeepAlive(a.config.Scheduler.Manager.SeedPeer.KeepAlive.Interval, &managerv1.KeepAliveRequest{
-			SourceType: managerv1.SourceType_SEED_PEER_SOURCE,
-			HostName:   a.config.Host.Hostname,
-			Ip:         a.config.Host.AdvertiseIP.String(),
-			ClusterId:  uint64(a.config.Scheduler.Manager.SeedPeer.ClusterID),
-		}, a.done)
-	}()
+		// Start keepalive to manager.
+		go func() {
+			a.managerClient.KeepAlive(a.config.Scheduler.Manager.SeedPeer.KeepAlive.Interval, &managerv1.KeepAliveRequest{
+				SourceType: managerv1.SourceType_SEED_PEER_SOURCE,
+				HostName:   a.config.Host.Hostname,
+				Ip:         a.config.Host.AdvertiseIP.String(),
+				ClusterId:  uint64(a.config.Scheduler.Manager.SeedPeer.ClusterID),
+			}, a.done)
+		}()
+	}
 
 	return nil
 }
