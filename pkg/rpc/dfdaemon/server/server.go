@@ -30,6 +30,7 @@ import (
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/keepalive"
+	"google.golang.org/grpc/reflection"
 
 	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
 
@@ -89,5 +90,8 @@ func New(svr dfdaemonv1.DaemonServer, opts ...grpc.ServerOption) *grpc.Server {
 
 	// Register health on grpc server.
 	healthpb.RegisterHealthServer(grpcServer, health.NewServer())
+
+	// Register reflection on grpc server.
+	reflection.Register(grpcServer)
 	return grpcServer
 }
