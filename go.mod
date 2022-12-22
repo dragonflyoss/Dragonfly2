@@ -84,7 +84,7 @@ require (
 	gorm.io/driver/postgres v1.4.5
 	gorm.io/gorm v1.24.2
 	gorm.io/plugin/soft_delete v1.2.0
-	k8s.io/component-base v0.25.4
+	k8s.io/component-base v0.26.0
 	logur.dev/adapter/zap v0.5.0
 	moul.io/zapgorm2 v1.1.3
 	stathat.com/c/consistent v1.0.0
@@ -99,6 +99,7 @@ require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/RichardKnop/logging v0.0.0-20190827224416-1a693bdd4fae // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
@@ -160,7 +161,7 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
-	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
+	github.com/matttproud/golang_protobuf_extensions v1.0.2 // indirect
 	github.com/mdlayher/socket v0.4.0 // indirect
 	github.com/microsoft/go-mssqldb v0.17.0 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
@@ -214,7 +215,7 @@ require (
 	gorm.io/driver/sqlite v1.4.3 // indirect
 	gorm.io/driver/sqlserver v1.4.1 // indirect
 	gorm.io/plugin/dbresolver v1.3.0 // indirect
-	k8s.io/apimachinery v0.25.4 // indirect
-	k8s.io/klog/v2 v2.70.1 // indirect
+	k8s.io/apimachinery v0.26.0 // indirect
+	k8s.io/klog/v2 v2.80.1 // indirect
 	logur.dev/logur v0.16.1 // indirect
 )
