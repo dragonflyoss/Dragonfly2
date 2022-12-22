@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2" //nolint
 	. "github.com/onsi/gomega"    //nolint
@@ -94,6 +95,11 @@ var _ = AfterSuite(func() {
 			podName := strings.Trim(string(out), "'")
 			pod := e2eutil.NewPodExec(server.namespace, podName, server.name)
 
+			var (
+				retryCount    = 0
+				maxRetryCount = 10
+			)
+		retry:
 			countOut, err := e2eutil.KubeCtlCommand("-n", server.namespace, "get", "pod", "-l", fmt.Sprintf("component=%s", server.name),
 				"-o", fmt.Sprintf("jsonpath='{.items[%d].status.containerStatuses[0].restartCount}'", i)).CombinedOutput()
 			if err != nil {
@@ -114,7 +120,13 @@ var _ = AfterSuite(func() {
               find /tmp/artifact -type d -exec chmod 777 {} \;
               `, server.logDirName, server.name, i)).CombinedOutput()
 			if err != nil {
-				fmt.Printf("copy log output: %s, error: %s\n", string(out), err)
+				fmt.Printf("copy log output: %q, error: %s, retry after 10s\n", string(out), err)
+				// pod maybe restart due to panic, wait it running again
+				time.Sleep(10 * time.Second)
+				if retryCount < maxRetryCount {
+					retryCount++
+					goto retry
+				}
 			}
 
 			if count > 0 {
