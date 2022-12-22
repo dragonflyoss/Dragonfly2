@@ -132,7 +132,7 @@ func (lm *ListMetadataClient) Download(request *Request) (*Response, error) {
 		}
 		cost := time.Now().Sub(listStart).Milliseconds()
 		listMilliseconds += cost
-		log.Infof("list dir %s cost: %dms", request.URL, cost)
+		log.Infof("list dir %s cost: %dms, entries(include dir): %d", parentReq.URL, cost, len(urlEntries))
 
 		for _, urlEntry := range urlEntries {
 			if urlEntry.IsDir {
@@ -146,18 +146,19 @@ func (lm *ListMetadataClient) Download(request *Request) (*Response, error) {
 		}
 	}
 
-	log.Infof("list dirs cost: %dms, download cost: %dms", listMilliseconds, time.Now().Sub(start).Milliseconds())
-
 	metadata := ListMetadata{
 		URLEntries: allURLEntries,
 	}
 	data, _ := json.Marshal(metadata)
+
+	log.Infof("list dirs cost: %dms, entries: %d, metadata size: %d, download cost: %dms",
+		listMilliseconds, len(allURLEntries), len(data), time.Now().Sub(start).Milliseconds())
 	return &Response{
 		Status:     "OK",
 		StatusCode: http.StatusOK,
-		Header: Header(map[string][]string{
+		Header: map[string][]string{
 			headers.Expires: {request.Header.Get(ListMetadataExpire)},
-		}),
+		},
 		Body:          io.NopCloser(bytes.NewBuffer(data)),
 		ContentLength: int64(len(data)),
 		Validate: func() error {
