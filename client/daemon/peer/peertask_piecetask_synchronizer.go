@@ -54,11 +54,15 @@ type pieceTaskSyncManager struct {
 
 type pieceTaskSynchronizer struct {
 	*logger.SugaredLoggerOnWith
+	ctx               context.Context
+	ctxCancel         context.CancelFunc
 	span              trace.Span
 	syncPiecesStream  dfdaemonv1.Daemon_SyncPieceTasksClient
 	grpcClient        dfdaemonclient.Client
 	dstPeer           *schedulerv1.PeerPacket_DestPeer
 	error             atomic.Value
+	grpcInitialized   *atomic.Bool
+	grpcInitError     atomic.Value
 	peerTaskConductor *peerTaskConductor
 	pieceRequestQueue ring.Queue[DownloadPieceRequest]
 }
@@ -75,7 +79,7 @@ type pieceTaskSynchronizerError struct {
 }
 
 // FIXME for compatibility, sync will be called after the dfdaemonclient.GetPieceTasks deprecated and the pieceTaskPoller removed
-func (s *pieceTaskSyncManager) syncPeers(destPeers []*schedulerv1.PeerPacket_DestPeer, desiredPiece int32) error {
+func (s *pieceTaskSyncManager) syncPeers(destPeers []*schedulerv1.PeerPacket_DestPeer, desiredPiece int32) {
 	s.Lock()
 	defer func() {
 		if s.peerTaskConductor.WatchdogTimeout > 0 {
@@ -84,81 +88,66 @@ func (s *pieceTaskSyncManager) syncPeers(destPeers []*schedulerv1.PeerPacket_Des
 		s.Unlock()
 	}()
 
-	var (
-		peers = map[string]bool{}
-		errs  []error
-	)
+	peersToKeep, peersToAdd, peersToClose := s.diffPeers(destPeers)
 
-	// TODO if the worker failed, reconnect and retry
-	for _, peer := range destPeers {
-		peers[peer.PeerId] = true
-		if _, ok := s.workers[peer.PeerId]; !ok {
-			err := s.newPieceTaskSynchronizer(s.ctx, peer, desiredPiece)
-			if err == nil {
-				s.peerTaskConductor.Infof("connected to peer: %s", peer.PeerId)
-				continue
-			}
+	for _, peer := range peersToAdd {
+		s.newPieceTaskSynchronizer(s.ctx, peer, desiredPiece)
+	}
 
-			// other errors, report to scheduler
-			if errors.Is(err, context.DeadlineExceeded) {
-				// connect timeout error, report to scheduler to get more available peers
-				s.reportInvalidPeer(peer, commonv1.Code_ClientConnectionError)
-				s.peerTaskConductor.Infof("connect peer %s with error: %s", peer.PeerId, err)
-			} else {
-				// other errors, report to scheduler to get more available peers
-				s.reportInvalidPeer(peer, commonv1.Code_ClientPieceRequestFail)
-				s.peerTaskConductor.Errorf("connect peer %s error: %s", peer.PeerId, err)
-			}
+	for _, peer := range peersToKeep {
+		worker := s.workers[peer.PeerId]
+		// worker is working, keep it going on
+		if worker.error.Load() == nil {
+			s.peerTaskConductor.Infof("reuse working PieceTaskSynchronizer %s", peer.PeerId)
+		} else {
+			s.peerTaskConductor.Infof("close stale PieceTaskSynchronizer %s and re-initialize it", peer.PeerId)
+			// clean error worker
+			worker.close()
+			delete(s.workers, peer.PeerId)
+			// reconnect and retry
+			s.newPieceTaskSynchronizer(s.ctx, peer, desiredPiece)
 		}
 	}
 
-	// cancel old workers
-	if len(s.workers) != len(peers) {
-		var peersToRemove []string
-		for p, worker := range s.workers {
-			if !peers[p] {
-				worker.close()
-				peersToRemove = append(peersToRemove, p)
-			}
-		}
-		for _, p := range peersToRemove {
-			delete(s.workers, p)
-		}
+	// close stale workers
+	for _, p := range peersToClose {
+		s.workers[p].close()
+		delete(s.workers, p)
 	}
 
-	if len(errs) > 0 {
-		return errs[0]
-	}
-	return nil
+	return
 }
 
-func (s *pieceTaskSyncManager) cleanStaleWorker(destPeers []*schedulerv1.PeerPacket_DestPeer) {
-	var (
-		peers = map[string]bool{}
-	)
-	for _, p := range destPeers {
-		peers[p.PeerId] = true
+func (s *pieceTaskSyncManager) diffPeers(peers []*schedulerv1.PeerPacket_DestPeer) (
+	peersToKeep []*schedulerv1.PeerPacket_DestPeer, peersToAdd []*schedulerv1.PeerPacket_DestPeer, peersToClose []string) {
+	if len(s.workers) == 0 {
+		return nil, peers, nil
 	}
 
-	// cancel old workers
-	if len(s.workers) != len(peers) {
-		var peersToRemove []string
-		for p, worker := range s.workers {
-			if !peers[p] {
-				worker.close()
-				peersToRemove = append(peersToRemove, p)
-			}
-		}
-		for _, p := range peersToRemove {
-			delete(s.workers, p)
+	cache := make(map[string]bool)
+	for _, p := range peers {
+		cache[p.PeerId] = true
+		if _, ok := s.workers[p.PeerId]; ok {
+			peersToKeep = append(peersToKeep, p)
+		} else {
+			peersToAdd = append(peersToAdd, p)
 		}
 	}
+
+	for p := range s.workers {
+		if !cache[p] {
+			peersToClose = append(peersToClose, p)
+		}
+	}
+	return
 }
 
 func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 	ctx context.Context,
 	dstPeer *schedulerv1.PeerPacket_DestPeer,
-	desiredPiece int32) error {
+	desiredPiece int32) {
+	_, span := tracer.Start(s.ctx, config.SpanSyncPieceTasks)
+	span.SetAttributes(config.AttributeTargetPeerID.String(dstPeer.PeerId))
 	request := &commonv1.PieceTaskRequest{
 		TaskId:   s.peerTaskConductor.taskID,
 		SrcPid:   s.peerTaskConductor.peerID,
@@ -166,72 +155,22 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 		StartNum: uint32(desiredPiece),
 		Limit:    16,
 	}
-	if worker, ok := s.workers[dstPeer.PeerId]; ok {
-		// worker is okay, keep it going on
-		if worker.error.Load() == nil {
-			s.peerTaskConductor.Infof("reuse PieceTaskSynchronizer %s", dstPeer.PeerId)
-			return nil
-		}
-		// clean error worker
-		delete(s.workers, dstPeer.PeerId)
-	}
-
-	ip, ok := ip.FormatIP(dstPeer.Ip)
-	if !ok {
-		return errors.New("format ip failedformat")
-	}
-
-	netAddr := &dfnet.NetAddr{
-		Type: dfnet.TCP,
-		Addr: fmt.Sprintf("%s:%d", ip, dstPeer.RpcPort),
-	}
-
-	credentialOpt := grpc.WithTransportCredentials(s.peerTaskConductor.GRPCCredentials)
-
-	dialCtx, cancel := context.WithTimeout(ctx, s.peerTaskConductor.GRPCDialTimeout)
-	grpcClient, err := dfdaemonclient.GetClient(dialCtx, netAddr.String(), credentialOpt)
-	cancel()
-
-	if err != nil {
-		s.peerTaskConductor.Errorf("get dfdaemon client error: %s, dest peer: %s", err, dstPeer.PeerId)
-		return err
-	}
-
-	stream, err := grpcClient.SyncPieceTasks(ctx, request)
-	// Refer: https://github.com/grpc/grpc-go/blob/v1.44.0/stream.go#L104
-	// When receive io.EOF, the real error should be discovered using RecvMsg, here is client.Recv() here
-	if err == io.EOF && grpcClient != nil {
-		_, err = stream.Recv()
-	}
-	if err != nil {
-		s.peerTaskConductor.Errorf("call SyncPieceTasks error: %s, dest peer: %s", err, dstPeer.PeerId)
-		return err
-	}
-
-	// TODO the codes.Unimplemented is received only in client.Recv()
-	// when remove legacy get piece grpc, can move this check into synchronizer.receive
-	piecePacket, err := stream.Recv()
-	if err != nil {
-		s.peerTaskConductor.Warnf("receive from SyncPieceTasksClient error: %s, dest peer: %s", err, dstPeer.PeerId)
-		_ = stream.CloseSend()
-		return err
-	}
-
-	_, span := tracer.Start(s.ctx, config.SpanSyncPieceTasks)
-	span.SetAttributes(config.AttributeTargetPeerID.String(dstPeer.PeerId))
+	ctx, cancel := context.WithCancel(ctx)
 	synchronizer := &pieceTaskSynchronizer{
+		ctx:                 ctx,
+		ctxCancel:           cancel,
 		span:                span,
 		peerTaskConductor:   s.peerTaskConductor,
 		pieceRequestQueue:   s.pieceRequestQueue,
-		syncPiecesStream:    stream,
-		grpcClient:          grpcClient,
 		dstPeer:             dstPeer,
 		error:               atomic.Value{},
+		grpcInitialized:     atomic.NewBool(false),
+		grpcInitError:       atomic.Value{},
 		SugaredLoggerOnWith: s.peerTaskConductor.With("targetPeerID", request.DstPid),
 	}
 	s.workers[dstPeer.PeerId] = synchronizer
-	go synchronizer.receive(piecePacket)
-	return nil
+	go synchronizer.start(request, dstPeer)
+	return
 }
 
 func (s *pieceTaskSyncManager) resetWatchdog(mainPeer *schedulerv1.PeerPacket_DestPeer) {
@@ -297,7 +236,98 @@ func (s *pieceTaskSyncManager) cancel() {
 	s.Unlock()
 }
 
+func (s *pieceTaskSynchronizer) start(request *commonv1.PieceTaskRequest, dstPeer *schedulerv1.PeerPacket_DestPeer) {
+	var startError error
+	defer func() {
+		if startError != nil {
+			s.grpcInitError.Store(&pieceTaskSynchronizerError{startError})
+			s.peerTaskConductor.Errorf("connect peer %s error: %s", dstPeer.PeerId, startError)
+			if errors.Is(startError, context.DeadlineExceeded) {
+				// connect timeout error, report to scheduler to get more available peers
+				s.peerTaskConductor.pieceTaskSyncManager.reportInvalidPeer(dstPeer, commonv1.Code_ClientConnectionError)
+			} else {
+				// other errors, report to scheduler to get more available peers
+				s.peerTaskConductor.pieceTaskSyncManager.reportInvalidPeer(dstPeer, commonv1.Code_ClientPieceRequestFail)
+			}
+		}
+	}()
+
+	formatIP, ok := ip.FormatIP(dstPeer.Ip)
+	if !ok {
+		startError = errors.New("format ip failed")
+		return
+	}
+
+	netAddr := &dfnet.NetAddr{
+		Type: dfnet.TCP,
+		Addr: fmt.Sprintf("%s:%d", formatIP, dstPeer.RpcPort),
+	}
+
+	credentialOpt := grpc.WithTransportCredentials(s.peerTaskConductor.GRPCCredentials)
+
+	dialCtx, cancel := context.WithTimeout(s.ctx, s.peerTaskConductor.GRPCDialTimeout)
+	grpcClient, err := dfdaemonclient.GetClient(dialCtx, netAddr.String(), credentialOpt)
+	cancel()
+
+	if err != nil {
+		startError = err
+		return
+	}
+
+	stream, err := grpcClient.SyncPieceTasks(s.ctx, request)
+	// Refer: https://github.com/grpc/grpc-go/blob/v1.44.0/stream.go#L104
+	// When receive io.EOF, the real error should be discovered using RecvMsg, here is client.Recv()
+	if err == io.EOF && stream != nil {
+		_, err = stream.Recv()
+	}
+	if err != nil {
+		// grpc client must be close, Refer: https://github.com/grpc/grpc-go/issues/5321
+		_ = grpcClient.Close()
+		if stream != nil {
+			_ = stream.CloseSend()
+		}
+		s.peerTaskConductor.Errorf("call SyncPieceTasks error: %s, dest peer: %s", err, dstPeer.PeerId)
+		startError = err
+		return
+	}
+
+	s.syncPiecesStream = stream
+	s.grpcClient = grpcClient
+
+	s.grpcInitialized.Store(true)
+	s.receive()
+}
+
 func (s *pieceTaskSynchronizer) close() {
+	s.ctxCancel()
+	if s.grpcInitialized.Load() {
+		s.closeGRPC()
+		s.Infof("pieceTaskSynchronizer grpc closed")
+	} else {
+		go s.waitAndClose()
+	}
+}
+
+// one of grpcInitialized and grpcInitError must be true, otherwise the pieceTaskSynchronizer is initializing, wait it
+func (s *pieceTaskSynchronizer) waitAndClose() {
+	for {
+		// grpc is ready, just close
+		if s.grpcInitialized.Load() {
+			s.closeGRPC()
+			s.Infof("pieceTaskSynchronizer grpc closed and exit in background")
+			return
+		}
+		// grpc init error
+		if s.grpcInitError.Load() != nil {
+			s.Infof("pieceTaskSynchronizer grpc init error and exit in background")
+			return
+		}
+		s.Infof("pieceTaskSynchronizer grpc is initializing, wait it completed in background")
+		time.Sleep(time.Minute)
+	}
+}
+
+func (s *pieceTaskSynchronizer) closeGRPC() {
 	if err := s.syncPiecesStream.CloseSend(); err != nil {
 		s.error.Store(&pieceTaskSynchronizerError{err})
 		s.Debugf("close send error: %s, dest peer: %s", err, s.dstPeer.PeerId)
@@ -356,14 +386,17 @@ func (s *pieceTaskSynchronizer) dispatchPieceRequest(piecePacket *commonv1.Piece
 	}
 }
 
-func (s *pieceTaskSynchronizer) receive(piecePacket *commonv1.PiecePacket) {
-	var err error
+func (s *pieceTaskSynchronizer) receive() {
+	var (
+		piecePacket *commonv1.PiecePacket
+		err         error
+	)
 	for {
-		s.dispatchPieceRequest(piecePacket)
 		piecePacket, err = s.syncPiecesStream.Recv()
 		if err != nil {
 			break
 		}
+		s.dispatchPieceRequest(piecePacket)
 	}
 
 	if err == io.EOF {
