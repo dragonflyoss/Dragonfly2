@@ -776,7 +776,7 @@ func (pt *peerTaskConductor) updateSynchronizers(lastNum int32, p *schedulerv1.P
 	var peers = []*schedulerv1.PeerPacket_DestPeer{p.MainPeer}
 	peers = append(peers, p.CandidatePeers...)
 
-	_ = pt.pieceTaskSyncManager.syncPeers(peers, desiredPiece)
+	pt.pieceTaskSyncManager.syncPeers(peers, desiredPiece)
 	return desiredPiece
 }
 

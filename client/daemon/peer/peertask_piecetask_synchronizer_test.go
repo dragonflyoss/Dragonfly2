@@ -90,3 +90,205 @@ func Test_watchdog(t *testing.T) {
 		})
 	}
 }
+
+func Test_diffPeers(t *testing.T) {
+	assert := testifyassert.New(t)
+
+	var testCases = []struct {
+		name         string
+		workers      map[string]*pieceTaskSynchronizer
+		peers        []*schedulerv1.PeerPacket_DestPeer
+		peersToKeep  []*schedulerv1.PeerPacket_DestPeer
+		peersToAdd   []*schedulerv1.PeerPacket_DestPeer
+		peersToClose []string
+	}{
+		{
+			name:    "add new peers with empty workers",
+			workers: map[string]*pieceTaskSynchronizer{},
+			peers: []*schedulerv1.PeerPacket_DestPeer{
+				{
+					PeerId: "peer-0",
+				},
+				{
+					PeerId: "peer-1",
+				},
+				{
+					PeerId: "peer-2",
+				},
+			},
+			peersToKeep: []*schedulerv1.PeerPacket_DestPeer{},
+			peersToAdd: []*schedulerv1.PeerPacket_DestPeer{
+				{
+					PeerId: "peer-0",
+				},
+				{
+					PeerId: "peer-1",
+				},
+				{
+					PeerId: "peer-2",
+				},
+			},
+			peersToClose: []string{},
+		},
+		{
+			name: "add new peers with some workers",
+			workers: map[string]*pieceTaskSynchronizer{
+				"peer-1": {},
+			},
+			peers: []*schedulerv1.PeerPacket_DestPeer{
+				{
+					PeerId: "peer-0",
+				},
+				{
+					PeerId: "peer-1",
+				},
+				{
+					PeerId: "peer-2",
+				},
+			},
+			peersToKeep: []*schedulerv1.PeerPacket_DestPeer{
+				{
+					PeerId: "peer-1",
+				},
+			},
+			peersToAdd: []*schedulerv1.PeerPacket_DestPeer{
+				{
+					PeerId: "peer-0",
+				},
+				{
+					PeerId: "peer-2",
+				},
+			},
+			peersToClose: []string{},
+		},
+		{
+			name: "keep peers",
+			workers: map[string]*pieceTaskSynchronizer{
+				"peer-0": {},
+				"peer-1": {},
+				"peer-2": {},
+			},
+			peers: []*schedulerv1.PeerPacket_DestPeer{
+				{
+					PeerId: "peer-0",
+				},
+				{
+					PeerId: "peer-1",
+				},
+				{
+					PeerId: "peer-2",
+				},
+			},
+			peersToKeep: []*schedulerv1.PeerPacket_DestPeer{
+				{
+					PeerId: "peer-0",
+				},
+				{
+					PeerId: "peer-1",
+				},
+				{
+					PeerId: "peer-2",
+				},
+			},
+			peersToAdd:   []*schedulerv1.PeerPacket_DestPeer{},
+			peersToClose: []string{},
+		},
+		{
+			name: "close peers",
+			workers: map[string]*pieceTaskSynchronizer{
+				"peer-0": {},
+				"peer-1": {},
+				"peer-2": {},
+			},
+			peers: []*schedulerv1.PeerPacket_DestPeer{
+				{
+					PeerId: "peer-3",
+				},
+				{
+					PeerId: "peer-4",
+				},
+				{
+					PeerId: "peer-5",
+				},
+			},
+			peersToKeep: []*schedulerv1.PeerPacket_DestPeer{},
+			peersToAdd: []*schedulerv1.PeerPacket_DestPeer{
+
+				{
+					PeerId: "peer-3",
+				},
+				{
+					PeerId: "peer-4",
+				},
+				{
+					PeerId: "peer-5",
+				},
+			},
+			peersToClose: []string{
+				"peer-0",
+				"peer-1",
+				"peer-2",
+			},
+		},
+		{
+			name: "mix peers",
+			workers: map[string]*pieceTaskSynchronizer{
+				"peer-0": {},
+				"peer-1": {},
+				"peer-2": {},
+			},
+			peers: []*schedulerv1.PeerPacket_DestPeer{
+				{
+					PeerId: "peer-1",
+				},
+				{
+					PeerId: "peer-2",
+				},
+				{
+					PeerId: "peer-3",
+				},
+				{
+					PeerId: "peer-4",
+				},
+				{
+					PeerId: "peer-5",
+				},
+			},
+			peersToKeep: []*schedulerv1.PeerPacket_DestPeer{
+				{
+					PeerId: "peer-1",
+				},
+				{
+					PeerId: "peer-2",
+				},
+			},
+			peersToAdd: []*schedulerv1.PeerPacket_DestPeer{
+
+				{
+					PeerId: "peer-3",
+				},
+				{
+					PeerId: "peer-4",
+				},
+				{
+					PeerId: "peer-5",
+				},
+			},
+			peersToClose: []string{
+				"peer-0",
+			},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &pieceTaskSyncManager{
+				workers: tt.workers,
+			}
+			peersToKeep, peersToAdd, peersToClose := s.diffPeers(tt.peers)
+			assert.ElementsMatch(tt.peersToKeep, peersToKeep)
+			assert.ElementsMatch(tt.peersToAdd, peersToAdd)
+			assert.ElementsMatch(tt.peersToClose, peersToClose)
+		})
+	}
+}
