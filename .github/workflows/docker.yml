@@ -35,13 +35,13 @@ jobs:
           if [[ ${GITHUB_REF} == "refs/heads/main" ]]; then
             VERSION=latest
           fi
-          echo ::set-output name=VERSION::${VERSION}
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
 
       - name: Get Git Revision
         id: vars
         shell: bash
         run: |
-          echo "::set-output name=git_revision::$(git rev-parse --short HEAD)"
+          echo "git_revision=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       - name: PrepareReg Names
         run: |
