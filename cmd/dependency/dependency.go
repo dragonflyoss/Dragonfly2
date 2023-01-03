@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -241,6 +242,7 @@ func initDecoderConfig(dc *mapstructure.DecoderConfig) {
 			reflect.TypeOf(config.TCPListenPortRange{}),
 			reflect.TypeOf(types.PEMContent("")),
 			reflect.TypeOf(config.URL{}),
+			reflect.TypeOf(net.IP{}),
 			reflect.TypeOf(config.CertPool{}),
 			reflect.TypeOf(config.Regexp{}):
 
