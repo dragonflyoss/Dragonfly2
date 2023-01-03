@@ -86,7 +86,7 @@ require (
 	gorm.io/plugin/soft_delete v1.2.0
 	k8s.io/component-base v0.26.0
 	logur.dev/adapter/zap v0.5.0
-	moul.io/zapgorm2 v1.1.3
+	moul.io/zapgorm2 v1.2.0
 	stathat.com/c/consistent v1.0.0
 )
 
