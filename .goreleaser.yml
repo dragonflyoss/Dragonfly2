@@ -107,6 +107,7 @@ builds:
 
 archives:
   - name_template: "dragonfly-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+    rlcp: true
     format: tar.gz
     files:
       - LICENSE
