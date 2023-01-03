@@ -89,7 +89,7 @@ var _ = AfterSuite(func() {
 			out, err := e2eutil.KubeCtlCommand("-n", server.namespace, "get", "pod", "-l", fmt.Sprintf("component=%s", server.name),
 				"-o", fmt.Sprintf("jsonpath='{.items[%d].metadata.name}'", i)).CombinedOutput()
 			if err != nil {
-				fmt.Printf("get pod error: %s\n", err)
+				fmt.Printf("get pod error: %s, output: %s\n", err, string(out))
 				continue
 			}
 			podName := strings.Trim(string(out), "'")
@@ -103,7 +103,7 @@ var _ = AfterSuite(func() {
 			countOut, err := e2eutil.KubeCtlCommand("-n", server.namespace, "get", "pod", "-l", fmt.Sprintf("component=%s", server.name),
 				"-o", fmt.Sprintf("jsonpath='{.items[%d].status.containerStatuses[0].restartCount}'", i)).CombinedOutput()
 			if err != nil {
-				fmt.Printf("get pod %s restart count error: %s\n", podName, err)
+				fmt.Printf("get pod %s restart count error: %s, output: %s\n", podName, err, string(countOut))
 				continue
 			}
 			rawCount := strings.Trim(string(countOut), "'")
