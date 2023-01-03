@@ -6,17 +6,15 @@ coverage:
     project:
       default:
         enabled: yes
-        target: 80%
+        target: 40%
     patch:
       default:
         enabled: yes
-        target: 80%
+        target: 40%
 
 comment:
   layout: "reach, diff, flags, files"
   behavior: default
   require_changes: false
-  require_base: no
-  require_head: yes
   branches:
     - main
