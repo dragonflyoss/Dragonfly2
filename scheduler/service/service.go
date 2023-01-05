@@ -553,9 +553,10 @@ func (s *Service) triggerTask(ctx context.Context, req *schedulerv1.PeerTaskRequ
 
 // triggerSeedPeerTask starts to trigger seed peer task.
 func (s *Service) triggerSeedPeerTask(ctx context.Context, task *resource.Task) {
+	ctx = trace.ContextWithSpan(context.Background(), trace.SpanFromContext(ctx))
+
 	task.Log.Info("trigger seed peer")
-	peer, endOfPiece, err := s.resource.SeedPeer().TriggerTask(
-		trace.ContextWithSpan(context.Background(), trace.SpanFromContext(ctx)), task)
+	peer, endOfPiece, err := s.resource.SeedPeer().TriggerTask(ctx, task)
 	if err != nil {
 		task.Log.Errorf("trigger seed peer failed: %s", err.Error())
 		s.handleTaskFailure(ctx, task, nil, err)
