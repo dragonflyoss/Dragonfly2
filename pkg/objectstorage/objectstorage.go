@@ -25,6 +25,7 @@ import (
 	"time"
 )
 
+// ObjectMetadata provides metadata of object.
 type ObjectMetadata struct {
 	// Key is object key.
 	Key string
@@ -51,6 +52,7 @@ type ObjectMetadata struct {
 	Digest string
 }
 
+// BucketMetadata provides metadata of bucket.
 type BucketMetadata struct {
 	// Name is bucket name.
 	Name string
@@ -59,6 +61,7 @@ type BucketMetadata struct {
 	CreateAt time.Time
 }
 
+// ObjectStorage is the interface used for object storage.
 type ObjectStorage interface {
 	// GetBucketMetadata returns metadata of bucket.
 	GetBucketMetadata(ctx context.Context, bucketName string) (*BucketMetadata, error)
@@ -97,15 +100,59 @@ type ObjectStorage interface {
 	GetSignURL(ctx context.Context, bucketName, objectKey string, method Method, expire time.Duration) (string, error)
 }
 
+// objectStorage provides object storage.
+type objectStorage struct {
+	// name is object storage name of type, it can be s3, oss or obs.
+	name string
+
+	// region is storage region.
+	region string
+
+	// endpoint is datacenter endpoint.
+	endpoint string
+
+	// accessKey is access key ID.
+	accessKey string
+
+	// secretKey is access key secret.
+	secretKey string
+
+	// secretKey is access key secret.
+	s3ForcePathStyle bool
+}
+
+// Option is a functional option for configuring the objectStorage.
+type Option func(o *objectStorage)
+
+// WithS3ForcePathStyle set the S3ForcePathStyle for objectStorage.
+func WithS3ForcePathStyle(s3ForcePathStyle bool) Option {
+	return func(o *objectStorage) {
+		o.s3ForcePathStyle = s3ForcePathStyle
+	}
+}
+
 // New object storage interface.
-func New(name, region, endpoint, accessKey, secretKey string) (ObjectStorage, error) {
-	switch name {
+func New(name, region, endpoint, accessKey, secretKey string, options ...Option) (ObjectStorage, error) {
+	o := &objectStorage{
+		name:             name,
+		region:           region,
+		endpoint:         endpoint,
+		accessKey:        accessKey,
+		secretKey:        secretKey,
+		s3ForcePathStyle: true,
+	}
+
+	for _, opt := range options {
+		opt(o)
+	}
+
+	switch o.name {
 	case ServiceNameS3:
-		return newS3(region, endpoint, accessKey, secretKey)
+		return newS3(o.region, o.endpoint, o.accessKey, o.secretKey, o.s3ForcePathStyle)
 	case ServiceNameOSS:
-		return newOSS(region, endpoint, accessKey, secretKey)
+		return newOSS(o.region, o.endpoint, o.accessKey, o.secretKey)
 	case ServiceNameOBS:
-		return newOBS(region, endpoint, accessKey, secretKey)
+		return newOBS(o.region, o.endpoint, o.accessKey, o.secretKey)
 	}
 
 	return nil, fmt.Errorf("unknow service name %s", name)

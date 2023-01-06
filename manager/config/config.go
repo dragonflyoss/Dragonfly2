@@ -249,20 +249,28 @@ type ObjectStorageConfig struct {
 	// Enable object storage.
 	Enable bool `yaml:"enable" mapstructure:"enable"`
 
-	// Object storage name of type, it can be s3 or oss.
+	// Name is object storage name of type, it can be s3, oss or obs.
 	Name string `mapstructure:"name" yaml:"name"`
 
-	// Storage region.
+	// Region is storage region.
 	Region string `mapstructure:"region" yaml:"region"`
 
-	// Datacenter endpoint.
+	// Endpoint is datacenter endpoint.
 	Endpoint string `mapstructure:"endpoint" yaml:"endpoint"`
 
-	// Access key ID.
+	// AccessKey is access key ID.
 	AccessKey string `mapstructure:"accessKey" yaml:"accessKey"`
 
-	// Access key secret.
+	// SecretKey is access key secret.
 	SecretKey string `mapstructure:"secretKey" yaml:"secretKey"`
+
+	// S3ForcePathStyle sets force path style for s3, true by default.
+	// Set this to `true` to force the request to use path-style addressing,
+	// i.e., `http://s3.amazonaws.com/BUCKET/KEY`. By default, the S3 client
+	// will use virtual hosted bucket addressing when possible
+	// (`http://BUCKET.s3.amazonaws.com/KEY`).
+	// Refer to https://github.com/aws/aws-sdk-go/blob/main/aws/config.go#L118.
+	S3ForcePathStyle bool `mapstructure:"s3ForcePathStyle" yaml:"s3ForcePathStyle"`
 }
 
 type SecurityConfig struct {
@@ -346,7 +354,8 @@ func New() *Config {
 			},
 		},
 		ObjectStorage: ObjectStorageConfig{
-			Enable: false,
+			Enable:           false,
+			S3ForcePathStyle: true,
 		},
 		Security: SecurityConfig{
 			AutoIssueCert: false,
