@@ -1,5 +1,5 @@
 /*
- *     Copyright 2022 The Dragonfly Authors
+ *     Copyright 2023 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,22 +23,35 @@ import (
 	"github.com/gaius-qi/ping"
 )
 
-// Ping sends
+const (
+	// defaultPingCount calls pinger to stop after sending (and receiving)
+	// default count echo packets.
+	defaultPingCount = 1
+
+	// defaultPingTimeout specifies a default timeout before ping exits,
+	// regardless of how many packets have been received.
+	defaultPingTimeout = 1 * time.Second
+)
+
+// Ping returns the ping metrics with the icmp protocol.
 func Ping(addr string) (*ping.Statistics, error) {
 	pinger, err := ping.NewPinger(addr)
 	if err != nil {
 		return nil, err
 	}
 
-	pinger.Count = 1
-	pinger.Timeout = 100 * time.Millisecond
+	pinger.Count = defaultPingCount
+	pinger.Timeout = defaultPingTimeout
+
+	// SetPrivileged sets the type of ping pinger will send.
+	// false means pinger will send an "unprivileged" UDP ping.
 	pinger.SetPrivileged(false)
 	if err := pinger.Run(); err != nil {
 		return nil, err
 	}
 
 	stats := pinger.Statistics()
-	if stats.PacketsRecv > 0 {
+	if stats.PacketsRecv <= 0 {
 		return nil, errors.New("receive packet failed")
 	}
 
