@@ -1,0 +1,157 @@
+/*
+ *     Copyright 2022 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+package peer
+
+import (
+	"errors"
+	"math/rand"
+	"sync"
+	"time"
+
+	"go.uber.org/atomic"
+	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+)
+
+type PieceDispatcher interface {
+	Put(req *DownloadPieceRequest)
+	Get() (req *DownloadPieceRequest, err error)
+	Report(result *DownloadPieceResult)
+	Close()
+}
+
+var ErrNoValidPieceTemporarily = errors.New("no valid piece temporarily")
+
+type pieceDispatcher struct {
+	reqMap     map[string][]*DownloadPieceRequest
+	score      map[string]int64
+	downloaded map[int32]struct{}
+	sum        *atomic.Int64
+	closed     bool
+	cond       *sync.Cond
+	lock       *sync.Mutex
+	log        *logger.SugaredLoggerOnWith
+	rand       *rand.Rand
+}
+
+var (
+	// the lower, the better
+	maxScore   = int64(0)
+	minScore   = (60 * time.Second).Nanoseconds()
+	randomRate = 0.1
+)
+
+func NewPieceDispatcher(log *logger.SugaredLoggerOnWith) *pieceDispatcher {
+	lock := &sync.Mutex{}
+	pd := &pieceDispatcher{
+		reqMap:     map[string][]*DownloadPieceRequest{},
+		score:      map[string]int64{},
+		downloaded: map[int32]struct{}{},
+		sum:        atomic.NewInt64(0),
+		closed:     false,
+		cond:       sync.NewCond(lock),
+		lock:       lock,
+		log:        log.With("component", "pieceDispatcher"),
+		rand:       rand.New(rand.NewSource(time.Now().Unix())),
+	}
+	return pd
+}
+
+func (p *pieceDispatcher) Put(req *DownloadPieceRequest) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	if reqs, ok := p.reqMap[req.DstPid]; ok {
+		p.reqMap[req.DstPid] = append(reqs, req)
+	} else {
+		p.reqMap[req.DstPid] = []*DownloadPieceRequest{req}
+	}
+	if _, ok := p.score[req.DstPid]; !ok {
+		p.score[req.DstPid] = maxScore
+	}
+	p.sum.Add(1)
+	p.cond.Broadcast()
+}
+
+func (p *pieceDispatcher) Get() (req *DownloadPieceRequest, err error) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	for p.sum.Load() == 0 && !p.closed {
+		p.cond.Wait()
+	}
+	if p.closed {
+		return nil, errors.New("piece dispatcher already closed")
+	}
+	return p.getDesiredReq()
+}
+
+// getDesiredReq return a req according to performance of each dest peer. It is not thread-safe
+func (p *pieceDispatcher) getDesiredReq() (*DownloadPieceRequest, error) {
+	distPeerIDs := maps.Keys(p.score)
+	if p.rand.Int31n(1000) < int32(randomRate*1000) { //random shuffle
+		p.rand.Shuffle(len(distPeerIDs), func(i, j int) {
+			tmp := distPeerIDs[j]
+			distPeerIDs[j] = distPeerIDs[i]
+			distPeerIDs[i] = tmp
+		})
+	} else { // sort by score
+		slices.SortFunc(distPeerIDs, func(p1, p2 string) bool { return p.score[p1] < p.score[p2] })
+	}
+	for _, peer := range distPeerIDs {
+		for len(p.reqMap[peer]) > 0 {
+			n := p.rand.Intn(len(p.reqMap[peer]))
+			req := p.reqMap[peer][n]
+			p.reqMap[peer] = append(p.reqMap[peer][0:n], p.reqMap[peer][n+1:]...)
+			p.sum.Sub(1)
+			if _, ok := p.downloaded[req.piece.PieceNum]; ok { //already downloaded, skip
+				// p.log.Debugf("skip already downloaded piece , peer: %s, piece:%d", peer, req.piece.PieceNum)
+				continue
+			}
+			// p.log.Debugf("scores :%v, select :%s, piece:%v", p.score, peer, req.piece.PieceNum)
+			return req, nil
+		}
+	}
+	return nil, ErrNoValidPieceTemporarily
+}
+
+func (p *pieceDispatcher) Report(result *DownloadPieceResult) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	if result == nil || result.DstPeerID == "" {
+		return
+	}
+	lastScore := p.score[result.DstPeerID]
+	if result.Fail {
+		p.score[result.DstPeerID] = (lastScore + minScore) / 2
+	} else {
+		if result.pieceInfo != nil {
+			p.downloaded[result.pieceInfo.PieceNum] = struct{}{}
+		}
+		p.score[result.DstPeerID] = (lastScore + result.FinishTime - result.BeginTime) / 2
+	}
+	return
+}
+
+func (p *pieceDispatcher) Close() {
+	p.lock.Lock()
+	p.closed = true
+	p.cond.Broadcast()
+	p.log.Infof("piece dispatcher closed")
+	p.lock.Unlock()
+}

@@ -64,7 +64,7 @@ const (
 	DefaultSchedulerPort   = 8002
 
 	DefaultPieceChanSize      = 16
-	DefaultPieceQueueExponent = 4
+	DefaultPieceQueueExponent = 10
 	DefaultObjectMaxReplicas  = 3
 )
 
