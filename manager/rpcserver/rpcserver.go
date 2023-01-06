@@ -618,11 +618,12 @@ func (s *Server) GetObjectStorage(ctx context.Context, req *managerv1.GetObjectS
 	}
 
 	return &managerv1.ObjectStorage{
-		Name:      s.objectStorageConfig.Name,
-		Region:    s.objectStorageConfig.Region,
-		Endpoint:  s.objectStorageConfig.Endpoint,
-		AccessKey: s.objectStorageConfig.AccessKey,
-		SecretKey: s.objectStorageConfig.SecretKey,
+		Name:             s.objectStorageConfig.Name,
+		Region:           s.objectStorageConfig.Region,
+		Endpoint:         s.objectStorageConfig.Endpoint,
+		AccessKey:        s.objectStorageConfig.AccessKey,
+		SecretKey:        s.objectStorageConfig.SecretKey,
+		S3ForcePathStyle: s.objectStorageConfig.S3ForcePathStyle,
 	}, nil
 }
 

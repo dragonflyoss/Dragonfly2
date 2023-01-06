@@ -633,7 +633,8 @@ func (o *objectStorage) client() (objectstorage.ObjectStorage, error) {
 		return nil, err
 	}
 
-	client, err := objectstorage.New(config.Name, config.Region, config.Endpoint, config.AccessKey, config.SecretKey)
+	client, err := objectstorage.New(config.Name, config.Region, config.Endpoint,
+		config.AccessKey, config.SecretKey, objectstorage.WithS3ForcePathStyle(config.S3ForcePathStyle))
 	if err != nil {
 		return nil, err
 	}

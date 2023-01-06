@@ -36,7 +36,7 @@ type s3 struct {
 }
 
 // New s3 instance.
-func newS3(region, endpoint, accessKey, secretKey string) (ObjectStorage, error) {
+func newS3(region, endpoint, accessKey, secretKey string, s3ForcePathStyle bool) (ObjectStorage, error) {
 	cfg := aws.NewConfig().WithCredentials(credentials.NewStaticCredentials(accessKey, secretKey, ""))
 	s, err := session.NewSession(cfg)
 	if err != nil {
@@ -44,7 +44,7 @@ func newS3(region, endpoint, accessKey, secretKey string) (ObjectStorage, error)
 	}
 
 	return &s3{
-		client: awss3.New(s, cfg.WithRegion(region), cfg.WithEndpoint(endpoint)),
+		client: awss3.New(s, cfg.WithRegion(region), cfg.WithEndpoint(endpoint), cfg.WithS3ForcePathStyle(s3ForcePathStyle)),
 	}, nil
 }
 

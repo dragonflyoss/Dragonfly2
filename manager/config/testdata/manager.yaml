@@ -61,6 +61,7 @@ objectStorage:
   accessKey: foo
   secretKey: bar
   region: baz
+  s3ForcePathStyle: false
 
 security:
   autoIssueCert: true

@@ -7,6 +7,9 @@ coverage:
       default:
         enabled: yes
         target: 40%
+    patch:
+      default:
+        enabled: no
 
 comment:
   layout: "reach, diff, flags, files"
