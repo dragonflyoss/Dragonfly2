@@ -32,8 +32,8 @@ func Ping(addr string) (*ping.Statistics, error) {
 
 	pinger.Count = 1
 	pinger.Timeout = 100 * time.Millisecond
-	err = pinger.Run()
-	if err != nil {
+	pinger.SetPrivileged(false)
+	if err := pinger.Run(); err != nil {
 		return nil, err
 	}
 
