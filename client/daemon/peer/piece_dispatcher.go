@@ -31,24 +31,33 @@ import (
 )
 
 type PieceDispatcher interface {
+	// Put pieceSynchronizer put piece request into PieceDispatcher
 	Put(req *DownloadPieceRequest)
+	// Get downloader will get piece request from PieceDispatcher
 	Get() (req *DownloadPieceRequest, err error)
+	// Report downloader will report piece download result to PieceDispatcher, so PieceDispatcher can score peers
 	Report(result *DownloadPieceResult)
+	// Close related resources, and not accept Put and Get anymore
 	Close()
 }
 
 var ErrNoValidPieceTemporarily = errors.New("no valid piece temporarily")
 
 type pieceDispatcher struct {
-	reqMap     map[string][]*DownloadPieceRequest
-	score      map[string]int64
+	// reqMap hold piece requests of peers. Key is PeerID, value is piece requests
+	reqMap map[string][]*DownloadPieceRequest
+	// score hold the score of every peer.
+	score map[string]int64
+	// downloaded hold the already successfully downloaded piece num
 	downloaded map[int32]struct{}
-	sum        *atomic.Int64
-	closed     bool
-	cond       *sync.Cond
-	lock       *sync.Mutex
-	log        *logger.SugaredLoggerOnWith
-	rand       *rand.Rand
+	// sum is the valid num of piece requests. When sum == 0, the consumer will wait until there is a request is putted
+	sum    *atomic.Int64
+	closed bool
+	cond   *sync.Cond
+	lock   *sync.Mutex
+	log    *logger.SugaredLoggerOnWith
+	// rand is not thread-safe
+	rand *rand.Rand
 }
 
 var (
@@ -58,7 +67,7 @@ var (
 	randomRate = 0.1
 )
 
-func NewPieceDispatcher(log *logger.SugaredLoggerOnWith) *pieceDispatcher {
+func NewPieceDispatcher(log *logger.SugaredLoggerOnWith) PieceDispatcher {
 	lock := &sync.Mutex{}
 	pd := &pieceDispatcher{
 		reqMap:     map[string][]*DownloadPieceRequest{},
@@ -71,6 +80,7 @@ func NewPieceDispatcher(log *logger.SugaredLoggerOnWith) *pieceDispatcher {
 		log:        log.With("component", "pieceDispatcher"),
 		rand:       rand.New(rand.NewSource(time.Now().Unix())),
 	}
+	log.Debugf("piece dispatcher created")
 	return pd
 }
 
@@ -104,17 +114,20 @@ func (p *pieceDispatcher) Get() (req *DownloadPieceRequest, err error) {
 // getDesiredReq return a req according to performance of each dest peer. It is not thread-safe
 func (p *pieceDispatcher) getDesiredReq() (*DownloadPieceRequest, error) {
 	distPeerIDs := maps.Keys(p.score)
-	if p.rand.Int31n(1000) < int32(randomRate*1000) { //random shuffle
+	if p.rand.Int31n(1000) < int32(randomRate*1000) { //random shuffle with the probability of randomRate
 		p.rand.Shuffle(len(distPeerIDs), func(i, j int) {
 			tmp := distPeerIDs[j]
 			distPeerIDs[j] = distPeerIDs[i]
 			distPeerIDs[i] = tmp
 		})
-	} else { // sort by score
+	} else { // sort by score with the probability of (1-randomRate)
 		slices.SortFunc(distPeerIDs, func(p1, p2 string) bool { return p.score[p1] < p.score[p2] })
 	}
+
+	// iterate all peers, until get a valid piece requests
 	for _, peer := range distPeerIDs {
 		for len(p.reqMap[peer]) > 0 {
+			// choose a random piece request of a peer
 			n := p.rand.Intn(len(p.reqMap[peer]))
 			req := p.reqMap[peer][n]
 			p.reqMap[peer] = append(p.reqMap[peer][0:n], p.reqMap[peer][n+1:]...)
@@ -130,6 +143,8 @@ func (p *pieceDispatcher) getDesiredReq() (*DownloadPieceRequest, error) {
 	return nil, ErrNoValidPieceTemporarily
 }
 
+// Report pieceDispatcher will score peer according to the download result reported by downloader
+// The score of peer is not determined only by last piece downloaded, it is smoothed.
 func (p *pieceDispatcher) Report(result *DownloadPieceResult) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
@@ -152,6 +167,6 @@ func (p *pieceDispatcher) Close() {
 	p.lock.Lock()
 	p.closed = true
 	p.cond.Broadcast()
-	p.log.Infof("piece dispatcher closed")
+	p.log.Debugf("piece dispatcher closed")
 	p.lock.Unlock()
 }
