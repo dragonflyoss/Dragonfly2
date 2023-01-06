@@ -48,7 +48,7 @@ func (b *Bitmap) IsSet(i int32) bool {
 }
 
 func (b *Bitmap) Set(i int32) {
-	if i >= b.cap {
+	for i >= b.cap {
 		b.bits = append(b.bits, make([]byte, b.cap/8)...)
 		b.cap *= 2
 	}
