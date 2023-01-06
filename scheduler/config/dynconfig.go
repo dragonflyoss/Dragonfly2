@@ -189,6 +189,7 @@ func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 			logger.Errorf("get health client %s failed: %s", addr, err.Error())
 			continue
 		}
+		defer healthClient.Close()
 
 		if err := healthClient.Check(context.Background(), &healthpb.HealthCheckRequest{}); err != nil {
 			logger.Errorf("seed peer address %s is unreachable: %s", addr, err.Error())
