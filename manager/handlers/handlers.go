@@ -47,7 +47,7 @@ func (h *Handlers) setPaginationDefault(page, perPage *int) {
 }
 
 func (h *Handlers) setPaginationLinkHeader(ctx *gin.Context, page, perPage, totalCount int) {
-	totalPage := totalCount / perPage
+	totalPage := (totalCount-1)/perPage + 1
 
 	var prevPage int
 	if page == 1 {
