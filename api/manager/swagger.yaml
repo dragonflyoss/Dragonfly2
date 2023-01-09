@@ -1814,7 +1814,7 @@ paths:
       summary: Create Role
       tags:
       - Role
-  /roles/:role:
+  /roles/{role}:
     delete:
       consumes:
       - application/json
@@ -1859,7 +1859,7 @@ paths:
       summary: Get Role
       tags:
       - Role
-  /roles/:role/permissions:
+  /roles/{role}/permissions:
     delete:
       consumes:
       - application/json
@@ -2364,6 +2364,43 @@ paths:
       summary: Get Model
       tags:
       - Model
+    patch:
+      consumes:
+      - application/json
+      description: Update by json config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: model_id
+        in: path
+        name: model_id
+        required: true
+        type: string
+      - description: Model
+        in: body
+        name: Model
+        required: true
+        schema:
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateModelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.Model'
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Update Model
+      tags:
+      - Model
   /schedulers/{id}/models/{model_id}/versions:
     get:
       consumes:
@@ -2506,45 +2543,6 @@ paths:
       summary: Get Model Version
       tags:
       - Model
-  /schedulers/{scheduler_id}/models/{model_id}:
-    patch:
-      consumes:
-      - application/json
-      description: Update by json config
-      parameters:
-      - description: id
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: model_id
-        in: path
-        name: model_id
-        required: true
-        type: string
-      - description: Model
-        in: body
-        name: Model
-        required: true
-        schema:
-          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateModelRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.Model'
-        "400":
-          description: Bad Request
-        "404":
-          description: Not Found
-        "500":
-          description: Internal Server Error
-      summary: Update Model
-      tags:
-      - Model
-  /schedulers/{scheduler_id}/models/{model_id}/versions/{version_id}:
     patch:
       consumes:
       - application/json
@@ -3546,6 +3544,11 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.ResetPasswordRequest'
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
       produces:
       - application/json
       responses:

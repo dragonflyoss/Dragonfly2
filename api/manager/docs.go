@@ -1293,7 +1293,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/roles/:role": {
+        "/roles/{role}": {
             "get": {
                 "description": "Get Role",
                 "consumes": [
@@ -1361,7 +1361,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/roles/:role/permissions": {
+        "/roles/{role}/permissions": {
             "post": {
                 "description": "Add Permission by json config",
                 "consumes": [
@@ -2115,6 +2115,61 @@ const docTemplate = `{
                         "description": "Internal Server Error"
                     }
                 }
+            },
+            "patch": {
+                "description": "Update by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Model"
+                ],
+                "summary": "Update Model",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "model_id",
+                        "name": "model_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Model",
+                        "name": "Model",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateModelRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.Model"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
             }
         },
         "/schedulers/{id}/models/{model_id}/versions": {
@@ -2326,66 +2381,7 @@ const docTemplate = `{
                         "description": "Internal Server Error"
                     }
                 }
-            }
-        },
-        "/schedulers/{scheduler_id}/models/{model_id}": {
-            "patch": {
-                "description": "Update by json config",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Model"
-                ],
-                "summary": "Update Model",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "model_id",
-                        "name": "model_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Model",
-                        "name": "Model",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateModelRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.Model"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request"
-                    },
-                    "404": {
-                        "description": "Not Found"
-                    },
-                    "500": {
-                        "description": "Internal Server Error"
-                    }
-                }
-            }
-        },
-        "/schedulers/{scheduler_id}/models/{model_id}/versions/{version_id}": {
+            },
             "patch": {
                 "description": "Update by json config",
                 "consumes": [
@@ -3888,6 +3884,13 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.ResetPasswordRequest"
                         }
+                    },
+                    {
+                        "type": "integer",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {

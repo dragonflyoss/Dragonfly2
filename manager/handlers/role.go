@@ -60,7 +60,7 @@ func (h *Handlers) CreateRole(ctx *gin.Context) {
 // @Success 200
 // @Failure 400
 // @Failure 500
-// @Router /roles/:role [delete]
+// @Router /roles/{role} [delete]
 func (h *Handlers) DestroyRole(ctx *gin.Context) {
 	var params types.RoleParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
@@ -88,7 +88,7 @@ func (h *Handlers) DestroyRole(ctx *gin.Context) {
 // @Success 200
 // @Failure 400
 // @Failure 500
-// @Router /roles/:role [get]
+// @Router /roles/{role} [get]
 func (h *Handlers) GetRole(ctx *gin.Context) {
 	var params types.RoleParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
@@ -123,7 +123,7 @@ func (h *Handlers) GetRoles(ctx *gin.Context) {
 // @Success 200
 // @Failure 400
 // @Failure 500
-// @Router /roles/:role/permissions [post]
+// @Router /roles/{role}/permissions [post]
 func (h *Handlers) AddPermissionForRole(ctx *gin.Context) {
 	var params types.RoleParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
@@ -158,7 +158,7 @@ func (h *Handlers) AddPermissionForRole(ctx *gin.Context) {
 // @Success 200
 // @Failure 400
 // @Failure 500
-// @Router /roles/:role/permissions [delete]
+// @Router /roles/{role}/permissions [delete]
 func (h *Handlers) DeletePermissionForRole(ctx *gin.Context) {
 	var params types.RoleParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
