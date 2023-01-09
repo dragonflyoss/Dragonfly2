@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/otel/trace"
@@ -282,15 +283,16 @@ func (s *Service) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerRes
 	parents := peer.Parents()
 	if !req.Success {
 		peer.Log.Error("report failed peer")
+		failCode := strconv.FormatInt(int64(req.Code), 10)
 		if peer.FSM.Is(resource.PeerStateBackToSource) {
-			metrics.DownloadFailureCount.WithLabelValues(peer.Tag, peer.Application, metrics.DownloadFailureBackToSourceType).Inc()
+			metrics.DownloadFailureCount.WithLabelValues(peer.Tag, peer.Application, metrics.DownloadFailureBackToSourceType, failCode).Inc()
 			go s.createRecord(peer, parents, req)
 			s.handleTaskFailure(ctx, peer.Task, req.GetSourceError(), nil)
 			s.handlePeerFailure(ctx, peer)
 			return nil
 		}
 
-		metrics.DownloadFailureCount.WithLabelValues(peer.Tag, peer.Application, metrics.DownloadFailureP2PType).Inc()
+		metrics.DownloadFailureCount.WithLabelValues(peer.Tag, peer.Application, metrics.DownloadFailureP2PType, failCode).Inc()
 		go s.createRecord(peer, parents, req)
 		s.handlePeerFailure(ctx, peer)
 		return nil
