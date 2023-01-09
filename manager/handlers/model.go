@@ -99,7 +99,7 @@ func (h *Handlers) DestroyModel(ctx *gin.Context) {
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /schedulers/{scheduler_id}/models/{model_id} [patch]
+// @Router /schedulers/{id}/models/{model_id} [patch]
 func (h *Handlers) UpdateModel(ctx *gin.Context) {
 	var params types.ModelParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
@@ -253,7 +253,7 @@ func (h *Handlers) DestroyModelVersion(ctx *gin.Context) {
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /schedulers/{scheduler_id}/models/{model_id}/versions/{version_id} [patch]
+// @Router /schedulers/{id}/models/{model_id}/versions/{version_id} [patch]
 func (h *Handlers) UpdateModelVersion(ctx *gin.Context) {
 	var params types.ModelVersionParams
 	if err := ctx.ShouldBindUri(&params); err != nil {

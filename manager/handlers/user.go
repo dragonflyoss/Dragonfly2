@@ -150,6 +150,7 @@ func (h *Handlers) SignUp(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param User body types.ResetPasswordRequest true "User"
+// @Param id path int true "id"
 // @Success 200
 // @Failure 400
 // @Failure 500
