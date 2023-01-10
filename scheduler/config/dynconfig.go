@@ -129,7 +129,7 @@ func WithTransportCredentials(creds credentials.TransportCredentials) DynconfigO
 }
 
 // NewDynconfig returns a new dynconfig instence.
-func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, cfg *Config, options ...DynconfigOption) (DynconfigInterface, error) {
+func NewDynconfig(rawManagerClient managerclient.ClientV1, cacheDir string, cfg *Config, options ...DynconfigOption) (DynconfigInterface, error) {
 	cachePath := filepath.Join(cacheDir, cacheFileName)
 	d := &dynconfig{
 		observers: map[Observer]struct{}{},
@@ -376,15 +376,15 @@ func (d *dynconfig) Stop() error {
 
 // Manager client for dynconfig.
 type managerClient struct {
-	managerclient.Client
+	managerclient.ClientV1
 	config *Config
 }
 
 // New the manager client used by dynconfig.
-func newManagerClient(client managerclient.Client, cfg *Config) dc.ManagerClient {
+func newManagerClient(client managerclient.ClientV1, cfg *Config) dc.ManagerClient {
 	return &managerClient{
-		Client: client,
-		config: cfg,
+		ClientV1: client,
+		config:   cfg,
 	}
 }
 

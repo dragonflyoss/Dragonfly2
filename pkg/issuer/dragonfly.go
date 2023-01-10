@@ -31,7 +31,7 @@ import (
 	securityv1 "d7y.io/api/pkg/apis/security/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
+	securityclient "d7y.io/dragonfly/v2/pkg/rpc/security/client"
 )
 
 var (
@@ -44,7 +44,7 @@ var (
 
 // dragonflyIssuer provides issuer function.
 type dragonflyIssuer struct {
-	client         managerclient.Client
+	securityclient.ClientV1
 	validityPeriod time.Duration
 }
 
@@ -59,9 +59,9 @@ func WithValidityPeriod(d time.Duration) Option {
 }
 
 // NewDragonflyIssuer returns a new certify.Issuer instence.
-func NewDragonflyIssuer(client managerclient.Client, opts ...Option) certify.Issuer {
+func NewDragonflyIssuer(clientV1 securityclient.ClientV1, opts ...Option) certify.Issuer {
 	i := &dragonflyIssuer{
-		client:         client,
+		ClientV1:       clientV1,
 		validityPeriod: defaultValidityPeriod,
 	}
 
@@ -79,7 +79,7 @@ func (i *dragonflyIssuer) Issue(ctx context.Context, commonName string, certConf
 		return nil, err
 	}
 
-	resp, err := i.client.IssueCertificate(ctx, &securityv1.CertificateRequest{
+	resp, err := i.ClientV1.IssueCertificate(ctx, &securityv1.CertificateRequest{
 		Csr:            csr,
 		ValidityPeriod: durationpb.New(i.validityPeriod),
 	})

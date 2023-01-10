@@ -53,7 +53,7 @@ type dynconfigManager struct {
 }
 
 // newDynconfigManager returns a new manager dynconfig instence.
-func newDynconfigManager(cfg *DaemonOption, rawManagerClient managerclient.Client, cacheDir string, expire time.Duration, creds credentials.TransportCredentials) (Dynconfig, error) {
+func newDynconfigManager(cfg *DaemonOption, rawManagerClient managerclient.ClientV1, cacheDir string, expire time.Duration, creds credentials.TransportCredentials) (Dynconfig, error) {
 	cachePath := filepath.Join(cacheDir, cacheFileName)
 	d, err := internaldynconfig.New[DynconfigData](
 		newManagerClient(rawManagerClient, cfg),
@@ -238,15 +238,15 @@ func (d *dynconfigManager) Stop() error {
 }
 
 type managerClient struct {
-	managerclient.Client
+	managerclient.ClientV1
 	config *DaemonOption
 }
 
 // New the manager client used by dynconfig.
-func newManagerClient(client managerclient.Client, cfg *DaemonOption) internaldynconfig.ManagerClient {
+func newManagerClient(clientV1 managerclient.ClientV1, cfg *DaemonOption) internaldynconfig.ManagerClient {
 	return &managerClient{
-		Client: client,
-		config: cfg,
+		ClientV1: clientV1,
+		config:   cfg,
 	}
 }
 

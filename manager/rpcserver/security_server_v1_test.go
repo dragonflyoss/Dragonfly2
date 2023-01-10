@@ -1,5 +1,5 @@
 /*
- *     Copyright 2022 The Dragonfly Authors
+ *     Copyright 2023 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,22 +30,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	testifyassert "github.com/stretchr/testify/assert"
 	testifyrequire "github.com/stretchr/testify/require"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/protobuf/types/known/durationpb"
-	"gorm.io/gorm"
 
 	securityv1 "d7y.io/api/pkg/apis/security/v1"
-
-	"d7y.io/dragonfly/v2/manager/database"
 )
 
 func TestIssueCertificate(t *testing.T) {
 	assert := testifyassert.New(t)
 	require := testifyrequire.New(t)
-
 	caCert, caKey := genCA()
 
 	testCases := []struct {
@@ -81,12 +76,16 @@ func TestIssueCertificate(t *testing.T) {
 			ca, err := tls.X509KeyPair([]byte(caCert), []byte(caKey))
 			require.Nilf(err, "parse cert and private key should be ok")
 
-			server, _, err := New(nil,
-				&database.Database{
-					DB:  &gorm.DB{},
-					RDB: &redis.Client{},
-				},
-				nil, nil, nil, nil, WithSelfSignedCert(&ca))
+			x509CACert, err := x509.ParseCertificate(ca.Certificate[0])
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			securityServerV1 := newSecurityServerV1(&SelfSignedCert{
+				TLSCert:   &ca,
+				X509Cert:  x509CACert,
+				CertChain: ca.Certificate,
+			})
 			require.Nilf(err, "newServer should be ok")
 
 			ctx := peer.NewContext(
@@ -98,7 +97,7 @@ func TestIssueCertificate(t *testing.T) {
 					},
 				})
 
-			resp, err := server.IssueCertificate(
+			resp, err := securityServerV1.IssueCertificate(
 				ctx,
 				&securityv1.CertificateRequest{
 					Csr:            csr,
