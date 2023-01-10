@@ -1,5 +1,5 @@
 /*
- *     Copyright 2022 The Dragonfly Authors
+ *     Copyright 2023 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,21 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
-func (s *Server) IssueCertificate(ctx context.Context, req *securityv1.CertificateRequest) (*securityv1.CertificateResponse, error) {
+// securityServerV1 is v1 version of the security grpc server.
+type securityServerV1 struct {
+	// selfSignedCert is self signed certificate.
+	selfSignedCert *SelfSignedCert
+}
+
+// newSecurityServerV1 returns v1 version of the security server.
+func newSecurityServerV1(selfSignedCert *SelfSignedCert) *securityServerV1 {
+	return &securityServerV1{
+		selfSignedCert: selfSignedCert,
+	}
+}
+
+// IssueCertificate issues certificate for client.
+func (s *securityServerV1) IssueCertificate(ctx context.Context, req *securityv1.CertificateRequest) (*securityv1.CertificateResponse, error) {
 	if s.selfSignedCert == nil {
 		return nil, status.Errorf(codes.Unavailable, "ca is missing for this manager instance")
 	}

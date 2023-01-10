@@ -33,6 +33,7 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+	managerv2 "d7y.io/api/pkg/apis/manager/v2"
 	securityv1 "d7y.io/api/pkg/apis/security/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -56,8 +57,8 @@ const (
 	DefaultMaxConnectionAgeGrace = 5 * time.Minute
 )
 
-// New returns a grpc server instance and register service on grpc server.
-func New(managerServer managerv1.ManagerServer, securityServer securityv1.CertificateServiceServer, opts ...grpc.ServerOption) *grpc.Server {
+// New returns grpc server instance and register service on grpc server.
+func New(managerServerV1 managerv1.ManagerServer, managerServerV2 managerv2.ManagerServer, securityServer securityv1.CertificateServiceServer, opts ...grpc.ServerOption) *grpc.Server {
 	limiter := rpc.NewRateLimiterInterceptor(DefaultQPS, DefaultBurst)
 
 	grpcServer := grpc.NewServer(append([]grpc.ServerOption{
@@ -84,8 +85,11 @@ func New(managerServer managerv1.ManagerServer, securityServer securityv1.Certif
 		)),
 	}, opts...)...)
 
-	// Register servers on grpc server.
-	managerv1.RegisterManagerServer(grpcServer, managerServer)
+	// Register servers on v1 version of the grpc server.
+	managerv1.RegisterManagerServer(grpcServer, managerServerV1)
+
+	// Register servers on v2 version of the grpc server.
+	managerv2.RegisterManagerServer(grpcServer, managerServerV2)
 
 	// Register security on grpc server.
 	securityv1.RegisterCertificateServiceServer(grpcServer, securityServer)

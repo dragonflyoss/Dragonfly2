@@ -51,7 +51,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 		refreshInterval time.Duration
 		sleep           func()
 		cleanFileCache  func(t *testing.T)
-		mock            func(m *mocks.MockClientMockRecorder)
+		mock            func(m *mocks.MockV1MockRecorder)
 		expect          func(t *testing.T, data *DynconfigData, err error)
 	}{
 		{
@@ -63,7 +63,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 				}
 			},
 			sleep: func() {},
-			mock: func(m *mocks.MockClientMockRecorder) {
+			mock: func(m *mocks.MockV1MockRecorder) {
 				m.GetScheduler(gomock.Any(), gomock.Any()).Return(&managerv1.Scheduler{
 					Id:          1,
 					HostName:    "foo",
@@ -186,7 +186,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 			sleep: func() {
 				time.Sleep(100 * time.Millisecond)
 			},
-			mock: func(m *mocks.MockClientMockRecorder) {
+			mock: func(m *mocks.MockV1MockRecorder) {
 				gomock.InOrder(
 					m.GetScheduler(gomock.Any(), gomock.Any()).Return(&managerv1.Scheduler{
 						Id:          1,
@@ -312,7 +312,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 			sleep: func() {
 				time.Sleep(100 * time.Millisecond)
 			},
-			mock: func(m *mocks.MockClientMockRecorder) {
+			mock: func(m *mocks.MockV1MockRecorder) {
 				gomock.InOrder(
 					m.GetScheduler(gomock.Any(), gomock.Any()).Return(&managerv1.Scheduler{
 						Id:          1,
@@ -467,7 +467,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
-			mockManagerClient := mocks.NewMockClient(ctl)
+			mockManagerClient := mocks.NewMockV1(ctl)
 			tc.mock(mockManagerClient.EXPECT())
 
 			mockConfig.DynConfig.RefreshInterval = tc.refreshInterval

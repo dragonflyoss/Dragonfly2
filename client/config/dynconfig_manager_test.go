@@ -63,7 +63,7 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 		data           *DynconfigData
 		sleep          func()
 		cleanFileCache func(t *testing.T)
-		mock           func(m *mocks.MockClientMockRecorder, data *DynconfigData)
+		mock           func(m *mocks.MockV1MockRecorder, data *DynconfigData)
 		expect         func(t *testing.T, dynconfig Dynconfig, data *DynconfigData)
 	}{
 		{
@@ -91,7 +91,7 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
+			mock: func(m *mocks.MockV1MockRecorder, data *DynconfigData) {
 				gomock.InOrder(
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{
 						Schedulers: []*managerv1.Scheduler{
@@ -138,7 +138,7 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
+			mock: func(m *mocks.MockV1MockRecorder, data *DynconfigData) {
 				gomock.InOrder(
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
 					m.GetObjectStorage(gomock.Any(), gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
@@ -187,7 +187,7 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
+			mock: func(m *mocks.MockV1MockRecorder, data *DynconfigData) {
 				gomock.InOrder(
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
 					m.GetObjectStorage(gomock.Any(), gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
@@ -239,7 +239,7 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
+			mock: func(m *mocks.MockV1MockRecorder, data *DynconfigData) {
 				gomock.InOrder(
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
 					m.GetObjectStorage(gomock.Any(), gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
@@ -288,7 +288,7 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
+			mock: func(m *mocks.MockV1MockRecorder, data *DynconfigData) {
 				gomock.InOrder(
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{
 						Schedulers: []*managerv1.Scheduler{
@@ -331,7 +331,7 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
+			mock: func(m *mocks.MockV1MockRecorder, data *DynconfigData) {
 				gomock.InOrder(
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
 					m.GetObjectStorage(gomock.Any(), gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
@@ -352,7 +352,7 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 
-			mockManagerClient := mocks.NewMockClient(ctl)
+			mockManagerClient := mocks.NewMockV1(ctl)
 			tc.mock(mockManagerClient.EXPECT(), tc.data)
 			dynconfig, err := NewDynconfig(
 				ManagerSourceType, tc.config,
@@ -381,7 +381,7 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 		data           *DynconfigData
 		sleep          func()
 		cleanFileCache func(t *testing.T)
-		mock           func(m *mocks.MockClientMockRecorder, data *DynconfigData)
+		mock           func(m *mocks.MockV1MockRecorder, data *DynconfigData)
 		expect         func(t *testing.T, dynconfig Dynconfig, data *DynconfigData)
 	}{
 		{
@@ -411,7 +411,7 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
+			mock: func(m *mocks.MockV1MockRecorder, data *DynconfigData) {
 				gomock.InOrder(
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{
 						Schedulers: []*managerv1.Scheduler{
@@ -461,7 +461,7 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
+			mock: func(m *mocks.MockV1MockRecorder, data *DynconfigData) {
 				gomock.InOrder(
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
 					m.GetObjectStorage(gomock.Any(), gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
@@ -510,7 +510,7 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
+			mock: func(m *mocks.MockV1MockRecorder, data *DynconfigData) {
 				gomock.InOrder(
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{
@@ -558,7 +558,7 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
+			mock: func(m *mocks.MockV1MockRecorder, data *DynconfigData) {
 				gomock.InOrder(
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{
 						Schedulers: []*managerv1.Scheduler{
@@ -609,7 +609,7 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
+			mock: func(m *mocks.MockV1MockRecorder, data *DynconfigData) {
 				gomock.InOrder(
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{
 						Schedulers: []*managerv1.Scheduler{
@@ -661,7 +661,7 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
+			mock: func(m *mocks.MockV1MockRecorder, data *DynconfigData) {
 				gomock.InOrder(
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{
 						Schedulers: []*managerv1.Scheduler{
@@ -722,7 +722,7 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
+			mock: func(m *mocks.MockV1MockRecorder, data *DynconfigData) {
 				gomock.InOrder(
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
 					m.GetObjectStorage(gomock.Any(), gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
@@ -744,7 +744,7 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 
-			mockManagerClient := mocks.NewMockClient(ctl)
+			mockManagerClient := mocks.NewMockV1(ctl)
 			tc.mock(mockManagerClient.EXPECT(), tc.data)
 			dynconfig, err := NewDynconfig(
 				ManagerSourceType, tc.config,
@@ -773,7 +773,7 @@ func TestDynconfigGetSchedulers_ManagerSourceType(t *testing.T) {
 		data           *DynconfigData
 		sleep          func()
 		cleanFileCache func(t *testing.T)
-		mock           func(m *mocks.MockClientMockRecorder, data *DynconfigData)
+		mock           func(m *mocks.MockV1MockRecorder, data *DynconfigData)
 		expect         func(t *testing.T, dynconfig Dynconfig, data *DynconfigData)
 	}{
 		{
@@ -800,7 +800,7 @@ func TestDynconfigGetSchedulers_ManagerSourceType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
+			mock: func(m *mocks.MockV1MockRecorder, data *DynconfigData) {
 				gomock.InOrder(
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{
 						Schedulers: []*managerv1.Scheduler{
@@ -845,7 +845,7 @@ func TestDynconfigGetSchedulers_ManagerSourceType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
+			mock: func(m *mocks.MockV1MockRecorder, data *DynconfigData) {
 				gomock.InOrder(
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
 					m.GetObjectStorage(gomock.Any(), gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
@@ -892,7 +892,7 @@ func TestDynconfigGetSchedulers_ManagerSourceType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
+			mock: func(m *mocks.MockV1MockRecorder, data *DynconfigData) {
 				gomock.InOrder(
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{
 						Schedulers: []*managerv1.Scheduler{
@@ -934,7 +934,7 @@ func TestDynconfigGetSchedulers_ManagerSourceType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
+			mock: func(m *mocks.MockV1MockRecorder, data *DynconfigData) {
 				gomock.InOrder(
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
 					m.GetObjectStorage(gomock.Any(), gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
@@ -955,7 +955,7 @@ func TestDynconfigGetSchedulers_ManagerSourceType(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 
-			mockManagerClient := mocks.NewMockClient(ctl)
+			mockManagerClient := mocks.NewMockV1(ctl)
 			tc.mock(mockManagerClient.EXPECT(), tc.data)
 			dynconfig, err := NewDynconfig(
 				ManagerSourceType, tc.config,
@@ -984,7 +984,7 @@ func TestDynconfigGetObjectStorage_ManagerSourceType(t *testing.T) {
 		data           *DynconfigData
 		sleep          func()
 		cleanFileCache func(t *testing.T)
-		mock           func(m *mocks.MockClientMockRecorder, data *DynconfigData)
+		mock           func(m *mocks.MockV1MockRecorder, data *DynconfigData)
 		expect         func(t *testing.T, dynconfig Dynconfig, data *DynconfigData)
 	}{
 		{
@@ -1009,7 +1009,7 @@ func TestDynconfigGetObjectStorage_ManagerSourceType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
+			mock: func(m *mocks.MockV1MockRecorder, data *DynconfigData) {
 				gomock.InOrder(
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
 					m.GetObjectStorage(gomock.Any(), gomock.Any()).Return(&managerv1.ObjectStorage{
@@ -1048,7 +1048,7 @@ func TestDynconfigGetObjectStorage_ManagerSourceType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
+			mock: func(m *mocks.MockV1MockRecorder, data *DynconfigData) {
 				gomock.InOrder(
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
 					m.GetObjectStorage(gomock.Any(), gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
@@ -1089,7 +1089,7 @@ func TestDynconfigGetObjectStorage_ManagerSourceType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
+			mock: func(m *mocks.MockV1MockRecorder, data *DynconfigData) {
 				gomock.InOrder(
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
 					m.GetObjectStorage(gomock.Any(), gomock.Any()).Return(&managerv1.ObjectStorage{
@@ -1130,7 +1130,7 @@ func TestDynconfigGetObjectStorage_ManagerSourceType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
+			mock: func(m *mocks.MockV1MockRecorder, data *DynconfigData) {
 				gomock.InOrder(
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
 					m.GetObjectStorage(gomock.Any(), gomock.Any()).Return(&managerv1.ObjectStorage{
@@ -1171,7 +1171,7 @@ func TestDynconfigGetObjectStorage_ManagerSourceType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
+			mock: func(m *mocks.MockV1MockRecorder, data *DynconfigData) {
 				gomock.InOrder(
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
 					m.GetObjectStorage(gomock.Any(), gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
@@ -1193,7 +1193,7 @@ func TestDynconfigGetObjectStorage_ManagerSourceType(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 
-			mockManagerClient := mocks.NewMockClient(ctl)
+			mockManagerClient := mocks.NewMockV1(ctl)
 			tc.mock(mockManagerClient.EXPECT(), tc.data)
 			dynconfig, err := NewDynconfig(
 				ManagerSourceType, tc.config,

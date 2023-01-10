@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	v1 "d7y.io/api/pkg/apis/scheduler/v1"
+	scheduler "d7y.io/api/pkg/apis/scheduler/v1"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -64,11 +64,11 @@ func (mr *MockSeedPeerMockRecorder) Stop() *gomock.Call {
 }
 
 // TriggerTask mocks base method.
-func (m *MockSeedPeer) TriggerTask(arg0 context.Context, arg1 *Task) (*Peer, *v1.PeerResult, error) {
+func (m *MockSeedPeer) TriggerTask(arg0 context.Context, arg1 *Task) (*Peer, *scheduler.PeerResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TriggerTask", arg0, arg1)
 	ret0, _ := ret[0].(*Peer)
-	ret1, _ := ret[1].(*v1.PeerResult)
+	ret1, _ := ret[1].(*scheduler.PeerResult)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }

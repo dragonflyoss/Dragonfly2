@@ -32,7 +32,7 @@ func TestAnnouncer_New(t *testing.T) {
 	tests := []struct {
 		name   string
 		config *config.Config
-		mock   func(m *mocks.MockClientMockRecorder)
+		mock   func(m *mocks.MockV1MockRecorder)
 		expect func(t *testing.T, announcer Announcer, err error)
 	}{
 		{
@@ -52,7 +52,7 @@ func TestAnnouncer_New(t *testing.T) {
 					SchedulerClusterID: 1,
 				},
 			},
-			mock: func(m *mocks.MockClientMockRecorder) {
+			mock: func(m *mocks.MockV1MockRecorder) {
 				m.UpdateScheduler(gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
 			},
 			expect: func(t *testing.T, a Announcer, err error) {
@@ -80,7 +80,7 @@ func TestAnnouncer_New(t *testing.T) {
 					SchedulerClusterID: 1,
 				},
 			},
-			mock: func(m *mocks.MockClientMockRecorder) {
+			mock: func(m *mocks.MockV1MockRecorder) {
 				m.UpdateScheduler(gomock.Any(), gomock.Any()).Return(nil, errors.New("foo")).Times(1)
 			},
 			expect: func(t *testing.T, a Announcer, err error) {
@@ -94,7 +94,7 @@ func TestAnnouncer_New(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
-			mockManagerClient := mocks.NewMockClient(ctl)
+			mockManagerClient := mocks.NewMockV1(ctl)
 			tc.mock(mockManagerClient.EXPECT())
 
 			a, err := New(tc.config, mockManagerClient)

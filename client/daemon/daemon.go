@@ -65,6 +65,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
+	securityclient "d7y.io/dragonfly/v2/pkg/rpc/security/client"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/types"
 )
@@ -99,7 +100,8 @@ type clientDaemon struct {
 
 	dynconfig       config.Dynconfig
 	dfpath          dfpath.Dfpath
-	managerClient   managerclient.Client
+	managerClient   managerclient.V1
+	securityClient  securityclient.V1
 	schedulerClient schedulerclient.Client
 	certifyClient   *certify.Certify
 	announcer       announcer.Announcer
@@ -122,8 +124,9 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	}
 
 	var (
-		managerClient managerclient.Client
-		certifyClient *certify.Certify
+		managerClient  managerclient.V1
+		securityClient securityclient.V1
+		certifyClient  *certify.Certify
 	)
 
 	if opt.Scheduler.Manager.Enable {
@@ -141,16 +144,22 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			}
 		}
 
-		managerClient, err = managerclient.GetClientByAddr(
+		managerClient, err = managerclient.GetV1ByAddr(
 			context.Background(), opt.Scheduler.Manager.NetAddrs, grpc.WithTransportCredentials(grpcCredentials))
 		if err != nil {
 			return nil, err
 		}
 
 		if opt.Security.AutoIssueCert {
+			// Initialize security client.
+			securityClient, err = securityclient.GetV1ByAddr(context.Background(), opt.Scheduler.Manager.NetAddrs, grpc.WithTransportCredentials(grpcCredentials))
+			if err != nil {
+				return nil, err
+			}
+
 			certifyClient = &certify.Certify{
 				CommonName:  ip.IPv4.String(),
-				Issuer:      issuer.NewDragonflyIssuer(managerClient, issuer.WithValidityPeriod(opt.Security.CertSpec.ValidityPeriod)),
+				Issuer:      issuer.NewDragonflyIssuer(securityClient, issuer.WithValidityPeriod(opt.Security.CertSpec.ValidityPeriod)),
 				RenewBefore: time.Hour,
 				CertConfig: &certify.CertConfig{
 					SubjectAlternativeNames:   opt.Security.CertSpec.DNSNames,
@@ -337,6 +346,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		dynconfig:       dynconfig,
 		dfpath:          d,
 		managerClient:   managerClient,
+		securityClient:  securityClient,
 		schedulerClient: schedulerClient,
 		certifyClient:   certifyClient,
 	}, nil
@@ -821,6 +831,14 @@ func (cd *clientDaemon) Stop() {
 				logger.Errorf("manager client failed to stop: %s", err.Error())
 			} else {
 				logger.Info("manager client closed")
+			}
+		}
+
+		if cd.securityClient != nil {
+			if err := cd.securityClient.Close(); err != nil {
+				logger.Errorf("security client failed to stop: %s", err.Error())
+			} else {
+				logger.Info("security client closed")
 			}
 		}
 	})

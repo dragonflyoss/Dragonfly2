@@ -21,8 +21,6 @@ import (
 	"fmt"
 	"os"
 
-	managerv1 "d7y.io/api/pkg/apis/manager/v1"
-
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/searcher"
 )
@@ -34,7 +32,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	clusters, err := s.FindSchedulerClusters(context.Background(), []model.SchedulerCluster{}, &managerv1.ListSchedulersRequest{})
+	clusters, err := s.FindSchedulerClusters(context.Background(), []model.SchedulerCluster{}, "foo", "127.0.0.1", map[string]string{})
 	if err != nil {
 		fmt.Println("scheduler cluster not found")
 		os.Exit(1)

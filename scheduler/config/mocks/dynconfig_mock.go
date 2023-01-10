@@ -7,7 +7,7 @@ package mocks
 import (
 	reflect "reflect"
 
-	v1 "d7y.io/api/pkg/apis/manager/v1"
+	manager "d7y.io/api/pkg/apis/manager/v1"
 	types "d7y.io/dragonfly/v2/manager/types"
 	config "d7y.io/dragonfly/v2/scheduler/config"
 	gomock "github.com/golang/mock/gomock"
@@ -65,10 +65,10 @@ func (mr *MockDynconfigInterfaceMockRecorder) Get() *gomock.Call {
 }
 
 // GetApplications mocks base method.
-func (m *MockDynconfigInterface) GetApplications() ([]*v1.Application, error) {
+func (m *MockDynconfigInterface) GetApplications() ([]*manager.Application, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetApplications")
-	ret0, _ := ret[0].([]*v1.Application)
+	ret0, _ := ret[0].([]*manager.Application)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -95,10 +95,10 @@ func (mr *MockDynconfigInterfaceMockRecorder) GetResolveSeedPeerAddrs() *gomock.
 }
 
 // GetScheduler mocks base method.
-func (m *MockDynconfigInterface) GetScheduler() (*v1.Scheduler, error) {
+func (m *MockDynconfigInterface) GetScheduler() (*manager.Scheduler, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetScheduler")
-	ret0, _ := ret[0].(*v1.Scheduler)
+	ret0, _ := ret[0].(*manager.Scheduler)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -110,10 +110,10 @@ func (mr *MockDynconfigInterfaceMockRecorder) GetScheduler() *gomock.Call {
 }
 
 // GetSchedulerCluster mocks base method.
-func (m *MockDynconfigInterface) GetSchedulerCluster() (*v1.SchedulerCluster, error) {
+func (m *MockDynconfigInterface) GetSchedulerCluster() (*manager.SchedulerCluster, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSchedulerCluster")
-	ret0, _ := ret[0].(*v1.SchedulerCluster)
+	ret0, _ := ret[0].(*manager.SchedulerCluster)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -155,10 +155,10 @@ func (mr *MockDynconfigInterfaceMockRecorder) GetSchedulerClusterConfig() *gomoc
 }
 
 // GetSeedPeers mocks base method.
-func (m *MockDynconfigInterface) GetSeedPeers() ([]*v1.SeedPeer, error) {
+func (m *MockDynconfigInterface) GetSeedPeers() ([]*manager.SeedPeer, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSeedPeers")
-	ret0, _ := ret[0].([]*v1.SeedPeer)
+	ret0, _ := ret[0].([]*manager.SeedPeer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
