@@ -57,7 +57,7 @@ type announcer struct {
 	daemonPort         int32
 	daemonDownloadPort int32
 	schedulerClient    schedulerclient.Client
-	managerClient      managerclient.Client
+	managerClient      managerclient.V1
 	done               chan struct{}
 }
 
@@ -65,7 +65,7 @@ type announcer struct {
 type Option func(s *announcer)
 
 // WithManagerClient sets the grpc client of manager.
-func WithManagerClient(client managerclient.Client) Option {
+func WithManagerClient(client managerclient.V1) Option {
 	return func(a *announcer) {
 		a.managerClient = client
 	}

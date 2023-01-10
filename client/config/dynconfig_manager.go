@@ -53,7 +53,7 @@ type dynconfigManager struct {
 }
 
 // newDynconfigManager returns a new manager dynconfig instence.
-func newDynconfigManager(cfg *DaemonOption, rawManagerClient managerclient.Client, cacheDir string, expire time.Duration, creds credentials.TransportCredentials) (Dynconfig, error) {
+func newDynconfigManager(cfg *DaemonOption, rawManagerClient managerclient.V1, cacheDir string, expire time.Duration, creds credentials.TransportCredentials) (Dynconfig, error) {
 	cachePath := filepath.Join(cacheDir, cacheFileName)
 	d, err := internaldynconfig.New[DynconfigData](
 		newManagerClient(rawManagerClient, cfg),
@@ -238,20 +238,20 @@ func (d *dynconfigManager) Stop() error {
 }
 
 type managerClient struct {
-	managerclient.Client
-	config *DaemonOption
+	managerClient managerclient.V1
+	config        *DaemonOption
 }
 
 // New the manager client used by dynconfig.
-func newManagerClient(client managerclient.Client, cfg *DaemonOption) internaldynconfig.ManagerClient {
+func newManagerClient(client managerclient.V1, cfg *DaemonOption) internaldynconfig.ManagerClient {
 	return &managerClient{
-		Client: client,
-		config: cfg,
+		managerClient: client,
+		config:        cfg,
 	}
 }
 
 func (mc *managerClient) Get() (any, error) {
-	listSchedulersResp, err := mc.ListSchedulers(context.Background(), &managerv1.ListSchedulersRequest{
+	listSchedulersResp, err := mc.managerClient.ListSchedulers(context.Background(), &managerv1.ListSchedulersRequest{
 		SourceType: managerv1.SourceType_PEER_SOURCE,
 		HostName:   mc.config.Host.Hostname,
 		Ip:         mc.config.Host.AdvertiseIP.String(),
@@ -269,7 +269,7 @@ func (mc *managerClient) Get() (any, error) {
 	}
 
 	if mc.config.ObjectStorage.Enable {
-		getObjectStorageResp, err := mc.GetObjectStorage(context.Background(), &managerv1.GetObjectStorageRequest{
+		getObjectStorageResp, err := mc.managerClient.GetObjectStorage(context.Background(), &managerv1.GetObjectStorageRequest{
 			SourceType: managerv1.SourceType_PEER_SOURCE,
 			HostName:   mc.config.Host.Hostname,
 			Ip:         mc.config.Host.AdvertiseIP.String(),

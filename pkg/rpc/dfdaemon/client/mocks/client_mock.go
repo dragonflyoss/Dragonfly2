@@ -8,8 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	v1 "d7y.io/api/pkg/apis/common/v1"
-	v10 "d7y.io/api/pkg/apis/dfdaemon/v1"
+	common "d7y.io/api/pkg/apis/common/v1"
+	dfdaemon "d7y.io/api/pkg/apis/dfdaemon/v1"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 )
@@ -71,7 +71,7 @@ func (mr *MockClientMockRecorder) Close() *gomock.Call {
 }
 
 // DeleteTask mocks base method.
-func (m *MockClient) DeleteTask(arg0 context.Context, arg1 *v10.DeleteTaskRequest, arg2 ...grpc.CallOption) error {
+func (m *MockClient) DeleteTask(arg0 context.Context, arg1 *dfdaemon.DeleteTaskRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -90,14 +90,14 @@ func (mr *MockClientMockRecorder) DeleteTask(arg0, arg1 interface{}, arg2 ...int
 }
 
 // Download mocks base method.
-func (m *MockClient) Download(arg0 context.Context, arg1 *v10.DownRequest, arg2 ...grpc.CallOption) (v10.Daemon_DownloadClient, error) {
+func (m *MockClient) Download(arg0 context.Context, arg1 *dfdaemon.DownRequest, arg2 ...grpc.CallOption) (dfdaemon.Daemon_DownloadClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "Download", varargs...)
-	ret0, _ := ret[0].(v10.Daemon_DownloadClient)
+	ret0, _ := ret[0].(dfdaemon.Daemon_DownloadClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -110,7 +110,7 @@ func (mr *MockClientMockRecorder) Download(arg0, arg1 interface{}, arg2 ...inter
 }
 
 // ExportTask mocks base method.
-func (m *MockClient) ExportTask(arg0 context.Context, arg1 *v10.ExportTaskRequest, arg2 ...grpc.CallOption) error {
+func (m *MockClient) ExportTask(arg0 context.Context, arg1 *dfdaemon.ExportTaskRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -129,14 +129,14 @@ func (mr *MockClientMockRecorder) ExportTask(arg0, arg1 interface{}, arg2 ...int
 }
 
 // GetPieceTasks mocks base method.
-func (m *MockClient) GetPieceTasks(arg0 context.Context, arg1 *v1.PieceTaskRequest, arg2 ...grpc.CallOption) (*v1.PiecePacket, error) {
+func (m *MockClient) GetPieceTasks(arg0 context.Context, arg1 *common.PieceTaskRequest, arg2 ...grpc.CallOption) (*common.PiecePacket, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetPieceTasks", varargs...)
-	ret0, _ := ret[0].(*v1.PiecePacket)
+	ret0, _ := ret[0].(*common.PiecePacket)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -149,7 +149,7 @@ func (mr *MockClientMockRecorder) GetPieceTasks(arg0, arg1 interface{}, arg2 ...
 }
 
 // ImportTask mocks base method.
-func (m *MockClient) ImportTask(arg0 context.Context, arg1 *v10.ImportTaskRequest, arg2 ...grpc.CallOption) error {
+func (m *MockClient) ImportTask(arg0 context.Context, arg1 *dfdaemon.ImportTaskRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -168,7 +168,7 @@ func (mr *MockClientMockRecorder) ImportTask(arg0, arg1 interface{}, arg2 ...int
 }
 
 // StatTask mocks base method.
-func (m *MockClient) StatTask(arg0 context.Context, arg1 *v10.StatTaskRequest, arg2 ...grpc.CallOption) error {
+func (m *MockClient) StatTask(arg0 context.Context, arg1 *dfdaemon.StatTaskRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -187,14 +187,14 @@ func (mr *MockClientMockRecorder) StatTask(arg0, arg1 interface{}, arg2 ...inter
 }
 
 // SyncPieceTasks mocks base method.
-func (m *MockClient) SyncPieceTasks(arg0 context.Context, arg1 *v1.PieceTaskRequest, arg2 ...grpc.CallOption) (v10.Daemon_SyncPieceTasksClient, error) {
+func (m *MockClient) SyncPieceTasks(arg0 context.Context, arg1 *common.PieceTaskRequest, arg2 ...grpc.CallOption) (dfdaemon.Daemon_SyncPieceTasksClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "SyncPieceTasks", varargs...)
-	ret0, _ := ret[0].(v10.Daemon_SyncPieceTasksClient)
+	ret0, _ := ret[0].(dfdaemon.Daemon_SyncPieceTasksClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

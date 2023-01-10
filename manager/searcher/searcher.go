@@ -27,8 +27,6 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 
-	managerv1 "d7y.io/api/pkg/apis/manager/v1"
-
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/pkg/math"
@@ -88,7 +86,7 @@ type Scopes struct {
 
 type Searcher interface {
 	// FindSchedulerClusters finds scheduler clusters that best matches the evaluation.
-	FindSchedulerClusters(context.Context, []model.SchedulerCluster, *managerv1.ListSchedulersRequest) ([]model.SchedulerCluster, error)
+	FindSchedulerClusters(ctx context.Context, schedulerClusters []model.SchedulerCluster, hostname, ip string, conditions map[string]string) ([]model.SchedulerCluster, error)
 }
 
 type searcher struct{}
@@ -105,8 +103,7 @@ func New(pluginDir string) Searcher {
 }
 
 // FindSchedulerClusters finds scheduler clusters that best matches the evaluation.
-func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters []model.SchedulerCluster, client *managerv1.ListSchedulersRequest) ([]model.SchedulerCluster, error) {
-	conditions := client.HostInfo
+func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters []model.SchedulerCluster, hostname, ip string, conditions map[string]string) ([]model.SchedulerCluster, error) {
 	if len(conditions) <= 0 {
 		return nil, errors.New("empty conditions")
 	}

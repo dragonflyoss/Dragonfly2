@@ -41,6 +41,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
+	securityclient "d7y.io/dragonfly/v2/pkg/rpc/security/client"
 	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/announcer"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -70,7 +71,10 @@ type Server struct {
 	metricsServer *http.Server
 
 	// Manager client.
-	managerClient managerclient.Client
+	managerClient managerclient.V1
+
+	// Security client.
+	securityClient securityclient.V1
 
 	// Resource interface.
 	resource resource.Resource
@@ -107,7 +111,8 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		managerDialOptions = append(managerDialOptions, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
-	managerClient, err := managerclient.GetClient(ctx, cfg.Manager.Addr, managerDialOptions...)
+	// Initialize manager client.
+	managerClient, err := managerclient.GetV1(ctx, cfg.Manager.Addr, managerDialOptions...)
 	if err != nil {
 		return nil, err
 	}
@@ -126,9 +131,16 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		clientTransportCredentials credentials.TransportCredentials
 	)
 	if cfg.Security.AutoIssueCert {
+		// Initialize security client.
+		securityClient, err := securityclient.GetV1(ctx, cfg.Manager.Addr, managerDialOptions...)
+		if err != nil {
+			return nil, err
+		}
+		s.securityClient = securityClient
+
 		certifyClient = &certify.Certify{
 			CommonName:  types.SchedulerName,
-			Issuer:      issuer.NewDragonflyIssuer(managerClient, issuer.WithValidityPeriod(cfg.Security.CertSpec.ValidityPeriod)),
+			Issuer:      issuer.NewDragonflyIssuer(s.securityClient, issuer.WithValidityPeriod(cfg.Security.CertSpec.ValidityPeriod)),
 			RenewBefore: time.Hour,
 			CertConfig: &certify.CertConfig{
 				SubjectAlternativeNames:   cfg.Security.CertSpec.DNSNames,
@@ -331,6 +343,15 @@ func (s *Server) Stop() {
 			logger.Errorf("manager client failed to stop: %s", err.Error())
 		} else {
 			logger.Info("manager client closed")
+		}
+	}
+
+	// Stop security client.
+	if s.securityClient != nil {
+		if err := s.securityClient.Close(); err != nil {
+			logger.Errorf("security client failed to stop: %s", err.Error())
+		} else {
+			logger.Info("security client closed")
 		}
 	}
 

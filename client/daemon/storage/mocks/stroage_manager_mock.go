@@ -10,7 +10,7 @@ import (
 	reflect "reflect"
 	time "time"
 
-	v1 "d7y.io/api/pkg/apis/common/v1"
+	common "d7y.io/api/pkg/apis/common/v1"
 	storage "d7y.io/dragonfly/v2/client/daemon/storage"
 	util "d7y.io/dragonfly/v2/client/util"
 	gomock "github.com/golang/mock/gomock"
@@ -40,10 +40,10 @@ func (m *MockTaskStorageDriver) EXPECT() *MockTaskStorageDriverMockRecorder {
 }
 
 // GetExtendAttribute mocks base method.
-func (m *MockTaskStorageDriver) GetExtendAttribute(ctx context.Context, req *storage.PeerTaskMetadata) (*v1.ExtendAttribute, error) {
+func (m *MockTaskStorageDriver) GetExtendAttribute(ctx context.Context, req *storage.PeerTaskMetadata) (*common.ExtendAttribute, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetExtendAttribute", ctx, req)
-	ret0, _ := ret[0].(*v1.ExtendAttribute)
+	ret0, _ := ret[0].(*common.ExtendAttribute)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -55,10 +55,10 @@ func (mr *MockTaskStorageDriverMockRecorder) GetExtendAttribute(ctx, req interfa
 }
 
 // GetPieces mocks base method.
-func (m *MockTaskStorageDriver) GetPieces(ctx context.Context, req *v1.PieceTaskRequest) (*v1.PiecePacket, error) {
+func (m *MockTaskStorageDriver) GetPieces(ctx context.Context, req *common.PieceTaskRequest) (*common.PiecePacket, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPieces", ctx, req)
-	ret0, _ := ret[0].(*v1.PiecePacket)
+	ret0, _ := ret[0].(*common.PiecePacket)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -354,10 +354,10 @@ func (mr *MockManagerMockRecorder) FindPartialCompletedTask(taskID, rg interface
 }
 
 // GetExtendAttribute mocks base method.
-func (m *MockManager) GetExtendAttribute(ctx context.Context, req *storage.PeerTaskMetadata) (*v1.ExtendAttribute, error) {
+func (m *MockManager) GetExtendAttribute(ctx context.Context, req *storage.PeerTaskMetadata) (*common.ExtendAttribute, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetExtendAttribute", ctx, req)
-	ret0, _ := ret[0].(*v1.ExtendAttribute)
+	ret0, _ := ret[0].(*common.ExtendAttribute)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -369,10 +369,10 @@ func (mr *MockManagerMockRecorder) GetExtendAttribute(ctx, req interface{}) *gom
 }
 
 // GetPieces mocks base method.
-func (m *MockManager) GetPieces(ctx context.Context, req *v1.PieceTaskRequest) (*v1.PiecePacket, error) {
+func (m *MockManager) GetPieces(ctx context.Context, req *common.PieceTaskRequest) (*common.PiecePacket, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPieces", ctx, req)
-	ret0, _ := ret[0].(*v1.PiecePacket)
+	ret0, _ := ret[0].(*common.PiecePacket)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
