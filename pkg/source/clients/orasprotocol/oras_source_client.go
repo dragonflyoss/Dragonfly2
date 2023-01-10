@@ -168,9 +168,9 @@ func (client *orasSourceClient) fetchManifest(request *source.Request, accesstok
 	if sha != "" {
 		logger.Info(fmt.Sprintf("fetching manifests for %s  successful", request.URL))
 		return sha, nil
-	} else {
-		return "", errors.New("manifest is empty")
 	}
+	return "", errors.New("manifest is empty")
+
 }
 
 func (client *orasSourceClient) fetchImage(request *source.Request, token, sha256, path, tag string) (*source.Response, error) {
@@ -205,9 +205,9 @@ func fileExists(filepath string) bool {
 	_, err := os.Stat(filepath)
 	if os.IsNotExist(err) {
 		return false
-	} else {
-		return true
 	}
+	return true
+
 }
 
 func parseURL(request *source.Request, urlPath string) (string, string, error) {
