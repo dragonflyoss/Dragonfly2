@@ -39,6 +39,13 @@ var (
 		Help:      "Gauge of the number of peer.",
 	}, []string{"version", "commit"})
 
+	SearchSchedulerClusterFailureCount = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "search_scheduler_cluster_failure_total",
+		Help:      "Counter of the number of failed of searching scheduler cluster.",
+	}, []string{"version", "commit"})
+
 	VersionGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.ManagerMetricsName,
