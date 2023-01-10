@@ -44,7 +44,7 @@ var (
 
 // dragonflyIssuer provides issuer function.
 type dragonflyIssuer struct {
-	securityclient.ClientV1
+	securityClient securityclient.V1
 	validityPeriod time.Duration
 }
 
@@ -59,9 +59,9 @@ func WithValidityPeriod(d time.Duration) Option {
 }
 
 // NewDragonflyIssuer returns a new certify.Issuer instence.
-func NewDragonflyIssuer(clientV1 securityclient.ClientV1, opts ...Option) certify.Issuer {
+func NewDragonflyIssuer(securityClient securityclient.V1, opts ...Option) certify.Issuer {
 	i := &dragonflyIssuer{
-		ClientV1:       clientV1,
+		securityClient: securityClient,
 		validityPeriod: defaultValidityPeriod,
 	}
 
@@ -79,7 +79,7 @@ func (i *dragonflyIssuer) Issue(ctx context.Context, commonName string, certConf
 		return nil, err
 	}
 
-	resp, err := i.ClientV1.IssueCertificate(ctx, &securityv1.CertificateRequest{
+	resp, err := i.securityClient.IssueCertificate(ctx, &securityv1.CertificateRequest{
 		Csr:            csr,
 		ValidityPeriod: durationpb.New(i.validityPeriod),
 	})

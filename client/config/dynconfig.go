@@ -82,7 +82,7 @@ type Dynconfig interface {
 
 type dynconfig struct {
 	sourceType           SourceType
-	managerClient        managerclient.ClientV1
+	managerClient        managerclient.V1
 	cacheDir             string
 	expire               time.Duration
 	transportCredentials credentials.TransportCredentials
@@ -97,7 +97,7 @@ type Observer interface {
 type DynconfigOption func(d *dynconfig) error
 
 // WithManagerClient set the manager client.
-func WithManagerClient(c managerclient.ClientV1) DynconfigOption {
+func WithManagerClient(c managerclient.V1) DynconfigOption {
 	return func(d *dynconfig) error {
 		d.managerClient = c
 		return nil

@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2023 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-//go:generate mockgen -destination mocks/client_v1_mock.go -source client_v1.go -package mocks
+//go:generate mockgen -destination mocks/v1_mock.go -source v1.go -package mocks
 
 package client
 
@@ -40,8 +40,8 @@ import (
 	"d7y.io/dragonfly/v2/pkg/reachable"
 )
 
-// GetClientV1 returns v1 version of the manager client.
-func GetClientV1(ctx context.Context, target string, opts ...grpc.DialOption) (ClientV1, error) {
+// GetV1 returns v1 version of the manager client.
+func GetV1(ctx context.Context, target string, opts ...grpc.DialOption) (V1, error) {
 	conn, err := grpc.DialContext(
 		ctx,
 		target,
@@ -66,20 +66,20 @@ func GetClientV1(ctx context.Context, target string, opts ...grpc.DialOption) (C
 		return nil, err
 	}
 
-	return &clientV1{
+	return &v1{
 		ManagerClient:            managerv1.NewManagerClient(conn),
 		CertificateServiceClient: securityv1.NewCertificateServiceClient(conn),
 		ClientConn:               conn,
 	}, nil
 }
 
-// GetClientV1ByAddr returns v1 version of the manager client with addresses.
-func GetClientV1ByAddr(ctx context.Context, netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (ClientV1, error) {
+// GetV1ByAddr returns v1 version of the manager client with addresses.
+func GetV1ByAddr(ctx context.Context, netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (V1, error) {
 	for _, netAddr := range netAddrs {
 		ipReachable := reachable.New(&reachable.Config{Address: netAddr.Addr})
 		if err := ipReachable.Check(); err == nil {
 			logger.Infof("use %s address for manager grpc client", netAddr.Addr)
-			return GetClientV1(ctx, netAddr.Addr, opts...)
+			return GetV1(ctx, netAddr.Addr, opts...)
 		}
 		logger.Warnf("%s manager address can not reachable", netAddr.Addr)
 	}
@@ -87,8 +87,8 @@ func GetClientV1ByAddr(ctx context.Context, netAddrs []dfnet.NetAddr, opts ...gr
 	return nil, errors.New("can not find available manager addresses")
 }
 
-// ClientV1 is the interface for v1 version of the grpc client.
-type ClientV1 interface {
+// V1 is the interface for v1 version of the grpc client.
+type V1 interface {
 	// Update Seed peer configuration.
 	UpdateSeedPeer(context.Context, *managerv1.UpdateSeedPeerRequest, ...grpc.CallOption) (*managerv1.SeedPeer, error)
 
@@ -147,160 +147,158 @@ type ClientV1 interface {
 	Close() error
 }
 
-// clientV1 provides v1 version of the manager grpc function.
-type clientV1 struct {
+// v1 provides v1 version of the manager grpc function.
+type v1 struct {
 	managerv1.ManagerClient
 	securityv1.CertificateServiceClient
 	*grpc.ClientConn
 }
 
 // Update SeedPeer configuration.
-func (c *clientV1) UpdateSeedPeer(ctx context.Context, req *managerv1.UpdateSeedPeerRequest, opts ...grpc.CallOption) (*managerv1.SeedPeer, error) {
+func (v *v1) UpdateSeedPeer(ctx context.Context, req *managerv1.UpdateSeedPeerRequest, opts ...grpc.CallOption) (*managerv1.SeedPeer, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	return c.ManagerClient.UpdateSeedPeer(ctx, req, opts...)
+	return v.ManagerClient.UpdateSeedPeer(ctx, req, opts...)
 }
 
 // Get Scheduler and Scheduler cluster configuration.
-func (c *clientV1) GetScheduler(ctx context.Context, req *managerv1.GetSchedulerRequest, opts ...grpc.CallOption) (*managerv1.Scheduler, error) {
+func (v *v1) GetScheduler(ctx context.Context, req *managerv1.GetSchedulerRequest, opts ...grpc.CallOption) (*managerv1.Scheduler, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	return c.ManagerClient.GetScheduler(ctx, req, opts...)
+	return v.ManagerClient.GetScheduler(ctx, req, opts...)
 }
 
 // Update scheduler configuration.
-func (c *clientV1) UpdateScheduler(ctx context.Context, req *managerv1.UpdateSchedulerRequest, opts ...grpc.CallOption) (*managerv1.Scheduler, error) {
+func (v *v1) UpdateScheduler(ctx context.Context, req *managerv1.UpdateSchedulerRequest, opts ...grpc.CallOption) (*managerv1.Scheduler, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	return c.ManagerClient.UpdateScheduler(ctx, req, opts...)
+	return v.ManagerClient.UpdateScheduler(ctx, req, opts...)
 }
 
 // List acitve schedulers configuration.
-func (c *clientV1) ListSchedulers(ctx context.Context, req *managerv1.ListSchedulersRequest, opts ...grpc.CallOption) (*managerv1.ListSchedulersResponse, error) {
+func (v *v1) ListSchedulers(ctx context.Context, req *managerv1.ListSchedulersRequest, opts ...grpc.CallOption) (*managerv1.ListSchedulersResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	return c.ManagerClient.ListSchedulers(ctx, req, opts...)
+	return v.ManagerClient.ListSchedulers(ctx, req, opts...)
 }
 
 // Get object storage configuration.
-func (c *clientV1) GetObjectStorage(ctx context.Context, req *managerv1.GetObjectStorageRequest, opts ...grpc.CallOption) (*managerv1.ObjectStorage, error) {
+func (v *v1) GetObjectStorage(ctx context.Context, req *managerv1.GetObjectStorageRequest, opts ...grpc.CallOption) (*managerv1.ObjectStorage, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	return c.ManagerClient.GetObjectStorage(ctx, req, opts...)
+	return v.ManagerClient.GetObjectStorage(ctx, req, opts...)
 }
 
 // List buckets configuration.
-func (c *clientV1) ListBuckets(ctx context.Context, req *managerv1.ListBucketsRequest, opts ...grpc.CallOption) (*managerv1.ListBucketsResponse, error) {
+func (v *v1) ListBuckets(ctx context.Context, req *managerv1.ListBucketsRequest, opts ...grpc.CallOption) (*managerv1.ListBucketsResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	return c.ManagerClient.ListBuckets(ctx, req, opts...)
+	return v.ManagerClient.ListBuckets(ctx, req, opts...)
 }
 
 // List models information.
-func (c *clientV1) ListModels(ctx context.Context, req *managerv1.ListModelsRequest, opts ...grpc.CallOption) (*managerv1.ListModelsResponse, error) {
+func (v *v1) ListModels(ctx context.Context, req *managerv1.ListModelsRequest, opts ...grpc.CallOption) (*managerv1.ListModelsResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	return c.ManagerClient.ListModels(ctx, req, opts...)
+	return v.ManagerClient.ListModels(ctx, req, opts...)
 }
 
 // Get model information.
-func (c *clientV1) GetModel(ctx context.Context, req *managerv1.GetModelRequest, opts ...grpc.CallOption) (*managerv1.Model, error) {
+func (v *v1) GetModel(ctx context.Context, req *managerv1.GetModelRequest, opts ...grpc.CallOption) (*managerv1.Model, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	return c.ManagerClient.GetModel(ctx, req, opts...)
+	return v.ManagerClient.GetModel(ctx, req, opts...)
 
 }
 
 // Create model information.
-func (c *clientV1) CreateModel(ctx context.Context, req *managerv1.CreateModelRequest, opts ...grpc.CallOption) (*managerv1.Model, error) {
+func (v *v1) CreateModel(ctx context.Context, req *managerv1.CreateModelRequest, opts ...grpc.CallOption) (*managerv1.Model, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	return c.ManagerClient.CreateModel(ctx, req, opts...)
+	return v.ManagerClient.CreateModel(ctx, req, opts...)
 }
 
 // Update model information.
-func (c *clientV1) UpdateModel(ctx context.Context, req *managerv1.UpdateModelRequest, opts ...grpc.CallOption) (*managerv1.Model, error) {
+func (v *v1) UpdateModel(ctx context.Context, req *managerv1.UpdateModelRequest, opts ...grpc.CallOption) (*managerv1.Model, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	return c.ManagerClient.UpdateModel(ctx, req, opts...)
+	return v.ManagerClient.UpdateModel(ctx, req, opts...)
 }
 
 // Delete model information.
-func (c *clientV1) DeleteModel(ctx context.Context, req *managerv1.DeleteModelRequest, opts ...grpc.CallOption) error {
+func (v *v1) DeleteModel(ctx context.Context, req *managerv1.DeleteModelRequest, opts ...grpc.CallOption) error {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	_, err := c.ManagerClient.DeleteModel(ctx, req, opts...)
+	_, err := v.ManagerClient.DeleteModel(ctx, req, opts...)
 	return err
 }
 
 // List model versions information.
-func (c *clientV1) ListModelVersions(ctx context.Context, req *managerv1.ListModelVersionsRequest, opts ...grpc.CallOption) (*managerv1.ListModelVersionsResponse, error) {
+func (v *v1) ListModelVersions(ctx context.Context, req *managerv1.ListModelVersionsRequest, opts ...grpc.CallOption) (*managerv1.ListModelVersionsResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	return c.ManagerClient.ListModelVersions(ctx, req, opts...)
+	return v.ManagerClient.ListModelVersions(ctx, req, opts...)
 }
 
 // Get model version information.
-func (c *clientV1) GetModelVersion(ctx context.Context, req *managerv1.GetModelVersionRequest, opts ...grpc.CallOption) (*managerv1.ModelVersion, error) {
+func (v *v1) GetModelVersion(ctx context.Context, req *managerv1.GetModelVersionRequest, opts ...grpc.CallOption) (*managerv1.ModelVersion, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	return c.ManagerClient.GetModelVersion(ctx, req, opts...)
-
+	return v.ManagerClient.GetModelVersion(ctx, req, opts...)
 }
 
 // Create model version information.
-func (c *clientV1) CreateModelVersion(ctx context.Context, req *managerv1.CreateModelVersionRequest, opts ...grpc.CallOption) (*managerv1.ModelVersion, error) {
+func (v *v1) CreateModelVersion(ctx context.Context, req *managerv1.CreateModelVersionRequest, opts ...grpc.CallOption) (*managerv1.ModelVersion, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	return c.ManagerClient.CreateModelVersion(ctx, req, opts...)
+	return v.ManagerClient.CreateModelVersion(ctx, req, opts...)
 }
 
 // Update model version information.
-func (c *clientV1) UpdateModelVersion(ctx context.Context, req *managerv1.UpdateModelVersionRequest, opts ...grpc.CallOption) (*managerv1.ModelVersion, error) {
+func (v *v1) UpdateModelVersion(ctx context.Context, req *managerv1.UpdateModelVersionRequest, opts ...grpc.CallOption) (*managerv1.ModelVersion, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	return c.ManagerClient.UpdateModelVersion(ctx, req, opts...)
-
+	return v.ManagerClient.UpdateModelVersion(ctx, req, opts...)
 }
 
 // Delete model version information.
-func (c *clientV1) DeleteModelVersion(ctx context.Context, req *managerv1.DeleteModelVersionRequest, opts ...grpc.CallOption) error {
+func (v *v1) DeleteModelVersion(ctx context.Context, req *managerv1.DeleteModelVersionRequest, opts ...grpc.CallOption) error {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	_, err := c.ManagerClient.DeleteModelVersion(ctx, req, opts...)
+	_, err := v.ManagerClient.DeleteModelVersion(ctx, req, opts...)
 	return err
 }
 
 // List applications configuration.
-func (c *clientV1) ListApplications(ctx context.Context, req *managerv1.ListApplicationsRequest, opts ...grpc.CallOption) (*managerv1.ListApplicationsResponse, error) {
+func (v *v1) ListApplications(ctx context.Context, req *managerv1.ListApplicationsRequest, opts ...grpc.CallOption) (*managerv1.ListApplicationsResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	return c.ManagerClient.ListApplications(ctx, req, opts...)
+	return v.ManagerClient.ListApplications(ctx, req, opts...)
 }
 
 // List acitve schedulers configuration.
-func (c *clientV1) KeepAlive(interval time.Duration, keepalive *managerv1.KeepAliveRequest, done <-chan struct{}, opts ...grpc.CallOption) {
+func (v *v1) KeepAlive(interval time.Duration, keepalive *managerv1.KeepAliveRequest, done <-chan struct{}, opts ...grpc.CallOption) {
 	log := logger.WithKeepAlive(keepalive.HostName, keepalive.Ip, keepalive.SourceType.Enum().String(), keepalive.ClusterId)
 retry:
 	ctx, cancel := context.WithCancel(context.Background())
-	stream, err := c.ManagerClient.KeepAlive(ctx, opts...)
+	stream, err := v.ManagerClient.KeepAlive(ctx, opts...)
 	if err != nil {
 		if status.Code(err) == codes.Canceled {
 			log.Info("keepalive canceled")

@@ -471,19 +471,27 @@ func (s *managerServerV1) ListSchedulers(ctx context.Context, req *managerv1.Lis
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
-	// Search optimal scheduler clusters.
 	log.Debugf("list scheduler clusters %v with hostInfo %#v", getSchedulerClusterNames(schedulerClusters), req.HostInfo)
-	schedulerClusters, err := s.searcher.FindSchedulerClusters(ctx, schedulerClusters, req.HostName, req.Ip, req.HostInfo)
+
+	// Search optimal scheduler clusters.
+	// If searcher can not found candidate scheduler cluster,
+	// return all scheduler clusters.
+	var (
+		candidateSchedulerClusters []model.SchedulerCluster
+		err                        error
+	)
+	candidateSchedulerClusters, err = s.searcher.FindSchedulerClusters(ctx, schedulerClusters, req.HostName, req.Ip, req.HostInfo)
 	if err != nil {
 		log.Error(err)
-		return nil, status.Error(codes.NotFound, "scheduler cluster not found")
+		metrics.SearchSchedulerClusterFailureCount.WithLabelValues(req.Version, req.Commit).Inc()
+		candidateSchedulerClusters = schedulerClusters
 	}
 	log.Debugf("find matching scheduler cluster %v", getSchedulerClusterNames(schedulerClusters))
 
 	schedulers := []model.Scheduler{}
-	for _, schedulerCluster := range schedulerClusters {
-		for _, scheduler := range schedulerCluster.Schedulers {
-			scheduler.SchedulerCluster = schedulerCluster
+	for _, candidateSchedulerCluster := range candidateSchedulerClusters {
+		for _, scheduler := range candidateSchedulerCluster.Schedulers {
+			scheduler.SchedulerCluster = candidateSchedulerCluster
 			schedulers = append(schedulers, scheduler)
 		}
 	}

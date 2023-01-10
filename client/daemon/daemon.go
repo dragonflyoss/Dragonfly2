@@ -100,8 +100,8 @@ type clientDaemon struct {
 
 	dynconfig       config.Dynconfig
 	dfpath          dfpath.Dfpath
-	managerClient   managerclient.ClientV1
-	securityClient  securityclient.ClientV1
+	managerClient   managerclient.V1
+	securityClient  securityclient.V1
 	schedulerClient schedulerclient.Client
 	certifyClient   *certify.Certify
 	announcer       announcer.Announcer
@@ -124,8 +124,8 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	}
 
 	var (
-		managerClient  managerclient.ClientV1
-		securityClient securityclient.ClientV1
+		managerClient  managerclient.V1
+		securityClient securityclient.V1
 		certifyClient  *certify.Certify
 	)
 
@@ -144,7 +144,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			}
 		}
 
-		managerClient, err = managerclient.GetClientV1ByAddr(
+		managerClient, err = managerclient.GetV1ByAddr(
 			context.Background(), opt.Scheduler.Manager.NetAddrs, grpc.WithTransportCredentials(grpcCredentials))
 		if err != nil {
 			return nil, err
@@ -152,7 +152,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 
 		if opt.Security.AutoIssueCert {
 			// Initialize security client.
-			securityClient, err = securityclient.GetClientV1ByAddr(context.Background(), opt.Scheduler.Manager.NetAddrs, grpc.WithTransportCredentials(grpcCredentials))
+			securityClient, err = securityclient.GetV1ByAddr(context.Background(), opt.Scheduler.Manager.NetAddrs, grpc.WithTransportCredentials(grpcCredentials))
 			if err != nil {
 				return nil, err
 			}

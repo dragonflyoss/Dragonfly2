@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-//go:generate mockgen -destination mocks/client_v1_mock.go -source client_v1.go -package mocks
+//go:generate mockgen -destination mocks/v1_mock.go -source v1.go -package mocks
 
 package client
 
@@ -49,8 +49,8 @@ const (
 	backoffWaitBetween = 500 * time.Millisecond
 )
 
-// GetClientV1 returns v1 version of the security client.
-func GetClientV1(ctx context.Context, target string, opts ...grpc.DialOption) (ClientV1, error) {
+// GetV1 returns v1 version of the security client.
+func GetV1(ctx context.Context, target string, opts ...grpc.DialOption) (V1, error) {
 	conn, err := grpc.DialContext(
 		ctx,
 		target,
@@ -75,19 +75,19 @@ func GetClientV1(ctx context.Context, target string, opts ...grpc.DialOption) (C
 		return nil, err
 	}
 
-	return &clientV1{
+	return &v1{
 		CertificateServiceClient: securityv1.NewCertificateServiceClient(conn),
 		ClientConn:               conn,
 	}, nil
 }
 
 // GetClientV1ByAddr returns v1 version of the manager client with addresses.
-func GetClientV1ByAddr(ctx context.Context, netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (ClientV1, error) {
+func GetV1ByAddr(ctx context.Context, netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (V1, error) {
 	for _, netAddr := range netAddrs {
 		ipReachable := reachable.New(&reachable.Config{Address: netAddr.Addr})
 		if err := ipReachable.Check(); err == nil {
 			logger.Infof("use %s address for manager grpc client", netAddr.Addr)
-			return GetClientV1(ctx, netAddr.Addr, opts...)
+			return GetV1(ctx, netAddr.Addr, opts...)
 		}
 		logger.Warnf("%s manager address can not reachable", netAddr.Addr)
 	}
@@ -96,7 +96,7 @@ func GetClientV1ByAddr(ctx context.Context, netAddrs []dfnet.NetAddr, opts ...gr
 }
 
 // ClientV1 is the interface for v1 version of the grpc client.
-type ClientV1 interface {
+type V1 interface {
 	// IssueCertificate issues certificate for client.
 	IssueCertificate(context.Context, *securityv1.CertificateRequest, ...grpc.CallOption) (*securityv1.CertificateResponse, error)
 
@@ -105,15 +105,15 @@ type ClientV1 interface {
 }
 
 // clientV1 provides v1 version of the manager grpc function.
-type clientV1 struct {
+type v1 struct {
 	securityv1.CertificateServiceClient
 	*grpc.ClientConn
 }
 
 // IssueCertificate issues certificate for client.
-func (c *clientV1) IssueCertificate(ctx context.Context, req *securityv1.CertificateRequest, opts ...grpc.CallOption) (*securityv1.CertificateResponse, error) {
+func (v *v1) IssueCertificate(ctx context.Context, req *securityv1.CertificateRequest, opts ...grpc.CallOption) (*securityv1.CertificateResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	return c.CertificateServiceClient.IssueCertificate(ctx, req, opts...)
+	return v.CertificateServiceClient.IssueCertificate(ctx, req, opts...)
 }
