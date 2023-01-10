@@ -78,7 +78,7 @@ var (
 		Subsystem: types.SchedulerMetricsName,
 		Name:      "download_failure_total",
 		Help:      "Counter of the number of failed of the downloading.",
-	}, []string{"tag", "app", "type"})
+	}, []string{"tag", "app", "type", "code"})
 
 	StatTaskCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
