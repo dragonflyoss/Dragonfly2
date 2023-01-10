@@ -283,14 +283,14 @@ func (s *Service) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerRes
 	if !req.Success {
 		peer.Log.Error("report failed peer")
 		if peer.FSM.Is(resource.PeerStateBackToSource) {
-			metrics.DownloadFailureCount.WithLabelValues(peer.Tag, peer.Application, metrics.DownloadFailureBackToSourceType).Inc()
+			metrics.DownloadFailureCount.WithLabelValues(peer.Tag, peer.Application, metrics.DownloadFailureBackToSourceType, req.Code.String()).Inc()
 			go s.createRecord(peer, parents, req)
 			s.handleTaskFailure(ctx, peer.Task, req.GetSourceError(), nil)
 			s.handlePeerFailure(ctx, peer)
 			return nil
 		}
 
-		metrics.DownloadFailureCount.WithLabelValues(peer.Tag, peer.Application, metrics.DownloadFailureP2PType).Inc()
+		metrics.DownloadFailureCount.WithLabelValues(peer.Tag, peer.Application, metrics.DownloadFailureP2PType, req.Code.String()).Inc()
 		go s.createRecord(peer, parents, req)
 		s.handlePeerFailure(ctx, peer)
 		return nil
