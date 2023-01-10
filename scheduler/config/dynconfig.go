@@ -129,7 +129,7 @@ func WithTransportCredentials(creds credentials.TransportCredentials) DynconfigO
 }
 
 // NewDynconfig returns a new dynconfig instence.
-func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, cfg *Config, options ...DynconfigOption) (DynconfigInterface, error) {
+func NewDynconfig(rawManagerClient managerclient.V1, cacheDir string, cfg *Config, options ...DynconfigOption) (DynconfigInterface, error) {
 	cachePath := filepath.Join(cacheDir, cacheFileName)
 	d := &dynconfig{
 		observers: map[Observer]struct{}{},
@@ -376,20 +376,20 @@ func (d *dynconfig) Stop() error {
 
 // Manager client for dynconfig.
 type managerClient struct {
-	managerclient.Client
-	config *Config
+	managerClient managerclient.V1
+	config        *Config
 }
 
 // New the manager client used by dynconfig.
-func newManagerClient(client managerclient.Client, cfg *Config) dc.ManagerClient {
+func newManagerClient(client managerclient.V1, cfg *Config) dc.ManagerClient {
 	return &managerClient{
-		Client: client,
-		config: cfg,
+		managerClient: client,
+		config:        cfg,
 	}
 }
 
 func (mc *managerClient) Get() (any, error) {
-	getSchedulerResp, err := mc.GetScheduler(context.Background(), &managerv1.GetSchedulerRequest{
+	getSchedulerResp, err := mc.managerClient.GetScheduler(context.Background(), &managerv1.GetSchedulerRequest{
 		SourceType:         managerv1.SourceType_SCHEDULER_SOURCE,
 		HostName:           mc.config.Server.Host,
 		Ip:                 mc.config.Server.AdvertiseIP.String(),
@@ -399,7 +399,7 @@ func (mc *managerClient) Get() (any, error) {
 		return nil, err
 	}
 
-	listApplicationsResp, err := mc.ListApplications(context.Background(), &managerv1.ListApplicationsRequest{
+	listApplicationsResp, err := mc.managerClient.ListApplications(context.Background(), &managerv1.ListApplicationsRequest{
 		SourceType: managerv1.SourceType_SCHEDULER_SOURCE,
 		HostName:   mc.config.Server.Host,
 		Ip:         mc.config.Server.AdvertiseIP.String(),

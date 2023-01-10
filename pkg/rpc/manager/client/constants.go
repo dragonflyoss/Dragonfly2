@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2023 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package main
+package client
 
 import (
-	"context"
-
-	"d7y.io/dragonfly/v2/manager/model"
+	"time"
 )
 
-type searcher struct{}
+const (
+	// contextTimeout is timeout of grpc invoke.
+	contextTimeout = 2 * time.Minute
 
-func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters []model.SchedulerCluster, hostname, ip string, conditions map[string]string) ([]model.SchedulerCluster, error) {
-	return []model.SchedulerCluster{{Name: "foo"}}, nil
-}
+	// maxRetries is maximum number of retries.
+	maxRetries = 3
 
-func DragonflyPluginInit(option map[string]string) (any, map[string]string, error) {
-	return &searcher{}, map[string]string{"type": "manager", "name": "searcher"}, nil
-}
+	// backoffWaitBetween is waiting for a fixed period of
+	// time between calls in backoff linear.
+	backoffWaitBetween = 500 * time.Millisecond
+)

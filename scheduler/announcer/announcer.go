@@ -40,7 +40,7 @@ type Announcer interface {
 // announcer provides announce function.
 type announcer struct {
 	config        *config.Config
-	managerClient managerclient.Client
+	managerClient managerclient.V1
 	done          chan struct{}
 }
 
@@ -48,7 +48,7 @@ type announcer struct {
 type Option func(s *announcer)
 
 // New returns a new Announcer interface.
-func New(cfg *config.Config, managerClient managerclient.Client) (Announcer, error) {
+func New(cfg *config.Config, managerClient managerclient.V1) (Announcer, error) {
 	a := &announcer{
 		config:        cfg,
 		managerClient: managerClient,

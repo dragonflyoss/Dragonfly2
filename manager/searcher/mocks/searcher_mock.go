@@ -8,7 +8,6 @@ import (
 	context "context"
 	reflect "reflect"
 
-	v1 "d7y.io/api/pkg/apis/manager/v1"
 	model "d7y.io/dragonfly/v2/manager/model"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -37,16 +36,16 @@ func (m *MockSearcher) EXPECT() *MockSearcherMockRecorder {
 }
 
 // FindSchedulerClusters mocks base method.
-func (m *MockSearcher) FindSchedulerClusters(arg0 context.Context, arg1 []model.SchedulerCluster, arg2 *v1.ListSchedulersRequest) ([]model.SchedulerCluster, error) {
+func (m *MockSearcher) FindSchedulerClusters(ctx context.Context, schedulerClusters []model.SchedulerCluster, hostname, ip string, conditions map[string]string) ([]model.SchedulerCluster, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindSchedulerClusters", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "FindSchedulerClusters", ctx, schedulerClusters, hostname, ip, conditions)
 	ret0, _ := ret[0].([]model.SchedulerCluster)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FindSchedulerClusters indicates an expected call of FindSchedulerClusters.
-func (mr *MockSearcherMockRecorder) FindSchedulerClusters(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockSearcherMockRecorder) FindSchedulerClusters(ctx, schedulerClusters, hostname, ip, conditions interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSchedulerClusters", reflect.TypeOf((*MockSearcher)(nil).FindSchedulerClusters), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSchedulerClusters", reflect.TypeOf((*MockSearcher)(nil).FindSchedulerClusters), ctx, schedulerClusters, hostname, ip, conditions)
 }
