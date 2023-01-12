@@ -33,6 +33,7 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+	schedulerv2 "d7y.io/api/pkg/apis/scheduler/v2"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -56,7 +57,7 @@ const (
 )
 
 // New returns a grpc server instance and register service on grpc server.
-func New(svr schedulerv1.SchedulerServer, opts ...grpc.ServerOption) *grpc.Server {
+func New(schedulerServerV1 schedulerv1.SchedulerServer, schedulerServerV2 schedulerv2.SchedulerServer, opts ...grpc.ServerOption) *grpc.Server {
 	limiter := rpc.NewRateLimiterInterceptor(DefaultQPS, DefaultBurst)
 
 	grpcServer := grpc.NewServer(append([]grpc.ServerOption{
@@ -85,8 +86,11 @@ func New(svr schedulerv1.SchedulerServer, opts ...grpc.ServerOption) *grpc.Serve
 		)),
 	}, opts...)...)
 
-	// Register servers on grpc server.
-	schedulerv1.RegisterSchedulerServer(grpcServer, svr)
+	// Register servers on v1 version of the grpc server.
+	schedulerv1.RegisterSchedulerServer(grpcServer, schedulerServerV1)
+
+	// Register servers on v2 version of the grpc server.
+	schedulerv2.RegisterSchedulerServer(grpcServer, schedulerServerV2)
 
 	// Register health on grpc server.
 	healthpb.RegisterHealthServer(grpcServer, health.NewServer())

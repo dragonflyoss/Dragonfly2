@@ -50,7 +50,6 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/rpcserver"
 	"d7y.io/dragonfly/v2/scheduler/scheduler"
-	"d7y.io/dragonfly/v2/scheduler/service"
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
@@ -198,9 +197,6 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 	s.storage = storage
 
-	// Initialize scheduler service.
-	service := service.New(cfg, resource, scheduler, dynconfig, s.storage)
-
 	// Initialize grpc service and server options of scheduler grpc server.
 	schedulerServerOptions := []grpc.ServerOption{}
 	if certifyClient != nil {
@@ -214,7 +210,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		schedulerServerOptions = append(schedulerServerOptions, grpc.Creds(insecure.NewCredentials()))
 	}
 
-	svr := rpcserver.New(service, schedulerServerOptions...)
+	svr := rpcserver.New(cfg, resource, scheduler, dynconfig, s.storage, schedulerServerOptions...)
 	s.grpcServer = svr
 
 	// Initialize job service.

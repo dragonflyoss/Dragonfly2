@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 	time "time"
 
-	manager "d7y.io/api/pkg/apis/manager/v1"
+	v1 "d7y.io/api/pkg/apis/manager/v1"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 )
@@ -52,14 +52,14 @@ func (mr *MockV1MockRecorder) Close() *gomock.Call {
 }
 
 // CreateModel mocks base method.
-func (m *MockV1) CreateModel(arg0 context.Context, arg1 *manager.CreateModelRequest, arg2 ...grpc.CallOption) (*manager.Model, error) {
+func (m *MockV1) CreateModel(arg0 context.Context, arg1 *v1.CreateModelRequest, arg2 ...grpc.CallOption) (*v1.Model, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "CreateModel", varargs...)
-	ret0, _ := ret[0].(*manager.Model)
+	ret0, _ := ret[0].(*v1.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -72,14 +72,14 @@ func (mr *MockV1MockRecorder) CreateModel(arg0, arg1 interface{}, arg2 ...interf
 }
 
 // CreateModelVersion mocks base method.
-func (m *MockV1) CreateModelVersion(arg0 context.Context, arg1 *manager.CreateModelVersionRequest, arg2 ...grpc.CallOption) (*manager.ModelVersion, error) {
+func (m *MockV1) CreateModelVersion(arg0 context.Context, arg1 *v1.CreateModelVersionRequest, arg2 ...grpc.CallOption) (*v1.ModelVersion, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "CreateModelVersion", varargs...)
-	ret0, _ := ret[0].(*manager.ModelVersion)
+	ret0, _ := ret[0].(*v1.ModelVersion)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -92,7 +92,7 @@ func (mr *MockV1MockRecorder) CreateModelVersion(arg0, arg1 interface{}, arg2 ..
 }
 
 // DeleteModel mocks base method.
-func (m *MockV1) DeleteModel(arg0 context.Context, arg1 *manager.DeleteModelRequest, arg2 ...grpc.CallOption) error {
+func (m *MockV1) DeleteModel(arg0 context.Context, arg1 *v1.DeleteModelRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -111,7 +111,7 @@ func (mr *MockV1MockRecorder) DeleteModel(arg0, arg1 interface{}, arg2 ...interf
 }
 
 // DeleteModelVersion mocks base method.
-func (m *MockV1) DeleteModelVersion(arg0 context.Context, arg1 *manager.DeleteModelVersionRequest, arg2 ...grpc.CallOption) error {
+func (m *MockV1) DeleteModelVersion(arg0 context.Context, arg1 *v1.DeleteModelVersionRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -130,14 +130,14 @@ func (mr *MockV1MockRecorder) DeleteModelVersion(arg0, arg1 interface{}, arg2 ..
 }
 
 // GetModel mocks base method.
-func (m *MockV1) GetModel(arg0 context.Context, arg1 *manager.GetModelRequest, arg2 ...grpc.CallOption) (*manager.Model, error) {
+func (m *MockV1) GetModel(arg0 context.Context, arg1 *v1.GetModelRequest, arg2 ...grpc.CallOption) (*v1.Model, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetModel", varargs...)
-	ret0, _ := ret[0].(*manager.Model)
+	ret0, _ := ret[0].(*v1.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -150,14 +150,14 @@ func (mr *MockV1MockRecorder) GetModel(arg0, arg1 interface{}, arg2 ...interface
 }
 
 // GetModelVersion mocks base method.
-func (m *MockV1) GetModelVersion(arg0 context.Context, arg1 *manager.GetModelVersionRequest, arg2 ...grpc.CallOption) (*manager.ModelVersion, error) {
+func (m *MockV1) GetModelVersion(arg0 context.Context, arg1 *v1.GetModelVersionRequest, arg2 ...grpc.CallOption) (*v1.ModelVersion, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetModelVersion", varargs...)
-	ret0, _ := ret[0].(*manager.ModelVersion)
+	ret0, _ := ret[0].(*v1.ModelVersion)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -170,14 +170,14 @@ func (mr *MockV1MockRecorder) GetModelVersion(arg0, arg1 interface{}, arg2 ...in
 }
 
 // GetObjectStorage mocks base method.
-func (m *MockV1) GetObjectStorage(arg0 context.Context, arg1 *manager.GetObjectStorageRequest, arg2 ...grpc.CallOption) (*manager.ObjectStorage, error) {
+func (m *MockV1) GetObjectStorage(arg0 context.Context, arg1 *v1.GetObjectStorageRequest, arg2 ...grpc.CallOption) (*v1.ObjectStorage, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetObjectStorage", varargs...)
-	ret0, _ := ret[0].(*manager.ObjectStorage)
+	ret0, _ := ret[0].(*v1.ObjectStorage)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -190,14 +190,14 @@ func (mr *MockV1MockRecorder) GetObjectStorage(arg0, arg1 interface{}, arg2 ...i
 }
 
 // GetScheduler mocks base method.
-func (m *MockV1) GetScheduler(arg0 context.Context, arg1 *manager.GetSchedulerRequest, arg2 ...grpc.CallOption) (*manager.Scheduler, error) {
+func (m *MockV1) GetScheduler(arg0 context.Context, arg1 *v1.GetSchedulerRequest, arg2 ...grpc.CallOption) (*v1.Scheduler, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetScheduler", varargs...)
-	ret0, _ := ret[0].(*manager.Scheduler)
+	ret0, _ := ret[0].(*v1.Scheduler)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -210,7 +210,7 @@ func (mr *MockV1MockRecorder) GetScheduler(arg0, arg1 interface{}, arg2 ...inter
 }
 
 // KeepAlive mocks base method.
-func (m *MockV1) KeepAlive(arg0 time.Duration, arg1 *manager.KeepAliveRequest, arg2 <-chan struct{}, arg3 ...grpc.CallOption) {
+func (m *MockV1) KeepAlive(arg0 time.Duration, arg1 *v1.KeepAliveRequest, arg2 <-chan struct{}, arg3 ...grpc.CallOption) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1, arg2}
 	for _, a := range arg3 {
@@ -227,14 +227,14 @@ func (mr *MockV1MockRecorder) KeepAlive(arg0, arg1, arg2 interface{}, arg3 ...in
 }
 
 // ListApplications mocks base method.
-func (m *MockV1) ListApplications(arg0 context.Context, arg1 *manager.ListApplicationsRequest, arg2 ...grpc.CallOption) (*manager.ListApplicationsResponse, error) {
+func (m *MockV1) ListApplications(arg0 context.Context, arg1 *v1.ListApplicationsRequest, arg2 ...grpc.CallOption) (*v1.ListApplicationsResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "ListApplications", varargs...)
-	ret0, _ := ret[0].(*manager.ListApplicationsResponse)
+	ret0, _ := ret[0].(*v1.ListApplicationsResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -247,14 +247,14 @@ func (mr *MockV1MockRecorder) ListApplications(arg0, arg1 interface{}, arg2 ...i
 }
 
 // ListBuckets mocks base method.
-func (m *MockV1) ListBuckets(arg0 context.Context, arg1 *manager.ListBucketsRequest, arg2 ...grpc.CallOption) (*manager.ListBucketsResponse, error) {
+func (m *MockV1) ListBuckets(arg0 context.Context, arg1 *v1.ListBucketsRequest, arg2 ...grpc.CallOption) (*v1.ListBucketsResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "ListBuckets", varargs...)
-	ret0, _ := ret[0].(*manager.ListBucketsResponse)
+	ret0, _ := ret[0].(*v1.ListBucketsResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -267,14 +267,14 @@ func (mr *MockV1MockRecorder) ListBuckets(arg0, arg1 interface{}, arg2 ...interf
 }
 
 // ListModelVersions mocks base method.
-func (m *MockV1) ListModelVersions(arg0 context.Context, arg1 *manager.ListModelVersionsRequest, arg2 ...grpc.CallOption) (*manager.ListModelVersionsResponse, error) {
+func (m *MockV1) ListModelVersions(arg0 context.Context, arg1 *v1.ListModelVersionsRequest, arg2 ...grpc.CallOption) (*v1.ListModelVersionsResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "ListModelVersions", varargs...)
-	ret0, _ := ret[0].(*manager.ListModelVersionsResponse)
+	ret0, _ := ret[0].(*v1.ListModelVersionsResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -287,14 +287,14 @@ func (mr *MockV1MockRecorder) ListModelVersions(arg0, arg1 interface{}, arg2 ...
 }
 
 // ListModels mocks base method.
-func (m *MockV1) ListModels(arg0 context.Context, arg1 *manager.ListModelsRequest, arg2 ...grpc.CallOption) (*manager.ListModelsResponse, error) {
+func (m *MockV1) ListModels(arg0 context.Context, arg1 *v1.ListModelsRequest, arg2 ...grpc.CallOption) (*v1.ListModelsResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "ListModels", varargs...)
-	ret0, _ := ret[0].(*manager.ListModelsResponse)
+	ret0, _ := ret[0].(*v1.ListModelsResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -307,14 +307,14 @@ func (mr *MockV1MockRecorder) ListModels(arg0, arg1 interface{}, arg2 ...interfa
 }
 
 // ListSchedulers mocks base method.
-func (m *MockV1) ListSchedulers(arg0 context.Context, arg1 *manager.ListSchedulersRequest, arg2 ...grpc.CallOption) (*manager.ListSchedulersResponse, error) {
+func (m *MockV1) ListSchedulers(arg0 context.Context, arg1 *v1.ListSchedulersRequest, arg2 ...grpc.CallOption) (*v1.ListSchedulersResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "ListSchedulers", varargs...)
-	ret0, _ := ret[0].(*manager.ListSchedulersResponse)
+	ret0, _ := ret[0].(*v1.ListSchedulersResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -327,14 +327,14 @@ func (mr *MockV1MockRecorder) ListSchedulers(arg0, arg1 interface{}, arg2 ...int
 }
 
 // UpdateModel mocks base method.
-func (m *MockV1) UpdateModel(arg0 context.Context, arg1 *manager.UpdateModelRequest, arg2 ...grpc.CallOption) (*manager.Model, error) {
+func (m *MockV1) UpdateModel(arg0 context.Context, arg1 *v1.UpdateModelRequest, arg2 ...grpc.CallOption) (*v1.Model, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "UpdateModel", varargs...)
-	ret0, _ := ret[0].(*manager.Model)
+	ret0, _ := ret[0].(*v1.Model)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -347,14 +347,14 @@ func (mr *MockV1MockRecorder) UpdateModel(arg0, arg1 interface{}, arg2 ...interf
 }
 
 // UpdateModelVersion mocks base method.
-func (m *MockV1) UpdateModelVersion(arg0 context.Context, arg1 *manager.UpdateModelVersionRequest, arg2 ...grpc.CallOption) (*manager.ModelVersion, error) {
+func (m *MockV1) UpdateModelVersion(arg0 context.Context, arg1 *v1.UpdateModelVersionRequest, arg2 ...grpc.CallOption) (*v1.ModelVersion, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "UpdateModelVersion", varargs...)
-	ret0, _ := ret[0].(*manager.ModelVersion)
+	ret0, _ := ret[0].(*v1.ModelVersion)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -367,14 +367,14 @@ func (mr *MockV1MockRecorder) UpdateModelVersion(arg0, arg1 interface{}, arg2 ..
 }
 
 // UpdateScheduler mocks base method.
-func (m *MockV1) UpdateScheduler(arg0 context.Context, arg1 *manager.UpdateSchedulerRequest, arg2 ...grpc.CallOption) (*manager.Scheduler, error) {
+func (m *MockV1) UpdateScheduler(arg0 context.Context, arg1 *v1.UpdateSchedulerRequest, arg2 ...grpc.CallOption) (*v1.Scheduler, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "UpdateScheduler", varargs...)
-	ret0, _ := ret[0].(*manager.Scheduler)
+	ret0, _ := ret[0].(*v1.Scheduler)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -387,14 +387,14 @@ func (mr *MockV1MockRecorder) UpdateScheduler(arg0, arg1 interface{}, arg2 ...in
 }
 
 // UpdateSeedPeer mocks base method.
-func (m *MockV1) UpdateSeedPeer(arg0 context.Context, arg1 *manager.UpdateSeedPeerRequest, arg2 ...grpc.CallOption) (*manager.SeedPeer, error) {
+func (m *MockV1) UpdateSeedPeer(arg0 context.Context, arg1 *v1.UpdateSeedPeerRequest, arg2 ...grpc.CallOption) (*v1.SeedPeer, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "UpdateSeedPeer", varargs...)
-	ret0, _ := ret[0].(*manager.SeedPeer)
+	ret0, _ := ret[0].(*v1.SeedPeer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

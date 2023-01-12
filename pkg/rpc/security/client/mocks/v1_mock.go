@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	security "d7y.io/api/pkg/apis/security/v1"
+	v1 "d7y.io/api/pkg/apis/security/v1"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 )
@@ -51,14 +51,14 @@ func (mr *MockV1MockRecorder) Close() *gomock.Call {
 }
 
 // IssueCertificate mocks base method.
-func (m *MockV1) IssueCertificate(arg0 context.Context, arg1 *security.CertificateRequest, arg2 ...grpc.CallOption) (*security.CertificateResponse, error) {
+func (m *MockV1) IssueCertificate(arg0 context.Context, arg1 *v1.CertificateRequest, arg2 ...grpc.CallOption) (*v1.CertificateResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "IssueCertificate", varargs...)
-	ret0, _ := ret[0].(*security.CertificateResponse)
+	ret0, _ := ret[0].(*v1.CertificateResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
