@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-//go:generate mockgen -destination mocks/v2_mock.go -source v2.go -package mocks
+//go:generate mockgen -destination mocks/client_v2_mock.go -source client_v2.go -package mocks
 
 package client
 
