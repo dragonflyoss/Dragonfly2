@@ -8,8 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	v2 "d7y.io/api/pkg/apis/common/v2"
-	v20 "d7y.io/api/pkg/apis/scheduler/v2"
+	common "d7y.io/api/pkg/apis/common/v2"
+	scheduler "d7y.io/api/pkg/apis/scheduler/v2"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 )
@@ -38,7 +38,7 @@ func (m *MockV2) EXPECT() *MockV2MockRecorder {
 }
 
 // AnnounceHost mocks base method.
-func (m *MockV2) AnnounceHost(arg0 context.Context, arg1 *v20.AnnounceHostRequest, arg2 ...grpc.CallOption) error {
+func (m *MockV2) AnnounceHost(arg0 context.Context, arg1 *scheduler.AnnounceHostRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -57,14 +57,14 @@ func (mr *MockV2MockRecorder) AnnounceHost(arg0, arg1 interface{}, arg2 ...inter
 }
 
 // AnnouncePeer mocks base method.
-func (m *MockV2) AnnouncePeer(arg0 context.Context, arg1 *v20.AnnouncePeerRequest, arg2 ...grpc.CallOption) (v20.Scheduler_AnnouncePeerClient, error) {
+func (m *MockV2) AnnouncePeer(arg0 context.Context, arg1 *scheduler.AnnouncePeerRequest, arg2 ...grpc.CallOption) (scheduler.Scheduler_AnnouncePeerClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "AnnouncePeer", varargs...)
-	ret0, _ := ret[0].(v20.Scheduler_AnnouncePeerClient)
+	ret0, _ := ret[0].(scheduler.Scheduler_AnnouncePeerClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -91,14 +91,14 @@ func (mr *MockV2MockRecorder) Close() *gomock.Call {
 }
 
 // ExchangePeer mocks base method.
-func (m *MockV2) ExchangePeer(arg0 context.Context, arg1 *v20.ExchangePeerRequest, arg2 ...grpc.CallOption) (*v20.ExchangePeerResponse, error) {
+func (m *MockV2) ExchangePeer(arg0 context.Context, arg1 *scheduler.ExchangePeerRequest, arg2 ...grpc.CallOption) (*scheduler.ExchangePeerResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "ExchangePeer", varargs...)
-	ret0, _ := ret[0].(*v20.ExchangePeerResponse)
+	ret0, _ := ret[0].(*scheduler.ExchangePeerResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -111,7 +111,7 @@ func (mr *MockV2MockRecorder) ExchangePeer(arg0, arg1 interface{}, arg2 ...inter
 }
 
 // LeaveHost mocks base method.
-func (m *MockV2) LeaveHost(arg0 context.Context, arg1 *v20.LeaveHostRequest, arg2 ...grpc.CallOption) error {
+func (m *MockV2) LeaveHost(arg0 context.Context, arg1 *scheduler.LeaveHostRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -130,7 +130,7 @@ func (mr *MockV2MockRecorder) LeaveHost(arg0, arg1 interface{}, arg2 ...interfac
 }
 
 // LeavePeer mocks base method.
-func (m *MockV2) LeavePeer(arg0 context.Context, arg1 *v20.LeavePeerRequest, arg2 ...grpc.CallOption) error {
+func (m *MockV2) LeavePeer(arg0 context.Context, arg1 *scheduler.LeavePeerRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -149,14 +149,14 @@ func (mr *MockV2MockRecorder) LeavePeer(arg0, arg1 interface{}, arg2 ...interfac
 }
 
 // StatPeer mocks base method.
-func (m *MockV2) StatPeer(arg0 context.Context, arg1 *v20.StatPeerRequest, arg2 ...grpc.CallOption) (*v2.Peer, error) {
+func (m *MockV2) StatPeer(arg0 context.Context, arg1 *scheduler.StatPeerRequest, arg2 ...grpc.CallOption) (*common.Peer, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "StatPeer", varargs...)
-	ret0, _ := ret[0].(*v2.Peer)
+	ret0, _ := ret[0].(*common.Peer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -169,14 +169,14 @@ func (mr *MockV2MockRecorder) StatPeer(arg0, arg1 interface{}, arg2 ...interface
 }
 
 // StatTask mocks base method.
-func (m *MockV2) StatTask(arg0 context.Context, arg1 *v20.StatTaskRequest, arg2 ...grpc.CallOption) (*v2.Task, error) {
+func (m *MockV2) StatTask(arg0 context.Context, arg1 *scheduler.StatTaskRequest, arg2 ...grpc.CallOption) (*common.Task, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "StatTask", varargs...)
-	ret0, _ := ret[0].(*v2.Task)
+	ret0, _ := ret[0].(*common.Task)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

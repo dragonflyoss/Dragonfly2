@@ -7,7 +7,7 @@ package mocks
 import (
 	reflect "reflect"
 
-	v1 "d7y.io/api/pkg/apis/manager/v1"
+	manager "d7y.io/api/pkg/apis/manager/v1"
 	config "d7y.io/dragonfly/v2/client/config"
 	gomock "github.com/golang/mock/gomock"
 	resolver "google.golang.org/grpc/resolver"
@@ -64,10 +64,10 @@ func (mr *MockDynconfigMockRecorder) Get() *gomock.Call {
 }
 
 // GetObjectStorage mocks base method.
-func (m *MockDynconfig) GetObjectStorage() (*v1.ObjectStorage, error) {
+func (m *MockDynconfig) GetObjectStorage() (*manager.ObjectStorage, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetObjectStorage")
-	ret0, _ := ret[0].(*v1.ObjectStorage)
+	ret0, _ := ret[0].(*manager.ObjectStorage)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -94,10 +94,10 @@ func (mr *MockDynconfigMockRecorder) GetResolveSchedulerAddrs() *gomock.Call {
 }
 
 // GetSchedulers mocks base method.
-func (m *MockDynconfig) GetSchedulers() ([]*v1.Scheduler, error) {
+func (m *MockDynconfig) GetSchedulers() ([]*manager.Scheduler, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSchedulers")
-	ret0, _ := ret[0].([]*v1.Scheduler)
+	ret0, _ := ret[0].([]*manager.Scheduler)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

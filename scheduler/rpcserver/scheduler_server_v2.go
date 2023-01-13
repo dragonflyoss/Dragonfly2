@@ -31,6 +31,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
+// TODO Implement v2 version of the rpc server apis.
 // schedulerServerV2 is v2 version of the scheduler grpc server.
 type schedulerServerV2 struct {
 	// Service interface.

@@ -87,7 +87,7 @@ type componentsOption struct {
 }
 
 func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOption) (
-	schedulerclient.Client, storage.Manager) {
+	schedulerclient.V1, storage.Manager) {
 	port := int32(freeport.GetPort())
 	// 1. set up a mock daemon server for uploading pieces info
 	var daemon = dfdaemonv1mocks.NewMockDaemonServer(ctrl)
@@ -211,7 +211,7 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 		})
 	pps.EXPECT().CloseSend().AnyTimes()
 
-	sched := schedulerclientmocks.NewMockClient(ctrl)
+	sched := schedulerclientmocks.NewMockV1(ctrl)
 	sched.EXPECT().RegisterPeerTask(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, ptr *schedulerv1.PeerTaskRequest, opts ...grpc.CallOption) (*schedulerv1.RegisterResult, error) {
 			switch opt.scope {
@@ -273,7 +273,7 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 type mockManager struct {
 	testSpec        *testSpec
 	peerTaskManager *peerTaskManager
-	schedulerClient schedulerclient.Client
+	schedulerClient schedulerclient.V1
 	storageManager  storage.Manager
 }
 

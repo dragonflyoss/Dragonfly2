@@ -178,7 +178,7 @@ var (
 	mockURL                         = "d7y://foo"
 )
 
-func TestService_New(t *testing.T) {
+func TestService_NewV1(t *testing.T) {
 	tests := []struct {
 		name   string
 		expect func(t *testing.T, s any)
@@ -187,7 +187,7 @@ func TestService_New(t *testing.T) {
 			name: "new service",
 			expect: func(t *testing.T, s any) {
 				assert := assert.New(t)
-				assert.Equal(reflect.TypeOf(s).Elem().Name(), "Service")
+				assert.Equal(reflect.TypeOf(s).Elem().Name(), "V1")
 			},
 		},
 	}

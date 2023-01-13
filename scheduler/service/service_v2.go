@@ -28,6 +28,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
+// TODO Implement v2 version of the service functions.
 // V2 is the interface for v2 version of the service.
 type V2 struct {
 	// Resource interface.

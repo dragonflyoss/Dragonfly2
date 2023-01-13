@@ -102,7 +102,7 @@ type clientDaemon struct {
 	dfpath          dfpath.Dfpath
 	managerClient   managerclient.V1
 	securityClient  securityclient.V1
-	schedulerClient schedulerclient.Client
+	schedulerClient schedulerclient.V1
 	certifyClient   *certify.Certify
 	announcer       announcer.Announcer
 }
@@ -215,7 +215,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		}
 	}
 
-	schedulerClient, err := schedulerclient.GetClient(context.Background(), dynconfig, grpc.WithTransportCredentials(grpcCredentials))
+	schedulerClient, err := schedulerclient.GetV1(context.Background(), dynconfig, grpc.WithTransportCredentials(grpcCredentials))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get schedulers: %w", err)
 	}
