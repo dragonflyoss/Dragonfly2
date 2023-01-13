@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-//go:generate mockgen -destination mocks/client_mock.go -source client.go -package mocks
+//go:generate mockgen -destination mocks/client_v1_mock.go -source client_v1.go -package mocks
 
 package client
 
 import (
 	"context"
-	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
@@ -42,19 +41,8 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
 )
 
-const (
-	// contextTimeout is timeout of grpc invoke.
-	contextTimeout = 2 * time.Minute
-
-	// maxRetries is maximum number of retries.
-	maxRetries = 3
-
-	// backoffWaitBetween is waiting for a fixed period of
-	// time between calls in backoff linear.
-	backoffWaitBetween = 500 * time.Millisecond
-)
-
-func GetClient(ctx context.Context, dynconfig config.Dynconfig, opts ...grpc.DialOption) (Client, error) {
+// GetV1 returns v1 version of the scheduler client.
+func GetV1(ctx context.Context, dynconfig config.Dynconfig, opts ...grpc.DialOption) (V1, error) {
 	// Register resolver and balancer.
 	resolver.RegisterScheduler(dynconfig)
 	builder, pickerBuilder := pkgbalancer.NewConsistentHashingBuilder()
@@ -89,7 +77,7 @@ func GetClient(ctx context.Context, dynconfig config.Dynconfig, opts ...grpc.Dia
 		return nil, err
 	}
 
-	return &client{
+	return &v1{
 		SchedulerClient:                schedulerv1.NewSchedulerClient(conn),
 		ClientConn:                     conn,
 		Dynconfig:                      dynconfig,
@@ -98,8 +86,8 @@ func GetClient(ctx context.Context, dynconfig config.Dynconfig, opts ...grpc.Dia
 	}, nil
 }
 
-// Client is the interface for grpc client.
-type Client interface {
+// V1 is the interface for v1 version of the grpc client.
+type V1 interface {
 	// RegisterPeerTask registers a peer into task.
 	RegisterPeerTask(context.Context, *schedulerv1.PeerTaskRequest, ...grpc.CallOption) (*schedulerv1.RegisterResult, error)
 
@@ -128,8 +116,8 @@ type Client interface {
 	Close() error
 }
 
-// client provides scheduler grpc function.
-type client struct {
+// v1 provides v1 version of the scheduler grpc function.
+type v1 struct {
 	schedulerv1.SchedulerClient
 	*grpc.ClientConn
 	config.Dynconfig
@@ -138,11 +126,11 @@ type client struct {
 }
 
 // RegisterPeerTask registers a peer into task.
-func (c *client) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, opts ...grpc.CallOption) (*schedulerv1.RegisterResult, error) {
+func (v *v1) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, opts ...grpc.CallOption) (*schedulerv1.RegisterResult, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	return c.SchedulerClient.RegisterPeerTask(
+	return v.SchedulerClient.RegisterPeerTask(
 		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		req,
 		opts...,
@@ -150,8 +138,8 @@ func (c *client) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTask
 }
 
 // ReportPieceResult reports piece results and receives peer packets.
-func (c *client) ReportPieceResult(ctx context.Context, req *schedulerv1.PeerTaskRequest, opts ...grpc.CallOption) (schedulerv1.Scheduler_ReportPieceResultClient, error) {
-	stream, err := c.SchedulerClient.ReportPieceResult(
+func (v *v1) ReportPieceResult(ctx context.Context, req *schedulerv1.PeerTaskRequest, opts ...grpc.CallOption) (schedulerv1.Scheduler_ReportPieceResultClient, error) {
+	stream, err := v.SchedulerClient.ReportPieceResult(
 		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		opts...,
 	)
@@ -170,8 +158,8 @@ func (c *client) ReportPieceResult(ctx context.Context, req *schedulerv1.PeerTas
 }
 
 // ReportPeerResult reports downloading result for the peer.
-func (c *client) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult, opts ...grpc.CallOption) error {
-	_, err := c.SchedulerClient.ReportPeerResult(
+func (v *v1) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult, opts ...grpc.CallOption) error {
+	_, err := v.SchedulerClient.ReportPeerResult(
 		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		req,
 		opts...,
@@ -181,11 +169,11 @@ func (c *client) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResu
 }
 
 // A peer announces that it has the announced task to other peers.
-func (c *client) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequest, opts ...grpc.CallOption) error {
+func (v *v1) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequest, opts ...grpc.CallOption) error {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	_, err := c.SchedulerClient.AnnounceTask(
+	_, err := v.SchedulerClient.AnnounceTask(
 		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		req,
 		opts...,
@@ -195,11 +183,11 @@ func (c *client) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTask
 }
 
 // Checks if any peer has the given task.
-func (c *client) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest, opts ...grpc.CallOption) (*schedulerv1.Task, error) {
+func (v *v1) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest, opts ...grpc.CallOption) (*schedulerv1.Task, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	return c.SchedulerClient.StatTask(
+	return v.SchedulerClient.StatTask(
 		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		req,
 		opts...,
@@ -207,11 +195,11 @@ func (c *client) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest,
 }
 
 // LeaveTask releases peer in scheduler.
-func (c *client) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget, opts ...grpc.CallOption) error {
+func (v *v1) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget, opts ...grpc.CallOption) error {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	_, err := c.SchedulerClient.LeaveTask(
+	_, err := v.SchedulerClient.LeaveTask(
 		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		req,
 		opts...,
@@ -221,11 +209,11 @@ func (c *client) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget, opt
 }
 
 // AnnounceHost announces host to scheduler.
-func (c *client) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequest, opts ...grpc.CallOption) error {
+func (v *v1) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequest, opts ...grpc.CallOption) error {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	circle, err := c.GetCircle()
+	circle, err := v.GetCircle()
 	if err != nil {
 		return err
 	}
@@ -234,7 +222,7 @@ func (c *client) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHost
 	for _, virtualTaskID := range circle {
 		virtualTaskID := virtualTaskID
 		eg.Go(func() error {
-			if _, err := c.SchedulerClient.AnnounceHost(
+			if _, err := v.SchedulerClient.AnnounceHost(
 				context.WithValue(ctx, pkgbalancer.ContextKey, virtualTaskID),
 				req,
 				opts...,
@@ -250,11 +238,11 @@ func (c *client) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHost
 }
 
 // LeaveHost releases host in all schedulers.
-func (c *client) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostRequest, opts ...grpc.CallOption) error {
+func (v *v1) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostRequest, opts ...grpc.CallOption) error {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	circle, err := c.GetCircle()
+	circle, err := v.GetCircle()
 	if err != nil {
 		return err
 	}
@@ -264,7 +252,7 @@ func (c *client) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostReques
 	for _, virtualTaskID := range circle {
 		virtualTaskID := virtualTaskID
 		eg.Go(func() error {
-			if _, err := c.SchedulerClient.LeaveHost(
+			if _, err := v.SchedulerClient.LeaveHost(
 				context.WithValue(ctx, pkgbalancer.ContextKey, virtualTaskID),
 				req,
 				opts...,

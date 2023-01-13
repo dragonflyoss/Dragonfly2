@@ -127,7 +127,7 @@ type peerTaskManager struct {
 
 type TaskManagerOption struct {
 	TaskOption
-	SchedulerClient   schedulerclient.Client
+	SchedulerClient   schedulerclient.V1
 	PerPeerRateLimit  rate.Limit
 	TotalRateLimit    rate.Limit
 	TrafficShaperType string

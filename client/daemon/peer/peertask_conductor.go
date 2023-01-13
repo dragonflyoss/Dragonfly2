@@ -90,7 +90,7 @@ type peerTaskConductor struct {
 
 	storage storage.TaskStorageDriver
 
-	schedulerClient schedulerclient.Client
+	schedulerClient schedulerclient.V1
 
 	// peer task meta info
 	peerID          string
