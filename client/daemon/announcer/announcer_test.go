@@ -77,7 +77,7 @@ func TestAnnouncer_New(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 			mockManagerClient := managerclientmocks.NewMockV1(ctl)
-			mockSchedulerClient := schedulerclientmocks.NewMockClient(ctl)
+			mockSchedulerClient := schedulerclientmocks.NewMockV1(ctl)
 			tc.expect(t, New(tc.config, tc.hostID, tc.deamonPort, tc.deamonDownloadPort, mockSchedulerClient, WithManagerClient(mockManagerClient)))
 		})
 	}

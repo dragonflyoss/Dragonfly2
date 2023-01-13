@@ -56,7 +56,7 @@ type announcer struct {
 	hostID             string
 	daemonPort         int32
 	daemonDownloadPort int32
-	schedulerClient    schedulerclient.Client
+	schedulerClient    schedulerclient.V1
 	managerClient      managerclient.V1
 	done               chan struct{}
 }
@@ -72,7 +72,7 @@ func WithManagerClient(client managerclient.V1) Option {
 }
 
 // New returns a new Announcer interface.
-func New(cfg *config.DaemonOption, hostID string, daemonPort int32, daemonDownloadPort int32, schedulerClient schedulerclient.Client, options ...Option) Announcer {
+func New(cfg *config.DaemonOption, hostID string, daemonPort int32, daemonDownloadPort int32, schedulerClient schedulerclient.V1, options ...Option) Announcer {
 	a := &announcer{
 		config:             cfg,
 		hostID:             hostID,

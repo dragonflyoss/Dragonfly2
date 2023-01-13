@@ -79,7 +79,7 @@ type managerServerV1 struct {
 func newManagerServerV1(
 	cfg *config.Config, database *database.Database, cache *cache.Cache, peerCache pkgcache.Cache, searcher searcher.Searcher,
 	objectStorage objectstorage.ObjectStorage, objectStorageConfig *config.ObjectStorageConfig,
-) *managerServerV1 {
+) managerv1.ManagerServer {
 	return &managerServerV1{
 		config:              cfg,
 		db:                  database.DB,

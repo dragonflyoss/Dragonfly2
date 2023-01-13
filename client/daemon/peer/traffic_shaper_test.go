@@ -80,7 +80,7 @@ type trafficShaperComponentsOption struct {
 }
 
 func trafficShaperSetupPeerTaskManagerComponents(ctrl *gomock.Controller, opt trafficShaperComponentsOption) (
-	schedulerclient.Client, storage.Manager) {
+	schedulerclient.V1, storage.Manager) {
 	taskMap := make(map[string]*taskOption)
 	piecesMap := make(map[string][]string)
 	totalDigestsMap := make(map[string]string)
@@ -202,7 +202,7 @@ func trafficShaperSetupPeerTaskManagerComponents(ctrl *gomock.Controller, opt tr
 		ppsMap[task.taskID] = pps
 	}
 
-	sched := schedulerclientmocks.NewMockClient(ctrl)
+	sched := schedulerclientmocks.NewMockV1(ctrl)
 	sched.EXPECT().RegisterPeerTask(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, ptr *schedulerv1.PeerTaskRequest, opts ...grpc.CallOption) (*schedulerv1.RegisterResult, error) {
 			return &schedulerv1.RegisterResult{
@@ -235,7 +235,7 @@ func trafficShaperSetupPeerTaskManagerComponents(ctrl *gomock.Controller, opt tr
 type trafficShaperMockManager struct {
 	testSpec        *trafficShaperTestSpec
 	peerTaskManager *peerTaskManager
-	schedulerClient schedulerclient.Client
+	schedulerClient schedulerclient.V1
 	storageManager  storage.Manager
 }
 
