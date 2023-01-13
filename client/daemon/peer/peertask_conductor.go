@@ -828,7 +828,7 @@ func (pt *peerTaskConductor) isExitPeerPacketCode(pp *schedulerv1.PeerPacket) bo
 		pt.failedCode = pp.Code
 		pt.failedReason = fmt.Sprintf("receive exit peer packet with code %d", pp.Code)
 		return true
-	case commonv1.Code_SchedError, commonv1.Code_SchedTaskStatusError, commonv1.Code_SchedPeerNotFound:
+	case commonv1.Code_SchedError, commonv1.Code_SchedTaskStatusError, commonv1.Code_SchedPeerNotFound, commonv1.Code_SchedForbidden:
 		// 5xxx
 		pt.failedCode = pp.Code
 		pt.failedReason = fmt.Sprintf("receive exit peer packet with code %d", pp.Code)
