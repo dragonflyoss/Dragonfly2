@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2023 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package rpcserver
+package service
 
 import (
 	"reflect"
 	"testing"
-	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -31,25 +30,16 @@ import (
 	storagemocks "d7y.io/dragonfly/v2/scheduler/storage/mocks"
 )
 
-var (
-	mockSchedulerConfig = config.SchedulerConfig{
-		RetryLimit:             10,
-		RetryBackToSourceLimit: 3,
-		RetryInterval:          10 * time.Millisecond,
-		BackToSourceCount:      200,
-	}
-)
-
-func TestRPCServer_New(t *testing.T) {
+func TestService_NewV2(t *testing.T) {
 	tests := []struct {
 		name   string
 		expect func(t *testing.T, s any)
 	}{
 		{
-			name: "new server",
+			name: "new service",
 			expect: func(t *testing.T, s any) {
 				assert := assert.New(t)
-				assert.Equal(reflect.TypeOf(s).Elem().Name(), "Server")
+				assert.Equal(reflect.TypeOf(s).Elem().Name(), "V2")
 			},
 		},
 	}
@@ -59,12 +49,10 @@ func TestRPCServer_New(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 			scheduler := mocks.NewMockScheduler(ctl)
-			res := resource.NewMockResource(ctl)
+			resource := resource.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			storage := storagemocks.NewMockStorage(ctl)
-
-			svr := New(&config.Config{Scheduler: mockSchedulerConfig}, res, scheduler, dynconfig, storage)
-			tc.expect(t, svr)
+			tc.expect(t, NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, scheduler, dynconfig, storage))
 		})
 	}
 }

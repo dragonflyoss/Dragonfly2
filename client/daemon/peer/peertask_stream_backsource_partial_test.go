@@ -60,7 +60,7 @@ import (
 )
 
 func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte, opt componentsOption) (
-	schedulerclient.Client, storage.Manager) {
+	schedulerclient.V1, storage.Manager) {
 	port := int32(freeport.GetPort())
 	// 1. set up a mock daemon server for uploading pieces info
 	var daemon = dfdaemonv1mocks.NewMockDaemonServer(ctrl)
@@ -198,7 +198,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 			}, nil
 		})
 	pps.EXPECT().CloseSend().AnyTimes()
-	sched := clientmocks.NewMockClient(ctrl)
+	sched := clientmocks.NewMockV1(ctrl)
 	sched.EXPECT().RegisterPeerTask(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, ptr *schedulerv1.PeerTaskRequest, opts ...grpc.CallOption) (*schedulerv1.RegisterResult, error) {
 			return &schedulerv1.RegisterResult{
