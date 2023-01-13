@@ -143,7 +143,7 @@ func (d *dynconfigManager) GetSchedulers() ([]*managerv1.Scheduler, error) {
 	}
 
 	if data.Schedulers == nil {
-		return nil, errors.New("invalid scheudlers")
+		return nil, errors.New("invalid schedulers")
 	}
 
 	if len(data.Schedulers) == 0 {
