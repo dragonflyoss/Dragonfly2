@@ -52,10 +52,10 @@ type Dfstore interface {
 	GetObjectWithContext(ctx context.Context, input *GetObjectInput) (io.ReadCloser, error)
 
 	// PutObjectRequestWithContext returns *http.Request of putting object.
-	PutObjectRequestWithContext(ctx context.Context, input *PutOjectInput) (*http.Request, error)
+	PutObjectRequestWithContext(ctx context.Context, input *PutObjectInput) (*http.Request, error)
 
 	// PutObjectWithContext puts data of object.
-	PutObjectWithContext(ctx context.Context, input *PutOjectInput) error
+	PutObjectWithContext(ctx context.Context, input *PutObjectInput) error
 
 	// DeleteObjectRequestWithContext returns *http.Request of deleting object.
 	DeleteObjectRequestWithContext(ctx context.Context, input *DeleteObjectInput) (*http.Request, error)
@@ -257,8 +257,8 @@ func (dfs *dfstore) GetObjectWithContext(ctx context.Context, input *GetObjectIn
 	return resp.Body, nil
 }
 
-// PutOjectInput is used to construct request of putting object.
-type PutOjectInput struct {
+// PutObjectInput is used to construct request of putting object.
+type PutObjectInput struct {
 	// BucketName is bucket name.
 	BucketName string
 
@@ -282,8 +282,8 @@ type PutOjectInput struct {
 	Reader io.Reader
 }
 
-// Validate validates PutOjectInput fields.
-func (i *PutOjectInput) Validate() error {
+// Validate validates PutObjectInput fields.
+func (i *PutObjectInput) Validate() error {
 	if i.BucketName == "" {
 		return errors.New("invalid BucketName")
 
@@ -305,7 +305,7 @@ func (i *PutOjectInput) Validate() error {
 }
 
 // PutObjectRequestWithContext returns *http.Request of putting object.
-func (dfs *dfstore) PutObjectRequestWithContext(ctx context.Context, input *PutOjectInput) (*http.Request, error) {
+func (dfs *dfstore) PutObjectRequestWithContext(ctx context.Context, input *PutObjectInput) (*http.Request, error) {
 	if err := input.Validate(); err != nil {
 		return nil, err
 	}
@@ -360,7 +360,7 @@ func (dfs *dfstore) PutObjectRequestWithContext(ctx context.Context, input *PutO
 }
 
 // PutObjectWithContext puts data of object.
-func (dfs *dfstore) PutObjectWithContext(ctx context.Context, input *PutOjectInput) error {
+func (dfs *dfstore) PutObjectWithContext(ctx context.Context, input *PutObjectInput) error {
 	req, err := dfs.PutObjectRequestWithContext(ctx, input)
 	if err != nil {
 		return err
