@@ -73,8 +73,8 @@ func CheckError(err error, code commonv1.Code) bool {
 	return ok && e.Code == code
 }
 
-// ConvertToDfError converts grpc error to DfError, if it exists.
-func ConvertToDfError(err error) error {
+// ConvertGRPCErrorToDfError converts grpc error to DfError, if it exists.
+func ConvertGRPCErrorToDfError(err error) error {
 	for _, d := range status.Convert(err).Details() {
 		switch internal := d.(type) {
 		case *commonv1.GrpcDfError:
@@ -85,5 +85,20 @@ func ConvertToDfError(err error) error {
 		}
 	}
 
+	return err
+}
+
+// ConvertDfErrorToGRPCError converts DfError to grpc error, if it is.
+func ConvertDfErrorToGRPCError(err error) error {
+	if v, ok := err.(*DfError); ok {
+		s, e := status.Convert(err).WithDetails(
+			&commonv1.GrpcDfError{
+				Code:    v.Code,
+				Message: v.Message,
+			})
+		if e == nil {
+			err = s.Err()
+		}
+	}
 	return err
 }

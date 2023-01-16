@@ -793,7 +793,7 @@ func (pt *peerTaskConductor) confirmReceivePeerPacketError(err error) (cont bool
 		failedReason string
 	)
 	// extract DfError for grpc status
-	err = dferrors.ConvertToDfError(err)
+	err = dferrors.ConvertGRPCErrorToDfError(err)
 	de, ok := err.(*dferrors.DfError)
 	if ok {
 		switch de.Code {
