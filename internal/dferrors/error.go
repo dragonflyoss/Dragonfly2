@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	"google.golang.org/grpc/status"
 )
 
 // common and framework errors
@@ -69,4 +70,19 @@ func CheckError(err error, code commonv1.Code) bool {
 	e, ok := err.(*DfError)
 
 	return ok && e.Code == code
+}
+
+// ConvertToDfError converts grpc error to DfError, if it exists.
+func ConvertToDfError(err error) error {
+	for _, d := range status.Convert(err).Details() {
+		switch internal := d.(type) {
+		case *commonv1.GrpcDfError:
+			return &DfError{
+				Code:    internal.Code,
+				Message: internal.Message,
+			}
+		}
+	}
+
+	return err
 }
