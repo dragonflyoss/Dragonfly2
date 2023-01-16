@@ -24,10 +24,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
-
 	"d7y.io/dragonfly/v2/internal/dferrors"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 // Refresher is the interface for refreshing dynconfig.
@@ -90,7 +87,7 @@ func (r *RateLimiterInterceptor) Limit() bool {
 func ConvertErrorUnaryServerInterceptor(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 	h, err := handler(ctx, req)
 	if err != nil {
-		return h, convertServerError(err)
+		return h, dferrors.ConvertDfErrorToGRPCError(err)
 	}
 
 	return h, nil
@@ -99,34 +96,16 @@ func ConvertErrorUnaryServerInterceptor(ctx context.Context, req any, info *grpc
 // ConvertErrorStreamServerInterceptor returns a new stream server interceptor that convert error when trigger custom error.
 func ConvertErrorStreamServerInterceptor(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 	if err := handler(srv, ss); err != nil {
-		return convertServerError(err)
+		return dferrors.ConvertDfErrorToGRPCError(err)
 	}
 
 	return nil
 }
 
-// convertServerError converts custom error of server.
-func convertServerError(err error) error {
-	if status.Code(err) == codes.InvalidArgument {
-		err = dferrors.New(commonv1.Code_BadRequest, err.Error())
-	}
-
-	if v, ok := err.(*dferrors.DfError); ok {
-		logger.GrpcLogger.Errorf(v.Message)
-		if s, e := status.Convert(err).WithDetails(&commonv1.GrpcDfError{
-			Code:    v.Code,
-			Message: v.Message,
-		}); e == nil {
-			err = s.Err()
-		}
-	}
-	return err
-}
-
 // ConvertErrorUnaryClientInterceptor returns a new unary client interceptor that convert error when trigger custom error.
 func ConvertErrorUnaryClientInterceptor(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 	if err := invoker(ctx, method, req, reply, cc, opts...); err != nil {
-		return convertClientError(err)
+		return dferrors.ConvertGRPCErrorToDfError(err)
 	}
 
 	return nil
@@ -136,23 +115,8 @@ func ConvertErrorUnaryClientInterceptor(ctx context.Context, method string, req,
 func ConvertErrorStreamClientInterceptor(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
 	s, err := streamer(ctx, desc, cc, method, opts...)
 	if err != nil {
-		return nil, convertClientError(err)
+		return nil, dferrors.ConvertGRPCErrorToDfError(err)
 	}
 
 	return s, nil
-}
-
-// convertClientError converts custom error of client.
-func convertClientError(err error) error {
-	for _, d := range status.Convert(err).Details() {
-		switch internal := d.(type) {
-		case *commonv1.GrpcDfError:
-			return &dferrors.DfError{
-				Code:    internal.Code,
-				Message: internal.Message,
-			}
-		}
-	}
-
-	return err
 }
