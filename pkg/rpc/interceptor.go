@@ -126,7 +126,7 @@ func convertServerError(err error) error {
 // ConvertErrorUnaryClientInterceptor returns a new unary client interceptor that convert error when trigger custom error.
 func ConvertErrorUnaryClientInterceptor(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 	if err := invoker(ctx, method, req, reply, cc, opts...); err != nil {
-		return convertClientError(err)
+		return ConvertToDfError(err)
 	}
 
 	return nil
@@ -136,14 +136,14 @@ func ConvertErrorUnaryClientInterceptor(ctx context.Context, method string, req,
 func ConvertErrorStreamClientInterceptor(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
 	s, err := streamer(ctx, desc, cc, method, opts...)
 	if err != nil {
-		return nil, convertClientError(err)
+		return nil, ConvertToDfError(err)
 	}
 
 	return s, nil
 }
 
-// convertClientError converts custom error of client.
-func convertClientError(err error) error {
+// ConvertToDfError converts custom error of client.
+func ConvertToDfError(err error) error {
 	for _, d := range status.Convert(err).Details() {
 		switch internal := d.(type) {
 		case *commonv1.GrpcDfError:

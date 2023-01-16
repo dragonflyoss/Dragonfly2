@@ -47,6 +47,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/container/ring"
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	"d7y.io/dragonfly/v2/pkg/source"
@@ -792,6 +793,8 @@ func (pt *peerTaskConductor) confirmReceivePeerPacketError(err error) (cont bool
 		failedCode   = commonv1.Code_UnknownError
 		failedReason string
 	)
+	// extract DfError for grpc status
+	err = rpc.ConvertToDfError(err)
 	de, ok := err.(*dferrors.DfError)
 	if ok {
 		switch de.Code {
