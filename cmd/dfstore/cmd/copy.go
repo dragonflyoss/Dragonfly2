@@ -199,7 +199,7 @@ func copyLocalFileToObjectStorage(ctx context.Context, cfg *config.DfstoreConfig
 	)
 
 	tr := io.TeeReader(f, bar)
-	if err := dfstore.New(cfg.Endpoint).PutObjectWithContext(ctx, &dfstore.PutOjectInput{
+	if err := dfstore.New(cfg.Endpoint).PutObjectWithContext(ctx, &dfstore.PutObjectInput{
 		BucketName:  bucketName,
 		ObjectKey:   objectKey,
 		Filter:      cfg.Filter,

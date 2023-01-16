@@ -158,7 +158,7 @@ func (mr *MockDfstoreMockRecorder) IsObjectExistWithContext(ctx, input interface
 }
 
 // PutObjectRequestWithContext mocks base method.
-func (m *MockDfstore) PutObjectRequestWithContext(ctx context.Context, input *dfstore.PutOjectInput) (*http.Request, error) {
+func (m *MockDfstore) PutObjectRequestWithContext(ctx context.Context, input *dfstore.PutObjectInput) (*http.Request, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PutObjectRequestWithContext", ctx, input)
 	ret0, _ := ret[0].(*http.Request)
@@ -173,7 +173,7 @@ func (mr *MockDfstoreMockRecorder) PutObjectRequestWithContext(ctx, input interf
 }
 
 // PutObjectWithContext mocks base method.
-func (m *MockDfstore) PutObjectWithContext(ctx context.Context, input *dfstore.PutOjectInput) error {
+func (m *MockDfstore) PutObjectWithContext(ctx context.Context, input *dfstore.PutObjectInput) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PutObjectWithContext", ctx, input)
 	ret0, _ := ret[0].(error)
