@@ -41,7 +41,6 @@ var (
 			SecurityDomain: "security_domain",
 			Location:       "location",
 			Idc:            "idc",
-			NetTopology:    "net_topology",
 		},
 	}
 
@@ -56,7 +55,6 @@ var (
 			SecurityDomain: "security_domain",
 			Location:       "location",
 			Idc:            "idc",
-			NetTopology:    "net_topology",
 		},
 	}
 )
@@ -82,7 +80,6 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.Network.SecurityDomain, mockRawHost.Network.SecurityDomain)
 				assert.Equal(host.Network.Location, mockRawHost.Network.Location)
 				assert.Equal(host.Network.Idc, mockRawHost.Network.Idc)
-				assert.Equal(host.Network.NetTopology, mockRawHost.Network.NetTopology)
 				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(config.DefaultPeerConcurrentUploadLimit))
 				assert.Equal(host.PeerCount.Load(), int32(0))
 				assert.NotEqual(host.CreatedAt.Load(), 0)
@@ -104,7 +101,6 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.Network.SecurityDomain, mockRawSeedHost.Network.SecurityDomain)
 				assert.Equal(host.Network.Location, mockRawSeedHost.Network.Location)
 				assert.Equal(host.Network.Idc, mockRawSeedHost.Network.Idc)
-				assert.Equal(host.Network.NetTopology, mockRawSeedHost.Network.NetTopology)
 				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(config.DefaultPeerConcurrentUploadLimit))
 				assert.Equal(host.PeerCount.Load(), int32(0))
 				assert.NotEqual(host.CreatedAt.Load(), 0)
@@ -127,7 +123,6 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.Network.SecurityDomain, mockRawHost.Network.SecurityDomain)
 				assert.Equal(host.Network.Location, mockRawHost.Network.Location)
 				assert.Equal(host.Network.Idc, mockRawHost.Network.Idc)
-				assert.Equal(host.Network.NetTopology, mockRawHost.Network.NetTopology)
 				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(200))
 				assert.Equal(host.PeerCount.Load(), int32(0))
 				assert.NotEqual(host.CreatedAt.Load(), 0)

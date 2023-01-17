@@ -260,7 +260,6 @@ func (mc *managerClient) Get() (any, error) {
 		HostInfo: map[string]string{
 			searcher.ConditionSecurityDomain: mc.config.Host.SecurityDomain,
 			searcher.ConditionIDC:            mc.config.Host.IDC,
-			searcher.ConditionNetTopology:    mc.config.Host.NetTopology,
 			searcher.ConditionLocation:       mc.config.Host.Location,
 		},
 	})

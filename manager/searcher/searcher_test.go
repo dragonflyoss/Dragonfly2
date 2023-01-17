@@ -285,39 +285,6 @@ func TestSchedulerCluster(t *testing.T) {
 			},
 		},
 		{
-			name: "match according to net topology condition",
-			schedulerClusters: []model.SchedulerCluster{
-				{
-					Name: "foo",
-					Scopes: map[string]any{
-						"net_topology": "net-topology-1",
-					},
-					Schedulers: []model.Scheduler{
-						{
-							HostName: "foo",
-							State:    "active",
-						},
-					},
-				},
-				{
-					Name: "bar",
-					Schedulers: []model.Scheduler{
-						{
-							HostName: "bar",
-							State:    "active",
-						},
-					},
-				},
-			},
-			conditions: map[string]string{"net_topology": "net-topology-1"},
-			expect: func(t *testing.T, data []model.SchedulerCluster, err error) {
-				assert := assert.New(t)
-				assert.Equal(data[0].Name, "foo")
-				assert.Equal(data[1].Name, "bar")
-				assert.Equal(len(data), 2)
-			},
-		},
-		{
 			name: "match according to location and idc condition",
 			schedulerClusters: []model.SchedulerCluster{
 				{
@@ -562,9 +529,8 @@ func TestSchedulerCluster(t *testing.T) {
 				{
 					Name: "baz",
 					Scopes: map[string]any{
-						"idc":          "idc-1",
-						"location":     "location-1|location-2",
-						"net_topology": "net_topology-1",
+						"idc":      "idc-1",
+						"location": "location-1|location-2",
 					},
 					Schedulers: []model.Scheduler{
 						{
@@ -576,9 +542,8 @@ func TestSchedulerCluster(t *testing.T) {
 				{
 					Name: "bax",
 					Scopes: map[string]any{
-						"idc":          "idc-1",
-						"location":     "location-2",
-						"net_topology": "net_topology-1|net_topology-2",
+						"idc":      "idc-1",
+						"location": "location-2",
 					},
 					Schedulers: []model.Scheduler{
 						{
@@ -591,9 +556,8 @@ func TestSchedulerCluster(t *testing.T) {
 				{
 					Name: "bac",
 					Scopes: map[string]any{
-						"idc":          "idc-1",
-						"location":     "location-2",
-						"net_topology": "net_topology-1|net_topology-2",
+						"idc":      "idc-1",
+						"location": "location-2",
 					},
 					SecurityGroup: model.SecurityGroup{
 						SecurityRules: []model.SecurityRule{
@@ -614,7 +578,6 @@ func TestSchedulerCluster(t *testing.T) {
 				"security_domain": "domain-1",
 				"idc":             "idc-1|idc-2",
 				"location":        "location-1|location-2",
-				"net_topology":    "net_topology-1|net_topology-1",
 			},
 			expect: func(t *testing.T, data []model.SchedulerCluster, err error) {
 				assert := assert.New(t)
@@ -671,9 +634,8 @@ func TestSchedulerCluster(t *testing.T) {
 				{
 					Name: "baz",
 					Scopes: map[string]any{
-						"idc":          "IDC-1",
-						"location":     "LOCATION-1|LOCATION-2",
-						"net_topology": "NET_TOPOLOGY-1",
+						"idc":      "IDC-1",
+						"location": "LOCATION-1|LOCATION-2",
 					},
 					Schedulers: []model.Scheduler{
 						{
@@ -685,9 +647,8 @@ func TestSchedulerCluster(t *testing.T) {
 				{
 					Name: "bax",
 					Scopes: map[string]any{
-						"idc":          "IDC-1",
-						"location":     "LOCATION-2",
-						"net_topology": "NET_TOPOLOGY-1|NET_TOPOLOGY-2",
+						"idc":      "IDC-1",
+						"location": "LOCATION-2",
 					},
 					Schedulers: []model.Scheduler{
 						{
@@ -700,9 +661,8 @@ func TestSchedulerCluster(t *testing.T) {
 				{
 					Name: "bac",
 					Scopes: map[string]any{
-						"idc":          "IDC-1",
-						"location":     "LOCATION-2",
-						"net_topology": "NET_TOPOLOGY-1|NET_TOPOLOGY-2",
+						"idc":      "IDC-1",
+						"location": "LOCATION-2",
 					},
 					SecurityGroup: model.SecurityGroup{
 						SecurityRules: []model.SecurityRule{
@@ -721,9 +681,8 @@ func TestSchedulerCluster(t *testing.T) {
 				{
 					Name: "bae",
 					Scopes: map[string]any{
-						"idc":          "IDC-1",
-						"location":     "LOCATION-2",
-						"net_topology": "NET_TOPOLOGY-1|NET_TOPOLOGY-2",
+						"idc":      "IDC-1",
+						"location": "LOCATION-2",
 					},
 					SecurityGroup: model.SecurityGroup{
 						SecurityRules: []model.SecurityRule{
@@ -745,7 +704,6 @@ func TestSchedulerCluster(t *testing.T) {
 				"security_domain": "domain-1",
 				"idc":             "idc-1|idc-2",
 				"location":        "location-1|location-2",
-				"net_topology":    "net_topology-1|net_topology-1",
 			},
 			expect: func(t *testing.T, data []model.SchedulerCluster, err error) {
 				assert := assert.New(t)

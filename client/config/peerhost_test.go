@@ -288,7 +288,6 @@ func TestPeerHostOption_Load(t *testing.T) {
 			SecurityDomain: "d7y.io",
 			Location:       "0.0.0.0",
 			IDC:            "d7y",
-			NetTopology:    "d7y",
 			AdvertiseIP:    net.IPv4zero,
 		},
 		Download: DownloadOption{

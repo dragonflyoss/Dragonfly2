@@ -42,13 +42,10 @@ const (
 	hostTypeWeight = 0.15
 
 	// IDC affinity weight.
-	idcAffinityWeight = 0.1
-
-	// NetTopology affinity weight.
-	netTopologyAffinityWeight = 0.1
+	idcAffinityWeight = 0.15
 
 	// Location affinity weight.
-	locationAffinityWeight = 0.1
+	locationAffinityWeight = 0.15
 )
 
 const (
@@ -83,8 +80,6 @@ func (eb *evaluatorBase) Evaluate(parent *resource.Peer, child *resource.Peer, t
 	var (
 		parentSecurityDomain string
 		childSecurityDomain  string
-		parentNetTopology    string
-		childNetTopology     string
 		parentLocation       string
 		childLocation        string
 		parentIDC            string
@@ -92,14 +87,12 @@ func (eb *evaluatorBase) Evaluate(parent *resource.Peer, child *resource.Peer, t
 	)
 	if parent.Host.Network != nil {
 		parentSecurityDomain = parent.Host.Network.SecurityDomain
-		parentNetTopology = parent.Host.Network.NetTopology
 		parentLocation = parent.Host.Network.Location
 		parentIDC = parent.Host.Network.Idc
 	}
 
 	if child.Host.Network != nil {
 		childSecurityDomain = child.Host.Network.SecurityDomain
-		childNetTopology = child.Host.Network.NetTopology
 		childLocation = child.Host.Network.Location
 		childIDC = child.Host.Network.Idc
 	}
@@ -117,7 +110,6 @@ func (eb *evaluatorBase) Evaluate(parent *resource.Peer, child *resource.Peer, t
 		freeUploadWeight*calculateFreeUploadScore(parent.Host) +
 		hostTypeWeight*calculateHostTypeScore(parent) +
 		idcAffinityWeight*calculateIDCAffinityScore(parentIDC, childIDC) +
-		netTopologyAffinityWeight*calculateMultiElementAffinityScore(parentNetTopology, childNetTopology) +
 		locationAffinityWeight*calculateMultiElementAffinityScore(parentLocation, childLocation)
 }
 

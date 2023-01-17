@@ -28,7 +28,6 @@ func (s *service) CreateSeedPeer(ctx context.Context, json types.CreateSeedPeerR
 		HostName:          json.HostName,
 		Type:              json.Type,
 		IDC:               json.IDC,
-		NetTopology:       json.NetTopology,
 		Location:          json.Location,
 		IP:                json.IP,
 		Port:              json.Port,
@@ -62,7 +61,6 @@ func (s *service) UpdateSeedPeer(ctx context.Context, id uint, json types.Update
 	if err := s.db.WithContext(ctx).First(&seedPeer, id).Updates(model.SeedPeer{
 		Type:              json.Type,
 		IDC:               json.IDC,
-		NetTopology:       json.NetTopology,
 		Location:          json.Location,
 		IP:                json.IP,
 		Port:              json.Port,
