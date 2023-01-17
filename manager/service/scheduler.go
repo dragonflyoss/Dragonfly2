@@ -27,7 +27,6 @@ func (s *service) CreateScheduler(ctx context.Context, json types.CreateSchedule
 	scheduler := model.Scheduler{
 		HostName:           json.HostName,
 		IDC:                json.IDC,
-		NetTopology:        json.NetTopology,
 		Location:           json.Location,
 		IP:                 json.IP,
 		Port:               json.Port,
@@ -58,7 +57,6 @@ func (s *service) UpdateScheduler(ctx context.Context, id uint, json types.Updat
 	scheduler := model.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, id).Updates(model.Scheduler{
 		IDC:                json.IDC,
-		NetTopology:        json.NetTopology,
 		Location:           json.Location,
 		IP:                 json.IP,
 		Port:               json.Port,

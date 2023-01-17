@@ -42,7 +42,6 @@ var (
 			SecurityDomain: "security_domain",
 			Location:       "location",
 			Idc:            "idc",
-			NetTopology:    "net_topology",
 		},
 	}
 
@@ -57,7 +56,6 @@ var (
 			SecurityDomain: "security_domain",
 			Location:       "location",
 			Idc:            "idc",
-			NetTopology:    "net_topology",
 		},
 	}
 
@@ -141,7 +139,7 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(0.85))
+				assert.Equal(score, float64(0.8500000000000001))
 			},
 		},
 		{
@@ -160,7 +158,7 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(0.85))
+				assert.Equal(score, float64(0.8500000000000001))
 			},
 		},
 		{
@@ -179,7 +177,7 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(0.85))
+				assert.Equal(score, float64(0.8500000000000001))
 			},
 		},
 	}

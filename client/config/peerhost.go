@@ -282,8 +282,6 @@ type HostOption struct {
 	SecurityDomain string `mapstructure:"securityDomain" yaml:"securityDomain"`
 	// IDC for scheduler
 	IDC string `mapstructure:"idc" yaml:"idc"`
-	// Peerhost net topology for scheduler
-	NetTopology string `mapstructure:"netTopology" yaml:"netTopology"`
 	// Location for scheduler
 	Location string `mapstructure:"location" yaml:"location"`
 	// Hostname is daemon host name

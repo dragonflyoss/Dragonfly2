@@ -757,7 +757,6 @@ func (ts *testSpec) runSeedTaskTest(_ *testifyassert.Assertions, require *testif
 				UrlMeta:     urlMeta,
 				PeerId:      ts.peerID,
 				PeerHost:    &schedulerv1.PeerHost{},
-				HostLoad:    nil,
 				IsMigrating: false,
 			},
 			Limit: 0,

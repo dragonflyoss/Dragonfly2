@@ -23,7 +23,6 @@ type SchedulerParams struct {
 type CreateSchedulerRequest struct {
 	HostName           string `json:"host_name" binding:"required"`
 	IDC                string `json:"idc" binding:"omitempty"`
-	NetTopology        string `json:"net_topology" binding:"omitempty"`
 	Location           string `json:"location" binding:"omitempty"`
 	IP                 string `json:"ip" binding:"required"`
 	Port               int32  `json:"port" binding:"required"`
@@ -32,7 +31,6 @@ type CreateSchedulerRequest struct {
 
 type UpdateSchedulerRequest struct {
 	IDC                string `json:"idc" binding:"omitempty"`
-	NetTopology        string `json:"net_topology" binding:"omitempty"`
 	Location           string `json:"location" binding:"omitempty"`
 	IP                 string `json:"ip" binding:"omitempty"`
 	Port               int32  `json:"port" binding:"omitempty"`

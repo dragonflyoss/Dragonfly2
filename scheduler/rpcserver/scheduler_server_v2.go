@@ -84,3 +84,13 @@ func (s *schedulerServerV2) AnnounceHost(ctx context.Context, req *schedulerv2.A
 func (s *schedulerServerV2) LeaveHost(ctx context.Context, req *schedulerv2.LeaveHostRequest) (*emptypb.Empty, error) {
 	return nil, nil
 }
+
+// SyncProbes sync probes of the host.
+func (s *schedulerServerV2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
+	return nil
+}
+
+// SyncNetworkTopology sync network topology of the hosts.
+func (s *schedulerServerV2) SyncNetworkTopology(stream schedulerv2.Scheduler_SyncNetworkTopologyServer) error {
+	return nil
+}

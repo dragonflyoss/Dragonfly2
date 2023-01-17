@@ -120,7 +120,6 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		SecurityDomain: opt.Host.SecurityDomain,
 		Location:       opt.Host.Location,
 		Idc:            opt.Host.IDC,
-		NetTopology:    opt.Host.NetTopology,
 	}
 
 	var (

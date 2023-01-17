@@ -138,9 +138,8 @@ func (sc *seedPeerClient) updateSeedPeersForHostManager(seedPeers []*managerv1.S
 				Port:         seedPeer.Port,
 				DownloadPort: seedPeer.DownloadPort,
 				Network: &schedulerv1.Network{
-					Location:    seedPeer.Location,
-					Idc:         seedPeer.Idc,
-					NetTopology: seedPeer.NetTopology,
+					Location: seedPeer.Location,
+					Idc:      seedPeer.Idc,
 				},
 			}, options...))
 			continue
@@ -152,9 +151,8 @@ func (sc *seedPeerClient) updateSeedPeersForHostManager(seedPeers []*managerv1.S
 		seedPeerHost.Port = seedPeer.Port
 		seedPeerHost.DownloadPort = seedPeer.DownloadPort
 		seedPeerHost.Network = &schedulerv1.Network{
-			Location:    seedPeer.Location,
-			Idc:         seedPeer.Idc,
-			NetTopology: seedPeer.NetTopology,
+			Location: seedPeer.Location,
+			Idc:      seedPeer.Idc,
 		}
 
 		if concurrentUploadLimit > 0 {

@@ -98,7 +98,6 @@ var (
 		SecurityDomain:           "product",
 		Location:                 "china",
 		Idc:                      "e1",
-		NetTopology:              "s1|s2",
 	}
 
 	mockHostDisk = &schedulerv1.Disk{
@@ -156,7 +155,6 @@ var (
 		SecurityDomain: "security_domain",
 		Location:       "location",
 		Idc:            "idc",
-		NetTopology:    "net_topology",
 	}
 
 	mockTaskURLMeta = &commonv1.UrlMeta{

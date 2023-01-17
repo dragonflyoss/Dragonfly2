@@ -75,9 +75,8 @@ func TestConfig_Load(t *testing.T) {
 			Enable: true,
 		},
 		Host: HostConfig{
-			IDC:         "foo",
-			NetTopology: "bar",
-			Location:    "baz",
+			IDC:      "foo",
+			Location: "baz",
 		},
 		Job: JobConfig{
 			Enable:             true,
