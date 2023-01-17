@@ -105,8 +105,6 @@ definitions:
         type: string
       location:
         type: string
-      net_topology:
-        type: string
       port:
         type: integer
       schedulerClusterID:
@@ -200,8 +198,6 @@ definitions:
       ip:
         type: string
       location:
-        type: string
-      net_topology:
         type: string
       object_storage_port:
         type: integer
@@ -466,8 +462,6 @@ definitions:
         type: string
       location:
         type: string
-      net_topology:
-        type: string
       port:
         type: integer
       scheduler_cluster_id:
@@ -528,8 +522,6 @@ definitions:
       ip:
         type: string
       location:
-        type: string
-      net_topology:
         type: string
       object_storage_port:
         type: integer
@@ -712,8 +704,6 @@ definitions:
         type: string
       location:
         type: string
-      net_topology:
-        type: string
     type: object
   d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig:
     properties:
@@ -727,8 +717,6 @@ definitions:
       idc:
         type: string
       location:
-        type: string
-      net_topology:
         type: string
     type: object
   d7y_io_dragonfly_v2_manager_types.SignUpRequest:
@@ -870,8 +858,6 @@ definitions:
         type: string
       location:
         type: string
-      net_topology:
-        type: string
       port:
         type: integer
       scheduler_cluster_id:
@@ -919,8 +905,6 @@ definitions:
       ip:
         type: string
       location:
-        type: string
-      net_topology:
         type: string
       object_storage_port:
         type: integer

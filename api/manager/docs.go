@@ -4187,9 +4187,6 @@ const docTemplate = `{
                 "location": {
                     "type": "string"
                 },
-                "net_topology": {
-                    "type": "string"
-                },
                 "port": {
                     "type": "integer"
                 },
@@ -4331,9 +4328,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "location": {
-                    "type": "string"
-                },
-                "net_topology": {
                     "type": "string"
                 },
                 "object_storage_port": {
@@ -4731,9 +4725,6 @@ const docTemplate = `{
                 "location": {
                     "type": "string"
                 },
-                "net_topology": {
-                    "type": "string"
-                },
                 "port": {
                     "type": "integer"
                 },
@@ -4825,9 +4816,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "location": {
-                    "type": "string"
-                },
-                "net_topology": {
                     "type": "string"
                 },
                 "object_storage_port": {
@@ -5078,9 +5066,6 @@ const docTemplate = `{
                 },
                 "location": {
                     "type": "string"
-                },
-                "net_topology": {
-                    "type": "string"
                 }
             }
         },
@@ -5101,9 +5086,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "location": {
-                    "type": "string"
-                },
-                "net_topology": {
                     "type": "string"
                 }
             }
@@ -5316,9 +5298,6 @@ const docTemplate = `{
                 "location": {
                     "type": "string"
                 },
-                "net_topology": {
-                    "type": "string"
-                },
                 "port": {
                     "type": "integer"
                 },
@@ -5391,9 +5370,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "location": {
-                    "type": "string"
-                },
-                "net_topology": {
                     "type": "string"
                 },
                 "object_storage_port": {
