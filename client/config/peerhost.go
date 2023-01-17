@@ -309,11 +309,13 @@ type DownloadOption struct {
 	SyncPieceViaHTTPS    bool              `mapstructure:"syncPieceViaHTTPS" yaml:"syncPieceViaHTTPS"`
 	SplitRunningTasks    bool              `mapstructure:"splitRunningTasks" yaml:"splitRunningTasks"`
 	// resource clients option
-	ResourceClients map[string]interface{} `mapstructure:"resourceClients" yaml:"resourceClients"`
+	ResourceClients ResourceClientsOption `mapstructure:"resourceClients" yaml:"resourceClients"`
 
 	RecursiveConcurrent    RecursiveConcurrent `mapstructure:"recursiveConcurrent" yaml:"recursiveConcurrent"`
 	CacheRecursiveMetadata time.Duration       `mapstructure:"cacheRecursiveMetadata" yaml:"cacheRecursiveMetadata"`
 }
+
+type ResourceClientsOption map[string]interface{}
 
 type TransportOption struct {
 	DialTimeout           time.Duration `mapstructure:"dialTimeout" yaml:"dialTimeout"`

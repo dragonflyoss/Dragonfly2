@@ -33,6 +33,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/johanbrandhorst/certify"
+	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
@@ -67,6 +68,7 @@ import (
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	securityclient "d7y.io/dragonfly/v2/pkg/rpc/security/client"
 	"d7y.io/dragonfly/v2/pkg/source"
+
 	// register all source clients
 	_ "d7y.io/dragonfly/v2/pkg/source/loader" // nolint
 	"d7y.io/dragonfly/v2/pkg/types"
@@ -113,7 +115,15 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	// update plugin directory
 	source.UpdatePluginDir(d.PluginDir())
 
-	err := source.InitSourceClients(opt.Download.ResourceClients)
+	// FIXME the viper casts all case sensitive keys into lower case, but the resource client is map[string]interface, it should not be casted.
+	// issue: https://github.com/spf13/viper/issues/1014
+	tmpOpt := config.NewDaemonConfig()
+	err := tmpOpt.Load(viper.ConfigFileUsed())
+	if err != nil {
+		return nil, fmt.Errorf("read config error: %s", err)
+	}
+
+	err = source.InitSourceClients(tmpOpt.Download.ResourceClients)
 	if err != nil {
 		return nil, err
 	}
