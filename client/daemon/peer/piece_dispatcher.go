@@ -51,34 +51,35 @@ type pieceDispatcher struct {
 	// downloaded hold the already successfully downloaded piece num
 	downloaded map[int32]struct{}
 	// sum is the valid num of piece requests. When sum == 0, the consumer will wait until there is a request is putted
-	sum    *atomic.Int64
-	closed bool
-	cond   *sync.Cond
-	lock   *sync.Mutex
-	log    *logger.SugaredLoggerOnWith
+	sum         *atomic.Int64
+	closed      bool
+	cond        *sync.Cond
+	lock        *sync.Mutex
+	log         *logger.SugaredLoggerOnWith
+	randomRatio float64
 	// rand is not thread-safe
 	rand *rand.Rand
 }
 
 var (
 	// the lower, the better
-	maxScore   = int64(0)
-	minScore   = (60 * time.Second).Nanoseconds()
-	randomRate = 0.1
+	maxScore = int64(0)
+	minScore = (60 * time.Second).Nanoseconds()
 )
 
-func NewPieceDispatcher(log *logger.SugaredLoggerOnWith) PieceDispatcher {
+func NewPieceDispatcher(randomRatio float64, log *logger.SugaredLoggerOnWith) PieceDispatcher {
 	lock := &sync.Mutex{}
 	pd := &pieceDispatcher{
-		reqMap:     map[string][]*DownloadPieceRequest{},
-		score:      map[string]int64{},
-		downloaded: map[int32]struct{}{},
-		sum:        atomic.NewInt64(0),
-		closed:     false,
-		cond:       sync.NewCond(lock),
-		lock:       lock,
-		log:        log.With("component", "pieceDispatcher"),
-		rand:       rand.New(rand.NewSource(time.Now().Unix())),
+		reqMap:      map[string][]*DownloadPieceRequest{},
+		score:       map[string]int64{},
+		downloaded:  map[int32]struct{}{},
+		sum:         atomic.NewInt64(0),
+		closed:      false,
+		cond:        sync.NewCond(lock),
+		lock:        lock,
+		log:         log.With("component", "pieceDispatcher"),
+		randomRatio: randomRatio,
+		rand:        rand.New(rand.NewSource(time.Now().Unix())),
 	}
 	log.Debugf("piece dispatcher created")
 	return pd
@@ -114,13 +115,13 @@ func (p *pieceDispatcher) Get() (req *DownloadPieceRequest, err error) {
 // getDesiredReq return a req according to performance of each dest peer. It is not thread-safe
 func (p *pieceDispatcher) getDesiredReq() (*DownloadPieceRequest, error) {
 	distPeerIDs := maps.Keys(p.score)
-	if p.rand.Int31n(1000) < int32(randomRate*1000) { //random shuffle with the probability of randomRate
+	if p.rand.Float64() < p.randomRatio { //random shuffle with the probability of randomRatio
 		p.rand.Shuffle(len(distPeerIDs), func(i, j int) {
 			tmp := distPeerIDs[j]
 			distPeerIDs[j] = distPeerIDs[i]
 			distPeerIDs[i] = tmp
 		})
-	} else { // sort by score with the probability of (1-randomRate)
+	} else { // sort by score with the probability of (1-randomRatio)
 		slices.SortFunc(distPeerIDs, func(p1, p2 string) bool { return p.score[p1] < p.score[p2] })
 	}
 

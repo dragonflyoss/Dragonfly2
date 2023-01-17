@@ -544,7 +544,7 @@ func (pt *peerTaskConductor) pullPieces() {
 func (pt *peerTaskConductor) pullPiecesWithP2P() {
 	var (
 		// keep same size with pt.failedPieceCh for avoiding deadlock
-		pieceRequestQueue = NewPieceDispatcher(pt.Log())
+		pieceRequestQueue = NewPieceDispatcher(config.DefaultPieceDispatcherRandomRatio, pt.Log())
 	)
 	ctx, cancel := context.WithCancel(pt.ctx)
 
