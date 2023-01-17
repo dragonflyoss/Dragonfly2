@@ -76,9 +76,7 @@ host:
   idc: ""
   # security domain deployed by daemon, network isolation between different security domains
   securityDomain: ""
-  # network topology, separated by "|" characters
-  netTopology: ""
-  # daemon hostname
+ # daemon hostname
   # hostname: ""
 
 # download service option

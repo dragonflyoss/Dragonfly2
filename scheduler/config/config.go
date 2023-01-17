@@ -171,9 +171,6 @@ type HostConfig struct {
 	// IDC for scheduler.
 	IDC string `mapstructure:"idc" yaml:"idc"`
 
-	// NetTopology for scheduler.
-	NetTopology string `mapstructure:"netTopology" yaml:"netTopology"`
-
 	// Location for scheduler.
 	Location string `mapstructure:"location" yaml:"location"`
 }

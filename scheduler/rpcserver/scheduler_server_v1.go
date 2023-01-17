@@ -140,3 +140,15 @@ func (s *schedulerServerV1) LeaveHost(ctx context.Context, req *schedulerv1.Leav
 
 	return new(emptypb.Empty), nil
 }
+
+// TODO Implement SyncProbes
+// SyncProbes sync probes of the host.
+func (s *schedulerServerV1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
+	return nil
+}
+
+// TODO Implement SyncProbes
+// SyncNetworkTopology sync network topology of the hosts.
+func (s *schedulerServerV1) SyncNetworkTopology(stream schedulerv1.Scheduler_SyncNetworkTopologyServer) error {
+	return nil
+}

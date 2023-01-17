@@ -40,7 +40,6 @@ host:
   location: ""
   idc: ""
   securityDomain: ""
-  netTopology: ""
 
 # download service option
 download:

@@ -292,7 +292,6 @@ func TestSeedPeerClient_seedPeersToNetAddrs(t *testing.T) {
 					Port:         mockRawSeedHost.Port,
 					DownloadPort: mockRawSeedHost.DownloadPort,
 					Idc:          mockRawSeedHost.Network.Idc,
-					NetTopology:  mockRawSeedHost.Network.NetTopology,
 					Location:     mockRawSeedHost.Network.Location,
 				},
 			},

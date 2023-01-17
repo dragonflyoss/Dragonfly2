@@ -63,7 +63,6 @@ var (
 			SecurityDomain: "security_domain",
 			Location:       "location",
 			Idc:            "idc",
-			NetTopology:    "net_topology",
 		},
 	}
 
@@ -78,7 +77,6 @@ var (
 			SecurityDomain: "security_domain",
 			Location:       "location",
 			Idc:            "idc",
-			NetTopology:    "net_topology",
 		},
 	}
 
@@ -568,7 +566,6 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 						SecurityDomain: "security_domain",
 						Location:       "location",
 						Idc:            "idc",
-						NetTopology:    "net_topology",
 					},
 				}))
 				candidatePeer.FSM.SetState(resource.PeerStateRunning)
@@ -616,7 +613,6 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 					SecurityDomain: "security_domain",
 					Location:       "location",
 					Idc:            "idc",
-					NetTopology:    "net_topology",
 				},
 			}))
 			blocklist := set.NewSafeSet[string]()
@@ -898,7 +894,6 @@ func TestScheduler_FindParent(t *testing.T) {
 						SecurityDomain: "security_domain",
 						Location:       "location",
 						Idc:            "idc",
-						NetTopology:    "net_topology",
 					},
 				})
 				peer := resource.NewPeer(idgen.PeerID(fmt.Sprintf("127.0.0.%d", i)), mockTask, mockHost)

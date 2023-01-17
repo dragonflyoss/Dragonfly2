@@ -208,9 +208,6 @@ type Network struct {
 
 	// IDC where the peer host is located
 	IDC string `csv:"idc"`
-
-	// Network topology(switch|router|...).
-	NetTopology string `csv:"netTopology"`
 }
 
 // Build contains content for build.

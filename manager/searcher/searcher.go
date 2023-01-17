@@ -40,9 +40,6 @@ const (
 	// Condition IDC key.
 	ConditionIDC = "idc"
 
-	// Condition netTopology key.
-	ConditionNetTopology = "net_topology"
-
 	// Condition location key.
 	ConditionLocation = "location"
 )
@@ -52,16 +49,13 @@ const (
 	clusterTypeWeight float64 = 0.03
 
 	// SecurityDomain affinity weight.
-	securityDomainAffinityWeight float64 = 0.4
+	securityDomainAffinityWeight float64 = 0.5
 
 	// IDC affinity weight.
-	idcAffinityWeight float64 = 0.3
-
-	// NetTopology affinity weight.
-	netTopologyAffinityWeight = 0.2
+	idcAffinityWeight float64 = 0.35
 
 	// Location affinity weight.
-	locationAffinityWeight = 0.07
+	locationAffinityWeight = 0.12
 )
 
 const (
@@ -79,9 +73,8 @@ const (
 
 // Scheduler cluster scopes.
 type Scopes struct {
-	IDC         string `mapstructure:"idc"`
-	Location    string `mapstructure:"location"`
-	NetTopology string `mapstructure:"net_topology"`
+	IDC      string `mapstructure:"idc"`
+	Location string `mapstructure:"location"`
 }
 
 type Searcher interface {
@@ -184,8 +177,7 @@ func Evaluate(conditions map[string]string, scopes Scopes, cluster model.Schedul
 	return clusterTypeWeight*calculateClusterTypeScore(cluster) +
 		securityDomainAffinityWeight*calculateSecurityDomainAffinityScore(conditions[ConditionSecurityDomain], cluster.SecurityGroup.SecurityRules) +
 		idcAffinityWeight*calculateIDCAffinityScore(conditions[ConditionIDC], scopes.IDC) +
-		locationAffinityWeight*calculateMultiElementAffinityScore(conditions[ConditionLocation], scopes.Location) +
-		netTopologyAffinityWeight*calculateMultiElementAffinityScore(conditions[ConditionNetTopology], scopes.NetTopology)
+		locationAffinityWeight*calculateMultiElementAffinityScore(conditions[ConditionLocation], scopes.Location)
 }
 
 // calculateClusterTypeScore 0.0~1.0 larger and better.
