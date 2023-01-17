@@ -4180,9 +4180,6 @@
                 "location": {
                     "type": "string"
                 },
-                "net_topology": {
-                    "type": "string"
-                },
                 "port": {
                     "type": "integer"
                 },
@@ -4324,9 +4321,6 @@
                     "type": "string"
                 },
                 "location": {
-                    "type": "string"
-                },
-                "net_topology": {
                     "type": "string"
                 },
                 "object_storage_port": {
@@ -4724,9 +4718,6 @@
                 "location": {
                     "type": "string"
                 },
-                "net_topology": {
-                    "type": "string"
-                },
                 "port": {
                     "type": "integer"
                 },
@@ -4818,9 +4809,6 @@
                     "type": "string"
                 },
                 "location": {
-                    "type": "string"
-                },
-                "net_topology": {
                     "type": "string"
                 },
                 "object_storage_port": {
@@ -5071,9 +5059,6 @@
                 },
                 "location": {
                     "type": "string"
-                },
-                "net_topology": {
-                    "type": "string"
                 }
             }
         },
@@ -5094,9 +5079,6 @@
                     "type": "string"
                 },
                 "location": {
-                    "type": "string"
-                },
-                "net_topology": {
                     "type": "string"
                 }
             }
@@ -5309,9 +5291,6 @@
                 "location": {
                     "type": "string"
                 },
-                "net_topology": {
-                    "type": "string"
-                },
                 "port": {
                     "type": "integer"
                 },
@@ -5384,9 +5363,6 @@
                     "type": "string"
                 },
                 "location": {
-                    "type": "string"
-                },
-                "net_topology": {
                     "type": "string"
                 },
                 "object_storage_port": {
