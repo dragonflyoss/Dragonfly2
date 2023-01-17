@@ -44,9 +44,11 @@ const (
 )
 
 func init() {
-	if err := source.Register(HDFSClient, NewHDFSSourceClient(), adapter); err != nil {
-		panic(err)
-	}
+	source.RegisterBuilder(HDFSClient, source.NewPlainResourceClientBuilder(Builder))
+}
+
+func Builder(optionYaml []byte) (source.ResourceClient, source.RequestAdapter, []source.Hook, error) {
+	return NewHDFSSourceClient(), adapter, nil, nil
 }
 
 func adapter(request *source.Request) *source.Request {

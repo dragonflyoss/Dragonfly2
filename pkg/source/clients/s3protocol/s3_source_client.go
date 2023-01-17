@@ -52,10 +52,12 @@ const (
 var _ source.ResourceClient = (*s3SourceClient)(nil)
 
 func init() {
+	source.RegisterBuilder(S3Scheme, source.NewPlainResourceClientBuilder(Builder))
+}
+
+func Builder(optionYaml []byte) (source.ResourceClient, source.RequestAdapter, []source.Hook, error) {
 	s3Client := &s3SourceClient{}
-	if err := source.Register(S3Scheme, s3Client, s3Client.adaptor); err != nil {
-		panic(err)
-	}
+	return s3Client, s3Client.adaptor, nil, nil
 }
 
 // s3SourceClient is an implementation of the interface of source.ResourceClient.
