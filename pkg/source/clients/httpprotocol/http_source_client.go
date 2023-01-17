@@ -58,14 +58,14 @@ func init() {
 	source.RegisterBuilder(HTTPSClient, source.NewPlainResourceClientBuilder(Builder))
 }
 
-func Builder(optionYaml []byte) (resourceClient source.ResourceClient, adaptor source.RequestAdapter, hooks []source.Hook, err error) {
+func Builder(optionYaml []byte) (source.ResourceClient, source.RequestAdapter, []source.Hook, error) {
 	var httpClient *http.Client
-	httpClient, err = source.ParseToHTTPClient(optionYaml)
+	httpClient, err := source.ParseToHTTPClient(optionYaml)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 	sc := NewHTTPSourceClient(WithHTTPClient(httpClient))
-	return sc, adaptor, nil, nil
+	return sc, Adapter, nil, nil
 }
 
 func Adapter(request *source.Request) *source.Request {
