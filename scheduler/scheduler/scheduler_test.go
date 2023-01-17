@@ -903,8 +903,8 @@ func TestScheduler_FindParent(t *testing.T) {
 			blocklist := set.NewSafeSet[string]()
 			tc.mock(peer, mockPeers, blocklist, dynconfig.EXPECT())
 			scheduler := New(mockSchedulerConfig, dynconfig, mockPluginDir)
-			parent, ok := scheduler.FindParent(context.Background(), peer, blocklist)
-			tc.expect(t, peer, mockPeers, parent, ok)
+			parent, found := scheduler.FindParent(context.Background(), peer, blocklist)
+			tc.expect(t, peer, mockPeers, parent, found)
 		})
 	}
 }

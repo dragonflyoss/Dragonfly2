@@ -996,8 +996,8 @@ func TestService_ReportPieceResult(t *testing.T) {
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-				_, ok := peer.LoadStream()
-				assert.False(ok)
+				_, loaded := peer.LoadStream()
+				assert.False(loaded)
 			},
 		},
 		{
@@ -1024,8 +1024,8 @@ func TestService_ReportPieceResult(t *testing.T) {
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-				_, ok := peer.LoadStream()
-				assert.False(ok)
+				_, loaded := peer.LoadStream()
+				assert.False(loaded)
 			},
 		},
 		{
@@ -1053,8 +1053,8 @@ func TestService_ReportPieceResult(t *testing.T) {
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-				_, ok := peer.LoadStream()
-				assert.False(ok)
+				_, loaded := peer.LoadStream()
+				assert.False(loaded)
 			},
 		},
 		{
@@ -1079,8 +1079,8 @@ func TestService_ReportPieceResult(t *testing.T) {
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-				_, ok := peer.LoadStream()
-				assert.False(ok)
+				_, loaded := peer.LoadStream()
+				assert.False(loaded)
 			},
 		},
 		{
@@ -1106,8 +1106,8 @@ func TestService_ReportPieceResult(t *testing.T) {
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-				_, ok := peer.LoadStream()
-				assert.False(ok)
+				_, loaded := peer.LoadStream()
+				assert.False(loaded)
 			},
 		},
 	}
@@ -1473,8 +1473,8 @@ func TestService_AnnounceTask(t *testing.T) {
 				assert.Equal(mockTask.FSM.Current(), resource.TaskStateSucceeded)
 				assert.Equal(mockTask.TotalPieceCount.Load(), int32(1))
 				assert.Equal(mockTask.ContentLength.Load(), int64(1000))
-				piece, ok := mockTask.LoadPiece(1)
-				assert.True(ok)
+				piece, loaded := mockTask.LoadPiece(1)
+				assert.True(loaded)
 				assert.EqualValues(piece, &commonv1.PieceInfo{PieceNum: 1, DownloadCost: 1})
 
 				assert.Equal(mockPeer.FinishedPieces.Count(), uint(1))
@@ -1518,8 +1518,8 @@ func TestService_AnnounceTask(t *testing.T) {
 				assert.Equal(mockTask.FSM.Current(), resource.TaskStateSucceeded)
 				assert.Equal(mockTask.TotalPieceCount.Load(), int32(1))
 				assert.Equal(mockTask.ContentLength.Load(), int64(1000))
-				piece, ok := mockTask.LoadPiece(1)
-				assert.True(ok)
+				piece, loaded := mockTask.LoadPiece(1)
+				assert.True(loaded)
 
 				assert.EqualValues(piece, &commonv1.PieceInfo{PieceNum: 1, DownloadCost: 1})
 				assert.Equal(mockPeer.FinishedPieces.Count(), uint(1))
@@ -1563,8 +1563,8 @@ func TestService_AnnounceTask(t *testing.T) {
 				assert.Equal(mockTask.FSM.Current(), resource.TaskStateSucceeded)
 				assert.Equal(mockTask.TotalPieceCount.Load(), int32(1))
 				assert.Equal(mockTask.ContentLength.Load(), int64(1000))
-				piece, ok := mockTask.LoadPiece(1)
-				assert.True(ok)
+				piece, loaded := mockTask.LoadPiece(1)
+				assert.True(loaded)
 
 				assert.EqualValues(piece, &commonv1.PieceInfo{PieceNum: 1, DownloadCost: 1})
 				assert.Equal(mockPeer.FinishedPieces.Count(), uint(1))
@@ -1608,8 +1608,8 @@ func TestService_AnnounceTask(t *testing.T) {
 				assert.Equal(mockTask.FSM.Current(), resource.TaskStateSucceeded)
 				assert.Equal(mockTask.TotalPieceCount.Load(), int32(1))
 				assert.Equal(mockTask.ContentLength.Load(), int64(1000))
-				piece, ok := mockTask.LoadPiece(1)
-				assert.True(ok)
+				piece, loaded := mockTask.LoadPiece(1)
+				assert.True(loaded)
 
 				assert.EqualValues(piece, &commonv1.PieceInfo{PieceNum: 1, DownloadCost: 1})
 				assert.Equal(mockPeer.FinishedPieces.Count(), uint(1))
@@ -2950,8 +2950,8 @@ func TestService_handlePieceSuccess(t *testing.T) {
 				assert.Equal(peer.Pieces.Len(), uint(1))
 				assert.Equal(peer.FinishedPieces.Count(), uint(1))
 				assert.Equal(peer.PieceCosts(), []int64{1})
-				piece, ok := peer.Task.LoadPiece(0)
-				assert.True(ok)
+				piece, loaded := peer.Task.LoadPiece(0)
+				assert.True(loaded)
 				assert.EqualValues(piece, &commonv1.PieceInfo{
 					PieceNum: 0,
 					PieceMd5: "ac32345ef819f03710e2105c81106fdd",

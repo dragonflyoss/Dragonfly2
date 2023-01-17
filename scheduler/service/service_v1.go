@@ -675,8 +675,8 @@ func (v *V1) registerTinyTask(ctx context.Context, peer *resource.Peer) (*schedu
 
 // registerSmallTask registers the small task.
 func (v *V1) registerSmallTask(ctx context.Context, peer *resource.Peer) (*schedulerv1.RegisterResult, error) {
-	parent, ok := v.scheduler.FindParent(ctx, peer, set.NewSafeSet[string]())
-	if !ok {
+	parent, found := v.scheduler.FindParent(ctx, peer, set.NewSafeSet[string]())
+	if !found {
 		return nil, errors.New("parent not found")
 	}
 
@@ -870,8 +870,8 @@ func (v *V1) handlePieceFailure(ctx context.Context, peer *resource.Peer, piece 
 
 		// Returns an scheduling error if the peer
 		// state is not PeerStateRunning.
-		stream, ok := peer.LoadStream()
-		if !ok {
+		stream, loaded := peer.LoadStream()
+		if !loaded {
 			peer.Log.Error("load stream failed")
 			return
 		}

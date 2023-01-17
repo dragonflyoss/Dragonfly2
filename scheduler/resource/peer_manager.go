@@ -87,12 +87,12 @@ func newPeerManager(cfg *config.GCConfig, gc pkggc.GC) (PeerManager, error) {
 }
 
 func (p *peerManager) Load(key string) (*Peer, bool) {
-	rawPeer, ok := p.Map.Load(key)
-	if !ok {
+	rawPeer, loaded := p.Map.Load(key)
+	if !loaded {
 		return nil, false
 	}
 
-	return rawPeer.(*Peer), ok
+	return rawPeer.(*Peer), loaded
 }
 
 func (p *peerManager) Store(peer *Peer) {
@@ -121,7 +121,7 @@ func (p *peerManager) Delete(key string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	if peer, ok := p.Load(key); ok {
+	if peer, loaded := p.Load(key); loaded {
 		p.Map.Delete(key)
 		peer.Task.DeletePeer(key)
 		peer.Host.DeletePeer(key)
