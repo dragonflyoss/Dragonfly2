@@ -182,8 +182,8 @@ func TestPeer_LoadStream(t *testing.T) {
 			expect: func(t *testing.T, peer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer) {
 				assert := assert.New(t)
 				peer.StoreStream(stream)
-				newStream, ok := peer.LoadStream()
-				assert.Equal(ok, true)
+				newStream, loaded := peer.LoadStream()
+				assert.Equal(loaded, true)
 				assert.EqualValues(newStream, stream)
 			},
 		},
@@ -191,8 +191,8 @@ func TestPeer_LoadStream(t *testing.T) {
 			name: "stream does not exist",
 			expect: func(t *testing.T, peer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer) {
 				assert := assert.New(t)
-				_, ok := peer.LoadStream()
-				assert.Equal(ok, false)
+				_, loaded := peer.LoadStream()
+				assert.Equal(loaded, false)
 			},
 		},
 	}
@@ -221,8 +221,8 @@ func TestPeer_StoreStream(t *testing.T) {
 			expect: func(t *testing.T, peer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer) {
 				assert := assert.New(t)
 				peer.StoreStream(stream)
-				newStream, ok := peer.LoadStream()
-				assert.Equal(ok, true)
+				newStream, loaded := peer.LoadStream()
+				assert.Equal(loaded, true)
 				assert.EqualValues(newStream, stream)
 			},
 		},
@@ -253,8 +253,8 @@ func TestPeer_DeleteStream(t *testing.T) {
 				assert := assert.New(t)
 				peer.StoreStream(stream)
 				peer.DeleteStream()
-				_, ok := peer.LoadStream()
-				assert.Equal(ok, false)
+				_, loaded := peer.LoadStream()
+				assert.Equal(loaded, false)
 			},
 		},
 	}

@@ -98,7 +98,7 @@ func (sc *seedPeerClient) OnNotify(data *config.DynconfigData) {
 	for _, seedPeer := range diffSeedPeers {
 		id := idgen.HostID(seedPeer.HostName, seedPeer.Port)
 		logger.Infof("host %s has been reclaimed, because of seed peer ip is changed", id)
-		if host, ok := sc.hostManager.Load(id); ok {
+		if host, loaded := sc.hostManager.Load(id); loaded {
 			host.LeavePeers()
 			sc.hostManager.Delete(id)
 		}

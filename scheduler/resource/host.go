@@ -157,12 +157,12 @@ func NewHost(req *schedulerv1.AnnounceHostRequest, options ...HostOption) *Host 
 
 // LoadPeer return peer for a key.
 func (h *Host) LoadPeer(key string) (*Peer, bool) {
-	rawPeer, ok := h.Peers.Load(key)
-	if !ok {
+	rawPeer, loaded := h.Peers.Load(key)
+	if !loaded {
 		return nil, false
 	}
 
-	return rawPeer.(*Peer), ok
+	return rawPeer.(*Peer), loaded
 }
 
 // StorePeer set peer.

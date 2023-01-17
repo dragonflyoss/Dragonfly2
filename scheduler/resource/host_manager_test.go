@@ -92,8 +92,8 @@ func TestHostManager_Load(t *testing.T) {
 			expect: func(t *testing.T, hostManager HostManager, mockHost *Host) {
 				assert := assert.New(t)
 				hostManager.Store(mockHost)
-				host, ok := hostManager.Load(mockHost.ID)
-				assert.Equal(ok, true)
+				host, loaded := hostManager.Load(mockHost.ID)
+				assert.Equal(loaded, true)
 				assert.Equal(host.ID, mockHost.ID)
 			},
 		},
@@ -104,8 +104,8 @@ func TestHostManager_Load(t *testing.T) {
 			},
 			expect: func(t *testing.T, hostManager HostManager, mockHost *Host) {
 				assert := assert.New(t)
-				_, ok := hostManager.Load(mockHost.ID)
-				assert.Equal(ok, false)
+				_, loaded := hostManager.Load(mockHost.ID)
+				assert.Equal(loaded, false)
 			},
 		},
 		{
@@ -117,8 +117,8 @@ func TestHostManager_Load(t *testing.T) {
 				assert := assert.New(t)
 				mockHost.ID = ""
 				hostManager.Store(mockHost)
-				host, ok := hostManager.Load(mockHost.ID)
-				assert.Equal(ok, true)
+				host, loaded := hostManager.Load(mockHost.ID)
+				assert.Equal(loaded, true)
 				assert.Equal(host.ID, mockHost.ID)
 			},
 		},
@@ -156,8 +156,8 @@ func TestHostManager_Store(t *testing.T) {
 			expect: func(t *testing.T, hostManager HostManager, mockHost *Host) {
 				assert := assert.New(t)
 				hostManager.Store(mockHost)
-				host, ok := hostManager.Load(mockHost.ID)
-				assert.Equal(ok, true)
+				host, loaded := hostManager.Load(mockHost.ID)
+				assert.Equal(loaded, true)
 				assert.Equal(host.ID, mockHost.ID)
 			},
 		},
@@ -170,8 +170,8 @@ func TestHostManager_Store(t *testing.T) {
 				assert := assert.New(t)
 				mockHost.ID = ""
 				hostManager.Store(mockHost)
-				host, ok := hostManager.Load(mockHost.ID)
-				assert.Equal(ok, true)
+				host, loaded := hostManager.Load(mockHost.ID)
+				assert.Equal(loaded, true)
 				assert.Equal(host.ID, mockHost.ID)
 			},
 		},
@@ -209,8 +209,8 @@ func TestHostManager_LoadOrStore(t *testing.T) {
 			expect: func(t *testing.T, hostManager HostManager, mockHost *Host) {
 				assert := assert.New(t)
 				hostManager.Store(mockHost)
-				host, ok := hostManager.LoadOrStore(mockHost)
-				assert.Equal(ok, true)
+				host, loaded := hostManager.LoadOrStore(mockHost)
+				assert.Equal(loaded, true)
 				assert.Equal(host.ID, mockHost.ID)
 			},
 		},
@@ -221,8 +221,8 @@ func TestHostManager_LoadOrStore(t *testing.T) {
 			},
 			expect: func(t *testing.T, hostManager HostManager, mockHost *Host) {
 				assert := assert.New(t)
-				host, ok := hostManager.LoadOrStore(mockHost)
-				assert.Equal(ok, false)
+				host, loaded := hostManager.LoadOrStore(mockHost)
+				assert.Equal(loaded, false)
 				assert.Equal(host.ID, mockHost.ID)
 			},
 		},
@@ -261,8 +261,8 @@ func TestHostManager_Delete(t *testing.T) {
 				assert := assert.New(t)
 				hostManager.Store(mockHost)
 				hostManager.Delete(mockHost.ID)
-				_, ok := hostManager.Load(mockHost.ID)
-				assert.Equal(ok, false)
+				_, loaded := hostManager.Load(mockHost.ID)
+				assert.Equal(loaded, false)
 			},
 		},
 		{
@@ -275,8 +275,8 @@ func TestHostManager_Delete(t *testing.T) {
 				mockHost.ID = ""
 				hostManager.Store(mockHost)
 				hostManager.Delete(mockHost.ID)
-				_, ok := hostManager.Load(mockHost.ID)
-				assert.Equal(ok, false)
+				_, loaded := hostManager.Load(mockHost.ID)
+				assert.Equal(loaded, false)
 			},
 		},
 	}
@@ -316,8 +316,8 @@ func TestHostManager_RunGC(t *testing.T) {
 				err := hostManager.RunGC()
 				assert.NoError(err)
 
-				_, ok := hostManager.Load(mockHost.ID)
-				assert.Equal(ok, false)
+				_, loaded := hostManager.Load(mockHost.ID)
+				assert.Equal(loaded, false)
 			},
 		},
 		{
@@ -332,8 +332,8 @@ func TestHostManager_RunGC(t *testing.T) {
 				err := hostManager.RunGC()
 				assert.NoError(err)
 
-				host, ok := hostManager.Load(mockHost.ID)
-				assert.Equal(ok, true)
+				host, loaded := hostManager.Load(mockHost.ID)
+				assert.Equal(loaded, true)
 				assert.Equal(host.ID, mockHost.ID)
 			},
 		},
@@ -351,8 +351,8 @@ func TestHostManager_RunGC(t *testing.T) {
 				err := hostManager.RunGC()
 				assert.NoError(err)
 
-				host, ok := hostManager.Load(mockHost.ID)
-				assert.Equal(ok, true)
+				host, loaded := hostManager.Load(mockHost.ID)
+				assert.Equal(loaded, true)
 				assert.Equal(host.ID, mockHost.ID)
 			},
 		},
@@ -368,8 +368,8 @@ func TestHostManager_RunGC(t *testing.T) {
 				err := hostManager.RunGC()
 				assert.NoError(err)
 
-				host, ok := hostManager.Load(mockSeedHost.ID)
-				assert.Equal(ok, true)
+				host, loaded := hostManager.Load(mockSeedHost.ID)
+				assert.Equal(loaded, true)
 				assert.Equal(host.ID, mockSeedHost.ID)
 			},
 		},

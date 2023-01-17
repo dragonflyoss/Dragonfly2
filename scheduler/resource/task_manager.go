@@ -74,12 +74,12 @@ func newTaskManager(cfg *config.GCConfig, gc pkggc.GC) (TaskManager, error) {
 }
 
 func (t *taskManager) Load(key string) (*Task, bool) {
-	rawTask, ok := t.Map.Load(key)
-	if !ok {
+	rawTask, loaded := t.Map.Load(key)
+	if !loaded {
 		return nil, false
 	}
 
-	return rawTask.(*Task), ok
+	return rawTask.(*Task), loaded
 }
 
 func (t *taskManager) Store(task *Task) {

@@ -105,7 +105,7 @@ func TestTask_LoadPeer(t *testing.T) {
 		url               string
 		backToSourceLimit int32
 		peerID            string
-		expect            func(t *testing.T, peer *Peer, ok bool)
+		expect            func(t *testing.T, peer *Peer, loaded bool)
 	}{
 		{
 			name:              "load peer",
@@ -114,9 +114,9 @@ func TestTask_LoadPeer(t *testing.T) {
 			url:               mockTaskURL,
 			backToSourceLimit: mockTaskBackToSourceLimit,
 			peerID:            mockPeerID,
-			expect: func(t *testing.T, peer *Peer, ok bool) {
+			expect: func(t *testing.T, peer *Peer, loaded bool) {
 				assert := assert.New(t)
-				assert.Equal(ok, true)
+				assert.Equal(loaded, true)
 				assert.Equal(peer.ID, mockPeerID)
 			},
 		},
@@ -127,9 +127,9 @@ func TestTask_LoadPeer(t *testing.T) {
 			url:               mockTaskURL,
 			backToSourceLimit: mockTaskBackToSourceLimit,
 			peerID:            idgen.PeerID("0.0.0.0"),
-			expect: func(t *testing.T, peer *Peer, ok bool) {
+			expect: func(t *testing.T, peer *Peer, loaded bool) {
 				assert := assert.New(t)
-				assert.Equal(ok, false)
+				assert.Equal(loaded, false)
 			},
 		},
 		{
@@ -139,9 +139,9 @@ func TestTask_LoadPeer(t *testing.T) {
 			url:               mockTaskURL,
 			backToSourceLimit: mockTaskBackToSourceLimit,
 			peerID:            "",
-			expect: func(t *testing.T, peer *Peer, ok bool) {
+			expect: func(t *testing.T, peer *Peer, loaded bool) {
 				assert := assert.New(t)
-				assert.Equal(ok, false)
+				assert.Equal(loaded, false)
 			},
 		},
 	}
@@ -153,8 +153,8 @@ func TestTask_LoadPeer(t *testing.T) {
 			mockPeer := NewPeer(mockPeerID, task, mockHost)
 
 			task.StorePeer(mockPeer)
-			peer, ok := task.LoadPeer(tc.peerID)
-			tc.expect(t, peer, ok)
+			peer, loaded := task.LoadPeer(tc.peerID)
+			tc.expect(t, peer, loaded)
 		})
 	}
 }
@@ -231,7 +231,7 @@ func TestTask_StorePeer(t *testing.T) {
 		url               string
 		backToSourceLimit int32
 		peerID            string
-		expect            func(t *testing.T, peer *Peer, ok bool)
+		expect            func(t *testing.T, peer *Peer, loaded bool)
 	}{
 		{
 			name:              "store peer",
@@ -240,9 +240,9 @@ func TestTask_StorePeer(t *testing.T) {
 			url:               mockTaskURL,
 			backToSourceLimit: mockTaskBackToSourceLimit,
 			peerID:            mockPeerID,
-			expect: func(t *testing.T, peer *Peer, ok bool) {
+			expect: func(t *testing.T, peer *Peer, loaded bool) {
 				assert := assert.New(t)
-				assert.Equal(ok, true)
+				assert.Equal(loaded, true)
 				assert.Equal(peer.ID, mockPeerID)
 			},
 		},
@@ -253,9 +253,9 @@ func TestTask_StorePeer(t *testing.T) {
 			url:               mockTaskURL,
 			backToSourceLimit: mockTaskBackToSourceLimit,
 			peerID:            "",
-			expect: func(t *testing.T, peer *Peer, ok bool) {
+			expect: func(t *testing.T, peer *Peer, loaded bool) {
 				assert := assert.New(t)
-				assert.Equal(ok, true)
+				assert.Equal(loaded, true)
 				assert.Equal(peer.ID, "")
 			},
 		},
@@ -268,8 +268,8 @@ func TestTask_StorePeer(t *testing.T) {
 			mockPeer := NewPeer(tc.peerID, task, mockHost)
 
 			task.StorePeer(mockPeer)
-			peer, ok := task.LoadPeer(tc.peerID)
-			tc.expect(t, peer, ok)
+			peer, loaded := task.LoadPeer(tc.peerID)
+			tc.expect(t, peer, loaded)
 		})
 	}
 }
@@ -293,8 +293,8 @@ func TestTask_DeletePeer(t *testing.T) {
 			peerID:            mockPeerID,
 			expect: func(t *testing.T, task *Task) {
 				assert := assert.New(t)
-				_, ok := task.LoadPeer(mockPeerID)
-				assert.Equal(ok, false)
+				_, loaded := task.LoadPeer(mockPeerID)
+				assert.Equal(loaded, false)
 			},
 		},
 		{
@@ -306,8 +306,8 @@ func TestTask_DeletePeer(t *testing.T) {
 			peerID:            "",
 			expect: func(t *testing.T, task *Task) {
 				assert := assert.New(t)
-				peer, ok := task.LoadPeer(mockPeerID)
-				assert.Equal(ok, true)
+				peer, loaded := task.LoadPeer(mockPeerID)
+				assert.Equal(loaded, true)
 				assert.Equal(peer.ID, mockPeerID)
 			},
 		},
@@ -1046,8 +1046,8 @@ func TestTask_LoadSeedPeer(t *testing.T) {
 				assert := assert.New(t)
 				task.StorePeer(mockPeer)
 				task.StorePeer(mockSeedPeer)
-				peer, ok := task.LoadSeedPeer()
-				assert.True(ok)
+				peer, loaded := task.LoadSeedPeer()
+				assert.True(loaded)
 				assert.Equal(peer.ID, mockSeedPeer.ID)
 			},
 		},
@@ -1062,8 +1062,8 @@ func TestTask_LoadSeedPeer(t *testing.T) {
 				mockPeer.UpdatedAt.Store(time.Now())
 				mockSeedPeer.UpdatedAt.Store(time.Now().Add(1 * time.Second))
 
-				peer, ok := task.LoadSeedPeer()
-				assert.True(ok)
+				peer, loaded := task.LoadSeedPeer()
+				assert.True(loaded)
 				assert.Equal(peer.ID, mockSeedPeer.ID)
 			},
 		},
@@ -1071,8 +1071,8 @@ func TestTask_LoadSeedPeer(t *testing.T) {
 			name: "peers is empty",
 			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockSeedPeer *Peer) {
 				assert := assert.New(t)
-				_, ok := task.LoadSeedPeer()
-				assert.False(ok)
+				_, loaded := task.LoadSeedPeer()
+				assert.False(loaded)
 			},
 		},
 		{
@@ -1080,8 +1080,8 @@ func TestTask_LoadSeedPeer(t *testing.T) {
 			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockSeedPeer *Peer) {
 				assert := assert.New(t)
 				task.StorePeer(mockPeer)
-				_, ok := task.LoadSeedPeer()
-				assert.False(ok)
+				_, loaded := task.LoadSeedPeer()
+				assert.False(loaded)
 			},
 		},
 	}
@@ -1171,7 +1171,7 @@ func TestTask_LoadPiece(t *testing.T) {
 		backToSourceLimit int32
 		pieceInfo         *commonv1.PieceInfo
 		pieceNum          int32
-		expect            func(t *testing.T, piece *commonv1.PieceInfo, ok bool)
+		expect            func(t *testing.T, piece *commonv1.PieceInfo, loaded bool)
 	}{
 		{
 			name:              "load piece",
@@ -1181,9 +1181,9 @@ func TestTask_LoadPiece(t *testing.T) {
 			backToSourceLimit: mockTaskBackToSourceLimit,
 			pieceInfo:         mockPieceInfo,
 			pieceNum:          mockPieceInfo.PieceNum,
-			expect: func(t *testing.T, piece *commonv1.PieceInfo, ok bool) {
+			expect: func(t *testing.T, piece *commonv1.PieceInfo, loaded bool) {
 				assert := assert.New(t)
-				assert.Equal(ok, true)
+				assert.Equal(loaded, true)
 				assert.Equal(piece.PieceNum, mockPieceInfo.PieceNum)
 			},
 		},
@@ -1195,9 +1195,9 @@ func TestTask_LoadPiece(t *testing.T) {
 			backToSourceLimit: mockTaskBackToSourceLimit,
 			pieceInfo:         mockPieceInfo,
 			pieceNum:          2,
-			expect: func(t *testing.T, piece *commonv1.PieceInfo, ok bool) {
+			expect: func(t *testing.T, piece *commonv1.PieceInfo, loaded bool) {
 				assert := assert.New(t)
-				assert.Equal(ok, false)
+				assert.Equal(loaded, false)
 			},
 		},
 		{
@@ -1208,9 +1208,9 @@ func TestTask_LoadPiece(t *testing.T) {
 			backToSourceLimit: mockTaskBackToSourceLimit,
 			pieceInfo:         mockPieceInfo,
 			pieceNum:          0,
-			expect: func(t *testing.T, piece *commonv1.PieceInfo, ok bool) {
+			expect: func(t *testing.T, piece *commonv1.PieceInfo, loaded bool) {
 				assert := assert.New(t)
-				assert.Equal(ok, false)
+				assert.Equal(loaded, false)
 			},
 		},
 	}
@@ -1220,8 +1220,8 @@ func TestTask_LoadPiece(t *testing.T) {
 			task := NewTask(tc.id, tc.url, commonv1.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 
 			task.StorePiece(tc.pieceInfo)
-			piece, ok := task.LoadPiece(tc.pieceNum)
-			tc.expect(t, piece, ok)
+			piece, loaded := task.LoadPiece(tc.pieceNum)
+			tc.expect(t, piece, loaded)
 		})
 	}
 }
@@ -1235,7 +1235,7 @@ func TestTask_StorePiece(t *testing.T) {
 		backToSourceLimit int32
 		pieceInfo         *commonv1.PieceInfo
 		pieceNum          int32
-		expect            func(t *testing.T, piece *commonv1.PieceInfo, ok bool)
+		expect            func(t *testing.T, piece *commonv1.PieceInfo, loaded bool)
 	}{
 		{
 			name:              "store piece",
@@ -1245,9 +1245,9 @@ func TestTask_StorePiece(t *testing.T) {
 			backToSourceLimit: mockTaskBackToSourceLimit,
 			pieceInfo:         mockPieceInfo,
 			pieceNum:          mockPieceInfo.PieceNum,
-			expect: func(t *testing.T, piece *commonv1.PieceInfo, ok bool) {
+			expect: func(t *testing.T, piece *commonv1.PieceInfo, loaded bool) {
 				assert := assert.New(t)
-				assert.Equal(ok, true)
+				assert.Equal(loaded, true)
 				assert.Equal(piece.PieceNum, mockPieceInfo.PieceNum)
 			},
 		},
@@ -1258,8 +1258,8 @@ func TestTask_StorePiece(t *testing.T) {
 			task := NewTask(tc.id, tc.url, commonv1.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 
 			task.StorePiece(tc.pieceInfo)
-			piece, ok := task.LoadPiece(tc.pieceNum)
-			tc.expect(t, piece, ok)
+			piece, loaded := task.LoadPiece(tc.pieceNum)
+			tc.expect(t, piece, loaded)
 		})
 	}
 }
@@ -1285,8 +1285,8 @@ func TestTask_DeletePiece(t *testing.T) {
 			pieceNum:          mockPieceInfo.PieceNum,
 			expect: func(t *testing.T, task *Task) {
 				assert := assert.New(t)
-				_, ok := task.LoadPiece(mockPieceInfo.PieceNum)
-				assert.Equal(ok, false)
+				_, loaded := task.LoadPiece(mockPieceInfo.PieceNum)
+				assert.Equal(loaded, false)
 			},
 		},
 		{
@@ -1299,8 +1299,8 @@ func TestTask_DeletePiece(t *testing.T) {
 			pieceNum:          0,
 			expect: func(t *testing.T, task *Task) {
 				assert := assert.New(t)
-				piece, ok := task.LoadPiece(mockPieceInfo.PieceNum)
-				assert.Equal(ok, true)
+				piece, loaded := task.LoadPiece(mockPieceInfo.PieceNum)
+				assert.Equal(loaded, true)
 				assert.Equal(piece.PieceNum, mockPieceInfo.PieceNum)
 			},
 		},

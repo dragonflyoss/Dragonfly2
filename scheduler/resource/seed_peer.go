@@ -170,15 +170,15 @@ func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *schedul
 // Initialize seed peer.
 func (s *seedPeer) initSeedPeer(ctx context.Context, task *Task, ps *cdnsystemv1.PieceSeed) (*Peer, error) {
 	// Load peer from manager.
-	peer, ok := s.peerManager.Load(ps.PeerId)
-	if ok {
+	peer, loaded := s.peerManager.Load(ps.PeerId)
+	if loaded {
 		return peer, nil
 	}
 	task.Log.Infof("can not find seed peer: %s", ps.PeerId)
 
 	// Load host from manager.
-	host, ok := s.hostManager.Load(ps.HostId)
-	if !ok {
+	host, loaded := s.hostManager.Load(ps.HostId)
+	if !loaded {
 		task.Log.Errorf("can not find seed host id: %s", ps.HostId)
 		return nil, fmt.Errorf("can not find host id: %s", ps.HostId)
 	}

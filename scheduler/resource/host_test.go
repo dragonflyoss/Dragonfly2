@@ -145,15 +145,15 @@ func TestHost_LoadPeer(t *testing.T) {
 		rawHost *schedulerv1.AnnounceHostRequest
 		peerID  string
 		options []HostOption
-		expect  func(t *testing.T, peer *Peer, ok bool)
+		expect  func(t *testing.T, peer *Peer, loaded bool)
 	}{
 		{
 			name:    "load peer",
 			rawHost: mockRawHost,
 			peerID:  mockPeerID,
-			expect: func(t *testing.T, peer *Peer, ok bool) {
+			expect: func(t *testing.T, peer *Peer, loaded bool) {
 				assert := assert.New(t)
-				assert.Equal(ok, true)
+				assert.Equal(loaded, true)
 				assert.Equal(peer.ID, mockPeerID)
 			},
 		},
@@ -161,18 +161,18 @@ func TestHost_LoadPeer(t *testing.T) {
 			name:    "peer does not exist",
 			rawHost: mockRawHost,
 			peerID:  idgen.PeerID("0.0.0.0"),
-			expect: func(t *testing.T, peer *Peer, ok bool) {
+			expect: func(t *testing.T, peer *Peer, loaded bool) {
 				assert := assert.New(t)
-				assert.Equal(ok, false)
+				assert.Equal(loaded, false)
 			},
 		},
 		{
 			name:    "load key is empty",
 			rawHost: mockRawHost,
 			peerID:  "",
-			expect: func(t *testing.T, peer *Peer, ok bool) {
+			expect: func(t *testing.T, peer *Peer, loaded bool) {
 				assert := assert.New(t)
-				assert.Equal(ok, false)
+				assert.Equal(loaded, false)
 			},
 		},
 	}
@@ -184,8 +184,8 @@ func TestHost_LoadPeer(t *testing.T) {
 			mockPeer := NewPeer(mockPeerID, mockTask, host)
 
 			host.StorePeer(mockPeer)
-			peer, ok := host.LoadPeer(tc.peerID)
-			tc.expect(t, peer, ok)
+			peer, loaded := host.LoadPeer(tc.peerID)
+			tc.expect(t, peer, loaded)
 		})
 	}
 }
@@ -196,15 +196,15 @@ func TestHost_StorePeer(t *testing.T) {
 		rawHost *schedulerv1.AnnounceHostRequest
 		peerID  string
 		options []HostOption
-		expect  func(t *testing.T, peer *Peer, ok bool)
+		expect  func(t *testing.T, peer *Peer, loaded bool)
 	}{
 		{
 			name:    "store peer",
 			rawHost: mockRawHost,
 			peerID:  mockPeerID,
-			expect: func(t *testing.T, peer *Peer, ok bool) {
+			expect: func(t *testing.T, peer *Peer, loaded bool) {
 				assert := assert.New(t)
-				assert.Equal(ok, true)
+				assert.Equal(loaded, true)
 				assert.Equal(peer.ID, mockPeerID)
 			},
 		},
@@ -212,9 +212,9 @@ func TestHost_StorePeer(t *testing.T) {
 			name:    "store key is empty",
 			rawHost: mockRawHost,
 			peerID:  "",
-			expect: func(t *testing.T, peer *Peer, ok bool) {
+			expect: func(t *testing.T, peer *Peer, loaded bool) {
 				assert := assert.New(t)
-				assert.Equal(ok, true)
+				assert.Equal(loaded, true)
 				assert.Equal(peer.ID, "")
 			},
 		},
@@ -227,8 +227,8 @@ func TestHost_StorePeer(t *testing.T) {
 			mockPeer := NewPeer(tc.peerID, mockTask, host)
 
 			host.StorePeer(mockPeer)
-			peer, ok := host.LoadPeer(tc.peerID)
-			tc.expect(t, peer, ok)
+			peer, loaded := host.LoadPeer(tc.peerID)
+			tc.expect(t, peer, loaded)
 		})
 	}
 }
@@ -247,8 +247,8 @@ func TestHost_DeletePeer(t *testing.T) {
 			peerID:  mockPeerID,
 			expect: func(t *testing.T, host *Host) {
 				assert := assert.New(t)
-				_, ok := host.LoadPeer(mockPeerID)
-				assert.Equal(ok, false)
+				_, loaded := host.LoadPeer(mockPeerID)
+				assert.Equal(loaded, false)
 			},
 		},
 		{
@@ -257,8 +257,8 @@ func TestHost_DeletePeer(t *testing.T) {
 			peerID:  "",
 			expect: func(t *testing.T, host *Host) {
 				assert := assert.New(t)
-				peer, ok := host.LoadPeer(mockPeerID)
-				assert.Equal(ok, true)
+				peer, loaded := host.LoadPeer(mockPeerID)
+				assert.Equal(loaded, true)
 				assert.Equal(peer.ID, mockPeerID)
 			},
 		},

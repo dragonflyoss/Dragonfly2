@@ -386,12 +386,12 @@ func (t *Task) IsSeedPeerFailed() bool {
 
 // LoadPiece return piece for a key.
 func (t *Task) LoadPiece(key int32) (*commonv1.PieceInfo, bool) {
-	rawPiece, ok := t.Pieces.Load(key)
-	if !ok {
+	rawPiece, loaded := t.Pieces.Load(key)
+	if !loaded {
 		return nil, false
 	}
 
-	return rawPiece.(*commonv1.PieceInfo), ok
+	return rawPiece.(*commonv1.PieceInfo), loaded
 }
 
 // StorePiece set piece.
@@ -448,8 +448,8 @@ func (t *Task) NotifyPeers(peerPacket *schedulerv1.PeerPacket, event string) {
 		}
 
 		if peer.FSM.Is(PeerStateRunning) {
-			stream, ok := peer.LoadStream()
-			if !ok {
+			stream, loaded := peer.LoadStream()
+			if !loaded {
 				continue
 			}
 
