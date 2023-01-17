@@ -42,6 +42,9 @@ import (
 
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
+	// register all source clients
+	_ "d7y.io/dragonfly/v2/pkg/source/loader"
+
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/announcer"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
@@ -111,6 +114,11 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	// update plugin directory
 	source.UpdatePluginDir(d.PluginDir())
 
+	err := source.InitSourceClients(opt.Download.ResourceClients)
+	if err != nil {
+		return nil, err
+	}
+
 	host := &schedulerv1.PeerHost{
 		Id:             idgen.HostID(opt.Host.Hostname, int32(opt.Download.PeerGRPC.TCPListen.PortRange.Start)),
 		Ip:             opt.Host.AdvertiseIP.String(),
@@ -130,10 +138,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	)
 
 	if opt.Scheduler.Manager.Enable {
-		var (
-			grpcCredentials credentials.TransportCredentials
-			err             error
-		)
+		var grpcCredentials credentials.TransportCredentials
 
 		if opt.Security.CACert == "" {
 			grpcCredentials = insecure.NewCredentials()
@@ -173,7 +178,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			}
 
 			// issue a certificate to reduce first time delay
-			if _, err := certifyClient.GetCertificate(&tls.ClientHelloInfo{
+			if _, err = certifyClient.GetCertificate(&tls.ClientHelloInfo{
 				ServerName: ip.IPv4.String(),
 			}); err != nil {
 				logger.Errorf("issue certificate error: %s", err.Error())
@@ -182,10 +187,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		}
 	}
 
-	var (
-		grpcCredentials credentials.TransportCredentials
-		err             error
-	)
+	var grpcCredentials credentials.TransportCredentials
 	if certifyClient == nil {
 		grpcCredentials = insecure.NewCredentials()
 	} else {

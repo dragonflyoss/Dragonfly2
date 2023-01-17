@@ -229,6 +229,12 @@ func runDfget(dfgetLockPath, daemonSockPath string) error {
 		err            error
 	)
 
+	// TODO load source client config
+	err = source.InitSourceClients(map[string]interface{}{})
+	if err != nil {
+		return err
+	}
+
 	logger.Info("start to check and spawn daemon")
 	if dfdaemonClient, err = checkAndSpawnDaemon(dfgetLockPath, daemonSockPath); err != nil {
 		logger.Errorf("check and spawn daemon error: %v", err)
