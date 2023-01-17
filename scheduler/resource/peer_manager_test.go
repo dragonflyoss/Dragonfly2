@@ -94,8 +94,8 @@ func TestPeerManager_Load(t *testing.T) {
 			expect: func(t *testing.T, peerManager PeerManager, mockPeer *Peer) {
 				assert := assert.New(t)
 				peerManager.Store(mockPeer)
-				peer, ok := peerManager.Load(mockPeer.ID)
-				assert.Equal(ok, true)
+				peer, loaded := peerManager.Load(mockPeer.ID)
+				assert.Equal(loaded, true)
 				assert.Equal(peer.ID, mockPeer.ID)
 			},
 		},
@@ -106,8 +106,8 @@ func TestPeerManager_Load(t *testing.T) {
 			},
 			expect: func(t *testing.T, peerManager PeerManager, mockPeer *Peer) {
 				assert := assert.New(t)
-				_, ok := peerManager.Load(mockPeer.ID)
-				assert.Equal(ok, false)
+				_, loaded := peerManager.Load(mockPeer.ID)
+				assert.Equal(loaded, false)
 			},
 		},
 		{
@@ -119,8 +119,8 @@ func TestPeerManager_Load(t *testing.T) {
 				assert := assert.New(t)
 				mockPeer.ID = ""
 				peerManager.Store(mockPeer)
-				peer, ok := peerManager.Load(mockPeer.ID)
-				assert.Equal(ok, true)
+				peer, loaded := peerManager.Load(mockPeer.ID)
+				assert.Equal(loaded, true)
 				assert.Equal(peer.ID, mockPeer.ID)
 			},
 		},
@@ -160,8 +160,8 @@ func TestPeerManager_Store(t *testing.T) {
 			expect: func(t *testing.T, peerManager PeerManager, mockPeer *Peer) {
 				assert := assert.New(t)
 				peerManager.Store(mockPeer)
-				peer, ok := peerManager.Load(mockPeer.ID)
-				assert.Equal(ok, true)
+				peer, loaded := peerManager.Load(mockPeer.ID)
+				assert.Equal(loaded, true)
 				assert.Equal(peer.ID, mockPeer.ID)
 			},
 		},
@@ -174,8 +174,8 @@ func TestPeerManager_Store(t *testing.T) {
 				assert := assert.New(t)
 				mockPeer.ID = ""
 				peerManager.Store(mockPeer)
-				peer, ok := peerManager.Load(mockPeer.ID)
-				assert.Equal(ok, true)
+				peer, loaded := peerManager.Load(mockPeer.ID)
+				assert.Equal(loaded, true)
 				assert.Equal(peer.ID, mockPeer.ID)
 			},
 		},
@@ -215,8 +215,8 @@ func TestPeerManager_LoadOrStore(t *testing.T) {
 			expect: func(t *testing.T, peerManager PeerManager, mockPeer *Peer) {
 				assert := assert.New(t)
 				peerManager.Store(mockPeer)
-				peer, ok := peerManager.LoadOrStore(mockPeer)
-				assert.Equal(ok, true)
+				peer, loaded := peerManager.LoadOrStore(mockPeer)
+				assert.Equal(loaded, true)
 				assert.Equal(peer.ID, mockPeer.ID)
 			},
 		},
@@ -227,8 +227,8 @@ func TestPeerManager_LoadOrStore(t *testing.T) {
 			},
 			expect: func(t *testing.T, peerManager PeerManager, mockPeer *Peer) {
 				assert := assert.New(t)
-				peer, ok := peerManager.LoadOrStore(mockPeer)
-				assert.Equal(ok, false)
+				peer, loaded := peerManager.LoadOrStore(mockPeer)
+				assert.Equal(loaded, false)
 				assert.Equal(peer.ID, mockPeer.ID)
 			},
 		},
@@ -269,8 +269,8 @@ func TestPeerManager_Delete(t *testing.T) {
 				assert := assert.New(t)
 				peerManager.Store(mockPeer)
 				peerManager.Delete(mockPeer.ID)
-				_, ok := peerManager.Load(mockPeer.ID)
-				assert.Equal(ok, false)
+				_, loaded := peerManager.Load(mockPeer.ID)
+				assert.Equal(loaded, false)
 			},
 		},
 		{
@@ -283,8 +283,8 @@ func TestPeerManager_Delete(t *testing.T) {
 				mockPeer.ID = ""
 				peerManager.Store(mockPeer)
 				peerManager.Delete(mockPeer.ID)
-				_, ok := peerManager.Load(mockPeer.ID)
-				assert.Equal(ok, false)
+				_, loaded := peerManager.Load(mockPeer.ID)
+				assert.Equal(loaded, false)
 			},
 		},
 	}
@@ -333,8 +333,8 @@ func TestPeerManager_RunGC(t *testing.T) {
 				err := peerManager.RunGC()
 				assert.NoError(err)
 
-				peer, ok := peerManager.Load(mockPeer.ID)
-				assert.Equal(ok, true)
+				peer, loaded := peerManager.Load(mockPeer.ID)
+				assert.Equal(loaded, true)
 				assert.Equal(peer.FSM.Current(), PeerStateLeave)
 			},
 		},
@@ -355,15 +355,15 @@ func TestPeerManager_RunGC(t *testing.T) {
 				err := peerManager.RunGC()
 				assert.NoError(err)
 
-				peer, ok := peerManager.Load(mockPeer.ID)
-				assert.Equal(ok, true)
+				peer, loaded := peerManager.Load(mockPeer.ID)
+				assert.Equal(loaded, true)
 				assert.Equal(peer.FSM.Current(), PeerStateLeave)
 
 				err = peerManager.RunGC()
 				assert.NoError(err)
 
-				_, ok = peerManager.Load(mockPeer.ID)
-				assert.Equal(ok, false)
+				_, loaded = peerManager.Load(mockPeer.ID)
+				assert.Equal(loaded, false)
 			},
 		},
 		{
@@ -383,15 +383,15 @@ func TestPeerManager_RunGC(t *testing.T) {
 				err := peerManager.RunGC()
 				assert.NoError(err)
 
-				peer, ok := peerManager.Load(mockPeer.ID)
-				assert.Equal(ok, true)
+				peer, loaded := peerManager.Load(mockPeer.ID)
+				assert.Equal(loaded, true)
 				assert.Equal(peer.FSM.Current(), PeerStateLeave)
 
 				err = peerManager.RunGC()
 				assert.NoError(err)
 
-				_, ok = peerManager.Load(mockPeer.ID)
-				assert.Equal(ok, false)
+				_, loaded = peerManager.Load(mockPeer.ID)
+				assert.Equal(loaded, false)
 			},
 		},
 		{
@@ -411,15 +411,15 @@ func TestPeerManager_RunGC(t *testing.T) {
 				err := peerManager.RunGC()
 				assert.NoError(err)
 
-				peer, ok := peerManager.Load(mockPeer.ID)
-				assert.Equal(ok, true)
+				peer, loaded := peerManager.Load(mockPeer.ID)
+				assert.Equal(loaded, true)
 				assert.Equal(peer.FSM.Current(), PeerStateLeave)
 
 				err = peerManager.RunGC()
 				assert.NoError(err)
 
-				_, ok = peerManager.Load(mockPeer.ID)
-				assert.Equal(ok, false)
+				_, loaded = peerManager.Load(mockPeer.ID)
+				assert.Equal(loaded, false)
 			},
 		},
 		{
@@ -439,8 +439,8 @@ func TestPeerManager_RunGC(t *testing.T) {
 				err := peerManager.RunGC()
 				assert.NoError(err)
 
-				peer, ok := peerManager.Load(mockPeer.ID)
-				assert.Equal(ok, true)
+				peer, loaded := peerManager.Load(mockPeer.ID)
+				assert.Equal(loaded, true)
 				assert.Equal(peer.FSM.Current(), PeerStateLeave)
 			},
 		},
@@ -463,8 +463,8 @@ func TestPeerManager_RunGC(t *testing.T) {
 				err := peerManager.RunGC()
 				assert.NoError(err)
 
-				_, ok := peerManager.Load(mockPeer.ID)
-				assert.Equal(ok, false)
+				_, loaded := peerManager.Load(mockPeer.ID)
+				assert.Equal(loaded, false)
 			},
 		},
 		{
@@ -489,8 +489,8 @@ func TestPeerManager_RunGC(t *testing.T) {
 				err := peerManager.RunGC()
 				assert.NoError(err)
 
-				peer, ok := peerManager.Load(mockPeer.ID)
-				assert.Equal(ok, true)
+				peer, loaded := peerManager.Load(mockPeer.ID)
+				assert.Equal(loaded, true)
 				assert.Equal(peer.FSM.Current(), PeerStateLeave)
 			},
 		},

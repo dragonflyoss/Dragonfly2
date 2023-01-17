@@ -80,8 +80,8 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 		peer.Log.Infof("peer needs to back-to-source: %t", needBackToSource)
 		if (n >= s.config.RetryBackToSourceLimit || needBackToSource) &&
 			peer.Task.CanBackToSource() {
-			stream, ok := peer.LoadStream()
-			if !ok {
+			stream, loaded := peer.LoadStream()
+			if !loaded {
 				peer.Log.Error("load stream failed")
 				return
 			}
@@ -112,8 +112,8 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 
 		// Handle peer schedule failed.
 		if n >= s.config.RetryLimit {
-			stream, ok := peer.LoadStream()
-			if !ok {
+			stream, loaded := peer.LoadStream()
+			if !loaded {
 				peer.Log.Error("load stream failed")
 				return
 			}
@@ -193,8 +193,8 @@ func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer
 	}
 
 	// Send scheduling success message.
-	stream, ok := peer.LoadStream()
-	if !ok {
+	stream, loaded := peer.LoadStream()
+	if !loaded {
 		peer.Log.Error("load peer stream failed")
 		return []*resource.Peer{}, false
 	}
