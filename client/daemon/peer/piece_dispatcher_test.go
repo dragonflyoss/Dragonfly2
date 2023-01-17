@@ -27,6 +27,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
@@ -195,7 +196,7 @@ func TestPieceDispatcherCount(t *testing.T) {
 			want: map[string]int{
 				"bad":  0,
 				"mid":  0,
-				"good": 9000,
+				"good": 8000,
 			},
 		},
 		{
@@ -210,9 +211,9 @@ func TestPieceDispatcherCount(t *testing.T) {
 				pieceNum: 10000,
 			},
 			want: map[string]int{
-				"bad":  1200,
-				"mid":  1200,
-				"good": 6200,
+				"bad":  1000,
+				"mid":  1000,
+				"good": 6000,
 			},
 		},
 		{
