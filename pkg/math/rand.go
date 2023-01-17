@@ -54,3 +54,8 @@ func RandBackoffSeconds(initBackoff float64, maxBackoff float64, base float64, e
 	m := math.Max(initBackoff, rand.Float64()*math.Min(math.Pow(base, float64(exp))*initBackoff, maxBackoff))
 	return time.Duration(m * float64(time.Second))
 }
+
+// RandomJitter jitter is the factor how input is randomized, it should be in [0,1]
+func RandomJitter(input time.Duration, jitter float64) time.Duration {
+	return time.Duration(float64(input) * (1 + jitter*(rand.Float64()*2-1)))
+}

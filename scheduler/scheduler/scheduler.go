@@ -20,6 +20,7 @@ package scheduler
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/pkg/math"
 	"sort"
 	"time"
 
@@ -132,7 +133,7 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 			peer.Log.Infof("schedule parent failed in %d times ", n)
 
 			// Sleep to avoid hot looping.
-			time.Sleep(s.config.RetryInterval)
+			time.Sleep(math.RandomJitter(s.config.RetryInterval, 0.3))
 			continue
 		}
 
