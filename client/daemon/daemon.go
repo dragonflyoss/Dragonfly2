@@ -68,9 +68,7 @@ import (
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	securityclient "d7y.io/dragonfly/v2/pkg/rpc/security/client"
 	"d7y.io/dragonfly/v2/pkg/source"
-
-	// register all source clients
-	_ "d7y.io/dragonfly/v2/pkg/source/loader" // nolint
+	_ "d7y.io/dragonfly/v2/pkg/source/loader" // register all source clients
 	"d7y.io/dragonfly/v2/pkg/types"
 )
 
