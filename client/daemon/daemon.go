@@ -115,7 +115,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	// update plugin directory
 	source.UpdatePluginDir(d.PluginDir())
 
-	// FIXME the viper casts all case sensitive keys into lower case, but the resource client is map[string]interface, it should not be casted.
+	// FIXME the viper casts all case sensitive keys into lower case, but the resource clients option is map[string]interface{}, it should not be casted.
 	// issue: https://github.com/spf13/viper/issues/1014
 	tmpOpt := config.NewDaemonConfig()
 	err := tmpOpt.Load(viper.ConfigFileUsed())
