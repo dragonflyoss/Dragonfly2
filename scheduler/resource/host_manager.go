@@ -74,12 +74,12 @@ func newHostManager(cfg *config.GCConfig, gc pkggc.GC) (HostManager, error) {
 }
 
 func (h *hostManager) Load(key string) (*Host, bool) {
-	rawHost, ok := h.Map.Load(key)
-	if !ok {
+	rawHost, loaded := h.Map.Load(key)
+	if !loaded {
 		return nil, false
 	}
 
-	return rawHost.(*Host), ok
+	return rawHost.(*Host), loaded
 }
 
 func (h *hostManager) Store(host *Host) {

@@ -92,8 +92,8 @@ func TestTaskManager_Load(t *testing.T) {
 			expect: func(t *testing.T, taskManager TaskManager, mockTask *Task) {
 				assert := assert.New(t)
 				taskManager.Store(mockTask)
-				task, ok := taskManager.Load(mockTask.ID)
-				assert.Equal(ok, true)
+				task, loaded := taskManager.Load(mockTask.ID)
+				assert.Equal(loaded, true)
 				assert.Equal(task.ID, mockTask.ID)
 			},
 		},
@@ -104,8 +104,8 @@ func TestTaskManager_Load(t *testing.T) {
 			},
 			expect: func(t *testing.T, taskManager TaskManager, mockTask *Task) {
 				assert := assert.New(t)
-				_, ok := taskManager.Load(mockTask.ID)
-				assert.Equal(ok, false)
+				_, loaded := taskManager.Load(mockTask.ID)
+				assert.Equal(loaded, false)
 			},
 		},
 		{
@@ -117,8 +117,8 @@ func TestTaskManager_Load(t *testing.T) {
 				assert := assert.New(t)
 				mockTask.ID = ""
 				taskManager.Store(mockTask)
-				task, ok := taskManager.Load(mockTask.ID)
-				assert.Equal(ok, true)
+				task, loaded := taskManager.Load(mockTask.ID)
+				assert.Equal(loaded, true)
 				assert.Equal(task.ID, mockTask.ID)
 			},
 		},
@@ -156,8 +156,8 @@ func TestTaskManager_Store(t *testing.T) {
 			expect: func(t *testing.T, taskManager TaskManager, mockTask *Task) {
 				assert := assert.New(t)
 				taskManager.Store(mockTask)
-				task, ok := taskManager.Load(mockTask.ID)
-				assert.Equal(ok, true)
+				task, loaded := taskManager.Load(mockTask.ID)
+				assert.Equal(loaded, true)
 				assert.Equal(task.ID, mockTask.ID)
 			},
 		},
@@ -170,8 +170,8 @@ func TestTaskManager_Store(t *testing.T) {
 				assert := assert.New(t)
 				mockTask.ID = ""
 				taskManager.Store(mockTask)
-				task, ok := taskManager.Load(mockTask.ID)
-				assert.Equal(ok, true)
+				task, loaded := taskManager.Load(mockTask.ID)
+				assert.Equal(loaded, true)
 				assert.Equal(task.ID, mockTask.ID)
 			},
 		},
@@ -209,8 +209,8 @@ func TestTaskManager_LoadOrStore(t *testing.T) {
 			expect: func(t *testing.T, taskManager TaskManager, mockTask *Task) {
 				assert := assert.New(t)
 				taskManager.Store(mockTask)
-				task, ok := taskManager.LoadOrStore(mockTask)
-				assert.Equal(ok, true)
+				task, loaded := taskManager.LoadOrStore(mockTask)
+				assert.Equal(loaded, true)
 				assert.Equal(task.ID, mockTask.ID)
 			},
 		},
@@ -221,8 +221,8 @@ func TestTaskManager_LoadOrStore(t *testing.T) {
 			},
 			expect: func(t *testing.T, taskManager TaskManager, mockTask *Task) {
 				assert := assert.New(t)
-				task, ok := taskManager.LoadOrStore(mockTask)
-				assert.Equal(ok, false)
+				task, loaded := taskManager.LoadOrStore(mockTask)
+				assert.Equal(loaded, false)
 				assert.Equal(task.ID, mockTask.ID)
 			},
 		},
@@ -261,8 +261,8 @@ func TestTaskManager_Delete(t *testing.T) {
 				assert := assert.New(t)
 				taskManager.Store(mockTask)
 				taskManager.Delete(mockTask.ID)
-				_, ok := taskManager.Load(mockTask.ID)
-				assert.Equal(ok, false)
+				_, loaded := taskManager.Load(mockTask.ID)
+				assert.Equal(loaded, false)
 			},
 		},
 		{
@@ -275,8 +275,8 @@ func TestTaskManager_Delete(t *testing.T) {
 				mockTask.ID = ""
 				taskManager.Store(mockTask)
 				taskManager.Delete(mockTask.ID)
-				_, ok := taskManager.Load(mockTask.ID)
-				assert.Equal(ok, false)
+				_, loaded := taskManager.Load(mockTask.ID)
+				assert.Equal(loaded, false)
 			},
 		},
 	}
@@ -316,14 +316,14 @@ func TestTaskManager_RunGC(t *testing.T) {
 				err := taskManager.RunGC()
 				assert.NoError(err)
 
-				task, ok := taskManager.Load(mockTask.ID)
-				assert.Equal(ok, true)
+				task, loaded := taskManager.Load(mockTask.ID)
+				assert.Equal(loaded, true)
 				assert.Equal(task.FSM.Current(), TaskStateLeave)
 
 				err = taskManager.RunGC()
 				assert.NoError(err)
-				_, ok = taskManager.Load(mockTask.ID)
-				assert.Equal(ok, false)
+				_, loaded = taskManager.Load(mockTask.ID)
+				assert.Equal(loaded, false)
 			},
 		},
 		{
@@ -338,8 +338,8 @@ func TestTaskManager_RunGC(t *testing.T) {
 				err := taskManager.RunGC()
 				assert.NoError(err)
 
-				task, ok := taskManager.Load(mockTask.ID)
-				assert.Equal(ok, true)
+				task, loaded := taskManager.Load(mockTask.ID)
+				assert.Equal(loaded, true)
 				assert.Equal(task.ID, mockTask.ID)
 				assert.Equal(task.FSM.Current(), TaskStatePending)
 			},
