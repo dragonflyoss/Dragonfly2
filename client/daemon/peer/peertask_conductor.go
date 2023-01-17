@@ -1093,7 +1093,6 @@ func (pt *peerTaskConductor) waitLimit(ctx context.Context, request *DownloadPie
 		PieceInfo:     request.piece,
 		Success:       false,
 		Code:          commonv1.Code_ClientRequestLimitFail,
-		HostLoad:      nil,
 		FinishedCount: 0, // update by peer task
 	})
 	if sendError != nil {
@@ -1206,7 +1205,6 @@ func (pt *peerTaskConductor) reportSuccessResult(request *DownloadPieceRequest, 
 			EndTime:       uint64(result.FinishTime),
 			Success:       true,
 			Code:          commonv1.Code_Success,
-			HostLoad:      nil, // TODO(jim): update PeerHost load
 			FinishedCount: pt.readyPieces.Settled(),
 			// TODO range_start, range_size, piece_md5, piece_offset, piece_style
 		})
@@ -1232,7 +1230,6 @@ func (pt *peerTaskConductor) reportFailResult(request *DownloadPieceRequest, res
 		EndTime:       uint64(result.FinishTime),
 		Success:       false,
 		Code:          code,
-		HostLoad:      nil,
 		FinishedCount: pt.readyPieces.Settled(),
 	})
 	if err != nil {

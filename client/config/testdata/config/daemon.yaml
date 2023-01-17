@@ -37,7 +37,6 @@ host:
   location: 0.0.0.0
   idc: d7y
   securityDomain: d7y.io
-  netTopology: d7y
 
 download:
   calculateDigest: true

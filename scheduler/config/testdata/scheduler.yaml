@@ -32,7 +32,6 @@ dynConfig:
 
 host:
   idc: foo
-  netTopology: bar
   location: baz
 
 manager:

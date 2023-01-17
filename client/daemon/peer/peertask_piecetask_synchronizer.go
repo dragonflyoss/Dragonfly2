@@ -197,7 +197,6 @@ func compositePieceResult(peerTaskConductor *peerTaskConductor, destPeer *schedu
 		PieceInfo:     &commonv1.PieceInfo{},
 		Success:       false,
 		Code:          code,
-		HostLoad:      nil,
 		FinishedCount: peerTaskConductor.readyPieces.Settled(),
 	}
 }

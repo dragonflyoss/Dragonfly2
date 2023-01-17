@@ -81,8 +81,8 @@ func NewV1(
 
 // RegisterPeerTask registers peer and triggers seed peer download task.
 func (v *V1) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest) (*schedulerv1.RegisterResult, error) {
-	logger.WithPeer(req.PeerHost.Id, req.TaskId, req.PeerId).Infof("register peer task request: %#v %#v %#v",
-		req, req.UrlMeta, req.HostLoad)
+	logger.WithPeer(req.PeerHost.Id, req.TaskId, req.PeerId).Infof("register peer task request: %#v %#v",
+		req, req.UrlMeta)
 
 	// Store resource.
 	task := v.storeTask(ctx, req, commonv1.TaskType_Normal)
@@ -609,7 +609,6 @@ func (v *V1) storeHost(ctx context.Context, peerHost *schedulerv1.PeerHost) *res
 				SecurityDomain: peerHost.SecurityDomain,
 				Location:       peerHost.Location,
 				Idc:            peerHost.Idc,
-				NetTopology:    peerHost.NetTopology,
 			},
 		}, options...)
 		v.resource.HostManager().Store(host)
@@ -1116,7 +1115,6 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 				SecurityDomain:           parent.Host.Network.SecurityDomain,
 				Location:                 parent.Host.Network.Location,
 				IDC:                      parent.Host.Network.Idc,
-				NetTopology:              parent.Host.Network.NetTopology,
 			}
 		}
 
@@ -1232,7 +1230,6 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 			SecurityDomain:           peer.Host.Network.SecurityDomain,
 			Location:                 peer.Host.Network.Location,
 			IDC:                      peer.Host.Network.Idc,
-			NetTopology:              peer.Host.Network.NetTopology,
 		}
 	}
 

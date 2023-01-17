@@ -63,7 +63,6 @@ func New(cfg *config.Config, managerClient managerclient.V1) (Announcer, error) 
 		Port:               int32(a.config.Server.Port),
 		Idc:                a.config.Host.IDC,
 		Location:           a.config.Host.Location,
-		NetTopology:        a.config.Host.NetTopology,
 		SchedulerClusterId: uint64(a.config.Manager.SchedulerClusterID),
 	}); err != nil {
 		return nil, err

@@ -95,7 +95,6 @@ var (
 			SecurityDomain:           "product",
 			Location:                 "china",
 			IDC:                      "e1",
-			NetTopology:              "s1|s2",
 		},
 		Disk: Disk{
 			Total:             100,

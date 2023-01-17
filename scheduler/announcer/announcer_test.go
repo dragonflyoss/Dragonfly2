@@ -44,9 +44,8 @@ func TestAnnouncer_New(t *testing.T) {
 					Port:        8080,
 				},
 				Host: config.HostConfig{
-					IDC:         "foo",
-					Location:    "bar",
-					NetTopology: "baz",
+					IDC:      "foo",
+					Location: "bar",
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -72,9 +71,8 @@ func TestAnnouncer_New(t *testing.T) {
 					Port:        8080,
 				},
 				Host: config.HostConfig{
-					IDC:         "foo",
-					Location:    "bar",
-					NetTopology: "baz",
+					IDC:      "foo",
+					Location: "bar",
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,

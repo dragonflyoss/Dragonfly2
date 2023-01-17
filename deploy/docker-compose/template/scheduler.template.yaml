@@ -70,8 +70,6 @@ dynConfig:
 host:
   # idc is the idc of scheduler instance.
   idc: ''
-  # netTopology is the net topology of scheduler instance.
-  netTopology: ''
   # location is the location of scheduler instance.
   location: ''
 

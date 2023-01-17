@@ -61,7 +61,6 @@ var peerHostConfig = func() *DaemonOption {
 			SecurityDomain: "",
 			Location:       "",
 			IDC:            "",
-			NetTopology:    "",
 		},
 		Download: DownloadOption{
 			CalculateDigest:      true,
