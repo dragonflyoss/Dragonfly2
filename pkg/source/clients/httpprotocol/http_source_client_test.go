@@ -135,6 +135,8 @@ func (suite *HTTPSourceClientTestSuite) SetupTest() {
 func (suite *HTTPSourceClientTestSuite) TestNewHTTPSourceClient() {
 	var sourceClient source.ResourceClient
 	sourceClient = NewHTTPSourceClient()
+	suite.Equal(http.DefaultClient, sourceClient.(*httpSourceClient).httpClient)
+	suite.EqualValues(*http.DefaultClient, *sourceClient.(*httpSourceClient).httpClient)
 
 	expectedHTTPClient := &http.Client{}
 	sourceClient = NewHTTPSourceClient(WithHTTPClient(expectedHTTPClient))

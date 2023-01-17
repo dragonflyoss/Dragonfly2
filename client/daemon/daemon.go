@@ -42,9 +42,6 @@ import (
 
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
-	// register all source clients
-	_ "d7y.io/dragonfly/v2/pkg/source/loader"
-
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/announcer"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
@@ -70,6 +67,8 @@ import (
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	securityclient "d7y.io/dragonfly/v2/pkg/rpc/security/client"
 	"d7y.io/dragonfly/v2/pkg/source"
+	// register all source clients
+	_ "d7y.io/dragonfly/v2/pkg/source/loader" // nolint
 	"d7y.io/dragonfly/v2/pkg/types"
 )
 
