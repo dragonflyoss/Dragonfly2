@@ -17,15 +17,17 @@
 package peer
 
 import (
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"github.com/stretchr/testify/assert"
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 	"math/rand"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
+
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 type peerDesc struct {
