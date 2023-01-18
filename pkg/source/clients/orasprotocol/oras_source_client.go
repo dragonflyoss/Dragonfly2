@@ -1,10 +1,26 @@
+/*
+ *     Copyright 2023 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package orasprotocol
 
 import (
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -22,10 +38,7 @@ const (
 	authFilePath     = "/.singularity/docker-config.json"
 )
 
-var (
-	_defaultHTTPClient *http.Client
-	_                  source.ResourceClient = (*orasSourceClient)(nil)
-)
+var _ source.ResourceClient = (*orasSourceClient)(nil)
 
 type Blob struct {
 	Digest string `json:"digest"`
@@ -36,18 +49,19 @@ type Manifest struct {
 }
 
 func init() {
-	_defaultHTTPClient = &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
+	source.RegisterBuilder(scheme, source.NewPlainResourceClientBuilder(Builder))
+}
+
+func Builder(optionYaml []byte) (source.ResourceClient, source.RequestAdapter, []source.Hook, error) {
+	var httpClient *http.Client
+	httpClient, err := source.ParseToHTTPClient(optionYaml)
+	if err != nil {
+		return nil, nil, nil, err
 	}
 	client := &orasSourceClient{
-		httpClient: _defaultHTTPClient,
+		httpClient: httpClient,
 	}
-	if err := source.Register(scheme, client, client.adaptor); err != nil {
-		panic(err)
-	}
-
+	return client, client.adaptor, nil, nil
 }
 
 func (client *orasSourceClient) adaptor(request *source.Request) *source.Request {
@@ -92,7 +106,6 @@ func (client *orasSourceClient) Download(request *source.Request) (*source.Respo
 		return nil, err
 	}
 	return imageFetchResponse, nil
-
 }
 
 func (client *orasSourceClient) fetchToken(request *source.Request, path string) (string, error) {
@@ -100,8 +113,8 @@ func (client *orasSourceClient) fetchToken(request *source.Request, path string)
 	var err error
 	tokenFetchURL := fmt.Sprintf("https://%s/service/token/?scope=repository:%s:pull&service=harbor-registry", request.URL.Host, path)
 	if fileExists(os.Getenv("HOME") + authFilePath) {
-		var auth string = ""
-		databytes, err := ioutil.ReadFile(os.Getenv("HOME") + authFilePath)
+		var auth string
+		databytes, err := os.ReadFile(os.Getenv("HOME") + authFilePath)
 		if err != nil {
 			return "", err
 		}
@@ -123,13 +136,11 @@ func (client *orasSourceClient) fetchToken(request *source.Request, path string)
 		if err != nil {
 			return "", err
 		}
-
 	} else {
 		response, err = client.doRequest(request, "", "", tokenFetchURL)
 		if err != nil {
 			return "", err
 		}
-
 	}
 	token, err := ioutil.ReadAll(response.Body)
 	if err != nil {
@@ -145,32 +156,31 @@ func (client *orasSourceClient) fetchToken(request *source.Request, path string)
 	return tokenVal, nil
 }
 
-func (client *orasSourceClient) fetchManifest(request *source.Request, accesstoken, path, tag string) (string, error) {
+func (client *orasSourceClient) fetchManifest(request *source.Request, accessToken, path, tag string) (string, error) {
 	var sha string
-	var bloblayers Manifest
+	var blobLayers Manifest
 	manifestFetchURL := fmt.Sprintf("https://%s/v2/%s/manifests/%s", request.URL.Host, path, tag)
-	authHeaderVal := "Bearer " + accesstoken
+	authHeaderVal := "Bearer " + accessToken
 	resp, err := client.doRequest(request, ociAcceptHeader, authHeaderVal, manifestFetchURL)
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
-	manifest, err := ioutil.ReadAll(resp.Body)
+	manifest, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
-	if err := json.Unmarshal(manifest, &bloblayers); err != nil {
+	if err := json.Unmarshal(manifest, &blobLayers); err != nil {
 		return "", err
 	}
-	for _, value := range bloblayers.Layers {
-		sha = string(value.Digest)
+	for _, value := range blobLayers.Layers {
+		sha = value.Digest
 	}
 	if sha != "" {
 		logger.Info(fmt.Sprintf("fetching manifests for %s  successful", request.URL))
 		return sha, nil
 	}
 	return "", errors.New("manifest is empty")
-
 }
 
 func (client *orasSourceClient) fetchImage(request *source.Request, token, sha256, path, tag string) (*source.Response, error) {
@@ -184,15 +194,14 @@ func (client *orasSourceClient) fetchImage(request *source.Request, token, sha25
 	return source.NewResponse(resp.Body), nil
 }
 
-func (client *orasSourceClient) doRequest(request *source.Request, acceptHeaderVal, authHeaderVal, myurl string) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(request.Context(), http.MethodGet, myurl, nil)
+func (client *orasSourceClient) doRequest(request *source.Request, acceptHeaderVal, authHeaderVal, url string) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(request.Context(), http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
 	if authHeaderVal != "" {
 		req.Header.Add("Accept", acceptHeaderVal)
 		req.Header.Add("Authorization", authHeaderVal)
-
 	}
 	resp, err := client.httpClient.Do(req)
 	if err != nil {
@@ -207,7 +216,6 @@ func fileExists(filepath string) bool {
 		return false
 	}
 	return true
-
 }
 
 func parseURL(request *source.Request, urlPath string) (string, string, error) {
@@ -222,7 +230,6 @@ func parseURL(request *source.Request, urlPath string) (string, string, error) {
 	path := strings.TrimPrefix(r[1], "/")
 	tag := r[2]
 	return path, tag, nil
-
 }
 
 func (client *orasSourceClient) GetLastModified(request *source.Request) (int64, error) {

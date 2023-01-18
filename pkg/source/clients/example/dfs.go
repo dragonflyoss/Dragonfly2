@@ -31,9 +31,11 @@ type client struct {
 }
 
 func init() {
-	if err := source.Register(scheme, New(), nil); err != nil {
-		panic(err)
-	}
+	source.RegisterBuilder(scheme, source.NewPlainResourceClientBuilder(Builder))
+}
+
+func Builder(optionYaml []byte) (source.ResourceClient, source.RequestAdapter, []source.Hook, error) {
+	return New(), nil, nil, nil
 }
 
 func New() source.ResourceClient {

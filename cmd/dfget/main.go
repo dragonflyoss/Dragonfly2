@@ -18,8 +18,6 @@ package main
 
 import (
 	"d7y.io/dragonfly/v2/cmd/dfget/cmd"
-	// register all source clients
-	_ "d7y.io/dragonfly/v2/pkg/source/loader"
 )
 
 func main() {

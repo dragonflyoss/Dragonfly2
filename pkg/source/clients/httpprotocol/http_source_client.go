@@ -17,13 +17,9 @@
 package httpprotocol
 
 import (
-	"crypto/tls"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
-	"net/url"
-	"os"
 	"regexp"
 	"strconv"
 	"time"
@@ -37,13 +33,10 @@ import (
 const (
 	HTTPClient  = "http"
 	HTTPSClient = "https"
-
-	ProxyEnv = "D7Y_SOURCE_PROXY"
 )
 
 var (
-	_defaultHTTPClient *http.Client
-	_                  source.ResourceClient = (*httpSourceClient)(nil)
+	_ source.ResourceClient = (*httpSourceClient)(nil)
 
 	// Syntax:
 	//   Content-Range: <unit> <range-start>-<range-end>/<size> -> Done
@@ -61,48 +54,18 @@ var (
 )
 
 func init() {
-	// TODO support customize source client
-	var (
-		proxy *url.URL
-		err   error
-	)
-	if proxyEnv := os.Getenv(ProxyEnv); len(proxyEnv) > 0 {
-		proxy, err = url.Parse(proxyEnv)
-		if err != nil {
-			fmt.Printf("Back source proxy parse error: %s\n", err)
-		}
-	}
+	source.RegisterBuilder(HTTPClient, source.NewPlainResourceClientBuilder(Builder))
+	source.RegisterBuilder(HTTPSClient, source.NewPlainResourceClientBuilder(Builder))
+}
 
-	transport := &http.Transport{
-		DialContext: (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
-			DualStack: true,
-		}).DialContext,
-		IdleConnTimeout:       90 * time.Second,
-		ResponseHeaderTimeout: 30 * time.Second,
-		ExpectContinueTimeout: 10 * time.Second,
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
+func Builder(optionYaml []byte) (source.ResourceClient, source.RequestAdapter, []source.Hook, error) {
+	var httpClient *http.Client
+	httpClient, err := source.ParseToHTTPClient(optionYaml)
+	if err != nil {
+		return nil, nil, nil, err
 	}
-
-	if proxy != nil {
-		transport.Proxy = http.ProxyURL(proxy)
-	}
-
-	_defaultHTTPClient = &http.Client{
-		Transport: transport,
-	}
-	sc := NewHTTPSourceClient()
-
-	if err := source.Register(HTTPClient, sc, Adapter); err != nil {
-		panic(err)
-	}
-
-	if err := source.Register(HTTPSClient, sc, Adapter); err != nil {
-		panic(err)
-	}
+	sc := NewHTTPSourceClient(WithHTTPClient(httpClient))
+	return sc, Adapter, nil, nil
 }
 
 func Adapter(request *source.Request) *source.Request {
@@ -125,11 +88,12 @@ func NewHTTPSourceClient(opts ...HTTPSourceClientOption) source.ResourceClient {
 }
 
 func newHTTPSourceClient(opts ...HTTPSourceClientOption) *httpSourceClient {
-	client := &httpSourceClient{
-		httpClient: _defaultHTTPClient,
-	}
+	client := &httpSourceClient{}
 	for i := range opts {
 		opts[i](client)
+	}
+	if client.httpClient == nil {
+		client.httpClient = http.DefaultClient
 	}
 	return client
 }
