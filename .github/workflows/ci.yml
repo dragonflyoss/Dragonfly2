@@ -60,12 +60,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test]
     steps:
-      - name: Set up Go
+      - name: Setup Go
         uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - name: Set up Docker
+      - name: Setup Docker
         uses: docker-practice/actions-setup-docker@v1
 
       - name: Check out code
