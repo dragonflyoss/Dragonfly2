@@ -63,9 +63,10 @@ const (
 	DefaultSchedulerIP     = "127.0.0.1"
 	DefaultSchedulerPort   = 8002
 
-	DefaultPieceChanSize      = 16
-	DefaultPieceQueueExponent = 4
-	DefaultObjectMaxReplicas  = 3
+	DefaultPieceChanSize              = 16
+	DefaultPieceQueueExponent         = 10
+	DefaultPieceDispatcherRandomRatio = 0.1
+	DefaultObjectMaxReplicas          = 3
 )
 
 // Store strategy.

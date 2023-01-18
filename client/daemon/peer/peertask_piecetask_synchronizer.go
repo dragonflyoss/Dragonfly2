@@ -36,7 +36,6 @@ import (
 
 	"d7y.io/dragonfly/v2/client/config"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/container/ring"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
 	dfdaemonclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
@@ -47,7 +46,7 @@ type pieceTaskSyncManager struct {
 	ctx               context.Context
 	ctxCancel         context.CancelFunc
 	peerTaskConductor *peerTaskConductor
-	pieceRequestQueue ring.Queue[DownloadPieceRequest]
+	pieceRequestQueue PieceDispatcher
 	workers           map[string]*pieceTaskSynchronizer
 	watchdog          *synchronizerWatchdog
 }
@@ -64,7 +63,7 @@ type pieceTaskSynchronizer struct {
 	grpcInitialized   *atomic.Bool
 	grpcInitError     atomic.Value
 	peerTaskConductor *peerTaskConductor
-	pieceRequestQueue ring.Queue[DownloadPieceRequest]
+	pieceRequestQueue PieceDispatcher
 }
 
 type synchronizerWatchdog struct {
@@ -216,7 +215,7 @@ func (s *pieceTaskSyncManager) acquire(request *commonv1.PieceTaskRequest) (atte
 	s.RLock()
 	for _, p := range s.workers {
 		attempt++
-		if p.acquire(request) == nil {
+		if p.grpcInitialized.Load() && p.acquire(request) == nil {
 			success++
 		}
 	}
@@ -372,7 +371,7 @@ func (s *pieceTaskSynchronizer) dispatchPieceRequest(piecePacket *commonv1.Piece
 			DstAddr: piecePacket.DstAddr,
 		}
 
-		s.pieceRequestQueue.Enqueue(req)
+		s.pieceRequestQueue.Put(req)
 		s.span.AddEvent(fmt.Sprintf("send piece #%d request to piece download queue", piece.PieceNum))
 
 		select {

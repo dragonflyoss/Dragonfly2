@@ -171,6 +171,9 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, request *DownloadPiec
 		Size:       -1,
 		BeginTime:  time.Now().UnixNano(),
 		FinishTime: 0,
+		DstPeerID:  request.DstPid,
+		Fail:       false,
+		pieceInfo:  request.piece,
 	}
 
 	// prepare trace and limit
@@ -179,6 +182,7 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, request *DownloadPiec
 	if pm.Limiter != nil {
 		if err := pm.Limiter.WaitN(ctx, int(request.piece.RangeSize)); err != nil {
 			result.FinishTime = time.Now().UnixNano()
+			result.Fail = true
 			request.log.Errorf("require rate limit access error: %s", err)
 			return result, err
 		}
@@ -192,6 +196,7 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, request *DownloadPiec
 	r, c, err := pm.pieceDownloader.DownloadPiece(ctx, request)
 	if err != nil {
 		result.FinishTime = time.Now().UnixNano()
+		result.Fail = true
 		span.RecordError(err)
 		request.log.Errorf("download piece failed, piece num: %d, error: %s, from peer: %s",
 			request.piece.PieceNum, err, request.DstPid)
@@ -222,6 +227,7 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, request *DownloadPiec
 
 	span.RecordError(err)
 	if err != nil {
+		result.Fail = true
 		request.log.Errorf("put piece to storage failed, piece num: %d, wrote: %d, error: %s",
 			request.piece.PieceNum, result.Size, err)
 		return result, err
@@ -237,6 +243,7 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 		Size:       -1,
 		BeginTime:  time.Now().UnixNano(),
 		FinishTime: 0,
+		DstPeerID:  "",
 	}
 
 	var (

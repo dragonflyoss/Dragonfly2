@@ -59,6 +59,9 @@ type DownloadPieceResult struct {
 	BeginTime int64
 	// FinishTime nanosecond
 	FinishTime int64
+	DstPeerID  string
+	Fail       bool
+	pieceInfo  *commonv1.PieceInfo
 }
 
 type PieceDownloader interface {
