@@ -33,6 +33,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/johanbrandhorst/certify"
+	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
@@ -67,6 +68,7 @@ import (
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	securityclient "d7y.io/dragonfly/v2/pkg/rpc/security/client"
 	"d7y.io/dragonfly/v2/pkg/source"
+	_ "d7y.io/dragonfly/v2/pkg/source/loader" // register all source clients
 	"d7y.io/dragonfly/v2/pkg/types"
 )
 
@@ -111,6 +113,19 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	// update plugin directory
 	source.UpdatePluginDir(d.PluginDir())
 
+	// FIXME the viper casts all case sensitive keys into lower case, but the resource clients option is map[string]interface{}, it should not be casted.
+	// issue: https://github.com/spf13/viper/issues/1014
+	tmpOpt := config.NewDaemonConfig()
+	err := tmpOpt.Load(viper.ConfigFileUsed())
+	if err != nil {
+		return nil, fmt.Errorf("read config error: %s", err)
+	}
+
+	err = source.InitSourceClients(tmpOpt.Download.ResourceClients)
+	if err != nil {
+		return nil, err
+	}
+
 	host := &schedulerv1.PeerHost{
 		Id:             idgen.HostID(opt.Host.Hostname, int32(opt.Download.PeerGRPC.TCPListen.PortRange.Start)),
 		Ip:             opt.Host.AdvertiseIP.String(),
@@ -129,10 +144,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	)
 
 	if opt.Scheduler.Manager.Enable {
-		var (
-			grpcCredentials credentials.TransportCredentials
-			err             error
-		)
+		var grpcCredentials credentials.TransportCredentials
 
 		if opt.Security.CACert == "" {
 			grpcCredentials = insecure.NewCredentials()
@@ -172,7 +184,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			}
 
 			// issue a certificate to reduce first time delay
-			if _, err := certifyClient.GetCertificate(&tls.ClientHelloInfo{
+			if _, err = certifyClient.GetCertificate(&tls.ClientHelloInfo{
 				ServerName: ip.IPv4.String(),
 			}); err != nil {
 				logger.Errorf("issue certificate error: %s", err.Error())
@@ -181,10 +193,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		}
 	}
 
-	var (
-		grpcCredentials credentials.TransportCredentials
-		err             error
-	)
+	var grpcCredentials credentials.TransportCredentials
 	if certifyClient == nil {
 		grpcCredentials = insecure.NewCredentials()
 	} else {

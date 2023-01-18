@@ -46,9 +46,11 @@ const (
 var _ source.ResourceClient = (*ossSourceClient)(nil)
 
 func init() {
-	if err := source.Register(OSSClient, NewOSSSourceClient(), adaptor); err != nil {
-		panic(err)
-	}
+	source.RegisterBuilder(OSSClient, source.NewPlainResourceClientBuilder(Builder))
+}
+
+func Builder(optionYaml []byte) (source.ResourceClient, source.RequestAdapter, []source.Hook, error) {
+	return NewOSSSourceClient(), adaptor, nil, nil
 }
 
 func adaptor(request *source.Request) *source.Request {
