@@ -42,9 +42,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/os/user"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/pkg/source"
-
-	// register all source clients
-	_ "d7y.io/dragonfly/v2/pkg/source/loader" // nolint
+	_ "d7y.io/dragonfly/v2/pkg/source/loader" // register all source clients
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/version"
 )
