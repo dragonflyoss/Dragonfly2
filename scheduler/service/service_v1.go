@@ -28,12 +28,14 @@ import (
 	"google.golang.org/grpc/status"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	commonv2 "d7y.io/api/pkg/apis/common/v2"
 	errordetailsv1 "d7y.io/api/pkg/apis/errordetails/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
+	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
 	pkgtime "d7y.io/dragonfly/v2/pkg/time"
 	"d7y.io/dragonfly/v2/pkg/types"
@@ -236,13 +238,13 @@ func (v *V1) ReportPieceResult(stream schedulerv1.Scheduler_ReportPieceResultSer
 				metrics.PeerHostTraffic.WithLabelValues(peer.Tag, peer.Application, metrics.PeerHostTrafficDownloadType, peer.Host.ID, peer.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
 				if parent, loaded := v.resource.PeerManager().Load(piece.DstPid); loaded {
 					metrics.PeerHostTraffic.WithLabelValues(peer.Tag, peer.Application, metrics.PeerHostTrafficUploadType, parent.Host.ID, parent.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
-				} else if !resource.IsPieceBackToSource(piece) {
+				} else if !resource.IsPieceBackToSource(piece.DstPid) {
 					peer.Log.Warnf("dst peer %s not found", piece.DstPid)
 				}
 			}
 
 			// Collect traffic metrics.
-			if !resource.IsPieceBackToSource(piece) {
+			if !resource.IsPieceBackToSource(piece.DstPid) {
 				metrics.Traffic.WithLabelValues(peer.Tag, peer.Application, metrics.TrafficP2PType).Add(float64(piece.PieceInfo.RangeSize))
 			} else {
 				metrics.Traffic.WithLabelValues(peer.Tag, peer.Application, metrics.TrafficBackToSourceType).Add(float64(piece.PieceInfo.RangeSize))
@@ -336,13 +338,15 @@ func (v *V1) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequ
 
 		// Load downloaded piece infos.
 		for _, pieceInfo := range req.PiecePacket.PieceInfos {
-			peer.Pieces.Add(&schedulerv1.PieceResult{
-				TaskId:          taskID,
-				SrcPid:          peerID,
-				DstPid:          req.PiecePacket.DstPid,
-				Success:         true,
-				PieceInfo:       pieceInfo,
-				ExtendAttribute: req.PiecePacket.ExtendAttribute,
+			peer.Pieces.Add(&resource.Piece{
+				Number:      uint32(pieceInfo.PieceNum),
+				ParentID:    req.PiecePacket.DstPid,
+				Offset:      pieceInfo.PieceOffset,
+				Size:        uint64(pieceInfo.RangeSize),
+				Digest:      digest.New("md5", pieceInfo.PieceMd5).String(),
+				TrafficType: commonv2.TrafficType_LOCAL_PEER,
+				Cost:        0,
+				CreatedAt:   time.Now(),
 			})
 			peer.FinishedPieces.Set(uint(pieceInfo.PieceNum))
 			peer.AppendPieceCost(int64(pieceInfo.DownloadCost) * int64(time.Millisecond))
@@ -788,8 +792,24 @@ func (v *V1) handleEndOfPiece(ctx context.Context, peer *resource.Peer) {}
 
 // handlePieceSuccess handles successful piece.
 func (v *V1) handlePieceSuccess(ctx context.Context, peer *resource.Peer, piece *schedulerv1.PieceResult) {
+	// Distinguish traffic type.
+	trafficType := commonv2.TrafficType_REMOTE_PEER
+	if resource.IsPieceBackToSource(piece.DstPid) {
+		trafficType = commonv2.TrafficType_BACK_TO_SOURCE
+	}
+
 	// Update peer piece info.
-	peer.Pieces.Add(piece)
+	cost := time.Duration(int64(piece.PieceInfo.DownloadCost) * int64(time.Millisecond))
+	peer.Pieces.Add(&resource.Piece{
+		Number:      uint32(piece.PieceInfo.PieceNum),
+		ParentID:    piece.DstPid,
+		Offset:      piece.PieceInfo.PieceOffset,
+		Size:        uint64(piece.PieceInfo.RangeSize),
+		Digest:      digest.New("md5", piece.PieceInfo.PieceMd5).String(),
+		TrafficType: trafficType,
+		Cost:        cost,
+		CreatedAt:   time.Now().Add(-cost),
+	})
 	peer.FinishedPieces.Set(uint(piece.PieceInfo.PieceNum))
 	peer.AppendPieceCost(pkgtime.SubNano(int64(piece.EndTime), int64(piece.BeginTime)).Milliseconds())
 
@@ -802,7 +822,7 @@ func (v *V1) handlePieceSuccess(ctx context.Context, peer *resource.Peer, piece 
 	// When the piece is downloaded successfully,
 	// dst peer's UpdatedAt needs to be updated
 	// to prevent the dst peer from being GC during the download process.
-	if !resource.IsPieceBackToSource(piece) {
+	if !resource.IsPieceBackToSource(piece.DstPid) {
 		if destPeer, loaded := v.resource.PeerManager().Load(piece.DstPid); loaded {
 			destPeer.UpdatedAt.Store(time.Now())
 		}
@@ -1141,7 +1161,7 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 		}
 
 		for _, piece := range peer.Pieces.Values() {
-			if piece.DstPid == parent.ID {
+			if piece.ParentID == parent.ID {
 				parentRecord.UploadPieceCount++
 			}
 		}

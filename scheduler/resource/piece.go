@@ -17,10 +17,32 @@
 package resource
 
 import (
-	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+	"time"
+
+	commonv2 "d7y.io/api/pkg/apis/common/v2"
 )
 
 // IsPieceBackToSource returns whether the piece is downloaded back-to-source.
-func IsPieceBackToSource(piece *schedulerv1.PieceResult) bool {
-	return piece.DstPid == ""
+func IsPieceBackToSource(parentID string) bool {
+	return parentID == ""
+}
+
+// Piece represents information of piece.
+type Piece struct {
+	// Piece number.
+	Number uint32
+	// Parent peer id.
+	ParentID string
+	// Piece offset.
+	Offset uint64
+	// Piece size.
+	Size uint64
+	// Digest of the piece data, for example md5:xxx or sha256:yyy.
+	Digest string
+	// Traffic type.
+	TrafficType commonv2.TrafficType
+	// Downloading piece costs time.
+	Cost time.Duration
+	// Piece create time.
+	CreatedAt time.Time
 }
