@@ -20,31 +20,25 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 )
 
 func TestResource_IsPieceBackToSource(t *testing.T) {
 	tests := []struct {
-		name   string
-		piece  *schedulerv1.PieceResult
-		expect func(t *testing.T, ok bool)
+		name     string
+		parentID string
+		expect   func(t *testing.T, ok bool)
 	}{
 		{
-			name: "piece is back-to-source",
-			piece: &schedulerv1.PieceResult{
-				DstPid: "",
-			},
+			name:     "piece is back-to-source",
+			parentID: "",
 			expect: func(t *testing.T, ok bool) {
 				assert := assert.New(t)
 				assert.True(ok)
 			},
 		},
 		{
-			name: "piece is not back-to-source",
-			piece: &schedulerv1.PieceResult{
-				DstPid: "foo",
-			},
+			name:     "piece is not back-to-source",
+			parentID: "foo",
 			expect: func(t *testing.T, ok bool) {
 				assert := assert.New(t)
 				assert.False(ok)
@@ -54,7 +48,7 @@ func TestResource_IsPieceBackToSource(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, IsPieceBackToSource(tc.piece))
+			tc.expect(t, IsPieceBackToSource(tc.parentID))
 		})
 	}
 }

@@ -141,7 +141,7 @@ type Peer struct {
 	Application string
 
 	// Pieces is finished piece set.
-	Pieces set.SafeSet[*schedulerv1.PieceResult]
+	Pieces set.SafeSet[*Piece]
 
 	// Pieces is finished pieces bitset.
 	FinishedPieces *bitset.BitSet
@@ -200,7 +200,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 		ID:               id,
 		Tag:              DefaultTag,
 		Application:      DefaultApplication,
-		Pieces:           set.NewSafeSet[*schedulerv1.PieceResult](),
+		Pieces:           set.NewSafeSet[*Piece](),
 		FinishedPieces:   &bitset.BitSet{},
 		pieceCosts:       []int64{},
 		Cost:             atomic.NewDuration(0),
