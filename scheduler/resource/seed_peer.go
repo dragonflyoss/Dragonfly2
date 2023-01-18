@@ -24,8 +24,10 @@ import (
 	"time"
 
 	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
+	commonv2 "d7y.io/api/pkg/apis/common/v2"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
+	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
 	pkgtime "d7y.io/dragonfly/v2/pkg/time"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
@@ -129,14 +131,15 @@ func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *schedul
 
 			// Handle piece download successfully.
 			peer.Log.Infof("receive piece from seed peer: %#v %#v", piece, piece.PieceInfo)
-			peer.Pieces.Add(&schedulerv1.PieceResult{
-				TaskId:          task.ID,
-				SrcPid:          peer.ID,
-				BeginTime:       piece.BeginTime,
-				EndTime:         piece.EndTime,
-				Success:         true,
-				PieceInfo:       piece.PieceInfo,
-				ExtendAttribute: piece.ExtendAttribute,
+			cost := time.Duration(int64(piece.PieceInfo.DownloadCost) * int64(time.Millisecond))
+			peer.Pieces.Add(&Piece{
+				Number:      uint32(piece.PieceInfo.PieceNum),
+				Offset:      piece.PieceInfo.PieceOffset,
+				Size:        uint64(piece.PieceInfo.RangeSize),
+				Digest:      digest.New("md5", piece.PieceInfo.PieceMd5).String(),
+				TrafficType: commonv2.TrafficType_BACK_TO_SOURCE,
+				Cost:        cost,
+				CreatedAt:   time.Now().Add(-cost),
 			})
 			peer.FinishedPieces.Set(uint(piece.PieceInfo.PieceNum))
 			peer.AppendPieceCost(pkgtime.SubNano(int64(piece.EndTime), int64(piece.BeginTime)).Milliseconds())
