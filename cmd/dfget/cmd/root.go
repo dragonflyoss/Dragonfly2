@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"strconv"
 	"syscall"
 	"time"
@@ -41,6 +42,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/os/user"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/pkg/source"
+
 	// register all source clients
 	_ "d7y.io/dragonfly/v2/pkg/source/loader" // nolint
 	"d7y.io/dragonfly/v2/pkg/unit"
@@ -99,8 +101,8 @@ var rootCmd = &cobra.Command{
 		fmt.Printf("current user: %s, default peer ip: %s\n", user.Username(), ip.IPv4.String())
 		fmt.Printf("output path: %s\n", dfgetConfig.Output)
 
-		//  do get file
-		err = runDfget(d.DfgetLockPath(), d.DaemonSockPath())
+		// do get file
+		err = runDfget(cmd, d.DfgetLockPath(), d.DaemonSockPath())
 		if err != nil {
 			msg := fmt.Sprintf("download success: %t cost: %d ms error: %s", false, time.Since(start).Milliseconds(), err.Error())
 			logger.With("url", dfgetConfig.URL).Info(msg)
@@ -216,7 +218,7 @@ func initDfgetDfpath(cfg *config.ClientOption) (dfpath.Dfpath, error) {
 }
 
 // runDfget does some init operations and starts to download.
-func runDfget(dfgetLockPath, daemonSockPath string) error {
+func runDfget(cmd *cobra.Command, dfgetLockPath, daemonSockPath string) error {
 	logger.Infof("Version:\n%s", version.Version())
 
 	// Dfget config values
@@ -231,9 +233,7 @@ func runDfget(dfgetLockPath, daemonSockPath string) error {
 		err            error
 	)
 
-	// TODO load source client config
-	err = source.InitSourceClients(map[string]interface{}{})
-	if err != nil {
+	if err := loadSourceClients(cmd); err != nil {
 		return err
 	}
 
@@ -245,6 +245,29 @@ func runDfget(dfgetLockPath, daemonSockPath string) error {
 	}
 
 	return dfget.Download(dfgetConfig, dfdaemonClient)
+}
+
+// loadSourceClients loads daemon config, extracts the source clients config, then initialize it.
+func loadSourceClients(cmd *cobra.Command) error {
+	configPath := path.Join(dfpath.DefaultConfigDir, cmd.Name()+".yaml")
+	config := config.NewDaemonConfig()
+	if err := config.Load(configPath); err != nil {
+		// skip not exist error
+		if !os.IsNotExist(err) {
+			logger.Warnf("load daemon config err: %s, use default config", err)
+		}
+		if err = source.InitSourceClients(map[string]interface{}{}); err != nil {
+			logger.Errorf("init source clients with default config err: %s", err)
+			return err
+		}
+		return nil
+	}
+
+	if err := source.InitSourceClients(config.Download.ResourceClients); err != nil {
+		logger.Errorf("init source clients with daemon config err: %s", err)
+		return err
+	}
+	return nil
 }
 
 // checkAndSpawnDaemon do checking at three checkpoints
