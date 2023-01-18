@@ -44,9 +44,9 @@ type PieceDispatcher interface {
 var ErrNoValidPieceTemporarily = errors.New("no valid piece temporarily")
 
 type pieceDispatcher struct {
-	// reqMap hold piece requests of peers. Key is PeerID, value is piece requests
-	reqMap map[string][]*DownloadPieceRequest
-	// score hold the score of every peer.
+	// peerRequests hold piece requests of peers. Key is PeerID, value is piece requests
+	peerRequests map[string][]*DownloadPieceRequest
+	// score hold the score of each peer.
 	score map[string]int64
 	// downloaded hold the already successfully downloaded piece num
 	downloaded map[int32]struct{}
@@ -70,16 +70,16 @@ var (
 func NewPieceDispatcher(randomRatio float64, log *logger.SugaredLoggerOnWith) PieceDispatcher {
 	lock := &sync.Mutex{}
 	pd := &pieceDispatcher{
-		reqMap:      map[string][]*DownloadPieceRequest{},
-		score:       map[string]int64{},
-		downloaded:  map[int32]struct{}{},
-		sum:         atomic.NewInt64(0),
-		closed:      false,
-		cond:        sync.NewCond(lock),
-		lock:        lock,
-		log:         log.With("component", "pieceDispatcher"),
-		randomRatio: randomRatio,
-		rand:        rand.New(rand.NewSource(time.Now().Unix())),
+		peerRequests: map[string][]*DownloadPieceRequest{},
+		score:        map[string]int64{},
+		downloaded:   map[int32]struct{}{},
+		sum:          atomic.NewInt64(0),
+		closed:       false,
+		cond:         sync.NewCond(lock),
+		lock:         lock,
+		log:          log.With("component", "pieceDispatcher"),
+		randomRatio:  randomRatio,
+		rand:         rand.New(rand.NewSource(time.Now().Unix())),
 	}
 	log.Debugf("piece dispatcher created")
 	return pd
@@ -88,10 +88,10 @@ func NewPieceDispatcher(randomRatio float64, log *logger.SugaredLoggerOnWith) Pi
 func (p *pieceDispatcher) Put(req *DownloadPieceRequest) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	if reqs, ok := p.reqMap[req.DstPid]; ok {
-		p.reqMap[req.DstPid] = append(reqs, req)
+	if reqs, ok := p.peerRequests[req.DstPid]; ok {
+		p.peerRequests[req.DstPid] = append(reqs, req)
 	} else {
-		p.reqMap[req.DstPid] = []*DownloadPieceRequest{req}
+		p.peerRequests[req.DstPid] = []*DownloadPieceRequest{req}
 	}
 	if _, ok := p.score[req.DstPid]; !ok {
 		p.score[req.DstPid] = maxScore
@@ -127,11 +127,11 @@ func (p *pieceDispatcher) getDesiredReq() (*DownloadPieceRequest, error) {
 
 	// iterate all peers, until get a valid piece requests
 	for _, peer := range distPeerIDs {
-		for len(p.reqMap[peer]) > 0 {
+		for len(p.peerRequests[peer]) > 0 {
 			// choose a random piece request of a peer
-			n := p.rand.Intn(len(p.reqMap[peer]))
-			req := p.reqMap[peer][n]
-			p.reqMap[peer] = append(p.reqMap[peer][0:n], p.reqMap[peer][n+1:]...)
+			n := p.rand.Intn(len(p.peerRequests[peer]))
+			req := p.peerRequests[peer][n]
+			p.peerRequests[peer] = append(p.peerRequests[peer][0:n], p.peerRequests[peer][n+1:]...)
 			p.sum.Sub(1)
 			if _, ok := p.downloaded[req.piece.PieceNum]; ok { //already downloaded, skip
 				// p.log.Debugf("skip already downloaded piece , peer: %s, piece:%d", peer, req.piece.PieceNum)
