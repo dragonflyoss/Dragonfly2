@@ -44,7 +44,6 @@ import (
 	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/container/ring"
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
@@ -545,7 +544,7 @@ func (pt *peerTaskConductor) pullPieces() {
 func (pt *peerTaskConductor) pullPiecesWithP2P() {
 	var (
 		// keep same size with pt.failedPieceCh for avoiding deadlock
-		pieceRequestQueue = ring.NewRandom[DownloadPieceRequest](config.DefaultPieceQueueExponent)
+		pieceRequestQueue = NewPieceDispatcher(config.DefaultPieceDispatcherRandomRatio, pt.Log())
 	)
 	ctx, cancel := context.WithCancel(pt.ctx)
 
@@ -657,7 +656,7 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 	pt.PublishPieceInfo(0, uint32(contentLength))
 }
 
-func (pt *peerTaskConductor) receivePeerPacket(pieceRequestQueue ring.Queue[DownloadPieceRequest]) {
+func (pt *peerTaskConductor) receivePeerPacket(pieceRequestQueue PieceDispatcher) {
 	var (
 		lastNotReadyPiece   int32 = 0
 		peerPacket          *schedulerv1.PeerPacket
@@ -944,7 +943,7 @@ func (pt *peerTaskConductor) updateMetadata(piecePacket *commonv1.PiecePacket) {
 	}
 }
 
-func (pt *peerTaskConductor) initDownloadPieceWorkers(count int32, pieceRequestQueue ring.Queue[DownloadPieceRequest]) {
+func (pt *peerTaskConductor) initDownloadPieceWorkers(count int32, pieceRequestQueue PieceDispatcher) {
 	if count < 1 {
 		count = 4
 	}
@@ -980,11 +979,14 @@ func (pt *peerTaskConductor) waitFirstPeerPacket(done chan bool) {
 	}
 }
 
-func (pt *peerTaskConductor) downloadPieceWorker(id int32, requests ring.Queue[DownloadPieceRequest]) {
+func (pt *peerTaskConductor) downloadPieceWorker(id int32, requests PieceDispatcher) {
 	for {
-		request, ok := requests.Dequeue()
-		if !ok {
-			pt.Infof("piece download queue cancelled, peer download worker #%d exit", id)
+		request, err := requests.Get()
+		if errors.Is(err, ErrNoValidPieceTemporarily) {
+			continue
+		}
+		if err != nil {
+			pt.Infof("piece download queue cancelled, peer download worker #%d exit, err: %v", id, err)
 			return
 		}
 		pt.readyPiecesLock.RLock()
@@ -994,7 +996,10 @@ func (pt *peerTaskConductor) downloadPieceWorker(id int32, requests ring.Queue[D
 			continue
 		}
 		pt.readyPiecesLock.RUnlock()
-		pt.downloadPiece(id, request)
+		result := pt.downloadPiece(id, request)
+		if result != nil {
+			requests.Report(result)
+		}
 		select {
 		case <-pt.pieceDownloadCtx.Done():
 			pt.Infof("piece download cancelled, peer download worker #%d exit", id)
@@ -1010,14 +1015,14 @@ func (pt *peerTaskConductor) downloadPieceWorker(id int32, requests ring.Queue[D
 	}
 }
 
-func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPieceRequest) {
+func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPieceRequest) *DownloadPieceResult {
 	// only downloading piece in one worker at same time
 	pt.runningPiecesLock.Lock()
 	if pt.runningPieces.IsSet(request.piece.PieceNum) {
 		pt.runningPiecesLock.Unlock()
 		pt.Log().Debugf("piece %d is downloading, skip", request.piece.PieceNum)
 		// TODO save to queue for failed pieces
-		return
+		return nil
 	}
 	pt.runningPieces.Set(request.piece.PieceNum)
 	pt.runningPiecesLock.Unlock()
@@ -1036,7 +1041,7 @@ func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPiec
 	if pt.limiter != nil && !pt.waitLimit(ctx, request) {
 		span.SetAttributes(config.AttributePieceSuccess.Bool(false))
 		span.End()
-		return
+		return nil
 	}
 
 	pt.Debugf("peer download worker #%d receive piece task, "+
@@ -1051,7 +1056,7 @@ func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPiec
 		span.End()
 		if pt.needBackSource.Load() {
 			pt.Infof("switch to back source, skip send failed piece")
-			return
+			return result
 		}
 		attempt, success := pt.pieceTaskSyncManager.acquire(
 			&commonv1.PieceTaskRequest{
@@ -1062,7 +1067,7 @@ func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPiec
 			})
 		pt.Infof("send failed piece %d to remote, attempt: %d, success: %d",
 			request.piece.PieceNum, attempt, success)
-		return
+		return result
 	}
 	// broadcast success piece
 	pt.reportSuccessResult(request, result)
@@ -1070,6 +1075,7 @@ func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPiec
 
 	span.SetAttributes(config.AttributePieceSuccess.Bool(true))
 	span.End()
+	return result
 }
 
 func (pt *peerTaskConductor) waitLimit(ctx context.Context, request *DownloadPieceRequest) bool {
