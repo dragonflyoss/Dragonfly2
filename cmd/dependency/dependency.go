@@ -244,8 +244,7 @@ func initDecoderConfig(dc *mapstructure.DecoderConfig) {
 			reflect.TypeOf(config.URL{}),
 			reflect.TypeOf(net.IP{}),
 			reflect.TypeOf(config.CertPool{}),
-			reflect.TypeOf(config.Regexp{}),
-			reflect.TypeOf(config.ResourceClientsOption{}):
+			reflect.TypeOf(config.Regexp{}):
 
 			b, _ := yaml.Marshal(v)
 			p := reflect.New(to)
