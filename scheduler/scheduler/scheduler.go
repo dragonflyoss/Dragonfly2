@@ -20,7 +20,6 @@ package scheduler
 
 import (
 	"context"
-	"d7y.io/dragonfly/v2/pkg/math"
 	"sort"
 	"time"
 
@@ -28,6 +27,7 @@ import (
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
 	"d7y.io/dragonfly/v2/pkg/container/set"
+	"d7y.io/dragonfly/v2/pkg/math"
 	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
