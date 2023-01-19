@@ -14,14 +14,14 @@
 [![GoDoc](https://godoc.org/github.com/dragonflyoss/Dragonfly2?status.svg)](https://godoc.org/github.com/dragonflyoss/Dragonfly2)
 [![LICENSE](https://img.shields.io/github/license/dragonflyoss/Dragonfly2.svg?style=flat-square)](https://github.com/dragonflyoss/Dragonfly2/blob/main/LICENSE)
 
-Provide efficient, stable, secure, low-cost file and
-image distribution services to be the best practice and
+Provide efficient, stable and secure file distribution and image acceleration
+based on p2p technology to be the best practice and
 standard solution in cloud native architectures.
 
 ## Introduction
 
-Dragonfly is an open source P2P-based file and
-image distribution system. It is hosted by the
+Dragonfly is an open source P2P-based file distribution and
+image acceleration system. It is hosted by the
 Cloud Native Computing Foundation ([CNCF](https://cncf.io/)) as
 an Incubating Level Project.
 Its goal is to tackle all distribution problems in cloud native architectures.
