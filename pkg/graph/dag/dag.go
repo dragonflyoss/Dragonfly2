@@ -308,7 +308,7 @@ func (d *dag[T]) depthFirstSearch(fromVertexID, toVertexID string) bool {
 	return ok
 }
 
-// depthFirstSearch finds successors of vertex.
+// search finds successors of vertex.
 func (d *dag[T]) search(vertexID string, successors map[string]struct{}) {
 	vertex, ok := d.vertices.Get(vertexID)
 	if !ok {

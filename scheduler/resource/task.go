@@ -31,7 +31,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
-	"d7y.io/dragonfly/v2/pkg/dag"
+	"d7y.io/dragonfly/v2/pkg/graph/dag"
 	"d7y.io/dragonfly/v2/pkg/types"
 )
 
