@@ -47,7 +47,7 @@ require (
 	github.com/mcuadros/go-gin-prometheus v0.1.0
 	github.com/mdlayher/vsock v1.2.0
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/montanaflynn/stats v0.6.6
+	github.com/montanaflynn/stats v0.7.0
 	github.com/onsi/ginkgo/v2 v2.7.0
 	github.com/onsi/gomega v1.24.2
 	github.com/orcaman/concurrent-map/v2 v2.0.1
