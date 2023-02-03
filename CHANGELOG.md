@@ -162,7 +162,7 @@
 ## [v2.0.8-alpha.0] - 2022-10-28
 ### Chore
 - add timestamp to stdout&stderr ([#1781](https://github.com/dragonflyoss/Dragonfly2/issues/1781))
-- update grpc api proto verison ([#1779](https://github.com/dragonflyoss/Dragonfly2/issues/1779))
+- update grpc api proto version ([#1779](https://github.com/dragonflyoss/Dragonfly2/issues/1779))
 - add intel to ADOPTERS.md ([#1778](https://github.com/dragonflyoss/Dragonfly2/issues/1778))
 - update helm-charts submodule
 - **deps:** bump github.com/onsi/ginkgo/v2 from 2.2.0 to 2.4.0 ([#1787](https://github.com/dragonflyoss/Dragonfly2/issues/1787))
@@ -2361,7 +2361,7 @@
 - update runtime guide in helm deploy ([#612](https://github.com/dragonflyoss/Dragonfly2/issues/612))
 
 ### Feat
-- update verison ([#640](https://github.com/dragonflyoss/Dragonfly2/issues/640))
+- update version ([#640](https://github.com/dragonflyoss/Dragonfly2/issues/640))
 - changelog ([#638](https://github.com/dragonflyoss/Dragonfly2/issues/638))
 - update console submodule ([#637](https://github.com/dragonflyoss/Dragonfly2/issues/637))
 - update submodule ([#632](https://github.com/dragonflyoss/Dragonfly2/issues/632))
