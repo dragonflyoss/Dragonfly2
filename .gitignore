@@ -66,3 +66,4 @@ Temporary Items
 artifacts
 .run
 deploy/docker-compose/log
+deploy/docker-compose/config
