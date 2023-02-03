@@ -131,7 +131,9 @@ func TestHostManager_Load(t *testing.T) {
 			gc := gc.NewMockGC(ctl)
 			tc.mock(gc.EXPECT())
 
-			mockHost := NewHost(mockRawHost)
+			mockHost := NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			hostManager, err := newHostManager(mockHostGCConfig, gc)
 			if err != nil {
 				t.Fatal(err)
@@ -184,7 +186,9 @@ func TestHostManager_Store(t *testing.T) {
 			gc := gc.NewMockGC(ctl)
 			tc.mock(gc.EXPECT())
 
-			mockHost := NewHost(mockRawHost)
+			mockHost := NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			hostManager, err := newHostManager(mockHostGCConfig, gc)
 			if err != nil {
 				t.Fatal(err)
@@ -235,7 +239,9 @@ func TestHostManager_LoadOrStore(t *testing.T) {
 			gc := gc.NewMockGC(ctl)
 			tc.mock(gc.EXPECT())
 
-			mockHost := NewHost(mockRawHost)
+			mockHost := NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			hostManager, err := newHostManager(mockHostGCConfig, gc)
 			if err != nil {
 				t.Fatal(err)
@@ -288,7 +294,9 @@ func TestHostManager_Delete(t *testing.T) {
 			gc := gc.NewMockGC(ctl)
 			tc.mock(gc.EXPECT())
 
-			mockHost := NewHost(mockRawHost)
+			mockHost := NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			hostManager, err := newHostManager(mockHostGCConfig, gc)
 			if err != nil {
 				t.Fatal(err)
@@ -363,7 +371,9 @@ func TestHostManager_RunGC(t *testing.T) {
 			},
 			expect: func(t *testing.T, hostManager HostManager, mockHost *Host, mockPeer *Peer) {
 				assert := assert.New(t)
-				mockSeedHost := NewHost(mockRawSeedHost)
+				mockSeedHost := NewHost(
+					mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
+					mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)
 				hostManager.Store(mockSeedHost)
 				err := hostManager.RunGC()
 				assert.NoError(err)
@@ -382,7 +392,9 @@ func TestHostManager_RunGC(t *testing.T) {
 			gc := gc.NewMockGC(ctl)
 			tc.mock(gc.EXPECT())
 
-			mockHost := NewHost(mockRawHost)
+			mockHost := NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, mockHost)
 			hostManager, err := newHostManager(mockHostGCConfig, gc)
