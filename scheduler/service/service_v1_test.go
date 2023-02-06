@@ -1011,7 +1011,7 @@ func TestService_ReportPieceResult(t *testing.T) {
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-				_, loaded := peer.LoadStream()
+				_, loaded := peer.LoadReportPieceStream()
 				assert.False(loaded)
 			},
 		},
@@ -1039,7 +1039,7 @@ func TestService_ReportPieceResult(t *testing.T) {
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-				_, loaded := peer.LoadStream()
+				_, loaded := peer.LoadReportPieceStream()
 				assert.False(loaded)
 			},
 		},
@@ -1068,7 +1068,7 @@ func TestService_ReportPieceResult(t *testing.T) {
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-				_, loaded := peer.LoadStream()
+				_, loaded := peer.LoadReportPieceStream()
 				assert.False(loaded)
 			},
 		},
@@ -1094,7 +1094,7 @@ func TestService_ReportPieceResult(t *testing.T) {
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-				_, loaded := peer.LoadStream()
+				_, loaded := peer.LoadReportPieceStream()
 				assert.False(loaded)
 			},
 		},
@@ -1121,7 +1121,7 @@ func TestService_ReportPieceResult(t *testing.T) {
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-				_, loaded := peer.LoadStream()
+				_, loaded := peer.LoadReportPieceStream()
 				assert.False(loaded)
 			},
 		},
