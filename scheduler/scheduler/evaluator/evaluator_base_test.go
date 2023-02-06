@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/types"
@@ -31,32 +30,96 @@ import (
 )
 
 var (
-	mockRawSeedHost = &schedulerv1.AnnounceHostRequest{
-		Id:           idgen.HostID("hostname", 8003),
-		Type:         types.HostTypeSuperSeedName,
-		Ip:           "127.0.0.1",
-		Port:         8003,
-		DownloadPort: 8001,
-		Hostname:     "hostname",
-		Network: &schedulerv1.Network{
-			SecurityDomain: "security_domain",
-			Location:       "location",
-			Idc:            "idc",
+	mockRawHost = resource.Host{
+		ID:              idgen.HostID("hostname", 8003),
+		Type:            types.HostTypeNormal,
+		Hostname:        "hostname",
+		IP:              "127.0.0.1",
+		Port:            8003,
+		DownloadPort:    8001,
+		OS:              "darwin",
+		Platform:        "darwin",
+		PlatformFamily:  "Standalone Workstation",
+		PlatformVersion: "11.1",
+		KernelVersion:   "20.2.0",
+		CPU:             mockCPU,
+		Memory:          mockMemory,
+		Network:         mockNetwork,
+		Disk:            mockDisk,
+		Build:           mockBuild,
+	}
+
+	mockRawSeedHost = resource.Host{
+		ID:              idgen.HostID("hostname_seed", 8003),
+		Type:            types.HostTypeSuperSeed,
+		Hostname:        "hostname_seed",
+		IP:              "127.0.0.1",
+		Port:            8003,
+		DownloadPort:    8001,
+		OS:              "darwin",
+		Platform:        "darwin",
+		PlatformFamily:  "Standalone Workstation",
+		PlatformVersion: "11.1",
+		KernelVersion:   "20.2.0",
+		CPU:             mockCPU,
+		Memory:          mockMemory,
+		Network:         mockNetwork,
+		Disk:            mockDisk,
+		Build:           mockBuild,
+	}
+
+	mockCPU = resource.CPU{
+		LogicalCount:   4,
+		PhysicalCount:  2,
+		Percent:        1,
+		ProcessPercent: 0.5,
+		Times: resource.CPUTimes{
+			User:      240662.2,
+			System:    317950.1,
+			Idle:      3393691.3,
+			Nice:      0,
+			Iowait:    0,
+			Irq:       0,
+			Softirq:   0,
+			Steal:     0,
+			Guest:     0,
+			GuestNice: 0,
 		},
 	}
 
-	mockRawHost = &schedulerv1.AnnounceHostRequest{
-		Id:           idgen.HostID("hostname", 8003),
-		Type:         types.HostTypeNormalName,
-		Ip:           "127.0.0.1",
-		Port:         8003,
-		DownloadPort: 8001,
-		Hostname:     "hostname",
-		Network: &schedulerv1.Network{
-			SecurityDomain: "security_domain",
-			Location:       "location",
-			Idc:            "idc",
-		},
+	mockMemory = resource.Memory{
+		Total:              17179869184,
+		Available:          5962813440,
+		Used:               11217055744,
+		UsedPercent:        65.291858,
+		ProcessUsedPercent: 41.525125,
+		Free:               2749598908,
+	}
+
+	mockNetwork = resource.Network{
+		TCPConnectionCount:       10,
+		UploadTCPConnectionCount: 1,
+		SecurityDomain:           "security_domain",
+		Location:                 "location",
+		IDC:                      "idc",
+	}
+
+	mockDisk = resource.Disk{
+		Total:             499963174912,
+		Free:              37226479616,
+		Used:              423809622016,
+		UsedPercent:       91.92547406065952,
+		InodesTotal:       4882452880,
+		InodesUsed:        7835772,
+		InodesFree:        4874617108,
+		InodesUsedPercent: 0.1604884305611568,
+	}
+
+	mockBuild = resource.Build{
+		GitVersion: "v1.0.0",
+		GitCommit:  "221176b117c6d59366d68f2b34d38be50c935883",
+		GoVersion:  "1.18",
+		Platform:   "darwin",
 	}
 
 	mockTaskURLMeta = &commonv1.UrlMeta{
@@ -109,10 +172,14 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 			name: "security domain is not the same",
 			parent: resource.NewPeer(idgen.PeerID("127.0.0.1"),
 				resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit)),
-				resource.NewHost(mockRawSeedHost)),
+				resource.NewHost(
+					mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
+					mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)),
 			child: resource.NewPeer(idgen.PeerID("127.0.0.1"),
 				resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit)),
-				resource.NewHost(mockRawHost)),
+				resource.NewHost(
+					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)),
 			totalPieceCount: 1,
 			mock: func(parent *resource.Peer, child *resource.Peer) {
 				parent.Host.Network.SecurityDomain = "foo"
@@ -127,10 +194,14 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 			name: "security domain is same",
 			parent: resource.NewPeer(idgen.PeerID("127.0.0.1"),
 				resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit)),
-				resource.NewHost(mockRawSeedHost)),
+				resource.NewHost(
+					mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
+					mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)),
 			child: resource.NewPeer(idgen.PeerID("127.0.0.1"),
 				resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit)),
-				resource.NewHost(mockRawHost)),
+				resource.NewHost(
+					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)),
 			totalPieceCount: 1,
 			mock: func(parent *resource.Peer, child *resource.Peer) {
 				parent.Host.Network.SecurityDomain = "bac"
@@ -139,17 +210,21 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(0.8500000000000001))
+				assert.Equal(score, float64(0.55))
 			},
 		},
 		{
 			name: "parent security domain is empty",
 			parent: resource.NewPeer(idgen.PeerID("127.0.0.1"),
 				resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit)),
-				resource.NewHost(mockRawSeedHost)),
+				resource.NewHost(
+					mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
+					mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)),
 			child: resource.NewPeer(idgen.PeerID("127.0.0.1"),
 				resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit)),
-				resource.NewHost(mockRawHost)),
+				resource.NewHost(
+					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)),
 			totalPieceCount: 1,
 			mock: func(parent *resource.Peer, child *resource.Peer) {
 				parent.Host.Network.SecurityDomain = ""
@@ -158,17 +233,21 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(0.8500000000000001))
+				assert.Equal(score, float64(0.55))
 			},
 		},
 		{
 			name: "child security domain is empty",
 			parent: resource.NewPeer(idgen.PeerID("127.0.0.1"),
 				resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit)),
-				resource.NewHost(mockRawSeedHost)),
+				resource.NewHost(
+					mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
+					mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)),
 			child: resource.NewPeer(idgen.PeerID("127.0.0.1"),
 				resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit)),
-				resource.NewHost(mockRawHost)),
+				resource.NewHost(
+					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)),
 			totalPieceCount: 1,
 			mock: func(parent *resource.Peer, child *resource.Peer) {
 				parent.Host.Network.SecurityDomain = "baz"
@@ -177,7 +256,7 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(0.8500000000000001))
+				assert.Equal(score, float64(0.55))
 			},
 		},
 	}
@@ -192,7 +271,9 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 }
 
 func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
-	mockHost := resource.NewHost(mockRawHost)
+	mockHost := resource.NewHost(
+		mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+		mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 	mockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 
 	tests := []struct {
@@ -351,7 +432,9 @@ func TestEvaluatorBase_calculatehostUploadSuccessScore(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			host := resource.NewHost(mockRawHost)
+			host := resource.NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := resource.NewPeer(mockPeerID, mockTask, host)
 			tc.mock(host)
@@ -388,7 +471,9 @@ func TestEvaluatorBase_calculateFreeUploadScore(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			host := resource.NewHost(mockRawHost)
+			host := resource.NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := resource.NewPeer(mockPeerID, mockTask, host)
 			tc.mock(host, mockPeer)
@@ -437,7 +522,9 @@ func TestEvaluatorBase_calculateHostTypeScore(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			mockHost := resource.NewHost(mockRawHost)
+			mockHost := resource.NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
 			tc.mock(peer)
@@ -455,8 +542,8 @@ func TestEvaluatorBase_calculateIDCAffinityScore(t *testing.T) {
 		{
 			name: "idc is empty",
 			mock: func(dstHost *resource.Host, srcHost *resource.Host) {
-				dstHost.Network.Idc = ""
-				srcHost.Network.Idc = ""
+				dstHost.Network.IDC = ""
+				srcHost.Network.IDC = ""
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
@@ -466,7 +553,7 @@ func TestEvaluatorBase_calculateIDCAffinityScore(t *testing.T) {
 		{
 			name: "dst host idc is empty",
 			mock: func(dstHost *resource.Host, srcHost *resource.Host) {
-				dstHost.Network.Idc = ""
+				dstHost.Network.IDC = ""
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
@@ -476,7 +563,7 @@ func TestEvaluatorBase_calculateIDCAffinityScore(t *testing.T) {
 		{
 			name: "src host idc is empty",
 			mock: func(dstHost *resource.Host, srcHost *resource.Host) {
-				srcHost.Network.Idc = ""
+				srcHost.Network.IDC = ""
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
@@ -486,8 +573,8 @@ func TestEvaluatorBase_calculateIDCAffinityScore(t *testing.T) {
 		{
 			name: "idc is not the same",
 			mock: func(dstHost *resource.Host, srcHost *resource.Host) {
-				dstHost.Network.Idc = "foo"
-				srcHost.Network.Idc = "bar"
+				dstHost.Network.IDC = "foo"
+				srcHost.Network.IDC = "bar"
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
@@ -497,8 +584,8 @@ func TestEvaluatorBase_calculateIDCAffinityScore(t *testing.T) {
 		{
 			name: "idc is the same",
 			mock: func(dstHost *resource.Host, srcHost *resource.Host) {
-				dstHost.Network.Idc = "example"
-				srcHost.Network.Idc = "example"
+				dstHost.Network.IDC = "example"
+				srcHost.Network.IDC = "example"
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
@@ -509,10 +596,14 @@ func TestEvaluatorBase_calculateIDCAffinityScore(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			dstHost := resource.NewHost(mockRawHost)
-			srcHost := resource.NewHost(mockRawSeedHost)
+			dstHost := resource.NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
+			srcHost := resource.NewHost(
+				mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
+				mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)
 			tc.mock(dstHost, srcHost)
-			tc.expect(t, calculateIDCAffinityScore(dstHost.Network.Idc, srcHost.Network.Idc))
+			tc.expect(t, calculateIDCAffinityScore(dstHost.Network.IDC, srcHost.Network.IDC))
 		})
 	}
 }
@@ -642,7 +733,9 @@ func TestEvaluatorBase_calculateMultiElementAffinityScore(t *testing.T) {
 }
 
 func TestEvaluatorBase_IsBadNode(t *testing.T) {
-	mockHost := resource.NewHost(mockRawHost)
+	mockHost := resource.NewHost(
+		mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+		mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 	mockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 
 	tests := []struct {

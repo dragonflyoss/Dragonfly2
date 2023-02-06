@@ -16,7 +16,11 @@
 
 package storage
 
-import "time"
+import (
+	"time"
+
+	"d7y.io/dragonfly/v2/scheduler/resource"
+)
 
 // Task contains content for task.
 type Task struct {
@@ -99,157 +103,25 @@ type Host struct {
 	UploadFailedCount int64 `csv:"uploadFailedCount"`
 
 	// CPU Stat.
-	CPU CPU `csv:"cpu"`
+	CPU resource.CPU `csv:"cpu"`
 
 	// Memory Stat.
-	Memory Memory `csv:"memory"`
+	Memory resource.Memory `csv:"memory"`
 
 	// Network Stat.
-	Network Network `csv:"network"`
+	Network resource.Network `csv:"network"`
 
 	// Disk Stat.
-	Disk Disk `csv:"disk"`
+	Disk resource.Disk `csv:"disk"`
 
 	// Build information.
-	Build Build `csv:"build"`
+	Build resource.Build `csv:"build"`
 
 	// CreatedAt is peer create nanosecond time.
 	CreatedAt int64 `csv:"createdAt"`
 
 	// UpdatedAt is peer update nanosecond time.
 	UpdatedAt int64 `csv:"updatedAt"`
-}
-
-// CPU contains content for cpu.
-type CPU struct {
-	// Number of logical cores in the system.
-	LogicalCount uint32 `csv:"logicalCount"`
-
-	// Number of physical cores in the system.
-	PhysicalCount uint32 `csv:"physicalCount"`
-
-	// Percent calculates the percentage of cpu used.
-	Percent float64 `csv:"percent"`
-
-	// Calculates the percentage of cpu used by process.
-	ProcessPercent float64 `csv:"processPercent"`
-
-	// Times contains the amounts of time the CPU has spent performing different kinds of work.
-	Times CPUTimes `csv:"times"`
-}
-
-// CPUTimes contains content for cpu times.
-type CPUTimes struct {
-	// CPU time of user.
-	User float64 `csv:"user"`
-
-	// CPU time of system.
-	System float64 `csv:"system"`
-
-	// CPU time of idle.
-	Idle float64 `csv:"idle"`
-
-	// CPU time of nice.
-	Nice float64 `csv:"nice"`
-
-	// CPU time of iowait.
-	Iowait float64 `csv:"iowait"`
-
-	// CPU time of irq.
-	Irq float64 `csv:"irq"`
-
-	// CPU time of softirq.
-	Softirq float64 `csv:"softirq"`
-
-	// CPU time of steal.
-	Steal float64 `csv:"steal"`
-
-	// CPU time of guest.
-	Guest float64 `csv:"guest"`
-
-	// CPU time of guest nice.
-	GuestNice float64 `csv:"guestNice"`
-}
-
-// Memory contains content for memory.
-type Memory struct {
-	// Total amount of RAM on this system.
-	Total uint64 `csv:"total"`
-
-	// RAM available for programs to allocate.
-	Available uint64 `csv:"available"`
-
-	// RAM used by programs.
-	Used uint64 `csv:"used"`
-
-	// Percentage of RAM used by programs.
-	UsedPercent float64 `csv:"usedPercent"`
-
-	// Calculates the percentage of memory used by process.
-	ProcessUsedPercent float64 `csv:"processUsedPercent"`
-
-	// This is the kernel's notion of free memory.
-	Free uint64 `csv:"free"`
-}
-
-// Network contains content for network.
-type Network struct {
-	// Return count of tcp connections opened and status is ESTABLISHED.
-	TCPConnectionCount uint32 `csv:"tcpConnectionCount"`
-
-	// Return count of upload tcp connections opened and status is ESTABLISHED.
-	UploadTCPConnectionCount uint32 `csv:"uploadTCPConnectionCount"`
-
-	// Security domain for network.
-	SecurityDomain string `csv:"securityDomain"`
-
-	// Location path(area|country|province|city|...).
-	Location string `csv:"location"`
-
-	// IDC where the peer host is located
-	IDC string `csv:"idc"`
-}
-
-// Build contains content for build.
-type Build struct {
-	// Git version.
-	GitVersion string `csv:"gitVersion"`
-
-	// Git commit.
-	GitCommit string `csv:"gitCommit"`
-
-	// Golang version.
-	GoVersion string `csv:"goVersion"`
-
-	// Build platform.
-	Platform string `csv:"platform"`
-}
-
-// Disk contains content for disk.
-type Disk struct {
-	// Total amount of disk on the data path of dragonfly.
-	Total uint64 `csv:"total"`
-
-	// Free amount of disk on the data path of dragonfly.
-	Free uint64 `csv:"free"`
-
-	// Used amount of disk on the data path of dragonfly.
-	Used uint64 `csv:"used"`
-
-	// Used percent of disk on the data path of dragonfly directory.
-	UsedPercent float64 `csv:"usedPercent"`
-
-	// Total amount of indoes on the data path of dragonfly directory.
-	InodesTotal uint64 `csv:"inodesTotal"`
-
-	// Used amount of indoes on the data path of dragonfly directory.
-	InodesUsed uint64 `csv:"inodesUsed"`
-
-	// Free amount of indoes on the data path of dragonfly directory.
-	InodesFree uint64 `csv:"inodesFree"`
-
-	// Used percent of indoes on the data path of dragonfly directory.
-	InodesUsedPercent float64 `csv:"inodesUsedPercent"`
 }
 
 // Parent contains content for parent.

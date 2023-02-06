@@ -440,32 +440,164 @@ func (v *V1) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequ
 
 	host, loaded := v.resource.HostManager().Load(req.Id)
 	if !loaded {
-		var options []resource.HostOption
+		options := []resource.HostOption{
+			resource.WithOS(req.Os),
+			resource.WithPlatform(req.Platform),
+			resource.WithPlatformFamily(req.PlatformFamily),
+			resource.WithPlatformVersion(req.PlatformVersion),
+			resource.WithKernelVersion(req.KernelVersion),
+		}
+
 		if concurrentUploadLimit > 0 {
 			options = append(options, resource.WithConcurrentUploadLimit(concurrentUploadLimit))
 		}
 
-		host = resource.NewHost(req, options...)
+		if req.Cpu != nil {
+			options = append(options, resource.WithCPU(resource.CPU{
+				LogicalCount:   req.Cpu.LogicalCount,
+				PhysicalCount:  req.Cpu.PhysicalCount,
+				Percent:        req.Cpu.Percent,
+				ProcessPercent: req.Cpu.ProcessPercent,
+				Times: resource.CPUTimes{
+					User:      req.Cpu.Times.User,
+					System:    req.Cpu.Times.System,
+					Idle:      req.Cpu.Times.Idle,
+					Nice:      req.Cpu.Times.Nice,
+					Iowait:    req.Cpu.Times.Iowait,
+					Irq:       req.Cpu.Times.Irq,
+					Softirq:   req.Cpu.Times.Softirq,
+					Steal:     req.Cpu.Times.Steal,
+					Guest:     req.Cpu.Times.Guest,
+					GuestNice: req.Cpu.Times.GuestNice,
+				},
+			}))
+		}
+
+		if req.Memory != nil {
+			options = append(options, resource.WithMemory(resource.Memory{
+				Total:              req.Memory.Total,
+				Available:          req.Memory.Available,
+				Used:               req.Memory.Used,
+				UsedPercent:        req.Memory.UsedPercent,
+				ProcessUsedPercent: req.Memory.ProcessUsedPercent,
+				Free:               req.Memory.Free,
+			}))
+		}
+
+		if req.Network != nil {
+			options = append(options, resource.WithNetwork(resource.Network{
+				TCPConnectionCount:       req.Network.TcpConnectionCount,
+				UploadTCPConnectionCount: req.Network.UploadTcpConnectionCount,
+				SecurityDomain:           req.Network.SecurityDomain,
+				Location:                 req.Network.Location,
+				IDC:                      req.Network.Idc,
+			}))
+		}
+
+		if req.Disk != nil {
+			options = append(options, resource.WithDisk(resource.Disk{
+				Total:             req.Disk.Total,
+				Free:              req.Disk.Free,
+				Used:              req.Disk.Used,
+				UsedPercent:       req.Disk.UsedPercent,
+				InodesTotal:       req.Disk.InodesTotal,
+				InodesUsed:        req.Disk.InodesUsed,
+				InodesFree:        req.Disk.InodesFree,
+				InodesUsedPercent: req.Disk.InodesUsedPercent,
+			}))
+		}
+
+		if req.Build != nil {
+			options = append(options, resource.WithBuild(resource.Build{
+				GitVersion: req.Build.GitVersion,
+				GitCommit:  req.Build.GitCommit,
+				GoVersion:  req.Build.GoVersion,
+				Platform:   req.Build.Platform,
+			}))
+		}
+
+		host = resource.NewHost(
+			req.Id, req.Ip, req.Hostname,
+			req.Port, req.DownloadPort, types.ParseHostType(req.Type),
+			options...,
+		)
 		v.resource.HostManager().Store(host)
 		host.Log.Infof("announce new host: %#v", req)
 		return nil
 	}
 
-	host.Type = types.ParseHostType(req.Type)
 	host.IP = req.Ip
-	host.Hostname = req.Hostname
-	host.Port = req.Port
 	host.DownloadPort = req.DownloadPort
+	host.Type = types.ParseHostType(req.Type)
 	host.OS = req.Os
 	host.Platform = req.Platform
 	host.PlatformFamily = req.PlatformFamily
 	host.PlatformVersion = req.PlatformVersion
 	host.KernelVersion = req.KernelVersion
-	host.CPU = req.Cpu
-	host.Memory = req.Memory
-	host.Network = req.Network
-	host.Disk = req.Disk
-	host.Build = req.Build
+
+	if req.Cpu != nil {
+		host.CPU = resource.CPU{
+			LogicalCount:   req.Cpu.LogicalCount,
+			PhysicalCount:  req.Cpu.PhysicalCount,
+			Percent:        req.Cpu.Percent,
+			ProcessPercent: req.Cpu.ProcessPercent,
+			Times: resource.CPUTimes{
+				User:      req.Cpu.Times.User,
+				System:    req.Cpu.Times.System,
+				Idle:      req.Cpu.Times.Idle,
+				Nice:      req.Cpu.Times.Nice,
+				Iowait:    req.Cpu.Times.Iowait,
+				Irq:       req.Cpu.Times.Irq,
+				Softirq:   req.Cpu.Times.Softirq,
+				Steal:     req.Cpu.Times.Steal,
+				Guest:     req.Cpu.Times.Guest,
+				GuestNice: req.Cpu.Times.GuestNice,
+			},
+		}
+	}
+
+	if req.Memory != nil {
+		host.Memory = resource.Memory{
+			Total:              req.Memory.Total,
+			Available:          req.Memory.Available,
+			Used:               req.Memory.Used,
+			UsedPercent:        req.Memory.UsedPercent,
+			ProcessUsedPercent: req.Memory.ProcessUsedPercent,
+			Free:               req.Memory.Free,
+		}
+	}
+
+	if req.Network != nil {
+		host.Network = resource.Network{
+			TCPConnectionCount:       req.Network.TcpConnectionCount,
+			UploadTCPConnectionCount: req.Network.UploadTcpConnectionCount,
+			SecurityDomain:           req.Network.SecurityDomain,
+			Location:                 req.Network.Location,
+			IDC:                      req.Network.Idc,
+		}
+	}
+
+	if req.Disk != nil {
+		host.Disk = resource.Disk{
+			Total:             req.Disk.Total,
+			Free:              req.Disk.Free,
+			Used:              req.Disk.Used,
+			UsedPercent:       req.Disk.UsedPercent,
+			InodesTotal:       req.Disk.InodesTotal,
+			InodesUsed:        req.Disk.InodesUsed,
+			InodesFree:        req.Disk.InodesFree,
+			InodesUsedPercent: req.Disk.InodesUsedPercent,
+		}
+	}
+
+	if req.Build != nil {
+		host.Build = resource.Build{
+			GitVersion: req.Build.GitVersion,
+			GitCommit:  req.Build.GitCommit,
+			GoVersion:  req.Build.GoVersion,
+			Platform:   req.Build.Platform,
+		}
+	}
 
 	if concurrentUploadLimit > 0 {
 		host.ConcurrentUploadLimit.Store(concurrentUploadLimit)
@@ -597,24 +729,21 @@ func (v *V1) storeHost(ctx context.Context, peerHost *schedulerv1.PeerHost) *res
 	host, loaded := v.resource.HostManager().Load(peerHost.Id)
 	if !loaded {
 		// Get scheduler cluster client config by manager.
-		var options []resource.HostOption
+		options := []resource.HostOption{resource.WithNetwork(resource.Network{
+			SecurityDomain: peerHost.SecurityDomain,
+			Location:       peerHost.Location,
+			IDC:            peerHost.Idc,
+		})}
 		if clientConfig, err := v.dynconfig.GetSchedulerClusterClientConfig(); err == nil && clientConfig.LoadLimit > 0 {
 			options = append(options, resource.WithConcurrentUploadLimit(int32(clientConfig.LoadLimit)))
 		}
 
-		host = resource.NewHost(&schedulerv1.AnnounceHostRequest{
-			Id:           peerHost.Id,
-			Type:         types.HostTypeNormalName,
-			Ip:           peerHost.Ip,
-			Hostname:     peerHost.HostName,
-			Port:         peerHost.RpcPort,
-			DownloadPort: peerHost.DownPort,
-			Network: &schedulerv1.Network{
-				SecurityDomain: peerHost.SecurityDomain,
-				Location:       peerHost.Location,
-				Idc:            peerHost.Idc,
-			},
-		}, options...)
+		host = resource.NewHost(
+			peerHost.Id, peerHost.Ip, peerHost.HostName,
+			peerHost.RpcPort, peerHost.DownPort, types.HostTypeNormal,
+			options...,
+		)
+
 		v.resource.HostManager().Store(host)
 		host.Log.Info("create new host")
 		return host
@@ -1096,68 +1225,58 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 			},
 		}
 
-		if parent.Host.CPU != nil {
-			parentRecord.Host.CPU = storage.CPU{
-				LogicalCount:   parent.Host.CPU.LogicalCount,
-				PhysicalCount:  parent.Host.CPU.PhysicalCount,
-				Percent:        parent.Host.CPU.Percent,
-				ProcessPercent: parent.Host.CPU.ProcessPercent,
-				Times: storage.CPUTimes{
-					User:      parent.Host.CPU.Times.User,
-					System:    parent.Host.CPU.Times.System,
-					Idle:      parent.Host.CPU.Times.Idle,
-					Nice:      parent.Host.CPU.Times.Nice,
-					Iowait:    parent.Host.CPU.Times.Iowait,
-					Irq:       parent.Host.CPU.Times.Irq,
-					Softirq:   parent.Host.CPU.Times.Softirq,
-					Steal:     parent.Host.CPU.Times.Steal,
-					Guest:     parent.Host.CPU.Times.Guest,
-					GuestNice: parent.Host.CPU.Times.GuestNice,
-				},
-			}
+		parentRecord.Host.CPU = resource.CPU{
+			LogicalCount:   parent.Host.CPU.LogicalCount,
+			PhysicalCount:  parent.Host.CPU.PhysicalCount,
+			Percent:        parent.Host.CPU.Percent,
+			ProcessPercent: parent.Host.CPU.ProcessPercent,
+			Times: resource.CPUTimes{
+				User:      parent.Host.CPU.Times.User,
+				System:    parent.Host.CPU.Times.System,
+				Idle:      parent.Host.CPU.Times.Idle,
+				Nice:      parent.Host.CPU.Times.Nice,
+				Iowait:    parent.Host.CPU.Times.Iowait,
+				Irq:       parent.Host.CPU.Times.Irq,
+				Softirq:   parent.Host.CPU.Times.Softirq,
+				Steal:     parent.Host.CPU.Times.Steal,
+				Guest:     parent.Host.CPU.Times.Guest,
+				GuestNice: parent.Host.CPU.Times.GuestNice,
+			},
 		}
 
-		if parent.Host.Memory != nil {
-			parentRecord.Host.Memory = storage.Memory{
-				Total:              parent.Host.Memory.Total,
-				Available:          parent.Host.Memory.Available,
-				Used:               parent.Host.Memory.Used,
-				UsedPercent:        parent.Host.Memory.UsedPercent,
-				ProcessUsedPercent: parent.Host.Memory.ProcessUsedPercent,
-				Free:               parent.Host.Memory.Free,
-			}
+		parentRecord.Host.Memory = resource.Memory{
+			Total:              parent.Host.Memory.Total,
+			Available:          parent.Host.Memory.Available,
+			Used:               parent.Host.Memory.Used,
+			UsedPercent:        parent.Host.Memory.UsedPercent,
+			ProcessUsedPercent: parent.Host.Memory.ProcessUsedPercent,
+			Free:               parent.Host.Memory.Free,
 		}
 
-		if parent.Host.Network != nil {
-			parentRecord.Host.Network = storage.Network{
-				TCPConnectionCount:       parent.Host.Network.TcpConnectionCount,
-				UploadTCPConnectionCount: parent.Host.Network.UploadTcpConnectionCount,
-				SecurityDomain:           parent.Host.Network.SecurityDomain,
-				Location:                 parent.Host.Network.Location,
-				IDC:                      parent.Host.Network.Idc,
-			}
+		parentRecord.Host.Network = resource.Network{
+			TCPConnectionCount:       parent.Host.Network.TCPConnectionCount,
+			UploadTCPConnectionCount: parent.Host.Network.UploadTCPConnectionCount,
+			SecurityDomain:           parent.Host.Network.SecurityDomain,
+			Location:                 parent.Host.Network.Location,
+			IDC:                      parent.Host.Network.IDC,
 		}
 
-		if parent.Host.Disk != nil {
-			parentRecord.Host.Disk = storage.Disk{
-				Total:             parent.Host.Disk.Total,
-				Free:              parent.Host.Disk.Free,
-				Used:              parent.Host.Disk.Used,
-				UsedPercent:       parent.Host.Disk.UsedPercent,
-				InodesTotal:       parent.Host.Disk.InodesTotal,
-				InodesUsed:        parent.Host.Disk.InodesUsed,
-				InodesFree:        parent.Host.Disk.InodesFree,
-				InodesUsedPercent: parent.Host.Disk.InodesUsedPercent,
-			}
+		parentRecord.Host.Disk = resource.Disk{
+			Total:             parent.Host.Disk.Total,
+			Free:              parent.Host.Disk.Free,
+			Used:              parent.Host.Disk.Used,
+			UsedPercent:       parent.Host.Disk.UsedPercent,
+			InodesTotal:       parent.Host.Disk.InodesTotal,
+			InodesUsed:        parent.Host.Disk.InodesUsed,
+			InodesFree:        parent.Host.Disk.InodesFree,
+			InodesUsedPercent: parent.Host.Disk.InodesUsedPercent,
 		}
 
-		if parent.Host.Build != nil {
-			parentRecord.Host.Build = storage.Build{
-				GitVersion: parent.Host.Build.GitVersion,
-				GitCommit:  parent.Host.Build.GitCommit,
-				GoVersion:  parent.Host.Build.GoVersion,
-				Platform:   parent.Host.Build.Platform,
-			}
+		parentRecord.Host.Build = resource.Build{
+			GitVersion: parent.Host.Build.GitVersion,
+			GitCommit:  parent.Host.Build.GitCommit,
+			GoVersion:  parent.Host.Build.GoVersion,
+			Platform:   parent.Host.Build.Platform,
 		}
 
 		for _, piece := range peer.Pieces.Values() {
@@ -1211,68 +1330,58 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 		},
 	}
 
-	if peer.Host.CPU != nil {
-		record.Host.CPU = storage.CPU{
-			LogicalCount:   peer.Host.CPU.LogicalCount,
-			PhysicalCount:  peer.Host.CPU.PhysicalCount,
-			Percent:        peer.Host.CPU.Percent,
-			ProcessPercent: peer.Host.CPU.ProcessPercent,
-			Times: storage.CPUTimes{
-				User:      peer.Host.CPU.Times.User,
-				System:    peer.Host.CPU.Times.System,
-				Idle:      peer.Host.CPU.Times.Idle,
-				Nice:      peer.Host.CPU.Times.Nice,
-				Iowait:    peer.Host.CPU.Times.Iowait,
-				Irq:       peer.Host.CPU.Times.Irq,
-				Softirq:   peer.Host.CPU.Times.Softirq,
-				Steal:     peer.Host.CPU.Times.Steal,
-				Guest:     peer.Host.CPU.Times.Guest,
-				GuestNice: peer.Host.CPU.Times.GuestNice,
-			},
-		}
+	record.Host.CPU = resource.CPU{
+		LogicalCount:   peer.Host.CPU.LogicalCount,
+		PhysicalCount:  peer.Host.CPU.PhysicalCount,
+		Percent:        peer.Host.CPU.Percent,
+		ProcessPercent: peer.Host.CPU.ProcessPercent,
+		Times: resource.CPUTimes{
+			User:      peer.Host.CPU.Times.User,
+			System:    peer.Host.CPU.Times.System,
+			Idle:      peer.Host.CPU.Times.Idle,
+			Nice:      peer.Host.CPU.Times.Nice,
+			Iowait:    peer.Host.CPU.Times.Iowait,
+			Irq:       peer.Host.CPU.Times.Irq,
+			Softirq:   peer.Host.CPU.Times.Softirq,
+			Steal:     peer.Host.CPU.Times.Steal,
+			Guest:     peer.Host.CPU.Times.Guest,
+			GuestNice: peer.Host.CPU.Times.GuestNice,
+		},
 	}
 
-	if peer.Host.Memory != nil {
-		record.Host.Memory = storage.Memory{
-			Total:              peer.Host.Memory.Total,
-			Available:          peer.Host.Memory.Available,
-			Used:               peer.Host.Memory.Used,
-			UsedPercent:        peer.Host.Memory.UsedPercent,
-			ProcessUsedPercent: peer.Host.Memory.ProcessUsedPercent,
-			Free:               peer.Host.Memory.Free,
-		}
+	record.Host.Memory = resource.Memory{
+		Total:              peer.Host.Memory.Total,
+		Available:          peer.Host.Memory.Available,
+		Used:               peer.Host.Memory.Used,
+		UsedPercent:        peer.Host.Memory.UsedPercent,
+		ProcessUsedPercent: peer.Host.Memory.ProcessUsedPercent,
+		Free:               peer.Host.Memory.Free,
 	}
 
-	if peer.Host.Network != nil {
-		record.Host.Network = storage.Network{
-			TCPConnectionCount:       peer.Host.Network.TcpConnectionCount,
-			UploadTCPConnectionCount: peer.Host.Network.UploadTcpConnectionCount,
-			SecurityDomain:           peer.Host.Network.SecurityDomain,
-			Location:                 peer.Host.Network.Location,
-			IDC:                      peer.Host.Network.Idc,
-		}
+	record.Host.Network = resource.Network{
+		TCPConnectionCount:       peer.Host.Network.TCPConnectionCount,
+		UploadTCPConnectionCount: peer.Host.Network.UploadTCPConnectionCount,
+		SecurityDomain:           peer.Host.Network.SecurityDomain,
+		Location:                 peer.Host.Network.Location,
+		IDC:                      peer.Host.Network.IDC,
 	}
 
-	if peer.Host.Disk != nil {
-		record.Host.Disk = storage.Disk{
-			Total:             peer.Host.Disk.Total,
-			Free:              peer.Host.Disk.Free,
-			Used:              peer.Host.Disk.Used,
-			UsedPercent:       peer.Host.Disk.UsedPercent,
-			InodesTotal:       peer.Host.Disk.InodesTotal,
-			InodesUsed:        peer.Host.Disk.InodesUsed,
-			InodesFree:        peer.Host.Disk.InodesFree,
-			InodesUsedPercent: peer.Host.Disk.InodesUsedPercent,
-		}
+	record.Host.Disk = resource.Disk{
+		Total:             peer.Host.Disk.Total,
+		Free:              peer.Host.Disk.Free,
+		Used:              peer.Host.Disk.Used,
+		UsedPercent:       peer.Host.Disk.UsedPercent,
+		InodesTotal:       peer.Host.Disk.InodesTotal,
+		InodesUsed:        peer.Host.Disk.InodesUsed,
+		InodesFree:        peer.Host.Disk.InodesFree,
+		InodesUsedPercent: peer.Host.Disk.InodesUsedPercent,
 	}
 
-	if peer.Host.Build != nil {
-		record.Host.Build = storage.Build{
-			GitVersion: peer.Host.Build.GitVersion,
-			GitCommit:  peer.Host.Build.GitCommit,
-			GoVersion:  peer.Host.Build.GoVersion,
-			Platform:   peer.Host.Build.Platform,
-		}
+	record.Host.Build = resource.Build{
+		GitVersion: peer.Host.Build.GitVersion,
+		GitCommit:  peer.Host.Build.GitCommit,
+		GoVersion:  peer.Host.Build.GoVersion,
+		Platform:   peer.Host.Build.Platform,
 	}
 
 	if req.Code != commonv1.Code_Success {

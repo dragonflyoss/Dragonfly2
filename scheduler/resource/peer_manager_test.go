@@ -133,7 +133,9 @@ func TestPeerManager_Load(t *testing.T) {
 			gc := gc.NewMockGC(ctl)
 			tc.mock(gc.EXPECT())
 
-			mockHost := NewHost(mockRawHost)
+			mockHost := NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, mockHost)
 			peerManager, err := newPeerManager(mockPeerGCConfig, gc)
@@ -188,7 +190,9 @@ func TestPeerManager_Store(t *testing.T) {
 			gc := gc.NewMockGC(ctl)
 			tc.mock(gc.EXPECT())
 
-			mockHost := NewHost(mockRawHost)
+			mockHost := NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, mockHost)
 			peerManager, err := newPeerManager(mockPeerGCConfig, gc)
@@ -241,7 +245,9 @@ func TestPeerManager_LoadOrStore(t *testing.T) {
 			gc := gc.NewMockGC(ctl)
 			tc.mock(gc.EXPECT())
 
-			mockHost := NewHost(mockRawHost)
+			mockHost := NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, mockHost)
 			peerManager, err := newPeerManager(mockPeerGCConfig, gc)
@@ -296,7 +302,9 @@ func TestPeerManager_Delete(t *testing.T) {
 			gc := gc.NewMockGC(ctl)
 			tc.mock(gc.EXPECT())
 
-			mockHost := NewHost(mockRawHost)
+			mockHost := NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, mockHost)
 			peerManager, err := newPeerManager(mockPeerGCConfig, gc)
@@ -503,7 +511,9 @@ func TestPeerManager_RunGC(t *testing.T) {
 			gc := gc.NewMockGC(ctl)
 			tc.mock(gc.EXPECT())
 
-			mockHost := NewHost(mockRawHost)
+			mockHost := NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, mockHost)
 			peerManager, err := newPeerManager(tc.gcConfig, gc)

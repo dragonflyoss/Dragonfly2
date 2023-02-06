@@ -163,7 +163,9 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 				},
 			},
 			mock: func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder) {
-				mockHost := NewHost(mockRawHost)
+				mockHost := NewHost(
+					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 				gomock.InOrder(
 					dynconfig.Get().Return(&config.DynconfigData{
 						Scheduler: &managerv1.Scheduler{
@@ -288,17 +290,17 @@ func TestSeedPeerClient_seedPeersToNetAddrs(t *testing.T) {
 					Id:           1,
 					Type:         pkgtypes.HostTypeSuperSeedName,
 					HostName:     mockRawSeedHost.Hostname,
-					Ip:           mockRawSeedHost.Ip,
+					Ip:           mockRawSeedHost.IP,
 					Port:         mockRawSeedHost.Port,
 					DownloadPort: mockRawSeedHost.DownloadPort,
-					Idc:          mockRawSeedHost.Network.Idc,
+					Idc:          mockRawSeedHost.Network.IDC,
 					Location:     mockRawSeedHost.Network.Location,
 				},
 			},
 			expect: func(t *testing.T, netAddrs []dfnet.NetAddr) {
 				assert := assert.New(t)
 				assert.Equal(netAddrs[0].Type, dfnet.TCP)
-				assert.Equal(netAddrs[0].Addr, fmt.Sprintf("%s:%d", mockRawSeedHost.Ip, mockRawSeedHost.Port))
+				assert.Equal(netAddrs[0].Addr, fmt.Sprintf("%s:%d", mockRawSeedHost.IP, mockRawSeedHost.Port))
 			},
 		},
 		{
