@@ -36,8 +36,9 @@ import (
 	"google.golang.org/grpc/status"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	commonv2 "d7y.io/api/pkg/apis/common/v2"
 	errordetailsv1 "d7y.io/api/pkg/apis/errordetails/v1"
-	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+	managerv2 "d7y.io/api/pkg/apis/manager/v2"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	schedulerv1mocks "d7y.io/api/pkg/apis/scheduler/v1/mocks"
 
@@ -286,11 +287,11 @@ func TestService_RegisterPeerTask(t *testing.T) {
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
-					md.GetApplications().Return([]*managerv1.Application{
+					md.GetApplications().Return([]*managerv2.Application{
 						{
 							Name: "baz",
-							Priority: &managerv1.ApplicationPriority{
-								Value: commonv1.Priority_LEVEL1,
+							Priority: &managerv2.ApplicationPriority{
+								Value: commonv2.Priority_LEVEL1,
 							},
 						},
 					}, nil).Times(1),
@@ -2239,11 +2240,11 @@ func TestService_triggerTask(t *testing.T) {
 				defer wg.Wait()
 
 				gomock.InOrder(
-					md.GetApplications().Return([]*managerv1.Application{
+					md.GetApplications().Return([]*managerv2.Application{
 						{
 							Name: "baw",
-							Priority: &managerv1.ApplicationPriority{
-								Value: commonv1.Priority_LEVEL6,
+							Priority: &managerv2.ApplicationPriority{
+								Value: commonv2.Priority_LEVEL6,
 							},
 						},
 					}, nil).Times(1),
@@ -2300,11 +2301,11 @@ func TestService_triggerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
 				mockPeer.Application = "bas"
 
-				md.GetApplications().Return([]*managerv1.Application{
+				md.GetApplications().Return([]*managerv2.Application{
 					{
 						Name: "bas",
-						Priority: &managerv1.ApplicationPriority{
-							Value: commonv1.Priority_LEVEL5,
+						Priority: &managerv2.ApplicationPriority{
+							Value: commonv2.Priority_LEVEL5,
 						},
 					},
 				}, nil).Times(1)
@@ -2332,11 +2333,11 @@ func TestService_triggerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
 				mockPeer.Application = "bas"
 
-				md.GetApplications().Return([]*managerv1.Application{
+				md.GetApplications().Return([]*managerv2.Application{
 					{
 						Name: "bas",
-						Priority: &managerv1.ApplicationPriority{
-							Value: commonv1.Priority_LEVEL4,
+						Priority: &managerv2.ApplicationPriority{
+							Value: commonv2.Priority_LEVEL4,
 						},
 					},
 				}, nil).Times(1)
@@ -2364,11 +2365,11 @@ func TestService_triggerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
 				mockPeer.Application = "bae"
 
-				md.GetApplications().Return([]*managerv1.Application{
+				md.GetApplications().Return([]*managerv2.Application{
 					{
 						Name: "bae",
-						Priority: &managerv1.ApplicationPriority{
-							Value: commonv1.Priority_LEVEL3,
+						Priority: &managerv2.ApplicationPriority{
+							Value: commonv2.Priority_LEVEL3,
 						},
 					},
 				}, nil).Times(1)
@@ -2396,11 +2397,11 @@ func TestService_triggerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
 				mockPeer.Application = "bae"
 
-				md.GetApplications().Return([]*managerv1.Application{
+				md.GetApplications().Return([]*managerv2.Application{
 					{
 						Name: "bae",
-						Priority: &managerv1.ApplicationPriority{
-							Value: commonv1.Priority_LEVEL2,
+						Priority: &managerv2.ApplicationPriority{
+							Value: commonv2.Priority_LEVEL2,
 						},
 					},
 				}, nil).Times(1)
@@ -2426,11 +2427,11 @@ func TestService_triggerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
 				mockPeer.Application = "bat"
 
-				md.GetApplications().Return([]*managerv1.Application{
+				md.GetApplications().Return([]*managerv2.Application{
 					{
 						Name: "bat",
-						Priority: &managerv1.ApplicationPriority{
-							Value: commonv1.Priority_LEVEL1,
+						Priority: &managerv2.ApplicationPriority{
+							Value: commonv2.Priority_LEVEL1,
 						},
 					},
 				}, nil).Times(1)
@@ -2461,11 +2462,11 @@ func TestService_triggerTask(t *testing.T) {
 				defer wg.Wait()
 
 				gomock.InOrder(
-					md.GetApplications().Return([]*managerv1.Application{
+					md.GetApplications().Return([]*managerv2.Application{
 						{
 							Name: "bat",
-							Priority: &managerv1.ApplicationPriority{
-								Value: commonv1.Priority_LEVEL0,
+							Priority: &managerv2.ApplicationPriority{
+								Value: commonv2.Priority_LEVEL0,
 							},
 						},
 					}, nil).Times(1),
