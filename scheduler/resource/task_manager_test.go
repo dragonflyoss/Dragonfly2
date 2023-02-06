@@ -353,7 +353,9 @@ func TestTaskManager_RunGC(t *testing.T) {
 			gc := gc.NewMockGC(ctl)
 			tc.mock(gc.EXPECT())
 
-			mockHost := NewHost(mockRawHost)
+			mockHost := NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, mockHost)
 			taskManager, err := newTaskManager(mockTaskGCConfig, gc)

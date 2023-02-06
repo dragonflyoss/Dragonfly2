@@ -52,32 +52,96 @@ var (
 		Algorithm:              evaluator.DefaultAlgorithm,
 	}
 
-	mockRawHost = &schedulerv1.AnnounceHostRequest{
-		Id:           idgen.HostID("hostname", 8003),
-		Type:         pkgtypes.HostTypeNormalName,
-		Ip:           "127.0.0.1",
-		Port:         8003,
-		DownloadPort: 8001,
-		Hostname:     "hostname",
-		Network: &schedulerv1.Network{
-			SecurityDomain: "security_domain",
-			Location:       "location",
-			Idc:            "idc",
+	mockRawHost = resource.Host{
+		ID:              idgen.HostID("hostname", 8003),
+		Type:            pkgtypes.HostTypeNormal,
+		Hostname:        "hostname",
+		IP:              "127.0.0.1",
+		Port:            8003,
+		DownloadPort:    8001,
+		OS:              "darwin",
+		Platform:        "darwin",
+		PlatformFamily:  "Standalone Workstation",
+		PlatformVersion: "11.1",
+		KernelVersion:   "20.2.0",
+		CPU:             mockCPU,
+		Memory:          mockMemory,
+		Network:         mockNetwork,
+		Disk:            mockDisk,
+		Build:           mockBuild,
+	}
+
+	mockRawSeedHost = resource.Host{
+		ID:              idgen.HostID("hostname_seed", 8003),
+		Type:            pkgtypes.HostTypeSuperSeed,
+		Hostname:        "hostname_seed",
+		IP:              "127.0.0.1",
+		Port:            8003,
+		DownloadPort:    8001,
+		OS:              "darwin",
+		Platform:        "darwin",
+		PlatformFamily:  "Standalone Workstation",
+		PlatformVersion: "11.1",
+		KernelVersion:   "20.2.0",
+		CPU:             mockCPU,
+		Memory:          mockMemory,
+		Network:         mockNetwork,
+		Disk:            mockDisk,
+		Build:           mockBuild,
+	}
+
+	mockCPU = resource.CPU{
+		LogicalCount:   4,
+		PhysicalCount:  2,
+		Percent:        1,
+		ProcessPercent: 0.5,
+		Times: resource.CPUTimes{
+			User:      240662.2,
+			System:    317950.1,
+			Idle:      3393691.3,
+			Nice:      0,
+			Iowait:    0,
+			Irq:       0,
+			Softirq:   0,
+			Steal:     0,
+			Guest:     0,
+			GuestNice: 0,
 		},
 	}
 
-	mockRawSeedHost = &schedulerv1.AnnounceHostRequest{
-		Id:           idgen.HostID("hostname_seed", 8003),
-		Type:         pkgtypes.HostTypeSuperSeedName,
-		Ip:           "127.0.0.1",
-		Port:         8003,
-		DownloadPort: 8001,
-		Hostname:     "hostname",
-		Network: &schedulerv1.Network{
-			SecurityDomain: "security_domain",
-			Location:       "location",
-			Idc:            "idc",
-		},
+	mockMemory = resource.Memory{
+		Total:              17179869184,
+		Available:          5962813440,
+		Used:               11217055744,
+		UsedPercent:        65.291858,
+		ProcessUsedPercent: 41.525125,
+		Free:               2749598908,
+	}
+
+	mockNetwork = resource.Network{
+		TCPConnectionCount:       10,
+		UploadTCPConnectionCount: 1,
+		SecurityDomain:           "security_domain",
+		Location:                 "location",
+		IDC:                      "idc",
+	}
+
+	mockDisk = resource.Disk{
+		Total:             499963174912,
+		Free:              37226479616,
+		Used:              423809622016,
+		UsedPercent:       91.92547406065952,
+		InodesTotal:       4882452880,
+		InodesUsed:        7835772,
+		InodesFree:        4874617108,
+		InodesUsedPercent: 0.1604884305611568,
+	}
+
+	mockBuild = resource.Build{
+		GitVersion: "v1.0.0",
+		GitCommit:  "221176b117c6d59366d68f2b34d38be50c935883",
+		GoVersion:  "1.18",
+		Platform:   "darwin",
 	}
 
 	mockTaskURLMeta = &commonv1.UrlMeta{
@@ -316,10 +380,14 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 			stream := mocks.NewMockScheduler_ReportPieceResultServer(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			ctx, cancel := context.WithCancel(context.Background())
-			mockHost := resource.NewHost(mockRawHost)
+			mockHost := resource.NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
-			mockSeedHost := resource.NewHost(mockRawSeedHost)
+			mockSeedHost := resource.NewHost(
+				mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
+				mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)
 			seedPeer := resource.NewPeer(mockSeedPeerID, mockTask, mockSeedHost)
 			blocklist := set.NewSafeSet[string]()
 
@@ -556,18 +624,9 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 			mock: func(peer *resource.Peer, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				mockPeer.FSM.SetState(resource.PeerStateRunning)
-				candidatePeer := resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, resource.NewHost(&schedulerv1.AnnounceHostRequest{
-					Id:           idgen.HostID(uuid.New().String(), 8003),
-					Ip:           "127.0.0.1",
-					Port:         8003,
-					DownloadPort: 8001,
-					Hostname:     "hostname",
-					Network: &schedulerv1.Network{
-						SecurityDomain: "security_domain",
-						Location:       "location",
-						Idc:            "idc",
-					},
-				}))
+				candidatePeer := resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, resource.NewHost(
+					idgen.HostID(uuid.New().String(), 8003), mockRawHost.IP, mockRawHost.Hostname,
+					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type))
 				candidatePeer.FSM.SetState(resource.PeerStateRunning)
 				peer.Task.StorePeer(peer)
 				peer.Task.StorePeer(mockPeer)
@@ -600,21 +659,14 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 			defer ctl.Finish()
 			stream := mocks.NewMockScheduler_ReportPieceResultServer(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			mockHost := resource.NewHost(mockRawHost)
+			mockHost := resource.NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
-			mockPeer := resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, resource.NewHost(&schedulerv1.AnnounceHostRequest{
-				Id:           idgen.HostID(uuid.New().String(), 8003),
-				Ip:           "127.0.0.1",
-				Port:         8003,
-				DownloadPort: 8001,
-				Hostname:     "hostname",
-				Network: &schedulerv1.Network{
-					SecurityDomain: "security_domain",
-					Location:       "location",
-					Idc:            "idc",
-				},
-			}))
+			mockPeer := resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, resource.NewHost(
+				idgen.HostID(uuid.New().String(), 8003), mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type))
 			blocklist := set.NewSafeSet[string]()
 
 			tc.mock(peer, mockTask, mockPeer, blocklist, stream, dynconfig, stream.EXPECT(), dynconfig.EXPECT())
@@ -878,24 +930,17 @@ func TestScheduler_FindParent(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			mockHost := resource.NewHost(mockRawHost)
+			mockHost := resource.NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
 
 			var mockPeers []*resource.Peer
 			for i := 0; i < 11; i++ {
-				mockHost := resource.NewHost(&schedulerv1.AnnounceHostRequest{
-					Id:           idgen.HostID(uuid.New().String(), 8003),
-					Ip:           "127.0.0.1",
-					Port:         8003,
-					DownloadPort: 8001,
-					Hostname:     "hostname",
-					Network: &schedulerv1.Network{
-						SecurityDomain: "security_domain",
-						Location:       "location",
-						Idc:            "idc",
-					},
-				})
+				mockHost := resource.NewHost(
+					idgen.HostID(uuid.New().String(), 8003), mockRawHost.IP, mockRawHost.Hostname,
+					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 				peer := resource.NewPeer(idgen.PeerID(fmt.Sprintf("127.0.0.%d", i)), mockTask, mockHost)
 				mockPeers = append(mockPeers, peer)
 			}
@@ -978,7 +1023,9 @@ func TestScheduler_constructSuccessPeerPacket(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			mockHost := resource.NewHost(mockRawHost)
+			mockHost := resource.NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 
 			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)

@@ -26,7 +26,6 @@ import (
 	"google.golang.org/grpc"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
-	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
@@ -125,35 +124,29 @@ func (sc *seedPeerClient) updateSeedPeersForHostManager(seedPeers []*managerv1.S
 		id := idgen.HostID(seedPeer.HostName, seedPeer.Port)
 		seedPeerHost, loaded := sc.hostManager.Load(id)
 		if !loaded {
-			var options []HostOption
+			options := []HostOption{WithNetwork(Network{
+				Location: seedPeer.Location,
+				IDC:      seedPeer.Idc,
+			})}
 			if concurrentUploadLimit > 0 {
 				options = append(options, WithConcurrentUploadLimit(concurrentUploadLimit))
 			}
 
-			sc.hostManager.Store(NewHost(&schedulerv1.AnnounceHostRequest{
-				Id:           id,
-				Type:         types.HostTypeSuperSeedName,
-				Ip:           seedPeer.Ip,
-				Hostname:     seedPeer.HostName,
-				Port:         seedPeer.Port,
-				DownloadPort: seedPeer.DownloadPort,
-				Network: &schedulerv1.Network{
-					Location: seedPeer.Location,
-					Idc:      seedPeer.Idc,
-				},
-			}, options...))
+			host := NewHost(
+				id, seedPeer.Ip, seedPeer.HostName,
+				seedPeer.Port, seedPeer.DownloadPort, types.HostTypeSuperSeed,
+				options...,
+			)
+
+			sc.hostManager.Store(host)
 			continue
 		}
 
-		seedPeerHost.IP = seedPeer.Ip
 		seedPeerHost.Type = types.HostTypeSuperSeed
-		seedPeerHost.Hostname = seedPeer.HostName
-		seedPeerHost.Port = seedPeer.Port
+		seedPeerHost.IP = seedPeer.Ip
 		seedPeerHost.DownloadPort = seedPeer.DownloadPort
-		seedPeerHost.Network = &schedulerv1.Network{
-			Location: seedPeer.Location,
-			Idc:      seedPeer.Idc,
-		}
+		seedPeerHost.Network.Location = seedPeer.Location
+		seedPeerHost.Network.IDC = seedPeer.Idc
 
 		if concurrentUploadLimit > 0 {
 			seedPeerHost.ConcurrentUploadLimit.Store(concurrentUploadLimit)
