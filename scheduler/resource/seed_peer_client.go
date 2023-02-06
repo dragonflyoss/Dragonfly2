@@ -25,7 +25,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+	managerv2 "d7y.io/api/pkg/apis/manager/v2"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
@@ -114,7 +114,7 @@ func (sc *seedPeerClient) OnNotify(data *config.DynconfigData) {
 }
 
 // updateSeedPeersForHostManager updates seed peers for host manager.
-func (sc *seedPeerClient) updateSeedPeersForHostManager(seedPeers []*managerv1.SeedPeer) {
+func (sc *seedPeerClient) updateSeedPeersForHostManager(seedPeers []*managerv2.SeedPeer) {
 	for _, seedPeer := range seedPeers {
 		var concurrentUploadLimit int32
 		if config, err := config.GetSeedPeerClusterConfigBySeedPeer(seedPeer); err == nil {
@@ -157,7 +157,7 @@ func (sc *seedPeerClient) updateSeedPeersForHostManager(seedPeers []*managerv1.S
 }
 
 // seedPeersToNetAddrs coverts []*config.SeedPeer to []dfnet.NetAddr.
-func seedPeersToNetAddrs(seedPeers []*managerv1.SeedPeer) []dfnet.NetAddr {
+func seedPeersToNetAddrs(seedPeers []*managerv2.SeedPeer) []dfnet.NetAddr {
 	netAddrs := make([]dfnet.NetAddr, 0, len(seedPeers))
 	for _, seedPeer := range seedPeers {
 		netAddrs = append(netAddrs, dfnet.NetAddr{
@@ -170,9 +170,9 @@ func seedPeersToNetAddrs(seedPeers []*managerv1.SeedPeer) []dfnet.NetAddr {
 }
 
 // diffSeedPeers find out different seed peers.
-func diffSeedPeers(sx []*managerv1.SeedPeer, sy []*managerv1.SeedPeer) []*managerv1.SeedPeer {
+func diffSeedPeers(sx []*managerv2.SeedPeer, sy []*managerv2.SeedPeer) []*managerv2.SeedPeer {
 	// Get seedPeers with the same HostID but different IP.
-	var diff []*managerv1.SeedPeer
+	var diff []*managerv2.SeedPeer
 	for _, x := range sx {
 		for _, y := range sy {
 			if x.HostName != y.HostName {

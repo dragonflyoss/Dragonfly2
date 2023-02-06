@@ -30,8 +30,8 @@ import (
 	"github.com/looplab/fsm"
 	"go.uber.org/atomic"
 
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+	commonv2 "d7y.io/api/pkg/apis/common/v2"
+	managerv2 "d7y.io/api/pkg/apis/manager/v2"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -425,15 +425,15 @@ func (p *Peer) DownloadTinyFile() ([]byte, error) {
 }
 
 // GetPriority returns priority of peer.
-func (p *Peer) GetPriority(dynconfig config.DynconfigInterface) commonv1.Priority {
+func (p *Peer) GetPriority(dynconfig config.DynconfigInterface) commonv2.Priority {
 	pbApplications, err := dynconfig.GetApplications()
 	if err != nil {
 		p.Log.Info(err)
-		return commonv1.Priority_LEVEL0
+		return commonv2.Priority_LEVEL0
 	}
 
 	// Find peer application.
-	var application *managerv1.Application
+	var application *managerv2.Application
 	for _, pbApplication := range pbApplications {
 		if p.Application == pbApplication.Name {
 			application = pbApplication
@@ -445,14 +445,14 @@ func (p *Peer) GetPriority(dynconfig config.DynconfigInterface) commonv1.Priorit
 	// then return Priority_LEVEL0.
 	if application == nil {
 		p.Log.Info("can not found matching application")
-		return commonv1.Priority_LEVEL0
+		return commonv2.Priority_LEVEL0
 	}
 
 	// If application has no priority,
 	// then return Priority_LEVEL0.
 	if application.Priority == nil {
 		p.Log.Info("can not found priority")
-		return commonv1.Priority_LEVEL0
+		return commonv2.Priority_LEVEL0
 	}
 
 	// Match url priority first.

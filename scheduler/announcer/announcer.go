@@ -21,7 +21,7 @@ package announcer
 import (
 	"context"
 
-	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+	managerv2 "d7y.io/api/pkg/apis/manager/v2"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
@@ -40,7 +40,7 @@ type Announcer interface {
 // announcer provides announce function.
 type announcer struct {
 	config        *config.Config
-	managerClient managerclient.V1
+	managerClient managerclient.V2
 	done          chan struct{}
 }
 
@@ -48,7 +48,7 @@ type announcer struct {
 type Option func(s *announcer)
 
 // New returns a new Announcer interface.
-func New(cfg *config.Config, managerClient managerclient.V1) (Announcer, error) {
+func New(cfg *config.Config, managerClient managerclient.V2) (Announcer, error) {
 	a := &announcer{
 		config:        cfg,
 		managerClient: managerClient,
@@ -56,8 +56,8 @@ func New(cfg *config.Config, managerClient managerclient.V1) (Announcer, error) 
 	}
 
 	// Register to manager.
-	if _, err := a.managerClient.UpdateScheduler(context.Background(), &managerv1.UpdateSchedulerRequest{
-		SourceType:         managerv1.SourceType_SCHEDULER_SOURCE,
+	if _, err := a.managerClient.UpdateScheduler(context.Background(), &managerv2.UpdateSchedulerRequest{
+		SourceType:         managerv2.SourceType_SCHEDULER_SOURCE,
 		HostName:           a.config.Server.Host,
 		Ip:                 a.config.Server.AdvertiseIP.String(),
 		Port:               int32(a.config.Server.Port),
@@ -90,8 +90,8 @@ func (a *announcer) Stop() error {
 // announceSeedPeer announces peer information to manager.
 func (a *announcer) announceToManager() error {
 	// Start keepalive to manager.
-	a.managerClient.KeepAlive(a.config.Manager.KeepAlive.Interval, &managerv1.KeepAliveRequest{
-		SourceType: managerv1.SourceType_SCHEDULER_SOURCE,
+	a.managerClient.KeepAlive(a.config.Manager.KeepAlive.Interval, &managerv2.KeepAliveRequest{
+		SourceType: managerv2.SourceType_SCHEDULER_SOURCE,
 		HostName:   a.config.Server.Host,
 		Ip:         a.config.Server.AdvertiseIP.String(),
 		ClusterId:  uint64(a.config.Manager.SchedulerClusterID),

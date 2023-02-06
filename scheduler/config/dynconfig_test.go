@@ -26,8 +26,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+	commonv2 "d7y.io/api/pkg/apis/common/v2"
+	managerv2 "d7y.io/api/pkg/apis/manager/v2"
 
 	"d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
 	"d7y.io/dragonfly/v2/pkg/types"
@@ -51,7 +51,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 		refreshInterval time.Duration
 		sleep           func()
 		cleanFileCache  func(t *testing.T)
-		mock            func(m *mocks.MockV1MockRecorder)
+		mock            func(m *mocks.MockV2MockRecorder)
 		expect          func(t *testing.T, data *DynconfigData, err error)
 	}{
 		{
@@ -63,8 +63,8 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 				}
 			},
 			sleep: func() {},
-			mock: func(m *mocks.MockV1MockRecorder) {
-				m.GetScheduler(gomock.Any(), gomock.Any()).Return(&managerv1.Scheduler{
+			mock: func(m *mocks.MockV2MockRecorder) {
+				m.GetScheduler(gomock.Any(), gomock.Any()).Return(&managerv2.Scheduler{
 					Id:       1,
 					HostName: "foo",
 					Idc:      "idc",
@@ -72,7 +72,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 					Ip:       "127.0.0.1",
 					Port:     8002,
 					State:    "active",
-					SeedPeers: []*managerv1.SeedPeer{
+					SeedPeers: []*managerv2.SeedPeer{
 						{
 							Id:           1,
 							HostName:     "bar",
@@ -82,33 +82,33 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 							Ip:           "127.0.0.1",
 							Port:         8001,
 							DownloadPort: 8003,
-							SeedPeerCluster: &managerv1.SeedPeerCluster{
+							SeedPeerCluster: &managerv2.SeedPeerCluster{
 								Id:     1,
 								Name:   "baz",
 								Config: []byte{1},
 							},
 						},
 					},
-					SchedulerCluster: &managerv1.SchedulerCluster{
+					SchedulerCluster: &managerv2.SchedulerCluster{
 						Id:           1,
 						Name:         "bas",
 						Config:       []byte{1},
 						ClientConfig: []byte{1},
 					},
 				}, nil).Times(1)
-				m.ListApplications(gomock.Any(), gomock.Any()).Return(&managerv1.ListApplicationsResponse{
-					Applications: []*managerv1.Application{
+				m.ListApplications(gomock.Any(), gomock.Any()).Return(&managerv2.ListApplicationsResponse{
+					Applications: []*managerv2.Application{
 						{
 							Id:   1,
 							Name: "foo",
 							Url:  "example.com",
 							Bio:  "bar",
-							Priority: &managerv1.ApplicationPriority{
-								Value: commonv1.Priority_LEVEL1,
-								Urls: []*managerv1.URLPriority{
+							Priority: &managerv2.ApplicationPriority{
+								Value: commonv2.Priority_LEVEL1,
+								Urls: []*managerv2.URLPriority{
 									{
 										Regex: "blobs*",
-										Value: commonv1.Priority_LEVEL1,
+										Value: commonv2.Priority_LEVEL1,
 									},
 								},
 							},
@@ -119,7 +119,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 			expect: func(t *testing.T, data *DynconfigData, err error) {
 				assert := assert.New(t)
 				assert.EqualValues(data, &DynconfigData{
-					Scheduler: &managerv1.Scheduler{
+					Scheduler: &managerv2.Scheduler{
 						Id:       1,
 						HostName: "foo",
 						Idc:      "idc",
@@ -127,7 +127,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 						Ip:       "127.0.0.1",
 						Port:     8002,
 						State:    "active",
-						SeedPeers: []*managerv1.SeedPeer{
+						SeedPeers: []*managerv2.SeedPeer{
 							{
 								Id:           1,
 								HostName:     "bar",
@@ -137,32 +137,32 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 								Ip:           "127.0.0.1",
 								Port:         8001,
 								DownloadPort: 8003,
-								SeedPeerCluster: &managerv1.SeedPeerCluster{
+								SeedPeerCluster: &managerv2.SeedPeerCluster{
 									Id:     1,
 									Name:   "baz",
 									Config: []byte{1},
 								},
 							},
 						},
-						SchedulerCluster: &managerv1.SchedulerCluster{
+						SchedulerCluster: &managerv2.SchedulerCluster{
 							Id:           1,
 							Name:         "bas",
 							Config:       []byte{1},
 							ClientConfig: []byte{1},
 						},
 					},
-					Applications: []*managerv1.Application{
+					Applications: []*managerv2.Application{
 						{
 							Id:   1,
 							Name: "foo",
 							Url:  "example.com",
 							Bio:  "bar",
-							Priority: &managerv1.ApplicationPriority{
-								Value: commonv1.Priority_LEVEL1,
-								Urls: []*managerv1.URLPriority{
+							Priority: &managerv2.ApplicationPriority{
+								Value: commonv2.Priority_LEVEL1,
+								Urls: []*managerv2.URLPriority{
 									{
 										Regex: "blobs*",
-										Value: commonv1.Priority_LEVEL1,
+										Value: commonv2.Priority_LEVEL1,
 									},
 								},
 							},
@@ -182,9 +182,9 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 			sleep: func() {
 				time.Sleep(100 * time.Millisecond)
 			},
-			mock: func(m *mocks.MockV1MockRecorder) {
+			mock: func(m *mocks.MockV2MockRecorder) {
 				gomock.InOrder(
-					m.GetScheduler(gomock.Any(), gomock.Any()).Return(&managerv1.Scheduler{
+					m.GetScheduler(gomock.Any(), gomock.Any()).Return(&managerv2.Scheduler{
 						Id:       1,
 						HostName: "foo",
 						Idc:      "idc",
@@ -192,7 +192,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 						Ip:       "127.0.0.1",
 						Port:     8002,
 						State:    "active",
-						SeedPeers: []*managerv1.SeedPeer{
+						SeedPeers: []*managerv2.SeedPeer{
 							{
 								Id:           1,
 								HostName:     "bar",
@@ -202,33 +202,33 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 								Ip:           "127.0.0.1",
 								Port:         8001,
 								DownloadPort: 8003,
-								SeedPeerCluster: &managerv1.SeedPeerCluster{
+								SeedPeerCluster: &managerv2.SeedPeerCluster{
 									Id:     1,
 									Name:   "baz",
 									Config: []byte{1},
 								},
 							},
 						},
-						SchedulerCluster: &managerv1.SchedulerCluster{
+						SchedulerCluster: &managerv2.SchedulerCluster{
 							Id:           1,
 							Name:         "bas",
 							Config:       []byte{1},
 							ClientConfig: []byte{1},
 						},
 					}, nil).Times(1),
-					m.ListApplications(gomock.Any(), gomock.Any()).Return(&managerv1.ListApplicationsResponse{
-						Applications: []*managerv1.Application{
+					m.ListApplications(gomock.Any(), gomock.Any()).Return(&managerv2.ListApplicationsResponse{
+						Applications: []*managerv2.Application{
 							{
 								Id:   1,
 								Name: "foo",
 								Url:  "example.com",
 								Bio:  "bar",
-								Priority: &managerv1.ApplicationPriority{
-									Value: commonv1.Priority_LEVEL1,
-									Urls: []*managerv1.URLPriority{
+								Priority: &managerv2.ApplicationPriority{
+									Value: commonv2.Priority_LEVEL1,
+									Urls: []*managerv2.URLPriority{
 										{
 											Regex: "blobs*",
-											Value: commonv1.Priority_LEVEL1,
+											Value: commonv2.Priority_LEVEL1,
 										},
 									},
 								},
@@ -241,7 +241,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 			expect: func(t *testing.T, data *DynconfigData, err error) {
 				assert := assert.New(t)
 				assert.EqualValues(data, &DynconfigData{
-					Scheduler: &managerv1.Scheduler{
+					Scheduler: &managerv2.Scheduler{
 						Id:       1,
 						HostName: "foo",
 						Idc:      "idc",
@@ -249,7 +249,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 						Ip:       "127.0.0.1",
 						Port:     8002,
 						State:    "active",
-						SeedPeers: []*managerv1.SeedPeer{
+						SeedPeers: []*managerv2.SeedPeer{
 							{
 								Id:           1,
 								HostName:     "bar",
@@ -259,32 +259,32 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 								Ip:           "127.0.0.1",
 								Port:         8001,
 								DownloadPort: 8003,
-								SeedPeerCluster: &managerv1.SeedPeerCluster{
+								SeedPeerCluster: &managerv2.SeedPeerCluster{
 									Id:     1,
 									Name:   "baz",
 									Config: []byte{1},
 								},
 							},
 						},
-						SchedulerCluster: &managerv1.SchedulerCluster{
+						SchedulerCluster: &managerv2.SchedulerCluster{
 							Id:           1,
 							Name:         "bas",
 							Config:       []byte{1},
 							ClientConfig: []byte{1},
 						},
 					},
-					Applications: []*managerv1.Application{
+					Applications: []*managerv2.Application{
 						{
 							Id:   1,
 							Name: "foo",
 							Url:  "example.com",
 							Bio:  "bar",
-							Priority: &managerv1.ApplicationPriority{
-								Value: commonv1.Priority_LEVEL1,
-								Urls: []*managerv1.URLPriority{
+							Priority: &managerv2.ApplicationPriority{
+								Value: commonv2.Priority_LEVEL1,
+								Urls: []*managerv2.URLPriority{
 									{
 										Regex: "blobs*",
-										Value: commonv1.Priority_LEVEL1,
+										Value: commonv2.Priority_LEVEL1,
 									},
 								},
 							},
@@ -304,9 +304,9 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 			sleep: func() {
 				time.Sleep(100 * time.Millisecond)
 			},
-			mock: func(m *mocks.MockV1MockRecorder) {
+			mock: func(m *mocks.MockV2MockRecorder) {
 				gomock.InOrder(
-					m.GetScheduler(gomock.Any(), gomock.Any()).Return(&managerv1.Scheduler{
+					m.GetScheduler(gomock.Any(), gomock.Any()).Return(&managerv2.Scheduler{
 						Id:       1,
 						HostName: "foo",
 						Idc:      "idc",
@@ -314,7 +314,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 						Ip:       "127.0.0.1",
 						Port:     8002,
 						State:    "active",
-						SeedPeers: []*managerv1.SeedPeer{
+						SeedPeers: []*managerv2.SeedPeer{
 							{
 								Id:           1,
 								HostName:     "bar",
@@ -324,40 +324,40 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 								Ip:           "127.0.0.1",
 								Port:         8001,
 								DownloadPort: 8003,
-								SeedPeerCluster: &managerv1.SeedPeerCluster{
+								SeedPeerCluster: &managerv2.SeedPeerCluster{
 									Id:     1,
 									Name:   "baz",
 									Config: []byte{1},
 								},
 							},
 						},
-						SchedulerCluster: &managerv1.SchedulerCluster{
+						SchedulerCluster: &managerv2.SchedulerCluster{
 							Id:           1,
 							Name:         "bas",
 							Config:       []byte{1},
 							ClientConfig: []byte{1},
 						},
 					}, nil).Times(1),
-					m.ListApplications(gomock.Any(), gomock.Any()).Return(&managerv1.ListApplicationsResponse{
-						Applications: []*managerv1.Application{
+					m.ListApplications(gomock.Any(), gomock.Any()).Return(&managerv2.ListApplicationsResponse{
+						Applications: []*managerv2.Application{
 							{
 								Id:   1,
 								Name: "foo",
 								Url:  "example.com",
 								Bio:  "bar",
-								Priority: &managerv1.ApplicationPriority{
-									Value: commonv1.Priority_LEVEL1,
-									Urls: []*managerv1.URLPriority{
+								Priority: &managerv2.ApplicationPriority{
+									Value: commonv2.Priority_LEVEL1,
+									Urls: []*managerv2.URLPriority{
 										{
 											Regex: "blobs*",
-											Value: commonv1.Priority_LEVEL1,
+											Value: commonv2.Priority_LEVEL1,
 										},
 									},
 								},
 							},
 						},
 					}, nil).Times(1),
-					m.GetScheduler(gomock.Any(), gomock.Any()).Return(&managerv1.Scheduler{
+					m.GetScheduler(gomock.Any(), gomock.Any()).Return(&managerv2.Scheduler{
 						Id:       1,
 						HostName: "foo",
 						Idc:      "idc",
@@ -365,7 +365,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 						Ip:       "127.0.0.1",
 						Port:     8002,
 						State:    "active",
-						SeedPeers: []*managerv1.SeedPeer{
+						SeedPeers: []*managerv2.SeedPeer{
 							{
 								Id:           1,
 								HostName:     "bar",
@@ -375,14 +375,14 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 								Ip:           "127.0.0.1",
 								Port:         8001,
 								DownloadPort: 8003,
-								SeedPeerCluster: &managerv1.SeedPeerCluster{
+								SeedPeerCluster: &managerv2.SeedPeerCluster{
 									Id:     1,
 									Name:   "baz",
 									Config: []byte{1},
 								},
 							},
 						},
-						SchedulerCluster: &managerv1.SchedulerCluster{
+						SchedulerCluster: &managerv2.SchedulerCluster{
 							Id:           1,
 							Name:         "bas",
 							Config:       []byte{1},
@@ -395,7 +395,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 			expect: func(t *testing.T, data *DynconfigData, err error) {
 				assert := assert.New(t)
 				assert.EqualValues(data, &DynconfigData{
-					Scheduler: &managerv1.Scheduler{
+					Scheduler: &managerv2.Scheduler{
 						Id:       1,
 						HostName: "foo",
 						Idc:      "idc",
@@ -403,7 +403,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 						Ip:       "127.0.0.1",
 						Port:     8002,
 						State:    "active",
-						SeedPeers: []*managerv1.SeedPeer{
+						SeedPeers: []*managerv2.SeedPeer{
 							{
 								Id:           1,
 								HostName:     "bar",
@@ -413,32 +413,32 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 								Ip:           "127.0.0.1",
 								Port:         8001,
 								DownloadPort: 8003,
-								SeedPeerCluster: &managerv1.SeedPeerCluster{
+								SeedPeerCluster: &managerv2.SeedPeerCluster{
 									Id:     1,
 									Name:   "baz",
 									Config: []byte{1},
 								},
 							},
 						},
-						SchedulerCluster: &managerv1.SchedulerCluster{
+						SchedulerCluster: &managerv2.SchedulerCluster{
 							Id:           1,
 							Name:         "bas",
 							Config:       []byte{1},
 							ClientConfig: []byte{1},
 						},
 					},
-					Applications: []*managerv1.Application{
+					Applications: []*managerv2.Application{
 						{
 							Id:   1,
 							Name: "foo",
 							Url:  "example.com",
 							Bio:  "bar",
-							Priority: &managerv1.ApplicationPriority{
-								Value: commonv1.Priority_LEVEL1,
-								Urls: []*managerv1.URLPriority{
+							Priority: &managerv2.ApplicationPriority{
+								Value: commonv2.Priority_LEVEL1,
+								Urls: []*managerv2.URLPriority{
 									{
 										Regex: "blobs*",
-										Value: commonv1.Priority_LEVEL1,
+										Value: commonv2.Priority_LEVEL1,
 									},
 								},
 							},
@@ -453,7 +453,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
-			mockManagerClient := mocks.NewMockV1(ctl)
+			mockManagerClient := mocks.NewMockV2(ctl)
 			tc.mock(mockManagerClient.EXPECT())
 
 			mockConfig.DynConfig.RefreshInterval = tc.refreshInterval

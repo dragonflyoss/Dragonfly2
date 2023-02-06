@@ -657,7 +657,8 @@ func (v *V1) triggerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, 
 	if req.UrlMeta.Priority != commonv1.Priority_LEVEL0 {
 		priority = req.UrlMeta.Priority
 	} else {
-		priority = peer.GetPriority(dynconfig)
+		// Compatible with v1 version of priority enum.
+		priority = commonv1.Priority(peer.GetPriority(dynconfig))
 	}
 	peer.Log.Infof("peer priority is %d", priority)
 

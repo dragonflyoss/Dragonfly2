@@ -27,7 +27,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/resolver"
 
-	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+	managerv2 "d7y.io/api/pkg/apis/manager/v2"
 
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	pkgtypes "d7y.io/dragonfly/v2/pkg/types"
@@ -46,8 +46,8 @@ func TestSeedPeerClient_newSeedPeerClient(t *testing.T) {
 			mock: func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder) {
 				gomock.InOrder(
 					dynconfig.Get().Return(&config.DynconfigData{
-						Scheduler: &managerv1.Scheduler{
-							SeedPeers: []*managerv1.SeedPeer{{Id: 1}},
+						Scheduler: &managerv2.Scheduler{
+							SeedPeers: []*managerv2.SeedPeer{{Id: 1}},
 						},
 					}, nil).Times(1),
 					dynconfig.Register(gomock.Any()).Return().Times(1),
@@ -77,8 +77,8 @@ func TestSeedPeerClient_newSeedPeerClient(t *testing.T) {
 			mock: func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder) {
 				gomock.InOrder(
 					dynconfig.Get().Return(&config.DynconfigData{
-						Scheduler: &managerv1.Scheduler{
-							SeedPeers: []*managerv1.SeedPeer{},
+						Scheduler: &managerv2.Scheduler{
+							SeedPeers: []*managerv2.SeedPeer{},
 						},
 					}, nil).Times(1),
 					dynconfig.Register(gomock.Any()).Return().Times(1),
@@ -116,8 +116,8 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 		{
 			name: "notify client without different seedPeers",
 			data: &config.DynconfigData{
-				Scheduler: &managerv1.Scheduler{
-					SeedPeers: []*managerv1.SeedPeer{
+				Scheduler: &managerv2.Scheduler{
+					SeedPeers: []*managerv2.SeedPeer{
 						{
 							Id:       1,
 							HostName: "foo",
@@ -130,8 +130,8 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 			mock: func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder) {
 				gomock.InOrder(
 					dynconfig.Get().Return(&config.DynconfigData{
-						Scheduler: &managerv1.Scheduler{
-							SeedPeers: []*managerv1.SeedPeer{
+						Scheduler: &managerv2.Scheduler{
+							SeedPeers: []*managerv2.SeedPeer{
 								{
 									Id:       1,
 									HostName: "foo",
@@ -152,8 +152,8 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 		{
 			name: "notify client with different seedPeers",
 			data: &config.DynconfigData{
-				Scheduler: &managerv1.Scheduler{
-					SeedPeers: []*managerv1.SeedPeer{
+				Scheduler: &managerv2.Scheduler{
+					SeedPeers: []*managerv2.SeedPeer{
 						{
 							Id:       1,
 							HostName: "foo",
@@ -168,8 +168,8 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 				gomock.InOrder(
 					dynconfig.Get().Return(&config.DynconfigData{
-						Scheduler: &managerv1.Scheduler{
-							SeedPeers: []*managerv1.SeedPeer{
+						Scheduler: &managerv2.Scheduler{
+							SeedPeers: []*managerv2.SeedPeer{
 								{
 									Id:       1,
 									HostName: "foo",
@@ -192,8 +192,8 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 		{
 			name: "notify client with different seed peers and load host failed",
 			data: &config.DynconfigData{
-				Scheduler: &managerv1.Scheduler{
-					SeedPeers: []*managerv1.SeedPeer{
+				Scheduler: &managerv2.Scheduler{
+					SeedPeers: []*managerv2.SeedPeer{
 						{
 							Id:       1,
 							HostName: "foo",
@@ -205,8 +205,8 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 			mock: func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder) {
 				gomock.InOrder(
 					dynconfig.Get().Return(&config.DynconfigData{
-						Scheduler: &managerv1.Scheduler{
-							SeedPeers: []*managerv1.SeedPeer{
+						Scheduler: &managerv2.Scheduler{
+							SeedPeers: []*managerv2.SeedPeer{
 								{
 									Id:       1,
 									HostName: "foo",
@@ -229,8 +229,8 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 		{
 			name: "seed peer list is deep equal",
 			data: &config.DynconfigData{
-				Scheduler: &managerv1.Scheduler{
-					SeedPeers: []*managerv1.SeedPeer{
+				Scheduler: &managerv2.Scheduler{
+					SeedPeers: []*managerv2.SeedPeer{
 						{
 							Id: 1,
 							Ip: "127.0.0.1",
@@ -241,8 +241,8 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 			mock: func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder) {
 				gomock.InOrder(
 					dynconfig.Get().Return(&config.DynconfigData{
-						Scheduler: &managerv1.Scheduler{
-							SeedPeers: []*managerv1.SeedPeer{
+						Scheduler: &managerv2.Scheduler{
+							SeedPeers: []*managerv2.SeedPeer{
 								{
 									Id: 1,
 									Ip: "127.0.0.1",
@@ -280,12 +280,12 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 func TestSeedPeerClient_seedPeersToNetAddrs(t *testing.T) {
 	tests := []struct {
 		name      string
-		seedPeers []*managerv1.SeedPeer
+		seedPeers []*managerv2.SeedPeer
 		expect    func(t *testing.T, netAddrs []dfnet.NetAddr)
 	}{
 		{
 			name: "seed peers covert to netAddr",
-			seedPeers: []*managerv1.SeedPeer{
+			seedPeers: []*managerv2.SeedPeer{
 				{
 					Id:           1,
 					Type:         pkgtypes.HostTypeSuperSeedName,
@@ -305,7 +305,7 @@ func TestSeedPeerClient_seedPeersToNetAddrs(t *testing.T) {
 		},
 		{
 			name:      "seed peers is empty",
-			seedPeers: []*managerv1.SeedPeer{},
+			seedPeers: []*managerv2.SeedPeer{},
 			expect: func(t *testing.T, netAddrs []dfnet.NetAddr) {
 				assert := assert.New(t)
 				assert.Equal(len(netAddrs), 0)
@@ -323,13 +323,13 @@ func TestSeedPeerClient_seedPeersToNetAddrs(t *testing.T) {
 func TestSeedPeerClient_diffSeedPeers(t *testing.T) {
 	tests := []struct {
 		name   string
-		sx     []*managerv1.SeedPeer
-		sy     []*managerv1.SeedPeer
-		expect func(t *testing.T, diff []*managerv1.SeedPeer)
+		sx     []*managerv2.SeedPeer
+		sy     []*managerv2.SeedPeer
+		expect func(t *testing.T, diff []*managerv2.SeedPeer)
 	}{
 		{
 			name: "same seed peer list",
-			sx: []*managerv1.SeedPeer{
+			sx: []*managerv2.SeedPeer{
 				{
 					Id:       1,
 					HostName: "foo",
@@ -337,7 +337,7 @@ func TestSeedPeerClient_diffSeedPeers(t *testing.T) {
 					Port:     8080,
 				},
 			},
-			sy: []*managerv1.SeedPeer{
+			sy: []*managerv2.SeedPeer{
 				{
 					Id:       1,
 					HostName: "foo",
@@ -345,14 +345,14 @@ func TestSeedPeerClient_diffSeedPeers(t *testing.T) {
 					Port:     8080,
 				},
 			},
-			expect: func(t *testing.T, diff []*managerv1.SeedPeer) {
+			expect: func(t *testing.T, diff []*managerv2.SeedPeer) {
 				assert := assert.New(t)
-				assert.EqualValues(diff, []*managerv1.SeedPeer(nil))
+				assert.EqualValues(diff, []*managerv2.SeedPeer(nil))
 			},
 		},
 		{
 			name: "different hostname",
-			sx: []*managerv1.SeedPeer{
+			sx: []*managerv2.SeedPeer{
 				{
 					Id:       1,
 					HostName: "bar",
@@ -360,7 +360,7 @@ func TestSeedPeerClient_diffSeedPeers(t *testing.T) {
 					Port:     8080,
 				},
 			},
-			sy: []*managerv1.SeedPeer{
+			sy: []*managerv2.SeedPeer{
 				{
 					Id:       1,
 					HostName: "foo",
@@ -368,9 +368,9 @@ func TestSeedPeerClient_diffSeedPeers(t *testing.T) {
 					Port:     8080,
 				},
 			},
-			expect: func(t *testing.T, diff []*managerv1.SeedPeer) {
+			expect: func(t *testing.T, diff []*managerv2.SeedPeer) {
 				assert := assert.New(t)
-				assert.EqualValues(diff, []*managerv1.SeedPeer{
+				assert.EqualValues(diff, []*managerv2.SeedPeer{
 					{
 						Id:       1,
 						HostName: "bar",
@@ -382,7 +382,7 @@ func TestSeedPeerClient_diffSeedPeers(t *testing.T) {
 		},
 		{
 			name: "different port",
-			sx: []*managerv1.SeedPeer{
+			sx: []*managerv2.SeedPeer{
 				{
 					Id:       1,
 					HostName: "foo",
@@ -390,7 +390,7 @@ func TestSeedPeerClient_diffSeedPeers(t *testing.T) {
 					Port:     8081,
 				},
 			},
-			sy: []*managerv1.SeedPeer{
+			sy: []*managerv2.SeedPeer{
 				{
 					Id:       1,
 					HostName: "foo",
@@ -398,9 +398,9 @@ func TestSeedPeerClient_diffSeedPeers(t *testing.T) {
 					Port:     8080,
 				},
 			},
-			expect: func(t *testing.T, diff []*managerv1.SeedPeer) {
+			expect: func(t *testing.T, diff []*managerv2.SeedPeer) {
 				assert := assert.New(t)
-				assert.EqualValues(diff, []*managerv1.SeedPeer{
+				assert.EqualValues(diff, []*managerv2.SeedPeer{
 					{
 						Id:       1,
 						HostName: "foo",
@@ -412,7 +412,7 @@ func TestSeedPeerClient_diffSeedPeers(t *testing.T) {
 		},
 		{
 			name: "different ip",
-			sx: []*managerv1.SeedPeer{
+			sx: []*managerv2.SeedPeer{
 				{
 					Id:       1,
 					HostName: "foo",
@@ -420,7 +420,7 @@ func TestSeedPeerClient_diffSeedPeers(t *testing.T) {
 					Port:     8080,
 				},
 			},
-			sy: []*managerv1.SeedPeer{
+			sy: []*managerv2.SeedPeer{
 				{
 					Id:       1,
 					HostName: "foo",
@@ -428,9 +428,9 @@ func TestSeedPeerClient_diffSeedPeers(t *testing.T) {
 					Port:     8080,
 				},
 			},
-			expect: func(t *testing.T, diff []*managerv1.SeedPeer) {
+			expect: func(t *testing.T, diff []*managerv2.SeedPeer) {
 				assert := assert.New(t)
-				assert.EqualValues(diff, []*managerv1.SeedPeer{
+				assert.EqualValues(diff, []*managerv2.SeedPeer{
 					{
 						Id:       1,
 						HostName: "foo",
@@ -442,7 +442,7 @@ func TestSeedPeerClient_diffSeedPeers(t *testing.T) {
 		},
 		{
 			name: "remove y seed peer",
-			sx: []*managerv1.SeedPeer{
+			sx: []*managerv2.SeedPeer{
 				{
 					Id:       1,
 					HostName: "foo",
@@ -456,7 +456,7 @@ func TestSeedPeerClient_diffSeedPeers(t *testing.T) {
 					Port:     8080,
 				},
 			},
-			sy: []*managerv1.SeedPeer{
+			sy: []*managerv2.SeedPeer{
 				{
 					Id:       1,
 					HostName: "foo",
@@ -464,9 +464,9 @@ func TestSeedPeerClient_diffSeedPeers(t *testing.T) {
 					Port:     8080,
 				},
 			},
-			expect: func(t *testing.T, diff []*managerv1.SeedPeer) {
+			expect: func(t *testing.T, diff []*managerv2.SeedPeer) {
 				assert := assert.New(t)
-				assert.EqualValues(diff, []*managerv1.SeedPeer{
+				assert.EqualValues(diff, []*managerv2.SeedPeer{
 					{
 						Id:       2,
 						HostName: "bar",
@@ -478,7 +478,7 @@ func TestSeedPeerClient_diffSeedPeers(t *testing.T) {
 		},
 		{
 			name: "remove x seed peer",
-			sx: []*managerv1.SeedPeer{
+			sx: []*managerv2.SeedPeer{
 				{
 					Id:       1,
 					HostName: "foo",
@@ -486,7 +486,7 @@ func TestSeedPeerClient_diffSeedPeers(t *testing.T) {
 					Port:     8080,
 				},
 			},
-			sy: []*managerv1.SeedPeer{
+			sy: []*managerv2.SeedPeer{
 				{
 					Id:       1,
 					HostName: "baz",
@@ -500,9 +500,9 @@ func TestSeedPeerClient_diffSeedPeers(t *testing.T) {
 					Port:     8080,
 				},
 			},
-			expect: func(t *testing.T, diff []*managerv1.SeedPeer) {
+			expect: func(t *testing.T, diff []*managerv2.SeedPeer) {
 				assert := assert.New(t)
-				assert.EqualValues(diff, []*managerv1.SeedPeer{
+				assert.EqualValues(diff, []*managerv2.SeedPeer{
 					{
 						Id:       1,
 						HostName: "foo",
