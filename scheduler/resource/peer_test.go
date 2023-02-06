@@ -35,6 +35,8 @@ import (
 	managerv2 "d7y.io/api/pkg/apis/manager/v2"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	"d7y.io/api/pkg/apis/scheduler/v1/mocks"
+	schedulerv2 "d7y.io/api/pkg/apis/scheduler/v2"
+	v2mocks "d7y.io/api/pkg/apis/scheduler/v2/mocks"
 
 	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/pkg/idgen"
@@ -62,7 +64,7 @@ func TestPeer_NewPeer(t *testing.T) {
 				assert.Equal(peer.Pieces.Len(), uint(0))
 				assert.Empty(peer.FinishedPieces)
 				assert.Equal(len(peer.PieceCosts()), 0)
-				assert.Empty(peer.Stream)
+				assert.Empty(peer.ReportPieceStream)
 				assert.Equal(peer.FSM.Current(), PeerStatePending)
 				assert.EqualValues(peer.Task, mockTask)
 				assert.EqualValues(peer.Host, mockHost)
@@ -83,7 +85,7 @@ func TestPeer_NewPeer(t *testing.T) {
 				assert.Equal(peer.Pieces.Len(), uint(0))
 				assert.Empty(peer.FinishedPieces)
 				assert.Equal(len(peer.PieceCosts()), 0)
-				assert.Empty(peer.Stream)
+				assert.Empty(peer.ReportPieceStream)
 				assert.Equal(peer.FSM.Current(), PeerStatePending)
 				assert.EqualValues(peer.Task, mockTask)
 				assert.EqualValues(peer.Host, mockHost)
@@ -179,7 +181,7 @@ func TestPeer_PieceCosts(t *testing.T) {
 	}
 }
 
-func TestPeer_LoadStream(t *testing.T) {
+func TestPeer_LoadReportPieceStream(t *testing.T) {
 	tests := []struct {
 		name   string
 		expect func(t *testing.T, peer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer)
@@ -188,8 +190,8 @@ func TestPeer_LoadStream(t *testing.T) {
 			name: "load stream",
 			expect: func(t *testing.T, peer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer) {
 				assert := assert.New(t)
-				peer.StoreStream(stream)
-				newStream, loaded := peer.LoadStream()
+				peer.StoreReportPieceStream(stream)
+				newStream, loaded := peer.LoadReportPieceStream()
 				assert.Equal(loaded, true)
 				assert.EqualValues(newStream, stream)
 			},
@@ -198,7 +200,7 @@ func TestPeer_LoadStream(t *testing.T) {
 			name: "stream does not exist",
 			expect: func(t *testing.T, peer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer) {
 				assert := assert.New(t)
-				_, loaded := peer.LoadStream()
+				_, loaded := peer.LoadReportPieceStream()
 				assert.Equal(loaded, false)
 			},
 		},
@@ -220,7 +222,7 @@ func TestPeer_LoadStream(t *testing.T) {
 	}
 }
 
-func TestPeer_StoreStream(t *testing.T) {
+func TestPeer_StoreReportPieceStream(t *testing.T) {
 	tests := []struct {
 		name   string
 		expect func(t *testing.T, peer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer)
@@ -229,8 +231,8 @@ func TestPeer_StoreStream(t *testing.T) {
 			name: "store stream",
 			expect: func(t *testing.T, peer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer) {
 				assert := assert.New(t)
-				peer.StoreStream(stream)
-				newStream, loaded := peer.LoadStream()
+				peer.StoreReportPieceStream(stream)
+				newStream, loaded := peer.LoadReportPieceStream()
 				assert.Equal(loaded, true)
 				assert.EqualValues(newStream, stream)
 			},
@@ -253,7 +255,7 @@ func TestPeer_StoreStream(t *testing.T) {
 	}
 }
 
-func TestPeer_DeleteStream(t *testing.T) {
+func TestPeer_DeleteReportPieceStream(t *testing.T) {
 	tests := []struct {
 		name   string
 		expect func(t *testing.T, peer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer)
@@ -262,9 +264,9 @@ func TestPeer_DeleteStream(t *testing.T) {
 			name: "delete stream",
 			expect: func(t *testing.T, peer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer) {
 				assert := assert.New(t)
-				peer.StoreStream(stream)
-				peer.DeleteStream()
-				_, loaded := peer.LoadStream()
+				peer.StoreReportPieceStream(stream)
+				peer.DeleteReportPieceStream()
+				_, loaded := peer.LoadReportPieceStream()
 				assert.Equal(loaded, false)
 			},
 		},
@@ -275,6 +277,113 @@ func TestPeer_DeleteStream(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 			stream := mocks.NewMockScheduler_ReportPieceResultServer(ctl)
+
+			mockHost := NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
+			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			peer := NewPeer(mockPeerID, mockTask, mockHost)
+			tc.expect(t, peer, stream)
+		})
+	}
+}
+
+func TestPeer_LoadAnnouncePeerStream(t *testing.T) {
+	tests := []struct {
+		name   string
+		expect func(t *testing.T, peer *Peer, stream schedulerv2.Scheduler_AnnouncePeerServer)
+	}{
+		{
+			name: "load stream",
+			expect: func(t *testing.T, peer *Peer, stream schedulerv2.Scheduler_AnnouncePeerServer) {
+				assert := assert.New(t)
+				peer.StoreAnnouncePeerStream(stream)
+				newStream, loaded := peer.LoadAnnouncePeerStream()
+				assert.Equal(loaded, true)
+				assert.EqualValues(newStream, stream)
+			},
+		},
+		{
+			name: "stream does not exist",
+			expect: func(t *testing.T, peer *Peer, stream schedulerv2.Scheduler_AnnouncePeerServer) {
+				assert := assert.New(t)
+				_, loaded := peer.LoadAnnouncePeerStream()
+				assert.Equal(loaded, false)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			stream := v2mocks.NewMockScheduler_AnnouncePeerServer(ctl)
+
+			mockHost := NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
+			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			peer := NewPeer(mockPeerID, mockTask, mockHost)
+			tc.expect(t, peer, stream)
+		})
+	}
+}
+
+func TestPeer_StoreAnnouncePeerStream(t *testing.T) {
+	tests := []struct {
+		name   string
+		expect func(t *testing.T, peer *Peer, stream schedulerv2.Scheduler_AnnouncePeerServer)
+	}{
+		{
+			name: "store stream",
+			expect: func(t *testing.T, peer *Peer, stream schedulerv2.Scheduler_AnnouncePeerServer) {
+				assert := assert.New(t)
+				peer.StoreAnnouncePeerStream(stream)
+				newStream, loaded := peer.LoadAnnouncePeerStream()
+				assert.Equal(loaded, true)
+				assert.EqualValues(newStream, stream)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			stream := v2mocks.NewMockScheduler_AnnouncePeerServer(ctl)
+
+			mockHost := NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
+			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			peer := NewPeer(mockPeerID, mockTask, mockHost)
+			tc.expect(t, peer, stream)
+		})
+	}
+}
+
+func TestPeer_DeleteAnnouncePeerStream(t *testing.T) {
+	tests := []struct {
+		name   string
+		expect func(t *testing.T, peer *Peer, stream schedulerv2.Scheduler_AnnouncePeerServer)
+	}{
+		{
+			name: "delete stream",
+			expect: func(t *testing.T, peer *Peer, stream schedulerv2.Scheduler_AnnouncePeerServer) {
+				assert := assert.New(t)
+				peer.StoreAnnouncePeerStream(stream)
+				peer.DeleteAnnouncePeerStream()
+				_, loaded := peer.LoadAnnouncePeerStream()
+				assert.Equal(loaded, false)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			stream := v2mocks.NewMockScheduler_AnnouncePeerServer(ctl)
 
 			mockHost := NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,

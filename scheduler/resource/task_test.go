@@ -1613,7 +1613,7 @@ func TestTask_NotifyPeers(t *testing.T) {
 			name: "peer state is PeerStateRunning and stream sending failed",
 			run: func(t *testing.T, task *Task, mockPeer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder) {
 				mockPeer.FSM.SetState(PeerStateRunning)
-				mockPeer.StoreStream(stream)
+				mockPeer.StoreReportPieceStream(stream)
 				ms.Send(gomock.Eq(&schedulerv1.PeerPacket{Code: commonv1.Code_SchedTaskStatusError})).Return(errors.New("foo")).Times(1)
 
 				task.NotifyPeers(&schedulerv1.PeerPacket{Code: commonv1.Code_SchedTaskStatusError}, PeerEventDownloadFailed)
@@ -1626,7 +1626,7 @@ func TestTask_NotifyPeers(t *testing.T) {
 			name: "peer state is PeerStateRunning and state changing failed",
 			run: func(t *testing.T, task *Task, mockPeer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder) {
 				mockPeer.FSM.SetState(PeerStateRunning)
-				mockPeer.StoreStream(stream)
+				mockPeer.StoreReportPieceStream(stream)
 				ms.Send(gomock.Eq(&schedulerv1.PeerPacket{Code: commonv1.Code_SchedTaskStatusError})).Return(errors.New("foo")).Times(1)
 
 				task.NotifyPeers(&schedulerv1.PeerPacket{Code: commonv1.Code_SchedTaskStatusError}, PeerEventDownloadFailed)
@@ -1639,7 +1639,7 @@ func TestTask_NotifyPeers(t *testing.T) {
 			name: "peer state is PeerStateRunning and notify peer successfully",
 			run: func(t *testing.T, task *Task, mockPeer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder) {
 				mockPeer.FSM.SetState(PeerStateRunning)
-				mockPeer.StoreStream(stream)
+				mockPeer.StoreReportPieceStream(stream)
 				ms.Send(gomock.Eq(&schedulerv1.PeerPacket{Code: commonv1.Code_SchedTaskStatusError})).Return(nil).Times(1)
 
 				task.NotifyPeers(&schedulerv1.PeerPacket{Code: commonv1.Code_SchedTaskStatusError}, PeerEventDownloadFailed)

@@ -33,6 +33,7 @@ import (
 	commonv2 "d7y.io/api/pkg/apis/common/v2"
 	managerv2 "d7y.io/api/pkg/apis/manager/v2"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+	schedulerv2 "d7y.io/api/pkg/apis/scheduler/v2"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
@@ -152,8 +153,13 @@ type Peer struct {
 	// Cost is the cost of downloading.
 	Cost *atomic.Duration
 
-	// Stream is grpc stream instance.
-	Stream *atomic.Value
+	// ReportPieceStream is the grpc stream of Scheduler_ReportPieceResultServer,
+	// Used only in v1 version of the grpc.
+	ReportPieceStream *atomic.Value
+
+	// AnnouncePeerStream is the grpc stream of Scheduler_AnnouncePeerServer,
+	// Used only in v2 version of the grpc.
+	AnnouncePeerStream *atomic.Value
 
 	// Task state machine.
 	FSM *fsm.FSM
@@ -197,23 +203,23 @@ type Peer struct {
 // New Peer instance.
 func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 	p := &Peer{
-		ID:               id,
-		Tag:              DefaultTag,
-		Application:      DefaultApplication,
-		Pieces:           set.NewSafeSet[*Piece](),
-		FinishedPieces:   &bitset.BitSet{},
-		pieceCosts:       []int64{},
-		Cost:             atomic.NewDuration(0),
-		Stream:           &atomic.Value{},
-		Task:             task,
-		Host:             host,
-		BlockParents:     set.NewSafeSet[string](),
-		NeedBackToSource: atomic.NewBool(false),
-		IsBackToSource:   atomic.NewBool(false),
-		PieceUpdatedAt:   atomic.NewTime(time.Now()),
-		CreatedAt:        atomic.NewTime(time.Now()),
-		UpdatedAt:        atomic.NewTime(time.Now()),
-		Log:              logger.WithPeer(host.ID, task.ID, id),
+		ID:                id,
+		Tag:               DefaultTag,
+		Application:       DefaultApplication,
+		Pieces:            set.NewSafeSet[*Piece](),
+		FinishedPieces:    &bitset.BitSet{},
+		pieceCosts:        []int64{},
+		Cost:              atomic.NewDuration(0),
+		ReportPieceStream: &atomic.Value{},
+		Task:              task,
+		Host:              host,
+		BlockParents:      set.NewSafeSet[string](),
+		NeedBackToSource:  atomic.NewBool(false),
+		IsBackToSource:    atomic.NewBool(false),
+		PieceUpdatedAt:    atomic.NewTime(time.Now()),
+		CreatedAt:         atomic.NewTime(time.Now()),
+		UpdatedAt:         atomic.NewTime(time.Now()),
+		Log:               logger.WithPeer(host.ID, task.ID, id),
 	}
 
 	// Initialize state machine.
@@ -327,9 +333,10 @@ func (p *Peer) PieceCosts() []int64 {
 	return p.pieceCosts
 }
 
-// LoadStream return grpc stream.
-func (p *Peer) LoadStream() (schedulerv1.Scheduler_ReportPieceResultServer, bool) {
-	rawStream := p.Stream.Load()
+// LoadReportPieceStream return the grpc stream of Scheduler_ReportPieceResultServer,
+// Used only in v1 version of the grpc.
+func (p *Peer) LoadReportPieceStream() (schedulerv1.Scheduler_ReportPieceResultServer, bool) {
+	rawStream := p.ReportPieceStream.Load()
 	if rawStream == nil {
 		return nil, false
 	}
@@ -337,14 +344,39 @@ func (p *Peer) LoadStream() (schedulerv1.Scheduler_ReportPieceResultServer, bool
 	return rawStream.(schedulerv1.Scheduler_ReportPieceResultServer), true
 }
 
-// StoreStream set grpc stream.
-func (p *Peer) StoreStream(stream schedulerv1.Scheduler_ReportPieceResultServer) {
-	p.Stream.Store(stream)
+// StoreReportPieceStream set the grpc stream of Scheduler_ReportPieceResultServer,
+// Used only in v1 version of the grpc.
+func (p *Peer) StoreReportPieceStream(stream schedulerv1.Scheduler_ReportPieceResultServer) {
+	p.ReportPieceStream.Store(stream)
 }
 
-// DeleteStream deletes grpc stream.
-func (p *Peer) DeleteStream() {
-	p.Stream = &atomic.Value{}
+// DeleteReportPieceStream deletes the grpc stream of Scheduler_ReportPieceResultServer,
+// Used only in v1 version of the grpc.
+func (p *Peer) DeleteReportPieceStream() {
+	p.ReportPieceStream = &atomic.Value{}
+}
+
+// LoadAnnouncePeerStream return the grpc stream of Scheduler_AnnouncePeerServer,
+// Used only in v2 version of the grpc.
+func (p *Peer) LoadAnnouncePeerStream() (schedulerv2.Scheduler_AnnouncePeerServer, bool) {
+	rawStream := p.ReportPieceStream.Load()
+	if rawStream == nil {
+		return nil, false
+	}
+
+	return rawStream.(schedulerv2.Scheduler_AnnouncePeerServer), true
+}
+
+// StoreAnnouncePeerStream set the grpc stream of Scheduler_AnnouncePeerServer,
+// Used only in v2 version of the grpc.
+func (p *Peer) StoreAnnouncePeerStream(stream schedulerv2.Scheduler_AnnouncePeerServer) {
+	p.ReportPieceStream.Store(stream)
+}
+
+// DeleteAnnouncePeerStream deletes the grpc stream of Scheduler_AnnouncePeerServer,
+// Used only in v2 version of the grpc.
+func (p *Peer) DeleteAnnouncePeerStream() {
+	p.ReportPieceStream = &atomic.Value{}
 }
 
 // Parents returns parents of peer.

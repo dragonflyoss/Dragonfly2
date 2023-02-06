@@ -448,7 +448,7 @@ func (t *Task) NotifyPeers(peerPacket *schedulerv1.PeerPacket, event string) {
 		}
 
 		if peer.FSM.Is(PeerStateRunning) {
-			stream, loaded := peer.LoadStream()
+			stream, loaded := peer.LoadReportPieceStream()
 			if !loaded {
 				continue
 			}
