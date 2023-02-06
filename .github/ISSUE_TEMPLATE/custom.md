@@ -1,6 +1,5 @@
 ---
-name: Custom
+name: Custom issue template
 about: Custom issue template for dragonfly
-labels: kind/custom
 
 ---
