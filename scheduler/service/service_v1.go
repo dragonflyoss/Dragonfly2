@@ -208,8 +208,8 @@ func (v *V1) ReportPieceResult(stream schedulerv1.Scheduler_ReportPieceResultSer
 			}
 
 			// Peer setting stream.
-			peer.StoreStream(stream)
-			defer peer.DeleteStream()
+			peer.StoreReportPieceStream(stream)
+			defer peer.DeleteReportPieceStream()
 		}
 
 		if piece.PieceInfo != nil {
@@ -1020,7 +1020,7 @@ func (v *V1) handlePieceFailure(ctx context.Context, peer *resource.Peer, piece 
 
 		// Returns an scheduling error if the peer
 		// state is not PeerStateRunning.
-		stream, loaded := peer.LoadStream()
+		stream, loaded := peer.LoadReportPieceStream()
 		if !loaded {
 			peer.Log.Error("load stream failed")
 			return
