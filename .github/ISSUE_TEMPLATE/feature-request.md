@@ -1,7 +1,7 @@
 ---
 name: Feature Request
 about: Request a new feature for dragonfly
-labels: kind/feature
+labels: enhancement
 
 ---
 
