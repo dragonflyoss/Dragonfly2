@@ -31,6 +31,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
 var (
@@ -63,12 +64,12 @@ var (
 		ConcurrentUploadCount: 40,
 		UploadCount:           20,
 		UploadFailedCount:     3,
-		CPU: CPU{
+		CPU: resource.CPU{
 			LogicalCount:   24,
 			PhysicalCount:  12,
 			Percent:        0.8,
 			ProcessPercent: 0.4,
-			Times: CPUTimes{
+			Times: resource.CPUTimes{
 				User:      100,
 				System:    101,
 				Idle:      102,
@@ -81,7 +82,7 @@ var (
 				GuestNice: 109,
 			},
 		},
-		Memory: Memory{
+		Memory: resource.Memory{
 			Total:              20,
 			Available:          19,
 			Used:               16,
@@ -89,14 +90,14 @@ var (
 			ProcessUsedPercent: 0.2,
 			Free:               15,
 		},
-		Network: Network{
+		Network: resource.Network{
 			TCPConnectionCount:       400,
 			UploadTCPConnectionCount: 200,
 			SecurityDomain:           "product",
 			Location:                 "china",
 			IDC:                      "e1",
 		},
-		Disk: Disk{
+		Disk: resource.Disk{
 			Total:             100,
 			Free:              88,
 			Used:              56,
@@ -106,7 +107,7 @@ var (
 			InodesFree:        160,
 			InodesUsedPercent: 0.6,
 		},
-		Build: Build{
+		Build: resource.Build{
 			GitVersion: "3.0.0",
 			GitCommit:  "2bf4d5e",
 			GoVersion:  "1.19",

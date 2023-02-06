@@ -335,6 +335,12 @@ func NewHost(
 	port, downloadPort int32, hostType types.HostType,
 	options ...HostOption,
 ) *Host {
+	// Calculate default of the concurrent upload limit by host type.
+	concurrentUploadLimit := config.DefaultSeedPeerConcurrentUploadLimit
+	if hostType == types.HostTypeNormal {
+		concurrentUploadLimit = config.DefaultPeerConcurrentUploadLimit
+	}
+
 	h := &Host{
 		ID:                    id,
 		Type:                  types.HostType(hostType),
@@ -342,7 +348,7 @@ func NewHost(
 		Hostname:              hostname,
 		Port:                  port,
 		DownloadPort:          downloadPort,
-		ConcurrentUploadLimit: atomic.NewInt32(config.DefaultPeerConcurrentUploadLimit),
+		ConcurrentUploadLimit: atomic.NewInt32(int32(concurrentUploadLimit)),
 		ConcurrentUploadCount: atomic.NewInt32(0),
 		UploadCount:           atomic.NewInt64(0),
 		UploadFailedCount:     atomic.NewInt64(0),
