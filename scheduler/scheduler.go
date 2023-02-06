@@ -70,7 +70,7 @@ type Server struct {
 	metricsServer *http.Server
 
 	// Manager client.
-	managerClient managerclient.V1
+	managerClient managerclient.V2
 
 	// Security client.
 	securityClient securityclient.V1
@@ -111,7 +111,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 
 	// Initialize manager client.
-	managerClient, err := managerclient.GetV1(ctx, cfg.Manager.Addr, managerDialOptions...)
+	managerClient, err := managerclient.GetV2(ctx, cfg.Manager.Addr, managerDialOptions...)
 	if err != nil {
 		return nil, err
 	}

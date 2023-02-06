@@ -35,7 +35,7 @@ import (
 	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/status"
 
-	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+	managerv2 "d7y.io/api/pkg/apis/manager/v2"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	dc "d7y.io/dragonfly/v2/internal/dynconfig"
@@ -55,8 +55,8 @@ var (
 )
 
 type DynconfigData struct {
-	Scheduler    *managerv1.Scheduler
-	Applications []*managerv1.Application
+	Scheduler    *managerv2.Scheduler
+	Applications []*managerv2.Application
 }
 
 type DynconfigInterface interface {
@@ -64,16 +64,16 @@ type DynconfigInterface interface {
 	GetResolveSeedPeerAddrs() ([]resolver.Address, error)
 
 	// GetScheduler returns the scheduler config from manager.
-	GetScheduler() (*managerv1.Scheduler, error)
+	GetScheduler() (*managerv2.Scheduler, error)
 
 	// GetApplications returns the applications config from manager.
-	GetApplications() ([]*managerv1.Application, error)
+	GetApplications() ([]*managerv2.Application, error)
 
 	// GetSeedPeers returns the dynamic seed peers config from manager.
-	GetSeedPeers() ([]*managerv1.SeedPeer, error)
+	GetSeedPeers() ([]*managerv2.SeedPeer, error)
 
 	// GetSchedulerCluster returns the the scheduler cluster config from manager.
-	GetSchedulerCluster() (*managerv1.SchedulerCluster, error)
+	GetSchedulerCluster() (*managerv2.SchedulerCluster, error)
 
 	// GetSchedulerClusterConfig returns the scheduler cluster config.
 	GetSchedulerClusterConfig() (types.SchedulerClusterConfig, error)
@@ -129,7 +129,7 @@ func WithTransportCredentials(creds credentials.TransportCredentials) DynconfigO
 }
 
 // NewDynconfig returns a new dynconfig instence.
-func NewDynconfig(rawManagerClient managerclient.V1, cacheDir string, cfg *Config, options ...DynconfigOption) (DynconfigInterface, error) {
+func NewDynconfig(rawManagerClient managerclient.V2, cacheDir string, cfg *Config, options ...DynconfigOption) (DynconfigInterface, error) {
 	cachePath := filepath.Join(cacheDir, cacheFileName)
 	d := &dynconfig{
 		observers: map[Observer]struct{}{},
@@ -215,7 +215,7 @@ func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 }
 
 // GetScheduler returns the scheduler config from manager.
-func (d *dynconfig) GetScheduler() (*managerv1.Scheduler, error) {
+func (d *dynconfig) GetScheduler() (*managerv2.Scheduler, error) {
 	data, err := d.Get()
 	if err != nil {
 		return nil, err
@@ -229,7 +229,7 @@ func (d *dynconfig) GetScheduler() (*managerv1.Scheduler, error) {
 }
 
 // GetApplications returns the applications config from manager.
-func (d *dynconfig) GetApplications() ([]*managerv1.Application, error) {
+func (d *dynconfig) GetApplications() ([]*managerv2.Application, error) {
 	data, err := d.Get()
 	if err != nil {
 		return nil, err
@@ -247,7 +247,7 @@ func (d *dynconfig) GetApplications() ([]*managerv1.Application, error) {
 }
 
 // GetSeedPeers returns the the seed peers config from manager.
-func (d *dynconfig) GetSeedPeers() ([]*managerv1.SeedPeer, error) {
+func (d *dynconfig) GetSeedPeers() ([]*managerv2.SeedPeer, error) {
 	scheduler, err := d.GetScheduler()
 	if err != nil {
 		return nil, err
@@ -265,7 +265,7 @@ func (d *dynconfig) GetSeedPeers() ([]*managerv1.SeedPeer, error) {
 }
 
 // GetSchedulerCluster returns the the scheduler cluster config from manager.
-func (d *dynconfig) GetSchedulerCluster() (*managerv1.SchedulerCluster, error) {
+func (d *dynconfig) GetSchedulerCluster() (*managerv2.SchedulerCluster, error) {
 	scheduler, err := d.GetScheduler()
 	if err != nil {
 		return nil, err
@@ -376,12 +376,12 @@ func (d *dynconfig) Stop() error {
 
 // Manager client for dynconfig.
 type managerClient struct {
-	managerClient managerclient.V1
+	managerClient managerclient.V2
 	config        *Config
 }
 
 // New the manager client used by dynconfig.
-func newManagerClient(client managerclient.V1, cfg *Config) dc.ManagerClient {
+func newManagerClient(client managerclient.V2, cfg *Config) dc.ManagerClient {
 	return &managerClient{
 		managerClient: client,
 		config:        cfg,
@@ -389,8 +389,8 @@ func newManagerClient(client managerclient.V1, cfg *Config) dc.ManagerClient {
 }
 
 func (mc *managerClient) Get() (any, error) {
-	getSchedulerResp, err := mc.managerClient.GetScheduler(context.Background(), &managerv1.GetSchedulerRequest{
-		SourceType:         managerv1.SourceType_SCHEDULER_SOURCE,
+	getSchedulerResp, err := mc.managerClient.GetScheduler(context.Background(), &managerv2.GetSchedulerRequest{
+		SourceType:         managerv2.SourceType_SCHEDULER_SOURCE,
 		HostName:           mc.config.Server.Host,
 		Ip:                 mc.config.Server.AdvertiseIP.String(),
 		SchedulerClusterId: uint64(mc.config.Manager.SchedulerClusterID),
@@ -399,8 +399,8 @@ func (mc *managerClient) Get() (any, error) {
 		return nil, err
 	}
 
-	listApplicationsResp, err := mc.managerClient.ListApplications(context.Background(), &managerv1.ListApplicationsRequest{
-		SourceType: managerv1.SourceType_SCHEDULER_SOURCE,
+	listApplicationsResp, err := mc.managerClient.ListApplications(context.Background(), &managerv2.ListApplicationsRequest{
+		SourceType: managerv2.SourceType_SCHEDULER_SOURCE,
 		HostName:   mc.config.Server.Host,
 		Ip:         mc.config.Server.AdvertiseIP.String(),
 	})
@@ -425,7 +425,7 @@ func (mc *managerClient) Get() (any, error) {
 }
 
 // GetSeedPeerClusterConfigBySeedPeer returns the seed peer cluster config by seed peer.
-func GetSeedPeerClusterConfigBySeedPeer(seedPeer *managerv1.SeedPeer) (types.SeedPeerClusterConfig, error) {
+func GetSeedPeerClusterConfigBySeedPeer(seedPeer *managerv2.SeedPeer) (types.SeedPeerClusterConfig, error) {
 	if seedPeer == nil {
 		return types.SeedPeerClusterConfig{}, errors.New("invalid seed peer")
 	}

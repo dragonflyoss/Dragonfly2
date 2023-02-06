@@ -31,10 +31,10 @@ jobs:
         include:
           - module: manager
             image: manager
-            image-tag: v2.0.3
+            image-tag: v2.0.9-beta.0
             chart-name: manager
           - module: scheduler
-            image: scheduler 
+            image: scheduler
             image-tag: v2.0.3
             chart-name: scheduler
           - module: dfdaemon

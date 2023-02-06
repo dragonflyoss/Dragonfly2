@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/resolver"
 
-	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+	managerv2 "d7y.io/api/pkg/apis/manager/v2"
 
 	"d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -46,8 +46,8 @@ func TestResource_New(t *testing.T) {
 				gomock.InOrder(
 					mg.Add(gomock.Any()).Return(nil).Times(3),
 					md.Get().Return(&config.DynconfigData{
-						Scheduler: &managerv1.Scheduler{
-							SeedPeers: []*managerv1.SeedPeer{
+						Scheduler: &managerv2.Scheduler{
+							SeedPeers: []*managerv2.SeedPeer{
 								{
 									Id: 1,
 								},
@@ -125,8 +125,8 @@ func TestResource_New(t *testing.T) {
 				gomock.InOrder(
 					mg.Add(gomock.Any()).Return(nil).Times(3),
 					md.Get().Return(&config.DynconfigData{
-						Scheduler: &managerv1.Scheduler{
-							SeedPeers: []*managerv1.SeedPeer{},
+						Scheduler: &managerv2.Scheduler{
+							SeedPeers: []*managerv2.SeedPeer{},
 						},
 					}, nil).Times(1),
 					md.Register(gomock.Any()).Return().Times(1),

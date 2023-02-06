@@ -31,7 +31,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+	commonv2 "d7y.io/api/pkg/apis/common/v2"
+	managerv2 "d7y.io/api/pkg/apis/manager/v2"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	"d7y.io/api/pkg/apis/scheduler/v1/mocks"
 
@@ -481,73 +482,73 @@ func TestPeer_GetPriority(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(peer *Peer, md *configmocks.MockDynconfigInterfaceMockRecorder)
-		expect func(t *testing.T, priority commonv1.Priority)
+		expect func(t *testing.T, priority commonv2.Priority)
 	}{
 		{
 			name: "get applications failed",
 			mock: func(peer *Peer, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				md.GetApplications().Return(nil, errors.New("bas")).Times(1)
 			},
-			expect: func(t *testing.T, priority commonv1.Priority) {
+			expect: func(t *testing.T, priority commonv2.Priority) {
 				assert := assert.New(t)
-				assert.Equal(priority, commonv1.Priority_LEVEL0)
+				assert.Equal(priority, commonv2.Priority_LEVEL0)
 			},
 		},
 		{
 			name: "can not found applications",
 			mock: func(peer *Peer, md *configmocks.MockDynconfigInterfaceMockRecorder) {
-				md.GetApplications().Return([]*managerv1.Application{}, nil).Times(1)
+				md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1)
 			},
-			expect: func(t *testing.T, priority commonv1.Priority) {
+			expect: func(t *testing.T, priority commonv2.Priority) {
 				assert := assert.New(t)
-				assert.Equal(priority, commonv1.Priority_LEVEL0)
+				assert.Equal(priority, commonv2.Priority_LEVEL0)
 			},
 		},
 		{
 			name: "can not found matching application",
 			mock: func(peer *Peer, md *configmocks.MockDynconfigInterfaceMockRecorder) {
-				md.GetApplications().Return([]*managerv1.Application{
+				md.GetApplications().Return([]*managerv2.Application{
 					{
 						Name: "baw",
 					},
 				}, nil).Times(1)
 			},
-			expect: func(t *testing.T, priority commonv1.Priority) {
+			expect: func(t *testing.T, priority commonv2.Priority) {
 				assert := assert.New(t)
-				assert.Equal(priority, commonv1.Priority_LEVEL0)
+				assert.Equal(priority, commonv2.Priority_LEVEL0)
 			},
 		},
 		{
 			name: "can not found priority",
 			mock: func(peer *Peer, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.Application = "bae"
-				md.GetApplications().Return([]*managerv1.Application{
+				md.GetApplications().Return([]*managerv2.Application{
 					{
 						Name: "bae",
 					},
 				}, nil).Times(1)
 			},
-			expect: func(t *testing.T, priority commonv1.Priority) {
+			expect: func(t *testing.T, priority commonv2.Priority) {
 				assert := assert.New(t)
-				assert.Equal(priority, commonv1.Priority_LEVEL0)
+				assert.Equal(priority, commonv2.Priority_LEVEL0)
 			},
 		},
 		{
 			name: "match the priority of application",
 			mock: func(peer *Peer, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.Application = "baz"
-				md.GetApplications().Return([]*managerv1.Application{
+				md.GetApplications().Return([]*managerv2.Application{
 					{
 						Name: "baz",
-						Priority: &managerv1.ApplicationPriority{
-							Value: commonv1.Priority_LEVEL1,
+						Priority: &managerv2.ApplicationPriority{
+							Value: commonv2.Priority_LEVEL1,
 						},
 					},
 				}, nil).Times(1)
 			},
-			expect: func(t *testing.T, priority commonv1.Priority) {
+			expect: func(t *testing.T, priority commonv2.Priority) {
 				assert := assert.New(t)
-				assert.Equal(priority, commonv1.Priority_LEVEL1)
+				assert.Equal(priority, commonv2.Priority_LEVEL1)
 			},
 		},
 		{
@@ -555,24 +556,24 @@ func TestPeer_GetPriority(t *testing.T) {
 			mock: func(peer *Peer, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.Application = "bak"
 				peer.Task.URL = "example.com"
-				md.GetApplications().Return([]*managerv1.Application{
+				md.GetApplications().Return([]*managerv2.Application{
 					{
 						Name: "bak",
-						Priority: &managerv1.ApplicationPriority{
-							Value: commonv1.Priority_LEVEL1,
-							Urls: []*managerv1.URLPriority{
+						Priority: &managerv2.ApplicationPriority{
+							Value: commonv2.Priority_LEVEL1,
+							Urls: []*managerv2.URLPriority{
 								{
 									Regex: "am",
-									Value: commonv1.Priority_LEVEL2,
+									Value: commonv2.Priority_LEVEL2,
 								},
 							},
 						},
 					},
 				}, nil).Times(1)
 			},
-			expect: func(t *testing.T, priority commonv1.Priority) {
+			expect: func(t *testing.T, priority commonv2.Priority) {
 				assert := assert.New(t)
-				assert.Equal(priority, commonv1.Priority_LEVEL2)
+				assert.Equal(priority, commonv2.Priority_LEVEL2)
 			},
 		},
 	}
