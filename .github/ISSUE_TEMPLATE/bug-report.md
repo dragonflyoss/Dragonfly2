@@ -1,7 +1,7 @@
 ---
 name: Bug Report
 about: Report a bug for dragonfly
-labels: kind/bug
+labels: bug
 
 ---
 
@@ -18,6 +18,7 @@ labels: kind/bug
 <!-- How can a maintainer reproduce this issue (please be detailed) -->
 
 ### Environment:
+
 - Dragonfly version:
 - OS:
 - Kernel (e.g. `uname -a`):
