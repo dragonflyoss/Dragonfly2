@@ -28,6 +28,7 @@ import (
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+	schedulerv2 "d7y.io/api/pkg/apis/scheduler/v2"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
@@ -439,8 +440,9 @@ func (t *Task) CanReuseDirectPiece() bool {
 	return len(t.DirectPiece) > 0 && int64(len(t.DirectPiece)) == t.ContentLength.Load()
 }
 
-// NotifyPeers notify all peers in the task with the state code.
-func (t *Task) NotifyPeers(peerPacket *schedulerv1.PeerPacket, event string) {
+// ReportPieceResultToPeers reports all peers in the task with the state code.
+// Used only in v1 version of the grpc.
+func (t *Task) ReportPieceResultToPeers(peerPacket *schedulerv1.PeerPacket, event string) {
 	for _, vertex := range t.DAG.GetVertices() {
 		peer := vertex.Value
 		if peer == nil {
@@ -448,7 +450,7 @@ func (t *Task) NotifyPeers(peerPacket *schedulerv1.PeerPacket, event string) {
 		}
 
 		if peer.FSM.Is(PeerStateRunning) {
-			stream, loaded := peer.LoadReportPieceStream()
+			stream, loaded := peer.LoadReportPieceResultStream()
 			if !loaded {
 				continue
 			}
@@ -457,7 +459,36 @@ func (t *Task) NotifyPeers(peerPacket *schedulerv1.PeerPacket, event string) {
 				t.Log.Errorf("send packet to peer %s failed: %s", peer.ID, err.Error())
 				continue
 			}
-			t.Log.Infof("task notify peer %s code %s", peer.ID, peerPacket.Code)
+			t.Log.Infof("task reports peer %s code %s", peer.ID, peerPacket.Code)
+
+			if err := peer.FSM.Event(context.Background(), event); err != nil {
+				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
+				continue
+			}
+		}
+	}
+}
+
+// AnnouncePeers announces all peers in the task with the state code.
+// Used only in v2 version of the grpc.
+func (t *Task) AnnouncePeers(resp *schedulerv2.AnnouncePeerResponse, event string) {
+	for _, vertex := range t.DAG.GetVertices() {
+		peer := vertex.Value
+		if peer == nil {
+			continue
+		}
+
+		if peer.FSM.Is(PeerStateRunning) {
+			stream, loaded := peer.LoadAnnouncePeerStream()
+			if !loaded {
+				continue
+			}
+
+			if err := stream.Send(resp); err != nil {
+				t.Log.Errorf("send response to peer %s failed: %s", peer.ID, err.Error())
+				continue
+			}
+			t.Log.Infof("task announces peer %s response %#v", peer.ID, resp.Response)
 
 			if err := peer.FSM.Event(context.Background(), event); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
