@@ -227,7 +227,7 @@ func runDfget(cmd *cobra.Command, dfgetLockPath, daemonSockPath string) error {
 	defer ff()
 
 	var (
-		dfdaemonClient client.Client
+		dfdaemonClient client.V1
 		err            error
 	)
 
@@ -269,9 +269,9 @@ func loadSourceClients(cmd *cobra.Command) error {
 }
 
 // checkAndSpawnDaemon do checking at three checkpoints
-func checkAndSpawnDaemon(dfgetLockPath, daemonSockPath string) (client.Client, error) {
+func checkAndSpawnDaemon(dfgetLockPath, daemonSockPath string) (client.V1, error) {
 	netAddr := &dfnet.NetAddr{Type: dfnet.UNIX, Addr: daemonSockPath}
-	dfdaemonClient, err := client.GetInsecureClient(context.Background(), netAddr.String())
+	dfdaemonClient, err := client.GetInsecureV1(context.Background(), netAddr.String())
 	if err != nil {
 		return nil, err
 	}

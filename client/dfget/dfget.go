@@ -44,7 +44,7 @@ import (
 	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 )
 
-func Download(cfg *config.DfgetConfig, client dfdaemonclient.Client) error {
+func Download(cfg *config.DfgetConfig, client dfdaemonclient.V1) error {
 	var (
 		ctx       = context.Background()
 		cancel    context.CancelFunc
@@ -74,14 +74,14 @@ func Download(cfg *config.DfgetConfig, client dfdaemonclient.Client) error {
 	return downError
 }
 
-func download(ctx context.Context, client dfdaemonclient.Client, cfg *config.DfgetConfig, wLog *logger.SugaredLoggerOnWith) error {
+func download(ctx context.Context, client dfdaemonclient.V1, cfg *config.DfgetConfig, wLog *logger.SugaredLoggerOnWith) error {
 	if cfg.Recursive {
 		return recursiveDownload(ctx, client, cfg)
 	}
 	return singleDownload(ctx, client, cfg, wLog)
 }
 
-func singleDownload(ctx context.Context, client dfdaemonclient.Client, cfg *config.DfgetConfig, wLog *logger.SugaredLoggerOnWith) error {
+func singleDownload(ctx context.Context, client dfdaemonclient.V1, cfg *config.DfgetConfig, wLog *logger.SugaredLoggerOnWith) error {
 	hdr := parseHeader(cfg.Header)
 
 	if client == nil {
@@ -293,7 +293,7 @@ func rejectRegex(u string, reject string) bool {
 }
 
 // recursiveDownload breadth-first download all resources
-func recursiveDownload(ctx context.Context, client dfdaemonclient.Client, cfg *config.DfgetConfig) error {
+func recursiveDownload(ctx context.Context, client dfdaemonclient.V1, cfg *config.DfgetConfig) error {
 	// if recursive level is 0, skip recursive level check
 	var skipLevel bool
 	if cfg.RecursiveLevel == 0 {

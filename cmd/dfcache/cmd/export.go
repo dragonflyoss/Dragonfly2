@@ -55,6 +55,6 @@ func initExport() {
 	}
 }
 
-func runExport(cfg *config.DfcacheConfig, client client.Client) error {
+func runExport(cfg *config.DfcacheConfig, client client.V1) error {
 	return dfcache.Export(cfg, client)
 }
