@@ -57,7 +57,7 @@ func (mr *MockV2MockRecorder) AnnounceHost(arg0, arg1 interface{}, arg2 ...inter
 }
 
 // AnnouncePeer mocks base method.
-func (m *MockV2) AnnouncePeer(arg0 context.Context, arg1 *scheduler.AnnouncePeerRequest, arg2 ...grpc.CallOption) (scheduler.Scheduler_AnnouncePeerClient, error) {
+func (m *MockV2) AnnouncePeer(arg0 context.Context, arg1 string, arg2 ...grpc.CallOption) (scheduler.Scheduler_AnnouncePeerClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {

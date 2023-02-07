@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2023 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-//go:generate mockgen -destination mocks/client_mock.go -source client.go -package mocks
+//go:generate mockgen -destination mocks/client_v1_mock.go -source client_v1.go -package mocks
 
 package client
 
 import (
 	"context"
-	"time"
 
 	"github.com/google/uuid"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -39,20 +38,8 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 )
 
-const (
-	// contextTimeout is timeout of grpc invoke.
-	contextTimeout = 2 * time.Minute
-
-	// maxRetries is maximum number of retries.
-	maxRetries = 3
-
-	// backoffWaitBetween is waiting for a fixed period of
-	// time between calls in backoff linear.
-	backoffWaitBetween = 500 * time.Millisecond
-)
-
-// GetClient returns dfdaemon client.
-func GetClient(ctx context.Context, target string, opts ...grpc.DialOption) (Client, error) {
+// GetV1 returns v1 version of the dfdaemon client.
+func GetV1(ctx context.Context, target string, opts ...grpc.DialOption) (V1, error) {
 	if rpc.IsVsock(target) {
 		opts = append(opts, grpc.WithContextDialer(rpc.VsockDialer))
 	}
@@ -83,20 +70,20 @@ func GetClient(ctx context.Context, target string, opts ...grpc.DialOption) (Cli
 		return nil, err
 	}
 
-	return &client{
+	return &v1{
 		DaemonClient: dfdaemonv1.NewDaemonClient(conn),
 		ClientConn:   conn,
 	}, nil
 }
 
-// GetInsecureClient returns dfdaemon client.
-// FIXME use GetClient + insecure.NewCredentials instead of this function
-func GetInsecureClient(ctx context.Context, target string, opts ...grpc.DialOption) (Client, error) {
-	return GetClient(ctx, target, append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
+// GetInsecureV1 returns v1 version of the dfdaemon client.
+// FIXME use GetV1 and insecure.NewCredentials instead of this function
+func GetInsecureV1(ctx context.Context, target string, opts ...grpc.DialOption) (V1, error) {
+	return GetV1(ctx, target, append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
 }
 
-// Client is the interface for grpc client.
-type Client interface {
+// V1 is the interface for v1 version of the grpc client.
+type V1 interface {
 	// Trigger client to download file.
 	Download(context.Context, *dfdaemonv1.DownRequest, ...grpc.CallOption) (dfdaemonv1.Daemon_DownloadClient, error)
 
@@ -125,29 +112,29 @@ type Client interface {
 	Close() error
 }
 
-// client provides dfdaemon grpc function.
-type client struct {
+// v1 provides v1 version of the dfdaemon grpc function.
+type v1 struct {
 	dfdaemonv1.DaemonClient
 	*grpc.ClientConn
 }
 
 // Trigger client to download file.
-func (c *client) Download(ctx context.Context, req *dfdaemonv1.DownRequest, opts ...grpc.CallOption) (dfdaemonv1.Daemon_DownloadClient, error) {
+func (v *v1) Download(ctx context.Context, req *dfdaemonv1.DownRequest, opts ...grpc.CallOption) (dfdaemonv1.Daemon_DownloadClient, error) {
 	req.Uuid = uuid.New().String()
-	return c.DaemonClient.Download(ctx, req, opts...)
+	return v.DaemonClient.Download(ctx, req, opts...)
 }
 
 // Get piece tasks from other peers.
-func (c *client) GetPieceTasks(ctx context.Context, req *commonv1.PieceTaskRequest, opts ...grpc.CallOption) (*commonv1.PiecePacket, error) {
+func (v *v1) GetPieceTasks(ctx context.Context, req *commonv1.PieceTaskRequest, opts ...grpc.CallOption) (*commonv1.PiecePacket, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	return c.DaemonClient.GetPieceTasks(ctx, req, opts...)
+	return v.DaemonClient.GetPieceTasks(ctx, req, opts...)
 }
 
 // Sync piece tasks with other peers.
-func (c *client) SyncPieceTasks(ctx context.Context, req *commonv1.PieceTaskRequest, opts ...grpc.CallOption) (dfdaemonv1.Daemon_SyncPieceTasksClient, error) {
-	stream, err := c.DaemonClient.SyncPieceTasks(ctx, opts...)
+func (v *v1) SyncPieceTasks(ctx context.Context, req *commonv1.PieceTaskRequest, opts ...grpc.CallOption) (dfdaemonv1.Daemon_SyncPieceTasksClient, error) {
+	stream, err := v.DaemonClient.SyncPieceTasks(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -156,40 +143,40 @@ func (c *client) SyncPieceTasks(ctx context.Context, req *commonv1.PieceTaskRequ
 }
 
 // Check if given task exists in P2P cache system.
-func (c *client) StatTask(ctx context.Context, req *dfdaemonv1.StatTaskRequest, opts ...grpc.CallOption) error {
+func (v *v1) StatTask(ctx context.Context, req *dfdaemonv1.StatTaskRequest, opts ...grpc.CallOption) error {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	_, err := c.DaemonClient.StatTask(ctx, req, opts...)
+	_, err := v.DaemonClient.StatTask(ctx, req, opts...)
 	return err
 }
 
 // Import the given file into P2P cache system.
-func (c *client) ImportTask(ctx context.Context, req *dfdaemonv1.ImportTaskRequest, opts ...grpc.CallOption) error {
-	_, err := c.DaemonClient.ImportTask(ctx, req, opts...)
+func (v *v1) ImportTask(ctx context.Context, req *dfdaemonv1.ImportTaskRequest, opts ...grpc.CallOption) error {
+	_, err := v.DaemonClient.ImportTask(ctx, req, opts...)
 	return err
 }
 
 // Export or download file from P2P cache system.
-func (c *client) ExportTask(ctx context.Context, req *dfdaemonv1.ExportTaskRequest, opts ...grpc.CallOption) error {
-	_, err := c.DaemonClient.ExportTask(ctx, req, opts...)
+func (v *v1) ExportTask(ctx context.Context, req *dfdaemonv1.ExportTaskRequest, opts ...grpc.CallOption) error {
+	_, err := v.DaemonClient.ExportTask(ctx, req, opts...)
 	return err
 }
 
 // Delete file from P2P cache system.
-func (c *client) DeleteTask(ctx context.Context, req *dfdaemonv1.DeleteTaskRequest, opts ...grpc.CallOption) error {
+func (v *v1) DeleteTask(ctx context.Context, req *dfdaemonv1.DeleteTaskRequest, opts ...grpc.CallOption) error {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	_, err := c.DaemonClient.DeleteTask(ctx, req, opts...)
+	_, err := v.DaemonClient.DeleteTask(ctx, req, opts...)
 	return err
 }
 
 // Check daemon health.
-func (c *client) CheckHealth(ctx context.Context, opts ...grpc.CallOption) error {
+func (v *v1) CheckHealth(ctx context.Context, opts ...grpc.CallOption) error {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	_, err := c.DaemonClient.CheckHealth(ctx, new(emptypb.Empty), opts...)
+	_, err := v.DaemonClient.CheckHealth(ctx, new(emptypb.Empty), opts...)
 	return err
 }

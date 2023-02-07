@@ -1142,7 +1142,7 @@ func TestServer_SyncPieceTasks(t *testing.T) {
 	}
 }
 
-func setupPeerServerAndClient(t *testing.T, srv *server, assert *testifyassert.Assertions, serveFunc func(listener net.Listener) error) dfdaemonclient.Client {
+func setupPeerServerAndClient(t *testing.T, srv *server, assert *testifyassert.Assertions, serveFunc func(listener net.Listener) error) dfdaemonclient.V1 {
 	srv.peerServer = dfdaemonserver.New(srv)
 	port, err := freeport.GetFreePort()
 	if err != nil {
@@ -1161,7 +1161,7 @@ func setupPeerServerAndClient(t *testing.T, srv *server, assert *testifyassert.A
 		Type: dfnet.TCP,
 		Addr: fmt.Sprintf(":%d", port),
 	}
-	client, err := dfdaemonclient.GetInsecureClient(context.Background(), netAddr.String())
+	client, err := dfdaemonclient.GetInsecureV1(context.Background(), netAddr.String())
 	assert.Nil(err, "grpc dial should be ok")
 	return client
 }

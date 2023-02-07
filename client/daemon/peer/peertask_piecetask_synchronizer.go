@@ -57,7 +57,7 @@ type pieceTaskSynchronizer struct {
 	ctxCancel         context.CancelFunc
 	span              trace.Span
 	syncPiecesStream  dfdaemonv1.Daemon_SyncPieceTasksClient
-	grpcClient        dfdaemonclient.Client
+	grpcClient        dfdaemonclient.V1
 	dstPeer           *schedulerv1.PeerPacket_DestPeer
 	error             atomic.Value
 	grpcInitialized   *atomic.Bool
@@ -264,7 +264,7 @@ func (s *pieceTaskSynchronizer) start(request *commonv1.PieceTaskRequest, dstPee
 	credentialOpt := grpc.WithTransportCredentials(s.peerTaskConductor.GRPCCredentials)
 
 	dialCtx, cancel := context.WithTimeout(s.ctx, s.peerTaskConductor.GRPCDialTimeout)
-	grpcClient, err := dfdaemonclient.GetClient(dialCtx, netAddr.String(), credentialOpt)
+	grpcClient, err := dfdaemonclient.GetV1(dialCtx, netAddr.String(), credentialOpt)
 	cancel()
 
 	if err != nil {
