@@ -54,6 +54,6 @@ func initImport() {
 	}
 }
 
-func runImport(cfg *config.DfcacheConfig, client client.Client) error {
+func runImport(cfg *config.DfcacheConfig, client client.V1) error {
 	return dfcache.Import(cfg, client)
 }

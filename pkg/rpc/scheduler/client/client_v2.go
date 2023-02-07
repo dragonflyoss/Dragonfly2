@@ -88,7 +88,7 @@ func GetV2(ctx context.Context, dynconfig config.Dynconfig, opts ...grpc.DialOpt
 // V2 is the interface for v1 version of the grpc client.
 type V2 interface {
 	// AnnouncePeer announces peer to scheduler.
-	AnnouncePeer(context.Context, *schedulerv2.AnnouncePeerRequest, ...grpc.CallOption) (schedulerv2.Scheduler_AnnouncePeerClient, error)
+	AnnouncePeer(context.Context, string, ...grpc.CallOption) (schedulerv2.Scheduler_AnnouncePeerClient, error)
 
 	// Checks information of peer.
 	StatPeer(context.Context, *schedulerv2.StatPeerRequest, ...grpc.CallOption) (*commonv2.Peer, error)
@@ -123,9 +123,9 @@ type v2 struct {
 }
 
 // AnnouncePeer announces peer to scheduler.
-func (v *v2) AnnouncePeer(ctx context.Context, req *schedulerv2.AnnouncePeerRequest, opts ...grpc.CallOption) (schedulerv2.Scheduler_AnnouncePeerClient, error) {
+func (v *v2) AnnouncePeer(ctx context.Context, taskID string, opts ...grpc.CallOption) (schedulerv2.Scheduler_AnnouncePeerClient, error) {
 	return v.SchedulerClient.AnnouncePeer(
-		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
+		context.WithValue(ctx, pkgbalancer.ContextKey, taskID),
 		opts...,
 	)
 }

@@ -54,6 +54,6 @@ func initStat() {
 	}
 }
 
-func runStat(cfg *config.DfcacheConfig, client client.Client) error {
+func runStat(cfg *config.DfcacheConfig, client client.V1) error {
 	return dfcache.Stat(cfg, client)
 }
