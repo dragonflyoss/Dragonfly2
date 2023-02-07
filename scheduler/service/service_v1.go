@@ -208,8 +208,8 @@ func (v *V1) ReportPieceResult(stream schedulerv1.Scheduler_ReportPieceResultSer
 			}
 
 			// Peer setting stream.
-			peer.StoreReportPieceStream(stream)
-			defer peer.DeleteReportPieceStream()
+			peer.StoreReportPieceResultStream(stream)
+			defer peer.DeleteReportPieceResultStream()
 		}
 
 		if piece.PieceInfo != nil {
@@ -1020,7 +1020,7 @@ func (v *V1) handlePieceFailure(ctx context.Context, peer *resource.Peer, piece 
 
 		// Returns an scheduling error if the peer
 		// state is not PeerStateRunning.
-		stream, loaded := peer.LoadReportPieceStream()
+		stream, loaded := peer.LoadReportPieceResultStream()
 		if !loaded {
 			peer.Log.Error("load stream failed")
 			return
@@ -1131,7 +1131,7 @@ func (v *V1) handleTaskFailure(ctx context.Context, task *resource.Task, backToS
 	// and return the source metadata to peer.
 	if backToSourceErr != nil {
 		if !backToSourceErr.Temporary {
-			task.NotifyPeers(&schedulerv1.PeerPacket{
+			task.ReportPieceResultToPeers(&schedulerv1.PeerPacket{
 				Code: commonv1.Code_BackToSourceAborted,
 				Errordetails: &schedulerv1.PeerPacket_SourceError{
 					SourceError: backToSourceErr,
@@ -1162,7 +1162,7 @@ func (v *V1) handleTaskFailure(ctx context.Context, task *resource.Task, backToS
 							task.URLMeta.Tag, task.URLMeta.Application, proto, "0").Inc()
 					}
 					if !d.Temporary {
-						task.NotifyPeers(&schedulerv1.PeerPacket{
+						task.ReportPieceResultToPeers(&schedulerv1.PeerPacket{
 							Code: commonv1.Code_BackToSourceAborted,
 							Errordetails: &schedulerv1.PeerPacket_SourceError{
 								SourceError: d,
@@ -1176,7 +1176,7 @@ func (v *V1) handleTaskFailure(ctx context.Context, task *resource.Task, backToS
 	} else if task.PeerFailedCount.Load() > resource.FailedPeerCountLimit {
 		// If the number of failed peers in the task is greater than FailedPeerCountLimit,
 		// then scheduler notifies running peers of failure.
-		task.NotifyPeers(&schedulerv1.PeerPacket{
+		task.ReportPieceResultToPeers(&schedulerv1.PeerPacket{
 			Code: commonv1.Code_SchedTaskStatusError,
 		}, resource.PeerEventDownloadFailed)
 		task.PeerFailedCount.Store(0)

@@ -233,7 +233,7 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 				task.StorePeer(peer)
 				peer.NeedBackToSource.Store(true)
 				peer.FSM.SetState(resource.PeerStateRunning)
-				peer.StoreReportPieceStream(stream)
+				peer.StoreReportPieceResultStream(stream)
 
 				mr.Send(gomock.Eq(&schedulerv1.PeerPacket{Code: commonv1.Code_SchedNeedBackSource})).Return(errors.New("foo")).Times(1)
 			},
@@ -250,7 +250,7 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 				task.StorePeer(peer)
 				peer.NeedBackToSource.Store(true)
 				peer.FSM.SetState(resource.PeerStateRunning)
-				peer.StoreReportPieceStream(stream)
+				peer.StoreReportPieceResultStream(stream)
 
 				mr.Send(gomock.Eq(&schedulerv1.PeerPacket{Code: commonv1.Code_SchedNeedBackSource})).Return(nil).Times(1)
 			},
@@ -269,7 +269,7 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 				peer.NeedBackToSource.Store(true)
 				peer.FSM.SetState(resource.PeerStateRunning)
 				task.FSM.SetState(resource.TaskStateFailed)
-				peer.StoreReportPieceStream(stream)
+				peer.StoreReportPieceResultStream(stream)
 
 				mr.Send(gomock.Eq(&schedulerv1.PeerPacket{Code: commonv1.Code_SchedNeedBackSource})).Return(nil).Times(1)
 			},
@@ -315,7 +315,7 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 				task.StorePeer(peer)
 				peer.FSM.SetState(resource.PeerStateRunning)
 				peer.Task.BackToSourceLimit.Store(-1)
-				peer.StoreReportPieceStream(stream)
+				peer.StoreReportPieceResultStream(stream)
 
 				gomock.InOrder(
 					md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, errors.New("foo")).Times(2),
@@ -335,7 +335,7 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 				task.StorePeer(peer)
 				peer.FSM.SetState(resource.PeerStateRunning)
 				peer.Task.BackToSourceLimit.Store(-1)
-				peer.StoreReportPieceStream(stream)
+				peer.StoreReportPieceResultStream(stream)
 
 				gomock.InOrder(
 					md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, errors.New("foo")).Times(2),
@@ -356,7 +356,7 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 				task.StorePeer(seedPeer)
 				peer.FSM.SetState(resource.PeerStateRunning)
 				seedPeer.FSM.SetState(resource.PeerStateRunning)
-				peer.StoreReportPieceStream(stream)
+				peer.StoreReportPieceResultStream(stream)
 				gomock.InOrder(
 					md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, errors.New("foo")).Times(1),
 					md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{
@@ -605,7 +605,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 				peer.Task.StorePeer(peer)
 				peer.Task.StorePeer(mockPeer)
 				mockPeer.FinishedPieces.Set(0)
-				peer.StoreReportPieceStream(stream)
+				peer.StoreReportPieceResultStream(stream)
 				gomock.InOrder(
 					md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, errors.New("foo")).Times(1),
 					md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{
@@ -636,7 +636,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 				mockPeer.IsBackToSource.Store(true)
 				candidatePeer.IsBackToSource.Store(true)
 				mockPeer.FinishedPieces.Set(0)
-				peer.StoreReportPieceStream(stream)
+				peer.StoreReportPieceResultStream(stream)
 				gomock.InOrder(
 					md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, errors.New("foo")).Times(1),
 					md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{
