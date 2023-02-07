@@ -49,6 +49,20 @@ func (mr *MockSeedPeerMockRecorder) Client() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Client", reflect.TypeOf((*MockSeedPeer)(nil).Client))
 }
 
+// DownloadTask mocks base method.
+func (m *MockSeedPeer) DownloadTask(arg0 context.Context, arg1 *Task) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DownloadTask", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DownloadTask indicates an expected call of DownloadTask.
+func (mr *MockSeedPeerMockRecorder) DownloadTask(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadTask", reflect.TypeOf((*MockSeedPeer)(nil).DownloadTask), arg0, arg1)
+}
+
 // Stop mocks base method.
 func (m *MockSeedPeer) Stop() error {
 	m.ctrl.T.Helper()
