@@ -47,7 +47,12 @@ const (
 )
 
 type SeedPeer interface {
-	// TriggerTask triggers the seed peer to download the task.
+	// DownloadTask downloads task back-to-source.
+	// Used only in v2 version of the grpc.
+	DownloadTask(context.Context, *Task) error
+
+	// TriggerTask triggers the seed peer to download task.
+	// Used only in v1 version of the grpc.
 	TriggerTask(context.Context, *Task) (*Peer, *schedulerv1.PeerResult, error)
 
 	// Client returns grpc client of seed peer.
@@ -75,7 +80,15 @@ func newSeedPeer(client SeedPeerClient, peerManager PeerManager, hostManager Hos
 	}
 }
 
-// TriggerTask start to trigger seed peer task.
+// TODO Implement DownloadTask
+// DownloadTask downloads task back-to-source.
+// Used only in v2 version of the grpc.
+func (s *seedPeer) DownloadTask(ctx context.Context, task *Task) error {
+	return nil
+}
+
+// TriggerTask triggers the seed peer to download task.
+// Used only in v1 version of the grpc.
 func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *schedulerv1.PeerResult, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
