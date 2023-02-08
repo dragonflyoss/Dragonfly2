@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	commonv2 "d7y.io/api/pkg/apis/common/v2"
 
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/types"
@@ -490,7 +490,7 @@ func TestHost_LoadPeer(t *testing.T) {
 			host := NewHost(
 				tc.rawHost.ID, tc.rawHost.IP, tc.rawHost.Hostname,
 				tc.rawHost.Port, tc.rawHost.DownloadPort, tc.rawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, commonv2.TaskType_DFDAEMON, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, host)
 
 			host.StorePeer(mockPeer)
@@ -535,7 +535,7 @@ func TestHost_StorePeer(t *testing.T) {
 			host := NewHost(
 				tc.rawHost.ID, tc.rawHost.IP, tc.rawHost.Hostname,
 				tc.rawHost.Port, tc.rawHost.DownloadPort, tc.rawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, commonv2.TaskType_DFDAEMON, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(tc.peerID, mockTask, host)
 
 			host.StorePeer(mockPeer)
@@ -581,7 +581,7 @@ func TestHost_DeletePeer(t *testing.T) {
 			host := NewHost(
 				tc.rawHost.ID, tc.rawHost.IP, tc.rawHost.Hostname,
 				tc.rawHost.Port, tc.rawHost.DownloadPort, tc.rawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, commonv2.TaskType_DFDAEMON, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, host)
 
 			host.StorePeer(mockPeer)
@@ -633,7 +633,7 @@ func TestHost_LeavePeers(t *testing.T) {
 			host := NewHost(
 				tc.rawHost.ID, tc.rawHost.IP, tc.rawHost.Hostname,
 				tc.rawHost.Port, tc.rawHost.DownloadPort, tc.rawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, commonv2.TaskType_DFDAEMON, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, host)
 
 			tc.expect(t, host, mockPeer)
@@ -685,7 +685,7 @@ func TestHost_FreeUploadCount(t *testing.T) {
 			host := NewHost(
 				tc.rawHost.ID, tc.rawHost.IP, tc.rawHost.Hostname,
 				tc.rawHost.Port, tc.rawHost.DownloadPort, tc.rawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, commonv2.TaskType_DFDAEMON, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, host)
 
 			tc.expect(t, host, mockTask, mockPeer)

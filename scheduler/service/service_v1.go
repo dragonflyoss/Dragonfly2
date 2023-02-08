@@ -87,7 +87,7 @@ func (v *V1) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequ
 		req, req.UrlMeta)
 
 	// Store resource.
-	task := v.storeTask(ctx, req, commonv1.TaskType_Normal)
+	task := v.storeTask(ctx, req, commonv2.TaskType_DFDAEMON)
 	host := v.storeHost(ctx, req.PeerHost)
 	peer := v.storePeer(ctx, req.PeerId, task, host, req.UrlMeta.Tag, req.UrlMeta.Application)
 
@@ -320,7 +320,7 @@ func (v *V1) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequ
 
 	taskID := req.TaskId
 	peerID := req.PiecePacket.DstPid
-	task := resource.NewTask(taskID, req.Url, req.TaskType, req.UrlMeta)
+	task := resource.NewTask(taskID, req.Url, types.TaskTypeV1ToV2(req.TaskType), req.UrlMeta)
 	task, _ = v.resource.TaskManager().LoadOrStore(task)
 	host := v.storeHost(ctx, req.PeerHost)
 	peer := v.storePeer(ctx, peerID, task, host, req.UrlMeta.Tag, req.UrlMeta.Application)
@@ -399,7 +399,7 @@ func (v *V1) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest) (*s
 
 	return &schedulerv1.Task{
 		Id:               task.ID,
-		Type:             task.Type,
+		Type:             types.TaskTypeV2ToV1(task.Type),
 		ContentLength:    task.ContentLength.Load(),
 		TotalPieceCount:  task.TotalPieceCount.Load(),
 		State:            task.FSM.Current(),
@@ -707,11 +707,11 @@ func (v *V1) triggerSeedPeerTask(ctx context.Context, task *resource.Task) {
 }
 
 // storeTask stores a new task or reuses a previous task.
-func (v *V1) storeTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, taskType commonv1.TaskType) *resource.Task {
+func (v *V1) storeTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, typ commonv2.TaskType) *resource.Task {
 	task, loaded := v.resource.TaskManager().Load(req.TaskId)
 	if !loaded {
 		// Create a task for the first time.
-		task = resource.NewTask(req.TaskId, req.Url, taskType, req.UrlMeta, resource.WithBackToSourceLimit(int32(v.config.Scheduler.BackToSourceCount)))
+		task = resource.NewTask(req.TaskId, req.Url, typ, req.UrlMeta, resource.WithBackToSourceLimit(int32(v.config.Scheduler.BackToSourceCount)))
 		v.resource.TaskManager().Store(task)
 		task.Log.Info("create new task")
 		return task
@@ -783,7 +783,7 @@ func (v *V1) registerEmptyTask(ctx context.Context, peer *resource.Peer) (*sched
 
 	return &schedulerv1.RegisterResult{
 		TaskId:    peer.Task.ID,
-		TaskType:  peer.Task.Type,
+		TaskType:  types.TaskTypeV2ToV1(peer.Task.Type),
 		SizeScope: commonv1.SizeScope_EMPTY,
 		DirectPiece: &schedulerv1.RegisterResult_PieceContent{
 			PieceContent: []byte{},
@@ -799,7 +799,7 @@ func (v *V1) registerTinyTask(ctx context.Context, peer *resource.Peer) (*schedu
 
 	return &schedulerv1.RegisterResult{
 		TaskId:    peer.Task.ID,
-		TaskType:  peer.Task.Type,
+		TaskType:  types.TaskTypeV2ToV1(peer.Task.Type),
 		SizeScope: commonv1.SizeScope_TINY,
 		DirectPiece: &schedulerv1.RegisterResult_PieceContent{
 			PieceContent: peer.Task.DirectPiece,
@@ -841,7 +841,7 @@ func (v *V1) registerSmallTask(ctx context.Context, peer *resource.Peer) (*sched
 
 	return &schedulerv1.RegisterResult{
 		TaskId:    peer.Task.ID,
-		TaskType:  peer.Task.Type,
+		TaskType:  types.TaskTypeV2ToV1(peer.Task.Type),
 		SizeScope: commonv1.SizeScope_SMALL,
 		DirectPiece: &schedulerv1.RegisterResult_SinglePiece{
 			SinglePiece: &schedulerv1.SinglePiece{
@@ -868,7 +868,7 @@ func (v *V1) registerNormalTask(ctx context.Context, peer *resource.Peer) (*sche
 
 	return &schedulerv1.RegisterResult{
 		TaskId:    peer.Task.ID,
-		TaskType:  peer.Task.Type,
+		TaskType:  types.TaskTypeV2ToV1(peer.Task.Type),
 		SizeScope: commonv1.SizeScope_NORMAL,
 	}, nil
 }

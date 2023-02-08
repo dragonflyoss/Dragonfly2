@@ -332,18 +332,18 @@ type Disk struct {
 // New host instance.
 func NewHost(
 	id, ip, hostname string,
-	port, downloadPort int32, hostType types.HostType,
+	port, downloadPort int32, typ types.HostType,
 	options ...HostOption,
 ) *Host {
 	// Calculate default of the concurrent upload limit by host type.
 	concurrentUploadLimit := config.DefaultSeedPeerConcurrentUploadLimit
-	if hostType == types.HostTypeNormal {
+	if typ == types.HostTypeNormal {
 		concurrentUploadLimit = config.DefaultPeerConcurrentUploadLimit
 	}
 
 	h := &Host{
 		ID:                    id,
-		Type:                  types.HostType(hostType),
+		Type:                  types.HostType(typ),
 		IP:                    ip,
 		Hostname:              hostname,
 		Port:                  port,

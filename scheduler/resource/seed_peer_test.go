@@ -25,7 +25,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	commonv2 "d7y.io/api/pkg/apis/common/v2"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 )
 
@@ -84,7 +84,7 @@ func TestSeedPeer_TriggerTask(t *testing.T) {
 			tc.mock(client.EXPECT())
 
 			seedPeer := newSeedPeer(client, peerManager, hostManager)
-			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, commonv2.TaskType_DFDAEMON, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer, result, err := seedPeer.TriggerTask(context.Background(), mockTask)
 			tc.expect(t, peer, result, err)
 		})
