@@ -27,6 +27,7 @@ import (
 	"go.uber.org/atomic"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	commonv2 "d7y.io/api/pkg/apis/common/v2"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	schedulerv2 "d7y.io/api/pkg/apis/scheduler/v2"
 
@@ -101,7 +102,7 @@ type Task struct {
 	URL string
 
 	// Type is task type.
-	Type commonv1.TaskType
+	Type commonv2.TaskType
 
 	// URLMeta is task download url meta.
 	URLMeta *commonv1.UrlMeta
@@ -145,11 +146,11 @@ type Task struct {
 }
 
 // New task instance.
-func NewTask(id, url string, taskType commonv1.TaskType, meta *commonv1.UrlMeta, options ...TaskOption) *Task {
+func NewTask(id, url string, typ commonv2.TaskType, meta *commonv1.UrlMeta, options ...TaskOption) *Task {
 	t := &Task{
 		ID:                id,
 		URL:               url,
-		Type:              taskType,
+		Type:              typ,
 		URLMeta:           meta,
 		DirectPiece:       []byte{},
 		ContentLength:     atomic.NewInt64(-1),
@@ -432,7 +433,7 @@ func (t *Task) SizeScope() (commonv1.SizeScope, error) {
 
 // CanBackToSource represents whether task can back-to-source.
 func (t *Task) CanBackToSource() bool {
-	return int32(t.BackToSourcePeers.Len()) <= t.BackToSourceLimit.Load() && (t.Type == commonv1.TaskType_Normal || t.Type == commonv1.TaskType_DfStore)
+	return int32(t.BackToSourcePeers.Len()) <= t.BackToSourceLimit.Load() && (t.Type == commonv2.TaskType_DFDAEMON || t.Type == commonv2.TaskType_DFSTORE)
 }
 
 // CanReuseDirectPiece represents whether task can reuse data of direct piece.
