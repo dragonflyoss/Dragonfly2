@@ -32,7 +32,7 @@ import (
 
 var (
 	mockRawHost = resource.Host{
-		ID:              idgen.HostID("hostname", 8003),
+		ID:              idgen.HostIDV1("hostname", 8003),
 		Type:            types.HostTypeNormal,
 		Hostname:        "hostname",
 		IP:              "127.0.0.1",
@@ -51,7 +51,7 @@ var (
 	}
 
 	mockRawSeedHost = resource.Host{
-		ID:              idgen.HostID("hostname_seed", 8003),
+		ID:              idgen.HostIDV1("hostname_seed", 8003),
 		Type:            types.HostTypeSuperSeed,
 		Hostname:        "hostname_seed",
 		IP:              "127.0.0.1",
@@ -135,8 +135,8 @@ var (
 
 	mockTaskBackToSourceLimit int32 = 200
 	mockTaskURL                     = "http://example.com/foo"
-	mockTaskID                      = idgen.TaskID(mockTaskURL, mockTaskURLMeta)
-	mockPeerID                      = idgen.PeerID("127.0.0.1")
+	mockTaskID                      = idgen.TaskIDV1(mockTaskURL, mockTaskURLMeta)
+	mockPeerID                      = idgen.PeerIDV1("127.0.0.1")
 )
 
 func TestEvaluatorBase_NewEvaluatorBase(t *testing.T) {
@@ -171,12 +171,12 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 	}{
 		{
 			name: "security domain is not the same",
-			parent: resource.NewPeer(idgen.PeerID("127.0.0.1"),
+			parent: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"),
 				resource.NewTask(mockTaskID, mockTaskURL, commonv2.TaskType_DFDAEMON, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit)),
 				resource.NewHost(
 					mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
 					mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)),
-			child: resource.NewPeer(idgen.PeerID("127.0.0.1"),
+			child: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"),
 				resource.NewTask(mockTaskID, mockTaskURL, commonv2.TaskType_DFDAEMON, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit)),
 				resource.NewHost(
 					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
@@ -193,12 +193,12 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 		},
 		{
 			name: "security domain is same",
-			parent: resource.NewPeer(idgen.PeerID("127.0.0.1"),
+			parent: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"),
 				resource.NewTask(mockTaskID, mockTaskURL, commonv2.TaskType_DFDAEMON, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit)),
 				resource.NewHost(
 					mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
 					mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)),
-			child: resource.NewPeer(idgen.PeerID("127.0.0.1"),
+			child: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"),
 				resource.NewTask(mockTaskID, mockTaskURL, commonv2.TaskType_DFDAEMON, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit)),
 				resource.NewHost(
 					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
@@ -216,12 +216,12 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 		},
 		{
 			name: "parent security domain is empty",
-			parent: resource.NewPeer(idgen.PeerID("127.0.0.1"),
+			parent: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"),
 				resource.NewTask(mockTaskID, mockTaskURL, commonv2.TaskType_DFDAEMON, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit)),
 				resource.NewHost(
 					mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
 					mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)),
-			child: resource.NewPeer(idgen.PeerID("127.0.0.1"),
+			child: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"),
 				resource.NewTask(mockTaskID, mockTaskURL, commonv2.TaskType_DFDAEMON, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit)),
 				resource.NewHost(
 					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
@@ -239,12 +239,12 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 		},
 		{
 			name: "child security domain is empty",
-			parent: resource.NewPeer(idgen.PeerID("127.0.0.1"),
+			parent: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"),
 				resource.NewTask(mockTaskID, mockTaskURL, commonv2.TaskType_DFDAEMON, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit)),
 				resource.NewHost(
 					mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
 					mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)),
-			child: resource.NewPeer(idgen.PeerID("127.0.0.1"),
+			child: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"),
 				resource.NewTask(mockTaskID, mockTaskURL, commonv2.TaskType_DFDAEMON, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit)),
 				resource.NewHost(
 					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
@@ -287,8 +287,8 @@ func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
 	}{
 		{
 			name:            "total piece count is zero and child pieces are empty",
-			parent:          resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost),
-			child:           resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost),
+			parent:          resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
+			child:           resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
 			totalPieceCount: 0,
 			mock: func(parent *resource.Peer, child *resource.Peer) {
 				parent.FinishedPieces.Set(0)
@@ -300,8 +300,8 @@ func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
 		},
 		{
 			name:            "total piece count is zero and parent pieces are empty",
-			parent:          resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost),
-			child:           resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost),
+			parent:          resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
+			child:           resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
 			totalPieceCount: 0,
 			mock: func(parent *resource.Peer, child *resource.Peer) {
 				child.FinishedPieces.Set(0)
@@ -313,8 +313,8 @@ func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
 		},
 		{
 			name:            "total piece count is zero and child pieces of length greater than parent pieces",
-			parent:          resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost),
-			child:           resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost),
+			parent:          resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
+			child:           resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
 			totalPieceCount: 0,
 			mock: func(parent *resource.Peer, child *resource.Peer) {
 				parent.FinishedPieces.Set(0)
@@ -328,8 +328,8 @@ func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
 		},
 		{
 			name:            "total piece count is zero and child pieces of length equal than parent pieces",
-			parent:          resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost),
-			child:           resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost),
+			parent:          resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
+			child:           resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
 			totalPieceCount: 0,
 			mock: func(parent *resource.Peer, child *resource.Peer) {
 				parent.FinishedPieces.Set(0)
@@ -342,8 +342,8 @@ func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
 		},
 		{
 			name:            "total piece count is zero and parent pieces of length greater than child pieces",
-			parent:          resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost),
-			child:           resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost),
+			parent:          resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
+			child:           resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
 			totalPieceCount: 0,
 			mock: func(parent *resource.Peer, child *resource.Peer) {
 				parent.FinishedPieces.Set(0)
@@ -357,8 +357,8 @@ func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
 		},
 		{
 			name:            "parent pieces are empty",
-			parent:          resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost),
-			child:           resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost),
+			parent:          resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
+			child:           resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
 			totalPieceCount: 10,
 			mock:            func(parent *resource.Peer, child *resource.Peer) {},
 			expect: func(t *testing.T, score float64) {
@@ -368,8 +368,8 @@ func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
 		},
 		{
 			name:            "parent pieces of length greater than zero",
-			parent:          resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost),
-			child:           resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost),
+			parent:          resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
+			child:           resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
 			totalPieceCount: 10,
 			mock: func(parent *resource.Peer, child *resource.Peer) {
 				parent.FinishedPieces.Set(0)

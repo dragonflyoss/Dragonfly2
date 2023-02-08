@@ -35,6 +35,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
+// SeedPeerClient is the interface used for client of seed peer.
 type SeedPeerClient interface {
 	// client is seed peer grpc client interface.
 	client.Client
@@ -43,6 +44,7 @@ type SeedPeerClient interface {
 	config.Observer
 }
 
+// seedPeerClient contains content for client of seed peer.
 type seedPeerClient struct {
 	// client is sedd peer grpc client instance.
 	client.Client
@@ -95,7 +97,7 @@ func (sc *seedPeerClient) OnNotify(data *config.DynconfigData) {
 	// the seed peer needs to be cleared.
 	diffSeedPeers := diffSeedPeers(sc.data.Scheduler.SeedPeers, data.Scheduler.SeedPeers)
 	for _, seedPeer := range diffSeedPeers {
-		id := idgen.HostID(seedPeer.HostName, seedPeer.Port)
+		id := idgen.HostIDV1(seedPeer.HostName, seedPeer.Port)
 		logger.Infof("host %s has been reclaimed, because of seed peer ip is changed", id)
 		if host, loaded := sc.hostManager.Load(id); loaded {
 			host.LeavePeers()
@@ -121,7 +123,7 @@ func (sc *seedPeerClient) updateSeedPeersForHostManager(seedPeers []*managerv2.S
 			concurrentUploadLimit = int32(config.LoadLimit)
 		}
 
-		id := idgen.HostID(seedPeer.HostName, seedPeer.Port)
+		id := idgen.HostIDV1(seedPeer.HostName, seedPeer.Port)
 		seedPeerHost, loaded := sc.hostManager.Load(id)
 		if !loaded {
 			options := []HostOption{WithNetwork(Network{
@@ -195,7 +197,7 @@ func diffSeedPeers(sx []*managerv2.SeedPeer, sy []*managerv2.SeedPeer) []*manage
 	for _, x := range sx {
 		found := false
 		for _, y := range sy {
-			if idgen.HostID(x.HostName, x.Port) == idgen.HostID(y.HostName, y.Port) {
+			if idgen.HostIDV1(x.HostName, x.Port) == idgen.HostIDV1(y.HostName, y.Port) {
 				found = true
 				break
 			}

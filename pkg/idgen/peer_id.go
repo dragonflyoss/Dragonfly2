@@ -23,12 +23,17 @@ import (
 	"github.com/google/uuid"
 )
 
-// PeerID generates a peer id.
-func PeerID(ip string) string {
+// PeerIDV1 generates v1 version of peer id.
+func PeerIDV1(ip string) string {
 	return fmt.Sprintf("%s-%d-%s", ip, os.Getpid(), uuid.New())
 }
 
-// SeedPeerID generates a seed peer id.
-func SeedPeerID(ip string) string {
-	return fmt.Sprintf("%s_%s", PeerID(ip), "Seed")
+// SeedPeerIDV1 generates v1 version of seed peer id.
+func SeedPeerIDV1(ip string) string {
+	return fmt.Sprintf("%s_%s", PeerIDV1(ip), "Seed")
+}
+
+// PeerIDV2 generates v2 version of peer id.
+func PeerIDV2() string {
+	return uuid.NewString()
 }

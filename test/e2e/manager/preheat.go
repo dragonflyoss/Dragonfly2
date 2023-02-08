@@ -80,7 +80,7 @@ var _ = Describe("Preheat with manager", func() {
 				Expect(done).Should(BeTrue())
 
 				// generate task_id, also the filename
-				seedPeerTaskID := idgen.TaskID(url, &commonv1.UrlMeta{})
+				seedPeerTaskID := idgen.TaskIDV1(url, &commonv1.UrlMeta{})
 				fmt.Println(seedPeerTaskID)
 
 				sha256sum, err := checkPreheatResult(seedPeerPods, seedPeerTaskID)

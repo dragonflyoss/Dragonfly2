@@ -94,6 +94,7 @@ func WithBackToSourceLimit(limit int32) TaskOption {
 	}
 }
 
+// Task contains content for task.
 type Task struct {
 	// ID is task id.
 	ID string

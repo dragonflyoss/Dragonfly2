@@ -282,8 +282,8 @@ func (ptm *peerTaskManager) prefetchParentTask(request *schedulerv1.PeerTaskRequ
 		}
 		req.UrlMeta.Header[k] = v
 	}
-	taskID := idgen.TaskID(req.Url, req.UrlMeta)
-	req.PeerId = idgen.PeerID(req.PeerHost.Ip)
+	taskID := idgen.TaskIDV1(req.Url, req.UrlMeta)
+	req.PeerId = idgen.PeerIDV1(req.PeerHost.Ip)
 
 	var limit = rate.Inf
 	if ptm.PerPeerRateLimit > 0 {

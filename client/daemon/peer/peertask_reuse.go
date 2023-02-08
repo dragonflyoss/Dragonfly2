@@ -48,7 +48,7 @@ var _ *logger.SugaredLoggerOnWith // pin this package for no log code generation
 
 func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	request *FileTaskRequest) (chan *FileTaskProgress, bool) {
-	taskID := idgen.TaskID(request.Url, request.UrlMeta)
+	taskID := idgen.TaskIDV1(request.Url, request.UrlMeta)
 	var (
 		reuse      *storage.ReusePeerTask
 		reuseRange *util.Range // the range of parent peer task data to read
@@ -69,7 +69,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 		}
 		// for ranged request, check the parent task
 		reuseRange = request.Range
-		taskID = idgen.ParentTaskID(request.Url, request.UrlMeta)
+		taskID = idgen.ParentTaskIDV1(request.Url, request.UrlMeta)
 		reuse = ptm.StorageManager.FindPartialCompletedTask(taskID, reuseRange)
 		if reuse == nil {
 			return nil, false
@@ -227,7 +227,7 @@ func (ptm *peerTaskManager) storePartialFile(ctx context.Context, request *FileT
 
 func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 	request *StreamTaskRequest) (io.ReadCloser, map[string]string, bool) {
-	taskID := idgen.TaskID(request.URL, request.URLMeta)
+	taskID := idgen.TaskIDV1(request.URL, request.URLMeta)
 	var (
 		reuse      *storage.ReusePeerTask
 		reuseRange *util.Range // the range of parent peer task data to read
@@ -247,7 +247,7 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 		}
 		// for ranged request, check the parent task
 		reuseRange = request.Range
-		taskID = idgen.ParentTaskID(request.URL, request.URLMeta)
+		taskID = idgen.ParentTaskIDV1(request.URL, request.URLMeta)
 		reuse = ptm.StorageManager.FindPartialCompletedTask(taskID, reuseRange)
 		if reuse == nil {
 			return nil, nil, false
@@ -344,7 +344,7 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 
 func (ptm *peerTaskManager) tryReuseSeedPeerTask(ctx context.Context,
 	request *SeedTaskRequest) (*SeedTaskResponse, bool) {
-	taskID := idgen.TaskID(request.Url, request.UrlMeta)
+	taskID := idgen.TaskIDV1(request.Url, request.UrlMeta)
 	var (
 		reuse      *storage.ReusePeerTask
 		reuseRange *util.Range // the range of parent peer task data to read

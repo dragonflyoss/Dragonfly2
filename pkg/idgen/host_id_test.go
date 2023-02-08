@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHostID(t *testing.T) {
+func TestHostIDV1(t *testing.T) {
 	tests := []struct {
 		name     string
 		hostname string
@@ -60,7 +60,64 @@ func TestHostID(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, HostID(tc.hostname, tc.port))
+			tc.expect(t, HostIDV1(tc.hostname, tc.port))
+		})
+	}
+}
+
+func TestHostIDV2(t *testing.T) {
+	tests := []struct {
+		name     string
+		ip       string
+		hostname string
+		port     int32
+		expect   func(t *testing.T, d string)
+	}{
+		{
+			name:     "generate HostID",
+			ip:       "127.0.0.1",
+			hostname: "foo",
+			port:     8000,
+			expect: func(t *testing.T, d string) {
+				assert := assert.New(t)
+				assert.Equal(d, "b4b84f2b6234738dae4fc7aec86ddd7f7e329bfb944b2a3b9914427843955d92")
+			},
+		},
+		{
+			name:     "generate HostID with empty ip",
+			ip:       "",
+			hostname: "foo",
+			port:     8000,
+			expect: func(t *testing.T, d string) {
+				assert := assert.New(t)
+				assert.Equal(d, "96d9be07dba6c87ffe290176c694182b7438f47c22cbef49f199c91a713cccc9")
+			},
+		},
+		{
+			name:     "generate HostID with empty host",
+			ip:       "127.0.0.1",
+			hostname: "",
+			port:     8000,
+			expect: func(t *testing.T, d string) {
+				assert := assert.New(t)
+				assert.Equal(d, "82d3b0c2c9d99d3c3b4955a37847e263bea9804713457a0524c37ff460aa2387")
+			},
+		},
+		{
+			name:     "generate HostID with zero port",
+			ip:       "127.0.0.1",
+			hostname: "foo",
+			port:     0,
+			expect: func(t *testing.T, d string) {
+				assert := assert.New(t)
+				assert.Equal(d, "eb1959ff4577621851cfb18bd55bc0870c5dfea03c0a45c54de7c44834b344de")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.expect(t, HostIDV2(tc.ip, tc.hostname, tc.port))
 		})
 	}
 }

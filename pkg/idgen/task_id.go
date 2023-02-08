@@ -21,32 +21,33 @@ import (
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 
-	"d7y.io/dragonfly/v2/pkg/digest"
+	pkgdigest "d7y.io/dragonfly/v2/pkg/digest"
 	neturl "d7y.io/dragonfly/v2/pkg/net/url"
 	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 )
 
 const (
+	// filterSeparator is filter separator for url.
 	filterSeparator = "&"
 )
 
-// TaskID generates a task id.
+// TaskIDV1 generates v1 version of task id.
 // filter is separated by & character.
-func TaskID(url string, meta *commonv1.UrlMeta) string {
-	return taskID(url, meta, false)
+func TaskIDV1(url string, meta *commonv1.UrlMeta) string {
+	return taskIDV1(url, meta, false)
 }
 
-// ParentTaskID generates a task id like TaskID, but without range.
+// ParentTaskIDV1 generates v1 version of parent task id, but without range.
 // this func is used to check the parent tasks for ranged requests
-func ParentTaskID(url string, meta *commonv1.UrlMeta) string {
-	return taskID(url, meta, true)
+func ParentTaskIDV1(url string, meta *commonv1.UrlMeta) string {
+	return taskIDV1(url, meta, true)
 }
 
-// taskID generates a task id.
+// taskIDV1 generates v1 version of task id.
 // filter is separated by & character.
-func taskID(url string, meta *commonv1.UrlMeta, ignoreRange bool) string {
+func taskIDV1(url string, meta *commonv1.UrlMeta, ignoreRange bool) string {
 	if meta == nil {
-		return digest.SHA256FromStrings(url)
+		return pkgdigest.SHA256FromStrings(url)
 	}
 
 	filters := parseFilters(meta.Filter)
@@ -77,7 +78,7 @@ func taskID(url string, meta *commonv1.UrlMeta, ignoreRange bool) string {
 		data = append(data, meta.Application)
 	}
 
-	return digest.SHA256FromStrings(data...)
+	return pkgdigest.SHA256FromStrings(data...)
 }
 
 // parseFilters parses a filter string to filter slice.
@@ -87,4 +88,14 @@ func parseFilters(rawFilters string) []string {
 	}
 
 	return strings.Split(rawFilters, filterSeparator)
+}
+
+// TaskIDV2 generates v2 version of task id.
+func TaskIDV2(url, digest, tag, application string, filters []string) string {
+	url, err := neturl.FilterQuery(url, filters)
+	if err != nil {
+		url = ""
+	}
+
+	return pkgdigest.SHA256FromStrings(url, digest, tag, application)
 }

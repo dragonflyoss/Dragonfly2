@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPeerID(t *testing.T) {
+func TestPeerIDV1(t *testing.T) {
 	tests := []struct {
 		name   string
 		ip     string
@@ -56,13 +56,13 @@ func TestPeerID(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			data := PeerID(tc.ip)
+			data := PeerIDV1(tc.ip)
 			tc.expect(t, data)
 		})
 	}
 }
 
-func TestSeedPeerID(t *testing.T) {
+func TestSeedPeerIDV1(t *testing.T) {
 	tests := []struct {
 		name   string
 		ip     string
@@ -96,8 +96,13 @@ func TestSeedPeerID(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			data := SeedPeerID(tc.ip)
+			data := SeedPeerIDV1(tc.ip)
 			tc.expect(t, data)
 		})
 	}
+}
+
+func TestPeerIDV2(t *testing.T) {
+	assert := assert.New(t)
+	assert.Len(PeerIDV2(), 36)
 }

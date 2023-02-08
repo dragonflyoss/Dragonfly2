@@ -46,6 +46,7 @@ const (
 	SeedPeerFailedTimeout = 30 * time.Minute
 )
 
+// SeedPeer is the interface used for seed peer.
 type SeedPeer interface {
 	// DownloadTask downloads task back-to-source.
 	// Used only in v2 version of the grpc.
@@ -62,6 +63,7 @@ type SeedPeer interface {
 	Stop() error
 }
 
+// seedPeer contains content for seed peer.
 type seedPeer struct {
 	// client is the dynamic client of seed peer.
 	client SeedPeerClient

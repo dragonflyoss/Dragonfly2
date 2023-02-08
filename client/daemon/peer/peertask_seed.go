@@ -62,7 +62,7 @@ func (ptm *peerTaskManager) newSeedTask(
 	request *SeedTaskRequest,
 	limit rate.Limit) (*SeedTaskResponse, error) {
 
-	taskID := idgen.TaskID(request.Url, request.UrlMeta)
+	taskID := idgen.TaskIDV1(request.Url, request.UrlMeta)
 	ptc, err := ptm.getPeerTaskConductor(ctx, taskID, &request.PeerTaskRequest, limit, nil, request.Range, "", true)
 	if err != nil {
 		return nil, err

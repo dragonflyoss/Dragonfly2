@@ -300,7 +300,7 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 		return
 	}
 
-	taskID := idgen.TaskID(signURL, urlMeta)
+	taskID := idgen.TaskIDV1(signURL, urlMeta)
 	log := logger.WithTaskID(taskID)
 	log.Infof("get object %s meta: %s %#v", objectKey, signURL, urlMeta)
 
@@ -405,7 +405,7 @@ func (o *objectStorage) putObject(ctx *gin.Context) {
 	}
 
 	// Initialize task id and peer id.
-	taskID := idgen.TaskID(signURL, urlMeta)
+	taskID := idgen.TaskIDV1(signURL, urlMeta)
 	peerID := o.peerIDGenerator.PeerID()
 
 	log := logger.WithTaskAndPeerID(taskID, peerID)

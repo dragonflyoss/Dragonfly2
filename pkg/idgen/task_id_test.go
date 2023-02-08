@@ -24,7 +24,7 @@ import (
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 )
 
-func TestTaskID(t *testing.T) {
+func TestTaskIDV1(t *testing.T) {
 	tests := []struct {
 		name        string
 		url         string
@@ -38,7 +38,7 @@ func TestTaskID(t *testing.T) {
 			meta: nil,
 			expect: func(t *testing.T, d any) {
 				assert := assert.New(t)
-				assert.Equal("100680ad546ce6a577f42f52df33b4cfdca756859e664b8d7de329b150d09ce9", d)
+				assert.Equal(d, "100680ad546ce6a577f42f52df33b4cfdca756859e664b8d7de329b150d09ce9")
 			},
 		},
 		{
@@ -51,7 +51,7 @@ func TestTaskID(t *testing.T) {
 			},
 			expect: func(t *testing.T, d any) {
 				assert := assert.New(t)
-				assert.Equal("aeee0e0a2a0c75130582641353c539aaf9011a0088b31347f7588e70e449a3e0", d)
+				assert.Equal(d, "aeee0e0a2a0c75130582641353c539aaf9011a0088b31347f7588e70e449a3e0")
 			},
 		},
 		{
@@ -65,7 +65,7 @@ func TestTaskID(t *testing.T) {
 			ignoreRange: true,
 			expect: func(t *testing.T, d any) {
 				assert := assert.New(t)
-				assert.Equal("63dee2822037636b0109876b58e95692233840753a882afa69b9b5ee82a6c57d", d)
+				assert.Equal(d, "63dee2822037636b0109876b58e95692233840753a882afa69b9b5ee82a6c57d")
 			},
 		},
 		{
@@ -77,7 +77,7 @@ func TestTaskID(t *testing.T) {
 			},
 			expect: func(t *testing.T, d any) {
 				assert := assert.New(t)
-				assert.Equal("2773851c628744fb7933003195db436ce397c1722920696c4274ff804d86920b", d)
+				assert.Equal(d, "2773851c628744fb7933003195db436ce397c1722920696c4274ff804d86920b")
 			},
 		},
 		{
@@ -88,7 +88,7 @@ func TestTaskID(t *testing.T) {
 			},
 			expect: func(t *testing.T, d any) {
 				assert := assert.New(t)
-				assert.Equal("2773851c628744fb7933003195db436ce397c1722920696c4274ff804d86920b", d)
+				assert.Equal(d, "2773851c628744fb7933003195db436ce397c1722920696c4274ff804d86920b")
 			},
 		},
 	}
@@ -97,11 +97,78 @@ func TestTaskID(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var data string
 			if tc.ignoreRange {
-				data = ParentTaskID(tc.url, tc.meta)
+				data = ParentTaskIDV1(tc.url, tc.meta)
 			} else {
-				data = TaskID(tc.url, tc.meta)
+				data = TaskIDV1(tc.url, tc.meta)
 			}
 			tc.expect(t, data)
+		})
+	}
+}
+
+func TestTaskIDV2(t *testing.T) {
+	tests := []struct {
+		name        string
+		url         string
+		digest      string
+		tag         string
+		application string
+		filters     []string
+		expect      func(t *testing.T, d any)
+	}{
+		{
+			name:        "generate taskID",
+			url:         "https://example.com",
+			digest:      "sha256:c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+			tag:         "foo",
+			application: "bar",
+			filters:     []string{},
+			expect: func(t *testing.T, d any) {
+				assert := assert.New(t)
+				assert.Equal(d, "c8659b8372599cf22c7a2de260dd6e148fca6d4e1c2940703022867f739d071d")
+			},
+		},
+		{
+			name:   "generate taskID with digest",
+			url:    "https://example.com",
+			digest: "sha256:c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+			expect: func(t *testing.T, d any) {
+				assert := assert.New(t)
+				assert.Equal(d, "60469c583429af631a45540f05e08805b31ca4f84e7974cad35cfc84c197bcf8")
+			},
+		},
+		{
+			name: "generate taskID with tag",
+			url:  "https://example.com",
+			tag:  "foo",
+			expect: func(t *testing.T, d any) {
+				assert := assert.New(t)
+				assert.Equal(d, "2773851c628744fb7933003195db436ce397c1722920696c4274ff804d86920b")
+			},
+		},
+		{
+			name:        "generate taskID with application",
+			url:         "https://example.com",
+			application: "bar",
+			expect: func(t *testing.T, d any) {
+				assert := assert.New(t)
+				assert.Equal(d, "63dee2822037636b0109876b58e95692233840753a882afa69b9b5ee82a6c57d")
+			},
+		},
+		{
+			name:    "generate taskID with filters",
+			url:     "https://example.com?foo=foo&bar=bar",
+			filters: []string{"foo", "bar"},
+			expect: func(t *testing.T, d any) {
+				assert := assert.New(t)
+				assert.Equal(d, "100680ad546ce6a577f42f52df33b4cfdca756859e664b8d7de329b150d09ce9")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.expect(t, TaskIDV2(tc.url, tc.digest, tc.tag, tc.application, tc.filters))
 		})
 	}
 }

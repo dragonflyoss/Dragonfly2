@@ -79,7 +79,7 @@ func (ptm *peerTaskManager) newStreamTask(
 		parent = ptm.prefetchParentTask(request, "")
 	}
 
-	taskID := idgen.TaskID(request.Url, request.UrlMeta)
+	taskID := idgen.TaskIDV1(request.Url, request.UrlMeta)
 	ptc, err := ptm.getPeerTaskConductor(ctx, taskID, request, limit, parent, rg, "", false)
 	if err != nil {
 		return nil, err

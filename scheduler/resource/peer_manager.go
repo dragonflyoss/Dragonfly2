@@ -32,6 +32,7 @@ const (
 	GCPeerID = "peer"
 )
 
+// PeerManager is the interface used for peer manager.
 type PeerManager interface {
 	// Load returns peer for a key.
 	Load(string) (*Peer, bool)
@@ -51,6 +52,7 @@ type PeerManager interface {
 	RunGC() error
 }
 
+// peerManager contains content for peer manager.
 type peerManager struct {
 	// Peer sync map.
 	*sync.Map
@@ -86,6 +88,7 @@ func newPeerManager(cfg *config.GCConfig, gc pkggc.GC) (PeerManager, error) {
 	return p, nil
 }
 
+// Load returns peer for a key.
 func (p *peerManager) Load(key string) (*Peer, bool) {
 	rawPeer, loaded := p.Map.Load(key)
 	if !loaded {
@@ -95,6 +98,7 @@ func (p *peerManager) Load(key string) (*Peer, bool) {
 	return rawPeer.(*Peer), loaded
 }
 
+// Store sets peer.
 func (p *peerManager) Store(peer *Peer) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -104,6 +108,9 @@ func (p *peerManager) Store(peer *Peer) {
 	peer.Host.StorePeer(peer)
 }
 
+// LoadOrStore returns peer the key if present.
+// Otherwise, it stores and returns the given peer.
+// The loaded result is true if the peer was loaded, false if stored.
 func (p *peerManager) LoadOrStore(peer *Peer) (*Peer, bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -117,6 +124,7 @@ func (p *peerManager) LoadOrStore(peer *Peer) (*Peer, bool) {
 	return rawPeer.(*Peer), loaded
 }
 
+// Delete deletes peer for a key.
 func (p *peerManager) Delete(key string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -128,6 +136,7 @@ func (p *peerManager) Delete(key string) {
 	}
 }
 
+// Try to reclaim peer.
 func (p *peerManager) RunGC() error {
 	p.Map.Range(func(_, value any) bool {
 		peer, ok := value.(*Peer)

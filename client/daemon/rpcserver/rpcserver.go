@@ -441,7 +441,7 @@ func (s *server) recursiveDownloadWithP2PMetadata(
 	rc, _, err := s.peerTaskManager.StartStreamTask(ctx, &peer.StreamTaskRequest{
 		URL:     purl.String(),
 		URLMeta: &urlMeta,
-		PeerID:  idgen.PeerID(s.peerHost.Ip),
+		PeerID:  idgen.PeerIDV1(s.peerHost.Ip),
 	})
 	if err != nil {
 		log.Errorf("start stream task for metadata error: %s", err)
@@ -707,7 +707,7 @@ func (s *server) download(ctx context.Context, req *dfdaemonv1.DownRequest, stre
 	// init peer task request, peer uses different peer id to generate every request
 	// if peerID is not specified
 	if peerID == "" {
-		peerID = idgen.PeerID(s.peerHost.Ip)
+		peerID = idgen.PeerIDV1(s.peerHost.Ip)
 	}
 	peerTask := &peer.FileTaskRequest{
 		PeerTaskRequest: schedulerv1.PeerTaskRequest{
@@ -802,7 +802,7 @@ func (s *server) download(ctx context.Context, req *dfdaemonv1.DownRequest, stre
 
 func (s *server) StatTask(ctx context.Context, req *dfdaemonv1.StatTaskRequest) (*emptypb.Empty, error) {
 	s.Keep()
-	taskID := idgen.TaskID(req.Url, req.UrlMeta)
+	taskID := idgen.TaskIDV1(req.Url, req.UrlMeta)
 	log := logger.With("function", "StatTask", "URL", req.Url, "Tag", req.UrlMeta.Tag, "taskID", taskID, "LocalOnly", req.LocalOnly)
 
 	log.Info("new stat task request")
@@ -839,8 +839,8 @@ func (s *server) isTaskCompleted(taskID string) bool {
 
 func (s *server) ImportTask(ctx context.Context, req *dfdaemonv1.ImportTaskRequest) (*emptypb.Empty, error) {
 	s.Keep()
-	peerID := idgen.PeerID(s.peerHost.Ip)
-	taskID := idgen.TaskID(req.Url, req.UrlMeta)
+	peerID := idgen.PeerIDV1(s.peerHost.Ip)
+	taskID := idgen.TaskIDV1(req.Url, req.UrlMeta)
 	log := logger.With("function", "ImportTask", "URL", req.Url, "Tag", req.UrlMeta.Tag, "taskID", taskID, "file", req.Path)
 
 	log.Info("new import task request")
@@ -901,7 +901,7 @@ func (s *server) ImportTask(ctx context.Context, req *dfdaemonv1.ImportTaskReque
 
 func (s *server) ExportTask(ctx context.Context, req *dfdaemonv1.ExportTaskRequest) (*emptypb.Empty, error) {
 	s.Keep()
-	taskID := idgen.TaskID(req.Url, req.UrlMeta)
+	taskID := idgen.TaskIDV1(req.Url, req.UrlMeta)
 	log := logger.With("function", "ExportTask", "URL", req.Url, "Tag", req.UrlMeta.Tag, "taskID", taskID, "destination", req.Output)
 
 	log.Info("new export task request")
@@ -930,7 +930,7 @@ func (s *server) exportFromLocal(ctx context.Context, req *dfdaemonv1.ExportTask
 	return s.storageManager.Store(ctx, &storage.StoreRequest{
 		CommonTaskRequest: storage.CommonTaskRequest{
 			PeerID:      peerID,
-			TaskID:      idgen.TaskID(req.Url, req.UrlMeta),
+			TaskID:      idgen.TaskIDV1(req.Url, req.UrlMeta),
 			Destination: req.Output,
 		},
 		StoreDataOnly: true,
@@ -938,8 +938,8 @@ func (s *server) exportFromLocal(ctx context.Context, req *dfdaemonv1.ExportTask
 }
 
 func (s *server) exportFromPeers(ctx context.Context, log *logger.SugaredLoggerOnWith, req *dfdaemonv1.ExportTaskRequest) error {
-	peerID := idgen.PeerID(s.peerHost.Ip)
-	taskID := idgen.TaskID(req.Url, req.UrlMeta)
+	peerID := idgen.PeerIDV1(s.peerHost.Ip)
+	taskID := idgen.TaskIDV1(req.Url, req.UrlMeta)
 
 	task, err := s.peerTaskManager.StatTask(ctx, taskID)
 	if err != nil {
@@ -1023,7 +1023,7 @@ func call(ctx context.Context, peerID string, sender ResultSender, s *server, re
 
 func (s *server) DeleteTask(ctx context.Context, req *dfdaemonv1.DeleteTaskRequest) (*emptypb.Empty, error) {
 	s.Keep()
-	taskID := idgen.TaskID(req.Url, req.UrlMeta)
+	taskID := idgen.TaskIDV1(req.Url, req.UrlMeta)
 	log := logger.With("function", "DeleteTask", "URL", req.Url, "Tag", req.UrlMeta.Tag, "taskID", taskID)
 
 	log.Info("new delete task request")

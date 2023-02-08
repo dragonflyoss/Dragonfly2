@@ -48,7 +48,7 @@ var (
 	}
 	mockTaskBackToSourceLimit int32 = 200
 	mockTaskURL                     = "http://example.com/foo"
-	mockTaskID                      = idgen.TaskID(mockTaskURL, mockTaskURLMeta)
+	mockTaskID                      = idgen.TaskIDV1(mockTaskURL, mockTaskURLMeta)
 	mockPieceInfo                   = &commonv1.PieceInfo{
 		PieceNum:    1,
 		RangeStart:  0,
@@ -129,7 +129,7 @@ func TestTask_LoadPeer(t *testing.T) {
 			urlMeta:           mockTaskURLMeta,
 			url:               mockTaskURL,
 			backToSourceLimit: mockTaskBackToSourceLimit,
-			peerID:            idgen.PeerID("0.0.0.0"),
+			peerID:            idgen.PeerIDV1("0.0.0.0"),
 			expect: func(t *testing.T, peer *Peer, loaded bool) {
 				assert := assert.New(t)
 				assert.Equal(loaded, false)
@@ -172,10 +172,10 @@ func TestTask_LoadRandomPeers(t *testing.T) {
 		{
 			name: "load random peers",
 			expect: func(t *testing.T, task *Task, host *Host) {
-				mockPeerE := NewPeer(idgen.PeerID("127.0.0.1"), task, host)
-				mockPeerF := NewPeer(idgen.PeerID("127.0.0.1"), task, host)
-				mockPeerG := NewPeer(idgen.PeerID("127.0.0.1"), task, host)
-				mockPeerH := NewPeer(idgen.PeerID("127.0.0.1"), task, host)
+				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, host)
+				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, host)
+				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, host)
+				mockPeerH := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, host)
 
 				task.StorePeer(mockPeerE)
 				task.StorePeer(mockPeerF)
@@ -383,9 +383,9 @@ func TestTask_AddPeerEdge(t *testing.T) {
 			name: "add peer edge failed",
 			expect: func(t *testing.T, mockHost *Host, task *Task) {
 				assert := assert.New(t)
-				mockPeerE := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
-				mockPeerF := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
-				mockPeerG := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
+				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
 
 				task.StorePeer(mockPeerE)
 				task.StorePeer(mockPeerF)
@@ -421,9 +421,9 @@ func TestTask_AddPeerEdge(t *testing.T) {
 			name: "add peer edge",
 			expect: func(t *testing.T, mockHost *Host, task *Task) {
 				assert := assert.New(t)
-				mockPeerE := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
-				mockPeerF := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
-				mockPeerG := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
+				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
 
 				task.StorePeer(mockPeerE)
 				task.StorePeer(mockPeerF)
@@ -488,9 +488,9 @@ func TestTask_DeletePeerInEdges(t *testing.T) {
 			name: "delete peer inedges",
 			expect: func(t *testing.T, mockHost *Host, task *Task) {
 				assert := assert.New(t)
-				mockPeerE := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
-				mockPeerF := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
-				mockPeerG := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
+				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
 
 				task.StorePeer(mockPeerE)
 				task.StorePeer(mockPeerF)
@@ -592,9 +592,9 @@ func TestTask_DeletePeerOutEdges(t *testing.T) {
 			name: "delete peer outedges",
 			expect: func(t *testing.T, mockHost *Host, task *Task) {
 				assert := assert.New(t)
-				mockPeerE := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
-				mockPeerF := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
-				mockPeerG := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
+				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
 
 				task.StorePeer(mockPeerE)
 				task.StorePeer(mockPeerF)
@@ -686,9 +686,9 @@ func TestTask_CanAddPeerEdge(t *testing.T) {
 			name: "peer can not add edge",
 			expect: func(t *testing.T, mockHost *Host, task *Task) {
 				assert := assert.New(t)
-				mockPeerE := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
-				mockPeerF := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
-				mockPeerG := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
+				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
 
 				task.StorePeer(mockPeerE)
 				task.StorePeer(mockPeerF)
@@ -720,9 +720,9 @@ func TestTask_CanAddPeerEdge(t *testing.T) {
 			name: "peer can add edge",
 			expect: func(t *testing.T, mockHost *Host, task *Task) {
 				assert := assert.New(t)
-				mockPeerE := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
-				mockPeerF := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
-				mockPeerG := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
+				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
 
 				task.StorePeer(mockPeerE)
 				task.StorePeer(mockPeerF)
@@ -781,9 +781,9 @@ func TestTask_PeerDegree(t *testing.T) {
 			name: "peer get degree",
 			expect: func(t *testing.T, mockHost *Host, task *Task) {
 				assert := assert.New(t)
-				mockPeerE := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
-				mockPeerF := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
-				mockPeerG := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
+				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
 
 				task.StorePeer(mockPeerE)
 				task.StorePeer(mockPeerF)
@@ -844,9 +844,9 @@ func TestTask_PeerInDegree(t *testing.T) {
 			name: "peer get indegree",
 			expect: func(t *testing.T, mockHost *Host, task *Task) {
 				assert := assert.New(t)
-				mockPeerE := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
-				mockPeerF := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
-				mockPeerG := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
+				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
 
 				task.StorePeer(mockPeerE)
 				task.StorePeer(mockPeerF)
@@ -907,9 +907,9 @@ func TestTask_PeerOutDegree(t *testing.T) {
 			name: "peer get outdegree",
 			expect: func(t *testing.T, mockHost *Host, task *Task) {
 				assert := assert.New(t)
-				mockPeerE := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
-				mockPeerF := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
-				mockPeerG := NewPeer(idgen.PeerID("127.0.0.1"), task, mockHost)
+				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
 
 				task.StorePeer(mockPeerE)
 				task.StorePeer(mockPeerF)
@@ -987,7 +987,7 @@ func TestTask_HasAvailablePeer(t *testing.T) {
 			expect: func(t *testing.T, task *Task, mockPeer *Peer) {
 				assert := assert.New(t)
 				task.StorePeer(mockPeer)
-				mockPeer.ID = idgen.PeerID("0.0.0.0")
+				mockPeer.ID = idgen.PeerIDV1("0.0.0.0")
 				mockPeer.FSM.SetState(PeerStatePending)
 				task.StorePeer(mockPeer)
 				assert.Equal(task.HasAvailablePeer(set.NewSafeSet[string]()), true)
@@ -1002,7 +1002,7 @@ func TestTask_HasAvailablePeer(t *testing.T) {
 			expect: func(t *testing.T, task *Task, mockPeer *Peer) {
 				assert := assert.New(t)
 				task.StorePeer(mockPeer)
-				mockPeer.ID = idgen.PeerID("0.0.0.0")
+				mockPeer.ID = idgen.PeerIDV1("0.0.0.0")
 				mockPeer.FSM.SetState(PeerStateSucceeded)
 				task.StorePeer(mockPeer)
 				assert.Equal(task.HasAvailablePeer(set.NewSafeSet[string]()), true)
@@ -1017,7 +1017,7 @@ func TestTask_HasAvailablePeer(t *testing.T) {
 			expect: func(t *testing.T, task *Task, mockPeer *Peer) {
 				assert := assert.New(t)
 				task.StorePeer(mockPeer)
-				mockPeer.ID = idgen.PeerID("0.0.0.0")
+				mockPeer.ID = idgen.PeerIDV1("0.0.0.0")
 				mockPeer.FSM.SetState(PeerStateRunning)
 				task.StorePeer(mockPeer)
 				assert.Equal(task.HasAvailablePeer(set.NewSafeSet[string]()), true)
@@ -1032,7 +1032,7 @@ func TestTask_HasAvailablePeer(t *testing.T) {
 			expect: func(t *testing.T, task *Task, mockPeer *Peer) {
 				assert := assert.New(t)
 				task.StorePeer(mockPeer)
-				mockPeer.ID = idgen.PeerID("0.0.0.0")
+				mockPeer.ID = idgen.PeerIDV1("0.0.0.0")
 				mockPeer.FSM.SetState(PeerStateBackToSource)
 				task.StorePeer(mockPeer)
 				assert.Equal(task.HasAvailablePeer(set.NewSafeSet[string]()), true)

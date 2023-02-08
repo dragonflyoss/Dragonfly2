@@ -131,6 +131,7 @@ func WithApplication(application string) PeerOption {
 	}
 }
 
+// Peer contains content for peer.
 type Peer struct {
 	// ID is peer id.
 	ID string
