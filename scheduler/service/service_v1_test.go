@@ -66,7 +66,7 @@ var (
 	}
 
 	mockRawHost = resource.Host{
-		ID:              idgen.HostID("hostname", 8003),
+		ID:              idgen.HostIDV1("hostname", 8003),
 		Type:            pkgtypes.HostTypeNormal,
 		Hostname:        "hostname",
 		IP:              "127.0.0.1",
@@ -85,7 +85,7 @@ var (
 	}
 
 	mockRawSeedHost = resource.Host{
-		ID:              idgen.HostID("hostname_seed", 8003),
+		ID:              idgen.HostIDV1("hostname_seed", 8003),
 		Type:            pkgtypes.HostTypeSuperSeed,
 		Hostname:        "hostname_seed",
 		IP:              "127.0.0.1",
@@ -158,7 +158,7 @@ var (
 	}
 
 	mockPeerHost = &schedulerv1.PeerHost{
-		Id:             idgen.HostID("hostname", 8003),
+		Id:             idgen.HostIDV1("hostname", 8003),
 		Ip:             "127.0.0.1",
 		RpcPort:        8003,
 		DownPort:       8001,
@@ -181,9 +181,9 @@ var (
 
 	mockTaskURL                     = "http://example.com/foo"
 	mockTaskBackToSourceLimit int32 = 200
-	mockTaskID                      = idgen.TaskID(mockTaskURL, mockTaskURLMeta)
-	mockPeerID                      = idgen.PeerID("127.0.0.1")
-	mockSeedPeerID                  = idgen.SeedPeerID("127.0.0.1")
+	mockTaskID                      = idgen.TaskIDV1(mockTaskURL, mockTaskURLMeta)
+	mockPeerID                      = idgen.PeerIDV1("127.0.0.1")
+	mockSeedPeerID                  = idgen.SeedPeerIDV1("127.0.0.1")
 	mockURL                         = "d7y://foo"
 )
 
@@ -2071,7 +2071,7 @@ func TestService_LeaveHost(t *testing.T) {
 
 			tc.mock(host, mockPeer, hostManager, scheduler.EXPECT(), res.EXPECT(), hostManager.EXPECT())
 			tc.expect(t, mockPeer, svc.LeaveHost(context.Background(), &schedulerv1.LeaveHostRequest{
-				Id: idgen.HostID(host.Hostname, host.Port),
+				Id: idgen.HostIDV1(host.Hostname, host.Port),
 			}))
 		})
 	}

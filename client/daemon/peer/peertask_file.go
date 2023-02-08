@@ -92,7 +92,7 @@ func (ptm *peerTaskManager) newFileTask(
 		parent = ptm.prefetchParentTask(&request.PeerTaskRequest, request.Output)
 	}
 
-	taskID := idgen.TaskID(request.Url, request.UrlMeta)
+	taskID := idgen.TaskIDV1(request.Url, request.UrlMeta)
 	ptc, err := ptm.getPeerTaskConductor(ctx, taskID, &request.PeerTaskRequest, limit, parent, request.Range, request.Output, false)
 	if err != nil {
 		return nil, nil, err

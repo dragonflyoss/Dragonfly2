@@ -633,7 +633,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 					if tc.urlGenerator != nil {
 						tc.url = tc.urlGenerator(&tc)
 					}
-					taskID := idgen.TaskID(tc.url, urlMeta)
+					taskID := idgen.TaskIDV1(tc.url, urlMeta)
 
 					var (
 						downloader   PieceDownloader
@@ -796,7 +796,7 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 	var (
 		ptm       = mm.peerTaskManager
 		pieceSize = ts.pieceSize
-		taskID    = idgen.TaskID(ts.url, urlMeta)
+		taskID    = idgen.TaskIDV1(ts.url, urlMeta)
 		output    = "../test/testdata/test.output"
 	)
 	defer func() {

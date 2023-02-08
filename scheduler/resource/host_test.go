@@ -30,7 +30,7 @@ import (
 
 var (
 	mockRawHost = Host{
-		ID:              idgen.HostID("hostname", 8003),
+		ID:              idgen.HostIDV1("hostname", 8003),
 		Type:            types.HostTypeNormal,
 		Hostname:        "hostname",
 		IP:              "127.0.0.1",
@@ -49,7 +49,7 @@ var (
 	}
 
 	mockRawSeedHost = Host{
-		ID:              idgen.HostID("hostname_seed", 8003),
+		ID:              idgen.HostIDV1("hostname_seed", 8003),
 		Type:            types.HostTypeSuperSeed,
 		Hostname:        "hostname_seed",
 		IP:              "127.0.0.1",
@@ -468,7 +468,7 @@ func TestHost_LoadPeer(t *testing.T) {
 		{
 			name:    "peer does not exist",
 			rawHost: mockRawHost,
-			peerID:  idgen.PeerID("0.0.0.0"),
+			peerID:  idgen.PeerIDV1("0.0.0.0"),
 			expect: func(t *testing.T, peer *Peer, loaded bool) {
 				assert := assert.New(t)
 				assert.Equal(loaded, false)
