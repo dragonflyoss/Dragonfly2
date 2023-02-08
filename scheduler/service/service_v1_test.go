@@ -279,7 +279,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				mp *resource.MockPeerManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder,
 			) {
 				mockPeer.Task.FSM.SetState(resource.TaskStatePending)
-				mockPeer.Application = "baz"
+				mockPeer.Task.Application = "baz"
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
 					mt.Load(gomock.Any()).Return(mockPeer.Task, true).Times(1),
@@ -1399,7 +1399,7 @@ func TestService_StatTask(t *testing.T) {
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			storage := storagemocks.NewMockStorage(ctl)
 			taskManager := resource.NewMockTaskManager(ctl)
-			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnablePeerHost: true}}, res, scheduler, dynconfig, storage)
+			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, res, scheduler, dynconfig, storage)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv2.TaskType_DFDAEMON, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 
 			tc.mock(mockTask, taskManager, res.EXPECT(), taskManager.EXPECT())
@@ -1649,7 +1649,7 @@ func TestService_AnnounceTask(t *testing.T) {
 			hostManager := resource.NewMockHostManager(ctl)
 			taskManager := resource.NewMockTaskManager(ctl)
 			peerManager := resource.NewMockPeerManager(ctl)
-			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnablePeerHost: true}}, res, scheduler, dynconfig, storage)
+			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, res, scheduler, dynconfig, storage)
 			mockHost := resource.NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
@@ -1852,7 +1852,7 @@ func TestService_LeaveTask(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv2.TaskType_DFDAEMON, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := resource.NewPeer(mockSeedPeerID, mockTask, mockHost)
-			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnablePeerHost: true}}, res, scheduler, dynconfig, storage)
+			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, res, scheduler, dynconfig, storage)
 
 			tc.mock(peer, peerManager, scheduler.EXPECT(), res.EXPECT(), peerManager.EXPECT())
 			tc.expect(t, peer, svc.LeaveTask(context.Background(), &schedulerv1.PeerTarget{}))
@@ -2067,7 +2067,7 @@ func TestService_LeaveHost(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv2.TaskType_DFDAEMON, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := resource.NewPeer(mockSeedPeerID, mockTask, host)
-			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnablePeerHost: true}}, res, scheduler, dynconfig, storage)
+			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, res, scheduler, dynconfig, storage)
 
 			tc.mock(host, mockPeer, hostManager, scheduler.EXPECT(), res.EXPECT(), hostManager.EXPECT())
 			tc.expect(t, mockPeer, svc.LeaveHost(context.Background(), &schedulerv1.LeaveHostRequest{
@@ -2233,7 +2233,7 @@ func TestService_triggerTask(t *testing.T) {
 			},
 			run: func(t *testing.T, svc *V1, mockTask *resource.Task, mockHost *resource.Host, mockPeer *resource.Peer, mockSeedPeer *resource.Peer, dynconfig config.DynconfigInterface, seedPeer resource.SeedPeer, mr *resource.MockResourceMockRecorder, mc *resource.MockSeedPeerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
-				mockPeer.Application = "baw"
+				mockPeer.Task.Application = "baw"
 
 				var wg sync.WaitGroup
 				wg.Add(2)
@@ -2299,7 +2299,7 @@ func TestService_triggerTask(t *testing.T) {
 			},
 			run: func(t *testing.T, svc *V1, mockTask *resource.Task, mockHost *resource.Host, mockPeer *resource.Peer, mockSeedPeer *resource.Peer, dynconfig config.DynconfigInterface, seedPeer resource.SeedPeer, mr *resource.MockResourceMockRecorder, mc *resource.MockSeedPeerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
-				mockPeer.Application = "bas"
+				mockPeer.Task.Application = "bas"
 
 				md.GetApplications().Return([]*managerv2.Application{
 					{
@@ -2331,7 +2331,7 @@ func TestService_triggerTask(t *testing.T) {
 			},
 			run: func(t *testing.T, svc *V1, mockTask *resource.Task, mockHost *resource.Host, mockPeer *resource.Peer, mockSeedPeer *resource.Peer, dynconfig config.DynconfigInterface, seedPeer resource.SeedPeer, mr *resource.MockResourceMockRecorder, mc *resource.MockSeedPeerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
-				mockPeer.Application = "bas"
+				mockPeer.Task.Application = "bas"
 
 				md.GetApplications().Return([]*managerv2.Application{
 					{
@@ -2363,7 +2363,7 @@ func TestService_triggerTask(t *testing.T) {
 			},
 			run: func(t *testing.T, svc *V1, mockTask *resource.Task, mockHost *resource.Host, mockPeer *resource.Peer, mockSeedPeer *resource.Peer, dynconfig config.DynconfigInterface, seedPeer resource.SeedPeer, mr *resource.MockResourceMockRecorder, mc *resource.MockSeedPeerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
-				mockPeer.Application = "bae"
+				mockPeer.Task.Application = "bae"
 
 				md.GetApplications().Return([]*managerv2.Application{
 					{
@@ -2395,7 +2395,7 @@ func TestService_triggerTask(t *testing.T) {
 			},
 			run: func(t *testing.T, svc *V1, mockTask *resource.Task, mockHost *resource.Host, mockPeer *resource.Peer, mockSeedPeer *resource.Peer, dynconfig config.DynconfigInterface, seedPeer resource.SeedPeer, mr *resource.MockResourceMockRecorder, mc *resource.MockSeedPeerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
-				mockPeer.Application = "bae"
+				mockPeer.Task.Application = "bae"
 
 				md.GetApplications().Return([]*managerv2.Application{
 					{
@@ -2425,7 +2425,7 @@ func TestService_triggerTask(t *testing.T) {
 			},
 			run: func(t *testing.T, svc *V1, mockTask *resource.Task, mockHost *resource.Host, mockPeer *resource.Peer, mockSeedPeer *resource.Peer, dynconfig config.DynconfigInterface, seedPeer resource.SeedPeer, mr *resource.MockResourceMockRecorder, mc *resource.MockSeedPeerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
-				mockPeer.Application = "bat"
+				mockPeer.Task.Application = "bat"
 
 				md.GetApplications().Return([]*managerv2.Application{
 					{
@@ -2455,7 +2455,7 @@ func TestService_triggerTask(t *testing.T) {
 			},
 			run: func(t *testing.T, svc *V1, mockTask *resource.Task, mockHost *resource.Host, mockPeer *resource.Peer, mockSeedPeer *resource.Peer, dynconfig config.DynconfigInterface, seedPeer resource.SeedPeer, mr *resource.MockResourceMockRecorder, mc *resource.MockSeedPeerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
-				mockPeer.Application = "bat"
+				mockPeer.Task.Application = "bat"
 
 				var wg sync.WaitGroup
 				wg.Add(2)
@@ -2740,7 +2740,7 @@ func TestService_storePeer(t *testing.T) {
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
 				assert.Equal(peer.ID, mockPeerID)
-				assert.Equal(peer.Tag, resource.DefaultTag)
+				assert.Equal(peer.Task.Tag, "")
 			},
 		},
 		{
@@ -2760,7 +2760,7 @@ func TestService_storePeer(t *testing.T) {
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
 				assert.Equal(peer.ID, mockPeerID)
-				assert.Equal(peer.Tag, resource.DefaultTag)
+				assert.Equal(peer.Task.Tag, "")
 			},
 		},
 	}
@@ -2782,7 +2782,7 @@ func TestService_storePeer(t *testing.T) {
 			mockPeer := resource.NewPeer(mockPeerID, mockTask, mockHost)
 
 			tc.mock(mockPeer, peerManager, res.EXPECT(), peerManager.EXPECT())
-			peer := svc.storePeer(context.Background(), tc.req.PeerId, mockTask, mockHost, tc.req.UrlMeta.Tag, tc.req.UrlMeta.Application)
+			peer := svc.storePeer(context.Background(), tc.req.PeerId, mockTask, mockHost)
 			tc.expect(t, peer)
 		})
 	}
@@ -3007,7 +3007,7 @@ func TestService_handlePieceSuccess(t *testing.T) {
 			res := resource.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			storage := storagemocks.NewMockStorage(ctl)
-			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnablePeerHost: true}}, res, scheduler, dynconfig, storage)
+			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, res, scheduler, dynconfig, storage)
 
 			tc.mock(tc.peer)
 			svc.handlePieceSuccess(context.Background(), tc.peer, tc.piece)
@@ -3031,7 +3031,7 @@ func TestService_handlePieceFail(t *testing.T) {
 			config: &config.Config{
 				Scheduler: mockSchedulerConfig,
 				SeedPeer:  config.SeedPeerConfig{Enable: true},
-				Metrics:   config.MetricsConfig{EnablePeerHost: true},
+				Metrics:   config.MetricsConfig{EnableHost: true},
 			},
 			piece: &schedulerv1.PieceResult{},
 			run: func(t *testing.T, svc *V1, peer *resource.Peer, parent *resource.Peer, piece *schedulerv1.PieceResult, peerManager resource.PeerManager, seedPeer resource.SeedPeer, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockSeedPeerMockRecorder) {
@@ -3048,7 +3048,7 @@ func TestService_handlePieceFail(t *testing.T) {
 			config: &config.Config{
 				Scheduler: mockSchedulerConfig,
 				SeedPeer:  config.SeedPeerConfig{Enable: true},
-				Metrics:   config.MetricsConfig{EnablePeerHost: true},
+				Metrics:   config.MetricsConfig{EnableHost: true},
 			},
 			piece: &schedulerv1.PieceResult{
 				Code:   commonv1.Code_ClientWaitPieceReady,
@@ -3075,7 +3075,7 @@ func TestService_handlePieceFail(t *testing.T) {
 			config: &config.Config{
 				Scheduler: mockSchedulerConfig,
 				SeedPeer:  config.SeedPeerConfig{Enable: true},
-				Metrics:   config.MetricsConfig{EnablePeerHost: true},
+				Metrics:   config.MetricsConfig{EnableHost: true},
 			},
 			piece: &schedulerv1.PieceResult{
 				Code:   commonv1.Code_PeerTaskNotFound,
@@ -3104,7 +3104,7 @@ func TestService_handlePieceFail(t *testing.T) {
 			config: &config.Config{
 				Scheduler: mockSchedulerConfig,
 				SeedPeer:  config.SeedPeerConfig{Enable: true},
-				Metrics:   config.MetricsConfig{EnablePeerHost: true},
+				Metrics:   config.MetricsConfig{EnableHost: true},
 			},
 			piece: &schedulerv1.PieceResult{
 				Code:   commonv1.Code_ClientPieceNotFound,
@@ -3132,7 +3132,7 @@ func TestService_handlePieceFail(t *testing.T) {
 			config: &config.Config{
 				Scheduler: mockSchedulerConfig,
 				SeedPeer:  config.SeedPeerConfig{Enable: true},
-				Metrics:   config.MetricsConfig{EnablePeerHost: true},
+				Metrics:   config.MetricsConfig{EnableHost: true},
 			},
 			piece: &schedulerv1.PieceResult{
 				Code:   commonv1.Code_ClientPieceRequestFail,
@@ -3161,7 +3161,7 @@ func TestService_handlePieceFail(t *testing.T) {
 			config: &config.Config{
 				Scheduler: mockSchedulerConfig,
 				SeedPeer:  config.SeedPeerConfig{Enable: true},
-				Metrics:   config.MetricsConfig{EnablePeerHost: true},
+				Metrics:   config.MetricsConfig{EnableHost: true},
 			},
 			piece: &schedulerv1.PieceResult{
 				Code:   commonv1.Code_ClientPieceRequestFail,
@@ -3326,7 +3326,7 @@ func TestService_handlePeerSuccess(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv2.TaskType_DFDAEMON, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
-			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnablePeerHost: true}}, res, scheduler, dynconfig, storage)
+			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, res, scheduler, dynconfig, storage)
 
 			tc.mock(peer)
 			svc.handlePeerSuccess(context.Background(), peer)
@@ -3401,7 +3401,7 @@ func TestService_handlePeerFail(t *testing.T) {
 			res := resource.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			storage := storagemocks.NewMockStorage(ctl)
-			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnablePeerHost: true}}, res, scheduler, dynconfig, storage)
+			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, res, scheduler, dynconfig, storage)
 			mockHost := resource.NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
@@ -3487,7 +3487,7 @@ func TestService_handleTaskSuccess(t *testing.T) {
 			res := resource.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			storage := storagemocks.NewMockStorage(ctl)
-			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnablePeerHost: true}}, res, scheduler, dynconfig, storage)
+			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, res, scheduler, dynconfig, storage)
 			task := resource.NewTask(mockTaskID, mockTaskURL, commonv2.TaskType_DFDAEMON, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 
 			tc.mock(task)
@@ -3626,7 +3626,7 @@ func TestService_handleTaskFail(t *testing.T) {
 			res := resource.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			storage := storagemocks.NewMockStorage(ctl)
-			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnablePeerHost: true}}, res, scheduler, dynconfig, storage)
+			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, res, scheduler, dynconfig, storage)
 			task := resource.NewTask(mockTaskID, mockTaskURL, commonv2.TaskType_DFDAEMON, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 
 			tc.mock(task)

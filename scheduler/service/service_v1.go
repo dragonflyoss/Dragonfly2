@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/url"
 	"time"
 
 	"go.opentelemetry.io/otel/trace"
@@ -89,7 +88,7 @@ func (v *V1) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequ
 	// Store resource.
 	task := v.storeTask(ctx, req, commonv2.TaskType_DFDAEMON)
 	host := v.storeHost(ctx, req.PeerHost)
-	peer := v.storePeer(ctx, req.PeerId, task, host, req.UrlMeta.Tag, req.UrlMeta.Application)
+	peer := v.storePeer(ctx, req.PeerId, task, host)
 
 	// Trigger the first download of the task.
 	if err := v.triggerTask(ctx, req, task, host, peer, v.dynconfig); err != nil {
@@ -234,10 +233,10 @@ func (v *V1) ReportPieceResult(stream schedulerv1.Scheduler_ReportPieceResultSer
 			v.handlePieceSuccess(ctx, peer, piece)
 
 			// Collect peer host traffic metrics.
-			if v.config.Metrics.Enable && v.config.Metrics.EnablePeerHost {
-				metrics.PeerHostTraffic.WithLabelValues(peer.Tag, peer.Application, metrics.PeerHostTrafficDownloadType, peer.Host.ID, peer.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
+			if v.config.Metrics.Enable && v.config.Metrics.EnableHost {
+				metrics.HostTraffic.WithLabelValues(peer.Task.Tag, peer.Task.Application, metrics.HostTrafficDownloadType, peer.Host.ID, peer.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
 				if parent, loaded := v.resource.PeerManager().Load(piece.DstPid); loaded {
-					metrics.PeerHostTraffic.WithLabelValues(peer.Tag, peer.Application, metrics.PeerHostTrafficUploadType, parent.Host.ID, parent.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
+					metrics.HostTraffic.WithLabelValues(peer.Task.Tag, peer.Task.Application, metrics.HostTrafficUploadType, parent.Host.ID, parent.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
 				} else if !resource.IsPieceBackToSource(piece.DstPid) {
 					peer.Log.Warnf("dst peer %s not found", piece.DstPid)
 				}
@@ -245,9 +244,9 @@ func (v *V1) ReportPieceResult(stream schedulerv1.Scheduler_ReportPieceResultSer
 
 			// Collect traffic metrics.
 			if !resource.IsPieceBackToSource(piece.DstPid) {
-				metrics.Traffic.WithLabelValues(peer.Tag, peer.Application, metrics.TrafficP2PType).Add(float64(piece.PieceInfo.RangeSize))
+				metrics.Traffic.WithLabelValues(peer.Task.Tag, peer.Task.Application, commonv2.TrafficType_REMOTE_PEER.String()).Add(float64(piece.PieceInfo.RangeSize))
 			} else {
-				metrics.Traffic.WithLabelValues(peer.Tag, peer.Application, metrics.TrafficBackToSourceType).Add(float64(piece.PieceInfo.RangeSize))
+				metrics.Traffic.WithLabelValues(peer.Task.Tag, peer.Task.Application, commonv2.TrafficType_BACK_TO_SOURCE.String()).Add(float64(piece.PieceInfo.RangeSize))
 			}
 			continue
 		}
@@ -279,25 +278,27 @@ func (v *V1) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult) 
 		logger.Error(msg)
 		return dferrors.New(commonv1.Code_SchedPeerNotFound, msg)
 	}
-	metrics.DownloadCount.WithLabelValues(peer.Tag, peer.Application).Inc()
+	metrics.DownloadTaskCount.WithLabelValues(peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
 	parents := peer.Parents()
 	if !req.Success {
 		peer.Log.Error("report failed peer")
 		if peer.FSM.Is(resource.PeerStateBackToSource) {
-			metrics.DownloadFailureCount.WithLabelValues(peer.Tag, peer.Application, metrics.DownloadFailureBackToSourceType, req.Code.String()).Inc()
+			metrics.DownloadTaskFailureCount.WithLabelValues(peer.Task.Tag, peer.Task.Application,
+				metrics.DownloadFailureBackToSourceType, req.Code.String(), peer.Host.Type.Name()).Inc()
 			go v.createRecord(peer, parents, req)
 			v.handleTaskFailure(ctx, peer.Task, req.GetSourceError(), nil)
 			v.handlePeerFailure(ctx, peer)
 			return nil
 		}
 
-		metrics.DownloadFailureCount.WithLabelValues(peer.Tag, peer.Application, metrics.DownloadFailureP2PType, req.Code.String()).Inc()
+		metrics.DownloadTaskFailureCount.WithLabelValues(peer.Task.Tag, peer.Task.Application,
+			metrics.DownloadFailureP2PType, req.Code.String(), peer.Host.Type.Name()).Inc()
 		go v.createRecord(peer, parents, req)
 		v.handlePeerFailure(ctx, peer)
 		return nil
 	}
-	metrics.PeerTaskDownloadDuration.WithLabelValues(peer.Tag, peer.Application).Observe(float64(req.Cost))
+	metrics.DownloadTaskDuration.WithLabelValues(peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Observe(float64(req.Cost))
 
 	peer.Log.Info("report success peer")
 	if peer.FSM.Is(resource.PeerStateBackToSource) {
@@ -323,7 +324,7 @@ func (v *V1) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequ
 	task := resource.NewTask(taskID, req.Url, types.TaskTypeV1ToV2(req.TaskType), req.UrlMeta)
 	task, _ = v.resource.TaskManager().LoadOrStore(task)
 	host := v.storeHost(ctx, req.PeerHost)
-	peer := v.storePeer(ctx, peerID, task, host, req.UrlMeta.Tag, req.UrlMeta.Application)
+	peer := v.storePeer(ctx, peerID, task, host)
 
 	// If the task state is not TaskStateSucceeded,
 	// advance the task state to TaskStateSucceeded.
@@ -418,10 +419,10 @@ func (v *V1) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget) error {
 		logger.Error(msg)
 		return dferrors.New(commonv1.Code_SchedPeerNotFound, msg)
 	}
-	metrics.LeaveTaskCount.WithLabelValues(peer.Tag, peer.Application).Inc()
+	metrics.LeaveTaskCount.WithLabelValues(peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
 	if err := peer.FSM.Event(ctx, resource.PeerEventLeave); err != nil {
-		metrics.LeaveTaskFailureCount.WithLabelValues(peer.Tag, peer.Application).Inc()
+		metrics.LeaveTaskFailureCount.WithLabelValues(peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 		msg := fmt.Sprintf("peer fsm event failed: %s", err.Error())
 		peer.Log.Error(msg)
 		return dferrors.New(commonv1.Code_SchedTaskStatusError, msg)
@@ -755,17 +756,8 @@ func (v *V1) storeHost(ctx context.Context, peerHost *schedulerv1.PeerHost) *res
 }
 
 // storePeer stores a new peer or reuses a previous peer.
-func (v *V1) storePeer(ctx context.Context, peerID string, task *resource.Task, host *resource.Host, tag, application string) *resource.Peer {
-	var options []resource.PeerOption
-	if tag != "" {
-		options = append(options, resource.WithTag(tag))
-	}
-
-	if application != "" {
-		options = append(options, resource.WithApplication(application))
-	}
-
-	peer, loaded := v.resource.PeerManager().LoadOrStore(resource.NewPeer(peerID, task, host, options...))
+func (v *V1) storePeer(ctx context.Context, peerID string, task *resource.Task, host *resource.Host) *resource.Peer {
+	peer, loaded := v.resource.PeerManager().LoadOrStore(resource.NewPeer(peerID, task, host))
 	if !loaded {
 		peer.Log.Info("create new peer")
 		return peer
@@ -1147,20 +1139,7 @@ func (v *V1) handleTaskFailure(ctx context.Context, task *resource.Task, backToS
 			for _, detail := range st.Details() {
 				switch d := detail.(type) {
 				case *errordetailsv1.SourceError:
-					var proto = "unknown"
-					if u, err := url.Parse(task.URL); err == nil {
-						proto = u.Scheme
-					}
-
-					task.Log.Infof("source error: %#v", d)
-					// TODO currently, metrics.PeerTaskSourceErrorCounter is only updated for seed peer source error, need update for normal peer
-					if d.Metadata != nil {
-						metrics.PeerTaskSourceErrorCounter.WithLabelValues(
-							task.URLMeta.Tag, task.URLMeta.Application, proto, fmt.Sprintf("%d", d.Metadata.StatusCode)).Inc()
-					} else {
-						metrics.PeerTaskSourceErrorCounter.WithLabelValues(
-							task.URLMeta.Tag, task.URLMeta.Application, proto, "0").Inc()
-					}
+					task.Log.Infof("download back-to-source error: %#v", d)
 					if !d.Temporary {
 						task.ReportPieceResultToPeers(&schedulerv1.PeerPacket{
 							Code: commonv1.Code_BackToSourceAborted,
@@ -1198,8 +1177,8 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 	for _, parent := range parents {
 		parentRecord := storage.Parent{
 			ID:               parent.ID,
-			Tag:              parent.Tag,
-			Application:      parent.Application,
+			Tag:              parent.Task.Tag,
+			Application:      parent.Task.Application,
 			State:            parent.FSM.Current(),
 			Cost:             parent.Cost.Load().Nanoseconds(),
 			UploadPieceCount: 0,
@@ -1291,8 +1270,8 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 
 	record := storage.Record{
 		ID:          peer.ID,
-		Tag:         peer.Tag,
-		Application: peer.Application,
+		Tag:         peer.Task.Tag,
+		Application: peer.Task.Application,
 		State:       peer.FSM.Current(),
 		Cost:        peer.Cost.Load().Nanoseconds(),
 		Parents:     parentRecords,

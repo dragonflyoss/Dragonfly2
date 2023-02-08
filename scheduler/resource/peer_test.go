@@ -49,10 +49,9 @@ var (
 
 func TestPeer_NewPeer(t *testing.T) {
 	tests := []struct {
-		name    string
-		id      string
-		options []PeerOption
-		expect  func(t *testing.T, peer *Peer, mockTask *Task, mockHost *Host)
+		name   string
+		id     string
+		expect func(t *testing.T, peer *Peer, mockTask *Task, mockHost *Host)
 	}{
 		{
 			name: "new peer",
@@ -73,27 +72,6 @@ func TestPeer_NewPeer(t *testing.T) {
 				assert.NotNil(peer.Log)
 			},
 		},
-		{
-			name:    "new peer with tag and application",
-			id:      mockPeerID,
-			options: []PeerOption{WithTag("foo"), WithApplication("bar")},
-			expect: func(t *testing.T, peer *Peer, mockTask *Task, mockHost *Host) {
-				assert := assert.New(t)
-				assert.Equal(peer.ID, mockPeerID)
-				assert.Equal(peer.Tag, "foo")
-				assert.Equal(peer.Application, "bar")
-				assert.Equal(peer.Pieces.Len(), uint(0))
-				assert.Empty(peer.FinishedPieces)
-				assert.Equal(len(peer.PieceCosts()), 0)
-				assert.Empty(peer.ReportPieceResultStream)
-				assert.Equal(peer.FSM.Current(), PeerStatePending)
-				assert.EqualValues(peer.Task, mockTask)
-				assert.EqualValues(peer.Host, mockHost)
-				assert.NotEqual(peer.CreatedAt.Load(), 0)
-				assert.NotEqual(peer.UpdatedAt.Load(), 0)
-				assert.NotNil(peer.Log)
-			},
-		},
 	}
 
 	for _, tc := range tests {
@@ -102,7 +80,7 @@ func TestPeer_NewPeer(t *testing.T) {
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := NewTask(mockTaskID, mockTaskURL, commonv2.TaskType_DFDAEMON, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
-			tc.expect(t, NewPeer(tc.id, mockTask, mockHost, tc.options...), mockTask, mockHost)
+			tc.expect(t, NewPeer(tc.id, mockTask, mockHost), mockTask, mockHost)
 		})
 	}
 }
@@ -630,7 +608,7 @@ func TestPeer_GetPriority(t *testing.T) {
 		{
 			name: "can not found priority",
 			mock: func(peer *Peer, md *configmocks.MockDynconfigInterfaceMockRecorder) {
-				peer.Application = "bae"
+				peer.Task.Application = "bae"
 				md.GetApplications().Return([]*managerv2.Application{
 					{
 						Name: "bae",
@@ -645,7 +623,7 @@ func TestPeer_GetPriority(t *testing.T) {
 		{
 			name: "match the priority of application",
 			mock: func(peer *Peer, md *configmocks.MockDynconfigInterfaceMockRecorder) {
-				peer.Application = "baz"
+				peer.Task.Application = "baz"
 				md.GetApplications().Return([]*managerv2.Application{
 					{
 						Name: "baz",
@@ -663,7 +641,7 @@ func TestPeer_GetPriority(t *testing.T) {
 		{
 			name: "match the priority of url",
 			mock: func(peer *Peer, md *configmocks.MockDynconfigInterfaceMockRecorder) {
-				peer.Application = "bak"
+				peer.Task.Application = "bak"
 				peer.Task.URL = "example.com"
 				md.GetApplications().Return([]*managerv2.Application{
 					{

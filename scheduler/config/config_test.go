@@ -99,9 +99,9 @@ func TestConfig_Load(t *testing.T) {
 			BufferSize: 1,
 		},
 		Metrics: MetricsConfig{
-			Enable:         false,
-			Addr:           ":8000",
-			EnablePeerHost: false,
+			Enable:     false,
+			Addr:       ":8000",
+			EnableHost: true,
 		},
 		Security: SecurityConfig{
 			AutoIssueCert: true,

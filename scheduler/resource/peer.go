@@ -41,12 +41,6 @@ import (
 )
 
 const (
-	// Default value of tag.
-	DefaultTag = "unknow"
-
-	//DefaultApplication default value of application
-	DefaultApplication = "unknown"
-
 	// Download tiny file timeout.
 	downloadTinyFileContextTimeout = 30 * time.Second
 )
@@ -112,23 +106,13 @@ const (
 	PeerEventLeave = "Leave"
 )
 
-// PeerOption is a functional option for configuring the peer.
-type PeerOption func(p *Peer) *Peer
+// Range contains content for range.
+type Range struct {
+	// Begin of range.
+	Begin uint64
 
-// WithTag sets peer's Tag.
-func WithTag(tag string) PeerOption {
-	return func(p *Peer) *Peer {
-		p.Tag = tag
-		return p
-	}
-}
-
-// WithApplication sets peer's Application.
-func WithApplication(application string) PeerOption {
-	return func(p *Peer) *Peer {
-		p.Application = application
-		return p
-	}
+	// End of range.
+	End uint64
 }
 
 // Peer contains content for peer.
@@ -136,11 +120,8 @@ type Peer struct {
 	// ID is peer id.
 	ID string
 
-	// Tag is peer tag.
-	Tag string
-
-	// Application is peer application.
-	Application string
+	// Range is url range of request.
+	Range Range
 
 	// Pieces is finished piece set.
 	Pieces set.SafeSet[*Piece]
@@ -202,11 +183,9 @@ type Peer struct {
 }
 
 // New Peer instance.
-func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
+func NewPeer(id string, task *Task, host *Host) *Peer {
 	p := &Peer{
 		ID:                      id,
-		Tag:                     DefaultTag,
-		Application:             DefaultApplication,
 		Pieces:                  set.NewSafeSet[*Piece](),
 		FinishedPieces:          &bitset.BitSet{},
 		pieceCosts:              []int64{},
@@ -317,10 +296,6 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 			},
 		},
 	)
-
-	for _, opt := range options {
-		opt(p)
-	}
 
 	return p
 }
@@ -469,7 +444,7 @@ func (p *Peer) GetPriority(dynconfig config.DynconfigInterface) commonv2.Priorit
 	// Find peer application.
 	var application *managerv2.Application
 	for _, pbApplication := range pbApplications {
-		if p.Application == pbApplication.Name {
+		if p.Task.Application == pbApplication.Name {
 			application = pbApplication
 			break
 		}

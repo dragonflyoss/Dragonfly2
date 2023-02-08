@@ -29,93 +29,82 @@ import (
 )
 
 // HostOption is a functional option for configuring the host.
-type HostOption func(h *Host) *Host
+type HostOption func(h *Host)
 
 // WithConcurrentUploadLimit sets host's ConcurrentUploadLimit.
 func WithConcurrentUploadLimit(limit int32) HostOption {
-	return func(h *Host) *Host {
+	return func(h *Host) {
 		h.ConcurrentUploadLimit.Store(limit)
-		return h
 	}
 }
 
 // WithOS sets host's os.
 func WithOS(os string) HostOption {
-	return func(h *Host) *Host {
+	return func(h *Host) {
 		h.OS = os
-		return h
 	}
 }
 
 // WithPlatform sets host's platform.
 func WithPlatform(platform string) HostOption {
-	return func(h *Host) *Host {
+	return func(h *Host) {
 		h.Platform = platform
-		return h
 	}
 }
 
 // WithPlatformFamily sets host's platform family.
 func WithPlatformFamily(platformFamily string) HostOption {
-	return func(h *Host) *Host {
+	return func(h *Host) {
 		h.PlatformFamily = platformFamily
-		return h
 	}
 }
 
 // WithPlatformVersion sets host's platform version.
 func WithPlatformVersion(platformVersion string) HostOption {
-	return func(h *Host) *Host {
+	return func(h *Host) {
 		h.PlatformVersion = platformVersion
-		return h
 	}
 }
 
 // WithKernelVersion sets host's kernel version.
 func WithKernelVersion(kernelVersion string) HostOption {
-	return func(h *Host) *Host {
+	return func(h *Host) {
 		h.KernelVersion = kernelVersion
-		return h
 	}
 }
 
 // WithCPU sets host's cpu.
 func WithCPU(cpu CPU) HostOption {
-	return func(h *Host) *Host {
+	return func(h *Host) {
 		h.CPU = cpu
-		return h
 	}
 }
 
 // WithMemory sets host's memory.
 func WithMemory(memory Memory) HostOption {
-	return func(h *Host) *Host {
+	return func(h *Host) {
 		h.Memory = memory
-		return h
 	}
 }
 
 // WithNetwork sets host's network.
 func WithNetwork(network Network) HostOption {
-	return func(h *Host) *Host {
+	return func(h *Host) {
 		h.Network = network
-		return h
 	}
 }
 
 // WithDisk sets host's disk.
 func WithDisk(disk Disk) HostOption {
-	return func(h *Host) *Host {
+	return func(h *Host) {
 		h.Disk = disk
-		return h
 	}
 }
 
 // WithBuild sets host's build information.
 func WithBuild(build Build) HostOption {
-	return func(h *Host) *Host {
+	return func(h *Host) {
 		h.Build = build
-		return h
 	}
 }
 

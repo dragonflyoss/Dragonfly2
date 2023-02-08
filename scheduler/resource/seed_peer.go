@@ -34,14 +34,6 @@ import (
 )
 
 const (
-	// SeedTag Default value of tag label for seed peer.
-	SeedTag = "d7y/seed"
-
-	// SeedApplication Default value of application label for seed peer.
-	SeedApplication = "d7y/seed"
-)
-
-const (
 	// Default value of seed peer failed timeout.
 	SeedPeerFailedTimeout = 30 * time.Minute
 )
@@ -167,11 +159,11 @@ func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *schedul
 			task.StorePiece(piece.PieceInfo)
 
 			// Statistical traffic metrics.
-			trafficType := metrics.TrafficBackToSourceType
+			trafficType := commonv2.TrafficType_BACK_TO_SOURCE
 			if piece.Reuse {
-				trafficType = metrics.TrafficP2PType
+				trafficType = commonv2.TrafficType_REMOTE_PEER
 			}
-			metrics.Traffic.WithLabelValues(peer.Tag, peer.Application, trafficType).Add(float64(piece.PieceInfo.RangeSize))
+			metrics.Traffic.WithLabelValues(peer.Task.Tag, peer.Task.Application, trafficType.String()).Add(float64(piece.PieceInfo.RangeSize))
 		}
 
 		// Handle end of piece.
@@ -202,7 +194,7 @@ func (s *seedPeer) initSeedPeer(ctx context.Context, task *Task, ps *cdnsystemv1
 	}
 
 	// New and store seed peer.
-	peer = NewPeer(ps.PeerId, task, host, WithTag(SeedTag), WithApplication(SeedApplication))
+	peer = NewPeer(ps.PeerId, task, host)
 	s.peerManager.Store(peer)
 	peer.Log.Info("seed peer has been stored")
 
