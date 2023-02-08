@@ -30,6 +30,7 @@ then please add your team and use-case to this file.
 - [Lazada](https://lazada.com) - Large-scale image and file distribution.
 - [Meituan](https://about.meituan.com/) - Large-scale image distribution.
 - [NetEase](https://www.neteasegames.com/) - Large-scale image and file distribution.
+- [miHoYo](https://www.mihoyo.com/) - Large-scale image distribution.
 - [Qihoo 360](https://www.360totalsecurity.com/) - Large-scale image and file distribution.
 - [Qunar](https://www.qunar.com/) - Large-scale image and file distribution.
 - [Shopee](https://shopee.com/) - Large-scale image distribution.
