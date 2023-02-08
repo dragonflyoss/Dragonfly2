@@ -65,6 +65,9 @@ type Config struct {
 
 	// Network configuration.
 	Network NetworkConfig `yaml:"network" mapstructure:"network"`
+
+	// Probe configuration.
+	Probe ProbeConfig `yaml:"probe" mapstructure:"probe"`
 }
 
 type ServerConfig struct {
@@ -299,6 +302,26 @@ type NetworkConfig struct {
 	EnableIPv6 bool `mapstructure:"enableIPv6" yaml:"enableIPv6"`
 }
 
+type ProbeConfig struct {
+	// ProbeQueueLength is the number of probes that an edge stores.
+	ProbeQueueLength int `mapstructure:"probeQueueLength" yaml:"probeQueueLength"`
+
+	// GetProbeListInterval is the interval at which the host get the probe list.
+	GetProbeListInterval time.Duration `mapstructure:"getProbeListInterval" yaml:"getProbeListInterval"`
+
+	// AOIPriorityInterval is the priority effect of the information of age for host.
+	AOIPriorityInterval time.Duration `mapstructure:"AOIPriorityInterval" yaml:"AOIPriorityInterval"`
+
+	// GetProbeCount is the number of targets that the scheduler sends to the host for probing.
+	GetProbeCount int `mapstructure:"getProbeCount" yaml:"getProbeCount"`
+
+	// SyncNetworkTopologyInterval is the interval at which network topologies are synchronized between schedulers.
+	SyncNetworkTopologyInterval time.Duration `mapstructure:"syncNetworkTopologyInterval" yaml:"syncNetworkTopologyInterval"`
+
+	// StoreNetworkTopologyInterval is the interval at which the network topology is stored locally.
+	StoreNetworkTopologyInterval time.Duration `mapstructure:"storeNetworkTopologyInterval" yaml:"storeNetworkTopologyInterval"`
+}
+
 // New default configuration.
 func New() *Config {
 	return &Config{
@@ -371,6 +394,14 @@ func New() *Config {
 		},
 		Network: NetworkConfig{
 			EnableIPv6: DefaultNetworkEnableIPv6,
+		},
+		Probe: ProbeConfig{
+			ProbeQueueLength:             DefaultProbeQueueLength,
+			GetProbeListInterval:         DefaultGetProbeListInterval,
+			AOIPriorityInterval:          DefaultAOIPriorityInterval,
+			GetProbeCount:                DefaultGetProbeCount,
+			SyncNetworkTopologyInterval:  DefaultSyncNetworkTopologyInterval,
+			StoreNetworkTopologyInterval: DefaultStoreNetworkTopologyInterval,
 		},
 	}
 }
@@ -523,6 +554,24 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	if cfg.Probe.ProbeQueueLength <= 0 {
+		return errors.New("probe requires parameter probeQueueLength")
+	}
+	if cfg.Probe.GetProbeListInterval <= 0 {
+		return errors.New("probe requires parameter getProbeListInterval")
+	}
+	if cfg.Probe.AOIPriorityInterval <= 0 {
+		return errors.New("probe requires parameter AOIPriorityInterval")
+	}
+	if cfg.Probe.GetProbeCount <= 0 {
+		return errors.New("probe requires parameter getProbeCount")
+	}
+	if cfg.Probe.SyncNetworkTopologyInterval <= 0 {
+		return errors.New("probe requires parameter syncNetworkTopologyInterval")
+	}
+	if cfg.Probe.StoreNetworkTopologyInterval <= 0 {
+		return errors.New("probe requires parameter storeNetworkTopologyInterval")
+	}
 	return nil
 }
 
