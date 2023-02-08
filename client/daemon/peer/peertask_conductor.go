@@ -186,7 +186,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 	span.SetAttributes(config.AttributePeerID.String(request.PeerId))
 	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
 
-	taskID := idgen.TaskID(request.Url, request.UrlMeta)
+	taskID := idgen.TaskIDV1(request.Url, request.UrlMeta)
 	request.TaskId = taskID
 
 	// init log with values

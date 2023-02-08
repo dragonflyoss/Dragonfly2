@@ -46,6 +46,6 @@ func (p *peerIDGenerator) PeerID() string {
 
 func (p *peerIDGenerator) run() {
 	for {
-		p.ch <- idgen.PeerID(p.ip)
+		p.ch <- idgen.PeerIDV1(p.ip)
 	}
 }

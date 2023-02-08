@@ -31,6 +31,7 @@ const (
 	GCHostID = "host"
 )
 
+// HostManager is the interface used for host manager.
 type HostManager interface {
 	// Load returns host for a key.
 	Load(string) (*Host, bool)
@@ -50,6 +51,7 @@ type HostManager interface {
 	RunGC() error
 }
 
+// hostManager contains content for host manager.
 type hostManager struct {
 	// Host sync map.
 	*sync.Map
@@ -73,6 +75,7 @@ func newHostManager(cfg *config.GCConfig, gc pkggc.GC) (HostManager, error) {
 	return h, nil
 }
 
+// Load returns host for a key.
 func (h *hostManager) Load(key string) (*Host, bool) {
 	rawHost, loaded := h.Map.Load(key)
 	if !loaded {
@@ -82,19 +85,25 @@ func (h *hostManager) Load(key string) (*Host, bool) {
 	return rawHost.(*Host), loaded
 }
 
+// Store sets host.
 func (h *hostManager) Store(host *Host) {
 	h.Map.Store(host.ID, host)
 }
 
+// LoadOrStore returns host the key if present.
+// Otherwise, it stores and returns the given host.
+// The loaded result is true if the host was loaded, false if stored.
 func (h *hostManager) LoadOrStore(host *Host) (*Host, bool) {
 	rawHost, loaded := h.Map.LoadOrStore(host.ID, host)
 	return rawHost.(*Host), loaded
 }
 
+// Delete deletes host for a key.
 func (h *hostManager) Delete(key string) {
 	h.Map.Delete(key)
 }
 
+// Try to reclaim host.
 func (h *hostManager) RunGC() error {
 	h.Map.Range(func(_, value any) bool {
 		host, ok := value.(*Host)

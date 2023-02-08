@@ -27,6 +27,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
+// Resource is the interface used for resource.
 type Resource interface {
 	// SeedPeer interface.
 	SeedPeer() SeedPeer
@@ -44,6 +45,7 @@ type Resource interface {
 	Stop() error
 }
 
+// resource contains content for resource.
 type resource struct {
 	// seedPeer interface.
 	seedPeer SeedPeer
@@ -124,22 +126,27 @@ func New(cfg *config.Config, gc gc.GC, dynconfig config.DynconfigInterface, opti
 	return resource, nil
 }
 
+// SeedPeer interface.
 func (r *resource) SeedPeer() SeedPeer {
 	return r.seedPeer
 }
 
+// Host manager interface.
 func (r *resource) HostManager() HostManager {
 	return r.hostManager
 }
 
-func (r *resource) TaskManager() TaskManager {
-	return r.taskManager
-}
-
+// Peer manager interface.
 func (r *resource) PeerManager() PeerManager {
 	return r.peerManager
 }
 
+// Task manager interface.
+func (r *resource) TaskManager() TaskManager {
+	return r.taskManager
+}
+
+// Stop resource serivce.
 func (r *resource) Stop() error {
 	if r.config.SeedPeer.Enable {
 		return r.seedPeer.Stop()

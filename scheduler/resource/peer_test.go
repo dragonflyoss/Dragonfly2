@@ -43,8 +43,8 @@ import (
 )
 
 var (
-	mockPeerID     = idgen.PeerID("127.0.0.1")
-	mockSeedPeerID = idgen.SeedPeerID("127.0.0.1")
+	mockPeerID     = idgen.PeerIDV1("127.0.0.1")
+	mockSeedPeerID = idgen.SeedPeerIDV1("127.0.0.1")
 )
 
 func TestPeer_NewPeer(t *testing.T) {

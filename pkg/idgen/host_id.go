@@ -18,9 +18,16 @@ package idgen
 
 import (
 	"fmt"
+
+	"d7y.io/dragonfly/v2/pkg/digest"
 )
 
-// HostID generates a host id.
-func HostID(hostname string, port int32) string {
+// HostIDV1 generates v1 version of host id.
+func HostIDV1(hostname string, port int32) string {
 	return fmt.Sprintf("%s-%d", hostname, port)
+}
+
+// HostIDV2 generates v2 version of host id.
+func HostIDV2(ip, hostname string, port int32) string {
+	return digest.SHA256FromStrings(ip, hostname, fmt.Sprint(port))
 }

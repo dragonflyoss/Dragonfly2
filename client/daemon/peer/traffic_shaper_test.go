@@ -505,7 +505,7 @@ func TestTrafficShaper_TaskSuite(t *testing.T) {
 						}
 						urlMetas[i] = urlMeta
 
-						taskID := idgen.TaskID(tc.url+fmt.Sprintf("-%d", i), urlMeta)
+						taskID := idgen.TaskIDV1(tc.url+fmt.Sprintf("-%d", i), urlMeta)
 						tasks = append(tasks, taskOption{
 							taskID:        taskID,
 							contentLength: int64(mockContentLength),
@@ -568,7 +568,7 @@ func (ts *trafficShaperTestSpec) run(assert *testifyassert.Assertions, require *
 	ptcs := make([]*peerTaskConductor, ptcCount)
 
 	for i := range ts.taskDelays {
-		taskID := idgen.TaskID(ts.url+fmt.Sprintf("-%d", i), urlMetas[i])
+		taskID := idgen.TaskIDV1(ts.url+fmt.Sprintf("-%d", i), urlMetas[i])
 		peerTaskRequest := &schedulerv1.PeerTaskRequest{
 			Url:      ts.url + fmt.Sprintf("-%d", i),
 			UrlMeta:  urlMetas[i],

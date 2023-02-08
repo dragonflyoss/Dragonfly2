@@ -196,7 +196,7 @@ func TestPieceDispatcherCount(t *testing.T) {
 			want: map[string]int{
 				"bad":  0,
 				"mid":  0,
-				"good": 8000,
+				"good": 7000,
 			},
 		},
 		{

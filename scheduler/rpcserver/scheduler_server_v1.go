@@ -53,7 +53,7 @@ func newSchedulerServerV1(
 func (s *schedulerServerV1) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest) (*schedulerv1.RegisterResult, error) {
 	// FIXME Scheudler will not generate task id.
 	if req.TaskId == "" {
-		req.TaskId = idgen.TaskID(req.Url, req.UrlMeta)
+		req.TaskId = idgen.TaskIDV1(req.Url, req.UrlMeta)
 	}
 
 	tag := resource.DefaultTag

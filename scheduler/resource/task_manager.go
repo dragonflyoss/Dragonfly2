@@ -31,6 +31,7 @@ const (
 	GCTaskID = "task"
 )
 
+// TaskManager is the interface used for task manager.
 type TaskManager interface {
 	// Load returns task for a key.
 	Load(string) (*Task, bool)
@@ -50,6 +51,7 @@ type TaskManager interface {
 	RunGC() error
 }
 
+// taskManager contains content for task manager.
 type taskManager struct {
 	// Task sync map.
 	*sync.Map
@@ -73,6 +75,7 @@ func newTaskManager(cfg *config.GCConfig, gc pkggc.GC) (TaskManager, error) {
 	return t, nil
 }
 
+// Load returns task for a key.
 func (t *taskManager) Load(key string) (*Task, bool) {
 	rawTask, loaded := t.Map.Load(key)
 	if !loaded {
@@ -82,19 +85,25 @@ func (t *taskManager) Load(key string) (*Task, bool) {
 	return rawTask.(*Task), loaded
 }
 
+// Store sets task.
 func (t *taskManager) Store(task *Task) {
 	t.Map.Store(task.ID, task)
 }
 
+// LoadOrStore returns task the key if present.
+// Otherwise, it stores and returns the given task.
+// The loaded result is true if the task was loaded, false if stored.
 func (t *taskManager) LoadOrStore(task *Task) (*Task, bool) {
 	rawTask, loaded := t.Map.LoadOrStore(task.ID, task)
 	return rawTask.(*Task), loaded
 }
 
+// Delete deletes task for a key.
 func (t *taskManager) Delete(key string) {
 	t.Map.Delete(key)
 }
 
+// Try to reclaim task.
 func (t *taskManager) RunGC() error {
 	t.Map.Range(func(_, value any) bool {
 		task, ok := value.(*Task)

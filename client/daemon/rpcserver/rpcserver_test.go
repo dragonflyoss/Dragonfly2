@@ -630,8 +630,8 @@ func TestServer_GetPieceTasks(t *testing.T) {
 			mockTaskManager := peer.NewMockTaskManager(ctrl)
 			mockTask := peer.NewMockTask(ctrl)
 			r := commonv1.PieceTaskRequest{
-				SrcPid: idgen.PeerID(ip.IPv4.String()),
-				DstPid: idgen.PeerID(ip.IPv4.String()),
+				SrcPid: idgen.PeerIDV1(ip.IPv4.String()),
+				DstPid: idgen.PeerIDV1(ip.IPv4.String()),
 			}
 			tc.mock(mockStorageManger.EXPECT(), mockTaskManager.EXPECT(), mockTask, &r)
 			s := &server{
@@ -755,9 +755,9 @@ func TestServer_ServePeer(t *testing.T) {
 	}{
 		{
 			request: &commonv1.PieceTaskRequest{
-				TaskId:   idgen.TaskID("http://www.test.com", &commonv1.UrlMeta{}),
-				SrcPid:   idgen.PeerID(ip.IPv4.String()),
-				DstPid:   idgen.PeerID(ip.IPv4.String()),
+				TaskId:   idgen.TaskIDV1("http://www.test.com", &commonv1.UrlMeta{}),
+				SrcPid:   idgen.PeerIDV1(ip.IPv4.String()),
+				DstPid:   idgen.PeerIDV1(ip.IPv4.String()),
 				StartNum: 0,
 				Limit:    1,
 			},
@@ -766,9 +766,9 @@ func TestServer_ServePeer(t *testing.T) {
 		},
 		{
 			request: &commonv1.PieceTaskRequest{
-				TaskId:   idgen.TaskID("http://www.test.com", &commonv1.UrlMeta{}),
-				SrcPid:   idgen.PeerID(ip.IPv4.String()),
-				DstPid:   idgen.PeerID(ip.IPv4.String()),
+				TaskId:   idgen.TaskIDV1("http://www.test.com", &commonv1.UrlMeta{}),
+				SrcPid:   idgen.PeerIDV1(ip.IPv4.String()),
+				DstPid:   idgen.PeerIDV1(ip.IPv4.String()),
 				StartNum: 0,
 				Limit:    4,
 			},
@@ -777,9 +777,9 @@ func TestServer_ServePeer(t *testing.T) {
 		},
 		{
 			request: &commonv1.PieceTaskRequest{
-				TaskId:   idgen.TaskID("http://www.test.com", &commonv1.UrlMeta{}),
-				SrcPid:   idgen.PeerID(ip.IPv4.String()),
-				DstPid:   idgen.PeerID(ip.IPv4.String()),
+				TaskId:   idgen.TaskIDV1("http://www.test.com", &commonv1.UrlMeta{}),
+				SrcPid:   idgen.PeerIDV1(ip.IPv4.String()),
+				DstPid:   idgen.PeerIDV1(ip.IPv4.String()),
 				StartNum: 8,
 				Limit:    1,
 			},
@@ -788,9 +788,9 @@ func TestServer_ServePeer(t *testing.T) {
 		},
 		{
 			request: &commonv1.PieceTaskRequest{
-				TaskId:   idgen.TaskID("http://www.test.com", &commonv1.UrlMeta{}),
-				SrcPid:   idgen.PeerID(ip.IPv4.String()),
-				DstPid:   idgen.PeerID(ip.IPv4.String()),
+				TaskId:   idgen.TaskIDV1("http://www.test.com", &commonv1.UrlMeta{}),
+				SrcPid:   idgen.PeerIDV1(ip.IPv4.String()),
+				DstPid:   idgen.PeerIDV1(ip.IPv4.String()),
 				StartNum: 8,
 				Limit:    4,
 			},
@@ -1083,8 +1083,8 @@ func TestServer_SyncPieceTasks(t *testing.T) {
 					context.Background(),
 					&commonv1.PieceTaskRequest{
 						TaskId:   tc.name,
-						SrcPid:   idgen.PeerID(ip.IPv4.String()),
-						DstPid:   idgen.PeerID(ip.IPv4.String()),
+						SrcPid:   idgen.PeerIDV1(ip.IPv4.String()),
+						DstPid:   idgen.PeerIDV1(ip.IPv4.String()),
 						StartNum: 0,
 						Limit:    tc.limit,
 					})
@@ -1102,8 +1102,8 @@ func TestServer_SyncPieceTasks(t *testing.T) {
 						for _, n := range tc.requestPieces {
 							request := &commonv1.PieceTaskRequest{
 								TaskId:   tc.name,
-								SrcPid:   idgen.PeerID(ip.IPv4.String()),
-								DstPid:   idgen.PeerID(ip.IPv4.String()),
+								SrcPid:   idgen.PeerIDV1(ip.IPv4.String()),
+								DstPid:   idgen.PeerIDV1(ip.IPv4.String()),
 								StartNum: uint32(n),
 								Limit:    tc.limit,
 							}
