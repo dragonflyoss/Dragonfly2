@@ -23,6 +23,9 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v3"
+
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	commonv2 "d7y.io/api/pkg/apis/common/v2"
 )
 
 // PEMContent supports load PEM format from file or just inline PEM format content
@@ -131,4 +134,32 @@ func ParseHostType(name string) HostType {
 	}
 
 	return HostTypeNormal
+}
+
+// TaskTypeV1ToV2 converts task type from v1 to v2.
+func TaskTypeV1ToV2(typ commonv1.TaskType) commonv2.TaskType {
+	switch typ {
+	case commonv1.TaskType_Normal:
+		return commonv2.TaskType_DFDAEMON
+	case commonv1.TaskType_DfCache:
+		return commonv2.TaskType_DFCACHE
+	case commonv1.TaskType_DfStore:
+		return commonv2.TaskType_DFSTORE
+	}
+
+	return commonv2.TaskType_DFDAEMON
+}
+
+// TaskTypeV2ToV1 converts task type from v2 to v1.
+func TaskTypeV2ToV1(typ commonv2.TaskType) commonv1.TaskType {
+	switch typ {
+	case commonv2.TaskType_DFDAEMON:
+		return commonv1.TaskType_Normal
+	case commonv2.TaskType_DFCACHE:
+		return commonv1.TaskType_DfCache
+	case commonv2.TaskType_DFSTORE:
+		return commonv1.TaskType_DfStore
+	}
+
+	return commonv1.TaskType_Normal
 }
