@@ -211,6 +211,8 @@ func (p *peerManager) RunGC() error {
 				return true
 			}
 
+			p.Delete(peer.ID)
+			peer.Log.Info("peer has been reclaimed")
 			return true
 		}
 
