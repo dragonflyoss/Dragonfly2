@@ -210,7 +210,8 @@ func (p *peerManager) RunGC() error {
 				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 				return true
 			}
-
+			p.Delete(peer.ID)
+			peer.Log.Info("peer has been reclaimed")
 			return true
 		}
 
