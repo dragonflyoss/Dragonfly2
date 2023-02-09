@@ -557,21 +557,27 @@ func (cfg *Config) Validate() error {
 	if cfg.Probe.ProbeQueueLength <= 0 {
 		return errors.New("probe requires parameter probeQueueLength")
 	}
+	
 	if cfg.Probe.GetProbeListInterval <= 0 {
 		return errors.New("probe requires parameter getProbeListInterval")
 	}
+	
 	if cfg.Probe.AOIPriorityInterval <= 0 {
 		return errors.New("probe requires parameter AOIPriorityInterval")
 	}
+	
 	if cfg.Probe.GetProbeCount <= 0 {
 		return errors.New("probe requires parameter getProbeCount")
 	}
+	
 	if cfg.Probe.SyncNetworkTopologyInterval <= 0 {
 		return errors.New("probe requires parameter syncNetworkTopologyInterval")
 	}
+	
 	if cfg.Probe.StoreNetworkTopologyInterval <= 0 {
 		return errors.New("probe requires parameter storeNetworkTopologyInterval")
 	}
+	
 	return nil
 }
 
