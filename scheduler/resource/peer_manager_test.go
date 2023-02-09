@@ -497,9 +497,8 @@ func TestPeerManager_RunGC(t *testing.T) {
 				err := peerManager.RunGC()
 				assert.NoError(err)
 
-				peer, loaded := peerManager.Load(mockPeer.ID)
-				assert.Equal(loaded, true)
-				assert.Equal(peer.FSM.Current(), PeerStateLeave)
+				_, loaded := peerManager.Load(mockPeer.ID)
+				assert.Equal(loaded, false)
 			},
 		},
 	}
