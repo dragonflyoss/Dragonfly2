@@ -324,7 +324,7 @@ func (v *V1) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequ
 	taskID := req.TaskId
 	peerID := req.PiecePacket.DstPid
 	task := resource.NewTask(taskID, req.Url, req.UrlMeta.Digest, req.UrlMeta.Tag, req.UrlMeta.Application,
-		types.TaskTypeV1ToV2(req.TaskType), strings.Split(req.UrlMeta.Filter, idgen.URLFilterSeparator), req.UrlMeta.Header)
+		types.TaskTypeV1ToV2(req.TaskType), strings.Split(req.UrlMeta.Filter, idgen.URLFilterSeparator), req.UrlMeta.Header, int32(v.config.Scheduler.BackSourceCount))
 	task, _ = v.resource.TaskManager().LoadOrStore(task)
 	host := v.storeHost(ctx, req.PeerHost)
 	peer := v.storePeer(ctx, peerID, task, host)
@@ -718,7 +718,7 @@ func (v *V1) storeTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, ty
 	if !loaded {
 		// Create a task for the first time.
 		task := resource.NewTask(req.TaskId, req.Url, req.UrlMeta.Digest, req.UrlMeta.Tag, req.UrlMeta.Application,
-			typ, filters, req.UrlMeta.Header, resource.WithBackToSourceLimit(int32(v.config.Scheduler.BackToSourceCount)))
+			typ, filters, req.UrlMeta.Header, int32(v.config.Scheduler.BackToSourceCount))
 		v.resource.TaskManager().Store(task)
 		task.Log.Info("create new task")
 		return task

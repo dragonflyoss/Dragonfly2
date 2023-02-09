@@ -87,13 +87,6 @@ const (
 // TaskOption is a functional option for task.
 type TaskOption func(task *Task)
 
-// WithBackToSourceLimit set BackToSourceLimit for task.
-func WithBackToSourceLimit(limit int32) TaskOption {
-	return func(t *Task) {
-		t.BackToSourceLimit.Add(limit)
-	}
-}
-
 // WithPieceSize set PieceSize for task.
 func WithPieceSize(pieceSize int32) TaskOption {
 	return func(t *Task) {
@@ -170,7 +163,7 @@ type Task struct {
 
 // New task instance.
 func NewTask(id, url, digest, tag, application string, typ commonv2.TaskType,
-	filters []string, header map[string]string, options ...TaskOption) *Task {
+	filters []string, header map[string]string, backToSourceLimit int32, options ...TaskOption) *Task {
 	t := &Task{
 		ID:                id,
 		Type:              typ,
@@ -183,7 +176,7 @@ func NewTask(id, url, digest, tag, application string, typ commonv2.TaskType,
 		DirectPiece:       []byte{},
 		ContentLength:     atomic.NewInt64(-1),
 		TotalPieceCount:   atomic.NewInt32(0),
-		BackToSourceLimit: atomic.NewInt32(0),
+		BackToSourceLimit: atomic.NewInt32(backToSourceLimit),
 		BackToSourcePeers: set.NewSafeSet[string](),
 		Pieces:            &sync.Map{},
 		DAG:               dag.NewDAG[*Peer](),
