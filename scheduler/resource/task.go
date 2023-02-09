@@ -50,7 +50,7 @@ const (
 	FailedPeerCountLimit = 200
 
 	// Peer count limit for task.
-	PeerCountLimitForTask = 10 * 1000
+	PeerCountLimitForTask = 1000
 )
 
 const (
@@ -91,6 +91,13 @@ type TaskOption func(task *Task)
 func WithBackToSourceLimit(limit int32) TaskOption {
 	return func(t *Task) {
 		t.BackToSourceLimit.Add(limit)
+	}
+}
+
+// WithPieceSize set PieceSize for task.
+func WithPieceSize(pieceSize int32) TaskOption {
+	return func(t *Task) {
+		t.PieceSize = pieceSize
 	}
 }
 
@@ -163,7 +170,7 @@ type Task struct {
 
 // New task instance.
 func NewTask(id, url, digest, tag, application string, typ commonv2.TaskType,
-	filters []string, header map[string]string, pieceSize int32, options ...TaskOption) *Task {
+	filters []string, header map[string]string, options ...TaskOption) *Task {
 	t := &Task{
 		ID:                id,
 		Type:              typ,
@@ -173,7 +180,6 @@ func NewTask(id, url, digest, tag, application string, typ commonv2.TaskType,
 		Application:       application,
 		Filters:           filters,
 		Header:            header,
-		PieceSize:         pieceSize,
 		DirectPiece:       []byte{},
 		ContentLength:     atomic.NewInt64(-1),
 		TotalPieceCount:   atomic.NewInt32(0),

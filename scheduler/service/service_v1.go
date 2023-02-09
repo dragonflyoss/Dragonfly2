@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel/trace"
@@ -35,6 +36,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/digest"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
 	pkgtime "d7y.io/dragonfly/v2/pkg/time"
 	"d7y.io/dragonfly/v2/pkg/types"
@@ -321,7 +323,8 @@ func (v *V1) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequ
 
 	taskID := req.TaskId
 	peerID := req.PiecePacket.DstPid
-	task := resource.NewTask(taskID, req.Url, types.TaskTypeV1ToV2(req.TaskType), req.UrlMeta)
+	task := resource.NewTask(taskID, req.Url, req.UrlMeta.Digest, req.UrlMeta.Tag, req.UrlMeta.Application,
+		types.TaskTypeV1ToV2(req.TaskType), strings.Split(req.UrlMeta.Filter, idgen.URLFilterSeparator), req.UrlMeta.Header)
 	task, _ = v.resource.TaskManager().LoadOrStore(task)
 	host := v.storeHost(ctx, req.PeerHost)
 	peer := v.storePeer(ctx, peerID, task, host)
@@ -709,10 +712,13 @@ func (v *V1) triggerSeedPeerTask(ctx context.Context, task *resource.Task) {
 
 // storeTask stores a new task or reuses a previous task.
 func (v *V1) storeTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, typ commonv2.TaskType) *resource.Task {
+	filters := strings.Split(req.UrlMeta.Filter, idgen.URLFilterSeparator)
+
 	task, loaded := v.resource.TaskManager().Load(req.TaskId)
 	if !loaded {
 		// Create a task for the first time.
-		task = resource.NewTask(req.TaskId, req.Url, typ, req.UrlMeta, resource.WithBackToSourceLimit(int32(v.config.Scheduler.BackToSourceCount)))
+		task := resource.NewTask(req.TaskId, req.Url, req.UrlMeta.Digest, req.UrlMeta.Tag, req.UrlMeta.Application,
+			typ, filters, req.UrlMeta.Header, resource.WithBackToSourceLimit(int32(v.config.Scheduler.BackToSourceCount)))
 		v.resource.TaskManager().Store(task)
 		task.Log.Info("create new task")
 		return task
@@ -721,7 +727,8 @@ func (v *V1) storeTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, ty
 	// Task is the pointer, if the task already exists, the next request will
 	// update the task's Url and UrlMeta in task manager.
 	task.URL = req.Url
-	task.URLMeta = req.UrlMeta
+	task.Filters = filters
+	task.Header = req.UrlMeta.Header
 	task.Log.Info("task already exists")
 	return task
 }
