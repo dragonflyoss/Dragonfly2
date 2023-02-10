@@ -24,6 +24,7 @@ import (
 	"github.com/go-sql-driver/mysql"
 	drivermysql "gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	gormlogger "gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
 	"moul.io/zapgorm2"
 
@@ -51,13 +52,20 @@ func newMyqsl(cfg *config.Config) (*gorm.DB, error) {
 		return nil, err
 	}
 
+	// Initialize gorm logger.
+	logLevel := gormlogger.Info
+	if !cfg.Verbose {
+		logLevel = gormlogger.Warn
+	}
+	gormLogger := zapgorm2.New(logger.CoreLogger.Desugar()).LogMode(logLevel)
+
 	// Connect to mysql.
 	db, err := gorm.Open(drivermysql.Open(dsn), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
 			SingularTable: true,
 		},
 		DisableForeignKeyConstraintWhenMigrating: true,
-		Logger:                                   zapgorm2.New(logger.CoreLogger.Desugar()),
+		Logger:                                   gormLogger,
 	})
 	if err != nil {
 		return nil, err
