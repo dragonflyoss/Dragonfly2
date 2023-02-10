@@ -106,6 +106,23 @@ const (
 	PeerEventLeave = "Leave"
 )
 
+// PeerOption is a functional option for peer.
+type PeerOption func(peer *Peer)
+
+// WithPieceSize set Priority for peer.
+func WithPriority(priority commonv2.Priority) PeerOption {
+	return func(p *Peer) {
+		p.Priority = priority
+	}
+}
+
+// WithRange set Range for peer.
+func WithRange(rg Range) PeerOption {
+	return func(p *Peer) {
+		p.Range = &rg
+	}
+}
+
 // Range contains content for range.
 type Range struct {
 	// Begin of range.
@@ -121,7 +138,10 @@ type Peer struct {
 	ID string
 
 	// Range is url range of request.
-	Range Range
+	Range *Range
+
+	// Priority is peer priority.
+	Priority commonv2.Priority
 
 	// Pieces is finished piece set.
 	Pieces set.SafeSet[*Piece]
@@ -183,9 +203,10 @@ type Peer struct {
 }
 
 // New Peer instance.
-func NewPeer(id string, task *Task, host *Host) *Peer {
+func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 	p := &Peer{
 		ID:                      id,
+		Priority:                commonv2.Priority_LEVEL0,
 		Pieces:                  set.NewSafeSet[*Piece](),
 		FinishedPieces:          &bitset.BitSet{},
 		pieceCosts:              []int64{},
@@ -297,6 +318,10 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 		},
 	)
 
+	for _, opt := range options {
+		opt(p)
+	}
+
 	return p
 }
 
@@ -396,7 +421,8 @@ func (p *Peer) Children() []*Peer {
 	return children
 }
 
-// DownloadTinyFile downloads tiny file from peer.
+// DownloadTinyFile downloads tiny file from peer without range.
+// Used only in v1 version of the grpc.
 func (p *Peer) DownloadTinyFile() ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), downloadTinyFileContextTimeout)
 	defer cancel()
@@ -433,8 +459,57 @@ func (p *Peer) DownloadTinyFile() ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
+// DownloadFile downloads file from peer with range.
+// Used only in v2 version of the grpc.
+func (p *Peer) DownloadFile() ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), downloadTinyFileContextTimeout)
+	defer cancel()
+
+	// Download url: http://${host}:${port}/download/${taskIndex}/${taskID}?peerId=${peerID}
+	targetURL := url.URL{
+		Scheme:   "http",
+		Host:     fmt.Sprintf("%s:%d", p.Host.IP, p.Host.DownloadPort),
+		Path:     fmt.Sprintf("download/%s/%s", p.Task.ID[:3], p.Task.ID),
+		RawQuery: fmt.Sprintf("peerId=%s", p.ID),
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, targetURL.String(), nil)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	begin := uint64(0)
+	end := uint64(p.Task.ContentLength.Load() - 1)
+	if p.Range != nil {
+		begin = p.Range.Begin
+		end = p.Range.End
+	}
+
+	req.Header.Set(headers.Range, fmt.Sprintf("bytes=%d-%d", begin, end))
+	p.Log.Infof("download tiny file %s, header is : %#v", targetURL.String(), req.Header)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	// The HTTP 206 Partial Content success status response code indicates that
+	// the request has succeeded and the body contains the requested ranges of data, as described in the Range header of the request.
+	// Refer to https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/206.
+	if resp.StatusCode/100 != 2 {
+		return nil, fmt.Errorf("bad response status %s", resp.Status)
+	}
+
+	return io.ReadAll(resp.Body)
+}
+
 // GetPriority returns priority of peer.
 func (p *Peer) GetPriority(dynconfig config.DynconfigInterface) commonv2.Priority {
+	if p.Priority != commonv2.Priority_LEVEL0 {
+		return p.Priority
+	}
+
 	pbApplications, err := dynconfig.GetApplications()
 	if err != nil {
 		p.Log.Info(err)

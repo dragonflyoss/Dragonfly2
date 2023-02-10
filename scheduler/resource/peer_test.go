@@ -49,16 +49,20 @@ var (
 
 func TestPeer_NewPeer(t *testing.T) {
 	tests := []struct {
-		name   string
-		id     string
-		expect func(t *testing.T, peer *Peer, mockTask *Task, mockHost *Host)
+		name    string
+		id      string
+		options []PeerOption
+		expect  func(t *testing.T, peer *Peer, mockTask *Task, mockHost *Host)
 	}{
 		{
-			name: "new peer",
-			id:   mockPeerID,
+			name:    "new peer",
+			id:      mockPeerID,
+			options: []PeerOption{},
 			expect: func(t *testing.T, peer *Peer, mockTask *Task, mockHost *Host) {
 				assert := assert.New(t)
 				assert.Equal(peer.ID, mockPeerID)
+				assert.Nil(peer.Range)
+				assert.Nil(peer.Priority)
 				assert.Equal(peer.Pieces.Len(), uint(0))
 				assert.Empty(peer.FinishedPieces)
 				assert.Equal(len(peer.PieceCosts()), 0)
@@ -67,6 +71,65 @@ func TestPeer_NewPeer(t *testing.T) {
 				assert.Equal(peer.FSM.Current(), PeerStatePending)
 				assert.EqualValues(peer.Task, mockTask)
 				assert.EqualValues(peer.Host, mockHost)
+				assert.Empty(peer.BlockParents)
+				assert.Equal(peer.NeedBackToSource, false)
+				assert.Equal(peer.IsBackToSource, false)
+				assert.NotEqual(peer.PieceUpdatedAt.Load(), 0)
+				assert.NotEqual(peer.CreatedAt.Load(), 0)
+				assert.NotEqual(peer.UpdatedAt.Load(), 0)
+				assert.NotNil(peer.Log)
+			},
+		},
+		{
+			name:    "new peer with priority",
+			id:      mockPeerID,
+			options: []PeerOption{WithPriority(commonv2.Priority_LEVEL4)},
+			expect: func(t *testing.T, peer *Peer, mockTask *Task, mockHost *Host) {
+				assert := assert.New(t)
+				assert.Equal(peer.ID, mockPeerID)
+				assert.Nil(peer.Range)
+				assert.Equal(peer.Priority, commonv2.Priority_LEVEL4)
+				assert.Equal(peer.Pieces.Len(), uint(0))
+				assert.Empty(peer.FinishedPieces)
+				assert.Equal(len(peer.PieceCosts()), 0)
+				assert.Empty(peer.ReportPieceResultStream)
+				assert.Empty(peer.AnnouncePeerStream)
+				assert.Equal(peer.FSM.Current(), PeerStatePending)
+				assert.EqualValues(peer.Task, mockTask)
+				assert.EqualValues(peer.Host, mockHost)
+				assert.Empty(peer.BlockParents)
+				assert.Equal(peer.NeedBackToSource, false)
+				assert.Equal(peer.IsBackToSource, false)
+				assert.NotEqual(peer.PieceUpdatedAt.Load(), 0)
+				assert.NotEqual(peer.CreatedAt.Load(), 0)
+				assert.NotEqual(peer.UpdatedAt.Load(), 0)
+				assert.NotNil(peer.Log)
+			},
+		},
+		{
+			name: "new peer with range",
+			id:   mockPeerID,
+			options: []PeerOption{WithRange(Range{
+				Begin: 1,
+				End:   10,
+			})},
+			expect: func(t *testing.T, peer *Peer, mockTask *Task, mockHost *Host) {
+				assert := assert.New(t)
+				assert.Equal(peer.ID, mockPeerID)
+				assert.EqualValues(peer.Range, Range{Begin: 1, End: 10})
+				assert.Nil(peer.Priority)
+				assert.Equal(peer.Pieces.Len(), uint(0))
+				assert.Empty(peer.FinishedPieces)
+				assert.Equal(len(peer.PieceCosts()), 0)
+				assert.Empty(peer.ReportPieceResultStream)
+				assert.Empty(peer.AnnouncePeerStream)
+				assert.Equal(peer.FSM.Current(), PeerStatePending)
+				assert.EqualValues(peer.Task, mockTask)
+				assert.EqualValues(peer.Host, mockHost)
+				assert.Empty(peer.BlockParents)
+				assert.Equal(peer.NeedBackToSource, false)
+				assert.Equal(peer.IsBackToSource, false)
+				assert.NotEqual(peer.PieceUpdatedAt.Load(), 0)
 				assert.NotEqual(peer.CreatedAt.Load(), 0)
 				assert.NotEqual(peer.UpdatedAt.Load(), 0)
 				assert.NotNil(peer.Log)
@@ -80,7 +143,7 @@ func TestPeer_NewPeer(t *testing.T) {
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskDigest, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit)
-			tc.expect(t, NewPeer(tc.id, mockTask, mockHost), mockTask, mockHost)
+			tc.expect(t, NewPeer(tc.id, mockTask, mockHost, tc.options...), mockTask, mockHost)
 		})
 	}
 }
@@ -468,9 +531,8 @@ func TestPeer_Children(t *testing.T) {
 func TestPeer_DownloadTinyFile(t *testing.T) {
 	testData := []byte("./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" +
 		"./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
-	newServer := func(t *testing.T, getPeer func() *Peer) *httptest.Server {
+	mockServer := func(t *testing.T, peer *Peer) *httptest.Server {
 		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			peer := getPeer()
 			assert := assert.New(t)
 			assert.NotNil(peer)
 			assert.Equal(r.URL.Path, fmt.Sprintf("/download/%s/%s", peer.Task.ID[:3], peer.Task.ID))
@@ -487,13 +549,15 @@ func TestPeer_DownloadTinyFile(t *testing.T) {
 			assert.Equal(int64(n), rg.Length)
 		}))
 	}
+
 	tests := []struct {
-		name      string
-		newServer func(t *testing.T, getPeer func() *Peer) *httptest.Server
-		expect    func(t *testing.T, peer *Peer)
+		name       string
+		mockServer func(t *testing.T, peer *Peer) *httptest.Server
+		expect     func(t *testing.T, peer *Peer)
 	}{
 		{
-			name: "download tiny file - 32",
+			name:       "download tiny file",
+			mockServer: mockServer,
 			expect: func(t *testing.T, peer *Peer) {
 				assert := assert.New(t)
 				peer.Task.ContentLength.Store(32)
@@ -503,10 +567,15 @@ func TestPeer_DownloadTinyFile(t *testing.T) {
 			},
 		},
 		{
-			name: "download tiny file - 128",
+			name:       "download tiny file with range",
+			mockServer: mockServer,
 			expect: func(t *testing.T, peer *Peer) {
 				assert := assert.New(t)
 				peer.Task.ContentLength.Store(32)
+				peer.Range = &Range{
+					Begin: 0,
+					End:   10,
+				}
 				data, err := peer.DownloadTinyFile()
 				assert.NoError(err)
 				assert.Equal(testData[:32], data)
@@ -514,7 +583,7 @@ func TestPeer_DownloadTinyFile(t *testing.T) {
 		},
 		{
 			name: "download tiny file failed because of http status code",
-			newServer: func(t *testing.T, getPeer func() *Peer) *httptest.Server {
+			mockServer: func(t *testing.T, peer *Peer) *httptest.Server {
 				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					w.WriteHeader(http.StatusNotFound)
 				}))
@@ -531,13 +600,119 @@ func TestPeer_DownloadTinyFile(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			var peer *Peer
-			if tc.newServer == nil {
-				tc.newServer = newServer
+			if tc.mockServer == nil {
+				tc.mockServer = mockServer
 			}
-			s := tc.newServer(t, func() *Peer {
-				return peer
-			})
+
+			s := tc.mockServer(t, peer)
 			defer s.Close()
+
+			url, err := url.Parse(s.URL)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			ip, rawPort, err := net.SplitHostPort(url.Host)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			port, err := strconv.ParseInt(rawPort, 10, 32)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			mockRawHost.IP = ip
+			mockRawHost.DownloadPort = int32(port)
+			mockHost := NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskDigest, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit)
+			peer = NewPeer(mockPeerID, mockTask, mockHost)
+			tc.expect(t, peer)
+		})
+	}
+}
+
+func TestPeer_DownloadFile(t *testing.T) {
+	testData := []byte("./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" +
+		"./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
+	mockServer := func(t *testing.T, peer *Peer) *httptest.Server {
+		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert := assert.New(t)
+			assert.NotNil(peer)
+			assert.Equal(r.URL.Path, fmt.Sprintf("/download/%s/%s", peer.Task.ID[:3], peer.Task.ID))
+			assert.Equal(r.URL.RawQuery, fmt.Sprintf("peerId=%s", peer.ID))
+
+			rgs, err := util.ParseRange(r.Header.Get(headers.Range), 128)
+			assert.Nil(err)
+			assert.Equal(1, len(rgs))
+			rg := rgs[0]
+
+			w.WriteHeader(http.StatusPartialContent)
+			n, err := w.Write(testData[rg.Start : rg.Start+rg.Length])
+			assert.Nil(err)
+			assert.Equal(int64(n), rg.Length)
+		}))
+	}
+
+	tests := []struct {
+		name       string
+		mockServer func(t *testing.T, peer *Peer) *httptest.Server
+		expect     func(t *testing.T, peer *Peer)
+	}{
+		{
+			name:       "download tiny file",
+			mockServer: mockServer,
+			expect: func(t *testing.T, peer *Peer) {
+				assert := assert.New(t)
+				peer.Task.ContentLength.Store(32)
+				data, err := peer.DownloadFile()
+				assert.NoError(err)
+				assert.Equal(testData[:32], data)
+			},
+		},
+		{
+			name:       "download tiny file with range",
+			mockServer: mockServer,
+			expect: func(t *testing.T, peer *Peer) {
+				assert := assert.New(t)
+				peer.Task.ContentLength.Store(10)
+				peer.Range = &Range{
+					Begin: 0,
+					End:   10,
+				}
+				data, err := peer.DownloadFile()
+				assert.NoError(err)
+				assert.Equal(testData[:10], data)
+			},
+		},
+		{
+			name: "download tiny file failed because of http status code",
+			mockServer: func(t *testing.T, peer *Peer) *httptest.Server {
+				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusNotFound)
+				}))
+			},
+			expect: func(t *testing.T, peer *Peer) {
+				assert := assert.New(t)
+				peer.Task.ID = "foobar"
+				_, err := peer.DownloadFile()
+				assert.EqualError(err, "bad response status 404 Not Found")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var peer *Peer
+			if tc.mockServer == nil {
+				tc.mockServer = mockServer
+			}
+
+			s := tc.mockServer(t, peer)
+			defer s.Close()
+
 			url, err := url.Parse(s.URL)
 			if err != nil {
 				t.Fatal(err)
@@ -571,6 +746,17 @@ func TestPeer_GetPriority(t *testing.T) {
 		mock   func(peer *Peer, md *configmocks.MockDynconfigInterfaceMockRecorder)
 		expect func(t *testing.T, priority commonv2.Priority)
 	}{
+		{
+			name: "peer has priority",
+			mock: func(peer *Peer, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				priority := commonv2.Priority_LEVEL4
+				peer.Priority = priority
+			},
+			expect: func(t *testing.T, priority commonv2.Priority) {
+				assert := assert.New(t)
+				assert.Equal(priority, commonv2.Priority_LEVEL4)
+			},
+		},
 		{
 			name: "get applications failed",
 			mock: func(peer *Peer, md *configmocks.MockDynconfigInterfaceMockRecorder) {
