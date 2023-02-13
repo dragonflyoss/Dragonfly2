@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"testing"
 	"time"
@@ -77,15 +78,15 @@ func (suite *HTTPSourceClientTestSuite) SetupTest() {
 	})
 
 	httpmock.RegisterResponder(http.MethodGet, normalRawURL, func(request *http.Request) (*http.Response, error) {
-		if rang := request.Header.Get(headers.Range); rang != "" {
-			r, _ := nethttp.GetRange(rang[6:])
+		if rg := request.Header.Get(headers.Range); rg != "" {
+			r, _ := nethttp.ParseOneRange(rg, math.MaxInt64)
 			header := http.Header{}
 			header.Set(headers.LastModified, lastModified)
 			header.Set(headers.ETag, etag)
 			res := &http.Response{
 				StatusCode:    http.StatusPartialContent,
-				ContentLength: int64(r.EndIndex) - int64(r.StartIndex) + int64(1),
-				Body:          httpmock.NewRespBodyFromString(testContent[r.StartIndex:r.EndIndex]),
+				ContentLength: r.Length,
+				Body:          httpmock.NewRespBodyFromString(testContent[r.Start : r.Start+r.Length-1]),
 				Header:        header,
 			}
 			return res, nil

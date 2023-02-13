@@ -58,6 +58,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
@@ -337,7 +338,7 @@ type testSpec struct {
 	taskType           int
 	name               string
 	taskData           []byte
-	httpRange          *util.Range // only used in back source cases
+	httpRange          *nethttp.Range // only used in back source cases
 	pieceParallelCount int32
 	pieceSize          int
 	sizeScope          commonv1.SizeScope
@@ -354,7 +355,7 @@ type testSpec struct {
 	backSource      bool
 
 	mockPieceDownloader  func(ctrl *gomock.Controller, taskData []byte, pieceSize int) PieceDownloader
-	mockHTTPSourceClient func(t *testing.T, ctrl *gomock.Controller, rg *util.Range, taskData []byte, url string) source.ResourceClient
+	mockHTTPSourceClient func(t *testing.T, ctrl *gomock.Controller, rg *nethttp.Range, taskData []byte, url string) source.ResourceClient
 
 	cleanUp []func()
 }
@@ -450,7 +451,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			url:                 "http://localhost/test/data",
 			sizeScope:           commonv1.SizeScope_NORMAL,
 			mockPieceDownloader: nil,
-			mockHTTPSourceClient: func(t *testing.T, ctrl *gomock.Controller, rg *util.Range, taskData []byte, url string) source.ResourceClient {
+			mockHTTPSourceClient: func(t *testing.T, ctrl *gomock.Controller, rg *nethttp.Range, taskData []byte, url string) source.ResourceClient {
 				sourceClient := sourcemocks.NewMockResourceClient(ctrl)
 				sourceClient.EXPECT().GetContentLength(source.RequestEq(url)).AnyTimes().DoAndReturn(
 					func(request *source.Request) (int64, error) {
@@ -473,18 +474,18 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			backSource:         true,
 			url:                "http://localhost/test/data",
 			sizeScope:          commonv1.SizeScope_NORMAL,
-			httpRange: &util.Range{
+			httpRange: &nethttp.Range{
 				Start:  0,
 				Length: 4096,
 			},
 			mockPieceDownloader: nil,
-			mockHTTPSourceClient: func(t *testing.T, ctrl *gomock.Controller, rg *util.Range, taskData []byte, url string) source.ResourceClient {
+			mockHTTPSourceClient: func(t *testing.T, ctrl *gomock.Controller, rg *nethttp.Range, taskData []byte, url string) source.ResourceClient {
 				sourceClient := sourcemocks.NewMockResourceClient(ctrl)
 				sourceClient.EXPECT().GetContentLength(source.RequestEq(url)).AnyTimes().DoAndReturn(
 					func(request *source.Request) (int64, error) {
 						assert := testifyassert.New(t)
 						if rg != nil {
-							rgs, err := util.ParseRange(request.Header.Get(headers.Range), math.MaxInt64)
+							rgs, err := nethttp.ParseRange(request.Header.Get(headers.Range), math.MaxInt64)
 							assert.Nil(err)
 							assert.Equal(1, len(rgs))
 							assert.Equal(rg.String(), rgs[0].String())
@@ -495,7 +496,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 					func(request *source.Request) (*source.Response, error) {
 						assert := testifyassert.New(t)
 						if rg != nil {
-							rgs, err := util.ParseRange(request.Header.Get(headers.Range), math.MaxInt64)
+							rgs, err := nethttp.ParseRange(request.Header.Get(headers.Range), math.MaxInt64)
 							assert.Nil(err)
 							assert.Equal(1, len(rgs))
 							assert.Equal(rg.String(), rgs[0].String())
@@ -516,7 +517,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			url:                 "http://localhost/test/data",
 			sizeScope:           commonv1.SizeScope_NORMAL,
 			mockPieceDownloader: nil,
-			mockHTTPSourceClient: func(t *testing.T, ctrl *gomock.Controller, rg *util.Range, taskData []byte, url string) source.ResourceClient {
+			mockHTTPSourceClient: func(t *testing.T, ctrl *gomock.Controller, rg *nethttp.Range, taskData []byte, url string) source.ResourceClient {
 				sourceClient := sourcemocks.NewMockResourceClient(ctrl)
 				sourceClient.EXPECT().GetContentLength(source.RequestEq(url)).AnyTimes().DoAndReturn(
 					func(request *source.Request) (int64, error) {
@@ -540,7 +541,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			url:                 "http://localhost/test/data",
 			sizeScope:           commonv1.SizeScope_NORMAL,
 			mockPieceDownloader: nil,
-			mockHTTPSourceClient: func(t *testing.T, ctrl *gomock.Controller, rg *util.Range, taskData []byte, url string) source.ResourceClient {
+			mockHTTPSourceClient: func(t *testing.T, ctrl *gomock.Controller, rg *nethttp.Range, taskData []byte, url string) source.ResourceClient {
 				sourceClient := sourcemocks.NewMockResourceClient(ctrl)
 				sourceClient.EXPECT().GetContentLength(source.RequestEq(url)).AnyTimes().DoAndReturn(
 					func(request *source.Request) (int64, error) {
@@ -588,7 +589,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			url:                 "http://localhost/test/data",
 			sizeScope:           commonv1.SizeScope_NORMAL,
 			mockPieceDownloader: nil,
-			mockHTTPSourceClient: func(t *testing.T, ctrl *gomock.Controller, rg *util.Range, taskData []byte, url string) source.ResourceClient {
+			mockHTTPSourceClient: func(t *testing.T, ctrl *gomock.Controller, rg *nethttp.Range, taskData []byte, url string) source.ResourceClient {
 				sourceClient := sourcemocks.NewMockResourceClient(ctrl)
 				sourceClient.EXPECT().GetContentLength(source.RequestEq(url)).AnyTimes().DoAndReturn(
 					func(request *source.Request) (int64, error) {

@@ -45,6 +45,7 @@ import (
 	clientutil "d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
+	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/source/clients/httpprotocol"
@@ -397,7 +398,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 					buf = bytes.NewBuffer(testBytes)
 					l = len(testBytes)
 				} else {
-					parsedRange, err := clientutil.ParseRange(rg, int64(len(testBytes)))
+					parsedRange, err := nethttp.ParseRange(rg, int64(len(testBytes)))
 					assert.Nil(err)
 					w.Header().Set(headers.ContentRange,
 						fmt.Sprintf("bytes %d-%d/%d",

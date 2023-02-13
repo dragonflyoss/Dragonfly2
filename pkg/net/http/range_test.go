@@ -22,94 +22,285 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseRange(t *testing.T) {
-	var cases = []struct {
-		rangeStr     string
-		totalLength  uint64
-		targetLength uint64
-		expected     *Range
-		wantErr      bool
+func TestRange_String(t *testing.T) {
+	tests := []struct {
+		s      string
+		rg     Range
+		expect func(t *testing.T, s string)
 	}{
 		{
-			rangeStr:     "0-65575",
-			totalLength:  65576,
-			targetLength: 65576,
-			expected: &Range{
-				StartIndex: 0,
-				EndIndex:   65575,
+			s: "bytes=0-9",
+			rg: Range{
+				Start:  0,
+				Length: 10,
 			},
-			wantErr: false,
-		}, {
-			rangeStr:     "2-2",
-			totalLength:  65576,
-			targetLength: 1,
-			expected: &Range{
-				StartIndex: 2,
-				EndIndex:   2,
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "bytes=0-9")
 			},
-			wantErr: false,
-		}, {
-			rangeStr:     "2-",
-			totalLength:  65576,
-			targetLength: 65574,
-			expected: &Range{
-				StartIndex: 2,
-				EndIndex:   65575,
-			},
-			wantErr: false,
-		}, {
-			rangeStr:     "-100",
-			totalLength:  65576,
-			targetLength: 100,
-			expected: &Range{
-				StartIndex: 65476,
-				EndIndex:   65575,
-			},
-			wantErr: false,
-		}, {
-			rangeStr:     "0-66575",
-			totalLength:  65576,
-			targetLength: 65576,
-			expected: &Range{
-				StartIndex: 0,
-				EndIndex:   65575,
-			},
-			wantErr: false,
 		},
 		{
-			rangeStr:    "0-65-575",
-			totalLength: 65576,
-			expected:    nil,
-			wantErr:     true,
+			s: "bytes=1-10",
+			rg: Range{
+				Start:  1,
+				Length: 10,
+			},
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "bytes=1-10")
+			},
 		},
 		{
-			rangeStr:    "0-hello",
-			totalLength: 65576,
-			expected:    nil,
-			wantErr:     true,
+			s: "bytes=1-0",
+			rg: Range{
+				Start:  1,
+				Length: 0,
+			},
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "bytes=1-0")
+			},
 		},
 		{
-			rangeStr:    "65575-0",
-			totalLength: 65576,
-			expected:    nil,
-			wantErr:     true,
-		},
-		{
-			rangeStr:    "-1-8",
-			totalLength: 65576,
-			expected:    nil,
-			wantErr:     true,
+			s: "bytes=1-1",
+			rg: Range{
+				Start:  1,
+				Length: 1,
+			},
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "bytes=1-1")
+			},
 		},
 	}
 
-	for _, v := range cases {
-		t.Run(v.rangeStr, func(t *testing.T) {
-			result, err := ParseRange(v.rangeStr, v.totalLength)
-			assert.Equal(t, v.expected, result)
-			assert.Equal(t, v.wantErr, err != nil)
-			if !v.wantErr {
-				assert.Equal(t, v.targetLength, result.Length())
+	for _, tc := range tests {
+		t.Run(tc.s, func(t *testing.T) {
+			tc.expect(t, tc.rg.String())
+		})
+	}
+}
+
+func TestParseRange(t *testing.T) {
+	tests := []struct {
+		s    string
+		size int64
+		rg   []Range
+	}{
+		{"", 0, nil},
+		{"", 1000, nil},
+		{"foo", 0, nil},
+		{"bytes=", 0, nil},
+		{"bytes=7", 10, nil},
+		{"bytes= 7 ", 10, nil},
+		{"bytes=1-", 0, nil},
+		{"bytes=5-4", 10, nil},
+		{"bytes=0-2,5-4", 10, nil},
+		{"bytes=2-5,4-3", 10, nil},
+		{"bytes=--5,4--3", 10, nil},
+		{"bytes=A-", 10, nil},
+		{"bytes=A- ", 10, nil},
+		{"bytes=A-Z", 10, nil},
+		{"bytes= -Z", 10, nil},
+		{"bytes=5-Z", 10, nil},
+		{"bytes=Ran-dom, garbage", 10, nil},
+		{"bytes=0x01-0x02", 10, nil},
+		{"bytes=         ", 10, nil},
+		{"bytes= , , ,   ", 10, nil},
+
+		{"bytes=0-9", 10, []Range{{0, 10}}},
+		{"bytes=0-", 10, []Range{{0, 10}}},
+		{"bytes=5-", 10, []Range{{5, 5}}},
+		{"bytes=0-20", 10, []Range{{0, 10}}},
+		{"bytes=15-,0-5", 10, []Range{{0, 6}}},
+		{"bytes=1-2,5-", 10, []Range{{1, 2}, {5, 5}}},
+		{"bytes=-2 , 7-", 11, []Range{{9, 2}, {7, 4}}},
+		{"bytes=0-0 ,2-2, 7-", 11, []Range{{0, 1}, {2, 1}, {7, 4}}},
+		{"bytes=-5", 10, []Range{{5, 5}}},
+		{"bytes=-15", 10, []Range{{0, 10}}},
+		{"bytes=0-499", 10000, []Range{{0, 500}}},
+		{"bytes=500-999", 10000, []Range{{500, 500}}},
+		{"bytes=-500", 10000, []Range{{9500, 500}}},
+		{"bytes=9500-", 10000, []Range{{9500, 500}}},
+		{"bytes=0-0,-1", 10000, []Range{{0, 1}, {9999, 1}}},
+		{"bytes=500-600,601-999", 10000, []Range{{500, 101}, {601, 399}}},
+		{"bytes=500-700,601-999", 10000, []Range{{500, 201}, {601, 399}}},
+
+		// Match Apache laxity:
+		{"bytes=   1 -2   ,  4- 5, 7 - 8 , ,,", 11, []Range{{1, 2}, {4, 2}, {7, 2}}},
+	}
+
+	for _, tc := range tests {
+		rg := tc.rg
+		ranges, err := ParseRange(tc.s, tc.size)
+		if err != nil && rg != nil {
+			t.Errorf("ParseRange(%q) returned error %q", tc.s, err)
+		}
+
+		if len(ranges) != len(rg) {
+			t.Errorf("len(ParseRange(%q)) = %d, want %d", tc.s, len(ranges), len(rg))
+			continue
+		}
+
+		for i := range rg {
+			if ranges[i].Start != rg[i].Start {
+				t.Errorf("ParseRange(%q)[%d].Serve = %d, want %d", tc.s, i, ranges[i].Start, rg[i].Start)
 			}
+
+			if ranges[i].Length != rg[i].Length {
+				t.Errorf("ParseRange(%q)[%d].Length = %d, want %d", tc.s, i, ranges[i].Length, rg[i].Length)
+			}
+		}
+	}
+}
+
+func TestParseOneRange(t *testing.T) {
+	tests := []struct {
+		s    string
+		size int64
+		rg   Range
+	}{
+		{"bytes=0-9", 10, Range{0, 10}},
+		{"bytes=0-", 10, Range{0, 10}},
+		{"bytes=5-", 10, Range{5, 5}},
+		{"bytes=0-20", 10, Range{0, 10}},
+		{"bytes=1-2", 10, Range{1, 2}},
+		{"bytes=0-0", 11, Range{0, 1}},
+		{"bytes=-5", 10, Range{5, 5}},
+		{"bytes=-15", 10, Range{0, 10}},
+		{"bytes=0-499", 10000, Range{0, 500}},
+		{"bytes=500-999", 10000, Range{500, 500}},
+		{"bytes=-500", 10000, Range{9500, 500}},
+		{"bytes=9500-", 10000, Range{9500, 500}},
+		{"bytes=0-0", 10000, Range{0, 1}},
+		{"bytes=500-600", 10000, Range{500, 101}},
+		{"bytes=500-700", 10000, Range{500, 201}},
+
+		// Match Apache laxity:
+		{"bytes=   1 -2     ", 11, Range{1, 2}},
+	}
+
+	for _, tc := range tests {
+		erg := tc.rg
+		rg, err := ParseOneRange(tc.s, tc.size)
+		if err != nil {
+			t.Errorf("ParseOneRange(%q) returned error %q", tc.s, err)
+		}
+
+		if rg.Start != erg.Start {
+			t.Errorf("ParseOneRange(%q).Serve = %d, want %d", tc.s, rg.Start, erg.Start)
+		}
+
+		if rg.Length != erg.Length {
+			t.Errorf("ParseOneRange(%q).Length = %d, want %d", tc.s, rg.Length, erg.Length)
+		}
+	}
+}
+
+func TestParseURLMetaRange(t *testing.T) {
+	tests := []struct {
+		s      string
+		size   int64
+		expect func(t *testing.T, rg Range, err error)
+	}{
+		{
+			s:    "0-65575",
+			size: 65576,
+			expect: func(t *testing.T, rg Range, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.EqualValues(rg, Range{
+					Start:  0,
+					Length: 65576,
+				})
+			},
+		},
+		{
+			s:    "2-2",
+			size: 65576,
+			expect: func(t *testing.T, rg Range, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.EqualValues(rg, Range{
+					Start:  2,
+					Length: 1,
+				})
+			},
+		},
+		{
+			s:    "2-",
+			size: 65576,
+			expect: func(t *testing.T, rg Range, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.EqualValues(rg, Range{
+					Start:  2,
+					Length: 65574,
+				})
+			},
+		},
+		{
+			s:    "-100",
+			size: 65576,
+			expect: func(t *testing.T, rg Range, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.EqualValues(rg, Range{
+					Start:  65476,
+					Length: 100,
+				})
+			},
+		},
+		{
+			s:    "0-66575",
+			size: 65576,
+			expect: func(t *testing.T, rg Range, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.EqualValues(rg, Range{
+					Start:  0,
+					Length: 65576,
+				})
+			},
+		},
+		{
+			s:    "0-65-575",
+			size: 65576,
+			expect: func(t *testing.T, rg Range, err error) {
+				assert := assert.New(t)
+				assert.Error(err)
+			},
+		},
+		{
+			s:    "0-hello",
+			size: 65576,
+			expect: func(t *testing.T, rg Range, err error) {
+				assert := assert.New(t)
+				assert.Error(err)
+			},
+		},
+		{
+			s:    "65575-0",
+			size: 65576,
+			expect: func(t *testing.T, rg Range, err error) {
+				assert := assert.New(t)
+				assert.Error(err)
+			},
+		},
+		{
+			s:    "-1-8",
+			size: 65576,
+			expect: func(t *testing.T, rg Range, err error) {
+				assert := assert.New(t)
+				assert.Error(err)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.s, func(t *testing.T) {
+			rg, err := ParseURLMetaRange(tc.s, tc.size)
+			tc.expect(t, rg, err)
 		})
 	}
 }
