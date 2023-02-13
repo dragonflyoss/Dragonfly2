@@ -306,8 +306,8 @@ type ProbeConfig struct {
 	// ProbeQueueLength is the number of probes that an edge stores.
 	ProbeQueueLength int `mapstructure:"probeQueueLength" yaml:"probeQueueLength"`
 
-	// GetProbeListInterval is the interval at which the host get the probe list.
-	GetProbeListInterval time.Duration `mapstructure:"getProbeListInterval" yaml:"getProbeListInterval"`
+	// GetProbesInterval is the interval at which the host get the probe list.
+	GetProbesInterval time.Duration `mapstructure:"getProbesInterval" yaml:"getProbesInterval"`
 
 	// AOIPriorityInterval is the priority effect of the information of age for host.
 	AOIPriorityInterval time.Duration `mapstructure:"AOIPriorityInterval" yaml:"AOIPriorityInterval"`
@@ -397,7 +397,7 @@ func New() *Config {
 		},
 		Probe: ProbeConfig{
 			ProbeQueueLength:             DefaultProbeQueueLength,
-			GetProbeListInterval:         DefaultGetProbeListInterval,
+			GetProbesInterval:            DefaultGetProbesInterval,
 			AOIPriorityInterval:          DefaultAOIPriorityInterval,
 			GetProbeCount:                DefaultGetProbeCount,
 			SyncNetworkTopologyInterval:  DefaultSyncNetworkTopologyInterval,
@@ -557,27 +557,27 @@ func (cfg *Config) Validate() error {
 	if cfg.Probe.ProbeQueueLength <= 0 {
 		return errors.New("probe requires parameter probeQueueLength")
 	}
-	
-	if cfg.Probe.GetProbeListInterval <= 0 {
-		return errors.New("probe requires parameter getProbeListInterval")
+
+	if cfg.Probe.GetProbesInterval <= 0 {
+		return errors.New("probe requires parameter getProbesInterval")
 	}
-	
+
 	if cfg.Probe.AOIPriorityInterval <= 0 {
 		return errors.New("probe requires parameter AOIPriorityInterval")
 	}
-	
+
 	if cfg.Probe.GetProbeCount <= 0 {
 		return errors.New("probe requires parameter getProbeCount")
 	}
-	
+
 	if cfg.Probe.SyncNetworkTopologyInterval <= 0 {
 		return errors.New("probe requires parameter syncNetworkTopologyInterval")
 	}
-	
+
 	if cfg.Probe.StoreNetworkTopologyInterval <= 0 {
 		return errors.New("probe requires parameter storeNetworkTopologyInterval")
 	}
-	
+
 	return nil
 }
 

@@ -81,3 +81,12 @@ security:
 
 network:
   enableIPv6: true
+
+probe:
+  probeQueueLength: 5
+  getProbesInterval: 30s
+  AOIPriorityInterval: 10s
+  getProbeCount: 50
+  syncNetworkTopologyInterval: 30s
+  storeNetworkTopologyInterval: 60s
+
