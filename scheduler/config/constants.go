@@ -144,3 +144,23 @@ const (
 	// DefaultStorageBufferSize is the default size of buffer container.
 	DefaultStorageBufferSize = 100
 )
+
+const (
+	// DefaultProbeQueueLength is the default number of probes that an edge stores.
+	DefaultProbeQueueLength = 5
+
+	// DefaultGetProbesInterval is the default interval at which the host get the probe list.
+	DefaultGetProbesInterval = 30 * time.Second
+
+	// DefaultAOIPriorityInterval is the default priority effect of the information of age for host.
+	DefaultAOIPriorityInterval = 10 * time.Second
+
+	// DefaultGetProbeCount is the default number of targets that the scheduler sends to the host for probing.
+	DefaultGetProbeCount = 50
+
+	// DefaultSyncNetworkTopologyInterval is the default interval at which network topologies are synchronized between schedulers.
+	DefaultSyncNetworkTopologyInterval = 30 * time.Second
+
+	// DefaultStoreNetworkTopologyInterval is the default interval at which the network topology is stored locally.
+	DefaultStoreNetworkTopologyInterval = 60 * time.Second
+)
