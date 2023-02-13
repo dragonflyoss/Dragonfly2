@@ -37,8 +37,8 @@ import (
 	schedulerv2 "d7y.io/api/pkg/apis/scheduler/v2"
 	v2mocks "d7y.io/api/pkg/apis/scheduler/v2/mocks"
 
-	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 	configmocks "d7y.io/dragonfly/v2/scheduler/config/mocks"
 )
 
@@ -62,7 +62,7 @@ func TestPeer_NewPeer(t *testing.T) {
 				assert := assert.New(t)
 				assert.Equal(peer.ID, mockPeerID)
 				assert.Nil(peer.Range)
-				assert.Nil(peer.Priority)
+				assert.Equal(peer.Priority, commonv2.Priority_LEVEL0)
 				assert.Equal(peer.Pieces.Len(), uint(0))
 				assert.Empty(peer.FinishedPieces)
 				assert.Equal(len(peer.PieceCosts()), 0)
@@ -71,9 +71,9 @@ func TestPeer_NewPeer(t *testing.T) {
 				assert.Equal(peer.FSM.Current(), PeerStatePending)
 				assert.EqualValues(peer.Task, mockTask)
 				assert.EqualValues(peer.Host, mockHost)
-				assert.Empty(peer.BlockParents)
-				assert.Equal(peer.NeedBackToSource, false)
-				assert.Equal(peer.IsBackToSource, false)
+				assert.Equal(peer.BlockParents.Len(), uint(0))
+				assert.Equal(peer.NeedBackToSource.Load(), false)
+				assert.Equal(peer.IsBackToSource.Load(), false)
 				assert.NotEqual(peer.PieceUpdatedAt.Load(), 0)
 				assert.NotEqual(peer.CreatedAt.Load(), 0)
 				assert.NotEqual(peer.UpdatedAt.Load(), 0)
@@ -97,9 +97,9 @@ func TestPeer_NewPeer(t *testing.T) {
 				assert.Equal(peer.FSM.Current(), PeerStatePending)
 				assert.EqualValues(peer.Task, mockTask)
 				assert.EqualValues(peer.Host, mockHost)
-				assert.Empty(peer.BlockParents)
-				assert.Equal(peer.NeedBackToSource, false)
-				assert.Equal(peer.IsBackToSource, false)
+				assert.Equal(peer.BlockParents.Len(), uint(0))
+				assert.Equal(peer.NeedBackToSource.Load(), false)
+				assert.Equal(peer.IsBackToSource.Load(), false)
 				assert.NotEqual(peer.PieceUpdatedAt.Load(), 0)
 				assert.NotEqual(peer.CreatedAt.Load(), 0)
 				assert.NotEqual(peer.UpdatedAt.Load(), 0)
@@ -109,15 +109,15 @@ func TestPeer_NewPeer(t *testing.T) {
 		{
 			name: "new peer with range",
 			id:   mockPeerID,
-			options: []PeerOption{WithRange(Range{
-				Begin: 1,
-				End:   10,
+			options: []PeerOption{WithRange(nethttp.Range{
+				Start:  1,
+				Length: 10,
 			})},
 			expect: func(t *testing.T, peer *Peer, mockTask *Task, mockHost *Host) {
 				assert := assert.New(t)
 				assert.Equal(peer.ID, mockPeerID)
-				assert.EqualValues(peer.Range, Range{Begin: 1, End: 10})
-				assert.Nil(peer.Priority)
+				assert.EqualValues(peer.Range, &nethttp.Range{Start: 1, Length: 10})
+				assert.Equal(peer.Priority, commonv2.Priority_LEVEL0)
 				assert.Equal(peer.Pieces.Len(), uint(0))
 				assert.Empty(peer.FinishedPieces)
 				assert.Equal(len(peer.PieceCosts()), 0)
@@ -126,9 +126,9 @@ func TestPeer_NewPeer(t *testing.T) {
 				assert.Equal(peer.FSM.Current(), PeerStatePending)
 				assert.EqualValues(peer.Task, mockTask)
 				assert.EqualValues(peer.Host, mockHost)
-				assert.Empty(peer.BlockParents)
-				assert.Equal(peer.NeedBackToSource, false)
-				assert.Equal(peer.IsBackToSource, false)
+				assert.Equal(peer.BlockParents.Len(), uint(0))
+				assert.Equal(peer.NeedBackToSource.Load(), false)
+				assert.Equal(peer.IsBackToSource.Load(), false)
 				assert.NotEqual(peer.PieceUpdatedAt.Load(), 0)
 				assert.NotEqual(peer.CreatedAt.Load(), 0)
 				assert.NotEqual(peer.UpdatedAt.Load(), 0)
@@ -538,7 +538,7 @@ func TestPeer_DownloadTinyFile(t *testing.T) {
 			assert.Equal(r.URL.Path, fmt.Sprintf("/download/%s/%s", peer.Task.ID[:3], peer.Task.ID))
 			assert.Equal(r.URL.RawQuery, fmt.Sprintf("peerId=%s", peer.ID))
 
-			rgs, err := util.ParseRange(r.Header.Get(headers.Range), 128)
+			rgs, err := nethttp.ParseRange(r.Header.Get(headers.Range), 128)
 			assert.Nil(err)
 			assert.Equal(1, len(rgs))
 			rg := rgs[0]
@@ -572,9 +572,9 @@ func TestPeer_DownloadTinyFile(t *testing.T) {
 			expect: func(t *testing.T, peer *Peer) {
 				assert := assert.New(t)
 				peer.Task.ContentLength.Store(32)
-				peer.Range = &Range{
-					Begin: 0,
-					End:   10,
+				peer.Range = &nethttp.Range{
+					Start:  0,
+					Length: 10,
 				}
 				data, err := peer.DownloadTinyFile()
 				assert.NoError(err)
@@ -599,7 +599,12 @@ func TestPeer_DownloadTinyFile(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			var peer *Peer
+			mockHost := NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskDigest, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit)
+			peer := NewPeer(mockPeerID, mockTask, mockHost)
+
 			if tc.mockServer == nil {
 				tc.mockServer = mockServer
 			}
@@ -622,13 +627,8 @@ func TestPeer_DownloadTinyFile(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			mockRawHost.IP = ip
-			mockRawHost.DownloadPort = int32(port)
-			mockHost := NewHost(
-				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
-				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskDigest, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit)
-			peer = NewPeer(mockPeerID, mockTask, mockHost)
+			mockHost.IP = ip
+			mockHost.DownloadPort = int32(port)
 			tc.expect(t, peer)
 		})
 	}
@@ -644,7 +644,7 @@ func TestPeer_DownloadFile(t *testing.T) {
 			assert.Equal(r.URL.Path, fmt.Sprintf("/download/%s/%s", peer.Task.ID[:3], peer.Task.ID))
 			assert.Equal(r.URL.RawQuery, fmt.Sprintf("peerId=%s", peer.ID))
 
-			rgs, err := util.ParseRange(r.Header.Get(headers.Range), 128)
+			rgs, err := nethttp.ParseRange(r.Header.Get(headers.Range), 128)
 			assert.Nil(err)
 			assert.Equal(1, len(rgs))
 			rg := rgs[0]
@@ -678,9 +678,9 @@ func TestPeer_DownloadFile(t *testing.T) {
 			expect: func(t *testing.T, peer *Peer) {
 				assert := assert.New(t)
 				peer.Task.ContentLength.Store(10)
-				peer.Range = &Range{
-					Begin: 0,
-					End:   10,
+				peer.Range = &nethttp.Range{
+					Start:  0,
+					Length: 10,
 				}
 				data, err := peer.DownloadFile()
 				assert.NoError(err)
@@ -705,7 +705,12 @@ func TestPeer_DownloadFile(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			var peer *Peer
+			mockHost := NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskDigest, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit)
+			peer := NewPeer(mockPeerID, mockTask, mockHost)
+
 			if tc.mockServer == nil {
 				tc.mockServer = mockServer
 			}
@@ -728,13 +733,8 @@ func TestPeer_DownloadFile(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			mockRawHost.IP = ip
-			mockRawHost.DownloadPort = int32(port)
-			mockHost := NewHost(
-				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
-				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskDigest, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit)
-			peer = NewPeer(mockPeerID, mockTask, mockHost)
+			mockHost.IP = ip
+			mockHost.DownloadPort = int32(port)
 			tc.expect(t, peer)
 		})
 	}

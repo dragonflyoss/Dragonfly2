@@ -37,6 +37,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
+	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
@@ -117,19 +118,10 @@ func WithPriority(priority commonv2.Priority) PeerOption {
 }
 
 // WithRange set Range for peer.
-func WithRange(rg Range) PeerOption {
+func WithRange(rg nethttp.Range) PeerOption {
 	return func(p *Peer) {
 		p.Range = &rg
 	}
-}
-
-// Range contains content for range.
-type Range struct {
-	// Begin of range.
-	Begin uint64
-
-	// End of range.
-	End uint64
 }
 
 // Peer contains content for peer.
@@ -138,7 +130,7 @@ type Peer struct {
 	ID string
 
 	// Range is url range of request.
-	Range *Range
+	Range *nethttp.Range
 
 	// Priority is peer priority.
 	Priority commonv2.Priority
@@ -478,14 +470,12 @@ func (p *Peer) DownloadFile() ([]byte, error) {
 		return []byte{}, err
 	}
 
-	begin := uint64(0)
-	end := uint64(p.Task.ContentLength.Load() - 1)
+	rg := fmt.Sprintf("bytes=%d-%d", 0, p.Task.ContentLength.Load()-1)
 	if p.Range != nil {
-		begin = p.Range.Begin
-		end = p.Range.End
+		rg = p.Range.String()
 	}
 
-	req.Header.Set(headers.Range, fmt.Sprintf("bytes=%d-%d", begin, end))
+	req.Header.Set(headers.Range, rg)
 	p.Log.Infof("download tiny file %s, header is : %#v", targetURL.String(), req.Header)
 
 	resp, err := http.DefaultClient.Do(req)

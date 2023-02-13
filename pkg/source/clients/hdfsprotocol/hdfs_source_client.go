@@ -134,16 +134,16 @@ func (h *hdfsSourceClient) Download(request *source.Request) (*source.Response, 
 	}
 
 	if request.Header.Get(source.Range) != "" {
-		requestRange, err := http.ParseRange(request.Header.Get(source.Range), uint64(limitReadN))
+		rg, err := http.ParseURLMetaRange(request.Header.Get(source.Range), limitReadN)
 		if err != nil {
 			return nil, err
 		}
-		_, err = hdfsFile.Seek(int64(requestRange.StartIndex), 0)
+		_, err = hdfsFile.Seek(rg.Start, 0)
 		if err != nil {
 			hdfsFile.Close()
 			return nil, err
 		}
-		limitReadN = int64(requestRange.Length())
+		limitReadN = rg.Length
 	}
 
 	response := source.NewResponse(

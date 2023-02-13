@@ -43,7 +43,6 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
-	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 )
@@ -245,11 +244,11 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 
 	// Init meta value
 	meta := &commonv1.UrlMeta{Header: map[string]string{}}
-	var rg *util.Range
+	var rg *nethttp.Range
 
 	// Set meta range's value
 	if rangeHeader := req.Header.Get("Range"); len(rangeHeader) > 0 {
-		rgs, err := util.ParseRange(rangeHeader, math.MaxInt64)
+		rgs, err := nethttp.ParseRange(rangeHeader, math.MaxInt64)
 		if err != nil {
 			span.RecordError(err)
 			return badRequest(req, err.Error())

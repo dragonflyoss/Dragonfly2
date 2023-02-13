@@ -26,6 +26,7 @@ import (
 	"net/url"
 	"reflect"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -46,6 +47,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
 	pkgtypes "d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -195,6 +197,11 @@ var (
 	mockHostIDC                     = "idc"
 	mockPeerID                      = idgen.PeerIDV2()
 	mockSeedPeerID                  = idgen.PeerIDV2()
+	mockPeerRange                   = nethttp.Range{
+		Start:  0,
+		Length: 10,
+	}
+	mockURLMetaRange = "0-9"
 )
 
 func TestService_NewV1(t *testing.T) {
@@ -261,7 +268,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, result *schedulerv1.RegisterResult, err error) {
@@ -296,7 +303,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
 					md.GetApplications().Return([]*managerv2.Application{
 						{
 							Name: "baz",
@@ -343,7 +350,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Delete(gomock.Any()).Return().Times(1),
 				)
@@ -383,7 +390,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, result *schedulerv1.RegisterResult, err error) {
@@ -421,7 +428,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, result *schedulerv1.RegisterResult, err error) {
@@ -463,7 +470,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, result *schedulerv1.RegisterResult, err error) {
@@ -504,7 +511,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, result *schedulerv1.RegisterResult, err error) {
@@ -544,7 +551,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Delete(gomock.Any()).Return().Times(1),
 				)
@@ -591,7 +598,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
 					ms.FindParent(gomock.Any(), gomock.Any(), gomock.Any()).Return(mockSeedPeer, true).Times(1),
 				)
 			},
@@ -637,7 +644,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
 					ms.FindParent(gomock.Any(), gomock.Any(), gomock.Any()).Return(mockSeedPeer, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Delete(gomock.Any()).Return().Times(1),
@@ -685,7 +692,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
 					ms.FindParent(gomock.Any(), gomock.Any(), gomock.Any()).Return(mockSeedPeer, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Delete(gomock.Any()).Return().Times(1),
@@ -731,7 +738,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
 					ms.FindParent(gomock.Any(), gomock.Any(), gomock.Any()).Return(mockSeedPeer, true).Times(1),
 				)
 			},
@@ -776,7 +783,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
 					ms.FindParent(gomock.Any(), gomock.Any(), gomock.Any()).Return(mockSeedPeer, true).Times(1),
 				)
 			},
@@ -817,7 +824,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Delete(gomock.Any()).Return().Times(1),
 				)
@@ -858,7 +865,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, result *schedulerv1.RegisterResult, err error) {
@@ -1456,7 +1463,7 @@ func TestService_AnnounceTask(t *testing.T) {
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(mockHost, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
 				)
 			},
 			expect: func(t *testing.T, mockTask *resource.Task, mockPeer *resource.Peer, err error) {
@@ -1493,7 +1500,7 @@ func TestService_AnnounceTask(t *testing.T) {
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(mockHost, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
 				)
 			},
 			expect: func(t *testing.T, mockTask *resource.Task, mockPeer *resource.Peer, err error) {
@@ -1538,7 +1545,7 @@ func TestService_AnnounceTask(t *testing.T) {
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(mockHost, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
 				)
 			},
 			expect: func(t *testing.T, mockTask *resource.Task, mockPeer *resource.Peer, err error) {
@@ -1583,7 +1590,7 @@ func TestService_AnnounceTask(t *testing.T) {
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(mockHost, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
 				)
 			},
 			expect: func(t *testing.T, mockTask *resource.Task, mockPeer *resource.Peer, err error) {
@@ -1628,7 +1635,7 @@ func TestService_AnnounceTask(t *testing.T) {
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(mockHost, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
 				)
 			},
 			expect: func(t *testing.T, mockTask *resource.Task, mockPeer *resource.Peer, err error) {
@@ -2259,7 +2266,7 @@ func TestService_triggerTask(t *testing.T) {
 						},
 					}, nil).Times(1),
 					mr.SeedPeer().Do(func() { wg.Done() }).Return(seedPeer).Times(1),
-					mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(mockPeer, &schedulerv1.PeerResult{}, nil).Times(1),
+					mc.TriggerTask(gomock.Any(), gomock.Any(), gomock.Any()).Do(func(ctx context.Context, rg *nethttp.Range, task *resource.Task) { wg.Done() }).Return(mockPeer, &schedulerv1.PeerResult{}, nil).Times(1),
 				)
 
 				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{
@@ -2481,7 +2488,7 @@ func TestService_triggerTask(t *testing.T) {
 						},
 					}, nil).Times(1),
 					mr.SeedPeer().Do(func() { wg.Done() }).Return(seedPeer).Times(1),
-					mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(mockPeer, &schedulerv1.PeerResult{}, nil).Times(1),
+					mc.TriggerTask(gomock.Any(), gomock.Any(), gomock.Any()).Do(func(ctx context.Context, rg *nethttp.Range, task *resource.Task) { wg.Done() }).Return(mockPeer, &schedulerv1.PeerResult{}, nil).Times(1),
 				)
 
 				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{
@@ -2505,7 +2512,7 @@ func TestService_triggerTask(t *testing.T) {
 			},
 			run: func(t *testing.T, svc *V1, mockTask *resource.Task, mockHost *resource.Host, mockPeer *resource.Peer, mockSeedPeer *resource.Peer, dynconfig config.DynconfigInterface, seedPeer resource.SeedPeer, mr *resource.MockResourceMockRecorder, mc *resource.MockSeedPeerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
-				mockPeer.Task.URLMeta.Priority = commonv1.Priority_LEVEL6
+				mockPeer.Priority = commonv2.Priority_LEVEL6
 
 				var wg sync.WaitGroup
 				wg.Add(2)
@@ -2513,7 +2520,7 @@ func TestService_triggerTask(t *testing.T) {
 
 				gomock.InOrder(
 					mr.SeedPeer().Do(func() { wg.Done() }).Return(seedPeer).Times(1),
-					mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(mockPeer, &schedulerv1.PeerResult{}, nil).Times(1),
+					mc.TriggerTask(gomock.Any(), gomock.Any(), gomock.Any()).Do(func(ctx context.Context, rg *nethttp.Range, task *resource.Task) { wg.Done() }).Return(mockPeer, &schedulerv1.PeerResult{}, nil).Times(1),
 				)
 
 				err := svc.triggerTask(context.Background(), &schedulerv1.PeerTaskRequest{
@@ -2556,72 +2563,79 @@ func TestService_triggerTask(t *testing.T) {
 
 func TestService_storeTask(t *testing.T) {
 	tests := []struct {
-		name     string
-		req      *schedulerv1.PeerTaskRequest
-		taskType commonv2.TaskType
-		mock     func(mockTask *resource.Task, taskManager resource.TaskManager, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder)
-		expect   func(t *testing.T, task *resource.Task, req *schedulerv1.PeerTaskRequest)
+		name string
+		run  func(t *testing.T, svc *V1, taskManager resource.TaskManager, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder)
 	}{
 		{
 			name: "task already exists",
-			req: &schedulerv1.PeerTaskRequest{
-				TaskId: mockTaskID,
-				Url:    "https://example.com",
-				UrlMeta: &commonv1.UrlMeta{
-					Priority: commonv1.Priority_LEVEL0,
-				},
-				PeerHost: mockPeerHost,
-			},
-			taskType: commonv2.TaskType_DFDAEMON,
-			mock: func(mockTask *resource.Task, taskManager resource.TaskManager, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder) {
+			run: func(t *testing.T, svc *V1, taskManager resource.TaskManager, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder) {
+				mockTask := resource.NewTask(mockTaskID, "", mockTaskDigest, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, nil, nil, mockTaskBackToSourceLimit)
+
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
 					mt.Load(gomock.Eq(mockTaskID)).Return(mockTask, true).Times(1),
 				)
-			},
-			expect: func(t *testing.T, task *resource.Task, req *schedulerv1.PeerTaskRequest) {
+
+				task := svc.storeTask(context.Background(), &schedulerv1.PeerTaskRequest{
+					TaskId: mockTaskID,
+					Url:    mockTaskURL,
+					UrlMeta: &commonv1.UrlMeta{
+						Priority: commonv1.Priority_LEVEL0,
+						Filter:   strings.Join(mockTaskFilters, idgen.URLFilterSeparator),
+						Header:   mockTaskHeader,
+					},
+					PeerHost: mockPeerHost,
+				}, commonv2.TaskType_DFDAEMON)
+
 				assert := assert.New(t)
-				assert.Equal(task.ID, mockTaskID)
-				assert.Equal(task.Type, commonv2.TaskType_DFDAEMON)
-				assert.Equal(task.URL, req.Url)
-				assert.Equal(task.Digest, mockTaskDigest)
-				assert.Equal(task.Tag, mockTaskTag)
-				assert.Equal(task.Application, mockTaskApplication)
-				assert.EqualValues(task.Filters, mockTaskFilters)
-				assert.EqualValues(task.Header, mockTaskHeader)
-				assert.Equal(task.PieceSize, mockTaskPieceSize)
+				assert.EqualValues(task, mockTask)
 			},
 		},
 		{
 			name: "task does not exist",
-			req: &schedulerv1.PeerTaskRequest{
-				TaskId: mockTaskID,
-				Url:    "https://example.com",
-				UrlMeta: &commonv1.UrlMeta{
-					Priority: commonv1.Priority_LEVEL0,
-				},
-				PeerHost: mockPeerHost,
-			},
-			taskType: commonv2.TaskType_DFCACHE,
-			mock: func(mockTask *resource.Task, taskManager resource.TaskManager, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder) {
+			run: func(t *testing.T, svc *V1, taskManager resource.TaskManager, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder) {
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
 					mt.Load(gomock.Eq(mockTaskID)).Return(nil, false).Times(1),
 					mr.TaskManager().Return(taskManager).Times(1),
 					mt.Store(gomock.Any()).Return().Times(1),
 				)
-			},
-			expect: func(t *testing.T, task *resource.Task, req *schedulerv1.PeerTaskRequest) {
+
+				task := svc.storeTask(context.Background(), &schedulerv1.PeerTaskRequest{
+					TaskId: mockTaskID,
+					Url:    mockTaskURL,
+					UrlMeta: &commonv1.UrlMeta{
+						Priority:    commonv1.Priority_LEVEL0,
+						Digest:      mockTaskDigest,
+						Tag:         mockTaskTag,
+						Application: mockTaskApplication,
+						Filter:      strings.Join(mockTaskFilters, idgen.URLFilterSeparator),
+						Header:      mockTaskHeader,
+					},
+					PeerHost: mockPeerHost,
+				}, commonv2.TaskType_DFCACHE)
+
 				assert := assert.New(t)
 				assert.Equal(task.ID, mockTaskID)
 				assert.Equal(task.Type, commonv2.TaskType_DFCACHE)
-				assert.Equal(task.URL, req.Url)
+				assert.Equal(task.URL, mockTaskURL)
 				assert.Equal(task.Digest, mockTaskDigest)
 				assert.Equal(task.Tag, mockTaskTag)
 				assert.Equal(task.Application, mockTaskApplication)
 				assert.EqualValues(task.Filters, mockTaskFilters)
 				assert.EqualValues(task.Header, mockTaskHeader)
-				assert.Equal(task.PieceSize, mockTaskPieceSize)
+				assert.Equal(task.PieceSize, int32(0))
+				assert.Empty(task.DirectPiece)
+				assert.Equal(task.ContentLength.Load(), int64(-1))
+				assert.Equal(task.TotalPieceCount.Load(), int32(0))
+				assert.Equal(task.BackToSourceLimit.Load(), int32(200))
+				assert.Equal(task.BackToSourcePeers.Len(), uint(0))
+				assert.Equal(task.FSM.Current(), resource.TaskStatePending)
+				assert.Empty(task.Pieces)
+				assert.Equal(task.PeerCount(), 0)
+				assert.NotEqual(task.CreatedAt.Load(), 0)
+				assert.NotEqual(task.UpdatedAt.Load(), 0)
+				assert.NotNil(task.Log)
 			},
 		},
 	}
@@ -2636,11 +2650,7 @@ func TestService_storeTask(t *testing.T) {
 			storage := storagemocks.NewMockStorage(ctl)
 			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig}, res, scheduler, dynconfig, storage)
 			taskManager := resource.NewMockTaskManager(ctl)
-			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskDigest, mockTaskTag, mockTaskApplication, tc.taskType, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithPieceSize(mockTaskPieceSize))
-
-			tc.mock(mockTask, taskManager, res.EXPECT(), taskManager.EXPECT())
-			task := svc.storeTask(context.Background(), tc.req, tc.taskType)
-			tc.expect(t, task, tc.req)
+			tc.run(t, svc, taskManager, res.EXPECT(), taskManager.EXPECT())
 		})
 	}
 }
@@ -2726,49 +2736,64 @@ func TestService_storeHost(t *testing.T) {
 
 func TestService_storePeer(t *testing.T) {
 	tests := []struct {
-		name   string
-		req    *schedulerv1.PeerTaskRequest
-		mock   func(mockPeer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder)
-		expect func(t *testing.T, peer *resource.Peer)
+		name string
+		run  func(t *testing.T, svc *V1, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder)
 	}{
 		{
 			name: "peer already exists",
-			req: &schedulerv1.PeerTaskRequest{
-				PeerId: mockPeerID,
-				UrlMeta: &commonv1.UrlMeta{
-					Priority: commonv1.Priority_LEVEL0,
-				},
-			},
-			mock: func(mockPeer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+			run: func(t *testing.T, svc *V1, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+				mockHost := resource.NewHost(
+					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
+				mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskDigest, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithPieceSize(mockTaskPieceSize))
+				mockPeer := resource.NewPeer(mockPeerID, mockTask, mockHost)
+
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
 				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer) {
+
+				peer := svc.storePeer(context.Background(), mockPeerID, commonv1.Priority_LEVEL0, mockURLMetaRange, mockTask, mockHost)
+
 				assert := assert.New(t)
-				assert.Equal(peer.ID, mockPeerID)
-				assert.Equal(peer.Task.Tag, "")
+				assert.EqualValues(peer, mockPeer)
 			},
 		},
 		{
 			name: "peer does not exists",
-			req: &schedulerv1.PeerTaskRequest{
-				PeerId: mockPeerID,
-				UrlMeta: &commonv1.UrlMeta{
-					Priority: commonv1.Priority_LEVEL0,
-				},
-			},
-			mock: func(mockPeer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+			run: func(t *testing.T, svc *V1, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+				mockHost := resource.NewHost(
+					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
+				mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskDigest, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithPieceSize(mockTaskPieceSize))
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.LoadOrStore(gomock.Any()).Return(mockPeer, false).Times(1),
+					mp.Load(gomock.Eq(mockPeerID)).Return(nil, false).Times(1),
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.Store(gomock.Any()).Return().Times(1),
 				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer) {
+
+				peer := svc.storePeer(context.Background(), mockPeerID, commonv1.Priority_LEVEL1, mockURLMetaRange, mockTask, mockHost)
+
 				assert := assert.New(t)
 				assert.Equal(peer.ID, mockPeerID)
-				assert.Equal(peer.Task.Tag, "")
+				assert.EqualValues(peer.Range, &mockPeerRange)
+				assert.Equal(peer.Priority, commonv2.Priority_LEVEL1)
+				assert.Equal(peer.Pieces.Len(), uint(0))
+				assert.Empty(peer.FinishedPieces)
+				assert.Equal(len(peer.PieceCosts()), 0)
+				assert.Empty(peer.ReportPieceResultStream)
+				assert.Empty(peer.AnnouncePeerStream)
+				assert.Equal(peer.FSM.Current(), resource.PeerStatePending)
+				assert.EqualValues(peer.Task, mockTask)
+				assert.EqualValues(peer.Host, mockHost)
+				assert.Equal(peer.BlockParents.Len(), uint(0))
+				assert.Equal(peer.NeedBackToSource.Load(), false)
+				assert.Equal(peer.IsBackToSource.Load(), false)
+				assert.NotEqual(peer.PieceUpdatedAt.Load(), 0)
+				assert.NotEqual(peer.CreatedAt.Load(), 0)
+				assert.NotEqual(peer.UpdatedAt.Load(), 0)
+				assert.NotNil(peer.Log)
 			},
 		},
 	}
@@ -2783,15 +2808,8 @@ func TestService_storePeer(t *testing.T) {
 			storage := storagemocks.NewMockStorage(ctl)
 			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig}, res, scheduler, dynconfig, storage)
 			peerManager := resource.NewMockPeerManager(ctl)
-			mockHost := resource.NewHost(
-				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
-				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskDigest, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithPieceSize(mockTaskPieceSize))
-			mockPeer := resource.NewPeer(mockPeerID, mockTask, mockHost)
 
-			tc.mock(mockPeer, peerManager, res.EXPECT(), peerManager.EXPECT())
-			peer := svc.storePeer(context.Background(), tc.req.PeerId, mockTask, mockHost)
-			tc.expect(t, peer)
+			tc.run(t, svc, peerManager, res.EXPECT(), peerManager.EXPECT())
 		})
 	}
 }
@@ -2809,7 +2827,7 @@ func TestService_triggerSeedPeerTask(t *testing.T) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				gomock.InOrder(
 					mr.SeedPeer().Return(seedPeer).Times(1),
-					mc.TriggerTask(gomock.Any(), gomock.Any()).Return(peer, &schedulerv1.PeerResult{
+					mc.TriggerTask(gomock.Any(), gomock.Any(), gomock.Any()).Return(peer, &schedulerv1.PeerResult{
 						TotalPieceCount: 3,
 						ContentLength:   1024,
 					}, nil).Times(1),
@@ -2829,7 +2847,7 @@ func TestService_triggerSeedPeerTask(t *testing.T) {
 				task.FSM.SetState(resource.TaskStateRunning)
 				gomock.InOrder(
 					mr.SeedPeer().Return(seedPeer).Times(1),
-					mc.TriggerTask(gomock.Any(), gomock.Any()).Return(peer, &schedulerv1.PeerResult{}, errors.New("foo")).Times(1),
+					mc.TriggerTask(gomock.Any(), gomock.Any(), gomock.Any()).Return(peer, &schedulerv1.PeerResult{}, errors.New("foo")).Times(1),
 				)
 			},
 			expect: func(t *testing.T, task *resource.Task, peer *resource.Peer) {
@@ -2856,7 +2874,7 @@ func TestService_triggerSeedPeerTask(t *testing.T) {
 			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig}, res, scheduler, dynconfig, storage)
 
 			tc.mock(task, peer, seedPeer, res.EXPECT(), seedPeer.EXPECT())
-			svc.triggerSeedPeerTask(context.Background(), task)
+			svc.triggerSeedPeerTask(context.Background(), &mockPeerRange, task)
 			tc.expect(t, task, peer)
 		})
 	}

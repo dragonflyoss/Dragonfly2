@@ -92,7 +92,7 @@ func (v *V1) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequ
 	// Store resource.
 	task := v.storeTask(ctx, req, commonv2.TaskType_DFDAEMON)
 	host := v.storeHost(ctx, req.PeerHost)
-	peer := v.storePeer(ctx, req.PeerId, req.UrlMeta, task, host)
+	peer := v.storePeer(ctx, req.PeerId, req.UrlMeta.Priority, req.UrlMeta.Range, task, host)
 
 	// Trigger the first download of the task.
 	if err := v.triggerTask(ctx, req, task, host, peer, v.dynconfig); err != nil {
@@ -329,7 +329,7 @@ func (v *V1) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequ
 		types.TaskTypeV1ToV2(req.TaskType), strings.Split(req.UrlMeta.Filter, idgen.URLFilterSeparator), req.UrlMeta.Header, int32(v.config.Scheduler.BackSourceCount))
 	task, _ = v.resource.TaskManager().LoadOrStore(task)
 	host := v.storeHost(ctx, req.PeerHost)
-	peer := v.storePeer(ctx, peerID, req.UrlMeta, task, host)
+	peer := v.storePeer(ctx, peerID, req.UrlMeta.Priority, req.UrlMeta.Range, task, host)
 
 	// If the task state is not TaskStateSucceeded,
 	// advance the task state to TaskStateSucceeded.
@@ -671,8 +671,17 @@ func (v *V1) triggerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, 
 	switch priority {
 	case commonv1.Priority_LEVEL6, commonv1.Priority_LEVEL0:
 		if v.config.SeedPeer.Enable && !task.IsSeedPeerFailed() {
-			go v.triggerSeedPeerTask(ctx, req.UrlMeta.Range, task)
-			return nil
+			if len(req.UrlMeta.Range) > 0 {
+				if rg, err := http.ParseURLMetaRange(req.UrlMeta.Range, math.MaxInt64); err == nil {
+					go v.triggerSeedPeerTask(ctx, &rg, task)
+					return nil
+				}
+
+				peer.Log.Errorf("range %s is invalid", req.UrlMeta.Range)
+			} else {
+				go v.triggerSeedPeerTask(ctx, nil, task)
+				return nil
+			}
 		}
 		fallthrough
 	case commonv1.Priority_LEVEL5:
@@ -695,7 +704,7 @@ func (v *V1) triggerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, 
 }
 
 // triggerSeedPeerTask starts to trigger seed peer task.
-func (v *V1) triggerSeedPeerTask(ctx context.Context, rg resource.Range, task *resource.Task) {
+func (v *V1) triggerSeedPeerTask(ctx context.Context, rg *http.Range, task *resource.Task) {
 	ctx = trace.ContextWithSpan(context.Background(), trace.SpanFromContext(ctx))
 
 	task.Log.Info("trigger seed peer")
@@ -718,7 +727,6 @@ func (v *V1) storeTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, ty
 
 	task, loaded := v.resource.TaskManager().Load(req.TaskId)
 	if !loaded {
-		// Create a task for the first time.
 		task := resource.NewTask(req.TaskId, req.Url, req.UrlMeta.Digest, req.UrlMeta.Tag, req.UrlMeta.Application,
 			typ, filters, req.UrlMeta.Header, int32(v.config.Scheduler.BackToSourceCount))
 		v.resource.TaskManager().Store(task)
@@ -739,7 +747,6 @@ func (v *V1) storeTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, ty
 func (v *V1) storeHost(ctx context.Context, peerHost *schedulerv1.PeerHost) *resource.Host {
 	host, loaded := v.resource.HostManager().Load(peerHost.Id)
 	if !loaded {
-		// Get scheduler cluster client config by manager.
 		options := []resource.HostOption{resource.WithNetwork(resource.Network{
 			SecurityDomain: peerHost.SecurityDomain,
 			Location:       peerHost.Location,
@@ -749,7 +756,7 @@ func (v *V1) storeHost(ctx context.Context, peerHost *schedulerv1.PeerHost) *res
 			options = append(options, resource.WithConcurrentUploadLimit(int32(clientConfig.LoadLimit)))
 		}
 
-		host = resource.NewHost(
+		host := resource.NewHost(
 			peerHost.Id, peerHost.Ip, peerHost.HostName,
 			peerHost.RpcPort, peerHost.DownPort, types.HostTypeNormal,
 			options...,
@@ -765,26 +772,24 @@ func (v *V1) storeHost(ctx context.Context, peerHost *schedulerv1.PeerHost) *res
 }
 
 // storePeer stores a new peer or reuses a previous peer.
-func (v *V1) storePeer(ctx context.Context, peerID string, urlMeta *commonv1.UrlMeta, task *resource.Task, host *resource.Host) *resource.Peer {
-	options := []resource.PeerOption{}
-	if urlMeta.Priority == commonv1.Priority_LEVEL0 {
-		options = append(options, resource.WithPriority(types.PriorityV1ToV2(urlMeta.Priority)))
-	}
-
-	if len(urlMeta.Range) > 0 {
-		if r, err := http.ParseRange(urlMeta.Range, math.MaxInt64); err == nil {
-			options = append(options, resource.WithRange(resource.Range{
-				Begin: r.StartIndex,
-				End:   r.EndIndex,
-			}))
-		} else {
-			task.Log.Error(err)
-		}
-	}
-
-	peer := resource.NewPeer(peerID, task, host, options...)
-	peer, loaded := v.resource.PeerManager().LoadOrStore(peer)
+func (v *V1) storePeer(ctx context.Context, id string, priority commonv1.Priority, rg string, task *resource.Task, host *resource.Host) *resource.Peer {
+	peer, loaded := v.resource.PeerManager().Load(id)
 	if !loaded {
+		options := []resource.PeerOption{}
+		if priority != commonv1.Priority_LEVEL0 {
+			options = append(options, resource.WithPriority(types.PriorityV1ToV2(priority)))
+		}
+
+		if len(rg) > 0 {
+			if r, err := http.ParseURLMetaRange(rg, math.MaxInt64); err == nil {
+				options = append(options, resource.WithRange(r))
+			} else {
+				logger.WithPeer(host.ID, task.ID, id).Error(err)
+			}
+		}
+
+		peer := resource.NewPeer(id, task, host, options...)
+		v.resource.PeerManager().Store(peer)
 		peer.Log.Info("create new peer")
 		return peer
 	}
@@ -1027,7 +1032,7 @@ func (v *V1) handlePieceFailure(ctx context.Context, peer *resource.Peer, piece 
 
 		// Start trigger seed peer task.
 		if v.config.SeedPeer.Enable {
-			go v.triggerSeedPeerTask(ctx, parent.Task)
+			go v.triggerSeedPeerTask(ctx, peer.Range, parent.Task)
 		}
 	default:
 	}

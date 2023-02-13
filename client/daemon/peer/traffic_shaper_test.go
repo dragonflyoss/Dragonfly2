@@ -53,6 +53,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
@@ -300,7 +301,7 @@ type trafficShaperTestSpec struct {
 	totalRateLimit       rate.Limit
 	backSource           bool
 	mockPieceDownloader  func(ctrl *gomock.Controller, taskData []byte, pieceSize int) PieceDownloader
-	mockHTTPSourceClient func(t *testing.T, ctrl *gomock.Controller, rg *util.Range, taskData []byte, url string) source.ResourceClient
+	mockHTTPSourceClient func(t *testing.T, ctrl *gomock.Controller, rg *nethttp.Range, taskData []byte, url string) source.ResourceClient
 	cleanUp              []func()
 }
 
@@ -321,8 +322,8 @@ func TestTrafficShaper_TaskSuite(t *testing.T) {
 			})
 		return downloader
 	}
-	sourceClient := func(hasLength bool) func(t *testing.T, ctrl *gomock.Controller, rg *util.Range, taskData []byte, url string) source.ResourceClient {
-		return func(t *testing.T, ctrl *gomock.Controller, rg *util.Range, taskData []byte, url string) source.ResourceClient {
+	sourceClient := func(hasLength bool) func(t *testing.T, ctrl *gomock.Controller, rg *nethttp.Range, taskData []byte, url string) source.ResourceClient {
+		return func(t *testing.T, ctrl *gomock.Controller, rg *nethttp.Range, taskData []byte, url string) source.ResourceClient {
 			sourceClient := sourcemocks.NewMockResourceClient(ctrl)
 			sourceClient.EXPECT().GetContentLength(gomock.Any()).AnyTimes().DoAndReturn(
 				func(request *source.Request) (int64, error) {

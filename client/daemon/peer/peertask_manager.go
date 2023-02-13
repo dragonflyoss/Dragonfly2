@@ -36,10 +36,10 @@ import (
 
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
-	clientutil "d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
 
@@ -163,7 +163,7 @@ func (ptm *peerTaskManager) getPeerTaskConductor(ctx context.Context,
 	request *schedulerv1.PeerTaskRequest,
 	limit rate.Limit,
 	parent *peerTaskConductor,
-	rg *clientutil.Range,
+	rg *nethttp.Range,
 	desiredLocation string,
 	seed bool) (*peerTaskConductor, error) {
 	var (
@@ -200,7 +200,7 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	request *schedulerv1.PeerTaskRequest,
 	limit rate.Limit,
 	parent *peerTaskConductor,
-	rg *clientutil.Range,
+	rg *nethttp.Range,
 	desiredLocation string,
 	seed bool) (*peerTaskConductor, bool, error) {
 	if ptc, ok := ptm.findPeerTaskConductor(taskID); ok {
@@ -241,7 +241,7 @@ func (ptm *peerTaskManager) createSplitedPeerTaskConductor(
 	request *schedulerv1.PeerTaskRequest,
 	limit rate.Limit,
 	parent *peerTaskConductor,
-	rg *clientutil.Range,
+	rg *nethttp.Range,
 	desiredLocation string,
 	seed bool) (*peerTaskConductor, bool, error) {
 	ptc := ptm.newPeerTaskConductor(ctx, request, limit, parent, rg, seed)
@@ -259,7 +259,7 @@ func (ptm *peerTaskManager) createSplitedPeerTaskConductor(
 	return ptc, true, nil
 }
 
-func (ptm *peerTaskManager) enabledPrefetch(rg *clientutil.Range) bool {
+func (ptm *peerTaskManager) enabledPrefetch(rg *nethttp.Range) bool {
 	return ptm.Prefetch && rg != nil
 }
 

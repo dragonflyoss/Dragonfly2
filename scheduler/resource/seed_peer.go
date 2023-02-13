@@ -21,7 +21,6 @@ package resource
 import (
 	"context"
 	"fmt"
-	"math"
 	"strings"
 	"time"
 
@@ -51,7 +50,7 @@ type SeedPeer interface {
 
 	// TriggerTask triggers the seed peer to download task.
 	// Used only in v1 version of the grpc.
-	TriggerTask(context.Context, *Range, *Task) (*Peer, *schedulerv1.PeerResult, error)
+	TriggerTask(context.Context, *http.Range, *Task) (*Peer, *schedulerv1.PeerResult, error)
 
 	// Client returns grpc client of seed peer.
 	Client() SeedPeerClient
@@ -88,7 +87,7 @@ func (s *seedPeer) DownloadTask(ctx context.Context, task *Task) error {
 
 // TriggerTask triggers the seed peer to download task.
 // Used only in v1 version of the grpc.
-func (s *seedPeer) TriggerTask(ctx context.Context, rg *Range, task *Task) (*Peer, *schedulerv1.PeerResult, error) {
+func (s *seedPeer) TriggerTask(ctx context.Context, rg *http.Range, task *Task) (*Peer, *schedulerv1.PeerResult, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -102,7 +101,7 @@ func (s *seedPeer) TriggerTask(ctx context.Context, rg *Range, task *Task) (*Pee
 	}
 
 	if rg != nil {
-		urlMeta.Range = rg
+		urlMeta.Range = rg.URLMetaString()
 	}
 
 	stream, err := s.client.ObtainSeeds(ctx, &cdnsystemv1.SeedRequest{
@@ -144,7 +143,7 @@ func (s *seedPeer) TriggerTask(ctx context.Context, rg *Range, task *Task) (*Pee
 			initialized = true
 
 			// Initialize seed peer.
-			peer, err = s.initSeedPeer(ctx, task, piece)
+			peer, err = s.initSeedPeer(ctx, rg, task, piece)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -203,7 +202,7 @@ func (s *seedPeer) TriggerTask(ctx context.Context, rg *Range, task *Task) (*Pee
 }
 
 // Initialize seed peer.
-func (s *seedPeer) initSeedPeer(ctx context.Context, rg string, task *Task, ps *cdnsystemv1.PieceSeed) (*Peer, error) {
+func (s *seedPeer) initSeedPeer(ctx context.Context, rg *http.Range, task *Task, ps *cdnsystemv1.PieceSeed) (*Peer, error) {
 	// Load peer from manager.
 	peer, loaded := s.peerManager.Load(ps.PeerId)
 	if loaded {
@@ -219,15 +218,8 @@ func (s *seedPeer) initSeedPeer(ctx context.Context, rg string, task *Task, ps *
 	}
 
 	options := []PeerOption{}
-	if len(rg) > 0 {
-		if r, err := http.ParseRange(rg, math.MaxInt64); err == nil {
-			options = append(options, WithRange(Range{
-				Begin: r.StartIndex,
-				End:   r.EndIndex,
-			}))
-		} else {
-			peer.Log.Error(err)
-		}
+	if rg != nil {
+		options = append(options, WithRange(*rg))
 	}
 
 	// New and store seed peer without range.

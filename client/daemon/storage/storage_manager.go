@@ -45,6 +45,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/gc"
 	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 )
 
 type TaskStorageDriver interface {
@@ -104,7 +105,7 @@ type Manager interface {
 	// FindCompletedSubTask try to find a completed subtask for fast path
 	FindCompletedSubTask(taskID string) *ReusePeerTask
 	// FindPartialCompletedTask try to find a partial completed task for fast path
-	FindPartialCompletedTask(taskID string, rg *util.Range) *ReusePeerTask
+	FindPartialCompletedTask(taskID string, rg *nethttp.Range) *ReusePeerTask
 	// CleanUp cleans all storage data
 	CleanUp()
 }
@@ -515,7 +516,7 @@ func (s *storageManager) FindCompletedTask(taskID string) *ReusePeerTask {
 	return nil
 }
 
-func (s *storageManager) FindPartialCompletedTask(taskID string, rg *util.Range) *ReusePeerTask {
+func (s *storageManager) FindPartialCompletedTask(taskID string, rg *nethttp.Range) *ReusePeerTask {
 	s.indexRWMutex.RLock()
 	defer s.indexRWMutex.RUnlock()
 	ts, ok := s.indexTask2PeerTask[taskID]

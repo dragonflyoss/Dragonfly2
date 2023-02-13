@@ -81,26 +81,26 @@ func TestGetApiGroupName(t *testing.T) {
 func TestHTTPMethodToAction(t *testing.T) {
 	tests := []struct {
 		method         string
-		exceptedAction string
+		expectedAction string
 	}{
 		{
 			method:         "GET",
-			exceptedAction: ReadAction,
+			expectedAction: ReadAction,
 		},
 		{
 			method:         "POST",
-			exceptedAction: AllAction,
+			expectedAction: AllAction,
 		},
 		{
 			method:         "UNKNOWN",
-			exceptedAction: ReadAction,
+			expectedAction: ReadAction,
 		},
 	}
 
 	for _, tt := range tests {
 		action := HTTPMethodToAction(tt.method)
-		if action != tt.exceptedAction {
-			t.Errorf("HttpMethodToAction(%v) = %v, want %v", tt.method, action, tt.exceptedAction)
+		if action != tt.expectedAction {
+			t.Errorf("HttpMethodToAction(%v) = %v, want %v", tt.method, action, tt.expectedAction)
 		}
 	}
 }

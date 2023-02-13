@@ -21,7 +21,6 @@ package objectstorage
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -45,10 +44,10 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
-	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
 	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 )
@@ -243,12 +242,11 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 	}
 
 	var (
-		bucketName    = params.ID
-		objectKey     = strings.TrimPrefix(params.ObjectKey, string(os.PathSeparator))
-		filter        = query.Filter
-		artifactRange *util.Range
-		ranges        []util.Range
-		err           error
+		bucketName = params.ID
+		objectKey  = strings.TrimPrefix(params.ObjectKey, string(os.PathSeparator))
+		filter     = query.Filter
+		rg         nethttp.Range
+		err        error
 	)
 
 	// Initialize filter field.
@@ -279,12 +277,11 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 	// Parse http range header.
 	rangeHeader := ctx.GetHeader(headers.Range)
 	if len(rangeHeader) > 0 {
-		ranges, err = o.parseRangeHeader(rangeHeader)
+		rg, err = nethttp.ParseOneRange(rangeHeader, math.MaxInt64)
 		if err != nil {
 			ctx.JSON(http.StatusRequestedRangeNotSatisfiable, gin.H{"errors": err.Error()})
 			return
 		}
-		artifactRange = &ranges[0]
 
 		// Range header in dragonfly is without "bytes=".
 		urlMeta.Range = strings.TrimLeft(rangeHeader, "bytes=")
@@ -307,7 +304,7 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 	reader, attr, err := o.peerTaskManager.StartStreamTask(ctx, &peer.StreamTaskRequest{
 		URL:     signURL,
 		URLMeta: urlMeta,
-		Range:   artifactRange,
+		Range:   &rg,
 		PeerID:  o.peerIDGenerator.PeerID(),
 	})
 	if err != nil {
@@ -640,22 +637,4 @@ func (o *objectStorage) client() (objectstorage.ObjectStorage, error) {
 	}
 
 	return client, nil
-}
-
-// parseRangeHeader uses to parse range http header for dragonfly.
-func (o *objectStorage) parseRangeHeader(rangeHeader string) ([]util.Range, error) {
-	ranges, err := util.ParseRange(rangeHeader, math.MaxInt64)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(ranges) > 1 {
-		return nil, errors.New("multiple range is not supported")
-	}
-
-	if len(ranges) == 0 {
-		return nil, errors.New("zero range is not supported")
-	}
-
-	return ranges, nil
 }
