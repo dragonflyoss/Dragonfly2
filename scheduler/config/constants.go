@@ -149,8 +149,8 @@ const (
 	// DefaultProbeQueueLength is the default number of probes that an edge stores.
 	DefaultProbeQueueLength = 5
 
-	// DefaultGetProbesInterval is the default interval at which the host get the probe list.
-	DefaultGetProbesInterval = 30 * time.Second
+	// DefaultGetProbeListInterval is the default interval at which the host get the probe list.
+	DefaultGetProbeListInterval = 30 * time.Second
 
 	// DefaultAOIPriorityInterval is the default priority effect of the information of age for host.
 	DefaultAOIPriorityInterval = 10 * time.Second

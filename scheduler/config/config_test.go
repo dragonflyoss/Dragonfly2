@@ -119,7 +119,7 @@ func TestConfig_Load(t *testing.T) {
 		},
 		Probe: ProbeConfig{
 			ProbeQueueLength:             5,
-			GetProbesInterval:            30 * time.Second,
+			GetProbeListInterval:         30 * time.Second,
 			AOIPriorityInterval:          10 * time.Second,
 			GetProbeCount:                50,
 			SyncNetworkTopologyInterval:  30 * time.Second,
