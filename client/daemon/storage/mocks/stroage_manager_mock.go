@@ -12,7 +12,7 @@ import (
 
 	common "d7y.io/api/pkg/apis/common/v1"
 	storage "d7y.io/dragonfly/v2/client/daemon/storage"
-	util "d7y.io/dragonfly/v2/client/util"
+	http "d7y.io/dragonfly/v2/pkg/net/http"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -340,7 +340,7 @@ func (mr *MockManagerMockRecorder) FindCompletedTask(taskID interface{}) *gomock
 }
 
 // FindPartialCompletedTask mocks base method.
-func (m *MockManager) FindPartialCompletedTask(taskID string, rg *util.Range) *storage.ReusePeerTask {
+func (m *MockManager) FindPartialCompletedTask(taskID string, rg *http.Range) *storage.ReusePeerTask {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindPartialCompletedTask", taskID, rg)
 	ret0, _ := ret[0].(*storage.ReusePeerTask)

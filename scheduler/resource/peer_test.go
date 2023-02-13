@@ -37,8 +37,8 @@ import (
 	schedulerv2 "d7y.io/api/pkg/apis/scheduler/v2"
 	v2mocks "d7y.io/api/pkg/apis/scheduler/v2/mocks"
 
-	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 	configmocks "d7y.io/dragonfly/v2/scheduler/config/mocks"
 )
 
@@ -498,7 +498,7 @@ func TestPeer_DownloadTinyFile(t *testing.T) {
 			assert.Equal(r.URL.Path, fmt.Sprintf("/download/%s/%s", peer.Task.ID[:3], peer.Task.ID))
 			assert.Equal(r.URL.RawQuery, fmt.Sprintf("peerId=%s", peer.ID))
 
-			rgs, err := util.ParseRange(r.Header.Get(headers.Range), 128)
+			rgs, err := nethttp.ParseRange(r.Header.Get(headers.Range), 128)
 			assert.Nil(err)
 			assert.Equal(1, len(rgs))
 			rg := rgs[0]

@@ -21,7 +21,7 @@ import (
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 
-	"d7y.io/dragonfly/v2/client/util"
+	"d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/source"
 )
 
@@ -48,7 +48,7 @@ type PieceMetadata struct {
 	Num    int32               `json:"num,omitempty"`
 	Md5    string              `json:"md5,omitempty"`
 	Offset uint64              `json:"offset,omitempty"`
-	Range  util.Range          `json:"range,omitempty"`
+	Range  http.Range          `json:"range,omitempty"`
 	Style  commonv1.PieceStyle `json:"style,omitempty"`
 	// time(nanosecond) consumed
 	Cost uint64 `json:"cost,omitempty"`
@@ -94,13 +94,13 @@ type ReadPieceRequest struct {
 
 type ReadAllPiecesRequest struct {
 	PeerTaskMetadata
-	Range *util.Range
+	Range *http.Range
 }
 
 type RegisterSubTaskRequest struct {
 	Parent  PeerTaskMetadata
 	SubTask PeerTaskMetadata
-	Range   *util.Range
+	Range   *http.Range
 }
 
 type UpdateTaskRequest struct {

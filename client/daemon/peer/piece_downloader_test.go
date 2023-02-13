@@ -37,8 +37,8 @@ import (
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 
 	"d7y.io/dragonfly/v2/client/daemon/test"
-	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/source/clients/httpprotocol"
 )
@@ -78,7 +78,7 @@ func TestPieceDownloader_DownloadPiece(t *testing.T) {
 		{
 			handleFunc: func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal("/download/tas/task-1", r.URL.Path)
-				rg := util.MustParseRange(r.Header.Get("Range"), math.MaxInt64)
+				rg := nethttp.MustParseRange(r.Header.Get("Range"), math.MaxInt64)
 				w.Header().Set(headers.ContentLength, fmt.Sprintf("%d", rg.Length))
 				if _, err := w.Write(testData[rg.Start : rg.Start+rg.Length]); err != nil {
 					t.Error(err)
@@ -93,7 +93,7 @@ func TestPieceDownloader_DownloadPiece(t *testing.T) {
 		{
 			handleFunc: func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal("/download/tas/task-2", r.URL.Path)
-				rg := util.MustParseRange(r.Header.Get("Range"), math.MaxInt64)
+				rg := nethttp.MustParseRange(r.Header.Get("Range"), math.MaxInt64)
 				w.Header().Set(headers.ContentLength, fmt.Sprintf("%d", rg.Length))
 				if _, err := w.Write(testData[rg.Start : rg.Start+rg.Length]); err != nil {
 					t.Error(err)
@@ -108,7 +108,7 @@ func TestPieceDownloader_DownloadPiece(t *testing.T) {
 		{
 			handleFunc: func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal("/download/tas/task-3", r.URL.Path)
-				rg := util.MustParseRange(r.Header.Get("Range"), math.MaxInt64)
+				rg := nethttp.MustParseRange(r.Header.Get("Range"), math.MaxInt64)
 				w.Header().Set(headers.ContentLength, fmt.Sprintf("%d", rg.Length))
 				if _, err := w.Write(testData[rg.Start : rg.Start+rg.Length]); err != nil {
 					t.Error(err)

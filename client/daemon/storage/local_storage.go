@@ -33,10 +33,10 @@ import (
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 
-	clientutil "d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/digest"
+	"d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/source"
 )
 
@@ -634,7 +634,7 @@ func (t *localTaskStore) saveMetadata() error {
 	return err
 }
 
-func (t *localTaskStore) partialCompleted(rg *clientutil.Range) bool {
+func (t *localTaskStore) partialCompleted(rg *http.Range) bool {
 	t.RLock()
 	defer t.RUnlock()
 
@@ -642,7 +642,7 @@ func (t *localTaskStore) partialCompleted(rg *clientutil.Range) bool {
 		return false
 	}
 
-	realRange := &clientutil.Range{
+	realRange := &http.Range{
 		Start:  rg.Start,
 		Length: rg.Length,
 	}
@@ -666,7 +666,7 @@ func (t *localTaskStore) partialCompleted(rg *clientutil.Range) bool {
 	return true
 }
 
-func computePiecePosition(total int64, rg *clientutil.Range, compute func(length int64) uint32) (start, end int32) {
+func computePiecePosition(total int64, rg *http.Range, compute func(length int64) uint32) (start, end int32) {
 	pieceSize := compute(total)
 	start = int32(math.Floor(float64(rg.Start) / float64(pieceSize)))
 	end = int32(math.Floor(float64(rg.Start+rg.Length-1) / float64(pieceSize)))

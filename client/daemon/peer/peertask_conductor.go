@@ -41,11 +41,11 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
-	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	"d7y.io/dragonfly/v2/pkg/source"
@@ -151,7 +151,7 @@ type peerTaskConductor struct {
 
 	// subtask only
 	parent *peerTaskConductor
-	rg     *util.Range
+	rg     *nethttp.Range
 
 	sourceErrorStatus *status.Status
 }
@@ -176,7 +176,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 	request *schedulerv1.PeerTaskRequest,
 	limit rate.Limit,
 	parent *peerTaskConductor,
-	rg *util.Range,
+	rg *nethttp.Range,
 	seed bool) *peerTaskConductor {
 	// use a new context with span info
 	ctx = trace.ContextWithSpan(context.Background(), trace.SpanFromContext(ctx))
@@ -622,7 +622,7 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 				Num:    0,
 				Md5:    "",
 				Offset: 0,
-				Range: util.Range{
+				Range: nethttp.Range{
 					Start:  0,
 					Length: contentLength,
 				},

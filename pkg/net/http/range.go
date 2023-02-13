@@ -17,145 +17,159 @@
 package http
 
 import (
+	"errors"
 	"fmt"
+	"net/textproto"
 	"strconv"
 	"strings"
 )
 
 const (
-	separator = "-"
+	// RangePrefix is prefix of range header.
+	RangePrefix = "bytes="
+
+	// RangeSeparator is separator of range header.
+	RangeSeparator = "-"
 )
 
+// ErrNoOverlap is returned by ParseRange if first-byte-pos of
+// all of the byte-range-spec values is greater than the content size.
+var ErrNoOverlap = errors.New("invalid range: failed to overlap")
+
+// Range specifies the byte range to be sent to the client.
 type Range struct {
-	StartIndex uint64 `json:"start_index"`
-	EndIndex   uint64 `json:"end_index"`
+	Start, Length int64
 }
 
-func (r Range) String() string {
-	return fmt.Sprintf("%d%s%d", r.StartIndex, separator, r.EndIndex)
+// String specifies the string of http header.
+func (r *Range) String() string {
+	return fmt.Sprintf("%s%d%s%d", RangePrefix, r.Start, RangeSeparator, r.Start+r.Length-1)
 }
 
-func (r Range) Length() uint64 {
-	return r.EndIndex - r.StartIndex + 1
-}
-
-// GetRange parses Range according to range string.
-// rangeStr: "start-end"
-func GetRange(rangeStr string) (r *Range, err error) {
-	ranges := strings.Split(rangeStr, separator)
-	if len(ranges) != 2 {
-		return nil, fmt.Errorf("range value(%s) is illegal which should be like 0-45535", rangeStr)
+// ParseRange parses a Range header string as per RFC 7233.
+// ErrNoOverlap is returned if none of the ranges overlap.
+// Example:
+//
+//	"Range": "bytes=100-200"
+//	"Range": "bytes=-50"
+//	"Range": "bytes=150-"
+//	"Range": "bytes=0-0,-1"
+//
+// copy from go/1.15.2 net/http/fs.go ParseRange
+func ParseRange(s string, size int64) ([]Range, error) {
+	if s == "" {
+		return nil, nil // header not present
 	}
 
-	startIndex, err := strconv.ParseUint(ranges[0], 10, 64)
-	if err != nil {
-		return nil, fmt.Errorf("range(%s) start is not a non-negative number", rangeStr)
-	}
-	endIndex, err := strconv.ParseUint(ranges[1], 10, 64)
-	if err != nil {
-		return nil, fmt.Errorf("range(%s) end is not a non-negative number", rangeStr)
+	const b = RangePrefix
+	if !strings.HasPrefix(s, b) {
+		return nil, errors.New("invalid range")
 	}
 
-	if endIndex < startIndex {
-		return nil, fmt.Errorf("range(%s) start is larger than end", rangeStr)
-	}
-
-	return &Range{
-		StartIndex: startIndex,
-		EndIndex:   endIndex,
-	}, nil
-}
-
-// ParseRange parses the start and the end from rangeStr and returns them.
-// length is file total length
-func ParseRange(rangeStr string, length uint64) (*Range, error) {
-	if strings.Count(rangeStr, "-") != 1 {
-		return nil, fmt.Errorf("invalid range: %s, should be like 0-1023", rangeStr)
-	}
-
-	// -{endIndex}
-	if strings.HasPrefix(rangeStr, "-") {
-		rangeStruct, err := handlePrefixRange(rangeStr, length)
-		if err != nil {
-			return nil, err
+	var ranges []Range
+	noOverlap := false
+	for _, ra := range strings.Split(s[len(b):], ",") {
+		ra = textproto.TrimString(ra)
+		if ra == "" {
+			continue
 		}
-		return rangeStruct, nil
-	}
 
-	// {startIndex}-
-	if strings.HasSuffix(rangeStr, "-") {
-		rangeStruct, err := handleSuffixRange(rangeStr, length)
-		if err != nil {
-			return nil, err
+		i := strings.Index(ra, "-")
+		if i < 0 {
+			return nil, errors.New("invalid range")
 		}
-		return rangeStruct, nil
+		start, end := textproto.TrimString(ra[:i]), textproto.TrimString(ra[i+1:])
+
+		var r Range
+		if start == "" {
+			// If no Serve is specified, end specifies the
+			// range Serve relative to the end of the file.
+			i, err := strconv.ParseInt(end, 10, 64)
+			if err != nil {
+				return nil, errors.New("invalid range")
+			}
+
+			if i > size {
+				i = size
+			}
+
+			r.Start = size - i
+			r.Length = size - r.Start
+		} else {
+			i, err := strconv.ParseInt(start, 10, 64)
+			if err != nil || i < 0 {
+				return nil, errors.New("invalid range")
+			}
+
+			if i >= size {
+				// If the range begins after the size of the content,
+				// then it does not overlap.
+				noOverlap = true
+				continue
+			}
+
+			r.Start = i
+			if end == "" {
+				// If no end is specified, range extends to end of the file.
+				r.Length = size - r.Start
+			} else {
+				i, err := strconv.ParseInt(end, 10, 64)
+				if err != nil || r.Start > i {
+					return nil, errors.New("invalid range")
+				}
+
+				if i >= size {
+					i = size - 1
+				}
+				r.Length = i - r.Start + 1
+			}
+		}
+
+		ranges = append(ranges, r)
 	}
 
-	rangeStruct, err := handlePairRange(rangeStr, length)
-	if err != nil {
-		return nil, err
+	if noOverlap && len(ranges) == 0 {
+		// The specified ranges did not overlap with the content.
+		return nil, ErrNoOverlap
 	}
-	return rangeStruct, nil
+
+	return ranges, nil
 }
 
-func handlePrefixRange(rangeStr string, length uint64) (*Range, error) {
-	downLength, err := strconv.ParseUint(strings.TrimPrefix(rangeStr, "-"), 10, 64)
+// MustParseRange is like ParseRange but panics if the range cannot be parsed.
+func MustParseRange(s string, size int64) Range {
+	rs, err := ParseRange(s, size)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse range: %s to int: %v", rangeStr, err)
+		panic(fmt.Sprintf("parse range %q error: %s", s, err))
 	}
 
-	if downLength > length {
-		return nil, fmt.Errorf("range: %s, the downLength is larger than length", rangeStr)
+	if len(rs) != 1 {
+		panic(fmt.Sprintf("parse range length must be 1"))
 	}
 
-	return &Range{
-		StartIndex: length - downLength,
-		EndIndex:   length - 1,
-	}, nil
+	return rs[0]
 }
 
-func handleSuffixRange(rangeStr string, length uint64) (*Range, error) {
-	startIndex, err := strconv.ParseUint(strings.TrimSuffix(rangeStr, "-"), 10, 64)
+// ParseOneRange parses only one range of Range header string as per RFC 7233.
+func ParseOneRange(s string, size int64) (Range, error) {
+	rs, err := ParseRange(s, size)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse range: %s to uint: %v", rangeStr, err)
+		return Range{}, err
 	}
 
-	if startIndex > length {
-		return nil, fmt.Errorf("range: %s, the startIndex is larger than length", rangeStr)
+	if len(rs) != 1 {
+		return Range{}, fmt.Errorf("parse range length must be 1")
 	}
 
-	return &Range{
-		StartIndex: startIndex,
-		EndIndex:   length - 1,
-	}, nil
+	return rs[0], nil
 }
 
-func handlePairRange(rangeStr string, length uint64) (*Range, error) {
-	rangePair := strings.Split(rangeStr, "-")
-
-	startIndex, err := strconv.ParseUint(rangePair[0], 10, 64)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse range: %s to uint: %v", rangeStr, err)
-	}
-	if startIndex > length {
-		return nil, fmt.Errorf("range: %s, the startIndex is larger than length", rangeStr)
-	}
-
-	endIndex, err := strconv.ParseUint(rangePair[1], 10, 64)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse range: %s to uint: %v", rangeStr, err)
-	}
-	if endIndex >= length {
-		//attention
-		endIndex = length - 1
-	}
-
-	if endIndex < startIndex {
-		return nil, fmt.Errorf("range: %s, the start is larger the end", rangeStr)
-	}
-
-	return &Range{
-		StartIndex: startIndex,
-		EndIndex:   endIndex,
-	}, nil
+// ParseRange parses a Range string of grpc UrlMeta.
+// Example:
+//
+//	"Range": "100-200"
+//	"Range": "-50"
+//	"Range": "150-"
+func ParseURLMetaRange(s string, size int64) (Range, error) {
+	return ParseOneRange(fmt.Sprintf("%s%s", RangePrefix, s), size)
 }

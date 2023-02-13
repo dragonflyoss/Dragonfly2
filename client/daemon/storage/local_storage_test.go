@@ -39,6 +39,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/digest"
+	"d7y.io/dragonfly/v2/pkg/net/http"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 )
 
@@ -117,7 +118,7 @@ func TestLocalTaskStore_PutAndGetPiece(t *testing.T) {
 							PeerID: peerID,
 							TaskID: taskID,
 						},
-						Range: &clientutil.Range{
+						Range: &http.Range{
 							Start:  100,
 							Length: int64(len(testBytes)),
 						},
@@ -188,7 +189,7 @@ func TestLocalTaskStore_PutAndGetPiece(t *testing.T) {
 						Num:    int32(p.index),
 						Md5:    piecesMd5[p.index],
 						Offset: uint64(p.start),
-						Range: clientutil.Range{
+						Range: http.Range{
 							Start:  int64(p.start),
 							Length: int64(p.end - p.start),
 						},
@@ -218,7 +219,7 @@ func TestLocalTaskStore_PutAndGetPiece(t *testing.T) {
 						Num:    int32(p.index),
 						Md5:    piecesMd5[p.index],
 						Offset: uint64(p.start),
-						Range: clientutil.Range{
+						Range: http.Range{
 							Start:  int64(p.start),
 							Length: int64(p.end - p.start),
 						},
@@ -359,7 +360,7 @@ func TestLocalTaskStore_StoreTaskData_Simple(t *testing.T) {
 	assert.Equal(testData, bs, "data must match")
 }
 
-func calcFileMd5(filePath string, rg *clientutil.Range) (string, error) {
+func calcFileMd5(filePath string, rg *http.Range) (string, error) {
 	var md5String string
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -395,7 +396,7 @@ func Test_computePiecePosition(t *testing.T) {
 	var testCases = []struct {
 		name  string
 		total int64
-		rg    *clientutil.Range
+		rg    *http.Range
 		start int32
 		end   int32
 		piece uint32
@@ -403,7 +404,7 @@ func Test_computePiecePosition(t *testing.T) {
 		{
 			name:  "0",
 			total: 500,
-			rg: &clientutil.Range{
+			rg: &http.Range{
 				Start:  0,
 				Length: 10,
 			},
@@ -414,7 +415,7 @@ func Test_computePiecePosition(t *testing.T) {
 		{
 			name:  "1",
 			total: 500,
-			rg: &clientutil.Range{
+			rg: &http.Range{
 				Start:  30,
 				Length: 60,
 			},
@@ -425,7 +426,7 @@ func Test_computePiecePosition(t *testing.T) {
 		{
 			name:  "2",
 			total: 500,
-			rg: &clientutil.Range{
+			rg: &http.Range{
 				Start:  30,
 				Length: 130,
 			},
@@ -436,7 +437,7 @@ func Test_computePiecePosition(t *testing.T) {
 		{
 			name:  "3",
 			total: 500,
-			rg: &clientutil.Range{
+			rg: &http.Range{
 				Start:  350,
 				Length: 100,
 			},
@@ -447,7 +448,7 @@ func Test_computePiecePosition(t *testing.T) {
 		{
 			name:  "4",
 			total: 500,
-			rg: &clientutil.Range{
+			rg: &http.Range{
 				Start:  400,
 				Length: 100,
 			},
@@ -458,7 +459,7 @@ func Test_computePiecePosition(t *testing.T) {
 		{
 			name:  "5",
 			total: 500,
-			rg: &clientutil.Range{
+			rg: &http.Range{
 				Start:  0,
 				Length: 500,
 			},
@@ -485,14 +486,14 @@ func TestLocalTaskStore_partialCompleted(t *testing.T) {
 		name            string
 		ContentLength   int64
 		ReadyPieceCount int32
-		Range           clientutil.Range
+		Range           http.Range
 		Found           bool
 	}{
 		{
 			name:            "range bytes=x-y partial completed",
 			ContentLength:   1024,
 			ReadyPieceCount: 1,
-			Range: clientutil.Range{
+			Range: http.Range{
 				Start:  1,
 				Length: 1023,
 			},
@@ -502,7 +503,7 @@ func TestLocalTaskStore_partialCompleted(t *testing.T) {
 			name:            "range bytes=x-y no partial completed",
 			ContentLength:   util.DefaultPieceSize * 10,
 			ReadyPieceCount: 1,
-			Range: clientutil.Range{
+			Range: http.Range{
 				Start:  1,
 				Length: util.DefaultPieceSize * 2,
 			},
@@ -512,7 +513,7 @@ func TestLocalTaskStore_partialCompleted(t *testing.T) {
 			name:            "range bytes=x- no partial completed",
 			ContentLength:   util.DefaultPieceSizeLimit * 1,
 			ReadyPieceCount: 1,
-			Range: clientutil.Range{
+			Range: http.Range{
 				Start:  1,
 				Length: math.MaxInt - 1,
 			},

@@ -31,9 +31,9 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
-	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/net/http"
 )
 
 type StreamTaskRequest struct {
@@ -42,7 +42,7 @@ type StreamTaskRequest struct {
 	// url meta info
 	URLMeta *commonv1.UrlMeta
 	// http range
-	Range *util.Range
+	Range *http.Range
 	// peer's id and must be global uniqueness
 	PeerID string
 }
@@ -66,7 +66,7 @@ type streamTask struct {
 func (ptm *peerTaskManager) newStreamTask(
 	ctx context.Context,
 	request *schedulerv1.PeerTaskRequest,
-	rg *util.Range) (*streamTask, error) {
+	rg *http.Range) (*streamTask, error) {
 	metrics.StreamTaskCount.Add(1)
 	var limit = rate.Inf
 	if ptm.PerPeerRateLimit > 0 {

@@ -722,14 +722,14 @@ func (s *server) download(ctx context.Context, req *dfdaemonv1.DownRequest, stre
 		KeepOriginalOffset: req.KeepOriginalOffset,
 	}
 	if len(req.UrlMeta.Range) > 0 {
-		r, err := http.ParseRange(req.UrlMeta.Range, math.MaxInt64)
+		r, err := http.ParseURLMetaRange(req.UrlMeta.Range, math.MaxInt64)
 		if err != nil {
 			err = fmt.Errorf("parse range %s error: %s", req.UrlMeta.Range, err)
 			return err
 		}
-		peerTask.Range = &util.Range{
-			Start:  int64(r.StartIndex),
-			Length: int64(r.Length()),
+		peerTask.Range = &http.Range{
+			Start:  r.Start,
+			Length: r.Length,
 		}
 	}
 

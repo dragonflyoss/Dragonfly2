@@ -26,7 +26,7 @@ import (
 	. "github.com/onsi/ginkgo/v2" //nolint
 	. "github.com/onsi/gomega"    //nolint
 
-	"d7y.io/dragonfly/v2/client/util"
+	"d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
 )
 
@@ -68,9 +68,9 @@ func getFileSizes() map[string]int {
 	return details
 }
 
-func getRandomRange(size int) *util.Range {
+func getRandomRange(size int) *http.Range {
 	if size == 0 {
-		return &util.Range{
+		return &http.Range{
 			Start:  0,
 			Length: 0,
 		}
@@ -86,7 +86,7 @@ func getRandomRange(size int) *util.Range {
 	}
 
 	// range for [start, end]
-	rg := &util.Range{
+	rg := &http.Range{
 		Start:  int64(start),
 		Length: int64(end + 1 - start),
 	}
@@ -282,7 +282,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 	})
 }
 
-func downloadSingleFile(ns string, pod *e2eutil.PodExec, path, url string, size int, rg *util.Range, rawRg string) {
+func downloadSingleFile(ns string, pod *e2eutil.PodExec, path, url string, size int, rg *http.Range, rawRg string) {
 	var (
 		sha256sum []string
 		dfget     []string

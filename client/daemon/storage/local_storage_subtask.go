@@ -26,9 +26,9 @@ import (
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 
-	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/digest"
+	"d7y.io/dragonfly/v2/pkg/net/http"
 )
 
 // TODO need refactor with localTaskStore, currently, localSubTaskStore code copies from localTaskStore
@@ -41,7 +41,7 @@ type localSubTaskStore struct {
 	// when digest not match, invalid will be set
 	invalid atomic.Bool
 
-	Range *util.Range
+	Range *http.Range
 }
 
 func (t *localSubTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest) (int64, error) {

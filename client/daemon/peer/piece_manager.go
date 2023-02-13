@@ -44,17 +44,16 @@ import (
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
-	clientutil "d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/digest"
-	httputil "d7y.io/dragonfly/v2/pkg/net/http"
+	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/retry"
 	"d7y.io/dragonfly/v2/pkg/source"
 )
 
 type PieceManager interface {
-	DownloadSource(ctx context.Context, pt Task, request *schedulerv1.PeerTaskRequest, parsedRange *clientutil.Range) error
+	DownloadSource(ctx context.Context, pt Task, request *schedulerv1.PeerTaskRequest, parsedRange *nethttp.Range) error
 	DownloadPiece(ctx context.Context, request *DownloadPieceRequest) (*DownloadPieceResult, error)
 	ImportFile(ctx context.Context, ptm storage.PeerTaskMetadata, tsd storage.TaskStorageDriver, req *dfdaemonv1.ImportTaskRequest) error
 	Import(ctx context.Context, ptm storage.PeerTaskMetadata, tsd storage.TaskStorageDriver, contentLength int64, reader io.Reader) error
@@ -215,7 +214,7 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, request *DownloadPiec
 			Num:    request.piece.PieceNum,
 			Md5:    request.piece.PieceMd5,
 			Offset: request.piece.PieceOffset,
-			Range: clientutil.Range{
+			Range: nethttp.Range{
 				Start:  int64(request.piece.RangeStart),
 				Length: int64(request.piece.RangeSize),
 			},
@@ -275,7 +274,7 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 				// storage manager will get digest from Reader, keep empty here is ok
 				Md5:    "",
 				Offset: pieceOffset,
-				Range: clientutil.Range{
+				Range: nethttp.Range{
 					Start:  int64(pieceOffset),
 					Length: int64(pieceSize),
 				},
@@ -298,7 +297,7 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 	return
 }
 
-func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, peerTaskRequest *schedulerv1.PeerTaskRequest, parsedRange *clientutil.Range) error {
+func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, peerTaskRequest *schedulerv1.PeerTaskRequest, parsedRange *nethttp.Range) error {
 	if peerTaskRequest.UrlMeta == nil {
 		peerTaskRequest.UrlMeta = &commonv1.UrlMeta{
 			Header: map[string]string{},
@@ -336,16 +335,16 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, peerTaskReq
 			supportConcurrent = true
 			if parsedRange != nil {
 				// we have the total content length, parse the real range
-				newRange, err := httputil.ParseRange(peerTaskRequest.UrlMeta.Range, uint64(metadata.TotalContentLength))
+				newRanges, err := nethttp.ParseURLMetaRange(peerTaskRequest.UrlMeta.Range, metadata.TotalContentLength)
 				if err != nil {
 					log.Errorf("update task error: %s", err)
 					return err
 				}
-				parsedRange.Start = int64(newRange.StartIndex)
-				parsedRange.Length = int64(newRange.Length())
+				parsedRange.Start = newRanges.Start
+				parsedRange.Length = newRanges.Length
 			} else {
 				// for non-ranged request, add a dummy range
-				parsedRange = &clientutil.Range{
+				parsedRange = &nethttp.Range{
 					Start:  0,
 					Length: metadata.TotalContentLength,
 				}
@@ -462,7 +461,7 @@ singleDownload:
 	return pm.downloadKnownLengthSource(ctx, pt, contentLength, pieceSize, reader, response, peerTaskRequest, parsedRange, supportConcurrent)
 }
 
-func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, contentLength int64, pieceSize uint32, reader io.Reader, response *source.Response, peerTaskRequest *schedulerv1.PeerTaskRequest, parsedRange *clientutil.Range, supportConcurrent bool) error {
+func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, contentLength int64, pieceSize uint32, reader io.Reader, response *source.Response, peerTaskRequest *schedulerv1.PeerTaskRequest, parsedRange *nethttp.Range, supportConcurrent bool) error {
 	log := pt.Log()
 	maxPieceNum := pt.GetTotalPieces()
 	for pieceNum := int32(0); pieceNum < maxPieceNum; pieceNum++ {
@@ -626,7 +625,7 @@ func (pm *pieceManager) processPieceFromFile(ctx context.Context, ptm storage.Pe
 				// storage manager will get digest from Reader, keep empty here is ok
 				Md5:    "",
 				Offset: pieceOffset,
-				Range: clientutil.Range{
+				Range: nethttp.Range{
 					Start:  int64(pieceOffset),
 					Length: int64(pieceSize),
 				},
@@ -771,7 +770,7 @@ func (pm *pieceManager) Import(ctx context.Context, ptm storage.PeerTaskMetadata
 	return nil
 }
 
-func (pm *pieceManager) concurrentDownloadSource(ctx context.Context, pt Task, peerTaskRequest *schedulerv1.PeerTaskRequest, parsedRange *clientutil.Range, startPieceNum int32) error {
+func (pm *pieceManager) concurrentDownloadSource(ctx context.Context, pt Task, peerTaskRequest *schedulerv1.PeerTaskRequest, parsedRange *nethttp.Range, startPieceNum int32) error {
 	// parsedRange is always exist
 	pieceSize := pm.computePieceSize(parsedRange.Length)
 	pieceCount := util.ComputePieceCount(parsedRange.Length, pieceSize)
@@ -863,7 +862,7 @@ func (pm *pieceManager) downloadPieceFromSource(ctx context.Context,
 	pt Task, log *logger.SugaredLoggerOnWith,
 	peerTaskRequest *schedulerv1.PeerTaskRequest,
 	pieceSize uint32, num int32,
-	parsedRange *clientutil.Range,
+	parsedRange *nethttp.Range,
 	pieceCount int32,
 	downloadedPieceCount *atomic.Int32) error {
 	backSourceRequest, err := source.NewRequestWithContext(ctx, peerTaskRequest.Url, peerTaskRequest.UrlMeta.Header)

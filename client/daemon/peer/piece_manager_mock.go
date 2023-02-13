@@ -12,7 +12,7 @@ import (
 	dfdaemon "d7y.io/api/pkg/apis/dfdaemon/v1"
 	scheduler "d7y.io/api/pkg/apis/scheduler/v1"
 	storage "d7y.io/dragonfly/v2/client/daemon/storage"
-	util "d7y.io/dragonfly/v2/client/util"
+	http "d7y.io/dragonfly/v2/pkg/net/http"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -55,7 +55,7 @@ func (mr *MockPieceManagerMockRecorder) DownloadPiece(ctx, request interface{}) 
 }
 
 // DownloadSource mocks base method.
-func (m *MockPieceManager) DownloadSource(ctx context.Context, pt Task, request *scheduler.PeerTaskRequest, parsedRange *util.Range) error {
+func (m *MockPieceManager) DownloadSource(ctx context.Context, pt Task, request *scheduler.PeerTaskRequest, parsedRange *http.Range) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DownloadSource", ctx, pt, request, parsedRange)
 	ret0, _ := ret[0].(error)
