@@ -20,6 +20,9 @@ scheduler:
   - name: artifact
     hostPath:
       path: /tmp/artifact
+  metrics:
+    enable: true
+    enableHost: true
   config:
     seedPeer:
       enable: false
@@ -49,10 +52,11 @@ dfdaemon:
   - name: artifact
     hostPath:
       path: /tmp/artifact
+  metrics:
+    enable: true
   config:
     verbose: true
     pprofPort: 9999
-    metrics: 127.0.0.1:8888
     download:
       prefetch: true
       concurrent:
@@ -96,5 +100,7 @@ manager:
   - name: artifact
     hostPath:
       path: /tmp/artifact
+  metrics:
+    enable: true
   config:
     verbose: true

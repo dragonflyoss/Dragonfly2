@@ -34,6 +34,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
@@ -161,15 +162,17 @@ func (j *job) preheat(ctx context.Context, req string) error {
 	}
 
 	urlMeta := &commonv1.UrlMeta{
-		Header: preheat.Headers,
-		Tag:    preheat.Tag,
-		Filter: preheat.Filter,
-		Digest: preheat.Digest,
+		Digest:      preheat.Digest,
+		Tag:         preheat.Tag,
+		Filter:      preheat.Filter,
+		Header:      preheat.Headers,
+		Application: preheat.Application,
+		Priority:    commonv1.Priority(preheat.Priority),
 	}
 	if preheat.Headers != nil {
 		if r, ok := preheat.Headers[headers.Range]; ok {
 			// Range in dragonfly is without "bytes=".
-			urlMeta.Range = strings.TrimLeft(r, "bytes=")
+			urlMeta.Range = strings.TrimLeft(r, http.RangePrefix)
 		}
 	}
 

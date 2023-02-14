@@ -122,9 +122,9 @@ var (
 	mockNetwork = resource.Network{
 		TCPConnectionCount:       10,
 		UploadTCPConnectionCount: 1,
-		SecurityDomain:           "security_domain",
-		Location:                 "location",
-		IDC:                      "idc",
+		SecurityDomain:           mockHostSecurityDomain,
+		Location:                 mockHostLocation,
+		IDC:                      mockHostIDC,
 	}
 
 	mockDisk = resource.Disk{

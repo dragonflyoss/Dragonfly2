@@ -170,17 +170,6 @@ var (
 		Idc:            mockHostIDC,
 	}
 
-	mockTaskURLMeta = &commonv1.UrlMeta{
-		Digest:   "digest",
-		Tag:      "tag",
-		Range:    "range",
-		Filter:   "filter",
-		Priority: commonv1.Priority_LEVEL0,
-		Header: map[string]string{
-			"content-length": "100",
-		},
-	}
-
 	mockTaskBackToSourceLimit int32 = 200
 	mockTaskURL                     = "http://example.com/foo"
 	mockTaskID                      = idgen.TaskIDV2(mockTaskURL, mockTaskDigest, mockTaskTag, mockTaskApplication, mockTaskFilters)

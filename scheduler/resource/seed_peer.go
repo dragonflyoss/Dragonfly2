@@ -105,16 +105,9 @@ func (s *seedPeer) TriggerTask(ctx context.Context, rg *http.Range, task *Task) 
 	}
 
 	stream, err := s.client.ObtainSeeds(ctx, &cdnsystemv1.SeedRequest{
-		TaskId: task.ID,
-		Url:    task.URL,
-		UrlMeta: &commonv1.UrlMeta{
-			Digest:      task.Digest,
-			Tag:         task.Tag,
-			Filter:      strings.Join(task.Filters, idgen.URLFilterSeparator),
-			Header:      task.Header,
-			Application: task.Application,
-			Priority:    commonv1.Priority_LEVEL0,
-		},
+		TaskId:  task.ID,
+		Url:     task.URL,
+		UrlMeta: urlMeta,
 	})
 	if err != nil {
 		return nil, nil, err
