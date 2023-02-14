@@ -110,7 +110,7 @@ const (
 // PeerOption is a functional option for peer.
 type PeerOption func(peer *Peer)
 
-// WithPieceSize set Priority for peer.
+// WithPriority set Priority for peer.
 func WithPriority(priority commonv2.Priority) PeerOption {
 	return func(p *Peer) {
 		p.Priority = priority

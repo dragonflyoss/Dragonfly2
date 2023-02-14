@@ -53,7 +53,7 @@ var (
 	mockTaskApplication             = "foo"
 	mockTaskFilters                 = []string{"bar"}
 	mockTaskHeader                  = map[string]string{"content-length": "100"}
-	mockTaskPieceSize         int32 = 2048
+	mockTaskPieceLength       int32 = 2048
 )
 
 func TestTask_NewTask(t *testing.T) {
@@ -75,7 +75,7 @@ func TestTask_NewTask(t *testing.T) {
 				assert.Equal(task.Application, mockTaskApplication)
 				assert.EqualValues(task.Filters, mockTaskFilters)
 				assert.EqualValues(task.Header, mockTaskHeader)
-				assert.Equal(task.PieceSize, int32(0))
+				assert.Equal(task.PieceLength, int32(0))
 				assert.Empty(task.DirectPiece)
 				assert.Equal(task.ContentLength.Load(), int64(-1))
 				assert.Equal(task.TotalPieceCount.Load(), int32(0))
@@ -91,7 +91,7 @@ func TestTask_NewTask(t *testing.T) {
 		},
 		{
 			name:    "new task with piece size",
-			options: []TaskOption{WithPieceSize(mockTaskPieceSize)},
+			options: []TaskOption{WithPieceLength(mockTaskPieceLength)},
 			expect: func(t *testing.T, task *Task) {
 				assert := assert.New(t)
 				assert.Equal(task.ID, mockTaskID)
@@ -102,7 +102,7 @@ func TestTask_NewTask(t *testing.T) {
 				assert.Equal(task.Application, mockTaskApplication)
 				assert.EqualValues(task.Filters, mockTaskFilters)
 				assert.EqualValues(task.Header, mockTaskHeader)
-				assert.Equal(task.PieceSize, mockTaskPieceSize)
+				assert.Equal(task.PieceLength, mockTaskPieceLength)
 				assert.Empty(task.DirectPiece)
 				assert.Equal(task.ContentLength.Load(), int64(-1))
 				assert.Equal(task.TotalPieceCount.Load(), int32(0))

@@ -159,7 +159,7 @@ func (s *seedPeer) TriggerTask(ctx context.Context, rg *http.Range, task *Task) 
 			peer.Pieces.Add(&Piece{
 				Number:      uint32(piece.PieceInfo.PieceNum),
 				Offset:      piece.PieceInfo.PieceOffset,
-				Size:        uint64(piece.PieceInfo.RangeSize),
+				Length:      uint64(piece.PieceInfo.RangeSize),
 				Digest:      digest.New("md5", piece.PieceInfo.PieceMd5).String(),
 				TrafficType: commonv2.TrafficType_BACK_TO_SOURCE,
 				Cost:        cost,
