@@ -146,21 +146,18 @@ const (
 )
 
 const (
-	// DefaultProbeQueueLength is the default number of probes that an edge stores.
-	DefaultProbeQueueLength = 5
-
-	// DefaultGetProbesInterval is the default interval at which the host get the probe list.
-	DefaultGetProbesInterval = 30 * time.Second
-
-	// DefaultAOIPriorityInterval is the default priority effect of the information of age for host.
-	DefaultAOIPriorityInterval = 10 * time.Second
-
-	// DefaultGetProbeCount is the default number of targets that the scheduler sends to the host for probing.
-	DefaultGetProbeCount = 50
-
 	// DefaultSyncNetworkTopologyInterval is the default interval at which network topologies are synchronized between schedulers.
 	DefaultSyncNetworkTopologyInterval = 30 * time.Second
 
-	// DefaultStoreNetworkTopologyInterval is the default interval at which the network topology is stored locally.
-	DefaultStoreNetworkTopologyInterval = 60 * time.Second
+	// DefaultCollectInterval is the default interval at which the network topology is collected locally.
+	DefaultCollectInterval = 60 * time.Second
+
+	// DefaultQueueLength is the default maximum number of probes that an edge stores.
+	DefaultQueueLength = 5
+
+	// DefaultSyncProbesInterval is the default interval at which network topology synchronizes the probes of host.
+	DefaultSyncProbesInterval = 30 * time.Second
+
+	// DefaultSyncCount is the default number of targets that the scheduler sends to the host for probing.
+	DefaultSyncCount = 50
 )

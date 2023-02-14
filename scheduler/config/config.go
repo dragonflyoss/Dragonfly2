@@ -303,28 +303,25 @@ type NetworkConfig struct {
 }
 
 type NetworkTopologyConfig struct {
-	// AOIPriorityInterval is the priority effect of the information of age for host.
-	AOIPriorityInterval time.Duration `mapstructure:"AOIPriorityInterval" yaml:"AOIPriorityInterval"`
+	// SyncInterval is the interval at which network topologies are synchronized between schedulers.
+	SyncInterval time.Duration `mapstructure:"syncInterval" yaml:"syncInterval"`
 
-	// SyncNetworkTopologyInterval is the interval at which network topologies are synchronized between schedulers.
-	SyncNetworkTopologyInterval time.Duration `mapstructure:"syncNetworkTopologyInterval" yaml:"syncNetworkTopologyInterval"`
-
-	// StoreNetworkTopologyInterval is the interval at which the network topology is stored locally.
-	StoreNetworkTopologyInterval time.Duration `mapstructure:"storeNetworkTopologyInterval" yaml:"storeNetworkTopologyInterval"`
+	// CollectInterval is the interval at which the network topology is collected locally.
+	CollectInterval time.Duration `mapstructure:"collectInterval" yaml:"collectInterval"`
 
 	//Probe is the configuration of probe
 	Probe ProbeConfig `yaml:"probe" mapstructure:"probe"`
 }
 
 type ProbeConfig struct {
-	// ProbeQueueLength is the number of probes that an edge stores.
-	ProbeQueueLength int `mapstructure:"probeQueueLength" yaml:"probeQueueLength"`
+	// QueueLength is the maximum number of probes that an edge stores.
+	QueueLength int `mapstructure:"queueLength" yaml:"queueLength"`
 
-	// GetProbesInterval is the interval at which the host get the probe list.
-	GetProbesInterval time.Duration `mapstructure:"getProbesInterval" yaml:"getProbesInterval"`
+	// SyncInterval is the interval at which network topology synchronizes the probes of host.
+	SyncInterval time.Duration `mapstructure:"syncInterval" yaml:"syncInterval"`
 
-	// GetProbeCount is the number of targets that the scheduler sends to the host for probing.
-	GetProbeCount int `mapstructure:"getProbeCount" yaml:"getProbeCount"`
+	// SyncCount is the number of targets that the scheduler sends to the host for probing.
+	SyncCount int `mapstructure:"syncCount" yaml:"syncCount"`
 }
 
 // New default configuration.
@@ -401,13 +398,12 @@ func New() *Config {
 			EnableIPv6: DefaultNetworkEnableIPv6,
 		},
 		NetworkTopology: NetworkTopologyConfig{
-			AOIPriorityInterval:          DefaultAOIPriorityInterval,
-			SyncNetworkTopologyInterval:  DefaultSyncNetworkTopologyInterval,
-			StoreNetworkTopologyInterval: DefaultStoreNetworkTopologyInterval,
+			SyncInterval:    DefaultSyncProbesInterval,
+			CollectInterval: DefaultCollectInterval,
 			Probe: ProbeConfig{
-				ProbeQueueLength:  DefaultProbeQueueLength,
-				GetProbesInterval: DefaultGetProbesInterval,
-				GetProbeCount:     DefaultGetProbeCount,
+				QueueLength:  DefaultQueueLength,
+				SyncInterval: DefaultSyncNetworkTopologyInterval,
+				SyncCount:    DefaultSyncCount,
 			},
 		},
 	}
@@ -561,28 +557,24 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	if cfg.NetworkTopology.AOIPriorityInterval <= 0 {
-		return errors.New("probe requires parameter AOIPriorityInterval")
+	if cfg.NetworkTopology.SyncInterval <= 0 {
+		return errors.New("networkTopology requires parameter SyncInterval")
 	}
 
-	if cfg.NetworkTopology.SyncNetworkTopologyInterval <= 0 {
-		return errors.New("probe requires parameter syncNetworkTopologyInterval")
+	if cfg.NetworkTopology.CollectInterval <= 0 {
+		return errors.New("networkTopology requires parameter CollectInterval")
 	}
 
-	if cfg.NetworkTopology.StoreNetworkTopologyInterval <= 0 {
-		return errors.New("probe requires parameter storeNetworkTopologyInterval")
+	if cfg.NetworkTopology.Probe.QueueLength <= 0 {
+		return errors.New("probe requires parameter QueueLength")
 	}
 
-	if cfg.NetworkTopology.Probe.ProbeQueueLength <= 0 {
-		return errors.New("probe requires parameter probeQueueLength")
+	if cfg.NetworkTopology.Probe.SyncInterval <= 0 {
+		return errors.New("probe requires parameter SyncInterval")
 	}
 
-	if cfg.NetworkTopology.Probe.GetProbesInterval <= 0 {
-		return errors.New("probe requires parameter getProbeListInterval")
-	}
-
-	if cfg.NetworkTopology.Probe.GetProbeCount <= 0 {
-		return errors.New("probe requires parameter getProbeCount")
+	if cfg.NetworkTopology.Probe.SyncCount <= 0 {
+		return errors.New("probe requires parameter SyncCount")
 	}
 
 	return nil

@@ -118,13 +118,12 @@ func TestConfig_Load(t *testing.T) {
 			EnableIPv6: true,
 		},
 		NetworkTopology: NetworkTopologyConfig{
-			AOIPriorityInterval:          10 * time.Second,
-			SyncNetworkTopologyInterval:  30 * time.Second,
-			StoreNetworkTopologyInterval: 60 * time.Second,
+			SyncInterval:    30 * time.Second,
+			CollectInterval: 60 * time.Second,
 			Probe: ProbeConfig{
-				ProbeQueueLength:  5,
-				GetProbesInterval: 30 * time.Second,
-				GetProbeCount:     50,
+				QueueLength:  5,
+				SyncInterval: 30 * time.Second,
+				SyncCount:    50,
 			},
 		},
 	}
