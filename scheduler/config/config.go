@@ -258,8 +258,8 @@ type MetricsConfig struct {
 	// Metrics service address.
 	Addr string `yaml:"addr" mapstructure:"addr"`
 
-	// Enable peer host metrics.
-	EnablePeerHost bool `yaml:"enablePeerHost" mapstructure:"enablePeerHost"`
+	// Enable host metrics.
+	EnableHost bool `yaml:"enableHost" mapstructure:"enableHost"`
 }
 
 type SecurityConfig struct {
@@ -355,9 +355,9 @@ func New() *Config {
 			BufferSize: DefaultStorageBufferSize,
 		},
 		Metrics: MetricsConfig{
-			Enable:         false,
-			Addr:           DefaultMetricsAddr,
-			EnablePeerHost: false,
+			Enable:     false,
+			Addr:       DefaultMetricsAddr,
+			EnableHost: false,
 		},
 		Security: SecurityConfig{
 			AutoIssueCert: false,

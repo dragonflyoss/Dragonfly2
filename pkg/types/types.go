@@ -163,3 +163,47 @@ func TaskTypeV2ToV1(typ commonv2.TaskType) commonv1.TaskType {
 
 	return commonv1.TaskType_Normal
 }
+
+// PriorityV1ToV2 converts priority from v1 to v2.
+func PriorityV1ToV2(priority commonv1.Priority) commonv2.Priority {
+	switch priority {
+	case commonv1.Priority_LEVEL0:
+		return commonv2.Priority_LEVEL0
+	case commonv1.Priority_LEVEL1:
+		return commonv2.Priority_LEVEL1
+	case commonv1.Priority_LEVEL2:
+		return commonv2.Priority_LEVEL2
+	case commonv1.Priority_LEVEL3:
+		return commonv2.Priority_LEVEL3
+	case commonv1.Priority_LEVEL4:
+		return commonv2.Priority_LEVEL4
+	case commonv1.Priority_LEVEL5:
+		return commonv2.Priority_LEVEL5
+	case commonv1.Priority_LEVEL6:
+		return commonv2.Priority_LEVEL6
+	}
+
+	return commonv2.Priority_LEVEL0
+}
+
+// PriorityV2ToV1 converts priority from v2 to v1.
+func PriorityV2ToV1(priority commonv2.Priority) commonv1.Priority {
+	switch priority {
+	case commonv2.Priority_LEVEL0:
+		return commonv1.Priority_LEVEL0
+	case commonv2.Priority_LEVEL1:
+		return commonv1.Priority_LEVEL1
+	case commonv2.Priority_LEVEL2:
+		return commonv1.Priority_LEVEL2
+	case commonv2.Priority_LEVEL3:
+		return commonv1.Priority_LEVEL3
+	case commonv2.Priority_LEVEL4:
+		return commonv1.Priority_LEVEL4
+	case commonv2.Priority_LEVEL5:
+		return commonv1.Priority_LEVEL5
+	case commonv2.Priority_LEVEL6:
+		return commonv1.Priority_LEVEL6
+	}
+
+	return commonv1.Priority_LEVEL0
+}

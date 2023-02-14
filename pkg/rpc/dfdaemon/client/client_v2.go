@@ -74,14 +74,11 @@ type V2 interface {
 	// DownloadTask downloads task back-to-source.
 	DownloadTask(context.Context, *dfdaemonv2.DownloadTaskRequest, ...grpc.CallOption) error
 
+	// UploadTask uploads task to p2p network.
+	UploadTask(context.Context, *dfdaemonv2.UploadTaskRequest, ...grpc.CallOption) error
+
 	// StatTask stats task information.
 	StatTask(context.Context, *dfdaemonv2.StatTaskRequest, ...grpc.CallOption) (*commonv2.Task, error)
-
-	// ImportTask imports task to p2p network.
-	ImportTask(context.Context, *dfdaemonv2.ImportTaskRequest, ...grpc.CallOption) error
-
-	// ExportTask exports task from p2p network.
-	ExportTask(context.Context, *dfdaemonv2.ExportTaskRequest, ...grpc.CallOption) error
 
 	// DeleteTask deletes task from p2p network.
 	DeleteTask(context.Context, *dfdaemonv2.DeleteTaskRequest, ...grpc.CallOption) error
@@ -118,6 +115,20 @@ func (v *v2) DownloadTask(ctx context.Context, req *dfdaemonv2.DownloadTaskReque
 	return err
 }
 
+// UploadTask uploads task to p2p network.
+func (v *v2) UploadTask(ctx context.Context, req *dfdaemonv2.UploadTaskRequest, opts ...grpc.CallOption) error {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
+	_, err := v.DfdaemonClient.UploadTask(
+		ctx,
+		req,
+		opts...,
+	)
+
+	return err
+}
+
 // StatTask stats task information.
 func (v *v2) StatTask(ctx context.Context, req *dfdaemonv2.StatTaskRequest, opts ...grpc.CallOption) (*commonv2.Task, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
@@ -128,34 +139,6 @@ func (v *v2) StatTask(ctx context.Context, req *dfdaemonv2.StatTaskRequest, opts
 		req,
 		opts...,
 	)
-}
-
-// ImportTask imports task to p2p network.
-func (v *v2) ImportTask(ctx context.Context, req *dfdaemonv2.ImportTaskRequest, opts ...grpc.CallOption) error {
-	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
-	defer cancel()
-
-	_, err := v.DfdaemonClient.ImportTask(
-		ctx,
-		req,
-		opts...,
-	)
-
-	return err
-}
-
-// ExportTask exports task from p2p network.
-func (v *v2) ExportTask(ctx context.Context, req *dfdaemonv2.ExportTaskRequest, opts ...grpc.CallOption) error {
-	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
-	defer cancel()
-
-	_, err := v.DfdaemonClient.ExportTask(
-		ctx,
-		req,
-		opts...,
-	)
-
-	return err
 }
 
 // DeleteTask deletes task from p2p network.

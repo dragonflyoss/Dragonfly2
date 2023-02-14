@@ -26,7 +26,7 @@ jobs:
     timeout-minutes: 40
     strategy:
       matrix:
-        module: 
+        module:
           - "normal"
           - "concurent-back-source"
           - "grpc-tls"
