@@ -27,8 +27,8 @@ import (
 )
 
 const (
-	// filterSeparator is filter separator for url.
-	filterSeparator = "&"
+	// URLFilterSeparator is filter separator for url.
+	URLFilterSeparator = "&"
 )
 
 // TaskIDV1 generates v1 version of task id.
@@ -87,7 +87,7 @@ func parseFilters(rawFilters string) []string {
 		return nil
 	}
 
-	return strings.Split(rawFilters, filterSeparator)
+	return strings.Split(rawFilters, URLFilterSeparator)
 }
 
 // TaskIDV2 generates v2 version of task id.

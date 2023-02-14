@@ -46,6 +46,11 @@ func (r *Range) String() string {
 	return fmt.Sprintf("%s%d%s%d", RangePrefix, r.Start, RangeSeparator, r.Start+r.Length-1)
 }
 
+// String specifies the string of url meta.
+func (r *Range) URLMetaString() string {
+	return fmt.Sprintf("%d%s%d", r.Start, RangeSeparator, r.Start+r.Length-1)
+}
+
 // ParseRange parses a Range header string as per RFC 7233.
 // ErrNoOverlap is returned if none of the ranges overlap.
 // Example:

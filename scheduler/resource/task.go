@@ -87,10 +87,10 @@ const (
 // TaskOption is a functional option for task.
 type TaskOption func(task *Task)
 
-// WithBackToSourceLimit set BackToSourceLimit for task.
-func WithBackToSourceLimit(limit int32) TaskOption {
-	return func(task *Task) {
-		task.BackToSourceLimit.Add(limit)
+// WithPieceSize set PieceSize for task.
+func WithPieceSize(pieceSize int32) TaskOption {
+	return func(t *Task) {
+		t.PieceSize = pieceSize
 	}
 }
 
@@ -99,14 +99,29 @@ type Task struct {
 	// ID is task id.
 	ID string
 
-	// URL is task download url.
-	URL string
-
 	// Type is task type.
 	Type commonv2.TaskType
 
-	// URLMeta is task download url meta.
-	URLMeta *commonv1.UrlMeta
+	// URL is task download url.
+	URL string
+
+	// Digest of the task content, for example md5:xxx or sha256:yyy.
+	Digest string
+
+	// URL tag identifies different task for same url.
+	Tag string
+
+	// Application identifies different task for same url.
+	Application string
+
+	// Filter url used to generate task id.
+	Filters []string
+
+	// Task request headers.
+	Header map[string]string
+
+	// Task piece size.
+	PieceSize int32
 
 	// DirectPiece is tiny piece data.
 	DirectPiece []byte
@@ -147,16 +162,21 @@ type Task struct {
 }
 
 // New task instance.
-func NewTask(id, url string, typ commonv2.TaskType, meta *commonv1.UrlMeta, options ...TaskOption) *Task {
+func NewTask(id, url, digest, tag, application string, typ commonv2.TaskType,
+	filters []string, header map[string]string, backToSourceLimit int32, options ...TaskOption) *Task {
 	t := &Task{
 		ID:                id,
-		URL:               url,
 		Type:              typ,
-		URLMeta:           meta,
+		URL:               url,
+		Digest:            digest,
+		Tag:               tag,
+		Application:       application,
+		Filters:           filters,
+		Header:            header,
 		DirectPiece:       []byte{},
 		ContentLength:     atomic.NewInt64(-1),
 		TotalPieceCount:   atomic.NewInt32(0),
-		BackToSourceLimit: atomic.NewInt32(0),
+		BackToSourceLimit: atomic.NewInt32(backToSourceLimit),
 		BackToSourcePeers: set.NewSafeSet[string](),
 		Pieces:            &sync.Map{},
 		DAG:               dag.NewDAG[*Peer](),

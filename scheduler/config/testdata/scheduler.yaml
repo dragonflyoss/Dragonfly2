@@ -65,7 +65,7 @@ storage:
 metrics:
   enable: false
   addr: ":8000"
-  enablePeerHost: false
+  enableHost: true
 
 security:
   autoIssueCert: true

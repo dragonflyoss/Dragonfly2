@@ -9,6 +9,7 @@ import (
 	reflect "reflect"
 
 	scheduler "d7y.io/api/pkg/apis/scheduler/v1"
+	http "d7y.io/dragonfly/v2/pkg/net/http"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -78,9 +79,9 @@ func (mr *MockSeedPeerMockRecorder) Stop() *gomock.Call {
 }
 
 // TriggerTask mocks base method.
-func (m *MockSeedPeer) TriggerTask(arg0 context.Context, arg1 *Task) (*Peer, *scheduler.PeerResult, error) {
+func (m *MockSeedPeer) TriggerTask(arg0 context.Context, arg1 *http.Range, arg2 *Task) (*Peer, *scheduler.PeerResult, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TriggerTask", arg0, arg1)
+	ret := m.ctrl.Call(m, "TriggerTask", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*Peer)
 	ret1, _ := ret[1].(*scheduler.PeerResult)
 	ret2, _ := ret[2].(error)
@@ -88,7 +89,7 @@ func (m *MockSeedPeer) TriggerTask(arg0 context.Context, arg1 *Task) (*Peer, *sc
 }
 
 // TriggerTask indicates an expected call of TriggerTask.
-func (mr *MockSeedPeerMockRecorder) TriggerTask(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockSeedPeerMockRecorder) TriggerTask(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TriggerTask", reflect.TypeOf((*MockSeedPeer)(nil).TriggerTask), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TriggerTask", reflect.TypeOf((*MockSeedPeer)(nil).TriggerTask), arg0, arg1, arg2)
 }

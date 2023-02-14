@@ -21,24 +21,20 @@ package resource
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	commonv2 "d7y.io/api/pkg/apis/common/v2"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
 	"d7y.io/dragonfly/v2/pkg/digest"
+	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
 	pkgtime "d7y.io/dragonfly/v2/pkg/time"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
-)
-
-const (
-	// SeedTag Default value of tag label for seed peer.
-	SeedTag = "d7y/seed"
-
-	// SeedApplication Default value of application label for seed peer.
-	SeedApplication = "d7y/seed"
 )
 
 const (
@@ -54,7 +50,7 @@ type SeedPeer interface {
 
 	// TriggerTask triggers the seed peer to download task.
 	// Used only in v1 version of the grpc.
-	TriggerTask(context.Context, *Task) (*Peer, *schedulerv1.PeerResult, error)
+	TriggerTask(context.Context, *http.Range, *Task) (*Peer, *schedulerv1.PeerResult, error)
 
 	// Client returns grpc client of seed peer.
 	Client() SeedPeerClient
@@ -91,14 +87,27 @@ func (s *seedPeer) DownloadTask(ctx context.Context, task *Task) error {
 
 // TriggerTask triggers the seed peer to download task.
 // Used only in v1 version of the grpc.
-func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *schedulerv1.PeerResult, error) {
+func (s *seedPeer) TriggerTask(ctx context.Context, rg *http.Range, task *Task) (*Peer, *schedulerv1.PeerResult, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	urlMeta := &commonv1.UrlMeta{
+		Digest:      task.Digest,
+		Tag:         task.Tag,
+		Filter:      strings.Join(task.Filters, idgen.URLFilterSeparator),
+		Header:      task.Header,
+		Application: task.Application,
+		Priority:    commonv1.Priority_LEVEL0,
+	}
+
+	if rg != nil {
+		urlMeta.Range = rg.URLMetaString()
+	}
 
 	stream, err := s.client.ObtainSeeds(ctx, &cdnsystemv1.SeedRequest{
 		TaskId:  task.ID,
 		Url:     task.URL,
-		UrlMeta: task.URLMeta,
+		UrlMeta: urlMeta,
 	})
 	if err != nil {
 		return nil, nil, err
@@ -127,7 +136,7 @@ func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *schedul
 			initialized = true
 
 			// Initialize seed peer.
-			peer, err = s.initSeedPeer(ctx, task, piece)
+			peer, err = s.initSeedPeer(ctx, rg, task, piece)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -167,11 +176,11 @@ func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *schedul
 			task.StorePiece(piece.PieceInfo)
 
 			// Statistical traffic metrics.
-			trafficType := metrics.TrafficBackToSourceType
+			trafficType := commonv2.TrafficType_BACK_TO_SOURCE
 			if piece.Reuse {
-				trafficType = metrics.TrafficP2PType
+				trafficType = commonv2.TrafficType_REMOTE_PEER
 			}
-			metrics.Traffic.WithLabelValues(peer.Tag, peer.Application, trafficType).Add(float64(piece.PieceInfo.RangeSize))
+			metrics.Traffic.WithLabelValues(peer.Task.Tag, peer.Task.Application, trafficType.String()).Add(float64(piece.PieceInfo.RangeSize))
 		}
 
 		// Handle end of piece.
@@ -186,7 +195,7 @@ func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *schedul
 }
 
 // Initialize seed peer.
-func (s *seedPeer) initSeedPeer(ctx context.Context, task *Task, ps *cdnsystemv1.PieceSeed) (*Peer, error) {
+func (s *seedPeer) initSeedPeer(ctx context.Context, rg *http.Range, task *Task, ps *cdnsystemv1.PieceSeed) (*Peer, error) {
 	// Load peer from manager.
 	peer, loaded := s.peerManager.Load(ps.PeerId)
 	if loaded {
@@ -201,8 +210,13 @@ func (s *seedPeer) initSeedPeer(ctx context.Context, task *Task, ps *cdnsystemv1
 		return nil, fmt.Errorf("can not find host id: %s", ps.HostId)
 	}
 
-	// New and store seed peer.
-	peer = NewPeer(ps.PeerId, task, host, WithTag(SeedTag), WithApplication(SeedApplication))
+	options := []PeerOption{}
+	if rg != nil {
+		options = append(options, WithRange(*rg))
+	}
+
+	// New and store seed peer without range.
+	peer = NewPeer(ps.PeerId, task, host, options...)
 	s.peerManager.Store(peer)
 	peer.Log.Info("seed peer has been stored")
 

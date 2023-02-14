@@ -81,6 +81,65 @@ func TestRange_String(t *testing.T) {
 	}
 }
 
+func TestRange_URLMetaString(t *testing.T) {
+	tests := []struct {
+		s      string
+		rg     Range
+		expect func(t *testing.T, s string)
+	}{
+		{
+			s: "0-9",
+			rg: Range{
+				Start:  0,
+				Length: 10,
+			},
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "0-9")
+			},
+		},
+		{
+			s: "1-10",
+			rg: Range{
+				Start:  1,
+				Length: 10,
+			},
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "1-10")
+			},
+		},
+		{
+			s: "1-0",
+			rg: Range{
+				Start:  1,
+				Length: 0,
+			},
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "1-0")
+			},
+		},
+		{
+			s: "1-1",
+			rg: Range{
+				Start:  1,
+				Length: 1,
+			},
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "1-1")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.s, func(t *testing.T) {
+			tc.expect(t, tc.rg.URLMetaString())
+		})
+	}
+}
+
 func TestParseRange(t *testing.T) {
 	tests := []struct {
 		s    string
