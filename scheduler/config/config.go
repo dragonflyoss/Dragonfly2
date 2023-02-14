@@ -303,24 +303,27 @@ type NetworkConfig struct {
 }
 
 type NetworkTopologyConfig struct {
-	// SyncInterval is the interval at which network topologies are synchronized between schedulers.
+	// Enable networkTopology service.
+	Enable bool `yaml:"enable" mapstructure:"enable"`
+
+	// SyncInterval is the interval of synchronizing network topology between schedulers.
 	SyncInterval time.Duration `mapstructure:"syncInterval" yaml:"syncInterval"`
 
-	// CollectInterval is the interval at which the network topology is collected locally.
+	// CollectInterval is the interval of collecting network topology.
 	CollectInterval time.Duration `mapstructure:"collectInterval" yaml:"collectInterval"`
 
-	//Probe is the configuration of probe
+	// Probe is the configuration of probe.
 	Probe ProbeConfig `yaml:"probe" mapstructure:"probe"`
 }
 
 type ProbeConfig struct {
-	// QueueLength is the maximum number of probes that an edge stores.
+	// QueueLength is the length of probe queue in directed graph.
 	QueueLength int `mapstructure:"queueLength" yaml:"queueLength"`
 
-	// SyncInterval is the interval at which network topology synchronizes the probes of host.
+	// SyncInterval is the interval of synchronizing host's probes.
 	SyncInterval time.Duration `mapstructure:"syncInterval" yaml:"syncInterval"`
 
-	// SyncCount is the number of targets that the scheduler sends to the host for probing.
+	// SyncCount is the number of probing hosts.
 	SyncCount int `mapstructure:"syncCount" yaml:"syncCount"`
 }
 
@@ -398,12 +401,13 @@ func New() *Config {
 			EnableIPv6: DefaultNetworkEnableIPv6,
 		},
 		NetworkTopology: NetworkTopologyConfig{
-			SyncInterval:    DefaultSyncProbesInterval,
-			CollectInterval: DefaultCollectInterval,
+			Enable:          true,
+			SyncInterval:    DefaultNetworkTopologySyncInterval,
+			CollectInterval: DefaultNetworkTopologyCollectInterval,
 			Probe: ProbeConfig{
-				QueueLength:  DefaultQueueLength,
-				SyncInterval: DefaultSyncNetworkTopologyInterval,
-				SyncCount:    DefaultSyncCount,
+				QueueLength:  DefaultProbeQueueLength,
+				SyncInterval: DefaultProbeSyncInterval,
+				SyncCount:    DefaultProbeSyncCount,
 			},
 		},
 	}

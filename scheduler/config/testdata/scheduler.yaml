@@ -83,6 +83,7 @@ network:
   enableIPv6: true
 
 networkTopology:
+  enable: true
   syncInterval: 30s
   collectInterval: 60s
   probe:

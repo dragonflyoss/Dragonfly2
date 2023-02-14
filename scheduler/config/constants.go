@@ -146,18 +146,22 @@ const (
 )
 
 const (
-	// DefaultSyncNetworkTopologyInterval is the default interval at which network topologies are synchronized between schedulers.
-	DefaultSyncNetworkTopologyInterval = 30 * time.Second
+	// TODO(XZ): The default setting needs to be changed after testing.
+	// DefaultNetworkTopologySyncInterval is the default interval of synchronizing network topology between schedulers.
+	DefaultNetworkTopologySyncInterval = 30 * time.Second
 
-	// DefaultCollectInterval is the default interval at which the network topology is collected locally.
-	DefaultCollectInterval = 60 * time.Second
+	// TODO(XZ): The default setting needs to be changed after testing.
+	// DefaultNetworkTopologyCollectInterval is the default interval of collecting network topology.
+	DefaultNetworkTopologyCollectInterval = 60 * time.Second
 
-	// DefaultQueueLength is the default maximum number of probes that an edge stores.
-	DefaultQueueLength = 5
+	// DefaultProbeQueueLength is the default length of probe queue in directed graph.
+	DefaultProbeQueueLength = 5
 
-	// DefaultSyncProbesInterval is the default interval at which network topology synchronizes the probes of host.
-	DefaultSyncProbesInterval = 30 * time.Second
+	// TODO(XZ): The default setting needs to be changed after testing.
+	// DefaultProbeSyncInterval is the default interval of synchronizing host's probes.
+	DefaultProbeSyncInterval = 30 * time.Second
 
-	// DefaultSyncCount is the default number of targets that the scheduler sends to the host for probing.
-	DefaultSyncCount = 50
+	// TODO(XZ): The default setting needs to be changed after testing.
+	// DefaultProbeSyncCount is the default number of probing hosts.
+	DefaultProbeSyncCount = 50
 )

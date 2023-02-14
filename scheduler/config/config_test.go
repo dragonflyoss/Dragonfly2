@@ -118,6 +118,7 @@ func TestConfig_Load(t *testing.T) {
 			EnableIPv6: true,
 		},
 		NetworkTopology: NetworkTopologyConfig{
+			Enable:          true,
 			SyncInterval:    30 * time.Second,
 			CollectInterval: 60 * time.Second,
 			Probe: ProbeConfig{
