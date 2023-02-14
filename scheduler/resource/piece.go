@@ -35,8 +35,8 @@ type Piece struct {
 	ParentID string
 	// Piece offset.
 	Offset uint64
-	// Piece size.
-	Size uint64
+	// Piece length.
+	Length uint64
 	// Digest of the piece data, for example md5:xxx or sha256:yyy.
 	Digest string
 	// Traffic type.
