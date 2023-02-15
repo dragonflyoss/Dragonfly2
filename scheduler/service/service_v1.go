@@ -123,7 +123,7 @@ func (v *V1) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequ
 	peer.Log.Infof("task size scope is %s", sizeScope)
 
 	// The task state is TaskStateSucceeded and SizeScope is not invalid.
-	switch sizeScope {
+	switch types.SizeScopeV2ToV1(sizeScope) {
 	case commonv1.SizeScope_EMPTY:
 		result, err := v.registerEmptyTask(ctx, peer)
 		if err != nil {
@@ -1097,7 +1097,7 @@ func (v *V1) handlePeerSuccess(ctx context.Context, peer *resource.Peer) {
 		return
 	}
 
-	if sizeScope == commonv1.SizeScope_TINY && len(peer.Task.DirectPiece) == 0 {
+	if types.SizeScopeV2ToV1(sizeScope) == commonv1.SizeScope_TINY && len(peer.Task.DirectPiece) == 0 {
 		data, err := peer.DownloadTinyFile()
 		if err != nil {
 			peer.Log.Errorf("download tiny task failed: %s", err.Error())

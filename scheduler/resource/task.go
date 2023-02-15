@@ -26,7 +26,6 @@ import (
 	"github.com/looplab/fsm"
 	"go.uber.org/atomic"
 
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	commonv2 "d7y.io/api/pkg/apis/common/v2"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	schedulerv2 "d7y.io/api/pkg/apis/scheduler/v2"
@@ -428,7 +427,7 @@ func (t *Task) DeletePiece(key int32) {
 }
 
 // SizeScope return task size scope type.
-func (t *Task) SizeScope() (commonv1.SizeScope, error) {
+func (t *Task) SizeScope() (commonv2.SizeScope, error) {
 	if t.ContentLength.Load() < 0 {
 		return -1, errors.New("invalid content length")
 	}
@@ -438,18 +437,18 @@ func (t *Task) SizeScope() (commonv1.SizeScope, error) {
 	}
 
 	if t.ContentLength.Load() == EmptyFileSize {
-		return commonv1.SizeScope_EMPTY, nil
+		return commonv2.SizeScope_EMPTY, nil
 	}
 
 	if t.ContentLength.Load() <= TinyFileSize {
-		return commonv1.SizeScope_TINY, nil
+		return commonv2.SizeScope_TINY, nil
 	}
 
 	if t.TotalPieceCount.Load() == 1 {
-		return commonv1.SizeScope_SMALL, nil
+		return commonv2.SizeScope_SMALL, nil
 	}
 
-	return commonv1.SizeScope_NORMAL, nil
+	return commonv2.SizeScope_NORMAL, nil
 }
 
 // CanBackToSource represents whether task can back-to-source.
