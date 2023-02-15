@@ -144,3 +144,24 @@ const (
 	// DefaultStorageBufferSize is the default size of buffer container.
 	DefaultStorageBufferSize = 100
 )
+
+const (
+	// TODO(XZ): The default setting needs to be changed after testing.
+	// DefaultNetworkTopologySyncInterval is the default interval of synchronizing network topology between schedulers.
+	DefaultNetworkTopologySyncInterval = 30 * time.Second
+
+	// TODO(XZ): The default setting needs to be changed after testing.
+	// DefaultNetworkTopologyCollectInterval is the default interval of collecting network topology.
+	DefaultNetworkTopologyCollectInterval = 60 * time.Second
+
+	// DefaultProbeQueueLength is the default length of probe queue in directed graph.
+	DefaultProbeQueueLength = 5
+
+	// TODO(XZ): The default setting needs to be changed after testing.
+	// DefaultProbeSyncInterval is the default interval of synchronizing host's probes.
+	DefaultProbeSyncInterval = 30 * time.Second
+
+	// TODO(XZ): The default setting needs to be changed after testing.
+	// DefaultProbeSyncCount is the default number of probing hosts.
+	DefaultProbeSyncCount = 50
+)
