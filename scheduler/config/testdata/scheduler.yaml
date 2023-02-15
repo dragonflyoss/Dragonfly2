@@ -44,7 +44,7 @@ job:
   schedulerWorkerNum: 1
   localWorkerNum: 5
   redis:
-    addrs: ["foo", "bar"]
+    addrs: [ "foo", "bar" ]
     masterName: "baz"
     host: 127.0.0.1
     port: 6379
@@ -76,3 +76,12 @@ security:
 
 network:
   enableIPv6: true
+
+networkTopology:
+  enable: true
+  syncInterval: 30s
+  collectInterval: 60s
+  probe:
+    queueLength: 5
+    syncInterval: 30s
+    syncCount: 50

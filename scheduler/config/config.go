@@ -65,6 +65,9 @@ type Config struct {
 
 	// Network configuration.
 	Network NetworkConfig `yaml:"network" mapstructure:"network"`
+
+	// NetworkTopology configuration.
+	NetworkTopology NetworkTopologyConfig `yaml:"networkTopology" mapstructure:"networkTopology"`
 }
 
 type ServerConfig struct {
@@ -282,6 +285,31 @@ type NetworkConfig struct {
 	EnableIPv6 bool `mapstructure:"enableIPv6" yaml:"enableIPv6"`
 }
 
+type NetworkTopologyConfig struct {
+	// Enable network topology service, including probe, network topology collection and synchronization service.
+	Enable bool `yaml:"enable" mapstructure:"enable"`
+
+	// SyncInterval is the interval of synchronizing network topology between schedulers.
+	SyncInterval time.Duration `mapstructure:"syncInterval" yaml:"syncInterval"`
+
+	// CollectInterval is the interval of collecting network topology.
+	CollectInterval time.Duration `mapstructure:"collectInterval" yaml:"collectInterval"`
+
+	// Probe is the configuration of probe.
+	Probe ProbeConfig `yaml:"probe" mapstructure:"probe"`
+}
+
+type ProbeConfig struct {
+	// QueueLength is the length of probe queue in directed graph.
+	QueueLength int `mapstructure:"queueLength" yaml:"queueLength"`
+
+	// SyncInterval is the interval of synchronizing host's probes.
+	SyncInterval time.Duration `mapstructure:"syncInterval" yaml:"syncInterval"`
+
+	// SyncCount is the number of probing hosts.
+	SyncCount int `mapstructure:"syncCount" yaml:"syncCount"`
+}
+
 // New default configuration.
 func New() *Config {
 	return &Config{
@@ -348,6 +376,16 @@ func New() *Config {
 		},
 		Network: NetworkConfig{
 			EnableIPv6: DefaultNetworkEnableIPv6,
+		},
+		NetworkTopology: NetworkTopologyConfig{
+			Enable:          true,
+			SyncInterval:    DefaultNetworkTopologySyncInterval,
+			CollectInterval: DefaultNetworkTopologyCollectInterval,
+			Probe: ProbeConfig{
+				QueueLength:  DefaultProbeQueueLength,
+				SyncInterval: DefaultProbeSyncInterval,
+				SyncCount:    DefaultProbeSyncCount,
+			},
 		},
 	}
 }
@@ -488,6 +526,26 @@ func (cfg *Config) Validate() error {
 		if cfg.Security.CertSpec.ValidityPeriod <= 0 {
 			return errors.New("certSpec requires parameter validityPeriod")
 		}
+	}
+
+	if cfg.NetworkTopology.SyncInterval <= 0 {
+		return errors.New("networkTopology requires parameter SyncInterval")
+	}
+
+	if cfg.NetworkTopology.CollectInterval <= 0 {
+		return errors.New("networkTopology requires parameter CollectInterval")
+	}
+
+	if cfg.NetworkTopology.Probe.QueueLength <= 0 {
+		return errors.New("probe requires parameter QueueLength")
+	}
+
+	if cfg.NetworkTopology.Probe.SyncInterval <= 0 {
+		return errors.New("probe requires parameter SyncInterval")
+	}
+
+	if cfg.NetworkTopology.Probe.SyncCount <= 0 {
+		return errors.New("probe requires parameter SyncCount")
 	}
 
 	return nil

@@ -111,6 +111,16 @@ func TestConfig_Load(t *testing.T) {
 		Network: NetworkConfig{
 			EnableIPv6: true,
 		},
+		NetworkTopology: NetworkTopologyConfig{
+			Enable:          true,
+			SyncInterval:    30 * time.Second,
+			CollectInterval: 60 * time.Second,
+			Probe: ProbeConfig{
+				QueueLength:  5,
+				SyncInterval: 30 * time.Second,
+				SyncCount:    50,
+			},
+		},
 	}
 
 	schedulerConfigYAML := &Config{}
