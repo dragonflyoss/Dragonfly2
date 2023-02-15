@@ -141,8 +141,8 @@ type Peer struct {
 	// Pieces is finished pieces bitset.
 	FinishedPieces *bitset.BitSet
 
-	// pieceCosts is piece downloaded time.
-	pieceCosts []int64
+	// pieceCosts is piece downloaded duration.
+	pieceCosts []time.Duration
 
 	// Cost is the cost of downloading.
 	Cost *atomic.Duration
@@ -201,7 +201,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 		Priority:                commonv2.Priority_LEVEL0,
 		Pieces:                  set.NewSafeSet[*Piece](),
 		FinishedPieces:          &bitset.BitSet{},
-		pieceCosts:              []int64{},
+		pieceCosts:              []time.Duration{},
 		Cost:                    atomic.NewDuration(0),
 		ReportPieceResultStream: &atomic.Value{},
 		AnnouncePeerStream:      &atomic.Value{},
@@ -318,12 +318,12 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 }
 
 // AppendPieceCost append piece cost to costs slice.
-func (p *Peer) AppendPieceCost(cost int64) {
-	p.pieceCosts = append(p.pieceCosts, cost)
+func (p *Peer) AppendPieceCost(duration time.Duration) {
+	p.pieceCosts = append(p.pieceCosts, duration)
 }
 
 // PieceCosts return piece costs slice.
-func (p *Peer) PieceCosts() []int64 {
+func (p *Peer) PieceCosts() []time.Duration {
 	return p.pieceCosts
 }
 
