@@ -32,17 +32,21 @@ import (
 	v2mocks "d7y.io/api/pkg/apis/scheduler/v2/mocks"
 
 	"d7y.io/dragonfly/v2/pkg/container/set"
+	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/types"
 )
 
 var (
-	mockPieceInfo = &commonv1.PieceInfo{
-		PieceNum:    1,
-		RangeStart:  0,
-		RangeSize:   100,
-		PieceMd5:    "ad83a945518a4ef007d8b2db2ef165b3",
-		PieceOffset: 10,
+	mockPiece = &Piece{
+		Number:      1,
+		ParentID:    idgen.PeerIDV2(),
+		Offset:      0,
+		Length:      100,
+		Digest:      mockPieceDigest,
+		TrafficType: commonv2.TrafficType_REMOTE_PEER,
+		Cost:        1 * time.Second,
+		CreatedAt:   time.Now(),
 	}
 
 	mockTaskBackToSourceLimit int32 = 200
@@ -54,6 +58,10 @@ var (
 	mockTaskFilters                 = []string{"bar"}
 	mockTaskHeader                  = map[string]string{"content-length": "100"}
 	mockTaskPieceLength       int32 = 2048
+	mockPieceDigest                 = &digest.Digest{
+		Algorithm: digest.AlgorithmMD5,
+		Encoded:   "ad83a945518a4ef007d8b2db2ef165b3",
+	}
 )
 
 func TestTask_NewTask(t *testing.T) {
@@ -1158,35 +1166,42 @@ func TestTask_IsSeedPeerFailed(t *testing.T) {
 
 func TestTask_LoadPiece(t *testing.T) {
 	tests := []struct {
-		name      string
-		pieceInfo *commonv1.PieceInfo
-		pieceNum  int32
-		expect    func(t *testing.T, piece *commonv1.PieceInfo, loaded bool)
+		name        string
+		piece       *Piece
+		pieceNumber int32
+		expect      func(t *testing.T, piece *Piece, loaded bool)
 	}{
 		{
-			name:      "load piece",
-			pieceInfo: mockPieceInfo,
-			pieceNum:  mockPieceInfo.PieceNum,
-			expect: func(t *testing.T, piece *commonv1.PieceInfo, loaded bool) {
+			name:        "load piece",
+			piece:       mockPiece,
+			pieceNumber: mockPiece.Number,
+			expect: func(t *testing.T, piece *Piece, loaded bool) {
 				assert := assert.New(t)
 				assert.Equal(loaded, true)
-				assert.Equal(piece.PieceNum, mockPieceInfo.PieceNum)
+				assert.Equal(piece.Number, mockPiece.Number)
+				assert.Equal(piece.ParentID, mockPiece.ParentID)
+				assert.Equal(piece.Offset, mockPiece.Offset)
+				assert.Equal(piece.Length, mockPiece.Length)
+				assert.EqualValues(piece.Digest, mockPiece.Digest)
+				assert.Equal(piece.TrafficType, mockPiece.TrafficType)
+				assert.Equal(piece.Cost, mockPiece.Cost)
+				assert.Equal(piece.CreatedAt, mockPiece.CreatedAt)
 			},
 		},
 		{
-			name:      "piece does not exist",
-			pieceInfo: mockPieceInfo,
-			pieceNum:  2,
-			expect: func(t *testing.T, piece *commonv1.PieceInfo, loaded bool) {
+			name:        "piece does not exist",
+			piece:       mockPiece,
+			pieceNumber: 2,
+			expect: func(t *testing.T, piece *Piece, loaded bool) {
 				assert := assert.New(t)
 				assert.Equal(loaded, false)
 			},
 		},
 		{
-			name:      "load key is zero",
-			pieceInfo: mockPieceInfo,
-			pieceNum:  0,
-			expect: func(t *testing.T, piece *commonv1.PieceInfo, loaded bool) {
+			name:        "load key is zero",
+			piece:       mockPiece,
+			pieceNumber: 0,
+			expect: func(t *testing.T, piece *Piece, loaded bool) {
 				assert := assert.New(t)
 				assert.Equal(loaded, false)
 			},
@@ -1197,8 +1212,8 @@ func TestTask_LoadPiece(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			task := NewTask(mockTaskID, mockTaskURL, mockTaskDigest, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit)
 
-			task.StorePiece(tc.pieceInfo)
-			piece, loaded := task.LoadPiece(tc.pieceNum)
+			task.StorePiece(tc.piece)
+			piece, loaded := task.LoadPiece(tc.pieceNumber)
 			tc.expect(t, piece, loaded)
 		})
 	}
@@ -1206,19 +1221,26 @@ func TestTask_LoadPiece(t *testing.T) {
 
 func TestTask_StorePiece(t *testing.T) {
 	tests := []struct {
-		name      string
-		pieceInfo *commonv1.PieceInfo
-		pieceNum  int32
-		expect    func(t *testing.T, piece *commonv1.PieceInfo, loaded bool)
+		name        string
+		piece       *Piece
+		pieceNumber int32
+		expect      func(t *testing.T, piece *Piece, loaded bool)
 	}{
 		{
-			name:      "store piece",
-			pieceInfo: mockPieceInfo,
-			pieceNum:  mockPieceInfo.PieceNum,
-			expect: func(t *testing.T, piece *commonv1.PieceInfo, loaded bool) {
+			name:        "store piece",
+			piece:       mockPiece,
+			pieceNumber: mockPiece.Number,
+			expect: func(t *testing.T, piece *Piece, loaded bool) {
 				assert := assert.New(t)
 				assert.Equal(loaded, true)
-				assert.Equal(piece.PieceNum, mockPieceInfo.PieceNum)
+				assert.Equal(piece.Number, mockPiece.Number)
+				assert.Equal(piece.ParentID, mockPiece.ParentID)
+				assert.Equal(piece.Offset, mockPiece.Offset)
+				assert.Equal(piece.Length, mockPiece.Length)
+				assert.EqualValues(piece.Digest, mockPiece.Digest)
+				assert.Equal(piece.TrafficType, mockPiece.TrafficType)
+				assert.Equal(piece.Cost, mockPiece.Cost)
+				assert.Equal(piece.CreatedAt, mockPiece.CreatedAt)
 			},
 		},
 	}
@@ -1227,8 +1249,8 @@ func TestTask_StorePiece(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			task := NewTask(mockTaskID, mockTaskURL, mockTaskDigest, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit)
 
-			task.StorePiece(tc.pieceInfo)
-			piece, loaded := task.LoadPiece(tc.pieceNum)
+			task.StorePiece(tc.piece)
+			piece, loaded := task.LoadPiece(tc.pieceNumber)
 			tc.expect(t, piece, loaded)
 		})
 	}
@@ -1236,30 +1258,30 @@ func TestTask_StorePiece(t *testing.T) {
 
 func TestTask_DeletePiece(t *testing.T) {
 	tests := []struct {
-		name      string
-		pieceInfo *commonv1.PieceInfo
-		pieceNum  int32
-		expect    func(t *testing.T, task *Task)
+		name        string
+		piece       *Piece
+		pieceNumber int32
+		expect      func(t *testing.T, task *Task)
 	}{
 		{
-			name:      "delete piece",
-			pieceInfo: mockPieceInfo,
-			pieceNum:  mockPieceInfo.PieceNum,
+			name:        "delete piece",
+			piece:       mockPiece,
+			pieceNumber: mockPiece.Number,
 			expect: func(t *testing.T, task *Task) {
 				assert := assert.New(t)
-				_, loaded := task.LoadPiece(mockPieceInfo.PieceNum)
+				_, loaded := task.LoadPiece(mockPiece.Number)
 				assert.Equal(loaded, false)
 			},
 		},
 		{
-			name:      "delete key does not exist",
-			pieceInfo: mockPieceInfo,
-			pieceNum:  0,
+			name:        "delete key does not exist",
+			piece:       mockPiece,
+			pieceNumber: 0,
 			expect: func(t *testing.T, task *Task) {
 				assert := assert.New(t)
-				piece, loaded := task.LoadPiece(mockPieceInfo.PieceNum)
+				piece, loaded := task.LoadPiece(mockPiece.Number)
 				assert.Equal(loaded, true)
-				assert.Equal(piece.PieceNum, mockPieceInfo.PieceNum)
+				assert.Equal(piece.Number, mockPiece.Number)
 			},
 		},
 	}
@@ -1268,8 +1290,8 @@ func TestTask_DeletePiece(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			task := NewTask(mockTaskID, mockTaskURL, mockTaskDigest, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit)
 
-			task.StorePiece(tc.pieceInfo)
-			task.DeletePiece(tc.pieceNum)
+			task.StorePiece(tc.piece)
+			task.DeletePiece(tc.pieceNumber)
 			tc.expect(t, task)
 		})
 	}

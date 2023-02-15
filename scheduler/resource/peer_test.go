@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/go-http-utils/headers"
 	"github.com/golang/mock/gomock"
@@ -157,9 +158,9 @@ func TestPeer_AppendPieceCost(t *testing.T) {
 			name: "append piece cost",
 			expect: func(t *testing.T, peer *Peer) {
 				assert := assert.New(t)
-				peer.AppendPieceCost(1)
+				peer.AppendPieceCost(time.Duration(1))
 				costs := peer.PieceCosts()
-				assert.Equal(costs[0], int64(1))
+				assert.Equal(costs[0], time.Duration(1))
 			},
 		},
 		{
@@ -194,9 +195,9 @@ func TestPeer_PieceCosts(t *testing.T) {
 			name: "piece costs slice is not empty",
 			expect: func(t *testing.T, peer *Peer) {
 				assert := assert.New(t)
-				peer.AppendPieceCost(1)
+				peer.AppendPieceCost(time.Duration(1))
 				costs := peer.PieceCosts()
-				assert.Equal(costs[0], int64(1))
+				assert.Equal(costs[0], time.Duration(1))
 			},
 		},
 		{

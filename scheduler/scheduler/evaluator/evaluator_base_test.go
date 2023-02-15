@@ -19,6 +19,7 @@ package evaluator
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -853,7 +854,7 @@ func TestEvaluatorBase_IsBadNode(t *testing.T) {
 			mock: func(peer *resource.Peer) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				for i := 0; i < 30; i++ {
-					peer.AppendPieceCost(int64(i))
+					peer.AppendPieceCost(time.Duration(i))
 				}
 				peer.AppendPieceCost(50)
 			},
@@ -869,7 +870,7 @@ func TestEvaluatorBase_IsBadNode(t *testing.T) {
 			mock: func(peer *resource.Peer) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				for i := 0; i < 30; i++ {
-					peer.AppendPieceCost(int64(i))
+					peer.AppendPieceCost(time.Duration(i))
 				}
 				peer.AppendPieceCost(18)
 			},
@@ -885,7 +886,7 @@ func TestEvaluatorBase_IsBadNode(t *testing.T) {
 			mock: func(peer *resource.Peer) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				for i := 20; i < 50; i++ {
-					peer.AppendPieceCost(int64(i))
+					peer.AppendPieceCost(time.Duration(i))
 				}
 				peer.AppendPieceCost(0)
 			},

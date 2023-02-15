@@ -20,6 +20,8 @@ import (
 	"time"
 
 	commonv2 "d7y.io/api/pkg/apis/common/v2"
+
+	"d7y.io/dragonfly/v2/pkg/digest"
 )
 
 // IsPieceBackToSource returns whether the piece is downloaded back-to-source.
@@ -30,15 +32,15 @@ func IsPieceBackToSource(parentID string) bool {
 // Piece represents information of piece.
 type Piece struct {
 	// Piece number.
-	Number uint32
+	Number int32
 	// Parent peer id.
 	ParentID string
 	// Piece offset.
 	Offset uint64
 	// Piece length.
 	Length uint64
-	// Digest of the piece data, for example md5:xxx or sha256:yyy.
-	Digest string
+	// Digest of the piece data.
+	Digest *digest.Digest
 	// Traffic type.
 	TrafficType commonv2.TrafficType
 	// Downloading piece costs time.
