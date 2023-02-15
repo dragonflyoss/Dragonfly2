@@ -33,7 +33,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
-	pkgtime "d7y.io/dragonfly/v2/pkg/time"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
 )
 
@@ -119,7 +118,7 @@ func (s *seedPeer) TriggerTask(ctx context.Context, rg *http.Range, task *Task) 
 	)
 
 	for {
-		piece, err := stream.Recv()
+		pieceSeed, err := stream.Recv()
 		if err != nil {
 			// If the peer initialization succeeds and the download fails,
 			// set peer status is PeerStateFailed.
@@ -136,16 +135,16 @@ func (s *seedPeer) TriggerTask(ctx context.Context, rg *http.Range, task *Task) 
 			initialized = true
 
 			// Initialize seed peer.
-			peer, err = s.initSeedPeer(ctx, rg, task, piece)
+			peer, err = s.initSeedPeer(ctx, rg, task, pieceSeed)
 			if err != nil {
 				return nil, nil, err
 			}
 		}
 
-		if piece.PieceInfo != nil {
+		if pieceSeed.PieceInfo != nil {
 			// Handle begin of piece.
-			if piece.PieceInfo.PieceNum == common.BeginOfPiece {
-				peer.Log.Infof("receive begin of piece from seed peer: %#v %#v", piece, piece.PieceInfo)
+			if pieceSeed.PieceInfo.PieceNum == common.BeginOfPiece {
+				peer.Log.Infof("receive begin of piece from seed peer: %#v %#v", pieceSeed, pieceSeed.PieceInfo)
 				if err := peer.FSM.Event(ctx, PeerEventDownload); err != nil {
 					return nil, nil, err
 				}
@@ -154,41 +153,45 @@ func (s *seedPeer) TriggerTask(ctx context.Context, rg *http.Range, task *Task) 
 			}
 
 			// Handle piece download successfully.
-			peer.Log.Infof("receive piece from seed peer: %#v %#v", piece, piece.PieceInfo)
-			cost := time.Duration(int64(piece.PieceInfo.DownloadCost) * int64(time.Millisecond))
-			peer.Pieces.Add(&Piece{
-				Number:      uint32(piece.PieceInfo.PieceNum),
-				Offset:      piece.PieceInfo.PieceOffset,
-				Length:      uint64(piece.PieceInfo.RangeSize),
-				Digest:      digest.New("md5", piece.PieceInfo.PieceMd5).String(),
+			peer.Log.Infof("receive piece from seed peer: %#v %#v", pieceSeed, pieceSeed.PieceInfo)
+			cost := time.Duration(int64(pieceSeed.PieceInfo.DownloadCost) * int64(time.Millisecond))
+			piece := &Piece{
+				Number:      pieceSeed.PieceInfo.PieceNum,
+				Offset:      pieceSeed.PieceInfo.RangeStart,
+				Length:      uint64(pieceSeed.PieceInfo.RangeSize),
 				TrafficType: commonv2.TrafficType_BACK_TO_SOURCE,
 				Cost:        cost,
 				CreatedAt:   time.Now().Add(-cost),
-			})
-			peer.FinishedPieces.Set(uint(piece.PieceInfo.PieceNum))
-			peer.AppendPieceCost(pkgtime.SubNano(int64(piece.EndTime), int64(piece.BeginTime)).Milliseconds())
+			}
+
+			if len(pieceSeed.PieceInfo.PieceMd5) > 0 {
+				piece.Digest = digest.New(digest.AlgorithmMD5, pieceSeed.PieceInfo.PieceMd5)
+			}
+
+			peer.FinishedPieces.Set(uint(pieceSeed.PieceInfo.PieceNum))
+			peer.AppendPieceCost(piece.Cost)
 
 			// When the piece is downloaded successfully,
 			// peer.UpdatedAt needs to be updated to prevent
 			// the peer from being GC during the download process.
 			peer.UpdatedAt.Store(time.Now())
 			peer.PieceUpdatedAt.Store(time.Now())
-			task.StorePiece(piece.PieceInfo)
+			task.StorePiece(piece)
 
 			// Statistical traffic metrics.
 			trafficType := commonv2.TrafficType_BACK_TO_SOURCE
-			if piece.Reuse {
+			if pieceSeed.Reuse {
 				trafficType = commonv2.TrafficType_REMOTE_PEER
 			}
-			metrics.Traffic.WithLabelValues(peer.Task.Tag, peer.Task.Application, trafficType.String()).Add(float64(piece.PieceInfo.RangeSize))
+			metrics.Traffic.WithLabelValues(peer.Task.Tag, peer.Task.Application, trafficType.String()).Add(float64(pieceSeed.PieceInfo.RangeSize))
 		}
 
 		// Handle end of piece.
-		if piece.Done {
+		if pieceSeed.Done {
 			peer.Log.Infof("receive done piece")
 			return peer, &schedulerv1.PeerResult{
-				TotalPieceCount: piece.TotalPieceCount,
-				ContentLength:   piece.ContentLength,
+				TotalPieceCount: pieceSeed.TotalPieceCount,
+				ContentLength:   pieceSeed.ContentLength,
 			}, nil
 		}
 	}

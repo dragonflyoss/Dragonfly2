@@ -40,7 +40,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
-	pkgtime "d7y.io/dragonfly/v2/pkg/time"
 	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
@@ -342,21 +341,26 @@ func (v *V1) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequ
 			}
 		}
 
-		// Load downloaded piece infos.
+		// Construct piece.
 		for _, pieceInfo := range req.PiecePacket.PieceInfos {
-			peer.Pieces.Add(&resource.Piece{
-				Number:      uint32(pieceInfo.PieceNum),
+			piece := &resource.Piece{
+				Number:      pieceInfo.PieceNum,
 				ParentID:    req.PiecePacket.DstPid,
-				Offset:      pieceInfo.PieceOffset,
+				Offset:      pieceInfo.RangeStart,
 				Length:      uint64(pieceInfo.RangeSize),
-				Digest:      digest.New("md5", pieceInfo.PieceMd5).String(),
 				TrafficType: commonv2.TrafficType_LOCAL_PEER,
 				Cost:        0,
 				CreatedAt:   time.Now(),
-			})
+			}
+
+			if len(pieceInfo.PieceMd5) > 0 {
+				piece.Digest = digest.New(digest.AlgorithmMD5, pieceInfo.PieceMd5)
+			}
+
+			peer.Pieces.Add(piece)
 			peer.FinishedPieces.Set(uint(pieceInfo.PieceNum))
-			peer.AppendPieceCost(int64(pieceInfo.DownloadCost) * int64(time.Millisecond))
-			task.StorePiece(pieceInfo)
+			peer.AppendPieceCost(piece.Cost)
+			task.StorePiece(piece)
 		}
 
 		v.handleTaskSuccess(ctx, task, &schedulerv1.PeerResult{
@@ -843,7 +847,7 @@ func (v *V1) registerSmallTask(ctx context.Context, peer *resource.Peer) (*sched
 		return nil, fmt.Errorf("parent state is %s", parent.FSM.Current())
 	}
 
-	firstPiece, loaded := peer.Task.LoadPiece(0)
+	piece, loaded := peer.Task.LoadPiece(0)
 	if !loaded {
 		return nil, fmt.Errorf("first piece not found")
 	}
@@ -862,22 +866,30 @@ func (v *V1) registerSmallTask(ctx context.Context, peer *resource.Peer) (*sched
 		return nil, err
 	}
 
+	// Construct piece information.
+	pieceInfo := &commonv1.PieceInfo{
+		PieceNum:    piece.Number,
+		RangeStart:  piece.Offset,
+		RangeSize:   uint32(piece.Length),
+		PieceOffset: piece.Offset,
+		// FIXME Use value of piece.PieceStyle.
+		PieceStyle:   commonv1.PieceStyle_PLAIN,
+		DownloadCost: uint64(piece.Cost.Milliseconds()),
+	}
+
+	if piece.Digest != nil {
+		pieceInfo.PieceMd5 = piece.Digest.Encoded
+	}
+
 	return &schedulerv1.RegisterResult{
 		TaskId:    peer.Task.ID,
 		TaskType:  types.TaskTypeV2ToV1(peer.Task.Type),
 		SizeScope: commonv1.SizeScope_SMALL,
 		DirectPiece: &schedulerv1.RegisterResult_SinglePiece{
 			SinglePiece: &schedulerv1.SinglePiece{
-				DstPid:  parent.ID,
-				DstAddr: fmt.Sprintf("%s:%d", parent.Host.IP, parent.Host.DownloadPort),
-				PieceInfo: &commonv1.PieceInfo{
-					PieceNum:    firstPiece.PieceNum,
-					RangeStart:  firstPiece.RangeStart,
-					RangeSize:   firstPiece.RangeSize,
-					PieceMd5:    firstPiece.PieceMd5,
-					PieceOffset: firstPiece.PieceOffset,
-					PieceStyle:  firstPiece.PieceStyle,
-				},
+				DstPid:    parent.ID,
+				DstAddr:   fmt.Sprintf("%s:%d", parent.Host.IP, parent.Host.DownloadPort),
+				PieceInfo: pieceInfo,
 			},
 		},
 	}, nil
@@ -944,27 +956,32 @@ func (v *V1) handleBeginOfPiece(ctx context.Context, peer *resource.Peer) {
 func (v *V1) handleEndOfPiece(ctx context.Context, peer *resource.Peer) {}
 
 // handlePieceSuccess handles successful piece.
-func (v *V1) handlePieceSuccess(ctx context.Context, peer *resource.Peer, piece *schedulerv1.PieceResult) {
+func (v *V1) handlePieceSuccess(ctx context.Context, peer *resource.Peer, pieceResult *schedulerv1.PieceResult) {
 	// Distinguish traffic type.
 	trafficType := commonv2.TrafficType_REMOTE_PEER
-	if resource.IsPieceBackToSource(piece.DstPid) {
+	if resource.IsPieceBackToSource(pieceResult.DstPid) {
 		trafficType = commonv2.TrafficType_BACK_TO_SOURCE
 	}
 
-	// Update peer piece info.
-	cost := time.Duration(int64(piece.PieceInfo.DownloadCost) * int64(time.Millisecond))
-	peer.Pieces.Add(&resource.Piece{
-		Number:      uint32(piece.PieceInfo.PieceNum),
-		ParentID:    piece.DstPid,
-		Offset:      piece.PieceInfo.PieceOffset,
-		Length:      uint64(piece.PieceInfo.RangeSize),
-		Digest:      digest.New("md5", piece.PieceInfo.PieceMd5).String(),
+	// Construct piece.
+	cost := time.Duration(int64(pieceResult.PieceInfo.DownloadCost) * int64(time.Millisecond))
+	piece := &resource.Piece{
+		Number:      pieceResult.PieceInfo.PieceNum,
+		ParentID:    pieceResult.DstPid,
+		Offset:      pieceResult.PieceInfo.RangeStart,
+		Length:      uint64(pieceResult.PieceInfo.RangeSize),
 		TrafficType: trafficType,
 		Cost:        cost,
 		CreatedAt:   time.Now().Add(-cost),
-	})
-	peer.FinishedPieces.Set(uint(piece.PieceInfo.PieceNum))
-	peer.AppendPieceCost(pkgtime.SubNano(int64(piece.EndTime), int64(piece.BeginTime)).Milliseconds())
+	}
+
+	if len(pieceResult.PieceInfo.PieceMd5) > 0 {
+		piece.Digest = digest.New(digest.AlgorithmMD5, pieceResult.PieceInfo.PieceMd5)
+	}
+
+	peer.Pieces.Add(piece)
+	peer.FinishedPieces.Set(uint(piece.Number))
+	peer.AppendPieceCost(piece.Cost)
 
 	// When the piece is downloaded successfully,
 	// peer's UpdatedAt needs to be updated
@@ -975,8 +992,8 @@ func (v *V1) handlePieceSuccess(ctx context.Context, peer *resource.Peer, piece 
 	// When the piece is downloaded successfully,
 	// dst peer's UpdatedAt needs to be updated
 	// to prevent the dst peer from being GC during the download process.
-	if !resource.IsPieceBackToSource(piece.DstPid) {
-		if destPeer, loaded := v.resource.PeerManager().Load(piece.DstPid); loaded {
+	if !resource.IsPieceBackToSource(pieceResult.DstPid) {
+		if destPeer, loaded := v.resource.PeerManager().Load(pieceResult.DstPid); loaded {
 			destPeer.UpdatedAt.Store(time.Now())
 		}
 	}
@@ -984,7 +1001,7 @@ func (v *V1) handlePieceSuccess(ctx context.Context, peer *resource.Peer, piece 
 	// When the peer downloads back-to-source,
 	// piece downloads successfully updates the task piece info.
 	if peer.FSM.Is(resource.PeerStateBackToSource) {
-		peer.Task.StorePiece(piece.PieceInfo)
+		peer.Task.StorePiece(piece)
 	}
 }
 

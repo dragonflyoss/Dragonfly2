@@ -408,18 +408,18 @@ func (t *Task) IsSeedPeerFailed() bool {
 }
 
 // LoadPiece return piece for a key.
-func (t *Task) LoadPiece(key int32) (*commonv1.PieceInfo, bool) {
+func (t *Task) LoadPiece(key int32) (*Piece, bool) {
 	rawPiece, loaded := t.Pieces.Load(key)
 	if !loaded {
 		return nil, false
 	}
 
-	return rawPiece.(*commonv1.PieceInfo), loaded
+	return rawPiece.(*Piece), loaded
 }
 
 // StorePiece set piece.
-func (t *Task) StorePiece(piece *commonv1.PieceInfo) {
-	t.Pieces.Store(piece.PieceNum, piece)
+func (t *Task) StorePiece(piece *Piece) {
+	t.Pieces.Store(piece.Number, piece)
 }
 
 // DeletePiece deletes piece for a key.
