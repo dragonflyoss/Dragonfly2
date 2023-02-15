@@ -1312,7 +1312,7 @@ func TestTask_SizeScope(t *testing.T) {
 				assert := assert.New(t)
 				sizeScope, err := task.SizeScope()
 				assert.NoError(err)
-				assert.Equal(sizeScope, commonv1.SizeScope_TINY)
+				assert.Equal(sizeScope, commonv2.SizeScope_TINY)
 			},
 		},
 		{
@@ -1323,7 +1323,7 @@ func TestTask_SizeScope(t *testing.T) {
 				assert := assert.New(t)
 				sizeScope, err := task.SizeScope()
 				assert.NoError(err)
-				assert.Equal(sizeScope, commonv1.SizeScope_EMPTY)
+				assert.Equal(sizeScope, commonv2.SizeScope_EMPTY)
 			},
 		},
 		{
@@ -1334,7 +1334,7 @@ func TestTask_SizeScope(t *testing.T) {
 				assert := assert.New(t)
 				sizeScope, err := task.SizeScope()
 				assert.NoError(err)
-				assert.Equal(sizeScope, commonv1.SizeScope_SMALL)
+				assert.Equal(sizeScope, commonv2.SizeScope_SMALL)
 			},
 		},
 		{
@@ -1345,7 +1345,7 @@ func TestTask_SizeScope(t *testing.T) {
 				assert := assert.New(t)
 				sizeScope, err := task.SizeScope()
 				assert.NoError(err)
-				assert.Equal(sizeScope, commonv1.SizeScope_NORMAL)
+				assert.Equal(sizeScope, commonv2.SizeScope_NORMAL)
 			},
 		},
 		{
