@@ -303,7 +303,7 @@ type NetworkConfig struct {
 }
 
 type NetworkTopologyConfig struct {
-	// Enable networkTopology service.
+	// Enable networkTopology services, including probe, network topology collection and synchronization service.
 	Enable bool `yaml:"enable" mapstructure:"enable"`
 
 	// SyncInterval is the interval of synchronizing network topology between schedulers.
