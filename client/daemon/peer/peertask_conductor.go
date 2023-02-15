@@ -717,6 +717,10 @@ loop:
 		pt.Debugf("receive peerPacket %v", peerPacket)
 		if peerPacket.Code != commonv1.Code_Success {
 			if peerPacket.Code == commonv1.Code_SchedNeedBackSource {
+				// fix back source directly, then waitFirstPeerPacket timeout
+				if !firstPacketReceived {
+					close(firstPacketDone)
+				}
 				pt.forceBackSource()
 				pt.Infof("receive back source code")
 				return
@@ -760,6 +764,11 @@ loop:
 			firstPacketReceived = true
 			close(firstPacketDone)
 		}
+	}
+
+	// double check to avoid waitFirstPeerPacket timeout
+	if !firstPacketReceived {
+		close(firstPacketDone)
 	}
 }
 
