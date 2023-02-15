@@ -21,11 +21,6 @@ scheduler:
     peerTTL: 60s
     taskGCInterval: 30s
     hostGCInterval: 1m
-  training:
-    enable: true
-    enableAutoRefresh: true
-    refreshModelInterval: 10s
-    cpu: 2
 
 dynConfig:
   refreshInterval: 10s

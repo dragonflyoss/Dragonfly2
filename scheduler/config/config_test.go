@@ -43,12 +43,6 @@ func TestConfig_Load(t *testing.T) {
 				TaskGCInterval:       30 * time.Second,
 				HostGCInterval:       1 * time.Minute,
 			},
-			Training: TrainingConfig{
-				Enable:               true,
-				EnableAutoRefresh:    true,
-				RefreshModelInterval: 10 * time.Second,
-				CPU:                  2,
-			},
 		},
 		Server: ServerConfig{
 			AdvertiseIP: net.ParseIP("127.0.0.1"),

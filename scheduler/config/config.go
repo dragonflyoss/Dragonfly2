@@ -126,23 +126,6 @@ type SchedulerConfig struct {
 
 	// GC configuration.
 	GC GCConfig `yaml:"gc" mapstructure:"gc"`
-
-	// Training configuration.
-	Training TrainingConfig `yaml:"training" mapstructure:"training"`
-}
-
-type TrainingConfig struct {
-	// Enable training.
-	Enable bool `yaml:"enable" mapstructure:"enable"`
-
-	// Enable auto refresh model.
-	EnableAutoRefresh bool `yaml:"enableAutoRefresh" mapstructure:"enableAutoRefresh"`
-
-	// RefreshModelInterval is refresh interval for refreshing model.
-	RefreshModelInterval time.Duration `yaml:"refreshModelInterval" mapstructure:"refreshModelInterval"`
-
-	// CPU limit while training.
-	CPU int `yaml:"cpu" mapstructure:"cpu"`
 }
 
 type GCConfig struct {
@@ -319,12 +302,6 @@ func New() *Config {
 				TaskGCInterval:       DefaultSchedulerTaskGCInterval,
 				HostGCInterval:       DefaultSchedulerHostGCInterval,
 			},
-			Training: TrainingConfig{
-				Enable:               false,
-				EnableAutoRefresh:    false,
-				RefreshModelInterval: DefaultRefreshModelInterval,
-				CPU:                  DefaultCPU,
-			},
 		},
 		DynConfig: DynConfig{
 			RefreshInterval: DefaultDynConfigRefreshInterval,
@@ -431,16 +408,6 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Scheduler.GC.HostGCInterval <= 0 {
 		return errors.New("scheduler requires parameter hostGCInterval")
-	}
-
-	if cfg.Scheduler.Training.Enable {
-		if cfg.Scheduler.Training.CPU <= 0 {
-			return errors.New("training requires parameter cpu")
-		}
-
-		if cfg.Scheduler.Training.EnableAutoRefresh && cfg.Scheduler.Training.RefreshModelInterval <= 0 {
-			return errors.New("training requires parameter refreshModelInterval")
-		}
 	}
 
 	if cfg.DynConfig.RefreshInterval <= 0 {
