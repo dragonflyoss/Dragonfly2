@@ -32,6 +32,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
+	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/graph/dag"
 	"d7y.io/dragonfly/v2/pkg/types"
 )
@@ -93,6 +94,13 @@ func WithPieceLength(pieceLength int32) TaskOption {
 	}
 }
 
+// WithDigest set Digest for task.
+func WithDigest(d *digest.Digest) TaskOption {
+	return func(t *Task) {
+		t.Digest = d
+	}
+}
+
 // Task contains content for task.
 type Task struct {
 	// ID is task id.
@@ -105,7 +113,7 @@ type Task struct {
 	URL string
 
 	// Digest of the task content, for example md5:xxx or sha256:yyy.
-	Digest string
+	Digest *digest.Digest
 
 	// URL tag identifies different task for same url.
 	Tag string
@@ -161,13 +169,12 @@ type Task struct {
 }
 
 // New task instance.
-func NewTask(id, url, digest, tag, application string, typ commonv2.TaskType,
-	filters []string, header map[string]string, backToSourceLimit int32, options ...TaskOption) *Task {
+func NewTask(id, url, tag, application string, typ commonv2.TaskType, filters []string,
+	header map[string]string, backToSourceLimit int32, options ...TaskOption) *Task {
 	t := &Task{
 		ID:                id,
 		Type:              typ,
 		URL:               url,
-		Digest:            digest,
 		Tag:               tag,
 		Application:       application,
 		Filters:           filters,
