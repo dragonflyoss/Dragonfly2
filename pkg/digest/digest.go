@@ -100,22 +100,39 @@ func HashFile(path string, algorithm string) (string, error) {
 
 // Parse uses to parse digest string to algorithm and encoded.
 func Parse(digest string) (*Digest, error) {
-	values := strings.Split(digest, ":")
-	if len(values) == 2 {
-		return &Digest{
-			Algorithm: values[0],
-			Encoded:   values[1],
-		}, nil
+	values := strings.Split(strings.TrimSpace(digest), ":")
+	if len(values) != 2 {
+		return nil, errors.New("invalid digest")
 	}
 
-	if len(values) == 1 {
-		return &Digest{
-			Algorithm: AlgorithmMD5,
-			Encoded:   values[0],
-		}, nil
+	algorithm := values[0]
+	encoded := values[1]
+
+	switch algorithm {
+	case AlgorithmSHA1:
+		if len(encoded) != 40 {
+			return nil, errors.New("invalid encoded")
+		}
+	case AlgorithmSHA256:
+		if len(encoded) != 64 {
+			return nil, errors.New("invalid encoded")
+		}
+	case AlgorithmSHA512:
+		if len(encoded) != 128 {
+			return nil, errors.New("invalid encoded")
+		}
+	case AlgorithmMD5:
+		if len(encoded) != 32 {
+			return nil, errors.New("invalid encoded")
+		}
+	default:
+		return nil, errors.New("invalid algorithm")
 	}
 
-	return nil, errors.New("invalid digest")
+	return &Digest{
+		Algorithm: algorithm,
+		Encoded:   encoded,
+	}, nil
 }
 
 // MD5FromReader computes the MD5 checksum with io.Reader.

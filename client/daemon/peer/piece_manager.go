@@ -258,7 +258,7 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 	}
 	if pm.calculateDigest {
 		pt.Log().Debugf("piece %d calculate digest", pieceNum)
-		reader, _ = digest.NewReader(reader, digest.WithLogger(pt.Log()))
+		reader, _ = digest.NewReader(digest.AlgorithmMD5, reader, digest.WithLogger(pt.Log()))
 	}
 	var n int64
 	result.Size, err = pt.GetStorage().WritePiece(
@@ -440,10 +440,23 @@ singleDownload:
 
 	// calc total
 	if pm.calculateDigest {
-		reader, err = digest.NewReader(response.Body, digest.WithDigest(peerTaskRequest.UrlMeta.Digest), digest.WithLogger(pt.Log()))
-		if err != nil {
-			log.Errorf("init digest reader error: %s", err.Error())
-			return err
+		if len(peerTaskRequest.UrlMeta.Digest) != 0 {
+			d, err := digest.Parse(peerTaskRequest.UrlMeta.Digest)
+			if err != nil {
+				return err
+			}
+
+			reader, err = digest.NewReader(d.Algorithm, response.Body, digest.WithEncoded(d.Encoded), digest.WithLogger(pt.Log()))
+			if err != nil {
+				log.Errorf("init digest reader error: %s", err.Error())
+				return err
+			}
+		} else {
+			reader, err = digest.NewReader(digest.AlgorithmMD5, response.Body, digest.WithLogger(pt.Log()))
+			if err != nil {
+				log.Errorf("init digest reader error: %s", err.Error())
+				return err
+			}
 		}
 	}
 
@@ -614,7 +627,7 @@ func (pm *pieceManager) processPieceFromFile(ctx context.Context, ptm storage.Pe
 
 	if pm.calculateDigest {
 		log.Debugf("calculate digest in processPieceFromFile")
-		reader, _ = digest.NewReader(r, digest.WithLogger(log))
+		reader, _ = digest.NewReader(digest.AlgorithmMD5, r, digest.WithLogger(log))
 	}
 	n, err := tsd.WritePiece(ctx,
 		&storage.WritePieceRequest{
