@@ -324,8 +324,13 @@ func (v *V1) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequ
 
 	taskID := req.TaskId
 	peerID := req.PiecePacket.DstPid
-	task := resource.NewTask(taskID, req.Url, req.UrlMeta.Digest, req.UrlMeta.Tag, req.UrlMeta.Application,
-		types.TaskTypeV1ToV2(req.TaskType), strings.Split(req.UrlMeta.Filter, idgen.URLFilterSeparator), req.UrlMeta.Header, int32(v.config.Scheduler.BackSourceCount))
+	options := []resource.TaskOption{}
+	if d, err := digest.Parse(req.UrlMeta.Digest); err == nil {
+		options = append(options, resource.WithDigest(d))
+	}
+
+	task := resource.NewTask(taskID, req.Url, req.UrlMeta.Tag, req.UrlMeta.Application, types.TaskTypeV1ToV2(req.TaskType),
+		strings.Split(req.UrlMeta.Filter, idgen.URLFilterSeparator), req.UrlMeta.Header, int32(v.config.Scheduler.BackSourceCount), options...)
 	task, _ = v.resource.TaskManager().LoadOrStore(task)
 	host := v.storeHost(ctx, req.PeerHost)
 	peer := v.storePeer(ctx, peerID, req.UrlMeta.Priority, req.UrlMeta.Range, task, host)
@@ -731,8 +736,13 @@ func (v *V1) storeTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, ty
 
 	task, loaded := v.resource.TaskManager().Load(req.TaskId)
 	if !loaded {
-		task := resource.NewTask(req.TaskId, req.Url, req.UrlMeta.Digest, req.UrlMeta.Tag, req.UrlMeta.Application,
-			typ, filters, req.UrlMeta.Header, int32(v.config.Scheduler.BackToSourceCount))
+		options := []resource.TaskOption{}
+		if d, err := digest.Parse(req.UrlMeta.Digest); err == nil {
+			options = append(options, resource.WithDigest(d))
+		}
+
+		task := resource.NewTask(req.TaskId, req.Url, req.UrlMeta.Tag, req.UrlMeta.Application,
+			typ, filters, req.UrlMeta.Header, int32(v.config.Scheduler.BackToSourceCount), options...)
 		v.resource.TaskManager().Store(task)
 		task.Log.Info("create new task")
 		return task
