@@ -70,54 +70,40 @@ func TestHostIDV2(t *testing.T) {
 		name     string
 		ip       string
 		hostname string
-		port     int32
 		expect   func(t *testing.T, d string)
 	}{
 		{
 			name:     "generate HostID",
 			ip:       "127.0.0.1",
 			hostname: "foo",
-			port:     8000,
 			expect: func(t *testing.T, d string) {
 				assert := assert.New(t)
-				assert.Equal(d, "b4b84f2b6234738dae4fc7aec86ddd7f7e329bfb944b2a3b9914427843955d92")
+				assert.Equal(d, "52727e8408e0ee1f999086f241ec43d5b3dbda666f1a06ef1fcbe75b4e90fa17")
 			},
 		},
 		{
 			name:     "generate HostID with empty ip",
 			ip:       "",
 			hostname: "foo",
-			port:     8000,
 			expect: func(t *testing.T, d string) {
 				assert := assert.New(t)
-				assert.Equal(d, "96d9be07dba6c87ffe290176c694182b7438f47c22cbef49f199c91a713cccc9")
+				assert.Equal(d, "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae")
 			},
 		},
 		{
 			name:     "generate HostID with empty host",
 			ip:       "127.0.0.1",
 			hostname: "",
-			port:     8000,
 			expect: func(t *testing.T, d string) {
 				assert := assert.New(t)
-				assert.Equal(d, "82d3b0c2c9d99d3c3b4955a37847e263bea9804713457a0524c37ff460aa2387")
-			},
-		},
-		{
-			name:     "generate HostID with zero port",
-			ip:       "127.0.0.1",
-			hostname: "foo",
-			port:     0,
-			expect: func(t *testing.T, d string) {
-				assert := assert.New(t)
-				assert.Equal(d, "eb1959ff4577621851cfb18bd55bc0870c5dfea03c0a45c54de7c44834b344de")
+				assert.Equal(d, "12ca17b49af2289436f303e0166030a21e525d266e209267433801a8fd4071a0")
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, HostIDV2(tc.ip, tc.hostname, tc.port))
+			tc.expect(t, HostIDV2(tc.ip, tc.hostname))
 		})
 	}
 }

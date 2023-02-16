@@ -28,6 +28,6 @@ func HostIDV1(hostname string, port int32) string {
 }
 
 // HostIDV2 generates v2 version of host id.
-func HostIDV2(ip, hostname string, port int32) string {
-	return digest.SHA256FromStrings(ip, hostname, fmt.Sprint(port))
+func HostIDV2(ip, hostname string) string {
+	return digest.SHA256FromStrings(ip, hostname)
 }
