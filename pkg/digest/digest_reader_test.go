@@ -18,83 +18,227 @@ package digest
 
 import (
 	"bytes"
-	"crypto/md5"
-	"crypto/sha1"
-	"crypto/sha256"
-	"crypto/sha512"
-	"encoding/hex"
 	"io"
 	"testing"
 
-	testifyassert "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
-func TestNewReader(t *testing.T) {
-	assert := testifyassert.New(t)
+func TestDigest_Reader(t *testing.T) {
+	logger := logger.With("test", "digest")
 
-	testCases := []struct {
-		name   string
-		data   []byte
-		digest func(data []byte) string
+	tests := []struct {
+		name      string
+		algorithm string
+		data      []byte
+		options   []Option
+		run       func(t *testing.T, data []byte, reader Reader, err error)
 	}{
 		{
-			name: "default md5",
-			data: []byte("hello world"),
-			digest: func(data []byte) string {
-				hash := md5.New()
-				hash.Write(data)
-				return hex.EncodeToString(hash.Sum(nil))
+			name:      "sha1 reader",
+			algorithm: AlgorithmSHA1,
+			data:      []byte("foo"),
+			options:   []Option{WithLogger(logger)},
+			run: func(t *testing.T, data []byte, reader Reader, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(reader.Encoded(), "da39a3ee5e6b4b0d3255bfef95601890afd80709")
+				b, err := io.ReadAll(reader)
+				assert.NoError(err)
+				assert.Equal(b, data)
+				assert.Equal(reader.Encoded(), "0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33")
 			},
 		},
 		{
-			name: "md5",
-			data: []byte("hello world"),
-			digest: func(data []byte) string {
-				hash := md5.New()
-				hash.Write(data)
-				return "md5:" + hex.EncodeToString(hash.Sum(nil))
+			name:      "sha256 reader",
+			algorithm: AlgorithmSHA256,
+			data:      []byte("foo"),
+			options:   []Option{WithLogger(logger)},
+			run: func(t *testing.T, data []byte, reader Reader, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(reader.Encoded(), "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+				b, err := io.ReadAll(reader)
+				assert.NoError(err)
+				assert.Equal(b, data)
+				assert.Equal(reader.Encoded(), "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae")
 			},
 		},
 		{
-			name: "sha1",
-			data: []byte("hello world"),
-			digest: func(data []byte) string {
-				hash := sha1.New()
-				hash.Write(data)
-				return "sha1:" + hex.EncodeToString(hash.Sum(nil))
+			name:      "sha512 reader",
+			algorithm: AlgorithmSHA512,
+			data:      []byte("foo"),
+			options:   []Option{WithLogger(logger)},
+			run: func(t *testing.T, data []byte, reader Reader, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(reader.Encoded(), "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e")
+				b, err := io.ReadAll(reader)
+				assert.NoError(err)
+				assert.Equal(b, data)
+				assert.Equal(reader.Encoded(), "f7fbba6e0636f890e56fbbf3283e524c6fa3204ae298382d624741d0dc6638326e282c41be5e4254d8820772c5518a2c5a8c0c7f7eda19594a7eb539453e1ed7")
 			},
 		},
 		{
-			name: "sha256",
-			data: []byte("hello world"),
-			digest: func(data []byte) string {
-				hash := sha256.New()
-				hash.Write(data)
-				return "sha256:" + hex.EncodeToString(hash.Sum(nil))
+			name:      "md5 reader",
+			algorithm: AlgorithmMD5,
+			data:      []byte("foo"),
+			options:   []Option{WithLogger(logger)},
+			run: func(t *testing.T, data []byte, reader Reader, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(reader.Encoded(), "d41d8cd98f00b204e9800998ecf8427e")
+				b, err := io.ReadAll(reader)
+				assert.NoError(err)
+				assert.Equal(b, data)
+				assert.Equal(reader.Encoded(), "acbd18db4cc2f85cedef654fccc4a4d8")
 			},
 		},
 		{
-			name: "sha512",
-			data: []byte("hello world"),
-			digest: func(data []byte) string {
-				hash := sha512.New()
-				hash.Write(data)
-				return "sha512:" + hex.EncodeToString(hash.Sum(nil))
+			name:      "sha1 reader with encoded",
+			algorithm: AlgorithmSHA1,
+			data:      []byte("foo"),
+			options:   []Option{WithLogger(logger), WithEncoded("0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33")},
+			run: func(t *testing.T, data []byte, reader Reader, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(reader.Encoded(), "da39a3ee5e6b4b0d3255bfef95601890afd80709")
+				b, err := io.ReadAll(reader)
+				assert.NoError(err)
+				assert.Equal(b, data)
+				assert.Equal(reader.Encoded(), "0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33")
+			},
+		},
+		{
+			name:      "sha256 reader with encoded",
+			algorithm: AlgorithmSHA256,
+			data:      []byte("foo"),
+			options:   []Option{WithLogger(logger), WithEncoded("2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae")},
+			run: func(t *testing.T, data []byte, reader Reader, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(reader.Encoded(), "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+				b, err := io.ReadAll(reader)
+				assert.NoError(err)
+				assert.Equal(b, data)
+				assert.Equal(reader.Encoded(), "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae")
+			},
+		},
+		{
+			name:      "sha512 reader with encoded",
+			algorithm: AlgorithmSHA512,
+			data:      []byte("foo"),
+			options:   []Option{WithLogger(logger), WithEncoded("f7fbba6e0636f890e56fbbf3283e524c6fa3204ae298382d624741d0dc6638326e282c41be5e4254d8820772c5518a2c5a8c0c7f7eda19594a7eb539453e1ed7")},
+			run: func(t *testing.T, data []byte, reader Reader, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(reader.Encoded(), "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e")
+				b, err := io.ReadAll(reader)
+				assert.NoError(err)
+				assert.Equal(b, data)
+				assert.Equal(reader.Encoded(), "f7fbba6e0636f890e56fbbf3283e524c6fa3204ae298382d624741d0dc6638326e282c41be5e4254d8820772c5518a2c5a8c0c7f7eda19594a7eb539453e1ed7")
+			},
+		},
+		{
+			name:      "md5 reader with encoded",
+			algorithm: AlgorithmMD5,
+			data:      []byte("foo"),
+			options:   []Option{WithLogger(logger), WithEncoded("acbd18db4cc2f85cedef654fccc4a4d8")},
+			run: func(t *testing.T, data []byte, reader Reader, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(reader.Encoded(), "d41d8cd98f00b204e9800998ecf8427e")
+				b, err := io.ReadAll(reader)
+				assert.NoError(err)
+				assert.Equal(b, data)
+				assert.Equal(reader.Encoded(), "acbd18db4cc2f85cedef654fccc4a4d8")
+			},
+		},
+		{
+			name:      "sha1 reader with invalid encoded",
+			algorithm: AlgorithmSHA1,
+			data:      []byte("foo"),
+			options:   []Option{WithLogger(logger), WithEncoded("bar")},
+			run: func(t *testing.T, data []byte, reader Reader, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(reader.Encoded(), "da39a3ee5e6b4b0d3255bfef95601890afd80709")
+				_, err = io.ReadAll(reader)
+				assert.Error(err)
+			},
+		},
+		{
+			name:      "sha256 reader with invalid encoded",
+			algorithm: AlgorithmSHA256,
+			data:      []byte("foo"),
+			options:   []Option{WithLogger(logger), WithEncoded("bar")},
+			run: func(t *testing.T, data []byte, reader Reader, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(reader.Encoded(), "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+				_, err = io.ReadAll(reader)
+				assert.Error(err)
+			},
+		},
+		{
+			name:      "sha512 reader with invalid encoded",
+			algorithm: AlgorithmSHA512,
+			data:      []byte("foo"),
+			options:   []Option{WithLogger(logger), WithEncoded("bar")},
+			run: func(t *testing.T, data []byte, reader Reader, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(reader.Encoded(), "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e")
+				_, err = io.ReadAll(reader)
+				assert.Error(err)
+			},
+		},
+		{
+			name:      "md5 reader with invalid encoded",
+			algorithm: AlgorithmMD5,
+			data:      []byte("foo"),
+			options:   []Option{WithLogger(logger), WithEncoded("bar")},
+			run: func(t *testing.T, data []byte, reader Reader, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(reader.Encoded(), "d41d8cd98f00b204e9800998ecf8427e")
+				_, err = io.ReadAll(reader)
+				assert.Error(err)
+			},
+		},
+		{
+			name:      "new reader with invalid algorithm",
+			algorithm: "",
+			data:      []byte("foo"),
+			options:   []Option{WithLogger(logger)},
+			run: func(t *testing.T, data []byte, reader Reader, err error) {
+				assert := assert.New(t)
+				assert.Error(err)
+			},
+		},
+		{
+			name:      "sha1 reader without logger",
+			algorithm: AlgorithmSHA1,
+			data:      []byte("foo"),
+			options:   []Option{WithEncoded("")},
+			run: func(t *testing.T, data []byte, reader Reader, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(reader.Encoded(), "da39a3ee5e6b4b0d3255bfef95601890afd80709")
+				b, err := io.ReadAll(reader)
+				assert.NoError(err)
+				assert.Equal(b, data)
+				assert.Equal(reader.Encoded(), "0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33")
 			},
 		},
 	}
 
-	for _, tc := range testCases {
+	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			digest := tc.digest(tc.data)
-			buf := bytes.NewBuffer(tc.data)
-			reader, err := NewReader(buf, WithDigest(digest), WithLogger(logger.With("test", "test")))
-			assert.Nil(err)
-			data, err := io.ReadAll(reader)
-			assert.Nil(err)
-			assert.Equal(tc.data, data)
+			r, err := NewReader(tc.algorithm, bytes.NewBuffer(tc.data), tc.options...)
+			tc.run(t, tc.data, r, err)
 		})
 	}
 }

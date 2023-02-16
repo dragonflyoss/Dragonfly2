@@ -45,6 +45,7 @@ import (
 	clientutil "d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
+	"d7y.io/dragonfly/v2/pkg/digest"
 	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/source"
@@ -78,7 +79,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 
 	hash := md5.New()
 	hash.Write(testBytes)
-	digest := hex.EncodeToString(hash.Sum(nil)[:16])
+	digest := digest.New(digest.AlgorithmMD5, hex.EncodeToString(hash.Sum(nil)[:16]))
 
 	testCases := []struct {
 		name               string
@@ -454,7 +455,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 				},
 			}
 			if tc.checkDigest {
-				request.UrlMeta.Digest = digest
+				request.UrlMeta.Digest = digest.String()
 			}
 			var start time.Time
 			if tc.recordDownloadTime {
