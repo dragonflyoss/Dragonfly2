@@ -114,7 +114,7 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 		mock func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder)
 	}{
 		{
-			name: "notify client without different seedPeers",
+			name: "notify client with same seed peers",
 			data: &config.DynconfigData{
 				Scheduler: &managerv2.Scheduler{
 					SeedPeers: []*managerv2.SeedPeer{
@@ -150,7 +150,7 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 			},
 		},
 		{
-			name: "notify client with different seedPeers",
+			name: "notify client with different seed peers",
 			data: &config.DynconfigData{
 				Scheduler: &managerv2.Scheduler{
 					SeedPeers: []*managerv2.SeedPeer{
@@ -183,8 +183,6 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 					hostManager.Load(gomock.Any()).Return(nil, false).Times(1),
 					hostManager.Store(gomock.Any()).Return().Times(1),
 					dynconfig.Register(gomock.Any()).Return().Times(1),
-					hostManager.Load(gomock.Any()).Return(mockHost, true).Times(1),
-					hostManager.Delete(gomock.Eq("foo-0")).Return().Times(1),
 					hostManager.Load(gomock.Any()).Return(mockHost, true).Times(1),
 				)
 			},
@@ -220,7 +218,6 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 					hostManager.Load(gomock.Any()).Return(nil, false).Times(1),
 					hostManager.Store(gomock.Any()).Return().Times(1),
 					dynconfig.Register(gomock.Any()).Return().Times(1),
-					hostManager.Load(gomock.Any()).Return(nil, false).Times(1),
 					hostManager.Load(gomock.Any()).Return(nil, false).Times(1),
 					hostManager.Store(gomock.Any()).Return().Times(1),
 				)
@@ -316,207 +313,6 @@ func TestSeedPeerClient_seedPeersToNetAddrs(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.expect(t, seedPeersToNetAddrs(tc.seedPeers))
-		})
-	}
-}
-
-func TestSeedPeerClient_diffSeedPeers(t *testing.T) {
-	tests := []struct {
-		name   string
-		sx     []*managerv2.SeedPeer
-		sy     []*managerv2.SeedPeer
-		expect func(t *testing.T, diff []*managerv2.SeedPeer)
-	}{
-		{
-			name: "same seed peer list",
-			sx: []*managerv2.SeedPeer{
-				{
-					Id:       1,
-					HostName: "foo",
-					Ip:       "127.0.0.1",
-					Port:     8080,
-				},
-			},
-			sy: []*managerv2.SeedPeer{
-				{
-					Id:       1,
-					HostName: "foo",
-					Ip:       "127.0.0.1",
-					Port:     8080,
-				},
-			},
-			expect: func(t *testing.T, diff []*managerv2.SeedPeer) {
-				assert := assert.New(t)
-				assert.EqualValues(diff, []*managerv2.SeedPeer(nil))
-			},
-		},
-		{
-			name: "different hostname",
-			sx: []*managerv2.SeedPeer{
-				{
-					Id:       1,
-					HostName: "bar",
-					Ip:       "127.0.0.1",
-					Port:     8080,
-				},
-			},
-			sy: []*managerv2.SeedPeer{
-				{
-					Id:       1,
-					HostName: "foo",
-					Ip:       "127.0.0.1",
-					Port:     8080,
-				},
-			},
-			expect: func(t *testing.T, diff []*managerv2.SeedPeer) {
-				assert := assert.New(t)
-				assert.EqualValues(diff, []*managerv2.SeedPeer{
-					{
-						Id:       1,
-						HostName: "bar",
-						Ip:       "127.0.0.1",
-						Port:     8080,
-					},
-				})
-			},
-		},
-		{
-			name: "different port",
-			sx: []*managerv2.SeedPeer{
-				{
-					Id:       1,
-					HostName: "foo",
-					Ip:       "127.0.0.1",
-					Port:     8081,
-				},
-			},
-			sy: []*managerv2.SeedPeer{
-				{
-					Id:       1,
-					HostName: "foo",
-					Ip:       "127.0.0.1",
-					Port:     8080,
-				},
-			},
-			expect: func(t *testing.T, diff []*managerv2.SeedPeer) {
-				assert := assert.New(t)
-				assert.EqualValues(diff, []*managerv2.SeedPeer{
-					{
-						Id:       1,
-						HostName: "foo",
-						Ip:       "127.0.0.1",
-						Port:     8081,
-					},
-				})
-			},
-		},
-		{
-			name: "different ip",
-			sx: []*managerv2.SeedPeer{
-				{
-					Id:       1,
-					HostName: "foo",
-					Ip:       "0.0.0.0",
-					Port:     8080,
-				},
-			},
-			sy: []*managerv2.SeedPeer{
-				{
-					Id:       1,
-					HostName: "foo",
-					Ip:       "127.0.0.1",
-					Port:     8080,
-				},
-			},
-			expect: func(t *testing.T, diff []*managerv2.SeedPeer) {
-				assert := assert.New(t)
-				assert.EqualValues(diff, []*managerv2.SeedPeer{
-					{
-						Id:       1,
-						HostName: "foo",
-						Ip:       "0.0.0.0",
-						Port:     8080,
-					},
-				})
-			},
-		},
-		{
-			name: "remove y seed peer",
-			sx: []*managerv2.SeedPeer{
-				{
-					Id:       1,
-					HostName: "foo",
-					Ip:       "127.0.0.1",
-					Port:     8080,
-				},
-				{
-					Id:       2,
-					HostName: "bar",
-					Ip:       "127.0.0.1",
-					Port:     8080,
-				},
-			},
-			sy: []*managerv2.SeedPeer{
-				{
-					Id:       1,
-					HostName: "foo",
-					Ip:       "127.0.0.1",
-					Port:     8080,
-				},
-			},
-			expect: func(t *testing.T, diff []*managerv2.SeedPeer) {
-				assert := assert.New(t)
-				assert.EqualValues(diff, []*managerv2.SeedPeer{
-					{
-						Id:       2,
-						HostName: "bar",
-						Ip:       "127.0.0.1",
-						Port:     8080,
-					},
-				})
-			},
-		},
-		{
-			name: "remove x seed peer",
-			sx: []*managerv2.SeedPeer{
-				{
-					Id:       1,
-					HostName: "foo",
-					Ip:       "127.0.0.1",
-					Port:     8080,
-				},
-			},
-			sy: []*managerv2.SeedPeer{
-				{
-					Id:       1,
-					HostName: "baz",
-					Ip:       "127.0.0.1",
-					Port:     8080,
-				},
-				{
-					Id:       2,
-					HostName: "bar",
-					Ip:       "127.0.0.1",
-					Port:     8080,
-				},
-			},
-			expect: func(t *testing.T, diff []*managerv2.SeedPeer) {
-				assert := assert.New(t)
-				assert.EqualValues(diff, []*managerv2.SeedPeer{
-					{
-						Id:       1,
-						HostName: "foo",
-						Ip:       "127.0.0.1",
-						Port:     8080,
-					},
-				})
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, diffSeedPeers(tc.sx, tc.sy))
 		})
 	}
 }

@@ -133,8 +133,8 @@ var (
 	mockTaskFilters                 = []string{"bar"}
 	mockTaskHeader                  = map[string]string{"content-length": "100"}
 	mockTaskPieceLength       int32 = 2048
-	mockHostID                      = idgen.HostIDV2("127.0.0.1", "hostname", 8003)
-	mockSeedHostID                  = idgen.HostIDV2("127.0.0.1", "hostname_seed", 8003)
+	mockHostID                      = idgen.HostIDV2("127.0.0.1", "hostname")
+	mockSeedHostID                  = idgen.HostIDV2("127.0.0.1", "hostname_seed")
 	mockHostSecurityDomain          = "security_domain"
 	mockHostLocation                = "location"
 	mockHostIDC                     = "idc"
