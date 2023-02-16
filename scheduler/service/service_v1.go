@@ -541,7 +541,7 @@ func (v *V1) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequ
 		return nil
 	}
 
-	host.IP = req.Ip
+	host.Port = req.Port
 	host.DownloadPort = req.DownloadPort
 	host.Type = types.ParseHostType(req.Type)
 	host.OS = req.Os
@@ -781,6 +781,11 @@ func (v *V1) storeHost(ctx context.Context, peerHost *schedulerv1.PeerHost) *res
 		return host
 	}
 
+	host.Port = peerHost.RpcPort
+	host.DownloadPort = peerHost.DownPort
+	host.Network.SecurityDomain = peerHost.SecurityDomain
+	host.Network.Location = peerHost.Location
+	host.Network.IDC = peerHost.Idc
 	host.Log.Info("host already exists")
 	return host
 }

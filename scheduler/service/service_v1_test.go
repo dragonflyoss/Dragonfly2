@@ -180,8 +180,8 @@ var (
 	mockTaskFilters                 = []string{"bar"}
 	mockTaskHeader                  = map[string]string{"content-length": "100"}
 	mockTaskPieceLength       int32 = 2048
-	mockHostID                      = idgen.HostIDV2("127.0.0.1", "hostname", 8003)
-	mockSeedHostID                  = idgen.HostIDV2("127.0.0.1", "hostname_seed", 8003)
+	mockHostID                      = idgen.HostIDV2("127.0.0.1", "hostname")
+	mockSeedHostID                  = idgen.HostIDV2("127.0.0.1", "hostname_seed")
 	mockHostSecurityDomain          = "security_domain"
 	mockHostLocation                = "location"
 	mockHostIDC                     = "idc"
@@ -2125,7 +2125,7 @@ func TestService_LeaveHost(t *testing.T) {
 
 			tc.mock(host, mockPeer, hostManager, scheduler.EXPECT(), res.EXPECT(), hostManager.EXPECT())
 			tc.expect(t, mockPeer, svc.LeaveHost(context.Background(), &schedulerv1.LeaveHostRequest{
-				Id: idgen.HostIDV1(host.Hostname, host.Port),
+				Id: idgen.HostIDV2(host.IP, host.Hostname),
 			}))
 		})
 	}
@@ -2711,6 +2711,11 @@ func TestService_storeHost(t *testing.T) {
 			expect: func(t *testing.T, host *resource.Host) {
 				assert := assert.New(t)
 				assert.Equal(host.ID, mockRawHost.ID)
+				assert.Equal(host.Port, mockRawHost.Port)
+				assert.Equal(host.DownloadPort, mockRawHost.DownloadPort)
+				assert.Equal(host.Network.SecurityDomain, mockRawHost.Network.SecurityDomain)
+				assert.Equal(host.Network.Location, mockRawHost.Network.Location)
+				assert.Equal(host.Network.IDC, mockRawHost.Network.IDC)
 			},
 		},
 		{

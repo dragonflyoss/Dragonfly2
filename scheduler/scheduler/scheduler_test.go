@@ -155,8 +155,8 @@ var (
 	mockTaskFilters                 = []string{"bar"}
 	mockTaskHeader                  = map[string]string{"content-length": "100"}
 	mockTaskPieceLength       int32 = 2048
-	mockHostID                      = idgen.HostIDV2("127.0.0.1", "hostname", 8003)
-	mockSeedHostID                  = idgen.HostIDV2("127.0.0.1", "hostname_seed", 8003)
+	mockHostID                      = idgen.HostIDV2("127.0.0.1", "hostname")
+	mockSeedHostID                  = idgen.HostIDV2("127.0.0.1", "hostname_seed")
 	mockHostSecurityDomain          = "security_domain"
 	mockHostLocation                = "location"
 	mockHostIDC                     = "idc"
@@ -628,7 +628,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				mockPeer.FSM.SetState(resource.PeerStateRunning)
 				candidatePeer := resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, resource.NewHost(
-					idgen.HostIDV1(uuid.New().String(), 8003), mockRawHost.IP, mockRawHost.Hostname,
+					idgen.HostIDV2("127.0.0.1", uuid.New().String()), mockRawHost.IP, mockRawHost.Hostname,
 					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type))
 				candidatePeer.FSM.SetState(resource.PeerStateRunning)
 				peer.Task.StorePeer(peer)
@@ -668,7 +668,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
 			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
 			mockPeer := resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, resource.NewHost(
-				idgen.HostIDV1(uuid.New().String(), 8003), mockRawHost.IP, mockRawHost.Hostname,
+				idgen.HostIDV2("127.0.0.1", uuid.New().String()), mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type))
 			blocklist := set.NewSafeSet[string]()
 
@@ -942,7 +942,7 @@ func TestScheduler_FindParent(t *testing.T) {
 			var mockPeers []*resource.Peer
 			for i := 0; i < 11; i++ {
 				mockHost := resource.NewHost(
-					idgen.HostIDV1(uuid.New().String(), 8003), mockRawHost.IP, mockRawHost.Hostname,
+					idgen.HostIDV2("127.0.0.1", uuid.New().String()), mockRawHost.IP, mockRawHost.Hostname,
 					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 				peer := resource.NewPeer(idgen.PeerIDV1(fmt.Sprintf("127.0.0.%d", i)), mockTask, mockHost)
 				mockPeers = append(mockPeers, peer)

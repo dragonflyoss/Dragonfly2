@@ -87,22 +87,20 @@ func newSeedPeerClient(dynconfig config.DynconfigInterface, hostManager HostMana
 	return sc, nil
 }
 
+// Addrs returns the addresses of seed peers.
+func (sc *seedPeerClient) Addrs() []string {
+	var addrs []string
+	for _, seedPeer := range sc.data.Scheduler.SeedPeers {
+		addrs = append(addrs, fmt.Sprintf("%s:%d", seedPeer.Ip, seedPeer.Port))
+	}
+
+	return addrs
+}
+
 // Dynamic config notify function.
 func (sc *seedPeerClient) OnNotify(data *config.DynconfigData) {
 	if reflect.DeepEqual(sc.data, data) {
 		return
-	}
-
-	// If only the ip of the seed peer is changed,
-	// the seed peer needs to be cleared.
-	diffSeedPeers := diffSeedPeers(sc.data.Scheduler.SeedPeers, data.Scheduler.SeedPeers)
-	for _, seedPeer := range diffSeedPeers {
-		id := idgen.HostIDV1(seedPeer.HostName, seedPeer.Port)
-		logger.Infof("host %s has been reclaimed, because of seed peer ip is changed", id)
-		if host, loaded := sc.hostManager.Load(id); loaded {
-			host.LeavePeers()
-			sc.hostManager.Delete(id)
-		}
 	}
 
 	// Update seed peers for host manager.
@@ -123,7 +121,7 @@ func (sc *seedPeerClient) updateSeedPeersForHostManager(seedPeers []*managerv2.S
 			concurrentUploadLimit = int32(config.LoadLimit)
 		}
 
-		id := idgen.HostIDV1(seedPeer.HostName, seedPeer.Port)
+		id := idgen.HostIDV2(seedPeer.Ip, seedPeer.HostName)
 		seedPeerHost, loaded := sc.hostManager.Load(id)
 		if !loaded {
 			options := []HostOption{WithNetwork(Network{
@@ -145,7 +143,7 @@ func (sc *seedPeerClient) updateSeedPeersForHostManager(seedPeers []*managerv2.S
 		}
 
 		seedPeerHost.Type = types.HostTypeSuperSeed
-		seedPeerHost.IP = seedPeer.Ip
+		seedPeerHost.Port = seedPeer.Port
 		seedPeerHost.DownloadPort = seedPeer.DownloadPort
 		seedPeerHost.Network.Location = seedPeer.Location
 		seedPeerHost.Network.IDC = seedPeer.Idc
@@ -169,44 +167,4 @@ func seedPeersToNetAddrs(seedPeers []*managerv2.SeedPeer) []dfnet.NetAddr {
 	}
 
 	return netAddrs
-}
-
-// diffSeedPeers find out different seed peers.
-func diffSeedPeers(sx []*managerv2.SeedPeer, sy []*managerv2.SeedPeer) []*managerv2.SeedPeer {
-	// Get seedPeers with the same HostID but different IP.
-	var diff []*managerv2.SeedPeer
-	for _, x := range sx {
-		for _, y := range sy {
-			if x.HostName != y.HostName {
-				continue
-			}
-
-			if x.Port != y.Port {
-				continue
-			}
-
-			if x.Ip == y.Ip {
-				continue
-			}
-
-			diff = append(diff, x)
-		}
-	}
-
-	// Get the removed seed peers.
-	for _, x := range sx {
-		found := false
-		for _, y := range sy {
-			if idgen.HostIDV1(x.HostName, x.Port) == idgen.HostIDV1(y.HostName, y.Port) {
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			diff = append(diff, x)
-		}
-	}
-
-	return diff
 }
