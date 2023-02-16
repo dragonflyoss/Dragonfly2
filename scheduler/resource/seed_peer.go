@@ -91,12 +91,15 @@ func (s *seedPeer) TriggerTask(ctx context.Context, rg *http.Range, task *Task) 
 	defer cancel()
 
 	urlMeta := &commonv1.UrlMeta{
-		Digest:      task.Digest,
 		Tag:         task.Tag,
 		Filter:      strings.Join(task.Filters, idgen.URLFilterSeparator),
 		Header:      task.Header,
 		Application: task.Application,
 		Priority:    commonv1.Priority_LEVEL0,
+	}
+
+	if task.Digest != nil {
+		urlMeta.Digest = task.Digest.String()
 	}
 
 	if rg != nil {
