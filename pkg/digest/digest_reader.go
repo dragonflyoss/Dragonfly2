@@ -41,9 +41,8 @@ type Reader interface {
 // reader reads stream with RateLimiter.
 type reader struct {
 	r       io.Reader
-	hash    hash.Hash
-	digest  string
 	encoded string
+	hash    hash.Hash
 	logger  *logger.SugaredLoggerOnWith
 }
 
@@ -57,47 +56,37 @@ func WithLogger(logger *logger.SugaredLoggerOnWith) Option {
 	}
 }
 
-// WithDigest sets the digest to be verified.
-func WithDigest(digest string) Option {
+// WithEncoded sets the encoded to be verified.
+func WithEncoded(encoded string) Option {
 	return func(reader *reader) {
-		reader.digest = digest
+		reader.encoded = encoded
 	}
 }
 
-// TODO add AF_ALG digest https://github.com/golang/sys/commit/e24f485414aeafb646f6fca458b0bf869c0880a1
-func NewReader(r io.Reader, options ...Option) (io.Reader, error) {
+// NewReader creates digest reader.
+func NewReader(algorithm string, r io.Reader, options ...Option) (Reader, error) {
+	var h hash.Hash
+	switch algorithm {
+	case AlgorithmSHA1:
+		h = sha1.New()
+	case AlgorithmSHA256:
+		h = sha256.New()
+	case AlgorithmSHA512:
+		h = sha512.New()
+	case AlgorithmMD5:
+		h = md5.New()
+	default:
+		return nil, fmt.Errorf("invalid algorithm: %s", algorithm)
+	}
+
 	reader := &reader{
 		r:      r,
-		hash:   md5.New(),
+		hash:   h,
 		logger: &logger.SugaredLoggerOnWith{},
 	}
 
 	for _, opt := range options {
 		opt(reader)
-	}
-
-	if reader.digest != "" {
-		d, err := Parse(reader.digest)
-		if err != nil {
-			return nil, errors.New("invalid digest")
-		}
-
-		var h hash.Hash
-		switch d.Algorithm {
-		case AlgorithmSHA1:
-			h = sha1.New()
-		case AlgorithmSHA256:
-			h = sha256.New()
-		case AlgorithmSHA512:
-			h = sha512.New()
-		case AlgorithmMD5:
-			h = md5.New()
-		default:
-			return nil, fmt.Errorf("unsupport digest method: %s", d.Algorithm)
-		}
-
-		reader.encoded = d.Encoded
-		reader.hash = h
 	}
 
 	return reader, nil
@@ -114,7 +103,7 @@ func (r *reader) Read(p []byte) (int, error) {
 		r.hash.Write(p[:n])
 	}
 
-	if err == io.EOF && r.digest != "" {
+	if err == io.EOF && len(r.encoded) != 0 {
 		encoded := r.Encoded()
 		if encoded != r.encoded {
 			r.logger.Warnf("digest encoded not match, desired: %s, actual: %s", r.encoded, encoded)
