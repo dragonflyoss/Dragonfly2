@@ -26,7 +26,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 	configmocks "d7y.io/dragonfly/v2/scheduler/config/mocks"
 	"d7y.io/dragonfly/v2/scheduler/resource"
-	"d7y.io/dragonfly/v2/scheduler/scheduler/mocks"
+	"d7y.io/dragonfly/v2/scheduler/scheduling/mocks"
 	storagemocks "d7y.io/dragonfly/v2/scheduler/storage/mocks"
 )
 
@@ -48,11 +48,11 @@ func TestService_NewV2(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
-			scheduler := mocks.NewMockScheduler(ctl)
+			scheduling := mocks.NewMockScheduling(ctl)
 			resource := resource.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			storage := storagemocks.NewMockStorage(ctl)
-			tc.expect(t, NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, scheduler, dynconfig, storage))
+			tc.expect(t, NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, scheduling, dynconfig, storage))
 		})
 	}
 }

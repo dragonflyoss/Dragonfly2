@@ -27,7 +27,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
 	"d7y.io/dragonfly/v2/scheduler/resource"
-	"d7y.io/dragonfly/v2/scheduler/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/scheduling"
 	"d7y.io/dragonfly/v2/scheduler/service"
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
@@ -42,11 +42,11 @@ type schedulerServerV1 struct {
 func newSchedulerServerV1(
 	cfg *config.Config,
 	resource resource.Resource,
-	scheduler scheduler.Scheduler,
+	scheduling scheduling.Scheduling,
 	dynconfig config.DynconfigInterface,
 	storage storage.Storage,
 ) schedulerv1.SchedulerServer {
-	return &schedulerServerV1{service.NewV1(cfg, resource, scheduler, dynconfig, storage)}
+	return &schedulerServerV1{service.NewV1(cfg, resource, scheduling, dynconfig, storage)}
 }
 
 // RegisterPeerTask registers peer and triggers seed peer download task.

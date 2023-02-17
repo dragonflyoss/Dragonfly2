@@ -49,7 +49,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/metrics"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/rpcserver"
-	"d7y.io/dragonfly/v2/scheduler/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/scheduling"
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
@@ -182,8 +182,8 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 	s.resource = resource
 
-	// Initialize scheduler.
-	scheduler := scheduler.New(&cfg.Scheduler, dynconfig, d.PluginDir())
+	// Initialize scheduling.
+	scheduling := scheduling.New(&cfg.Scheduler, dynconfig, d.PluginDir())
 
 	// Initialize Storage.
 	storage, err := storage.New(
@@ -210,7 +210,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		schedulerServerOptions = append(schedulerServerOptions, grpc.Creds(insecure.NewCredentials()))
 	}
 
-	svr := rpcserver.New(cfg, resource, scheduler, dynconfig, s.storage, schedulerServerOptions...)
+	svr := rpcserver.New(cfg, resource, scheduling, dynconfig, s.storage, schedulerServerOptions...)
 	s.grpcServer = svr
 
 	// Initialize job service.

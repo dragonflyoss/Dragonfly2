@@ -22,7 +22,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
-	"d7y.io/dragonfly/v2/scheduler/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/scheduling"
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
@@ -30,13 +30,13 @@ import (
 func New(
 	cfg *config.Config,
 	resource resource.Resource,
-	scheduler scheduler.Scheduler,
+	scheduling scheduling.Scheduling,
 	dynconfig config.DynconfigInterface,
 	storage storage.Storage,
 	opts ...grpc.ServerOption,
 ) *grpc.Server {
 	return server.New(
-		newSchedulerServerV1(cfg, resource, scheduler, dynconfig, storage),
-		newSchedulerServerV2(cfg, resource, scheduler, dynconfig, storage),
+		newSchedulerServerV1(cfg, resource, scheduling, dynconfig, storage),
+		newSchedulerServerV2(cfg, resource, scheduling, dynconfig, storage),
 		opts...)
 }

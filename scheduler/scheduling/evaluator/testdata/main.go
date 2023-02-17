@@ -21,7 +21,7 @@ import (
 	"os"
 
 	"d7y.io/dragonfly/v2/scheduler/resource"
-	"d7y.io/dragonfly/v2/scheduler/scheduler/evaluator"
+	"d7y.io/dragonfly/v2/scheduler/scheduling/evaluator"
 )
 
 func main() {

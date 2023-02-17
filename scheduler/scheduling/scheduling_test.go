@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package scheduler
+package scheduling
 
 import (
 	"context"
@@ -41,7 +41,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 	configmocks "d7y.io/dragonfly/v2/scheduler/config/mocks"
 	"d7y.io/dragonfly/v2/scheduler/resource"
-	"d7y.io/dragonfly/v2/scheduler/scheduler/evaluator"
+	"d7y.io/dragonfly/v2/scheduler/scheduling/evaluator"
 )
 
 var (
@@ -164,26 +164,26 @@ var (
 	mockSeedPeerID                  = idgen.PeerIDV2()
 )
 
-func TestScheduler_New(t *testing.T) {
+func TestScheduling_New(t *testing.T) {
 	tests := []struct {
 		name      string
 		pluginDir string
 		expect    func(t *testing.T, s any)
 	}{
 		{
-			name:      "new scheduler",
+			name:      "new scheduling",
 			pluginDir: "bar",
 			expect: func(t *testing.T, s any) {
 				assert := assert.New(t)
-				assert.Equal(reflect.TypeOf(s).Elem().Name(), "scheduler")
+				assert.Equal(reflect.TypeOf(s).Elem().Name(), "scheduling")
 			},
 		},
 		{
-			name:      "new scheduler with empty pluginDir",
+			name:      "new scheduling with empty pluginDir",
 			pluginDir: "",
 			expect: func(t *testing.T, s any) {
 				assert := assert.New(t)
-				assert.Equal(reflect.TypeOf(s).Elem().Name(), "scheduler")
+				assert.Equal(reflect.TypeOf(s).Elem().Name(), "scheduling")
 			},
 		},
 	}
@@ -199,7 +199,7 @@ func TestScheduler_New(t *testing.T) {
 	}
 }
 
-func TestScheduler_ScheduleParent(t *testing.T) {
+func TestScheduling_ScheduleParent(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, mr *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder)
@@ -395,14 +395,14 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 			blocklist := set.NewSafeSet[string]()
 
 			tc.mock(cancel, peer, seedPeer, blocklist, stream, stream.EXPECT(), dynconfig.EXPECT())
-			scheduler := New(mockSchedulerConfig, dynconfig, mockPluginDir)
-			scheduler.ScheduleParent(ctx, peer, blocklist)
+			scheduling := New(mockSchedulerConfig, dynconfig, mockPluginDir)
+			scheduling.ScheduleParent(ctx, peer, blocklist)
 			tc.expect(t, peer)
 		})
 	}
 }
 
-func TestScheduler_NotifyAndFindParent(t *testing.T) {
+func TestScheduling_NotifyAndFindParent(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(peer *resource.Peer, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder)
@@ -673,14 +673,14 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 			blocklist := set.NewSafeSet[string]()
 
 			tc.mock(peer, mockTask, mockPeer, blocklist, stream, dynconfig, stream.EXPECT(), dynconfig.EXPECT())
-			scheduler := New(mockSchedulerConfig, dynconfig, mockPluginDir)
-			parents, ok := scheduler.NotifyAndFindParent(context.Background(), peer, blocklist)
+			scheduling := New(mockSchedulerConfig, dynconfig, mockPluginDir)
+			parents, ok := scheduling.NotifyAndFindParent(context.Background(), peer, blocklist)
 			tc.expect(t, peer, parents, ok)
 		})
 	}
 }
 
-func TestScheduler_FindParent(t *testing.T) {
+func TestScheduling_FindParent(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet[string], md *configmocks.MockDynconfigInterfaceMockRecorder)
@@ -950,14 +950,14 @@ func TestScheduler_FindParent(t *testing.T) {
 
 			blocklist := set.NewSafeSet[string]()
 			tc.mock(peer, mockPeers, blocklist, dynconfig.EXPECT())
-			scheduler := New(mockSchedulerConfig, dynconfig, mockPluginDir)
-			parent, found := scheduler.FindParent(context.Background(), peer, blocklist)
+			scheduling := New(mockSchedulerConfig, dynconfig, mockPluginDir)
+			parent, found := scheduling.FindParent(context.Background(), peer, blocklist)
 			tc.expect(t, peer, mockPeers, parent, found)
 		})
 	}
 }
 
-func TestScheduler_constructSuccessPeerPacket(t *testing.T) {
+func TestScheduling_constructSuccessPeerPacket(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(md *configmocks.MockDynconfigInterfaceMockRecorder)

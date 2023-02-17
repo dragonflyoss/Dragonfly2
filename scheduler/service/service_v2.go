@@ -24,7 +24,7 @@ import (
 
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
-	"d7y.io/dragonfly/v2/scheduler/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/scheduling"
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
@@ -34,10 +34,10 @@ type V2 struct {
 	// Resource interface.
 	resource resource.Resource
 
-	// Scheduler interface.
-	scheduler scheduler.Scheduler
+	// Scheduling interface.
+	scheduling scheduling.Scheduling
 
-	// Scheduelr service config.
+	// Scheduler service config.
 	config *config.Config
 
 	// Dynamic config.
@@ -51,16 +51,16 @@ type V2 struct {
 func NewV2(
 	cfg *config.Config,
 	resource resource.Resource,
-	scheduler scheduler.Scheduler,
+	scheduling scheduling.Scheduling,
 	dynconfig config.DynconfigInterface,
 	storage storage.Storage,
 ) *V2 {
 	return &V2{
-		resource:  resource,
-		scheduler: scheduler,
-		config:    cfg,
-		dynconfig: dynconfig,
-		storage:   storage,
+		resource:   resource,
+		scheduling: scheduling,
+		config:     cfg,
+		dynconfig:  dynconfig,
+		storage:    storage,
 	}
 }
 
