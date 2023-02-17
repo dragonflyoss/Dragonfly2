@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-//go:generate mockgen -destination mocks/scheduler_mock.go -source scheduler.go -package mocks
+//go:generate mockgen -destination mocks/scheduling_mock.go -source scheduling.go -package mocks
 
-package scheduler
+package scheduling
 
 import (
 	"context"
@@ -30,10 +30,10 @@ import (
 	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
-	"d7y.io/dragonfly/v2/scheduler/scheduler/evaluator"
+	"d7y.io/dragonfly/v2/scheduler/scheduling/evaluator"
 )
 
-type Scheduler interface {
+type Scheduling interface {
 	// ScheduleParent schedule a parent and candidates to a peer.
 	ScheduleParent(context.Context, *resource.Peer, set.SafeSet[string])
 
@@ -44,7 +44,7 @@ type Scheduler interface {
 	FindParent(context.Context, *resource.Peer, set.SafeSet[string]) (*resource.Peer, bool)
 }
 
-type scheduler struct {
+type scheduling struct {
 	// Evaluator interface.
 	evaluator evaluator.Evaluator
 
@@ -55,8 +55,8 @@ type scheduler struct {
 	dynconfig config.DynconfigInterface
 }
 
-func New(cfg *config.SchedulerConfig, dynconfig config.DynconfigInterface, pluginDir string) Scheduler {
-	return &scheduler{
+func New(cfg *config.SchedulerConfig, dynconfig config.DynconfigInterface, pluginDir string) Scheduling {
+	return &scheduling{
 		evaluator: evaluator.New(cfg.Algorithm, pluginDir),
 		config:    cfg,
 		dynconfig: dynconfig,
@@ -64,7 +64,7 @@ func New(cfg *config.SchedulerConfig, dynconfig config.DynconfigInterface, plugi
 }
 
 // ScheduleParent schedule a parent and candidates to a peer.
-func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blocklist set.SafeSet[string]) {
+func (s *scheduling) ScheduleParent(ctx context.Context, peer *resource.Peer, blocklist set.SafeSet[string]) {
 	var n int
 	for {
 		select {
@@ -142,7 +142,7 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 }
 
 // NotifyAndFindParent finds parent that best matches the evaluation and notify peer.
-func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer, blocklist set.SafeSet[string]) ([]*resource.Peer, bool) {
+func (s *scheduling) NotifyAndFindParent(ctx context.Context, peer *resource.Peer, blocklist set.SafeSet[string]) ([]*resource.Peer, bool) {
 	// Only PeerStateRunning peers need to be rescheduled,
 	// and other states including the PeerStateBackToSource indicate that
 	// they have been scheduled.
@@ -209,7 +209,7 @@ func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer
 }
 
 // FindParent finds parent that best matches the evaluation.
-func (s *scheduler) FindParent(ctx context.Context, peer *resource.Peer, blocklist set.SafeSet[string]) (*resource.Peer, bool) {
+func (s *scheduling) FindParent(ctx context.Context, peer *resource.Peer, blocklist set.SafeSet[string]) (*resource.Peer, bool) {
 	// Filter the candidate parent that can be scheduled.
 	candidateParents := s.filterCandidateParents(peer, blocklist)
 	if len(candidateParents) == 0 {
@@ -231,7 +231,7 @@ func (s *scheduler) FindParent(ctx context.Context, peer *resource.Peer, blockli
 }
 
 // Filter the candidate parent that can be scheduled.
-func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.SafeSet[string]) []*resource.Peer {
+func (s *scheduling) filterCandidateParents(peer *resource.Peer, blocklist set.SafeSet[string]) []*resource.Peer {
 	filterParentLimit := config.DefaultSchedulerFilterParentLimit
 	filterParentRangeLimit := config.DefaultSchedulerFilterParentRangeLimit
 	if config, err := s.dynconfig.GetSchedulerClusterConfig(); err == nil {
