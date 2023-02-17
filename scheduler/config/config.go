@@ -138,14 +138,20 @@ type GCConfig struct {
 	// PeerGCInterval is interval of peer gc.
 	PeerGCInterval time.Duration `yaml:"peerGCInterval" mapstructure:"peerGCInterval"`
 
-	// PeerTTL is time to live of peer.
+	// PeerTTL is time to live of peer. If the peer has been downloaded by other peers,
+	// then PeerTTL will be reset.
 	PeerTTL time.Duration `yaml:"peerTTL" mapstructure:"peerTTL"`
 
-	// TaskGCInterval is interval of task gc.
+	// TaskGCInterval is interval of task gc. If all the peers have been reclaimed in the task,
+	// then the task will also be reclaimed.
 	TaskGCInterval time.Duration `yaml:"taskGCInterval" mapstructure:"taskGCInterval"`
 
 	// HostGCInterval is interval of host gc.
 	HostGCInterval time.Duration `yaml:"hostGCInterval" mapstructure:"hostGCInterval"`
+
+	// HostTTL is time to live of host. If host announces message to scheduler,
+	// then HostTTl will be reset.
+	HostTTL time.Duration `yaml:"hostTTL" mapstructure:"hostTTL"`
 }
 
 type DynConfig struct {
@@ -329,6 +335,7 @@ func New() *Config {
 				PeerTTL:              DefaultSchedulerPeerTTL,
 				TaskGCInterval:       DefaultSchedulerTaskGCInterval,
 				HostGCInterval:       DefaultSchedulerHostGCInterval,
+				HostTTL:              DefaultSchedulerHostTTL,
 			},
 		},
 		DynConfig: DynConfig{
@@ -446,6 +453,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Scheduler.GC.HostGCInterval <= 0 {
 		return errors.New("scheduler requires parameter hostGCInterval")
+	}
+
+	if cfg.Scheduler.GC.HostTTL <= 0 {
+		return errors.New("scheduler requires parameter hostTTL")
 	}
 
 	if cfg.DynConfig.RefreshInterval <= 0 {

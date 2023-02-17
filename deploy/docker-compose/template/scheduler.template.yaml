@@ -54,12 +54,17 @@ scheduler:
     pieceDownloadTimeout: 30m
     # peerGCInterval is the interval of peer gc.
     peerGCInterval: 10s
-    # peerTTL is the ttl of peer.
+    # peerTTL is the ttl of peer. If the peer has been downloaded by other peers,
+    # then PeerTTL will be reset
     peerTTL: 24h
-    # taskGCInterval is the interval of task gc.
+    # taskGCInterval is the interval of task gc. If all the peers have been reclaimed in the task,
+    # then the task will also be reclaimed.
     taskGCInterval: 30m
     # hostGCInterval is the interval of host gc.
-    hostGCInterval: 1h
+    hostGCInterval: 6h
+    # hostTTL is time to live of host. If host announces message to scheduler,
+    # then HostTTl will be reset.
+    hostTTL: 1h
 
 # Dynamic data configuration.
 dynConfig:

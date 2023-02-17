@@ -57,8 +57,11 @@ type peerManager struct {
 	// Peer sync map.
 	*sync.Map
 
-	// ttl is time to live of peer.
-	ttl time.Duration
+	// peerTTL is time to live of peer.
+	peerTTL time.Duration
+
+	// hostTTL is time to live of host.
+	hostTTL time.Duration
 
 	// pieceDownloadTimeout is timeout of downloading piece.
 	pieceDownloadTimeout time.Duration
@@ -71,7 +74,8 @@ type peerManager struct {
 func newPeerManager(cfg *config.GCConfig, gc pkggc.GC) (PeerManager, error) {
 	p := &peerManager{
 		Map:                  &sync.Map{},
-		ttl:                  cfg.PeerTTL,
+		peerTTL:              cfg.PeerTTL,
+		hostTTL:              cfg.HostTTL,
 		pieceDownloadTimeout: cfg.PieceDownloadTimeout,
 		mu:                   &sync.Mutex{},
 	}
@@ -168,11 +172,24 @@ func (p *peerManager) RunGC() error {
 			}
 		}
 
-		// If the peer's elapsed exceeds the ttl,
+		// If the peer's elapsed exceeds the peer ttl,
 		// then set the peer state to PeerStateLeave and then delete peer.
 		elapsed := time.Since(peer.UpdatedAt.Load())
-		if elapsed > p.ttl {
-			peer.Log.Info("peer elapsed exceeds the ttl, causing the peer to leave")
+		if elapsed > p.peerTTL {
+			peer.Log.Info("peer elapsed exceeds the peer ttl, causing the peer to leave")
+			if err := peer.FSM.Event(context.Background(), PeerEventLeave); err != nil {
+				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
+				return true
+			}
+
+			return true
+		}
+
+		// If the host's elapsed exceeds the host ttl,
+		// then set the peer state to PeerStateLeave and then delete peer.
+		elapsed = time.Since(peer.Host.UpdatedAt.Load())
+		if elapsed > p.hostTTL {
+			peer.Log.Info("peer elapsed exceeds the host ttl, causing the peer to leave")
 			if err := peer.FSM.Event(context.Background(), PeerEventLeave); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 				return true

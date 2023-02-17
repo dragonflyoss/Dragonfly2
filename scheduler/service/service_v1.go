@@ -549,6 +549,7 @@ func (v *V1) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequ
 	host.PlatformFamily = req.PlatformFamily
 	host.PlatformVersion = req.PlatformVersion
 	host.KernelVersion = req.KernelVersion
+	host.UpdatedAt.Store(time.Now())
 
 	if req.Cpu != nil {
 		host.CPU = resource.CPU{
@@ -786,6 +787,7 @@ func (v *V1) storeHost(ctx context.Context, peerHost *schedulerv1.PeerHost) *res
 	host.Network.SecurityDomain = peerHost.SecurityDomain
 	host.Network.Location = peerHost.Location
 	host.Network.IDC = peerHost.Idc
+	host.UpdatedAt.Store(time.Now())
 	host.Log.Info("host already exists")
 	return host
 }
@@ -1010,6 +1012,7 @@ func (v *V1) handlePieceSuccess(ctx context.Context, peer *resource.Peer, pieceR
 	if !resource.IsPieceBackToSource(pieceResult.DstPid) {
 		if destPeer, loaded := v.resource.PeerManager().Load(pieceResult.DstPid); loaded {
 			destPeer.UpdatedAt.Store(time.Now())
+			destPeer.Host.UpdatedAt.Store(time.Now())
 		}
 	}
 

@@ -74,7 +74,10 @@ const (
 	DefaultSchedulerTaskGCInterval = 30 * time.Minute
 
 	// DefaultSchedulerHostGCInterval is default interval for host gc.
-	DefaultSchedulerHostGCInterval = 1 * time.Hour
+	DefaultSchedulerHostGCInterval = 6 * time.Hour
+
+	// DefaultSchedulerHostTTL is default ttl for host.
+	DefaultSchedulerHostTTL = 1 * time.Hour
 
 	// DefaultRefreshModelInterval is model refresh interval.
 	DefaultRefreshModelInterval = 168 * time.Hour

@@ -330,6 +330,7 @@ func TestPeerManager_RunGC(t *testing.T) {
 				PieceDownloadTimeout: 5 * time.Minute,
 				PeerGCInterval:       1 * time.Second,
 				PeerTTL:              1 * time.Microsecond,
+				HostTTL:              10 * time.Second,
 			},
 			mock: func(m *gc.MockGCMockRecorder) {
 				m.Add(gomock.Any()).Return(nil).Times(1)
@@ -352,6 +353,7 @@ func TestPeerManager_RunGC(t *testing.T) {
 				PieceDownloadTimeout: 1 * time.Microsecond,
 				PeerGCInterval:       1 * time.Second,
 				PeerTTL:              5 * time.Minute,
+				HostTTL:              10 * time.Second,
 			},
 			mock: func(m *gc.MockGCMockRecorder) {
 				m.Add(gomock.Any()).Return(nil).Times(1)
@@ -380,6 +382,7 @@ func TestPeerManager_RunGC(t *testing.T) {
 				PieceDownloadTimeout: 1 * time.Microsecond,
 				PeerGCInterval:       1 * time.Second,
 				PeerTTL:              5 * time.Minute,
+				HostTTL:              10 * time.Second,
 			},
 			mock: func(m *gc.MockGCMockRecorder) {
 				m.Add(gomock.Any()).Return(nil).Times(1)
@@ -403,11 +406,41 @@ func TestPeerManager_RunGC(t *testing.T) {
 			},
 		},
 		{
-			name: "peer reclaimed",
+			name: "peer reclaimed with peer ttl",
 			gcConfig: &config.GCConfig{
 				PieceDownloadTimeout: 5 * time.Minute,
 				PeerGCInterval:       1 * time.Second,
 				PeerTTL:              1 * time.Microsecond,
+				HostTTL:              10 * time.Second,
+			},
+			mock: func(m *gc.MockGCMockRecorder) {
+				m.Add(gomock.Any()).Return(nil).Times(1)
+			},
+			expect: func(t *testing.T, peerManager PeerManager, mockHost *Host, mockTask *Task, mockPeer *Peer) {
+				assert := assert.New(t)
+				peerManager.Store(mockPeer)
+				mockPeer.FSM.SetState(PeerStateSucceeded)
+				err := peerManager.RunGC()
+				assert.NoError(err)
+
+				peer, loaded := peerManager.Load(mockPeer.ID)
+				assert.Equal(loaded, true)
+				assert.Equal(peer.FSM.Current(), PeerStateLeave)
+
+				err = peerManager.RunGC()
+				assert.NoError(err)
+
+				_, loaded = peerManager.Load(mockPeer.ID)
+				assert.Equal(loaded, false)
+			},
+		},
+		{
+			name: "peer reclaimed with host ttl",
+			gcConfig: &config.GCConfig{
+				PieceDownloadTimeout: 5 * time.Minute,
+				PeerGCInterval:       1 * time.Second,
+				PeerTTL:              10 * time.Second,
+				HostTTL:              1 * time.Microsecond,
 			},
 			mock: func(m *gc.MockGCMockRecorder) {
 				m.Add(gomock.Any()).Return(nil).Times(1)
@@ -436,6 +469,7 @@ func TestPeerManager_RunGC(t *testing.T) {
 				PieceDownloadTimeout: 5 * time.Minute,
 				PeerGCInterval:       1 * time.Second,
 				PeerTTL:              1 * time.Microsecond,
+				HostTTL:              10 * time.Second,
 			},
 			mock: func(m *gc.MockGCMockRecorder) {
 				m.Add(gomock.Any()).Return(nil).Times(1)
@@ -458,6 +492,7 @@ func TestPeerManager_RunGC(t *testing.T) {
 				PieceDownloadTimeout: 5 * time.Minute,
 				PeerGCInterval:       1 * time.Second,
 				PeerTTL:              1 * time.Hour,
+				HostTTL:              10 * time.Second,
 			},
 			mock: func(m *gc.MockGCMockRecorder) {
 				m.Add(gomock.Any()).Return(nil).Times(1)
@@ -481,6 +516,7 @@ func TestPeerManager_RunGC(t *testing.T) {
 				PieceDownloadTimeout: 5 * time.Minute,
 				PeerGCInterval:       1 * time.Second,
 				PeerTTL:              1 * time.Hour,
+				HostTTL:              10 * time.Second,
 			},
 			mock: func(m *gc.MockGCMockRecorder) {
 				m.Add(gomock.Any()).Return(nil).Times(1)
