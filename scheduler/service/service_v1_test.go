@@ -33,6 +33,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/atomic"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -85,6 +86,8 @@ var (
 		Network:         mockNetwork,
 		Disk:            mockDisk,
 		Build:           mockBuild,
+		CreatedAt:       atomic.NewTime(time.Now()),
+		UpdatedAt:       atomic.NewTime(time.Now()),
 	}
 
 	mockRawSeedHost = resource.Host{
@@ -104,6 +107,8 @@ var (
 		Network:         mockNetwork,
 		Disk:            mockDisk,
 		Build:           mockBuild,
+		CreatedAt:       atomic.NewTime(time.Now()),
+		UpdatedAt:       atomic.NewTime(time.Now()),
 	}
 
 	mockCPU = resource.CPU{
@@ -2716,6 +2721,7 @@ func TestService_storeHost(t *testing.T) {
 				assert.Equal(host.Network.SecurityDomain, mockRawHost.Network.SecurityDomain)
 				assert.Equal(host.Network.Location, mockRawHost.Network.Location)
 				assert.Equal(host.Network.IDC, mockRawHost.Network.IDC)
+				assert.NotEqual(host.UpdatedAt.Load(), mockRawHost.UpdatedAt.Load())
 			},
 		},
 		{
