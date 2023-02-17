@@ -44,7 +44,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
 	"d7y.io/dragonfly/v2/scheduler/resource"
-	"d7y.io/dragonfly/v2/scheduler/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/scheduling"
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
@@ -53,8 +53,8 @@ type V1 struct {
 	// Resource interface.
 	resource resource.Resource
 
-	// Scheduler interface.
-	scheduler scheduler.Scheduler
+	// Scheduling interface.
+	scheduling scheduling.Scheduling
 
 	// Scheduelr service config.
 	config *config.Config
@@ -70,16 +70,16 @@ type V1 struct {
 func NewV1(
 	cfg *config.Config,
 	resource resource.Resource,
-	scheduler scheduler.Scheduler,
+	scheduling scheduling.Scheduling,
 	dynconfig config.DynconfigInterface,
 	storage storage.Storage,
 ) *V1 {
 	return &V1{
-		resource:  resource,
-		scheduler: scheduler,
-		config:    cfg,
-		dynconfig: dynconfig,
-		storage:   storage,
+		resource:   resource,
+		scheduling: scheduling,
+		config:     cfg,
+		dynconfig:  dynconfig,
+		storage:    storage,
 	}
 }
 
@@ -851,7 +851,7 @@ func (v *V1) registerTinyTask(ctx context.Context, peer *resource.Peer) (*schedu
 
 // registerSmallTask registers the small task.
 func (v *V1) registerSmallTask(ctx context.Context, peer *resource.Peer) (*schedulerv1.RegisterResult, error) {
-	parent, found := v.scheduler.FindParent(ctx, peer, set.NewSafeSet[string]())
+	parent, found := v.scheduling.FindParent(ctx, peer, set.NewSafeSet[string]())
 	if !found {
 		return nil, errors.New("parent not found")
 	}
@@ -962,7 +962,7 @@ func (v *V1) handleBeginOfPiece(ctx context.Context, peer *resource.Peer) {
 			return
 		}
 
-		v.scheduler.ScheduleParent(ctx, peer, set.NewSafeSet[string]())
+		v.scheduling.ScheduleParent(ctx, peer, set.NewSafeSet[string]())
 	default:
 	}
 }
@@ -1032,7 +1032,7 @@ func (v *V1) handlePieceFailure(ctx context.Context, peer *resource.Peer, piece 
 	if !loaded {
 		peer.Log.Errorf("parent %s not found", piece.DstPid)
 		peer.BlockParents.Add(piece.DstPid)
-		v.scheduler.ScheduleParent(ctx, peer, peer.BlockParents)
+		v.scheduling.ScheduleParent(ctx, peer, peer.BlockParents)
 		return
 	}
 
@@ -1091,7 +1091,7 @@ func (v *V1) handlePieceFailure(ctx context.Context, peer *resource.Peer, piece 
 
 	peer.Log.Infof("reschedule parent because of failed piece")
 	peer.BlockParents.Add(parent.ID)
-	v.scheduler.ScheduleParent(ctx, peer, peer.BlockParents)
+	v.scheduling.ScheduleParent(ctx, peer, peer.BlockParents)
 }
 
 // handlePeerSuccess handles successful peer.
@@ -1139,7 +1139,7 @@ func (v *V1) handlePeerFailure(ctx context.Context, peer *resource.Peer) {
 	// Reschedule a new parent to children of peer to exclude the current failed peer.
 	for _, child := range peer.Children() {
 		child.Log.Infof("reschedule parent because of parent peer %s is failed", peer.ID)
-		v.scheduler.ScheduleParent(ctx, child, child.BlockParents)
+		v.scheduling.ScheduleParent(ctx, child, child.BlockParents)
 	}
 }
 
@@ -1154,7 +1154,7 @@ func (v *V1) handleLegacySeedPeer(ctx context.Context, peer *resource.Peer) {
 	// Reschedule a new parent to children of peer to exclude the current failed peer.
 	for _, child := range peer.Children() {
 		child.Log.Infof("reschedule parent because of parent peer %s is failed", peer.ID)
-		v.scheduler.ScheduleParent(ctx, child, child.BlockParents)
+		v.scheduling.ScheduleParent(ctx, child, child.BlockParents)
 	}
 }
 
