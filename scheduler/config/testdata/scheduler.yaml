@@ -21,6 +21,7 @@ scheduler:
     peerTTL: 60s
     taskGCInterval: 30s
     hostGCInterval: 1m
+    hostTTL: 1m
 
 dynConfig:
   refreshInterval: 10s

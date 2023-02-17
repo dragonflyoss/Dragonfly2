@@ -39,9 +39,10 @@ func TestConfig_Load(t *testing.T) {
 			GC: GCConfig{
 				PieceDownloadTimeout: 5 * time.Second,
 				PeerGCInterval:       10 * time.Second,
-				PeerTTL:              60 * time.Second,
+				PeerTTL:              1 * time.Minute,
 				TaskGCInterval:       30 * time.Second,
 				HostGCInterval:       1 * time.Minute,
+				HostTTL:              1 * time.Minute,
 			},
 		},
 		Server: ServerConfig{

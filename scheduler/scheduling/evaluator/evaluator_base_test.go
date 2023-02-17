@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/atomic"
 
 	commonv2 "d7y.io/api/pkg/apis/common/v2"
 
@@ -49,6 +50,8 @@ var (
 		Network:         mockNetwork,
 		Disk:            mockDisk,
 		Build:           mockBuild,
+		CreatedAt:       atomic.NewTime(time.Now()),
+		UpdatedAt:       atomic.NewTime(time.Now()),
 	}
 
 	mockRawSeedHost = resource.Host{
@@ -68,6 +71,8 @@ var (
 		Network:         mockNetwork,
 		Disk:            mockDisk,
 		Build:           mockBuild,
+		CreatedAt:       atomic.NewTime(time.Now()),
+		UpdatedAt:       atomic.NewTime(time.Now()),
 	}
 
 	mockCPU = resource.CPU{
