@@ -761,6 +761,10 @@ func (cd *clientDaemon) Serve() error {
 		}()
 	}
 
+	if cd.dynconfig.GetSourceType() == config.LocalSourceType {
+		watchers = append(watchers, cd.dynconfig.SetConfig)
+	}
+
 	if len(watchers) > 0 && interval > 0 {
 		go func() {
 			dependency.WatchConfig(interval, func() any {
