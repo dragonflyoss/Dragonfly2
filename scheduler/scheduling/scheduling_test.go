@@ -204,7 +204,7 @@ func TestScheduling_New(t *testing.T) {
 	}
 }
 
-func TestScheduling_ScheduleParent(t *testing.T) {
+func TestScheduling_ScheduleParentsForNormalPeer(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, mr *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder)
@@ -401,13 +401,13 @@ func TestScheduling_ScheduleParent(t *testing.T) {
 
 			tc.mock(cancel, peer, seedPeer, blocklist, stream, stream.EXPECT(), dynconfig.EXPECT())
 			scheduling := New(mockSchedulerConfig, dynconfig, mockPluginDir)
-			scheduling.ScheduleParent(ctx, peer, blocklist)
+			scheduling.ScheduleParentsForNormalPeer(ctx, peer, blocklist)
 			tc.expect(t, peer)
 		})
 	}
 }
 
-func TestScheduling_NotifyAndFindParent(t *testing.T) {
+func TestScheduling_notifyAndFindParents(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(peer *resource.Peer, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder)
@@ -678,8 +678,8 @@ func TestScheduling_NotifyAndFindParent(t *testing.T) {
 			blocklist := set.NewSafeSet[string]()
 
 			tc.mock(peer, mockTask, mockPeer, blocklist, stream, dynconfig, stream.EXPECT(), dynconfig.EXPECT())
-			scheduling := New(mockSchedulerConfig, dynconfig, mockPluginDir)
-			parents, ok := scheduling.NotifyAndFindParent(context.Background(), peer, blocklist)
+			s := New(mockSchedulerConfig, dynconfig, mockPluginDir)
+			parents, ok := s.(*scheduling).notifyAndFindParents(context.Background(), peer, blocklist)
 			tc.expect(t, peer, parents, ok)
 		})
 	}

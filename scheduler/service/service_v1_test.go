@@ -361,44 +361,6 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			},
 		},
 		{
-			name: "get task scope size failed",
-			req: &schedulerv1.PeerTaskRequest{
-				UrlMeta: &commonv1.UrlMeta{
-					Priority: commonv1.Priority_LEVEL0,
-				},
-				PeerHost: &schedulerv1.PeerHost{
-					Id: mockRawHost.ID,
-				},
-			},
-			mock: func(
-				req *schedulerv1.PeerTaskRequest, mockPeer *resource.Peer, mockSeedPeer *resource.Peer,
-				scheduling scheduling.Scheduling, res resource.Resource, hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager,
-				ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder,
-				mp *resource.MockPeerManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder,
-			) {
-				mockPeer.Task.FSM.SetState(resource.TaskStateSucceeded)
-				mockSeedPeer.FSM.SetState(resource.PeerStateRunning)
-				mockPeer.Task.StorePeer(mockSeedPeer)
-				mockPeer.Task.ContentLength.Store(-1)
-				gomock.InOrder(
-					mr.TaskManager().Return(taskManager).Times(1),
-					mt.Load(gomock.Any()).Return(mockPeer.Task, true).Times(1),
-					mr.HostManager().Return(hostManager).Times(1),
-					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
-					mr.PeerManager().Return(peerManager).Times(1),
-					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
-				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer, result *schedulerv1.RegisterResult, err error) {
-				assert := assert.New(t)
-				assert.NoError(err)
-				assert.Equal(result.TaskId, peer.Task.ID)
-				assert.Equal(result.SizeScope, commonv1.SizeScope_NORMAL)
-				assert.True(peer.FSM.Is(resource.PeerStateReceivedNormal))
-				assert.Equal(peer.NeedBackToSource.Load(), false)
-			},
-		},
-		{
 			name: "task scope size is SizeScope_EMPTY",
 			req: &schedulerv1.PeerTaskRequest{
 				UrlMeta: &commonv1.UrlMeta{
@@ -869,6 +831,45 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				assert.NoError(err)
 				assert.Equal(result.TaskId, peer.Task.ID)
 				assert.Equal(result.SizeScope, commonv1.SizeScope_NORMAL)
+				assert.True(peer.FSM.Is(resource.PeerStateReceivedNormal))
+				assert.Equal(peer.NeedBackToSource.Load(), false)
+			},
+		},
+		{
+			name: "task scope size is SizeScope_UNKNOW",
+			req: &schedulerv1.PeerTaskRequest{
+				UrlMeta: &commonv1.UrlMeta{
+					Priority: commonv1.Priority_LEVEL0,
+				},
+				PeerHost: &schedulerv1.PeerHost{
+					Id: mockRawHost.ID,
+				},
+			},
+			mock: func(
+				req *schedulerv1.PeerTaskRequest, mockPeer *resource.Peer, mockSeedPeer *resource.Peer,
+				scheduling scheduling.Scheduling, res resource.Resource, hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager,
+				ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder,
+				mp *resource.MockPeerManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder,
+			) {
+				mockPeer.Task.FSM.SetState(resource.TaskStateSucceeded)
+				mockSeedPeer.FSM.SetState(resource.PeerStateRunning)
+				mockPeer.Task.StorePeer(mockSeedPeer)
+				mockPeer.Task.ContentLength.Store(-1)
+				mockPeer.Task.TotalPieceCount.Store(2)
+				gomock.InOrder(
+					mr.TaskManager().Return(taskManager).Times(1),
+					mt.Load(gomock.Any()).Return(mockPeer.Task, true).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
+				)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, result *schedulerv1.RegisterResult, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(result.TaskId, peer.Task.ID)
+				assert.Equal(result.SizeScope, commonv1.SizeScope_UNKNOW)
 				assert.True(peer.FSM.Is(resource.PeerStateReceivedNormal))
 				assert.Equal(peer.NeedBackToSource.Load(), false)
 			},

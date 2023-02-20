@@ -115,15 +115,12 @@ func (v *V1) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequ
 		return result, nil
 	}
 
-	// If SizeScope is invalid, then register as SizeScope_NORMAL.
-	sizeScope, err := task.SizeScope()
-	if err != nil {
-		peer.Log.Warnf("scope size is invalid: %s", err.Error())
-	}
+	// If SizeScope is SizeScope_UNKNOW, then register as SizeScope_NORMAL.
+	sizeScope := types.SizeScopeV2ToV1(task.SizeScope())
 	peer.Log.Infof("task size scope is %s", sizeScope)
 
 	// The task state is TaskStateSucceeded and SizeScope is not invalid.
-	switch types.SizeScopeV2ToV1(sizeScope) {
+	switch sizeScope {
 	case commonv1.SizeScope_EMPTY:
 		result, err := v.registerEmptyTask(ctx, peer)
 		if err != nil {
