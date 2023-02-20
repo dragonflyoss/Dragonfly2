@@ -290,10 +290,8 @@ func (c *cache) Save(w io.Writer) (err error) {
 // documentation for NewFrom().)
 func (c *cache) SaveFile(fname string) error {
 	dir := filepath.Dir(fname)
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-			return err
-		}
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return err
 	}
 
 	fp, err := os.Create(fname)
@@ -301,12 +299,9 @@ func (c *cache) SaveFile(fname string) error {
 		return err
 	}
 
-	err = c.Save(fp)
-	if err != nil {
-		fp.Close()
-		return err
-	}
-	return fp.Close()
+	defer fp.Close()
+
+	return c.Save(fp)
 }
 
 // Add (Gob-serialized) cache items from an io.Reader, excluding any items with
