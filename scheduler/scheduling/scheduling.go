@@ -29,6 +29,7 @@ import (
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	commonv2 "d7y.io/api/pkg/apis/common/v2"
+	errordetailsv2 "d7y.io/api/pkg/apis/errordetails/v2"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	schedulerv2 "d7y.io/api/pkg/apis/scheduler/v2"
 
@@ -43,10 +44,6 @@ type Scheduling interface {
 	// ScheduleCandidateParentsForNormalPeer schedules candidate parents to the normal peer.
 	// Used only in v2 version of the grpc.
 	ScheduleCandidateParentsForNormalPeer(context.Context, *resource.Peer, set.SafeSet[string])
-
-	// ScheduleCandidateParentForSmallPeer schedules candidate parent to the small peer.
-	// Used only in v2 version of the grpc.
-	ScheduleCandidateParentForSmallPeer(context.Context, *resource.Peer, set.SafeSet[string]) (*resource.Peer, bool)
 
 	// ScheduleParentAndCandiateParentsForNormalPeer schedules a parent and candidate parents to the normal peer.
 	// Used only in v1 version of the grpc.
@@ -87,8 +84,13 @@ func (s *scheduling) ScheduleCandidateParentsForNormalPeer(ctx context.Context, 
 		default:
 		}
 
+		// Scheduling will send NeedBackToSourceResponse to peer.
+		//
+		// Condition 1: Peer's NeedBackToSource is true.
+		// Condition 2: Scheduling exceeds the RetryBackToSourceLimit.
 		if peer.Task.CanBackToSource() {
-			// If peer needs back-to-source, send back-to-source response to peer.
+			// Check condition 1:
+			// Peer's NeedBackToSource is true.
 			if peer.NeedBackToSource.Load() {
 				stream, loaded := peer.LoadAnnouncePeerStream()
 				if !loaded {
@@ -96,8 +98,8 @@ func (s *scheduling) ScheduleCandidateParentsForNormalPeer(ctx context.Context, 
 					return
 				}
 
-				// Send back-to-source response to peer with reason.
-				reason := "peer needs to back-to-source"
+				// Send NeedBackToSourceResponse to peer.
+				reason := fmt.Sprintf("send NeedBackToSourceResponse to peer, because of peer's NeedBackToSource is %t", peer.NeedBackToSource.Load())
 				if err := stream.Send(&schedulerv2.AnnouncePeerResponse{
 					Response: &schedulerv2.AnnouncePeerResponse_NeedBackToSourceResponse{
 						NeedBackToSourceResponse: &schedulerv2.NeedBackToSourceResponse{
@@ -108,7 +110,7 @@ func (s *scheduling) ScheduleCandidateParentsForNormalPeer(ctx context.Context, 
 					peer.Log.Error(err)
 					return
 				}
-				peer.Log.Infof(reason)
+				peer.Log.Info(reason)
 
 				if err := peer.FSM.Event(ctx, resource.PeerEventDownloadBackToSource); err != nil {
 					peer.Log.Errorf("peer fsm event failed: %s", err.Error())
@@ -125,10 +127,10 @@ func (s *scheduling) ScheduleCandidateParentsForNormalPeer(ctx context.Context, 
 				}
 
 				return
-
 			}
 
-			// If the scheduling exceeds the RetryBackToSourceLimit, send back-to-source response to peer.
+			// Check condition 2:
+			// The number of retry scheduling is greater than RetryBackToSourceLimit
 			if n >= s.config.RetryBackToSourceLimit {
 				stream, loaded := peer.LoadAnnouncePeerStream()
 				if !loaded {
@@ -136,8 +138,8 @@ func (s *scheduling) ScheduleCandidateParentsForNormalPeer(ctx context.Context, 
 					return
 				}
 
-				// Send back-to-source response to peer with reason.
-				reason := fmt.Sprintf("schedule peer in %d times", n)
+				// Send NeedBackToSourceResponse to peer.
+				reason := fmt.Sprintf("send NeedBackToSourceResponse to peer, because of scheduling exceeded RetryBackToSourceLimit %d", s.config.RetryBackToSourceLimit)
 				if err := stream.Send(&schedulerv2.AnnouncePeerResponse{
 					Response: &schedulerv2.AnnouncePeerResponse_NeedBackToSourceResponse{
 						NeedBackToSourceResponse: &schedulerv2.NeedBackToSourceResponse{
@@ -148,7 +150,7 @@ func (s *scheduling) ScheduleCandidateParentsForNormalPeer(ctx context.Context, 
 					peer.Log.Error(err)
 					return
 				}
-				peer.Log.Infof(reason)
+				peer.Log.Info(reason)
 
 				if err := peer.FSM.Event(ctx, resource.PeerEventDownloadBackToSource); err != nil {
 					peer.Log.Errorf("peer fsm event failed: %s", err.Error())
@@ -168,7 +170,9 @@ func (s *scheduling) ScheduleCandidateParentsForNormalPeer(ctx context.Context, 
 			}
 		}
 
-		// Handle peer schedule failed.
+		// Scheduling will send SchedulePeerFailed to peer.
+		//
+		// Condition 1: Scheduling exceeds the RetryLimit.
 		if n >= s.config.RetryLimit {
 			stream, loaded := peer.LoadAnnouncePeerStream()
 			if !loaded {
@@ -176,12 +180,12 @@ func (s *scheduling) ScheduleCandidateParentsForNormalPeer(ctx context.Context, 
 				return
 			}
 
-			// Notify peer schedule failed.
-			reason := fmt.Sprintf("schedule parent exceeded the limit %d times", s.config.RetryLimit)
+			// Send SchedulePeerFailed to peer.
+			reason := fmt.Sprintf("send SchedulePeerFailed to peer, because of scheduling exceeded RetryLimit %d", s.config.RetryLimit)
 			if err := stream.Send(&schedulerv2.AnnouncePeerResponse{
-				Response: &schedulerv2.AnnouncePeerResponse_NeedBackToSourceResponse{
-					NeedBackToSourceResponse: &schedulerv2.NeedBackToSourceResponse{
-						Reason: reason,
+				Errordetails: &schedulerv2.AnnouncePeerResponse_SchedulePeerFailed{
+					SchedulePeerFailed: &errordetailsv2.SchedulePeerFailed{
+						Description: reason,
 					},
 				},
 			}); err != nil {
@@ -193,63 +197,70 @@ func (s *scheduling) ScheduleCandidateParentsForNormalPeer(ctx context.Context, 
 			return
 		}
 
-		// Delete inedges of vertex.
+		// Scheduling will send NormalTaskResponse to peer.
+		//
+		// Condition 1: Scheduling can find candidate parents.
 		if err := peer.Task.DeletePeerInEdges(peer.ID); err != nil {
 			n++
-			peer.Log.Errorf("peer deletes inedges failed: %s", err.Error())
+			peer.Log.Errorf("scheduling failed in %d times, because of %s", n, err.Error())
 
 			// Sleep to avoid hot looping.
 			time.Sleep(s.config.RetryInterval)
 			continue
 		}
 
+		// Find candidate parents.
 		candidateParents, found := s.FindCandidateParents(ctx, peer, blocklist)
 		if !found {
 			n++
-			peer.Log.Infof("schedule parent failed in %d times ", n)
+			peer.Log.Infof("scheduling failed in %d times, because of candidate parents not found", n)
 
 			// Sleep to avoid hot looping.
 			time.Sleep(s.config.RetryInterval)
 			continue
 		}
 
-		// Load stream of the report piece result.
+		// Load AnnouncePeerStream from peer.
 		stream, loaded := peer.LoadAnnouncePeerStream()
 		if !loaded {
 			n++
-			peer.Log.Error("load peer stream failed")
+			peer.Log.Errorf("scheduling failed in %d times, because of loading AnnouncePeerStream failed", n)
 
 			if err := peer.Task.DeletePeerInEdges(peer.ID); err != nil {
 				peer.Log.Errorf("peer deletes inedges failed: %s", err.Error())
+				return
 			}
 
-			// Sleep to avoid hot looping.
-			time.Sleep(s.config.RetryInterval)
-			continue
+			return
 		}
 
-		if err := stream.Send(constructSuccessPeerPacket(s.dynconfig, peer, candidateParents[0], candidateParents[1:])); err != nil {
+		// Send NormalTaskResponse to peer.
+		peer.Log.Info("send NormalTaskResponse to peer")
+		if err := stream.Send(&schedulerv2.AnnouncePeerResponse{
+			Response: constructSuccessNormalTaskResponse(s.dynconfig, candidateParents),
+		}); err != nil {
 			n++
-			peer.Log.Error(err)
+			peer.Log.Errorf("scheduling failed in %d times, because of %s", n, err.Error())
 
 			if err := peer.Task.DeletePeerInEdges(peer.ID); err != nil {
 				peer.Log.Errorf("peer deletes inedges failed: %s", err.Error())
+				return
 			}
 
-			// Sleep to avoid hot looping.
-			time.Sleep(s.config.RetryInterval)
-			continue
+			return
 		}
 
-		peer.Log.Infof("schedule parent successfully in %d times", n+1)
+		// Add edge from parent to peer.
+		for _, candidateParent := range candidateParents {
+			if err := peer.Task.AddPeerEdge(candidateParent, peer); err != nil {
+				peer.Log.Debugf("peer adds edge failed: %s", err.Error())
+				continue
+			}
+		}
+
+		peer.Log.Infof("scheduling success in %d times", n+1)
 		return
 	}
-}
-
-// ScheduleCandidateParentForSmallPeer schedules candidate parent to the small peer.
-// Used only in v2 version of the grpc.
-func (s *scheduling) ScheduleCandidateParentForSmallPeer(ctx context.Context, peer *resource.Peer, blocklist set.SafeSet[string]) (*resource.Peer, bool) {
-	return nil, false
 }
 
 // ScheduleParentsForNormalPeer schedules a parent and candidate parents to a peer.
@@ -264,43 +275,81 @@ func (s *scheduling) ScheduleParentsForNormalPeer(ctx context.Context, peer *res
 		default:
 		}
 
-		// If the scheduling exceeds the RetryBackToSourceLimit or peer needs back-to-source,
-		// peer will download the task back-to-source.
-		needBackToSource := peer.NeedBackToSource.Load()
-		peer.Log.Infof("peer needs to back-to-source: %t", needBackToSource)
-		if (n >= s.config.RetryBackToSourceLimit || needBackToSource) &&
-			peer.Task.CanBackToSource() {
-			stream, loaded := peer.LoadReportPieceResultStream()
-			if !loaded {
-				peer.Log.Error("load stream failed")
-				return
-			}
-
-			// Notify peer back-to-source.
-			if err := stream.Send(&schedulerv1.PeerPacket{Code: commonv1.Code_SchedNeedBackSource}); err != nil {
-				peer.Log.Error(err)
-				return
-			}
-			peer.Log.Infof("schedule peer back-to-source in %d times", n)
-
-			if err := peer.FSM.Event(ctx, resource.PeerEventDownloadBackToSource); err != nil {
-				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
-				return
-			}
-
-			// If the task state is TaskStateFailed,
-			// peer back-to-source and reset task state to TaskStateRunning.
-			if peer.Task.FSM.Is(resource.TaskStateFailed) {
-				if err := peer.Task.FSM.Event(ctx, resource.TaskEventDownload); err != nil {
-					peer.Task.Log.Errorf("task fsm event failed: %s", err.Error())
+		// Scheduling will send Code_SchedNeedBackSource to peer.
+		//
+		// Condition 1: Peer needs back-to-source.
+		// Condition 2: Scheduling exceeds the RetryBackToSourceLimit.
+		if peer.Task.CanBackToSource() {
+			// Check condition 1:
+			// Peer's NeedBackToSource is true.
+			if peer.NeedBackToSource.Load() {
+				stream, loaded := peer.LoadReportPieceResultStream()
+				if !loaded {
+					peer.Log.Error("load stream failed")
 					return
 				}
+
+				// Send Code_SchedNeedBackSource to peer.
+				if err := stream.Send(&schedulerv1.PeerPacket{Code: commonv1.Code_SchedNeedBackSource}); err != nil {
+					peer.Log.Error(err)
+					return
+				}
+				peer.Log.Infof("send Code_SchedNeedBackSource to peer, because of peer's NeedBackToSource is %t", peer.NeedBackToSource.Load())
+
+				if err := peer.FSM.Event(ctx, resource.PeerEventDownloadBackToSource); err != nil {
+					peer.Log.Errorf("peer fsm event failed: %s", err.Error())
+					return
+				}
+
+				// If the task state is TaskStateFailed,
+				// peer back-to-source and reset task state to TaskStateRunning.
+				if peer.Task.FSM.Is(resource.TaskStateFailed) {
+					if err := peer.Task.FSM.Event(ctx, resource.TaskEventDownload); err != nil {
+						peer.Task.Log.Errorf("task fsm event failed: %s", err.Error())
+						return
+					}
+				}
+
+				return
 			}
 
-			return
+			// Check condition 2:
+			// The number of retry scheduling is greater than RetryBackToSourceLimit
+			if n >= s.config.RetryBackToSourceLimit {
+				stream, loaded := peer.LoadReportPieceResultStream()
+				if !loaded {
+					peer.Log.Error("load stream failed")
+					return
+				}
+
+				// Send Code_SchedNeedBackSource peer.
+				if err := stream.Send(&schedulerv1.PeerPacket{Code: commonv1.Code_SchedNeedBackSource}); err != nil {
+					peer.Log.Error(err)
+					return
+				}
+				peer.Log.Infof("send Code_SchedNeedBackSource to peer, because of scheduling exceeded RetryLimit %d", s.config.RetryLimit)
+
+				if err := peer.FSM.Event(ctx, resource.PeerEventDownloadBackToSource); err != nil {
+					peer.Log.Errorf("peer fsm event failed: %s", err.Error())
+					return
+				}
+
+				// If the task state is TaskStateFailed,
+				// peer back-to-source and reset task state to TaskStateRunning.
+				if peer.Task.FSM.Is(resource.TaskStateFailed) {
+					if err := peer.Task.FSM.Event(ctx, resource.TaskEventDownload); err != nil {
+						peer.Task.Log.Errorf("task fsm event failed: %s", err.Error())
+						return
+					}
+				}
+
+				return
+			}
 		}
 
-		// Handle peer schedule failed.
+		// Scheduling will send Code_SchedTaskStatusError to peer.
+		//
+		// Condition 1: Scheduling exceeds the RetryLimit.
 		if n >= s.config.RetryLimit {
 			stream, loaded := peer.LoadReportPieceResultStream()
 			if !loaded {
@@ -308,64 +357,76 @@ func (s *scheduling) ScheduleParentsForNormalPeer(ctx context.Context, peer *res
 				return
 			}
 
-			// Notify peer schedule failed.
+			// Send Code_SchedTaskStatusError to peer.
 			if err := stream.Send(&schedulerv1.PeerPacket{Code: commonv1.Code_SchedTaskStatusError}); err != nil {
 				peer.Log.Error(err)
 				return
 			}
-			peer.Log.Errorf("schedule parent exceeded the limit %d times", s.config.RetryLimit)
+
+			peer.Log.Errorf("send SchedulePeerFailed to peer, because of scheduling exceeded RetryLimit %d", s.config.RetryLimit)
 			return
 		}
 
-		// Delete inedges of vertex.
+		// Scheduling will send PeerPacket to peer.
+		//
+		// Condition 1: Scheduling can find candidate parents.
 		if err := peer.Task.DeletePeerInEdges(peer.ID); err != nil {
 			n++
-			peer.Log.Errorf("peer deletes inedges failed: %s", err.Error())
+			peer.Log.Errorf("scheduling failed in %d times, because of %s", n, err.Error())
 
 			// Sleep to avoid hot looping.
 			time.Sleep(s.config.RetryInterval)
 			continue
 		}
 
+		// Find candidate parents.
 		candidateParents, found := s.FindCandidateParents(ctx, peer, blocklist)
 		if !found {
 			n++
-			peer.Log.Infof("schedule parent failed in %d times ", n)
+			peer.Log.Infof("scheduling failed in %d times, because of candidate parents not found", n)
 
 			// Sleep to avoid hot looping.
 			time.Sleep(s.config.RetryInterval)
 			continue
 		}
 
-		// Load stream of the report piece result.
+		// Load ReportPieceResultStream from peer.
 		stream, loaded := peer.LoadReportPieceResultStream()
 		if !loaded {
 			n++
-			peer.Log.Error("load peer stream failed")
+			peer.Log.Errorf("scheduling failed in %d times, because of loading peer stream failed", n)
 
 			if err := peer.Task.DeletePeerInEdges(peer.ID); err != nil {
 				peer.Log.Errorf("peer deletes inedges failed: %s", err.Error())
+				return
 			}
 
-			// Sleep to avoid hot looping.
-			time.Sleep(s.config.RetryInterval)
-			continue
+			return
 		}
 
+		// Send PeerPacket to peer.
+		peer.Log.Info("send PeerPacket to peer")
 		if err := stream.Send(constructSuccessPeerPacket(s.dynconfig, peer, candidateParents[0], candidateParents[1:])); err != nil {
 			n++
-			peer.Log.Error(err)
+			peer.Log.Errorf("scheduling failed in %d times, because of %s", n, err.Error())
 
 			if err := peer.Task.DeletePeerInEdges(peer.ID); err != nil {
 				peer.Log.Errorf("peer deletes inedges failed: %s", err.Error())
+				return
 			}
 
-			// Sleep to avoid hot looping.
-			time.Sleep(s.config.RetryInterval)
-			continue
+			return
 		}
 
-		peer.Log.Infof("schedule parent successfully in %d times", n+1)
+		// Add edge from parent to peer.
+		for _, candidateParent := range candidateParents {
+			if err := peer.Task.AddPeerEdge(candidateParent, peer); err != nil {
+				peer.Log.Debugf("peer adds edge failed: %s", err.Error())
+				continue
+			}
+		}
+
+		peer.Log.Infof("scheduling success in %d times", n+1)
 		return
 	}
 }
@@ -407,7 +468,7 @@ func (s *scheduling) FindCandidateParents(ctx context.Context, peer *resource.Pe
 		return []*resource.Peer{}, false
 	}
 
-	peer.Log.Infof("schedule candidate parents is %#v", parentIDs)
+	peer.Log.Infof("scheduling candidate parents is %#v", parentIDs)
 	return candidateParents, true
 }
 
@@ -468,11 +529,11 @@ func (s *scheduling) filterCandidateParents(peer *resource.Peer, blocklist set.S
 			continue
 		}
 
-		// Conditions for candidate parent to be a parent:
-		// 1. parent has parent.
-		// 2. parent has been back-to-source.
-		// 3. parent has been succeeded.
-		// 4. parent is seed peer.
+		// Parent can be parent of the peer:
+		// Condition 1: Parent has parent.
+		// Condition 2: Parent has been back-to-source.
+		// Condition 3: Parent has been succeeded.
+		// Condition 4: Parent is seed peer.
 		isBackToSource := candidateParent.IsBackToSource.Load()
 		if candidateParent.Host.Type == types.HostTypeNormal && inDegree == 0 && !isBackToSource &&
 			!candidateParent.FSM.Is(resource.PeerStateSucceeded) {
@@ -511,7 +572,6 @@ func constructSuccessNormalTaskResponse(dynconfig config.DynconfigInterface, can
 			Priority:         candidateParent.Priority,
 			Cost:             durationpb.New(candidateParent.Cost.Load()),
 			State:            candidateParent.FSM.Current(),
-			Host:             &commonv2.Host{},
 			NeedBackToSource: candidateParent.NeedBackToSource.Load(),
 			CreatedAt:        timestamppb.New(candidateParent.CreatedAt.Load()),
 			UpdatedAt:        timestamppb.New(candidateParent.UpdatedAt.Load()),
@@ -529,7 +589,7 @@ func constructSuccessNormalTaskResponse(dynconfig config.DynconfigInterface, can
 		candidateParent.Pieces.Range(func(key, value any) bool {
 			candidateParentPiece, ok := value.(*resource.Piece)
 			if !ok {
-				candidateParent.Log.Error("invalid piece %s %#v", key, value)
+				candidateParent.Log.Errorf("invalid piece %s %#v", key, value)
 				return true
 			}
 
@@ -579,7 +639,7 @@ func constructSuccessNormalTaskResponse(dynconfig config.DynconfigInterface, can
 		candidateParent.Task.Pieces.Range(func(key, value any) bool {
 			taskPiece, ok := value.(*resource.Piece)
 			if !ok {
-				candidateParent.Task.Log.Error("invalid piece %s %#v", key, value)
+				candidateParent.Task.Log.Errorf("invalid piece %s %#v", key, value)
 				return true
 			}
 
@@ -603,12 +663,66 @@ func constructSuccessNormalTaskResponse(dynconfig config.DynconfigInterface, can
 
 		// Set host to parent.
 		parent.Host = &commonv2.Host{
-			Id:           candidateParent.Host.ID,
-			Type:         uint32(candidateParent.Host.Type),
-			Ip:           candidateParent.Host.IP,
-			Hostname:     candidateParent.Host.Hostname,
-			Port:         candidateParent.Host.Port,
-			DownloadPort: candidateParent.Host.DownloadPort,
+			Id:              candidateParent.Host.ID,
+			Type:            uint32(candidateParent.Host.Type),
+			Hostname:        candidateParent.Host.Hostname,
+			Ip:              candidateParent.Host.IP,
+			Port:            candidateParent.Host.Port,
+			DownloadPort:    candidateParent.Host.DownloadPort,
+			Os:              candidateParent.Host.OS,
+			Platform:        candidateParent.Host.Platform,
+			PlatformFamily:  candidateParent.Host.PlatformFamily,
+			PlatformVersion: candidateParent.Host.PlatformVersion,
+			KernelVersion:   candidateParent.Host.KernelVersion,
+			Cpu: &commonv2.CPU{
+				LogicalCount:   candidateParent.Host.CPU.LogicalCount,
+				PhysicalCount:  candidateParent.Host.CPU.PhysicalCount,
+				Percent:        candidateParent.Host.CPU.Percent,
+				ProcessPercent: candidateParent.Host.CPU.ProcessPercent,
+				Times: &commonv2.CPUTimes{
+					User:      candidateParent.Host.CPU.Times.User,
+					System:    candidateParent.Host.CPU.Times.System,
+					Idle:      candidateParent.Host.CPU.Times.Idle,
+					Nice:      candidateParent.Host.CPU.Times.Nice,
+					Iowait:    candidateParent.Host.CPU.Times.Iowait,
+					Irq:       candidateParent.Host.CPU.Times.Irq,
+					Softirq:   candidateParent.Host.CPU.Times.Softirq,
+					Steal:     candidateParent.Host.CPU.Times.Steal,
+					Guest:     candidateParent.Host.CPU.Times.Guest,
+					GuestNice: candidateParent.Host.CPU.Times.GuestNice,
+				},
+			},
+			Memory: &commonv2.Memory{
+				Total:              candidateParent.Host.Memory.Total,
+				Available:          candidateParent.Host.Memory.Available,
+				Used:               candidateParent.Host.Memory.Used,
+				UsedPercent:        candidateParent.Host.Memory.UsedPercent,
+				ProcessUsedPercent: candidateParent.Host.Memory.ProcessUsedPercent,
+				Free:               candidateParent.Host.Memory.Free,
+			},
+			Network: &commonv2.Network{
+				TcpConnectionCount:       candidateParent.Host.Network.TCPConnectionCount,
+				UploadTcpConnectionCount: candidateParent.Host.Network.UploadTCPConnectionCount,
+				SecurityDomain:           candidateParent.Host.Network.SecurityDomain,
+				Location:                 candidateParent.Host.Network.Location,
+				Idc:                      candidateParent.Host.Network.IDC,
+			},
+			Disk: &commonv2.Disk{
+				Total:             candidateParent.Host.Disk.Total,
+				Free:              candidateParent.Host.Disk.Free,
+				Used:              candidateParent.Host.Disk.Used,
+				UsedPercent:       candidateParent.Host.Disk.UsedPercent,
+				InodesTotal:       candidateParent.Host.Disk.InodesTotal,
+				InodesUsed:        candidateParent.Host.Disk.InodesUsed,
+				InodesFree:        candidateParent.Host.Disk.InodesFree,
+				InodesUsedPercent: candidateParent.Host.Disk.InodesUsedPercent,
+			},
+			Build: &commonv2.Build{
+				GitVersion: candidateParent.Host.Build.GitVersion,
+				GitCommit:  candidateParent.Host.Build.GitCommit,
+				GoVersion:  candidateParent.Host.Build.GoVersion,
+				Platform:   candidateParent.Host.Build.Platform,
+			},
 		}
 
 		parents = append(parents, parent)
