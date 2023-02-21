@@ -481,6 +481,12 @@ func (t *localTaskStore) CanReclaim() bool {
 	if t.invalid.Load() {
 		return true
 	}
+
+	// don't gc if expire time is 0
+	if t.expireTime == 0 {
+		return false
+	}
+
 	now := time.Now()
 	// task soft cache time reached
 	access := time.Unix(0, t.lastAccess.Load())
