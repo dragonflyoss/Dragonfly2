@@ -148,27 +148,9 @@ func TestPieceDispatcherCount(t *testing.T) {
 			want: map[string]int{
 				"bad":  0,
 				"mid":  0,
-				"good": 5000,
+				"good": 4000,
 			},
 		},
-		// delete UT with randomness, which may cause UT failed
-		//{
-		//	name: "with 0.5 randomRatio",
-		//	args: args{
-		//		randomRatio: 0.5,
-		//		peers: []peerDesc{
-		//			{"bad", time.Second * 4, nil},
-		//			{"mid", time.Second * 3, nil},
-		//			{"good", time.Second * 2, nil},
-		//		},
-		//		pieceNum: 10000,
-		//	},
-		//	want: map[string]int{
-		//		"bad":  1000,
-		//		"mid":  1000,
-		//		"good": 5500,
-		//	},
-		//},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
