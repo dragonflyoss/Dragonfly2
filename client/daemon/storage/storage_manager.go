@@ -886,6 +886,7 @@ func (s *storageManager) TryGC() (bool, error) {
 	return true, nil
 }
 
+// delete the given task from local storage and unregister it from scheduler.
 func (s *storageManager) deleteTask(meta PeerTaskMetadata) error {
 	task, ok := s.LoadAndDeleteTask(meta)
 	if !ok {
@@ -899,7 +900,8 @@ func (s *storageManager) deleteTask(meta PeerTaskMetadata) error {
 	} else {
 		s.cleanSubIndex(meta.TaskID, meta.PeerID)
 	}
-	task.(Reclaimer).MarkInvalid()
+	// MarkReclaim() will call gcCallback, which will unregister task from scheduler
+	task.(Reclaimer).MarkReclaim()
 	return task.(Reclaimer).Reclaim()
 }
 
