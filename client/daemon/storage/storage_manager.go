@@ -83,9 +83,6 @@ type Reclaimer interface {
 	// MarkReclaim marks the storage which will be reclaimed
 	MarkReclaim()
 
-	// marks the special storage invalid, that will reclaim next gc round
-	MarkInvalid()
-
 	// Reclaim reclaims the storage
 	Reclaim() error
 }
@@ -886,6 +883,7 @@ func (s *storageManager) TryGC() (bool, error) {
 	return true, nil
 }
 
+// delete the given task from local storage and unregister it from scheduler.
 func (s *storageManager) deleteTask(meta PeerTaskMetadata) error {
 	task, ok := s.LoadAndDeleteTask(meta)
 	if !ok {
@@ -899,7 +897,8 @@ func (s *storageManager) deleteTask(meta PeerTaskMetadata) error {
 	} else {
 		s.cleanSubIndex(meta.TaskID, meta.PeerID)
 	}
-	task.(Reclaimer).MarkInvalid()
+	// MarkReclaim() will call gcCallback, which will unregister task from scheduler
+	task.(Reclaimer).MarkReclaim()
 	return task.(Reclaimer).Reclaim()
 }
 

@@ -391,20 +391,16 @@ func (t *localSubTaskStore) CanReclaim() bool {
 	return false
 }
 
-func (t *localSubTaskStore) MarkInvalid() {
-	if t.parent.Done || t.invalid.Load() {
-		return
-	}
-	t.parent.MarkInvalid()
-}
-
 func (t *localSubTaskStore) MarkReclaim() {
+	// gc this subtask with gcCallback from parent
 	t.parent.gcCallback(CommonTaskRequest{
 		PeerID: t.PeerID,
 		TaskID: t.TaskID,
 	})
 	t.Infof("sub task %s/%s will be reclaimed, marked", t.TaskID, t.PeerID)
+
 	t.parent.Lock()
+	// remove subtask from parent
 	delete(t.parent.subtasks, PeerTaskMetadata{
 		PeerID: t.PeerID,
 		TaskID: t.TaskID,

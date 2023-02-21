@@ -10,7 +10,7 @@ require (
 	github.com/aliyun/aliyun-oss-go-sdk v2.2.6+incompatible
 	github.com/appleboy/gin-jwt/v2 v2.9.1
 	github.com/aws/aws-sdk-go v1.44.189
-	github.com/bits-and-blooms/bitset v1.4.0
+	github.com/bits-and-blooms/bitset v1.5.0
 	github.com/casbin/casbin/v2 v2.61.1
 	github.com/casbin/gorm-adapter/v3 v3.5.0
 	github.com/colinmarc/hdfs/v2 v2.3.0
@@ -65,23 +65,23 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin v0.37.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.37.0
 	go.opentelemetry.io/otel v1.13.0
-	go.opentelemetry.io/otel/exporters/jaeger v1.12.0
-	go.opentelemetry.io/otel/sdk v1.12.0
+	go.opentelemetry.io/otel/exporters/jaeger v1.13.0
+	go.opentelemetry.io/otel/sdk v1.13.0
 	go.opentelemetry.io/otel/trace v1.13.0
 	go.uber.org/atomic v1.10.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/crypto v0.5.0
 	golang.org/x/exp v0.0.0-20220613132600-b0d781184e0d
-	golang.org/x/oauth2 v0.4.0
+	golang.org/x/oauth2 v0.5.0
 	golang.org/x/sync v0.1.0
-	golang.org/x/sys v0.4.0
+	golang.org/x/sys v0.5.0
 	golang.org/x/time v0.3.0
 	google.golang.org/api v0.109.0
 	google.golang.org/grpc v1.53.0
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v3 v3.0.1
-	gorm.io/driver/mysql v1.4.5
+	gorm.io/driver/mysql v1.4.7
 	gorm.io/driver/postgres v1.4.6
 	gorm.io/gorm v1.24.5
 	gorm.io/plugin/soft_delete v1.2.0
@@ -200,9 +200,9 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/otel/metric v0.34.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	golang.org/x/net v0.5.0 // indirect
-	golang.org/x/term v0.4.0 // indirect
-	golang.org/x/text v0.6.0 // indirect
+	golang.org/x/net v0.6.0 // indirect
+	golang.org/x/term v0.5.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/tools v0.5.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
