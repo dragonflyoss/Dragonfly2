@@ -41,6 +41,7 @@ const (
 	endpoint        = "endpoint"
 	accessKeyID     = "accessKeyID"
 	accessKeySecret = "accessKeySecret"
+	securityToken   = "securityToken"
 )
 
 var _ source.ResourceClient = (*ossSourceClient)(nil)
@@ -320,11 +321,17 @@ func (osc *ossSourceClient) getClient(header source.Header) (*oss.Client, error)
 	if pkgstrings.IsBlank(accessKeySecret) {
 		return nil, errors.New("accessKeySecret is empty")
 	}
+	securityToken := header.Get(securityToken)
+	if !pkgstrings.IsBlank(securityToken) {
+		return oss.New(endpoint, accessKeyID, accessKeySecret, oss.SecurityToken(securityToken))
+	}
 	clientKey := buildClientKey(endpoint, accessKeyID, accessKeySecret)
 	if client, ok := osc.clientMap.Load(clientKey); ok {
 		return client.(*oss.Client), nil
 	}
+
 	client, err := oss.New(endpoint, accessKeyID, accessKeySecret)
+
 	if err != nil {
 		return nil, err
 	}
