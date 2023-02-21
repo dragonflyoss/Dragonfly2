@@ -83,9 +83,6 @@ type Reclaimer interface {
 	// MarkReclaim marks the storage which will be reclaimed
 	MarkReclaim()
 
-	// marks the special storage invalid, that will reclaim next gc round
-	MarkInvalid()
-
 	// Reclaim reclaims the storage
 	Reclaim() error
 }

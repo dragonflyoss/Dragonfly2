@@ -505,10 +505,6 @@ func (t *localTaskStore) CanReclaim() bool {
 	return false
 }
 
-func (t *localTaskStore) MarkInvalid() {
-	t.invalid.Store(true)
-}
-
 // MarkReclaim will try to invoke gcCallback (normal leave peer task)
 func (t *localTaskStore) MarkReclaim() {
 	if t.reclaimMarked.Load() {
