@@ -30,6 +30,7 @@ import (
 	"time"
 
 	testifyassert "github.com/stretchr/testify/assert"
+	"go.uber.org/atomic"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 
@@ -535,6 +536,49 @@ func TestLocalTaskStore_partialCompleted(t *testing.T) {
 			}
 			ok := lts.partialCompleted(&tc.Range)
 			assert.Equal(tc.Found, ok)
+		})
+	}
+}
+
+func TestLocalTaskStore_CanReclaim(t *testing.T) {
+	testCases := []struct {
+		name   string
+		lts    *localTaskStore
+		expect bool
+	}{
+		{
+			name:   "normal task",
+			lts:    &localTaskStore{},
+			expect: false,
+		},
+		{
+			name: "invalid task",
+			lts: &localTaskStore{
+				invalid: *atomic.NewBool(true),
+			},
+			expect: true,
+		},
+		{
+			name: "never expire task",
+			lts: &localTaskStore{
+				expireTime: 0,
+			},
+			expect: false,
+		},
+		{
+			name: "expired task",
+			lts: &localTaskStore{
+				expireTime: time.Second,
+				lastAccess: *atomic.NewInt64(1),
+			},
+			expect: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert := testifyassert.New(t)
+			assert.Equal(tc.lts.CanReclaim(), tc.expect)
 		})
 	}
 }
