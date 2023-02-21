@@ -224,18 +224,6 @@ func (mr *MockReclaimerMockRecorder) CanReclaim() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanReclaim", reflect.TypeOf((*MockReclaimer)(nil).CanReclaim))
 }
 
-// MarkInvalid mocks base method.
-func (m *MockReclaimer) MarkInvalid() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "MarkInvalid")
-}
-
-// MarkInvalid indicates an expected call of MarkInvalid.
-func (mr *MockReclaimerMockRecorder) MarkInvalid() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkInvalid", reflect.TypeOf((*MockReclaimer)(nil).MarkInvalid))
-}
-
 // MarkReclaim mocks base method.
 func (m *MockReclaimer) MarkReclaim() {
 	m.ctrl.T.Helper()
