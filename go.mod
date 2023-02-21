@@ -10,7 +10,7 @@ require (
 	github.com/aliyun/aliyun-oss-go-sdk v2.2.6+incompatible
 	github.com/appleboy/gin-jwt/v2 v2.9.1
 	github.com/aws/aws-sdk-go v1.44.189
-	github.com/bits-and-blooms/bitset v1.4.0
+	github.com/bits-and-blooms/bitset v1.5.0
 	github.com/casbin/casbin/v2 v2.61.1
 	github.com/casbin/gorm-adapter/v3 v3.5.0
 	github.com/colinmarc/hdfs/v2 v2.3.0
