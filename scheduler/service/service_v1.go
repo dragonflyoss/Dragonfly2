@@ -115,15 +115,12 @@ func (v *V1) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequ
 		return result, nil
 	}
 
-	// If SizeScope is invalid, then register as SizeScope_NORMAL.
-	sizeScope, err := task.SizeScope()
-	if err != nil {
-		peer.Log.Warnf("scope size is invalid: %s", err.Error())
-	}
+	// If SizeScope is SizeScope_UNKNOW, then register as SizeScope_NORMAL.
+	sizeScope := types.SizeScopeV2ToV1(task.SizeScope())
 	peer.Log.Infof("task size scope is %s", sizeScope)
 
 	// The task state is TaskStateSucceeded and SizeScope is not invalid.
-	switch types.SizeScopeV2ToV1(sizeScope) {
+	switch sizeScope {
 	case commonv1.SizeScope_EMPTY:
 		result, err := v.registerEmptyTask(ctx, peer)
 		if err != nil {
@@ -362,7 +359,7 @@ func (v *V1) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequ
 				piece.Digest = digest.New(digest.AlgorithmMD5, pieceInfo.PieceMd5)
 			}
 
-			peer.Pieces.Add(piece)
+			peer.StorePiece(piece)
 			peer.FinishedPieces.Set(uint(pieceInfo.PieceNum))
 			peer.AppendPieceCost(piece.Cost)
 			task.StorePiece(piece)
@@ -853,15 +850,16 @@ func (v *V1) registerTinyTask(ctx context.Context, peer *resource.Peer) (*schedu
 
 // registerSmallTask registers the small task.
 func (v *V1) registerSmallTask(ctx context.Context, peer *resource.Peer) (*schedulerv1.RegisterResult, error) {
-	parent, found := v.scheduling.FindParent(ctx, peer, set.NewSafeSet[string]())
+	candidateParents, found := v.scheduling.FindCandidateParents(ctx, peer, set.NewSafeSet[string]())
 	if !found {
-		return nil, errors.New("parent not found")
+		return nil, errors.New("candidate parent not found")
 	}
+	candidateParent := candidateParents[0]
 
 	// When task size scope is small, parent must be downloaded successfully
 	// before returning to the parent directly.
-	if !parent.FSM.Is(resource.PeerStateSucceeded) {
-		return nil, fmt.Errorf("parent state is %s", parent.FSM.Current())
+	if !candidateParent.FSM.Is(resource.PeerStateSucceeded) {
+		return nil, fmt.Errorf("candidate parent state is %s", candidateParent.FSM.Current())
 	}
 
 	piece, loaded := peer.Task.LoadPiece(0)
@@ -875,7 +873,7 @@ func (v *V1) registerSmallTask(ctx context.Context, peer *resource.Peer) (*sched
 	}
 
 	// Add edges between parent and peer.
-	if err := peer.Task.AddPeerEdge(parent, peer); err != nil {
+	if err := peer.Task.AddPeerEdge(candidateParent, peer); err != nil {
 		return nil, err
 	}
 
@@ -904,8 +902,8 @@ func (v *V1) registerSmallTask(ctx context.Context, peer *resource.Peer) (*sched
 		SizeScope: commonv1.SizeScope_SMALL,
 		DirectPiece: &schedulerv1.RegisterResult_SinglePiece{
 			SinglePiece: &schedulerv1.SinglePiece{
-				DstPid:    parent.ID,
-				DstAddr:   fmt.Sprintf("%s:%d", parent.Host.IP, parent.Host.DownloadPort),
+				DstPid:    candidateParent.ID,
+				DstAddr:   fmt.Sprintf("%s:%d", candidateParent.Host.IP, candidateParent.Host.DownloadPort),
 				PieceInfo: pieceInfo,
 			},
 		},
@@ -964,7 +962,7 @@ func (v *V1) handleBeginOfPiece(ctx context.Context, peer *resource.Peer) {
 			return
 		}
 
-		v.scheduling.ScheduleParent(ctx, peer, set.NewSafeSet[string]())
+		v.scheduling.ScheduleParentsForNormalPeer(ctx, peer, set.NewSafeSet[string]())
 	default:
 	}
 }
@@ -996,7 +994,7 @@ func (v *V1) handlePieceSuccess(ctx context.Context, peer *resource.Peer, pieceR
 		piece.Digest = digest.New(digest.AlgorithmMD5, pieceResult.PieceInfo.PieceMd5)
 	}
 
-	peer.Pieces.Add(piece)
+	peer.StorePiece(piece)
 	peer.FinishedPieces.Set(uint(piece.Number))
 	peer.AppendPieceCost(piece.Cost)
 
@@ -1035,7 +1033,7 @@ func (v *V1) handlePieceFailure(ctx context.Context, peer *resource.Peer, piece 
 	if !loaded {
 		peer.Log.Errorf("parent %s not found", piece.DstPid)
 		peer.BlockParents.Add(piece.DstPid)
-		v.scheduling.ScheduleParent(ctx, peer, peer.BlockParents)
+		v.scheduling.ScheduleParentsForNormalPeer(ctx, peer, peer.BlockParents)
 		return
 	}
 
@@ -1094,7 +1092,7 @@ func (v *V1) handlePieceFailure(ctx context.Context, peer *resource.Peer, piece 
 
 	peer.Log.Infof("reschedule parent because of failed piece")
 	peer.BlockParents.Add(parent.ID)
-	v.scheduling.ScheduleParent(ctx, peer, peer.BlockParents)
+	v.scheduling.ScheduleParentsForNormalPeer(ctx, peer, peer.BlockParents)
 }
 
 // handlePeerSuccess handles successful peer.
@@ -1109,13 +1107,7 @@ func (v *V1) handlePeerSuccess(ctx context.Context, peer *resource.Peer) {
 
 	// If the peer type is tiny and back-to-source,
 	// it needs to directly download the tiny file and store the data in task DirectPiece.
-	sizeScope, err := peer.Task.SizeScope()
-	if err != nil {
-		peer.Log.Error(err)
-		return
-	}
-
-	if types.SizeScopeV2ToV1(sizeScope) == commonv1.SizeScope_TINY && len(peer.Task.DirectPiece) == 0 {
+	if types.SizeScopeV2ToV1(peer.Task.SizeScope()) == commonv1.SizeScope_TINY && len(peer.Task.DirectPiece) == 0 {
 		data, err := peer.DownloadTinyFile()
 		if err != nil {
 			peer.Log.Errorf("download tiny task failed: %s", err.Error())
@@ -1142,7 +1134,7 @@ func (v *V1) handlePeerFailure(ctx context.Context, peer *resource.Peer) {
 	// Reschedule a new parent to children of peer to exclude the current failed peer.
 	for _, child := range peer.Children() {
 		child.Log.Infof("reschedule parent because of parent peer %s is failed", peer.ID)
-		v.scheduling.ScheduleParent(ctx, child, child.BlockParents)
+		v.scheduling.ScheduleParentsForNormalPeer(ctx, child, child.BlockParents)
 	}
 }
 
@@ -1157,7 +1149,7 @@ func (v *V1) handleLegacySeedPeer(ctx context.Context, peer *resource.Peer) {
 	// Reschedule a new parent to children of peer to exclude the current failed peer.
 	for _, child := range peer.Children() {
 		child.Log.Infof("reschedule parent because of parent peer %s is failed", peer.ID)
-		v.scheduling.ScheduleParent(ctx, child, child.BlockParents)
+		v.scheduling.ScheduleParentsForNormalPeer(ctx, child, child.BlockParents)
 	}
 }
 
@@ -1325,11 +1317,18 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 			Platform:   parent.Host.Build.Platform,
 		}
 
-		for _, piece := range peer.Pieces.Values() {
+		peer.Pieces.Range(func(key, value any) bool {
+			piece, ok := value.(*resource.Piece)
+			if !ok {
+				return true
+			}
+
 			if piece.ParentID == parent.ID {
 				parentRecord.UploadPieceCount++
 			}
-		}
+
+			return true
+		})
 
 		parentRecords = append(parentRecords, parentRecord)
 	}

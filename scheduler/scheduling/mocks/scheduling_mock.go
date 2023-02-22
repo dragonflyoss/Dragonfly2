@@ -36,44 +36,41 @@ func (m *MockScheduling) EXPECT() *MockSchedulingMockRecorder {
 	return m.recorder
 }
 
-// FindParent mocks base method.
-func (m *MockScheduling) FindParent(arg0 context.Context, arg1 *resource.Peer, arg2 set.SafeSet[string]) (*resource.Peer, bool) {
+// FindCandidateParents mocks base method.
+func (m *MockScheduling) FindCandidateParents(arg0 context.Context, arg1 *resource.Peer, arg2 set.SafeSet[string]) ([]*resource.Peer, bool) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindParent", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*resource.Peer)
-	ret1, _ := ret[1].(bool)
-	return ret0, ret1
-}
-
-// FindParent indicates an expected call of FindParent.
-func (mr *MockSchedulingMockRecorder) FindParent(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindParent", reflect.TypeOf((*MockScheduling)(nil).FindParent), arg0, arg1, arg2)
-}
-
-// NotifyAndFindParent mocks base method.
-func (m *MockScheduling) NotifyAndFindParent(arg0 context.Context, arg1 *resource.Peer, arg2 set.SafeSet[string]) ([]*resource.Peer, bool) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NotifyAndFindParent", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "FindCandidateParents", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]*resource.Peer)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 
-// NotifyAndFindParent indicates an expected call of NotifyAndFindParent.
-func (mr *MockSchedulingMockRecorder) NotifyAndFindParent(arg0, arg1, arg2 interface{}) *gomock.Call {
+// FindCandidateParents indicates an expected call of FindCandidateParents.
+func (mr *MockSchedulingMockRecorder) FindCandidateParents(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyAndFindParent", reflect.TypeOf((*MockScheduling)(nil).NotifyAndFindParent), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindCandidateParents", reflect.TypeOf((*MockScheduling)(nil).FindCandidateParents), arg0, arg1, arg2)
 }
 
-// ScheduleParent mocks base method.
-func (m *MockScheduling) ScheduleParent(arg0 context.Context, arg1 *resource.Peer, arg2 set.SafeSet[string]) {
+// ScheduleCandidateParentsForNormalPeer mocks base method.
+func (m *MockScheduling) ScheduleCandidateParentsForNormalPeer(arg0 context.Context, arg1 *resource.Peer, arg2 set.SafeSet[string]) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "ScheduleParent", arg0, arg1, arg2)
+	m.ctrl.Call(m, "ScheduleCandidateParentsForNormalPeer", arg0, arg1, arg2)
 }
 
-// ScheduleParent indicates an expected call of ScheduleParent.
-func (mr *MockSchedulingMockRecorder) ScheduleParent(arg0, arg1, arg2 interface{}) *gomock.Call {
+// ScheduleCandidateParentsForNormalPeer indicates an expected call of ScheduleCandidateParentsForNormalPeer.
+func (mr *MockSchedulingMockRecorder) ScheduleCandidateParentsForNormalPeer(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScheduleParent", reflect.TypeOf((*MockScheduling)(nil).ScheduleParent), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScheduleCandidateParentsForNormalPeer", reflect.TypeOf((*MockScheduling)(nil).ScheduleCandidateParentsForNormalPeer), arg0, arg1, arg2)
+}
+
+// ScheduleParentsForNormalPeer mocks base method.
+func (m *MockScheduling) ScheduleParentsForNormalPeer(arg0 context.Context, arg1 *resource.Peer, arg2 set.SafeSet[string]) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "ScheduleParentsForNormalPeer", arg0, arg1, arg2)
+}
+
+// ScheduleParentsForNormalPeer indicates an expected call of ScheduleParentsForNormalPeer.
+func (mr *MockSchedulingMockRecorder) ScheduleParentsForNormalPeer(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScheduleParentsForNormalPeer", reflect.TypeOf((*MockScheduling)(nil).ScheduleParentsForNormalPeer), arg0, arg1, arg2)
 }
