@@ -129,6 +129,9 @@ type SchedulerConfig struct {
 
 	// GC configuration.
 	GC GCConfig `yaml:"gc" mapstructure:"gc"`
+
+	// Number for pieces to concurrent downloading.
+	ConcurrentPieceCount int `yaml:"concurrentPieceCount" mapstructure:"concurrentPieceCount"`
 }
 
 type GCConfig struct {
@@ -337,6 +340,7 @@ func New() *Config {
 				HostGCInterval:       DefaultSchedulerHostGCInterval,
 				HostTTL:              DefaultSchedulerHostTTL,
 			},
+			ConcurrentPieceCount: DefaultPeerConcurrentPieceCount,
 		},
 		DynConfig: DynConfig{
 			RefreshInterval: DefaultDynConfigRefreshInterval,

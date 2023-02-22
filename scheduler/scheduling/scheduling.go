@@ -406,7 +406,8 @@ func (s *scheduling) ScheduleParentsForNormalPeer(ctx context.Context, peer *res
 
 		// Send PeerPacket to peer.
 		peer.Log.Info("send PeerPacket to peer")
-		if err := stream.Send(constructSuccessPeerPacket(s.dynconfig, peer, candidateParents[0], candidateParents[1:])); err != nil {
+		concurrentPieceCount := s.config.ConcurrentPieceCount
+		if err := stream.Send(constructSuccessPeerPacket(concurrentPieceCount, s.dynconfig, peer, candidateParents[0], candidateParents[1:])); err != nil {
 			n++
 			peer.Log.Errorf("scheduling failed in %d times, because of %s", n, err.Error())
 
@@ -738,8 +739,10 @@ func constructSuccessNormalTaskResponse(dynconfig config.DynconfigInterface, can
 
 // constructSuccessPeerPacket constructs peer successful packet.
 // Used only in v1 version of the grpc.
-func constructSuccessPeerPacket(dynconfig config.DynconfigInterface, peer *resource.Peer, parent *resource.Peer, candidateParents []*resource.Peer) *schedulerv1.PeerPacket {
-	concurrentPieceCount := config.DefaultPeerConcurrentPieceCount
+func constructSuccessPeerPacket(concurrentPieceCount int, dynconfig config.DynconfigInterface, peer *resource.Peer, parent *resource.Peer, candidateParents []*resource.Peer) *schedulerv1.PeerPacket {
+	if concurrentPieceCount <= 0 {
+		concurrentPieceCount = config.DefaultPeerConcurrentPieceCount
+	}
 	if config, err := dynconfig.GetSchedulerClusterClientConfig(); err == nil && config.ConcurrentPieceCount > 0 {
 		concurrentPieceCount = int(config.ConcurrentPieceCount)
 	}

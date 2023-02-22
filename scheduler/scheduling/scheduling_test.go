@@ -1394,17 +1394,19 @@ func TestScheduling_constructSuccessNormalTaskResponse(t *testing.T) {
 func TestScheduling_constructSuccessPeerPacket(t *testing.T) {
 	tests := []struct {
 		name   string
+		ccount int32
 		mock   func(md *configmocks.MockDynconfigInterfaceMockRecorder)
-		expect func(t *testing.T, packet *schedulerv1.PeerPacket, parent *resource.Peer, candidateParents []*resource.Peer)
+		expect func(t *testing.T, ccount int32, packet *schedulerv1.PeerPacket, parent *resource.Peer, candidateParents []*resource.Peer)
 	}{
 		{
 			name: "get concurrentPieceCount from dynconfig",
+			ccount: 0,
 			mock: func(md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{
 					ConcurrentPieceCount: 1,
 				}, nil).Times(1)
 			},
-			expect: func(t *testing.T, packet *schedulerv1.PeerPacket, parent *resource.Peer, candidateParents []*resource.Peer) {
+			expect: func(t *testing.T, _ccount int32, packet *schedulerv1.PeerPacket, parent *resource.Peer, candidateParents []*resource.Peer) {
 				assert := assert.New(t)
 				assert.EqualValues(packet, &schedulerv1.PeerPacket{
 					TaskId:        mockTaskID,
@@ -1428,15 +1430,74 @@ func TestScheduling_constructSuccessPeerPacket(t *testing.T) {
 		},
 		{
 			name: "use default concurrentPieceCount",
+			ccount: 0,
 			mock: func(md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{}, errors.New("foo")).Times(1)
 			},
-			expect: func(t *testing.T, packet *schedulerv1.PeerPacket, parent *resource.Peer, candidateParents []*resource.Peer) {
+			expect: func(t *testing.T, _ccount int32, packet *schedulerv1.PeerPacket, parent *resource.Peer, candidateParents []*resource.Peer) {
 				assert := assert.New(t)
 				assert.EqualValues(packet, &schedulerv1.PeerPacket{
 					TaskId:        mockTaskID,
 					SrcPid:        mockPeerID,
-					ParallelCount: 4,
+					ParallelCount: config.DefaultPeerConcurrentPieceCount,
+					MainPeer: &schedulerv1.PeerPacket_DestPeer{
+						Ip:      parent.Host.IP,
+						RpcPort: parent.Host.Port,
+						PeerId:  parent.ID,
+					},
+					CandidatePeers: []*schedulerv1.PeerPacket_DestPeer{
+						{
+							Ip:      candidateParents[0].Host.IP,
+							RpcPort: candidateParents[0].Host.Port,
+							PeerId:  candidateParents[0].ID,
+						},
+					},
+					Code: commonv1.Code_Success,
+				})
+			},
+		},
+		{
+			name: "get concurrentPieceCount from dynconfig to override specified count",
+			ccount: 10,
+			mock: func(md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{
+					ConcurrentPieceCount: 1,
+				}, nil).Times(1)
+			},
+			expect: func(t *testing.T, _ccount int32, packet *schedulerv1.PeerPacket, parent *resource.Peer, candidateParents []*resource.Peer) {
+				assert := assert.New(t)
+				assert.EqualValues(packet, &schedulerv1.PeerPacket{
+					TaskId:        mockTaskID,
+					SrcPid:        mockPeerID,
+					ParallelCount: 1,
+					MainPeer: &schedulerv1.PeerPacket_DestPeer{
+						Ip:      parent.Host.IP,
+						RpcPort: parent.Host.Port,
+						PeerId:  parent.ID,
+					},
+					CandidatePeers: []*schedulerv1.PeerPacket_DestPeer{
+						{
+							Ip:      candidateParents[0].Host.IP,
+							RpcPort: candidateParents[0].Host.Port,
+							PeerId:  candidateParents[0].ID,
+						},
+					},
+					Code: commonv1.Code_Success,
+				})
+			},
+		},
+		{
+			name: "use specified concurrentPieceCount",
+			ccount: 11,
+			mock: func(md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{}, errors.New("foo")).Times(1)
+			},
+			expect: func(t *testing.T, ccount int32, packet *schedulerv1.PeerPacket, parent *resource.Peer, candidateParents []*resource.Peer) {
+				assert := assert.New(t)
+				assert.EqualValues(packet, &schedulerv1.PeerPacket{
+					TaskId:        mockTaskID,
+					SrcPid:        mockPeerID,
+					ParallelCount: ccount,
 					MainPeer: &schedulerv1.PeerPacket_DestPeer{
 						Ip:      parent.Host.IP,
 						RpcPort: parent.Host.Port,
@@ -1470,7 +1531,7 @@ func TestScheduling_constructSuccessPeerPacket(t *testing.T) {
 			candidateParents := []*resource.Peer{resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost)}
 
 			tc.mock(dynconfig.EXPECT())
-			tc.expect(t, constructSuccessPeerPacket(dynconfig, peer, parent, candidateParents), parent, candidateParents)
+			tc.expect(t, tc.ccount, constructSuccessPeerPacket(int(tc.ccount), dynconfig, peer, parent, candidateParents), parent, candidateParents)
 		})
 	}
 }

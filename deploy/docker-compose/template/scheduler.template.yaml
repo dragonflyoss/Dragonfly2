@@ -48,6 +48,8 @@ scheduler:
   retryLimit: 10
   # Retry scheduling interval.
   retryInterval: 50ms
+  # Number for pieces to concurrent downloading.
+  concurrentPieceCount: 4
   # GC metadata configuration.
   gc:
     # pieceDownloadTimeout is the timeout of downloading piece.
