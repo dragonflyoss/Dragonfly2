@@ -234,10 +234,6 @@ definitions:
         items:
           $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.SchedulerCluster'
         type: array
-      scopes:
-        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_model.JSONMap'
-      security_group_id:
-        type: integer
       updated_at:
         type: string
     type: object
@@ -505,8 +501,6 @@ definitions:
         type: boolean
       name:
         type: string
-      scopes:
-        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterScopes'
     required:
     - config
     - name
@@ -712,13 +706,6 @@ definitions:
         minimum: 1
         type: integer
     type: object
-  d7y_io_dragonfly_v2_manager_types.SeedPeerClusterScopes:
-    properties:
-      idc:
-        type: string
-      location:
-        type: string
-    type: object
   d7y_io_dragonfly_v2_manager_types.SignUpRequest:
     properties:
       avatar:
@@ -893,8 +880,6 @@ definitions:
         type: boolean
       name:
         type: string
-      scopes:
-        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterScopes'
     type: object
   d7y_io_dragonfly_v2_manager_types.UpdateSeedPeerRequest:
     properties:

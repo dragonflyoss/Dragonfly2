@@ -21,11 +21,8 @@ type SeedPeerCluster struct {
 	Name              string             `gorm:"column:name;type:varchar(256);index:uk_seed_peer_cluster_name,unique;not null;comment:name" json:"name"`
 	BIO               string             `gorm:"column:bio;type:varchar(1024);comment:biography" json:"bio"`
 	Config            JSONMap            `gorm:"column:config;not null;comment:configuration" json:"config"`
-	Scopes            JSONMap            `gorm:"column:scopes;comment:match scopes" json:"scopes"`
 	IsDefault         bool               `gorm:"column:is_default;not null;default:false;comment:default seed peer cluster" json:"is_default"`
 	SchedulerClusters []SchedulerCluster `gorm:"many2many:seed_peer_cluster_scheduler_cluster;" json:"scheduler_clusters"`
 	SeedPeers         []SeedPeer         `json:"-"`
-	SecurityGroupID   uint               `gorm:"comment:security group id" json:"security_group_id"`
-	SecurityGroup     SecurityGroup      `json:"-"`
 	Jobs              []Job              `gorm:"many2many:job_seed_peer_cluster;" json:"jobs"`
 }

@@ -34,7 +34,6 @@ type CreateSeedPeerClusterRequest struct {
 	Name      string                 `json:"name" binding:"required"`
 	BIO       string                 `json:"bio" binding:"omitempty"`
 	Config    *SeedPeerClusterConfig `json:"config" binding:"required"`
-	Scopes    *SeedPeerClusterScopes `json:"scopes" binding:"omitempty"`
 	IsDefault bool                   `json:"is_default" binding:"omitempty"`
 }
 
@@ -42,7 +41,6 @@ type UpdateSeedPeerClusterRequest struct {
 	Name      string                 `json:"name" binding:"omitempty"`
 	BIO       string                 `json:"bio" binding:"omitempty"`
 	Config    *SeedPeerClusterConfig `json:"config" binding:"omitempty"`
-	Scopes    *SeedPeerClusterScopes `json:"scopes" binding:"omitempty"`
 	IsDefault bool                   `json:"is_default" binding:"omitempty"`
 }
 
@@ -54,9 +52,4 @@ type GetSeedPeerClustersQuery struct {
 
 type SeedPeerClusterConfig struct {
 	LoadLimit uint32 `yaml:"loadLimit" mapstructure:"loadLimit" json:"load_limit" binding:"omitempty,gte=1,lte=5000"`
-}
-
-type SeedPeerClusterScopes struct {
-	IDC      string `yaml:"idc" mapstructure:"idc" json:"idc" binding:"omitempty"`
-	Location string `yaml:"location" mapstructure:"location" json:"location" binding:"omitempty"`
 }
