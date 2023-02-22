@@ -61,14 +61,8 @@ type Dynconfig interface {
 	// Get the dynamic config.
 	Get() (*DynconfigData, error)
 
-	// Get the dynamic config source type.
-	GetSourceType() SourceType
-
 	// Refresh refreshes dynconfig in cache.
 	Refresh() error
-
-	// SetConfig updates DaemonOption in dynconfig.
-	SetConfig(*DaemonOption)
 
 	// Register allows an instance to register itself to listen/observe events.
 	Register(Observer)
@@ -78,6 +72,10 @@ type Dynconfig interface {
 
 	// Notify publishes new events to listeners.
 	Notify() error
+
+	// OnNotify allows an event to be published to the dynconfig.
+	// Used for listening changes of the local configuration.
+	OnNotify(*DaemonOption)
 
 	// Serve the dynconfig listening service.
 	Serve() error
