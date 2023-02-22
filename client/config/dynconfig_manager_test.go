@@ -38,7 +38,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
 )
 
-func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
+func TestDynconfigManager_GetResolveSchedulerAddrs(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	healthpb.RegisterHealthServer(grpcServer, health.NewServer())
 	l, err := net.Listen("tcp", ":3000")
@@ -58,7 +58,6 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 	mockCachePath := filepath.Join(mockCacheDir, cacheFileName)
 	tests := []struct {
 		name           string
-		expire         time.Duration
 		config         *DaemonOption
 		data           *DynconfigData
 		sleep          func()
@@ -67,9 +66,13 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 		expect         func(t *testing.T, dynconfig Dynconfig, data *DynconfigData)
 	}{
 		{
-			name:   "get cache scheduler addrs",
-			expire: 10 * time.Second,
+			name: "get cache scheduler ip addrs",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Second,
+					},
+				},
 				Host: HostOption{
 					Hostname: "foo",
 				},
@@ -112,9 +115,13 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 			},
 		},
 		{
-			name:   "get scheduler addrs",
-			expire: 10 * time.Millisecond,
+			name: "get scheduler ip addrs",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Millisecond,
+					},
+				},
 				Host: HostOption{
 					Hostname: "foo",
 				},
@@ -161,9 +168,68 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 			},
 		},
 		{
-			name:   "scheduler addrs can not reachable",
-			expire: 10 * time.Millisecond,
+			name: "get scheduler host addrs",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Millisecond,
+					},
+				},
+				Host: HostOption{
+					Hostname: "foo",
+				},
+				ObjectStorage: ObjectStorageOption{
+					Enable: true,
+				},
+			},
+			data: &DynconfigData{
+				Schedulers: []*managerv1.Scheduler{
+					{
+						Ip:       "101.1.1.1",
+						HostName: "localhost",
+						Port:     3000,
+					},
+				},
+			},
+			sleep: func() {
+				time.Sleep(100 * time.Millisecond)
+			},
+			cleanFileCache: func(t *testing.T) {
+				if err := os.Remove(mockCachePath); err != nil {
+					t.Fatal(err)
+				}
+			},
+			mock: func(m *mocks.MockV1MockRecorder, data *DynconfigData) {
+				gomock.InOrder(
+					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
+					m.GetObjectStorage(gomock.Any(), gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
+					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{
+						Schedulers: []*managerv1.Scheduler{
+							{
+								Ip:       data.Schedulers[0].Ip,
+								HostName: data.Schedulers[0].HostName,
+								Port:     data.Schedulers[0].Port,
+							},
+						},
+					}, nil).Times(1),
+					m.GetObjectStorage(gomock.Any(), gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
+				)
+			},
+			expect: func(t *testing.T, dynconfig Dynconfig, data *DynconfigData) {
+				assert := assert.New(t)
+				result, err := dynconfig.GetResolveSchedulerAddrs()
+				assert.NoError(err)
+				assert.EqualValues(result, []resolver.Address{{ServerName: "localhost", Addr: "localhost:3000"}})
+			},
+		},
+		{
+			name: "scheduler addrs can not reachable",
+			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Millisecond,
+					},
+				},
 				Host: HostOption{
 					Hostname: "foo",
 				},
@@ -209,9 +275,13 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 			},
 		},
 		{
-			name:   "data has duplicate scheduler addrs",
-			expire: 10 * time.Millisecond,
+			name: "data has duplicate scheduler addrs",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Millisecond,
+					},
+				},
 				Host: HostOption{
 					Hostname: "foo",
 				},
@@ -262,9 +332,13 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 			},
 		},
 		{
-			name:   "list schedulers error",
-			expire: 10 * time.Millisecond,
+			name: "list schedulers error",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Millisecond,
+					},
+				},
 				Host: HostOption{
 					Hostname: "foo",
 				},
@@ -310,9 +384,13 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 			},
 		},
 		{
-			name:   "scheduler addrs is empty",
-			expire: 10 * time.Millisecond,
+			name: "scheduler addrs is empty",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Millisecond,
+					},
+				},
 				Host: HostOption{
 					Hostname: "foo",
 				},
@@ -357,7 +435,6 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 			dynconfig, err := NewDynconfig(
 				ManagerSourceType, tc.config,
 				WithCacheDir(mockCacheDir),
-				WithExpireTime(tc.expire),
 				WithManagerClient(mockManagerClient),
 			)
 			if err != nil {
@@ -371,12 +448,11 @@ func TestDynconfigGetResolveSchedulerAddrs_ManagerSourceType(t *testing.T) {
 	}
 }
 
-func TestDynconfigGet_ManagerSourceType(t *testing.T) {
+func TestDynconfigManager_Get(t *testing.T) {
 	mockCacheDir := t.TempDir()
 	mockCachePath := filepath.Join(mockCacheDir, cacheFileName)
 	tests := []struct {
 		name           string
-		expire         time.Duration
 		config         *DaemonOption
 		data           *DynconfigData
 		sleep          func()
@@ -385,9 +461,13 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 		expect         func(t *testing.T, dynconfig Dynconfig, data *DynconfigData)
 	}{
 		{
-			name:   "get dynconfig cache data",
-			expire: 10 * time.Second,
+			name: "get dynconfig cache data",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Second,
+					},
+				},
 				Host: HostOption{
 					Hostname: "foo",
 				},
@@ -433,9 +513,13 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 			},
 		},
 		{
-			name:   "get dynconfig data",
-			expire: 10 * time.Millisecond,
+			name: "get dynconfig data",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Millisecond,
+					},
+				},
 				Host: HostOption{
 					Hostname: "foo",
 				},
@@ -485,9 +569,13 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 			},
 		},
 		{
-			name:   "disable object storage",
-			expire: 10 * time.Millisecond,
+			name: "disable object storage",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Millisecond,
+					},
+				},
 				Host: HostOption{
 					Hostname: "foo",
 				},
@@ -530,9 +618,13 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 			},
 		},
 		{
-			name:   "list schedulers error",
-			expire: 10 * time.Millisecond,
+			name: "list schedulers error",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Millisecond,
+					},
+				},
 				Host: HostOption{
 					Hostname: "foo",
 				},
@@ -581,9 +673,13 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 			},
 		},
 		{
-			name:   "get object storage error",
-			expire: 10 * time.Millisecond,
+			name: "get object storage error",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Millisecond,
+					},
+				},
 				Host: HostOption{
 					Hostname: "foo",
 				},
@@ -633,9 +729,13 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 			},
 		},
 		{
-			name:   "object storage is not found",
-			expire: 10 * time.Millisecond,
+			name: "object storage is not found",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Millisecond,
+					},
+				},
 				Host: HostOption{
 					Hostname: "foo",
 				},
@@ -700,9 +800,13 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 			},
 		},
 		{
-			name:   "resource is empty",
-			expire: 10 * time.Millisecond,
+			name: "resource is empty",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Millisecond,
+					},
+				},
 				Host: HostOption{
 					Hostname: "foo",
 				},
@@ -749,7 +853,6 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 			dynconfig, err := NewDynconfig(
 				ManagerSourceType, tc.config,
 				WithCacheDir(mockCacheDir),
-				WithExpireTime(tc.expire),
 				WithManagerClient(mockManagerClient),
 			)
 			if err != nil {
@@ -763,12 +866,11 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 	}
 }
 
-func TestDynconfigGetSchedulers_ManagerSourceType(t *testing.T) {
+func TestDynconfigManager_GetSchedulers(t *testing.T) {
 	mockCacheDir := t.TempDir()
 	mockCachePath := filepath.Join(mockCacheDir, cacheFileName)
 	tests := []struct {
 		name           string
-		expire         time.Duration
 		config         *DaemonOption
 		data           *DynconfigData
 		sleep          func()
@@ -777,9 +879,13 @@ func TestDynconfigGetSchedulers_ManagerSourceType(t *testing.T) {
 		expect         func(t *testing.T, dynconfig Dynconfig, data *DynconfigData)
 	}{
 		{
-			name:   "get cache schedulers",
-			expire: 10 * time.Second,
+			name: "get cache schedulers",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Second,
+					},
+				},
 				Host: HostOption{
 					Hostname: "foo",
 				},
@@ -820,9 +926,13 @@ func TestDynconfigGetSchedulers_ManagerSourceType(t *testing.T) {
 			},
 		},
 		{
-			name:   "get schedulers",
-			expire: 10 * time.Millisecond,
+			name: "get schedulers",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Millisecond,
+					},
+				},
 				Host: HostOption{
 					Hostname: "foo",
 				},
@@ -867,9 +977,13 @@ func TestDynconfigGetSchedulers_ManagerSourceType(t *testing.T) {
 			},
 		},
 		{
-			name:   "list schedulers error",
-			expire: 10 * time.Millisecond,
+			name: "list schedulers error",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Millisecond,
+					},
+				},
 				Host: HostOption{
 					Hostname: "foo",
 				},
@@ -913,9 +1027,13 @@ func TestDynconfigGetSchedulers_ManagerSourceType(t *testing.T) {
 			},
 		},
 		{
-			name:   "schedulers is empty",
-			expire: 10 * time.Millisecond,
+			name: "schedulers is empty",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Millisecond,
+					},
+				},
 				Host: HostOption{
 					Hostname: "foo",
 				},
@@ -960,7 +1078,6 @@ func TestDynconfigGetSchedulers_ManagerSourceType(t *testing.T) {
 			dynconfig, err := NewDynconfig(
 				ManagerSourceType, tc.config,
 				WithCacheDir(mockCacheDir),
-				WithExpireTime(tc.expire),
 				WithManagerClient(mockManagerClient),
 			)
 			if err != nil {
@@ -974,12 +1091,11 @@ func TestDynconfigGetSchedulers_ManagerSourceType(t *testing.T) {
 	}
 }
 
-func TestDynconfigGetObjectStorage_ManagerSourceType(t *testing.T) {
+func TestDynconfigManager_GetObjectStorage(t *testing.T) {
 	mockCacheDir := t.TempDir()
 	mockCachePath := filepath.Join(mockCacheDir, cacheFileName)
 	tests := []struct {
 		name           string
-		expire         time.Duration
 		config         *DaemonOption
 		data           *DynconfigData
 		sleep          func()
@@ -988,9 +1104,13 @@ func TestDynconfigGetObjectStorage_ManagerSourceType(t *testing.T) {
 		expect         func(t *testing.T, dynconfig Dynconfig, data *DynconfigData)
 	}{
 		{
-			name:   "get cache object storage",
-			expire: 10 * time.Second,
+			name: "get cache object storage",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Second,
+					},
+				},
 				Host: HostOption{
 					Hostname: "foo",
 				},
@@ -1025,9 +1145,13 @@ func TestDynconfigGetObjectStorage_ManagerSourceType(t *testing.T) {
 			},
 		},
 		{
-			name:   "get object storage",
-			expire: 10 * time.Millisecond,
+			name: "get object storage",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Millisecond,
+					},
+				},
 				Host: HostOption{
 					Hostname: "foo",
 				},
@@ -1066,9 +1190,13 @@ func TestDynconfigGetObjectStorage_ManagerSourceType(t *testing.T) {
 			},
 		},
 		{
-			name:   "get object storage error",
-			expire: 10 * time.Millisecond,
+			name: "get object storage error",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Millisecond,
+					},
+				},
 				Host: HostOption{
 					Hostname: "foo",
 				},
@@ -1107,9 +1235,13 @@ func TestDynconfigGetObjectStorage_ManagerSourceType(t *testing.T) {
 			},
 		},
 		{
-			name:   "object storage is not found",
-			expire: 10 * time.Millisecond,
+			name: "object storage is not found",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Millisecond,
+					},
+				},
 				Host: HostOption{
 					Hostname: "foo",
 				},
@@ -1150,9 +1282,13 @@ func TestDynconfigGetObjectStorage_ManagerSourceType(t *testing.T) {
 			},
 		},
 		{
-			name:   "object storage is empty",
-			expire: 10 * time.Millisecond,
+			name: "object storage is empty",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Millisecond,
+					},
+				},
 				Host: HostOption{
 					Hostname: "foo",
 				},
@@ -1198,7 +1334,6 @@ func TestDynconfigGetObjectStorage_ManagerSourceType(t *testing.T) {
 			dynconfig, err := NewDynconfig(
 				ManagerSourceType, tc.config,
 				WithCacheDir(mockCacheDir),
-				WithExpireTime(tc.expire),
 				WithManagerClient(mockManagerClient),
 			)
 			if err != nil {
