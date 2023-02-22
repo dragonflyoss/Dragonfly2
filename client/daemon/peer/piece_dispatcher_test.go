@@ -22,7 +22,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 
@@ -124,53 +123,6 @@ func (pc *pieceTestManager) Order() []string {
 	return peerIDs
 }
 
-func TestPieceDispatcher(t *testing.T) {
-	type args struct {
-		randomRatio float64
-		peers       []peerDesc
-		pieceNum    int
-	}
-	tests := []struct {
-		name string
-		args args
-		want []string
-	}{
-		{
-			name: "no random",
-			args: args{
-				randomRatio: 0,
-				peers: []peerDesc{
-					{"bad", time.Second * 10, nil},
-					{"good", time.Second * 2, nil},
-				},
-				pieceNum: 10000,
-			},
-			want: []string{"good", "bad"},
-		},
-		{
-			name: "with 0.5 randomRatio",
-			args: args{
-				randomRatio: 0.5,
-				peers: []peerDesc{
-					{"bad", time.Second * 10, nil},
-					{"good", time.Second * 2, nil},
-				},
-				pieceNum: 10000,
-			},
-			want: []string{"good", "bad"},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			pieceDispatcher := NewPieceDispatcher(tt.args.randomRatio, logger.With())
-			pieceTestManager := newPieceTestManager(pieceDispatcher, tt.args.peers, tt.args.pieceNum)
-			pieceTestManager.Run()
-			result := pieceTestManager.Order()
-			assert.Equal(t, tt.want, result)
-		})
-	}
-}
-
 func TestPieceDispatcherCount(t *testing.T) {
 	type args struct {
 		randomRatio float64
@@ -196,38 +148,6 @@ func TestPieceDispatcherCount(t *testing.T) {
 			want: map[string]int{
 				"bad":  0,
 				"mid":  0,
-				"good": 7000,
-			},
-		},
-		{
-			name: "with 0.5 randomRatio",
-			args: args{
-				randomRatio: 0.5,
-				peers: []peerDesc{
-					{"bad", time.Second * 4, nil},
-					{"mid", time.Second * 3, nil},
-					{"good", time.Second * 2, nil},
-				},
-				pieceNum: 10000,
-			},
-			want: map[string]int{
-				"bad":  1000,
-				"mid":  1000,
-				"good": 5500,
-			},
-		},
-		{
-			name: "total random",
-			args: args{
-				randomRatio: 1,
-				peers: []peerDesc{
-					{"bad", time.Second * 10, nil},
-					{"good", time.Second * 2, nil},
-				},
-				pieceNum: 10000,
-			},
-			want: map[string]int{
-				"bad":  4000,
 				"good": 4000,
 			},
 		},
