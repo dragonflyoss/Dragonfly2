@@ -1334,8 +1334,7 @@ func TestTask_SizeScope(t *testing.T) {
 			totalPieceCount: 1,
 			expect: func(t *testing.T, task *Task) {
 				assert := assert.New(t)
-				sizeScope, err := task.SizeScope()
-				assert.NoError(err)
+				sizeScope := task.SizeScope()
 				assert.Equal(sizeScope, commonv2.SizeScope_TINY)
 			},
 		},
@@ -1345,8 +1344,7 @@ func TestTask_SizeScope(t *testing.T) {
 			totalPieceCount: 0,
 			expect: func(t *testing.T, task *Task) {
 				assert := assert.New(t)
-				sizeScope, err := task.SizeScope()
-				assert.NoError(err)
+				sizeScope := task.SizeScope()
 				assert.Equal(sizeScope, commonv2.SizeScope_EMPTY)
 			},
 		},
@@ -1356,8 +1354,7 @@ func TestTask_SizeScope(t *testing.T) {
 			totalPieceCount: 1,
 			expect: func(t *testing.T, task *Task) {
 				assert := assert.New(t)
-				sizeScope, err := task.SizeScope()
-				assert.NoError(err)
+				sizeScope := task.SizeScope()
 				assert.Equal(sizeScope, commonv2.SizeScope_SMALL)
 			},
 		},
@@ -1367,8 +1364,7 @@ func TestTask_SizeScope(t *testing.T) {
 			totalPieceCount: 2,
 			expect: func(t *testing.T, task *Task) {
 				assert := assert.New(t)
-				sizeScope, err := task.SizeScope()
-				assert.NoError(err)
+				sizeScope := task.SizeScope()
 				assert.Equal(sizeScope, commonv2.SizeScope_NORMAL)
 			},
 		},
@@ -1378,8 +1374,8 @@ func TestTask_SizeScope(t *testing.T) {
 			totalPieceCount: 2,
 			expect: func(t *testing.T, task *Task) {
 				assert := assert.New(t)
-				_, err := task.SizeScope()
-				assert.Errorf(err, "invalid content length")
+				sizeScope := task.SizeScope()
+				assert.Equal(sizeScope, commonv2.SizeScope_UNKNOW)
 			},
 		},
 		{
@@ -1388,8 +1384,8 @@ func TestTask_SizeScope(t *testing.T) {
 			totalPieceCount: -1,
 			expect: func(t *testing.T, task *Task) {
 				assert := assert.New(t)
-				_, err := task.SizeScope()
-				assert.Errorf(err, "invalid total piece count")
+				sizeScope := task.SizeScope()
+				assert.Equal(sizeScope, commonv2.SizeScope_UNKNOW)
 			},
 		},
 	}

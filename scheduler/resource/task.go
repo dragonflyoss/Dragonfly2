@@ -434,28 +434,28 @@ func (t *Task) DeletePiece(key int32) {
 }
 
 // SizeScope return task size scope type.
-func (t *Task) SizeScope() (commonv2.SizeScope, error) {
+func (t *Task) SizeScope() commonv2.SizeScope {
 	if t.ContentLength.Load() < 0 {
-		return -1, errors.New("invalid content length")
+		return commonv2.SizeScope_UNKNOW
 	}
 
 	if t.TotalPieceCount.Load() < 0 {
-		return -1, errors.New("invalid total piece count")
+		return commonv2.SizeScope_UNKNOW
 	}
 
 	if t.ContentLength.Load() == EmptyFileSize {
-		return commonv2.SizeScope_EMPTY, nil
+		return commonv2.SizeScope_EMPTY
 	}
 
 	if t.ContentLength.Load() <= TinyFileSize {
-		return commonv2.SizeScope_TINY, nil
+		return commonv2.SizeScope_TINY
 	}
 
 	if t.TotalPieceCount.Load() == 1 {
-		return commonv2.SizeScope_SMALL, nil
+		return commonv2.SizeScope_SMALL
 	}
 
-	return commonv2.SizeScope_NORMAL, nil
+	return commonv2.SizeScope_NORMAL
 }
 
 // CanBackToSource represents whether task can back-to-source.

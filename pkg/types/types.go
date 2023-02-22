@@ -219,9 +219,11 @@ func SizeScopeV1ToV2(sizeScope commonv1.SizeScope) commonv2.SizeScope {
 		return commonv2.SizeScope_TINY
 	case commonv1.SizeScope_EMPTY:
 		return commonv2.SizeScope_EMPTY
+	case commonv1.SizeScope_UNKNOW:
+		return commonv2.SizeScope_UNKNOW
 	}
 
-	return commonv2.SizeScope_NORMAL
+	return commonv2.SizeScope_UNKNOW
 }
 
 // SizeScopeV2ToV1 converts size scope from v2 to v1.
@@ -235,7 +237,9 @@ func SizeScopeV2ToV1(sizeScope commonv2.SizeScope) commonv1.SizeScope {
 		return commonv1.SizeScope_TINY
 	case commonv2.SizeScope_EMPTY:
 		return commonv1.SizeScope_EMPTY
+	case commonv2.SizeScope_UNKNOW:
+		return commonv1.SizeScope_UNKNOW
 	}
 
-	return commonv1.SizeScope_NORMAL
+	return commonv1.SizeScope_UNKNOW
 }

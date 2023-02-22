@@ -171,6 +171,7 @@ func (s *seedPeer) TriggerTask(ctx context.Context, rg *http.Range, task *Task) 
 				piece.Digest = digest.New(digest.AlgorithmMD5, pieceSeed.PieceInfo.PieceMd5)
 			}
 
+			peer.StorePiece(piece)
 			peer.FinishedPieces.Set(uint(pieceSeed.PieceInfo.PieceNum))
 			peer.AppendPieceCost(piece.Cost)
 

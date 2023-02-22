@@ -678,12 +678,12 @@ definitions:
     type: object
   d7y_io_dragonfly_v2_manager_types.SchedulerClusterClientConfig:
     properties:
-      load_limit:
-        maximum: 2000
+      concurrent_piece_count:
+        maximum: 50
         minimum: 1
         type: integer
-      parallel_count:
-        maximum: 50
+      load_limit:
+        maximum: 2000
         minimum: 1
         type: integer
     type: object

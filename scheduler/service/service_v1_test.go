@@ -361,44 +361,6 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			},
 		},
 		{
-			name: "get task scope size failed",
-			req: &schedulerv1.PeerTaskRequest{
-				UrlMeta: &commonv1.UrlMeta{
-					Priority: commonv1.Priority_LEVEL0,
-				},
-				PeerHost: &schedulerv1.PeerHost{
-					Id: mockRawHost.ID,
-				},
-			},
-			mock: func(
-				req *schedulerv1.PeerTaskRequest, mockPeer *resource.Peer, mockSeedPeer *resource.Peer,
-				scheduling scheduling.Scheduling, res resource.Resource, hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager,
-				ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder,
-				mp *resource.MockPeerManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder,
-			) {
-				mockPeer.Task.FSM.SetState(resource.TaskStateSucceeded)
-				mockSeedPeer.FSM.SetState(resource.PeerStateRunning)
-				mockPeer.Task.StorePeer(mockSeedPeer)
-				mockPeer.Task.ContentLength.Store(-1)
-				gomock.InOrder(
-					mr.TaskManager().Return(taskManager).Times(1),
-					mt.Load(gomock.Any()).Return(mockPeer.Task, true).Times(1),
-					mr.HostManager().Return(hostManager).Times(1),
-					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
-					mr.PeerManager().Return(peerManager).Times(1),
-					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
-				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer, result *schedulerv1.RegisterResult, err error) {
-				assert := assert.New(t)
-				assert.NoError(err)
-				assert.Equal(result.TaskId, peer.Task.ID)
-				assert.Equal(result.SizeScope, commonv1.SizeScope_NORMAL)
-				assert.True(peer.FSM.Is(resource.PeerStateReceivedNormal))
-				assert.Equal(peer.NeedBackToSource.Load(), false)
-			},
-		},
-		{
 			name: "task scope size is SizeScope_EMPTY",
 			req: &schedulerv1.PeerTaskRequest{
 				UrlMeta: &commonv1.UrlMeta{
@@ -595,7 +557,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
-					ms.FindParent(gomock.Any(), gomock.Any(), gomock.Any()).Return(mockSeedPeer, true).Times(1),
+					ms.FindCandidateParents(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*resource.Peer{mockSeedPeer}, true).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, result *schedulerv1.RegisterResult, err error) {
@@ -641,7 +603,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
-					ms.FindParent(gomock.Any(), gomock.Any(), gomock.Any()).Return(mockSeedPeer, true).Times(1),
+					ms.FindCandidateParents(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*resource.Peer{mockSeedPeer}, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Delete(gomock.Any()).Return().Times(1),
 				)
@@ -689,7 +651,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
-					ms.FindParent(gomock.Any(), gomock.Any(), gomock.Any()).Return(mockSeedPeer, true).Times(1),
+					ms.FindCandidateParents(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*resource.Peer{mockSeedPeer}, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Delete(gomock.Any()).Return().Times(1),
 				)
@@ -735,7 +697,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
-					ms.FindParent(gomock.Any(), gomock.Any(), gomock.Any()).Return(mockSeedPeer, true).Times(1),
+					ms.FindCandidateParents(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*resource.Peer{mockSeedPeer}, true).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, result *schedulerv1.RegisterResult, err error) {
@@ -780,7 +742,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
-					ms.FindParent(gomock.Any(), gomock.Any(), gomock.Any()).Return(mockSeedPeer, true).Times(1),
+					ms.FindCandidateParents(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*resource.Peer{mockSeedPeer}, true).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, result *schedulerv1.RegisterResult, err error) {
@@ -854,6 +816,45 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				mockSeedPeer.FSM.SetState(resource.PeerStateRunning)
 				mockPeer.Task.StorePeer(mockSeedPeer)
 				mockPeer.Task.ContentLength.Store(129)
+				mockPeer.Task.TotalPieceCount.Store(2)
+				gomock.InOrder(
+					mr.TaskManager().Return(taskManager).Times(1),
+					mt.Load(gomock.Any()).Return(mockPeer.Task, true).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
+				)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, result *schedulerv1.RegisterResult, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(result.TaskId, peer.Task.ID)
+				assert.Equal(result.SizeScope, commonv1.SizeScope_NORMAL)
+				assert.True(peer.FSM.Is(resource.PeerStateReceivedNormal))
+				assert.Equal(peer.NeedBackToSource.Load(), false)
+			},
+		},
+		{
+			name: "task scope size is SizeScope_UNKNOW",
+			req: &schedulerv1.PeerTaskRequest{
+				UrlMeta: &commonv1.UrlMeta{
+					Priority: commonv1.Priority_LEVEL0,
+				},
+				PeerHost: &schedulerv1.PeerHost{
+					Id: mockRawHost.ID,
+				},
+			},
+			mock: func(
+				req *schedulerv1.PeerTaskRequest, mockPeer *resource.Peer, mockSeedPeer *resource.Peer,
+				scheduling scheduling.Scheduling, res resource.Resource, hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager,
+				ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder,
+				mp *resource.MockPeerManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder,
+			) {
+				mockPeer.Task.FSM.SetState(resource.TaskStateSucceeded)
+				mockSeedPeer.FSM.SetState(resource.PeerStateRunning)
+				mockPeer.Task.StorePeer(mockSeedPeer)
+				mockPeer.Task.ContentLength.Store(-1)
 				mockPeer.Task.TotalPieceCount.Store(2)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
@@ -2827,7 +2828,7 @@ func TestService_storePeer(t *testing.T) {
 				assert.Equal(peer.ID, mockPeerID)
 				assert.EqualValues(peer.Range, &mockPeerRange)
 				assert.Equal(peer.Priority, commonv2.Priority_LEVEL1)
-				assert.Equal(peer.Pieces.Len(), uint(0))
+				assert.Empty(peer.Pieces)
 				assert.Empty(peer.FinishedPieces)
 				assert.Equal(len(peer.PieceCosts()), 0)
 				assert.Empty(peer.ReportPieceResultStream)
@@ -2968,7 +2969,7 @@ func TestService_handleBeginOfPiece(t *testing.T) {
 			name: "peer state is PeerStateReceivedNormal",
 			mock: func(peer *resource.Peer, scheduling *mocks.MockSchedulingMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateReceivedNormal)
-				scheduling.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(set.NewSafeSet[string]())).Return().Times(1)
+				scheduling.ScheduleParentsForNormalPeer(gomock.Any(), gomock.Eq(peer), gomock.Eq(set.NewSafeSet[string]())).Return().Times(1)
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
@@ -3044,7 +3045,8 @@ func TestService_handlePieceSuccess(t *testing.T) {
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
-				piece := peer.Pieces.Values()[0]
+				piece, loaded := peer.LoadPiece(1)
+				assert.True(loaded)
 				assert.Equal(piece.Number, int32(1))
 				assert.Equal(piece.ParentID, mockSeedPeerID)
 				assert.Equal(piece.Offset, uint64(2))
@@ -3053,7 +3055,6 @@ func TestService_handlePieceSuccess(t *testing.T) {
 				assert.Equal(piece.TrafficType, commonv2.TrafficType_REMOTE_PEER)
 				assert.Equal(piece.Cost, time.Duration(1*time.Millisecond))
 				assert.NotEqual(piece.CreatedAt.Nanosecond(), 0)
-				assert.Equal(peer.Pieces.Len(), uint(1))
 				assert.Equal(peer.FinishedPieces.Count(), uint(1))
 				assert.EqualValues(peer.PieceCosts(), []time.Duration{time.Duration(1 * time.Millisecond)})
 			},
@@ -3079,7 +3080,8 @@ func TestService_handlePieceSuccess(t *testing.T) {
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
-				piece := peer.Pieces.Values()[0]
+				piece, loaded := peer.LoadPiece(1)
+				assert.True(loaded)
 				assert.Equal(piece.Number, int32(1))
 				assert.Equal(piece.ParentID, mockSeedPeerID)
 				assert.Equal(piece.Offset, uint64(2))
@@ -3088,7 +3090,6 @@ func TestService_handlePieceSuccess(t *testing.T) {
 				assert.Equal(piece.TrafficType, commonv2.TrafficType_REMOTE_PEER)
 				assert.Equal(piece.Cost, time.Duration(1*time.Millisecond))
 				assert.NotEqual(piece.CreatedAt.Nanosecond(), 0)
-				assert.Equal(peer.Pieces.Len(), uint(1))
 				assert.Equal(peer.FinishedPieces.Count(), uint(1))
 				assert.EqualValues(peer.PieceCosts(), []time.Duration{time.Duration(1 * time.Millisecond)})
 				assert.NotEqual(peer.UpdatedAt.Load(), 0)
@@ -3110,7 +3111,8 @@ func TestService_handlePieceSuccess(t *testing.T) {
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
-				piece := peer.Pieces.Values()[0]
+				piece, loaded := peer.LoadPiece(1)
+				assert.True(loaded)
 				assert.Equal(piece.Number, int32(1))
 				assert.Empty(piece.ParentID)
 				assert.Equal(piece.Offset, uint64(2))
@@ -3119,7 +3121,6 @@ func TestService_handlePieceSuccess(t *testing.T) {
 				assert.Equal(piece.TrafficType, commonv2.TrafficType_BACK_TO_SOURCE)
 				assert.Equal(piece.Cost, time.Duration(1*time.Millisecond))
 				assert.NotEqual(piece.CreatedAt.Nanosecond(), 0)
-				assert.Equal(peer.Pieces.Len(), uint(1))
 				assert.Equal(peer.FinishedPieces.Count(), uint(1))
 				assert.EqualValues(peer.PieceCosts(), []time.Duration{time.Duration(1 * time.Millisecond)})
 			},
@@ -3189,7 +3190,7 @@ func TestService_handlePieceFail(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(parent.ID)).Return(nil, false).Times(1),
-					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
+					ms.ScheduleParentsForNormalPeer(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
 				)
 
 				svc.handlePieceFailure(context.Background(), peer, piece)
@@ -3217,7 +3218,7 @@ func TestService_handlePieceFail(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
-					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
+					ms.ScheduleParentsForNormalPeer(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
 				)
 
 				svc.handlePieceFailure(context.Background(), peer, piece)
@@ -3246,7 +3247,7 @@ func TestService_handlePieceFail(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
-					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
+					ms.ScheduleParentsForNormalPeer(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
 				)
 
 				svc.handlePieceFailure(context.Background(), peer, piece)
@@ -3274,7 +3275,7 @@ func TestService_handlePieceFail(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
-					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
+					ms.ScheduleParentsForNormalPeer(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
 				)
 
 				svc.handlePieceFailure(context.Background(), peer, piece)
@@ -3303,7 +3304,7 @@ func TestService_handlePieceFail(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
-					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
+					ms.ScheduleParentsForNormalPeer(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
 				)
 
 				svc.handlePieceFailure(context.Background(), peer, piece)
@@ -3501,7 +3502,7 @@ func TestService_handlePeerFail(t *testing.T) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				child.FSM.SetState(resource.PeerStateRunning)
 
-				ms.ScheduleParent(gomock.Any(), gomock.Eq(child), gomock.Eq(set.NewSafeSet[string]())).Return().Times(1)
+				ms.ScheduleParentsForNormalPeer(gomock.Any(), gomock.Eq(child), gomock.Eq(set.NewSafeSet[string]())).Return().Times(1)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, child *resource.Peer) {
 				assert := assert.New(t)

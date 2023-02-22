@@ -104,8 +104,8 @@ func seed(cfg *config.Config, db *gorm.DB) error {
 				"filter_parent_range_limit": schedulerconfig.DefaultSchedulerFilterParentRangeLimit,
 			},
 			ClientConfig: map[string]any{
-				"load_limit":     schedulerconfig.DefaultPeerConcurrentUploadLimit,
-				"parallel_count": schedulerconfig.DefaultPeerParallelCount,
+				"load_limit":             schedulerconfig.DefaultPeerConcurrentUploadLimit,
+				"concurrent_piece_count": schedulerconfig.DefaultPeerConcurrentPieceCount,
 			},
 			Scopes:    map[string]any{},
 			IsDefault: true,
