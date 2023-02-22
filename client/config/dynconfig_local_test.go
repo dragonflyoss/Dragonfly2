@@ -36,8 +36,7 @@ func TestDynconfigGetResolveSchedulerAddrs_LocalSourceType(t *testing.T) {
 	tests := []struct {
 		name   string
 		config *DaemonOption
-		newcfg *DaemonOption
-		expect func(t *testing.T, dynconfig Dynconfig, config, newcfg *DaemonOption)
+		expect func(t *testing.T, dynconfig Dynconfig, config *DaemonOption)
 	}{
 		{
 			name: "get scheduler addrs",
@@ -50,8 +49,7 @@ func TestDynconfigGetResolveSchedulerAddrs_LocalSourceType(t *testing.T) {
 					},
 				},
 			},
-			newcfg: nil,
-			expect: func(t *testing.T, dynconfig Dynconfig, config, _newcfg *DaemonOption) {
+			expect: func(t *testing.T, dynconfig Dynconfig, config *DaemonOption) {
 				assert := assert.New(t)
 				result, err := dynconfig.GetResolveSchedulerAddrs()
 				assert.NoError(err)
@@ -69,8 +67,7 @@ func TestDynconfigGetResolveSchedulerAddrs_LocalSourceType(t *testing.T) {
 					},
 				},
 			},
-			newcfg: nil,
-			expect: func(t *testing.T, dynconfig Dynconfig, config, _newcfg *DaemonOption) {
+			expect: func(t *testing.T, dynconfig Dynconfig, config *DaemonOption) {
 				assert := assert.New(t)
 				_, err := dynconfig.GetResolveSchedulerAddrs()
 				assert.EqualError(err, "can not found available scheduler addresses")
@@ -90,8 +87,7 @@ func TestDynconfigGetResolveSchedulerAddrs_LocalSourceType(t *testing.T) {
 					},
 				},
 			},
-			newcfg: nil,
-			expect: func(t *testing.T, dynconfig Dynconfig, config, _newcfg *DaemonOption) {
+			expect: func(t *testing.T, dynconfig Dynconfig, config *DaemonOption) {
 				assert := assert.New(t)
 				result, err := dynconfig.GetResolveSchedulerAddrs()
 				assert.NoError(err)
@@ -99,7 +95,7 @@ func TestDynconfigGetResolveSchedulerAddrs_LocalSourceType(t *testing.T) {
 			},
 		},
 		{
-			name: "get scheduler addrs after update config",
+			name: "get scheduler addrs with OnNotify",
 			config: &DaemonOption{
 				Scheduler: SchedulerOption{
 					NetAddrs: []dfnet.NetAddr{
@@ -109,21 +105,20 @@ func TestDynconfigGetResolveSchedulerAddrs_LocalSourceType(t *testing.T) {
 					},
 				},
 			},
-			newcfg: &DaemonOption{
-				Scheduler: SchedulerOption{
-					NetAddrs: []dfnet.NetAddr{
-						{
-							Addr: "127.0.0.1:3000",
-						},
-					},
-				},
-			},
-			expect: func(t *testing.T, dynconfig Dynconfig, config, newcfg *DaemonOption) {
+			expect: func(t *testing.T, dynconfig Dynconfig, config *DaemonOption) {
 				assert := assert.New(t)
 				_, err := dynconfig.GetResolveSchedulerAddrs()
 				assert.EqualError(err, "can not found available scheduler addresses")
 
-				dynconfig.SetConfig(newcfg)
+				dynconfig.OnNotify(&DaemonOption{
+					Scheduler: SchedulerOption{
+						NetAddrs: []dfnet.NetAddr{
+							{
+								Addr: "127.0.0.1:3000",
+							},
+						},
+					},
+				})
 				result, err := dynconfig.GetResolveSchedulerAddrs()
 				assert.NoError(err)
 				assert.EqualValues(result, []resolver.Address{{ServerName: "127.0.0.1", Addr: "127.0.0.1:3000"}})
@@ -138,7 +133,7 @@ func TestDynconfigGetResolveSchedulerAddrs_LocalSourceType(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			tc.expect(t, dynconfig, tc.config, tc.newcfg)
+			tc.expect(t, dynconfig, tc.config)
 		})
 	}
 }
