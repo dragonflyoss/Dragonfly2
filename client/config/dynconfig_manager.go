@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -28,7 +29,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
-	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/resolver"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
@@ -55,12 +55,12 @@ type dynconfigManager struct {
 }
 
 // newDynconfigManager returns a new manager dynconfig instence.
-func newDynconfigManager(cfg *DaemonOption, rawManagerClient managerclient.V1, cacheDir string, expire time.Duration, creds credentials.TransportCredentials) (Dynconfig, error) {
+func newDynconfigManager(cfg *DaemonOption, rawManagerClient managerclient.V1, cacheDir string, creds credentials.TransportCredentials) (Dynconfig, error) {
 	cachePath := filepath.Join(cacheDir, cacheFileName)
 	d, err := internaldynconfig.New[DynconfigData](
 		newManagerClient(rawManagerClient, cfg),
 		cachePath,
-		expire,
+		cfg.Scheduler.Manager.RefreshInterval,
 	)
 	if err != nil {
 		return nil, err
@@ -94,12 +94,6 @@ func (d *dynconfigManager) GetResolveSchedulerAddrs() ([]resolver.Address, error
 			continue
 		}
 
-		ip, ok := ip.FormatIP(scheduler.GetIp())
-		if !ok {
-			continue
-		}
-
-		addr := fmt.Sprintf("%s:%d", ip, scheduler.GetPort())
 		dialOptions := []grpc.DialOption{}
 		if d.transportCredentials != nil {
 			dialOptions = append(dialOptions, grpc.WithTransportCredentials(d.transportCredentials))
@@ -107,15 +101,28 @@ func (d *dynconfigManager) GetResolveSchedulerAddrs() ([]resolver.Address, error
 			dialOptions = append(dialOptions, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		}
 
-		healthClient, err := healthclient.GetClient(context.Background(), addr, dialOptions...)
-		if err != nil {
-			logger.Errorf("get health client %s failed: %s", addr, err.Error())
-			continue
-		}
-		defer healthClient.Close()
+		var addr string
+		if ip, ok := ip.FormatIP(scheduler.GetIp()); ok {
+			// Check health with ip address.
+			target := fmt.Sprintf("%s:%d", ip, scheduler.GetPort())
+			if err := healthclient.Check(context.Background(), target, dialOptions...); err != nil {
+				logger.Warnf("scheduler ip address %s is unreachable: %s", addr, err.Error())
 
-		if err := healthClient.Check(context.Background(), &healthpb.HealthCheckRequest{}); err != nil {
-			logger.Errorf("scheduler address %s is unreachable: %s", addr, err.Error())
+				// Check health with host address.
+				target = fmt.Sprintf("%s:%d", scheduler.GetHostName(), scheduler.GetPort())
+				if err := healthclient.Check(context.Background(), target, dialOptions...); err != nil {
+					logger.Warnf("scheduler host address %s is unreachable: %s", addr, err.Error())
+				} else {
+					addr = target
+				}
+			} else {
+				addr = target
+			}
+		}
+
+		if addr == "" {
+			logger.Warnf("scheduler %s %s %s has not reachable addresses",
+				scheduler.GetIp(), scheduler.GetHostName(), scheduler.GetPort())
 			continue
 		}
 
@@ -123,9 +130,14 @@ func (d *dynconfigManager) GetResolveSchedulerAddrs() ([]resolver.Address, error
 			continue
 		}
 
+		host, _, err := net.SplitHostPort(addr)
+		if err != nil {
+			continue
+		}
+
 		schedulerClusterID = scheduler.SchedulerClusterId
 		resolveAddrs = append(resolveAddrs, resolver.Address{
-			ServerName: scheduler.GetIp(),
+			ServerName: host,
 			Addr:       addr,
 		})
 		addrs[addr] = true

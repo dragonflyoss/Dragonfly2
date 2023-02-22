@@ -33,21 +33,24 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
 )
 
-func TestDynconfigNewDynconfig_ManagerSourceType(t *testing.T) {
+func TestDynconfig_NewDynconfig(t *testing.T) {
 	mockCacheDir := t.TempDir()
 	mockCachePath := filepath.Join(mockCacheDir, cacheFileName)
 	tests := []struct {
 		name           string
-		expire         time.Duration
 		config         *DaemonOption
 		cleanFileCache func(t *testing.T)
 		mock           func(m *mocks.MockV1MockRecorder)
 		expect         func(t *testing.T, err error)
 	}{
 		{
-			name:   "new dynconfig",
-			expire: 10 * time.Second,
+			name: "new dynconfig",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Second,
+					},
+				},
 				Host: HostOption{
 					Hostname: "foo",
 				},
@@ -72,9 +75,13 @@ func TestDynconfigNewDynconfig_ManagerSourceType(t *testing.T) {
 			},
 		},
 		{
-			name:   "new dynconfig and host option is empty",
-			expire: 10 * time.Millisecond,
+			name: "new dynconfig and host option is empty",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Millisecond,
+					},
+				},
 				Host: HostOption{},
 				ObjectStorage: ObjectStorageOption{
 					Enable: true,
@@ -97,9 +104,13 @@ func TestDynconfigNewDynconfig_ManagerSourceType(t *testing.T) {
 			},
 		},
 		{
-			name:   "new dynconfig and list scheduler error",
-			expire: 10 * time.Millisecond,
+			name: "new dynconfig and list scheduler error",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Millisecond,
+					},
+				},
 				Host: HostOption{},
 				ObjectStorage: ObjectStorageOption{
 					Enable: true,
@@ -115,9 +126,13 @@ func TestDynconfigNewDynconfig_ManagerSourceType(t *testing.T) {
 			},
 		},
 		{
-			name:   "new dynconfig and get object storage error",
-			expire: 10 * time.Millisecond,
+			name: "new dynconfig and get object storage error",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Millisecond,
+					},
+				},
 				Host: HostOption{},
 				ObjectStorage: ObjectStorageOption{
 					Enable: true,
@@ -136,9 +151,13 @@ func TestDynconfigNewDynconfig_ManagerSourceType(t *testing.T) {
 			},
 		},
 		{
-			name:   "new dynconfig and object storage is not found",
-			expire: 10 * time.Millisecond,
+			name: "new dynconfig and object storage is not found",
 			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					Manager: ManagerOption{
+						RefreshInterval: 10 * time.Millisecond,
+					},
+				},
 				Host: HostOption{},
 				ObjectStorage: ObjectStorageOption{
 					Enable: true,
@@ -168,7 +187,6 @@ func TestDynconfigNewDynconfig_ManagerSourceType(t *testing.T) {
 			_, err := NewDynconfig(
 				ManagerSourceType, tc.config,
 				WithCacheDir(mockCacheDir),
-				WithExpireTime(tc.expire),
 				WithManagerClient(mockManagerClient),
 			)
 			tc.expect(t, err)
@@ -177,7 +195,7 @@ func TestDynconfigNewDynconfig_ManagerSourceType(t *testing.T) {
 	}
 }
 
-func TestDynconfigNewDynconfig_validate(t *testing.T) {
+func TestDynconfig_validate(t *testing.T) {
 	ctl := gomock.NewController(t)
 	defer ctl.Finish()
 	mockManagerClient := mocks.NewMockV1(ctl)
@@ -192,7 +210,6 @@ func TestDynconfigNewDynconfig_validate(t *testing.T) {
 				sourceType:    ManagerSourceType,
 				managerClient: mockManagerClient,
 				cacheDir:      "foo",
-				expire:        1,
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
@@ -220,19 +237,6 @@ func TestDynconfigNewDynconfig_validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "manager dynconfig requires parameter CacheDir")
-			},
-		},
-		{
-			name: "expire not found",
-			dynconfig: &dynconfig{
-				sourceType:    ManagerSourceType,
-				managerClient: mockManagerClient,
-				cacheDir:      "foo",
-				expire:        0,
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "manager dynconfig requires parameter ExpireTime")
 			},
 		},
 	}

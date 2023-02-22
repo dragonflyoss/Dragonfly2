@@ -66,6 +66,21 @@ func GetClient(ctx context.Context, target string, opts ...grpc.DialOption) (Cli
 	}, nil
 }
 
+// Check checks health of grpc server.
+func Check(ctx context.Context, target string, opts ...grpc.DialOption) error {
+	healthClient, err := GetClient(ctx, target, opts...)
+	if err != nil {
+		return err
+	}
+	defer healthClient.Close()
+
+	if err := healthClient.Check(context.Background(), &healthpb.HealthCheckRequest{}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Client is the interface for grpc client.
 type Client interface {
 	// Check checks health of grpc server.

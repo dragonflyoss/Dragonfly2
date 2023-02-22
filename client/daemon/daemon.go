@@ -210,14 +210,13 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			config.ManagerSourceType, opt,
 			config.WithManagerClient(managerClient),
 			config.WithCacheDir(filepath.Join(d.CacheDir(), internaldynconfig.CacheDirName)),
-			config.WithExpireTime(opt.Scheduler.Manager.RefreshInterval),
 			config.WithTransportCredentials(grpcCredentials),
 		)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		dynconfig, err = config.NewDynconfig(config.LocalSourceType, opt)
+		dynconfig, err = config.NewDynconfig(config.LocalSourceType, opt, config.WithTransportCredentials(grpcCredentials))
 		if err != nil {
 			return nil, err
 		}

@@ -21,17 +21,29 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/resolver"
 
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 )
 
-func TestDynconfigGetResolveSchedulerAddrs_LocalSourceType(t *testing.T) {
+func TestDynconfigLocal_GetResolveSchedulerAddrs(t *testing.T) {
+	grpcServer := grpc.NewServer()
+	healthpb.RegisterHealthServer(grpcServer, health.NewServer())
 	l, err := net.Listen("tcp", ":3000")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer l.Close()
+
+	go func() {
+		if err := grpcServer.Serve(l); err != nil {
+			panic(err)
+		}
+	}()
+	defer grpcServer.Stop()
 
 	tests := []struct {
 		name   string

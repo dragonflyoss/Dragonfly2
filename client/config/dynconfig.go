@@ -88,7 +88,6 @@ type dynconfig struct {
 	sourceType           SourceType
 	managerClient        managerclient.V1
 	cacheDir             string
-	expire               time.Duration
 	transportCredentials credentials.TransportCredentials
 }
 
@@ -112,14 +111,6 @@ func WithManagerClient(c managerclient.V1) DynconfigOption {
 func WithCacheDir(dir string) DynconfigOption {
 	return func(d *dynconfig) error {
 		d.cacheDir = dir
-		return nil
-	}
-}
-
-// WithExpireTime set the expire time for cache.
-func WithExpireTime(e time.Duration) DynconfigOption {
-	return func(d *dynconfig) error {
-		d.expire = e
 		return nil
 	}
 }
@@ -155,12 +146,12 @@ func NewDynconfig(sourceType SourceType, cfg *DaemonOption, options ...Dynconfig
 	)
 	switch sourceType {
 	case ManagerSourceType:
-		di, err = newDynconfigManager(cfg, d.managerClient, d.cacheDir, d.expire, d.transportCredentials)
+		di, err = newDynconfigManager(cfg, d.managerClient, d.cacheDir, d.transportCredentials)
 		if err != nil {
 			return nil, err
 		}
 	case LocalSourceType:
-		di, err = newDynconfigLocal(cfg)
+		di, err = newDynconfigLocal(cfg, d.transportCredentials)
 		if err != nil {
 			return nil, err
 		}
@@ -180,10 +171,6 @@ func (d *dynconfig) validate() error {
 
 		if d.cacheDir == "" {
 			return errors.New("manager dynconfig requires parameter CacheDir")
-		}
-
-		if d.expire == 0 {
-			return errors.New("manager dynconfig requires parameter ExpireTime")
 		}
 	}
 

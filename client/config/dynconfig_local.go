@@ -17,17 +17,21 @@
 package config
 
 import (
+	"context"
 	"errors"
 	"net"
 	"reflect"
 	"time"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/resolver"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/reachable"
+	healthclient "d7y.io/dragonfly/v2/pkg/rpc/health/client"
 )
 
 var (
@@ -35,17 +39,19 @@ var (
 )
 
 type dynconfigLocal struct {
-	config    *DaemonOption
-	observers map[Observer]struct{}
-	done      chan struct{}
+	config               *DaemonOption
+	observers            map[Observer]struct{}
+	done                 chan struct{}
+	transportCredentials credentials.TransportCredentials
 }
 
 // newDynconfigLocal returns a new local dynconfig instence.
-func newDynconfigLocal(cfg *DaemonOption) (Dynconfig, error) {
+func newDynconfigLocal(cfg *DaemonOption, creds credentials.TransportCredentials) (Dynconfig, error) {
 	return &dynconfigLocal{
-		config:    cfg,
-		observers: map[Observer]struct{}{},
-		done:      make(chan struct{}),
+		config:               cfg,
+		observers:            map[Observer]struct{}{},
+		done:                 make(chan struct{}),
+		transportCredentials: creds,
 	}, nil
 }
 
@@ -56,10 +62,16 @@ func (d *dynconfigLocal) GetResolveSchedulerAddrs() ([]resolver.Address, error) 
 		resolveAddrs = []resolver.Address{}
 	)
 	for _, schedulerAddr := range d.config.Scheduler.NetAddrs {
+		dialOptions := []grpc.DialOption{}
+		if d.transportCredentials != nil {
+			dialOptions = append(dialOptions, grpc.WithTransportCredentials(d.transportCredentials))
+		} else {
+			dialOptions = append(dialOptions, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		}
+
 		addr := schedulerAddr.Addr
-		r := reachable.New(&reachable.Config{Address: addr})
-		if err := r.Check(); err != nil {
-			logger.Warnf("scheduler address %s is unreachable", addr)
+		if err := healthclient.Check(context.Background(), addr, dialOptions...); err != nil {
+			logger.Warnf("scheduler address %s is unreachable: %s", addr, err.Error())
 			continue
 		}
 

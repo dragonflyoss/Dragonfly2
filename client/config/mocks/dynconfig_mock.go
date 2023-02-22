@@ -122,6 +122,18 @@ func (mr *MockDynconfigMockRecorder) Notify() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Notify", reflect.TypeOf((*MockDynconfig)(nil).Notify))
 }
 
+// OnNotify mocks base method.
+func (m *MockDynconfig) OnNotify(arg0 *config.DaemonOption) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "OnNotify", arg0)
+}
+
+// OnNotify indicates an expected call of OnNotify.
+func (mr *MockDynconfigMockRecorder) OnNotify(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnNotify", reflect.TypeOf((*MockDynconfig)(nil).OnNotify), arg0)
+}
+
 // Refresh mocks base method.
 func (m *MockDynconfig) Refresh() error {
 	m.ctrl.T.Helper()

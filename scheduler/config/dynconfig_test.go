@@ -33,7 +33,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/types"
 )
 
-func TestDynconfig_GetManagerSourceType(t *testing.T) {
+func TestDynconfig_Get(t *testing.T) {
 	mockCacheDir := t.TempDir()
 	mockConfig := &Config{
 		DynConfig: DynConfig{},
