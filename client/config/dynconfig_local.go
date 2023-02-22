@@ -19,6 +19,7 @@ package config
 import (
 	"errors"
 	"net"
+	"reflect"
 	"time"
 
 	"google.golang.org/grpc/resolver"
@@ -100,19 +101,9 @@ func (d *dynconfigLocal) Get() (*DynconfigData, error) {
 	return nil, ErrUnimplemented
 }
 
-// Get the dynamic config source type.
-func (d *dynconfigLocal) GetSourceType() SourceType {
-	return LocalSourceType
-}
-
 // Refresh refreshes dynconfig in cache.
 func (d *dynconfigLocal) Refresh() error {
 	return nil
-}
-
-// SetConfig updates DaemonOption in dynconfig.
-func (d *dynconfigLocal) SetConfig(newcfg *DaemonOption) {
-	d.config = newcfg
 }
 
 // Register allows an instance to register itself to listen/observe events.
@@ -132,6 +123,16 @@ func (d *dynconfigLocal) Notify() error {
 	}
 
 	return nil
+}
+
+// OnNotify allows an event to be published to the dynconfig.
+// Used for listening changes of the local configuration.
+func (d *dynconfigLocal) OnNotify(cfg *DaemonOption) {
+	if reflect.DeepEqual(d.config, cfg) {
+		return
+	}
+
+	d.config = cfg
 }
 
 // Serve the dynconfig listening service.

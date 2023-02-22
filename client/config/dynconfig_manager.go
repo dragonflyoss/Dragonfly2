@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"time"
 
 	"google.golang.org/grpc"
@@ -45,6 +46,7 @@ import (
 var cacheFileName = "daemon"
 
 type dynconfigManager struct {
+	config *DaemonOption
 	internaldynconfig.Dynconfig[DynconfigData]
 	observers            map[Observer]struct{}
 	done                 chan struct{}
@@ -65,6 +67,7 @@ func newDynconfigManager(cfg *DaemonOption, rawManagerClient managerclient.V1, c
 	}
 
 	return &dynconfigManager{
+		config:               cfg,
 		observers:            map[Observer]struct{}{},
 		done:                 make(chan struct{}),
 		cachePath:            cachePath,
@@ -167,11 +170,6 @@ func (d *dynconfigManager) GetObjectStorage() (*managerv1.ObjectStorage, error) 
 	return data.ObjectStorage, nil
 }
 
-// Get the dynamic config source type.
-func (d *dynconfigManager) GetSourceType() SourceType {
-	return ManagerSourceType
-}
-
 // Refresh refreshes dynconfig in cache.
 func (d *dynconfigManager) Refresh() error {
 	if err := d.Dynconfig.Refresh(); err != nil {
@@ -183,11 +181,6 @@ func (d *dynconfigManager) Refresh() error {
 	}
 
 	return nil
-}
-
-// SetConfig updates DaemonOption in dynconfig. This is only useful for local dynconfig.
-func (d *dynconfigManager) SetConfig(_cfg *DaemonOption) {
-	return
 }
 
 // Register allows an instance to register itself to listen/observe events.
@@ -214,7 +207,17 @@ func (d *dynconfigManager) Notify() error {
 	return nil
 }
 
-// watch the dynconfig events.
+// OnNotify allows an event to be published to the dynconfig.
+// Used for listening changes of the local configuration.
+func (d *dynconfigManager) OnNotify(cfg *DaemonOption) {
+	if reflect.DeepEqual(d.config, cfg) {
+		return
+	}
+
+	d.config = cfg
+}
+
+// Serve the dynconfig listening service.
 func (d *dynconfigManager) Serve() error {
 	if err := d.Notify(); err != nil {
 		return err
@@ -231,10 +234,6 @@ func (d *dynconfigManager) Serve() error {
 			return nil
 		}
 	}
-}
-
-// watch the dynconfig events.
-func (d *dynconfigManager) watch() {
 }
 
 // Stop the dynconfig listening service.

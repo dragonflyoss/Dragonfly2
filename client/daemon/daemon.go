@@ -718,9 +718,14 @@ func (cd *clientDaemon) Serve() error {
 			logger.Errorf("dynconfig start failed %v", err)
 			return err
 		}
+
 		logger.Info("dynconfig start successfully")
 		return nil
 	})
+
+	if cd.managerClient == nil {
+		watchers = append(watchers, cd.dynconfig.OnNotify)
+	}
 
 	if cd.Option.Metrics != "" {
 		metricsServer := metrics.New(cd.Option.Metrics)
@@ -759,10 +764,6 @@ func (cd *clientDaemon) Serve() error {
 				logger.Errorf("health http server error: %v", err)
 			}
 		}()
-	}
-
-	if cd.dynconfig.GetSourceType() == config.LocalSourceType {
-		watchers = append(watchers, cd.dynconfig.SetConfig)
 	}
 
 	if len(watchers) > 0 && interval > 0 {
