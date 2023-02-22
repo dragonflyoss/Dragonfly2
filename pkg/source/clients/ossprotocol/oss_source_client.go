@@ -217,6 +217,12 @@ func (osc *ossSourceClient) Download(request *source.Request) (*source.Response,
 				ETag:         objectResult.Response.Headers.Get(headers.ETag),
 			},
 		))
+	contentLength := objectResult.Response.Headers.Get(oss.HTTPHeaderContentLength)
+	if !pkgstrings.IsBlank(contentLength) {
+		if len, err := strconv.ParseInt(contentLength, 10, 64); err == nil {
+			response.ContentLength = len
+		}
+	}
 	return response, nil
 }
 
