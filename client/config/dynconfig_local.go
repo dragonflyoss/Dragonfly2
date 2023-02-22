@@ -100,9 +100,19 @@ func (d *dynconfigLocal) Get() (*DynconfigData, error) {
 	return nil, ErrUnimplemented
 }
 
+// Get the dynamic config source type.
+func (d *dynconfigLocal) GetSourceType() SourceType {
+	return LocalSourceType
+}
+
 // Refresh refreshes dynconfig in cache.
 func (d *dynconfigLocal) Refresh() error {
 	return nil
+}
+
+// SetConfig updates DaemonOption in dynconfig.
+func (d *dynconfigLocal) SetConfig(newcfg *DaemonOption) {
+	d.config = newcfg
 }
 
 // Register allows an instance to register itself to listen/observe events.

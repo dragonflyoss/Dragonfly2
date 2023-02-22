@@ -167,6 +167,11 @@ func (d *dynconfigManager) GetObjectStorage() (*managerv1.ObjectStorage, error) 
 	return data.ObjectStorage, nil
 }
 
+// Get the dynamic config source type.
+func (d *dynconfigManager) GetSourceType() SourceType {
+	return ManagerSourceType
+}
+
 // Refresh refreshes dynconfig in cache.
 func (d *dynconfigManager) Refresh() error {
 	if err := d.Dynconfig.Refresh(); err != nil {
@@ -178,6 +183,11 @@ func (d *dynconfigManager) Refresh() error {
 	}
 
 	return nil
+}
+
+// SetConfig updates DaemonOption in dynconfig. This is only useful for local dynconfig.
+func (d *dynconfigManager) SetConfig(_cfg *DaemonOption) {
+	return
 }
 
 // Register allows an instance to register itself to listen/observe events.
