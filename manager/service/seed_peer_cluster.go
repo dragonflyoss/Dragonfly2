@@ -31,16 +31,10 @@ func (s *service) CreateSeedPeerCluster(ctx context.Context, json types.CreateSe
 		return nil, err
 	}
 
-	scopes, err := structure.StructToMap(json.Scopes)
-	if err != nil {
-		return nil, err
-	}
-
 	seedPeerCluster := model.SeedPeerCluster{
 		Name:      json.Name,
 		BIO:       json.BIO,
 		Config:    config,
-		Scopes:    scopes,
 		IsDefault: json.IsDefault,
 	}
 
@@ -80,20 +74,11 @@ func (s *service) UpdateSeedPeerCluster(ctx context.Context, id uint, json types
 		}
 	}
 
-	var scopes map[string]any
-	if json.Scopes != nil {
-		scopes, err = structure.StructToMap(json.Scopes)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	seedPeerCluster := model.SeedPeerCluster{}
 	if err := s.db.WithContext(ctx).First(&seedPeerCluster, id).Updates(model.SeedPeerCluster{
 		Name:   json.Name,
 		BIO:    json.BIO,
 		Config: config,
-		Scopes: scopes,
 	}).Error; err != nil {
 		return nil, err
 	}

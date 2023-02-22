@@ -291,6 +291,12 @@ func (s *managerServerV1) GetScheduler(ctx context.Context, req *managerv1.GetSc
 		return nil, status.Error(codes.DataLoss, err.Error())
 	}
 
+	// Marshal scopes of client.
+	schedulerClusterScopes, err := scheduler.SchedulerCluster.Scopes.MarshalJSON()
+	if err != nil {
+		return nil, status.Error(codes.DataLoss, err.Error())
+	}
+
 	// Construct seed peers.
 	var pbSeedPeers []*managerv1.SeedPeer
 	for _, seedPeerCluster := range scheduler.SchedulerCluster.SeedPeerClusters {
@@ -338,6 +344,7 @@ func (s *managerServerV1) GetScheduler(ctx context.Context, req *managerv1.GetSc
 			Bio:          scheduler.SchedulerCluster.BIO,
 			Config:       schedulerClusterConfig,
 			ClientConfig: schedulerClusterClientConfig,
+			Scopes:       schedulerClusterScopes,
 		},
 		SeedPeers: pbSeedPeers,
 	}
