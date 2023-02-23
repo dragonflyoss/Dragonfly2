@@ -33,6 +33,7 @@ import (
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/distribution/distribution/v3"
 	"github.com/distribution/distribution/v3/manifest/schema2"
+	"github.com/go-http-utils/headers"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
@@ -189,9 +190,7 @@ func (p *preheat) getLayers(ctx context.Context, url, tag, filter string, header
 				return nil, err
 			}
 
-			bearer := "Bearer " + token
-			header.Add("Authorization", bearer)
-
+			header.Add(headers.Authorization, fmt.Sprintf("Bearer %s", token))
 			resp, err = p.getManifests(ctx, url, header)
 			if err != nil {
 				return nil, err
@@ -210,13 +209,13 @@ func (p *preheat) getLayers(ctx context.Context, url, tag, filter string, header
 }
 
 func (p *preheat) getManifests(ctx context.Context, url string, header http.Header) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	req.Header = header
-	req.Header.Add("Accept", schema2.MediaTypeManifest)
+	req.Header.Add(headers.Accept, schema2.MediaTypeManifest)
 
 	client := &http.Client{
 		Timeout: defaultHTTPRequesttimeout,
@@ -246,9 +245,8 @@ func (p *preheat) parseLayers(resp *http.Response, url, tag, filter string, head
 
 	var layers []internaljob.PreheatRequest
 	for _, v := range manifest.References() {
-		digest := v.Digest.String()
 		layer := internaljob.PreheatRequest{
-			URL:     layerURL(image.protocol, image.domain, image.name, digest),
+			URL:     layerURL(image.protocol, image.domain, image.name, v.Digest.String()),
 			Tag:     tag,
 			Filter:  filter,
 			Headers: nethttp.HeaderToMap(header),
@@ -264,12 +262,12 @@ func getAuthToken(ctx context.Context, header http.Header) (string, error) {
 	ctx, span := tracer.Start(ctx, config.SpanAuthWithRegistry, trace.WithSpanKind(trace.SpanKindProducer))
 	defer span.End()
 
-	authURL := authURL(header.Values("WWW-Authenticate"))
+	authURL := authURL(header.Values(headers.WWWAuthenticate))
 	if len(authURL) == 0 {
 		return "", errors.New("authURL is empty")
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", authURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, authURL, nil)
 	if err != nil {
 		return "", err
 	}
@@ -288,6 +286,7 @@ func getAuthToken(ctx context.Context, header http.Header) (string, error) {
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
+
 	var result map[string]any
 	if err := json.Unmarshal(body, &result); err != nil {
 		return "", err
@@ -299,7 +298,6 @@ func getAuthToken(ctx context.Context, header http.Header) (string, error) {
 
 	token := fmt.Sprintf("%v", result["token"])
 	return token, nil
-
 }
 
 func authURL(wwwAuth []string) string {
@@ -307,10 +305,12 @@ func authURL(wwwAuth []string) string {
 	if len(wwwAuth) == 0 {
 		return ""
 	}
+
 	polished := make([]string, 0)
 	for _, it := range wwwAuth {
 		polished = append(polished, strings.ReplaceAll(it, "\"", ""))
 	}
+
 	fileds := strings.Split(polished[0], ",")
 	host := strings.Split(fileds[0], "=")[1]
 	query := strings.Join(fileds[1:], "&")
