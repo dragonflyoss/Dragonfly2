@@ -5052,6 +5052,12 @@ const docTemplate = `{
         "d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes": {
             "type": "object",
             "properties": {
+                "cidrs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "idc": {
                     "type": "string"
                 },

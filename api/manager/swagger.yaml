@@ -694,6 +694,10 @@ definitions:
     type: object
   d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes:
     properties:
+      cidrs:
+        items:
+          type: string
+        type: array
       idc:
         type: string
       location:

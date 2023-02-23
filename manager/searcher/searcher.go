@@ -22,10 +22,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"sort"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
+	"github.com/yl2chen/cidranger"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/model"
@@ -45,17 +47,20 @@ const (
 )
 
 const (
-	// clusterTypeWeight cluster type weight.
-	clusterTypeWeight float64 = 0.03
+	// securityDomainAffinityWeight is security domain affinity weight.
+	securityDomainAffinityWeight float64 = 0.4
 
-	// SecurityDomain affinity weight.
-	securityDomainAffinityWeight float64 = 0.5
+	// cidrAffinityWeight is CIDR affinity weight.
+	cidrAffinityWeight float64 = 0.3
 
-	// IDC affinity weight.
-	idcAffinityWeight float64 = 0.35
+	// idcAffinityWeight is IDC affinity weight.
+	idcAffinityWeight float64 = 0.15
 
-	// Location affinity weight.
-	locationAffinityWeight = 0.12
+	// locationAffinityWeight is location affinity weight.
+	locationAffinityWeight = 0.1
+
+	// clusterTypeWeight is cluster type weight.
+	clusterTypeWeight float64 = 0.05
 )
 
 const (
@@ -73,16 +78,19 @@ const (
 
 // Scheduler cluster scopes.
 type Scopes struct {
-	IDC      string `mapstructure:"idc"`
-	Location string `mapstructure:"location"`
+	IDC      string   `mapstructure:"idc"`
+	Location string   `mapstructure:"location"`
+	CIDRs    []string `mapstructure:"cidrs"`
 }
 
 type Searcher interface {
 	// FindSchedulerClusters finds scheduler clusters that best matches the evaluation.
-	FindSchedulerClusters(ctx context.Context, schedulerClusters []model.SchedulerCluster, hostname, ip string, conditions map[string]string) ([]model.SchedulerCluster, error)
+	FindSchedulerClusters(ctx context.Context, schedulerClusters []model.SchedulerCluster, ip, hostname string, conditions map[string]string) ([]model.SchedulerCluster, error)
 }
 
-type searcher struct{}
+type searcher struct {
+	cidrs []string
+}
 
 func New(pluginDir string) Searcher {
 	s, err := LoadPlugin(pluginDir)
@@ -96,11 +104,7 @@ func New(pluginDir string) Searcher {
 }
 
 // FindSchedulerClusters finds scheduler clusters that best matches the evaluation.
-func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters []model.SchedulerCluster, hostname, ip string, conditions map[string]string) ([]model.SchedulerCluster, error) {
-	if len(conditions) <= 0 {
-		return nil, errors.New("empty conditions")
-	}
-
+func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters []model.SchedulerCluster, ip, hostname string, conditions map[string]string) ([]model.SchedulerCluster, error) {
 	if len(schedulerClusters) <= 0 {
 		return nil, errors.New("empty scheduler clusters")
 	}
@@ -124,7 +128,7 @@ func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters 
 				return false
 			}
 
-			return Evaluate(conditions, si, clusters[i]) > Evaluate(conditions, sj, clusters[j])
+			return Evaluate(ip, hostname, conditions, si, clusters[i]) > Evaluate(ip, hostname, conditions, sj, clusters[j])
 		},
 	)
 
@@ -173,20 +177,12 @@ func FilterSchedulerClusters(conditions map[string]string, schedulerClusters []m
 }
 
 // Evaluate the degree of matching between scheduler cluster and dfdaemon.
-func Evaluate(conditions map[string]string, scopes Scopes, cluster model.SchedulerCluster) float64 {
-	return clusterTypeWeight*calculateClusterTypeScore(cluster) +
-		securityDomainAffinityWeight*calculateSecurityDomainAffinityScore(conditions[ConditionSecurityDomain], cluster.SecurityGroup.SecurityRules) +
+func Evaluate(ip, hostname string, conditions map[string]string, scopes Scopes, cluster model.SchedulerCluster) float64 {
+	return securityDomainAffinityWeight*calculateSecurityDomainAffinityScore(conditions[ConditionSecurityDomain], cluster.SecurityGroup.SecurityRules) +
+		cidrAffinityWeight*calculateCIDRAffinityScore(ip, scopes.CIDRs) +
 		idcAffinityWeight*calculateIDCAffinityScore(conditions[ConditionIDC], scopes.IDC) +
-		locationAffinityWeight*calculateMultiElementAffinityScore(conditions[ConditionLocation], scopes.Location)
-}
-
-// calculateClusterTypeScore 0.0~1.0 larger and better.
-func calculateClusterTypeScore(cluster model.SchedulerCluster) float64 {
-	if cluster.IsDefault {
-		return maxScore
-	}
-
-	return minScore
+		locationAffinityWeight*calculateMultiElementAffinityScore(conditions[ConditionLocation], scopes.Location) +
+		clusterTypeWeight*calculateClusterTypeScore(cluster)
 }
 
 // calculateSecurityDomainAffinityScore 0.0~1.0 larger and better.
@@ -196,6 +192,37 @@ func calculateSecurityDomainAffinityScore(securityDomain string, securityRules [
 	}
 
 	if len(securityRules) == 0 {
+		return minScore
+	}
+
+	return maxScore
+}
+
+// calculateCIDRAffinityScore 0.0~1.0 larger and better.
+func calculateCIDRAffinityScore(ip string, cidrs []string) float64 {
+	// Construct CIDR ranger.
+	ranger := cidranger.NewPCTrieRanger()
+	for _, cidr := range cidrs {
+		_, network, err := net.ParseCIDR(cidr)
+		if err != nil {
+			logger.Error(err)
+			continue
+		}
+
+		if err := ranger.Insert(cidranger.NewBasicRangerEntry(*network)); err != nil {
+			logger.Error(err)
+			continue
+		}
+	}
+
+	// Determine whether an IP is contained in the constructed networks ranger.
+	contains, err := ranger.Contains(net.ParseIP(ip))
+	if err != nil {
+		logger.Error(err)
+		return minScore
+	}
+
+	if !contains {
 		return minScore
 	}
 
@@ -254,4 +281,13 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 	}
 
 	return float64(score) / float64(maxElementLen)
+}
+
+// calculateClusterTypeScore 0.0~1.0 larger and better.
+func calculateClusterTypeScore(cluster model.SchedulerCluster) float64 {
+	if cluster.IsDefault {
+		return maxScore
+	}
+
+	return minScore
 }
