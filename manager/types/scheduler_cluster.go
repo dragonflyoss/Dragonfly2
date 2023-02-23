@@ -64,6 +64,7 @@ type SchedulerClusterClientConfig struct {
 }
 
 type SchedulerClusterScopes struct {
-	IDC      string `yaml:"idc" mapstructure:"idc" json:"idc" binding:"omitempty"`
-	Location string `yaml:"location" mapstructure:"location" json:"location" binding:"omitempty"`
+	IDC      string   `yaml:"idc" mapstructure:"idc" json:"idc" binding:"omitempty"`
+	Location string   `yaml:"location" mapstructure:"location" json:"location" binding:"omitempty"`
+	CIDRs    []string `yaml:"cidrs" mapstructure:"cidrs" json:"cidrs" binding:"omitempty"`
 }
