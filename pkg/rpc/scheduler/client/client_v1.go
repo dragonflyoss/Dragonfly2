@@ -86,6 +86,42 @@ func GetV1(ctx context.Context, dynconfig config.Dynconfig, opts ...grpc.DialOpt
 	}, nil
 }
 
+// GetV1ByAddr returns v2 version of the scheduler client by address.
+func GetV1ByAddr(ctx context.Context, target string, opts ...grpc.DialOption) (V1, error) {
+	conn, err := grpc.DialContext(
+		ctx,
+		target,
+		append([]grpc.DialOption{
+			grpc.WithDefaultServiceConfig(pkgbalancer.BalancerServiceConfig),
+			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
+				rpc.ConvertErrorUnaryClientInterceptor,
+				otelgrpc.UnaryClientInterceptor(),
+				grpc_prometheus.UnaryClientInterceptor,
+				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
+				grpc_retry.UnaryClientInterceptor(
+					grpc_retry.WithMax(maxRetries),
+					grpc_retry.WithBackoff(grpc_retry.BackoffLinear(backoffWaitBetween)),
+				),
+			)),
+			grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
+				rpc.ConvertErrorStreamClientInterceptor,
+				otelgrpc.StreamClientInterceptor(),
+				grpc_prometheus.StreamClientInterceptor,
+				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
+			)),
+		}, opts...)...,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &v1{
+		SchedulerClient: schedulerv1.NewSchedulerClient(conn),
+		ClientConn:      conn,
+		dialOptions:     opts,
+	}, nil
+}
+
 // V1 is the interface for v1 version of the grpc client.
 type V1 interface {
 	// RegisterPeerTask registers a peer into task.
@@ -111,6 +147,12 @@ type V1 interface {
 
 	// LeaveHost releases host in scheduler.
 	LeaveHost(context.Context, *schedulerv1.LeaveHostRequest, ...grpc.CallOption) error
+
+	// SyncProbes sync probes of the host.
+	SyncProbes(context.Context, *schedulerv1.SyncProbesRequest, ...grpc.CallOption) (schedulerv1.Scheduler_SyncProbesClient, error)
+
+	// SyncNetworkTopology sync network topology of the hosts.
+	SyncNetworkTopology(context.Context, *schedulerv1.SyncNetworkTopologyRequest, ...grpc.CallOption) (schedulerv1.Scheduler_SyncNetworkTopologyClient, error)
 
 	// Close tears down the ClientConn and all underlying connections.
 	Close() error
@@ -265,4 +307,26 @@ func (v *v1) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostRequest, o
 	}
 
 	return eg.Wait()
+}
+
+// SyncProbes sync probes of the host.
+func (v *v1) SyncProbes(ctx context.Context, req *schedulerv1.SyncProbesRequest, opts ...grpc.CallOption) (schedulerv1.Scheduler_SyncProbesClient, error) {
+	stream, err := v.SchedulerClient.SyncProbes(ctx, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	// Send begin of piece.
+	return stream, stream.Send(req)
+}
+
+// SyncNetworkTopology sync network topology of the hosts.
+func (v *v1) SyncNetworkTopology(ctx context.Context, req *schedulerv1.SyncNetworkTopologyRequest, opts ...grpc.CallOption) (schedulerv1.Scheduler_SyncNetworkTopologyClient, error) {
+	stream, err := v.SchedulerClient.SyncNetworkTopology(ctx, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	// Send begin of piece.
+	return stream, stream.Send(req)
 }

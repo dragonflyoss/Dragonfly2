@@ -40,8 +40,8 @@ import (
 	"d7y.io/dragonfly/v2/pkg/reachable"
 )
 
-// GetV2 returns v2 version of the manager client.
-func GetV2(ctx context.Context, target string, opts ...grpc.DialOption) (V2, error) {
+// GetV2ByAddr returns v2 version of the manager client by address.
+func GetV2ByAddr(ctx context.Context, target string, opts ...grpc.DialOption) (V2, error) {
 	conn, err := grpc.DialContext(
 		ctx,
 		target,
@@ -73,13 +73,13 @@ func GetV2(ctx context.Context, target string, opts ...grpc.DialOption) (V2, err
 	}, nil
 }
 
-// GetV2ByAddr returns v2 version of the manager client with addresses.
-func GetV2ByAddr(ctx context.Context, netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (V2, error) {
+// GetV2ByNetAddrs returns v2 version of the manager client with net addresses.
+func GetV2ByNetAddrs(ctx context.Context, netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (V2, error) {
 	for _, netAddr := range netAddrs {
 		ipReachable := reachable.New(&reachable.Config{Address: netAddr.Addr})
 		if err := ipReachable.Check(); err == nil {
 			logger.Infof("use %s address for manager grpc client", netAddr.Addr)
-			return GetV2(ctx, netAddr.Addr, opts...)
+			return GetV2ByAddr(ctx, netAddr.Addr, opts...)
 		}
 		logger.Warnf("%s manager address can not reachable", netAddr.Addr)
 	}

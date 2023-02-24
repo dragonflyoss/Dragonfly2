@@ -155,7 +155,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			}
 		}
 
-		managerClient, err = managerclient.GetV1ByAddr(
+		managerClient, err = managerclient.GetV1ByNetAddrs(
 			context.Background(), opt.Scheduler.Manager.NetAddrs, grpc.WithTransportCredentials(grpcCredentials))
 		if err != nil {
 			return nil, err
