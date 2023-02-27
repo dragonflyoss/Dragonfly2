@@ -17,6 +17,7 @@
 package rpcserver
 
 import (
+	"d7y.io/dragonfly/v2/scheduler/networktopology"
 	"google.golang.org/grpc"
 
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
@@ -33,10 +34,11 @@ func New(
 	scheduling scheduling.Scheduling,
 	dynconfig config.DynconfigInterface,
 	storage storage.Storage,
+	networkTopology networktopology.NetworkTopology,
 	opts ...grpc.ServerOption,
 ) *grpc.Server {
 	return server.New(
-		newSchedulerServerV1(cfg, resource, scheduling, dynconfig, storage),
+		newSchedulerServerV1(cfg, resource, scheduling, dynconfig, storage, networkTopology),
 		newSchedulerServerV2(cfg, resource, scheduling, dynconfig, storage),
 		opts...)
 }

@@ -19,6 +19,7 @@ package scheduler
 import (
 	"context"
 	"crypto/tls"
+	"d7y.io/dragonfly/v2/scheduler/networktopology"
 	"errors"
 	"fmt"
 	"net"
@@ -89,6 +90,9 @@ type Server struct {
 
 	// Announcer interface.
 	announcer announcer.Announcer
+
+	// NetworkTopology interface.
+	networkTopology networktopology.NetworkTopology
 
 	// GC service.
 	gc gc.GC
@@ -210,7 +214,14 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		schedulerServerOptions = append(schedulerServerOptions, grpc.Creds(insecure.NewCredentials()))
 	}
 
-	svr := rpcserver.New(cfg, resource, scheduling, dynconfig, s.storage, schedulerServerOptions...)
+	// Initialize networktopology.
+	networkTopology, err := networktopology.New(resource)
+	if err != nil {
+		return nil, err
+	}
+	s.networkTopology = networkTopology
+
+	svr := rpcserver.New(cfg, resource, scheduling, dynconfig, s.storage, s.networkTopology, schedulerServerOptions...)
 	s.grpcServer = svr
 
 	// Initialize job service.

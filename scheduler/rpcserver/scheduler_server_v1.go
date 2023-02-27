@@ -18,6 +18,7 @@ package rpcserver
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/scheduler/networktopology"
 
 	"google.golang.org/protobuf/types/known/emptypb"
 
@@ -45,8 +46,9 @@ func newSchedulerServerV1(
 	scheduling scheduling.Scheduling,
 	dynconfig config.DynconfigInterface,
 	storage storage.Storage,
+	networkTopology networktopology.NetworkTopology,
 ) schedulerv1.SchedulerServer {
-	return &schedulerServerV1{service.NewV1(cfg, resource, scheduling, dynconfig, storage)}
+	return &schedulerServerV1{service.NewV1(cfg, resource, scheduling, dynconfig, storage, networkTopology)}
 }
 
 // RegisterPeerTask registers peer and triggers seed peer download task.
@@ -132,14 +134,12 @@ func (s *schedulerServerV1) LeaveHost(ctx context.Context, req *schedulerv1.Leav
 	return new(emptypb.Empty), nil
 }
 
-// TODO Implement SyncProbes
 // SyncProbes sync probes of the host.
 func (s *schedulerServerV1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
-	return nil
+	return s.service.SyncProbes(stream)
 }
 
-// TODO Implement SyncProbes
 // SyncNetworkTopology sync network topology of the hosts.
 func (s *schedulerServerV1) SyncNetworkTopology(stream schedulerv1.Scheduler_SyncNetworkTopologyServer) error {
-	return nil
+	return s.service.SyncNetworkTopology(stream)
 }

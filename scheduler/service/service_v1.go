@@ -18,11 +18,14 @@ package service
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/scheduler/networktopology"
 	"errors"
 	"fmt"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"io"
 	"math"
 	"strings"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/otel/trace"
@@ -64,6 +67,9 @@ type V1 struct {
 
 	// Storage interface.
 	storage storage.Storage
+
+	// NetworkTopology interface
+	networkTopology networktopology.NetworkTopology
 }
 
 // New v1 version of service instance.
@@ -73,13 +79,15 @@ func NewV1(
 	scheduling scheduling.Scheduling,
 	dynconfig config.DynconfigInterface,
 	storage storage.Storage,
+	networkTopology networktopology.NetworkTopology,
 ) *V1 {
 	return &V1{
-		resource:   resource,
-		scheduling: scheduling,
-		config:     cfg,
-		dynconfig:  dynconfig,
-		storage:    storage,
+		resource:        resource,
+		scheduling:      scheduling,
+		config:          cfg,
+		dynconfig:       dynconfig,
+		storage:         storage,
+		networkTopology: networkTopology,
 	}
 }
 
@@ -1437,5 +1445,101 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 
 	if err := v.storage.Create(record); err != nil {
 		peer.Log.Error(err)
+	}
+}
+
+func (v *V1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
+	ctx := stream.Context()
+	for {
+		select {
+		case <-ctx.Done():
+			logger.Infof("context was done")
+			return ctx.Err()
+		default:
+		}
+		syncProbesRequest, err := stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+
+			logger.Errorf("receive sync probes failed: %s", err.Error())
+			return err
+		}
+		// Sync the probes sent by host.
+		probesOfHost := syncProbesRequest.ProbesOfHost
+		for _, probe := range probesOfHost.Probes {
+			host, ok := v.networkTopology.GetHost(probe.Host.Id)
+			if ok {
+				v.networkTopology.StoreProbe(probesOfHost.Host.Id, host.ID, host, probe.Rtt, probe.UpdatedAt)
+			}
+		}
+		// Get the targets to be probed by the host.
+		root, ok := v.networkTopology.GetHost(probesOfHost.Host.Id)
+		if ok {
+			probes := v.networkTopology.FindProbes(root)
+			hosts := make([]*commonv1.Host, 0)
+			for _, probe := range probes {
+				rawProbe := commonv1.Host{
+					Id:             probe.ID,
+					Ip:             probe.IP,
+					Hostname:       probe.Hostname,
+					Port:           probe.Port,
+					DownloadPort:   probe.DownloadPort,
+					SecurityDomain: probe.Network.SecurityDomain,
+					Location:       probe.Network.Location,
+					Idc:            probe.Network.IDC,
+				}
+				hosts = append(hosts, &rawProbe)
+			}
+
+			// Send the targets to host for probing.
+			if err := stream.Send(&schedulerv1.SyncProbesResponse{Hosts: hosts, ProbeInterval: durationpb.New(config.DefaultProbeSyncInterval)}); err != nil {
+				return err
+			}
+		}
+
+	}
+}
+
+func (v *V1) SyncNetworkTopology(stream schedulerv1.Scheduler_SyncNetworkTopologyServer) error {
+	ctx := stream.Context()
+	for {
+		select {
+		case <-ctx.Done():
+			logger.Infof("context was done")
+			return ctx.Err()
+		default:
+		}
+		syncNetworkTopologyRequest, err := stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+
+			logger.Errorf("receive syncNetworkTopologyRequest failed: %s", err.Error())
+			return err
+		}
+		// Sync the network topology from other schedulers.
+		// UpdateHostsRequest
+		if updateHostsRequest := syncNetworkTopologyRequest.GetUpdateProbesOfHostsRequest(); updateHostsRequest != nil {
+			for _, updateHost := range updateHostsRequest.ProbesOfHosts {
+				v.networkTopology.DeleteParents(updateHost.Host.Id)
+				var rawMap *sync.Map
+				v.networkTopology.StoreParents(updateHost.Host.Id, rawMap)
+				for _, probe := range updateHost.Probes {
+					host, ok := v.networkTopology.GetHost(probe.Host.Id)
+					if ok {
+						v.networkTopology.StoreProbe(updateHost.Host.Id, host.ID, host, probe.Rtt, probe.UpdatedAt)
+					}
+				}
+			}
+		}
+		// DeleteHostsRequest
+		if deleteHostsRequest := syncNetworkTopologyRequest.GetDeleteProbesOfHostsRequest(); deleteHostsRequest != nil {
+			for _, deleteHost := range deleteHostsRequest.ProbesOfHosts {
+				v.networkTopology.DeleteParents(deleteHost.Host.Id)
+			}
+		}
 	}
 }
