@@ -198,6 +198,16 @@ var (
 	}
 	mockURLMetaRange = "0-9"
 	mockPieceMD5     = digest.New(digest.AlgorithmMD5, "86d3f3a95c324c9479bd8986968f4327")
+	mockPiece        = resource.Piece{
+		Number:      1,
+		ParentID:    "foo",
+		Offset:      2,
+		Length:      10,
+		Digest:      mockPieceMD5,
+		TrafficType: commonv2.TrafficType_REMOTE_PEER,
+		Cost:        1 * time.Minute,
+		CreatedAt:   time.Now(),
+	}
 )
 
 func TestService_NewV1(t *testing.T) {
@@ -227,7 +237,7 @@ func TestService_NewV1(t *testing.T) {
 	}
 }
 
-func TestService_RegisterPeerTask(t *testing.T) {
+func TestServiceV1_RegisterPeerTask(t *testing.T) {
 	tests := []struct {
 		name string
 		req  *schedulerv1.PeerTaskRequest
@@ -911,7 +921,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 	}
 }
 
-func TestService_ReportPieceResult(t *testing.T) {
+func TestServiceV1_ReportPieceResult(t *testing.T) {
 	tests := []struct {
 		name string
 		mock func(
@@ -1164,7 +1174,7 @@ func TestService_ReportPieceResult(t *testing.T) {
 	}
 }
 
-func TestService_ReportPeerResult(t *testing.T) {
+func TestServiceV1_ReportPeerResult(t *testing.T) {
 	tests := []struct {
 		name string
 		req  *schedulerv1.PeerResult
@@ -1361,7 +1371,7 @@ func TestService_ReportPeerResult(t *testing.T) {
 	}
 }
 
-func TestService_StatTask(t *testing.T) {
+func TestServiceV1_StatTask(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(mockTask *resource.Task, taskManager resource.TaskManager, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder)
@@ -1423,7 +1433,7 @@ func TestService_StatTask(t *testing.T) {
 	}
 }
 
-func TestService_AnnounceTask(t *testing.T) {
+func TestServiceV1_AnnounceTask(t *testing.T) {
 	tests := []struct {
 		name string
 		req  *schedulerv1.AnnounceTaskRequest
@@ -1722,7 +1732,7 @@ func TestService_AnnounceTask(t *testing.T) {
 	}
 }
 
-func TestService_LeaveTask(t *testing.T) {
+func TestServiceV1_LeaveTask(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(peer *resource.Peer, peerManager resource.PeerManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder)
@@ -1920,7 +1930,7 @@ func TestService_LeaveTask(t *testing.T) {
 	}
 }
 
-func TestService_LeaveHost(t *testing.T) {
+func TestServiceV1_LeaveHost(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder)
@@ -2137,7 +2147,7 @@ func TestService_LeaveHost(t *testing.T) {
 	}
 }
 
-func TestService_triggerTask(t *testing.T) {
+func TestServiceV1_triggerTask(t *testing.T) {
 	tests := []struct {
 		name   string
 		config *config.Config
@@ -2604,7 +2614,7 @@ func TestService_triggerTask(t *testing.T) {
 	}
 }
 
-func TestService_storeTask(t *testing.T) {
+func TestServiceV1_storeTask(t *testing.T) {
 	tests := []struct {
 		name string
 		run  func(t *testing.T, svc *V1, taskManager resource.TaskManager, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder)
@@ -2698,7 +2708,7 @@ func TestService_storeTask(t *testing.T) {
 	}
 }
 
-func TestService_storeHost(t *testing.T) {
+func TestServiceV1_storeHost(t *testing.T) {
 	tests := []struct {
 		name     string
 		peerHost *schedulerv1.PeerHost
@@ -2783,7 +2793,7 @@ func TestService_storeHost(t *testing.T) {
 	}
 }
 
-func TestService_storePeer(t *testing.T) {
+func TestServiceV1_storePeer(t *testing.T) {
 	tests := []struct {
 		name string
 		run  func(t *testing.T, svc *V1, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder)
@@ -2863,7 +2873,7 @@ func TestService_storePeer(t *testing.T) {
 	}
 }
 
-func TestService_triggerSeedPeerTask(t *testing.T) {
+func TestServiceV1_triggerSeedPeerTask(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(task *resource.Task, peer *resource.Peer, seedPeer resource.SeedPeer, mr *resource.MockResourceMockRecorder, mc *resource.MockSeedPeerMockRecorder)
@@ -2929,7 +2939,7 @@ func TestService_triggerSeedPeerTask(t *testing.T) {
 	}
 }
 
-func TestService_handleBeginOfPiece(t *testing.T) {
+func TestServiceV1_handleBeginOfPiece(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(peer *resource.Peer, scheduling *mocks.MockSchedulingMockRecorder)
@@ -3010,7 +3020,7 @@ func TestService_handleBeginOfPiece(t *testing.T) {
 	}
 }
 
-func TestService_handlePieceSuccess(t *testing.T) {
+func TestServiceV1_handlePieceSuccess(t *testing.T) {
 	mockHost := resource.NewHost(
 		mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 		mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
@@ -3145,7 +3155,7 @@ func TestService_handlePieceSuccess(t *testing.T) {
 	}
 }
 
-func TestService_handlePieceFail(t *testing.T) {
+func TestServiceV1_handlePieceFail(t *testing.T) {
 
 	tests := []struct {
 		name   string
@@ -3339,7 +3349,7 @@ func TestService_handlePieceFail(t *testing.T) {
 	}
 }
 
-func TestService_handlePeerSuccess(t *testing.T) {
+func TestServiceV1_handlePeerSuccess(t *testing.T) {
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if _, err := w.Write([]byte{1}); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -3464,7 +3474,7 @@ func TestService_handlePeerSuccess(t *testing.T) {
 	}
 }
 
-func TestService_handlePeerFail(t *testing.T) {
+func TestServiceV1_handlePeerFail(t *testing.T) {
 
 	tests := []struct {
 		name   string
@@ -3545,7 +3555,7 @@ func TestService_handlePeerFail(t *testing.T) {
 	}
 }
 
-func TestService_handleTaskSuccess(t *testing.T) {
+func TestServiceV1_handleTaskSuccess(t *testing.T) {
 	tests := []struct {
 		name   string
 		result *schedulerv1.PeerResult
@@ -3626,7 +3636,7 @@ func TestService_handleTaskSuccess(t *testing.T) {
 	}
 }
 
-func TestService_handleTaskFail(t *testing.T) {
+func TestServiceV1_handleTaskFail(t *testing.T) {
 	rst := status.Newf(codes.Aborted, "response is not valid")
 	st, err := rst.WithDetails(&errordetailsv1.SourceError{Temporary: false})
 	if err != nil {

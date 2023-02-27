@@ -46,6 +46,48 @@ var (
 
 // Variables declared for metrics.
 var (
+	AnnouncePeerCount = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "announce_peer_total",
+		Help:      "Counter of the number of the announcing peer.",
+	}, []string{"tag", "app"})
+
+	AnnouncePeerFailureCount = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "announce_peer_failure_total",
+		Help:      "Counter of the number of failed of the announcing peer.",
+	}, []string{"tag", "app"})
+
+	StatPeerCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "stat_peer_total",
+		Help:      "Counter of the number of the stat peer.",
+	})
+
+	StatPeerFailureCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "stat_peer_failure_total",
+		Help:      "Counter of the number of failed of the stat peer.",
+	})
+
+	LeavePeerCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "leave_peer_total",
+		Help:      "Counter of the number of the leaving peer.",
+	})
+
+	LeavePeerFailureCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "leave_peer_failure_total",
+		Help:      "Counter of the number of failed of the leaving peer.",
+	})
+
 	RegisterTaskCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
