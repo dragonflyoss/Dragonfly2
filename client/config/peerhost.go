@@ -192,6 +192,10 @@ func (p *DaemonOption) Validate() error {
 		return errors.New("reload interval too short, must great than 1 second")
 	}
 
+	if p.GCInterval.Duration <= 0 {
+		return errors.New("gcInterval must be greater than 0")
+	}
+
 	if p.Security.AutoIssueCert {
 		if p.Security.CACert == "" {
 			return errors.New("security requires parameter caCert")
