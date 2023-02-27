@@ -12,7 +12,7 @@ COPY ./manager/console /build
 
 RUN npm run build
 
-FROM golang:1.19-alpine3.16 as server-builder
+FROM golang:1.20.1-alpine3.16 as server-builder
 
 ARG GOPROXY
 ARG GOTAGS
@@ -30,7 +30,7 @@ RUN make build-manager-server && make install-manager
 
 FROM ${BASE_IMAGE} as health
 
-ENV GRPC_HEALTH_PROBE_VERSION v0.4.11
+ENV GRPC_HEALTH_PROBE_VERSION v0.4.15
 
 RUN wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && \
     chmod +x /bin/grpc_health_probe
