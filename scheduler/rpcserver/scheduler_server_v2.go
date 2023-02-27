@@ -25,6 +25,7 @@ import (
 	schedulerv2 "d7y.io/api/pkg/apis/scheduler/v2"
 
 	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/metrics"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/scheduling"
 	"d7y.io/dragonfly/v2/scheduler/service"
@@ -54,14 +55,27 @@ func (s *schedulerServerV2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePe
 	return nil
 }
 
-// Checks information of peer.
+// StatPeer checks information of peer.
 func (s *schedulerServerV2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*commonv2.Peer, error) {
-	return nil, nil
+	metrics.StatPeerCount.Inc()
+	peer, err := s.service.StatPeer(ctx, req)
+	if err != nil {
+		metrics.StatPeerFailureCount.Inc()
+		return nil, err
+	}
+
+	return peer, nil
 }
 
 // LeavePeer releases peer in scheduler.
 func (s *schedulerServerV2) LeavePeer(ctx context.Context, req *schedulerv2.LeavePeerRequest) (*emptypb.Empty, error) {
-	return nil, nil
+	metrics.LeavePeerCount.Inc()
+	if err := s.service.LeavePeer(ctx, req); err != nil {
+		metrics.LeavePeerFailureCount.Inc()
+		return new(emptypb.Empty), err
+	}
+
+	return new(emptypb.Empty), nil
 }
 
 // TODO exchange peer api definition.
