@@ -19,6 +19,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -29,8 +30,8 @@ import (
 	schedulerv2 "d7y.io/api/pkg/apis/scheduler/v2"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/metrics"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/scheduling"
 	"d7y.io/dragonfly/v2/scheduler/storage"
@@ -149,12 +150,12 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 		UpdatedAt:     timestamppb.New(peer.Task.UpdatedAt.Load()),
 	}
 
-	// Set digest to response.
+	// Set digest to task response.
 	if peer.Task.Digest != nil {
 		resp.Task.Digest = peer.Task.Digest.String()
 	}
 
-	// Set pieces to response.
+	// Set pieces to task response.
 	peer.Task.Pieces.Range(func(key, value any) bool {
 		piece, ok := value.(*resource.Piece)
 		if !ok {
@@ -253,15 +254,12 @@ func (v *V2) LeavePeer(ctx context.Context, req *schedulerv2.LeavePeerRequest) e
 
 	peer, loaded := v.resource.PeerManager().Load(req.PeerId)
 	if !loaded {
-		metrics.LeavePeerFailureCount.Inc()
 		msg := fmt.Sprintf("peer %s not found", req.PeerId)
 		logger.Error(msg)
 		return status.Error(codes.NotFound, msg)
 	}
-	metrics.LeavePeerCount.Inc()
 
 	if err := peer.FSM.Event(ctx, resource.PeerEventLeave); err != nil {
-		metrics.LeavePeerFailureCount.Inc()
 		msg := fmt.Sprintf("peer fsm event failed: %s", err.Error())
 		peer.Log.Error(msg)
 		return status.Error(codes.FailedPrecondition, msg)
@@ -276,17 +274,261 @@ func (v *V2) ExchangePeer(ctx context.Context, req *schedulerv2.ExchangePeerRequ
 	return nil, nil
 }
 
-// Checks information of task.
+// StatTask checks information of task.
 func (v *V2) StatTask(ctx context.Context, req *schedulerv2.StatTaskRequest) (*commonv2.Task, error) {
-	return nil, nil
+	logger.WithTaskID(req.Id).Infof("stat task request: %#v", req)
+
+	task, loaded := v.resource.TaskManager().Load(req.Id)
+	if !loaded {
+		msg := fmt.Sprintf("task %s not found", req.Id)
+		logger.Error(msg)
+		return nil, status.Error(codes.NotFound, msg)
+	}
+
+	resp := &commonv2.Task{
+		Id:            task.ID,
+		Type:          task.Type,
+		Url:           task.URL,
+		Tag:           task.Tag,
+		Application:   task.Application,
+		Filters:       task.Filters,
+		Header:        task.Header,
+		PieceLength:   task.PieceLength,
+		ContentLength: task.ContentLength.Load(),
+		PieceCount:    task.TotalPieceCount.Load(),
+		SizeScope:     task.SizeScope(),
+		State:         task.FSM.Current(),
+		PeerCount:     int32(task.PeerCount()),
+		CreatedAt:     timestamppb.New(task.CreatedAt.Load()),
+		UpdatedAt:     timestamppb.New(task.UpdatedAt.Load()),
+	}
+
+	// Set digest to response.
+	if task.Digest != nil {
+		resp.Digest = task.Digest.String()
+	}
+
+	// Set pieces to response.
+	task.Pieces.Range(func(key, value any) bool {
+		piece, ok := value.(*resource.Piece)
+		if !ok {
+			task.Log.Errorf("invalid piece %s %#v", key, value)
+			return true
+		}
+
+		respPiece := &commonv2.Piece{
+			Number:      piece.Number,
+			ParentId:    piece.ParentID,
+			Offset:      piece.Offset,
+			Length:      piece.Length,
+			TrafficType: piece.TrafficType,
+			Cost:        durationpb.New(piece.Cost),
+			CreatedAt:   timestamppb.New(piece.CreatedAt),
+		}
+
+		if piece.Digest != nil {
+			respPiece.Digest = piece.Digest.String()
+		}
+
+		resp.Pieces = append(resp.Pieces, respPiece)
+		return true
+	})
+
+	return resp, nil
 }
 
 // AnnounceHost announces host to scheduler.
 func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequest) error {
+	logger.WithHostID(req.Host.Id).Infof("announce host request: %#v", req.Host)
+
+	// Get scheduler cluster client config by manager.
+	var concurrentUploadLimit int32
+	if clientConfig, err := v.dynconfig.GetSchedulerClusterClientConfig(); err == nil {
+		concurrentUploadLimit = int32(clientConfig.LoadLimit)
+	}
+
+	host, loaded := v.resource.HostManager().Load(req.Host.Id)
+	if !loaded {
+		options := []resource.HostOption{
+			resource.WithOS(req.Host.Os),
+			resource.WithPlatform(req.Host.Platform),
+			resource.WithPlatformFamily(req.Host.PlatformFamily),
+			resource.WithPlatformVersion(req.Host.PlatformVersion),
+			resource.WithKernelVersion(req.Host.KernelVersion),
+		}
+
+		if concurrentUploadLimit > 0 {
+			options = append(options, resource.WithConcurrentUploadLimit(concurrentUploadLimit))
+		}
+
+		if req.Host.Cpu != nil {
+			options = append(options, resource.WithCPU(resource.CPU{
+				LogicalCount:   req.Host.Cpu.LogicalCount,
+				PhysicalCount:  req.Host.Cpu.PhysicalCount,
+				Percent:        req.Host.Cpu.Percent,
+				ProcessPercent: req.Host.Cpu.ProcessPercent,
+				Times: resource.CPUTimes{
+					User:      req.Host.Cpu.Times.User,
+					System:    req.Host.Cpu.Times.System,
+					Idle:      req.Host.Cpu.Times.Idle,
+					Nice:      req.Host.Cpu.Times.Nice,
+					Iowait:    req.Host.Cpu.Times.Iowait,
+					Irq:       req.Host.Cpu.Times.Irq,
+					Softirq:   req.Host.Cpu.Times.Softirq,
+					Steal:     req.Host.Cpu.Times.Steal,
+					Guest:     req.Host.Cpu.Times.Guest,
+					GuestNice: req.Host.Cpu.Times.GuestNice,
+				},
+			}))
+		}
+
+		if req.Host.Memory != nil {
+			options = append(options, resource.WithMemory(resource.Memory{
+				Total:              req.Host.Memory.Total,
+				Available:          req.Host.Memory.Available,
+				Used:               req.Host.Memory.Used,
+				UsedPercent:        req.Host.Memory.UsedPercent,
+				ProcessUsedPercent: req.Host.Memory.ProcessUsedPercent,
+				Free:               req.Host.Memory.Free,
+			}))
+		}
+
+		if req.Host.Network != nil {
+			options = append(options, resource.WithNetwork(resource.Network{
+				TCPConnectionCount:       req.Host.Network.TcpConnectionCount,
+				UploadTCPConnectionCount: req.Host.Network.UploadTcpConnectionCount,
+				SecurityDomain:           req.Host.Network.SecurityDomain,
+				Location:                 req.Host.Network.Location,
+				IDC:                      req.Host.Network.Idc,
+			}))
+		}
+
+		if req.Host.Disk != nil {
+			options = append(options, resource.WithDisk(resource.Disk{
+				Total:             req.Host.Disk.Total,
+				Free:              req.Host.Disk.Free,
+				Used:              req.Host.Disk.Used,
+				UsedPercent:       req.Host.Disk.UsedPercent,
+				InodesTotal:       req.Host.Disk.InodesTotal,
+				InodesUsed:        req.Host.Disk.InodesUsed,
+				InodesFree:        req.Host.Disk.InodesFree,
+				InodesUsedPercent: req.Host.Disk.InodesUsedPercent,
+			}))
+		}
+
+		if req.Host.Build != nil {
+			options = append(options, resource.WithBuild(resource.Build{
+				GitVersion: req.Host.Build.GitVersion,
+				GitCommit:  req.Host.Build.GitCommit,
+				GoVersion:  req.Host.Build.GoVersion,
+				Platform:   req.Host.Build.Platform,
+			}))
+		}
+
+		host = resource.NewHost(
+			req.Host.Id, req.Host.Ip, req.Host.Hostname,
+			req.Host.Port, req.Host.DownloadPort, types.HostType(req.Host.Type),
+			options...,
+		)
+
+		v.resource.HostManager().Store(host)
+		host.Log.Infof("announce new host: %#v", req)
+		return nil
+	}
+
+	// Host already exists and updates properties.
+	host.Port = req.Host.Port
+	host.DownloadPort = req.Host.DownloadPort
+	host.Type = types.HostType(req.Host.Type)
+	host.OS = req.Host.Os
+	host.Platform = req.Host.Platform
+	host.PlatformFamily = req.Host.PlatformFamily
+	host.PlatformVersion = req.Host.PlatformVersion
+	host.KernelVersion = req.Host.KernelVersion
+	host.UpdatedAt.Store(time.Now())
+
+	if concurrentUploadLimit > 0 {
+		host.ConcurrentUploadLimit.Store(concurrentUploadLimit)
+	}
+
+	if req.Host.Cpu != nil {
+		host.CPU = resource.CPU{
+			LogicalCount:   req.Host.Cpu.LogicalCount,
+			PhysicalCount:  req.Host.Cpu.PhysicalCount,
+			Percent:        req.Host.Cpu.Percent,
+			ProcessPercent: req.Host.Cpu.ProcessPercent,
+			Times: resource.CPUTimes{
+				User:      req.Host.Cpu.Times.User,
+				System:    req.Host.Cpu.Times.System,
+				Idle:      req.Host.Cpu.Times.Idle,
+				Nice:      req.Host.Cpu.Times.Nice,
+				Iowait:    req.Host.Cpu.Times.Iowait,
+				Irq:       req.Host.Cpu.Times.Irq,
+				Softirq:   req.Host.Cpu.Times.Softirq,
+				Steal:     req.Host.Cpu.Times.Steal,
+				Guest:     req.Host.Cpu.Times.Guest,
+				GuestNice: req.Host.Cpu.Times.GuestNice,
+			},
+		}
+	}
+
+	if req.Host.Memory != nil {
+		host.Memory = resource.Memory{
+			Total:              req.Host.Memory.Total,
+			Available:          req.Host.Memory.Available,
+			Used:               req.Host.Memory.Used,
+			UsedPercent:        req.Host.Memory.UsedPercent,
+			ProcessUsedPercent: req.Host.Memory.ProcessUsedPercent,
+			Free:               req.Host.Memory.Free,
+		}
+	}
+
+	if req.Host.Network != nil {
+		host.Network = resource.Network{
+			TCPConnectionCount:       req.Host.Network.TcpConnectionCount,
+			UploadTCPConnectionCount: req.Host.Network.UploadTcpConnectionCount,
+			SecurityDomain:           req.Host.Network.SecurityDomain,
+			Location:                 req.Host.Network.Location,
+			IDC:                      req.Host.Network.Idc,
+		}
+	}
+
+	if req.Host.Disk != nil {
+		host.Disk = resource.Disk{
+			Total:             req.Host.Disk.Total,
+			Free:              req.Host.Disk.Free,
+			Used:              req.Host.Disk.Used,
+			UsedPercent:       req.Host.Disk.UsedPercent,
+			InodesTotal:       req.Host.Disk.InodesTotal,
+			InodesUsed:        req.Host.Disk.InodesUsed,
+			InodesFree:        req.Host.Disk.InodesFree,
+			InodesUsedPercent: req.Host.Disk.InodesUsedPercent,
+		}
+	}
+
+	if req.Host.Build != nil {
+		host.Build = resource.Build{
+			GitVersion: req.Host.Build.GitVersion,
+			GitCommit:  req.Host.Build.GitCommit,
+			GoVersion:  req.Host.Build.GoVersion,
+			Platform:   req.Host.Build.Platform,
+		}
+	}
+
 	return nil
 }
 
 // LeaveHost releases host in scheduler.
 func (v *V2) LeaveHost(ctx context.Context, req *schedulerv2.LeaveHostRequest) error {
+	logger.WithHostID(req.Id).Infof("leave host request: %#v", req)
+
+	host, loaded := v.resource.HostManager().Load(req.Id)
+	if !loaded {
+		msg := fmt.Sprintf("host %s not found", req.Id)
+		logger.Error(msg)
+		return status.Error(codes.NotFound, msg)
+	}
+
+	host.LeavePeers()
 	return nil
 }
