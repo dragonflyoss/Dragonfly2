@@ -17,6 +17,7 @@
 package config
 
 import (
+	"fmt"
 	"net"
 	"net/url"
 	"os"
@@ -26,6 +27,7 @@ import (
 	"time"
 
 	testifyassert "github.com/stretchr/testify/assert"
+	"golang.org/x/time/rate"
 	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/client/util"
@@ -520,4 +522,192 @@ func TestPeerHostOption_Load(t *testing.T) {
 	}
 
 	assert.EqualValues(peerHostOption, peerHostOptionYAML)
+}
+
+func TestPeerHostOption_Validate(t *testing.T) {
+	tests := []struct {
+		name      string
+		getConfig func() *DaemonConfig
+		expect    func(t *testing.T, err error)
+	}{
+		{
+			name: "Valid config",
+			getConfig: func() *DaemonConfig {
+				return NewDaemonConfig()
+			},
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				assert.NoError(err)
+			},
+		},
+		{
+			name: "No manager addrs",
+			getConfig: func() *DaemonConfig {
+				config := NewDaemonConfig()
+				config.Scheduler.Manager.Enable = true
+				config.Scheduler.Manager.NetAddrs = nil
+				return config
+			},
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				assert.EqualError(err, "manager addr is not specified")
+			},
+		},
+		{
+			name: "Manager refreshInterval not specified",
+			getConfig: func() *DaemonConfig {
+				config := NewDaemonConfig()
+				config.Scheduler.Manager.Enable = true
+				config.Scheduler.Manager.RefreshInterval = 0
+				config.Scheduler.Manager.NetAddrs = []dfnet.NetAddr{
+					{
+						Type: dfnet.TCP,
+						Addr: "127.0.0.1:8002",
+					},
+				}
+				return config
+			},
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				assert.EqualError(err, "manager refreshInterval is not specified")
+			},
+		},
+		{
+			name: "Empty schduler addrs",
+			getConfig: func() *DaemonConfig {
+				config := NewDaemonConfig()
+				config.Scheduler.NetAddrs = nil
+				return config
+			},
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				assert.EqualError(err, "empty schedulers and config server is not specified")
+			},
+		},
+		{
+			name: "Small download rate limit",
+			getConfig: func() *DaemonConfig {
+				config := NewDaemonConfig()
+				config.Download.TotalRateLimit.Limit = rate.Limit(10 * unit.MB)
+				return config
+			},
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				msg := fmt.Sprintf("rate limit must be greater than %s", DefaultMinRate.String())
+				assert.EqualError(err, msg)
+			},
+		},
+		{
+			name: "Small upload rate limit",
+			getConfig: func() *DaemonConfig {
+				config := NewDaemonConfig()
+				config.Upload.RateLimit.Limit = rate.Limit(10 * unit.MB)
+				return config
+			},
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				msg := fmt.Sprintf("rate limit must be greater than %s", DefaultMinRate.String())
+				assert.EqualError(err, msg)
+			},
+		},
+		{
+			name: "Zero object storage replica",
+			getConfig: func() *DaemonConfig {
+				config := NewDaemonConfig()
+				config.ObjectStorage.Enable = true
+				config.ObjectStorage.MaxReplicas = 0
+				return config
+			},
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				assert.EqualError(err, "max replicas must be greater than 0")
+			},
+		},
+		{
+			name: "Small reload interval",
+			getConfig: func() *DaemonConfig {
+				config := NewDaemonConfig()
+				config.Reload.Interval.Duration = time.Millisecond
+				return config
+			},
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				assert.EqualError(err, "reload interval too short, must great than 1 second")
+			},
+		},
+		{
+			name: "Invalid gcInterval",
+			getConfig: func() *DaemonConfig {
+				config := NewDaemonConfig()
+				config.GCInterval.Duration = 0
+				return config
+			},
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				assert.EqualError(err, "gcInterval must be greater than 0")
+			},
+		},
+		{
+			name: "Empty caCert",
+			getConfig: func() *DaemonConfig {
+				config := NewDaemonConfig()
+				config.Security.AutoIssueCert = true
+				config.Security.CACert = ""
+				return config
+			},
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				assert.EqualError(err, "security requires parameter caCert")
+			},
+		},
+		{
+			name: "Empty certSpec ipAddresses",
+			getConfig: func() *DaemonConfig {
+				config := NewDaemonConfig()
+				config.Security.AutoIssueCert = true
+				config.Security.CACert = "test"
+				config.Security.CertSpec.IPAddresses = nil
+				return config
+			},
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				assert.EqualError(err, "certSpec requires parameter ipAddresses")
+			},
+		},
+		{
+			name: "Empty certSpec dnsNames",
+			getConfig: func() *DaemonConfig {
+				config := NewDaemonConfig()
+				config.Security.AutoIssueCert = true
+				config.Security.CACert = "test"
+				config.Security.CertSpec.DNSNames = nil
+				return config
+			},
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				assert.EqualError(err, "certSpec requires parameter dnsNames")
+			},
+		},
+		{
+			name: "Invalid certSpec validityPeriod",
+			getConfig: func() *DaemonConfig {
+				config := NewDaemonConfig()
+				config.Security.AutoIssueCert = true
+				config.Security.CACert = "testcert"
+				config.Security.CertSpec.ValidityPeriod = 0
+				return config
+			},
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				assert.EqualError(err, "certSpec requires parameter validityPeriod")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			config := tc.getConfig()
+			tc.expect(t, config.Validate())
+		})
+	}
 }
