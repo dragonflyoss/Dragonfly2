@@ -526,27 +526,26 @@ func TestPeerHostOption_Load(t *testing.T) {
 
 func TestPeerHostOption_Validate(t *testing.T) {
 	tests := []struct {
-		name      string
-		getConfig func() *DaemonConfig
-		expect    func(t *testing.T, err error)
+		name   string
+		config *DaemonConfig
+		mock   func(cfg *DaemonConfig)
+		expect func(t *testing.T, err error)
 	}{
 		{
-			name: "Valid config",
-			getConfig: func() *DaemonConfig {
-				return NewDaemonConfig()
-			},
+			name:   "valid config",
+			config: NewDaemonConfig(),
+			mock:   func(cfg *DaemonConfig) {},
 			expect: func(t *testing.T, err error) {
 				assert := testifyassert.New(t)
 				assert.NoError(err)
 			},
 		},
 		{
-			name: "No manager addrs",
-			getConfig: func() *DaemonConfig {
-				config := NewDaemonConfig()
-				config.Scheduler.Manager.Enable = true
-				config.Scheduler.Manager.NetAddrs = nil
-				return config
+			name:   "manager addr is not specified",
+			config: NewDaemonConfig(),
+			mock: func(cfg *DaemonConfig) {
+				cfg.Scheduler.Manager.Enable = true
+				cfg.Scheduler.Manager.NetAddrs = nil
 			},
 			expect: func(t *testing.T, err error) {
 				assert := testifyassert.New(t)
@@ -554,18 +553,17 @@ func TestPeerHostOption_Validate(t *testing.T) {
 			},
 		},
 		{
-			name: "Manager refreshInterval not specified",
-			getConfig: func() *DaemonConfig {
-				config := NewDaemonConfig()
-				config.Scheduler.Manager.Enable = true
-				config.Scheduler.Manager.RefreshInterval = 0
-				config.Scheduler.Manager.NetAddrs = []dfnet.NetAddr{
+			name:   "manager refreshInterval not specified",
+			config: NewDaemonConfig(),
+			mock: func(cfg *DaemonConfig) {
+				cfg.Scheduler.Manager.Enable = true
+				cfg.Scheduler.Manager.RefreshInterval = 0
+				cfg.Scheduler.Manager.NetAddrs = []dfnet.NetAddr{
 					{
 						Type: dfnet.TCP,
 						Addr: "127.0.0.1:8002",
 					},
 				}
-				return config
 			},
 			expect: func(t *testing.T, err error) {
 				assert := testifyassert.New(t)
@@ -573,11 +571,10 @@ func TestPeerHostOption_Validate(t *testing.T) {
 			},
 		},
 		{
-			name: "Empty schduler addrs",
-			getConfig: func() *DaemonConfig {
-				config := NewDaemonConfig()
-				config.Scheduler.NetAddrs = nil
-				return config
+			name:   "empty schedulers and config server is not specified",
+			config: NewDaemonConfig(),
+			mock: func(cfg *DaemonConfig) {
+				cfg.Scheduler.NetAddrs = nil
 			},
 			expect: func(t *testing.T, err error) {
 				assert := testifyassert.New(t)
@@ -585,11 +582,10 @@ func TestPeerHostOption_Validate(t *testing.T) {
 			},
 		},
 		{
-			name: "Small download rate limit",
-			getConfig: func() *DaemonConfig {
-				config := NewDaemonConfig()
-				config.Download.TotalRateLimit.Limit = rate.Limit(10 * unit.MB)
-				return config
+			name:   "download rate limit must be greater",
+			config: NewDaemonConfig(),
+			mock: func(cfg *DaemonConfig) {
+				cfg.Download.TotalRateLimit.Limit = rate.Limit(10 * unit.MB)
 			},
 			expect: func(t *testing.T, err error) {
 				assert := testifyassert.New(t)
@@ -598,11 +594,10 @@ func TestPeerHostOption_Validate(t *testing.T) {
 			},
 		},
 		{
-			name: "Small upload rate limit",
-			getConfig: func() *DaemonConfig {
-				config := NewDaemonConfig()
-				config.Upload.RateLimit.Limit = rate.Limit(10 * unit.MB)
-				return config
+			name:   "upload rate limit must be greater",
+			config: NewDaemonConfig(),
+			mock: func(cfg *DaemonConfig) {
+				cfg.Upload.RateLimit.Limit = rate.Limit(10 * unit.MB)
 			},
 			expect: func(t *testing.T, err error) {
 				assert := testifyassert.New(t)
@@ -611,12 +606,11 @@ func TestPeerHostOption_Validate(t *testing.T) {
 			},
 		},
 		{
-			name: "Zero object storage replica",
-			getConfig: func() *DaemonConfig {
-				config := NewDaemonConfig()
-				config.ObjectStorage.Enable = true
-				config.ObjectStorage.MaxReplicas = 0
-				return config
+			name:   "max replicas must be greater than 0",
+			config: NewDaemonConfig(),
+			mock: func(cfg *DaemonConfig) {
+				cfg.ObjectStorage.Enable = true
+				cfg.ObjectStorage.MaxReplicas = 0
 			},
 			expect: func(t *testing.T, err error) {
 				assert := testifyassert.New(t)
@@ -624,11 +618,10 @@ func TestPeerHostOption_Validate(t *testing.T) {
 			},
 		},
 		{
-			name: "Small reload interval",
-			getConfig: func() *DaemonConfig {
-				config := NewDaemonConfig()
-				config.Reload.Interval.Duration = time.Millisecond
-				return config
+			name:   "reload interval too short, must great than 1 second",
+			config: NewDaemonConfig(),
+			mock: func(cfg *DaemonConfig) {
+				cfg.Reload.Interval.Duration = time.Millisecond
 			},
 			expect: func(t *testing.T, err error) {
 				assert := testifyassert.New(t)
@@ -636,11 +629,10 @@ func TestPeerHostOption_Validate(t *testing.T) {
 			},
 		},
 		{
-			name: "Invalid gcInterval",
-			getConfig: func() *DaemonConfig {
-				config := NewDaemonConfig()
-				config.GCInterval.Duration = 0
-				return config
+			name:   "gcInterval must be greater than 0",
+			config: NewDaemonConfig(),
+			mock: func(cfg *DaemonConfig) {
+				cfg.GCInterval.Duration = 0
 			},
 			expect: func(t *testing.T, err error) {
 				assert := testifyassert.New(t)
@@ -648,12 +640,11 @@ func TestPeerHostOption_Validate(t *testing.T) {
 			},
 		},
 		{
-			name: "Empty caCert",
-			getConfig: func() *DaemonConfig {
-				config := NewDaemonConfig()
-				config.Security.AutoIssueCert = true
-				config.Security.CACert = ""
-				return config
+			name:   "security requires parameter caCert",
+			config: NewDaemonConfig(),
+			mock: func(cfg *DaemonConfig) {
+				cfg.Security.AutoIssueCert = true
+				cfg.Security.CACert = ""
 			},
 			expect: func(t *testing.T, err error) {
 				assert := testifyassert.New(t)
@@ -661,13 +652,12 @@ func TestPeerHostOption_Validate(t *testing.T) {
 			},
 		},
 		{
-			name: "Empty certSpec ipAddresses",
-			getConfig: func() *DaemonConfig {
-				config := NewDaemonConfig()
-				config.Security.AutoIssueCert = true
-				config.Security.CACert = "test"
-				config.Security.CertSpec.IPAddresses = nil
-				return config
+			name:   "certSpec requires parameter ipAddresses",
+			config: NewDaemonConfig(),
+			mock: func(cfg *DaemonConfig) {
+				cfg.Security.AutoIssueCert = true
+				cfg.Security.CACert = "test"
+				cfg.Security.CertSpec.IPAddresses = nil
 			},
 			expect: func(t *testing.T, err error) {
 				assert := testifyassert.New(t)
@@ -675,13 +665,13 @@ func TestPeerHostOption_Validate(t *testing.T) {
 			},
 		},
 		{
-			name: "Empty certSpec dnsNames",
-			getConfig: func() *DaemonConfig {
-				config := NewDaemonConfig()
-				config.Security.AutoIssueCert = true
-				config.Security.CACert = "test"
-				config.Security.CertSpec.DNSNames = nil
-				return config
+			name:   "certSpec requires parameter dnsNames",
+			config: NewDaemonConfig(),
+			mock: func(cfg *DaemonConfig) {
+				cfg.Security.AutoIssueCert = true
+				cfg.Security.CACert = "test"
+				cfg.Security.CertSpec.IPAddresses = []net.IP{net.ParseIP("127.0.0.1")}
+				cfg.Security.CertSpec.DNSNames = nil
 			},
 			expect: func(t *testing.T, err error) {
 				assert := testifyassert.New(t)
@@ -689,13 +679,12 @@ func TestPeerHostOption_Validate(t *testing.T) {
 			},
 		},
 		{
-			name: "Invalid certSpec validityPeriod",
-			getConfig: func() *DaemonConfig {
-				config := NewDaemonConfig()
-				config.Security.AutoIssueCert = true
-				config.Security.CACert = "testcert"
-				config.Security.CertSpec.ValidityPeriod = 0
-				return config
+			name:   "certSpec requires parameter validityPeriod",
+			config: NewDaemonConfig(),
+			mock: func(cfg *DaemonConfig) {
+				cfg.Security.AutoIssueCert = true
+				cfg.Security.CACert = "testcert"
+				cfg.Security.CertSpec.ValidityPeriod = 0
 			},
 			expect: func(t *testing.T, err error) {
 				assert := testifyassert.New(t)
@@ -706,8 +695,8 @@ func TestPeerHostOption_Validate(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			config := tc.getConfig()
-			tc.expect(t, config.Validate())
+			tc.mock(tc.config)
+			tc.expect(t, tc.config.Validate())
 		})
 	}
 }
