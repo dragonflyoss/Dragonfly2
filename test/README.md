@@ -12,7 +12,7 @@ Unit tests is in the project directory.
 make test
 ```
 
-### Running uint tests with coverage reports
+### Running unit tests with coverage reports
 
 ```bash
 make test-coverage
