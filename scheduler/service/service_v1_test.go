@@ -1930,6 +1930,437 @@ func TestServiceV1_LeaveTask(t *testing.T) {
 	}
 }
 
+func TestServiceV1_AnnounceHost(t *testing.T) {
+	tests := []struct {
+		name string
+		req  *schedulerv1.AnnounceHostRequest
+		run  func(t *testing.T, svc *V1, req *schedulerv1.AnnounceHostRequest, host *resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder)
+	}{
+		{
+			name: "host not found",
+			req: &schedulerv1.AnnounceHostRequest{
+				Id:              mockHostID,
+				Type:            pkgtypes.HostTypeNormal.Name(),
+				Hostname:        "hostname",
+				Ip:              "127.0.0.1",
+				Port:            8003,
+				DownloadPort:    8001,
+				Os:              "darwin",
+				Platform:        "darwin",
+				PlatformFamily:  "Standalone Workstation",
+				PlatformVersion: "11.1",
+				KernelVersion:   "20.2.0",
+				Cpu: &schedulerv1.CPU{
+					LogicalCount:   mockCPU.LogicalCount,
+					PhysicalCount:  mockCPU.PhysicalCount,
+					Percent:        mockCPU.Percent,
+					ProcessPercent: mockCPU.ProcessPercent,
+					Times: &schedulerv1.CPUTimes{
+						User:      mockCPU.Times.User,
+						System:    mockCPU.Times.System,
+						Idle:      mockCPU.Times.Idle,
+						Nice:      mockCPU.Times.Nice,
+						Iowait:    mockCPU.Times.Iowait,
+						Irq:       mockCPU.Times.Irq,
+						Softirq:   mockCPU.Times.Softirq,
+						Steal:     mockCPU.Times.Steal,
+						Guest:     mockCPU.Times.Guest,
+						GuestNice: mockCPU.Times.GuestNice,
+					},
+				},
+				Memory: &schedulerv1.Memory{
+					Total:              mockMemory.Total,
+					Available:          mockMemory.Available,
+					Used:               mockMemory.Used,
+					UsedPercent:        mockMemory.UsedPercent,
+					ProcessUsedPercent: mockMemory.ProcessUsedPercent,
+					Free:               mockMemory.Free,
+				},
+				Network: &schedulerv1.Network{
+					TcpConnectionCount:       mockNetwork.TCPConnectionCount,
+					UploadTcpConnectionCount: mockNetwork.UploadTCPConnectionCount,
+					SecurityDomain:           mockNetwork.SecurityDomain,
+					Location:                 mockNetwork.Location,
+					Idc:                      mockNetwork.IDC,
+				},
+				Disk: &schedulerv1.Disk{
+					Total:             mockDisk.Total,
+					Free:              mockDisk.Free,
+					Used:              mockDisk.Used,
+					UsedPercent:       mockDisk.UsedPercent,
+					InodesTotal:       mockDisk.InodesTotal,
+					InodesUsed:        mockDisk.InodesUsed,
+					InodesFree:        mockDisk.InodesFree,
+					InodesUsedPercent: mockDisk.InodesUsedPercent,
+				},
+				Build: &schedulerv1.Build{
+					GitVersion: mockBuild.GitVersion,
+					GitCommit:  mockBuild.GitCommit,
+					GoVersion:  mockBuild.GoVersion,
+					Platform:   mockBuild.Platform,
+				},
+			},
+			run: func(t *testing.T, svc *V1, req *schedulerv1.AnnounceHostRequest, host *resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				gomock.InOrder(
+					md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{LoadLimit: 10}, nil).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Any()).Return(nil, false).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Store(gomock.Any()).Do(func(host *resource.Host) {
+						assert := assert.New(t)
+						assert.Equal(host.ID, req.Id)
+						assert.Equal(host.Type, pkgtypes.ParseHostType(req.Type))
+						assert.Equal(host.Hostname, req.Hostname)
+						assert.Equal(host.IP, req.Ip)
+						assert.Equal(host.Port, req.Port)
+						assert.Equal(host.DownloadPort, req.DownloadPort)
+						assert.Equal(host.OS, req.Os)
+						assert.Equal(host.Platform, req.Platform)
+						assert.Equal(host.PlatformVersion, req.PlatformVersion)
+						assert.Equal(host.KernelVersion, req.KernelVersion)
+						assert.EqualValues(host.CPU, mockCPU)
+						assert.EqualValues(host.Memory, mockMemory)
+						assert.EqualValues(host.Network, mockNetwork)
+						assert.EqualValues(host.Disk, mockDisk)
+						assert.EqualValues(host.Build, mockBuild)
+						assert.Equal(host.ConcurrentUploadLimit.Load(), int32(10))
+						assert.Equal(host.ConcurrentUploadCount.Load(), int32(0))
+						assert.Equal(host.UploadCount.Load(), int64(0))
+						assert.Equal(host.UploadFailedCount.Load(), int64(0))
+						assert.NotNil(host.Peers)
+						assert.Equal(host.PeerCount.Load(), int32(0))
+						assert.NotEqual(host.CreatedAt.Load().Nanosecond(), 0)
+						assert.NotEqual(host.UpdatedAt.Load().Nanosecond(), 0)
+						assert.NotNil(host.Log)
+					}).Return().Times(1),
+				)
+
+				assert := assert.New(t)
+				assert.NoError(svc.AnnounceHost(context.Background(), req))
+			},
+		},
+		{
+			name: "host not found and dynconfig returns error",
+			req: &schedulerv1.AnnounceHostRequest{
+				Id:              mockHostID,
+				Type:            pkgtypes.HostTypeNormal.Name(),
+				Hostname:        "hostname",
+				Ip:              "127.0.0.1",
+				Port:            8003,
+				DownloadPort:    8001,
+				Os:              "darwin",
+				Platform:        "darwin",
+				PlatformFamily:  "Standalone Workstation",
+				PlatformVersion: "11.1",
+				KernelVersion:   "20.2.0",
+				Cpu: &schedulerv1.CPU{
+					LogicalCount:   mockCPU.LogicalCount,
+					PhysicalCount:  mockCPU.PhysicalCount,
+					Percent:        mockCPU.Percent,
+					ProcessPercent: mockCPU.ProcessPercent,
+					Times: &schedulerv1.CPUTimes{
+						User:      mockCPU.Times.User,
+						System:    mockCPU.Times.System,
+						Idle:      mockCPU.Times.Idle,
+						Nice:      mockCPU.Times.Nice,
+						Iowait:    mockCPU.Times.Iowait,
+						Irq:       mockCPU.Times.Irq,
+						Softirq:   mockCPU.Times.Softirq,
+						Steal:     mockCPU.Times.Steal,
+						Guest:     mockCPU.Times.Guest,
+						GuestNice: mockCPU.Times.GuestNice,
+					},
+				},
+				Memory: &schedulerv1.Memory{
+					Total:              mockMemory.Total,
+					Available:          mockMemory.Available,
+					Used:               mockMemory.Used,
+					UsedPercent:        mockMemory.UsedPercent,
+					ProcessUsedPercent: mockMemory.ProcessUsedPercent,
+					Free:               mockMemory.Free,
+				},
+				Network: &schedulerv1.Network{
+					TcpConnectionCount:       mockNetwork.TCPConnectionCount,
+					UploadTcpConnectionCount: mockNetwork.UploadTCPConnectionCount,
+					SecurityDomain:           mockNetwork.SecurityDomain,
+					Location:                 mockNetwork.Location,
+					Idc:                      mockNetwork.IDC,
+				},
+				Disk: &schedulerv1.Disk{
+					Total:             mockDisk.Total,
+					Free:              mockDisk.Free,
+					Used:              mockDisk.Used,
+					UsedPercent:       mockDisk.UsedPercent,
+					InodesTotal:       mockDisk.InodesTotal,
+					InodesUsed:        mockDisk.InodesUsed,
+					InodesFree:        mockDisk.InodesFree,
+					InodesUsedPercent: mockDisk.InodesUsedPercent,
+				},
+				Build: &schedulerv1.Build{
+					GitVersion: mockBuild.GitVersion,
+					GitCommit:  mockBuild.GitCommit,
+					GoVersion:  mockBuild.GoVersion,
+					Platform:   mockBuild.Platform,
+				},
+			},
+			run: func(t *testing.T, svc *V1, req *schedulerv1.AnnounceHostRequest, host *resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				gomock.InOrder(
+					md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{}, errors.New("foo")).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Any()).Return(nil, false).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Store(gomock.Any()).Do(func(host *resource.Host) {
+						assert := assert.New(t)
+						assert.Equal(host.ID, req.Id)
+						assert.Equal(host.Type, pkgtypes.ParseHostType(req.Type))
+						assert.Equal(host.Hostname, req.Hostname)
+						assert.Equal(host.IP, req.Ip)
+						assert.Equal(host.Port, req.Port)
+						assert.Equal(host.DownloadPort, req.DownloadPort)
+						assert.Equal(host.OS, req.Os)
+						assert.Equal(host.Platform, req.Platform)
+						assert.Equal(host.PlatformVersion, req.PlatformVersion)
+						assert.Equal(host.KernelVersion, req.KernelVersion)
+						assert.EqualValues(host.CPU, mockCPU)
+						assert.EqualValues(host.Memory, mockMemory)
+						assert.EqualValues(host.Network, mockNetwork)
+						assert.EqualValues(host.Disk, mockDisk)
+						assert.EqualValues(host.Build, mockBuild)
+						assert.Equal(host.ConcurrentUploadLimit.Load(), int32(50))
+						assert.Equal(host.ConcurrentUploadCount.Load(), int32(0))
+						assert.Equal(host.UploadCount.Load(), int64(0))
+						assert.Equal(host.UploadFailedCount.Load(), int64(0))
+						assert.NotNil(host.Peers)
+						assert.Equal(host.PeerCount.Load(), int32(0))
+						assert.NotEqual(host.CreatedAt.Load().Nanosecond(), 0)
+						assert.NotEqual(host.UpdatedAt.Load().Nanosecond(), 0)
+						assert.NotNil(host.Log)
+					}).Return().Times(1),
+				)
+
+				assert := assert.New(t)
+				assert.NoError(svc.AnnounceHost(context.Background(), req))
+			},
+		},
+		{
+			name: "host already exists",
+			req: &schedulerv1.AnnounceHostRequest{
+				Id:              mockHostID,
+				Type:            pkgtypes.HostTypeNormal.Name(),
+				Hostname:        "hostname",
+				Ip:              "127.0.0.1",
+				Port:            8003,
+				DownloadPort:    8001,
+				Os:              "darwin",
+				Platform:        "darwin",
+				PlatformFamily:  "Standalone Workstation",
+				PlatformVersion: "11.1",
+				KernelVersion:   "20.2.0",
+				Cpu: &schedulerv1.CPU{
+					LogicalCount:   mockCPU.LogicalCount,
+					PhysicalCount:  mockCPU.PhysicalCount,
+					Percent:        mockCPU.Percent,
+					ProcessPercent: mockCPU.ProcessPercent,
+					Times: &schedulerv1.CPUTimes{
+						User:      mockCPU.Times.User,
+						System:    mockCPU.Times.System,
+						Idle:      mockCPU.Times.Idle,
+						Nice:      mockCPU.Times.Nice,
+						Iowait:    mockCPU.Times.Iowait,
+						Irq:       mockCPU.Times.Irq,
+						Softirq:   mockCPU.Times.Softirq,
+						Steal:     mockCPU.Times.Steal,
+						Guest:     mockCPU.Times.Guest,
+						GuestNice: mockCPU.Times.GuestNice,
+					},
+				},
+				Memory: &schedulerv1.Memory{
+					Total:              mockMemory.Total,
+					Available:          mockMemory.Available,
+					Used:               mockMemory.Used,
+					UsedPercent:        mockMemory.UsedPercent,
+					ProcessUsedPercent: mockMemory.ProcessUsedPercent,
+					Free:               mockMemory.Free,
+				},
+				Network: &schedulerv1.Network{
+					TcpConnectionCount:       mockNetwork.TCPConnectionCount,
+					UploadTcpConnectionCount: mockNetwork.UploadTCPConnectionCount,
+					SecurityDomain:           mockNetwork.SecurityDomain,
+					Location:                 mockNetwork.Location,
+					Idc:                      mockNetwork.IDC,
+				},
+				Disk: &schedulerv1.Disk{
+					Total:             mockDisk.Total,
+					Free:              mockDisk.Free,
+					Used:              mockDisk.Used,
+					UsedPercent:       mockDisk.UsedPercent,
+					InodesTotal:       mockDisk.InodesTotal,
+					InodesUsed:        mockDisk.InodesUsed,
+					InodesFree:        mockDisk.InodesFree,
+					InodesUsedPercent: mockDisk.InodesUsedPercent,
+				},
+				Build: &schedulerv1.Build{
+					GitVersion: mockBuild.GitVersion,
+					GitCommit:  mockBuild.GitCommit,
+					GoVersion:  mockBuild.GoVersion,
+					Platform:   mockBuild.Platform,
+				},
+			},
+			run: func(t *testing.T, svc *V1, req *schedulerv1.AnnounceHostRequest, host *resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				gomock.InOrder(
+					md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{LoadLimit: 10}, nil).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Any()).Return(host, true).Times(1),
+				)
+
+				assert := assert.New(t)
+				assert.NoError(svc.AnnounceHost(context.Background(), req))
+				assert.Equal(host.ID, req.Id)
+				assert.Equal(host.Type, pkgtypes.ParseHostType(req.Type))
+				assert.Equal(host.Hostname, req.Hostname)
+				assert.Equal(host.IP, req.Ip)
+				assert.Equal(host.Port, req.Port)
+				assert.Equal(host.DownloadPort, req.DownloadPort)
+				assert.Equal(host.OS, req.Os)
+				assert.Equal(host.Platform, req.Platform)
+				assert.Equal(host.PlatformVersion, req.PlatformVersion)
+				assert.Equal(host.KernelVersion, req.KernelVersion)
+				assert.EqualValues(host.CPU, mockCPU)
+				assert.EqualValues(host.Memory, mockMemory)
+				assert.EqualValues(host.Network, mockNetwork)
+				assert.EqualValues(host.Disk, mockDisk)
+				assert.EqualValues(host.Build, mockBuild)
+				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(10))
+				assert.Equal(host.ConcurrentUploadCount.Load(), int32(0))
+				assert.Equal(host.UploadCount.Load(), int64(0))
+				assert.Equal(host.UploadFailedCount.Load(), int64(0))
+				assert.NotNil(host.Peers)
+				assert.Equal(host.PeerCount.Load(), int32(0))
+				assert.NotEqual(host.CreatedAt.Load().Nanosecond(), 0)
+				assert.NotEqual(host.UpdatedAt.Load().Nanosecond(), 0)
+				assert.NotNil(host.Log)
+			},
+		},
+		{
+			name: "host already exists and dynconfig returns error",
+			req: &schedulerv1.AnnounceHostRequest{
+				Id:              mockHostID,
+				Type:            pkgtypes.HostTypeNormal.Name(),
+				Hostname:        "hostname",
+				Ip:              "127.0.0.1",
+				Port:            8003,
+				DownloadPort:    8001,
+				Os:              "darwin",
+				Platform:        "darwin",
+				PlatformFamily:  "Standalone Workstation",
+				PlatformVersion: "11.1",
+				KernelVersion:   "20.2.0",
+				Cpu: &schedulerv1.CPU{
+					LogicalCount:   mockCPU.LogicalCount,
+					PhysicalCount:  mockCPU.PhysicalCount,
+					Percent:        mockCPU.Percent,
+					ProcessPercent: mockCPU.ProcessPercent,
+					Times: &schedulerv1.CPUTimes{
+						User:      mockCPU.Times.User,
+						System:    mockCPU.Times.System,
+						Idle:      mockCPU.Times.Idle,
+						Nice:      mockCPU.Times.Nice,
+						Iowait:    mockCPU.Times.Iowait,
+						Irq:       mockCPU.Times.Irq,
+						Softirq:   mockCPU.Times.Softirq,
+						Steal:     mockCPU.Times.Steal,
+						Guest:     mockCPU.Times.Guest,
+						GuestNice: mockCPU.Times.GuestNice,
+					},
+				},
+				Memory: &schedulerv1.Memory{
+					Total:              mockMemory.Total,
+					Available:          mockMemory.Available,
+					Used:               mockMemory.Used,
+					UsedPercent:        mockMemory.UsedPercent,
+					ProcessUsedPercent: mockMemory.ProcessUsedPercent,
+					Free:               mockMemory.Free,
+				},
+				Network: &schedulerv1.Network{
+					TcpConnectionCount:       mockNetwork.TCPConnectionCount,
+					UploadTcpConnectionCount: mockNetwork.UploadTCPConnectionCount,
+					SecurityDomain:           mockNetwork.SecurityDomain,
+					Location:                 mockNetwork.Location,
+					Idc:                      mockNetwork.IDC,
+				},
+				Disk: &schedulerv1.Disk{
+					Total:             mockDisk.Total,
+					Free:              mockDisk.Free,
+					Used:              mockDisk.Used,
+					UsedPercent:       mockDisk.UsedPercent,
+					InodesTotal:       mockDisk.InodesTotal,
+					InodesUsed:        mockDisk.InodesUsed,
+					InodesFree:        mockDisk.InodesFree,
+					InodesUsedPercent: mockDisk.InodesUsedPercent,
+				},
+				Build: &schedulerv1.Build{
+					GitVersion: mockBuild.GitVersion,
+					GitCommit:  mockBuild.GitCommit,
+					GoVersion:  mockBuild.GoVersion,
+					Platform:   mockBuild.Platform,
+				},
+			},
+			run: func(t *testing.T, svc *V1, req *schedulerv1.AnnounceHostRequest, host *resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				gomock.InOrder(
+					md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{}, errors.New("foo")).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Any()).Return(host, true).Times(1),
+				)
+
+				assert := assert.New(t)
+				assert.NoError(svc.AnnounceHost(context.Background(), req))
+				assert.Equal(host.ID, req.Id)
+				assert.Equal(host.Type, pkgtypes.ParseHostType(req.Type))
+				assert.Equal(host.Hostname, req.Hostname)
+				assert.Equal(host.IP, req.Ip)
+				assert.Equal(host.Port, req.Port)
+				assert.Equal(host.DownloadPort, req.DownloadPort)
+				assert.Equal(host.OS, req.Os)
+				assert.Equal(host.Platform, req.Platform)
+				assert.Equal(host.PlatformVersion, req.PlatformVersion)
+				assert.Equal(host.KernelVersion, req.KernelVersion)
+				assert.EqualValues(host.CPU, mockCPU)
+				assert.EqualValues(host.Memory, mockMemory)
+				assert.EqualValues(host.Network, mockNetwork)
+				assert.EqualValues(host.Disk, mockDisk)
+				assert.EqualValues(host.Build, mockBuild)
+				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(50))
+				assert.Equal(host.ConcurrentUploadCount.Load(), int32(0))
+				assert.Equal(host.UploadCount.Load(), int64(0))
+				assert.Equal(host.UploadFailedCount.Load(), int64(0))
+				assert.NotNil(host.Peers)
+				assert.Equal(host.PeerCount.Load(), int32(0))
+				assert.NotEqual(host.CreatedAt.Load().Nanosecond(), 0)
+				assert.NotEqual(host.UpdatedAt.Load().Nanosecond(), 0)
+				assert.NotNil(host.Log)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			scheduling := mocks.NewMockScheduling(ctl)
+			res := resource.NewMockResource(ctl)
+			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
+			storage := storagemocks.NewMockStorage(ctl)
+			hostManager := resource.NewMockHostManager(ctl)
+			host := resource.NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
+			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, res, scheduling, dynconfig, storage)
+
+			tc.run(t, svc, tc.req, host, hostManager, res.EXPECT(), hostManager.EXPECT(), dynconfig.EXPECT())
+		})
+	}
+}
+
 func TestServiceV1_LeaveHost(t *testing.T) {
 	tests := []struct {
 		name   string
