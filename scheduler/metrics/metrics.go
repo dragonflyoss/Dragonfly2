@@ -88,6 +88,20 @@ var (
 		Help:      "Counter of the number of failed of the leaving peer.",
 	})
 
+	ExchangePeerCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "exchange_peer_total",
+		Help:      "Counter of the number of the leaving peer.",
+	})
+
+	ExchangePeerFailureCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "exchange_peer_failure_total",
+		Help:      "Counter of the number of failed of the leaving peer.",
+	})
+
 	RegisterTaskCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
@@ -152,12 +166,13 @@ var (
 	}, []string{"os", "platform", "platform_family", "platform_version",
 		"kernel_version", "git_version", "git_commit", "go_version", "build_platform"})
 
-	AnnounceHostFailureCount = promauto.NewCounter(prometheus.CounterOpts{
+	AnnounceHostFailureCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
 		Name:      "announce_host_failure_total",
 		Help:      "Counter of the number of failed of the announce host.",
-	})
+	}, []string{"os", "platform", "platform_family", "platform_version",
+		"kernel_version", "git_version", "git_commit", "go_version", "build_platform"})
 
 	LeaveTaskCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
