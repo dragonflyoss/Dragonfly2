@@ -22,14 +22,83 @@ import (
 	"testing"
 	"time"
 
-	testifyassert "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
+	"d7y.io/dragonfly/v2/pkg/types"
+)
+
+var (
+	mockMysqlConfig = MysqlConfig{
+		User:      "foo",
+		Password:  "bar",
+		Host:      "localhost",
+		Port:      3306,
+		DBName:    "manager",
+		TLSConfig: "true",
+		Migrate:   true,
+	}
+
+	mockMysqlTLSConfig = &TLSConfig{
+		Cert:               "ca.crt",
+		Key:                "ca.key",
+		CA:                 "ca",
+		InsecureSkipVerify: false,
+	}
+
+	mockPostgresConfig = PostgresConfig{
+		User:     "foo",
+		Password: "bar",
+		Host:     "localhost",
+		Port:     5432,
+		DBName:   "manager",
+		SSLMode:  "verify-ca",
+		Timezone: "UTC",
+		Migrate:  true,
+	}
+
+	mockRedisConfig = RedisConfig{
+		Addrs:      []string{"127.0.0.0:6379"},
+		MasterName: "master",
+		Username:   "baz",
+		Password:   "bax",
+		DB:         0,
+		BrokerDB:   1,
+		BackendDB:  2,
+	}
+
+	mockObjectStorageConfig = ObjectStorageConfig{
+		Enable:           true,
+		Name:             objectstorage.ServiceNameS3,
+		Region:           "bas",
+		Endpoint:         "127.0.0.1",
+		AccessKey:        "ak",
+		SecretKey:        "sk",
+		S3ForcePathStyle: true,
+	}
+
+	mockSecurityConfig = SecurityConfig{
+		AutoIssueCert: true,
+		CACert:        types.PEMContent("foo"),
+		CAKey:         types.PEMContent("bar"),
+		TLSPolicy:     "force",
+		CertSpec: CertSpec{
+			DNSNames:       []string{"localhost"},
+			IPAddresses:    []net.IP{net.ParseIP("127.0.0.1")},
+			ValidityPeriod: time.Duration(1 * time.Second),
+		},
+	}
+
+	mockMetricsConfig = MetricsConfig{
+		Enable:          true,
+		Addr:            "localhost",
+		EnablePeerGauge: true,
+	}
 )
 
 func TestManagerConfig_Load(t *testing.T) {
-	assert := testifyassert.New(t)
+	assert := assert.New(t)
 
 	config := &Config{
 		Server: ServerConfig{
@@ -134,4 +203,530 @@ func TestManagerConfig_Load(t *testing.T) {
 	}
 
 	assert.EqualValues(config, managerConfigYAML)
+}
+
+func TestManagerConfig_Validate(t *testing.T) {
+	tests := []struct {
+		name   string
+		config *Config
+		mock   func(cfg *Config)
+		expect func(t *testing.T, err error)
+	}{
+		{
+			name:   "valid config",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Redis = mockRedisConfig
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+			},
+		},
+		{
+			name:   "server requires parameter name",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Server.Name = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "server requires parameter name")
+			},
+		},
+		{
+			name:   "grpc requires parameter advertiseIP",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Server.GRPC.AdvertiseIP = nil
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "grpc requires parameter advertiseIP")
+			},
+		},
+		{
+			name:   "grpc requires parameter listenIP",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Server.GRPC.ListenIP = nil
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "grpc requires parameter listenIP")
+			},
+		},
+		{
+			name:   "database requires parameter type",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "database requires parameter type")
+			},
+		},
+		{
+			name:   "mysql requires parameter user",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Mysql.User = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "mysql requires parameter user")
+			},
+		},
+		{
+			name:   "mysql requires parameter password",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Mysql.Password = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "mysql requires parameter password")
+			},
+		},
+		{
+			name:   "mysql requires parameter host",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Mysql.Host = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "mysql requires parameter host")
+			},
+		},
+		{
+			name:   "mysql requires parameter port",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Mysql.Port = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "mysql requires parameter port")
+			},
+		},
+		{
+			name:   "mysql requires parameter dbname",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Mysql.DBName = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "mysql requires parameter dbname")
+			},
+		},
+		{
+			name:   "tls requires parameter cert",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Mysql.TLS = mockMysqlTLSConfig
+				cfg.Database.Mysql.TLS.Cert = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "tls requires parameter cert")
+			},
+		},
+		{
+			name:   "tls requires parameter key",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Mysql.TLS = mockMysqlTLSConfig
+				cfg.Database.Mysql.TLS.Cert = "ca.crt"
+				cfg.Database.Mysql.TLS.Key = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "tls requires parameter key")
+			},
+		},
+		{
+			name:   "tls requires parameter ca",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Mysql.TLS = mockMysqlTLSConfig
+				cfg.Database.Mysql.TLS.Cert = "ca.crt"
+				cfg.Database.Mysql.TLS.Key = "ca.key"
+				cfg.Database.Mysql.TLS.CA = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "tls requires parameter ca")
+			},
+		},
+		{
+			name:   "postgres requires parameter user",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypePostgres
+				cfg.Database.Postgres = mockPostgresConfig
+				cfg.Database.Postgres.User = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "postgres requires parameter user")
+			},
+		},
+		{
+			name:   "postgres requires parameter password",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypePostgres
+				cfg.Database.Postgres = mockPostgresConfig
+				cfg.Database.Postgres.Password = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "postgres requires parameter password")
+			},
+		},
+		{
+			name:   "postgres requires parameter host",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypePostgres
+				cfg.Database.Postgres = mockPostgresConfig
+				cfg.Database.Postgres.Host = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "postgres requires parameter host")
+			},
+		},
+		{
+			name:   "postgres requires parameter port",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypePostgres
+				cfg.Database.Postgres = mockPostgresConfig
+				cfg.Database.Postgres.Port = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "postgres requires parameter port")
+			},
+		},
+		{
+			name:   "postgres requires parameter dbname",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypePostgres
+				cfg.Database.Postgres = mockPostgresConfig
+				cfg.Database.Postgres.DBName = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "postgres requires parameter dbname")
+			},
+		},
+		{
+			name:   "postgres requires parameter sslMode",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypePostgres
+				cfg.Database.Postgres = mockPostgresConfig
+				cfg.Database.Postgres.SSLMode = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "postgres requires parameter sslMode")
+			},
+		},
+		{
+			name:   "postgres requires parameter timezone",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypePostgres
+				cfg.Database.Postgres = mockPostgresConfig
+				cfg.Database.Postgres.Timezone = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "postgres requires parameter timezone")
+			},
+		},
+		{
+			name:   "redis requires parameter addrs",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Database.Redis.Addrs = []string{}
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "redis requires parameter addrs")
+			},
+		},
+		{
+			name:   "redis requires parameter db",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Database.Redis.DB = -1
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "redis requires parameter db")
+			},
+		},
+		{
+			name:   "redis requires parameter brokerDB",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Database.Redis.BrokerDB = -1
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "redis requires parameter brokerDB")
+			},
+		},
+		{
+			name:   "redis requires parameter backendDB",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Database.Redis.BackendDB = -1
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "redis requires parameter backendDB")
+			},
+		},
+		{
+			name:   "redis requires parameter ttl",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Cache.Redis.TTL = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "redis requires parameter ttl")
+			},
+		},
+		{
+			name:   "local requires parameter size",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Cache.Local.Size = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "local requires parameter size")
+			},
+		},
+		{
+			name:   "local requires parameter ttl",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Cache.Local.TTL = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "local requires parameter ttl")
+			},
+		},
+		{
+			name:   "objectStorage requires parameter name",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.ObjectStorage = mockObjectStorageConfig
+				cfg.ObjectStorage.Name = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "objectStorage requires parameter name")
+			},
+		},
+		{
+			name:   "invalid objectStorage name",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.ObjectStorage = mockObjectStorageConfig
+				cfg.ObjectStorage.Name = "foo"
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "objectStorage requires parameter name")
+			},
+		},
+		{
+			name:   "objectStorage requires parameter accessKey",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.ObjectStorage = mockObjectStorageConfig
+				cfg.ObjectStorage.AccessKey = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "objectStorage requires parameter accessKey")
+			},
+		},
+		{
+			name:   "objectStorage requires parameter secretKey",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.ObjectStorage = mockObjectStorageConfig
+				cfg.ObjectStorage.SecretKey = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "objectStorage requires parameter secretKey")
+			},
+		},
+		{
+			name:   "security requires parameter caCert",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Security = mockSecurityConfig
+				cfg.Security.CACert = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "security requires parameter caCert")
+			},
+		},
+		{
+			name:   "security requires parameter caKey",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Security = mockSecurityConfig
+				cfg.Security.CAKey = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "security requires parameter caKey")
+			},
+		},
+		{
+			name:   "security requires parameter tlsPolicy",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Security = mockSecurityConfig
+				cfg.Security.TLSPolicy = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "security requires parameter tlsPolicy")
+			},
+		},
+		{
+			name:   "certSpec requires parameter ipAddresses",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Security = mockSecurityConfig
+				cfg.Security.CertSpec.IPAddresses = []net.IP{}
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "certSpec requires parameter ipAddresses")
+			},
+		},
+		{
+			name:   "certSpec requires parameter dnsNames",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Security = mockSecurityConfig
+				cfg.Security.CertSpec.DNSNames = []string{}
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "certSpec requires parameter dnsNames")
+			},
+		},
+		{
+			name:   "metrics requires parameter addr",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Metrics = mockMetricsConfig
+				cfg.Metrics.Addr = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "metrics requires parameter addr")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := tc.config.Convert(); err != nil {
+				t.Fatal(err)
+			}
+
+			tc.mock(tc.config)
+			tc.expect(t, tc.config.Validate())
+		})
+	}
 }

@@ -395,7 +395,7 @@ func (cfg *Config) Validate() error {
 		return errors.New("database requires parameter type")
 	}
 
-	if cfg.Database.Type == DatabaseTypeMysql || cfg.Database.Type == DatabaseTypeMariaDB {
+	if slices.Contains([]string{DatabaseTypeMysql, DatabaseTypeMariaDB}, cfg.Database.Type) {
 		if cfg.Database.Mysql.User == "" {
 			return errors.New("mysql requires parameter user")
 		}
@@ -477,14 +477,6 @@ func (cfg *Config) Validate() error {
 		if cfg.Database.Redis.BackendDB < 0 {
 			return errors.New("redis requires parameter backendDB")
 		}
-	}
-
-	if cfg.Database.Redis.BrokerDB < 0 {
-		return errors.New("redis requires parameter brokerDB")
-	}
-
-	if cfg.Database.Redis.BackendDB < 0 {
-		return errors.New("redis requires parameter backendDB")
 	}
 
 	if cfg.Cache.Redis.TTL == 0 {
