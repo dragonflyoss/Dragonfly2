@@ -26,6 +26,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
+	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/types"
 )
 
@@ -34,8 +35,8 @@ var (
 		User:      "foo",
 		Password:  "bar",
 		Host:      "localhost",
-		Port:      3306,
-		DBName:    "manager",
+		Port:      DefaultMysqlPort,
+		DBName:    DefaultMysqlDBName,
 		TLSConfig: "true",
 		Migrate:   true,
 	}
@@ -51,10 +52,10 @@ var (
 		User:     "foo",
 		Password: "bar",
 		Host:     "localhost",
-		Port:     5432,
-		DBName:   "manager",
-		SSLMode:  "verify-ca",
-		Timezone: "UTC",
+		Port:     DefaultPostgresPort,
+		DBName:   DefaultPostgresDBName,
+		SSLMode:  DefaultPostgresSSLMode,
+		Timezone: DefaultPostgresTimezone,
 		Migrate:  true,
 	}
 
@@ -63,9 +64,9 @@ var (
 		MasterName: "master",
 		Username:   "baz",
 		Password:   "bax",
-		DB:         0,
-		BrokerDB:   1,
-		BackendDB:  2,
+		DB:         DefaultRedisDB,
+		BrokerDB:   DefaultRedisBrokerDB,
+		BackendDB:  DefaultRedisBackendDB,
 	}
 
 	mockObjectStorageConfig = ObjectStorageConfig{
@@ -78,28 +79,26 @@ var (
 		S3ForcePathStyle: true,
 	}
 
+	mockMetricsConfig = MetricsConfig{
+		Enable:          true,
+		Addr:            DefaultMetricsAddr,
+		EnablePeerGauge: true,
+	}
+
 	mockSecurityConfig = SecurityConfig{
 		AutoIssueCert: true,
 		CACert:        types.PEMContent("foo"),
 		CAKey:         types.PEMContent("bar"),
-		TLSPolicy:     "force",
+		TLSPolicy:     rpc.PreferTLSPolicy,
 		CertSpec: CertSpec{
-			DNSNames:       []string{"localhost"},
-			IPAddresses:    []net.IP{net.ParseIP("127.0.0.1")},
-			ValidityPeriod: time.Duration(1 * time.Second),
+			DNSNames:       DefaultCertDNSNames,
+			IPAddresses:    DefaultCertIPAddresses,
+			ValidityPeriod: DefaultCertValidityPeriod,
 		},
-	}
-
-	mockMetricsConfig = MetricsConfig{
-		Enable:          true,
-		Addr:            "localhost",
-		EnablePeerGauge: true,
 	}
 )
 
-func TestManagerConfig_Load(t *testing.T) {
-	assert := assert.New(t)
-
+func TestConfig_Load(t *testing.T) {
 	config := &Config{
 		Server: ServerConfig{
 			Name:      "foo",
@@ -202,10 +201,11 @@ func TestManagerConfig_Load(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	assert := assert.New(t)
 	assert.EqualValues(config, managerConfigYAML)
 }
 
-func TestManagerConfig_Validate(t *testing.T) {
+func TestConfig_Validate(t *testing.T) {
 	tests := []struct {
 		name   string
 		config *Config
@@ -628,6 +628,21 @@ func TestManagerConfig_Validate(t *testing.T) {
 			},
 		},
 		{
+			name:   "metrics requires parameter addr",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Metrics = mockMetricsConfig
+				cfg.Metrics.Addr = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "metrics requires parameter addr")
+			},
+		},
+		{
 			name:   "security requires parameter caCert",
 			config: New(),
 			mock: func(cfg *Config) {
@@ -703,18 +718,18 @@ func TestManagerConfig_Validate(t *testing.T) {
 			},
 		},
 		{
-			name:   "metrics requires parameter addr",
+			name:   "certSpec requires parameter validityPeriod",
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Redis = mockRedisConfig
-				cfg.Metrics = mockMetricsConfig
-				cfg.Metrics.Addr = ""
+				cfg.Security = mockSecurityConfig
+				cfg.Security.CertSpec.ValidityPeriod = 0
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "metrics requires parameter addr")
+				assert.EqualError(err, "certSpec requires parameter validityPeriod")
 			},
 		},
 	}

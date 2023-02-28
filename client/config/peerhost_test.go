@@ -26,7 +26,7 @@ import (
 	"testing"
 	"time"
 
-	testifyassert "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 	"golang.org/x/time/rate"
 	"gopkg.in/yaml.v3"
 
@@ -38,7 +38,6 @@ import (
 )
 
 func Test_AllUnmarshalYAML(t *testing.T) {
-	assert := testifyassert.New(t)
 	var cases = []struct {
 		text   string
 		target any
@@ -160,6 +159,8 @@ diskGCThreshold: 1Ki
 	for _, c := range cases {
 		actual := reflect.New(reflect.TypeOf(c.target).Elem()).Interface()
 		err := yaml.Unmarshal([]byte(c.text), actual)
+
+		assert := assert.New(t)
 		assert.Nil(err, "yaml.Unmarshal should return nil")
 		assert.EqualValues(c.target, actual)
 	}
@@ -219,8 +220,6 @@ schedulers2:
 }
 
 func TestPeerHostOption_Load(t *testing.T) {
-	assert := testifyassert.New(t)
-
 	proxyExp, _ := NewRegexp("blobs/sha256.*")
 	hijackExp, _ := NewRegexp("mirror.aliyuncs.com:443")
 
@@ -521,6 +520,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	assert := assert.New(t)
 	assert.EqualValues(peerHostOption, peerHostOptionYAML)
 }
 
@@ -536,7 +536,7 @@ func TestPeerHostOption_Validate(t *testing.T) {
 			config: NewDaemonConfig(),
 			mock:   func(cfg *DaemonConfig) {},
 			expect: func(t *testing.T, err error) {
-				assert := testifyassert.New(t)
+				assert := assert.New(t)
 				assert.NoError(err)
 			},
 		},
@@ -548,7 +548,7 @@ func TestPeerHostOption_Validate(t *testing.T) {
 				cfg.Scheduler.Manager.NetAddrs = nil
 			},
 			expect: func(t *testing.T, err error) {
-				assert := testifyassert.New(t)
+				assert := assert.New(t)
 				assert.EqualError(err, "manager addr is not specified")
 			},
 		},
@@ -566,7 +566,7 @@ func TestPeerHostOption_Validate(t *testing.T) {
 				}
 			},
 			expect: func(t *testing.T, err error) {
-				assert := testifyassert.New(t)
+				assert := assert.New(t)
 				assert.EqualError(err, "manager refreshInterval is not specified")
 			},
 		},
@@ -577,7 +577,7 @@ func TestPeerHostOption_Validate(t *testing.T) {
 				cfg.Scheduler.NetAddrs = nil
 			},
 			expect: func(t *testing.T, err error) {
-				assert := testifyassert.New(t)
+				assert := assert.New(t)
 				assert.EqualError(err, "empty schedulers and config server is not specified")
 			},
 		},
@@ -588,7 +588,7 @@ func TestPeerHostOption_Validate(t *testing.T) {
 				cfg.Download.TotalRateLimit.Limit = rate.Limit(10 * unit.MB)
 			},
 			expect: func(t *testing.T, err error) {
-				assert := testifyassert.New(t)
+				assert := assert.New(t)
 				msg := fmt.Sprintf("rate limit must be greater than %s", DefaultMinRate.String())
 				assert.EqualError(err, msg)
 			},
@@ -600,7 +600,7 @@ func TestPeerHostOption_Validate(t *testing.T) {
 				cfg.Upload.RateLimit.Limit = rate.Limit(10 * unit.MB)
 			},
 			expect: func(t *testing.T, err error) {
-				assert := testifyassert.New(t)
+				assert := assert.New(t)
 				msg := fmt.Sprintf("rate limit must be greater than %s", DefaultMinRate.String())
 				assert.EqualError(err, msg)
 			},
@@ -613,7 +613,7 @@ func TestPeerHostOption_Validate(t *testing.T) {
 				cfg.ObjectStorage.MaxReplicas = 0
 			},
 			expect: func(t *testing.T, err error) {
-				assert := testifyassert.New(t)
+				assert := assert.New(t)
 				assert.EqualError(err, "max replicas must be greater than 0")
 			},
 		},
@@ -624,7 +624,7 @@ func TestPeerHostOption_Validate(t *testing.T) {
 				cfg.Reload.Interval.Duration = time.Millisecond
 			},
 			expect: func(t *testing.T, err error) {
-				assert := testifyassert.New(t)
+				assert := assert.New(t)
 				assert.EqualError(err, "reload interval too short, must great than 1 second")
 			},
 		},
@@ -635,7 +635,7 @@ func TestPeerHostOption_Validate(t *testing.T) {
 				cfg.GCInterval.Duration = 0
 			},
 			expect: func(t *testing.T, err error) {
-				assert := testifyassert.New(t)
+				assert := assert.New(t)
 				assert.EqualError(err, "gcInterval must be greater than 0")
 			},
 		},
@@ -647,7 +647,7 @@ func TestPeerHostOption_Validate(t *testing.T) {
 				cfg.Security.CACert = ""
 			},
 			expect: func(t *testing.T, err error) {
-				assert := testifyassert.New(t)
+				assert := assert.New(t)
 				assert.EqualError(err, "security requires parameter caCert")
 			},
 		},
@@ -660,7 +660,7 @@ func TestPeerHostOption_Validate(t *testing.T) {
 				cfg.Security.CertSpec.IPAddresses = nil
 			},
 			expect: func(t *testing.T, err error) {
-				assert := testifyassert.New(t)
+				assert := assert.New(t)
 				assert.EqualError(err, "certSpec requires parameter ipAddresses")
 			},
 		},
@@ -674,7 +674,7 @@ func TestPeerHostOption_Validate(t *testing.T) {
 				cfg.Security.CertSpec.DNSNames = nil
 			},
 			expect: func(t *testing.T, err error) {
-				assert := testifyassert.New(t)
+				assert := assert.New(t)
 				assert.EqualError(err, "certSpec requires parameter dnsNames")
 			},
 		},
@@ -687,7 +687,7 @@ func TestPeerHostOption_Validate(t *testing.T) {
 				cfg.Security.CertSpec.ValidityPeriod = 0
 			},
 			expect: func(t *testing.T, err error) {
-				assert := testifyassert.New(t)
+				assert := assert.New(t)
 				assert.EqualError(err, "certSpec requires parameter validityPeriod")
 			},
 		},
