@@ -2,6 +2,7 @@ package networktopology
 
 import (
 	"container/list"
+	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -79,16 +80,20 @@ type NetworkTopology interface {
 
 type networkTopology struct {
 	*sync.Map
-	resource resource.Resource
-	done     chan struct{}
+	resource      resource.Resource
+	dynconfig     config.DynconfigInterface
+	managerClient managerclient.V2
+	done          chan struct{}
 }
 
 // New network topology interface.
-func New(resource resource.Resource) (NetworkTopology, error) {
+func New(resource resource.Resource, dynconfig config.DynconfigInterface, managerClient managerclient.V2) (NetworkTopology, error) {
 
 	n := &networkTopology{
-		Map:      &sync.Map{},
-		resource: resource,
+		Map:           &sync.Map{},
+		resource:      resource,
+		dynconfig:     dynconfig,
+		managerClient: managerClient,
 	}
 	return n, nil
 }
@@ -334,26 +339,27 @@ func (n *networkTopology) FindProbes(host *resource.Host) []*resource.Host {
 
 func (n *networkTopology) Serve() error {
 
-	//var (
-	//	grpcCredentials credentials.TransportCredentials
-	//	certifyClient  *certify.Certify
-	//)
-	//
-	//if certifyClient == nil {
-	//	grpcCredentials = insecure.NewCredentials()
-	//} else {
-	//	grpcCredentials, err = loadGlobalGPRCTLSCredentials(certifyClient, opt.Security)
-	//	if err != nil {
-	//		return err
-	//	}
+	////ListSchedulers return []schedulers
+	//// Register to manager.
+	//if _, err := n.managerClient.ListSchedulers(context.Background(), &managerv2.ListSchedulersRequest{
+	//	SourceType:         managerv2.SourceType_SCHEDULER_SOURCE,
+	//	HostName:           a.config.Server.Host,
+	//	Ip:                 a.config.Server.AdvertiseIP.String(),
+	//	Port:               int32(a.config.Server.Port),
+	//	Idc:                a.config.Host.IDC,
+	//	Location:           a.config.Host.Location,
+	//	SchedulerClusterId: uint64(a.config.Manager.SchedulerClusterID),
+	//}); err != nil {
+	//	return nil, err
 	//}
-	//// Initialize scheduler client.
-	//schedulerClient, err = schedulerclient.GetV1ByAddr(context.Background(), opt.Scheduler.Manager.NetAddrs, grpc.WithTransportCredentials(grpcCredentials))
+	////getAddrbyScheduler
+	//
+	//schedulerCluster, err := n.dynconfig.GetSchedulerCluster()
 	//if err != nil {
 	//	return err
 	//}
-	//
-	//if err := n.schedulerClient; err != nil {
+	//addr, err := schedulerCluster
+	//if err != nil {
 	//	return err
 	//}
 	//tick := time.NewTicker(config.DefaultNetworkTopologySyncInterval)

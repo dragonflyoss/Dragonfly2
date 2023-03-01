@@ -215,7 +215,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 
 	// Initialize networktopology.
-	networkTopology, err := networktopology.New(resource)
+	networkTopology, err := networktopology.New(resource, dynconfig, managerClient)
 	if err != nil {
 		return nil, err
 	}

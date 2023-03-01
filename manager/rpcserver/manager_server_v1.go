@@ -538,7 +538,7 @@ func (s *managerServerV1) ListSchedulersByPeerOrSeedPeer(ctx context.Context, re
 	return &pbListSchedulersResponse, nil
 }
 
-// TODO: Implement list schedulers by scheduler function.
+// TODO: Implement list schedulers by scheduler function
 // List acitve schedulers configuration by scheduler
 func (s *managerServerV1) ListSchedulersByScheduler(ctx context.Context, req *managerv1.ListSchedulersRequest) (*managerv1.ListSchedulersResponse, error) {
 

@@ -1498,7 +1498,6 @@ func (v *V1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
 				return err
 			}
 		}
-
 	}
 }
 

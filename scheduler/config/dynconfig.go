@@ -447,7 +447,7 @@ func (mc *managerClient) Get() (any, error) {
 	return DynconfigData{
 		Scheduler:    getSchedulerResp,
 		Applications: listApplicationsResp.Applications,
-		Schedulers:   listSchedulers,
+		Schedulers:   listSchedulersResp.Schedulers,
 	}, nil
 }
 
