@@ -56,7 +56,6 @@ const (
 
 type DaemonServer interface {
 	dfdaemonv1.DaemonServer
-	SetServingStatusFunc(func(service string, servingStatus healthpb.HealthCheckResponse_ServingStatus))
 }
 
 // New returns a grpc server instance and register service on grpc server.
