@@ -432,8 +432,8 @@ func (s *managerServerV1) createScheduler(ctx context.Context, req *managerv1.Up
 	}, nil
 }
 
-// List acitve schedulers configuration.
-func (s *managerServerV1) ListSchedulers(ctx context.Context, req *managerv1.ListSchedulersRequest) (*managerv1.ListSchedulersResponse, error) {
+// List acitve schedulers configuration by peer or seed peer.
+func (s *managerServerV1) ListSchedulersByPeerOrSeedPeer(ctx context.Context, req *managerv1.ListSchedulersRequest) (*managerv1.ListSchedulersResponse, error) {
 	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
 	log.Debugf("list schedulers, version %s, commit %s", req.Version, req.Commit)
 
@@ -536,6 +536,22 @@ func (s *managerServerV1) ListSchedulers(ctx context.Context, req *managerv1.Lis
 	}
 
 	return &pbListSchedulersResponse, nil
+}
+
+// TODO: Implement list schedulers by scheduler function.
+// List acitve schedulers configuration by scheduler
+func (s *managerServerV1) ListSchedulersByScheduler(ctx context.Context, req *managerv1.ListSchedulersRequest) (*managerv1.ListSchedulersResponse, error) {
+
+	return nil, nil
+}
+
+// List acitve schedulers configuration.
+func (s *managerServerV1) ListSchedulers(ctx context.Context, req *managerv1.ListSchedulersRequest) (*managerv1.ListSchedulersResponse, error) {
+	if req.SourceType == managerv1.SourceType_PEER_SOURCE|managerv1.SourceType_SEED_PEER_SOURCE {
+		return s.ListSchedulersByPeerOrSeedPeer(ctx, req)
+	}
+	return s.ListSchedulersByScheduler(ctx, req)
+
 }
 
 // Get object storage configuration.

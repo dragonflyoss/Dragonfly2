@@ -20,6 +20,7 @@ package config
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/version"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -57,6 +58,7 @@ var (
 type DynconfigData struct {
 	Scheduler    *managerv2.Scheduler
 	Applications []*managerv2.Application
+	Schedulers   []*managerv2.Scheduler
 }
 
 type DynconfigInterface interface {
@@ -430,9 +432,22 @@ func (mc *managerClient) Get() (any, error) {
 		return nil, err
 	}
 
+	listSchedulersResp, err := mc.managerClient.ListSchedulers(context.Background(), &managerv2.ListSchedulersRequest{
+		SourceType: managerv2.SourceType_SCHEDULER_SOURCE,
+		HostName:   mc.config.Server.Host,
+		Ip:         mc.config.Server.AdvertiseIP.String(),
+		HostInfo:   nil,
+		Version:    version.GitVersion,
+		Commit:     version.GitCommit,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return DynconfigData{
 		Scheduler:    getSchedulerResp,
 		Applications: listApplicationsResp.Applications,
+		Schedulers:   listSchedulers,
 	}, nil
 }
 
