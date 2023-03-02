@@ -85,6 +85,10 @@ func (b *ConsistentHashingPickerBuilder) Build(info base.PickerBuildInfo) balanc
 }
 
 func (b *ConsistentHashingPickerBuilder) GetCircle() (map[string]string, error) {
+	if b.hashring == nil {
+		return nil, errors.New("invalid hashring")
+	}
+
 	members := b.hashring.Members()
 	if reflect.DeepEqual(b.members, members) {
 		return b.circle, nil
