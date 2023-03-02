@@ -4383,12 +4383,6 @@ const docTemplate = `{
                         "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SchedulerCluster"
                     }
                 },
-                "scopes": {
-                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.JSONMap"
-                },
-                "security_group_id": {
-                    "type": "integer"
-                },
                 "updated_at": {
                     "type": "string"
                 }
@@ -4786,9 +4780,6 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
-                },
-                "scopes": {
-                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterScopes"
                 }
             }
         },
@@ -5061,6 +5052,12 @@ const docTemplate = `{
         "d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes": {
             "type": "object",
             "properties": {
+                "cidrs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "idc": {
                     "type": "string"
                 },
@@ -5076,17 +5073,6 @@ const docTemplate = `{
                     "type": "integer",
                     "maximum": 5000,
                     "minimum": 1
-                }
-            }
-        },
-        "d7y_io_dragonfly_v2_manager_types.SeedPeerClusterScopes": {
-            "type": "object",
-            "properties": {
-                "idc": {
-                    "type": "string"
-                },
-                "location": {
-                    "type": "string"
                 }
             }
         },
@@ -5351,9 +5337,6 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
-                },
-                "scopes": {
-                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterScopes"
                 }
             }
         },

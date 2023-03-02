@@ -4376,12 +4376,6 @@
                         "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SchedulerCluster"
                     }
                 },
-                "scopes": {
-                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.JSONMap"
-                },
-                "security_group_id": {
-                    "type": "integer"
-                },
                 "updated_at": {
                     "type": "string"
                 }
@@ -4779,9 +4773,6 @@
                 },
                 "name": {
                     "type": "string"
-                },
-                "scopes": {
-                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterScopes"
                 }
             }
         },
@@ -5054,6 +5045,12 @@
         "d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes": {
             "type": "object",
             "properties": {
+                "cidrs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "idc": {
                     "type": "string"
                 },
@@ -5069,17 +5066,6 @@
                     "type": "integer",
                     "maximum": 5000,
                     "minimum": 1
-                }
-            }
-        },
-        "d7y_io_dragonfly_v2_manager_types.SeedPeerClusterScopes": {
-            "type": "object",
-            "properties": {
-                "idc": {
-                    "type": "string"
-                },
-                "location": {
-                    "type": "string"
                 }
             }
         },
@@ -5344,9 +5330,6 @@
                 },
                 "name": {
                     "type": "string"
-                },
-                "scopes": {
-                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterScopes"
                 }
             }
         },

@@ -17,6 +17,7 @@
 package config
 
 import (
+	"fmt"
 	"net"
 	"net/url"
 	"os"
@@ -25,7 +26,8 @@ import (
 	"testing"
 	"time"
 
-	testifyassert "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
+	"golang.org/x/time/rate"
 	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/client/util"
@@ -36,7 +38,6 @@ import (
 )
 
 func Test_AllUnmarshalYAML(t *testing.T) {
-	assert := testifyassert.New(t)
 	var cases = []struct {
 		text   string
 		target any
@@ -158,6 +159,8 @@ diskGCThreshold: 1Ki
 	for _, c := range cases {
 		actual := reflect.New(reflect.TypeOf(c.target).Elem()).Interface()
 		err := yaml.Unmarshal([]byte(c.text), actual)
+
+		assert := assert.New(t)
 		assert.Nil(err, "yaml.Unmarshal should return nil")
 		assert.EqualValues(c.target, actual)
 	}
@@ -217,8 +220,6 @@ schedulers2:
 }
 
 func TestPeerHostOption_Load(t *testing.T) {
-	assert := testifyassert.New(t)
-
 	proxyExp, _ := NewRegexp("blobs/sha256.*")
 	hijackExp, _ := NewRegexp("mirror.aliyuncs.com:443")
 
@@ -519,5 +520,183 @@ func TestPeerHostOption_Load(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	assert := assert.New(t)
 	assert.EqualValues(peerHostOption, peerHostOptionYAML)
+}
+
+func TestPeerHostOption_Validate(t *testing.T) {
+	tests := []struct {
+		name   string
+		config *DaemonConfig
+		mock   func(cfg *DaemonConfig)
+		expect func(t *testing.T, err error)
+	}{
+		{
+			name:   "valid config",
+			config: NewDaemonConfig(),
+			mock:   func(cfg *DaemonConfig) {},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+			},
+		},
+		{
+			name:   "manager addr is not specified",
+			config: NewDaemonConfig(),
+			mock: func(cfg *DaemonConfig) {
+				cfg.Scheduler.Manager.Enable = true
+				cfg.Scheduler.Manager.NetAddrs = nil
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "manager addr is not specified")
+			},
+		},
+		{
+			name:   "manager refreshInterval not specified",
+			config: NewDaemonConfig(),
+			mock: func(cfg *DaemonConfig) {
+				cfg.Scheduler.Manager.Enable = true
+				cfg.Scheduler.Manager.RefreshInterval = 0
+				cfg.Scheduler.Manager.NetAddrs = []dfnet.NetAddr{
+					{
+						Type: dfnet.TCP,
+						Addr: "127.0.0.1:8002",
+					},
+				}
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "manager refreshInterval is not specified")
+			},
+		},
+		{
+			name:   "empty schedulers and config server is not specified",
+			config: NewDaemonConfig(),
+			mock: func(cfg *DaemonConfig) {
+				cfg.Scheduler.NetAddrs = nil
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "empty schedulers and config server is not specified")
+			},
+		},
+		{
+			name:   "download rate limit must be greater",
+			config: NewDaemonConfig(),
+			mock: func(cfg *DaemonConfig) {
+				cfg.Download.TotalRateLimit.Limit = rate.Limit(10 * unit.MB)
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				msg := fmt.Sprintf("rate limit must be greater than %s", DefaultMinRate.String())
+				assert.EqualError(err, msg)
+			},
+		},
+		{
+			name:   "upload rate limit must be greater",
+			config: NewDaemonConfig(),
+			mock: func(cfg *DaemonConfig) {
+				cfg.Upload.RateLimit.Limit = rate.Limit(10 * unit.MB)
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				msg := fmt.Sprintf("rate limit must be greater than %s", DefaultMinRate.String())
+				assert.EqualError(err, msg)
+			},
+		},
+		{
+			name:   "max replicas must be greater than 0",
+			config: NewDaemonConfig(),
+			mock: func(cfg *DaemonConfig) {
+				cfg.ObjectStorage.Enable = true
+				cfg.ObjectStorage.MaxReplicas = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "max replicas must be greater than 0")
+			},
+		},
+		{
+			name:   "reload interval too short, must great than 1 second",
+			config: NewDaemonConfig(),
+			mock: func(cfg *DaemonConfig) {
+				cfg.Reload.Interval.Duration = time.Millisecond
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "reload interval too short, must great than 1 second")
+			},
+		},
+		{
+			name:   "gcInterval must be greater than 0",
+			config: NewDaemonConfig(),
+			mock: func(cfg *DaemonConfig) {
+				cfg.GCInterval.Duration = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "gcInterval must be greater than 0")
+			},
+		},
+		{
+			name:   "security requires parameter caCert",
+			config: NewDaemonConfig(),
+			mock: func(cfg *DaemonConfig) {
+				cfg.Security.AutoIssueCert = true
+				cfg.Security.CACert = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "security requires parameter caCert")
+			},
+		},
+		{
+			name:   "certSpec requires parameter ipAddresses",
+			config: NewDaemonConfig(),
+			mock: func(cfg *DaemonConfig) {
+				cfg.Security.AutoIssueCert = true
+				cfg.Security.CACert = "test"
+				cfg.Security.CertSpec.IPAddresses = nil
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "certSpec requires parameter ipAddresses")
+			},
+		},
+		{
+			name:   "certSpec requires parameter dnsNames",
+			config: NewDaemonConfig(),
+			mock: func(cfg *DaemonConfig) {
+				cfg.Security.AutoIssueCert = true
+				cfg.Security.CACert = "test"
+				cfg.Security.CertSpec.IPAddresses = []net.IP{net.ParseIP("127.0.0.1")}
+				cfg.Security.CertSpec.DNSNames = nil
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "certSpec requires parameter dnsNames")
+			},
+		},
+		{
+			name:   "certSpec requires parameter validityPeriod",
+			config: NewDaemonConfig(),
+			mock: func(cfg *DaemonConfig) {
+				cfg.Security.AutoIssueCert = true
+				cfg.Security.CACert = "testcert"
+				cfg.Security.CertSpec.ValidityPeriod = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "certSpec requires parameter validityPeriod")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.mock(tc.config)
+			tc.expect(t, tc.config.Validate())
+		})
+	}
 }

@@ -25,7 +25,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/model"
 )
 
-func TestSchedulerCluster(t *testing.T) {
+func TestSearcher_FindSchedulerClusters(t *testing.T) {
 	pluginDir := "."
 	tests := []struct {
 		name              string
@@ -33,15 +33,6 @@ func TestSchedulerCluster(t *testing.T) {
 		conditions        map[string]string
 		expect            func(t *testing.T, data []model.SchedulerCluster, err error)
 	}{
-		{
-			name:              "conditions is empty",
-			schedulerClusters: []model.SchedulerCluster{{Name: "foo"}},
-			conditions:        map[string]string{},
-			expect: func(t *testing.T, data []model.SchedulerCluster, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "empty conditions")
-			},
-		},
 		{
 			name:              "scheduler clusters is empty",
 			schedulerClusters: []model.SchedulerCluster{},
@@ -281,6 +272,40 @@ func TestSchedulerCluster(t *testing.T) {
 				assert := assert.New(t)
 				assert.Equal(data[0].Name, "bar")
 				assert.Equal(data[1].Name, "foo")
+				assert.Equal(len(data), 2)
+			},
+		},
+		{
+			name: "match according to cidr condition",
+			schedulerClusters: []model.SchedulerCluster{
+				{
+					Name: "foo",
+					Scopes: map[string]any{
+						"cidrs": []string{"128.168.1.0/24"},
+					},
+					Schedulers: []model.Scheduler{
+						{
+							HostName: "foo",
+							State:    "active",
+						},
+					},
+				},
+				{
+					Name:   "bar",
+					Scopes: map[string]any{},
+					Schedulers: []model.Scheduler{
+						{
+							HostName: "bar",
+							State:    "active",
+						},
+					},
+				},
+			},
+			conditions: map[string]string{},
+			expect: func(t *testing.T, data []model.SchedulerCluster, err error) {
+				assert := assert.New(t)
+				assert.Equal(data[0].Name, "foo")
+				assert.Equal(data[1].Name, "bar")
 				assert.Equal(len(data), 2)
 			},
 		},
@@ -596,6 +621,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Scopes: map[string]any{
 						"idc":      "IDC-1",
 						"location": "LOCATION-2",
+						"cidrs":    []string{"128.168.1.0/24"},
 					},
 					SecurityGroup: model.SecurityGroup{
 						SecurityRules: []model.SecurityRule{
@@ -616,6 +642,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Scopes: map[string]any{
 						"idc":      "IDC-1",
 						"location": "LOCATION-1",
+						"cidrs":    []string{"128.168.1.0/24"},
 					},
 					SecurityGroup: model.SecurityGroup{
 						SecurityRules: []model.SecurityRule{
@@ -636,6 +663,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Scopes: map[string]any{
 						"idc":      "IDC-1",
 						"location": "LOCATION-1|LOCATION-2",
+						"cidrs":    []string{"128.168.1.0/24"},
 					},
 					Schedulers: []model.Scheduler{
 						{
@@ -649,6 +677,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Scopes: map[string]any{
 						"idc":      "IDC-1",
 						"location": "LOCATION-2",
+						"cidrs":    []string{"128.168.1.0/24"},
 					},
 					Schedulers: []model.Scheduler{
 						{
@@ -663,6 +692,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Scopes: map[string]any{
 						"idc":      "IDC-1",
 						"location": "LOCATION-2",
+						"cidrs":    []string{"128.168.1.0/24"},
 					},
 					SecurityGroup: model.SecurityGroup{
 						SecurityRules: []model.SecurityRule{
@@ -683,6 +713,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Scopes: map[string]any{
 						"idc":      "IDC-1",
 						"location": "LOCATION-2",
+						"cidrs":    []string{"128.168.1.0/24"},
 					},
 					SecurityGroup: model.SecurityGroup{
 						SecurityRules: []model.SecurityRule{
@@ -720,7 +751,7 @@ func TestSchedulerCluster(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			searcher := New(pluginDir)
-			clusters, found := searcher.FindSchedulerClusters(context.Background(), tc.schedulerClusters, "foo", "127.0.0.1", tc.conditions)
+			clusters, found := searcher.FindSchedulerClusters(context.Background(), tc.schedulerClusters, "128.168.1.0", "foo", tc.conditions)
 			tc.expect(t, clusters, found)
 		})
 	}

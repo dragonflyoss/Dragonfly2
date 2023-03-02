@@ -155,7 +155,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			}
 		}
 
-		managerClient, err = managerclient.GetV1ByAddr(
+		managerClient, err = managerclient.GetV1ByNetAddrs(
 			context.Background(), opt.Scheduler.Manager.NetAddrs, grpc.WithTransportCredentials(grpcCredentials))
 		if err != nil {
 			return nil, err
@@ -210,14 +210,13 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			config.ManagerSourceType, opt,
 			config.WithManagerClient(managerClient),
 			config.WithCacheDir(filepath.Join(d.CacheDir(), internaldynconfig.CacheDirName)),
-			config.WithExpireTime(opt.Scheduler.Manager.RefreshInterval),
 			config.WithTransportCredentials(grpcCredentials),
 		)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		dynconfig, err = config.NewDynconfig(config.LocalSourceType, opt)
+		dynconfig, err = config.NewDynconfig(config.LocalSourceType, opt, config.WithTransportCredentials(grpcCredentials))
 		if err != nil {
 			return nil, err
 		}
@@ -311,6 +310,8 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	if err != nil {
 		return nil, err
 	}
+	// register notify for health check
+	dynconfig.Register(rpcManager)
 
 	proxyManager, err := proxy.NewProxyManager(host, peerTaskManager, opt.Proxy)
 	if err != nil {
@@ -723,6 +724,7 @@ func (cd *clientDaemon) Serve() error {
 		return nil
 	})
 
+	// when there is no manager configured, watch schedulers in local config
 	if cd.managerClient == nil {
 		watchers = append(watchers, cd.dynconfig.OnNotify)
 	}
