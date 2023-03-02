@@ -63,6 +63,9 @@ type Config struct {
 	// Security configuration.
 	Security SecurityConfig `yaml:"security" mapstructure:"security"`
 
+	//Trainer configuration.
+	Trainer TrainerConfig `yaml:"trainer" mapstructure:"trainer"`
+
 	// Network configuration.
 	Network NetworkConfig `yaml:"network" mapstructure:"network"`
 
@@ -316,6 +319,50 @@ type ProbeConfig struct {
 	SyncCount int `mapstructure:"syncCount" yaml:"syncCount"`
 }
 
+type TrainerConfig struct {
+	// Enable training.
+	Enable bool `yaml:"enable" mapstructure:"enable"`
+
+	// RefreshInterval is the interval for refreshing model.
+	RefreshInterval time.Duration `yaml:"refreshInterval" mapstructure:"refreshInterval"`
+
+	// IP is trainer's listen ip, like: 0.0.0.0, 192.168.0.1.
+	IP net.IP `yaml:"IP" mapstructure:"IP"`
+
+	// Server port.
+	Port int `yaml:"port" mapstructure:"port"`
+
+	// NetworkRecord is the configuration of network record.
+	NetworkRecord NetworkRecordConfig `yaml:"networkRecord" mapstructure:"networkRecord"`
+
+	// HistoricalRecord is the configuration of historical record.
+	HistoricalRecord HistoricalRecordConfig `yaml:"historicalRecord" mapstructure:"historicalRecord"`
+}
+
+// Network record for ai model training configuration
+type NetworkRecordConfig struct {
+	// Network record storage address.
+	Addr string `yaml:"addr" mapstructure:"addr"`
+
+	// MaxSize sets the total maximum size in megabytes of network records in one training process.
+	MaxSize int `yaml:"maxSize" mapstructure:"maxSize"`
+
+	// UnitSize sets the unit size in megabytes of the network record.
+	UnitSize int `yaml:"unitSize" mapstructure:"unitSize"`
+}
+
+// Historical record for ai model training configuration
+type HistoricalRecordConfig struct {
+	// Historical record storage address.
+	Addr string `yaml:"addr" mapstructure:"addr"`
+
+	// MaxSize sets the total maximum size in megabytes of historical records in one training process.
+	MaxSize int `yaml:"maxSize" mapstructure:"maxSize"`
+
+	// UnitSize sets the unit size in megabytes of the historical record.
+	UnitSize int `yaml:"unitSize" mapstructure:"unitSize"`
+}
+
 // New default configuration.
 func New() *Config {
 	return &Config{
@@ -392,6 +439,22 @@ func New() *Config {
 				QueueLength:  DefaultProbeQueueLength,
 				SyncInterval: DefaultProbeSyncInterval,
 				SyncCount:    DefaultProbeSyncCount,
+			},
+		},
+		Trainer: TrainerConfig{
+			Enable:          true,
+			RefreshInterval: DefaultRefreshInterval,
+			IP:              DefaultTrainerIP,
+			Port:            DefaultTrainerPort,
+			NetworkRecord: NetworkRecordConfig{
+				Addr:     DefaultNetworkRcordAddr,
+				MaxSize:  DefaultNetworkRcordMaxSize,
+				UnitSize: DefaultHistoricalRecordUnitSize,
+			},
+			HistoricalRecord: HistoricalRecordConfig{
+				Addr:     DefaultHistoricalRecordAddr,
+				MaxSize:  DefaultHistoricalRecordMaxSize,
+				UnitSize: DefaultHistoricalRecordUnitSize,
 			},
 		},
 	}
@@ -557,6 +620,30 @@ func (cfg *Config) Validate() error {
 
 	if cfg.NetworkTopology.Probe.SyncCount <= 0 {
 		return errors.New("probe requires parameter SyncCount")
+	}
+
+	if cfg.Trainer.Enable {
+		if cfg.Trainer.RefreshInterval <= 0 {
+			return errors.New("trainer requires parameter RefreshInterval")
+		}
+		if cfg.Trainer.NetworkRecord.Addr == "" {
+			return errors.New("networkRecord requires parameter Addr")
+		}
+		if cfg.Trainer.NetworkRecord.MaxSize <= 0 {
+			return errors.New("networkRecord requires parameter MaxSize")
+		}
+		if cfg.Trainer.NetworkRecord.UnitSize <= 0 {
+			return errors.New("networkRecord requires parameter UnitSize")
+		}
+		if cfg.Trainer.HistoricalRecord.Addr == "" {
+			return errors.New("storicalRecord requires parameter Addr")
+		}
+		if cfg.Trainer.HistoricalRecord.MaxSize <= 0 {
+			return errors.New("historicalRecord requires parameter MaxSize")
+		}
+		if cfg.Trainer.HistoricalRecord.UnitSize <= 0 {
+			return errors.New("historicalRecord requires parameter UnitSize")
+		}
 	}
 
 	return nil

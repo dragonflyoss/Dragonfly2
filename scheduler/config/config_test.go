@@ -122,6 +122,22 @@ func TestConfig_Load(t *testing.T) {
 				SyncCount:    50,
 			},
 		},
+		Trainer: TrainerConfig{
+			Enable:          true,
+			RefreshInterval: 3 * 24 * time.Hour,
+			IP:              net.ParseIP("127.0.0.1"),
+			Port:            8009,
+			NetworkRecord: NetworkRecordConfig{
+				Addr:     "/networkRecord/",
+				MaxSize:  1024,
+				UnitSize: 100,
+			},
+			HistoricalRecord: HistoricalRecordConfig{
+				Addr:     "/historicalRecord/",
+				MaxSize:  1024,
+				UnitSize: 100,
+			},
+		},
 	}
 
 	schedulerConfigYAML := &Config{}

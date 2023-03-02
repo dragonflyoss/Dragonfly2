@@ -168,3 +168,41 @@ const (
 	// DefaultProbeSyncCount is the default number of probing hosts.
 	DefaultProbeSyncCount = 50
 )
+
+var (
+	// DefaultTrainerIP is the default ip for trainer
+	DefaultTrainerIP = net.ParseIP("127.0.0.1")
+
+	// DefaultTrainerPort is the default port for trainer
+	DefaultTrainerPort = 8009
+)
+
+const (
+	// TODO(fyx): The default setting needs to be changed after testing.
+	// DefaultRefreshInterval is the default interval for refreshing model.
+	DefaultRefreshInterval = 3 * 24 * time.Hour
+
+	// TODO(fyx): The default setting needs to be changed after testing.
+	// DefaultStorageBufferSize is the default network record storage address.
+	DefaultNetworkRcordAddr = "/networkRecord/"
+
+	// TODO(fyx): The default setting needs to be changed after testing.
+	// DefaultNetworkRcordMaxSize is the default total maximum size in megabytes of network records in one training process
+	DefaultNetworkRcordMaxSize = 1024
+
+	// TODO(fyx): The default setting needs to be changed after testing.
+	// DefaultNetworkRcordUnitSize is unit size in megabytes of the network record.
+	DefaultNetworkRcordUnitSize = 100
+
+	// TODO(fyx): The default setting needs to be changed after testing.
+	// DefaultHistoricalRecordAddr is the default historical record storage address.
+	DefaultHistoricalRecordAddr = "/historicalRecord/"
+
+	// TODO(fyx): The default setting needs to be changed after testing.
+	// DefaultNetworkRcordMaxSize is the default total maximum size in megabytes of historical records in one training process
+	DefaultHistoricalRecordMaxSize = 1024
+
+	// TODO(fyx): The default setting needs to be changed after testing.
+	// DefaultHistoricalRecordUnitSize is unit size in megabytes of the historical record.
+	DefaultHistoricalRecordUnitSize = 100
+)
