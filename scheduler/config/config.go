@@ -645,7 +645,6 @@ func (cfg *Config) Validate() error {
 			return errors.New("historicalRecord requires parameter UnitSize")
 		}
 	}
-
 	return nil
 }
 
