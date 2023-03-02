@@ -44,7 +44,7 @@ type SchedulerResolver struct {
 	dynconfig config.Dynconfig
 }
 
-// SchedulerRegister register the dragonfly resovler builder to the grpc with custom schema.
+// RegisterScheduler registers the dragonfly resolver builder to the grpc with custom schema.
 func RegisterScheduler(dynconfig config.Dynconfig) {
 	resolver.Register(&SchedulerResolver{dynconfig: dynconfig})
 }

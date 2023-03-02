@@ -310,6 +310,8 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	if err != nil {
 		return nil, err
 	}
+	// register notify for health check
+	dynconfig.Register(rpcManager)
 
 	proxyManager, err := proxy.NewProxyManager(host, peerTaskManager, opt.Proxy)
 	if err != nil {
@@ -722,6 +724,7 @@ func (cd *clientDaemon) Serve() error {
 		return nil
 	})
 
+	// when there is no manager configured, watch schedulers in local config
 	if cd.managerClient == nil {
 		watchers = append(watchers, cd.dynconfig.OnNotify)
 	}

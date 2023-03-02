@@ -27,7 +27,6 @@ import (
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/reflection"
@@ -55,8 +54,12 @@ const (
 	DefaultMaxConnectionAgeGrace = 5 * time.Minute
 )
 
+type DaemonServer interface {
+	dfdaemonv1.DaemonServer
+}
+
 // New returns a grpc server instance and register service on grpc server.
-func New(svr dfdaemonv1.DaemonServer, opts ...grpc.ServerOption) *grpc.Server {
+func New(svr dfdaemonv1.DaemonServer, healthServer healthpb.HealthServer, opts ...grpc.ServerOption) *grpc.Server {
 	limiter := rpc.NewRateLimiterInterceptor(DefaultQPS, DefaultBurst)
 
 	grpcServer := grpc.NewServer(append([]grpc.ServerOption{
@@ -89,7 +92,7 @@ func New(svr dfdaemonv1.DaemonServer, opts ...grpc.ServerOption) *grpc.Server {
 	dfdaemonv1.RegisterDaemonServer(grpcServer, svr)
 
 	// Register health on grpc server.
-	healthpb.RegisterHealthServer(grpcServer, health.NewServer())
+	healthpb.RegisterHealthServer(grpcServer, healthServer)
 
 	// Register reflection on grpc server.
 	reflection.Register(grpcServer)

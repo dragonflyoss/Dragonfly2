@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/health"
 
 	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
@@ -365,7 +366,11 @@ func Test_ObtainSeeds(t *testing.T) {
 }
 
 func setupSeederServerAndClient(t *testing.T, srv *server, sd *seeder, assert *testifyassert.Assertions, serveFunc func(listener net.Listener) error) (int, client.Client) {
-	srv.peerServer = dfdaemonserver.New(srv)
+	if srv.healthServer == nil {
+		srv.healthServer = health.NewServer()
+	}
+
+	srv.peerServer = dfdaemonserver.New(srv, srv.healthServer)
 	cdnsystemv1.RegisterSeederServer(srv.peerServer, sd)
 
 	port, err := freeport.GetFreePort()

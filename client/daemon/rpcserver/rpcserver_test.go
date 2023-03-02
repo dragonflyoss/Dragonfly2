@@ -29,6 +29,7 @@ import (
 	"github.com/phayes/freeport"
 	testifyassert "github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
@@ -673,13 +674,12 @@ func TestServer_ServeDownload(t *testing.T) {
 			}()
 			return ch, false, nil
 		})
-	m := &server{
+	s := &server{
 		KeepAlive:       util.NewKeepAlive("test"),
 		peerHost:        &schedulerv1.PeerHost{},
 		peerTaskManager: mockPeerTaskManager,
 	}
-	m.downloadServer = dfdaemonserver.New(m)
-	client := setupPeerServerAndClient(t, m, assert, m.ServeDownload)
+	client := setupPeerServerAndClient(t, s, assert, s.ServeDownload)
 	request := &dfdaemonv1.DownRequest{
 		Uuid:              uuid.Generate().String(),
 		Url:               "http://localhost/test",
@@ -745,7 +745,6 @@ func TestServer_ServePeer(t *testing.T) {
 		peerHost:       &schedulerv1.PeerHost{},
 		storageManager: mockStorageManger,
 	}
-	s.peerServer = dfdaemonserver.New(s)
 	client := setupPeerServerAndClient(t, s, assert, s.ServePeer)
 	defer s.peerServer.GracefulStop()
 
@@ -1143,7 +1142,11 @@ func TestServer_SyncPieceTasks(t *testing.T) {
 }
 
 func setupPeerServerAndClient(t *testing.T, srv *server, assert *testifyassert.Assertions, serveFunc func(listener net.Listener) error) dfdaemonclient.V1 {
-	srv.peerServer = dfdaemonserver.New(srv)
+	if srv.healthServer == nil {
+		srv.healthServer = health.NewServer()
+	}
+	srv.downloadServer = dfdaemonserver.New(srv, srv.healthServer)
+	srv.peerServer = dfdaemonserver.New(srv, srv.healthServer)
 	port, err := freeport.GetFreePort()
 	if err != nil {
 		t.Fatal(err)

@@ -43,6 +43,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	grpcpeer "google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -71,6 +73,7 @@ type Server interface {
 	util.KeepAlive
 	ServeDownload(listener net.Listener) error
 	ServePeer(listener net.Listener) error
+	OnNotify(*config.DynconfigData)
 	Stop()
 }
 
@@ -80,6 +83,7 @@ type server struct {
 	peerTaskManager peer.TaskManager
 	storageManager  storage.Manager
 
+	healthServer   *health.Server
 	downloadServer *grpc.Server
 	peerServer     *grpc.Server
 	uploadAddr     string
@@ -105,14 +109,19 @@ func New(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskManager,
 
 		recursiveConcurrent:    recursiveConcurrent,
 		cacheRecursiveMetadata: cacheRecursiveMetadata,
+
+		healthServer: health.NewServer(),
 	}
 
 	sd := &seeder{
 		server: s,
 	}
 
-	s.downloadServer = dfdaemonserver.New(s, downloadOpts...)
-	s.peerServer = dfdaemonserver.New(s, peerOpts...)
+	// set not serving by default
+	s.healthServer.SetServingStatus("", healthpb.HealthCheckResponse_NOT_SERVING)
+
+	s.downloadServer = dfdaemonserver.New(s, s.healthServer, downloadOpts...)
+	s.peerServer = dfdaemonserver.New(s, s.healthServer, peerOpts...)
 	cdnsystemv1.RegisterSeederServer(s.peerServer, sd)
 	return s, nil
 }
@@ -124,6 +133,14 @@ func (s *server) ServeDownload(listener net.Listener) error {
 func (s *server) ServePeer(listener net.Listener) error {
 	s.uploadAddr = fmt.Sprintf("%s:%d", s.peerHost.Ip, s.peerHost.DownPort)
 	return s.peerServer.Serve(listener)
+}
+
+func (s *server) OnNotify(data *config.DynconfigData) {
+	if len(data.Schedulers) > 0 {
+		s.healthServer.SetServingStatus("", healthpb.HealthCheckResponse_SERVING)
+	} else {
+		s.healthServer.SetServingStatus("", healthpb.HealthCheckResponse_NOT_SERVING)
+	}
 }
 
 func (s *server) Stop() {

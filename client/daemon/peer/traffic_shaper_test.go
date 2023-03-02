@@ -36,6 +36,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/status"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
@@ -163,7 +164,8 @@ func trafficShaperSetupPeerTaskManagerComponents(ctrl *gomock.Controller, opt tr
 	})
 
 	go func() {
-		if err := daemonserver.New(daemon).Serve(ln); err != nil {
+		hs := health.NewServer()
+		if err := daemonserver.New(daemon, hs).Serve(ln); err != nil {
 			panic(err)
 		}
 	}()
