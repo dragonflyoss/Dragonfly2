@@ -86,7 +86,7 @@ func (s *schedulerServerV1) AnnounceTask(ctx context.Context, req *schedulerv1.A
 	metrics.AnnounceTaskCount.Inc()
 	if err := s.service.AnnounceTask(ctx, req); err != nil {
 		metrics.AnnounceTaskFailureCount.Inc()
-		return new(emptypb.Empty), err
+		return nil, err
 	}
 
 	return new(emptypb.Empty), nil
@@ -95,13 +95,13 @@ func (s *schedulerServerV1) AnnounceTask(ctx context.Context, req *schedulerv1.A
 // StatTask checks if the given task exists.
 func (s *schedulerServerV1) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest) (*schedulerv1.Task, error) {
 	metrics.StatTaskCount.Inc()
-	task, err := s.service.StatTask(ctx, req)
+	resp, err := s.service.StatTask(ctx, req)
 	if err != nil {
 		metrics.StatTaskFailureCount.Inc()
 		return nil, err
 	}
 
-	return task, nil
+	return resp, nil
 }
 
 // LeaveTask makes the peer unschedulable.
@@ -114,8 +114,9 @@ func (s *schedulerServerV1) AnnounceHost(ctx context.Context, req *schedulerv1.A
 	metrics.AnnounceHostCount.WithLabelValues(req.Os, req.Platform, req.PlatformFamily, req.PlatformVersion,
 		req.KernelVersion, req.Build.GitVersion, req.Build.GitCommit, req.Build.GoVersion, req.Build.Platform).Inc()
 	if err := s.service.AnnounceHost(ctx, req); err != nil {
-		metrics.AnnounceHostFailureCount.Inc()
-		return new(emptypb.Empty), err
+		metrics.AnnounceHostFailureCount.WithLabelValues(req.Os, req.Platform, req.PlatformFamily, req.PlatformVersion,
+			req.KernelVersion, req.Build.GitVersion, req.Build.GitCommit, req.Build.GoVersion, req.Build.Platform).Inc()
+		return nil, err
 	}
 
 	return new(emptypb.Empty), nil
@@ -126,7 +127,7 @@ func (s *schedulerServerV1) LeaveHost(ctx context.Context, req *schedulerv1.Leav
 	metrics.LeaveHostCount.Inc()
 	if err := s.service.LeaveHost(ctx, req); err != nil {
 		metrics.LeaveHostFailureCount.Inc()
-		return new(emptypb.Empty), err
+		return nil, err
 	}
 
 	return new(emptypb.Empty), nil

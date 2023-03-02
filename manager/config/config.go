@@ -395,7 +395,7 @@ func (cfg *Config) Validate() error {
 		return errors.New("database requires parameter type")
 	}
 
-	if cfg.Database.Type == DatabaseTypeMysql || cfg.Database.Type == DatabaseTypeMariaDB {
+	if slices.Contains([]string{DatabaseTypeMysql, DatabaseTypeMariaDB}, cfg.Database.Type) {
 		if cfg.Database.Mysql.User == "" {
 			return errors.New("mysql requires parameter user")
 		}
@@ -465,18 +465,8 @@ func (cfg *Config) Validate() error {
 		return errors.New("redis requires parameter addrs")
 	}
 
-	if len(cfg.Database.Redis.Addrs) == 1 {
-		if cfg.Database.Redis.DB < 0 {
-			return errors.New("redis requires parameter db")
-		}
-
-		if cfg.Database.Redis.BrokerDB < 0 {
-			return errors.New("redis requires parameter brokerDB")
-		}
-
-		if cfg.Database.Redis.BackendDB < 0 {
-			return errors.New("redis requires parameter backendDB")
-		}
+	if cfg.Database.Redis.DB < 0 {
+		return errors.New("redis requires parameter db")
 	}
 
 	if cfg.Database.Redis.BrokerDB < 0 {
@@ -517,6 +507,12 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	if cfg.Metrics.Enable {
+		if cfg.Metrics.Addr == "" {
+			return errors.New("metrics requires parameter addr")
+		}
+	}
+
 	if cfg.Security.AutoIssueCert {
 		if cfg.Security.CACert == "" {
 			return errors.New("security requires parameter caCert")
@@ -537,11 +533,9 @@ func (cfg *Config) Validate() error {
 		if len(cfg.Security.CertSpec.DNSNames) == 0 {
 			return errors.New("certSpec requires parameter dnsNames")
 		}
-	}
 
-	if cfg.Metrics.Enable {
-		if cfg.Metrics.Addr == "" {
-			return errors.New("metrics requires parameter addr")
+		if cfg.Security.CertSpec.ValidityPeriod <= 0 {
+			return errors.New("certSpec requires parameter validityPeriod")
 		}
 	}
 

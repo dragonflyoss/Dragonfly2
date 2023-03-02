@@ -538,6 +538,7 @@ func (v *V1) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequ
 		return nil
 	}
 
+	// Host already exists and updates properties.
 	host.Port = req.Port
 	host.DownloadPort = req.DownloadPort
 	host.Type = types.ParseHostType(req.Type)
@@ -547,6 +548,10 @@ func (v *V1) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequ
 	host.PlatformVersion = req.PlatformVersion
 	host.KernelVersion = req.KernelVersion
 	host.UpdatedAt.Store(time.Now())
+
+	if concurrentUploadLimit > 0 {
+		host.ConcurrentUploadLimit.Store(concurrentUploadLimit)
+	}
 
 	if req.Cpu != nil {
 		host.CPU = resource.CPU{
@@ -610,10 +615,6 @@ func (v *V1) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequ
 			GoVersion:  req.Build.GoVersion,
 			Platform:   req.Build.Platform,
 		}
-	}
-
-	if concurrentUploadLimit > 0 {
-		host.ConcurrentUploadLimit.Store(concurrentUploadLimit)
 	}
 
 	return nil

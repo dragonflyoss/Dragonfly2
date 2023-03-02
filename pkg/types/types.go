@@ -109,8 +109,8 @@ const (
 )
 
 // Name returns the name of host type.
-func (h *HostType) Name() string {
-	switch *h {
+func (h HostType) Name() string {
+	switch h {
 	case HostTypeSuperSeed:
 		return HostTypeSuperSeedName
 	case HostTypeStrongSeed:

@@ -22,11 +22,11 @@ import (
 	"path"
 	"testing"
 
-	testifyassert "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestLoadPlugin(t *testing.T) {
-	assert := testifyassert.New(t)
+	assert := assert.New(t)
 	defer func() {
 		os.Remove("./testdata/d7y-manager-plugin-searcher.so")
 		os.Remove("./testdata/test")

@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"time"
@@ -31,7 +32,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
-	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/status"
 
@@ -171,12 +171,6 @@ func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 		resolveAddrs []resolver.Address
 	)
 	for _, seedPeer := range seedPeers {
-		ip, ok := ip.FormatIP(seedPeer.Ip)
-		if !ok {
-			continue
-		}
-
-		addr := fmt.Sprintf("%s:%d", ip, seedPeer.Port)
 		dialOptions := []grpc.DialOption{}
 		if d.transportCredentials != nil {
 			dialOptions = append(dialOptions, grpc.WithTransportCredentials(d.transportCredentials))
@@ -184,15 +178,28 @@ func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 			dialOptions = append(dialOptions, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		}
 
-		healthClient, err := healthclient.GetClient(context.Background(), addr, dialOptions...)
-		if err != nil {
-			logger.Errorf("get health client %s failed: %s", addr, err.Error())
-			continue
-		}
-		defer healthClient.Close()
+		var addr string
+		if ip, ok := ip.FormatIP(seedPeer.GetIp()); ok {
+			// Check health with ip address.
+			target := fmt.Sprintf("%s:%d", ip, seedPeer.GetPort())
+			if err := healthclient.Check(context.Background(), target, dialOptions...); err != nil {
+				logger.Warnf("seed peer ip address %s is unreachable: %s", addr, err.Error())
 
-		if err := healthClient.Check(context.Background(), &healthpb.HealthCheckRequest{}); err != nil {
-			logger.Errorf("seed peer address %s is unreachable: %s", addr, err.Error())
+				// Check health with host address.
+				target = fmt.Sprintf("%s:%d", seedPeer.GetHostName(), seedPeer.GetPort())
+				if err := healthclient.Check(context.Background(), target, dialOptions...); err != nil {
+					logger.Warnf("seed peer host address %s is unreachable: %s", addr, err.Error())
+				} else {
+					addr = target
+				}
+			} else {
+				addr = target
+			}
+		}
+
+		if addr == "" {
+			logger.Warnf("seed peer %s %s %s has not reachable addresses",
+				seedPeer.GetIp(), seedPeer.GetHostName(), seedPeer.GetPort())
 			continue
 		}
 
@@ -200,8 +207,13 @@ func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 			continue
 		}
 
+		host, _, err := net.SplitHostPort(addr)
+		if err != nil {
+			continue
+		}
+
 		resolveAddrs = append(resolveAddrs, resolver.Address{
-			ServerName: seedPeer.Ip,
+			ServerName: host,
 			Addr:       addr,
 		})
 		addrs[addr] = true

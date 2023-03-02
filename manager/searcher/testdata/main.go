@@ -32,7 +32,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	clusters, err := s.FindSchedulerClusters(context.Background(), []model.SchedulerCluster{}, "foo", "127.0.0.1", map[string]string{})
+	clusters, err := s.FindSchedulerClusters(context.Background(), []model.SchedulerCluster{}, "127.0.0.1", "foo", map[string]string{})
 	if err != nil {
 		fmt.Println("scheduler cluster not found")
 		os.Exit(1)

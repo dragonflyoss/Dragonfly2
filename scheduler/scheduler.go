@@ -111,7 +111,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 
 	// Initialize manager client.
-	managerClient, err := managerclient.GetV2(ctx, cfg.Manager.Addr, managerDialOptions...)
+	managerClient, err := managerclient.GetV2ByAddr(ctx, cfg.Manager.Addr, managerDialOptions...)
 	if err != nil {
 		return nil, err
 	}
