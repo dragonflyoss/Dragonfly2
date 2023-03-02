@@ -515,8 +515,8 @@ func (p *Peer) DownloadFile() ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
-// GetPriority returns priority of peer.
-func (p *Peer) GetPriority(dynconfig config.DynconfigInterface) commonv2.Priority {
+// CalculatePriority returns priority of peer.
+func (p *Peer) CalculatePriority(dynconfig config.DynconfigInterface) commonv2.Priority {
 	if p.Priority != commonv2.Priority_LEVEL0 {
 		return p.Priority
 	}

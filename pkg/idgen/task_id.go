@@ -17,6 +17,7 @@
 package idgen
 
 import (
+	"fmt"
 	"strings"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
@@ -91,11 +92,11 @@ func parseFilters(rawFilters string) []string {
 }
 
 // TaskIDV2 generates v2 version of task id.
-func TaskIDV2(url, digest, tag, application string, filters []string) string {
+func TaskIDV2(url, digest, tag, application string, pieceLength int32, filters []string) string {
 	url, err := neturl.FilterQuery(url, filters)
 	if err != nil {
 		url = ""
 	}
 
-	return pkgdigest.SHA256FromStrings(url, digest, tag, application)
+	return pkgdigest.SHA256FromStrings(url, digest, tag, application, fmt.Sprint(pieceLength))
 }

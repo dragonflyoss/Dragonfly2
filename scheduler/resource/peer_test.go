@@ -886,7 +886,7 @@ func TestPeer_DownloadFile(t *testing.T) {
 	}
 }
 
-func TestPeer_GetPriority(t *testing.T) {
+func TestPeer_CalculatePriority(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(peer *Peer, md *configmocks.MockDynconfigInterfaceMockRecorder)
@@ -1009,7 +1009,7 @@ func TestPeer_GetPriority(t *testing.T) {
 			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
 			tc.mock(peer, dynconfig.EXPECT())
-			tc.expect(t, peer.GetPriority(dynconfig))
+			tc.expect(t, peer.CalculatePriority(dynconfig))
 		})
 	}
 }
