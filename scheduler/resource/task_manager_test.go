@@ -315,14 +315,7 @@ func TestTaskManager_RunGC(t *testing.T) {
 				taskManager.Store(mockTask)
 				err := taskManager.RunGC()
 				assert.NoError(err)
-
-				task, loaded := taskManager.Load(mockTask.ID)
-				assert.Equal(loaded, true)
-				assert.Equal(task.FSM.Current(), TaskStateLeave)
-
-				err = taskManager.RunGC()
-				assert.NoError(err)
-				_, loaded = taskManager.Load(mockTask.ID)
+				_, loaded := taskManager.Load(mockTask.ID)
 				assert.Equal(loaded, false)
 			},
 		},

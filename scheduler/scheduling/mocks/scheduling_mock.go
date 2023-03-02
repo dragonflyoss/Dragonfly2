@@ -51,26 +51,28 @@ func (mr *MockSchedulingMockRecorder) FindCandidateParents(arg0, arg1, arg2 inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindCandidateParents", reflect.TypeOf((*MockScheduling)(nil).FindCandidateParents), arg0, arg1, arg2)
 }
 
-// ScheduleCandidateParentsForNormalPeer mocks base method.
-func (m *MockScheduling) ScheduleCandidateParentsForNormalPeer(arg0 context.Context, arg1 *resource.Peer, arg2 set.SafeSet[string]) {
+// ScheduleCandidateParents mocks base method.
+func (m *MockScheduling) ScheduleCandidateParents(arg0 context.Context, arg1 *resource.Peer, arg2 set.SafeSet[string]) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "ScheduleCandidateParentsForNormalPeer", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "ScheduleCandidateParents", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
-// ScheduleCandidateParentsForNormalPeer indicates an expected call of ScheduleCandidateParentsForNormalPeer.
-func (mr *MockSchedulingMockRecorder) ScheduleCandidateParentsForNormalPeer(arg0, arg1, arg2 interface{}) *gomock.Call {
+// ScheduleCandidateParents indicates an expected call of ScheduleCandidateParents.
+func (mr *MockSchedulingMockRecorder) ScheduleCandidateParents(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScheduleCandidateParentsForNormalPeer", reflect.TypeOf((*MockScheduling)(nil).ScheduleCandidateParentsForNormalPeer), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScheduleCandidateParents", reflect.TypeOf((*MockScheduling)(nil).ScheduleCandidateParents), arg0, arg1, arg2)
 }
 
-// ScheduleParentsForNormalPeer mocks base method.
-func (m *MockScheduling) ScheduleParentsForNormalPeer(arg0 context.Context, arg1 *resource.Peer, arg2 set.SafeSet[string]) {
+// ScheduleParentAndCandidateParents mocks base method.
+func (m *MockScheduling) ScheduleParentAndCandidateParents(arg0 context.Context, arg1 *resource.Peer, arg2 set.SafeSet[string]) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "ScheduleParentsForNormalPeer", arg0, arg1, arg2)
+	m.ctrl.Call(m, "ScheduleParentAndCandidateParents", arg0, arg1, arg2)
 }
 
-// ScheduleParentsForNormalPeer indicates an expected call of ScheduleParentsForNormalPeer.
-func (mr *MockSchedulingMockRecorder) ScheduleParentsForNormalPeer(arg0, arg1, arg2 interface{}) *gomock.Call {
+// ScheduleParentAndCandidateParents indicates an expected call of ScheduleParentAndCandidateParents.
+func (mr *MockSchedulingMockRecorder) ScheduleParentAndCandidateParents(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScheduleParentsForNormalPeer", reflect.TypeOf((*MockScheduling)(nil).ScheduleParentsForNormalPeer), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScheduleParentAndCandidateParents", reflect.TypeOf((*MockScheduling)(nil).ScheduleParentAndCandidateParents), arg0, arg1, arg2)
 }

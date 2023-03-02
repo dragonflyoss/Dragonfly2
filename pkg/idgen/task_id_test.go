@@ -113,6 +113,7 @@ func TestTaskIDV2(t *testing.T) {
 		digest      string
 		tag         string
 		application string
+		pieceLength int32
 		filters     []string
 		expect      func(t *testing.T, d any)
 	}{
@@ -122,10 +123,11 @@ func TestTaskIDV2(t *testing.T) {
 			digest:      "sha256:c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
 			tag:         "foo",
 			application: "bar",
+			pieceLength: 1,
 			filters:     []string{},
 			expect: func(t *testing.T, d any) {
 				assert := assert.New(t)
-				assert.Equal(d, "c8659b8372599cf22c7a2de260dd6e148fca6d4e1c2940703022867f739d071d")
+				assert.Equal(d, "6acf73532a2e7b8c30dfc7abce2fd7d2a2cd3746f16b0d54d3e2f136ffa61c90")
 			},
 		},
 		{
@@ -134,7 +136,7 @@ func TestTaskIDV2(t *testing.T) {
 			digest: "sha256:c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
 			expect: func(t *testing.T, d any) {
 				assert := assert.New(t)
-				assert.Equal(d, "60469c583429af631a45540f05e08805b31ca4f84e7974cad35cfc84c197bcf8")
+				assert.Equal(d, "b08a435da662ad5ae8ab8359a9c4ebd5027cf14d04b71ccc85f1e197e898adbd")
 			},
 		},
 		{
@@ -143,7 +145,7 @@ func TestTaskIDV2(t *testing.T) {
 			tag:  "foo",
 			expect: func(t *testing.T, d any) {
 				assert := assert.New(t)
-				assert.Equal(d, "2773851c628744fb7933003195db436ce397c1722920696c4274ff804d86920b")
+				assert.Equal(d, "274c3716c538b5a49e7296ee36dd412bae29948dfb6153e5ac9694e382144f83")
 			},
 		},
 		{
@@ -152,7 +154,16 @@ func TestTaskIDV2(t *testing.T) {
 			application: "bar",
 			expect: func(t *testing.T, d any) {
 				assert := assert.New(t)
-				assert.Equal(d, "63dee2822037636b0109876b58e95692233840753a882afa69b9b5ee82a6c57d")
+				assert.Equal(d, "ca12c6591c38f726c238f35d9c7945559b52a0dcc10ae191920be6f5f8a0326a")
+			},
+		},
+		{
+			name:        "generate taskID with pieceLength",
+			url:         "https://example.com",
+			pieceLength: 1,
+			expect: func(t *testing.T, d any) {
+				assert := assert.New(t)
+				assert.Equal(d, "614fb0088e7d82b2538f1ccb5861db5940aaa665b587792898e4be1f591bafec")
 			},
 		},
 		{
@@ -161,14 +172,14 @@ func TestTaskIDV2(t *testing.T) {
 			filters: []string{"foo", "bar"},
 			expect: func(t *testing.T, d any) {
 				assert := assert.New(t)
-				assert.Equal(d, "100680ad546ce6a577f42f52df33b4cfdca756859e664b8d7de329b150d09ce9")
+				assert.Equal(d, "4a89bbe790108d4987e7dc5127df2b99aea1c17828f1ff3e55176f49ac974b28")
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, TaskIDV2(tc.url, tc.digest, tc.tag, tc.application, tc.filters))
+			tc.expect(t, TaskIDV2(tc.url, tc.digest, tc.tag, tc.application, tc.pieceLength, tc.filters))
 		})
 	}
 }

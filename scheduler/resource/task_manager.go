@@ -19,7 +19,6 @@
 package resource
 
 import (
-	"context"
 	"sync"
 
 	pkggc "d7y.io/dragonfly/v2/pkg/gc"
@@ -112,21 +111,10 @@ func (t *taskManager) RunGC() error {
 			return true
 		}
 
-		// If task state is TaskStateLeave, it will be reclaimed.
-		if task.FSM.Is(TaskStateLeave) {
+		// If there is no peer then task will be reclaimed.
+		if task.PeerCount() == 0 {
 			task.Log.Info("task has been reclaimed")
 			t.Delete(task.ID)
-			return true
-		}
-
-		// If there is no peer then switch the task state to TaskStateLeave.
-		if task.PeerCount() == 0 {
-			if err := task.FSM.Event(context.Background(), TaskEventLeave); err != nil {
-				task.Log.Errorf("task fsm event failed: %s", err.Error())
-				return true
-			}
-
-			task.Log.Info("task peer count is zero, causing the task to leave")
 		}
 
 		return true

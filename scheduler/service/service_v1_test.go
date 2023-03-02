@@ -178,7 +178,7 @@ var (
 
 	mockTaskBackToSourceLimit int32 = 200
 	mockTaskURL                     = "http://example.com/foo"
-	mockTaskID                      = idgen.TaskIDV2(mockTaskURL, mockTaskDigest.String(), mockTaskTag, mockTaskApplication, mockTaskFilters)
+	mockTaskID                      = idgen.TaskIDV2(mockTaskURL, mockTaskDigest.String(), mockTaskTag, mockTaskApplication, mockTaskPieceLength, mockTaskFilters)
 	mockTaskDigest                  = digest.New(digest.AlgorithmSHA256, "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4")
 	mockTaskTag                     = "d7y"
 	mockTaskApplication             = "foo"
@@ -3410,7 +3410,7 @@ func TestServiceV1_handleBeginOfPiece(t *testing.T) {
 			name: "peer state is PeerStateReceivedNormal",
 			mock: func(peer *resource.Peer, scheduling *mocks.MockSchedulingMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateReceivedNormal)
-				scheduling.ScheduleParentsForNormalPeer(gomock.Any(), gomock.Eq(peer), gomock.Eq(set.NewSafeSet[string]())).Return().Times(1)
+				scheduling.ScheduleParentAndCandidateParents(gomock.Any(), gomock.Eq(peer), gomock.Eq(set.NewSafeSet[string]())).Return().Times(1)
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
@@ -3631,7 +3631,7 @@ func TestServiceV1_handlePieceFail(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(parent.ID)).Return(nil, false).Times(1),
-					ms.ScheduleParentsForNormalPeer(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
+					ms.ScheduleParentAndCandidateParents(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
 				)
 
 				svc.handlePieceFailure(context.Background(), peer, piece)
@@ -3659,7 +3659,7 @@ func TestServiceV1_handlePieceFail(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
-					ms.ScheduleParentsForNormalPeer(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
+					ms.ScheduleParentAndCandidateParents(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
 				)
 
 				svc.handlePieceFailure(context.Background(), peer, piece)
@@ -3688,7 +3688,7 @@ func TestServiceV1_handlePieceFail(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
-					ms.ScheduleParentsForNormalPeer(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
+					ms.ScheduleParentAndCandidateParents(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
 				)
 
 				svc.handlePieceFailure(context.Background(), peer, piece)
@@ -3716,7 +3716,7 @@ func TestServiceV1_handlePieceFail(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
-					ms.ScheduleParentsForNormalPeer(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
+					ms.ScheduleParentAndCandidateParents(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
 				)
 
 				svc.handlePieceFailure(context.Background(), peer, piece)
@@ -3745,7 +3745,7 @@ func TestServiceV1_handlePieceFail(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
-					ms.ScheduleParentsForNormalPeer(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
+					ms.ScheduleParentAndCandidateParents(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
 				)
 
 				svc.handlePieceFailure(context.Background(), peer, piece)
@@ -3943,7 +3943,7 @@ func TestServiceV1_handlePeerFail(t *testing.T) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				child.FSM.SetState(resource.PeerStateRunning)
 
-				ms.ScheduleParentsForNormalPeer(gomock.Any(), gomock.Eq(child), gomock.Eq(set.NewSafeSet[string]())).Return().Times(1)
+				ms.ScheduleParentAndCandidateParents(gomock.Any(), gomock.Eq(child), gomock.Eq(set.NewSafeSet[string]())).Return().Times(1)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, child *resource.Peer) {
 				assert := assert.New(t)
