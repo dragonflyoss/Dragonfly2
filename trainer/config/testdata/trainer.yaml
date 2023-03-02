@@ -1,0 +1,26 @@
+server:
+  grpc:
+    advertiseIP: 0.0.0.0
+    listenIP: 0.0.0.0
+    port:
+      start: 65003
+      end: 65003
+  keepalive:
+    interval: 5s
+
+redis:
+    addrs: [ "foo", "bar" ]
+    masterName: baz
+    password: bar
+    trainerDB: 3
+
+metrics:
+  enable: true
+  addr: :8000
+
+trainer:
+    maxBackups: 5
+    dataPath: "/trainer/data"
+
+network:
+  enableIPv6: true
