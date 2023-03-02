@@ -19,6 +19,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"io"
 	"time"
 
 	"google.golang.org/grpc/codes"
@@ -37,7 +38,6 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
-// TODO Implement v2 version of the service functions.
 // V2 is the interface for v2 version of the service.
 type V2 struct {
 	// Resource interface.
@@ -75,7 +75,119 @@ func NewV2(
 
 // AnnouncePeer announces peer to scheduler.
 func (v *V2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePeerServer) error {
+	ctx, cancel := context.WithCancel(stream.Context())
+	defer cancel()
+
+	for {
+		select {
+		case <-ctx.Done():
+			logger.Infof("context was done")
+			return ctx.Err()
+		default:
+		}
+
+		req, err := stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+
+			logger.Errorf("receive error: %s", err.Error())
+			return err
+		}
+
+		logger := logger.WithPeer(req.HostId, req.TaskId, req.PeerId)
+		switch announcePeerRequest := req.GetRequest().(type) {
+		case *schedulerv2.AnnouncePeerRequest_RegisterPeerRequest:
+			logger.Infof("receive AnnouncePeerRequest_RegisterPeerRequest: %#v", announcePeerRequest.RegisterPeerRequest.Download)
+			if err := v.handleRegisterPeerRequest(req.HostId, req.TaskId, req.PeerId, announcePeerRequest.RegisterPeerRequest); err != nil {
+				logger.Error(err)
+				return err
+			}
+		case *schedulerv2.AnnouncePeerRequest_DownloadPeerStartedRequest:
+			logger.Infof("receive AnnouncePeerRequest_DownloadPeerStartedRequest: %#v", announcePeerRequest.DownloadPeerStartedRequest)
+			v.handleDownloadPeerStartedRequest(announcePeerRequest.DownloadPeerStartedRequest)
+		case *schedulerv2.AnnouncePeerRequest_DownloadPeerBackToSourceStartedRequest:
+			logger.Infof("receive AnnouncePeerRequest_DownloadPeerBackToSourceStartedRequest: %#v", announcePeerRequest.DownloadPeerBackToSourceStartedRequest)
+			v.handleDownloadPeerBackToSourceStartedRequest(announcePeerRequest.DownloadPeerBackToSourceStartedRequest)
+		case *schedulerv2.AnnouncePeerRequest_DownloadPeerFinishedRequest:
+			logger.Infof("receive AnnouncePeerRequest_DownloadPeerFinishedRequest: %#v", announcePeerRequest.DownloadPeerFinishedRequest)
+			v.handleDownloadPeerFinishedRequest(announcePeerRequest.DownloadPeerFinishedRequest)
+		case *schedulerv2.AnnouncePeerRequest_DownloadPeerBackToSourceFinishedRequest:
+			logger.Infof("receive AnnouncePeerRequest_DownloadPeerBackToSourceFinishedRequest: %#v", announcePeerRequest.DownloadPeerBackToSourceFinishedRequest)
+			v.handleDownloadPeerBackToSourceFinishedRequest(announcePeerRequest.DownloadPeerBackToSourceFinishedRequest)
+		case *schedulerv2.AnnouncePeerRequest_DownloadPieceFinishedRequest:
+			logger.Infof("receive AnnouncePeerRequest_DownloadPieceFinishedRequest: %#v", announcePeerRequest.DownloadPieceFinishedRequest)
+			v.handleDownloadPieceFinishedRequest(announcePeerRequest.DownloadPieceFinishedRequest)
+		case *schedulerv2.AnnouncePeerRequest_DownloadPieceBackToSourceFinishedRequest:
+			logger.Infof("receive AnnouncePeerRequest_DownloadPieceBackToSourceFinishedRequest: %#v", announcePeerRequest.DownloadPieceBackToSourceFinishedRequest)
+			v.handleDownloadPieceBackToSourceFinishedRequest(announcePeerRequest.DownloadPieceBackToSourceFinishedRequest)
+		case *schedulerv2.AnnouncePeerRequest_DownloadPieceFailedRequest:
+			logger.Infof("receive AnnouncePeerRequest_DownloadPieceFailedRequest: %#v", announcePeerRequest.DownloadPieceFailedRequest)
+			v.handleDownloadPieceFailedRequest(announcePeerRequest.DownloadPieceFailedRequest)
+		case *schedulerv2.AnnouncePeerRequest_DownloadPieceBackToSourceFailedRequest:
+			logger.Infof("receive AnnouncePeerRequest_DownloadPieceBackToSourceFailedRequest: %#v", announcePeerRequest.DownloadPieceBackToSourceFailedRequest)
+			v.handleDownloadPieceBackToSourceFailedRequest(announcePeerRequest.DownloadPieceBackToSourceFailedRequest)
+		case *schedulerv2.AnnouncePeerRequest_SyncPiecesFailedRequest:
+			logger.Infof("receive AnnouncePeerRequest_SyncPiecesFailedRequest: %#v", announcePeerRequest.SyncPiecesFailedRequest)
+			v.handleSyncPiecesFailedRequest(announcePeerRequest.SyncPiecesFailedRequest)
+		default:
+			msg := fmt.Sprintf("receive unknow request: %#v", announcePeerRequest)
+			logger.Error(msg)
+			return status.Error(codes.FailedPrecondition, msg)
+		}
+	}
+}
+
+// TODO Implement function.
+// handleRegisterPeerRequest handles RegisterPeerRequest of AnnouncePeerRequest.
+func (v *V2) handleRegisterPeerRequest(hostID, taskID, peerID string, req *schedulerv2.RegisterPeerRequest) error {
 	return nil
+}
+
+// TODO Implement function.
+// handleDownloadPeerStartedRequest handles DownloadPeerStartedRequest of AnnouncePeerRequest.
+func (v *V2) handleDownloadPeerStartedRequest(req *schedulerv2.DownloadPeerStartedRequest) {
+}
+
+// TODO Implement function.
+// handleDownloadPeerBackToSourceStartedRequest handles DownloadPeerBackToSourceStartedRequest of AnnouncePeerRequest.
+func (v *V2) handleDownloadPeerBackToSourceStartedRequest(req *schedulerv2.DownloadPeerBackToSourceStartedRequest) {
+}
+
+// TODO Implement function.
+// handleDownloadPeerFinishedRequest handles DownloadPeerFinishedRequest of AnnouncePeerRequest.
+func (v *V2) handleDownloadPeerFinishedRequest(req *schedulerv2.DownloadPeerFinishedRequest) {
+}
+
+// TODO Implement function.
+// handleDownloadPeerBackToSourceFinishedRequest handles DownloadPeerBackToSourceFinishedRequest of AnnouncePeerRequest.
+func (v *V2) handleDownloadPeerBackToSourceFinishedRequest(req *schedulerv2.DownloadPeerBackToSourceFinishedRequest) {
+}
+
+// TODO Implement function.
+// handleDownloadPieceFinishedRequest handles DownloadPieceFinishedRequest of AnnouncePeerRequest.
+func (v *V2) handleDownloadPieceFinishedRequest(req *schedulerv2.DownloadPieceFinishedRequest) {
+}
+
+// TODO Implement function.
+// handleDownloadPieceBackToSourceFinishedRequest handles DownloadPieceBackToSourceFinishedRequest of AnnouncePeerRequest.
+func (v *V2) handleDownloadPieceBackToSourceFinishedRequest(req *schedulerv2.DownloadPieceBackToSourceFinishedRequest) {
+}
+
+// TODO Implement function.
+// handleDownloadPieceFailedRequest handles DownloadPieceFailedRequest of AnnouncePeerRequest.
+func (v *V2) handleDownloadPieceFailedRequest(req *schedulerv2.DownloadPieceFailedRequest) {
+}
+
+// TODO Implement function.
+// handleDownloadPieceBackToSourceFailedRequest handles DownloadPieceBackToSourceFailedRequest of AnnouncePeerRequest.
+func (v *V2) handleDownloadPieceBackToSourceFailedRequest(req *schedulerv2.DownloadPieceBackToSourceFailedRequest) {
+}
+
+// TODO Implement function.
+// handleSyncPiecesFailedRequest handles SyncPiecesFailedRequest of AnnouncePeerRequest.
+func (v *V2) handleSyncPiecesFailedRequest(req *schedulerv2.SyncPiecesFailedRequest) {
 }
 
 // StatPeer checks information of peer.
