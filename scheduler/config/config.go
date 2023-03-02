@@ -626,25 +626,32 @@ func (cfg *Config) Validate() error {
 		if cfg.Trainer.RefreshInterval <= 0 {
 			return errors.New("trainer requires parameter RefreshInterval")
 		}
+
 		if cfg.Trainer.NetworkRecord.Addr == "" {
 			return errors.New("networkRecord requires parameter Addr")
 		}
+
 		if cfg.Trainer.NetworkRecord.MaxSize <= 0 {
 			return errors.New("networkRecord requires parameter MaxSize")
 		}
+
 		if cfg.Trainer.NetworkRecord.UnitSize <= 0 {
 			return errors.New("networkRecord requires parameter UnitSize")
 		}
+
 		if cfg.Trainer.HistoricalRecord.Addr == "" {
 			return errors.New("storicalRecord requires parameter Addr")
 		}
+
 		if cfg.Trainer.HistoricalRecord.MaxSize <= 0 {
 			return errors.New("historicalRecord requires parameter MaxSize")
 		}
+
 		if cfg.Trainer.HistoricalRecord.UnitSize <= 0 {
 			return errors.New("historicalRecord requires parameter UnitSize")
 		}
 	}
+
 	return nil
 }
 

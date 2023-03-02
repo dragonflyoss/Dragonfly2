@@ -171,10 +171,10 @@ const (
 
 var (
 	// DefaultTrainerIP is the default ip for trainer
-	DefaultTrainerIP = net.ParseIP("127.0.0.1")
+	DefaultTrainerIP = net.ParseIP("177.7.0.1")
 
 	// DefaultTrainerPort is the default port for trainer
-	DefaultTrainerPort = 8009
+	DefaultTrainerPort = 8509
 )
 
 const (
@@ -184,7 +184,7 @@ const (
 
 	// TODO(fyx): The default setting needs to be changed after testing.
 	// DefaultStorageBufferSize is the default network record storage address.
-	DefaultNetworkRcordAddr = "/networkRecord/"
+	DefaultNetworkRcordAddr = "./networkRecord/"
 
 	// TODO(fyx): The default setting needs to be changed after testing.
 	// DefaultNetworkRcordMaxSize is the default total maximum size in megabytes of network records in one training process
@@ -196,7 +196,7 @@ const (
 
 	// TODO(fyx): The default setting needs to be changed after testing.
 	// DefaultHistoricalRecordAddr is the default historical record storage address.
-	DefaultHistoricalRecordAddr = "/historicalRecord/"
+	DefaultHistoricalRecordAddr = "./historicalRecord/"
 
 	// TODO(fyx): The default setting needs to be changed after testing.
 	// DefaultNetworkRcordMaxSize is the default total maximum size in megabytes of historical records in one training process

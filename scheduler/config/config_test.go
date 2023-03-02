@@ -125,15 +125,15 @@ func TestConfig_Load(t *testing.T) {
 		Trainer: TrainerConfig{
 			Enable:          true,
 			RefreshInterval: 3 * 24 * time.Hour,
-			IP:              net.ParseIP("127.0.0.1"),
-			Port:            8009,
+			IP:              net.ParseIP("177.7.0.1"),
+			Port:            8509,
 			NetworkRecord: NetworkRecordConfig{
-				Addr:     "/networkRecord/",
+				Addr:     "./networkRecord/",
 				MaxSize:  1024,
 				UnitSize: 100,
 			},
 			HistoricalRecord: HistoricalRecordConfig{
-				Addr:     "/historicalRecord/",
+				Addr:     "./historicalRecord/",
 				MaxSize:  1024,
 				UnitSize: 100,
 			},
