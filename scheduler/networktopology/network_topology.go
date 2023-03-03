@@ -412,8 +412,80 @@ func (n *networkTopology) Serve() error {
 		return nil
 	}
 
-	// Initialize seed peer interface.
 	if n.config.NetworkTopology.Enable {
+		// Generate grpc synchronization network topology request of updating hosts.
+		updateProbesOfHosts := make([]*schedulerv1.ProbesOfHost, 0)
+		for srcID := range n.localHosts {
+			parents, ok := n.Load(srcID)
+			if ok {
+				parents.(*sync.Map).Range(func(dest, probes interface{}) bool {
+					rawHost, ok1 := n.GetHost(dest.(string))
+					rawProbes := make([]*schedulerv1.Probe, 0)
+					for e := probes.(Probes).Probes.Front(); e != nil; e = e.Next() {
+						probe := e.Value.(Probe)
+
+						p := &schedulerv1.Probe{
+							Host: &v1.Host{
+								Id:             probe.Host.ID,
+								Ip:             probe.Host.IP,
+								Hostname:       probe.Host.Hostname,
+								Port:           probe.Host.Port,
+								DownloadPort:   probe.Host.DownloadPort,
+								SecurityDomain: probe.Host.Network.SecurityDomain,
+								Location:       probe.Host.Network.Location,
+								Idc:            probe.Host.Network.IDC,
+							},
+							Rtt:       durationpb.New(probe.RTT),
+							UpdatedAt: timestamppb.New(probe.UpdatedAt),
+						}
+						rawProbes = append(rawProbes, p)
+					}
+
+					if ok1 {
+						probesOfHost := &schedulerv1.ProbesOfHost{
+							Host: &v1.Host{
+								Id:             rawHost.ID,
+								Ip:             rawHost.IP,
+								Hostname:       rawHost.Hostname,
+								Port:           rawHost.Port,
+								DownloadPort:   rawHost.DownloadPort,
+								SecurityDomain: rawHost.Network.SecurityDomain,
+								Location:       rawHost.Network.Location,
+								Idc:            rawHost.Network.IDC,
+							},
+							Probes: rawProbes,
+						}
+						updateProbesOfHosts = append(updateProbesOfHosts, probesOfHost)
+					}
+					return true
+				})
+			}
+		}
+
+		// Generate grpc synchronization network topology request of deleting hosts.
+		deleteProbesOfHosts := make([]*schedulerv1.ProbesOfHost, 0)
+		if len(n.deleteHosts) != 0 {
+			for _, deleteHost := range n.deleteHosts {
+				rawHost, ok := n.GetHost(deleteHost)
+				if ok {
+					probesOfHost := &schedulerv1.ProbesOfHost{
+						Host: &v1.Host{
+							Id:             rawHost.ID,
+							Ip:             rawHost.IP,
+							Hostname:       rawHost.Hostname,
+							Port:           rawHost.Port,
+							DownloadPort:   rawHost.DownloadPort,
+							SecurityDomain: rawHost.Network.SecurityDomain,
+							Location:       rawHost.Network.Location,
+							Idc:            rawHost.Network.IDC,
+						},
+						Probes: nil,
+					}
+					deleteProbesOfHosts = append(deleteProbesOfHosts, probesOfHost)
+				}
+			}
+		}
+
 		for _, scheduler := range listSchedulersResponse.Schedulers {
 			schedulerClient, err := schedulerclient.GetV1ByAddr(context.Background(), scheduler.Ip, grpc.WithTransportCredentials(n.transportCredentials))
 			if err != nil {
@@ -421,62 +493,27 @@ func (n *networkTopology) Serve() error {
 			}
 
 			// Synchronize network topology by updating hosts.
-			probesOfHosts := make([]*schedulerv1.ProbesOfHost, 0)
-			for srcID := range n.localHosts {
-				parents, ok := n.Load(srcID)
-				if ok {
-					parents.(*sync.Map).Range(func(dest, probes interface{}) bool {
-
-						rawHost, ok1 := n.GetHost(dest.(string))
-						rawProbes := make([]*schedulerv1.Probe, 0)
-						for e := probes.(Probes).Probes.Front(); e != nil; e = e.Next() {
-							rawProbe := e.Value.(Probe)
-							probe := &schedulerv1.Probe{
-								Host:      rawProbe.Host,
-								Rtt:       rawProbe.RTT,
-								UpdatedAt: rawProbe.UpdatedAt,
-							}
-						}
-
-						if ok1 {
-							probesOfHost := &schedulerv1.ProbesOfHost{
-								Host: &v1.Host{
-									Id:             rawHost.ID,
-									Ip:             rawHost.IP,
-									Hostname:       rawHost.Hostname,
-									Port:           rawHost.Port,
-									DownloadPort:   rawHost.DownloadPort,
-									SecurityDomain: rawHost.Network.SecurityDomain,
-									Location:       rawHost.Network.Location,
-									Idc:            rawHost.Network.IDC,
-								},
-								Probes:,
-							}
-							probesOfHosts = append(probesOfHosts)
-						}
-						return true
-					})
-				}
-			}
-			updateHostsRequest := &schedulerv1.UpdateHostsRequest{ProbesOfHosts: []*schedulerv1.ProbesOfHost}
+			updateHostsRequest := &schedulerv1.UpdateHostsRequest{ProbesOfHosts: updateProbesOfHosts}
 			updateProbesOfHostsRequest := &schedulerv1.SyncNetworkTopologyRequest_UpdateProbesOfHostsRequest{
 				UpdateProbesOfHostsRequest: updateHostsRequest,
 			}
-			topology, err := schedulerClient.SyncNetworkTopology(context.Background(),
+			schedulerSyncNetworkTopologyClient, err := schedulerClient.SyncNetworkTopology(context.Background(),
 				&schedulerv1.SyncNetworkTopologyRequest{Request: updateProbesOfHostsRequest})
 			if err != nil {
 				return err
 			}
 
 			// Synchronize network topology by deleting hosts.
-			deleteHostsRequest := &schedulerv1.DeleteHostsRequest{ProbesOfHosts: nil}
-			deleteProbesOfHostsRequest := &schedulerv1.SyncNetworkTopologyRequest_DeleteProbesOfHostsRequest{
-				DeleteProbesOfHostsRequest: deleteHostsRequest,
-			}
-			topology, err := schedulerClient.SyncNetworkTopology(context.Background(),
-				&schedulerv1.SyncNetworkTopologyRequest{Request: deleteProbesOfHostsRequest})
-			if err != nil {
-				return err
+			if len(n.deleteHosts) != 0 {
+				deleteHostsRequest := &schedulerv1.DeleteHostsRequest{ProbesOfHosts: deleteProbesOfHosts}
+				deleteProbesOfHostsRequest := &schedulerv1.SyncNetworkTopologyRequest_DeleteProbesOfHostsRequest{
+					DeleteProbesOfHostsRequest: deleteHostsRequest,
+				}
+				err := schedulerSyncNetworkTopologyClient.Send(&schedulerv1.SyncNetworkTopologyRequest{Request: deleteProbesOfHostsRequest})
+				if err != nil {
+					return err
+				}
+				n.deleteHosts = make([]string, 0)
 			}
 		}
 	}
@@ -485,9 +522,7 @@ func (n *networkTopology) Serve() error {
 	for {
 		select {
 		case <-tick.C:
-			for name, gc := range {
-
-			}
+			
 		case <-n.done:
 			return nil
 		}
