@@ -61,6 +61,10 @@ const (
 	ReadAction = "read"
 )
 
+var (
+	apiGroupRegexp = regexp.MustCompile(`^/api/v[0-9]+/([-_a-zA-Z]*)[/.*]*`)
+)
+
 func NewEnforcer(gdb *gorm.DB) (*casbin.Enforcer, error) {
 	adapter, err := gormadapter.NewAdapterByDBWithCustomTable(gdb, &managermodel.CasbinRule{})
 	if err != nil {
@@ -160,7 +164,6 @@ func GetAPIGroupNames(g *gin.Engine) []string {
 }
 
 func GetAPIGroupName(path string) (string, error) {
-	apiGroupRegexp := regexp.MustCompile(`^/api/v[0-9]+/([-_a-zA-Z]*)[/.*]*`)
 	matchs := apiGroupRegexp.FindStringSubmatch(path)
 	if len(matchs) != 2 {
 		return "", errors.New("cannot find group name")
