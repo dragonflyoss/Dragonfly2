@@ -1466,6 +1466,8 @@ func (v *V1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
 			logger.Errorf("receive sync probes failed: %s", err.Error())
 			return err
 		}
+		// Record the Host that sent the probe.
+		v.networkTopology.StoreSyncHost(syncProbesRequest.ProbesOfHost.Host.Ip)
 		// Sync the probes sent by host.
 		probesOfHost := syncProbesRequest.ProbesOfHost
 		for _, probe := range probesOfHost.Probes {

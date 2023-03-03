@@ -2,9 +2,17 @@ package networktopology
 
 import (
 	"container/list"
+	"context"
+	v1 "d7y.io/api/pkg/apis/common/v1"
+	managerv2 "d7y.io/api/pkg/apis/manager/v2"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
+	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
+	"d7y.io/dragonfly/v2/version"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"sort"
@@ -36,10 +44,18 @@ type NetworkTopology interface {
 	// GetHost returns host from hostId.
 	GetHost(string) (*resource.Host, bool)
 
+	// StoreSyncHost stores the hosts that sent the synchronization probe instead of
+	// the hosts that synchronized the network topology.
+	StoreSyncHost(string)
+
+	// DeleteSyncHost deletes the hosts that sent the synchronization probe, it comes
+	// from LeaveHost.
+	DeleteSyncHost(string)
+
 	// LoadParents returns host for a key.
 	LoadParents(string) (*sync.Map, bool)
 
-	// StoreParents sets host.
+	// StoreParents stores host.
 	StoreParents(key string, parents *sync.Map)
 
 	// DeleteParents deletes host for a key.
@@ -48,7 +64,7 @@ type NetworkTopology interface {
 	// LoadEdge returns edge between tow hosts.
 	LoadEdge(src, dest string) (*Probes, bool)
 
-	// StoreEdge sets edge between tow hosts.
+	// StoreEdge stores edge between two hosts.
 	StoreEdge(src, dest string, probes *Probes)
 
 	// DeleteEdge deletes edge between tow hosts.
@@ -78,23 +94,56 @@ type NetworkTopology interface {
 	Stop() error
 }
 
+type empty struct{}
+
 type networkTopology struct {
 	*sync.Map
-	resource      resource.Resource
-	dynconfig     config.DynconfigInterface
+
+	// Scheduler config.
+	config *config.Config
+
+	// Resource interface
+	resource resource.Resource
+
+	// Manager client interface
 	managerClient managerclient.V2
-	done          chan struct{}
+
+	// TransportCredentials stores the Authenticator required to setup a client connection.
+	transportCredentials credentials.TransportCredentials
+
+	// LocalHosts stores the host from which the probe is sent
+	localHosts map[string]empty
+
+	// deleteHosts stores the deleted host in a synchronized time interval.
+	deleteHosts []string
+
+	done chan struct{}
+}
+
+// Option is a functional option for configuring the networkTopology.
+type Option func(n *networkTopology)
+
+// WithTransportCredentials returns a DialOption which configures a connection
+// level security credentials (e.g., TLS/SSL).
+func WithTransportCredentials(creds credentials.TransportCredentials) Option {
+	return func(n *networkTopology) {
+		n.transportCredentials = creds
+	}
 }
 
 // New network topology interface.
-func New(resource resource.Resource, dynconfig config.DynconfigInterface, managerClient managerclient.V2) (NetworkTopology, error) {
+func New(cfg *config.Config, resource resource.Resource, managerClient managerclient.V2, options ...Option) (NetworkTopology, error) {
 
-	n := &networkTopology{
-		Map:           &sync.Map{},
-		resource:      resource,
-		dynconfig:     dynconfig,
-		managerClient: managerClient,
+	n := &networkTopology{config: cfg}
+
+	for _, opt := range options {
+		opt(n)
 	}
+	n.Map = &sync.Map{}
+	n.resource = resource
+	n.managerClient = managerClient
+	n.localHosts = map[string]empty{}
+	n.deleteHosts = make([]string, 0)
 	return n, nil
 }
 
@@ -106,6 +155,16 @@ func (n *networkTopology) GetHost(hostId string) (*resource.Host, bool) {
 	return nil, ok
 }
 
+func (n *networkTopology) StoreSyncHost(hostId string) {
+
+	n.localHosts[hostId] = empty{}
+}
+
+func (n *networkTopology) DeleteSyncHost(hostId string) {
+
+	n.deleteHosts = append(n.deleteHosts, hostId)
+}
+
 func (n *networkTopology) LoadParents(key string) (*sync.Map, bool) {
 	rawNetwork, ok := n.Map.Load(key)
 	if !ok {
@@ -115,10 +174,12 @@ func (n *networkTopology) LoadParents(key string) (*sync.Map, bool) {
 }
 
 func (n *networkTopology) StoreParents(key string, parents *sync.Map) {
+
 	n.Map.Store(key, parents)
 }
 
 func (n *networkTopology) DeleteParents(key string) {
+
 	n.Map.Delete(key)
 }
 
@@ -339,40 +400,98 @@ func (n *networkTopology) FindProbes(host *resource.Host) []*resource.Host {
 
 func (n *networkTopology) Serve() error {
 
-	////ListSchedulers return []schedulers
-	//// Register to manager.
-	//if _, err := n.managerClient.ListSchedulers(context.Background(), &managerv2.ListSchedulersRequest{
-	//	SourceType:         managerv2.SourceType_SCHEDULER_SOURCE,
-	//	HostName:           a.config.Server.Host,
-	//	Ip:                 a.config.Server.AdvertiseIP.String(),
-	//	Port:               int32(a.config.Server.Port),
-	//	Idc:                a.config.Host.IDC,
-	//	Location:           a.config.Host.Location,
-	//	SchedulerClusterId: uint64(a.config.Manager.SchedulerClusterID),
-	//}); err != nil {
-	//	return nil, err
-	//}
-	////getAddrbyScheduler
-	//
-	//schedulerCluster, err := n.dynconfig.GetSchedulerCluster()
-	//if err != nil {
-	//	return err
-	//}
-	//addr, err := schedulerCluster
-	//if err != nil {
-	//	return err
-	//}
-	//tick := time.NewTicker(config.DefaultNetworkTopologySyncInterval)
-	//for {
-	//	select {
-	//	case <-tick.C:
-	//		for name, gc := range  {
-	//
-	//		}
-	//	case <-n.done:
-	//		return nil
-	//	}
-	//}
+	listSchedulersResponse, err := n.managerClient.ListSchedulers(context.Background(), &managerv2.ListSchedulersRequest{
+		SourceType: managerv2.SourceType_SCHEDULER_SOURCE,
+		HostName:   n.config.Server.Host,
+		Ip:         n.config.Server.AdvertiseIP.String(),
+		HostInfo:   nil,
+		Version:    version.GitVersion,
+		Commit:     version.GitCommit,
+	})
+	if err != nil {
+		return nil
+	}
+
+	// Initialize seed peer interface.
+	if n.config.NetworkTopology.Enable {
+		for _, scheduler := range listSchedulersResponse.Schedulers {
+			schedulerClient, err := schedulerclient.GetV1ByAddr(context.Background(), scheduler.Ip, grpc.WithTransportCredentials(n.transportCredentials))
+			if err != nil {
+				return err
+			}
+
+			// Synchronize network topology by updating hosts.
+			probesOfHosts := make([]*schedulerv1.ProbesOfHost, 0)
+			for srcID := range n.localHosts {
+				parents, ok := n.Load(srcID)
+				if ok {
+					parents.(*sync.Map).Range(func(dest, probes interface{}) bool {
+
+						rawHost, ok1 := n.GetHost(dest.(string))
+						rawProbes := make([]*schedulerv1.Probe, 0)
+						for e := probes.(Probes).Probes.Front(); e != nil; e = e.Next() {
+							rawProbe := e.Value.(Probe)
+							probe := &schedulerv1.Probe{
+								Host:      rawProbe.Host,
+								Rtt:       rawProbe.RTT,
+								UpdatedAt: rawProbe.UpdatedAt,
+							}
+						}
+
+						if ok1 {
+							probesOfHost := &schedulerv1.ProbesOfHost{
+								Host: &v1.Host{
+									Id:             rawHost.ID,
+									Ip:             rawHost.IP,
+									Hostname:       rawHost.Hostname,
+									Port:           rawHost.Port,
+									DownloadPort:   rawHost.DownloadPort,
+									SecurityDomain: rawHost.Network.SecurityDomain,
+									Location:       rawHost.Network.Location,
+									Idc:            rawHost.Network.IDC,
+								},
+								Probes:,
+							}
+							probesOfHosts = append(probesOfHosts)
+						}
+						return true
+					})
+				}
+			}
+			updateHostsRequest := &schedulerv1.UpdateHostsRequest{ProbesOfHosts: []*schedulerv1.ProbesOfHost}
+			updateProbesOfHostsRequest := &schedulerv1.SyncNetworkTopologyRequest_UpdateProbesOfHostsRequest{
+				UpdateProbesOfHostsRequest: updateHostsRequest,
+			}
+			topology, err := schedulerClient.SyncNetworkTopology(context.Background(),
+				&schedulerv1.SyncNetworkTopologyRequest{Request: updateProbesOfHostsRequest})
+			if err != nil {
+				return err
+			}
+
+			// Synchronize network topology by deleting hosts.
+			deleteHostsRequest := &schedulerv1.DeleteHostsRequest{ProbesOfHosts: nil}
+			deleteProbesOfHostsRequest := &schedulerv1.SyncNetworkTopologyRequest_DeleteProbesOfHostsRequest{
+				DeleteProbesOfHostsRequest: deleteHostsRequest,
+			}
+			topology, err := schedulerClient.SyncNetworkTopology(context.Background(),
+				&schedulerv1.SyncNetworkTopologyRequest{Request: deleteProbesOfHostsRequest})
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	tick := time.NewTicker(config.DefaultNetworkTopologySyncInterval)
+	for {
+		select {
+		case <-tick.C:
+			for name, gc := range {
+
+			}
+		case <-n.done:
+			return nil
+		}
+	}
 	return nil
 }
 

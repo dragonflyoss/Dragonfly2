@@ -214,15 +214,15 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		schedulerServerOptions = append(schedulerServerOptions, grpc.Creds(insecure.NewCredentials()))
 	}
 
+	svr := rpcserver.New(cfg, resource, scheduling, dynconfig, s.storage, s.networkTopology, schedulerServerOptions...)
+	s.grpcServer = svr
+
 	// Initialize networktopology.
-	networkTopology, err := networktopology.New(resource, dynconfig, managerClient)
+	networkTopology, err := networktopology.New(cfg, resource, managerClient)
 	if err != nil {
 		return nil, err
 	}
 	s.networkTopology = networkTopology
-
-	svr := rpcserver.New(cfg, resource, scheduling, dynconfig, s.storage, s.networkTopology, schedulerServerOptions...)
-	s.grpcServer = svr
 
 	// Initialize job service.
 	if cfg.Job.Enable {
