@@ -176,13 +176,14 @@ func (v *V1) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequ
 
 // ReportPieceResult handles the piece information reported by dfdaemon.
 func (v *V1) ReportPieceResult(stream schedulerv1.Scheduler_ReportPieceResultServer) error {
-	ctx := stream.Context()
+	ctx, cancel := context.WithCancel(stream.Context())
+	defer cancel()
+
 	var (
 		peer        *resource.Peer
 		initialized bool
 		loaded      bool
 	)
-
 	for {
 		select {
 		case <-ctx.Done():
@@ -335,7 +336,7 @@ func (v *V1) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequ
 	}
 
 	task := resource.NewTask(taskID, req.Url, req.UrlMeta.Tag, req.UrlMeta.Application, types.TaskTypeV1ToV2(req.TaskType),
-		strings.Split(req.UrlMeta.Filter, idgen.URLFilterSeparator), req.UrlMeta.Header, int32(v.config.Scheduler.BackSourceCount), options...)
+		strings.Split(req.UrlMeta.Filter, idgen.URLFilterSeparator), req.UrlMeta.Header, int32(v.config.Scheduler.BackToSourceCount), options...)
 	task, _ = v.resource.TaskManager().LoadOrStore(task)
 	host := v.storeHost(ctx, req.PeerHost)
 	peer := v.storePeer(ctx, peerID, req.UrlMeta.Priority, req.UrlMeta.Range, task, host)
@@ -546,6 +547,7 @@ func (v *V1) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequ
 		return nil
 	}
 
+	// Host already exists and updates properties.
 	host.Port = req.Port
 	host.DownloadPort = req.DownloadPort
 	host.Type = types.ParseHostType(req.Type)
@@ -555,6 +557,10 @@ func (v *V1) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequ
 	host.PlatformVersion = req.PlatformVersion
 	host.KernelVersion = req.KernelVersion
 	host.UpdatedAt.Store(time.Now())
+
+	if concurrentUploadLimit > 0 {
+		host.ConcurrentUploadLimit.Store(concurrentUploadLimit)
+	}
 
 	if req.Cpu != nil {
 		host.CPU = resource.CPU{
@@ -618,10 +624,6 @@ func (v *V1) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequ
 			GoVersion:  req.Build.GoVersion,
 			Platform:   req.Build.Platform,
 		}
-	}
-
-	if concurrentUploadLimit > 0 {
-		host.ConcurrentUploadLimit.Store(concurrentUploadLimit)
 	}
 
 	return nil
@@ -970,7 +972,7 @@ func (v *V1) handleBeginOfPiece(ctx context.Context, peer *resource.Peer) {
 			return
 		}
 
-		v.scheduling.ScheduleParentsForNormalPeer(ctx, peer, set.NewSafeSet[string]())
+		v.scheduling.ScheduleParentAndCandidateParents(ctx, peer, set.NewSafeSet[string]())
 	default:
 	}
 }
@@ -1041,7 +1043,7 @@ func (v *V1) handlePieceFailure(ctx context.Context, peer *resource.Peer, piece 
 	if !loaded {
 		peer.Log.Errorf("parent %s not found", piece.DstPid)
 		peer.BlockParents.Add(piece.DstPid)
-		v.scheduling.ScheduleParentsForNormalPeer(ctx, peer, peer.BlockParents)
+		v.scheduling.ScheduleParentAndCandidateParents(ctx, peer, peer.BlockParents)
 		return
 	}
 
@@ -1100,7 +1102,7 @@ func (v *V1) handlePieceFailure(ctx context.Context, peer *resource.Peer, piece 
 
 	peer.Log.Infof("reschedule parent because of failed piece")
 	peer.BlockParents.Add(parent.ID)
-	v.scheduling.ScheduleParentsForNormalPeer(ctx, peer, peer.BlockParents)
+	v.scheduling.ScheduleParentAndCandidateParents(ctx, peer, peer.BlockParents)
 }
 
 // handlePeerSuccess handles successful peer.
@@ -1142,7 +1144,7 @@ func (v *V1) handlePeerFailure(ctx context.Context, peer *resource.Peer) {
 	// Reschedule a new parent to children of peer to exclude the current failed peer.
 	for _, child := range peer.Children() {
 		child.Log.Infof("reschedule parent because of parent peer %s is failed", peer.ID)
-		v.scheduling.ScheduleParentsForNormalPeer(ctx, child, child.BlockParents)
+		v.scheduling.ScheduleParentAndCandidateParents(ctx, child, child.BlockParents)
 	}
 }
 
@@ -1157,7 +1159,7 @@ func (v *V1) handleLegacySeedPeer(ctx context.Context, peer *resource.Peer) {
 	// Reschedule a new parent to children of peer to exclude the current failed peer.
 	for _, child := range peer.Children() {
 		child.Log.Infof("reschedule parent because of parent peer %s is failed", peer.ID)
-		v.scheduling.ScheduleParentsForNormalPeer(ctx, child, child.BlockParents)
+		v.scheduling.ScheduleParentAndCandidateParents(ctx, child, child.BlockParents)
 	}
 }
 

@@ -36,6 +36,7 @@ import (
 	"go.uber.org/atomic"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/health"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
@@ -142,7 +143,8 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 		Addr: fmt.Sprintf("0.0.0.0:%d", port),
 	})
 	go func(daemon *dfdaemonv1mocks.MockDaemonServer, ln net.Listener) {
-		if err := daemonserver.New(daemon).Serve(ln); err != nil {
+		hs := health.NewServer()
+		if err := daemonserver.New(daemon, hs).Serve(ln); err != nil {
 			log.Fatal(err)
 		}
 	}(daemon, ln)

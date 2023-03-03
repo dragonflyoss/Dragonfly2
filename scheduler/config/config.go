@@ -26,6 +26,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/net/fqdn"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/slices"
 	"d7y.io/dragonfly/v2/pkg/types"
 )
 
@@ -492,14 +493,12 @@ func (cfg *Config) Validate() error {
 			return errors.New("job requires parameter addrs")
 		}
 
-		if len(cfg.Job.Redis.Addrs) == 1 {
-			if cfg.Job.Redis.BrokerDB <= 0 {
-				return errors.New("job requires parameter redis brokerDB")
-			}
+		if cfg.Job.Redis.BrokerDB <= 0 {
+			return errors.New("job requires parameter redis brokerDB")
+		}
 
-			if cfg.Job.Redis.BackendDB <= 0 {
-				return errors.New("job requires parameter redis backendDB")
-			}
+		if cfg.Job.Redis.BackendDB <= 0 {
+			return errors.New("job requires parameter redis backendDB")
 		}
 	}
 
@@ -524,6 +523,10 @@ func (cfg *Config) Validate() error {
 	if cfg.Security.AutoIssueCert {
 		if cfg.Security.CACert == "" {
 			return errors.New("security requires parameter caCert")
+		}
+
+		if !slices.Contains([]string{rpc.DefaultTLSPolicy, rpc.ForceTLSPolicy, rpc.PreferTLSPolicy}, cfg.Security.TLSPolicy) {
+			return errors.New("security requires parameter tlsPolicy")
 		}
 
 		if len(cfg.Security.CertSpec.IPAddresses) == 0 {
