@@ -173,11 +173,19 @@ func (v *V2) handleRegisterPeerRequest(hostID, taskID, peerID string, req *sched
 		peer := resource.NewPeer(peerID, task, host, peerOptions...)
 		v.resource.PeerManager().Store(peer)
 
-		switch peer.CalculatePriority(v.dynconfig) {
+		// If host type is not HostTypeNormal, then it needs to back-to-source.
+		if host.Type != types.HostTypeNormal {
+			peer.Log.Infof("%s peer needs back-to-source", host.Type.Name())
+			peer.NeedBackToSource.Store(true)
+			return nil
+		}
+
+		priority := peer.CalculatePriority(v.dynconfig)
+		switch priority {
 		case commonv2.Priority_LEVEL6, commonv2.Priority_LEVEL0:
 			if v.config.SeedPeer.Enable && !task.IsSeedPeerFailed() {
 				if err := v.resource.SeedPeer().DownloadTask(context.Background(), task); err != nil {
-					task.Log.Errorf("seed peer download task failed %s", err.Error())
+					peer.Log.Errorf("seed peer downloads task failed %s", err.Error())
 				}
 			}
 			fallthrough
@@ -186,11 +194,21 @@ func (v *V2) handleRegisterPeerRequest(hostID, taskID, peerID string, req *sched
 		case commonv2.Priority_LEVEL4:
 			fallthrough
 		case commonv2.Priority_LEVEL3:
+			peer.Log.Infof("%s peer needs back-to-source", commonv2.Priority_LEVEL3.String())
+			peer.NeedBackToSource.Store(true)
+			return nil
 		case commonv2.Priority_LEVEL2:
+			peer.Log.Infof("%s peer not found candidate peers", commonv2.Priority_LEVEL2.String())
+			return status.Error(codes.NotFound, "candidate peers not found")
 		case commonv2.Priority_LEVEL1:
+			peer.Log.Infof("%s peer is forbidden", commonv2.Priority_LEVEL1.String())
+			return status.Error(codes.FailedPrecondition, "download task is forbidden")
 		default:
+			return status.Errorf(codes.InvalidArgument, "invalid %#v", priority)
 		}
 	}
+
+	sizeScope := task.SizeScope()
 
 	return nil
 }
