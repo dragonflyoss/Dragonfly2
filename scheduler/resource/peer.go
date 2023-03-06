@@ -111,6 +111,13 @@ const (
 // PeerOption is a functional option for peer.
 type PeerOption func(peer *Peer)
 
+// WithAnnouncePeerStream set AnnouncePeerStream for peer.
+func WithAnnouncePeerStream(stream schedulerv2.Scheduler_AnnouncePeerServer) PeerOption {
+	return func(p *Peer) {
+		p.StoreAnnouncePeerStream(stream)
+	}
+}
+
 // WithPriority set Priority for peer.
 func WithPriority(priority commonv2.Priority) PeerOption {
 	return func(p *Peer) {
