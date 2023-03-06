@@ -448,7 +448,7 @@ func New() *Config {
 			NetworkRecord: NetworkRecordConfig{
 				LocalPath: DefaultNetworkRcordLocalPath,
 				MaxSize:   DefaultNetworkRcordMaxSize,
-				UnitSize:  DefaultHistoricalRecordUnitSize,
+				UnitSize:  DefaultNetworkRcordUnitSize,
 			},
 			HistoricalRecord: HistoricalRecordConfig{
 				LocalPath: DefaultHistoricalRecordLocalPath,

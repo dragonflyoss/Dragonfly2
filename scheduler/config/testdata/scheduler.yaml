@@ -93,11 +93,11 @@ trainer:
   IP: 177.7.0.1
   port: 8509
   networkRecord:
-    addr: "./networkRecord/"
+    localPath: "./networkRecord/"
     maxSize:  1024
     unitSize:  100
   historicalRecord:
-    addr: "./historicalRecord/"
+    localPath: "./historicalRecord/"
     maxSize:  1024
     unitSize:  100
 
