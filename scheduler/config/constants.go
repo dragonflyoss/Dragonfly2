@@ -170,9 +170,11 @@ const (
 )
 
 var (
+	// TODO(fyx): The default setting needs to be changed after testing.
 	// DefaultTrainerIP is the default ip for trainer
 	DefaultTrainerIP = net.ParseIP("177.7.0.1")
 
+	// TODO(fyx): The default setting needs to be changed after testing.
 	// DefaultTrainerPort is the default port for trainer
 	DefaultTrainerPort = 8509
 )
@@ -183,8 +185,8 @@ const (
 	DefaultRefreshInterval = 3 * 24 * time.Hour
 
 	// TODO(fyx): The default setting needs to be changed after testing.
-	// DefaultStorageBufferSize is the default network record storage address.
-	DefaultNetworkRcordAddr = "./networkRecord/"
+	// DefaultNetworkRcordLocalPath is the default network record storage path.
+	DefaultNetworkRcordLocalPath = "./networkRecord/"
 
 	// TODO(fyx): The default setting needs to be changed after testing.
 	// DefaultNetworkRcordMaxSize is the default total maximum size in megabytes of network records in one training process
@@ -195,8 +197,8 @@ const (
 	DefaultNetworkRcordUnitSize = 100
 
 	// TODO(fyx): The default setting needs to be changed after testing.
-	// DefaultHistoricalRecordAddr is the default historical record storage address.
-	DefaultHistoricalRecordAddr = "./historicalRecord/"
+	// DefaultHistoricalRecordLocalPath is the default historical record storage path.
+	DefaultHistoricalRecordLocalPath = "./historicalRecord/"
 
 	// TODO(fyx): The default setting needs to be changed after testing.
 	// DefaultNetworkRcordMaxSize is the default total maximum size in megabytes of historical records in one training process

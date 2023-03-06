@@ -340,10 +340,9 @@ type TrainerConfig struct {
 	HistoricalRecord HistoricalRecordConfig `yaml:"historicalRecord" mapstructure:"historicalRecord"`
 }
 
-// Network record for ai model training configuration
 type NetworkRecordConfig struct {
-	// Network record storage address.
-	Addr string `yaml:"addr" mapstructure:"addr"`
+	// LocalPath sets the network record storage local path.
+	LocalPath string `yaml:"localPath" mapstructure:"localPath"`
 
 	// MaxSize sets the total maximum size in megabytes of network records in one training process.
 	MaxSize int `yaml:"maxSize" mapstructure:"maxSize"`
@@ -352,10 +351,9 @@ type NetworkRecordConfig struct {
 	UnitSize int `yaml:"unitSize" mapstructure:"unitSize"`
 }
 
-// Historical record for ai model training configuration
 type HistoricalRecordConfig struct {
-	// Historical record storage address.
-	Addr string `yaml:"addr" mapstructure:"addr"`
+	// LocalPath sets the historical record storage path.
+	LocalPath string `yaml:"localPath" mapstructure:"localPath"`
 
 	// MaxSize sets the total maximum size in megabytes of historical records in one training process.
 	MaxSize int `yaml:"maxSize" mapstructure:"maxSize"`
@@ -448,14 +446,14 @@ func New() *Config {
 			IP:              DefaultTrainerIP,
 			Port:            DefaultTrainerPort,
 			NetworkRecord: NetworkRecordConfig{
-				Addr:     DefaultNetworkRcordAddr,
-				MaxSize:  DefaultNetworkRcordMaxSize,
-				UnitSize: DefaultHistoricalRecordUnitSize,
+				LocalPath: DefaultNetworkRcordLocalPath,
+				MaxSize:   DefaultNetworkRcordMaxSize,
+				UnitSize:  DefaultHistoricalRecordUnitSize,
 			},
 			HistoricalRecord: HistoricalRecordConfig{
-				Addr:     DefaultHistoricalRecordAddr,
-				MaxSize:  DefaultHistoricalRecordMaxSize,
-				UnitSize: DefaultHistoricalRecordUnitSize,
+				LocalPath: DefaultHistoricalRecordLocalPath,
+				MaxSize:   DefaultHistoricalRecordMaxSize,
+				UnitSize:  DefaultHistoricalRecordUnitSize,
 			},
 		},
 	}
@@ -626,12 +624,21 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.Trainer.Enable {
+
+		if cfg.Trainer.IP == nil {
+			return errors.New("server requires parameter IP")
+		}
+
+		if cfg.Trainer.Port <= 0 {
+			return errors.New("server requires parameter port")
+		}
+
 		if cfg.Trainer.RefreshInterval <= 0 {
 			return errors.New("trainer requires parameter RefreshInterval")
 		}
 
-		if cfg.Trainer.NetworkRecord.Addr == "" {
-			return errors.New("networkRecord requires parameter Addr")
+		if cfg.Trainer.NetworkRecord.LocalPath == "" {
+			return errors.New("networkRecord requires parameter LocalPath")
 		}
 
 		if cfg.Trainer.NetworkRecord.MaxSize <= 0 {
@@ -642,8 +649,8 @@ func (cfg *Config) Validate() error {
 			return errors.New("networkRecord requires parameter UnitSize")
 		}
 
-		if cfg.Trainer.HistoricalRecord.Addr == "" {
-			return errors.New("storicalRecord requires parameter Addr")
+		if cfg.Trainer.HistoricalRecord.LocalPath == "" {
+			return errors.New("storicalRecord requires parameter Localpath")
 		}
 
 		if cfg.Trainer.HistoricalRecord.MaxSize <= 0 {

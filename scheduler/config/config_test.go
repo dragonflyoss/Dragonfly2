@@ -170,14 +170,14 @@ func TestConfig_Load(t *testing.T) {
 			IP:              net.ParseIP("177.7.0.1"),
 			Port:            8509,
 			NetworkRecord: NetworkRecordConfig{
-				Addr:     "./networkRecord/",
-				MaxSize:  1024,
-				UnitSize: 100,
+				LocalPath: "./networkRecord/",
+				MaxSize:   1024,
+				UnitSize:  100,
 			},
 			HistoricalRecord: HistoricalRecordConfig{
-				Addr:     "./historicalRecord/",
-				MaxSize:  1024,
-				UnitSize: 100,
+				LocalPath: "./historicalRecord/",
+				MaxSize:   1024,
+				UnitSize:  100,
 			},
 		},
 	}
@@ -722,6 +722,123 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "probe requires parameter SyncCount")
+			},
+		},
+		{
+			name:   "trainer requires parameter IP",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Job = mockJobConfig
+				cfg.Trainer.IP = nil
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "trainer requires parameter IP")
+			},
+		},
+		{
+			name:   "trainer requires parameter Port",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Job = mockJobConfig
+				cfg.Trainer.Port = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "trainer requires parameter Port")
+			},
+		},
+		{
+			name:   "trainer requires parameter RefreshInterval",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Job = mockJobConfig
+				cfg.Trainer.RefreshInterval = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "trainer requires parameter RefreshInterval")
+			},
+		},
+		{
+			name:   "networkRecord requires parameter LocalPath",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Job = mockJobConfig
+				cfg.Trainer.NetworkRecord.LocalPath = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "networkRecord requires parameter LocalPath")
+			},
+		},
+		{
+			name:   "networkRecord requires parameter MaxSize",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Job = mockJobConfig
+				cfg.Trainer.NetworkRecord.MaxSize = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "networkRecord requires parameter MaxSize")
+			},
+		},
+		{
+			name:   "networkRecord requires parameter UnitSize",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Job = mockJobConfig
+				cfg.Trainer.NetworkRecord.UnitSize = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "networkRecord requires parameter UnitSize")
+			},
+		},
+		{
+			name:   "historicalRecord requires parameter LocalPath",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Job = mockJobConfig
+				cfg.Trainer.HistoricalRecord.LocalPath = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "historicalRecord requires parameter LocalPath")
+			},
+		},
+		{
+			name:   "historicalRecord requires parameter MaxSize",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Job = mockJobConfig
+				cfg.Trainer.HistoricalRecord.MaxSize = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "historicalRecord requires parameter MaxSize")
+			},
+		},
+		{
+			name:   "historicalRecord requires parameter UnitSize",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Job = mockJobConfig
+				cfg.Trainer.HistoricalRecord.UnitSize = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "historicalRecord requires parameter UnitSize")
 			},
 		},
 	}
