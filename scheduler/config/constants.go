@@ -185,7 +185,7 @@ const (
 	DefaultRefreshInterval = 3 * 24 * time.Hour
 
 	// TODO(fyx): The default setting needs to be changed after testing.
-	// DefaultNetworkRcordLocalPath is the default network record storage path.
+	// DefaultNetworkRcordLocalPath is the default network record storage local path.
 	DefaultNetworkRcordLocalPath = "./networkRecord/"
 
 	// TODO(fyx): The default setting needs to be changed after testing.
@@ -197,7 +197,7 @@ const (
 	DefaultNetworkRcordUnitSize = 100
 
 	// TODO(fyx): The default setting needs to be changed after testing.
-	// DefaultHistoricalRecordLocalPath is the default historical record storage path.
+	// DefaultHistoricalRecordLocalPath is the default historical record storage local path.
 	DefaultHistoricalRecordLocalPath = "./historicalRecord/"
 
 	// TODO(fyx): The default setting needs to be changed after testing.

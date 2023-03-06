@@ -352,7 +352,7 @@ type NetworkRecordConfig struct {
 }
 
 type HistoricalRecordConfig struct {
-	// LocalPath sets the historical record storage path.
+	// LocalPath sets the historical record local storage path.
 	LocalPath string `yaml:"localPath" mapstructure:"localPath"`
 
 	// MaxSize sets the total maximum size in megabytes of historical records in one training process.
