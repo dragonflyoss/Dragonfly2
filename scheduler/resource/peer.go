@@ -361,7 +361,7 @@ func (p *Peer) DeleteReportPieceResultStream() {
 // LoadAnnouncePeerStream return the grpc stream of Scheduler_AnnouncePeerServer,
 // Used only in v2 version of the grpc.
 func (p *Peer) LoadAnnouncePeerStream() (schedulerv2.Scheduler_AnnouncePeerServer, bool) {
-	rawStream := p.ReportPieceResultStream.Load()
+	rawStream := p.AnnouncePeerStream.Load()
 	if rawStream == nil {
 		return nil, false
 	}
@@ -372,13 +372,13 @@ func (p *Peer) LoadAnnouncePeerStream() (schedulerv2.Scheduler_AnnouncePeerServe
 // StoreAnnouncePeerStream set the grpc stream of Scheduler_AnnouncePeerServer,
 // Used only in v2 version of the grpc.
 func (p *Peer) StoreAnnouncePeerStream(stream schedulerv2.Scheduler_AnnouncePeerServer) {
-	p.ReportPieceResultStream.Store(stream)
+	p.AnnouncePeerStream.Store(stream)
 }
 
 // DeleteAnnouncePeerStream deletes the grpc stream of Scheduler_AnnouncePeerServer,
 // Used only in v2 version of the grpc.
 func (p *Peer) DeleteAnnouncePeerStream() {
-	p.ReportPieceResultStream = &atomic.Value{}
+	p.AnnouncePeerStream = &atomic.Value{}
 }
 
 // LoadPiece return piece for a key.

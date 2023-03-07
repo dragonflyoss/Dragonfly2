@@ -24,6 +24,8 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/otel/trace"
+
 	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	commonv2 "d7y.io/api/pkg/apis/common/v2"
@@ -82,13 +84,16 @@ func newSeedPeer(client SeedPeerClient, peerManager PeerManager, hostManager Hos
 // DownloadTask downloads task back-to-source.
 // Used only in v2 version of the grpc.
 func (s *seedPeer) DownloadTask(ctx context.Context, task *Task, hostType types.HostType) error {
+	// ctx, cancel := context.WithCancel(trace.ContextWithSpan(context.Background(), trace.SpanFromContext(ctx)))
+	// defer cancel()
+
 	return nil
 }
 
 // TriggerTask triggers the seed peer to download task.
 // Used only in v1 version of the grpc.
 func (s *seedPeer) TriggerTask(ctx context.Context, rg *http.Range, task *Task) (*Peer, *schedulerv1.PeerResult, error) {
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithCancel(trace.ContextWithSpan(context.Background(), trace.SpanFromContext(ctx)))
 	defer cancel()
 
 	urlMeta := &commonv1.UrlMeta{
