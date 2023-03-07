@@ -39,9 +39,10 @@ func TestAnnouncer_New(t *testing.T) {
 			name: "new announcer",
 			config: &config.Config{
 				Server: config.ServerConfig{
-					Host:        "localhost",
-					AdvertiseIP: net.ParseIP("127.0.0.1"),
-					Port:        8080,
+					Host:          "localhost",
+					AdvertiseIP:   net.ParseIP("127.0.0.1"),
+					AdvertisePort: 8004,
+					Port:          8080,
 				},
 				Host: config.HostConfig{
 					IDC:      "foo",
@@ -66,9 +67,10 @@ func TestAnnouncer_New(t *testing.T) {
 			name: "update scheduler failed",
 			config: &config.Config{
 				Server: config.ServerConfig{
-					Host:        "localhost",
-					AdvertiseIP: net.ParseIP("127.0.0.1"),
-					Port:        8080,
+					Host:          "localhost",
+					AdvertiseIP:   net.ParseIP("127.0.0.1"),
+					AdvertisePort: 8004,
+					Port:          8080,
 				},
 				Host: config.HostConfig{
 					IDC:      "foo",
