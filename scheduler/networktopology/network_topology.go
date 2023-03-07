@@ -87,6 +87,9 @@ type NetworkTopology interface {
 	// FindProbes finds the probe targets for host.
 	FindProbes(host *resource.Host) []*resource.Host
 
+	// SyncNetworkTopology synchronizes the network topology to other schedulers.
+	SyncNetworkTopology() error
+
 	// Serve starts networktopology server.
 	Serve() error
 
@@ -108,7 +111,7 @@ type networkTopology struct {
 	// Manager client interface
 	managerClient managerclient.V2
 
-	// TransportCredentials stores the Authenticator required to setup a client connection.
+	// TransportCredentials stores the Authenticator required to set up a client connection.
 	transportCredentials credentials.TransportCredentials
 
 	// LocalHosts stores the host from which the probe is sent
@@ -398,7 +401,7 @@ func (n *networkTopology) FindProbes(host *resource.Host) []*resource.Host {
 	return hosts[0:config.DefaultProbeSyncCount]
 }
 
-func (n *networkTopology) Serve() error {
+func (n *networkTopology) SyncNetworkTopology() error {
 
 	listSchedulersResponse, err := n.managerClient.ListSchedulers(context.Background(), &managerv2.ListSchedulersRequest{
 		SourceType: managerv2.SourceType_SCHEDULER_SOURCE,
@@ -517,17 +520,26 @@ func (n *networkTopology) Serve() error {
 			}
 		}
 	}
+	return nil
+}
 
+func (n *networkTopology) Serve() error {
+
+	if err := n.SyncNetworkTopology(); err != nil {
+		return err
+	}
 	tick := time.NewTicker(config.DefaultNetworkTopologySyncInterval)
 	for {
 		select {
 		case <-tick.C:
-			
+			if err := n.SyncNetworkTopology(); err != nil {
+				return err
+			}
 		case <-n.done:
 			return nil
 		}
+		return nil
 	}
-	return nil
 }
 
 func (n *networkTopology) Stop() error {
