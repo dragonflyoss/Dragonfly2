@@ -45,7 +45,7 @@ const (
 	DefaultServerPort = 8002
 
 	// DefaultServerAdvertisePort is default advertise port for server.
-	DefaultServerAdvertisePort = 8004
+	DefaultServerAdvertisePort = 8002
 )
 
 const (
