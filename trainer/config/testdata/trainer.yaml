@@ -1,0 +1,26 @@
+server:
+  grpc:
+    advertiseIP: 0.0.0.0
+    listenIP: 0.0.0.0
+    port:
+      start: 65003
+      end: 65003
+  keepAlive:
+    interval: 5s
+  objectStorage:
+    name: s3
+    endpoint: 127.0.0.1
+    accessKey: foo
+    secretKey: bar
+    region: baz
+
+metrics:
+  enable: true
+  addr: :8000
+
+trainer:
+    maxBackups: 5
+    dataPath: "/trainer/data"
+
+network:
+  enableIPv6: true
