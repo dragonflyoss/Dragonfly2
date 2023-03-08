@@ -10,6 +10,7 @@ import (
 
 	v1 "d7y.io/api/pkg/apis/scheduler/v1"
 	http "d7y.io/dragonfly/v2/pkg/net/http"
+	types "d7y.io/dragonfly/v2/pkg/types"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -51,17 +52,17 @@ func (mr *MockSeedPeerMockRecorder) Client() *gomock.Call {
 }
 
 // DownloadTask mocks base method.
-func (m *MockSeedPeer) DownloadTask(arg0 context.Context, arg1 *Task) error {
+func (m *MockSeedPeer) DownloadTask(arg0 context.Context, arg1 *Task, arg2 types.HostType) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DownloadTask", arg0, arg1)
+	ret := m.ctrl.Call(m, "DownloadTask", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DownloadTask indicates an expected call of DownloadTask.
-func (mr *MockSeedPeerMockRecorder) DownloadTask(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockSeedPeerMockRecorder) DownloadTask(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadTask", reflect.TypeOf((*MockSeedPeer)(nil).DownloadTask), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadTask", reflect.TypeOf((*MockSeedPeer)(nil).DownloadTask), arg0, arg1, arg2)
 }
 
 // Stop mocks base method.

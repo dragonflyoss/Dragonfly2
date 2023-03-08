@@ -38,4 +38,3 @@ COPY --from=health /bin/grpc_health_probe /bin/grpc_health_probe
 EXPOSE 65001
 
 ENTRYPOINT ["/opt/dragonfly/bin/dfget", "daemon"]
-

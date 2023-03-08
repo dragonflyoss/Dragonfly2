@@ -10,6 +10,7 @@ import (
 	time "time"
 
 	dfdaemon "d7y.io/api/pkg/apis/dfdaemon/v1"
+	config "d7y.io/dragonfly/v2/client/config"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -60,6 +61,18 @@ func (m *MockServer) Keep() {
 func (mr *MockServerMockRecorder) Keep() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Keep", reflect.TypeOf((*MockServer)(nil).Keep))
+}
+
+// OnNotify mocks base method.
+func (m *MockServer) OnNotify(arg0 *config.DynconfigData) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "OnNotify", arg0)
+}
+
+// OnNotify indicates an expected call of OnNotify.
+func (mr *MockServerMockRecorder) OnNotify(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnNotify", reflect.TypeOf((*MockServer)(nil).OnNotify), arg0)
 }
 
 // ServeDownload mocks base method.
