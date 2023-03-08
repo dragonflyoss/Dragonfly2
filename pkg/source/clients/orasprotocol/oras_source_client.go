@@ -28,6 +28,7 @@ import (
 	"strings"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/source"
 )
@@ -164,6 +165,9 @@ func (client *orasSourceClient) fetchToken(request *source.Request, path string)
 	} else if fileExists(os.Getenv("HOME") + configFilePath) {
 		var auth string
 		auth, err = fetchAuthInfo(request.URL.Host, true)
+		if err != nil {
+			return "", err
+		}
 		authHeaderVal = "Basic " + auth
 		response, err = client.doRequest(request, jsonAcceptHeader, authHeaderVal, tokenFetchURL)
 		if err != nil {
