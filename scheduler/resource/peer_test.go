@@ -78,7 +78,6 @@ func TestPeer_NewPeer(t *testing.T) {
 				assert.EqualValues(peer.Host, mockHost)
 				assert.Equal(peer.BlockParents.Len(), uint(0))
 				assert.Equal(peer.NeedBackToSource.Load(), false)
-				assert.Equal(peer.IsBackToSource.Load(), false)
 				assert.NotEqual(peer.PieceUpdatedAt.Load(), 0)
 				assert.NotEqual(peer.CreatedAt.Load(), 0)
 				assert.NotEqual(peer.UpdatedAt.Load(), 0)
@@ -104,7 +103,6 @@ func TestPeer_NewPeer(t *testing.T) {
 				assert.EqualValues(peer.Host, mockHost)
 				assert.Equal(peer.BlockParents.Len(), uint(0))
 				assert.Equal(peer.NeedBackToSource.Load(), false)
-				assert.Equal(peer.IsBackToSource.Load(), false)
 				assert.NotEqual(peer.PieceUpdatedAt.Load(), 0)
 				assert.NotEqual(peer.CreatedAt.Load(), 0)
 				assert.NotEqual(peer.UpdatedAt.Load(), 0)
@@ -133,7 +131,6 @@ func TestPeer_NewPeer(t *testing.T) {
 				assert.EqualValues(peer.Host, mockHost)
 				assert.Equal(peer.BlockParents.Len(), uint(0))
 				assert.Equal(peer.NeedBackToSource.Load(), false)
-				assert.Equal(peer.IsBackToSource.Load(), false)
 				assert.NotEqual(peer.PieceUpdatedAt.Load(), 0)
 				assert.NotEqual(peer.CreatedAt.Load(), 0)
 				assert.NotEqual(peer.UpdatedAt.Load(), 0)
@@ -159,7 +156,6 @@ func TestPeer_NewPeer(t *testing.T) {
 				assert.EqualValues(peer.Host, mockHost)
 				assert.Equal(peer.BlockParents.Len(), uint(0))
 				assert.Equal(peer.NeedBackToSource.Load(), false)
-				assert.Equal(peer.IsBackToSource.Load(), false)
 				assert.NotEqual(peer.PieceUpdatedAt.Load(), 0)
 				assert.NotEqual(peer.CreatedAt.Load(), 0)
 				assert.NotEqual(peer.UpdatedAt.Load(), 0)
@@ -768,112 +764,6 @@ func TestPeer_DownloadTinyFile(t *testing.T) {
 				assert := assert.New(t)
 				peer.Task.ID = "foobar"
 				_, err := peer.DownloadTinyFile()
-				assert.EqualError(err, "bad response status 404 Not Found")
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			mockHost := NewHost(
-				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
-				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
-			peer := NewPeer(mockPeerID, mockTask, mockHost)
-
-			if tc.mockServer == nil {
-				tc.mockServer = mockServer
-			}
-
-			s := tc.mockServer(t, peer)
-			defer s.Close()
-
-			url, err := url.Parse(s.URL)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			ip, rawPort, err := net.SplitHostPort(url.Host)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			port, err := strconv.ParseInt(rawPort, 10, 32)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			mockHost.IP = ip
-			mockHost.DownloadPort = int32(port)
-			tc.expect(t, peer)
-		})
-	}
-}
-
-func TestPeer_DownloadFile(t *testing.T) {
-	testData := []byte("./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" +
-		"./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
-	mockServer := func(t *testing.T, peer *Peer) *httptest.Server {
-		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			assert := assert.New(t)
-			assert.NotNil(peer)
-			assert.Equal(r.URL.Path, fmt.Sprintf("/download/%s/%s", peer.Task.ID[:3], peer.Task.ID))
-			assert.Equal(r.URL.RawQuery, fmt.Sprintf("peerId=%s", peer.ID))
-
-			rgs, err := nethttp.ParseRange(r.Header.Get(headers.Range), 128)
-			assert.Nil(err)
-			assert.Equal(1, len(rgs))
-			rg := rgs[0]
-
-			w.WriteHeader(http.StatusPartialContent)
-			n, err := w.Write(testData[rg.Start : rg.Start+rg.Length])
-			assert.Nil(err)
-			assert.Equal(int64(n), rg.Length)
-		}))
-	}
-
-	tests := []struct {
-		name       string
-		mockServer func(t *testing.T, peer *Peer) *httptest.Server
-		expect     func(t *testing.T, peer *Peer)
-	}{
-		{
-			name:       "download tiny file",
-			mockServer: mockServer,
-			expect: func(t *testing.T, peer *Peer) {
-				assert := assert.New(t)
-				peer.Task.ContentLength.Store(32)
-				data, err := peer.DownloadFile()
-				assert.NoError(err)
-				assert.Equal(testData[:32], data)
-			},
-		},
-		{
-			name:       "download tiny file with range",
-			mockServer: mockServer,
-			expect: func(t *testing.T, peer *Peer) {
-				assert := assert.New(t)
-				peer.Task.ContentLength.Store(10)
-				peer.Range = &nethttp.Range{
-					Start:  0,
-					Length: 10,
-				}
-				data, err := peer.DownloadFile()
-				assert.NoError(err)
-				assert.Equal(testData[:10], data)
-			},
-		},
-		{
-			name: "download tiny file failed because of http status code",
-			mockServer: func(t *testing.T, peer *Peer) *httptest.Server {
-				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.WriteHeader(http.StatusNotFound)
-				}))
-			},
-			expect: func(t *testing.T, peer *Peer) {
-				assert := assert.New(t)
-				peer.Task.ID = "foobar"
-				_, err := peer.DownloadFile()
 				assert.EqualError(err, "bad response status 404 Not Found")
 			},
 		},

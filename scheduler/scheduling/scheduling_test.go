@@ -302,7 +302,7 @@ func TestScheduling_ScheduleCandidateParents(t *testing.T) {
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(len(peer.Parents()), 0)
-				assert.True(peer.FSM.Is(resource.PeerStateBackToSource))
+				assert.True(peer.FSM.Is(resource.PeerStateRunning))
 				assert.True(peer.Task.FSM.Is(resource.TaskStatePending))
 			},
 		},
@@ -372,7 +372,7 @@ func TestScheduling_ScheduleCandidateParents(t *testing.T) {
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(len(peer.Parents()), 0)
-				assert.True(peer.FSM.Is(resource.PeerStateBackToSource))
+				assert.True(peer.FSM.Is(resource.PeerStateRunning))
 				assert.True(peer.Task.FSM.Is(resource.TaskStatePending))
 			},
 		},
@@ -829,8 +829,8 @@ func TestScheduling_FindCandidateParents(t *testing.T) {
 				peer.Task.StorePeer(mockPeers[1])
 				peer.Task.BackToSourcePeers.Add(mockPeers[0].ID)
 				peer.Task.BackToSourcePeers.Add(mockPeers[1].ID)
-				mockPeers[0].IsBackToSource.Store(true)
-				mockPeers[1].IsBackToSource.Store(true)
+				mockPeers[0].FSM.SetState(resource.PeerStateBackToSource)
+				mockPeers[1].FSM.SetState(resource.PeerStateBackToSource)
 				mockPeers[0].FinishedPieces.Set(0)
 				mockPeers[1].FinishedPieces.Set(0)
 				mockPeers[1].FinishedPieces.Set(1)
@@ -928,7 +928,7 @@ func TestScheduling_FindCandidateParents(t *testing.T) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				mockPeers[0].FSM.SetState(resource.PeerStateRunning)
 				mockPeers[1].FSM.SetState(resource.PeerStateRunning)
-				mockPeers[0].IsBackToSource.Store(true)
+				mockPeers[0].FSM.SetState(resource.PeerStateBackToSource)
 				mockPeers[1].Host = peer.Host
 				peer.Task.StorePeer(peer)
 				peer.Task.StorePeer(mockPeers[0])
@@ -952,8 +952,8 @@ func TestScheduling_FindCandidateParents(t *testing.T) {
 				peer.Task.StorePeer(mockPeers[1])
 				peer.Task.BackToSourcePeers.Add(mockPeers[0].ID)
 				peer.Task.BackToSourcePeers.Add(mockPeers[1].ID)
-				mockPeers[0].IsBackToSource.Store(true)
-				mockPeers[1].IsBackToSource.Store(true)
+				mockPeers[0].FSM.SetState(resource.PeerStateBackToSource)
+				mockPeers[1].FSM.SetState(resource.PeerStateBackToSource)
 				mockPeers[0].FinishedPieces.Set(0)
 				mockPeers[1].FinishedPieces.Set(0)
 				mockPeers[1].FinishedPieces.Set(1)
@@ -1099,15 +1099,13 @@ func TestScheduling_FindSuccessParent(t *testing.T) {
 			name: "find back-to-source parent",
 			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet[string], md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
-				mockPeers[0].FSM.SetState(resource.PeerStateSucceeded)
-				mockPeers[1].FSM.SetState(resource.PeerStateSucceeded)
 				peer.Task.StorePeer(peer)
 				peer.Task.StorePeer(mockPeers[0])
 				peer.Task.StorePeer(mockPeers[1])
 				peer.Task.BackToSourcePeers.Add(mockPeers[0].ID)
 				peer.Task.BackToSourcePeers.Add(mockPeers[1].ID)
-				mockPeers[0].IsBackToSource.Store(true)
-				mockPeers[1].IsBackToSource.Store(true)
+				mockPeers[0].FSM.SetState(resource.PeerStateSucceeded)
+				mockPeers[1].FSM.SetState(resource.PeerStateSucceeded)
 				mockPeers[0].FinishedPieces.Set(0)
 				mockPeers[1].FinishedPieces.Set(0)
 				mockPeers[1].FinishedPieces.Set(1)
@@ -1183,7 +1181,6 @@ func TestScheduling_FindSuccessParent(t *testing.T) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				mockPeers[0].FSM.SetState(resource.PeerStateSucceeded)
 				mockPeers[1].FSM.SetState(resource.PeerStateSucceeded)
-				mockPeers[0].IsBackToSource.Store(true)
 				mockPeers[1].Host = peer.Host
 				peer.Task.StorePeer(peer)
 				peer.Task.StorePeer(mockPeers[0])
@@ -1200,15 +1197,13 @@ func TestScheduling_FindSuccessParent(t *testing.T) {
 			name: "find parent and fetch filterParentLimit from manager dynconfig",
 			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet[string], md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
-				mockPeers[0].FSM.SetState(resource.PeerStateSucceeded)
-				mockPeers[1].FSM.SetState(resource.PeerStateSucceeded)
 				peer.Task.StorePeer(peer)
 				peer.Task.StorePeer(mockPeers[0])
 				peer.Task.StorePeer(mockPeers[1])
 				peer.Task.BackToSourcePeers.Add(mockPeers[0].ID)
 				peer.Task.BackToSourcePeers.Add(mockPeers[1].ID)
-				mockPeers[0].IsBackToSource.Store(true)
-				mockPeers[1].IsBackToSource.Store(true)
+				mockPeers[0].FSM.SetState(resource.PeerStateSucceeded)
+				mockPeers[1].FSM.SetState(resource.PeerStateSucceeded)
 				mockPeers[0].FinishedPieces.Set(0)
 				mockPeers[1].FinishedPieces.Set(0)
 				mockPeers[1].FinishedPieces.Set(1)
