@@ -49,6 +49,10 @@ var (
 )
 
 func TestPeer_NewPeer(t *testing.T) {
+	ctl := gomock.NewController(t)
+	defer ctl.Finish()
+	stream := v2mocks.NewMockScheduler_AnnouncePeerServer(ctl)
+
 	tests := []struct {
 		name    string
 		id      string
@@ -124,6 +128,32 @@ func TestPeer_NewPeer(t *testing.T) {
 				assert.Equal(len(peer.PieceCosts()), 0)
 				assert.Empty(peer.ReportPieceResultStream)
 				assert.Empty(peer.AnnouncePeerStream)
+				assert.Equal(peer.FSM.Current(), PeerStatePending)
+				assert.EqualValues(peer.Task, mockTask)
+				assert.EqualValues(peer.Host, mockHost)
+				assert.Equal(peer.BlockParents.Len(), uint(0))
+				assert.Equal(peer.NeedBackToSource.Load(), false)
+				assert.Equal(peer.IsBackToSource.Load(), false)
+				assert.NotEqual(peer.PieceUpdatedAt.Load(), 0)
+				assert.NotEqual(peer.CreatedAt.Load(), 0)
+				assert.NotEqual(peer.UpdatedAt.Load(), 0)
+				assert.NotNil(peer.Log)
+			},
+		},
+		{
+			name:    "new peer with AnnouncePeerStream",
+			id:      mockPeerID,
+			options: []PeerOption{WithAnnouncePeerStream(stream)},
+			expect: func(t *testing.T, peer *Peer, mockTask *Task, mockHost *Host) {
+				assert := assert.New(t)
+				assert.Equal(peer.ID, mockPeerID)
+				assert.Nil(peer.Range)
+				assert.Equal(peer.Priority, commonv2.Priority_LEVEL0)
+				assert.Empty(peer.Pieces)
+				assert.Empty(peer.FinishedPieces)
+				assert.Equal(len(peer.PieceCosts()), 0)
+				assert.Empty(peer.ReportPieceResultStream)
+				assert.NotEmpty(peer.AnnouncePeerStream)
 				assert.Equal(peer.FSM.Current(), PeerStatePending)
 				assert.EqualValues(peer.Task, mockTask)
 				assert.EqualValues(peer.Host, mockHost)
@@ -886,7 +916,7 @@ func TestPeer_DownloadFile(t *testing.T) {
 	}
 }
 
-func TestPeer_GetPriority(t *testing.T) {
+func TestPeer_CalculatePriority(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(peer *Peer, md *configmocks.MockDynconfigInterfaceMockRecorder)
@@ -1009,7 +1039,7 @@ func TestPeer_GetPriority(t *testing.T) {
 			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
 			tc.mock(peer, dynconfig.EXPECT())
-			tc.expect(t, peer.GetPriority(dynconfig))
+			tc.expect(t, peer.CalculatePriority(dynconfig))
 		})
 	}
 }
