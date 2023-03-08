@@ -158,6 +158,8 @@ func (client *orasSourceClient) fetchToken(request *source.Request, path string)
 	var err error
 	tokenFetchURL := fmt.Sprintf("https://%s/service/token/?scope=repository:%s:pull&service=harbor-registry", request.URL.Host, path)
 	if authHeaderVal := request.Header.Get(authHeader); authHeaderVal != "" {
+		// remove the internal auth header
+		request.Header.Del(authHeader)
 		response, err = client.doRequest(request, jsonAcceptHeader, authHeaderVal, tokenFetchURL)
 		if err != nil {
 			return "", err
