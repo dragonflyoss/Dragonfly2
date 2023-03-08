@@ -18,6 +18,7 @@ package source
 
 import (
 	"fmt"
+	"net/url"
 
 	"gopkg.in/yaml.v3"
 
@@ -38,7 +39,7 @@ type ResourceClientBuilder interface {
 
 // AuthInfoInjector will inject auth information for target url and metadata, eg: fetch docker config for different users
 type AuthInfoInjector interface {
-	Inject(url string, urlMeta *commonv1.UrlMeta) error
+	Inject(_url *url.URL, urlMeta *commonv1.UrlMeta) error
 }
 
 // RegisterOption is used for extra options when registering, like mark target scheme protocol should inject auth information
@@ -116,14 +117,14 @@ func NewPlainResourceClientBuilder(
 }
 
 type plainAuthInfoInjector struct {
-	inject func(url string, urlMeta *commonv1.UrlMeta) error
+	inject func(url *url.URL, urlMeta *commonv1.UrlMeta) error
 }
 
-func (a *plainAuthInfoInjector) Inject(url string, urlMeta *commonv1.UrlMeta) error {
-	return a.inject(url, urlMeta)
+func (a *plainAuthInfoInjector) Inject(_url *url.URL, urlMeta *commonv1.UrlMeta) error {
+	return a.inject(_url, urlMeta)
 }
 
 func NewPlainAuthInfoInjector(
-	inject func(url string, urlMeta *commonv1.UrlMeta) error) AuthInfoInjector {
+	inject func(url *url.URL, urlMeta *commonv1.UrlMeta) error) AuthInfoInjector {
 	return &plainAuthInfoInjector{inject: inject}
 }

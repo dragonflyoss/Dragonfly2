@@ -69,13 +69,8 @@ func Builder(optionYaml []byte) (source.ResourceClient, source.RequestAdapter, [
 	return client, client.adaptor, nil, nil
 }
 
-func AuthInfoInjector(_url string, urlMeta *commonv1.UrlMeta) error {
-	u, err := url.Parse(_url)
-	if err != nil {
-		return err
-	}
-
-	auth, err := fetchAuthInfo(u.Host, false)
+func AuthInfoInjector(_url *url.URL, urlMeta *commonv1.UrlMeta) error {
+	auth, err := fetchAuthInfo(_url.Host, false)
 	if err != nil {
 		return err
 	}
