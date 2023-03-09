@@ -28,7 +28,6 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/status"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
@@ -681,7 +680,7 @@ func (v *V1) triggerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, 
 		priority = req.UrlMeta.Priority
 	} else {
 		// Compatible with v1 version of priority enum.
-		priority = types.PriorityV2ToV1(peer.GetPriority(dynconfig))
+		priority = types.PriorityV2ToV1(peer.CalculatePriority(dynconfig))
 	}
 	peer.Log.Infof("peer priority is %d", priority)
 
@@ -722,8 +721,6 @@ func (v *V1) triggerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, 
 
 // triggerSeedPeerTask starts to trigger seed peer task.
 func (v *V1) triggerSeedPeerTask(ctx context.Context, rg *http.Range, task *resource.Task) {
-	ctx = trace.ContextWithSpan(context.Background(), trace.SpanFromContext(ctx))
-
 	task.Log.Info("trigger seed peer")
 	peer, endOfPiece, err := v.resource.SeedPeer().TriggerTask(ctx, rg, task)
 	if err != nil {

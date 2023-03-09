@@ -111,6 +111,13 @@ const (
 // PeerOption is a functional option for peer.
 type PeerOption func(peer *Peer)
 
+// WithAnnouncePeerStream set AnnouncePeerStream for peer.
+func WithAnnouncePeerStream(stream schedulerv2.Scheduler_AnnouncePeerServer) PeerOption {
+	return func(p *Peer) {
+		p.StoreAnnouncePeerStream(stream)
+	}
+}
+
 // WithPriority set Priority for peer.
 func WithPriority(priority commonv2.Priority) PeerOption {
 	return func(p *Peer) {
@@ -354,7 +361,7 @@ func (p *Peer) DeleteReportPieceResultStream() {
 // LoadAnnouncePeerStream return the grpc stream of Scheduler_AnnouncePeerServer,
 // Used only in v2 version of the grpc.
 func (p *Peer) LoadAnnouncePeerStream() (schedulerv2.Scheduler_AnnouncePeerServer, bool) {
-	rawStream := p.ReportPieceResultStream.Load()
+	rawStream := p.AnnouncePeerStream.Load()
 	if rawStream == nil {
 		return nil, false
 	}
@@ -365,13 +372,13 @@ func (p *Peer) LoadAnnouncePeerStream() (schedulerv2.Scheduler_AnnouncePeerServe
 // StoreAnnouncePeerStream set the grpc stream of Scheduler_AnnouncePeerServer,
 // Used only in v2 version of the grpc.
 func (p *Peer) StoreAnnouncePeerStream(stream schedulerv2.Scheduler_AnnouncePeerServer) {
-	p.ReportPieceResultStream.Store(stream)
+	p.AnnouncePeerStream.Store(stream)
 }
 
 // DeleteAnnouncePeerStream deletes the grpc stream of Scheduler_AnnouncePeerServer,
 // Used only in v2 version of the grpc.
 func (p *Peer) DeleteAnnouncePeerStream() {
-	p.ReportPieceResultStream = &atomic.Value{}
+	p.AnnouncePeerStream = &atomic.Value{}
 }
 
 // LoadPiece return piece for a key.
@@ -515,8 +522,8 @@ func (p *Peer) DownloadFile() ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
-// GetPriority returns priority of peer.
-func (p *Peer) GetPriority(dynconfig config.DynconfigInterface) commonv2.Priority {
+// CalculatePriority returns priority of peer.
+func (p *Peer) CalculatePriority(dynconfig config.DynconfigInterface) commonv2.Priority {
 	if p.Priority != commonv2.Priority_LEVEL0 {
 		return p.Priority
 	}
