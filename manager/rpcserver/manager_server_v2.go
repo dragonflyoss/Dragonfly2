@@ -436,6 +436,8 @@ func (s *managerServerV2) createScheduler(ctx context.Context, req *managerv2.Up
 
 // List acitve schedulers configuration.
 func (s *managerServerV2) ListSchedulers(ctx context.Context, req *managerv2.ListSchedulersRequest) (*managerv2.ListSchedulersResponse, error) {
+	metrics.SearchSchedulerClusterCount.WithLabelValues(req.Version, req.Commit).Inc()
+
 	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
 	log.Debugf("list schedulers, version %s, commit %s", req.Version, req.Commit)
 
