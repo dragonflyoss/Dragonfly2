@@ -115,12 +115,6 @@ func (s *scheduling) ScheduleCandidateParents(ctx context.Context, peer *resourc
 					return status.Error(codes.FailedPrecondition, err.Error())
 				}
 
-				if err := peer.FSM.Event(ctx, resource.PeerEventDownloadBackToSource); err != nil {
-					msg := fmt.Sprintf("peer fsm event failed: %s", err.Error())
-					peer.Log.Error(msg)
-					return status.Error(codes.Internal, err.Error())
-				}
-
 				return nil
 			}
 
@@ -144,12 +138,6 @@ func (s *scheduling) ScheduleCandidateParents(ctx context.Context, peer *resourc
 				}); err != nil {
 					peer.Log.Error(err)
 					return status.Error(codes.FailedPrecondition, err.Error())
-				}
-
-				if err := peer.FSM.Event(ctx, resource.PeerEventDownloadBackToSource); err != nil {
-					msg := fmt.Sprintf("peer fsm event failed: %s", err.Error())
-					peer.Log.Error(msg)
-					return status.Error(codes.Internal, err.Error())
 				}
 
 				return nil
@@ -520,11 +508,10 @@ func (s *scheduling) filterCandidateParents(peer *resource.Peer, blocklist set.S
 		// Condition 2: Parent has been back-to-source.
 		// Condition 3: Parent has been succeeded.
 		// Condition 4: Parent is seed peer.
-		isBackToSource := candidateParent.IsBackToSource.Load()
-		if candidateParent.Host.Type == types.HostTypeNormal && inDegree == 0 && !isBackToSource &&
+		if candidateParent.Host.Type == types.HostTypeNormal && inDegree == 0 && !candidateParent.FSM.Is(resource.PeerStateBackToSource) &&
 			!candidateParent.FSM.Is(resource.PeerStateSucceeded) {
-			peer.Log.Debugf("parent %s is not selected, because its download state is %d %d %t %s",
-				candidateParent.ID, inDegree, int(candidateParent.Host.Type), isBackToSource, candidateParent.FSM.Current())
+			peer.Log.Debugf("parent %s is not selected, because its download state is %d %d %s",
+				candidateParent.ID, inDegree, int(candidateParent.Host.Type), candidateParent.FSM.Current())
 			continue
 		}
 

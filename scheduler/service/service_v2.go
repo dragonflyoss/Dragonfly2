@@ -115,34 +115,64 @@ func (v *V2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePeerServer) error
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerStartedRequest:
 			logger.Infof("receive AnnouncePeerRequest_DownloadPeerStartedRequest: %#v", announcePeerRequest.DownloadPeerStartedRequest)
-			v.handleDownloadPeerStartedRequest(ctx, announcePeerRequest.DownloadPeerStartedRequest)
+			if err := v.handleDownloadPeerStartedRequest(ctx, req.PeerId); err != nil {
+				logger.Error(err)
+				return err
+			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerBackToSourceStartedRequest:
 			logger.Infof("receive AnnouncePeerRequest_DownloadPeerBackToSourceStartedRequest: %#v", announcePeerRequest.DownloadPeerBackToSourceStartedRequest)
-			v.handleDownloadPeerBackToSourceStartedRequest(ctx, announcePeerRequest.DownloadPeerBackToSourceStartedRequest)
-		case *schedulerv2.AnnouncePeerRequest_DownloadSeedPeerBackToSourceStartedRequest:
-			logger.Infof("receive AnnouncePeerRequest_DownloadSeedPeerBackToSourceStartedRequest: %#v", announcePeerRequest.DownloadSeedPeerBackToSourceStartedRequest)
-			v.handleDownloadSeedPeerBackToSourceStartedRequest(ctx, announcePeerRequest.DownloadSeedPeerBackToSourceStartedRequest)
+			if err := v.handleDownloadPeerBackToSourceStartedRequest(ctx, req.PeerId); err != nil {
+				logger.Error(err)
+				return err
+			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerFinishedRequest:
 			logger.Infof("receive AnnouncePeerRequest_DownloadPeerFinishedRequest: %#v", announcePeerRequest.DownloadPeerFinishedRequest)
-			v.handleDownloadPeerFinishedRequest(ctx, announcePeerRequest.DownloadPeerFinishedRequest)
+			if err := v.handleDownloadPeerFinishedRequest(ctx, req.PeerId); err != nil {
+				logger.Error(err)
+				return err
+			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerBackToSourceFinishedRequest:
 			logger.Infof("receive AnnouncePeerRequest_DownloadPeerBackToSourceFinishedRequest: %#v", announcePeerRequest.DownloadPeerBackToSourceFinishedRequest)
-			v.handleDownloadPeerBackToSourceFinishedRequest(ctx, announcePeerRequest.DownloadPeerBackToSourceFinishedRequest)
-		case *schedulerv2.AnnouncePeerRequest_DownloadSeedPeerBackToSourceFinishedRequest:
-			logger.Infof("receive AnnouncePeerRequest_DownloadSeedPeerBackToSourceFinishedRequest: %#v", announcePeerRequest.DownloadSeedPeerBackToSourceFinishedRequest)
-			v.handleDownloadSeedPeerBackToSourceFinishedRequest(ctx, announcePeerRequest.DownloadSeedPeerBackToSourceFinishedRequest)
+			if err := v.handleDownloadPeerBackToSourceFinishedRequest(ctx, req.PeerId, announcePeerRequest.DownloadPeerBackToSourceFinishedRequest); err != nil {
+				logger.Error(err)
+				return err
+			}
+		case *schedulerv2.AnnouncePeerRequest_DownloadPeerFailedRequest:
+			logger.Infof("receive AnnouncePeerRequest_DownloadPeerFailedRequest: %#v", announcePeerRequest.DownloadPeerFailedRequest)
+			if err := v.handleDownloadPeerFailedRequest(ctx, req.PeerId); err != nil {
+				logger.Error(err)
+				return err
+			}
+		case *schedulerv2.AnnouncePeerRequest_DownloadPeerBackToSourceFailedRequest:
+			logger.Infof("receive AnnouncePeerRequest_DownloadPeerBackToSourceFailedRequest: %#v", announcePeerRequest.DownloadPeerBackToSourceFailedRequest)
+			if err := v.handleDownloadPeerBackToSourceFailedRequest(ctx, req.PeerId); err != nil {
+				logger.Error(err)
+				return err
+			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPieceFinishedRequest:
 			logger.Infof("receive AnnouncePeerRequest_DownloadPieceFinishedRequest: %#v", announcePeerRequest.DownloadPieceFinishedRequest)
-			v.handleDownloadPieceFinishedRequest(ctx, announcePeerRequest.DownloadPieceFinishedRequest)
+			if err := v.handleDownloadPieceFinishedRequest(ctx, req.PeerId, announcePeerRequest.DownloadPieceFinishedRequest); err != nil {
+				logger.Error(err)
+				return err
+			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPieceBackToSourceFinishedRequest:
 			logger.Infof("receive AnnouncePeerRequest_DownloadPieceBackToSourceFinishedRequest: %#v", announcePeerRequest.DownloadPieceBackToSourceFinishedRequest)
-			v.handleDownloadPieceBackToSourceFinishedRequest(ctx, announcePeerRequest.DownloadPieceBackToSourceFinishedRequest)
+			if err := v.handleDownloadPieceBackToSourceFinishedRequest(ctx, req.PeerId, announcePeerRequest.DownloadPieceBackToSourceFinishedRequest); err != nil {
+				logger.Error(err)
+				return err
+			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPieceFailedRequest:
 			logger.Infof("receive AnnouncePeerRequest_DownloadPieceFailedRequest: %#v", announcePeerRequest.DownloadPieceFailedRequest)
-			v.handleDownloadPieceFailedRequest(ctx, announcePeerRequest.DownloadPieceFailedRequest)
+			if err := v.handleDownloadPieceFailedRequest(ctx, req.PeerId, announcePeerRequest.DownloadPieceFailedRequest); err != nil {
+				logger.Error(err)
+				return err
+			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPieceBackToSourceFailedRequest:
 			logger.Infof("receive AnnouncePeerRequest_DownloadPieceBackToSourceFailedRequest: %#v", announcePeerRequest.DownloadPieceBackToSourceFailedRequest)
-			v.handleDownloadPieceBackToSourceFailedRequest(ctx, announcePeerRequest.DownloadPieceBackToSourceFailedRequest)
+			if err := v.handleDownloadPieceBackToSourceFailedRequest(ctx, req.PeerId, announcePeerRequest.DownloadPieceBackToSourceFailedRequest); err != nil {
+				logger.Error(err)
+				return err
+			}
 		case *schedulerv2.AnnouncePeerRequest_SyncPiecesFailedRequest:
 			logger.Infof("receive AnnouncePeerRequest_SyncPiecesFailedRequest: %#v", announcePeerRequest.SyncPiecesFailedRequest)
 			v.handleSyncPiecesFailedRequest(ctx, announcePeerRequest.SyncPiecesFailedRequest)
@@ -152,61 +182,6 @@ func (v *V2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePeerServer) error
 			return status.Error(codes.FailedPrecondition, msg)
 		}
 	}
-}
-
-// TODO Implement function.
-// handleDownloadPeerStartedRequest handles DownloadPeerStartedRequest of AnnouncePeerRequest.
-func (v *V2) handleDownloadPeerStartedRequest(ctx context.Context, req *schedulerv2.DownloadPeerStartedRequest) {
-}
-
-// TODO Implement function.
-// handleDownloadPeerBackToSourceStartedRequest handles DownloadPeerBackToSourceStartedRequest of AnnouncePeerRequest.
-func (v *V2) handleDownloadPeerBackToSourceStartedRequest(ctx context.Context, req *schedulerv2.DownloadPeerBackToSourceStartedRequest) {
-}
-
-// TODO Implement function.
-// handleDownloadSeedPeerBackToSourceStartedRequest handles DownloadSeedPeerBackToSourceStartedRequest of AnnouncePeerRequest.
-func (v *V2) handleDownloadSeedPeerBackToSourceStartedRequest(ctx context.Context, req *schedulerv2.DownloadSeedPeerBackToSourceStartedRequest) {
-}
-
-// TODO Implement function.
-// handleDownloadPeerFinishedRequest handles DownloadPeerFinishedRequest of AnnouncePeerRequest.
-func (v *V2) handleDownloadPeerFinishedRequest(ctx context.Context, req *schedulerv2.DownloadPeerFinishedRequest) {
-}
-
-// TODO Implement function.
-// handleDownloadPeerBackToSourceFinishedRequest handles DownloadPeerBackToSourceFinishedRequest of AnnouncePeerRequest.
-func (v *V2) handleDownloadPeerBackToSourceFinishedRequest(ctx context.Context, req *schedulerv2.DownloadPeerBackToSourceFinishedRequest) {
-}
-
-// TODO Implement function.
-// handleDownloadSeedPeerBackToSourceFinishedRequest handles DownloadSeedPeerBackToSourceFinishedRequest of AnnouncePeerRequest.
-func (v *V2) handleDownloadSeedPeerBackToSourceFinishedRequest(ctx context.Context, req *schedulerv2.DownloadSeedPeerBackToSourceFinishedRequest) {
-}
-
-// TODO Implement function.
-// handleDownloadPieceFinishedRequest handles DownloadPieceFinishedRequest of AnnouncePeerRequest.
-func (v *V2) handleDownloadPieceFinishedRequest(ctx context.Context, req *schedulerv2.DownloadPieceFinishedRequest) {
-}
-
-// TODO Implement function.
-// handleDownloadPieceBackToSourceFinishedRequest handles DownloadPieceBackToSourceFinishedRequest of AnnouncePeerRequest.
-func (v *V2) handleDownloadPieceBackToSourceFinishedRequest(ctx context.Context, req *schedulerv2.DownloadPieceBackToSourceFinishedRequest) {
-}
-
-// TODO Implement function.
-// handleDownloadPieceFailedRequest handles DownloadPieceFailedRequest of AnnouncePeerRequest.
-func (v *V2) handleDownloadPieceFailedRequest(ctx context.Context, req *schedulerv2.DownloadPieceFailedRequest) {
-}
-
-// TODO Implement function.
-// handleDownloadPieceBackToSourceFailedRequest handles DownloadPieceBackToSourceFailedRequest of AnnouncePeerRequest.
-func (v *V2) handleDownloadPieceBackToSourceFailedRequest(ctx context.Context, req *schedulerv2.DownloadPieceBackToSourceFailedRequest) {
-}
-
-// TODO Implement function.
-// handleSyncPiecesFailedRequest handles SyncPiecesFailedRequest of AnnouncePeerRequest.
-func (v *V2) handleSyncPiecesFailedRequest(ctx context.Context, req *schedulerv2.SyncPiecesFailedRequest) {
 }
 
 // StatPeer checks information of peer.
@@ -399,7 +374,7 @@ func (v *V2) LeavePeer(ctx context.Context, req *schedulerv2.LeavePeerRequest) e
 	return nil
 }
 
-// TODO exchange peer api definition.
+// TODO Implement function.
 // ExchangePeer exchanges peer information.
 func (v *V2) ExchangePeer(ctx context.Context, req *schedulerv2.ExchangePeerRequest) (*schedulerv2.ExchangePeerResponse, error) {
 	return nil, nil
@@ -676,7 +651,7 @@ func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.S
 	// the first task download in the p2p cluster.
 	blocklist := set.NewSafeSet[string]()
 	blocklist.Add(peer.ID)
-	if !task.HasAvailablePeer(blocklist) {
+	if task.FSM.Is(resource.TaskStateFailed) || !task.HasAvailablePeer(blocklist) {
 		if err := v.downloadTaskBySeedPeer(ctx, peer); err != nil {
 			return err
 		}
@@ -698,7 +673,7 @@ func (v *V2) handleRegisterSeedPeerRequest(ctx context.Context, stream scheduler
 	// the first task download in the p2p cluster.
 	blocklist := set.NewSafeSet[string]()
 	blocklist.Add(peer.ID)
-	if !task.HasAvailablePeer(blocklist) {
+	if task.FSM.Is(resource.TaskStateFailed) || !task.HasAvailablePeer(blocklist) {
 		// When the task has no available peer,
 		// the seed peer will download back-to-source directly.
 		peer.NeedBackToSource.Store(true)
@@ -706,6 +681,288 @@ func (v *V2) handleRegisterSeedPeerRequest(ctx context.Context, stream scheduler
 
 	// Scheduling parent for the peer..
 	return v.schedule(ctx, peer)
+}
+
+// handleDownloadPeerStartedRequest handles DownloadPeerStartedRequest of AnnouncePeerRequest.
+func (v *V2) handleDownloadPeerStartedRequest(ctx context.Context, peerID string) error {
+	peer, loaded := v.resource.PeerManager().Load(peerID)
+	if !loaded {
+		return status.Errorf(codes.NotFound, "peer %s not found", peerID)
+	}
+
+	// Handle peer with peer started request.
+	if err := peer.FSM.Event(ctx, resource.PeerEventDownload); err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+
+	// Handle task with peer started request.
+	if !peer.Task.FSM.Is(resource.TaskStateRunning) {
+		if err := peer.Task.FSM.Event(ctx, resource.TaskEventDownload); err != nil {
+			return status.Error(codes.Internal, err.Error())
+		}
+	} else {
+		peer.Task.UpdatedAt.Store(time.Now())
+	}
+
+	return nil
+}
+
+// handleDownloadPeerBackToSourceStartedRequest handles DownloadPeerBackToSourceStartedRequest of AnnouncePeerRequest.
+func (v *V2) handleDownloadPeerBackToSourceStartedRequest(ctx context.Context, peerID string) error {
+	peer, loaded := v.resource.PeerManager().Load(peerID)
+	if !loaded {
+		return status.Errorf(codes.NotFound, "peer %s not found", peerID)
+	}
+
+	// Handle peer with peer back-to-source started request.
+	if err := peer.FSM.Event(ctx, resource.PeerEventDownloadBackToSource); err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+
+	// Handle task with peer back-to-source started request.
+	if !peer.Task.FSM.Is(resource.TaskStateRunning) {
+		if err := peer.Task.FSM.Event(ctx, resource.TaskEventDownload); err != nil {
+			return status.Error(codes.Internal, err.Error())
+		}
+	} else {
+		peer.Task.UpdatedAt.Store(time.Now())
+	}
+
+	return nil
+}
+
+// handleDownloadPeerFinishedRequest handles DownloadPeerFinishedRequest of AnnouncePeerRequest.
+func (v *V2) handleDownloadPeerFinishedRequest(ctx context.Context, peerID string) error {
+	peer, loaded := v.resource.PeerManager().Load(peerID)
+	if !loaded {
+		return status.Errorf(codes.NotFound, "peer %s not found", peerID)
+	}
+
+	// Handle peer with peer finished request.
+	peer.Cost.Store(time.Since(peer.CreatedAt.Load()))
+	if err := peer.FSM.Event(ctx, resource.PeerEventDownloadSucceeded); err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+
+	return nil
+}
+
+// handleDownloadPeerBackToSourceFinishedRequest handles DownloadPeerBackToSourceFinishedRequest of AnnouncePeerRequest.
+func (v *V2) handleDownloadPeerBackToSourceFinishedRequest(ctx context.Context, peerID string, req *schedulerv2.DownloadPeerBackToSourceFinishedRequest) error {
+	peer, loaded := v.resource.PeerManager().Load(peerID)
+	if !loaded {
+		return status.Errorf(codes.NotFound, "peer %s not found", peerID)
+	}
+
+	// Handle peer with peer back-to-source finished request.
+	peer.Cost.Store(time.Since(peer.CreatedAt.Load()))
+	if err := peer.FSM.Event(ctx, resource.PeerEventDownloadSucceeded); err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+
+	// Handle task with peer back-to-source finished request, peer can only represent
+	// a successful task after downloading the complete task.
+	if peer.Range == nil && !peer.Task.FSM.Is(resource.TaskStateSucceeded) {
+		peer.Task.ContentLength.Store(req.ContentLength)
+		peer.Task.TotalPieceCount.Store(req.PieceCount)
+		if err := peer.Task.FSM.Event(ctx, resource.TaskEventDownloadSucceeded); err != nil {
+			return status.Error(codes.Internal, err.Error())
+		}
+
+		// If the task size scope is tiny, scheduler needs to download the tiny file from peer and
+		// store the data in task DirectPiece.
+		if peer.Task.SizeScope() == commonv2.SizeScope_TINY {
+			data, err := peer.DownloadTinyFile()
+			if err != nil {
+				peer.Log.Errorf("download failed: %s", err.Error())
+				return nil
+			}
+
+			if len(data) != int(peer.Task.ContentLength.Load()) {
+				peer.Log.Errorf("data length %d is not equal content length %d", len(data), peer.Task.ContentLength.Load())
+				return nil
+			}
+
+			peer.Task.DirectPiece = data
+		}
+	}
+
+	return nil
+}
+
+// handleDownloadPeerFailedRequest handles DownloadPeerFailedRequest of AnnouncePeerRequest.
+func (v *V2) handleDownloadPeerFailedRequest(ctx context.Context, peerID string) error {
+	peer, loaded := v.resource.PeerManager().Load(peerID)
+	if !loaded {
+		return status.Errorf(codes.NotFound, "peer %s not found", peerID)
+	}
+
+	// Handle peer with peer failed request.
+	if err := peer.FSM.Event(ctx, resource.PeerEventDownloadFailed); err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+
+	// Handle task with peer failed request.
+	peer.Task.UpdatedAt.Store(time.Now())
+	return nil
+}
+
+// handleDownloadPeerBackToSourceFailedRequest handles DownloadPeerBackToSourceFailedRequest of AnnouncePeerRequest.
+func (v *V2) handleDownloadPeerBackToSourceFailedRequest(ctx context.Context, peerID string) error {
+	peer, loaded := v.resource.PeerManager().Load(peerID)
+	if !loaded {
+		return status.Errorf(codes.NotFound, "peer %s not found", peerID)
+	}
+
+	// Handle peer with peer back-to-source failed request.
+	if err := peer.FSM.Event(ctx, resource.PeerEventDownloadFailed); err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+
+	// Handle task with peer back-to-source failed request.
+	peer.Task.ContentLength.Store(-1)
+	peer.Task.TotalPieceCount.Store(0)
+	peer.Task.DirectPiece = []byte{}
+	if err := peer.Task.FSM.Event(ctx, resource.TaskEventDownloadFailed); err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+
+	return nil
+}
+
+// handleDownloadPieceFinishedRequest handles DownloadPieceFinishedRequest of AnnouncePeerRequest.
+func (v *V2) handleDownloadPieceFinishedRequest(ctx context.Context, peerID string, req *schedulerv2.DownloadPieceFinishedRequest) error {
+	// Construct piece.
+	piece := &resource.Piece{
+		Number:      req.Piece.Number,
+		ParentID:    req.Piece.ParentId,
+		Offset:      req.Piece.Offset,
+		Length:      req.Piece.Length,
+		TrafficType: commonv2.TrafficType_REMOTE_PEER,
+		Cost:        req.Piece.Cost.AsDuration(),
+		CreatedAt:   req.Piece.CreatedAt.AsTime(),
+	}
+
+	if len(req.Piece.Digest) > 0 {
+		d, err := digest.Parse(req.Piece.Digest)
+		if err != nil {
+			return status.Errorf(codes.InvalidArgument, err.Error())
+		}
+
+		piece.Digest = d
+	}
+
+	peer, loaded := v.resource.PeerManager().Load(peerID)
+	if !loaded {
+		return status.Errorf(codes.NotFound, "peer %s not found", peerID)
+	}
+
+	// Handle peer with piece finished request. When the piece is downloaded successfully, peer.UpdatedAt needs
+	// to be updated to prevent the peer from being GC during the download process.
+	peer.StorePiece(piece)
+	peer.FinishedPieces.Set(uint(piece.Number))
+	peer.AppendPieceCost(piece.Cost)
+	peer.PieceUpdatedAt.Store(time.Now())
+	peer.UpdatedAt.Store(time.Now())
+
+	// When the piece is downloaded successfully, parent.UpdatedAt needs to be updated
+	// to prevent the parent from being GC during the download process.
+	if parent, loaded := v.resource.PeerManager().Load(piece.ParentID); loaded {
+		parent.UpdatedAt.Store(time.Now())
+		parent.Host.UpdatedAt.Store(time.Now())
+	}
+
+	// Handle task with piece finished request.
+	peer.Task.UpdatedAt.Store(time.Now())
+	return nil
+}
+
+// handleDownloadPieceBackToSourceFinishedRequest handles DownloadPieceBackToSourceFinishedRequest of AnnouncePeerRequest.
+func (v *V2) handleDownloadPieceBackToSourceFinishedRequest(ctx context.Context, peerID string, req *schedulerv2.DownloadPieceBackToSourceFinishedRequest) error {
+	// Construct piece.
+	piece := &resource.Piece{
+		Number:      req.Piece.Number,
+		ParentID:    req.Piece.ParentId,
+		Offset:      req.Piece.Offset,
+		Length:      req.Piece.Length,
+		TrafficType: commonv2.TrafficType_REMOTE_PEER,
+		Cost:        req.Piece.Cost.AsDuration(),
+		CreatedAt:   req.Piece.CreatedAt.AsTime(),
+	}
+
+	if len(req.Piece.Digest) > 0 {
+		d, err := digest.Parse(req.Piece.Digest)
+		if err != nil {
+			return status.Errorf(codes.InvalidArgument, err.Error())
+		}
+
+		piece.Digest = d
+	}
+
+	peer, loaded := v.resource.PeerManager().Load(peerID)
+	if !loaded {
+		return status.Errorf(codes.NotFound, "peer %s not found", peerID)
+	}
+
+	// Handle peer with piece back-to-source finished request. When the piece is downloaded successfully, peer.UpdatedAt
+	// needs to be updated to prevent the peer from being GC during the download process.
+	peer.StorePiece(piece)
+	peer.FinishedPieces.Set(uint(piece.Number))
+	peer.AppendPieceCost(piece.Cost)
+	peer.PieceUpdatedAt.Store(time.Now())
+	peer.UpdatedAt.Store(time.Now())
+
+	// Handle task with piece back-to-source finished request.
+	peer.Task.StorePiece(piece)
+	peer.Task.UpdatedAt.Store(time.Now())
+	return nil
+}
+
+// handleDownloadPieceFailedRequest handles DownloadPieceFailedRequest of AnnouncePeerRequest.
+func (v *V2) handleDownloadPieceFailedRequest(ctx context.Context, peerID string, req *schedulerv2.DownloadPieceFailedRequest) error {
+	if req.Temporary {
+		peer, loaded := v.resource.PeerManager().Load(peerID)
+		if !loaded {
+			return status.Errorf(codes.NotFound, "peer %s not found", peerID)
+		}
+
+		// Handle peer with piece temporary failed request.
+		peer.UpdatedAt.Store(time.Now())
+		peer.BlockParents.Add(req.ParentId)
+		if err := v.scheduling.ScheduleCandidateParents(ctx, peer, peer.BlockParents); err != nil {
+			return status.Error(codes.FailedPrecondition, err.Error())
+		}
+
+		if parent, loaded := v.resource.PeerManager().Load(req.ParentId); loaded {
+			parent.Host.UploadFailedCount.Inc()
+		}
+
+		// Handle task with piece temporary failed request.
+		peer.Task.UpdatedAt.Store(time.Now())
+		return nil
+	}
+
+	return status.Error(codes.FailedPrecondition, "download piece failed")
+}
+
+// handleDownloadPieceBackToSourceFailedRequest handles DownloadPieceBackToSourceFailedRequest of AnnouncePeerRequest.
+func (v *V2) handleDownloadPieceBackToSourceFailedRequest(ctx context.Context, peerID string, req *schedulerv2.DownloadPieceBackToSourceFailedRequest) error {
+	peer, loaded := v.resource.PeerManager().Load(peerID)
+	if !loaded {
+		return status.Errorf(codes.NotFound, "peer %s not found", peerID)
+	}
+
+	// Handle peer with piece back-to-source failed request.
+	peer.UpdatedAt.Store(time.Now())
+
+	// Handle task with piece back-to-source failed request.
+	peer.Task.UpdatedAt.Store(time.Now())
+	return status.Error(codes.Internal, req.Status)
+}
+
+// TODO Implement function.
+// handleSyncPiecesFailedRequest handles SyncPiecesFailedRequest of AnnouncePeerRequest.
+func (v *V2) handleSyncPiecesFailedRequest(ctx context.Context, req *schedulerv2.SyncPiecesFailedRequest) {
 }
 
 // handleResource handles resource included host, task, and peer.
