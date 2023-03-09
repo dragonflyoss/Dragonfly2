@@ -18,7 +18,7 @@ metrics:
   enable: true
   addr: :8000
 
-trainer:
+train:
     maxBackups: 5
     dataPath: "/trainer/data"
 

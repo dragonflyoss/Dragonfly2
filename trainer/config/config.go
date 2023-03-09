@@ -16,7 +16,7 @@ type Config struct {
 	// Server configuration.
 	Server ServerConfig `yaml:"server" mapstructure:"server"`
 	// Trainer configuration
-	Trainer TrainerConfig `yaml:"trainer" mapstructure:"trainer"`
+	Train TrainConfig `yaml:"train" mapstructure:"train"`
 }
 
 type NetworkConfig struct {
@@ -82,7 +82,7 @@ type RedisConfig struct {
 	TrainerDB int `yaml:"trainerDB" mapstructure:"trainerDB"`
 }
 
-type TrainerConfig struct {
+type TrainConfig struct {
 	// MaxBackups is the maximum number of model version to retain in redis.
 	MaxBackups int `yaml:"maxBackups" mapstructure:"maxBackups"`
 	// DataPath is the path of data for training
@@ -114,7 +114,7 @@ func New() *Config {
 			Enable: false,
 			Addr:   DefaultMetricsAddr,
 		},
-		Trainer: TrainerConfig{
+		Train: TrainConfig{
 			MaxBackups: DefaultMaxBackups,
 			DataPath:   DefaultSchemaPath,
 		},
@@ -133,11 +133,11 @@ func (cfg *Config) Validate() error {
 		return errors.New("grpc requires parameter listenIP")
 	}
 
-	if cfg.Trainer.MaxBackups < 1 {
+	if cfg.Train.MaxBackups < 1 {
 		return errors.New("training requires parameter ")
 	}
 
-	if cfg.Trainer.DataPath == "" {
+	if cfg.Train.DataPath == "" {
 		return errors.New("training requires parameter Backups")
 	}
 

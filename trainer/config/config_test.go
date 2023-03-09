@@ -37,7 +37,7 @@ func TestTrainerConfig_Load(t *testing.T) {
 			Enable: true,
 			Addr:   ":8000",
 		},
-		Trainer: TrainerConfig{
+		Train: TrainConfig{
 			MaxBackups: 5,
 			DataPath:   "/trainer/data",
 		},
