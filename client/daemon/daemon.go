@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"d7y.io/dragonfly/v2/client/daemon/probe"
 	"errors"
 	"fmt"
 	"net"
@@ -107,6 +108,7 @@ type clientDaemon struct {
 	schedulerClient schedulerclient.V1
 	certifyClient   *certify.Certify
 	announcer       announcer.Announcer
+	probe           probe.Probe
 }
 
 func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
@@ -684,6 +686,16 @@ func (cd *clientDaemon) Serve() error {
 		}
 	}()
 
+	// serve probe
+	cd.probe = probe.New(&cd.Option, cd.schedPeerHost.Id, cd.schedPeerHost.RpcPort,
+		cd.schedPeerHost.DownPort, cd.schedulerClient)
+	go func() {
+		logger.Info("serve probe")
+		if err := cd.probe.Serve(); err != nil {
+			logger.Fatalf("failed to serve for probe: %v", err)
+		}
+	}()
+
 	if cd.Option.AliveTime.Duration > 0 {
 		g.Go(func() error {
 			for {
@@ -833,6 +845,12 @@ func (cd *clientDaemon) Stop() {
 
 		if err := cd.announcer.Stop(); err != nil {
 			logger.Errorf("announcer stop failed %s", err)
+		}
+
+		if err := cd.probe.Stop(); err != nil {
+			logger.Errorf("probe client closed failed %s", err)
+		} else {
+			logger.Info("probe client closed")
 		}
 
 		if err := cd.dynconfig.Stop(); err != nil {
