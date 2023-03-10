@@ -36,6 +36,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/metrics"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/scheduling"
 	"d7y.io/dragonfly/v2/scheduler/storage"
@@ -647,18 +648,33 @@ func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.S
 		return err
 	}
 
+	// Collect RegisterPeerCount metrics.
+	priority := peer.CalculatePriority(v.dynconfig)
+	metrics.RegisterPeerCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+
 	// When there are no available peers for a task, the scheduler needs to trigger
 	// the first task download in the p2p cluster.
 	blocklist := set.NewSafeSet[string]()
 	blocklist.Add(peer.ID)
 	if task.FSM.Is(resource.TaskStateFailed) || !task.HasAvailablePeer(blocklist) {
 		if err := v.downloadTaskBySeedPeer(ctx, peer); err != nil {
+			// Collect RegisterPeerFailureCount metrics.
+			metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 			return err
 		}
 	}
 
-	// Scheduling parent for the peer..
-	return v.schedule(ctx, peer)
+	// Scheduling parent for the peer.
+	if err := v.schedule(ctx, peer); err != nil {
+		// Collect RegisterPeerFailureCount metrics.
+		metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+			peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+		return err
+	}
+
+	return nil
 }
 
 // handleRegisterSeedPeerRequest handles RegisterSeedPeerRequest of AnnouncePeerRequest.
@@ -668,6 +684,11 @@ func (v *V2) handleRegisterSeedPeerRequest(ctx context.Context, stream scheduler
 	if err != nil {
 		return err
 	}
+
+	// Collect RegisterPeerCount metrics.
+	priority := peer.CalculatePriority(v.dynconfig)
+	metrics.RegisterPeerCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
 	// When there are no available peers for a task, the scheduler needs to trigger
 	// the first task download in the p2p cluster.
@@ -679,8 +700,15 @@ func (v *V2) handleRegisterSeedPeerRequest(ctx context.Context, stream scheduler
 		peer.NeedBackToSource.Store(true)
 	}
 
-	// Scheduling parent for the peer..
-	return v.schedule(ctx, peer)
+	// Scheduling parent for the peer.
+	if err := v.schedule(ctx, peer); err != nil {
+		// Collect RegisterPeerFailureCount metrics.
+		metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+			peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+		return err
+	}
+
+	return nil
 }
 
 // handleDownloadPeerStartedRequest handles DownloadPeerStartedRequest of AnnouncePeerRequest.
@@ -690,14 +718,25 @@ func (v *V2) handleDownloadPeerStartedRequest(ctx context.Context, peerID string
 		return status.Errorf(codes.NotFound, "peer %s not found", peerID)
 	}
 
+	// Collect DownloadPeerStartedCount metrics.
+	priority := peer.CalculatePriority(v.dynconfig)
+	metrics.DownloadPeerStartedCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+
 	// Handle peer with peer started request.
 	if err := peer.FSM.Event(ctx, resource.PeerEventDownload); err != nil {
+		// Collect DownloadPeerStartedFailureCount metrics.
+		metrics.DownloadPeerStartedFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+			peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 		return status.Error(codes.Internal, err.Error())
 	}
 
 	// Handle task with peer started request.
 	if !peer.Task.FSM.Is(resource.TaskStateRunning) {
 		if err := peer.Task.FSM.Event(ctx, resource.TaskEventDownload); err != nil {
+			// Collect DownloadPeerStartedFailureCount metrics.
+			metrics.DownloadPeerStartedFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 			return status.Error(codes.Internal, err.Error())
 		}
 	} else {
@@ -714,14 +753,25 @@ func (v *V2) handleDownloadPeerBackToSourceStartedRequest(ctx context.Context, p
 		return status.Errorf(codes.NotFound, "peer %s not found", peerID)
 	}
 
+	// Collect DownloadPeerBackToSourceStartedCount metrics.
+	priority := peer.CalculatePriority(v.dynconfig)
+	metrics.DownloadPeerBackToSourceStartedCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+
 	// Handle peer with peer back-to-source started request.
 	if err := peer.FSM.Event(ctx, resource.PeerEventDownloadBackToSource); err != nil {
+		// Collect DownloadPeerBackToSourceStartedFailureCount metrics.
+		metrics.DownloadPeerBackToSourceStartedFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+			peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 		return status.Error(codes.Internal, err.Error())
 	}
 
 	// Handle task with peer back-to-source started request.
 	if !peer.Task.FSM.Is(resource.TaskStateRunning) {
 		if err := peer.Task.FSM.Event(ctx, resource.TaskEventDownload); err != nil {
+			// Collect DownloadPeerBackToSourceStartedFailureCount metrics.
+			metrics.DownloadPeerBackToSourceStartedFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 			return status.Error(codes.Internal, err.Error())
 		}
 	} else {
@@ -743,6 +793,13 @@ func (v *V2) handleDownloadPeerFinishedRequest(ctx context.Context, peerID strin
 	if err := peer.FSM.Event(ctx, resource.PeerEventDownloadSucceeded); err != nil {
 		return status.Error(codes.Internal, err.Error())
 	}
+
+	// Collect DownloadPeerCount and DownloadPeerDuration metrics.
+	priority := peer.CalculatePriority(v.dynconfig)
+	metrics.DownloadPeerCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+	metrics.DownloadPeerDuration.WithLabelValues(priority.String(), peer.Task.Type.String(),
+		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Observe(float64(peer.Cost.Load()))
 
 	return nil
 }
@@ -787,6 +844,13 @@ func (v *V2) handleDownloadPeerBackToSourceFinishedRequest(ctx context.Context, 
 		}
 	}
 
+	// Collect DownloadPeerCount and DownloadPeerDuration metrics.
+	priority := peer.CalculatePriority(v.dynconfig)
+	metrics.DownloadPeerCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+	metrics.DownloadPeerDuration.WithLabelValues(priority.String(), peer.Task.Type.String(),
+		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Observe(float64(peer.Cost.Load()))
+
 	return nil
 }
 
@@ -804,6 +868,11 @@ func (v *V2) handleDownloadPeerFailedRequest(ctx context.Context, peerID string)
 
 	// Handle task with peer failed request.
 	peer.Task.UpdatedAt.Store(time.Now())
+
+	// Collect DownloadPeerFailureCount and DownloadPeerDuration metrics.
+	metrics.DownloadPeerFailureCount.WithLabelValues(peer.CalculatePriority(v.dynconfig).String(), peer.Task.Type.String(),
+		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+
 	return nil
 }
 
@@ -827,6 +896,10 @@ func (v *V2) handleDownloadPeerBackToSourceFailedRequest(ctx context.Context, pe
 		return status.Error(codes.Internal, err.Error())
 	}
 
+	// Collect DownloadPeerBackToSourceFailureCount and DownloadPeerDuration metrics.
+	metrics.DownloadPeerBackToSourceFailureCount.WithLabelValues(peer.CalculatePriority(v.dynconfig).String(), peer.Task.Type.String(),
+		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+
 	return nil
 }
 
@@ -838,7 +911,7 @@ func (v *V2) handleDownloadPieceFinishedRequest(ctx context.Context, peerID stri
 		ParentID:    req.Piece.ParentId,
 		Offset:      req.Piece.Offset,
 		Length:      req.Piece.Length,
-		TrafficType: commonv2.TrafficType_REMOTE_PEER,
+		TrafficType: req.Piece.TrafficType,
 		Cost:        req.Piece.Cost.AsDuration(),
 		CreatedAt:   req.Piece.CreatedAt.AsTime(),
 	}
@@ -867,13 +940,29 @@ func (v *V2) handleDownloadPieceFinishedRequest(ctx context.Context, peerID stri
 
 	// When the piece is downloaded successfully, parent.UpdatedAt needs to be updated
 	// to prevent the parent from being GC during the download process.
-	if parent, loaded := v.resource.PeerManager().Load(piece.ParentID); loaded {
+	parent, loadedParent := v.resource.PeerManager().Load(piece.ParentID)
+	if loadedParent {
 		parent.UpdatedAt.Store(time.Now())
 		parent.Host.UpdatedAt.Store(time.Now())
 	}
 
 	// Handle task with piece finished request.
 	peer.Task.UpdatedAt.Store(time.Now())
+
+	// Collect piece and traffic metrics.
+	metrics.DownloadPieceCount.WithLabelValues(piece.TrafficType.String(), peer.Task.Type.String(),
+		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+	metrics.Traffic.WithLabelValues(piece.TrafficType.String(), peer.Task.Type.String(),
+		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Add(float64(piece.Length))
+	if v.config.Metrics.EnableHost {
+		metrics.HostTraffic.WithLabelValues(metrics.HostTrafficDownloadType, peer.Task.Type.String(), peer.Task.Tag, peer.Task.Application,
+			peer.Host.Type.Name(), peer.Host.ID, peer.Host.IP, peer.Host.Hostname).Add(float64(piece.Length))
+		if loadedParent {
+			metrics.HostTraffic.WithLabelValues(metrics.HostTrafficUploadType, peer.Task.Type.String(), peer.Task.Tag, peer.Task.Application,
+				parent.Host.Type.Name(), parent.Host.ID, parent.Host.IP, parent.Host.Hostname).Add(float64(piece.Length))
+		}
+	}
+
 	return nil
 }
 
@@ -885,7 +974,7 @@ func (v *V2) handleDownloadPieceBackToSourceFinishedRequest(ctx context.Context,
 		ParentID:    req.Piece.ParentId,
 		Offset:      req.Piece.Offset,
 		Length:      req.Piece.Length,
-		TrafficType: commonv2.TrafficType_REMOTE_PEER,
+		TrafficType: req.Piece.TrafficType,
 		Cost:        req.Piece.Cost.AsDuration(),
 		CreatedAt:   req.Piece.CreatedAt.AsTime(),
 	}
@@ -915,25 +1004,40 @@ func (v *V2) handleDownloadPieceBackToSourceFinishedRequest(ctx context.Context,
 	// Handle task with piece back-to-source finished request.
 	peer.Task.StorePiece(piece)
 	peer.Task.UpdatedAt.Store(time.Now())
+
+	// Collect piece and traffic metrics.
+	metrics.DownloadPieceCount.WithLabelValues(piece.TrafficType.String(), peer.Task.Type.String(),
+		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+	metrics.Traffic.WithLabelValues(piece.TrafficType.String(), peer.Task.Type.String(),
+		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Add(float64(piece.Length))
+	if v.config.Metrics.EnableHost {
+		metrics.HostTraffic.WithLabelValues(metrics.HostTrafficDownloadType, peer.Task.Type.String(), peer.Task.Tag, peer.Task.Application,
+			peer.Host.Type.Name(), peer.Host.ID, peer.Host.IP, peer.Host.Hostname).Add(float64(piece.Length))
+	}
+
 	return nil
 }
 
 // handleDownloadPieceFailedRequest handles DownloadPieceFailedRequest of AnnouncePeerRequest.
 func (v *V2) handleDownloadPieceFailedRequest(ctx context.Context, peerID string, req *schedulerv2.DownloadPieceFailedRequest) error {
-	if req.Temporary {
-		peer, loaded := v.resource.PeerManager().Load(peerID)
-		if !loaded {
-			return status.Errorf(codes.NotFound, "peer %s not found", peerID)
-		}
+	peer, loaded := v.resource.PeerManager().Load(peerID)
+	if !loaded {
+		return status.Errorf(codes.NotFound, "peer %s not found", peerID)
+	}
 
+	// Collect DownloadPieceFailureCount metrics.
+	metrics.DownloadPieceFailureCount.WithLabelValues(req.Piece.TrafficType.String(), peer.Task.Type.String(),
+		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+
+	if req.Temporary {
 		// Handle peer with piece temporary failed request.
 		peer.UpdatedAt.Store(time.Now())
-		peer.BlockParents.Add(req.ParentId)
+		peer.BlockParents.Add(req.Piece.ParentId)
 		if err := v.scheduling.ScheduleCandidateParents(ctx, peer, peer.BlockParents); err != nil {
 			return status.Error(codes.FailedPrecondition, err.Error())
 		}
 
-		if parent, loaded := v.resource.PeerManager().Load(req.ParentId); loaded {
+		if parent, loaded := v.resource.PeerManager().Load(req.Piece.ParentId); loaded {
 			parent.Host.UploadFailedCount.Inc()
 		}
 
@@ -957,7 +1061,12 @@ func (v *V2) handleDownloadPieceBackToSourceFailedRequest(ctx context.Context, p
 
 	// Handle task with piece back-to-source failed request.
 	peer.Task.UpdatedAt.Store(time.Now())
-	return status.Error(codes.Internal, req.Status)
+
+	// Collect DownloadPieceFailureCount metrics.
+	metrics.DownloadPieceFailureCount.WithLabelValues(req.Piece.TrafficType.String(), peer.Task.Type.String(),
+		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+
+	return status.Error(codes.Internal, "download piece from source failed")
 }
 
 // TODO Implement function.

@@ -436,10 +436,9 @@ func (s *managerServerV1) createScheduler(ctx context.Context, req *managerv1.Up
 
 // List acitve schedulers configuration.
 func (s *managerServerV1) ListSchedulers(ctx context.Context, req *managerv1.ListSchedulersRequest) (*managerv1.ListSchedulersResponse, error) {
-	metrics.SearchSchedulerClusterCount.WithLabelValues(req.Version, req.Commit).Inc()
-
 	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
 	log.Debugf("list schedulers, version %s, commit %s", req.Version, req.Commit)
+	metrics.SearchSchedulerClusterCount.WithLabelValues(req.Version, req.Commit).Inc()
 
 	// Count the number of the active peer.
 	if s.config.Metrics.EnablePeerGauge && req.SourceType == managerv1.SourceType_PEER_SOURCE {
