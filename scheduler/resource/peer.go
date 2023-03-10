@@ -111,6 +111,13 @@ const (
 // PeerOption is a functional option for peer.
 type PeerOption func(peer *Peer)
 
+// WithAnnouncePeerStream set AnnouncePeerStream for peer.
+func WithAnnouncePeerStream(stream schedulerv2.Scheduler_AnnouncePeerServer) PeerOption {
+	return func(p *Peer) {
+		p.StoreAnnouncePeerStream(stream)
+	}
+}
+
 // WithPriority set Priority for peer.
 func WithPriority(priority commonv2.Priority) PeerOption {
 	return func(p *Peer) {
@@ -175,13 +182,6 @@ type Peer struct {
 	// NeedBackToSource is set to true.
 	NeedBackToSource *atomic.Bool
 
-	// IsBackToSource is downloaded from source.
-	//
-	// When peer is scheduling and NeedBackToSource is true,
-	// scheduler needs to return Code_SchedNeedBackSource and
-	// IsBackToSource is set to true.
-	IsBackToSource *atomic.Bool
-
 	// PieceUpdatedAt is piece update time.
 	PieceUpdatedAt *atomic.Time
 
@@ -210,7 +210,6 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 		Host:                    host,
 		BlockParents:            set.NewSafeSet[string](),
 		NeedBackToSource:        atomic.NewBool(false),
-		IsBackToSource:          atomic.NewBool(false),
 		PieceUpdatedAt:          atomic.NewTime(time.Now()),
 		CreatedAt:               atomic.NewTime(time.Now()),
 		UpdatedAt:               atomic.NewTime(time.Now()),
@@ -264,7 +263,6 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 			PeerEventDownloadBackToSource: func(ctx context.Context, e *fsm.Event) {
-				p.IsBackToSource.Store(true)
 				p.Task.BackToSourcePeers.Add(p.ID)
 
 				if err := p.Task.DeletePeerInEdges(p.ID); err != nil {
@@ -354,7 +352,7 @@ func (p *Peer) DeleteReportPieceResultStream() {
 // LoadAnnouncePeerStream return the grpc stream of Scheduler_AnnouncePeerServer,
 // Used only in v2 version of the grpc.
 func (p *Peer) LoadAnnouncePeerStream() (schedulerv2.Scheduler_AnnouncePeerServer, bool) {
-	rawStream := p.ReportPieceResultStream.Load()
+	rawStream := p.AnnouncePeerStream.Load()
 	if rawStream == nil {
 		return nil, false
 	}
@@ -365,13 +363,13 @@ func (p *Peer) LoadAnnouncePeerStream() (schedulerv2.Scheduler_AnnouncePeerServe
 // StoreAnnouncePeerStream set the grpc stream of Scheduler_AnnouncePeerServer,
 // Used only in v2 version of the grpc.
 func (p *Peer) StoreAnnouncePeerStream(stream schedulerv2.Scheduler_AnnouncePeerServer) {
-	p.ReportPieceResultStream.Store(stream)
+	p.AnnouncePeerStream.Store(stream)
 }
 
 // DeleteAnnouncePeerStream deletes the grpc stream of Scheduler_AnnouncePeerServer,
 // Used only in v2 version of the grpc.
 func (p *Peer) DeleteAnnouncePeerStream() {
-	p.ReportPieceResultStream = &atomic.Value{}
+	p.AnnouncePeerStream = &atomic.Value{}
 }
 
 // LoadPiece return piece for a key.
@@ -435,7 +433,6 @@ func (p *Peer) Children() []*Peer {
 }
 
 // DownloadTinyFile downloads tiny file from peer without range.
-// Used only in v1 version of the grpc.
 func (p *Peer) DownloadTinyFile() ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), downloadTinyFileContextTimeout)
 	defer cancel()
@@ -472,51 +469,8 @@ func (p *Peer) DownloadTinyFile() ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
-// DownloadFile downloads file from peer with range.
-// Used only in v2 version of the grpc.
-func (p *Peer) DownloadFile() ([]byte, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), downloadTinyFileContextTimeout)
-	defer cancel()
-
-	// Download url: http://${host}:${port}/download/${taskIndex}/${taskID}?peerId=${peerID}
-	targetURL := url.URL{
-		Scheme:   "http",
-		Host:     fmt.Sprintf("%s:%d", p.Host.IP, p.Host.DownloadPort),
-		Path:     fmt.Sprintf("download/%s/%s", p.Task.ID[:3], p.Task.ID),
-		RawQuery: fmt.Sprintf("peerId=%s", p.ID),
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, targetURL.String(), nil)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	rg := fmt.Sprintf("bytes=%d-%d", 0, p.Task.ContentLength.Load()-1)
-	if p.Range != nil {
-		rg = p.Range.String()
-	}
-
-	req.Header.Set(headers.Range, rg)
-	p.Log.Infof("download tiny file %s, header is : %#v", targetURL.String(), req.Header)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	// The HTTP 206 Partial Content success status response code indicates that
-	// the request has succeeded and the body contains the requested ranges of data, as described in the Range header of the request.
-	// Refer to https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/206.
-	if resp.StatusCode/100 != 2 {
-		return nil, fmt.Errorf("bad response status %s", resp.Status)
-	}
-
-	return io.ReadAll(resp.Body)
-}
-
-// GetPriority returns priority of peer.
-func (p *Peer) GetPriority(dynconfig config.DynconfigInterface) commonv2.Priority {
+// CalculatePriority returns priority of peer.
+func (p *Peer) CalculatePriority(dynconfig config.DynconfigInterface) commonv2.Priority {
 	if p.Priority != commonv2.Priority_LEVEL0 {
 		return p.Priority
 	}

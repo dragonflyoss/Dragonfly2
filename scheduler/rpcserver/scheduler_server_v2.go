@@ -52,6 +52,12 @@ func newSchedulerServerV2(
 
 // AnnouncePeer announces peer to scheduler.
 func (s *schedulerServerV2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePeerServer) error {
+	metrics.AnnouncePeerCount.Inc()
+	if err := s.service.AnnouncePeer(stream); err != nil {
+		metrics.AnnouncePeerFailureCount.Inc()
+		return err
+	}
+
 	return nil
 }
 
