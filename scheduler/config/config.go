@@ -324,7 +324,7 @@ type TrainerConfig struct {
 	// Enable training.
 	Enable bool `yaml:"enable" mapstructure:"enable"`
 
-	// RefreshInterval is the interval for refreshing model.
+	// RefreshInterval is the interval of refreshing model.
 	RefreshInterval time.Duration `yaml:"refreshInterval" mapstructure:"refreshInterval"`
 
 	// IP is trainer's listen ip, like: 0.0.0.0, 192.168.0.1.
@@ -341,7 +341,7 @@ type TrainerConfig struct {
 }
 
 type NetworkRecordConfig struct {
-	// LocalPath sets the network record storage local path.
+	// LocalPath sets the storage local path of network record.
 	LocalPath string `yaml:"localPath" mapstructure:"localPath"`
 
 	// MaxSize sets the total maximum size in megabytes of network records in one training process.
@@ -352,7 +352,7 @@ type NetworkRecordConfig struct {
 }
 
 type HistoricalRecordConfig struct {
-	// LocalPath sets the historical record local storage path.
+	// LocalPath sets the storage local path of historical record.
 	LocalPath string `yaml:"localPath" mapstructure:"localPath"`
 
 	// MaxSize sets the total maximum size in megabytes of historical records in one training process.
