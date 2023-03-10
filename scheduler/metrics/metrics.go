@@ -36,12 +36,6 @@ var (
 
 	// HostTrafficDownloadType is download traffic type for host traffic metrics.
 	HostTrafficDownloadType = "download"
-
-	// DownloadFailureBackToSourceType is back-to-source type for download failure count metrics.
-	DownloadFailureBackToSourceType = "back_to_source"
-
-	// DownloadFailureP2PType is p2p type for download failure count metrics.
-	DownloadFailureP2PType = "p2p"
 )
 
 // Variables declared for metrics.
@@ -102,33 +96,89 @@ var (
 		Help:      "Counter of the number of failed of the leaving peer.",
 	})
 
-	RegisterTaskCount = promauto.NewCounterVec(prometheus.CounterOpts{
+	RegisterPeerCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
-		Name:      "register_task_total",
-		Help:      "Counter of the number of the register task.",
-	}, []string{"tag", "app"})
+		Name:      "register_peer_total",
+		Help:      "Counter of the number of the register peer.",
+	}, []string{"priority", "task_type", "task_tag", "task_app", "host_type"})
 
-	RegisterTaskFailureCount = promauto.NewCounterVec(prometheus.CounterOpts{
+	RegisterPeerFailureCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
-		Name:      "register_task_failure_total",
-		Help:      "Counter of the number of failed of the register task.",
-	}, []string{"tag", "app"})
+		Name:      "register_peer_failure_total",
+		Help:      "Counter of the number of failed of the register peer.",
+	}, []string{"priority", "task_type", "task_tag", "task_app", "host_type"})
 
-	DownloadTaskCount = promauto.NewCounterVec(prometheus.CounterOpts{
+	DownloadPeerStartedCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
-		Name:      "download_task_total",
-		Help:      "Counter of the number of the task downloading.",
-	}, []string{"tag", "app", "host_type"})
+		Name:      "download_peer_started_total",
+		Help:      "Counter of the number of the download peer started.",
+	}, []string{"priority", "task_type", "task_tag", "task_app", "host_type"})
 
-	DownloadTaskFailureCount = promauto.NewCounterVec(prometheus.CounterOpts{
+	DownloadPeerStartedFailureCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
-		Name:      "download_task_failure_total",
-		Help:      "Counter of the number of failed of the task downloading.",
-	}, []string{"tag", "app", "type", "code", "host_type"})
+		Name:      "download_peer_started_failure_total",
+		Help:      "Counter of the number of failed of the download peer started.",
+	}, []string{"priority", "task_type", "task_tag", "task_app", "host_type"})
+
+	DownloadPeerBackToSourceStartedCount = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "download_peer_back_to_source_started_total",
+		Help:      "Counter of the number of the download peer back-to-source started.",
+	}, []string{"priority", "task_type", "task_tag", "task_app", "host_type"})
+
+	DownloadPeerBackToSourceStartedFailureCount = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "download_peer_back_to_source_started_failure_total",
+		Help:      "Counter of the number of failed of the download peer back-to-source started.",
+	}, []string{"priority", "task_type", "task_tag", "task_app", "host_type"})
+
+	DownloadPeerCount = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "download_peer_finished_total",
+		Help:      "Counter of the number of the download peer.",
+	}, []string{"priority", "task_type", "task_tag", "task_app", "host_type"})
+
+	DownloadPeerFailureCount = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "download_peer_finished_failure_total",
+		Help:      "Counter of the number of failed of the download peer.",
+	}, []string{"priority", "task_type", "task_tag", "task_app", "host_type"})
+
+	DownloadPeerBackToSourceFailureCount = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "download_peer_back_to_source_finished_failure_total",
+		Help:      "Counter of the number of failed of the download peer back-to-source.",
+	}, []string{"priority", "task_type", "task_tag", "task_app", "host_type"})
+
+	DownloadPieceCount = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "download_piece_finished_total",
+		Help:      "Counter of the number of the download piece.",
+	}, []string{"traffic_type", "task_type", "task_tag", "task_app", "host_type"})
+
+	DownloadPieceFailureCount = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "download_piece_finished_failure_total",
+		Help:      "Counter of the number of failed of the download piece.",
+	}, []string{"traffic_type", "task_type", "task_tag", "task_app", "host_type"})
+
+	DownloadPieceBackToSourceFailureCount = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "download_piece_back_to_source_finished_failure_total",
+		Help:      "Counter of the number of failed of the download piece back-to-source.",
+	}, []string{"traffic_type", "task_type", "task_tag", "task_app", "host_type"})
 
 	StatTaskCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
@@ -142,20 +192,6 @@ var (
 		Subsystem: types.SchedulerMetricsName,
 		Name:      "stat_task_failure_total",
 		Help:      "Counter of the number of failed of the stat task.",
-	})
-
-	AnnounceTaskCount = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: types.MetricsNamespace,
-		Subsystem: types.SchedulerMetricsName,
-		Name:      "announce_task_total",
-		Help:      "Counter of the number of the announce task.",
-	})
-
-	AnnounceTaskFailureCount = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: types.MetricsNamespace,
-		Subsystem: types.SchedulerMetricsName,
-		Name:      "announce_task_failure_total",
-		Help:      "Counter of the number of failed of the announce task.",
 	})
 
 	AnnounceHostCount = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -173,20 +209,6 @@ var (
 		Help:      "Counter of the number of failed of the announce host.",
 	}, []string{"os", "platform", "platform_family", "platform_version",
 		"kernel_version", "git_version", "git_commit", "go_version", "build_platform"})
-
-	LeaveTaskCount = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: types.MetricsNamespace,
-		Subsystem: types.SchedulerMetricsName,
-		Name:      "leave_task_total",
-		Help:      "Counter of the number of the leaving task.",
-	}, []string{"tag", "app", "host_type"})
-
-	LeaveTaskFailureCount = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: types.MetricsNamespace,
-		Subsystem: types.SchedulerMetricsName,
-		Name:      "leave_task_failure_total",
-		Help:      "Counter of the number of failed of the leaving task.",
-	}, []string{"tag", "app", "host_type"})
 
 	LeaveHostCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
@@ -207,22 +229,22 @@ var (
 		Subsystem: types.SchedulerMetricsName,
 		Name:      "traffic",
 		Help:      "Counter of the number of traffic.",
-	}, []string{"task_tag", "task_app", "type"})
+	}, []string{"type", "task_type", "task_tag", "task_app", "host_type"})
 
 	HostTraffic = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
 		Name:      "host_traffic",
 		Help:      "Counter of the number of per host traffic.",
-	}, []string{"task_tag", "task_app", "type", "host_id", "host_ip"})
+	}, []string{"type", "task_type", "task_tag", "task_app", "host_type", "host_id", "host_ip", "host_name"})
 
-	DownloadTaskDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+	DownloadPeerDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
-		Name:      "download_task_duration_milliseconds",
-		Help:      "Histogram of the time each task downloading.",
+		Name:      "download_peer_duration_milliseconds",
+		Help:      "Histogram of the time each peer downloading.",
 		Buckets:   []float64{100, 200, 500, 1000, 1500, 2 * 1000, 3 * 1000, 5 * 1000, 10 * 1000, 20 * 1000, 60 * 1000, 120 * 1000, 300 * 1000},
-	}, []string{"tag", "app", "host_type"})
+	}, []string{"priority", "task_type", "task_tag", "task_app", "host_type"})
 
 	ConcurrentScheduleGauge = promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace: types.MetricsNamespace,

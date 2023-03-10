@@ -232,11 +232,13 @@ func (v *V1) ReportPieceResult(stream schedulerv1.Scheduler_ReportPieceResultSer
 			peer.Log.Infof("receive success piece: %#v %#v", piece, piece.PieceInfo)
 			v.handlePieceSuccess(ctx, peer, piece)
 
-			// Collect peer host traffic metrics.
+			// Collect host traffic metrics.
 			if v.config.Metrics.Enable && v.config.Metrics.EnableHost {
-				metrics.HostTraffic.WithLabelValues(peer.Task.Tag, peer.Task.Application, metrics.HostTrafficDownloadType, peer.Host.ID, peer.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
+				metrics.HostTraffic.WithLabelValues(metrics.HostTrafficDownloadType, peer.Task.Type.String(), peer.Task.Tag, peer.Task.Application,
+					peer.Host.Type.Name(), peer.Host.ID, peer.Host.IP, peer.Host.Hostname).Add(float64(piece.PieceInfo.RangeSize))
 				if parent, loaded := v.resource.PeerManager().Load(piece.DstPid); loaded {
-					metrics.HostTraffic.WithLabelValues(peer.Task.Tag, peer.Task.Application, metrics.HostTrafficUploadType, parent.Host.ID, parent.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
+					metrics.HostTraffic.WithLabelValues(metrics.HostTrafficUploadType, peer.Task.Type.String(), peer.Task.Tag, peer.Task.Application,
+						parent.Host.Type.Name(), parent.Host.ID, parent.Host.IP, parent.Host.Hostname).Add(float64(piece.PieceInfo.RangeSize))
 				} else if !resource.IsPieceBackToSource(piece.DstPid) {
 					peer.Log.Warnf("dst peer %s not found", piece.DstPid)
 				}
@@ -244,9 +246,11 @@ func (v *V1) ReportPieceResult(stream schedulerv1.Scheduler_ReportPieceResultSer
 
 			// Collect traffic metrics.
 			if !resource.IsPieceBackToSource(piece.DstPid) {
-				metrics.Traffic.WithLabelValues(peer.Task.Tag, peer.Task.Application, commonv2.TrafficType_REMOTE_PEER.String()).Add(float64(piece.PieceInfo.RangeSize))
+				metrics.Traffic.WithLabelValues(commonv2.TrafficType_REMOTE_PEER.String(), peer.Task.Type.String(),
+					peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Add(float64(piece.PieceInfo.RangeSize))
 			} else {
-				metrics.Traffic.WithLabelValues(peer.Task.Tag, peer.Task.Application, commonv2.TrafficType_BACK_TO_SOURCE.String()).Add(float64(piece.PieceInfo.RangeSize))
+				metrics.Traffic.WithLabelValues(commonv2.TrafficType_BACK_TO_SOURCE.String(), peer.Task.Type.String(),
+					peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Add(float64(piece.PieceInfo.RangeSize))
 			}
 			continue
 		}
@@ -278,27 +282,38 @@ func (v *V1) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult) 
 		logger.Error(msg)
 		return dferrors.New(commonv1.Code_SchedPeerNotFound, msg)
 	}
-	metrics.DownloadTaskCount.WithLabelValues(peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+
+	// Collect DownloadPeerCount metrics.
+	priority := peer.CalculatePriority(v.dynconfig)
+	metrics.DownloadPeerCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
 	parents := peer.Parents()
 	if !req.Success {
 		peer.Log.Error("report failed peer")
 		if peer.FSM.Is(resource.PeerStateBackToSource) {
-			metrics.DownloadTaskFailureCount.WithLabelValues(peer.Task.Tag, peer.Task.Application,
-				metrics.DownloadFailureBackToSourceType, req.Code.String(), peer.Host.Type.Name()).Inc()
+			// Collect DownloadPeerBackToSourceFailureCount metrics.
+			metrics.DownloadPeerBackToSourceFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+
 			go v.createRecord(peer, parents, req)
 			v.handleTaskFailure(ctx, peer.Task, req.GetSourceError(), nil)
 			v.handlePeerFailure(ctx, peer)
 			return nil
 		}
 
-		metrics.DownloadTaskFailureCount.WithLabelValues(peer.Task.Tag, peer.Task.Application,
-			metrics.DownloadFailureP2PType, req.Code.String(), peer.Host.Type.Name()).Inc()
+		// Collect DownloadPeerFailureCount metrics.
+		metrics.DownloadPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+			peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+
 		go v.createRecord(peer, parents, req)
 		v.handlePeerFailure(ctx, peer)
 		return nil
 	}
-	metrics.DownloadTaskDuration.WithLabelValues(peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Observe(float64(req.Cost))
+
+	// Collect DownloadPeerDuration metrics.
+	metrics.DownloadPeerDuration.WithLabelValues(priority.String(), peer.Task.Type.String(),
+		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Observe(float64(req.Cost))
 
 	peer.Log.Info("report success peer")
 	if peer.FSM.Is(resource.PeerStateBackToSource) {
@@ -430,10 +445,8 @@ func (v *V1) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget) error {
 		logger.Error(msg)
 		return dferrors.New(commonv1.Code_SchedPeerNotFound, msg)
 	}
-	metrics.LeaveTaskCount.WithLabelValues(peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
 	if err := peer.FSM.Event(ctx, resource.PeerEventLeave); err != nil {
-		metrics.LeaveTaskFailureCount.WithLabelValues(peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 		msg := fmt.Sprintf("peer fsm event failed: %s", err.Error())
 		peer.Log.Error(msg)
 		return dferrors.New(commonv1.Code_SchedTaskStatusError, msg)

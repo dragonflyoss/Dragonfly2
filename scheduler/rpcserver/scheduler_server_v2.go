@@ -52,8 +52,14 @@ func newSchedulerServerV2(
 
 // AnnouncePeer announces peer to scheduler.
 func (s *schedulerServerV2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePeerServer) error {
+	// Collect ConcurrentScheduleGauge metrics.
+	metrics.ConcurrentScheduleGauge.Inc()
+	defer metrics.ConcurrentScheduleGauge.Dec()
+
+	// Collect AnnouncePeerCount metrics.
 	metrics.AnnouncePeerCount.Inc()
 	if err := s.service.AnnouncePeer(stream); err != nil {
+		// Collect AnnouncePeerFailureCount metrics.
 		metrics.AnnouncePeerFailureCount.Inc()
 		return err
 	}
@@ -63,9 +69,11 @@ func (s *schedulerServerV2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePe
 
 // StatPeer checks information of peer.
 func (s *schedulerServerV2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*commonv2.Peer, error) {
+	// Collect StatPeerCount metrics.
 	metrics.StatPeerCount.Inc()
 	resp, err := s.service.StatPeer(ctx, req)
 	if err != nil {
+		// Collect StatPeerFailureCount metrics.
 		metrics.StatPeerFailureCount.Inc()
 		return nil, err
 	}
@@ -75,8 +83,10 @@ func (s *schedulerServerV2) StatPeer(ctx context.Context, req *schedulerv2.StatP
 
 // LeavePeer releases peer in scheduler.
 func (s *schedulerServerV2) LeavePeer(ctx context.Context, req *schedulerv2.LeavePeerRequest) (*emptypb.Empty, error) {
+	// Collect LeavePeerCount metrics.
 	metrics.LeavePeerCount.Inc()
 	if err := s.service.LeavePeer(ctx, req); err != nil {
+		// Collect LeavePeerFailureCount metrics.
 		metrics.LeavePeerFailureCount.Inc()
 		return nil, err
 	}
@@ -86,9 +96,11 @@ func (s *schedulerServerV2) LeavePeer(ctx context.Context, req *schedulerv2.Leav
 
 // ExchangePeer exchanges peer information.
 func (s *schedulerServerV2) ExchangePeer(ctx context.Context, req *schedulerv2.ExchangePeerRequest) (*schedulerv2.ExchangePeerResponse, error) {
+	// Collect ExchangePeerCount metrics.
 	metrics.ExchangePeerCount.Inc()
 	resp, err := s.service.ExchangePeer(ctx, req)
 	if err != nil {
+		// Collect ExchangePeerFailureCount metrics.
 		metrics.ExchangePeerFailureCount.Inc()
 		return nil, err
 	}
@@ -98,9 +110,11 @@ func (s *schedulerServerV2) ExchangePeer(ctx context.Context, req *schedulerv2.E
 
 // StatTask checks information of task.
 func (s *schedulerServerV2) StatTask(ctx context.Context, req *schedulerv2.StatTaskRequest) (*commonv2.Task, error) {
+	// Collect StatTaskCount metrics.
 	metrics.StatTaskCount.Inc()
 	resp, err := s.service.StatTask(ctx, req)
 	if err != nil {
+		// Collect StatTaskFailureCount metrics.
 		metrics.StatTaskFailureCount.Inc()
 		return nil, err
 	}
@@ -110,9 +124,11 @@ func (s *schedulerServerV2) StatTask(ctx context.Context, req *schedulerv2.StatT
 
 // AnnounceHost announces host to scheduler.
 func (s *schedulerServerV2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequest) (*emptypb.Empty, error) {
+	// Collect AnnounceHostCount metrics.
 	metrics.AnnounceHostCount.WithLabelValues(req.Host.Os, req.Host.Platform, req.Host.PlatformFamily, req.Host.PlatformVersion,
 		req.Host.KernelVersion, req.Host.Build.GitVersion, req.Host.Build.GitCommit, req.Host.Build.GoVersion, req.Host.Build.Platform).Inc()
 	if err := s.service.AnnounceHost(ctx, req); err != nil {
+		// Collect AnnounceHostFailureCount metrics.
 		metrics.AnnounceHostFailureCount.WithLabelValues(req.Host.Os, req.Host.Platform, req.Host.PlatformFamily, req.Host.PlatformVersion,
 			req.Host.KernelVersion, req.Host.Build.GitVersion, req.Host.Build.GitCommit, req.Host.Build.GoVersion, req.Host.Build.Platform).Inc()
 		return nil, err
@@ -123,8 +139,10 @@ func (s *schedulerServerV2) AnnounceHost(ctx context.Context, req *schedulerv2.A
 
 // LeaveHost releases host in scheduler.
 func (s *schedulerServerV2) LeaveHost(ctx context.Context, req *schedulerv2.LeaveHostRequest) (*emptypb.Empty, error) {
+	// Collect LeaveHostCount metrics.
 	metrics.LeaveHostCount.Inc()
 	if err := s.service.LeaveHost(ctx, req); err != nil {
+		// Collect LeaveHostFailureCount metrics.
 		metrics.LeaveHostFailureCount.Inc()
 		return nil, err
 	}

@@ -188,12 +188,13 @@ func (s *seedPeer) TriggerTask(ctx context.Context, rg *http.Range, task *Task) 
 			peer.PieceUpdatedAt.Store(time.Now())
 			task.StorePiece(piece)
 
-			// Statistical traffic metrics.
+			// Collect Traffic metrics.
 			trafficType := commonv2.TrafficType_BACK_TO_SOURCE
 			if pieceSeed.Reuse {
-				trafficType = commonv2.TrafficType_REMOTE_PEER
+				trafficType = commonv2.TrafficType_LOCAL_PEER
 			}
-			metrics.Traffic.WithLabelValues(peer.Task.Tag, peer.Task.Application, trafficType.String()).Add(float64(pieceSeed.PieceInfo.RangeSize))
+			metrics.Traffic.WithLabelValues(trafficType.String(), peer.Task.Type.String(),
+				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Add(float64(pieceSeed.PieceInfo.RangeSize))
 		}
 
 		// Handle end of piece.
