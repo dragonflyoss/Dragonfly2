@@ -149,7 +149,7 @@ func MustParseRange(s string, size int64) Range {
 	}
 
 	if len(rs) != 1 {
-		panic(fmt.Sprintf("parse range length must be 1"))
+		panic("parse range length must be 1")
 	}
 
 	return rs[0]
