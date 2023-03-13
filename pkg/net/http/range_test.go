@@ -363,3 +363,39 @@ func TestParseURLMetaRange(t *testing.T) {
 		})
 	}
 }
+
+func TestMustParseRang(t *testing.T) {
+	tests := []struct {
+		s     string
+		size  int64
+		rg    Range
+		panic bool
+	}{
+		{"bytes=0-9", 10, Range{0, 10}, false},
+		{"-10", 10, Range{}, true},
+		{"bytes=500-700,601-999", 10000, Range{}, true},
+	}
+
+	for _, tc := range tests {
+		func() {
+			defer func() {
+				if r := recover(); r != nil && !tc.panic {
+					t.Errorf("Unexpected panic: %v", r)
+				} else if r == nil && tc.panic {
+					t.Errorf("Expected panic but did not panic")
+				}
+			}()
+
+			erg := tc.rg
+			rg := MustParseRange(tc.s, tc.size)
+
+			if rg.Start != erg.Start {
+				t.Errorf("MustParseRange(%q).Serve = %d, want %d", tc.s, rg.Start, erg.Start)
+			}
+
+			if rg.Length != erg.Length {
+				t.Errorf("MustParseRange(%q).Length = %d, want %d", tc.s, rg.Length, erg.Length)
+			}
+		}()
+	}
+}
