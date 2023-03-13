@@ -31,17 +31,14 @@ func FilterQuery(rawURL string, filters []string) (string, error) {
 		return "", err
 	}
 
+	hidden := make(map[string]struct{})
+	for _, filter := range filters {
+		hidden[filter] = struct{}{}
+	}
+
 	var values = make(url.Values)
 	for k, v := range u.Query() {
-		var isFilter bool
-		for _, filter := range filters {
-			if k == filter {
-				isFilter = true
-				break
-			}
-		}
-
-		if !isFilter {
+		if _, ok := hidden[k]; !ok {
 			values[k] = v
 		}
 	}
