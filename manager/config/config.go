@@ -37,6 +37,9 @@ type Config struct {
 	// Server configuration.
 	Server ServerConfig `yaml:"server" mapstructure:"server"`
 
+	// Auth configuration.
+	Auth AuthConfig `yaml:"auth" mapstructure:"auth"`
+
 	// Database configuration.
 	Database DatabaseConfig `yaml:"database" mapstructure:"database"`
 
@@ -77,6 +80,25 @@ type ServerConfig struct {
 
 	// REST server configuration.
 	REST RestConfig `yaml:"rest" mapstructure:"rest"`
+}
+
+type AuthConfig struct {
+	// JWT configuration.
+	JWT JWTConfig `yaml:"jwt" mapstructure:"jwt"`
+}
+
+type JWTConfig struct {
+	// Realm name to display to the user, default value is Dragonfly.
+	Realm string `yaml:"realm" mapstructure:"realm"`
+
+	// Key is secret key used for signing. Please change the key in production
+	Key string `yaml:"key" mapstructure:"key"`
+
+	// Timeout is duration that a jwt token is valid, default duration is two days.
+	Timeout time.Duration `yaml:"timeout" mapstructure:"timeout"`
+
+	// MaxRefresh field allows clients to refresh their token until MaxRefresh has passed, default duration is two days.
+	MaxRefresh time.Duration `yaml:"maxRefresh" mapstructure:"maxRefresh"`
 }
 
 type DatabaseConfig struct {
@@ -324,6 +346,13 @@ func New() *Config {
 				Addr: DefaultRESTAddr,
 			},
 		},
+		Auth: AuthConfig{
+			JWT: JWTConfig{
+				Realm:      DefaultJWTRealm,
+				Timeout:    DefaultJWTTimeout,
+				MaxRefresh: DefaultJWTMaxRefresh,
+			},
+		},
 		Database: DatabaseConfig{
 			Type: DatabaseTypeMysql,
 			Mysql: MysqlConfig{
@@ -389,6 +418,22 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Server.GRPC.ListenIP == nil {
 		return errors.New("grpc requires parameter listenIP")
+	}
+
+	if cfg.Auth.JWT.Realm == "" {
+		return errors.New("jwt requires parameter realm")
+	}
+
+	if cfg.Auth.JWT.Key == "" {
+		return errors.New("jwt requires parameter key")
+	}
+
+	if cfg.Auth.JWT.Timeout == 0 {
+		return errors.New("jwt requires parameter timeout")
+	}
+
+	if cfg.Auth.JWT.MaxRefresh == 0 {
+		return errors.New("jwt requires parameter maxRefresh")
 	}
 
 	if cfg.Database.Type == "" {

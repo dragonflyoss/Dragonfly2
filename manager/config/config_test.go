@@ -31,6 +31,13 @@ import (
 )
 
 var (
+	mockJWTConfig = JWTConfig{
+		Realm:      "foo",
+		Key:        "bar",
+		Timeout:    30 * time.Second,
+		MaxRefresh: 1 * time.Minute,
+	}
+
 	mockMysqlConfig = MysqlConfig{
 		User:      "foo",
 		Password:  "bar",
@@ -116,6 +123,14 @@ func TestConfig_Load(t *testing.T) {
 			},
 			REST: RestConfig{
 				Addr: ":8080",
+			},
+		},
+		Auth: AuthConfig{
+			JWT: JWTConfig{
+				Realm:      "foo",
+				Key:        "bar",
+				Timeout:    30 * time.Second,
+				MaxRefresh: 1 * time.Minute,
 			},
 		},
 		Database: DatabaseConfig{
@@ -216,6 +231,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "valid config",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Redis = mockRedisConfig
 			},
@@ -258,9 +274,56 @@ func TestConfig_Validate(t *testing.T) {
 			},
 		},
 		{
+			name:   "jwt requires parameter realm",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Auth.JWT.Realm = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "jwt requires parameter realm")
+			},
+		},
+		{
+			name:   "jwt requires parameter key",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Auth.JWT.Key = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "jwt requires parameter key")
+			},
+		},
+		{
+			name:   "jwt requires parameter timeout",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
+				cfg.Auth.JWT.Timeout = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "jwt requires parameter timeout")
+			},
+		},
+		{
+			name:   "jwt requires parameter maxRefresh",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
+				cfg.Auth.JWT.MaxRefresh = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "jwt requires parameter maxRefresh")
+			},
+		},
+		{
 			name:   "database requires parameter type",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = ""
 			},
 			expect: func(t *testing.T, err error) {
@@ -272,6 +335,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "mysql requires parameter user",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Mysql.User = ""
@@ -285,6 +349,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "mysql requires parameter password",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Mysql.Password = ""
@@ -298,6 +363,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "mysql requires parameter host",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Mysql.Host = ""
@@ -311,6 +377,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "mysql requires parameter port",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Mysql.Port = 0
@@ -324,6 +391,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "mysql requires parameter dbname",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Mysql.DBName = ""
@@ -337,6 +405,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "tls requires parameter cert",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Mysql.TLS = mockMysqlTLSConfig
@@ -351,6 +420,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "tls requires parameter key",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Mysql.TLS = mockMysqlTLSConfig
@@ -366,6 +436,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "tls requires parameter ca",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Mysql.TLS = mockMysqlTLSConfig
@@ -382,6 +453,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "postgres requires parameter user",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypePostgres
 				cfg.Database.Postgres = mockPostgresConfig
 				cfg.Database.Postgres.User = ""
@@ -395,6 +467,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "postgres requires parameter password",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypePostgres
 				cfg.Database.Postgres = mockPostgresConfig
 				cfg.Database.Postgres.Password = ""
@@ -408,6 +481,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "postgres requires parameter host",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypePostgres
 				cfg.Database.Postgres = mockPostgresConfig
 				cfg.Database.Postgres.Host = ""
@@ -421,6 +495,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "postgres requires parameter port",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypePostgres
 				cfg.Database.Postgres = mockPostgresConfig
 				cfg.Database.Postgres.Port = 0
@@ -434,6 +509,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "postgres requires parameter dbname",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypePostgres
 				cfg.Database.Postgres = mockPostgresConfig
 				cfg.Database.Postgres.DBName = ""
@@ -447,6 +523,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "postgres requires parameter sslMode",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypePostgres
 				cfg.Database.Postgres = mockPostgresConfig
 				cfg.Database.Postgres.SSLMode = ""
@@ -460,6 +537,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "postgres requires parameter timezone",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypePostgres
 				cfg.Database.Postgres = mockPostgresConfig
 				cfg.Database.Postgres.Timezone = ""
@@ -473,6 +551,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "redis requires parameter addrs",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Redis = mockRedisConfig
@@ -487,6 +566,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "redis requires parameter db",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Redis = mockRedisConfig
@@ -501,6 +581,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "redis requires parameter brokerDB",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Redis = mockRedisConfig
@@ -515,6 +596,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "redis requires parameter backendDB",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Redis = mockRedisConfig
@@ -529,6 +611,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "redis requires parameter ttl",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Redis = mockRedisConfig
@@ -543,6 +626,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "local requires parameter size",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Redis = mockRedisConfig
@@ -557,6 +641,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "local requires parameter ttl",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Redis = mockRedisConfig
@@ -571,6 +656,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "objectStorage requires parameter name",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Redis = mockRedisConfig
@@ -586,6 +672,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "invalid objectStorage name",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Redis = mockRedisConfig
@@ -601,6 +688,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "objectStorage requires parameter accessKey",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Redis = mockRedisConfig
@@ -616,6 +704,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "objectStorage requires parameter secretKey",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Redis = mockRedisConfig
@@ -631,6 +720,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "metrics requires parameter addr",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Redis = mockRedisConfig
@@ -646,6 +736,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "security requires parameter caCert",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Redis = mockRedisConfig
@@ -661,6 +752,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "security requires parameter caKey",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Redis = mockRedisConfig
@@ -676,6 +768,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "security requires parameter tlsPolicy",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Redis = mockRedisConfig
@@ -691,6 +784,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "certSpec requires parameter ipAddresses",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Redis = mockRedisConfig
@@ -706,6 +800,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "certSpec requires parameter dnsNames",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Redis = mockRedisConfig
@@ -721,6 +816,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "certSpec requires parameter validityPeriod",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Redis = mockRedisConfig
