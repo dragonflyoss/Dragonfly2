@@ -59,7 +59,7 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.15.0
 	github.com/stretchr/testify v1.8.2
-	github.com/swaggo/files v0.0.0-20220728132757-551d4a08d97a
+	github.com/swaggo/files v1.0.0
 	github.com/swaggo/gin-swagger v1.5.3
 	github.com/swaggo/swag v1.8.9
 	github.com/yl2chen/cidranger v1.0.2
