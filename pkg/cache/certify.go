@@ -45,6 +45,7 @@ func (c *certifyCache) Get(ctx context.Context, key string) (cert *tls.Certifica
 	for i, cache := range c.caches {
 		if cert, err = cache.Get(ctx, key); err == nil {
 			foundCacheIdx = i
+			break
 		}
 	}
 
