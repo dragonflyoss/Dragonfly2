@@ -46,6 +46,17 @@ const (
 )
 
 const (
+	// DefaultJWTTimeout is default of name in jwt.
+	DefaultJWTRealm = "Dragonfly"
+
+	// DefaultJWTTimeout is default of timeout in jwt.
+	DefaultJWTTimeout = 2 * 24 * time.Hour
+
+	// DefaultJWTMaxRefresh is default of max refresh in jwt.
+	DefaultJWTMaxRefresh = 2 * 24 * time.Hour
+)
+
+const (
 	// DefaultRedisDB is default db for redis.
 	DefaultRedisDB = 0
 

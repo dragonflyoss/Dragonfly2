@@ -78,7 +78,7 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	r.Use(cors.New(corsConfig))
 
 	rbac := middlewares.RBAC(enforcer)
-	jwt, err := middlewares.Jwt(service)
+	jwt, err := middlewares.Jwt(cfg.Auth.JWT, service)
 	if err != nil {
 		return nil, err
 	}

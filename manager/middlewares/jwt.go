@@ -24,25 +24,29 @@ import (
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 
+	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/service"
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-func Jwt(service service.Service) (*jwt.GinJWTMiddleware, error) {
-	identityKey := "id"
+const (
+	// defaultIdentityKey is default of the identity key.
+	defaultIdentityKey = "id"
+)
 
+func Jwt(cfg config.JWTConfig, service service.Service) (*jwt.GinJWTMiddleware, error) {
 	authMiddleware, err := jwt.New(&jwt.GinJWTMiddleware{
-		Realm:       "Dragonfly",
-		Key:         []byte("Secret Key"),
-		Timeout:     2 * 24 * time.Hour,
-		MaxRefresh:  2 * 24 * time.Hour,
-		IdentityKey: identityKey,
+		Realm:       cfg.Realm,
+		Key:         []byte(cfg.Key),
+		Timeout:     cfg.Timeout,
+		MaxRefresh:  cfg.MaxRefresh,
+		IdentityKey: defaultIdentityKey,
 
 		IdentityHandler: func(c *gin.Context) any {
 			claims := jwt.ExtractClaims(c)
 
-			id, ok := claims[identityKey]
+			id, ok := claims[defaultIdentityKey]
 			if !ok {
 				c.JSON(http.StatusUnauthorized, gin.H{
 					"message": "Unavailable token: require user id",
@@ -82,7 +86,7 @@ func Jwt(service service.Service) (*jwt.GinJWTMiddleware, error) {
 		PayloadFunc: func(data any) jwt.MapClaims {
 			if user, ok := data.(*model.User); ok {
 				return jwt.MapClaims{
-					identityKey: user.ID,
+					defaultIdentityKey: user.ID,
 				}
 			}
 
