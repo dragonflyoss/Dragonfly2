@@ -44,6 +44,7 @@ func TestMin(t *testing.T) {
 	assert := assert.New(t)
 	assert.Equal(1, Min(1))
 	assert.Equal(1, Min(1, 2, 3))
+	assert.Equal(1, Min(3, 2, 1))
 	assert.Equal(int8(1), Min(int8(1), int8(2), int8(3)))
 	assert.Equal(int16(1), Min(int16(1), int16(2), int16(3)))
 	assert.Equal(int32(1), Min(int32(1), int32(2), int32(3)))
