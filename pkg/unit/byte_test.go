@@ -32,6 +32,7 @@ func Test_parseByte(t *testing.T) {
 	}{
 		{
 			data: []string{
+				"1234567890123456789012345678901234567890123456789012345678901234567890",
 				"1Ka",
 				"1Kia",
 				"1KBa",
@@ -94,6 +95,12 @@ func Test_parseByte(t *testing.T) {
 				"1Ei",
 			},
 			size: int64(EB),
+		},
+		{
+			data: []string{
+				"",
+			},
+			size: 0,
 		},
 	}
 
