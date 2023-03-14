@@ -162,3 +162,40 @@ size: 1Mix
 		assert.Equal(tc.size, data.Size.ToNumber())
 	}
 }
+
+func Test_String(t *testing.T) {
+	assert := testifyassert.New(t)
+	testCases := []struct {
+		data string
+		b    Bytes
+	}{
+		{
+			data: "1.0B",
+			b:    1,
+		},
+		{
+			data: "2.0KB",
+			b:    2 * 1024,
+		},
+		{
+			data: "3.0MB",
+			b:    3 * 1024 * 1024,
+		},
+		{
+			data: "4.0GB",
+			b:    4 * 1024 * 1024 * 1024,
+		},
+		{
+			data: "5.0TB",
+			b:    5 * 1024 * 1024 * 1024 * 1024,
+		},
+		{
+			data: "6.0PB",
+			b:    6 * 1024 * 1024 * 1024 * 1024 * 1024,
+		},
+	}
+
+	for _, tc := range testCases {
+		assert.Equal(tc.b.String(), tc.data)
+	}
+}
