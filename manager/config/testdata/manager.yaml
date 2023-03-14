@@ -13,6 +13,13 @@ server:
   rest:
     addr: :8080
 
+auth:
+  jwt:
+    realm: foo
+    key: bar
+    timeout: 30s
+    maxRefresh: 1m
+
 database:
   type: mysql
   mysql:

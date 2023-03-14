@@ -1178,24 +1178,18 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 	tests := []struct {
 		name string
 		req  *schedulerv1.PeerResult
-		run  func(
-			t *testing.T, peer *resource.Peer, req *schedulerv1.PeerResult, svc *V1,
-			mockPeer *resource.Peer,
-			res resource.Resource, peerManager resource.PeerManager,
+		run  func(t *testing.T, peer *resource.Peer, req *schedulerv1.PeerResult, svc *V1, mockPeer *resource.Peer, res resource.Resource, peerManager resource.PeerManager,
 			mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
-		)
+			md *configmocks.MockDynconfigInterfaceMockRecorder)
 	}{
 		{
 			name: "peer not found",
 			req: &schedulerv1.PeerResult{
 				PeerId: mockPeerID,
 			},
-			run: func(
-				t *testing.T, peer *resource.Peer, req *schedulerv1.PeerResult, svc *V1,
-				mockPeer *resource.Peer,
-				res resource.Resource, peerManager resource.PeerManager,
+			run: func(t *testing.T, peer *resource.Peer, req *schedulerv1.PeerResult, svc *V1, mockPeer *resource.Peer, res resource.Resource, peerManager resource.PeerManager,
 				mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
-			) {
+				md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(nil, false).Times(1),
@@ -1214,12 +1208,9 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 				Success: false,
 				PeerId:  mockPeerID,
 			},
-			run: func(
-				t *testing.T, peer *resource.Peer, req *schedulerv1.PeerResult, svc *V1,
-				mockPeer *resource.Peer,
-				res resource.Resource, peerManager resource.PeerManager,
+			run: func(t *testing.T, peer *resource.Peer, req *schedulerv1.PeerResult, svc *V1, mockPeer *resource.Peer, res resource.Resource, peerManager resource.PeerManager,
 				mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
-			) {
+				md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				var wg sync.WaitGroup
 				wg.Add(1)
 				defer wg.Wait()
@@ -1228,6 +1219,7 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
+					md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1),
 					ms.Create(gomock.Any()).Do(func(record storage.Record) { wg.Done() }).Return(nil).Times(1),
 				)
 
@@ -1242,12 +1234,9 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 				Success: false,
 				PeerId:  mockPeerID,
 			},
-			run: func(
-				t *testing.T, peer *resource.Peer, req *schedulerv1.PeerResult, svc *V1,
-				mockPeer *resource.Peer,
-				res resource.Resource, peerManager resource.PeerManager,
+			run: func(t *testing.T, peer *resource.Peer, req *schedulerv1.PeerResult, svc *V1, mockPeer *resource.Peer, res resource.Resource, peerManager resource.PeerManager,
 				mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
-			) {
+				md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				var wg sync.WaitGroup
 				wg.Add(1)
 				defer wg.Wait()
@@ -1256,6 +1245,7 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
+					md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1),
 					ms.Create(gomock.Any()).Do(func(record storage.Record) { wg.Done() }).Return(nil).Times(1),
 				)
 
@@ -1270,12 +1260,9 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 				Success: true,
 				PeerId:  mockPeerID,
 			},
-			run: func(
-				t *testing.T, peer *resource.Peer, req *schedulerv1.PeerResult, svc *V1,
-				mockPeer *resource.Peer,
-				res resource.Resource, peerManager resource.PeerManager,
+			run: func(t *testing.T, peer *resource.Peer, req *schedulerv1.PeerResult, svc *V1, mockPeer *resource.Peer, res resource.Resource, peerManager resource.PeerManager,
 				mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
-			) {
+				md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				var wg sync.WaitGroup
 				wg.Add(1)
 				defer wg.Wait()
@@ -1284,6 +1271,7 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
+					md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1),
 					ms.Create(gomock.Any()).Do(func(record storage.Record) { wg.Done() }).Return(nil).Times(1),
 				)
 
@@ -1298,12 +1286,9 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 				Success: true,
 				PeerId:  mockPeerID,
 			},
-			run: func(
-				t *testing.T, peer *resource.Peer, req *schedulerv1.PeerResult, svc *V1,
-				mockPeer *resource.Peer,
-				res resource.Resource, peerManager resource.PeerManager,
+			run: func(t *testing.T, peer *resource.Peer, req *schedulerv1.PeerResult, svc *V1, mockPeer *resource.Peer, res resource.Resource, peerManager resource.PeerManager,
 				mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
-			) {
+				md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				var wg sync.WaitGroup
 				wg.Add(1)
 				defer wg.Wait()
@@ -1312,6 +1297,7 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
+					md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1),
 					ms.Create(gomock.Any()).Do(func(record storage.Record) { wg.Done() }).Return(nil).Times(1),
 				)
 
@@ -1326,12 +1312,9 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 				Success: true,
 				PeerId:  mockPeerID,
 			},
-			run: func(
-				t *testing.T, peer *resource.Peer, req *schedulerv1.PeerResult, svc *V1,
-				mockPeer *resource.Peer,
-				res resource.Resource, peerManager resource.PeerManager,
+			run: func(t *testing.T, peer *resource.Peer, req *schedulerv1.PeerResult, svc *V1, mockPeer *resource.Peer, res resource.Resource, peerManager resource.PeerManager,
 				mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
-			) {
+				md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				var wg sync.WaitGroup
 				wg.Add(1)
 				defer wg.Wait()
@@ -1340,6 +1323,7 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
+					md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1),
 					ms.Create(gomock.Any()).Do(func(record storage.Record) { wg.Done() }).Return(nil).Times(1),
 				)
 
@@ -1366,7 +1350,7 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
 			mockPeer := resource.NewPeer(mockPeerID, mockTask, mockHost)
-			tc.run(t, mockPeer, tc.req, svc, mockPeer, res, peerManager, res.EXPECT(), peerManager.EXPECT(), storage.EXPECT())
+			tc.run(t, mockPeer, tc.req, svc, mockPeer, res, peerManager, res.EXPECT(), peerManager.EXPECT(), storage.EXPECT(), dynconfig.EXPECT())
 		})
 	}
 }
