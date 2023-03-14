@@ -11,8 +11,9 @@ then please add your team and use-case to this file.
 [Google Kubernetes Engine(GKE)](https://cloud.google.com/kubernetes-engine) through [Marketplace](https://console.cloud.google.com/marketplace),
 refer to [Click to Deploy Dragonfly](https://console.cloud.google.com/marketplace/product/google/dragonfly).
 
-**_[ByteDance's Cloud Service Volcengine](https://www.volcengine.com/)_** - Volcengine provides click to
-deploy Dragonfly in [Container Registry(CR)](https://www.volcengine.com/product/cr).
+**_[Volcano Engine](https://www.volcengine.com/)_** - Volcano Engine provides Dragonfly integration in
+Volcano Engine Kubernetes Engine(VKE) and Container Registry(CR),
+visit [VKE](https://www.volcengine.com/product/vke) & [CR](https://www.volcengine.com/product/cr) to Learn more..
 
 **_[Baidu AI Cloud](https://intl.cloud.baidu.com/)_** - Baidu AI Cloud provides click to P2P Acceleration in
 [Cloud Container Engine(CCE)](https://intl.cloud.baidu.com/product/cce.html), power by Dragonfly.
