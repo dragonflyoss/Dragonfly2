@@ -22,6 +22,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/model"
 	schedulerconfig "d7y.io/dragonfly/v2/scheduler/config"
@@ -49,11 +50,13 @@ func New(cfg *config.Config) (*Database, error) {
 	case config.DatabaseTypeMysql, config.DatabaseTypeMariaDB:
 		db, err = newMyqsl(cfg)
 		if err != nil {
+			logger.Errorf("mysql: %s", err.Error())
 			return nil, err
 		}
 	case config.DatabaseTypePostgres:
 		db, err = newPostgres(cfg)
 		if err != nil {
+			logger.Errorf("postgres: %s", err.Error())
 			return nil, err
 		}
 	default:
@@ -62,6 +65,7 @@ func New(cfg *config.Config) (*Database, error) {
 
 	rdb, err := NewRedis(&cfg.Database.Redis)
 	if err != nil {
+		logger.Errorf("redis: %s", err.Error())
 		return nil, err
 	}
 
