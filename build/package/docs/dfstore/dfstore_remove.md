@@ -1,4 +1,4 @@
-% DFCACHE(1) Version v2.0.8 | Frivolous "Dfstore" Documentation
+% DFCACHE(1) Version v2.0.9 | Frivolous "Dfstore" Documentation
 
 # NAME
 
