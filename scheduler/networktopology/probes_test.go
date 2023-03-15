@@ -298,3 +298,36 @@ func TestProbes_GetUpdatedAt(t *testing.T) {
 		})
 	}
 }
+
+func TestProbes_GetAverageRTT(t *testing.T) {
+	tests := []struct {
+		name   string
+		expect func(t *testing.T, averageRTT time.Duration, loaded bool)
+	}{
+		{
+			name: "get average RTT",
+			expect: func(t *testing.T, averageRTT time.Duration, loaded bool) {
+				assert := assert.New(t)
+				assert.Equal(averageRTT, mockProbe.UpdatedAt)
+				assert.Equal(loaded, true)
+			},
+		},
+		{
+			name: "failed to get the update time",
+			expect: func(t *testing.T, averageRTT time.Duration, loaded bool) {
+				assert := assert.New(t)
+				assert.Equal(averageRTT, time.Duration(0))
+				assert.Equal(loaded, false)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			probes := NewProbes(mockSrcHost)
+			probes.StoreProbe(mockProbe)
+			averageRTT, loaded := probes.GetAverageRTT()
+			tc.expect(t, averageRTT, loaded)
+		})
+	}
+}

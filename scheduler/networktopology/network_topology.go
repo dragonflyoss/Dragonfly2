@@ -135,7 +135,7 @@ func WithTransportCredentials(creds credentials.TransportCredentials) Option {
 }
 
 // New network topology interface.
-func New(cfg *config.Config, resource resource.Resource, managerClient managerclient.V2, options ...Option) (NetworkTopology, error) {
+func NewNetworkTopology(cfg *config.Config, resource resource.Resource, managerClient managerclient.V2, options ...Option) (NetworkTopology, error) {
 
 	n := &networkTopology{config: cfg}
 
