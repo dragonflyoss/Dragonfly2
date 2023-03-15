@@ -86,14 +86,14 @@ var (
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
 		Name:      "exchange_peer_total",
-		Help:      "Counter of the number of the leaving peer.",
+		Help:      "Counter of the number of the exchanging peer.",
 	})
 
 	ExchangePeerFailureCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
 		Name:      "exchange_peer_failure_total",
-		Help:      "Counter of the number of failed of the leaving peer.",
+		Help:      "Counter of the number of failed of the exchanging peer.",
 	})
 
 	RegisterPeerCount = promauto.NewCounterVec(prometheus.CounterOpts{

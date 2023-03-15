@@ -869,8 +869,11 @@ func (v *V2) handleDownloadPeerFailedRequest(ctx context.Context, peerID string)
 	// Handle task with peer failed request.
 	peer.Task.UpdatedAt.Store(time.Now())
 
-	// Collect DownloadPeerFailureCount and DownloadPeerDuration metrics.
-	metrics.DownloadPeerFailureCount.WithLabelValues(peer.CalculatePriority(v.dynconfig).String(), peer.Task.Type.String(),
+	// Collect DownloadPeerCount and DownloadPeerFailureCount metrics.
+	priority := peer.CalculatePriority(v.dynconfig)
+	metrics.DownloadPeerCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+	metrics.DownloadPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
 	return nil
@@ -896,8 +899,11 @@ func (v *V2) handleDownloadPeerBackToSourceFailedRequest(ctx context.Context, pe
 		return status.Error(codes.Internal, err.Error())
 	}
 
-	// Collect DownloadPeerBackToSourceFailureCount and DownloadPeerDuration metrics.
-	metrics.DownloadPeerBackToSourceFailureCount.WithLabelValues(peer.CalculatePriority(v.dynconfig).String(), peer.Task.Type.String(),
+	// Collect DownloadPeerCount and DownloadPeerBackToSourceFailureCount metrics.
+	priority := peer.CalculatePriority(v.dynconfig)
+	metrics.DownloadPeerCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+	metrics.DownloadPeerBackToSourceFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
 	return nil
@@ -1025,7 +1031,9 @@ func (v *V2) handleDownloadPieceFailedRequest(ctx context.Context, peerID string
 		return status.Errorf(codes.NotFound, "peer %s not found", peerID)
 	}
 
-	// Collect DownloadPieceFailureCount metrics.
+	// Collect DownloadPieceCount and DownloadPieceFailureCount metrics.
+	metrics.DownloadPieceCount.WithLabelValues(req.Piece.TrafficType.String(), peer.Task.Type.String(),
+		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 	metrics.DownloadPieceFailureCount.WithLabelValues(req.Piece.TrafficType.String(), peer.Task.Type.String(),
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
@@ -1062,7 +1070,9 @@ func (v *V2) handleDownloadPieceBackToSourceFailedRequest(ctx context.Context, p
 	// Handle task with piece back-to-source failed request.
 	peer.Task.UpdatedAt.Store(time.Now())
 
-	// Collect DownloadPieceFailureCount metrics.
+	// Collect DownloadPieceCount and DownloadPieceFailureCount metrics.
+	metrics.DownloadPieceCount.WithLabelValues(req.Piece.TrafficType.String(), peer.Task.Type.String(),
+		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 	metrics.DownloadPieceFailureCount.WithLabelValues(req.Piece.TrafficType.String(), peer.Task.Type.String(),
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
