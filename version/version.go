@@ -23,7 +23,7 @@ import (
 var (
 	Major      = "2"
 	Minor      = "0"
-	GitVersion = "v2.0.8"
+	GitVersion = "v2.0.9"
 	GitCommit  = "unknown"
 	Platform   = osArch
 	BuildTime  = "unknown"
