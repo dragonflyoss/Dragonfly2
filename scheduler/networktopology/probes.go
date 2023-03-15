@@ -9,6 +9,9 @@ import (
 	"time"
 )
 
+// TODO: Here we need to design a timestamp measurement point.
+var InitTime = time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC)
+
 type Probe struct {
 	// Host metadata.
 	Host *resource.Host
@@ -74,10 +77,9 @@ func (p *Probes) StoreProbe(probe *Probe) {
 }
 
 // GetUpdatedAt gets the probe update time.
-func (p *Probes) GetUpdatedAt() time.Time {
+func (p *Probes) GetUpdatedAt() (time.Time, bool) {
 	if p.Probes.Len() != 0 {
-		return p.Probes.Back().Value.(*Probe).UpdatedAt
+		return p.Probes.Back().Value.(*Probe).UpdatedAt, true
 	}
-	//TODO: Here we need to design a timestamp measurement point.
-	return time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC)
+	return InitTime, false
 }

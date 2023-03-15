@@ -233,7 +233,7 @@ func (n *networkTopology) StoreProbe(
 	if ok {
 		rawProbes, ok1 := rawNetwork.(*sync.Map).Load(dest)
 		if ok1 {
-			rawProbe := newProbe(Host, RTT, UpdatedAt)
+			rawProbe := NewProbe(Host, RTT, UpdatedAt)
 			rawProbes.(*Probes).StoreProbe(rawProbe)
 		}
 	}
@@ -389,9 +389,11 @@ func (n *networkTopology) FindProbes(host *resource.Host) []*resource.Host {
 		if !flag {
 			edge, ok := n.LoadEdge(host.ID, h.ID)
 			if ok {
-				//TODO: Here we need to design a timestamp measurement point.
-				hostPriority[h] = AOIPriority + 1 -
-					int(time.Now().Sub(edge.GetUpdatedAt())/time.Now().Sub(time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC)))
+				updatedAt, ok1 := edge.GetUpdatedAt()
+				if ok1 {
+					hostPriority[h] = AOIPriority + 1 -
+						int(time.Now().Sub(updatedAt)/time.Now().Sub(InitTime))
+				}
 			}
 		}
 	}
