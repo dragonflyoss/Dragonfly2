@@ -3,9 +3,9 @@ package networktopology
 import (
 	"container/list"
 	"context"
-	v1 "d7y.io/api/pkg/apis/common/v1"
+	v2 "d7y.io/api/pkg/apis/common/v2"
 	managerv2 "d7y.io/api/pkg/apis/manager/v2"
-	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+	schedulerv2 "d7y.io/api/pkg/apis/scheduler/v2"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -419,26 +419,78 @@ func (n *networkTopology) SyncNetworkTopology() error {
 
 	if n.config.NetworkTopology.Enable {
 		// Generate grpc synchronization network topology request of updating hosts.
-		updateProbesOfHosts := make([]*schedulerv1.ProbesOfHost, 0)
+		updateProbesOfHosts := make([]*schedulerv2.ProbesOfHost, 0)
 		for srcID := range n.localHosts {
 			parents, ok := n.Load(srcID)
 			if ok {
 				parents.(*sync.Map).Range(func(dest, probes interface{}) bool {
 					rawHost, ok1 := n.GetHost(dest.(string))
-					rawProbes := make([]*schedulerv1.Probe, 0)
+					rawProbes := make([]*schedulerv2.Probe, 0)
 					for e := probes.(Probes).Probes.Front(); e != nil; e = e.Next() {
 						probe := e.Value.(Probe)
 
-						p := &schedulerv1.Probe{
-							Host: &v1.Host{
-								Id:             probe.Host.ID,
-								Ip:             probe.Host.IP,
-								Hostname:       probe.Host.Hostname,
-								Port:           probe.Host.Port,
-								DownloadPort:   probe.Host.DownloadPort,
-								SecurityDomain: probe.Host.Network.SecurityDomain,
-								Location:       probe.Host.Network.Location,
-								Idc:            probe.Host.Network.IDC,
+						p := &schedulerv2.Probe{
+							Host: &v2.Host{
+								Id:              probe.Host.ID,
+								Type:            uint32(probe.Host.Type),
+								Hostname:        probe.Host.Hostname,
+								Ip:              probe.Host.IP,
+								Port:            probe.Host.Port,
+								DownloadPort:    probe.Host.DownloadPort,
+								Os:              probe.Host.OS,
+								Platform:        probe.Host.Platform,
+								PlatformFamily:  probe.Host.PlatformFamily,
+								PlatformVersion: probe.Host.PlatformVersion,
+								KernelVersion:   probe.Host.KernelVersion,
+								Cpu: &v2.CPU{
+									LogicalCount:   probe.Host.CPU.LogicalCount,
+									PhysicalCount:  probe.Host.CPU.PhysicalCount,
+									Percent:        probe.Host.CPU.Percent,
+									ProcessPercent: probe.Host.CPU.ProcessPercent,
+									Times: &v2.CPUTimes{
+										User:      probe.Host.CPU.Times.User,
+										System:    probe.Host.CPU.Times.System,
+										Idle:      probe.Host.CPU.Times.Idle,
+										Nice:      probe.Host.CPU.Times.Nice,
+										Iowait:    probe.Host.CPU.Times.Iowait,
+										Irq:       probe.Host.CPU.Times.Irq,
+										Softirq:   probe.Host.CPU.Times.Softirq,
+										Steal:     probe.Host.CPU.Times.Steal,
+										Guest:     probe.Host.CPU.Times.Guest,
+										GuestNice: probe.Host.CPU.Times.GuestNice,
+									},
+								},
+								Memory: &v2.Memory{
+									Total:              probe.Host.Memory.Total,
+									Available:          probe.Host.Memory.Available,
+									Used:               probe.Host.Memory.Used,
+									UsedPercent:        probe.Host.Memory.UsedPercent,
+									ProcessUsedPercent: probe.Host.Memory.ProcessUsedPercent,
+									Free:               probe.Host.Memory.Free,
+								},
+								Network: &v2.Network{
+									TcpConnectionCount:       probe.Host.Network.TCPConnectionCount,
+									UploadTcpConnectionCount: probe.Host.Network.UploadTCPConnectionCount,
+									SecurityDomain:           probe.Host.Network.SecurityDomain,
+									Location:                 probe.Host.Network.Location,
+									Idc:                      probe.Host.Network.IDC,
+								},
+								Disk: &v2.Disk{
+									Total:             probe.Host.Disk.Total,
+									Free:              probe.Host.Disk.Free,
+									Used:              probe.Host.Disk.Used,
+									UsedPercent:       probe.Host.Disk.UsedPercent,
+									InodesTotal:       probe.Host.Disk.InodesTotal,
+									InodesUsed:        probe.Host.Disk.InodesUsed,
+									InodesFree:        probe.Host.Disk.InodesFree,
+									InodesUsedPercent: probe.Host.Disk.InodesUsedPercent,
+								},
+								Build: &v2.Build{
+									GitVersion: probe.Host.Build.GitVersion,
+									GitCommit:  probe.Host.Build.GitCommit,
+									GoVersion:  probe.Host.Build.GoVersion,
+									Platform:   probe.Host.Build.Platform,
+								},
 							},
 							Rtt:       durationpb.New(probe.RTT),
 							UpdatedAt: timestamppb.New(probe.UpdatedAt),
@@ -447,16 +499,68 @@ func (n *networkTopology) SyncNetworkTopology() error {
 					}
 
 					if ok1 {
-						probesOfHost := &schedulerv1.ProbesOfHost{
-							Host: &v1.Host{
-								Id:             rawHost.ID,
-								Ip:             rawHost.IP,
-								Hostname:       rawHost.Hostname,
-								Port:           rawHost.Port,
-								DownloadPort:   rawHost.DownloadPort,
-								SecurityDomain: rawHost.Network.SecurityDomain,
-								Location:       rawHost.Network.Location,
-								Idc:            rawHost.Network.IDC,
+						probesOfHost := &schedulerv2.ProbesOfHost{
+							Host: &v2.Host{
+								Id:              rawHost.ID,
+								Type:            uint32(rawHost.Type),
+								Hostname:        rawHost.Hostname,
+								Ip:              rawHost.IP,
+								Port:            rawHost.Port,
+								DownloadPort:    rawHost.DownloadPort,
+								Os:              rawHost.OS,
+								Platform:        rawHost.Platform,
+								PlatformFamily:  rawHost.PlatformFamily,
+								PlatformVersion: rawHost.PlatformVersion,
+								KernelVersion:   rawHost.KernelVersion,
+								Cpu: &v2.CPU{
+									LogicalCount:   rawHost.CPU.LogicalCount,
+									PhysicalCount:  rawHost.CPU.PhysicalCount,
+									Percent:        rawHost.CPU.Percent,
+									ProcessPercent: rawHost.CPU.ProcessPercent,
+									Times: &v2.CPUTimes{
+										User:      rawHost.CPU.Times.User,
+										System:    rawHost.CPU.Times.System,
+										Idle:      rawHost.CPU.Times.Idle,
+										Nice:      rawHost.CPU.Times.Nice,
+										Iowait:    rawHost.CPU.Times.Iowait,
+										Irq:       rawHost.CPU.Times.Irq,
+										Softirq:   rawHost.CPU.Times.Softirq,
+										Steal:     rawHost.CPU.Times.Steal,
+										Guest:     rawHost.CPU.Times.Guest,
+										GuestNice: rawHost.CPU.Times.GuestNice,
+									},
+								},
+								Memory: &v2.Memory{
+									Total:              rawHost.Memory.Total,
+									Available:          rawHost.Memory.Available,
+									Used:               rawHost.Memory.Used,
+									UsedPercent:        rawHost.Memory.UsedPercent,
+									ProcessUsedPercent: rawHost.Memory.ProcessUsedPercent,
+									Free:               rawHost.Memory.Free,
+								},
+								Network: &v2.Network{
+									TcpConnectionCount:       rawHost.Network.TCPConnectionCount,
+									UploadTcpConnectionCount: rawHost.Network.UploadTCPConnectionCount,
+									SecurityDomain:           rawHost.Network.SecurityDomain,
+									Location:                 rawHost.Network.Location,
+									Idc:                      rawHost.Network.IDC,
+								},
+								Disk: &v2.Disk{
+									Total:             rawHost.Disk.Total,
+									Free:              rawHost.Disk.Free,
+									Used:              rawHost.Disk.Used,
+									UsedPercent:       rawHost.Disk.UsedPercent,
+									InodesTotal:       rawHost.Disk.InodesTotal,
+									InodesUsed:        rawHost.Disk.InodesUsed,
+									InodesFree:        rawHost.Disk.InodesFree,
+									InodesUsedPercent: rawHost.Disk.InodesUsedPercent,
+								},
+								Build: &v2.Build{
+									GitVersion: rawHost.Build.GitVersion,
+									GitCommit:  rawHost.Build.GitCommit,
+									GoVersion:  rawHost.Build.GoVersion,
+									Platform:   rawHost.Build.Platform,
+								},
 							},
 							Probes: rawProbes,
 						}
@@ -468,21 +572,73 @@ func (n *networkTopology) SyncNetworkTopology() error {
 		}
 
 		// Generate grpc synchronization network topology request of deleting hosts.
-		deleteProbesOfHosts := make([]*schedulerv1.ProbesOfHost, 0)
+		deleteProbesOfHosts := make([]*schedulerv2.ProbesOfHost, 0)
 		if len(n.deleteHosts) != 0 {
 			for _, deleteHost := range n.deleteHosts {
 				rawHost, ok := n.GetHost(deleteHost)
 				if ok {
-					probesOfHost := &schedulerv1.ProbesOfHost{
-						Host: &v1.Host{
-							Id:             rawHost.ID,
-							Ip:             rawHost.IP,
-							Hostname:       rawHost.Hostname,
-							Port:           rawHost.Port,
-							DownloadPort:   rawHost.DownloadPort,
-							SecurityDomain: rawHost.Network.SecurityDomain,
-							Location:       rawHost.Network.Location,
-							Idc:            rawHost.Network.IDC,
+					probesOfHost := &schedulerv2.ProbesOfHost{
+						Host: &v2.Host{
+							Id:              rawHost.ID,
+							Type:            uint32(rawHost.Type),
+							Hostname:        rawHost.Hostname,
+							Ip:              rawHost.IP,
+							Port:            rawHost.Port,
+							DownloadPort:    rawHost.DownloadPort,
+							Os:              rawHost.OS,
+							Platform:        rawHost.Platform,
+							PlatformFamily:  rawHost.PlatformFamily,
+							PlatformVersion: rawHost.PlatformVersion,
+							KernelVersion:   rawHost.KernelVersion,
+							Cpu: &v2.CPU{
+								LogicalCount:   rawHost.CPU.LogicalCount,
+								PhysicalCount:  rawHost.CPU.PhysicalCount,
+								Percent:        rawHost.CPU.Percent,
+								ProcessPercent: rawHost.CPU.ProcessPercent,
+								Times: &v2.CPUTimes{
+									User:      rawHost.CPU.Times.User,
+									System:    rawHost.CPU.Times.System,
+									Idle:      rawHost.CPU.Times.Idle,
+									Nice:      rawHost.CPU.Times.Nice,
+									Iowait:    rawHost.CPU.Times.Iowait,
+									Irq:       rawHost.CPU.Times.Irq,
+									Softirq:   rawHost.CPU.Times.Softirq,
+									Steal:     rawHost.CPU.Times.Steal,
+									Guest:     rawHost.CPU.Times.Guest,
+									GuestNice: rawHost.CPU.Times.GuestNice,
+								},
+							},
+							Memory: &v2.Memory{
+								Total:              rawHost.Memory.Total,
+								Available:          rawHost.Memory.Available,
+								Used:               rawHost.Memory.Used,
+								UsedPercent:        rawHost.Memory.UsedPercent,
+								ProcessUsedPercent: rawHost.Memory.ProcessUsedPercent,
+								Free:               rawHost.Memory.Free,
+							},
+							Network: &v2.Network{
+								TcpConnectionCount:       rawHost.Network.TCPConnectionCount,
+								UploadTcpConnectionCount: rawHost.Network.UploadTCPConnectionCount,
+								SecurityDomain:           rawHost.Network.SecurityDomain,
+								Location:                 rawHost.Network.Location,
+								Idc:                      rawHost.Network.IDC,
+							},
+							Disk: &v2.Disk{
+								Total:             rawHost.Disk.Total,
+								Free:              rawHost.Disk.Free,
+								Used:              rawHost.Disk.Used,
+								UsedPercent:       rawHost.Disk.UsedPercent,
+								InodesTotal:       rawHost.Disk.InodesTotal,
+								InodesUsed:        rawHost.Disk.InodesUsed,
+								InodesFree:        rawHost.Disk.InodesFree,
+								InodesUsedPercent: rawHost.Disk.InodesUsedPercent,
+							},
+							Build: &v2.Build{
+								GitVersion: rawHost.Build.GitVersion,
+								GitCommit:  rawHost.Build.GitCommit,
+								GoVersion:  rawHost.Build.GoVersion,
+								Platform:   rawHost.Build.Platform,
+							},
 						},
 						Probes: nil,
 					}
@@ -492,29 +648,29 @@ func (n *networkTopology) SyncNetworkTopology() error {
 		}
 
 		for _, scheduler := range listSchedulersResponse.Schedulers {
-			schedulerClient, err := schedulerclient.GetV1ByAddr(context.Background(), scheduler.Ip, grpc.WithTransportCredentials(n.transportCredentials))
+			schedulerClient, err := schedulerclient.GetV2ByAddr(context.Background(), scheduler.Ip, grpc.WithTransportCredentials(n.transportCredentials))
 			if err != nil {
 				return err
 			}
 
 			// Synchronize network topology by updating hosts.
-			updateHostsRequest := &schedulerv1.UpdateHostsRequest{ProbesOfHosts: updateProbesOfHosts}
-			updateProbesOfHostsRequest := &schedulerv1.SyncNetworkTopologyRequest_UpdateProbesOfHostsRequest{
+			updateHostsRequest := &schedulerv2.UpdateHostsRequest{ProbesOfHosts: updateProbesOfHosts}
+			updateProbesOfHostsRequest := &schedulerv2.SyncNetworkTopologyRequest_UpdateProbesOfHostsRequest{
 				UpdateProbesOfHostsRequest: updateHostsRequest,
 			}
 			schedulerSyncNetworkTopologyClient, err := schedulerClient.SyncNetworkTopology(context.Background(),
-				&schedulerv1.SyncNetworkTopologyRequest{Request: updateProbesOfHostsRequest})
+				&schedulerv2.SyncNetworkTopologyRequest{Request: updateProbesOfHostsRequest})
 			if err != nil {
 				return err
 			}
 
 			// Synchronize network topology by deleting hosts.
 			if len(n.deleteHosts) != 0 {
-				deleteHostsRequest := &schedulerv1.DeleteHostsRequest{ProbesOfHosts: deleteProbesOfHosts}
-				deleteProbesOfHostsRequest := &schedulerv1.SyncNetworkTopologyRequest_DeleteProbesOfHostsRequest{
+				deleteHostsRequest := &schedulerv2.DeleteHostsRequest{ProbesOfHosts: deleteProbesOfHosts}
+				deleteProbesOfHostsRequest := &schedulerv2.SyncNetworkTopologyRequest_DeleteProbesOfHostsRequest{
 					DeleteProbesOfHostsRequest: deleteHostsRequest,
 				}
-				err := schedulerSyncNetworkTopologyClient.Send(&schedulerv1.SyncNetworkTopologyRequest{Request: deleteProbesOfHostsRequest})
+				err := schedulerSyncNetworkTopologyClient.Send(&schedulerv2.SyncNetworkTopologyRequest{Request: deleteProbesOfHostsRequest})
 				if err != nil {
 					return err
 				}
@@ -525,7 +681,6 @@ func (n *networkTopology) SyncNetworkTopology() error {
 	return nil
 }
 
-// 都走schedulerv2
 func (n *networkTopology) Serve() error {
 
 	if err := n.SyncNetworkTopology(); err != nil {
