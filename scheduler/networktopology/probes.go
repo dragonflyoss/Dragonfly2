@@ -18,9 +18,10 @@ type Probe struct {
 	UpdatedAt time.Time
 }
 
-func newProbe(Host *resource.Host, RTT *durationpb.Duration, UpdatedAt *timestamppb.Timestamp) *Probe {
+// NewProbe creates a new probe instance.
+func NewProbe(host *resource.Host, RTT *durationpb.Duration, UpdatedAt *timestamppb.Timestamp) *Probe {
 	p := &Probe{
-		Host:      Host,
+		Host:      host,
 		RTT:       RTT.AsDuration(),
 		UpdatedAt: UpdatedAt.AsTime(),
 	}
@@ -36,15 +37,25 @@ type Probes struct {
 	AverageRTT time.Duration
 }
 
-func newProbes(Host *resource.Host) *Probes {
+// NewProbes creates a new probe list instance.
+func NewProbes(host *resource.Host) *Probes {
 	p := &Probes{
-		Host:       Host,
+		Host:       host,
 		Probes:     list.New(),
 		AverageRTT: time.Duration(0),
 	}
 	return p
 }
 
+// LoadProbe return the latest probe.
+func (p *Probes) LoadProbe() (*Probe, bool) {
+	if p.Probes.Len() == 0 {
+		return nil, false
+	}
+	return p.Probes.Back().Value.(*Probe), true
+}
+
+// StoreProbe stores probe in probe list.
 func (p *Probes) StoreProbe(probe *Probe) {
 	if p.Probes.Len() == config.DefaultProbeQueueLength {
 		front := p.Probes.Front()
@@ -62,9 +73,10 @@ func (p *Probes) StoreProbe(probe *Probe) {
 	p.AverageRTT = SumRTT / time.Duration(p.Probes.Len())
 }
 
+// GetUpdatedAt gets the probe update time.
 func (p *Probes) GetUpdatedAt() time.Time {
 	if p.Probes.Len() != 0 {
-		return p.Probes.Back().Value.(Probe).UpdatedAt
+		return p.Probes.Back().Value.(*Probe).UpdatedAt
 	}
 	//TODO: Here we need to design a timestamp measurement point.
 	return time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC)
