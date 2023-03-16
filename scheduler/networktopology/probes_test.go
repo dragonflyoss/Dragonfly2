@@ -1,20 +1,16 @@
 package networktopology
 
 import (
-	"testing"
-	"time"
-
 	"container/list"
-
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/atomic"
-
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/resource"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/atomic"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"testing"
+	"time"
 )
 
 var (
