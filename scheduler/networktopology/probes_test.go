@@ -15,7 +15,7 @@ import (
 
 var (
 	mockDestHost = &resource.Host{
-		ID:              mockHostID,
+		ID:              idgen.HostIDV2("127.0.0.1", "destHostName"),
 		Type:            types.HostTypeNormal,
 		Hostname:        "destination_hostname",
 		IP:              "127.0.0.1",
@@ -36,7 +36,7 @@ var (
 	}
 
 	mockSrcHost = &resource.Host{
-		ID:              mockHostID,
+		ID:              idgen.HostIDV2("127.0.0.1", "srcHostName"),
 		Type:            types.HostTypeNormal,
 		Hostname:        "source_hostname",
 		IP:              "127.0.0.1",
@@ -110,7 +110,6 @@ var (
 		Platform:   "darwin",
 	}
 
-	mockHostID             = idgen.HostIDV2("127.0.0.1", "hostname")
 	mockHostSecurityDomain = "security_domain"
 	mockHostLocation       = "location"
 	mockHostIDC            = "idc"

@@ -48,7 +48,7 @@ type NetworkTopology interface {
 	// the hosts that synchronized the network topology.
 	StoreSyncHost(string)
 
-	// DeleteSyncHost deletes the hosts that sent the synchronization probe, it comes
+	// DeleteSyncHost deletes the hosts that sent the synchronization probe, it is called
 	// from LeaveHost.
 	DeleteSyncHost(string)
 
@@ -158,6 +158,8 @@ func (n *networkTopology) GetHost(hostId string) (*resource.Host, bool) {
 	return nil, ok
 }
 
+// TODO(XZ): if each host do not send probes to the same host within a synchronization interval,
+// the stored synchronization node is not duplicated, so that we do not need the map structure.
 func (n *networkTopology) StoreSyncHost(hostId string) {
 
 	n.localHosts[hostId] = empty{}

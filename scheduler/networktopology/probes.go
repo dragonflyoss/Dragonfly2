@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// TODO: Here we need to design a timestamp measurement point.
+// TODO(XZ): Here we need to design a timestamp measurement point.
 var InitTime = time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC)
 
 type Probe struct {
