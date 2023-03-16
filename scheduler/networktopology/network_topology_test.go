@@ -1,14 +1,16 @@
 package networktopology
 
 import (
+	"sync"
+	"testing"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
-	"sync"
-	"testing"
 )
 
 func TestNetworkTopology_NewNetworkTopology(t *testing.T) {
