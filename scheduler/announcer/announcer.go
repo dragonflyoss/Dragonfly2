@@ -60,7 +60,7 @@ func New(cfg *config.Config, managerClient managerclient.V2) (Announcer, error) 
 		SourceType:         managerv2.SourceType_SCHEDULER_SOURCE,
 		HostName:           a.config.Server.Host,
 		Ip:                 a.config.Server.AdvertiseIP.String(),
-		Port:               int32(a.config.Server.Port),
+		Port:               int32(a.config.Server.AdvertisePort),
 		Idc:                a.config.Host.IDC,
 		Location:           a.config.Host.Location,
 		SchedulerClusterId: uint64(a.config.Manager.SchedulerClusterID),

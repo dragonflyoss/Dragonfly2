@@ -81,6 +81,9 @@ type ServerConfig struct {
 	// AdvertiseIP is advertise ip.
 	AdvertiseIP net.IP `yaml:"advertiseIP" mapstructure:"advertiseIP"`
 
+	// AdvertisePort is advertise port.
+	AdvertisePort int `yaml:"advertisePort" mapstructure:"advertisePort"`
+
 	// ListenIP is listen ip, like: 0.0.0.0, 192.168.0.1.
 	ListenIP net.IP `yaml:"listenIP" mapstructure:"listenIP"`
 
@@ -321,8 +324,9 @@ type ProbeConfig struct {
 func New() *Config {
 	return &Config{
 		Server: ServerConfig{
-			Port: DefaultServerPort,
-			Host: fqdn.FQDNHostname,
+			Port:          DefaultServerPort,
+			AdvertisePort: DefaultServerAdvertisePort,
+			Host:          fqdn.FQDNHostname,
 		},
 		Scheduler: SchedulerConfig{
 			Algorithm:              DefaultSchedulerAlgorithm,
@@ -402,6 +406,10 @@ func New() *Config {
 func (cfg *Config) Validate() error {
 	if cfg.Server.AdvertiseIP == nil {
 		return errors.New("server requires parameter advertiseIP")
+	}
+
+	if cfg.Server.AdvertisePort <= 0 {
+		return errors.New("server requires parameter advertisePort")
 	}
 
 	if cfg.Server.ListenIP == nil {
