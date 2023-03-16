@@ -2,7 +2,6 @@ package networktopology
 
 import (
 	"container/list"
-
 	"testing"
 	"time"
 
