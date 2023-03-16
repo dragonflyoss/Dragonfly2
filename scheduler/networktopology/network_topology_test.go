@@ -11,8 +11,6 @@ import (
 	"testing"
 )
 
-var ()
-
 func TestNetworkTopology_NewNetworkTopology(t *testing.T) {
 	tests := []struct {
 		name   string

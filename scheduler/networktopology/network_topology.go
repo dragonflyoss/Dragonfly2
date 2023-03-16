@@ -361,7 +361,7 @@ func (n *networkTopology) FindProbes(host *resource.Host) []*resource.Host {
 
 	// The priority of hosts.
 	var (
-		hostPriority map[string]int
+		hostPriority = make(map[string]int)
 		rawLocation  = strings.Split(host.Network.Location, "|")
 		flag         = false
 	)
@@ -698,7 +698,6 @@ func (n *networkTopology) Serve() error {
 		case <-n.done:
 			return nil
 		}
-		return nil
 	}
 }
 
