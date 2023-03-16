@@ -10,7 +10,7 @@ import (
 )
 
 // TODO(XZ): Here we need to design a timestamp measurement point.
-var InitTime = time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC)
+var initTime = time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC)
 
 type Probe struct {
 	// Host metadata.
@@ -80,7 +80,7 @@ func (p *Probes) GetUpdatedAt() (time.Time, bool) {
 	if p.Probes.Len() != 0 {
 		return p.Probes.Back().Value.(*Probe).UpdatedAt, true
 	}
-	return InitTime, false
+	return initTime, false
 }
 
 // GetAverageRTT gets the average RTT of probes.

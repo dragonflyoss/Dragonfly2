@@ -150,8 +150,8 @@ func NewNetworkTopology(cfg *config.Config, resource resource.Resource, managerC
 	return n, nil
 }
 
-func (n *networkTopology) GetHost(hostId string) (*resource.Host, bool) {
-	host, ok := n.resource.HostManager().Load(hostId)
+func (n *networkTopology) GetHost(hostID string) (*resource.Host, bool) {
+	host, ok := n.resource.HostManager().Load(hostID)
 	if ok {
 		return host, ok
 	}
@@ -160,14 +160,14 @@ func (n *networkTopology) GetHost(hostId string) (*resource.Host, bool) {
 
 // TODO(XZ): if each host do not send probes to the same host within a synchronization interval,
 // the stored synchronization node is not duplicated, so that we do not need the map structure.
-func (n *networkTopology) StoreSyncHost(hostId string) {
+func (n *networkTopology) StoreSyncHost(hostID string) {
 
-	n.localHosts[hostId] = empty{}
+	n.localHosts[hostID] = empty{}
 }
 
-func (n *networkTopology) DeleteSyncHost(hostId string) {
+func (n *networkTopology) DeleteSyncHost(hostID string) {
 
-	n.deleteHosts = append(n.deleteHosts, hostId)
+	n.deleteHosts = append(n.deleteHosts, hostID)
 }
 
 func (n *networkTopology) LoadParents(key string) (*sync.Map, bool) {
@@ -361,29 +361,29 @@ func (n *networkTopology) FindProbes(host *resource.Host) []*resource.Host {
 
 	// The priority of hosts.
 	var (
-		hostPriority map[*resource.Host]int
+		hostPriority map[string]int
 		rawLocation  = strings.Split(host.Network.Location, "|")
 		flag         = false
 	)
 
 	for _, h := range hosts {
 		if h.Network.SecurityDomain == host.Network.SecurityDomain {
-			hostPriority[h] = SecurityDomainPriority
+			hostPriority[h.ID] = SecurityDomainPriority
 			continue
 		}
 		if h.Network.IDC == host.Network.IDC {
-			hostPriority[h] = IDCPriority
+			hostPriority[h.ID] = IDCPriority
 			continue
 		}
 		if h.IP == host.IP {
-			hostPriority[h] = IPPriority
+			hostPriority[h.ID] = IPPriority
 			continue
 		}
 		flag = false
 		hostLocation := strings.Split(host.Network.Location, "|")
 		for index := range rawLocation {
 			if rawLocation[index] != hostLocation[index] {
-				hostPriority[h] = LocationPriority + 10 - index/len(rawLocation)
+				hostPriority[h.ID] = LocationPriority + 10 - index/len(rawLocation)
 				flag = true
 				break
 			}
@@ -393,14 +393,14 @@ func (n *networkTopology) FindProbes(host *resource.Host) []*resource.Host {
 			if ok {
 				updatedAt, ok1 := edge.GetUpdatedAt()
 				if ok1 {
-					hostPriority[h] = AOIPriority + 1 -
-						int(time.Now().Sub(updatedAt)/time.Now().Sub(InitTime))
+					hostPriority[h.ID] = AOIPriority + 1 -
+						int(time.Now().Sub(updatedAt)/time.Now().Sub(initTime))
 				}
 			}
 		}
 	}
 	sort.Slice(hosts, func(i, j int) bool {
-		return hostPriority[hosts[i]] < hostPriority[hosts[j]]
+		return hostPriority[hosts[i].ID] < hostPriority[hosts[j].ID]
 	})
 	return hosts[0:config.DefaultProbeSyncCount]
 }
