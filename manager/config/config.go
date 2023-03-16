@@ -255,6 +255,9 @@ type GRPCConfig struct {
 	// AdvertiseIP is advertise ip.
 	AdvertiseIP net.IP `yaml:"advertiseIP" mapstructure:"advertiseIP"`
 
+	// AdvertisePort is advertise port.
+	AdvertisePort int `yaml:"advertisePort" mapstructure:"advertisePort"`
+
 	// ListenIP is listen ip, like: 0.0.0.0, 192.168.0.1.
 	ListenIP net.IP `mapstructure:"listenIP" yaml:"listenIP"`
 
@@ -337,6 +340,7 @@ func New() *Config {
 		Server: ServerConfig{
 			Name: DefaultServerName,
 			GRPC: GRPCConfig{
+				AdvertisePort: DefaultGRPCAdvertisePort,
 				PortRange: TCPListenPortRange{
 					Start: DefaultGRPCPort,
 					End:   DefaultGRPCPort,
@@ -414,6 +418,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Server.GRPC.AdvertiseIP == nil {
 		return errors.New("grpc requires parameter advertiseIP")
+	}
+
+	if cfg.Server.GRPC.AdvertisePort <= 0 {
+		return errors.New("grpc requires parameter advertisePort")
 	}
 
 	if cfg.Server.GRPC.ListenIP == nil {
