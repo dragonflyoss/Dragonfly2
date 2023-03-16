@@ -17,6 +17,9 @@ GOPROXY=${GOPROXY:-`go env GOPROXY`}
 GOTAGS=${GOTAGS:-}
 GOGCFLAGS=${GOGCFLAGS:-}
 
+GOOS=${GOOS:-linux}
+GOARCH=${GOARCH:-amd64}
+
 # enable bash debug output
 DEBUG=${DEBUG:-}
 
@@ -27,6 +30,7 @@ fi
 docker-build() {
     name=$1
     docker build \
+      --platform ${GOOS}/${GOARCH} \
       --build-arg CGO_ENABLED="${CGO_ENABLED}" \
       --build-arg GOPROXY="${GOPROXY}" \
       --build-arg GOTAGS="${GOTAGS}" \
