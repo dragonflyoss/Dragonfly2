@@ -28,148 +28,148 @@ DFSTORE_ARCHIVE_PREFIX := "$(DFSTORE_NAME)_$(SEMVER)-$(VERSION_RELEASE)_$(GIT_CO
 
 all: help
 
-# Prepare required folders for build
+# Prepare required folders for build.
 build-dirs:
 	@mkdir -p ./bin
 .PHONY: build-dirs
 
-# Build dragonlfy
+# Build dragonlfy.
 docker-build: docker-build-dfdaemon docker-build-scheduler docker-build-manager
 	@echo "Build image done."
 .PHONY: docker-build
 
-# Push dragonfly images
+# Push dragonfly images.
 docker-push: docker-push-dfdaemon docker-push-scheduler docker-push-manager
 	@echo "Push image done."
 .PHONY: docker-push
 
-# Build dfdaemon image
+# Build dfdaemon image.
 docker-build-dfdaemon:
 	@echo "Begin to use docker build dfdaemon image."
 	./hack/docker-build.sh dfdaemon
 .PHONY: docker-build-dfdaemon
 
-# Build scheduler image
+# Build scheduler image.
 docker-build-scheduler:
 	@echo "Begin to use docker build scheduler image."
 	./hack/docker-build.sh scheduler
 .PHONY: docker-build-scheduler
 
-# Build manager image
+# Build manager image.
 docker-build-manager:
 	@echo "Begin to use docker build manager image."
 	./hack/docker-build.sh manager
 .PHONY: docker-build-manager
 
-# Build testing tools image
+# Build testing tools image.
 docker-build-testing-tools: build-dirs
 	@echo "Begin to testing tools image."
 	./test/tools/no-content-length/build.sh
 .PHONY: docker-build-testing-tools
 
-# Push dfdaemon image
+# Push dfdaemon image.
 docker-push-dfdaemon: docker-build-dfdaemon
 	@echo "Begin to push dfdaemon docker image."
 	./hack/docker-push.sh dfdaemon
 .PHONY: docker-push-dfdaemon
 
-# Push scheduler image
+# Push scheduler image.
 docker-push-scheduler: docker-build-scheduler
 	@echo "Begin to push scheduler docker image."
 	./hack/docker-push.sh scheduler
 .PHONY: docker-push-scheduler
 
-# Push manager image
+# Push manager image.
 docker-push-manager: docker-build-manager
 	@echo "Begin to push manager docker image."
 	./hack/docker-push.sh manager
 .PHONY: docker-push-manager
 
-# Build dragonfly
+# Build dragonfly.
 build: build-manager build-scheduler build-dfget build-dfcache build-dfstore
 .PHONY: build
 
-# Build dfget
+# Build dfget.
 build-dfget: build-dirs
 	@echo "Begin to build dfget."
 	./hack/build.sh dfget
 .PHONY: build-dfget
 
-# Build linux dfget
+# Build linux dfget.
 build-linux-dfget: build-dirs
 	@echo "Begin to build linux dfget."
 	GOOS=linux GOARCH=amd64 ./hack/build.sh dfget
 .PHONY: build-linux-dfget
 
-# Build dfcache
+# Build dfcache.
 build-dfcache: build-dirs
 	@echo "Begin to build dfcache."
 	./hack/build.sh dfcache
 .PHONY: build-dfcache
 
-# Build linux dfcache
+# Build linux dfcache.
 build-linux-dfcache: build-dirs
 	@echo "Begin to build linux dfcache."
 	GOOS=linux GOARCH=amd64 ./hack/build.sh dfcache
 .PHONY: build-linux-dfcache
 
-# Build dfstore
+# Build dfstore.
 build-dfstore: build-dirs
 	@echo "Begin to build dfstore."
 	./hack/build.sh dfstore
 .PHONY: build-dfstore
 
-# Build linux dfcache
+# Build linux dfcache.
 build-linux-dfstore: build-dirs
 	@echo "Begin to build linux dfstore."
 	GOOS=linux GOARCH=amd64 ./hack/build.sh dfstore
 .PHONY: build-linux-dfstore
 
-# Build scheduler
+# Build scheduler.
 build-scheduler: build-dirs
 	@echo "Begin to build scheduler."
 	./hack/build.sh scheduler
 .PHONY: build-scheduler
 
-# Build manager
+# Build manager.
 build-manager: build-dirs build-manager-console
 	@echo "Begin to build manager."
 	make build-manager-server
 .PHONY: build-manager
 
-# Build manager server
+# Build manager server.
 build-manager-server: build-dirs
 	@echo "Begin to build manager server."
 	./hack/build.sh manager
 .PHONY: build-manager
 
-# Build manager console
+# Build manager console.
 build-manager-console: build-dirs
 	@echo "Begin to build manager console."
 	./hack/build.sh manager-console
 .PHONY: build-manager-console
 
-# Install dfget
+# Install dfget.
 install-dfget:
 	@echo "Begin to install dfget."
 	./hack/install.sh install dfget
 .PHONY: install-dfget
 
-# Install scheduler
+# Install scheduler.
 install-scheduler:
 	@echo "Begin to install scheduler."
 	./hack/install.sh install scheduler
 .PHONY: install-scheduler
 
-# Install manager
+# Install manager.
 install-manager:
 	@echo "Begin to install manager."
 	./hack/install.sh install manager
 .PHONY: install-manager
 
-# Build rpm dfget
+# Build rpm dfget.
 build-rpm-dfget: build-linux-dfget
-	@echo "Begin to build rpm dfget"
+	@echo "Begin to build rpm dfget."
 	@docker run --rm \
 	-v "$(PWD)/build:/root/build" \
 	-v "$(PWD)/build/package/docs:/root/docs" \
@@ -184,9 +184,9 @@ build-rpm-dfget: build-linux-dfget
 	@echo "Build package output: ./bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.rpm"
 .PHONY: build-rpm-dfget
 
-# Build rpm dfcache
+# Build rpm dfcache.
 build-rpm-dfcache: build-linux-dfcache build-dfcache-man-page
-	@echo "Begin to build rpm dfcache"
+	@echo "Begin to build rpm dfcache."
 	@docker run --rm \
 	-v "$(PWD)/build:/root/build" \
 	-v "$(PWD)/build/package/docs:/root/docs" \
@@ -201,9 +201,9 @@ build-rpm-dfcache: build-linux-dfcache build-dfcache-man-page
 	@echo "Build package output: ./bin/$(DFCACHE_ARCHIVE_PREFIX)_linux_amd64.rpm"
 .PHONY: build-rpm-dfcache
 
-# Build rpm dfstore
+# Build rpm dfstore.
 build-rpm-dfstore: build-linux-dfstore
-	@echo "Begin to build rpm dfstore"
+	@echo "Begin to build rpm dfstore."
 	@docker run --rm \
 	-v "$(PWD)/build:/root/build" \
 	-v "$(PWD)/build/package/docs:/root/docs" \
@@ -218,9 +218,9 @@ build-rpm-dfstore: build-linux-dfstore
 	@echo "Build package output: ./bin/$(DFSTORE_ARCHIVE_PREFIX)_linux_amd64.rpm"
 .PHONY: build-rpm-dfstore
 
-# Build deb dfget
+# Build deb dfget.
 build-deb-dfget: build-linux-dfget
-	@echo "Begin to build deb dfget"
+	@echo "Begin to build deb dfget."
 	@docker run --rm \
 	-v "$(PWD)/build:/root/build" \
 	-v "$(PWD)/build/package/docs:/root/docs" \
@@ -235,9 +235,9 @@ build-deb-dfget: build-linux-dfget
 	@echo "Build package output: ./bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.deb"
 .PHONY: build-deb-dfget
 
-# Build deb dfcache
+# Build deb dfcache.
 build-deb-dfcache: build-linux-dfcache build-dfcache-man-page
-	@echo "Begin to build deb dfcache"
+	@echo "Begin to build deb dfcache."
 	@docker run --rm \
 	-v "$(PWD)/build:/root/build" \
 	-v "$(PWD)/build/package/docs:/root/docs" \
@@ -269,12 +269,16 @@ build-deb-dfstore: build-linux-dfstore
 	@echo "Build package output: ./bin/$(DFSTORE_ARCHIVE_PREFIX)_linux_amd64.deb"
 .PHONY: build-deb-dfstore
 
-# Generate dfget man page
+# Generate man page.
+build-man-page: build-dfget-man-page build-dfcache-man-page build-dfstore-man-page
+.PHONY: build-man-page
+
+# Generate dfget man page.
 build-dfget-man-page:
 	@pandoc -s -t man ./build/package/docs/dfget.1.md -o ./build/package/docs/dfget.1
 .PHONY: build-dfget-man-page
 
-# Genrate dfcache man pages
+# Genrate dfcache man pages.
 build-dfcache-man-page:
 	@pandoc -s -t man ./build/package/docs/dfcache/dfcache.md -o ./build/package/docs/dfcache/dfcache.1
 	@pandoc -s -t man ./build/package/docs/dfcache/dfcache_delete.md -o ./build/package/docs/dfcache/dfcache-delete.1
@@ -286,7 +290,7 @@ build-dfcache-man-page:
 	@pandoc -s -t man ./build/package/docs/dfcache/dfcache_version.md -o ./build/package/docs/dfcache/dfcache-version.1
 .PHONY: build-dfcache-man-page
 
-# Genrate dfstore man pages
+# Genrate dfstore man pages.
 build-dfstore-man-page:
 	@pandoc -s -t man ./build/package/docs/dfstore/dfstore.md -o ./build/package/docs/dfstore/dfstore.1
 	@pandoc -s -t man ./build/package/docs/dfstore/dfstore_copy.md -o ./build/package/docs/dfstore/dfstore-copy.1
@@ -294,108 +298,108 @@ build-dfstore-man-page:
 	@pandoc -s -t man ./build/package/docs/dfstore/dfstore_version.md -o ./build/package/docs/dfstore/dfstore-version.1
 .PHONY: build-dfstore-man-page
 
-# Generate e2e sha256sum
+# Generate e2e sha256sum.
 build-e2e-sha256sum:
 	@GOOS=linux GOARCH=amd64 go build -o /tmp/sha256sum-offset test/tools/sha256sum-offset/main.go
 .PHONY: build-e2e-sha256sum
 
-# Generate e2e download grpc test binary
+# Generate e2e download grpc test binary.
 build-e2e-download-grpc-test:
 	@GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o /tmp/download-grpc-test test/tools/download-grpc-test/main.go
 .PHONY: build-e2e-download-grpc-test
 
-# Run unittests
+# Run unittests.
 test:
 	@go test -v -race -short ${PKG_LIST}
 .PHONY: test
 
-# Run tests with coverage
+# Run tests with coverage.
 test-coverage:
 	@go test -v -race -short ${PKG_LIST} -coverprofile cover.out -covermode=atomic
 	@cat cover.out >> coverage.txt
 .PHONY: test-coverage
 
-# Run github actions E2E tests with coverage
+# Run github actions E2E tests with coverage.
 actions-e2e-test-coverage:
 	@ginkgo -v -r --race --fail-fast --cover --trace --progress test/e2e
 	@cat coverprofile.out >> coverage.txt
 .PHONY: actions-e2e-test-coverage
 
-# Install E2E tests environment
+# Install E2E tests environment.
 install-e2e-test:
 	@./hack/install-e2e-test.sh
 .PHONY: install-e2e-test
 
-# Run E2E tests
+# Run E2E tests.
 e2e-test: install-e2e-test build-e2e-sha256sum build-e2e-download-grpc-test
 	@ginkgo -v -r --race --fail-fast --cover --trace --progress test/e2e
 .PHONY: e2e-test
 
-# Run E2E tests with coverage
+# Run E2E tests with coverage.
 e2e-test-coverage: install-e2e-test build-e2e-sha256sum build-e2e-download-grpc-test
 	@ginkgo -v -r --race --fail-fast --cover --trace --progress test/e2e
 	@cat coverprofile.out >> coverage.txt
 .PHONY: e2e-test-coverage
 
-# Clean E2E tests
+# Clean E2E tests.
 clean-e2e-test: 
 	@kind delete cluster
-	@echo "cleaning log file"
+	@echo "cleaning log file."
 	@rm -rf test/e2e/*.log
 .PHONY: clean-e2e-test
 
-# Kind load dragonlfy
+# Kind load dragonlfy.
 kind-load: kind-load-scheduler kind-load-dfdaemon kind-load-manager kind-load-testing-tools
 	@echo "Kind load image done."
 .PHONY: kind-load
 
-# Run kind load docker scheduler
+# Run kind load docker scheduler.
 kind-load-scheduler:
 	@./hack/kind-load.sh scheduler
 .PHONY: kind-load-scheduler
 
-# Run kind load docker dfget
+# Run kind load docker dfget.
 kind-load-dfdaemon:
 	@./hack/kind-load.sh dfdaemon
 .PHONY: kind-load-dfget
 
-# Run kind load docker manager
+# Run kind load docker manager.
 kind-load-manager:
 	@./hack/kind-load.sh manager
 .PHONY: kind-load-manager
 
-# Run kind load docker testing tools
+# Run kind load docker testing tools.
 kind-load-testing-tools:
 	@./hack/kind-load.sh no-content-length
 .PHONY: kind-load-testing-tools
 
-# Run code lint
+# Run code lint.
 lint: markdownlint
 	@echo "Begin to golangci-lint."
 	@golangci-lint run
 .PHONY: lint
 
-# Run markdown lint
+# Run markdown lint.
 markdownlint:
 	@echo "Begin to markdownlint."
 	@./hack/markdownlint.sh
 .PHONY: markdownlint
 
-# Run go generate
+# Run go generate.
 generate:
 	@go generate ${PKG_LIST}
 .PHONY: generate
 
-# Generate swagger files
+# Generate swagger files.
 swag:
 	@swag init --parseDependency --parseInternal -g cmd/manager/main.go -o api/manager
 
-# Generate changelog
+# Generate changelog.
 changelog:
 	@git-chglog -o CHANGELOG.md
 .PHONY: changelog
 
-# Clear compiled files
+# Clear compiled files.
 clean:
 	@go clean
 	@rm -rf bin .go .cache
@@ -433,6 +437,7 @@ help:
 	@echo "make build-deb-dfget                build deb dfget"
 	@echo "make build-deb-dfcache              build deb dfcache"
 	@echo "make build-deb-dfstore              build deb dfstore"
+	@echo "make build-man-page                 generate man page"
 	@echo "make build-dfget-man-page           generate dfget man page"
 	@echo "make build-dfcache-man-page         generate dfcache man page"
 	@echo "make build-dfstore-man-page         generate dfstore man page"
