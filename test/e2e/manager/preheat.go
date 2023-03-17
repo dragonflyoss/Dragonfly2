@@ -31,7 +31,7 @@ import (
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 
 	internaljob "d7y.io/dragonfly/v2/internal/job"
-	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/structure"
@@ -73,7 +73,7 @@ var _ = Describe("Preheat with manager", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				// wait for success
-				job := &model.Job{}
+				job := &models.Job{}
 				err = json.Unmarshal(out, job)
 				Expect(err).NotTo(HaveOccurred())
 				done := waitForDone(job, fsPod)
@@ -126,7 +126,7 @@ var _ = Describe("Preheat with manager", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// wait for success
-			job := &model.Job{}
+			job := &models.Job{}
 			err = json.Unmarshal(out, job)
 			Expect(err).NotTo(HaveOccurred())
 			done := waitForDone(job, fsPod)
@@ -141,7 +141,7 @@ var _ = Describe("Preheat with manager", func() {
 	})
 })
 
-func waitForDone(preheat *model.Job, pod *e2eutil.PodExec) bool {
+func waitForDone(preheat *models.Job, pod *e2eutil.PodExec) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 

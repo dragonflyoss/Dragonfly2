@@ -20,18 +20,18 @@ import (
 	"context"
 	"errors"
 
-	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/structure"
 )
 
-func (s *service) CreateSeedPeerCluster(ctx context.Context, json types.CreateSeedPeerClusterRequest) (*model.SeedPeerCluster, error) {
+func (s *service) CreateSeedPeerCluster(ctx context.Context, json types.CreateSeedPeerClusterRequest) (*models.SeedPeerCluster, error) {
 	config, err := structure.StructToMap(json.Config)
 	if err != nil {
 		return nil, err
 	}
 
-	seedPeerCluster := model.SeedPeerCluster{
+	seedPeerCluster := models.SeedPeerCluster{
 		Name:      json.Name,
 		BIO:       json.BIO,
 		Config:    config,
@@ -46,7 +46,7 @@ func (s *service) CreateSeedPeerCluster(ctx context.Context, json types.CreateSe
 }
 
 func (s *service) DestroySeedPeerCluster(ctx context.Context, id uint) error {
-	seedPeerCluster := model.SeedPeerCluster{}
+	seedPeerCluster := models.SeedPeerCluster{}
 	if err := s.db.WithContext(ctx).Preload("SeedPeers").First(&seedPeerCluster, id).Error; err != nil {
 		return err
 	}
@@ -55,14 +55,14 @@ func (s *service) DestroySeedPeerCluster(ctx context.Context, id uint) error {
 		return errors.New("seedPeer cluster exists seedPeer")
 	}
 
-	if err := s.db.WithContext(ctx).Delete(&model.SeedPeerCluster{}, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Delete(&models.SeedPeerCluster{}, id).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *service) UpdateSeedPeerCluster(ctx context.Context, id uint, json types.UpdateSeedPeerClusterRequest) (*model.SeedPeerCluster, error) {
+func (s *service) UpdateSeedPeerCluster(ctx context.Context, id uint, json types.UpdateSeedPeerClusterRequest) (*models.SeedPeerCluster, error) {
 	var (
 		config map[string]any
 		err    error
@@ -74,8 +74,8 @@ func (s *service) UpdateSeedPeerCluster(ctx context.Context, id uint, json types
 		}
 	}
 
-	seedPeerCluster := model.SeedPeerCluster{}
-	if err := s.db.WithContext(ctx).First(&seedPeerCluster, id).Updates(model.SeedPeerCluster{
+	seedPeerCluster := models.SeedPeerCluster{}
+	if err := s.db.WithContext(ctx).First(&seedPeerCluster, id).Updates(models.SeedPeerCluster{
 		Name:   json.Name,
 		BIO:    json.BIO,
 		Config: config,
@@ -94,8 +94,8 @@ func (s *service) UpdateSeedPeerCluster(ctx context.Context, id uint, json types
 	return &seedPeerCluster, nil
 }
 
-func (s *service) GetSeedPeerCluster(ctx context.Context, id uint) (*model.SeedPeerCluster, error) {
-	seedPeerCluster := model.SeedPeerCluster{}
+func (s *service) GetSeedPeerCluster(ctx context.Context, id uint) (*models.SeedPeerCluster, error) {
+	seedPeerCluster := models.SeedPeerCluster{}
 	if err := s.db.WithContext(ctx).First(&seedPeerCluster, id).Error; err != nil {
 		return nil, err
 	}
@@ -103,10 +103,10 @@ func (s *service) GetSeedPeerCluster(ctx context.Context, id uint) (*model.SeedP
 	return &seedPeerCluster, nil
 }
 
-func (s *service) GetSeedPeerClusters(ctx context.Context, q types.GetSeedPeerClustersQuery) ([]model.SeedPeerCluster, int64, error) {
+func (s *service) GetSeedPeerClusters(ctx context.Context, q types.GetSeedPeerClustersQuery) ([]models.SeedPeerCluster, int64, error) {
 	var count int64
-	var seedPeerClusters []model.SeedPeerCluster
-	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SeedPeerCluster{
+	var seedPeerClusters []models.SeedPeerCluster
+	if err := s.db.WithContext(ctx).Scopes(models.Paginate(q.Page, q.PerPage)).Where(&models.SeedPeerCluster{
 		Name: q.Name,
 	}).Find(&seedPeerClusters).Limit(-1).Offset(-1).Count(&count).Error; err != nil {
 		return nil, 0, err
@@ -116,12 +116,12 @@ func (s *service) GetSeedPeerClusters(ctx context.Context, q types.GetSeedPeerCl
 }
 
 func (s *service) AddSeedPeerToSeedPeerCluster(ctx context.Context, id, seedPeerID uint) error {
-	seedPeerCluster := model.SeedPeerCluster{}
+	seedPeerCluster := models.SeedPeerCluster{}
 	if err := s.db.WithContext(ctx).First(&seedPeerCluster, id).Error; err != nil {
 		return err
 	}
 
-	seedPeer := model.SeedPeer{}
+	seedPeer := models.SeedPeer{}
 	if err := s.db.WithContext(ctx).First(&seedPeer, seedPeerID).Error; err != nil {
 		return err
 	}
@@ -134,17 +134,17 @@ func (s *service) AddSeedPeerToSeedPeerCluster(ctx context.Context, id, seedPeer
 }
 
 func (s *service) AddSchedulerClusterToSeedPeerCluster(ctx context.Context, id, schedulerClusterID uint) error {
-	seedPeerCluster := model.SeedPeerCluster{}
+	seedPeerCluster := models.SeedPeerCluster{}
 	if err := s.db.WithContext(ctx).First(&seedPeerCluster, id).Error; err != nil {
 		return err
 	}
 
-	schedulerCluster := model.SchedulerCluster{}
+	schedulerCluster := models.SchedulerCluster{}
 	if err := s.db.WithContext(ctx).First(&schedulerCluster, schedulerClusterID).Error; err != nil {
 		return err
 	}
 
-	seedPeerClusters := []model.SeedPeerCluster{}
+	seedPeerClusters := []models.SeedPeerCluster{}
 	if err := s.db.WithContext(ctx).Model(&schedulerCluster).Association("SeedPeerClusters").Find(&seedPeerClusters); err != nil {
 		return err
 	}

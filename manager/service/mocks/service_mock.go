@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	model "d7y.io/dragonfly/v2/manager/model"
+	models "d7y.io/dragonfly/v2/manager/models"
 	rbac "d7y.io/dragonfly/v2/manager/permission/rbac"
 	types "d7y.io/dragonfly/v2/manager/types"
 	objectstorage "d7y.io/dragonfly/v2/pkg/objectstorage"
@@ -154,10 +154,10 @@ func (mr *MockServiceMockRecorder) AddSeedPeerToSeedPeerCluster(arg0, arg1, arg2
 }
 
 // CreateApplication mocks base method.
-func (m *MockService) CreateApplication(arg0 context.Context, arg1 types.CreateApplicationRequest) (*model.Application, error) {
+func (m *MockService) CreateApplication(arg0 context.Context, arg1 types.CreateApplicationRequest) (*models.Application, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateApplication", arg0, arg1)
-	ret0, _ := ret[0].(*model.Application)
+	ret0, _ := ret[0].(*models.Application)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -183,10 +183,10 @@ func (mr *MockServiceMockRecorder) CreateBucket(arg0, arg1 interface{}) *gomock.
 }
 
 // CreateConfig mocks base method.
-func (m *MockService) CreateConfig(arg0 context.Context, arg1 types.CreateConfigRequest) (*model.Config, error) {
+func (m *MockService) CreateConfig(arg0 context.Context, arg1 types.CreateConfigRequest) (*models.Config, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateConfig", arg0, arg1)
-	ret0, _ := ret[0].(*model.Config)
+	ret0, _ := ret[0].(*models.Config)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -228,10 +228,10 @@ func (mr *MockServiceMockRecorder) CreateModelVersion(arg0, arg1, arg2 interface
 }
 
 // CreateOauth mocks base method.
-func (m *MockService) CreateOauth(arg0 context.Context, arg1 types.CreateOauthRequest) (*model.Oauth, error) {
+func (m *MockService) CreateOauth(arg0 context.Context, arg1 types.CreateOauthRequest) (*models.Oauth, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateOauth", arg0, arg1)
-	ret0, _ := ret[0].(*model.Oauth)
+	ret0, _ := ret[0].(*models.Oauth)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -243,10 +243,10 @@ func (mr *MockServiceMockRecorder) CreateOauth(arg0, arg1 interface{}) *gomock.C
 }
 
 // CreatePreheatJob mocks base method.
-func (m *MockService) CreatePreheatJob(arg0 context.Context, arg1 types.CreatePreheatJobRequest) (*model.Job, error) {
+func (m *MockService) CreatePreheatJob(arg0 context.Context, arg1 types.CreatePreheatJobRequest) (*models.Job, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreatePreheatJob", arg0, arg1)
-	ret0, _ := ret[0].(*model.Job)
+	ret0, _ := ret[0].(*models.Job)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -272,10 +272,10 @@ func (mr *MockServiceMockRecorder) CreateRole(arg0, arg1 interface{}) *gomock.Ca
 }
 
 // CreateScheduler mocks base method.
-func (m *MockService) CreateScheduler(arg0 context.Context, arg1 types.CreateSchedulerRequest) (*model.Scheduler, error) {
+func (m *MockService) CreateScheduler(arg0 context.Context, arg1 types.CreateSchedulerRequest) (*models.Scheduler, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateScheduler", arg0, arg1)
-	ret0, _ := ret[0].(*model.Scheduler)
+	ret0, _ := ret[0].(*models.Scheduler)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -287,10 +287,10 @@ func (mr *MockServiceMockRecorder) CreateScheduler(arg0, arg1 interface{}) *gomo
 }
 
 // CreateSchedulerCluster mocks base method.
-func (m *MockService) CreateSchedulerCluster(arg0 context.Context, arg1 types.CreateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
+func (m *MockService) CreateSchedulerCluster(arg0 context.Context, arg1 types.CreateSchedulerClusterRequest) (*models.SchedulerCluster, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateSchedulerCluster", arg0, arg1)
-	ret0, _ := ret[0].(*model.SchedulerCluster)
+	ret0, _ := ret[0].(*models.SchedulerCluster)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -302,10 +302,10 @@ func (mr *MockServiceMockRecorder) CreateSchedulerCluster(arg0, arg1 interface{}
 }
 
 // CreateSecurityGroup mocks base method.
-func (m *MockService) CreateSecurityGroup(arg0 context.Context, arg1 types.CreateSecurityGroupRequest) (*model.SecurityGroup, error) {
+func (m *MockService) CreateSecurityGroup(arg0 context.Context, arg1 types.CreateSecurityGroupRequest) (*models.SecurityGroup, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateSecurityGroup", arg0, arg1)
-	ret0, _ := ret[0].(*model.SecurityGroup)
+	ret0, _ := ret[0].(*models.SecurityGroup)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -317,10 +317,10 @@ func (mr *MockServiceMockRecorder) CreateSecurityGroup(arg0, arg1 interface{}) *
 }
 
 // CreateSecurityRule mocks base method.
-func (m *MockService) CreateSecurityRule(arg0 context.Context, arg1 types.CreateSecurityRuleRequest) (*model.SecurityRule, error) {
+func (m *MockService) CreateSecurityRule(arg0 context.Context, arg1 types.CreateSecurityRuleRequest) (*models.SecurityRule, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateSecurityRule", arg0, arg1)
-	ret0, _ := ret[0].(*model.SecurityRule)
+	ret0, _ := ret[0].(*models.SecurityRule)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -332,10 +332,10 @@ func (mr *MockServiceMockRecorder) CreateSecurityRule(arg0, arg1 interface{}) *g
 }
 
 // CreateSeedPeer mocks base method.
-func (m *MockService) CreateSeedPeer(arg0 context.Context, arg1 types.CreateSeedPeerRequest) (*model.SeedPeer, error) {
+func (m *MockService) CreateSeedPeer(arg0 context.Context, arg1 types.CreateSeedPeerRequest) (*models.SeedPeer, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateSeedPeer", arg0, arg1)
-	ret0, _ := ret[0].(*model.SeedPeer)
+	ret0, _ := ret[0].(*models.SeedPeer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -347,10 +347,10 @@ func (mr *MockServiceMockRecorder) CreateSeedPeer(arg0, arg1 interface{}) *gomoc
 }
 
 // CreateSeedPeerCluster mocks base method.
-func (m *MockService) CreateSeedPeerCluster(arg0 context.Context, arg1 types.CreateSeedPeerClusterRequest) (*model.SeedPeerCluster, error) {
+func (m *MockService) CreateSeedPeerCluster(arg0 context.Context, arg1 types.CreateSeedPeerClusterRequest) (*models.SeedPeerCluster, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateSeedPeerCluster", arg0, arg1)
-	ret0, _ := ret[0].(*model.SeedPeerCluster)
+	ret0, _ := ret[0].(*models.SeedPeerCluster)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -618,10 +618,10 @@ func (mr *MockServiceMockRecorder) DestroySeedPeerCluster(arg0, arg1 interface{}
 }
 
 // GetApplication mocks base method.
-func (m *MockService) GetApplication(arg0 context.Context, arg1 uint) (*model.Application, error) {
+func (m *MockService) GetApplication(arg0 context.Context, arg1 uint) (*models.Application, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetApplication", arg0, arg1)
-	ret0, _ := ret[0].(*model.Application)
+	ret0, _ := ret[0].(*models.Application)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -633,10 +633,10 @@ func (mr *MockServiceMockRecorder) GetApplication(arg0, arg1 interface{}) *gomoc
 }
 
 // GetApplications mocks base method.
-func (m *MockService) GetApplications(arg0 context.Context, arg1 types.GetApplicationsQuery) ([]model.Application, int64, error) {
+func (m *MockService) GetApplications(arg0 context.Context, arg1 types.GetApplicationsQuery) ([]models.Application, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetApplications", arg0, arg1)
-	ret0, _ := ret[0].([]model.Application)
+	ret0, _ := ret[0].([]models.Application)
 	ret1, _ := ret[1].(int64)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
@@ -679,10 +679,10 @@ func (mr *MockServiceMockRecorder) GetBuckets(arg0 interface{}) *gomock.Call {
 }
 
 // GetConfig mocks base method.
-func (m *MockService) GetConfig(arg0 context.Context, arg1 uint) (*model.Config, error) {
+func (m *MockService) GetConfig(arg0 context.Context, arg1 uint) (*models.Config, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConfig", arg0, arg1)
-	ret0, _ := ret[0].(*model.Config)
+	ret0, _ := ret[0].(*models.Config)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -694,10 +694,10 @@ func (mr *MockServiceMockRecorder) GetConfig(arg0, arg1 interface{}) *gomock.Cal
 }
 
 // GetConfigs mocks base method.
-func (m *MockService) GetConfigs(arg0 context.Context, arg1 types.GetConfigsQuery) ([]model.Config, int64, error) {
+func (m *MockService) GetConfigs(arg0 context.Context, arg1 types.GetConfigsQuery) ([]models.Config, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConfigs", arg0, arg1)
-	ret0, _ := ret[0].([]model.Config)
+	ret0, _ := ret[0].([]models.Config)
 	ret1, _ := ret[1].(int64)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
@@ -710,10 +710,10 @@ func (mr *MockServiceMockRecorder) GetConfigs(arg0, arg1 interface{}) *gomock.Ca
 }
 
 // GetJob mocks base method.
-func (m *MockService) GetJob(arg0 context.Context, arg1 uint) (*model.Job, error) {
+func (m *MockService) GetJob(arg0 context.Context, arg1 uint) (*models.Job, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetJob", arg0, arg1)
-	ret0, _ := ret[0].(*model.Job)
+	ret0, _ := ret[0].(*models.Job)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -725,10 +725,10 @@ func (mr *MockServiceMockRecorder) GetJob(arg0, arg1 interface{}) *gomock.Call {
 }
 
 // GetJobs mocks base method.
-func (m *MockService) GetJobs(arg0 context.Context, arg1 types.GetJobsQuery) ([]model.Job, int64, error) {
+func (m *MockService) GetJobs(arg0 context.Context, arg1 types.GetJobsQuery) ([]models.Job, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetJobs", arg0, arg1)
-	ret0, _ := ret[0].([]model.Job)
+	ret0, _ := ret[0].([]models.Job)
 	ret1, _ := ret[1].(int64)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
@@ -801,10 +801,10 @@ func (mr *MockServiceMockRecorder) GetModels(arg0, arg1 interface{}) *gomock.Cal
 }
 
 // GetOauth mocks base method.
-func (m *MockService) GetOauth(arg0 context.Context, arg1 uint) (*model.Oauth, error) {
+func (m *MockService) GetOauth(arg0 context.Context, arg1 uint) (*models.Oauth, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetOauth", arg0, arg1)
-	ret0, _ := ret[0].(*model.Oauth)
+	ret0, _ := ret[0].(*models.Oauth)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -816,10 +816,10 @@ func (mr *MockServiceMockRecorder) GetOauth(arg0, arg1 interface{}) *gomock.Call
 }
 
 // GetOauths mocks base method.
-func (m *MockService) GetOauths(arg0 context.Context, arg1 types.GetOauthsQuery) ([]model.Oauth, int64, error) {
+func (m *MockService) GetOauths(arg0 context.Context, arg1 types.GetOauthsQuery) ([]models.Oauth, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetOauths", arg0, arg1)
-	ret0, _ := ret[0].([]model.Oauth)
+	ret0, _ := ret[0].([]models.Oauth)
 	ret1, _ := ret[1].(int64)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
@@ -904,10 +904,10 @@ func (mr *MockServiceMockRecorder) GetRolesForUser(arg0, arg1 interface{}) *gomo
 }
 
 // GetScheduler mocks base method.
-func (m *MockService) GetScheduler(arg0 context.Context, arg1 uint) (*model.Scheduler, error) {
+func (m *MockService) GetScheduler(arg0 context.Context, arg1 uint) (*models.Scheduler, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetScheduler", arg0, arg1)
-	ret0, _ := ret[0].(*model.Scheduler)
+	ret0, _ := ret[0].(*models.Scheduler)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -919,10 +919,10 @@ func (mr *MockServiceMockRecorder) GetScheduler(arg0, arg1 interface{}) *gomock.
 }
 
 // GetSchedulerCluster mocks base method.
-func (m *MockService) GetSchedulerCluster(arg0 context.Context, arg1 uint) (*model.SchedulerCluster, error) {
+func (m *MockService) GetSchedulerCluster(arg0 context.Context, arg1 uint) (*models.SchedulerCluster, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSchedulerCluster", arg0, arg1)
-	ret0, _ := ret[0].(*model.SchedulerCluster)
+	ret0, _ := ret[0].(*models.SchedulerCluster)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -934,10 +934,10 @@ func (mr *MockServiceMockRecorder) GetSchedulerCluster(arg0, arg1 interface{}) *
 }
 
 // GetSchedulerClusters mocks base method.
-func (m *MockService) GetSchedulerClusters(arg0 context.Context, arg1 types.GetSchedulerClustersQuery) ([]model.SchedulerCluster, int64, error) {
+func (m *MockService) GetSchedulerClusters(arg0 context.Context, arg1 types.GetSchedulerClustersQuery) ([]models.SchedulerCluster, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSchedulerClusters", arg0, arg1)
-	ret0, _ := ret[0].([]model.SchedulerCluster)
+	ret0, _ := ret[0].([]models.SchedulerCluster)
 	ret1, _ := ret[1].(int64)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
@@ -950,10 +950,10 @@ func (mr *MockServiceMockRecorder) GetSchedulerClusters(arg0, arg1 interface{}) 
 }
 
 // GetSchedulers mocks base method.
-func (m *MockService) GetSchedulers(arg0 context.Context, arg1 types.GetSchedulersQuery) ([]model.Scheduler, int64, error) {
+func (m *MockService) GetSchedulers(arg0 context.Context, arg1 types.GetSchedulersQuery) ([]models.Scheduler, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSchedulers", arg0, arg1)
-	ret0, _ := ret[0].([]model.Scheduler)
+	ret0, _ := ret[0].([]models.Scheduler)
 	ret1, _ := ret[1].(int64)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
@@ -966,10 +966,10 @@ func (mr *MockServiceMockRecorder) GetSchedulers(arg0, arg1 interface{}) *gomock
 }
 
 // GetSecurityGroup mocks base method.
-func (m *MockService) GetSecurityGroup(arg0 context.Context, arg1 uint) (*model.SecurityGroup, error) {
+func (m *MockService) GetSecurityGroup(arg0 context.Context, arg1 uint) (*models.SecurityGroup, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSecurityGroup", arg0, arg1)
-	ret0, _ := ret[0].(*model.SecurityGroup)
+	ret0, _ := ret[0].(*models.SecurityGroup)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -981,10 +981,10 @@ func (mr *MockServiceMockRecorder) GetSecurityGroup(arg0, arg1 interface{}) *gom
 }
 
 // GetSecurityGroups mocks base method.
-func (m *MockService) GetSecurityGroups(arg0 context.Context, arg1 types.GetSecurityGroupsQuery) ([]model.SecurityGroup, int64, error) {
+func (m *MockService) GetSecurityGroups(arg0 context.Context, arg1 types.GetSecurityGroupsQuery) ([]models.SecurityGroup, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSecurityGroups", arg0, arg1)
-	ret0, _ := ret[0].([]model.SecurityGroup)
+	ret0, _ := ret[0].([]models.SecurityGroup)
 	ret1, _ := ret[1].(int64)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
@@ -997,10 +997,10 @@ func (mr *MockServiceMockRecorder) GetSecurityGroups(arg0, arg1 interface{}) *go
 }
 
 // GetSecurityRule mocks base method.
-func (m *MockService) GetSecurityRule(arg0 context.Context, arg1 uint) (*model.SecurityRule, error) {
+func (m *MockService) GetSecurityRule(arg0 context.Context, arg1 uint) (*models.SecurityRule, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSecurityRule", arg0, arg1)
-	ret0, _ := ret[0].(*model.SecurityRule)
+	ret0, _ := ret[0].(*models.SecurityRule)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -1012,10 +1012,10 @@ func (mr *MockServiceMockRecorder) GetSecurityRule(arg0, arg1 interface{}) *gomo
 }
 
 // GetSecurityRules mocks base method.
-func (m *MockService) GetSecurityRules(arg0 context.Context, arg1 types.GetSecurityRulesQuery) ([]model.SecurityRule, int64, error) {
+func (m *MockService) GetSecurityRules(arg0 context.Context, arg1 types.GetSecurityRulesQuery) ([]models.SecurityRule, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSecurityRules", arg0, arg1)
-	ret0, _ := ret[0].([]model.SecurityRule)
+	ret0, _ := ret[0].([]models.SecurityRule)
 	ret1, _ := ret[1].(int64)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
@@ -1028,10 +1028,10 @@ func (mr *MockServiceMockRecorder) GetSecurityRules(arg0, arg1 interface{}) *gom
 }
 
 // GetSeedPeer mocks base method.
-func (m *MockService) GetSeedPeer(arg0 context.Context, arg1 uint) (*model.SeedPeer, error) {
+func (m *MockService) GetSeedPeer(arg0 context.Context, arg1 uint) (*models.SeedPeer, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSeedPeer", arg0, arg1)
-	ret0, _ := ret[0].(*model.SeedPeer)
+	ret0, _ := ret[0].(*models.SeedPeer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -1043,10 +1043,10 @@ func (mr *MockServiceMockRecorder) GetSeedPeer(arg0, arg1 interface{}) *gomock.C
 }
 
 // GetSeedPeerCluster mocks base method.
-func (m *MockService) GetSeedPeerCluster(arg0 context.Context, arg1 uint) (*model.SeedPeerCluster, error) {
+func (m *MockService) GetSeedPeerCluster(arg0 context.Context, arg1 uint) (*models.SeedPeerCluster, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSeedPeerCluster", arg0, arg1)
-	ret0, _ := ret[0].(*model.SeedPeerCluster)
+	ret0, _ := ret[0].(*models.SeedPeerCluster)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -1058,10 +1058,10 @@ func (mr *MockServiceMockRecorder) GetSeedPeerCluster(arg0, arg1 interface{}) *g
 }
 
 // GetSeedPeerClusters mocks base method.
-func (m *MockService) GetSeedPeerClusters(arg0 context.Context, arg1 types.GetSeedPeerClustersQuery) ([]model.SeedPeerCluster, int64, error) {
+func (m *MockService) GetSeedPeerClusters(arg0 context.Context, arg1 types.GetSeedPeerClustersQuery) ([]models.SeedPeerCluster, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSeedPeerClusters", arg0, arg1)
-	ret0, _ := ret[0].([]model.SeedPeerCluster)
+	ret0, _ := ret[0].([]models.SeedPeerCluster)
 	ret1, _ := ret[1].(int64)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
@@ -1074,10 +1074,10 @@ func (mr *MockServiceMockRecorder) GetSeedPeerClusters(arg0, arg1 interface{}) *
 }
 
 // GetSeedPeers mocks base method.
-func (m *MockService) GetSeedPeers(arg0 context.Context, arg1 types.GetSeedPeersQuery) ([]model.SeedPeer, int64, error) {
+func (m *MockService) GetSeedPeers(arg0 context.Context, arg1 types.GetSeedPeersQuery) ([]models.SeedPeer, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSeedPeers", arg0, arg1)
-	ret0, _ := ret[0].([]model.SeedPeer)
+	ret0, _ := ret[0].([]models.SeedPeer)
 	ret1, _ := ret[1].(int64)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
@@ -1090,10 +1090,10 @@ func (mr *MockServiceMockRecorder) GetSeedPeers(arg0, arg1 interface{}) *gomock.
 }
 
 // GetUser mocks base method.
-func (m *MockService) GetUser(arg0 context.Context, arg1 uint) (*model.User, error) {
+func (m *MockService) GetUser(arg0 context.Context, arg1 uint) (*models.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUser", arg0, arg1)
-	ret0, _ := ret[0].(*model.User)
+	ret0, _ := ret[0].(*models.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -1105,10 +1105,10 @@ func (mr *MockServiceMockRecorder) GetUser(arg0, arg1 interface{}) *gomock.Call 
 }
 
 // GetUsers mocks base method.
-func (m *MockService) GetUsers(arg0 context.Context, arg1 types.GetUsersQuery) ([]model.User, int64, error) {
+func (m *MockService) GetUsers(arg0 context.Context, arg1 types.GetUsersQuery) ([]models.User, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUsers", arg0, arg1)
-	ret0, _ := ret[0].([]model.User)
+	ret0, _ := ret[0].([]models.User)
 	ret1, _ := ret[1].(int64)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
@@ -1151,10 +1151,10 @@ func (mr *MockServiceMockRecorder) OauthSignin(arg0, arg1 interface{}) *gomock.C
 }
 
 // OauthSigninCallback mocks base method.
-func (m *MockService) OauthSigninCallback(arg0 context.Context, arg1, arg2 string) (*model.User, error) {
+func (m *MockService) OauthSigninCallback(arg0 context.Context, arg1, arg2 string) (*models.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "OauthSigninCallback", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*model.User)
+	ret0, _ := ret[0].(*models.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -1180,10 +1180,10 @@ func (mr *MockServiceMockRecorder) ResetPassword(arg0, arg1, arg2 interface{}) *
 }
 
 // SignIn mocks base method.
-func (m *MockService) SignIn(arg0 context.Context, arg1 types.SignInRequest) (*model.User, error) {
+func (m *MockService) SignIn(arg0 context.Context, arg1 types.SignInRequest) (*models.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SignIn", arg0, arg1)
-	ret0, _ := ret[0].(*model.User)
+	ret0, _ := ret[0].(*models.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -1195,10 +1195,10 @@ func (mr *MockServiceMockRecorder) SignIn(arg0, arg1 interface{}) *gomock.Call {
 }
 
 // SignUp mocks base method.
-func (m *MockService) SignUp(arg0 context.Context, arg1 types.SignUpRequest) (*model.User, error) {
+func (m *MockService) SignUp(arg0 context.Context, arg1 types.SignUpRequest) (*models.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SignUp", arg0, arg1)
-	ret0, _ := ret[0].(*model.User)
+	ret0, _ := ret[0].(*models.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -1210,10 +1210,10 @@ func (mr *MockServiceMockRecorder) SignUp(arg0, arg1 interface{}) *gomock.Call {
 }
 
 // UpdateApplication mocks base method.
-func (m *MockService) UpdateApplication(arg0 context.Context, arg1 uint, arg2 types.UpdateApplicationRequest) (*model.Application, error) {
+func (m *MockService) UpdateApplication(arg0 context.Context, arg1 uint, arg2 types.UpdateApplicationRequest) (*models.Application, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateApplication", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*model.Application)
+	ret0, _ := ret[0].(*models.Application)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -1225,10 +1225,10 @@ func (mr *MockServiceMockRecorder) UpdateApplication(arg0, arg1, arg2 interface{
 }
 
 // UpdateConfig mocks base method.
-func (m *MockService) UpdateConfig(arg0 context.Context, arg1 uint, arg2 types.UpdateConfigRequest) (*model.Config, error) {
+func (m *MockService) UpdateConfig(arg0 context.Context, arg1 uint, arg2 types.UpdateConfigRequest) (*models.Config, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateConfig", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*model.Config)
+	ret0, _ := ret[0].(*models.Config)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -1240,10 +1240,10 @@ func (mr *MockServiceMockRecorder) UpdateConfig(arg0, arg1, arg2 interface{}) *g
 }
 
 // UpdateJob mocks base method.
-func (m *MockService) UpdateJob(arg0 context.Context, arg1 uint, arg2 types.UpdateJobRequest) (*model.Job, error) {
+func (m *MockService) UpdateJob(arg0 context.Context, arg1 uint, arg2 types.UpdateJobRequest) (*models.Job, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateJob", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*model.Job)
+	ret0, _ := ret[0].(*models.Job)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -1285,10 +1285,10 @@ func (mr *MockServiceMockRecorder) UpdateModelVersion(arg0, arg1, arg2 interface
 }
 
 // UpdateOauth mocks base method.
-func (m *MockService) UpdateOauth(arg0 context.Context, arg1 uint, arg2 types.UpdateOauthRequest) (*model.Oauth, error) {
+func (m *MockService) UpdateOauth(arg0 context.Context, arg1 uint, arg2 types.UpdateOauthRequest) (*models.Oauth, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateOauth", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*model.Oauth)
+	ret0, _ := ret[0].(*models.Oauth)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -1300,10 +1300,10 @@ func (mr *MockServiceMockRecorder) UpdateOauth(arg0, arg1, arg2 interface{}) *go
 }
 
 // UpdateScheduler mocks base method.
-func (m *MockService) UpdateScheduler(arg0 context.Context, arg1 uint, arg2 types.UpdateSchedulerRequest) (*model.Scheduler, error) {
+func (m *MockService) UpdateScheduler(arg0 context.Context, arg1 uint, arg2 types.UpdateSchedulerRequest) (*models.Scheduler, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateScheduler", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*model.Scheduler)
+	ret0, _ := ret[0].(*models.Scheduler)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -1315,10 +1315,10 @@ func (mr *MockServiceMockRecorder) UpdateScheduler(arg0, arg1, arg2 interface{})
 }
 
 // UpdateSchedulerCluster mocks base method.
-func (m *MockService) UpdateSchedulerCluster(arg0 context.Context, arg1 uint, arg2 types.UpdateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
+func (m *MockService) UpdateSchedulerCluster(arg0 context.Context, arg1 uint, arg2 types.UpdateSchedulerClusterRequest) (*models.SchedulerCluster, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateSchedulerCluster", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*model.SchedulerCluster)
+	ret0, _ := ret[0].(*models.SchedulerCluster)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -1330,10 +1330,10 @@ func (mr *MockServiceMockRecorder) UpdateSchedulerCluster(arg0, arg1, arg2 inter
 }
 
 // UpdateSecurityGroup mocks base method.
-func (m *MockService) UpdateSecurityGroup(arg0 context.Context, arg1 uint, arg2 types.UpdateSecurityGroupRequest) (*model.SecurityGroup, error) {
+func (m *MockService) UpdateSecurityGroup(arg0 context.Context, arg1 uint, arg2 types.UpdateSecurityGroupRequest) (*models.SecurityGroup, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateSecurityGroup", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*model.SecurityGroup)
+	ret0, _ := ret[0].(*models.SecurityGroup)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -1345,10 +1345,10 @@ func (mr *MockServiceMockRecorder) UpdateSecurityGroup(arg0, arg1, arg2 interfac
 }
 
 // UpdateSecurityRule mocks base method.
-func (m *MockService) UpdateSecurityRule(arg0 context.Context, arg1 uint, arg2 types.UpdateSecurityRuleRequest) (*model.SecurityRule, error) {
+func (m *MockService) UpdateSecurityRule(arg0 context.Context, arg1 uint, arg2 types.UpdateSecurityRuleRequest) (*models.SecurityRule, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateSecurityRule", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*model.SecurityRule)
+	ret0, _ := ret[0].(*models.SecurityRule)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -1360,10 +1360,10 @@ func (mr *MockServiceMockRecorder) UpdateSecurityRule(arg0, arg1, arg2 interface
 }
 
 // UpdateSeedPeer mocks base method.
-func (m *MockService) UpdateSeedPeer(arg0 context.Context, arg1 uint, arg2 types.UpdateSeedPeerRequest) (*model.SeedPeer, error) {
+func (m *MockService) UpdateSeedPeer(arg0 context.Context, arg1 uint, arg2 types.UpdateSeedPeerRequest) (*models.SeedPeer, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateSeedPeer", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*model.SeedPeer)
+	ret0, _ := ret[0].(*models.SeedPeer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -1375,10 +1375,10 @@ func (mr *MockServiceMockRecorder) UpdateSeedPeer(arg0, arg1, arg2 interface{}) 
 }
 
 // UpdateSeedPeerCluster mocks base method.
-func (m *MockService) UpdateSeedPeerCluster(arg0 context.Context, arg1 uint, arg2 types.UpdateSeedPeerClusterRequest) (*model.SeedPeerCluster, error) {
+func (m *MockService) UpdateSeedPeerCluster(arg0 context.Context, arg1 uint, arg2 types.UpdateSeedPeerClusterRequest) (*models.SeedPeerCluster, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateSeedPeerCluster", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*model.SeedPeerCluster)
+	ret0, _ := ret[0].(*models.SeedPeerCluster)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -1390,10 +1390,10 @@ func (mr *MockServiceMockRecorder) UpdateSeedPeerCluster(arg0, arg1, arg2 interf
 }
 
 // UpdateUser mocks base method.
-func (m *MockService) UpdateUser(arg0 context.Context, arg1 uint, arg2 types.UpdateUserRequest) (*model.User, error) {
+func (m *MockService) UpdateUser(arg0 context.Context, arg1 uint, arg2 types.UpdateUserRequest) (*models.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateUser", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*model.User)
+	ret0, _ := ret[0].(*models.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

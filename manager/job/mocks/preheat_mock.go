@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	job "d7y.io/dragonfly/v2/internal/job"
-	model "d7y.io/dragonfly/v2/manager/model"
+	models "d7y.io/dragonfly/v2/manager/models"
 	types "d7y.io/dragonfly/v2/manager/types"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -38,7 +38,7 @@ func (m *MockPreheat) EXPECT() *MockPreheatMockRecorder {
 }
 
 // CreatePreheat mocks base method.
-func (m *MockPreheat) CreatePreheat(arg0 context.Context, arg1 []model.Scheduler, arg2 types.PreheatArgs) (*job.GroupJobState, error) {
+func (m *MockPreheat) CreatePreheat(arg0 context.Context, arg1 []models.Scheduler, arg2 types.PreheatArgs) (*job.GroupJobState, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreatePreheat", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*job.GroupJobState)

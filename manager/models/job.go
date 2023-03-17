@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package model
+package models
 
 type Job struct {
-	Model
+	BaseModel
 	TaskID            string             `gorm:"column:task_id;type:varchar(256);not null;comment:task id" json:"task_id"`
 	BIO               string             `gorm:"column:bio;type:varchar(1024);comment:biography" json:"bio"`
 	Type              string             `gorm:"column:type;type:varchar(256);comment:type" json:"type"`

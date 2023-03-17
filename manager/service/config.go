@@ -19,12 +19,12 @@ package service
 import (
 	"context"
 
-	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-func (s *service) CreateConfig(ctx context.Context, json types.CreateConfigRequest) (*model.Config, error) {
-	config := model.Config{
+func (s *service) CreateConfig(ctx context.Context, json types.CreateConfigRequest) (*models.Config, error) {
+	config := models.Config{
 		Name:   json.Name,
 		Value:  json.Value,
 		BIO:    json.BIO,
@@ -39,21 +39,21 @@ func (s *service) CreateConfig(ctx context.Context, json types.CreateConfigReque
 }
 
 func (s *service) DestroyConfig(ctx context.Context, id uint) error {
-	config := model.Config{}
+	config := models.Config{}
 	if err := s.db.WithContext(ctx).First(&config, id).Error; err != nil {
 		return err
 	}
 
-	if err := s.db.WithContext(ctx).Unscoped().Delete(&model.Config{}, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Unscoped().Delete(&models.Config{}, id).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *service) UpdateConfig(ctx context.Context, id uint, json types.UpdateConfigRequest) (*model.Config, error) {
-	config := model.Config{}
-	if err := s.db.WithContext(ctx).First(&config, id).Updates(model.Config{
+func (s *service) UpdateConfig(ctx context.Context, id uint, json types.UpdateConfigRequest) (*models.Config, error) {
+	config := models.Config{}
+	if err := s.db.WithContext(ctx).First(&config, id).Updates(models.Config{
 		Name:   json.Name,
 		Value:  json.Value,
 		BIO:    json.BIO,
@@ -65,8 +65,8 @@ func (s *service) UpdateConfig(ctx context.Context, id uint, json types.UpdateCo
 	return &config, nil
 }
 
-func (s *service) GetConfig(ctx context.Context, id uint) (*model.Config, error) {
-	config := model.Config{}
+func (s *service) GetConfig(ctx context.Context, id uint) (*models.Config, error) {
+	config := models.Config{}
 	if err := s.db.WithContext(ctx).First(&config, id).Error; err != nil {
 		return nil, err
 	}
@@ -74,10 +74,10 @@ func (s *service) GetConfig(ctx context.Context, id uint) (*model.Config, error)
 	return &config, nil
 }
 
-func (s *service) GetConfigs(ctx context.Context, q types.GetConfigsQuery) ([]model.Config, int64, error) {
+func (s *service) GetConfigs(ctx context.Context, q types.GetConfigsQuery) ([]models.Config, int64, error) {
 	var count int64
-	var configs []model.Config
-	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Config{
+	var configs []models.Config
+	if err := s.db.WithContext(ctx).Scopes(models.Paginate(q.Page, q.PerPage)).Where(&models.Config{
 		Name:   q.Name,
 		Value:  q.Value,
 		UserID: q.UserID,

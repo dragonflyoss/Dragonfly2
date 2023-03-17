@@ -41,7 +41,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/config"
-	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
 	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 )
@@ -66,7 +66,7 @@ const (
 var accessURLPattern, _ = regexp.Compile("^(.*)://(.*)/v2/(.*)/manifests/(.*)")
 
 type Preheat interface {
-	CreatePreheat(context.Context, []model.Scheduler, types.PreheatArgs) (*internaljob.GroupJobState, error)
+	CreatePreheat(context.Context, []models.Scheduler, types.PreheatArgs) (*internaljob.GroupJobState, error)
 }
 
 type preheat struct {
@@ -86,7 +86,7 @@ func newPreheat(job *internaljob.Job) (Preheat, error) {
 	}, nil
 }
 
-func (p *preheat) CreatePreheat(ctx context.Context, schedulers []model.Scheduler, json types.PreheatArgs) (*internaljob.GroupJobState, error) {
+func (p *preheat) CreatePreheat(ctx context.Context, schedulers []models.Scheduler, json types.PreheatArgs) (*internaljob.GroupJobState, error) {
 	var span trace.Span
 	ctx, span = tracer.Start(ctx, config.SpanPreheat, trace.WithSpanKind(trace.SpanKindProducer))
 	span.SetAttributes(config.AttributePreheatType.String(json.Type))
@@ -335,7 +335,7 @@ func parseAccessURL(url string) (*preheatImage, error) {
 	}, nil
 }
 
-func getSchedulerQueues(schedulers []model.Scheduler) []internaljob.Queue {
+func getSchedulerQueues(schedulers []models.Scheduler) []internaljob.Queue {
 	var queues []internaljob.Queue
 	for _, scheduler := range schedulers {
 		queue, err := internaljob.GetSchedulerQueue(scheduler.SchedulerClusterID, scheduler.HostName)

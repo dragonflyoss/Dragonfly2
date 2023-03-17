@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	model "d7y.io/dragonfly/v2/manager/model"
+	models "d7y.io/dragonfly/v2/manager/models"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -36,10 +36,10 @@ func (m *MockSearcher) EXPECT() *MockSearcherMockRecorder {
 }
 
 // FindSchedulerClusters mocks base method.
-func (m *MockSearcher) FindSchedulerClusters(ctx context.Context, schedulerClusters []model.SchedulerCluster, ip, hostname string, conditions map[string]string) ([]model.SchedulerCluster, error) {
+func (m *MockSearcher) FindSchedulerClusters(ctx context.Context, schedulerClusters []models.SchedulerCluster, ip, hostname string, conditions map[string]string) ([]models.SchedulerCluster, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindSchedulerClusters", ctx, schedulerClusters, ip, hostname, conditions)
-	ret0, _ := ret[0].([]model.SchedulerCluster)
+	ret0, _ := ret[0].([]models.SchedulerCluster)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
