@@ -12,7 +12,7 @@ import (
 )
 
 // TODO(XZ): Here we need to design a timestamp measurement point.
-var initTime = time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC)
+var initTime = time.Date(2023, time.January, 1, 0, 0, 0, 0, time.Local)
 
 type Probe struct {
 	// Host metadata.
@@ -71,7 +71,7 @@ func (p *Probes) StoreProbe(probe *Probe) {
 	//update AverageRtt by moving average method
 	var averageRTT = float64(p.Probes.Front().Value.(*Probe).RTT)
 	for e := p.Probes.Front().Next(); e != nil; e = e.Next() {
-		averageRTT += averageRTT*0.1 + float64(e.Value.(*Probe).RTT)*0.9
+		averageRTT = averageRTT*0.1 + float64(e.Value.(*Probe).RTT)*0.9
 	}
 	p.AverageRTT = time.Duration(averageRTT)
 }

@@ -308,9 +308,9 @@ func TestProbes_StoreProbe(t *testing.T) {
 
 				var averageRTT = float64(probes.Probes.Front().Value.(*Probe).RTT)
 				for e := probes.Probes.Front().Next(); e != nil; e = e.Next() {
-					averageRTT += averageRTT*0.1 + float64(e.Value.(*Probe).RTT)*0.9
+					averageRTT = averageRTT*0.1 + float64(e.Value.(*Probe).RTT)*0.9
 				}
-				assert.Equal(probes.AverageRTT, averageRTT)
+				assert.Equal(probes.AverageRTT, time.Duration(averageRTT))
 
 				assert.Equal(loaded, true)
 				assert.Equal(probe.Host.ID, mockProbe6.Host.ID)
@@ -400,10 +400,10 @@ func TestProbes_GetAverageRTT(t *testing.T) {
 
 				var a = float64(mockProbesWithThreeProbe[0].RTT)
 				for _, p := range mockProbesWithThreeProbe {
-					a += a*0.1 + float64(p.RTT)*0.9
+					a = a*0.1 + float64(p.RTT)*0.9
 				}
 
-				assert.Equal(averageRTT, a)
+				assert.Equal(averageRTT, time.Duration(a))
 				assert.Equal(loaded, true)
 			},
 		},
