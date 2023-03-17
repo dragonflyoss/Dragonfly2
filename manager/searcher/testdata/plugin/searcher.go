@@ -19,13 +19,13 @@ package main
 import (
 	"context"
 
-	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/models"
 )
 
 type searcher struct{}
 
-func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters []model.SchedulerCluster, hostname, ip string, conditions map[string]string) ([]model.SchedulerCluster, error) {
-	return []model.SchedulerCluster{{Name: "foo"}}, nil
+func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters []models.SchedulerCluster, hostname, ip string, conditions map[string]string) ([]models.SchedulerCluster, error) {
+	return []models.SchedulerCluster{{Name: "foo"}}, nil
 }
 
 func DragonflyPluginInit(option map[string]string) (any, map[string]string, error) {

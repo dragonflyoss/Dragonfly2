@@ -19,12 +19,12 @@ package service
 import (
 	"context"
 
-	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-func (s *service) CreateOauth(ctx context.Context, json types.CreateOauthRequest) (*model.Oauth, error) {
-	oauth := model.Oauth{
+func (s *service) CreateOauth(ctx context.Context, json types.CreateOauthRequest) (*models.Oauth, error) {
+	oauth := models.Oauth{
 		Name:         json.Name,
 		BIO:          json.BIO,
 		ClientID:     json.ClientID,
@@ -40,21 +40,21 @@ func (s *service) CreateOauth(ctx context.Context, json types.CreateOauthRequest
 }
 
 func (s *service) DestroyOauth(ctx context.Context, id uint) error {
-	oauth := model.Oauth{}
+	oauth := models.Oauth{}
 	if err := s.db.WithContext(ctx).First(&oauth, id).Error; err != nil {
 		return err
 	}
 
-	if err := s.db.WithContext(ctx).Unscoped().Delete(&model.Oauth{}, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Unscoped().Delete(&models.Oauth{}, id).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *service) UpdateOauth(ctx context.Context, id uint, json types.UpdateOauthRequest) (*model.Oauth, error) {
-	oauth := model.Oauth{}
-	if err := s.db.WithContext(ctx).First(&oauth, id).Updates(model.Oauth{
+func (s *service) UpdateOauth(ctx context.Context, id uint, json types.UpdateOauthRequest) (*models.Oauth, error) {
+	oauth := models.Oauth{}
+	if err := s.db.WithContext(ctx).First(&oauth, id).Updates(models.Oauth{
 		Name:         json.Name,
 		BIO:          json.BIO,
 		ClientID:     json.ClientID,
@@ -67,8 +67,8 @@ func (s *service) UpdateOauth(ctx context.Context, id uint, json types.UpdateOau
 	return &oauth, nil
 }
 
-func (s *service) GetOauth(ctx context.Context, id uint) (*model.Oauth, error) {
-	oauth := model.Oauth{}
+func (s *service) GetOauth(ctx context.Context, id uint) (*models.Oauth, error) {
+	oauth := models.Oauth{}
 	if err := s.db.WithContext(ctx).First(&oauth, id).Error; err != nil {
 		return nil, err
 	}
@@ -76,10 +76,10 @@ func (s *service) GetOauth(ctx context.Context, id uint) (*model.Oauth, error) {
 	return &oauth, nil
 }
 
-func (s *service) GetOauths(ctx context.Context, q types.GetOauthsQuery) ([]model.Oauth, int64, error) {
+func (s *service) GetOauths(ctx context.Context, q types.GetOauthsQuery) ([]models.Oauth, int64, error) {
 	var count int64
-	var oauths []model.Oauth
-	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Oauth{
+	var oauths []models.Oauth
+	if err := s.db.WithContext(ctx).Scopes(models.Paginate(q.Page, q.PerPage)).Where(&models.Oauth{
 		Name:     q.Name,
 		ClientID: q.ClientID,
 	}).Find(&oauths).Limit(-1).Offset(-1).Count(&count).Error; err != nil {

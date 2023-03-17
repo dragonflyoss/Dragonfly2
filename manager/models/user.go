@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package model
+package models
 
 const (
 	UserStateEnabled  = "enable"
@@ -22,7 +22,7 @@ const (
 )
 
 type User struct {
-	Model
+	BaseModel
 	Email             string   `gorm:"column:email;type:varchar(256);index:uk_user_email,unique;not null;comment:email address" json:"email"`
 	Name              string   `gorm:"column:name;type:varchar(256);index:uk_user_name,unique;not null;comment:name" json:"name"`
 	EncryptedPassword string   `gorm:"column:encrypted_password;size:1024;comment:encrypted password" json:"-"`

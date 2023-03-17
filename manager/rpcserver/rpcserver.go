@@ -31,7 +31,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/metrics"
-	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/searcher"
 	pkgcache "d7y.io/dragonfly/v2/pkg/cache"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
@@ -157,7 +157,7 @@ func New(
 }
 
 // Get scheduler cluster names.
-func getSchedulerClusterNames(clusters []model.SchedulerCluster) []string {
+func getSchedulerClusterNames(clusters []models.SchedulerCluster) []string {
 	names := []string{}
 	for _, cluster := range clusters {
 		names = append(names, cluster.Name)

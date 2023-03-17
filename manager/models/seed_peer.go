@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package model
+package models
 
 const (
 	SeedPeerStateActive   = "active"
@@ -22,7 +22,7 @@ const (
 )
 
 type SeedPeer struct {
-	Model
+	BaseModel
 	HostName          string          `gorm:"column:host_name;type:varchar(256);index:uk_seed_peer,unique;not null;comment:hostname" json:"host_name"`
 	Type              string          `gorm:"column:type;type:varchar(256);comment:type" json:"type"`
 	IDC               string          `gorm:"column:idc;type:varchar(1024);comment:internet data center" json:"idc"`

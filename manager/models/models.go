@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package model
+package models
 
 import (
 	"database/sql/driver"
@@ -28,7 +28,7 @@ import (
 	"gorm.io/plugin/soft_delete"
 )
 
-type Model struct {
+type BaseModel struct {
 	ID        uint                  `gorm:"primarykey;comment:id" json:"id"`
 	CreatedAt time.Time             `gorm:"column:created_at;type:timestamp;default:current_timestamp" json:"created_at"`
 	UpdatedAt time.Time             `gorm:"column:updated_at;type:timestamp;default:current_timestamp" json:"updated_at"`

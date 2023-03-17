@@ -23,12 +23,12 @@ import (
 	"github.com/google/uuid"
 
 	"d7y.io/dragonfly/v2/manager/cache"
-	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
 func (s *service) CreateModel(ctx context.Context, params types.CreateModelParams, json types.CreateModelRequest) (*types.Model, error) {
-	scheduler := model.Scheduler{}
+	scheduler := models.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, params.SchedulerID).Error; err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (s *service) DestroyModel(ctx context.Context, params types.ModelParams) er
 		return err
 	}
 
-	scheduler := model.Scheduler{}
+	scheduler := models.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, params.SchedulerID).Error; err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func (s *service) DestroyModel(ctx context.Context, params types.ModelParams) er
 }
 
 func (s *service) UpdateModel(ctx context.Context, params types.ModelParams, json types.UpdateModelRequest) (*types.Model, error) {
-	scheduler := model.Scheduler{}
+	scheduler := models.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, params.SchedulerID).Error; err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (s *service) UpdateModel(ctx context.Context, params types.ModelParams, jso
 }
 
 func (s *service) GetModel(ctx context.Context, params types.ModelParams) (*types.Model, error) {
-	scheduler := model.Scheduler{}
+	scheduler := models.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, params.SchedulerID).Error; err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func (s *service) GetModel(ctx context.Context, params types.ModelParams) (*type
 }
 
 func (s *service) GetModels(ctx context.Context, params types.GetModelsParams) ([]*types.Model, error) {
-	scheduler := model.Scheduler{}
+	scheduler := models.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, params.SchedulerID).Error; err != nil {
 		return nil, err
 	}
@@ -123,7 +123,7 @@ func (s *service) GetModels(ctx context.Context, params types.GetModelsParams) (
 }
 
 func (s *service) CreateModelVersion(ctx context.Context, params types.CreateModelVersionParams, json types.CreateModelVersionRequest) (*types.ModelVersion, error) {
-	scheduler := model.Scheduler{}
+	scheduler := models.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, params.SchedulerID).Error; err != nil {
 		return nil, err
 	}
@@ -151,7 +151,7 @@ func (s *service) DestroyModelVersion(ctx context.Context, params types.ModelVer
 		return err
 	}
 
-	scheduler := model.Scheduler{}
+	scheduler := models.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, params.SchedulerID).Error; err != nil {
 		return err
 	}
@@ -164,7 +164,7 @@ func (s *service) DestroyModelVersion(ctx context.Context, params types.ModelVer
 }
 
 func (s *service) UpdateModelVersion(ctx context.Context, params types.ModelVersionParams, json types.UpdateModelVersionRequest) (*types.ModelVersion, error) {
-	scheduler := model.Scheduler{}
+	scheduler := models.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, params.SchedulerID).Error; err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ func (s *service) UpdateModelVersion(ctx context.Context, params types.ModelVers
 }
 
 func (s *service) GetModelVersion(ctx context.Context, params types.ModelVersionParams) (*types.ModelVersion, error) {
-	scheduler := model.Scheduler{}
+	scheduler := models.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, params.SchedulerID).Error; err != nil {
 		return nil, err
 	}
@@ -218,7 +218,7 @@ func (s *service) GetModelVersion(ctx context.Context, params types.ModelVersion
 }
 
 func (s *service) GetModelVersions(ctx context.Context, params types.GetModelVersionsParams) ([]*types.ModelVersion, error) {
-	scheduler := model.Scheduler{}
+	scheduler := models.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, params.SchedulerID).Error; err != nil {
 		return nil, err
 	}

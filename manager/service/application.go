@@ -19,18 +19,18 @@ package service
 import (
 	"context"
 
-	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/structure"
 )
 
-func (s *service) CreateApplication(ctx context.Context, json types.CreateApplicationRequest) (*model.Application, error) {
+func (s *service) CreateApplication(ctx context.Context, json types.CreateApplicationRequest) (*models.Application, error) {
 	priority, err := structure.StructToMap(json.Priority)
 	if err != nil {
 		return nil, err
 	}
 
-	application := model.Application{
+	application := models.Application{
 		Name:     json.Name,
 		URL:      json.URL,
 		BIO:      json.BIO,
@@ -46,19 +46,19 @@ func (s *service) CreateApplication(ctx context.Context, json types.CreateApplic
 }
 
 func (s *service) DestroyApplication(ctx context.Context, id uint) error {
-	application := model.Application{}
+	application := models.Application{}
 	if err := s.db.WithContext(ctx).First(&application, id).Error; err != nil {
 		return err
 	}
 
-	if err := s.db.WithContext(ctx).Delete(&model.Application{}, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Delete(&models.Application{}, id).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *service) UpdateApplication(ctx context.Context, id uint, json types.UpdateApplicationRequest) (*model.Application, error) {
+func (s *service) UpdateApplication(ctx context.Context, id uint, json types.UpdateApplicationRequest) (*models.Application, error) {
 	var (
 		priority map[string]any
 		err      error
@@ -70,8 +70,8 @@ func (s *service) UpdateApplication(ctx context.Context, id uint, json types.Upd
 		}
 	}
 
-	application := model.Application{}
-	if err := s.db.WithContext(ctx).Preload("User").First(&application, id).Updates(model.Application{
+	application := models.Application{}
+	if err := s.db.WithContext(ctx).Preload("User").First(&application, id).Updates(models.Application{
 		Name:     json.Name,
 		URL:      json.URL,
 		BIO:      json.BIO,
@@ -84,8 +84,8 @@ func (s *service) UpdateApplication(ctx context.Context, id uint, json types.Upd
 	return &application, nil
 }
 
-func (s *service) GetApplication(ctx context.Context, id uint) (*model.Application, error) {
-	application := model.Application{}
+func (s *service) GetApplication(ctx context.Context, id uint) (*models.Application, error) {
+	application := models.Application{}
 	if err := s.db.WithContext(ctx).Preload("User").First(&application, id).Error; err != nil {
 		return nil, err
 	}
@@ -93,10 +93,10 @@ func (s *service) GetApplication(ctx context.Context, id uint) (*model.Applicati
 	return &application, nil
 }
 
-func (s *service) GetApplications(ctx context.Context, q types.GetApplicationsQuery) ([]model.Application, int64, error) {
+func (s *service) GetApplications(ctx context.Context, q types.GetApplicationsQuery) ([]models.Application, int64, error) {
 	var count int64
-	applications := []model.Application{}
-	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Preload("User").Find(&applications).Limit(-1).Offset(-1).Count(&count).Error; err != nil {
+	applications := []models.Application{}
+	if err := s.db.WithContext(ctx).Scopes(models.Paginate(q.Page, q.PerPage)).Preload("User").Find(&applications).Limit(-1).Offset(-1).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 

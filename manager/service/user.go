@@ -26,14 +26,14 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	manageroauth "d7y.io/dragonfly/v2/manager/auth/oauth"
-	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-func (s *service) UpdateUser(ctx context.Context, id uint, json types.UpdateUserRequest) (*model.User, error) {
-	user := model.User{}
-	if err := s.db.WithContext(ctx).First(&user, id).Updates(model.User{
+func (s *service) UpdateUser(ctx context.Context, id uint, json types.UpdateUserRequest) (*models.User, error) {
+	user := models.User{}
+	if err := s.db.WithContext(ctx).First(&user, id).Updates(models.User{
 		Email:    json.Email,
 		Phone:    json.Phone,
 		Avatar:   json.Avatar,
@@ -46,8 +46,8 @@ func (s *service) UpdateUser(ctx context.Context, id uint, json types.UpdateUser
 	return &user, nil
 }
 
-func (s *service) GetUser(ctx context.Context, id uint) (*model.User, error) {
-	user := model.User{}
+func (s *service) GetUser(ctx context.Context, id uint) (*models.User, error) {
+	user := models.User{}
 	if err := s.db.WithContext(ctx).First(&user, id).Error; err != nil {
 		return nil, err
 	}
@@ -55,10 +55,10 @@ func (s *service) GetUser(ctx context.Context, id uint) (*model.User, error) {
 	return &user, nil
 }
 
-func (s *service) GetUsers(ctx context.Context, q types.GetUsersQuery) ([]model.User, int64, error) {
+func (s *service) GetUsers(ctx context.Context, q types.GetUsersQuery) ([]models.User, int64, error) {
 	var count int64
-	var users []model.User
-	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.User{
+	var users []models.User
+	if err := s.db.WithContext(ctx).Scopes(models.Paginate(q.Page, q.PerPage)).Where(&models.User{
 		Name:     q.Name,
 		Email:    q.Email,
 		Location: q.Location,
@@ -70,9 +70,9 @@ func (s *service) GetUsers(ctx context.Context, q types.GetUsersQuery) ([]model.
 	return users, count, nil
 }
 
-func (s *service) SignIn(ctx context.Context, json types.SignInRequest) (*model.User, error) {
-	user := model.User{}
-	if err := s.db.WithContext(ctx).First(&user, model.User{
+func (s *service) SignIn(ctx context.Context, json types.SignInRequest) (*models.User, error) {
+	user := models.User{}
+	if err := s.db.WithContext(ctx).First(&user, models.User{
 		Name: json.Name,
 	}).Error; err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func (s *service) SignIn(ctx context.Context, json types.SignInRequest) (*model.
 }
 
 func (s *service) ResetPassword(ctx context.Context, id uint, json types.ResetPasswordRequest) error {
-	user := model.User{}
+	user := models.User{}
 	if err := s.db.WithContext(ctx).First(&user, id).Error; err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func (s *service) ResetPassword(ctx context.Context, id uint, json types.ResetPa
 		return err
 	}
 
-	if err := s.db.WithContext(ctx).First(&user, id).Updates(model.User{
+	if err := s.db.WithContext(ctx).First(&user, id).Updates(models.User{
 		EncryptedPassword: string(encryptedPasswordBytes),
 	}).Error; err != nil {
 		return err
@@ -109,13 +109,13 @@ func (s *service) ResetPassword(ctx context.Context, id uint, json types.ResetPa
 	return nil
 }
 
-func (s *service) SignUp(ctx context.Context, json types.SignUpRequest) (*model.User, error) {
+func (s *service) SignUp(ctx context.Context, json types.SignUpRequest) (*models.User, error) {
 	encryptedPasswordBytes, err := bcrypt.GenerateFromPassword([]byte(json.Password), bcrypt.MinCost)
 	if err != nil {
 		return nil, err
 	}
 
-	user := model.User{
+	user := models.User{
 		EncryptedPassword: string(encryptedPasswordBytes),
 		Name:              json.Name,
 		Email:             json.Email,
@@ -123,7 +123,7 @@ func (s *service) SignUp(ctx context.Context, json types.SignUpRequest) (*model.
 		Avatar:            json.Avatar,
 		Location:          json.Location,
 		BIO:               json.BIO,
-		State:             model.UserStateEnabled,
+		State:             models.UserStateEnabled,
 	}
 
 	if err := s.db.WithContext(ctx).Create(&user).Error; err != nil {
@@ -138,8 +138,8 @@ func (s *service) SignUp(ctx context.Context, json types.SignUpRequest) (*model.
 }
 
 func (s *service) OauthSignin(ctx context.Context, name string) (string, error) {
-	oauth := model.Oauth{}
-	if err := s.db.WithContext(ctx).First(&oauth, model.Oauth{Name: name}).Error; err != nil {
+	oauth := models.Oauth{}
+	if err := s.db.WithContext(ctx).First(&oauth, models.Oauth{Name: name}).Error; err != nil {
 		return "", err
 	}
 
@@ -151,9 +151,9 @@ func (s *service) OauthSignin(ctx context.Context, name string) (string, error) 
 	return o.AuthCodeURL()
 }
 
-func (s *service) OauthSigninCallback(ctx context.Context, name, code string) (*model.User, error) {
-	oauth := model.Oauth{}
-	if err := s.db.WithContext(ctx).First(&oauth, model.Oauth{Name: name}).Error; err != nil {
+func (s *service) OauthSigninCallback(ctx context.Context, name, code string) (*models.User, error) {
+	oauth := models.Oauth{}
+	if err := s.db.WithContext(ctx).First(&oauth, models.Oauth{Name: name}).Error; err != nil {
 		return nil, err
 	}
 
@@ -172,11 +172,11 @@ func (s *service) OauthSigninCallback(ctx context.Context, name, code string) (*
 		return nil, err
 	}
 
-	user := model.User{
+	user := models.User{
 		Name:   oauthUser.Name,
 		Email:  oauthUser.Email,
 		Avatar: oauthUser.Avatar,
-		State:  model.UserStateEnabled,
+		State:  models.UserStateEnabled,
 	}
 	if err := s.db.WithContext(ctx).Create(&user).Error; err != nil {
 		var merr *mysql.MySQLError

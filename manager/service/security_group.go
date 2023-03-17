@@ -19,12 +19,12 @@ package service
 import (
 	"context"
 
-	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-func (s *service) CreateSecurityGroup(ctx context.Context, json types.CreateSecurityGroupRequest) (*model.SecurityGroup, error) {
-	securityGroup := model.SecurityGroup{
+func (s *service) CreateSecurityGroup(ctx context.Context, json types.CreateSecurityGroupRequest) (*models.SecurityGroup, error) {
+	securityGroup := models.SecurityGroup{
 		Name: json.Name,
 		BIO:  json.BIO,
 	}
@@ -37,21 +37,21 @@ func (s *service) CreateSecurityGroup(ctx context.Context, json types.CreateSecu
 }
 
 func (s *service) DestroySecurityGroup(ctx context.Context, id uint) error {
-	securityGroup := model.SecurityGroup{}
+	securityGroup := models.SecurityGroup{}
 	if err := s.db.WithContext(ctx).First(&securityGroup, id).Error; err != nil {
 		return err
 	}
 
-	if err := s.db.WithContext(ctx).Unscoped().Delete(&model.SecurityGroup{}, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Unscoped().Delete(&models.SecurityGroup{}, id).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *service) UpdateSecurityGroup(ctx context.Context, id uint, json types.UpdateSecurityGroupRequest) (*model.SecurityGroup, error) {
-	securityGroup := model.SecurityGroup{}
-	if err := s.db.WithContext(ctx).First(&securityGroup, id).Updates(model.SecurityGroup{
+func (s *service) UpdateSecurityGroup(ctx context.Context, id uint, json types.UpdateSecurityGroupRequest) (*models.SecurityGroup, error) {
+	securityGroup := models.SecurityGroup{}
+	if err := s.db.WithContext(ctx).First(&securityGroup, id).Updates(models.SecurityGroup{
 		Name: json.Name,
 		BIO:  json.BIO,
 	}).Error; err != nil {
@@ -61,8 +61,8 @@ func (s *service) UpdateSecurityGroup(ctx context.Context, id uint, json types.U
 	return &securityGroup, nil
 }
 
-func (s *service) GetSecurityGroup(ctx context.Context, id uint) (*model.SecurityGroup, error) {
-	securityGroup := model.SecurityGroup{}
+func (s *service) GetSecurityGroup(ctx context.Context, id uint) (*models.SecurityGroup, error) {
+	securityGroup := models.SecurityGroup{}
 	if err := s.db.WithContext(ctx).Preload("SecurityRules").First(&securityGroup, id).Error; err != nil {
 		return nil, err
 	}
@@ -70,10 +70,10 @@ func (s *service) GetSecurityGroup(ctx context.Context, id uint) (*model.Securit
 	return &securityGroup, nil
 }
 
-func (s *service) GetSecurityGroups(ctx context.Context, q types.GetSecurityGroupsQuery) ([]model.SecurityGroup, int64, error) {
+func (s *service) GetSecurityGroups(ctx context.Context, q types.GetSecurityGroupsQuery) ([]models.SecurityGroup, int64, error) {
 	var count int64
-	var securityGroups []model.SecurityGroup
-	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SecurityGroup{
+	var securityGroups []models.SecurityGroup
+	if err := s.db.WithContext(ctx).Scopes(models.Paginate(q.Page, q.PerPage)).Where(&models.SecurityGroup{
 		Name: q.Name,
 	}).Preload("SecurityRules").Find(&securityGroups).Limit(-1).Offset(-1).Count(&count).Error; err != nil {
 		return nil, 0, err
@@ -83,12 +83,12 @@ func (s *service) GetSecurityGroups(ctx context.Context, q types.GetSecurityGrou
 }
 
 func (s *service) AddSchedulerClusterToSecurityGroup(ctx context.Context, id, schedulerClusterID uint) error {
-	securityGroup := model.SecurityGroup{}
+	securityGroup := models.SecurityGroup{}
 	if err := s.db.WithContext(ctx).First(&securityGroup, id).Error; err != nil {
 		return err
 	}
 
-	schedulerCluster := model.SchedulerCluster{}
+	schedulerCluster := models.SchedulerCluster{}
 	if err := s.db.WithContext(ctx).First(&schedulerCluster, schedulerClusterID).Error; err != nil {
 		return err
 	}
@@ -101,12 +101,12 @@ func (s *service) AddSchedulerClusterToSecurityGroup(ctx context.Context, id, sc
 }
 
 func (s *service) AddSeedPeerClusterToSecurityGroup(ctx context.Context, id, seedPeerClusterID uint) error {
-	securityGroup := model.SecurityGroup{}
+	securityGroup := models.SecurityGroup{}
 	if err := s.db.WithContext(ctx).First(&securityGroup, id).Error; err != nil {
 		return err
 	}
 
-	seedPeerCluster := model.SeedPeerCluster{}
+	seedPeerCluster := models.SeedPeerCluster{}
 	if err := s.db.WithContext(ctx).First(&seedPeerCluster, seedPeerClusterID).Error; err != nil {
 		return err
 	}
@@ -119,12 +119,12 @@ func (s *service) AddSeedPeerClusterToSecurityGroup(ctx context.Context, id, see
 }
 
 func (s *service) AddSecurityRuleToSecurityGroup(ctx context.Context, id, securityRuleID uint) error {
-	securityGroup := model.SecurityGroup{}
+	securityGroup := models.SecurityGroup{}
 	if err := s.db.WithContext(ctx).First(&securityGroup, id).Error; err != nil {
 		return err
 	}
 
-	securityRule := model.SecurityRule{}
+	securityRule := models.SecurityRule{}
 	if err := s.db.WithContext(ctx).First(&securityRule, securityRuleID).Error; err != nil {
 		return err
 	}
@@ -137,12 +137,12 @@ func (s *service) AddSecurityRuleToSecurityGroup(ctx context.Context, id, securi
 }
 
 func (s *service) DestroySecurityRuleToSecurityGroup(ctx context.Context, id, securityRuleID uint) error {
-	securityGroup := model.SecurityGroup{}
+	securityGroup := models.SecurityGroup{}
 	if err := s.db.WithContext(ctx).First(&securityGroup, id).Error; err != nil {
 		return err
 	}
 
-	securityRule := model.SecurityRule{}
+	securityRule := models.SecurityRule{}
 	if err := s.db.WithContext(ctx).First(&securityRule, securityRuleID).Error; err != nil {
 		return err
 	}

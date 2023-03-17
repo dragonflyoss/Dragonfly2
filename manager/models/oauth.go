@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package model
+package models
 
 type Oauth struct {
-	Model
+	BaseModel
 	Name         string `gorm:"column:name;type:varchar(256);index:uk_oauth2_name,unique;not null;comment:oauth2 name" json:"name"`
 	BIO          string `gorm:"column:bio;type:varchar(1024);comment:biography" json:"bio"`
 	ClientID     string `gorm:"column:client_id;type:varchar(256);index:uk_oauth2_client_id,unique;not null;comment:client id for oauth2" json:"client_id"`

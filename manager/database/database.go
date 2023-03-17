@@ -24,7 +24,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/config"
-	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/models"
 	schedulerconfig "d7y.io/dragonfly/v2/scheduler/config"
 )
 
@@ -77,29 +77,29 @@ func New(cfg *config.Config) (*Database, error) {
 
 func migrate(db *gorm.DB) error {
 	return db.AutoMigrate(
-		&model.Job{},
-		&model.SeedPeerCluster{},
-		&model.SeedPeer{},
-		&model.SchedulerCluster{},
-		&model.Scheduler{},
-		&model.SecurityRule{},
-		&model.SecurityGroup{},
-		&model.User{},
-		&model.Oauth{},
-		&model.Config{},
-		&model.Application{},
+		&models.Job{},
+		&models.SeedPeerCluster{},
+		&models.SeedPeer{},
+		&models.SchedulerCluster{},
+		&models.Scheduler{},
+		&models.SecurityRule{},
+		&models.SecurityGroup{},
+		&models.User{},
+		&models.Oauth{},
+		&models.Config{},
+		&models.Application{},
 	)
 }
 
 func seed(cfg *config.Config, db *gorm.DB) error {
 	var schedulerClusterCount int64
-	if err := db.Model(model.SchedulerCluster{}).Count(&schedulerClusterCount).Error; err != nil {
+	if err := db.Model(models.SchedulerCluster{}).Count(&schedulerClusterCount).Error; err != nil {
 		return err
 	}
 
 	if schedulerClusterCount <= 0 {
-		if err := db.Create(&model.SchedulerCluster{
-			Model: model.Model{
+		if err := db.Create(&models.SchedulerCluster{
+			BaseModel: models.BaseModel{
 				ID: uint(1),
 			},
 			Name: DefaultSchedulerClusterName,
@@ -119,13 +119,13 @@ func seed(cfg *config.Config, db *gorm.DB) error {
 	}
 
 	var seedPeerClusterCount int64
-	if err := db.Model(model.SeedPeerCluster{}).Count(&seedPeerClusterCount).Error; err != nil {
+	if err := db.Model(models.SeedPeerCluster{}).Count(&seedPeerClusterCount).Error; err != nil {
 		return err
 	}
 
 	if seedPeerClusterCount <= 0 {
-		if err := db.Create(&model.SeedPeerCluster{
-			Model: model.Model{
+		if err := db.Create(&models.SeedPeerCluster{
+			BaseModel: models.BaseModel{
 				ID: uint(1),
 			},
 			Name: DefaultSeedPeerClusterName,
@@ -137,12 +137,12 @@ func seed(cfg *config.Config, db *gorm.DB) error {
 			return err
 		}
 
-		seedPeerCluster := model.SeedPeerCluster{}
+		seedPeerCluster := models.SeedPeerCluster{}
 		if err := db.First(&seedPeerCluster).Error; err != nil {
 			return err
 		}
 
-		schedulerCluster := model.SchedulerCluster{}
+		schedulerCluster := models.SchedulerCluster{}
 		if err := db.First(&schedulerCluster).Error; err != nil {
 			return err
 		}

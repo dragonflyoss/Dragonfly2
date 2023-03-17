@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package model
+package models
 
-type SecurityGroup struct {
-	Model
-	Name              string             `gorm:"column:name;type:varchar(256);index:uk_security_group_name,unique;not null;comment:name" json:"name"`
-	BIO               string             `gorm:"column:bio;type:varchar(1024);comment:biography" json:"bio"`
-	SecurityRules     []SecurityRule     `gorm:"many2many:security_group_security_rule;" json:"security_rules"`
-	SchedulerClusters []SchedulerCluster `json:"-"`
+type Config struct {
+	BaseModel
+	Name   string `gorm:"column:name;type:varchar(256);index:uk_config_name,unique;not null;comment:config name" json:"name"`
+	Value  string `gorm:"column:value;type:varchar(1024);not null;comment:config value" json:"value"`
+	BIO    string `gorm:"column:bio;type:varchar(1024);comment:biography" json:"bio"`
+	UserID uint   `gorm:"comment:user id" json:"user_id"`
+	User   User   `json:"-"`
 }

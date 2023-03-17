@@ -30,7 +30,7 @@ import (
 	"github.com/yl2chen/cidranger"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/pkg/math"
 	"d7y.io/dragonfly/v2/pkg/types"
 )
@@ -85,7 +85,7 @@ type Scopes struct {
 
 type Searcher interface {
 	// FindSchedulerClusters finds scheduler clusters that best matches the evaluation.
-	FindSchedulerClusters(ctx context.Context, schedulerClusters []model.SchedulerCluster, ip, hostname string, conditions map[string]string) ([]model.SchedulerCluster, error)
+	FindSchedulerClusters(ctx context.Context, schedulerClusters []models.SchedulerCluster, ip, hostname string, conditions map[string]string) ([]models.SchedulerCluster, error)
 }
 
 type searcher struct {
@@ -104,7 +104,7 @@ func New(pluginDir string) Searcher {
 }
 
 // FindSchedulerClusters finds scheduler clusters that best matches the evaluation.
-func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters []model.SchedulerCluster, ip, hostname string, conditions map[string]string) ([]model.SchedulerCluster, error) {
+func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters []models.SchedulerCluster, ip, hostname string, conditions map[string]string) ([]models.SchedulerCluster, error) {
 	if len(schedulerClusters) <= 0 {
 		return nil, errors.New("empty scheduler clusters")
 	}
@@ -136,8 +136,8 @@ func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters 
 }
 
 // Filter the scheduler clusters that dfdaemon can be used.
-func FilterSchedulerClusters(conditions map[string]string, schedulerClusters []model.SchedulerCluster) []model.SchedulerCluster {
-	var clusters []model.SchedulerCluster
+func FilterSchedulerClusters(conditions map[string]string, schedulerClusters []models.SchedulerCluster) []models.SchedulerCluster {
+	var clusters []models.SchedulerCluster
 	securityDomain := conditions[ConditionSecurityDomain]
 	for _, schedulerCluster := range schedulerClusters {
 		// There are no active schedulers in the scheduler cluster
@@ -177,7 +177,7 @@ func FilterSchedulerClusters(conditions map[string]string, schedulerClusters []m
 }
 
 // Evaluate the degree of matching between scheduler cluster and dfdaemon.
-func Evaluate(ip, hostname string, conditions map[string]string, scopes Scopes, cluster model.SchedulerCluster) float64 {
+func Evaluate(ip, hostname string, conditions map[string]string, scopes Scopes, cluster models.SchedulerCluster) float64 {
 	return securityDomainAffinityWeight*calculateSecurityDomainAffinityScore(conditions[ConditionSecurityDomain], cluster.SecurityGroup.SecurityRules) +
 		cidrAffinityWeight*calculateCIDRAffinityScore(ip, scopes.CIDRs) +
 		idcAffinityWeight*calculateIDCAffinityScore(conditions[ConditionIDC], scopes.IDC) +
@@ -186,7 +186,7 @@ func Evaluate(ip, hostname string, conditions map[string]string, scopes Scopes, 
 }
 
 // calculateSecurityDomainAffinityScore 0.0~1.0 larger and better.
-func calculateSecurityDomainAffinityScore(securityDomain string, securityRules []model.SecurityRule) float64 {
+func calculateSecurityDomainAffinityScore(securityDomain string, securityRules []models.SecurityRule) float64 {
 	if securityDomain == "" {
 		return minScore
 	}
@@ -284,7 +284,7 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 }
 
 // calculateClusterTypeScore 0.0~1.0 larger and better.
-func calculateClusterTypeScore(cluster model.SchedulerCluster) float64 {
+func calculateClusterTypeScore(cluster models.SchedulerCluster) float64 {
 	if cluster.IsDefault {
 		return maxScore
 	}

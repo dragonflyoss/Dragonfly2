@@ -19,12 +19,12 @@ package service
 import (
 	"context"
 
-	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-func (s *service) CreateSecurityRule(ctx context.Context, json types.CreateSecurityRuleRequest) (*model.SecurityRule, error) {
-	securityRule := model.SecurityRule{
+func (s *service) CreateSecurityRule(ctx context.Context, json types.CreateSecurityRuleRequest) (*models.SecurityRule, error) {
+	securityRule := models.SecurityRule{
 		Name:        json.Name,
 		BIO:         json.BIO,
 		Domain:      json.Domain,
@@ -39,21 +39,21 @@ func (s *service) CreateSecurityRule(ctx context.Context, json types.CreateSecur
 }
 
 func (s *service) DestroySecurityRule(ctx context.Context, id uint) error {
-	securityRule := model.SecurityRule{}
+	securityRule := models.SecurityRule{}
 	if err := s.db.WithContext(ctx).First(&securityRule, id).Error; err != nil {
 		return err
 	}
 
-	if err := s.db.WithContext(ctx).Unscoped().Delete(&model.SecurityRule{}, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Unscoped().Delete(&models.SecurityRule{}, id).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *service) UpdateSecurityRule(ctx context.Context, id uint, json types.UpdateSecurityRuleRequest) (*model.SecurityRule, error) {
-	securityRule := model.SecurityRule{}
-	if err := s.db.WithContext(ctx).First(&securityRule, id).Updates(model.SecurityRule{
+func (s *service) UpdateSecurityRule(ctx context.Context, id uint, json types.UpdateSecurityRuleRequest) (*models.SecurityRule, error) {
+	securityRule := models.SecurityRule{}
+	if err := s.db.WithContext(ctx).First(&securityRule, id).Updates(models.SecurityRule{
 		Name:        json.Name,
 		BIO:         json.BIO,
 		Domain:      json.Domain,
@@ -65,8 +65,8 @@ func (s *service) UpdateSecurityRule(ctx context.Context, id uint, json types.Up
 	return &securityRule, nil
 }
 
-func (s *service) GetSecurityRule(ctx context.Context, id uint) (*model.SecurityRule, error) {
-	securityRule := model.SecurityRule{}
+func (s *service) GetSecurityRule(ctx context.Context, id uint) (*models.SecurityRule, error) {
+	securityRule := models.SecurityRule{}
 	if err := s.db.WithContext(ctx).First(&securityRule, id).Error; err != nil {
 		return nil, err
 	}
@@ -74,10 +74,10 @@ func (s *service) GetSecurityRule(ctx context.Context, id uint) (*model.Security
 	return &securityRule, nil
 }
 
-func (s *service) GetSecurityRules(ctx context.Context, q types.GetSecurityRulesQuery) ([]model.SecurityRule, int64, error) {
+func (s *service) GetSecurityRules(ctx context.Context, q types.GetSecurityRulesQuery) ([]models.SecurityRule, int64, error) {
 	var count int64
-	var securityRules []model.SecurityRule
-	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SecurityRule{
+	var securityRules []models.SecurityRule
+	if err := s.db.WithContext(ctx).Scopes(models.Paginate(q.Page, q.PerPage)).Where(&models.SecurityRule{
 		Name: q.Name,
 	}).Find(&securityRules).Limit(-1).Offset(-1).Count(&count).Error; err != nil {
 		return nil, 0, err

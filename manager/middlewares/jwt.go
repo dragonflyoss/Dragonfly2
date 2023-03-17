@@ -25,7 +25,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"d7y.io/dragonfly/v2/manager/config"
-	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/service"
 	"d7y.io/dragonfly/v2/manager/types"
 )
@@ -62,7 +62,7 @@ func Jwt(cfg config.JWTConfig, service service.Service) (*jwt.GinJWTMiddleware, 
 		Authenticator: func(c *gin.Context) (any, error) {
 			// Oauth2 signin
 			if rawUser, ok := c.Get("user"); ok {
-				user, ok := rawUser.(*model.User)
+				user, ok := rawUser.(*models.User)
 				if !ok {
 					return "", jwt.ErrFailedAuthentication
 				}
@@ -84,7 +84,7 @@ func Jwt(cfg config.JWTConfig, service service.Service) (*jwt.GinJWTMiddleware, 
 		},
 
 		PayloadFunc: func(data any) jwt.MapClaims {
-			if user, ok := data.(*model.User); ok {
+			if user, ok := data.(*models.User); ok {
 				return jwt.MapClaims{
 					defaultIdentityKey: user.ID,
 				}
