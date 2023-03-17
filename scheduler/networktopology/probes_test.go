@@ -225,15 +225,15 @@ func TestProbes_NewProbes(t *testing.T) {
 
 func TestProbes_LoadProbe(t *testing.T) {
 	tests := []struct {
-		name   string
-		expect func(t *testing.T, probes *Probes)
+		name      string
+		rawProbes []*Probe
+		expect    func(t *testing.T, probe *Probe, loaded bool)
 	}{
 		{
-			name: "load probe",
-			expect: func(t *testing.T, probes *Probes) {
+			name:      "load probe from probes which has one probe",
+			rawProbes: mockProbesWithOneProbe,
+			expect: func(t *testing.T, probe *Probe, loaded bool) {
 				assert := assert.New(t)
-				probes.StoreProbe(mockProbe1)
-				probe, loaded := probes.LoadProbe()
 				assert.Equal(loaded, true)
 				assert.Equal(probe.Host.ID, mockProbe1.Host.ID)
 				assert.Equal(probe.RTT, mockProbe1.RTT)
@@ -241,19 +241,34 @@ func TestProbes_LoadProbe(t *testing.T) {
 			},
 		},
 		{
-			name: "probe does not exist",
-			expect: func(t *testing.T, probes *Probes) {
+			name:      "load probe from probes which has three probes",
+			rawProbes: mockProbesWithThreeProbe,
+			expect: func(t *testing.T, probe *Probe, loaded bool) {
 				assert := assert.New(t)
-				probe, loaded := probes.LoadProbe()
-				assert.Nil(probe)
+				assert.Equal(loaded, true)
+				assert.Equal(probe.Host.ID, mockProbe3.Host.ID)
+				assert.Equal(probe.RTT, mockProbe3.RTT)
+				assert.Equal(probe.UpdatedAt, mockProbe3.UpdatedAt)
+			},
+		},
+		{
+			name:      "probe does not exist",
+			rawProbes: []*Probe{},
+			expect: func(t *testing.T, probe *Probe, loaded bool) {
+				assert := assert.New(t)
 				assert.Equal(loaded, false)
+				assert.Nil(probe)
 			},
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			probes := NewProbes(mockSrcHost)
-			tc.expect(t, probes)
+			for _, p := range tc.rawProbes {
+				probes.StoreProbe(p)
+			}
+			probe, loaded := probes.LoadProbe()
+			tc.expect(t, probe, loaded)
 		})
 	}
 }
