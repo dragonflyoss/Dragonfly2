@@ -17,7 +17,10 @@
 package models
 
 const (
-	SchedulerStateActive   = "active"
+	// SchedulerStateActive represents the scheduler whose state is active.
+	SchedulerStateActive = "active"
+
+	// SchedulerStateInactive represents the scheduler whose state is inactive.
 	SchedulerStateInactive = "inactive"
 )
 
@@ -31,4 +34,5 @@ type Scheduler struct {
 	State              string           `gorm:"column:state;type:varchar(256);default:'inactive';comment:service state" json:"state"`
 	SchedulerClusterID uint             `gorm:"index:uk_scheduler,unique;not null;comment:scheduler cluster id"`
 	SchedulerCluster   SchedulerCluster `json:"-"`
+	Models             []Model          `json:"-"`
 }

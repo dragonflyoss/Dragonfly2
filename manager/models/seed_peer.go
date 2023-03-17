@@ -17,7 +17,10 @@
 package models
 
 const (
-	SeedPeerStateActive   = "active"
+	// SeedPeerStateActive represents the seed peer whose state is active.
+	SeedPeerStateActive = "active"
+
+	// SeedPeerStateInactive represents the seed peer whose state is inactive.
 	SeedPeerStateInactive = "inactive"
 )
 
