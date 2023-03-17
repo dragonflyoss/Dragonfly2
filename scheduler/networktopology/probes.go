@@ -70,9 +70,9 @@ func (p *Probes) StoreProbe(probe *Probe) {
 	}
 
 	//update AverageRtt by moving average method
-	var averageRTT = float64(p.Probes.Front().Value.(Probe).RTT)
+	var averageRTT = float64(p.Probes.Front().Value.(*Probe).RTT)
 	for e := p.Probes.Front().Next(); e != nil; e = e.Next() {
-		averageRTT += averageRTT*0.1 + float64(e.Value.(Probe).RTT)*0.9
+		averageRTT += averageRTT*0.1 + float64(e.Value.(*Probe).RTT)*0.9
 	}
 	p.AverageRTT = time.Duration(averageRTT)
 }

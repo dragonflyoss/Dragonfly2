@@ -305,9 +305,9 @@ func TestProbes_StoreProbe(t *testing.T) {
 				assert.Equal(probes.Probes.Len(), 5)
 				probe, loaded := probes.LoadProbe()
 
-				var averageRTT = float64(probes.Probes.Front().Value.(Probe).RTT)
+				var averageRTT = float64(probes.Probes.Front().Value.(*Probe).RTT)
 				for e := probes.Probes.Front().Next(); e != nil; e = e.Next() {
-					averageRTT += averageRTT*0.1 + float64(e.Value.(Probe).RTT)*0.9
+					averageRTT += averageRTT*0.1 + float64(e.Value.(*Probe).RTT)*0.9
 				}
 				assert.Equal(probes.AverageRTT, averageRTT)
 
