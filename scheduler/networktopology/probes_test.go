@@ -2,6 +2,7 @@ package networktopology
 
 import (
 	"container/list"
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"testing"
 	"time"
 
@@ -302,7 +303,7 @@ func TestProbes_StoreProbe(t *testing.T) {
 			rawProbes: mockProbesWithSixProbe,
 			expect: func(t *testing.T, probes *Probes) {
 				assert := assert.New(t)
-				assert.Equal(probes.Probes.Len(), 5)
+				assert.Equal(probes.Probes.Len(), config.DefaultProbeQueueLength)
 				probe, loaded := probes.LoadProbe()
 
 				var averageRTT = float64(probes.Probes.Front().Value.(*Probe).RTT)

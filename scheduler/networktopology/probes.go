@@ -65,9 +65,8 @@ func (p *Probes) StoreProbe(probe *Probe) {
 	if p.Probes.Len() == config.DefaultProbeQueueLength {
 		front := p.Probes.Front()
 		p.Probes.Remove(front)
-	} else {
-		p.Probes.PushBack(probe)
 	}
+	p.Probes.PushBack(probe)
 
 	//update AverageRtt by moving average method
 	var averageRTT = float64(p.Probes.Front().Value.(*Probe).RTT)
