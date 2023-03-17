@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package model
+package models
 
 type CasbinRule struct {
 	ID    uint   `gorm:"primaryKey;autoIncrement;comment:id"`

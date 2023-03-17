@@ -19,12 +19,12 @@ package service
 import (
 	"context"
 
-	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-func (s *service) CreateSeedPeer(ctx context.Context, json types.CreateSeedPeerRequest) (*model.SeedPeer, error) {
-	seedPeer := model.SeedPeer{
+func (s *service) CreateSeedPeer(ctx context.Context, json types.CreateSeedPeerRequest) (*models.SeedPeer, error) {
+	seedPeer := models.SeedPeer{
 		HostName:          json.HostName,
 		Type:              json.Type,
 		IDC:               json.IDC,
@@ -44,21 +44,21 @@ func (s *service) CreateSeedPeer(ctx context.Context, json types.CreateSeedPeerR
 }
 
 func (s *service) DestroySeedPeer(ctx context.Context, id uint) error {
-	seedPeer := model.SeedPeer{}
+	seedPeer := models.SeedPeer{}
 	if err := s.db.WithContext(ctx).First(&seedPeer, id).Error; err != nil {
 		return err
 	}
 
-	if err := s.db.WithContext(ctx).Unscoped().Delete(&model.SeedPeer{}, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Unscoped().Delete(&models.SeedPeer{}, id).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *service) UpdateSeedPeer(ctx context.Context, id uint, json types.UpdateSeedPeerRequest) (*model.SeedPeer, error) {
-	seedPeer := model.SeedPeer{}
-	if err := s.db.WithContext(ctx).First(&seedPeer, id).Updates(model.SeedPeer{
+func (s *service) UpdateSeedPeer(ctx context.Context, id uint, json types.UpdateSeedPeerRequest) (*models.SeedPeer, error) {
+	seedPeer := models.SeedPeer{}
+	if err := s.db.WithContext(ctx).First(&seedPeer, id).Updates(models.SeedPeer{
 		Type:              json.Type,
 		IDC:               json.IDC,
 		Location:          json.Location,
@@ -74,8 +74,8 @@ func (s *service) UpdateSeedPeer(ctx context.Context, id uint, json types.Update
 	return &seedPeer, nil
 }
 
-func (s *service) GetSeedPeer(ctx context.Context, id uint) (*model.SeedPeer, error) {
-	seedPeer := model.SeedPeer{}
+func (s *service) GetSeedPeer(ctx context.Context, id uint) (*models.SeedPeer, error) {
+	seedPeer := models.SeedPeer{}
 	if err := s.db.WithContext(ctx).First(&seedPeer, id).Error; err != nil {
 		return nil, err
 	}
@@ -83,10 +83,10 @@ func (s *service) GetSeedPeer(ctx context.Context, id uint) (*model.SeedPeer, er
 	return &seedPeer, nil
 }
 
-func (s *service) GetSeedPeers(ctx context.Context, q types.GetSeedPeersQuery) ([]model.SeedPeer, int64, error) {
+func (s *service) GetSeedPeers(ctx context.Context, q types.GetSeedPeersQuery) ([]models.SeedPeer, int64, error) {
 	var count int64
-	var seedPeers []model.SeedPeer
-	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SeedPeer{
+	var seedPeers []models.SeedPeer
+	if err := s.db.WithContext(ctx).Scopes(models.Paginate(q.Page, q.PerPage)).Where(&models.SeedPeer{
 		Type:              q.Type,
 		HostName:          q.HostName,
 		IDC:               q.IDC,
