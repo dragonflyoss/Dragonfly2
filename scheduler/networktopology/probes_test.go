@@ -227,13 +227,14 @@ func TestProbes_LoadProbe(t *testing.T) {
 	tests := []struct {
 		name      string
 		rawProbes []*Probe
-		expect    func(t *testing.T, probe *Probe, loaded bool)
+		expect    func(t *testing.T, probes *Probes)
 	}{
 		{
 			name:      "load probe from probes which has one probe",
 			rawProbes: mockProbesWithOneProbe,
-			expect: func(t *testing.T, probe *Probe, loaded bool) {
+			expect: func(t *testing.T, probes *Probes) {
 				assert := assert.New(t)
+				probe, loaded := probes.LoadProbe()
 				assert.Equal(loaded, true)
 				assert.Equal(probe.Host.ID, mockProbe1.Host.ID)
 				assert.Equal(probe.RTT, mockProbe1.RTT)
@@ -243,8 +244,9 @@ func TestProbes_LoadProbe(t *testing.T) {
 		{
 			name:      "load probe from probes which has three probes",
 			rawProbes: mockProbesWithThreeProbe,
-			expect: func(t *testing.T, probe *Probe, loaded bool) {
+			expect: func(t *testing.T, probes *Probes) {
 				assert := assert.New(t)
+				probe, loaded := probes.LoadProbe()
 				assert.Equal(loaded, true)
 				assert.Equal(probe.Host.ID, mockProbe3.Host.ID)
 				assert.Equal(probe.RTT, mockProbe3.RTT)
@@ -254,8 +256,9 @@ func TestProbes_LoadProbe(t *testing.T) {
 		{
 			name:      "probe does not exist",
 			rawProbes: []*Probe{},
-			expect: func(t *testing.T, probe *Probe, loaded bool) {
+			expect: func(t *testing.T, probes *Probes) {
 				assert := assert.New(t)
+				probe, loaded := probes.LoadProbe()
 				assert.Equal(loaded, false)
 				assert.Nil(probe)
 			},
@@ -267,8 +270,7 @@ func TestProbes_LoadProbe(t *testing.T) {
 			for _, p := range tc.rawProbes {
 				probes.StoreProbe(p)
 			}
-			probe, loaded := probes.LoadProbe()
-			tc.expect(t, probe, loaded)
+			tc.expect(t, probes)
 		})
 	}
 }
