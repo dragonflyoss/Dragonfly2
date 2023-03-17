@@ -28,7 +28,7 @@ func NewProbe(host *resource.Host, RTT *durationpb.Duration, UpdatedAt *timestam
 	p := &Probe{
 		Host:      host,
 		RTT:       RTT.AsDuration(),
-		UpdatedAt: UpdatedAt.AsTime(),
+		UpdatedAt: UpdatedAt.AsTime().Local(),
 	}
 	return p
 }

@@ -127,11 +127,11 @@ var (
 
 	mockProbes = &Probes{
 		Host:       mockSrcHost,
-		Probes:     mockList,
+		Probes:     mockQueue,
 		AverageRTT: mockAverageRTT,
 	}
 
-	mockList       = list.New()
+	mockQueue      = list.New()
 	mockAverageRTT = time.Duration(0)
 
 	mockInitTime = time.Date(2023, time.January, 1, 0, 0, 0, 0, time.Local)
@@ -201,13 +201,13 @@ func TestProbes_NewProbes(t *testing.T) {
 
 func TestProbes_LoadProbe(t *testing.T) {
 	tests := []struct {
-		name      string
-		rawProbes *Probes
-		expect    func(t *testing.T, probe *Probe, loaded bool)
+		name     string
+		rawProbe *Probe
+		expect   func(t *testing.T, probe *Probe, loaded bool)
 	}{
 		{
-			name:      "load probe",
-			rawProbes: mockProbes,
+			name:     "load probe",
+			rawProbe: mockProbe,
 			expect: func(t *testing.T, probe *Probe, loaded bool) {
 				assert := assert.New(t)
 				assert.Equal(loaded, true)
@@ -217,8 +217,8 @@ func TestProbes_LoadProbe(t *testing.T) {
 			},
 		},
 		{
-			name:      "probe does not exist",
-			rawProbes: mockProbes,
+			name:     "probe does not exist",
+			rawProbe: mockProbe,
 			expect: func(t *testing.T, probe *Probe, loaded bool) {
 				assert := assert.New(t)
 				assert.Nil(probe)
