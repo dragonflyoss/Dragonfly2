@@ -123,7 +123,7 @@ var (
 	}
 
 	mockRTT       = 30 * time.Millisecond
-	mockUpdatedAt = time.Now()
+	mockUpdatedAt = time.Now().Local()
 
 	mockProbes = &Probes{
 		Host:       mockSrcHost,
@@ -134,7 +134,7 @@ var (
 	mockList       = list.New()
 	mockAverageRTT = time.Duration(0)
 
-	mockInitTime = time.Date(2023, time.January, 1, 0, 0, 0, 0, time.UTC)
+	mockInitTime = time.Date(2023, time.January, 1, 0, 0, 0, 0, time.Local)
 )
 
 func TestProbes_NewProbe(t *testing.T) {
