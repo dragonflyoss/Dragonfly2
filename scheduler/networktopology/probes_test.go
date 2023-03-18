@@ -275,9 +275,9 @@ func TestProbes_LoadProbe(t *testing.T) {
 				assert := assert.New(t)
 				probe, loaded := probes.LoadProbe()
 				assert.Equal(loaded, true)
-				assert.Equal(probe.Host.ID, mockProbesWithOneProbe[2].Host.ID)
-				assert.Equal(probe.RTT, mockProbesWithOneProbe[2].RTT)
-				assert.Equal(probe.UpdatedAt, mockProbesWithOneProbe[2].UpdatedAt)
+				assert.Equal(probe.Host.ID, mockProbesWithThreeProbe[2].Host.ID)
+				assert.Equal(probe.RTT, mockProbesWithThreeProbe[2].RTT)
+				assert.Equal(probe.UpdatedAt, mockProbesWithThreeProbe[2].UpdatedAt)
 			},
 		},
 		{
@@ -363,7 +363,7 @@ func TestProbes_GetUpdatedAt(t *testing.T) {
 		expect    func(t *testing.T, updatedAt time.Time, loaded bool)
 	}{
 		{
-			name:      "get update timefrom probes which has only one probe",
+			name:      "get update time from probes which has only one probe",
 			rawProbes: mockProbesWithOneProbe,
 			expect: func(t *testing.T, updatedAt time.Time, loaded bool) {
 				assert := assert.New(t)
