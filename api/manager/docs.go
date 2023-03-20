@@ -59,7 +59,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Application"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Application"
                             }
                         }
                     },
@@ -101,7 +101,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Application"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Application"
                         }
                     },
                     "400": {
@@ -142,7 +142,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Application"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Application"
                         }
                     },
                     "400": {
@@ -226,7 +226,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Application"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Application"
                         }
                     },
                     "400": {
@@ -430,7 +430,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Config"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Config"
                             }
                         }
                     },
@@ -472,7 +472,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Config"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Config"
                         }
                     },
                     "400": {
@@ -513,7 +513,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Config"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Config"
                         }
                     },
                     "400": {
@@ -597,7 +597,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Config"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Config"
                         }
                     },
                     "400": {
@@ -680,7 +680,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Job"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Job"
                             }
                         }
                     },
@@ -722,7 +722,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Job"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Job"
                         }
                     },
                     "400": {
@@ -763,7 +763,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Job"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Job"
                         }
                     },
                     "400": {
@@ -847,7 +847,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Job"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Job"
                         }
                     },
                     "400": {
@@ -901,7 +901,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Oauth"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Oauth"
                             }
                         }
                     },
@@ -943,7 +943,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Oauth"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Oauth"
                         }
                     },
                     "400": {
@@ -984,7 +984,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Oauth"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Oauth"
                         }
                     },
                     "400": {
@@ -1068,7 +1068,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Oauth"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Oauth"
                         }
                     },
                     "400": {
@@ -1485,7 +1485,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SchedulerCluster"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SchedulerCluster"
                             }
                         }
                     },
@@ -1527,7 +1527,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SchedulerCluster"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SchedulerCluster"
                         }
                     },
                     "400": {
@@ -1568,7 +1568,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SchedulerCluster"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SchedulerCluster"
                         }
                     },
                     "400": {
@@ -1652,7 +1652,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SchedulerCluster"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SchedulerCluster"
                         }
                     },
                     "400": {
@@ -1751,7 +1751,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Scheduler"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Scheduler"
                             }
                         }
                     },
@@ -1793,7 +1793,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Scheduler"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Scheduler"
                         }
                     },
                     "400": {
@@ -1834,7 +1834,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Scheduler"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Scheduler"
                         }
                     },
                     "400": {
@@ -1918,518 +1918,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Scheduler"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request"
-                    },
-                    "404": {
-                        "description": "Not Found"
-                    },
-                    "500": {
-                        "description": "Internal Server Error"
-                    }
-                }
-            }
-        },
-        "/schedulers/{id}/models": {
-            "get": {
-                "description": "Get Models",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Model"
-                ],
-                "summary": "Get Models",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.Model"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request"
-                    },
-                    "404": {
-                        "description": "Not Found"
-                    },
-                    "500": {
-                        "description": "Internal Server Error"
-                    }
-                }
-            },
-            "post": {
-                "description": "Create by id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Model"
-                ],
-                "summary": "Create Model",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Model",
-                        "name": "Model",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.CreateModelRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.Model"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request"
-                    },
-                    "404": {
-                        "description": "Not Found"
-                    },
-                    "500": {
-                        "description": "Internal Server Error"
-                    }
-                }
-            }
-        },
-        "/schedulers/{id}/models/{model_id}": {
-            "get": {
-                "description": "Get Model by id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Model"
-                ],
-                "summary": "Get Model",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "model_id",
-                        "name": "model_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.Model"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request"
-                    },
-                    "404": {
-                        "description": "Not Found"
-                    },
-                    "500": {
-                        "description": "Internal Server Error"
-                    }
-                }
-            },
-            "delete": {
-                "description": "Destroy by id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Model"
-                ],
-                "summary": "Destroy Model",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "model_id",
-                        "name": "model_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    },
-                    "400": {
-                        "description": "Bad Request"
-                    },
-                    "404": {
-                        "description": "Not Found"
-                    },
-                    "500": {
-                        "description": "Internal Server Error"
-                    }
-                }
-            },
-            "patch": {
-                "description": "Update by json config",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Model"
-                ],
-                "summary": "Update Model",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "model_id",
-                        "name": "model_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Model",
-                        "name": "Model",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateModelRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.Model"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request"
-                    },
-                    "404": {
-                        "description": "Not Found"
-                    },
-                    "500": {
-                        "description": "Internal Server Error"
-                    }
-                }
-            }
-        },
-        "/schedulers/{id}/models/{model_id}/versions": {
-            "get": {
-                "description": "Get Model Versions by id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Model"
-                ],
-                "summary": "Get Model Versions",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "model_id",
-                        "name": "model_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.ModelVersion"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request"
-                    },
-                    "404": {
-                        "description": "Not Found"
-                    },
-                    "500": {
-                        "description": "Internal Server Error"
-                    }
-                }
-            },
-            "post": {
-                "description": "Create by id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Model"
-                ],
-                "summary": "Create Model Version",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "model_id",
-                        "name": "model_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "ModelVersion",
-                        "name": "ModelVersion",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.CreateModelVersionRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.ModelVersion"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request"
-                    },
-                    "404": {
-                        "description": "Not Found"
-                    },
-                    "500": {
-                        "description": "Internal Server Error"
-                    }
-                }
-            }
-        },
-        "/schedulers/{id}/models/{model_id}/versions/{version_id}": {
-            "get": {
-                "description": "Get Model Version by id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Model"
-                ],
-                "summary": "Get Model Version",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "model_id",
-                        "name": "model_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "version_id",
-                        "name": "version_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.ModelVersion"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request"
-                    },
-                    "404": {
-                        "description": "Not Found"
-                    },
-                    "500": {
-                        "description": "Internal Server Error"
-                    }
-                }
-            },
-            "delete": {
-                "description": "Destroy by id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Model"
-                ],
-                "summary": "Destroy Model Version",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "model_id",
-                        "name": "model_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "version_id",
-                        "name": "version_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    },
-                    "400": {
-                        "description": "Bad Request"
-                    },
-                    "404": {
-                        "description": "Not Found"
-                    },
-                    "500": {
-                        "description": "Internal Server Error"
-                    }
-                }
-            },
-            "patch": {
-                "description": "Update by json config",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Model"
-                ],
-                "summary": "Update Model Version",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "model_id",
-                        "name": "model_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "version_id",
-                        "name": "version_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "ModelVersion",
-                        "name": "ModelVersion",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateModelVersionRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.ModelVersion"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Scheduler"
                         }
                     },
                     "400": {
@@ -2483,7 +1972,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityGroup"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SecurityGroup"
                             }
                         }
                     },
@@ -2525,7 +2014,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityGroup"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SecurityGroup"
                         }
                     },
                     "400": {
@@ -2566,7 +2055,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityGroup"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SecurityGroup"
                         }
                     },
                     "400": {
@@ -2614,7 +2103,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityGroup"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SecurityGroup"
                         }
                     },
                     "400": {
@@ -2846,7 +2335,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityRule"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SecurityRule"
                             }
                         }
                     },
@@ -2888,7 +2377,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityRule"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SecurityRule"
                         }
                     },
                     "400": {
@@ -2929,7 +2418,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityRule"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SecurityRule"
                         }
                     },
                     "400": {
@@ -2977,7 +2466,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityRule"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SecurityRule"
                         }
                     },
                     "400": {
@@ -3107,7 +2596,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeerCluster"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SeedPeerCluster"
                             }
                         }
                     },
@@ -3149,7 +2638,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeerCluster"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SeedPeerCluster"
                         }
                     },
                     "400": {
@@ -3190,7 +2679,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeerCluster"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SeedPeerCluster"
                         }
                     },
                     "400": {
@@ -3274,7 +2763,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeerCluster"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SeedPeerCluster"
                         }
                     },
                     "400": {
@@ -3418,7 +2907,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeer"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SeedPeer"
                             }
                         }
                     },
@@ -3460,7 +2949,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeer"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SeedPeer"
                         }
                     },
                     "400": {
@@ -3501,7 +2990,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeer"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SeedPeer"
                         }
                     },
                     "400": {
@@ -3585,7 +3074,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeer"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SeedPeer"
                         }
                     },
                     "400": {
@@ -3705,7 +3194,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.User"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.User"
                         }
                     },
                     "400": {
@@ -3756,7 +3245,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.User"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.User"
                             }
                         }
                     },
@@ -3798,7 +3287,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.User"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.User"
                         }
                     },
                     "400": {
@@ -3846,7 +3335,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.User"
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.User"
                         }
                     },
                     "400": {
@@ -4027,7 +3516,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "d7y_io_dragonfly_v2_manager_model.Application": {
+        "d7y_io_dragonfly_v2_manager_models.Application": {
             "type": "object",
             "properties": {
                 "bio": {
@@ -4043,7 +3532,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "priority": {
-                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.JSONMap"
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.JSONMap"
                 },
                 "updated_at": {
                     "type": "string"
@@ -4052,14 +3541,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.User"
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.User"
                 },
                 "user_id": {
                     "type": "integer"
                 }
             }
         },
-        "d7y_io_dragonfly_v2_manager_model.Config": {
+        "d7y_io_dragonfly_v2_manager_models.Config": {
             "type": "object",
             "properties": {
                 "bio": {
@@ -4085,15 +3574,15 @@ const docTemplate = `{
                 }
             }
         },
-        "d7y_io_dragonfly_v2_manager_model.JSONMap": {
+        "d7y_io_dragonfly_v2_manager_models.JSONMap": {
             "type": "object",
             "additionalProperties": {}
         },
-        "d7y_io_dragonfly_v2_manager_model.Job": {
+        "d7y_io_dragonfly_v2_manager_models.Job": {
             "type": "object",
             "properties": {
                 "args": {
-                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.JSONMap"
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.JSONMap"
                 },
                 "bio": {
                     "type": "string"
@@ -4105,18 +3594,18 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "result": {
-                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.JSONMap"
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.JSONMap"
                 },
                 "scheduler_clusters": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SchedulerCluster"
+                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SchedulerCluster"
                     }
                 },
                 "seed_peer_clusters": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeerCluster"
+                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SeedPeerCluster"
                     }
                 },
                 "state": {
@@ -4136,7 +3625,7 @@ const docTemplate = `{
                 }
             }
         },
-        "d7y_io_dragonfly_v2_manager_model.Oauth": {
+        "d7y_io_dragonfly_v2_manager_models.Oauth": {
             "type": "object",
             "properties": {
                 "bio": {
@@ -4165,7 +3654,7 @@ const docTemplate = `{
                 }
             }
         },
-        "d7y_io_dragonfly_v2_manager_model.Scheduler": {
+        "d7y_io_dragonfly_v2_manager_models.Scheduler": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -4200,17 +3689,17 @@ const docTemplate = `{
                 }
             }
         },
-        "d7y_io_dragonfly_v2_manager_model.SchedulerCluster": {
+        "d7y_io_dragonfly_v2_manager_models.SchedulerCluster": {
             "type": "object",
             "properties": {
                 "bio": {
                     "type": "string"
                 },
                 "client_config": {
-                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.JSONMap"
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.JSONMap"
                 },
                 "config": {
-                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.JSONMap"
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.JSONMap"
                 },
                 "created_at": {
                     "type": "string"
@@ -4224,14 +3713,14 @@ const docTemplate = `{
                 "jobs": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Job"
+                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Job"
                     }
                 },
                 "name": {
                     "type": "string"
                 },
                 "scopes": {
-                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.JSONMap"
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.JSONMap"
                 },
                 "security_group_id": {
                     "type": "integer"
@@ -4239,7 +3728,7 @@ const docTemplate = `{
                 "seed_peer_clusters": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SeedPeerCluster"
+                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SeedPeerCluster"
                     }
                 },
                 "updated_at": {
@@ -4247,7 +3736,7 @@ const docTemplate = `{
                 }
             }
         },
-        "d7y_io_dragonfly_v2_manager_model.SecurityGroup": {
+        "d7y_io_dragonfly_v2_manager_models.SecurityGroup": {
             "type": "object",
             "properties": {
                 "bio": {
@@ -4265,7 +3754,7 @@ const docTemplate = `{
                 "security_rules": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityRule"
+                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SecurityRule"
                     }
                 },
                 "updated_at": {
@@ -4273,7 +3762,7 @@ const docTemplate = `{
                 }
             }
         },
-        "d7y_io_dragonfly_v2_manager_model.SecurityRule": {
+        "d7y_io_dragonfly_v2_manager_models.SecurityRule": {
             "type": "object",
             "properties": {
                 "bio": {
@@ -4297,7 +3786,7 @@ const docTemplate = `{
                 "security_groups": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SecurityGroup"
+                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SecurityGroup"
                     }
                 },
                 "updated_at": {
@@ -4305,7 +3794,7 @@ const docTemplate = `{
                 }
             }
         },
-        "d7y_io_dragonfly_v2_manager_model.SeedPeer": {
+        "d7y_io_dragonfly_v2_manager_models.SeedPeer": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -4349,14 +3838,14 @@ const docTemplate = `{
                 }
             }
         },
-        "d7y_io_dragonfly_v2_manager_model.SeedPeerCluster": {
+        "d7y_io_dragonfly_v2_manager_models.SeedPeerCluster": {
             "type": "object",
             "properties": {
                 "bio": {
                     "type": "string"
                 },
                 "config": {
-                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.JSONMap"
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.JSONMap"
                 },
                 "created_at": {
                     "type": "string"
@@ -4370,7 +3859,7 @@ const docTemplate = `{
                 "jobs": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.Job"
+                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Job"
                     }
                 },
                 "name": {
@@ -4379,7 +3868,7 @@ const docTemplate = `{
                 "scheduler_clusters": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_model.SchedulerCluster"
+                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SchedulerCluster"
                     }
                 },
                 "updated_at": {
@@ -4387,7 +3876,7 @@ const docTemplate = `{
                 }
             }
         },
-        "d7y_io_dragonfly_v2_manager_model.User": {
+        "d7y_io_dragonfly_v2_manager_models.User": {
             "type": "object",
             "properties": {
                 "avatar": {
@@ -4553,66 +4042,6 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "integer"
-                }
-            }
-        },
-        "d7y_io_dragonfly_v2_manager_types.CreateModelRequest": {
-            "type": "object",
-            "required": [
-                "hostname",
-                "id",
-                "ip",
-                "name",
-                "version_id"
-            ],
-            "properties": {
-                "hostname": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string",
-                    "enum": [
-                        "evaluator"
-                    ]
-                },
-                "ip": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "version_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "d7y_io_dragonfly_v2_manager_types.CreateModelVersionRequest": {
-            "type": "object",
-            "required": [
-                "data",
-                "mae",
-                "mse",
-                "r2",
-                "rmse"
-            ],
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "mae": {
-                    "type": "number"
-                },
-                "mse": {
-                    "type": "number"
-                },
-                "r2": {
-                    "type": "number"
-                },
-                "rmse": {
-                    "type": "number"
                 }
             }
         },
@@ -4899,87 +4328,6 @@ const docTemplate = `{
                 }
             }
         },
-        "d7y_io_dragonfly_v2_manager_types.Model": {
-            "type": "object",
-            "required": [
-                "create_at",
-                "hostname",
-                "id",
-                "ip",
-                "name",
-                "scheduler_id",
-                "updated_at",
-                "version_id"
-            ],
-            "properties": {
-                "create_at": {
-                    "type": "string"
-                },
-                "hostname": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "ip": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "scheduler_id": {
-                    "type": "integer"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "version_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "d7y_io_dragonfly_v2_manager_types.ModelVersion": {
-            "type": "object",
-            "required": [
-                "create_at",
-                "data",
-                "id",
-                "mae",
-                "mse",
-                "r2",
-                "rmse",
-                "updated_at"
-            ],
-            "properties": {
-                "create_at": {
-                    "type": "string"
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "id": {
-                    "type": "string"
-                },
-                "mae": {
-                    "type": "number"
-                },
-                "mse": {
-                    "type": "number"
-                },
-                "r2": {
-                    "type": "number"
-                },
-                "rmse": {
-                    "type": "number"
-                },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
         "d7y_io_dragonfly_v2_manager_types.PriorityConfig": {
             "type": "object",
             "required": [
@@ -5175,46 +4523,6 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "integer"
-                }
-            }
-        },
-        "d7y_io_dragonfly_v2_manager_types.UpdateModelRequest": {
-            "type": "object",
-            "properties": {
-                "hostname": {
-                    "type": "string"
-                },
-                "ip": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "version_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "d7y_io_dragonfly_v2_manager_types.UpdateModelVersionRequest": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "mae": {
-                    "type": "number"
-                },
-                "mse": {
-                    "type": "number"
-                },
-                "r2": {
-                    "type": "number"
-                },
-                "rmse": {
-                    "type": "number"
                 }
             }
         },

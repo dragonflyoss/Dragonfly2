@@ -133,18 +133,6 @@ type Service interface {
 	UpdateApplication(context.Context, uint, types.UpdateApplicationRequest) (*models.Application, error)
 	GetApplication(context.Context, uint) (*models.Application, error)
 	GetApplications(context.Context, types.GetApplicationsQuery) ([]models.Application, int64, error)
-
-	CreateModel(context.Context, types.CreateModelParams, types.CreateModelRequest) (*types.Model, error)
-	DestroyModel(context.Context, types.ModelParams) error
-	UpdateModel(context.Context, types.ModelParams, types.UpdateModelRequest) (*types.Model, error)
-	GetModel(context.Context, types.ModelParams) (*types.Model, error)
-	GetModels(context.Context, types.GetModelsParams) ([]*types.Model, error)
-
-	CreateModelVersion(context.Context, types.CreateModelVersionParams, types.CreateModelVersionRequest) (*types.ModelVersion, error)
-	DestroyModelVersion(context.Context, types.ModelVersionParams) error
-	UpdateModelVersion(context.Context, types.ModelVersionParams, types.UpdateModelVersionRequest) (*types.ModelVersion, error)
-	GetModelVersion(context.Context, types.ModelVersionParams) (*types.ModelVersion, error)
-	GetModelVersions(context.Context, types.GetModelVersionsParams) ([]*types.ModelVersion, error)
 }
 
 type service struct {

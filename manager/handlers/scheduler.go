@@ -32,7 +32,7 @@ import (
 // @Accept json
 // @Produce json
 // @Param Scheduler body types.CreateSchedulerRequest true "Scheduler"
-// @Success 200 {object} model.Scheduler
+// @Success 200 {object} models.Scheduler
 // @Failure 400
 // @Failure 404
 // @Failure 500
@@ -86,7 +86,7 @@ func (h *Handlers) DestroyScheduler(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "id"
 // @Param Scheduler body types.UpdateSchedulerRequest true "Scheduler"
-// @Success 200 {object} model.Scheduler
+// @Success 200 {object} models.Scheduler
 // @Failure 400
 // @Failure 404
 // @Failure 500
@@ -119,7 +119,7 @@ func (h *Handlers) UpdateScheduler(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
-// @Success 200 {object} model.Scheduler
+// @Success 200 {object} models.Scheduler
 // @Failure 400
 // @Failure 404
 // @Failure 500
@@ -147,7 +147,7 @@ func (h *Handlers) GetScheduler(ctx *gin.Context) {
 // @Produce json
 // @Param page query int true "current page" default(0)
 // @Param per_page query int true "return max item count, default 10, max 50" default(10) minimum(2) maximum(50)
-// @Success 200 {object} []model.Scheduler
+// @Success 200 {object} []models.Scheduler
 // @Failure 400
 // @Failure 404
 // @Failure 500
