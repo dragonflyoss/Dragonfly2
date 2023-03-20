@@ -32,7 +32,7 @@ import (
 // @Accept json
 // @Produce json
 // @Param SchedulerCluster body types.CreateSchedulerClusterRequest true "SchedulerCluster"
-// @Success 200 {object} model.SchedulerCluster
+// @Success 200 {object} models.SchedulerCluster
 // @Failure 400
 // @Failure 404
 // @Failure 500
@@ -86,7 +86,7 @@ func (h *Handlers) DestroySchedulerCluster(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "id"
 // @Param SchedulerCluster body types.UpdateSchedulerClusterRequest true "SchedulerCluster"
-// @Success 200 {object} model.SchedulerCluster
+// @Success 200 {object} models.SchedulerCluster
 // @Failure 400
 // @Failure 404
 // @Failure 500
@@ -119,7 +119,7 @@ func (h *Handlers) UpdateSchedulerCluster(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
-// @Success 200 {object} model.SchedulerCluster
+// @Success 200 {object} models.SchedulerCluster
 // @Failure 400
 // @Failure 404
 // @Failure 500
@@ -147,7 +147,7 @@ func (h *Handlers) GetSchedulerCluster(ctx *gin.Context) {
 // @Produce json
 // @Param page query int true "current page" default(0)
 // @Param per_page query int true "return max item count, default 10, max 50" default(10) minimum(2) maximum(50)
-// @Success 200 {object} []model.SchedulerCluster
+// @Success 200 {object} []models.SchedulerCluster
 // @Failure 400
 // @Failure 404
 // @Failure 500

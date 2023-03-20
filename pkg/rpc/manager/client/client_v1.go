@@ -107,36 +107,6 @@ type V1 interface {
 	// List buckets configuration.
 	ListBuckets(context.Context, *managerv1.ListBucketsRequest, ...grpc.CallOption) (*managerv1.ListBucketsResponse, error)
 
-	// List models information.
-	ListModels(context.Context, *managerv1.ListModelsRequest, ...grpc.CallOption) (*managerv1.ListModelsResponse, error)
-
-	// Get model information.
-	GetModel(context.Context, *managerv1.GetModelRequest, ...grpc.CallOption) (*managerv1.Model, error)
-
-	// Create model information.
-	CreateModel(context.Context, *managerv1.CreateModelRequest, ...grpc.CallOption) (*managerv1.Model, error)
-
-	// Update model information.
-	UpdateModel(context.Context, *managerv1.UpdateModelRequest, ...grpc.CallOption) (*managerv1.Model, error)
-
-	// Delete model information.
-	DeleteModel(context.Context, *managerv1.DeleteModelRequest, ...grpc.CallOption) error
-
-	// List model versions information.
-	ListModelVersions(context.Context, *managerv1.ListModelVersionsRequest, ...grpc.CallOption) (*managerv1.ListModelVersionsResponse, error)
-
-	// Get model version information.
-	GetModelVersion(context.Context, *managerv1.GetModelVersionRequest, ...grpc.CallOption) (*managerv1.ModelVersion, error)
-
-	// Create model version information.
-	CreateModelVersion(context.Context, *managerv1.CreateModelVersionRequest, ...grpc.CallOption) (*managerv1.ModelVersion, error)
-
-	// Update model version information.
-	UpdateModelVersion(context.Context, *managerv1.UpdateModelVersionRequest, ...grpc.CallOption) (*managerv1.ModelVersion, error)
-
-	// Delete model version information.
-	DeleteModelVersion(context.Context, *managerv1.DeleteModelVersionRequest, ...grpc.CallOption) error
-
 	// List applications configuration.
 	ListApplications(context.Context, *managerv1.ListApplicationsRequest, ...grpc.CallOption) (*managerv1.ListApplicationsResponse, error)
 
@@ -200,89 +170,6 @@ func (v *v1) ListBuckets(ctx context.Context, req *managerv1.ListBucketsRequest,
 	defer cancel()
 
 	return v.ManagerClient.ListBuckets(ctx, req, opts...)
-}
-
-// List models information.
-func (v *v1) ListModels(ctx context.Context, req *managerv1.ListModelsRequest, opts ...grpc.CallOption) (*managerv1.ListModelsResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
-	defer cancel()
-
-	return v.ManagerClient.ListModels(ctx, req, opts...)
-}
-
-// Get model information.
-func (v *v1) GetModel(ctx context.Context, req *managerv1.GetModelRequest, opts ...grpc.CallOption) (*managerv1.Model, error) {
-	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
-	defer cancel()
-
-	return v.ManagerClient.GetModel(ctx, req, opts...)
-
-}
-
-// Create model information.
-func (v *v1) CreateModel(ctx context.Context, req *managerv1.CreateModelRequest, opts ...grpc.CallOption) (*managerv1.Model, error) {
-	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
-	defer cancel()
-
-	return v.ManagerClient.CreateModel(ctx, req, opts...)
-}
-
-// Update model information.
-func (v *v1) UpdateModel(ctx context.Context, req *managerv1.UpdateModelRequest, opts ...grpc.CallOption) (*managerv1.Model, error) {
-	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
-	defer cancel()
-
-	return v.ManagerClient.UpdateModel(ctx, req, opts...)
-}
-
-// Delete model information.
-func (v *v1) DeleteModel(ctx context.Context, req *managerv1.DeleteModelRequest, opts ...grpc.CallOption) error {
-	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
-	defer cancel()
-
-	_, err := v.ManagerClient.DeleteModel(ctx, req, opts...)
-	return err
-}
-
-// List model versions information.
-func (v *v1) ListModelVersions(ctx context.Context, req *managerv1.ListModelVersionsRequest, opts ...grpc.CallOption) (*managerv1.ListModelVersionsResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
-	defer cancel()
-
-	return v.ManagerClient.ListModelVersions(ctx, req, opts...)
-}
-
-// Get model version information.
-func (v *v1) GetModelVersion(ctx context.Context, req *managerv1.GetModelVersionRequest, opts ...grpc.CallOption) (*managerv1.ModelVersion, error) {
-	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
-	defer cancel()
-
-	return v.ManagerClient.GetModelVersion(ctx, req, opts...)
-}
-
-// Create model version information.
-func (v *v1) CreateModelVersion(ctx context.Context, req *managerv1.CreateModelVersionRequest, opts ...grpc.CallOption) (*managerv1.ModelVersion, error) {
-	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
-	defer cancel()
-
-	return v.ManagerClient.CreateModelVersion(ctx, req, opts...)
-}
-
-// Update model version information.
-func (v *v1) UpdateModelVersion(ctx context.Context, req *managerv1.UpdateModelVersionRequest, opts ...grpc.CallOption) (*managerv1.ModelVersion, error) {
-	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
-	defer cancel()
-
-	return v.ManagerClient.UpdateModelVersion(ctx, req, opts...)
-}
-
-// Delete model version information.
-func (v *v1) DeleteModelVersion(ctx context.Context, req *managerv1.DeleteModelVersionRequest, opts ...grpc.CallOption) error {
-	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
-	defer cancel()
-
-	_, err := v.ManagerClient.DeleteModelVersion(ctx, req, opts...)
-	return err
 }
 
 // List applications configuration.

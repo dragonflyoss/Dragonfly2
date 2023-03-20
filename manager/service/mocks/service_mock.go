@@ -197,36 +197,6 @@ func (mr *MockServiceMockRecorder) CreateConfig(arg0, arg1 interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateConfig", reflect.TypeOf((*MockService)(nil).CreateConfig), arg0, arg1)
 }
 
-// CreateModel mocks base method.
-func (m *MockService) CreateModel(arg0 context.Context, arg1 types.CreateModelParams, arg2 types.CreateModelRequest) (*types.Model, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateModel", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*types.Model)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateModel indicates an expected call of CreateModel.
-func (mr *MockServiceMockRecorder) CreateModel(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateModel", reflect.TypeOf((*MockService)(nil).CreateModel), arg0, arg1, arg2)
-}
-
-// CreateModelVersion mocks base method.
-func (m *MockService) CreateModelVersion(arg0 context.Context, arg1 types.CreateModelVersionParams, arg2 types.CreateModelVersionRequest) (*types.ModelVersion, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateModelVersion", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*types.ModelVersion)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateModelVersion indicates an expected call of CreateModelVersion.
-func (mr *MockServiceMockRecorder) CreateModelVersion(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateModelVersion", reflect.TypeOf((*MockService)(nil).CreateModelVersion), arg0, arg1, arg2)
-}
-
 // CreateOauth mocks base method.
 func (m *MockService) CreateOauth(arg0 context.Context, arg1 types.CreateOauthRequest) (*models.Oauth, error) {
 	m.ctrl.T.Helper()
@@ -460,34 +430,6 @@ func (m *MockService) DestroyJob(arg0 context.Context, arg1 uint) error {
 func (mr *MockServiceMockRecorder) DestroyJob(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroyJob", reflect.TypeOf((*MockService)(nil).DestroyJob), arg0, arg1)
-}
-
-// DestroyModel mocks base method.
-func (m *MockService) DestroyModel(arg0 context.Context, arg1 types.ModelParams) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DestroyModel", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DestroyModel indicates an expected call of DestroyModel.
-func (mr *MockServiceMockRecorder) DestroyModel(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroyModel", reflect.TypeOf((*MockService)(nil).DestroyModel), arg0, arg1)
-}
-
-// DestroyModelVersion mocks base method.
-func (m *MockService) DestroyModelVersion(arg0 context.Context, arg1 types.ModelVersionParams) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DestroyModelVersion", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DestroyModelVersion indicates an expected call of DestroyModelVersion.
-func (mr *MockServiceMockRecorder) DestroyModelVersion(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroyModelVersion", reflect.TypeOf((*MockService)(nil).DestroyModelVersion), arg0, arg1)
 }
 
 // DestroyOauth mocks base method.
@@ -738,66 +680,6 @@ func (m *MockService) GetJobs(arg0 context.Context, arg1 types.GetJobsQuery) ([]
 func (mr *MockServiceMockRecorder) GetJobs(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetJobs", reflect.TypeOf((*MockService)(nil).GetJobs), arg0, arg1)
-}
-
-// GetModel mocks base method.
-func (m *MockService) GetModel(arg0 context.Context, arg1 types.ModelParams) (*types.Model, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetModel", arg0, arg1)
-	ret0, _ := ret[0].(*types.Model)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetModel indicates an expected call of GetModel.
-func (mr *MockServiceMockRecorder) GetModel(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModel", reflect.TypeOf((*MockService)(nil).GetModel), arg0, arg1)
-}
-
-// GetModelVersion mocks base method.
-func (m *MockService) GetModelVersion(arg0 context.Context, arg1 types.ModelVersionParams) (*types.ModelVersion, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetModelVersion", arg0, arg1)
-	ret0, _ := ret[0].(*types.ModelVersion)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetModelVersion indicates an expected call of GetModelVersion.
-func (mr *MockServiceMockRecorder) GetModelVersion(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelVersion", reflect.TypeOf((*MockService)(nil).GetModelVersion), arg0, arg1)
-}
-
-// GetModelVersions mocks base method.
-func (m *MockService) GetModelVersions(arg0 context.Context, arg1 types.GetModelVersionsParams) ([]*types.ModelVersion, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetModelVersions", arg0, arg1)
-	ret0, _ := ret[0].([]*types.ModelVersion)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetModelVersions indicates an expected call of GetModelVersions.
-func (mr *MockServiceMockRecorder) GetModelVersions(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelVersions", reflect.TypeOf((*MockService)(nil).GetModelVersions), arg0, arg1)
-}
-
-// GetModels mocks base method.
-func (m *MockService) GetModels(arg0 context.Context, arg1 types.GetModelsParams) ([]*types.Model, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetModels", arg0, arg1)
-	ret0, _ := ret[0].([]*types.Model)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetModels indicates an expected call of GetModels.
-func (mr *MockServiceMockRecorder) GetModels(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModels", reflect.TypeOf((*MockService)(nil).GetModels), arg0, arg1)
 }
 
 // GetOauth mocks base method.
@@ -1252,36 +1134,6 @@ func (m *MockService) UpdateJob(arg0 context.Context, arg1 uint, arg2 types.Upda
 func (mr *MockServiceMockRecorder) UpdateJob(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateJob", reflect.TypeOf((*MockService)(nil).UpdateJob), arg0, arg1, arg2)
-}
-
-// UpdateModel mocks base method.
-func (m *MockService) UpdateModel(arg0 context.Context, arg1 types.ModelParams, arg2 types.UpdateModelRequest) (*types.Model, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateModel", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*types.Model)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// UpdateModel indicates an expected call of UpdateModel.
-func (mr *MockServiceMockRecorder) UpdateModel(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateModel", reflect.TypeOf((*MockService)(nil).UpdateModel), arg0, arg1, arg2)
-}
-
-// UpdateModelVersion mocks base method.
-func (m *MockService) UpdateModelVersion(arg0 context.Context, arg1 types.ModelVersionParams, arg2 types.UpdateModelVersionRequest) (*types.ModelVersion, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateModelVersion", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*types.ModelVersion)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// UpdateModelVersion indicates an expected call of UpdateModelVersion.
-func (mr *MockServiceMockRecorder) UpdateModelVersion(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateModelVersion", reflect.TypeOf((*MockService)(nil).UpdateModelVersion), arg0, arg1, arg2)
 }
 
 // UpdateOauth mocks base method.

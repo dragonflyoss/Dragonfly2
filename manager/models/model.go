@@ -39,6 +39,7 @@ type Model struct {
 	BIO         string    `gorm:"column:bio;type:varchar(1024);comment:biography" json:"bio"`
 	Version     string    `gorm:"column:version;type:varchar(1024);index:uk_model_version,unique;not null;comment:model version" json:"version"`
 	State       string    `gorm:"column:state;type:varchar(256);default:'inactive';comment:model state" json:"state"`
+	Evaluation  JSONMap   `gorm:"column:evaluation;comment:evaluation metrics" json:"evaluation"`
 	SchedulerID uint      `gorm:"comment:scheduler id" json:"scheduler_id"`
 	Scheduler   Scheduler `json:"-"`
 }
