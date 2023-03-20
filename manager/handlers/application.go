@@ -32,7 +32,7 @@ import (
 // @Accept json
 // @Produce json
 // @Param Application body types.CreateApplicationRequest true "Application"
-// @Success 200 {object} model.Application
+// @Success 200 {object} models.Application
 // @Failure 400
 // @Failure 404
 // @Failure 500
@@ -86,7 +86,7 @@ func (h *Handlers) DestroyApplication(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "id"
 // @Param Application body types.UpdateApplicationRequest true "Application"
-// @Success 200 {object} model.Application
+// @Success 200 {object} models.Application
 // @Failure 400
 // @Failure 404
 // @Failure 500
@@ -119,7 +119,7 @@ func (h *Handlers) UpdateApplication(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
-// @Success 200 {object} model.Application
+// @Success 200 {object} models.Application
 // @Failure 400
 // @Failure 404
 // @Failure 500
@@ -147,7 +147,7 @@ func (h *Handlers) GetApplication(ctx *gin.Context) {
 // @Produce json
 // @Param page query int true "current page" default(0)
 // @Param per_page query int true "return max item count, default 10, max 50" default(10) minimum(2) maximum(50)
-// @Success 200 {object} []model.Application
+// @Success 200 {object} []models.Application
 // @Failure 400
 // @Failure 404
 // @Failure 500
