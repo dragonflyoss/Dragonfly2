@@ -1,0 +1,139 @@
+scheduler:
+  image: d7yio/scheduler
+  tag: latest
+  replicas: 3
+  resources:
+    requests:
+      cpu: "0"
+      memory: "0"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+  extraVolumeMounts:
+  - name: logs
+    mountPath: "/var/log/"
+  - name: artifact
+    mountPath: /tmp/artifact
+  extraVolumes:
+  - name: logs
+    emptyDir: { }
+  - name: artifact
+    hostPath:
+      path: /tmp/artifact
+  metrics:
+    enable: true
+    enableHost: true
+  config:
+    verbose: true
+
+seedPeer:
+  image: d7yio/dfdaemon
+  tag: latest
+  replicas: 3
+  resources:
+    requests:
+      cpu: "0"
+      memory: "0"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+  extraVolumeMounts:
+  - name: logs
+    mountPath: "/var/log/dragonfly"
+    subPath: dragonfly
+  - name: artifact
+    mountPath: /tmp/artifact
+  extraVolumes:
+  - name: logs
+    emptyDir: { }
+  - name: artifact
+    hostPath:
+      path: /tmp/artifact
+  metrics:
+    enable: true
+  config:
+    verbose: true
+    download:
+      prefetch: true
+
+dfdaemon:
+  image: d7yio/dfdaemon
+  tag: latest
+  resources:
+    requests:
+      cpu: "0"
+      memory: "0"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+  extraVolumeMounts:
+  - name: logs
+    mountPath: "/var/log/"
+  - name: artifact
+    mountPath: /tmp/artifact
+  extraVolumes:
+  - name: logs
+    emptyDir: { }
+  - name: artifact
+    hostPath:
+      path: /tmp/artifact
+  metrics:
+    enable: true
+  config:
+    verbose: true
+    pprofPort: 9999
+    download:
+      prefetch: true
+    scheduler:
+      disableAutoBackSource: true
+    proxy:
+      defaultFilter: "Expires&Signature&ns"
+      security:
+        insecure: true
+      tcpListen:
+        namespace: /run/dragonfly/net
+        # if you want to change port, please update hostPort in $.Values.dfdaemon.hostPort
+        # port in configmap is generated from $.Values.dfdaemon.hostPort
+        # port: 65001
+      registryMirror:
+        url: https://index.docker.io
+      proxies:
+        - regx: blobs/sha256.*
+        - regx: file-server
+
+manager:
+  image: d7yio/manager
+  tag: latest
+  replicas: 1
+  resources:
+    requests:
+      cpu: "0"
+      memory: "0"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+  extraVolumeMounts:
+  - name: logs
+    mountPath: "/var/log/"
+  - name: artifact
+    mountPath: /tmp/artifact
+  extraVolumes:
+  - name: logs
+    emptyDir: { }
+  - name: artifact
+    hostPath:
+      path: /tmp/artifact
+  metrics:
+    enable: true
+  config:
+    verbose: true
+    cache:
+      redis:
+        ttl: 1m
+      local:
+        size: 200000
+        ttl: 30s
+
+containerRuntime:
+  containerd:
+    enable: true
