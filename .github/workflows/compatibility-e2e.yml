@@ -16,7 +16,7 @@ env:
   CONTAINERD_VERSION: v1.5.2
   KIND_CONFIG_PATH: test/testdata/kind/config.yaml
   DRAGONFLY_CHARTS_PATH: deploy/helm-charts/charts/dragonfly
-  DRAGONFLY_CHARTS_CONFIG_PATH: test/testdata/charts/config.yaml
+  DRAGONFLY_CHARTS_CONFIG_PATH: test/testdata/charts/config-compatibility.yaml
   DRAGONFLY_FILE_SERVER_PATH: test/testdata/k8s/file-server.yaml
   DRAGONFLY_PROXY_SERVER_PATH: test/testdata/k8s/proxy.yaml
 

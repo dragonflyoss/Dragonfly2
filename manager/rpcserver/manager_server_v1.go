@@ -527,6 +527,13 @@ func (s *managerServerV1) ListSchedulers(ctx context.Context, req *managerv1.Lis
 		})
 	}
 
+	// If scheduler is not found, even no default scheduler is returned.
+	// It means that the scheduler has not been started,
+	// and the results are not cached, waiting for the scheduler to be ready.
+	if len(pbListSchedulersResponse.Schedulers) == 0 {
+		return &pbListSchedulersResponse, nil
+	}
+
 	// Cache data.
 	if err := s.cache.Once(&cachev8.Item{
 		Ctx:   ctx,

@@ -121,7 +121,7 @@ func (d *dynconfigManager) GetResolveSchedulerAddrs() ([]resolver.Address, error
 		}
 
 		if addr == "" {
-			logger.Warnf("scheduler %s %s %s has not reachable addresses",
+			logger.Warnf("scheduler %s %s %d has not reachable addresses",
 				scheduler.GetIp(), scheduler.GetHostName(), scheduler.GetPort())
 			continue
 		}
