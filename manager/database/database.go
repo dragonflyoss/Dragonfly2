@@ -88,8 +88,7 @@ func migrate(db *gorm.DB) error {
 		&models.Oauth{},
 		&models.Config{},
 		&models.Application{},
-		// TODO New Model Table.
-		// &models.Model{},
+		&models.Model{},
 	)
 }
 

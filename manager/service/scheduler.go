@@ -25,7 +25,7 @@ import (
 
 func (s *service) CreateScheduler(ctx context.Context, json types.CreateSchedulerRequest) (*models.Scheduler, error) {
 	scheduler := models.Scheduler{
-		HostName:           json.HostName,
+		Hostname:           json.Hostname,
 		IDC:                json.IDC,
 		Location:           json.Location,
 		IP:                 json.IP,
@@ -81,7 +81,7 @@ func (s *service) GetSchedulers(ctx context.Context, q types.GetSchedulersQuery)
 	var count int64
 	var schedulers []models.Scheduler
 	if err := s.db.WithContext(ctx).Scopes(models.Paginate(q.Page, q.PerPage)).Where(&models.Scheduler{
-		HostName:           q.HostName,
+		Hostname:           q.Hostname,
 		IDC:                q.IDC,
 		Location:           q.Location,
 		IP:                 q.IP,

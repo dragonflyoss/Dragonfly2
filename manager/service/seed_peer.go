@@ -25,7 +25,7 @@ import (
 
 func (s *service) CreateSeedPeer(ctx context.Context, json types.CreateSeedPeerRequest) (*models.SeedPeer, error) {
 	seedPeer := models.SeedPeer{
-		HostName:          json.HostName,
+		Hostname:          json.Hostname,
 		Type:              json.Type,
 		IDC:               json.IDC,
 		Location:          json.Location,
@@ -88,7 +88,7 @@ func (s *service) GetSeedPeers(ctx context.Context, q types.GetSeedPeersQuery) (
 	var seedPeers []models.SeedPeer
 	if err := s.db.WithContext(ctx).Scopes(models.Paginate(q.Page, q.PerPage)).Where(&models.SeedPeer{
 		Type:              q.Type,
-		HostName:          q.HostName,
+		Hostname:          q.Hostname,
 		IDC:               q.IDC,
 		Location:          q.Location,
 		IP:                q.IP,

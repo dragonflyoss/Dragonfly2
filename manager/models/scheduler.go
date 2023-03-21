@@ -26,7 +26,7 @@ const (
 
 type Scheduler struct {
 	BaseModel
-	HostName           string           `gorm:"column:host_name;type:varchar(256);index:uk_scheduler,unique;not null;comment:hostname" json:"host_name"`
+	Hostname           string           `gorm:"column:host_name;type:varchar(256);index:uk_scheduler,unique;not null;comment:hostname" json:"host_name"`
 	IDC                string           `gorm:"column:idc;type:varchar(1024);comment:internet data center" json:"idc"`
 	Location           string           `gorm:"column:location;type:varchar(1024);comment:location" json:"location"`
 	IP                 string           `gorm:"column:ip;type:varchar(256);not null;comment:ip address" json:"ip"`

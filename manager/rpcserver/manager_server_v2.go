@@ -90,8 +90,8 @@ func newManagerServerV2(
 
 // Get SeedPeer and SeedPeer cluster configuration.
 func (s *managerServerV2) GetSeedPeer(ctx context.Context, req *managerv2.GetSeedPeerRequest) (*managerv2.SeedPeer, error) {
-	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
-	cacheKey := cache.MakeSeedPeerCacheKey(uint(req.SeedPeerClusterId), req.HostName, req.Ip)
+	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
+	cacheKey := cache.MakeSeedPeerCacheKey(uint(req.SeedPeerClusterId), req.Hostname, req.Ip)
 
 	// Cache hit.
 	var pbSeedPeer managerv2.SeedPeer
@@ -107,7 +107,7 @@ func (s *managerServerV2) GetSeedPeer(ctx context.Context, req *managerv2.GetSee
 	if err := s.db.WithContext(ctx).Preload("SeedPeerCluster").Preload("SeedPeerCluster.SchedulerClusters.Schedulers", &models.Scheduler{
 		State: models.SchedulerStateActive,
 	}).First(&seedPeer, &models.SeedPeer{
-		HostName:          req.HostName,
+		Hostname:          req.Hostname,
 		SeedPeerClusterID: uint(req.SeedPeerClusterId),
 	}).Error; err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -125,7 +125,7 @@ func (s *managerServerV2) GetSeedPeer(ctx context.Context, req *managerv2.GetSee
 		for _, scheduler := range schedulerCluster.Schedulers {
 			pbSchedulers = append(pbSchedulers, &managerv2.Scheduler{
 				Id:       uint64(scheduler.ID),
-				HostName: scheduler.HostName,
+				Hostname: scheduler.Hostname,
 				Idc:      scheduler.IDC,
 				Location: scheduler.Location,
 				Ip:       scheduler.IP,
@@ -139,7 +139,7 @@ func (s *managerServerV2) GetSeedPeer(ctx context.Context, req *managerv2.GetSee
 	pbSeedPeer = managerv2.SeedPeer{
 		Id:                uint64(seedPeer.ID),
 		Type:              seedPeer.Type,
-		HostName:          seedPeer.HostName,
+		Hostname:          seedPeer.Hostname,
 		Idc:               seedPeer.IDC,
 		Location:          seedPeer.Location,
 		Ip:                seedPeer.IP,
@@ -172,10 +172,10 @@ func (s *managerServerV2) GetSeedPeer(ctx context.Context, req *managerv2.GetSee
 
 // Update SeedPeer configuration.
 func (s *managerServerV2) UpdateSeedPeer(ctx context.Context, req *managerv2.UpdateSeedPeerRequest) (*managerv2.SeedPeer, error) {
-	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
+	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
 	seedPeer := models.SeedPeer{}
 	if err := s.db.WithContext(ctx).First(&seedPeer, models.SeedPeer{
-		HostName:          req.HostName,
+		Hostname:          req.Hostname,
 		SeedPeerClusterID: uint(req.SeedPeerClusterId),
 	}).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -200,14 +200,14 @@ func (s *managerServerV2) UpdateSeedPeer(ctx context.Context, req *managerv2.Upd
 
 	if err := s.cache.Delete(
 		ctx,
-		cache.MakeSeedPeerCacheKey(seedPeer.SeedPeerClusterID, seedPeer.HostName, seedPeer.IP),
+		cache.MakeSeedPeerCacheKey(seedPeer.SeedPeerClusterID, seedPeer.Hostname, seedPeer.IP),
 	); err != nil {
 		log.Warn(err)
 	}
 
 	return &managerv2.SeedPeer{
 		Id:                uint64(seedPeer.ID),
-		HostName:          seedPeer.HostName,
+		Hostname:          seedPeer.Hostname,
 		Type:              seedPeer.Type,
 		Idc:               seedPeer.IDC,
 		Location:          seedPeer.Location,
@@ -223,7 +223,7 @@ func (s *managerServerV2) UpdateSeedPeer(ctx context.Context, req *managerv2.Upd
 // Create SeedPeer and associate cluster.
 func (s *managerServerV2) createSeedPeer(ctx context.Context, req *managerv2.UpdateSeedPeerRequest) (*managerv2.SeedPeer, error) {
 	seedPeer := models.SeedPeer{
-		HostName:          req.HostName,
+		Hostname:          req.Hostname,
 		Type:              req.Type,
 		IDC:               req.Idc,
 		Location:          req.Location,
@@ -240,7 +240,7 @@ func (s *managerServerV2) createSeedPeer(ctx context.Context, req *managerv2.Upd
 
 	return &managerv2.SeedPeer{
 		Id:                uint64(seedPeer.ID),
-		HostName:          seedPeer.HostName,
+		Hostname:          seedPeer.Hostname,
 		Type:              seedPeer.Type,
 		Idc:               seedPeer.IDC,
 		Location:          seedPeer.Location,
@@ -255,8 +255,8 @@ func (s *managerServerV2) createSeedPeer(ctx context.Context, req *managerv2.Upd
 
 // Get Scheduler and Scheduler cluster configuration.
 func (s *managerServerV2) GetScheduler(ctx context.Context, req *managerv2.GetSchedulerRequest) (*managerv2.Scheduler, error) {
-	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
-	cacheKey := cache.MakeSchedulerCacheKey(uint(req.SchedulerClusterId), req.HostName, req.Ip)
+	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
+	cacheKey := cache.MakeSchedulerCacheKey(uint(req.SchedulerClusterId), req.Hostname, req.Ip)
 
 	// Cache hit.
 	var pbScheduler managerv2.Scheduler
@@ -272,7 +272,7 @@ func (s *managerServerV2) GetScheduler(ctx context.Context, req *managerv2.GetSc
 	if err := s.db.WithContext(ctx).Preload("SchedulerCluster").Preload("SchedulerCluster.SeedPeerClusters.SeedPeers", &models.SeedPeer{
 		State: models.SeedPeerStateActive,
 	}).First(&scheduler, &models.Scheduler{
-		HostName:           req.HostName,
+		Hostname:           req.Hostname,
 		SchedulerClusterID: uint(req.SchedulerClusterId),
 	}).Error; err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -307,7 +307,7 @@ func (s *managerServerV2) GetScheduler(ctx context.Context, req *managerv2.GetSc
 		for _, seedPeer := range seedPeerCluster.SeedPeers {
 			pbSeedPeers = append(pbSeedPeers, &managerv2.SeedPeer{
 				Id:                uint64(seedPeer.ID),
-				HostName:          seedPeer.HostName,
+				Hostname:          seedPeer.Hostname,
 				Type:              seedPeer.Type,
 				Idc:               seedPeer.IDC,
 				Location:          seedPeer.Location,
@@ -330,7 +330,7 @@ func (s *managerServerV2) GetScheduler(ctx context.Context, req *managerv2.GetSc
 	// Construct scheduler.
 	pbScheduler = managerv2.Scheduler{
 		Id:                 uint64(scheduler.ID),
-		HostName:           scheduler.HostName,
+		Hostname:           scheduler.Hostname,
 		Idc:                scheduler.IDC,
 		Location:           scheduler.Location,
 		Ip:                 scheduler.IP,
@@ -363,10 +363,10 @@ func (s *managerServerV2) GetScheduler(ctx context.Context, req *managerv2.GetSc
 
 // Update scheduler configuration.
 func (s *managerServerV2) UpdateScheduler(ctx context.Context, req *managerv2.UpdateSchedulerRequest) (*managerv2.Scheduler, error) {
-	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
+	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
 	scheduler := models.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, models.Scheduler{
-		HostName:           req.HostName,
+		Hostname:           req.Hostname,
 		SchedulerClusterID: uint(req.SchedulerClusterId),
 	}).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -388,14 +388,14 @@ func (s *managerServerV2) UpdateScheduler(ctx context.Context, req *managerv2.Up
 
 	if err := s.cache.Delete(
 		ctx,
-		cache.MakeSchedulerCacheKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP),
+		cache.MakeSchedulerCacheKey(scheduler.SchedulerClusterID, scheduler.Hostname, scheduler.IP),
 	); err != nil {
 		log.Warn(err)
 	}
 
 	return &managerv2.Scheduler{
 		Id:                 uint64(scheduler.ID),
-		HostName:           scheduler.HostName,
+		Hostname:           scheduler.Hostname,
 		Idc:                scheduler.IDC,
 		Location:           scheduler.Location,
 		Ip:                 scheduler.IP,
@@ -408,7 +408,7 @@ func (s *managerServerV2) UpdateScheduler(ctx context.Context, req *managerv2.Up
 // Create scheduler and associate cluster.
 func (s *managerServerV2) createScheduler(ctx context.Context, req *managerv2.UpdateSchedulerRequest) (*managerv2.Scheduler, error) {
 	scheduler := models.Scheduler{
-		HostName:           req.HostName,
+		Hostname:           req.Hostname,
 		IDC:                req.Idc,
 		Location:           req.Location,
 		IP:                 req.Ip,
@@ -422,7 +422,7 @@ func (s *managerServerV2) createScheduler(ctx context.Context, req *managerv2.Up
 
 	return &managerv2.Scheduler{
 		Id:                 uint64(scheduler.ID),
-		HostName:           scheduler.HostName,
+		Hostname:           scheduler.Hostname,
 		Idc:                scheduler.IDC,
 		Location:           scheduler.Location,
 		Ip:                 scheduler.IP,
@@ -434,13 +434,13 @@ func (s *managerServerV2) createScheduler(ctx context.Context, req *managerv2.Up
 
 // List acitve schedulers configuration.
 func (s *managerServerV2) ListSchedulers(ctx context.Context, req *managerv2.ListSchedulersRequest) (*managerv2.ListSchedulersResponse, error) {
-	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
+	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
 	log.Debugf("list schedulers, version %s, commit %s", req.Version, req.Commit)
 	metrics.SearchSchedulerClusterCount.WithLabelValues(req.Version, req.Commit).Inc()
 
 	// Count the number of the active peer.
 	if s.config.Metrics.EnablePeerGauge && req.SourceType == managerv2.SourceType_PEER_SOURCE {
-		peerCacheKey := fmt.Sprintf("%s-%s", req.HostName, req.Ip)
+		peerCacheKey := fmt.Sprintf("%s-%s", req.Hostname, req.Ip)
 		if data, _, found := s.peerCache.GetWithExpiration(peerCacheKey); !found {
 			metrics.PeerGauge.WithLabelValues(req.Version, req.Commit).Inc()
 		} else if cache, ok := data.(*managerv2.ListSchedulersRequest); ok && (cache.Version != req.Version || cache.Commit != req.Commit) {
@@ -453,7 +453,7 @@ func (s *managerServerV2) ListSchedulers(ctx context.Context, req *managerv2.Lis
 
 	// Cache hit.
 	var pbListSchedulersResponse managerv2.ListSchedulersResponse
-	cacheKey := cache.MakeSchedulersCacheKeyForPeer(req.HostName, req.Ip)
+	cacheKey := cache.MakeSchedulersCacheKeyForPeer(req.Hostname, req.Ip)
 
 	if err := s.cache.Get(ctx, cacheKey, &pbListSchedulersResponse); err != nil {
 		log.Errorf("%s cache miss because of %s", cacheKey, err.Error())
@@ -476,7 +476,7 @@ func (s *managerServerV2) ListSchedulers(ctx context.Context, req *managerv2.Lis
 		candidateSchedulerClusters []models.SchedulerCluster
 		err                        error
 	)
-	candidateSchedulerClusters, err = s.searcher.FindSchedulerClusters(ctx, schedulerClusters, req.HostName, req.Ip, req.HostInfo)
+	candidateSchedulerClusters, err = s.searcher.FindSchedulerClusters(ctx, schedulerClusters, req.Hostname, req.Ip, req.HostInfo)
 	if err != nil {
 		log.Error(err)
 		metrics.SearchSchedulerClusterFailureCount.WithLabelValues(req.Version, req.Commit).Inc()
@@ -499,7 +499,7 @@ func (s *managerServerV2) ListSchedulers(ctx context.Context, req *managerv2.Lis
 			for _, seedPeer := range seedPeerCluster.SeedPeers {
 				seedPeers = append(seedPeers, &managerv2.SeedPeer{
 					Id:                uint64(seedPeer.ID),
-					HostName:          seedPeer.HostName,
+					Hostname:          seedPeer.Hostname,
 					Type:              seedPeer.Type,
 					Idc:               seedPeer.IDC,
 					Location:          seedPeer.Location,
@@ -515,7 +515,7 @@ func (s *managerServerV2) ListSchedulers(ctx context.Context, req *managerv2.Lis
 
 		pbListSchedulersResponse.Schedulers = append(pbListSchedulersResponse.Schedulers, &managerv2.Scheduler{
 			Id:                 uint64(scheduler.ID),
-			HostName:           scheduler.HostName,
+			Hostname:           scheduler.Hostname,
 			Idc:                scheduler.IDC,
 			Location:           scheduler.Location,
 			Ip:                 scheduler.IP,
@@ -568,7 +568,7 @@ func (s *managerServerV2) ListBuckets(ctx context.Context, req *managerv2.ListBu
 		return nil, status.Error(codes.NotFound, "object storage is disabled")
 	}
 
-	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
+	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
 	var pbListBucketsResponse managerv2.ListBucketsResponse
 	cacheKey := cache.MakeBucketCacheKey(s.objectStorageConfig.Name)
 
@@ -608,7 +608,7 @@ func (s *managerServerV2) ListBuckets(ctx context.Context, req *managerv2.ListBu
 
 // List applications configuration.
 func (s *managerServerV2) ListApplications(ctx context.Context, req *managerv2.ListApplicationsRequest) (*managerv2.ListApplicationsResponse, error) {
-	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
+	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
 
 	// Cache hit.
 	var pbListApplicationsResponse managerv2.ListApplicationsResponse
@@ -687,19 +687,19 @@ func (s *managerServerV2) KeepAlive(stream managerv2.Manager_KeepAliveServer) er
 		logger.Errorf("keepalive failed for the first time: %s", err.Error())
 		return status.Error(codes.Internal, err.Error())
 	}
-	hostName := req.HostName
+	hostname := req.Hostname
 	ip := req.Ip
 	sourceType := req.SourceType
 	clusterID := uint(req.ClusterId)
 
-	log := logger.WithKeepAlive(hostName, ip, sourceType.Enum().String(), req.ClusterId)
+	log := logger.WithKeepAlive(hostname, ip, sourceType.Enum().String(), req.ClusterId)
 	log.Info("keepalive for the first time")
 
 	// Initialize active scheduler.
 	if sourceType == managerv2.SourceType_SCHEDULER_SOURCE {
 		scheduler := models.Scheduler{}
 		if err := s.db.First(&scheduler, models.Scheduler{
-			HostName:           hostName,
+			Hostname:           hostname,
 			SchedulerClusterID: clusterID,
 		}).Updates(models.Scheduler{
 			State: models.SchedulerStateActive,
@@ -709,7 +709,7 @@ func (s *managerServerV2) KeepAlive(stream managerv2.Manager_KeepAliveServer) er
 
 		if err := s.cache.Delete(
 			context.TODO(),
-			cache.MakeSchedulerCacheKey(clusterID, hostName, ip),
+			cache.MakeSchedulerCacheKey(clusterID, hostname, ip),
 		); err != nil {
 			log.Warnf("refresh keepalive status failed: %s", err.Error())
 		}
@@ -719,7 +719,7 @@ func (s *managerServerV2) KeepAlive(stream managerv2.Manager_KeepAliveServer) er
 	if sourceType == managerv2.SourceType_SEED_PEER_SOURCE {
 		seedPeer := models.SeedPeer{}
 		if err := s.db.First(&seedPeer, models.SeedPeer{
-			HostName:          hostName,
+			Hostname:          hostname,
 			SeedPeerClusterID: clusterID,
 		}).Updates(models.SeedPeer{
 			State: models.SeedPeerStateActive,
@@ -729,7 +729,7 @@ func (s *managerServerV2) KeepAlive(stream managerv2.Manager_KeepAliveServer) er
 
 		if err := s.cache.Delete(
 			context.TODO(),
-			cache.MakeSeedPeerCacheKey(clusterID, hostName, ip),
+			cache.MakeSeedPeerCacheKey(clusterID, hostname, ip),
 		); err != nil {
 			log.Warnf("refresh keepalive status failed: %s", err.Error())
 		}
@@ -742,7 +742,7 @@ func (s *managerServerV2) KeepAlive(stream managerv2.Manager_KeepAliveServer) er
 			if sourceType == managerv2.SourceType_SCHEDULER_SOURCE {
 				scheduler := models.Scheduler{}
 				if err := s.db.First(&scheduler, models.Scheduler{
-					HostName:           hostName,
+					Hostname:           hostname,
 					SchedulerClusterID: clusterID,
 				}).Updates(models.Scheduler{
 					State: models.SchedulerStateInactive,
@@ -752,7 +752,7 @@ func (s *managerServerV2) KeepAlive(stream managerv2.Manager_KeepAliveServer) er
 
 				if err := s.cache.Delete(
 					context.TODO(),
-					cache.MakeSchedulerCacheKey(clusterID, hostName, ip),
+					cache.MakeSchedulerCacheKey(clusterID, hostname, ip),
 				); err != nil {
 					log.Warnf("refresh keepalive status failed: %s", err.Error())
 				}
@@ -762,7 +762,7 @@ func (s *managerServerV2) KeepAlive(stream managerv2.Manager_KeepAliveServer) er
 			if sourceType == managerv2.SourceType_SEED_PEER_SOURCE {
 				seedPeer := models.SeedPeer{}
 				if err := s.db.First(&seedPeer, models.SeedPeer{
-					HostName:          hostName,
+					Hostname:          hostname,
 					SeedPeerClusterID: clusterID,
 				}).Updates(models.SeedPeer{
 					State: models.SeedPeerStateInactive,
@@ -772,7 +772,7 @@ func (s *managerServerV2) KeepAlive(stream managerv2.Manager_KeepAliveServer) er
 
 				if err := s.cache.Delete(
 					context.TODO(),
-					cache.MakeSeedPeerCacheKey(clusterID, hostName, ip),
+					cache.MakeSeedPeerCacheKey(clusterID, hostname, ip),
 				); err != nil {
 					log.Warnf("refresh keepalive status failed: %s", err.Error())
 				}
