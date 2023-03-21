@@ -95,13 +95,14 @@ func (s *managerServerV1) GetSeedPeer(ctx context.Context, req *managerv1.GetSee
 
 	// Cache hit.
 	var pbSeedPeer managerv1.SeedPeer
-	if err := s.cache.Get(ctx, cacheKey, &pbSeedPeer); err == nil {
+	if err := s.cache.Get(ctx, cacheKey, &pbSeedPeer); err != nil {
+		log.Errorf("%s cache miss because of %s", cacheKey, err.Error())
+	} else {
 		log.Debugf("%s cache hit", cacheKey)
 		return &pbSeedPeer, nil
 	}
 
 	// Cache miss.
-	log.Debugf("%s cache miss", cacheKey)
 	seedPeer := models.SeedPeer{}
 	if err := s.db.WithContext(ctx).Preload("SeedPeerCluster").Preload("SeedPeerCluster.SchedulerClusters.Schedulers", &models.Scheduler{
 		State: models.SchedulerStateActive,
@@ -163,7 +164,7 @@ func (s *managerServerV1) GetSeedPeer(ctx context.Context, req *managerv1.GetSee
 		Value: &pbSeedPeer,
 		TTL:   s.cache.TTL,
 	}); err != nil {
-		log.Warn(err)
+		log.Error(err)
 	}
 
 	return &pbSeedPeer, nil
@@ -259,13 +260,14 @@ func (s *managerServerV1) GetScheduler(ctx context.Context, req *managerv1.GetSc
 
 	// Cache hit.
 	var pbScheduler managerv1.Scheduler
-	if err := s.cache.Get(ctx, cacheKey, &pbScheduler); err == nil {
+	if err := s.cache.Get(ctx, cacheKey, &pbScheduler); err != nil {
+		log.Errorf("%s cache miss because of %s", cacheKey, err.Error())
+	} else {
 		log.Debugf("%s cache hit", cacheKey)
 		return &pbScheduler, nil
 	}
 
 	// Cache miss.
-	log.Debugf("%s cache miss", cacheKey)
 	scheduler := models.Scheduler{}
 	if err := s.db.WithContext(ctx).Preload("SchedulerCluster").Preload("SchedulerCluster.SeedPeerClusters.SeedPeers", &models.SeedPeer{
 		State: models.SeedPeerStateActive,
@@ -353,7 +355,7 @@ func (s *managerServerV1) GetScheduler(ctx context.Context, req *managerv1.GetSc
 		Value: &pbScheduler,
 		TTL:   s.cache.TTL,
 	}); err != nil {
-		log.Warn(err)
+		log.Error(err)
 	}
 
 	return &pbScheduler, nil
@@ -453,13 +455,14 @@ func (s *managerServerV1) ListSchedulers(ctx context.Context, req *managerv1.Lis
 	var pbListSchedulersResponse managerv1.ListSchedulersResponse
 	cacheKey := cache.MakeSchedulersCacheKeyForPeer(req.HostName, req.Ip)
 
-	if err := s.cache.Get(ctx, cacheKey, &pbListSchedulersResponse); err == nil {
+	if err := s.cache.Get(ctx, cacheKey, &pbListSchedulersResponse); err != nil {
+		log.Errorf("%s cache miss because of %s", cacheKey, err.Error())
+	} else {
 		log.Debugf("%s cache hit", cacheKey)
 		return &pbListSchedulersResponse, nil
 	}
 
 	// Cache miss.
-	log.Debugf("%s cache miss", cacheKey)
 	var schedulerClusters []models.SchedulerCluster
 	if err := s.db.WithContext(ctx).Preload("SecurityGroup.SecurityRules").Preload("SeedPeerClusters.SeedPeers", "state = ?", "active").Preload("Schedulers", "state = ?", "active").Find(&schedulerClusters).Error; err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -524,6 +527,13 @@ func (s *managerServerV1) ListSchedulers(ctx context.Context, req *managerv1.Lis
 		})
 	}
 
+	// If scheduler is not found, even no default scheduler is returned.
+	// It means that the scheduler has not been started,
+	// and the results are not cached, waiting for the scheduler to be ready.
+	if len(pbListSchedulersResponse.Schedulers) == 0 {
+		return &pbListSchedulersResponse, nil
+	}
+
 	// Cache data.
 	if err := s.cache.Once(&cachev8.Item{
 		Ctx:   ctx,
@@ -531,7 +541,7 @@ func (s *managerServerV1) ListSchedulers(ctx context.Context, req *managerv1.Lis
 		Value: &pbListSchedulersResponse,
 		TTL:   s.cache.TTL,
 	}); err != nil {
-		log.Warn(err)
+		log.Error(err)
 	}
 
 	return &pbListSchedulersResponse, nil
@@ -564,13 +574,14 @@ func (s *managerServerV1) ListBuckets(ctx context.Context, req *managerv1.ListBu
 	cacheKey := cache.MakeBucketCacheKey(s.objectStorageConfig.Name)
 
 	// Cache hit.
-	if err := s.cache.Get(ctx, cacheKey, &pbListBucketsResponse); err == nil {
+	if err := s.cache.Get(ctx, cacheKey, &pbListBucketsResponse); err != nil {
+		log.Errorf("%s cache miss because of %s", cacheKey, err.Error())
+	} else {
 		log.Debugf("%s cache hit", cacheKey)
 		return &pbListBucketsResponse, nil
 	}
 
 	// Cache miss.
-	log.Debugf("%s cache miss", cacheKey)
 	buckets, err := s.objectStorage.ListBucketMetadatas(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -590,7 +601,7 @@ func (s *managerServerV1) ListBuckets(ctx context.Context, req *managerv1.ListBu
 		Value: &pbListBucketsResponse,
 		TTL:   s.cache.TTL,
 	}); err != nil {
-		log.Warn(err)
+		log.Error(err)
 	}
 
 	return &pbListBucketsResponse, nil
@@ -603,13 +614,14 @@ func (s *managerServerV1) ListApplications(ctx context.Context, req *managerv1.L
 	// Cache hit.
 	var pbListApplicationsResponse managerv1.ListApplicationsResponse
 	cacheKey := cache.MakeApplicationsCacheKey()
-	if err := s.cache.Get(ctx, cacheKey, &pbListApplicationsResponse); err == nil {
+	if err := s.cache.Get(ctx, cacheKey, &pbListApplicationsResponse); err != nil {
+		log.Errorf("%s cache miss because of %s", cacheKey, err.Error())
+	} else {
 		log.Debugf("%s cache hit", cacheKey)
 		return &pbListApplicationsResponse, nil
 	}
 
 	// Cache miss.
-	log.Debugf("%s cache miss", cacheKey)
 	var applications []models.Application
 	if err := s.db.WithContext(ctx).Find(&applications, "priority != ?", "").Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -663,7 +675,7 @@ func (s *managerServerV1) ListApplications(ctx context.Context, req *managerv1.L
 		Value: &pbListApplicationsResponse,
 		TTL:   s.cache.TTL,
 	}); err != nil {
-		log.Warn(err)
+		log.Error(err)
 	}
 
 	return &pbListApplicationsResponse, nil
