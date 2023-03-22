@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2023 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,32 +14,40 @@
  * limitations under the License.
  */
 
-//go:generate mockgen -destination mocks/client_mock.go -source client.go -package mocks
+//go:generate mockgen -destination mocks/client_v1_mock.go -source client_v1.go -package mocks
 
 package client
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
-	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+
+	tfservingv1 "d7y.io/api/pkg/apis/tfserving/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 const (
 	// contextTimeout is timeout of grpc invoke.
-	contextTimeout = 2 * time.Second
+	contextTimeout = 2 * time.Minute
+
+	// maxRetries is maximum number of retries.
+	maxRetries = 3
+
+	// backoffWaitBetween is waiting for a fixed period of
+	// time between calls in backoff linear.
+	backoffWaitBetween = 500 * time.Millisecond
 )
 
-// GetClient returns health client.
-func GetClient(ctx context.Context, target string, opts ...grpc.DialOption) (Client, error) {
+// GetV1 returns v1 version of the prediction client.
+func GetV1(ctx context.Context, target string, opts ...grpc.DialOption) (V1, error) {
 	conn, err := grpc.DialContext(
 		ctx,
 		target,
@@ -48,6 +56,10 @@ func GetClient(ctx context.Context, target string, opts ...grpc.DialOption) (Cli
 				otelgrpc.UnaryClientInterceptor(),
 				grpc_prometheus.UnaryClientInterceptor,
 				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
+				grpc_retry.UnaryClientInterceptor(
+					grpc_retry.WithMax(maxRetries),
+					grpc_retry.WithBackoff(grpc_retry.BackoffLinear(backoffWaitBetween)),
+				),
 			)),
 			grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
 				otelgrpc.StreamClientInterceptor(),
@@ -60,55 +72,31 @@ func GetClient(ctx context.Context, target string, opts ...grpc.DialOption) (Cli
 		return nil, err
 	}
 
-	return &client{
-		HealthClient: healthpb.NewHealthClient(conn),
-		ClientConn:   conn,
+	return &v1{
+		PredictionServiceClient: tfservingv1.NewPredictionServiceClient(conn),
+		ClientConn:              conn,
 	}, nil
 }
 
-// Check checks health of grpc server.
-func Check(ctx context.Context, target string, opts ...grpc.DialOption) error {
-	healthClient, err := GetClient(ctx, target, opts...)
-	if err != nil {
-		return err
-	}
-	defer healthClient.Close()
-
-	if err := healthClient.Check(context.Background(), &healthpb.HealthCheckRequest{}); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Client is the interface for grpc client.
-type Client interface {
-	// Check checks health of grpc server.
-	Check(context.Context, *healthpb.HealthCheckRequest, ...grpc.CallOption) error
+// ClientV1 is the interface for v1 version of the grpc client.
+type V1 interface {
+	// Predict provides access to loaded TensorFlow model.
+	Predict(context.Context, *tfservingv1.PredictRequest, ...grpc.CallOption) (*tfservingv1.PredictResponse, error)
 
 	// Close tears down the ClientConn and all underlying connections.
 	Close() error
 }
 
-// client provides health grpc function.
-type client struct {
-	healthpb.HealthClient
+// clientV1 provides v1 version of the prediction grpc function.
+type v1 struct {
+	tfservingv1.PredictionServiceClient
 	*grpc.ClientConn
 }
 
-// Check checks health of grpc server.
-func (c *client) Check(ctx context.Context, req *healthpb.HealthCheckRequest, opts ...grpc.CallOption) error {
+// Predict provides access to loaded TensorFlow model.
+func (v *v1) Predict(ctx context.Context, req *tfservingv1.PredictRequest, opts ...grpc.CallOption) (*tfservingv1.PredictResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	resp, err := c.HealthClient.Check(ctx, req, opts...)
-	if err != nil {
-		return err
-	}
-
-	if resp.Status != healthpb.HealthCheckResponse_SERVING {
-		return fmt.Errorf("check %s health failed, because of status is %d", c.ClientConn.Target(), resp.Status)
-	}
-
-	return nil
+	return v.PredictionServiceClient.Predict(ctx, req, opts...)
 }
