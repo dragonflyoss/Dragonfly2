@@ -81,18 +81,18 @@ func GetV1(ctx context.Context, target string, opts ...grpc.DialOption) (V1, err
 	}, nil
 }
 
-// GetClientV1ByAddr returns v1 version of the manager client with addresses.
+// GetClientV1ByAddr returns v1 version of the security client with addresses.
 func GetV1ByAddr(ctx context.Context, netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (V1, error) {
 	for _, netAddr := range netAddrs {
 		ipReachable := reachable.New(&reachable.Config{Address: netAddr.Addr})
 		if err := ipReachable.Check(); err == nil {
-			logger.Infof("use %s address for manager grpc client", netAddr.Addr)
+			logger.Infof("use %s address for security grpc client", netAddr.Addr)
 			return GetV1(ctx, netAddr.Addr, opts...)
 		}
-		logger.Warnf("%s manager address can not reachable", netAddr.Addr)
+		logger.Warnf("%s security address can not reachable", netAddr.Addr)
 	}
 
-	return nil, errors.New("can not find available manager addresses")
+	return nil, errors.New("can not find available security addresses")
 }
 
 // ClientV1 is the interface for v1 version of the grpc client.
@@ -104,7 +104,7 @@ type V1 interface {
 	Close() error
 }
 
-// clientV1 provides v1 version of the manager grpc function.
+// clientV1 provides v1 version of the security grpc function.
 type v1 struct {
 	securityv1.CertificateClient
 	*grpc.ClientConn
