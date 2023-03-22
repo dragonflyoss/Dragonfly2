@@ -67,9 +67,9 @@ func GetV1ByAddr(ctx context.Context, target string, opts ...grpc.DialOption) (V
 	}
 
 	return &v1{
-		ManagerClient:            managerv1.NewManagerClient(conn),
-		CertificateServiceClient: securityv1.NewCertificateServiceClient(conn),
-		ClientConn:               conn,
+		ManagerClient:     managerv1.NewManagerClient(conn),
+		CertificateClient: securityv1.NewCertificateClient(conn),
+		ClientConn:        conn,
 	}, nil
 }
 
@@ -120,7 +120,7 @@ type V1 interface {
 // v1 provides v1 version of the manager grpc function.
 type v1 struct {
 	managerv1.ManagerClient
-	securityv1.CertificateServiceClient
+	securityv1.CertificateClient
 	*grpc.ClientConn
 }
 
