@@ -109,7 +109,7 @@ func (d *dynconfigManager) GetResolveSchedulerAddrs() ([]resolver.Address, error
 				logger.Warnf("scheduler ip address %s is unreachable: %s", addr, err.Error())
 
 				// Check health with host address.
-				target = fmt.Sprintf("%s:%d", scheduler.GetHostName(), scheduler.GetPort())
+				target = fmt.Sprintf("%s:%d", scheduler.GetHostname(), scheduler.GetPort())
 				if err := healthclient.Check(context.Background(), target, dialOptions...); err != nil {
 					logger.Warnf("scheduler host address %s is unreachable: %s", addr, err.Error())
 				} else {
@@ -122,7 +122,7 @@ func (d *dynconfigManager) GetResolveSchedulerAddrs() ([]resolver.Address, error
 
 		if addr == "" {
 			logger.Warnf("scheduler %s %s %d has not reachable addresses",
-				scheduler.GetIp(), scheduler.GetHostName(), scheduler.GetPort())
+				scheduler.GetIp(), scheduler.GetHostname(), scheduler.GetPort())
 			continue
 		}
 
@@ -274,7 +274,7 @@ func newManagerClient(client managerclient.V1, cfg *DaemonOption) internaldyncon
 func (mc *managerClient) Get() (any, error) {
 	listSchedulersResp, err := mc.managerClient.ListSchedulers(context.Background(), &managerv1.ListSchedulersRequest{
 		SourceType: managerv1.SourceType_PEER_SOURCE,
-		HostName:   mc.config.Host.Hostname,
+		Hostname:   mc.config.Host.Hostname,
 		Ip:         mc.config.Host.AdvertiseIP.String(),
 		Version:    version.GitVersion,
 		Commit:     version.GitCommit,
@@ -291,7 +291,7 @@ func (mc *managerClient) Get() (any, error) {
 	if mc.config.ObjectStorage.Enable {
 		getObjectStorageResp, err := mc.managerClient.GetObjectStorage(context.Background(), &managerv1.GetObjectStorageRequest{
 			SourceType: managerv1.SourceType_PEER_SOURCE,
-			HostName:   mc.config.Host.Hostname,
+			Hostname:   mc.config.Host.Hostname,
 			Ip:         mc.config.Host.AdvertiseIP.String(),
 		})
 		if err != nil {

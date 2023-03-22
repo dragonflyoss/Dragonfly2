@@ -338,7 +338,7 @@ func parseAccessURL(url string) (*preheatImage, error) {
 func getSchedulerQueues(schedulers []models.Scheduler) []internaljob.Queue {
 	var queues []internaljob.Queue
 	for _, scheduler := range schedulers {
-		queue, err := internaljob.GetSchedulerQueue(scheduler.SchedulerClusterID, scheduler.HostName)
+		queue, err := internaljob.GetSchedulerQueue(scheduler.SchedulerClusterID, scheduler.Hostname)
 		if err != nil {
 			continue
 		}

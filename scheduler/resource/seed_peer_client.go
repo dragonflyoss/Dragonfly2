@@ -121,7 +121,7 @@ func (sc *seedPeerClient) updateSeedPeersForHostManager(seedPeers []*managerv2.S
 			concurrentUploadLimit = int32(config.LoadLimit)
 		}
 
-		id := idgen.HostIDV2(seedPeer.Ip, seedPeer.HostName)
+		id := idgen.HostIDV2(seedPeer.Ip, seedPeer.Hostname)
 		seedPeerHost, loaded := sc.hostManager.Load(id)
 		if !loaded {
 			options := []HostOption{WithNetwork(Network{
@@ -133,7 +133,7 @@ func (sc *seedPeerClient) updateSeedPeersForHostManager(seedPeers []*managerv2.S
 			}
 
 			host := NewHost(
-				id, seedPeer.Ip, seedPeer.HostName,
+				id, seedPeer.Ip, seedPeer.Hostname,
 				seedPeer.Port, seedPeer.DownloadPort, types.HostTypeSuperSeed,
 				options...,
 			)

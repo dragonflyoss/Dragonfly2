@@ -56,7 +56,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "foo",
+							Hostname: "foo",
 							State:    "active",
 						},
 					},
@@ -85,7 +85,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "foo",
+							Hostname: "foo",
 							State:    "active",
 						},
 					},
@@ -94,7 +94,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					Name: "bar",
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "bar",
+							Hostname: "bar",
 							State:    "active",
 						},
 					},
@@ -104,7 +104,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					Name: "baz",
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "baz",
+							Hostname: "baz",
 							State:    "active",
 						},
 					},
@@ -132,7 +132,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "foo",
+							Hostname: "foo",
 							State:    "active",
 						},
 					},
@@ -141,7 +141,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					Name: "bar",
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "bar",
+							Hostname: "bar",
 							State:    "active",
 						},
 					},
@@ -168,7 +168,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "foo",
+							Hostname: "foo",
 							State:    "active",
 						},
 					},
@@ -177,7 +177,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					Name: "bar",
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "bar",
+							Hostname: "bar",
 							State:    "active",
 						},
 					},
@@ -193,7 +193,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "baz",
+							Hostname: "baz",
 							State:    "active",
 						},
 					},
@@ -217,7 +217,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "foo",
+							Hostname: "foo",
 							State:    "active",
 						},
 					},
@@ -226,7 +226,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					Name: "bar",
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "bar",
+							Hostname: "bar",
 							State:    "active",
 						},
 					},
@@ -249,7 +249,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "foo",
+							Hostname: "foo",
 							State:    "active",
 						},
 					},
@@ -261,7 +261,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "bar",
+							Hostname: "bar",
 							State:    "active",
 						},
 					},
@@ -285,7 +285,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "foo",
+							Hostname: "foo",
 							State:    "active",
 						},
 					},
@@ -295,7 +295,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					Scopes: map[string]any{},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "bar",
+							Hostname: "bar",
 							State:    "active",
 						},
 					},
@@ -320,7 +320,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "foo",
+							Hostname: "foo",
 							State:    "active",
 						},
 					},
@@ -329,7 +329,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					Name: "bar",
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "bar",
+							Hostname: "bar",
 							State:    "active",
 						},
 					},
@@ -363,7 +363,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "foo",
+							Hostname: "foo",
 							State:    "active",
 						},
 					},
@@ -372,7 +372,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					Name: "bar",
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "bar",
+							Hostname: "bar",
 							State:    "active",
 						},
 					},
@@ -406,7 +406,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "foo",
+							Hostname: "foo",
 							State:    "active",
 						},
 					},
@@ -415,7 +415,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					Name: "bar",
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "bar",
+							Hostname: "bar",
 							State:    "active",
 						},
 					},
@@ -450,7 +450,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "foo",
+							Hostname: "foo",
 							State:    "active",
 						},
 					},
@@ -470,7 +470,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "bar",
+							Hostname: "bar",
 							State:    "active",
 						},
 					},
@@ -490,7 +490,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "baz",
+							Hostname: "baz",
 							State:    "active",
 						},
 					},
@@ -526,7 +526,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "foo",
+							Hostname: "foo",
 							State:    "active",
 						},
 					},
@@ -546,7 +546,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "bar",
+							Hostname: "bar",
 							State:    "active",
 						},
 					},
@@ -559,7 +559,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "baz",
+							Hostname: "baz",
 							State:    "active",
 						},
 					},
@@ -572,7 +572,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "bax",
+							Hostname: "bax",
 							State:    "active",
 						},
 					},
@@ -593,7 +593,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "bac",
+							Hostname: "bac",
 							State:    "active",
 						},
 					},
@@ -632,7 +632,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "foo",
+							Hostname: "foo",
 							State:    "active",
 						},
 					},
@@ -653,7 +653,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "bar",
+							Hostname: "bar",
 							State:    "active",
 						},
 					},
@@ -667,7 +667,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "baz",
+							Hostname: "baz",
 							State:    "active",
 						},
 					},
@@ -681,7 +681,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "bax",
+							Hostname: "bax",
 							State:    "active",
 						},
 					},
@@ -703,7 +703,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "bac",
+							Hostname: "bac",
 							State:    "active",
 						},
 					},
@@ -724,7 +724,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					Schedulers: []models.Scheduler{
 						{
-							HostName: "bae",
+							Hostname: "bae",
 							State:    "active",
 						},
 					},
