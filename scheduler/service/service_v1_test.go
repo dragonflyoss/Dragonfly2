@@ -170,7 +170,7 @@ var (
 		Ip:             "127.0.0.1",
 		RpcPort:        8003,
 		DownPort:       8001,
-		HostName:       "hostname",
+		Hostname:       "hostname",
 		SecurityDomain: mockHostSecurityDomain,
 		Location:       mockHostLocation,
 		Idc:            mockHostIDC,

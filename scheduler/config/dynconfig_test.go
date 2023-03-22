@@ -66,7 +66,7 @@ func TestDynconfig_Get(t *testing.T) {
 			mock: func(m *mocks.MockV2MockRecorder) {
 				m.GetScheduler(gomock.Any(), gomock.Any()).Return(&managerv2.Scheduler{
 					Id:       1,
-					HostName: "foo",
+					Hostname: "foo",
 					Idc:      "idc",
 					Location: "location",
 					Ip:       "127.0.0.1",
@@ -75,7 +75,7 @@ func TestDynconfig_Get(t *testing.T) {
 					SeedPeers: []*managerv2.SeedPeer{
 						{
 							Id:           1,
-							HostName:     "bar",
+							Hostname:     "bar",
 							Type:         types.HostTypeStrongSeedName,
 							Idc:          "idc",
 							Location:     "location",
@@ -121,7 +121,7 @@ func TestDynconfig_Get(t *testing.T) {
 				assert.EqualValues(data, &DynconfigData{
 					Scheduler: &managerv2.Scheduler{
 						Id:       1,
-						HostName: "foo",
+						Hostname: "foo",
 						Idc:      "idc",
 						Location: "location",
 						Ip:       "127.0.0.1",
@@ -130,7 +130,7 @@ func TestDynconfig_Get(t *testing.T) {
 						SeedPeers: []*managerv2.SeedPeer{
 							{
 								Id:           1,
-								HostName:     "bar",
+								Hostname:     "bar",
 								Type:         types.HostTypeStrongSeedName,
 								Idc:          "idc",
 								Location:     "location",
@@ -186,7 +186,7 @@ func TestDynconfig_Get(t *testing.T) {
 				gomock.InOrder(
 					m.GetScheduler(gomock.Any(), gomock.Any()).Return(&managerv2.Scheduler{
 						Id:       1,
-						HostName: "foo",
+						Hostname: "foo",
 						Idc:      "idc",
 						Location: "location",
 						Ip:       "127.0.0.1",
@@ -195,7 +195,7 @@ func TestDynconfig_Get(t *testing.T) {
 						SeedPeers: []*managerv2.SeedPeer{
 							{
 								Id:           1,
-								HostName:     "bar",
+								Hostname:     "bar",
 								Type:         types.HostTypeSuperSeedName,
 								Idc:          "idc",
 								Location:     "location",
@@ -243,7 +243,7 @@ func TestDynconfig_Get(t *testing.T) {
 				assert.EqualValues(data, &DynconfigData{
 					Scheduler: &managerv2.Scheduler{
 						Id:       1,
-						HostName: "foo",
+						Hostname: "foo",
 						Idc:      "idc",
 						Location: "location",
 						Ip:       "127.0.0.1",
@@ -252,7 +252,7 @@ func TestDynconfig_Get(t *testing.T) {
 						SeedPeers: []*managerv2.SeedPeer{
 							{
 								Id:           1,
-								HostName:     "bar",
+								Hostname:     "bar",
 								Type:         types.HostTypeSuperSeedName,
 								Idc:          "idc",
 								Location:     "location",
@@ -308,7 +308,7 @@ func TestDynconfig_Get(t *testing.T) {
 				gomock.InOrder(
 					m.GetScheduler(gomock.Any(), gomock.Any()).Return(&managerv2.Scheduler{
 						Id:       1,
-						HostName: "foo",
+						Hostname: "foo",
 						Idc:      "idc",
 						Location: "location",
 						Ip:       "127.0.0.1",
@@ -317,7 +317,7 @@ func TestDynconfig_Get(t *testing.T) {
 						SeedPeers: []*managerv2.SeedPeer{
 							{
 								Id:           1,
-								HostName:     "bar",
+								Hostname:     "bar",
 								Type:         types.HostTypeSuperSeedName,
 								Idc:          "idc",
 								Location:     "location",
@@ -359,7 +359,7 @@ func TestDynconfig_Get(t *testing.T) {
 					}, nil).Times(1),
 					m.GetScheduler(gomock.Any(), gomock.Any()).Return(&managerv2.Scheduler{
 						Id:       1,
-						HostName: "foo",
+						Hostname: "foo",
 						Idc:      "idc",
 						Location: "location",
 						Ip:       "127.0.0.1",
@@ -368,7 +368,7 @@ func TestDynconfig_Get(t *testing.T) {
 						SeedPeers: []*managerv2.SeedPeer{
 							{
 								Id:           1,
-								HostName:     "bar",
+								Hostname:     "bar",
 								Type:         types.HostTypeSuperSeedName,
 								Idc:          "idc",
 								Location:     "location",
@@ -397,7 +397,7 @@ func TestDynconfig_Get(t *testing.T) {
 				assert.EqualValues(data, &DynconfigData{
 					Scheduler: &managerv2.Scheduler{
 						Id:       1,
-						HostName: "foo",
+						Hostname: "foo",
 						Idc:      "idc",
 						Location: "location",
 						Ip:       "127.0.0.1",
@@ -406,7 +406,7 @@ func TestDynconfig_Get(t *testing.T) {
 						SeedPeers: []*managerv2.SeedPeer{
 							{
 								Id:           1,
-								HostName:     "bar",
+								Hostname:     "bar",
 								Type:         types.HostTypeSuperSeedName,
 								Idc:          "idc",
 								Location:     "location",

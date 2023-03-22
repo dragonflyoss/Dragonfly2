@@ -295,7 +295,7 @@ func (a *announcer) announceToManager() error {
 
 		if _, err := a.managerClient.UpdateSeedPeer(context.Background(), &managerv1.UpdateSeedPeerRequest{
 			SourceType:        managerv1.SourceType_SEED_PEER_SOURCE,
-			HostName:          a.config.Host.Hostname,
+			Hostname:          a.config.Host.Hostname,
 			Type:              a.config.Scheduler.Manager.SeedPeer.Type,
 			Idc:               a.config.Host.IDC,
 			Location:          a.config.Host.Location,
@@ -312,7 +312,7 @@ func (a *announcer) announceToManager() error {
 		go func() {
 			a.managerClient.KeepAlive(a.config.Scheduler.Manager.SeedPeer.KeepAlive.Interval, &managerv1.KeepAliveRequest{
 				SourceType: managerv1.SourceType_SEED_PEER_SOURCE,
-				HostName:   a.config.Host.Hostname,
+				Hostname:   a.config.Host.Hostname,
 				Ip:         a.config.Host.AdvertiseIP.String(),
 				ClusterId:  uint64(a.config.Scheduler.Manager.SeedPeer.ClusterID),
 			}, a.done)

@@ -37,10 +37,10 @@ const (
 )
 
 const (
-	// hdfsUseDataNodeHostName set hdfs client whether user hostname connect to datanode
-	hdfsUseDataNodeHostName = "dfs.client.use.datanode.hostname"
-	// hdfsUseDataNodeHostNameValue set value is true
-	hdfsUseDataNodeHostNameValue = "true"
+	// hdfsUseDataNodeHostname set hdfs client whether user hostname connect to datanode
+	hdfsUseDataNodeHostname = "dfs.client.use.datanode.hostname"
+	// hdfsUseDataNodeHostnameValue set value is true
+	hdfsUseDataNodeHostnameValue = "true"
 )
 
 func init() {
@@ -181,7 +181,7 @@ func (h *hdfsSourceClient) getHDFSClient(url *url.URL) (*hdfs.Client, error) {
 
 	// create client option
 	options := hdfs.ClientOptionsFromConf(map[string]string{
-		hdfsUseDataNodeHostName: hdfsUseDataNodeHostNameValue,
+		hdfsUseDataNodeHostname: hdfsUseDataNodeHostnameValue,
 	})
 
 	if strings.Contains(url.Host, ":") {

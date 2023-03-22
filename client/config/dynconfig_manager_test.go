@@ -186,7 +186,7 @@ func TestDynconfigManager_GetResolveSchedulerAddrs(t *testing.T) {
 				Schedulers: []*managerv1.Scheduler{
 					{
 						Ip:       "101.1.1.1",
-						HostName: "localhost",
+						Hostname: "localhost",
 						Port:     3000,
 					},
 				},
@@ -207,7 +207,7 @@ func TestDynconfigManager_GetResolveSchedulerAddrs(t *testing.T) {
 						Schedulers: []*managerv1.Scheduler{
 							{
 								Ip:       data.Schedulers[0].Ip,
-								HostName: data.Schedulers[0].HostName,
+								Hostname: data.Schedulers[0].Hostname,
 								Port:     data.Schedulers[0].Port,
 							},
 						},
@@ -478,7 +478,7 @@ func TestDynconfigManager_Get(t *testing.T) {
 			data: &DynconfigData{
 				Schedulers: []*managerv1.Scheduler{
 					{
-						HostName: "foo",
+						Hostname: "foo",
 					},
 				},
 				ObjectStorage: &managerv1.ObjectStorage{
@@ -496,7 +496,7 @@ func TestDynconfigManager_Get(t *testing.T) {
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{
 						Schedulers: []*managerv1.Scheduler{
 							{
-								HostName: data.Schedulers[0].HostName,
+								Hostname: data.Schedulers[0].Hostname,
 							},
 						},
 					}, nil).Times(1),
@@ -530,7 +530,7 @@ func TestDynconfigManager_Get(t *testing.T) {
 			data: &DynconfigData{
 				Schedulers: []*managerv1.Scheduler{
 					{
-						HostName: "foo",
+						Hostname: "foo",
 					},
 				},
 				ObjectStorage: &managerv1.ObjectStorage{
@@ -552,7 +552,7 @@ func TestDynconfigManager_Get(t *testing.T) {
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{
 						Schedulers: []*managerv1.Scheduler{
 							{
-								HostName: data.Schedulers[0].HostName,
+								Hostname: data.Schedulers[0].Hostname,
 							},
 						},
 					}, nil).Times(1),
@@ -586,7 +586,7 @@ func TestDynconfigManager_Get(t *testing.T) {
 			data: &DynconfigData{
 				Schedulers: []*managerv1.Scheduler{
 					{
-						HostName: "foo",
+						Hostname: "foo",
 					},
 				},
 			},
@@ -604,7 +604,7 @@ func TestDynconfigManager_Get(t *testing.T) {
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{
 						Schedulers: []*managerv1.Scheduler{
 							{
-								HostName: data.Schedulers[0].HostName,
+								Hostname: data.Schedulers[0].Hostname,
 							},
 						},
 					}, nil).Times(1),
@@ -635,7 +635,7 @@ func TestDynconfigManager_Get(t *testing.T) {
 			data: &DynconfigData{
 				Schedulers: []*managerv1.Scheduler{
 					{
-						HostName: "foo",
+						Hostname: "foo",
 					},
 				},
 				ObjectStorage: &managerv1.ObjectStorage{
@@ -655,7 +655,7 @@ func TestDynconfigManager_Get(t *testing.T) {
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{
 						Schedulers: []*managerv1.Scheduler{
 							{
-								HostName: data.Schedulers[0].HostName,
+								Hostname: data.Schedulers[0].Hostname,
 							},
 						},
 					}, nil).Times(1),
@@ -690,7 +690,7 @@ func TestDynconfigManager_Get(t *testing.T) {
 			data: &DynconfigData{
 				Schedulers: []*managerv1.Scheduler{
 					{
-						HostName: "foo",
+						Hostname: "foo",
 					},
 				},
 				ObjectStorage: &managerv1.ObjectStorage{
@@ -710,7 +710,7 @@ func TestDynconfigManager_Get(t *testing.T) {
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{
 						Schedulers: []*managerv1.Scheduler{
 							{
-								HostName: data.Schedulers[0].HostName,
+								Hostname: data.Schedulers[0].Hostname,
 							},
 						},
 					}, nil).Times(1),
@@ -746,7 +746,7 @@ func TestDynconfigManager_Get(t *testing.T) {
 			data: &DynconfigData{
 				Schedulers: []*managerv1.Scheduler{
 					{
-						HostName: "foo",
+						Hostname: "foo",
 					},
 				},
 				ObjectStorage: &managerv1.ObjectStorage{
@@ -766,7 +766,7 @@ func TestDynconfigManager_Get(t *testing.T) {
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{
 						Schedulers: []*managerv1.Scheduler{
 							{
-								HostName: data.Schedulers[0].HostName,
+								Hostname: data.Schedulers[0].Hostname,
 							},
 						},
 					}, nil).Times(1),
@@ -776,7 +776,7 @@ func TestDynconfigManager_Get(t *testing.T) {
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{
 						Schedulers: []*managerv1.Scheduler{
 							{
-								HostName: data.Schedulers[0].HostName,
+								Hostname: data.Schedulers[0].Hostname,
 							},
 						},
 					}, nil).Times(1),
@@ -790,7 +790,7 @@ func TestDynconfigManager_Get(t *testing.T) {
 				assert.EqualValues(result, &DynconfigData{
 					Schedulers: []*managerv1.Scheduler{
 						{
-							HostName: data.Schedulers[0].HostName,
+							Hostname: data.Schedulers[0].Hostname,
 						},
 					},
 					ObjectStorage: &managerv1.ObjectStorage{
@@ -896,7 +896,7 @@ func TestDynconfigManager_GetSchedulers(t *testing.T) {
 			data: &DynconfigData{
 				Schedulers: []*managerv1.Scheduler{
 					{
-						HostName: "foo",
+						Hostname: "foo",
 					},
 				},
 			},
@@ -911,7 +911,7 @@ func TestDynconfigManager_GetSchedulers(t *testing.T) {
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{
 						Schedulers: []*managerv1.Scheduler{
 							{
-								HostName: data.Schedulers[0].HostName,
+								Hostname: data.Schedulers[0].Hostname,
 							},
 						},
 					}, nil).Times(1),
@@ -943,7 +943,7 @@ func TestDynconfigManager_GetSchedulers(t *testing.T) {
 			data: &DynconfigData{
 				Schedulers: []*managerv1.Scheduler{
 					{
-						HostName: "foo",
+						Hostname: "foo",
 					},
 				},
 			},
@@ -962,7 +962,7 @@ func TestDynconfigManager_GetSchedulers(t *testing.T) {
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{
 						Schedulers: []*managerv1.Scheduler{
 							{
-								HostName: data.Schedulers[0].HostName,
+								Hostname: data.Schedulers[0].Hostname,
 							},
 						},
 					}, nil).Times(1),
@@ -994,7 +994,7 @@ func TestDynconfigManager_GetSchedulers(t *testing.T) {
 			data: &DynconfigData{
 				Schedulers: []*managerv1.Scheduler{
 					{
-						HostName: "foo",
+						Hostname: "foo",
 					},
 				},
 			},
@@ -1011,7 +1011,7 @@ func TestDynconfigManager_GetSchedulers(t *testing.T) {
 					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{
 						Schedulers: []*managerv1.Scheduler{
 							{
-								HostName: data.Schedulers[0].HostName,
+								Hostname: data.Schedulers[0].Hostname,
 							},
 						},
 					}, nil).Times(1),

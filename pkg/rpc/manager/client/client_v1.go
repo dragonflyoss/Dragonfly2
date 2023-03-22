@@ -182,7 +182,7 @@ func (v *v1) ListApplications(ctx context.Context, req *managerv1.ListApplicatio
 
 // List acitve schedulers configuration.
 func (v *v1) KeepAlive(interval time.Duration, keepalive *managerv1.KeepAliveRequest, done <-chan struct{}, opts ...grpc.CallOption) {
-	log := logger.WithKeepAlive(keepalive.HostName, keepalive.Ip, keepalive.SourceType.Enum().String(), keepalive.ClusterId)
+	log := logger.WithKeepAlive(keepalive.Hostname, keepalive.Ip, keepalive.SourceType.Enum().String(), keepalive.ClusterId)
 retry:
 	ctx, cancel := context.WithCancel(context.Background())
 	stream, err := v.ManagerClient.KeepAlive(ctx, opts...)
@@ -204,7 +204,7 @@ retry:
 		case <-tick.C:
 			if err := stream.Send(&managerv1.KeepAliveRequest{
 				SourceType: keepalive.SourceType,
-				HostName:   keepalive.HostName,
+				Hostname:   keepalive.Hostname,
 				Ip:         keepalive.Ip,
 				ClusterId:  keepalive.ClusterId,
 			}); err != nil {

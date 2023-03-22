@@ -21,7 +21,7 @@ type SchedulerParams struct {
 }
 
 type CreateSchedulerRequest struct {
-	HostName           string `json:"host_name" binding:"required"`
+	Hostname           string `json:"host_name" binding:"required"`
 	IDC                string `json:"idc" binding:"omitempty"`
 	Location           string `json:"location" binding:"omitempty"`
 	IP                 string `json:"ip" binding:"required"`
@@ -41,7 +41,7 @@ type UpdateSchedulerRequest struct {
 type GetSchedulersQuery struct {
 	Page               int    `form:"page" binding:"omitempty,gte=1"`
 	PerPage            int    `form:"per_page" binding:"omitempty,gte=1,lte=50"`
-	HostName           string `form:"host_name" binding:"omitempty"`
+	Hostname           string `form:"host_name" binding:"omitempty"`
 	IDC                string `form:"idc" binding:"omitempty"`
 	Location           string `form:"location" binding:"omitempty"`
 	IP                 string `form:"ip" binding:"omitempty"`

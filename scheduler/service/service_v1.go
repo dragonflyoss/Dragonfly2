@@ -781,7 +781,7 @@ func (v *V1) storeHost(ctx context.Context, peerHost *schedulerv1.PeerHost) *res
 		}
 
 		host := resource.NewHost(
-			peerHost.Id, peerHost.Ip, peerHost.HostName,
+			peerHost.Id, peerHost.Ip, peerHost.Hostname,
 			peerHost.RpcPort, peerHost.DownPort, types.HostTypeNormal,
 			options...,
 		)

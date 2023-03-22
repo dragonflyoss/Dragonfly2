@@ -58,7 +58,7 @@ func New(cfg *config.Config, managerClient managerclient.V2) (Announcer, error) 
 	// Register to manager.
 	if _, err := a.managerClient.UpdateScheduler(context.Background(), &managerv2.UpdateSchedulerRequest{
 		SourceType:         managerv2.SourceType_SCHEDULER_SOURCE,
-		HostName:           a.config.Server.Host,
+		Hostname:           a.config.Server.Host,
 		Ip:                 a.config.Server.AdvertiseIP.String(),
 		Port:               int32(a.config.Server.AdvertisePort),
 		Idc:                a.config.Host.IDC,
@@ -92,7 +92,7 @@ func (a *announcer) announceToManager() error {
 	// Start keepalive to manager.
 	a.managerClient.KeepAlive(a.config.Manager.KeepAlive.Interval, &managerv2.KeepAliveRequest{
 		SourceType: managerv2.SourceType_SCHEDULER_SOURCE,
-		HostName:   a.config.Server.Host,
+		Hostname:   a.config.Server.Host,
 		Ip:         a.config.Server.AdvertiseIP.String(),
 		ClusterId:  uint64(a.config.Manager.SchedulerClusterID),
 	}, a.done)

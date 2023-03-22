@@ -186,7 +186,7 @@ func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 				logger.Warnf("seed peer ip address %s is unreachable: %s", addr, err.Error())
 
 				// Check health with host address.
-				target = fmt.Sprintf("%s:%d", seedPeer.GetHostName(), seedPeer.GetPort())
+				target = fmt.Sprintf("%s:%d", seedPeer.GetHostname(), seedPeer.GetPort())
 				if err := healthclient.Check(context.Background(), target, dialOptions...); err != nil {
 					logger.Warnf("seed peer host address %s is unreachable: %s", addr, err.Error())
 				} else {
@@ -199,7 +199,7 @@ func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 
 		if addr == "" {
 			logger.Warnf("seed peer %s %s %s has not reachable addresses",
-				seedPeer.GetIp(), seedPeer.GetHostName(), seedPeer.GetPort())
+				seedPeer.GetIp(), seedPeer.GetHostname(), seedPeer.GetPort())
 			continue
 		}
 
@@ -403,7 +403,7 @@ func newManagerClient(client managerclient.V2, cfg *Config) dc.ManagerClient {
 func (mc *managerClient) Get() (any, error) {
 	getSchedulerResp, err := mc.managerClient.GetScheduler(context.Background(), &managerv2.GetSchedulerRequest{
 		SourceType:         managerv2.SourceType_SCHEDULER_SOURCE,
-		HostName:           mc.config.Server.Host,
+		Hostname:           mc.config.Server.Host,
 		Ip:                 mc.config.Server.AdvertiseIP.String(),
 		SchedulerClusterId: uint64(mc.config.Manager.SchedulerClusterID),
 	})
@@ -413,7 +413,7 @@ func (mc *managerClient) Get() (any, error) {
 
 	listApplicationsResp, err := mc.managerClient.ListApplications(context.Background(), &managerv2.ListApplicationsRequest{
 		SourceType: managerv2.SourceType_SCHEDULER_SOURCE,
-		HostName:   mc.config.Server.Host,
+		Hostname:   mc.config.Server.Host,
 		Ip:         mc.config.Server.AdvertiseIP.String(),
 	})
 	if err != nil {
