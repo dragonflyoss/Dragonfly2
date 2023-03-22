@@ -76,8 +76,8 @@ func GetV1(ctx context.Context, target string, opts ...grpc.DialOption) (V1, err
 	}
 
 	return &v1{
-		CertificateServiceClient: securityv1.NewCertificateServiceClient(conn),
-		ClientConn:               conn,
+		CertificateClient: securityv1.NewCertificateClient(conn),
+		ClientConn:        conn,
 	}, nil
 }
 
@@ -106,7 +106,7 @@ type V1 interface {
 
 // clientV1 provides v1 version of the manager grpc function.
 type v1 struct {
-	securityv1.CertificateServiceClient
+	securityv1.CertificateClient
 	*grpc.ClientConn
 }
 
@@ -115,5 +115,5 @@ func (v *v1) IssueCertificate(ctx context.Context, req *securityv1.CertificateRe
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	return v.CertificateServiceClient.IssueCertificate(ctx, req, opts...)
+	return v.CertificateClient.IssueCertificate(ctx, req, opts...)
 }

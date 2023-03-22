@@ -41,7 +41,7 @@ type securityServerV1 struct {
 }
 
 // newSecurityServerV1 returns v1 version of the security server.
-func newSecurityServerV1(selfSignedCert *SelfSignedCert) securityv1.CertificateServiceServer {
+func newSecurityServerV1(selfSignedCert *SelfSignedCert) securityv1.CertificateServer {
 	return &securityServerV1{
 		selfSignedCert: selfSignedCert,
 	}
