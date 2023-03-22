@@ -27,6 +27,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"gorm.io/gorm"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
@@ -679,6 +680,12 @@ func (s *managerServerV1) ListApplications(ctx context.Context, req *managerv1.L
 	}
 
 	return &pbListApplicationsResponse, nil
+}
+
+// TODO(MinH-09) Implement function.
+// CreateModel creates model and update data of model to object storage.
+func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.CreateModelRequest) (*emptypb.Empty, error) {
+	return new(emptypb.Empty), nil
 }
 
 // KeepAlive with manager.
