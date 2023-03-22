@@ -110,6 +110,9 @@ type V2 interface {
 	// List applications configuration.
 	ListApplications(context.Context, *managerv2.ListApplicationsRequest, ...grpc.CallOption) (*managerv2.ListApplicationsResponse, error)
 
+	// Create model and update data of model to object storage.
+	CreateModel(context.Context, *managerv2.CreateModelRequest, ...grpc.CallOption) error
+
 	// KeepAlive with manager.
 	KeepAlive(time.Duration, *managerv2.KeepAliveRequest, <-chan struct{}, ...grpc.CallOption)
 
@@ -178,6 +181,15 @@ func (v *v2) ListApplications(ctx context.Context, req *managerv2.ListApplicatio
 	defer cancel()
 
 	return v.ManagerClient.ListApplications(ctx, req, opts...)
+}
+
+// Create model and update data of model to object storage.
+func (v *v2) CreateModel(ctx context.Context, req *managerv2.CreateModelRequest, opts ...grpc.CallOption) error {
+	ctx, cancel := context.WithTimeout(ctx, createModelContextTimeout)
+	defer cancel()
+
+	_, err := v.ManagerClient.CreateModel(ctx, req, opts...)
+	return err
 }
 
 // List acitve schedulers configuration.
