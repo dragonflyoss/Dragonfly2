@@ -15,8 +15,8 @@ type Probes interface {
 	// StoreProbe stores probe in probe list.
 	StoreProbe(*Probe)
 
-	// GetProbes gets the probes list from struct probes
-	GetProbes() *list.List
+	// GetQueue gets the probes list from struct probes
+	GetQueue() *list.List
 
 	// GetUpdatedAt gets the probe update time.
 	GetUpdatedAt() time.Time
@@ -67,8 +67,8 @@ func (p *probes) StoreProbe(pro *Probe) {
 	p.AverageRTT = time.Duration(averageRTT)
 }
 
-// GetProbes gets the probes list from struct probes
-func (p *probes) GetProbes() *list.List {
+// GetQueue gets the probes list from struct probes
+func (p *probes) GetQueue() *list.List {
 	return p.Queue
 }
 
