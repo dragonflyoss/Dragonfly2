@@ -263,7 +263,7 @@ func TestProbes_GetItems(t *testing.T) {
 			rawProbes: mockProbesWithThreeProbe,
 			expect: func(t *testing.T, queue *list.List) {
 				assert := assert.New(t)
-				assert.Equal(queue.Len(), len(mockProbesWithOneProbe))
+				assert.Equal(queue.Len(), len(mockProbesWithThreeProbe))
 			},
 		},
 		{
