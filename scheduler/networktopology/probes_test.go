@@ -115,8 +115,6 @@ var (
 			UpdatedAt: time.Now().Local(),
 		},
 	}
-
-	mockInitTime = time.Date(2023, time.January, 1, 0, 0, 0, 0, time.Local)
 )
 
 func TestProbes_NewProbes(t *testing.T) {
@@ -272,7 +270,7 @@ func TestProbes_GetUpdatedAt(t *testing.T) {
 			rawProbes: []*probe{},
 			expect: func(t *testing.T, updatedAt time.Time) {
 				assert := assert.New(t)
-				assert.Equal(updatedAt, mockInitTime)
+				assert.Equal(updatedAt, time.Time{}.UTC())
 			},
 		},
 	}

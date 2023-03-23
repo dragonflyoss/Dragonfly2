@@ -8,9 +8,6 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
-// TODO(XZ): Here we need to design a timestamp measurement point.
-var initTime = time.Date(2023, time.January, 1, 0, 0, 0, 0, time.Local)
-
 type Probes interface {
 	// LoadProbe return the latest probe.
 	LoadProbe() (*probe, bool)
@@ -31,8 +28,8 @@ type Probes interface {
 type probes struct {
 	// Host metadata.
 	Host *resource.Host
-	// Probes is the array of probe.
-	Probes *list.List
+	// Queue is the list of probe.
+	Queue *list.List
 	// AverageRTT is the average round-trip time of probes.
 	AverageRTT time.Duration
 }
@@ -41,30 +38,30 @@ type probes struct {
 func NewProbes(host *resource.Host) Probes {
 	p := &probes{
 		Host:       host,
-		Probes:     list.New(),
+		Queue:      list.New(),
 		AverageRTT: time.Duration(0),
 	}
 	return p
 }
 
 func (p *probes) LoadProbe() (*probe, bool) {
-	if p.Probes.Len() == 0 {
+	if p.Queue.Len() == 0 {
 		return nil, false
 	}
-	return p.Probes.Back().Value.(*probe), true
+	return p.Queue.Back().Value.(*probe), true
 }
 
 // StoreProbe stores probe in probe list.
 func (p *probes) StoreProbe(pro *probe) {
-	if p.Probes.Len() == config.DefaultProbeQueueLength {
-		front := p.Probes.Front()
-		p.Probes.Remove(front)
+	if p.Queue.Len() == config.DefaultProbeQueueLength {
+		front := p.Queue.Front()
+		p.Queue.Remove(front)
 	}
-	p.Probes.PushBack(pro)
+	p.Queue.PushBack(pro)
 
 	//update AverageRtt by moving average method
-	var averageRTT = float64(p.Probes.Front().Value.(*probe).RTT)
-	for e := p.Probes.Front().Next(); e != nil; e = e.Next() {
+	var averageRTT = float64(p.Queue.Front().Value.(*probe).RTT)
+	for e := p.Queue.Front().Next(); e != nil; e = e.Next() {
 		averageRTT = averageRTT*0.1 + float64(e.Value.(*probe).RTT)*0.9
 	}
 	p.AverageRTT = time.Duration(averageRTT)
@@ -72,20 +69,20 @@ func (p *probes) StoreProbe(pro *probe) {
 
 // GetProbes gets the probes list from struct probes
 func (p *probes) GetProbes() *list.List {
-	return p.Probes
+	return p.Queue
 }
 
 // GetUpdatedAt gets the probe update time.
 func (p *probes) GetUpdatedAt() time.Time {
-	if p.Probes.Len() != 0 {
-		return p.Probes.Back().Value.(*probe).UpdatedAt
+	if p.Queue.Len() != 0 {
+		return p.Queue.Back().Value.(*probe).UpdatedAt
 	}
-	return initTime
+	return time.Time{}.UTC()
 }
 
 // GetAverageRTT gets the average RTT of probes.
 func (p *probes) GetAverageRTT() time.Duration {
-	if p.Probes.Len() != 0 {
+	if p.Queue.Len() != 0 {
 		return p.AverageRTT
 	}
 	return time.Duration(0)

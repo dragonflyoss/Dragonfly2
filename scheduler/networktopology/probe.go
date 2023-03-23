@@ -1,10 +1,12 @@
 package networktopology
 
 import (
-	"d7y.io/dragonfly/v2/scheduler/resource"
+	"time"
+
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"time"
+
+	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
 type probe struct {
