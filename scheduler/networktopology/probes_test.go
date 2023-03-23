@@ -57,7 +57,7 @@ var (
 		UpdatedAt:       atomic.NewTime(time.Now()),
 	}
 
-	mockProbesWithOneProbe = []*probe{
+	mockProbesWithOneProbe = []*Probe{
 		{
 			Host:      mockDestHost,
 			RTT:       30 * time.Millisecond,
@@ -65,7 +65,7 @@ var (
 		},
 	}
 
-	mockProbesWithThreeProbe = []*probe{
+	mockProbesWithThreeProbe = []*Probe{
 		{
 			Host:      mockDestHost,
 			RTT:       30 * time.Millisecond,
@@ -83,7 +83,7 @@ var (
 		},
 	}
 
-	mockProbesWithSixProbe = []*probe{
+	mockProbesWithSixProbe = []*Probe{
 		{
 			Host:      mockDestHost,
 			RTT:       30 * time.Millisecond,
@@ -140,7 +140,7 @@ func TestProbes_NewProbes(t *testing.T) {
 func TestProbes_LoadProbe(t *testing.T) {
 	tests := []struct {
 		name      string
-		rawProbes []*probe
+		rawProbes []*Probe
 		expect    func(t *testing.T, probes Probes)
 	}{
 		{
@@ -169,7 +169,7 @@ func TestProbes_LoadProbe(t *testing.T) {
 		},
 		{
 			name:      "probe does not exist",
-			rawProbes: []*probe{},
+			rawProbes: []*Probe{},
 			expect: func(t *testing.T, probes Probes) {
 				assert := assert.New(t)
 				probe, loaded := probes.LoadProbe()
@@ -192,7 +192,7 @@ func TestProbes_LoadProbe(t *testing.T) {
 func TestProbes_StoreProbe(t *testing.T) {
 	tests := []struct {
 		name      string
-		rawProbes []*probe
+		rawProbes []*Probe
 		expect    func(t *testing.T, probes Probes)
 	}{
 		{
@@ -219,9 +219,9 @@ func TestProbes_StoreProbe(t *testing.T) {
 				assert.Equal(probes.GetProbes().Len(), config.DefaultProbeQueueLength)
 				p, loaded := probes.LoadProbe()
 
-				var averageRTT = float64(probes.GetProbes().Front().Value.(*probe).RTT)
+				var averageRTT = float64(probes.GetProbes().Front().Value.(*Probe).RTT)
 				for e := probes.GetProbes().Front().Next(); e != nil; e = e.Next() {
-					averageRTT = averageRTT*0.1 + float64(e.Value.(*probe).RTT)*0.9
+					averageRTT = averageRTT*0.1 + float64(e.Value.(*Probe).RTT)*0.9
 				}
 				assert.Equal(probes.GetAverageRTT(), time.Duration(averageRTT))
 
@@ -246,7 +246,7 @@ func TestProbes_StoreProbe(t *testing.T) {
 func TestProbes_GetUpdatedAt(t *testing.T) {
 	tests := []struct {
 		name      string
-		rawProbes []*probe
+		rawProbes []*Probe
 		expect    func(t *testing.T, updatedAt time.Time)
 	}{
 		{
@@ -267,7 +267,7 @@ func TestProbes_GetUpdatedAt(t *testing.T) {
 		},
 		{
 			name:      "failed to get the update time",
-			rawProbes: []*probe{},
+			rawProbes: []*Probe{},
 			expect: func(t *testing.T, updatedAt time.Time) {
 				assert := assert.New(t)
 				assert.Equal(updatedAt, time.Time{}.UTC())
@@ -289,7 +289,7 @@ func TestProbes_GetUpdatedAt(t *testing.T) {
 func TestProbes_GetAverageRTT(t *testing.T) {
 	tests := []struct {
 		name      string
-		rawProbes []*probe
+		rawProbes []*Probe
 		expect    func(t *testing.T, averageRTT time.Duration)
 	}{
 		{
@@ -316,7 +316,7 @@ func TestProbes_GetAverageRTT(t *testing.T) {
 		},
 		{
 			name:      "failed to get the average RTT",
-			rawProbes: []*probe{},
+			rawProbes: []*Probe{},
 			expect: func(t *testing.T, averageRTT time.Duration) {
 				assert := assert.New(t)
 				assert.Equal(averageRTT, time.Duration(0))

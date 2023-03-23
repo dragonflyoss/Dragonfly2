@@ -9,7 +9,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
-type probe struct {
+type Probe struct {
 	// Host metadata.
 	Host *resource.Host
 	// RTT is the round-trip time sent via this pinger.
@@ -19,8 +19,8 @@ type probe struct {
 }
 
 // NewProbe creates a new probe instance.
-func NewProbe(host *resource.Host, RTT *durationpb.Duration, UpdatedAt *timestamppb.Timestamp) *probe {
-	p := &probe{
+func NewProbe(host *resource.Host, RTT *durationpb.Duration, UpdatedAt *timestamppb.Timestamp) *Probe {
+	p := &Probe{
 		Host:      host,
 		RTT:       RTT.AsDuration(),
 		UpdatedAt: UpdatedAt.AsTime().Local(),

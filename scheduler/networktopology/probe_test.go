@@ -94,7 +94,7 @@ var (
 	mockHostLocation       = "location"
 	mockHostIDC            = "idc"
 
-	mockRawProbe = &probe{
+	mockRawProbe = &Probe{
 		Host:      mockHost,
 		RTT:       30 * time.Millisecond,
 		UpdatedAt: time.Now().Local(),
@@ -104,20 +104,20 @@ var (
 func TestProbe_NewProbe(t *testing.T) {
 	tests := []struct {
 		name   string
-		expect func(t *testing.T, probe *probe)
+		expect func(t *testing.T, p *Probe)
 	}{
 		{
 			name: "new probe",
-			expect: func(t *testing.T, probe *probe) {
+			expect: func(t *testing.T, p *Probe) {
 				assert := assert.New(t)
-				assert.Equal(probe.Host.ID, mockRawProbe.Host.ID)
-				assert.Equal(probe.Host.Port, mockRawProbe.Host.Port)
-				assert.Equal(probe.Host.DownloadPort, mockRawProbe.Host.DownloadPort)
-				assert.Equal(probe.Host.Network.SecurityDomain, mockRawProbe.Host.Network.SecurityDomain)
-				assert.Equal(probe.Host.Network.Location, mockRawProbe.Host.Network.Location)
-				assert.Equal(probe.Host.Network.IDC, mockRawProbe.Host.Network.IDC)
-				assert.Equal(probe.RTT, mockRawProbe.RTT)
-				assert.Equal(probe.UpdatedAt, mockRawProbe.UpdatedAt)
+				assert.Equal(p.Host.ID, mockRawProbe.Host.ID)
+				assert.Equal(p.Host.Port, mockRawProbe.Host.Port)
+				assert.Equal(p.Host.DownloadPort, mockRawProbe.Host.DownloadPort)
+				assert.Equal(p.Host.Network.SecurityDomain, mockRawProbe.Host.Network.SecurityDomain)
+				assert.Equal(p.Host.Network.Location, mockRawProbe.Host.Network.Location)
+				assert.Equal(p.Host.Network.IDC, mockRawProbe.Host.Network.IDC)
+				assert.Equal(p.RTT, mockRawProbe.RTT)
+				assert.Equal(p.UpdatedAt, mockRawProbe.UpdatedAt)
 			},
 		},
 	}
