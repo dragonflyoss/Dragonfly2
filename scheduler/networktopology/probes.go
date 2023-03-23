@@ -15,8 +15,8 @@ type Probes interface {
 	// StoreProbe stores probe in probe list.
 	StoreProbe(*Probe)
 
-	// GetQueue gets the probes list from struct probes
-	GetQueue() *list.List
+	// GetItems gets the probes list from struct probes
+	GetItems() *list.List
 
 	// GetUpdatedAt gets the probe update time.
 	GetUpdatedAt() time.Time
@@ -28,8 +28,8 @@ type Probes interface {
 type probes struct {
 	// Host metadata.
 	Host *resource.Host
-	// Queue is the list of probe.
-	Queue *list.List
+	// Items is the list of probe.
+	Items *list.List
 	// AverageRTT is the average round-trip time of probes.
 	AverageRTT time.Duration
 }
@@ -38,51 +38,51 @@ type probes struct {
 func NewProbes(host *resource.Host) Probes {
 	p := &probes{
 		Host:       host,
-		Queue:      list.New(),
+		Items:      list.New(),
 		AverageRTT: time.Duration(0),
 	}
 	return p
 }
 
 func (p *probes) LoadProbe() (*Probe, bool) {
-	if p.Queue.Len() == 0 {
+	if p.Items.Len() == 0 {
 		return nil, false
 	}
-	return p.Queue.Back().Value.(*Probe), true
+	return p.Items.Back().Value.(*Probe), true
 }
 
 // StoreProbe stores probe in probe list.
 func (p *probes) StoreProbe(pro *Probe) {
-	if p.Queue.Len() == config.DefaultProbeQueueLength {
-		front := p.Queue.Front()
-		p.Queue.Remove(front)
+	if p.Items.Len() == config.DefaultProbeQueueLength {
+		front := p.Items.Front()
+		p.Items.Remove(front)
 	}
-	p.Queue.PushBack(pro)
+	p.Items.PushBack(pro)
 
 	//update AverageRtt by moving average method
-	var averageRTT = float64(p.Queue.Front().Value.(*Probe).RTT)
-	for e := p.Queue.Front().Next(); e != nil; e = e.Next() {
+	var averageRTT = float64(p.Items.Front().Value.(*Probe).RTT)
+	for e := p.Items.Front().Next(); e != nil; e = e.Next() {
 		averageRTT = averageRTT*0.1 + float64(e.Value.(*Probe).RTT)*0.9
 	}
 	p.AverageRTT = time.Duration(averageRTT)
 }
 
-// GetQueue gets the probes list from struct probes
-func (p *probes) GetQueue() *list.List {
-	return p.Queue
+// GetItems gets the probes list from struct probes
+func (p *probes) GetItems() *list.List {
+	return p.Items
 }
 
 // GetUpdatedAt gets the probe update time.
 func (p *probes) GetUpdatedAt() time.Time {
-	if p.Queue.Len() != 0 {
-		return p.Queue.Back().Value.(*Probe).UpdatedAt
+	if p.Items.Len() != 0 {
+		return p.Items.Back().Value.(*Probe).UpdatedAt
 	}
 	return time.Time{}.UTC()
 }
 
 // GetAverageRTT gets the average RTT of probes.
 func (p *probes) GetAverageRTT() time.Duration {
-	if p.Queue.Len() != 0 {
+	if p.Items.Len() != 0 {
 		return p.AverageRTT
 	}
 	return time.Duration(0)

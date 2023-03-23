@@ -201,7 +201,7 @@ func TestProbes_StoreProbe(t *testing.T) {
 			rawProbes: mockProbesWithOneProbe,
 			expect: func(t *testing.T, probes Probes) {
 				assert := assert.New(t)
-				assert.Equal(probes.GetQueue().Len(), 1)
+				assert.Equal(probes.GetItems().Len(), 1)
 				p, loaded := probes.LoadProbe()
 				assert.Equal(loaded, true)
 				assert.Equal(probes.GetAverageRTT(), p.RTT)
@@ -217,11 +217,11 @@ func TestProbes_StoreProbe(t *testing.T) {
 			rawProbes: mockProbesWithSixProbe,
 			expect: func(t *testing.T, probes Probes) {
 				assert := assert.New(t)
-				assert.Equal(probes.GetQueue().Len(), config.DefaultProbeQueueLength)
+				assert.Equal(probes.GetItems().Len(), config.DefaultProbeQueueLength)
 				p, loaded := probes.LoadProbe()
 
-				var averageRTT = float64(probes.GetQueue().Front().Value.(*Probe).RTT)
-				for e := probes.GetQueue().Front().Next(); e != nil; e = e.Next() {
+				var averageRTT = float64(probes.GetItems().Front().Value.(*Probe).RTT)
+				for e := probes.GetItems().Front().Next(); e != nil; e = e.Next() {
 					averageRTT = averageRTT*0.1 + float64(e.Value.(*Probe).RTT)*0.9
 				}
 				assert.Equal(probes.GetAverageRTT(), time.Duration(averageRTT))
@@ -244,7 +244,7 @@ func TestProbes_StoreProbe(t *testing.T) {
 	}
 }
 
-func TestProbes_GetQueue(t *testing.T) {
+func TestProbes_GetItems(t *testing.T) {
 	tests := []struct {
 		name      string
 		rawProbes []*Probe
@@ -282,7 +282,7 @@ func TestProbes_GetQueue(t *testing.T) {
 			for _, p := range tc.rawProbes {
 				probes.StoreProbe(p)
 			}
-			tc.expect(t, probes.GetQueue())
+			tc.expect(t, probes.GetItems())
 		})
 	}
 }
