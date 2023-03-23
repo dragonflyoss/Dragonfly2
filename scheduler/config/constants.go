@@ -171,3 +171,25 @@ const (
 	// DefaultProbeSyncCount is the default number of probing hosts.
 	DefaultProbeSyncCount = 50
 )
+
+const (
+	// DefaultNetworkRecordDataPath is default data path for network record
+	DefaultNetworkRecordDataPath = "networkRecord"
+
+	// DefaultStorageMaxSize is the default maximum size of network record.
+	DefaultNetworkRecordMaxSize = 100
+
+	// The default setting needs to be changed after testing.
+	// DefaultMaxBackups is the default maximum count of network records.
+	DefaultNetworkRecordMaxBackups = 10
+
+	// DefaultNetworkRecordDataPath is default data path for network record
+	DefaultHistoricalRecordDataPath = "historicalRecord"
+
+	// DefaultHistoricalRecordMaxSize is the default maximum size of network record.
+	DefaultHistoricalRecordMaxSize = 100
+
+	// The default setting needs to be changed after testing.
+	// DefaultHistoricalRecordMaxBackups is the default maximum count of network records.
+	DefaultHistoricalRecordMaxBackups = 10
+)
