@@ -1,17 +1,17 @@
 package networktopology
 
 import (
-	"container/list"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/atomic"
 
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/atomic"
 )
 
 var (
@@ -55,17 +55,6 @@ var (
 		Build:           mockBuild,
 		CreatedAt:       atomic.NewTime(time.Now()),
 		UpdatedAt:       atomic.NewTime(time.Now()),
-	}
-
-	mockProbe = &probe{
-		Host:      mockDestHost,
-		RTT:       30 * time.Millisecond,
-		UpdatedAt: time.Now().Local(),
-	}
-	mockProbes = &probes{
-		Host:       mockSrcHost,
-		Probes:     list.New(),
-		AverageRTT: time.Duration(0),
 	}
 
 	mockProbesWithOneProbe = []*probe{
