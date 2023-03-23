@@ -4,9 +4,6 @@ import (
 	"container/list"
 	"time"
 
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
@@ -14,26 +11,24 @@ import (
 // TODO(XZ): Here we need to design a timestamp measurement point.
 var initTime = time.Date(2023, time.January, 1, 0, 0, 0, 0, time.Local)
 
-type Probe struct {
-	// Host metadata.
-	Host *resource.Host
-	// RTT is the round-trip time sent via this pinger.
-	RTT time.Duration
-	// Probe update time.
-	UpdatedAt time.Time
+type Probes interface {
+	// LoadProbe return the latest probe.
+	LoadProbe() (*probe, bool)
+
+	// StoreProbe stores probe in probe list.
+	StoreProbe(*probe)
+
+	// GetProbes gets the probes list from struct probes
+	GetProbes() *list.List
+
+	// GetUpdatedAt gets the probe update time.
+	GetUpdatedAt() time.Time
+
+	// GetAverageRTT gets the average RTT of probes.
+	GetAverageRTT() time.Duration
 }
 
-// NewProbe creates a new probe instance.
-func NewProbe(host *resource.Host, RTT *durationpb.Duration, UpdatedAt *timestamppb.Timestamp) *Probe {
-	p := &Probe{
-		Host:      host,
-		RTT:       RTT.AsDuration(),
-		UpdatedAt: UpdatedAt.AsTime().Local(),
-	}
-	return p
-}
-
-type Probes struct {
+type probes struct {
 	// Host metadata.
 	Host *resource.Host
 	// Probes is the array of probe.
@@ -43,8 +38,8 @@ type Probes struct {
 }
 
 // NewProbes creates a new probe list instance.
-func NewProbes(host *resource.Host) *Probes {
-	p := &Probes{
+func NewProbes(host *resource.Host) Probes {
+	p := &probes{
 		Host:       host,
 		Probes:     list.New(),
 		AverageRTT: time.Duration(0),
@@ -52,42 +47,46 @@ func NewProbes(host *resource.Host) *Probes {
 	return p
 }
 
-// LoadProbe return the latest probe.
-func (p *Probes) LoadProbe() (*Probe, bool) {
+func (p *probes) LoadProbe() (*probe, bool) {
 	if p.Probes.Len() == 0 {
 		return nil, false
 	}
-	return p.Probes.Back().Value.(*Probe), true
+	return p.Probes.Back().Value.(*probe), true
 }
 
 // StoreProbe stores probe in probe list.
-func (p *Probes) StoreProbe(probe *Probe) {
+func (p *probes) StoreProbe(pro *probe) {
 	if p.Probes.Len() == config.DefaultProbeQueueLength {
 		front := p.Probes.Front()
 		p.Probes.Remove(front)
 	}
-	p.Probes.PushBack(probe)
+	p.Probes.PushBack(pro)
 
 	//update AverageRtt by moving average method
-	var averageRTT = float64(p.Probes.Front().Value.(*Probe).RTT)
+	var averageRTT = float64(p.Probes.Front().Value.(*probe).RTT)
 	for e := p.Probes.Front().Next(); e != nil; e = e.Next() {
-		averageRTT = averageRTT*0.1 + float64(e.Value.(*Probe).RTT)*0.9
+		averageRTT = averageRTT*0.1 + float64(e.Value.(*probe).RTT)*0.9
 	}
 	p.AverageRTT = time.Duration(averageRTT)
 }
 
+// GetProbes gets the probes list from struct probes
+func (p *probes) GetProbes() *list.List {
+	return p.Probes
+}
+
 // GetUpdatedAt gets the probe update time.
-func (p *Probes) GetUpdatedAt() (time.Time, bool) {
+func (p *probes) GetUpdatedAt() time.Time {
 	if p.Probes.Len() != 0 {
-		return p.Probes.Back().Value.(*Probe).UpdatedAt, true
+		return p.Probes.Back().Value.(*probe).UpdatedAt
 	}
-	return initTime, false
+	return initTime
 }
 
 // GetAverageRTT gets the average RTT of probes.
-func (p *Probes) GetAverageRTT() (time.Duration, bool) {
+func (p *probes) GetAverageRTT() time.Duration {
 	if p.Probes.Len() != 0 {
-		return p.AverageRTT, true
+		return p.AverageRTT
 	}
-	return time.Duration(0), false
+	return time.Duration(0)
 }
