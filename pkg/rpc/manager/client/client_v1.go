@@ -67,9 +67,9 @@ func GetV1ByAddr(ctx context.Context, target string, opts ...grpc.DialOption) (V
 	}
 
 	return &v1{
-		ManagerClient:            managerv1.NewManagerClient(conn),
-		CertificateServiceClient: securityv1.NewCertificateServiceClient(conn),
-		ClientConn:               conn,
+		ManagerClient:     managerv1.NewManagerClient(conn),
+		CertificateClient: securityv1.NewCertificateClient(conn),
+		ClientConn:        conn,
 	}, nil
 }
 
@@ -110,6 +110,9 @@ type V1 interface {
 	// List applications configuration.
 	ListApplications(context.Context, *managerv1.ListApplicationsRequest, ...grpc.CallOption) (*managerv1.ListApplicationsResponse, error)
 
+	// Create model and update data of model to object storage.
+	CreateModel(context.Context, *managerv1.CreateModelRequest, ...grpc.CallOption) error
+
 	// KeepAlive with manager.
 	KeepAlive(time.Duration, *managerv1.KeepAliveRequest, <-chan struct{}, ...grpc.CallOption)
 
@@ -120,7 +123,7 @@ type V1 interface {
 // v1 provides v1 version of the manager grpc function.
 type v1 struct {
 	managerv1.ManagerClient
-	securityv1.CertificateServiceClient
+	securityv1.CertificateClient
 	*grpc.ClientConn
 }
 
@@ -178,6 +181,15 @@ func (v *v1) ListApplications(ctx context.Context, req *managerv1.ListApplicatio
 	defer cancel()
 
 	return v.ManagerClient.ListApplications(ctx, req, opts...)
+}
+
+// Create model and update data of model to object storage.
+func (v *v1) CreateModel(ctx context.Context, req *managerv1.CreateModelRequest, opts ...grpc.CallOption) error {
+	ctx, cancel := context.WithTimeout(ctx, createModelContextTimeout)
+	defer cancel()
+
+	_, err := v.ManagerClient.CreateModel(ctx, req, opts...)
+	return err
 }
 
 // List acitve schedulers configuration.

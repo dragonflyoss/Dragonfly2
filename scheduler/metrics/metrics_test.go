@@ -14,23 +14,29 @@
  * limitations under the License.
  */
 
-package client
+package metrics
 
 import (
-	"time"
+	"net/http"
+	"testing"
+
+	"google.golang.org/grpc"
+
+	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
-const (
-	// contextTimeout is timeout of grpc invoke.
-	contextTimeout = 2 * time.Minute
+func TestNew(t *testing.T) {
+	cfg := &config.MetricsConfig{
+		Addr: "localhost:8080",
+	}
+	svr := grpc.NewServer()
+	server := New(cfg, svr)
 
-	// createModelContextTimeout is timeout of CreateModel grpc invoke.
-	createModelContextTimeout = 30 * time.Minute
+	if server.Addr != cfg.Addr {
+		t.Errorf("expected server.Addr to be %s, but got %s", cfg.Addr, server.Addr)
+	}
 
-	// maxRetries is maximum number of retries.
-	maxRetries = 3
-
-	// backoffWaitBetween is waiting for a fixed period of
-	// time between calls in backoff linear.
-	backoffWaitBetween = 500 * time.Millisecond
-)
+	if _, ok := server.Handler.(*http.ServeMux); !ok {
+		t.Errorf("expected server.Handler to be a *http.ServeMux, but got %T", server.Handler)
+	}
+}

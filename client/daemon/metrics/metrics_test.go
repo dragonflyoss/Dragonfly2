@@ -14,23 +14,21 @@
  * limitations under the License.
  */
 
-package client
+package metrics
 
 import (
-	"time"
+	"testing"
 )
 
-const (
-	// contextTimeout is timeout of grpc invoke.
-	contextTimeout = 2 * time.Minute
+func TestNew(t *testing.T) {
+	addr := "localhost:8080"
+	server := New(addr)
 
-	// createModelContextTimeout is timeout of CreateModel grpc invoke.
-	createModelContextTimeout = 30 * time.Minute
+	if server.Addr != addr {
+		t.Errorf("Expected server address to be %s, but got %s", addr, server.Addr)
+	}
 
-	// maxRetries is maximum number of retries.
-	maxRetries = 3
-
-	// backoffWaitBetween is waiting for a fixed period of
-	// time between calls in backoff linear.
-	backoffWaitBetween = 500 * time.Millisecond
-)
+	if server.Handler == nil {
+		t.Error("Expected server handler to not be nil")
+	}
+}

@@ -1,5 +1,5 @@
 /*
- *     Copyright 2022 The Dragonfly Authors
+ *     Copyright 2023 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,9 +32,7 @@ import (
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/reflection"
 
-	managerv1 "d7y.io/api/pkg/apis/manager/v1"
-	managerv2 "d7y.io/api/pkg/apis/manager/v2"
-	securityv1 "d7y.io/api/pkg/apis/security/v1"
+	trainerv1 "d7y.io/api/pkg/apis/trainer/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -58,7 +56,7 @@ const (
 )
 
 // New returns grpc server instance and register service on grpc server.
-func New(managerServerV1 managerv1.ManagerServer, managerServerV2 managerv2.ManagerServer, securityServer securityv1.CertificateServer, opts ...grpc.ServerOption) *grpc.Server {
+func New(trainerServerV1 trainerv1.TrainerServer, opts ...grpc.ServerOption) *grpc.Server {
 	limiter := rpc.NewRateLimiterInterceptor(DefaultQPS, DefaultBurst)
 
 	grpcServer := grpc.NewServer(append([]grpc.ServerOption{
@@ -86,13 +84,7 @@ func New(managerServerV1 managerv1.ManagerServer, managerServerV2 managerv2.Mana
 	}, opts...)...)
 
 	// Register servers on v1 version of the grpc server.
-	managerv1.RegisterManagerServer(grpcServer, managerServerV1)
-
-	// Register servers on v2 version of the grpc server.
-	managerv2.RegisterManagerServer(grpcServer, managerServerV2)
-
-	// Register security on grpc server.
-	securityv1.RegisterCertificateServer(grpcServer, securityServer)
+	trainerv1.RegisterTrainerServer(grpcServer, trainerServerV1)
 
 	// Register health on grpc server.
 	healthpb.RegisterHealthServer(grpcServer, health.NewServer())
