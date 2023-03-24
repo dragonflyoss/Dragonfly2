@@ -2,11 +2,11 @@ name: CI
 
 on:
   push:
-    branches: [ main, release-* ]
-    paths-ignore: [ '**.md', '**.png', '**.jpg', '**.svg', '**/docs/**' ]
+    branches: [main, release-*]
+    paths-ignore: ['**.md', '**.png', '**.jpg', '**.svg', '**/docs/**']
   pull_request:
     branches: [ main, release-* ]
-    paths-ignore: [ '**.md', '**.png', '**.jpg', '**.svg', '**/docs/**' ]
+    paths-ignore: ['**.md', '**.png', '**.jpg', '**.svg', '**/docs/**']
   schedule:
     - cron: '0 4 * * *'
 
