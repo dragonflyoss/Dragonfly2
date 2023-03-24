@@ -173,23 +173,23 @@ const (
 )
 
 const (
-	// DefaultNetworkRecordDataPath is default data path for network record
+	// DefaultNetworkRecordDataPath is default data path for network record.
 	DefaultNetworkRecordDataPath = "networkRecord"
 
-	// DefaultStorageMaxSize is the default maximum size of network record.
+	// DefaultNetworkRecordMaxSize is the default maximum size of network record.
 	DefaultNetworkRecordMaxSize = 100
 
-	// The default setting needs to be changed after testing.
-	// DefaultMaxBackups is the default maximum count of network records.
+	// TODO(HM): The default setting needs to be changed after testing.
+	// DefaultNetworkRecordMaxBackups is the default maximum count of network record backups.
 	DefaultNetworkRecordMaxBackups = 10
 
-	// DefaultNetworkRecordDataPath is default data path for network record
+	// DefaultHistoricalRecordDataPath is default data path for historical record
 	DefaultHistoricalRecordDataPath = "historicalRecord"
 
-	// DefaultHistoricalRecordMaxSize is the default maximum size of network record.
+	// DefaultHistoricalRecordMaxSize is the default maximum size of historical record.
 	DefaultHistoricalRecordMaxSize = 100
 
-	// The default setting needs to be changed after testing.
-	// DefaultHistoricalRecordMaxBackups is the default maximum count of network records.
+	// TODO(HM): The default setting needs to be changed after testing.
+	// DefaultHistoricalRecordMaxBackups is the default maximum count of historical record backups.
 	DefaultHistoricalRecordMaxBackups = 10
 )

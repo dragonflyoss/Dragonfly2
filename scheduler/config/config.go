@@ -70,7 +70,7 @@ type Config struct {
 	// NetworkTopology configuration.
 	NetworkTopology NetworkTopologyConfig `yaml:"networkTopology" mapstructure:"networkTopology"`
 
-	// Trainer configuration
+	// Trainer configuration.
 	Trainer TrainerConfig `yaml:"trainer" mapstructure:"trainer"`
 }
 
@@ -327,7 +327,7 @@ type TrainerConfig struct {
 	// Enable trainer service.
 	Enable bool `yaml:"enable" mapstructure:"enable"`
 
-	// Addr is trainer service address
+	// Addr is trainer service address.
 	Addr string `yaml:"addr" mapstructure:"addr"`
 
 	// NetworkRecord is the configuration of network record.
