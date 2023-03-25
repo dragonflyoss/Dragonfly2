@@ -60,7 +60,7 @@ func Test_NewProbes(t *testing.T) {
 			name: "new probes",
 			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
-				assert.Equal(reflect.TypeOf(p).Elem().Name(), "Probes")
+				assert.Equal(reflect.TypeOf(p).Elem().Name(), "probes")
 			},
 		},
 	}
