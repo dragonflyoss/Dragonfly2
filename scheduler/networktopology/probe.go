@@ -9,10 +9,8 @@ import (
 type Probe struct {
 	// Host metadata.
 	Host *resource.Host
-
 	// RTT is the round-trip time sent via this pinger.
 	RTT time.Duration
-	
 	// CreatedAt is the time to create probe.
 	CreatedAt time.Time
 }
