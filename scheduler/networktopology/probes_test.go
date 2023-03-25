@@ -132,8 +132,9 @@ func TestProbes_LoadProbe(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.mock(tc.probes)
-			tc.expect(t, tc.probes)
+			pro := tc.probes
+			tc.mock(pro)
+			tc.expect(t, pro)
 		})
 	}
 }
@@ -200,8 +201,9 @@ func TestProbes_StoreProbe(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.mock(tc.probes)
-			tc.expect(t, tc.probes)
+			pro := tc.probes
+			tc.mock(pro)
+			tc.expect(t, pro)
 		})
 	}
 }
@@ -250,8 +252,9 @@ func TestProbes_GetProbes(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.mock(tc.probes)
-			tc.expect(t, tc.probes.GetProbes())
+			pro := tc.probes
+			tc.mock(pro)
+			tc.expect(t, pro.GetProbes())
 		})
 	}
 }
@@ -300,8 +303,9 @@ func TestProbes_UpdatedAt(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.mock(tc.probes)
-			tc.expect(t, tc.probes.UpdatedAt())
+			pro := tc.probes
+			tc.mock(pro)
+			tc.expect(t, pro.UpdatedAt())
 		})
 	}
 }
@@ -356,8 +360,9 @@ func TestProbes_AverageRTT(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.mock(tc.probes)
-			tc.expect(t, tc.probes.AverageRTT())
+			pro := tc.probes
+			tc.mock(pro)
+			tc.expect(t, pro.AverageRTT())
 		})
 	}
 }
