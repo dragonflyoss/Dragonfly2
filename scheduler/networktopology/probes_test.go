@@ -16,31 +16,10 @@ import (
 )
 
 var (
-	mockDestHost = &resource.Host{
-		ID:              idgen.HostIDV2("127.0.0.1", "destHostName"),
-		Type:            types.HostTypeNormal,
-		Hostname:        "destination_hostname",
-		IP:              "127.0.0.1",
-		Port:            8003,
-		DownloadPort:    8001,
-		OS:              "darwin",
-		Platform:        "darwin",
-		PlatformFamily:  "Standalone Workstation",
-		PlatformVersion: "11.1",
-		KernelVersion:   "20.2.0",
-		CPU:             mockCPU,
-		Memory:          mockMemory,
-		Network:         mockNetwork,
-		Disk:            mockDisk,
-		Build:           mockBuild,
-		CreatedAt:       atomic.NewTime(time.Now()),
-		UpdatedAt:       atomic.NewTime(time.Now()),
-	}
-
 	mockSrcHost = &resource.Host{
-		ID:              idgen.HostIDV2("127.0.0.1", "srcHostName"),
+		ID:              idgen.HostIDV2("127.0.0.1", "SrcHostName"),
 		Type:            types.HostTypeNormal,
-		Hostname:        "source_hostname",
+		Hostname:        "hostname",
 		IP:              "127.0.0.1",
 		Port:            8003,
 		DownloadPort:    8001,
@@ -58,122 +37,94 @@ var (
 		UpdatedAt:       atomic.NewTime(time.Now()),
 	}
 
-	mockProbesWithOneProbe = []*Probe{
-		{
-			Host:      mockDestHost,
-			RTT:       30 * time.Millisecond,
-			UpdatedAt: time.Now().Local(),
+	mockConfig = &config.Config{
+		NetworkTopology: config.NetworkTopologyConfig{
+			Enable:          true,
+			SyncInterval:    30 * time.Second,
+			CollectInterval: 60 * time.Second,
+			Probe: config.ProbeConfig{
+				QueueLength:  5,
+				SyncInterval: 30 * time.Second,
+				SyncCount:    50,
+			},
 		},
 	}
 
-	mockProbesWithThreeProbe = []*Probe{
-		{
-			Host:      mockDestHost,
-			RTT:       30 * time.Millisecond,
-			UpdatedAt: time.Now().Local(),
-		},
-		{
-			Host:      mockDestHost,
-			RTT:       31 * time.Millisecond,
-			UpdatedAt: time.Now().Local(),
-		},
-		{
-			Host:      mockDestHost,
-			RTT:       32 * time.Millisecond,
-			UpdatedAt: time.Now().Local(),
-		},
-	}
-
-	mockProbesWithSixProbe = []*Probe{
-		{
-			Host:      mockDestHost,
-			RTT:       30 * time.Millisecond,
-			UpdatedAt: time.Now().Local(),
-		},
-		{
-			Host:      mockDestHost,
-			RTT:       31 * time.Millisecond,
-			UpdatedAt: time.Now().Local(),
-		},
-		{
-			Host:      mockDestHost,
-			RTT:       32 * time.Millisecond,
-			UpdatedAt: time.Now().Local(),
-		},
-		{
-			Host:      mockDestHost,
-			RTT:       33 * time.Millisecond,
-			UpdatedAt: time.Now().Local(),
-		},
-		{
-			Host:      mockDestHost,
-			RTT:       34 * time.Millisecond,
-			UpdatedAt: time.Now().Local(),
-		},
-		{
-			Host:      mockDestHost,
-			RTT:       35 * time.Millisecond,
-			UpdatedAt: time.Now().Local(),
-		},
+	mockProbes = &probes{
+		config:     mockConfig,
+		host:       mockSrcHost,
+		items:      list.New(),
+		averageRTT: time.Duration(0),
+		updatedAt:  time.Time{},
 	}
 )
 
-func TestProbes_NewProbes(t *testing.T) {
+func Test_NewProbes(t *testing.T) {
 	tests := []struct {
 		name   string
-		expect func(t *testing.T, probes Probes)
+		expect func(t *testing.T, p Probes)
 	}{
 		{
 			name: "new probes",
-			expect: func(t *testing.T, probes Probes) {
+			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
-				assert.Equal(reflect.TypeOf(probes).Elem().Name(), "probes")
+				assert.Equal(reflect.TypeOf(p).Elem().Name(), "Probes")
 			},
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, NewProbes(mockSrcHost))
+			tc.expect(t, NewProbes(mockConfig, mockSrcHost))
 		})
 	}
 }
 
 func TestProbes_LoadProbe(t *testing.T) {
 	tests := []struct {
-		name      string
-		rawProbes []*Probe
-		expect    func(t *testing.T, probes Probes)
+		name   string
+		probes Probes
+		mock   func(probes Probes)
+		expect func(t *testing.T, p Probes)
 	}{
 		{
-			name:      "load probe from probes which has one probe",
-			rawProbes: mockProbesWithOneProbe,
-			expect: func(t *testing.T, probes Probes) {
+			name:   "load probe from probes which has one probe",
+			probes: mockProbes,
+			mock: func(probes Probes) {
+				probes.StoreProbe(mockRawProbe)
+			},
+			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
-				probe, loaded := probes.LoadProbe()
+				probe, loaded := p.LoadProbe()
 				assert.Equal(loaded, true)
-				assert.Equal(probe.Host.ID, mockProbesWithOneProbe[0].Host.ID)
-				assert.Equal(probe.RTT, mockProbesWithOneProbe[0].RTT)
-				assert.Equal(probe.UpdatedAt, mockProbesWithOneProbe[0].UpdatedAt)
+				assert.Equal(probe.Host.ID, mockRawProbe.Host.ID)
+				assert.Equal(probe.RTT, mockRawProbe.RTT)
+				assert.Equal(probe.CreatedAt, mockRawProbe.CreatedAt)
 			},
 		},
 		{
-			name:      "load probe from probes which has three probes",
-			rawProbes: mockProbesWithThreeProbe,
-			expect: func(t *testing.T, probes Probes) {
+			name:   "load probe from probes which has three probes",
+			probes: mockProbes,
+			mock: func(probes Probes) {
+				probes.StoreProbe(NewProbe(mockHost, 31*time.Millisecond, time.Now()))
+				probes.StoreProbe(NewProbe(mockHost, 32*time.Millisecond, time.Now()))
+				probes.StoreProbe(mockRawProbe)
+			},
+			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
-				probe, loaded := probes.LoadProbe()
+				probe, loaded := p.LoadProbe()
 				assert.Equal(loaded, true)
-				assert.Equal(probe.Host.ID, mockProbesWithThreeProbe[2].Host.ID)
-				assert.Equal(probe.RTT, mockProbesWithThreeProbe[2].RTT)
-				assert.Equal(probe.UpdatedAt, mockProbesWithThreeProbe[2].UpdatedAt)
+				assert.Equal(probe.Host.ID, mockRawProbe.Host.ID)
+				assert.Equal(probe.RTT, mockRawProbe.RTT)
+				assert.Equal(probe.CreatedAt, mockRawProbe.CreatedAt)
 			},
 		},
 		{
-			name:      "probe does not exist",
-			rawProbes: []*Probe{},
-			expect: func(t *testing.T, probes Probes) {
+			name:   "probe does not exist",
+			probes: mockProbes,
+			mock:   func(probes Probes) {},
+			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
-				probe, loaded := probes.LoadProbe()
+				probe, loaded := p.LoadProbe()
 				assert.Equal(loaded, false)
 				assert.Nil(probe)
 			},
@@ -181,94 +132,115 @@ func TestProbes_LoadProbe(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			probes := NewProbes(mockSrcHost)
-			for _, p := range tc.rawProbes {
-				probes.StoreProbe(p)
-			}
-			tc.expect(t, probes)
+			tc.mock(tc.probes)
+			tc.expect(t, tc.probes)
 		})
 	}
 }
 
 func TestProbes_StoreProbe(t *testing.T) {
 	tests := []struct {
-		name      string
-		rawProbes []*Probe
-		expect    func(t *testing.T, probes Probes)
+		name   string
+		probes Probes
+		mock   func(probes Probes)
+		expect func(t *testing.T, p Probes)
 	}{
 		{
-			name:      "store probe",
-			rawProbes: mockProbesWithOneProbe,
-			expect: func(t *testing.T, probes Probes) {
+			name:   "store probe",
+			probes: mockProbes,
+			mock: func(probes Probes) {
+				probes.StoreProbe(mockRawProbe)
+			},
+			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
-				assert.Equal(probes.GetItems().Len(), 1)
-				p, loaded := probes.LoadProbe()
+				assert.Equal(p.GetProbes().Len(), 1)
+				probe, loaded := p.LoadProbe()
 				assert.Equal(loaded, true)
-				assert.Equal(probes.GetAverageRTT(), p.RTT)
+				assert.Equal(p.AverageRTT(), probe.RTT)
 
-				assert.Equal(p.Host.ID, mockProbesWithOneProbe[0].Host.ID)
-				assert.Equal(p.RTT, mockProbesWithOneProbe[0].RTT)
-				assert.Equal(p.UpdatedAt, mockProbesWithOneProbe[0].UpdatedAt)
+				assert.Equal(probe.Host.ID, mockRawProbe.Host.ID)
+				assert.Equal(probe.RTT, mockRawProbe.RTT)
+				assert.Equal(probe.CreatedAt, mockRawProbe.CreatedAt)
 
 			},
 		},
 		{
-			name:      "store probe when probes has full probe",
-			rawProbes: mockProbesWithSixProbe,
-			expect: func(t *testing.T, probes Probes) {
+			name:   "store probe when probes has full probe",
+			probes: mockProbes,
+			mock: func(probes Probes) {
+				probes.StoreProbe(NewProbe(mockHost, 31*time.Millisecond, time.Now()))
+				probes.StoreProbe(NewProbe(mockHost, 32*time.Millisecond, time.Now()))
+				probes.StoreProbe(NewProbe(mockHost, 33*time.Millisecond, time.Now()))
+				probes.StoreProbe(NewProbe(mockHost, 34*time.Millisecond, time.Now()))
+				probes.StoreProbe(NewProbe(mockHost, 35*time.Millisecond, time.Now()))
+				probes.StoreProbe(mockRawProbe)
+			},
+			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
-				assert.Equal(probes.GetItems().Len(), config.DefaultProbeQueueLength)
-				p, loaded := probes.LoadProbe()
-
-				var averageRTT = float64(probes.GetItems().Front().Value.(*Probe).RTT)
-				for e := probes.GetItems().Front().Next(); e != nil; e = e.Next() {
-					averageRTT = averageRTT*0.1 + float64(e.Value.(*Probe).RTT)*0.9
+				assert.Equal(p.GetProbes().Len(), 5)
+				front, ok := p.GetProbes().Front().Value.(*Probe)
+				assert.Equal(ok, true)
+				averageRTT := float64(front.RTT)
+				for e := p.GetProbes().Front().Next(); e != nil; e = e.Next() {
+					rawProbe, loaded := e.Value.(*Probe)
+					assert.Equal(loaded, true)
+					averageRTT = float64(averageRTT)*DefaultMovingAverageValue +
+						float64(rawProbe.RTT)*(1-DefaultMovingAverageValue)
 				}
-				assert.Equal(probes.GetAverageRTT(), time.Duration(averageRTT))
 
+				assert.Equal(p.AverageRTT(), time.Duration(averageRTT))
+
+				probe, loaded := p.LoadProbe()
 				assert.Equal(loaded, true)
-				assert.Equal(p.Host.ID, mockProbesWithSixProbe[5].Host.ID)
-				assert.Equal(p.RTT, mockProbesWithSixProbe[5].RTT)
-				assert.Equal(p.UpdatedAt, mockProbesWithSixProbe[5].UpdatedAt)
+				assert.Equal(probe.Host.ID, mockRawProbe.Host.ID)
+				assert.Equal(probe.RTT, mockRawProbe.RTT)
+				assert.Equal(probe.CreatedAt, mockRawProbe.CreatedAt)
 			},
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			probes := NewProbes(mockSrcHost)
-			for _, p := range tc.rawProbes {
-				probes.StoreProbe(p)
-			}
-			tc.expect(t, probes)
+			tc.mock(tc.probes)
+			tc.expect(t, tc.probes)
 		})
 	}
 }
 
-func TestProbes_GetItems(t *testing.T) {
+func TestProbes_GetProbes(t *testing.T) {
 	tests := []struct {
-		name      string
-		rawProbes []*Probe
-		expect    func(t *testing.T, queue *list.List)
+		name   string
+		probes Probes
+		mock   func(probes Probes)
+		expect func(t *testing.T, queue *list.List)
 	}{
 		{
-			name:      "get Queue from probes which has only one probe",
-			rawProbes: mockProbesWithOneProbe,
+			name:   "get Queue from probes which has only one probe",
+			probes: mockProbes,
+			mock: func(probes Probes) {
+				probes.StoreProbe(mockRawProbe)
+			},
 			expect: func(t *testing.T, queue *list.List) {
 				assert := assert.New(t)
-				assert.Equal(queue.Len(), len(mockProbesWithOneProbe))
+				assert.Equal(queue.Len(), 1)
 			},
 		},
 		{
-			name:      "get update time from probes which has three probe",
-			rawProbes: mockProbesWithThreeProbe,
+			name:   "get update time from probes which has three probe",
+			probes: mockProbes,
+			mock: func(probes Probes) {
+				probes.StoreProbe(NewProbe(mockHost, 31*time.Millisecond, time.Now()))
+				probes.StoreProbe(NewProbe(mockHost, 32*time.Millisecond, time.Now()))
+				probes.StoreProbe(mockRawProbe)
+			},
 			expect: func(t *testing.T, queue *list.List) {
 				assert := assert.New(t)
-				assert.Equal(queue.Len(), len(mockProbesWithThreeProbe))
+				assert.Equal(queue.Len(), 3)
 			},
 		},
 		{
-			name:      "failed to get the update time",
-			rawProbes: []*Probe{},
+			name:   "get Queue from probes which has no probe",
+			probes: mockProbes,
+			mock:   func(probes Probes) {},
 			expect: func(t *testing.T, queue *list.List) {
 				assert := assert.New(t)
 				assert.Equal(queue.Len(), 0)
@@ -278,89 +250,103 @@ func TestProbes_GetItems(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			probes := NewProbes(mockSrcHost)
-			for _, p := range tc.rawProbes {
-				probes.StoreProbe(p)
-			}
-			tc.expect(t, probes.GetItems())
+			tc.mock(tc.probes)
+			tc.expect(t, tc.probes.GetProbes())
 		})
 	}
 }
 
-func TestProbes_GetUpdatedAt(t *testing.T) {
+func TestProbes_UpdatedAt(t *testing.T) {
 	tests := []struct {
-		name      string
-		rawProbes []*Probe
-		expect    func(t *testing.T, updatedAt time.Time)
+		name   string
+		probes Probes
+		mock   func(probes Probes)
+		expect func(t *testing.T, updatedAt time.Time)
 	}{
 		{
-			name:      "get update time from probes which has only one probe",
-			rawProbes: mockProbesWithOneProbe,
+			name:   "get update time from probes which has only one probe",
+			probes: mockProbes,
+			mock: func(probes Probes) {
+				probes.StoreProbe(mockRawProbe)
+			},
 			expect: func(t *testing.T, updatedAt time.Time) {
 				assert := assert.New(t)
-				assert.Equal(updatedAt, mockProbesWithOneProbe[0].UpdatedAt)
+				assert.Equal(updatedAt, mockRawProbe.CreatedAt)
 			},
 		},
 		{
-			name:      "get update time from probes which has three probe",
-			rawProbes: mockProbesWithThreeProbe,
+			name:   "get update time from probes which has three probe",
+			probes: mockProbes,
+			mock: func(probes Probes) {
+				probes.StoreProbe(NewProbe(mockHost, 31*time.Millisecond, time.Now()))
+				probes.StoreProbe(NewProbe(mockHost, 32*time.Millisecond, time.Now()))
+				probes.StoreProbe(mockRawProbe)
+			},
 			expect: func(t *testing.T, updatedAt time.Time) {
 				assert := assert.New(t)
-				assert.Equal(updatedAt, mockProbesWithThreeProbe[2].UpdatedAt)
+				assert.Equal(updatedAt, mockRawProbe.CreatedAt)
 			},
 		},
 		{
-			name:      "failed to get the update time",
-			rawProbes: []*Probe{},
+			name:   "get update time from probes which has no probe",
+			probes: mockProbes,
+			mock:   func(probes Probes) {},
 			expect: func(t *testing.T, updatedAt time.Time) {
 				assert := assert.New(t)
-				assert.Equal(updatedAt, time.Time{}.UTC())
+				assert.Equal(updatedAt, time.Time{})
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			probes := NewProbes(mockSrcHost)
-			for _, p := range tc.rawProbes {
-				probes.StoreProbe(p)
-			}
-			tc.expect(t, probes.GetUpdatedAt())
+			tc.mock(tc.probes)
+			tc.expect(t, tc.probes.UpdatedAt())
 		})
 	}
 }
 
-func TestProbes_GetAverageRTT(t *testing.T) {
+func TestProbes_AverageRTT(t *testing.T) {
 	tests := []struct {
-		name      string
-		rawProbes []*Probe
-		expect    func(t *testing.T, averageRTT time.Duration)
+		name   string
+		probes Probes
+		mock   func(probes Probes)
+		expect func(t *testing.T, averageRTT time.Duration)
 	}{
 		{
-			name:      "get average RTT from probes which has only one probes",
-			rawProbes: mockProbesWithOneProbe,
+			name:   "get average rtt from probes which has only one probes",
+			probes: mockProbes,
+			mock: func(probes Probes) {
+				probes.StoreProbe(mockRawProbe)
+			},
 			expect: func(t *testing.T, averageRTT time.Duration) {
 				assert := assert.New(t)
-				assert.Equal(averageRTT, mockProbesWithOneProbe[0].RTT)
+				assert.Equal(averageRTT, mockRawProbe.RTT)
 			},
 		},
 		{
-			name:      "get average RTT from probes which has three probes",
-			rawProbes: mockProbesWithThreeProbe,
+			name:   "get average rtt from probes which has three probes",
+			probes: mockProbes,
+			mock: func(probes Probes) {
+				probes.StoreProbe(NewProbe(mockHost, 31*time.Millisecond, time.Now()))
+				probes.StoreProbe(NewProbe(mockHost, 32*time.Millisecond, time.Now()))
+				probes.StoreProbe(mockRawProbe)
+			},
 			expect: func(t *testing.T, averageRTT time.Duration) {
 				assert := assert.New(t)
+				aver := float64(31 * time.Millisecond)
+				aver = aver*DefaultMovingAverageValue +
+					float64(32*time.Millisecond)*(1-DefaultMovingAverageValue)
+				aver = aver*DefaultMovingAverageValue +
+					float64(mockRawProbe.RTT)*(1-DefaultMovingAverageValue)
 
-				var a = float64(mockProbesWithThreeProbe[0].RTT)
-				for _, p := range mockProbesWithThreeProbe {
-					a = a*0.1 + float64(p.RTT)*0.9
-				}
-
-				assert.Equal(averageRTT, time.Duration(a))
+				assert.Equal(averageRTT, time.Duration(aver))
 			},
 		},
 		{
-			name:      "failed to get the average RTT",
-			rawProbes: []*Probe{},
+			name:   "get average rtt from probes which has no probes",
+			probes: mockProbes,
+			mock:   func(probes Probes) {},
 			expect: func(t *testing.T, averageRTT time.Duration) {
 				assert := assert.New(t)
 				assert.Equal(averageRTT, time.Duration(0))
@@ -370,11 +356,8 @@ func TestProbes_GetAverageRTT(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			probes := NewProbes(mockSrcHost)
-			for _, p := range tc.rawProbes {
-				probes.StoreProbe(p)
-			}
-			tc.expect(t, probes.GetAverageRTT())
+			tc.mock(tc.probes)
+			tc.expect(t, tc.probes.AverageRTT())
 		})
 	}
 }

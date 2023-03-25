@@ -4,14 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/atomic"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/resource"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/atomic"
 )
 
 var (
@@ -97,11 +94,11 @@ var (
 	mockRawProbe = &Probe{
 		Host:      mockHost,
 		RTT:       30 * time.Millisecond,
-		UpdatedAt: time.Now().Local(),
+		CreatedAt: time.Now(),
 	}
 )
 
-func TestProbe_NewProbe(t *testing.T) {
+func Test_NewProbe(t *testing.T) {
 	tests := []struct {
 		name   string
 		expect func(t *testing.T, p *Probe)
@@ -110,22 +107,13 @@ func TestProbe_NewProbe(t *testing.T) {
 			name: "new probe",
 			expect: func(t *testing.T, p *Probe) {
 				assert := assert.New(t)
-				assert.Equal(p.Host.ID, mockRawProbe.Host.ID)
-				assert.Equal(p.Host.Port, mockRawProbe.Host.Port)
-				assert.Equal(p.Host.DownloadPort, mockRawProbe.Host.DownloadPort)
-				assert.Equal(p.Host.Network.SecurityDomain, mockRawProbe.Host.Network.SecurityDomain)
-				assert.Equal(p.Host.Network.Location, mockRawProbe.Host.Network.Location)
-				assert.Equal(p.Host.Network.IDC, mockRawProbe.Host.Network.IDC)
-				assert.Equal(p.RTT, mockRawProbe.RTT)
-				assert.Equal(p.UpdatedAt, mockRawProbe.UpdatedAt)
+				assert.EqualValues(p, mockRawProbe)
 			},
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, NewProbe(mockRawProbe.Host,
-				durationpb.New(mockRawProbe.RTT),
-				timestamppb.New(mockRawProbe.UpdatedAt)))
+			tc.expect(t, NewProbe(mockRawProbe.Host, mockRawProbe.RTT, mockRawProbe.CreatedAt))
 		})
 	}
 }

@@ -3,27 +3,25 @@ package networktopology
 import (
 	"time"
 
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
 type Probe struct {
 	// Host metadata.
 	Host *resource.Host
+
 	// RTT is the round-trip time sent via this pinger.
 	RTT time.Duration
-	// Probe update time.
-	UpdatedAt time.Time
+	
+	// CreatedAt is the time to create probe.
+	CreatedAt time.Time
 }
 
 // NewProbe creates a new probe instance.
-func NewProbe(host *resource.Host, RTT *durationpb.Duration, UpdatedAt *timestamppb.Timestamp) *Probe {
-	p := &Probe{
+func NewProbe(host *resource.Host, rtt time.Duration, createdAt time.Time) *Probe {
+	return &Probe{
 		Host:      host,
-		RTT:       RTT.AsDuration(),
-		UpdatedAt: UpdatedAt.AsTime().Local(),
+		RTT:       rtt,
+		CreatedAt: createdAt,
 	}
-	return p
 }
