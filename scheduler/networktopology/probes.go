@@ -83,10 +83,7 @@ func (p *probes) StoreProbe(probe *Probe) bool {
 	}
 	p.items.PushBack(probe)
 
-	//update updatedAt
-	p.updatedAt = atomic.NewTime(probe.CreatedAt)
-
-	//update AverageRtt by moving average method
+	// Update AverageRtt by moving average method
 	front, ok := p.items.Front().Value.(*Probe)
 	if ok {
 		averageRTT := float64(front.RTT)
@@ -102,6 +99,9 @@ func (p *probes) StoreProbe(probe *Probe) bool {
 
 		p.averageRTT = atomic.NewDuration(time.Duration(averageRTT))
 	}
+
+	// Update updatedAt
+	p.updatedAt = atomic.NewTime(probe.CreatedAt)
 
 	return ok
 }

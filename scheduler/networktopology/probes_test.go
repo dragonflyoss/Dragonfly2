@@ -174,10 +174,10 @@ func TestProbes_StoreProbe(t *testing.T) {
 				assert.Equal(ok, true)
 				averageRTT := float64(front.RTT)
 				for e := p.GetProbes().Front().Next(); e != nil; e = e.Next() {
-					rawProbe, loaded := e.Value.(*Probe)
+					probe, loaded := e.Value.(*Probe)
 					assert.Equal(loaded, true)
 					averageRTT = float64(averageRTT)*DefaultSlidingMeanParameter +
-						float64(rawProbe.RTT)*(1-DefaultSlidingMeanParameter)
+						float64(probe.RTT)*(1-DefaultSlidingMeanParameter)
 				}
 
 				assert.Equal(p.AverageRTT(), atomic.NewDuration(time.Duration(averageRTT)))
