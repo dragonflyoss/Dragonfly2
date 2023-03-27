@@ -68,21 +68,6 @@ var (
 			ValidityPeriod: DefaultCertValidityPeriod,
 		},
 	}
-
-	mockTrainerConfig = TrainerConfig{
-		Enable: true,
-		Addr:   "127.0.0.1:9000",
-		NetworkRecord: NetworkRecordConfig{
-			DataPath:   DefaultNetworkRecordDataPath,
-			MaxBackups: DefaultNetworkRecordMaxBackups,
-			MaxSize:    DefaultNetworkRecordMaxSize,
-		},
-		HistoricalRecord: HistoricalRecordConfig{
-			DataPath:   DefaultHistoricalRecordDataPath,
-			MaxBackups: DefaultHistoricalRecordMaxBackups,
-			MaxSize:    DefaultHistoricalRecordMaxSize,
-		},
-	}
 )
 
 func TestConfig_Load(t *testing.T) {
@@ -182,17 +167,6 @@ func TestConfig_Load(t *testing.T) {
 		},
 		Trainer: TrainerConfig{
 			Enable: false,
-			Addr:   "127.0.0.1:9000",
-			NetworkRecord: NetworkRecordConfig{
-				DataPath:   "networkRecord",
-				MaxSize:    100,
-				MaxBackups: 10,
-			},
-			HistoricalRecord: HistoricalRecordConfig{
-				DataPath:   "historicalRecord",
-				MaxSize:    100,
-				MaxBackups: 10,
-			},
 		},
 	}
 
@@ -736,104 +710,6 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "probe requires parameter SyncCount")
-			},
-		},
-		{
-			name:   "trainer requires parameter addr",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Job = mockJobConfig
-				cfg.Trainer = mockTrainerConfig
-				cfg.Trainer.Addr = ""
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "trainer requires parameter addr")
-			},
-		},
-		{
-			name:   "networkRecord requires parameter dataPath",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Job = mockJobConfig
-				cfg.Trainer = mockTrainerConfig
-				cfg.Trainer.NetworkRecord.DataPath = ""
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "networkRecord requires parameter dataPath")
-			},
-		},
-		{
-			name:   "networkRecord requires parameter maxBackups",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Job = mockJobConfig
-				cfg.Trainer = mockTrainerConfig
-				cfg.Trainer.NetworkRecord.MaxBackups = 0
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "networkRecord requires parameter maxBackups")
-			},
-		},
-		{
-			name:   "networkRecord requires parameter maxSize",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Job = mockJobConfig
-				cfg.Trainer = mockTrainerConfig
-				cfg.Trainer.NetworkRecord.MaxSize = 0
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "networkRecord requires parameter maxSize")
-			},
-		},
-		{
-			name:   "historicalRecord requires parameter dataPath",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Job = mockJobConfig
-				cfg.Trainer = mockTrainerConfig
-				cfg.Trainer.HistoricalRecord.DataPath = ""
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "historicalRecord requires parameter dataPath")
-			},
-		},
-		{
-			name:   "historicalRecord requires parameter maxBackups",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Job = mockJobConfig
-				cfg.Trainer = mockTrainerConfig
-				cfg.Trainer.HistoricalRecord.MaxBackups = 0
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "historicalRecord requires parameter maxBackups")
-			},
-		},
-		{
-			name:   "historicalRecord requires parameter maxSize",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Job = mockJobConfig
-				cfg.Trainer = mockTrainerConfig
-				cfg.Trainer.HistoricalRecord.MaxSize = 0
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "historicalRecord requires parameter maxSize")
 			},
 		},
 	}

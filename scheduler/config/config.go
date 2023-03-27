@@ -326,37 +326,6 @@ type ProbeConfig struct {
 type TrainerConfig struct {
 	// Enable trainer service.
 	Enable bool `yaml:"enable" mapstructure:"enable"`
-
-	// Addr is trainer service address.
-	Addr string `yaml:"addr" mapstructure:"addr"`
-
-	// NetworkRecord is the configuration of network record.
-	NetworkRecord NetworkRecordConfig `yaml:"networkRecord" mapstructure:"networkRecord"`
-
-	// HistoricalRecord is the configuration of historical record.
-	HistoricalRecord HistoricalRecordConfig `yaml:"historicalRecord" mapstructure:"historicalRecord"`
-}
-
-type NetworkRecordConfig struct {
-	// Network record local storage data path.
-	DataPath string `yaml:"dataPath" mapstructure:"dataPath"`
-
-	// MaxSize sets the maximum size in megabytes of storage file.
-	MaxSize int `yaml:"maxSize" mapstructure:"maxSize"`
-
-	// MaxBackups sets the maximum number of retained files.
-	MaxBackups int `yaml:"maxBackups" mapstructure:"maxBackups"`
-}
-
-type HistoricalRecordConfig struct {
-	// Historical record storage data path.
-	DataPath string `yaml:"dataPath" mapstructure:"dataPath"`
-
-	// MaxSize sets the maximum size in megabytes of storage file.
-	MaxSize int `yaml:"maxSize" mapstructure:"maxSize"`
-
-	// MaxBackups sets the maximum number of retained files.
-	MaxBackups int `yaml:"maxBackups" mapstructure:"maxBackups"`
 }
 
 // New default configuration.
@@ -437,6 +406,9 @@ func New() *Config {
 				SyncInterval: DefaultProbeSyncInterval,
 				SyncCount:    DefaultProbeSyncCount,
 			},
+		},
+		Trainer: TrainerConfig{
+			Enable: false,
 		},
 	}
 }
@@ -607,36 +579,6 @@ func (cfg *Config) Validate() error {
 
 	if cfg.NetworkTopology.Probe.SyncCount <= 0 {
 		return errors.New("probe requires parameter SyncCount")
-	}
-
-	if cfg.Trainer.Enable {
-		if cfg.Trainer.Addr == "" {
-			return errors.New("trainer requires parameter addr")
-		}
-
-		if cfg.Trainer.NetworkRecord.DataPath == "" {
-			return errors.New("networkRecord requires parameter dataPath")
-		}
-
-		if cfg.Trainer.NetworkRecord.MaxBackups <= 0 {
-			return errors.New("networkRecord requires parameter maxBackups")
-		}
-
-		if cfg.Trainer.NetworkRecord.MaxSize <= 0 {
-			return errors.New("networkRecord requires parameter maxSize")
-		}
-
-		if cfg.Trainer.HistoricalRecord.DataPath == "" {
-			return errors.New("historicalRecord requires parameter dataPath")
-		}
-
-		if cfg.Trainer.HistoricalRecord.MaxBackups <= 0 {
-			return errors.New("historicalRecord requires parameter maxBackups")
-		}
-
-		if cfg.Trainer.HistoricalRecord.MaxSize <= 0 {
-			return errors.New("historicalRecord requires parameter maxSize")
-		}
 	}
 
 	return nil

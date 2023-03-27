@@ -90,12 +90,3 @@ networkTopology:
 
 trainer:
   enable: false
-  addr:  127.0.0.1:9000
-  networkRecord:
-    dataPath: "networkRecord"
-    maxSize: 100
-    maxBackups: 10
-  historicalRecord:
-    dataPath: "historicalRecord"
-    maxSize: 100
-    maxBackups: 10
