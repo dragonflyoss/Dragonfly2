@@ -131,7 +131,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		Ip:             opt.Host.AdvertiseIP.String(),
 		RpcPort:        int32(opt.Download.PeerGRPC.TCPListen.PortRange.Start),
 		DownPort:       0,
-		HostName:       opt.Host.Hostname,
+		Hostname:       opt.Host.Hostname,
 		SecurityDomain: opt.Host.SecurityDomain,
 		Location:       opt.Host.Location,
 		Idc:            opt.Host.IDC,

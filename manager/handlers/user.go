@@ -23,7 +23,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	// nolint
-	_ "d7y.io/dragonfly/v2/manager/model"
+	_ "d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
@@ -34,7 +34,7 @@ import (
 // @Produce json
 // @Param id path string true "id"
 // @Param User body types.UpdateUserRequest true "User"
-// @Success 200 {object} model.User
+// @Success 200 {object} models.User
 // @Failure 400
 // @Failure 404
 // @Failure 500
@@ -67,7 +67,7 @@ func (h *Handlers) UpdateUser(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
-// @Success 200 {object} model.User
+// @Success 200 {object} models.User
 // @Failure 400
 // @Failure 404
 // @Failure 500
@@ -95,7 +95,7 @@ func (h *Handlers) GetUser(ctx *gin.Context) {
 // @Produce json
 // @Param page query int true "current page" default(0)
 // @Param per_page query int true "return max item count, default 10, max 50" default(10) minimum(2) maximum(50)
-// @Success 200 {object} []model.User
+// @Success 200 {object} []models.User
 // @Failure 400
 // @Failure 404
 // @Failure 500
@@ -124,7 +124,7 @@ func (h *Handlers) GetUsers(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param User body types.SignUpRequest true "User"
-// @Success 200 {object} model.User
+// @Success 200 {object} models.User
 // @Failure 400
 // @Failure 500
 // @Router /user/signup [post]

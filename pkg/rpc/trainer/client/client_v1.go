@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2023 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-//go:generate mockgen -destination mocks/v1_mock.go -source v1.go -package mocks
+//go:generate mockgen -destination mocks/client_v1_mock.go -source client_v1.go -package mocks
 
 package client
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -30,17 +29,12 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 
-	securityv1 "d7y.io/api/pkg/apis/security/v1"
+	trainerv1 "d7y.io/api/pkg/apis/trainer/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/dfnet"
-	"d7y.io/dragonfly/v2/pkg/reachable"
 )
 
 const (
-	// contextTimeout is timeout of grpc invoke.
-	contextTimeout = 2 * time.Minute
-
 	// maxRetries is maximum number of retries.
 	maxRetries = 3
 
@@ -49,8 +43,8 @@ const (
 	backoffWaitBetween = 500 * time.Millisecond
 )
 
-// GetV1 returns v1 version of the security client.
-func GetV1(ctx context.Context, target string, opts ...grpc.DialOption) (V1, error) {
+// GetV1ByAddr returns v1 version of the trainer client by address.
+func GetV1ByAddr(ctx context.Context, target string, opts ...grpc.DialOption) (V1, error) {
 	conn, err := grpc.DialContext(
 		ctx,
 		target,
@@ -76,44 +70,27 @@ func GetV1(ctx context.Context, target string, opts ...grpc.DialOption) (V1, err
 	}
 
 	return &v1{
-		CertificateServiceClient: securityv1.NewCertificateServiceClient(conn),
-		ClientConn:               conn,
+		TrainerClient: trainerv1.NewTrainerClient(conn),
+		ClientConn:    conn,
 	}, nil
 }
 
-// GetClientV1ByAddr returns v1 version of the manager client with addresses.
-func GetV1ByAddr(ctx context.Context, netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (V1, error) {
-	for _, netAddr := range netAddrs {
-		ipReachable := reachable.New(&reachable.Config{Address: netAddr.Addr})
-		if err := ipReachable.Check(); err == nil {
-			logger.Infof("use %s address for manager grpc client", netAddr.Addr)
-			return GetV1(ctx, netAddr.Addr, opts...)
-		}
-		logger.Warnf("%s manager address can not reachable", netAddr.Addr)
-	}
-
-	return nil, errors.New("can not find available manager addresses")
-}
-
-// ClientV1 is the interface for v1 version of the grpc client.
+// V1 is the interface for v1 version of the grpc client.
 type V1 interface {
-	// IssueCertificate issues certificate for client.
-	IssueCertificate(context.Context, *securityv1.CertificateRequest, ...grpc.CallOption) (*securityv1.CertificateResponse, error)
+	// Train models of scheduler using dataset.
+	Train(context.Context, ...grpc.CallOption) (trainerv1.Trainer_TrainClient, error)
 
 	// Close tears down the ClientConn and all underlying connections.
 	Close() error
 }
 
-// clientV1 provides v1 version of the manager grpc function.
+// v1 provides v1 version of the trainer grpc function.
 type v1 struct {
-	securityv1.CertificateServiceClient
+	trainerv1.TrainerClient
 	*grpc.ClientConn
 }
 
-// IssueCertificate issues certificate for client.
-func (v *v1) IssueCertificate(ctx context.Context, req *securityv1.CertificateRequest, opts ...grpc.CallOption) (*securityv1.CertificateResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
-	defer cancel()
-
-	return v.CertificateServiceClient.IssueCertificate(ctx, req, opts...)
+// Train models of scheduler using dataset.
+func (v *v1) Train(ctx context.Context, opts ...grpc.CallOption) (trainerv1.Trainer_TrainClient, error) {
+	return v.TrainerClient.Train(ctx, opts...)
 }

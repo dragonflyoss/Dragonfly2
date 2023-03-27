@@ -38,7 +38,7 @@ var peerHostConfig = func() *DaemonOption {
 		Scheduler: SchedulerOption{
 			Manager: ManagerOption{
 				Enable:          false,
-				RefreshInterval: 5 * time.Minute,
+				RefreshInterval: 10 * time.Minute,
 				SeedPeer: SeedPeerOption{
 					Enable:    false,
 					Type:      types.HostTypeSuperSeedName,

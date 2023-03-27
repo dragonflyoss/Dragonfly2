@@ -26,7 +26,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaljob "d7y.io/dragonfly/v2/internal/job"
-	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
@@ -69,7 +69,7 @@ func (s *service) GetV1Preheat(ctx context.Context, rawID string) (*types.GetV1P
 		logger.Errorf("preheat convert error", err)
 	}
 
-	job := model.Job{}
+	job := models.Job{}
 	if err := s.db.WithContext(ctx).First(&job, uint(id)).Error; err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
