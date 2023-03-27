@@ -88,13 +88,13 @@ func (p *probes) StoreProbe(probe *Probe) bool {
 	if ok {
 		averageRTT := float64(front.RTT)
 		for e := p.items.Front().Next(); e != nil; e = e.Next() {
-			rawProbe, loaded := e.Value.(*Probe)
+			tmpProbe, loaded := e.Value.(*Probe)
 			if !loaded {
 				return loaded
 			}
 
-			averageRTT = float64(averageRTT)*DefaultSlidingMeanParameter +
-				float64(rawProbe.RTT)*(1-DefaultSlidingMeanParameter)
+			averageRTT = averageRTT*DefaultSlidingMeanParameter +
+				float64(tmpProbe.RTT)*(1-DefaultSlidingMeanParameter)
 		}
 
 		p.averageRTT = atomic.NewDuration(time.Duration(averageRTT))

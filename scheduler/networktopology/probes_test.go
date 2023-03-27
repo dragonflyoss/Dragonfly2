@@ -16,10 +16,10 @@ import (
 )
 
 var (
-	mockSrcHost = &resource.Host{
-		ID:              idgen.HostIDV2("127.0.0.1", "SrcHostName"),
-		Type:            types.HostTypeNormal,
-		Hostname:        "hostname",
+	mockSeedHost = &resource.Host{
+		ID:              idgen.HostIDV2("127.0.0.1", "hostname_seed"),
+		Type:            types.HostTypeSuperSeed,
+		Hostname:        "hostname_seed",
 		IP:              "127.0.0.1",
 		Port:            8003,
 		DownloadPort:    8001,
@@ -66,7 +66,7 @@ func Test_NewProbes(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, NewProbes(mockConfig, mockSrcHost))
+			tc.expect(t, NewProbes(mockConfig, mockSeedHost))
 		})
 	}
 }
@@ -80,7 +80,7 @@ func TestProbes_LoadProbe(t *testing.T) {
 	}{
 		{
 			name:   "load probe from probes which has one probe",
-			probes: NewProbes(mockConfig, mockSrcHost),
+			probes: NewProbes(mockConfig, mockSeedHost),
 			mock: func(probes Probes) {
 				probes.StoreProbe(mockProbe)
 			},
@@ -95,7 +95,7 @@ func TestProbes_LoadProbe(t *testing.T) {
 		},
 		{
 			name:   "load probe from probes which has three probes",
-			probes: NewProbes(mockConfig, mockSrcHost),
+			probes: NewProbes(mockConfig, mockSeedHost),
 			mock: func(probes Probes) {
 				probes.StoreProbe(NewProbe(mockHost, 31*time.Millisecond, time.Now()))
 				probes.StoreProbe(NewProbe(mockHost, 32*time.Millisecond, time.Now()))
@@ -112,7 +112,7 @@ func TestProbes_LoadProbe(t *testing.T) {
 		},
 		{
 			name:   "probe does not exist",
-			probes: NewProbes(mockConfig, mockSrcHost),
+			probes: NewProbes(mockConfig, mockSeedHost),
 			mock:   func(probes Probes) {},
 			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
@@ -139,7 +139,7 @@ func TestProbes_StoreProbe(t *testing.T) {
 	}{
 		{
 			name:   "store probe",
-			probes: NewProbes(mockConfig, mockSrcHost),
+			probes: NewProbes(mockConfig, mockSeedHost),
 			mock: func(probes Probes) {
 				probes.StoreProbe(mockProbe)
 			},
@@ -158,7 +158,7 @@ func TestProbes_StoreProbe(t *testing.T) {
 		},
 		{
 			name:   "store probe when probes has full probe",
-			probes: NewProbes(mockConfig, mockSrcHost),
+			probes: NewProbes(mockConfig, mockSeedHost),
 			mock: func(probes Probes) {
 				probes.StoreProbe(NewProbe(mockHost, 31*time.Millisecond, time.Now()))
 				probes.StoreProbe(NewProbe(mockHost, 32*time.Millisecond, time.Now()))
@@ -206,8 +206,8 @@ func TestProbes_GetProbes(t *testing.T) {
 		expect func(t *testing.T, queue *list.List)
 	}{
 		{
-			name:   "get Queue from probes which has only one probe",
-			probes: NewProbes(mockConfig, mockSrcHost),
+			name:   "get probes list from probes which has only one probe",
+			probes: NewProbes(mockConfig, mockSeedHost),
 			mock: func(probes Probes) {
 				probes.StoreProbe(mockProbe)
 			},
@@ -217,8 +217,8 @@ func TestProbes_GetProbes(t *testing.T) {
 			},
 		},
 		{
-			name:   "get update time from probes which has three probe",
-			probes: NewProbes(mockConfig, mockSrcHost),
+			name:   "get probes list from probes which has three probe",
+			probes: NewProbes(mockConfig, mockSeedHost),
 			mock: func(probes Probes) {
 				probes.StoreProbe(NewProbe(mockHost, 31*time.Millisecond, time.Now()))
 				probes.StoreProbe(NewProbe(mockHost, 32*time.Millisecond, time.Now()))
@@ -230,8 +230,8 @@ func TestProbes_GetProbes(t *testing.T) {
 			},
 		},
 		{
-			name:   "get Queue from probes which has no probe",
-			probes: NewProbes(mockConfig, mockSrcHost),
+			name:   "get probes list from probes which has no probe",
+			probes: NewProbes(mockConfig, mockSeedHost),
 			mock:   func(probes Probes) {},
 			expect: func(t *testing.T, queue *list.List) {
 				assert := assert.New(t)
@@ -257,7 +257,7 @@ func TestProbes_UpdatedAt(t *testing.T) {
 	}{
 		{
 			name:   "get update time from probes which has only one probe",
-			probes: NewProbes(mockConfig, mockSrcHost),
+			probes: NewProbes(mockConfig, mockSeedHost),
 			mock: func(probes Probes) {
 				probes.StoreProbe(mockProbe)
 			},
@@ -268,7 +268,7 @@ func TestProbes_UpdatedAt(t *testing.T) {
 		},
 		{
 			name:   "get update time from probes which has three probe",
-			probes: NewProbes(mockConfig, mockSrcHost),
+			probes: NewProbes(mockConfig, mockSeedHost),
 			mock: func(probes Probes) {
 				probes.StoreProbe(NewProbe(mockHost, 31*time.Millisecond, time.Now()))
 				probes.StoreProbe(NewProbe(mockHost, 32*time.Millisecond, time.Now()))
@@ -281,7 +281,7 @@ func TestProbes_UpdatedAt(t *testing.T) {
 		},
 		{
 			name:   "get update time from probes which has no probe",
-			probes: NewProbes(mockConfig, mockSrcHost),
+			probes: NewProbes(mockConfig, mockSeedHost),
 			mock:   func(probes Probes) {},
 			expect: func(t *testing.T, updatedAt *atomic.Time) {
 				assert := assert.New(t)
@@ -307,7 +307,7 @@ func TestProbes_AverageRTT(t *testing.T) {
 	}{
 		{
 			name:   "get average rtt from probes which has only one probes",
-			probes: NewProbes(mockConfig, mockSrcHost),
+			probes: NewProbes(mockConfig, mockSeedHost),
 			mock: func(probes Probes) {
 				probes.StoreProbe(mockProbe)
 			},
@@ -318,7 +318,7 @@ func TestProbes_AverageRTT(t *testing.T) {
 		},
 		{
 			name:   "get average rtt from probes which has three probes",
-			probes: NewProbes(mockConfig, mockSrcHost),
+			probes: NewProbes(mockConfig, mockSeedHost),
 			mock: func(probes Probes) {
 				probes.StoreProbe(NewProbe(mockHost, 31*time.Millisecond, time.Now()))
 				probes.StoreProbe(NewProbe(mockHost, 32*time.Millisecond, time.Now()))
@@ -337,7 +337,7 @@ func TestProbes_AverageRTT(t *testing.T) {
 		},
 		{
 			name:   "get average rtt from probes which has no probes",
-			probes: NewProbes(mockConfig, mockSrcHost),
+			probes: NewProbes(mockConfig, mockSeedHost),
 			mock:   func(probes Probes) {},
 			expect: func(t *testing.T, averageRTT *atomic.Duration) {
 				assert := assert.New(t)
