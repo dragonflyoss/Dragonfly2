@@ -2,8 +2,9 @@ package networktopology
 
 import (
 	"container/list"
-	"go.uber.org/atomic"
 	"time"
+
+	"go.uber.org/atomic"
 
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
