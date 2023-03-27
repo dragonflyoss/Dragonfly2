@@ -87,3 +87,6 @@ networkTopology:
     queueLength: 5
     syncInterval: 30s
     syncCount: 50
+
+trainer:
+  enable: false
