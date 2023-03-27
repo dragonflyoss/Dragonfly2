@@ -69,6 +69,9 @@ type Config struct {
 
 	// NetworkTopology configuration.
 	NetworkTopology NetworkTopologyConfig `yaml:"networkTopology" mapstructure:"networkTopology"`
+
+	// Trainer configuration.
+	Trainer TrainerConfig `yaml:"trainer" mapstructure:"trainer"`
 }
 
 type ServerConfig struct {
@@ -320,6 +323,11 @@ type ProbeConfig struct {
 	SyncCount int `mapstructure:"syncCount" yaml:"syncCount"`
 }
 
+type TrainerConfig struct {
+	// Enable trainer service.
+	Enable bool `yaml:"enable" mapstructure:"enable"`
+}
+
 // New default configuration.
 func New() *Config {
 	return &Config{
@@ -398,6 +406,9 @@ func New() *Config {
 				SyncInterval: DefaultProbeSyncInterval,
 				SyncCount:    DefaultProbeSyncCount,
 			},
+		},
+		Trainer: TrainerConfig{
+			Enable: false,
 		},
 	}
 }

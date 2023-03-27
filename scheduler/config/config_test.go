@@ -165,6 +165,9 @@ func TestConfig_Load(t *testing.T) {
 				SyncCount:    50,
 			},
 		},
+		Trainer: TrainerConfig{
+			Enable: false,
+		},
 	}
 
 	schedulerConfigYAML := &Config{}
