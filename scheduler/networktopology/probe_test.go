@@ -92,7 +92,7 @@ var (
 	mockHostLocation       = "location"
 	mockHostIDC            = "idc"
 
-	mockRawProbe = &Probe{
+	mockProbe = &Probe{
 		Host:      mockHost,
 		RTT:       30 * time.Millisecond,
 		CreatedAt: time.Now(),
@@ -108,13 +108,13 @@ func Test_NewProbe(t *testing.T) {
 			name: "new probe",
 			expect: func(t *testing.T, p *Probe) {
 				assert := assert.New(t)
-				assert.EqualValues(p, mockRawProbe)
+				assert.EqualValues(p, mockProbe)
 			},
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, NewProbe(mockRawProbe.Host, mockRawProbe.RTT, mockRawProbe.CreatedAt))
+			tc.expect(t, NewProbe(mockProbe.Host, mockProbe.RTT, mockProbe.CreatedAt))
 		})
 	}
 }

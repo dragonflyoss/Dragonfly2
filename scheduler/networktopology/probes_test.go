@@ -82,15 +82,15 @@ func TestProbes_LoadProbe(t *testing.T) {
 			name:   "load probe from probes which has one probe",
 			probes: NewProbes(mockConfig, mockSrcHost),
 			mock: func(probes Probes) {
-				probes.StoreProbe(mockRawProbe)
+				probes.StoreProbe(mockProbe)
 			},
 			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
 				probe, loaded := p.LoadProbe()
 				assert.Equal(loaded, true)
-				assert.Equal(probe.Host.ID, mockRawProbe.Host.ID)
-				assert.Equal(probe.RTT, mockRawProbe.RTT)
-				assert.Equal(probe.CreatedAt, mockRawProbe.CreatedAt)
+				assert.Equal(probe.Host.ID, mockProbe.Host.ID)
+				assert.Equal(probe.RTT, mockProbe.RTT)
+				assert.Equal(probe.CreatedAt, mockProbe.CreatedAt)
 			},
 		},
 		{
@@ -99,15 +99,15 @@ func TestProbes_LoadProbe(t *testing.T) {
 			mock: func(probes Probes) {
 				probes.StoreProbe(NewProbe(mockHost, 31*time.Millisecond, time.Now()))
 				probes.StoreProbe(NewProbe(mockHost, 32*time.Millisecond, time.Now()))
-				probes.StoreProbe(mockRawProbe)
+				probes.StoreProbe(mockProbe)
 			},
 			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
 				probe, loaded := p.LoadProbe()
 				assert.Equal(loaded, true)
-				assert.Equal(probe.Host.ID, mockRawProbe.Host.ID)
-				assert.Equal(probe.RTT, mockRawProbe.RTT)
-				assert.Equal(probe.CreatedAt, mockRawProbe.CreatedAt)
+				assert.Equal(probe.Host.ID, mockProbe.Host.ID)
+				assert.Equal(probe.RTT, mockProbe.RTT)
+				assert.Equal(probe.CreatedAt, mockProbe.CreatedAt)
 			},
 		},
 		{
@@ -141,7 +141,7 @@ func TestProbes_StoreProbe(t *testing.T) {
 			name:   "store probe",
 			probes: NewProbes(mockConfig, mockSrcHost),
 			mock: func(probes Probes) {
-				probes.StoreProbe(mockRawProbe)
+				probes.StoreProbe(mockProbe)
 			},
 			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
@@ -150,9 +150,9 @@ func TestProbes_StoreProbe(t *testing.T) {
 				assert.Equal(loaded, true)
 				assert.Equal(p.AverageRTT(), probe.RTT)
 
-				assert.Equal(probe.Host.ID, mockRawProbe.Host.ID)
-				assert.Equal(probe.RTT, mockRawProbe.RTT)
-				assert.Equal(probe.CreatedAt, mockRawProbe.CreatedAt)
+				assert.Equal(probe.Host.ID, mockProbe.Host.ID)
+				assert.Equal(probe.RTT, mockProbe.RTT)
+				assert.Equal(probe.CreatedAt, mockProbe.CreatedAt)
 
 			},
 		},
@@ -165,7 +165,7 @@ func TestProbes_StoreProbe(t *testing.T) {
 				probes.StoreProbe(NewProbe(mockHost, 33*time.Millisecond, time.Now()))
 				probes.StoreProbe(NewProbe(mockHost, 34*time.Millisecond, time.Now()))
 				probes.StoreProbe(NewProbe(mockHost, 35*time.Millisecond, time.Now()))
-				probes.StoreProbe(mockRawProbe)
+				probes.StoreProbe(mockProbe)
 			},
 			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
@@ -176,17 +176,17 @@ func TestProbes_StoreProbe(t *testing.T) {
 				for e := p.GetProbes().Front().Next(); e != nil; e = e.Next() {
 					rawProbe, loaded := e.Value.(*Probe)
 					assert.Equal(loaded, true)
-					averageRTT = float64(averageRTT)*DefaultMovingAverageValue +
-						float64(rawProbe.RTT)*(1-DefaultMovingAverageValue)
+					averageRTT = float64(averageRTT)*DefaultSlidingMeanParameter +
+						float64(rawProbe.RTT)*(1-DefaultSlidingMeanParameter)
 				}
 
 				assert.Equal(p.AverageRTT(), time.Duration(averageRTT))
 
 				probe, loaded := p.LoadProbe()
 				assert.Equal(loaded, true)
-				assert.Equal(probe.Host.ID, mockRawProbe.Host.ID)
-				assert.Equal(probe.RTT, mockRawProbe.RTT)
-				assert.Equal(probe.CreatedAt, mockRawProbe.CreatedAt)
+				assert.Equal(probe.Host.ID, mockProbe.Host.ID)
+				assert.Equal(probe.RTT, mockProbe.RTT)
+				assert.Equal(probe.CreatedAt, mockProbe.CreatedAt)
 			},
 		},
 	}
@@ -209,7 +209,7 @@ func TestProbes_GetProbes(t *testing.T) {
 			name:   "get Queue from probes which has only one probe",
 			probes: NewProbes(mockConfig, mockSrcHost),
 			mock: func(probes Probes) {
-				probes.StoreProbe(mockRawProbe)
+				probes.StoreProbe(mockProbe)
 			},
 			expect: func(t *testing.T, queue *list.List) {
 				assert := assert.New(t)
@@ -222,7 +222,7 @@ func TestProbes_GetProbes(t *testing.T) {
 			mock: func(probes Probes) {
 				probes.StoreProbe(NewProbe(mockHost, 31*time.Millisecond, time.Now()))
 				probes.StoreProbe(NewProbe(mockHost, 32*time.Millisecond, time.Now()))
-				probes.StoreProbe(mockRawProbe)
+				probes.StoreProbe(mockProbe)
 			},
 			expect: func(t *testing.T, queue *list.List) {
 				assert := assert.New(t)
@@ -253,17 +253,17 @@ func TestProbes_UpdatedAt(t *testing.T) {
 		name   string
 		probes Probes
 		mock   func(probes Probes)
-		expect func(t *testing.T, updatedAt time.Time)
+		expect func(t *testing.T, updatedAt *atomic.Time)
 	}{
 		{
 			name:   "get update time from probes which has only one probe",
 			probes: NewProbes(mockConfig, mockSrcHost),
 			mock: func(probes Probes) {
-				probes.StoreProbe(mockRawProbe)
+				probes.StoreProbe(mockProbe)
 			},
-			expect: func(t *testing.T, updatedAt time.Time) {
+			expect: func(t *testing.T, updatedAt *atomic.Time) {
 				assert := assert.New(t)
-				assert.Equal(updatedAt, mockRawProbe.CreatedAt)
+				assert.Equal(updatedAt, atomic.NewTime(mockProbe.CreatedAt))
 			},
 		},
 		{
@@ -272,20 +272,20 @@ func TestProbes_UpdatedAt(t *testing.T) {
 			mock: func(probes Probes) {
 				probes.StoreProbe(NewProbe(mockHost, 31*time.Millisecond, time.Now()))
 				probes.StoreProbe(NewProbe(mockHost, 32*time.Millisecond, time.Now()))
-				probes.StoreProbe(mockRawProbe)
+				probes.StoreProbe(mockProbe)
 			},
-			expect: func(t *testing.T, updatedAt time.Time) {
+			expect: func(t *testing.T, updatedAt *atomic.Time) {
 				assert := assert.New(t)
-				assert.Equal(updatedAt, mockRawProbe.CreatedAt)
+				assert.Equal(updatedAt, atomic.NewTime(mockProbe.CreatedAt))
 			},
 		},
 		{
 			name:   "get update time from probes which has no probe",
 			probes: NewProbes(mockConfig, mockSrcHost),
 			mock:   func(probes Probes) {},
-			expect: func(t *testing.T, updatedAt time.Time) {
+			expect: func(t *testing.T, updatedAt *atomic.Time) {
 				assert := assert.New(t)
-				assert.Equal(updatedAt, time.Time{})
+				assert.Equal(updatedAt, atomic.NewTime(time.Time{}))
 			},
 		},
 	}
@@ -303,17 +303,17 @@ func TestProbes_AverageRTT(t *testing.T) {
 		name   string
 		probes Probes
 		mock   func(probes Probes)
-		expect func(t *testing.T, averageRTT time.Duration)
+		expect func(t *testing.T, averageRTT *atomic.Duration)
 	}{
 		{
 			name:   "get average rtt from probes which has only one probes",
 			probes: NewProbes(mockConfig, mockSrcHost),
 			mock: func(probes Probes) {
-				probes.StoreProbe(mockRawProbe)
+				probes.StoreProbe(mockProbe)
 			},
-			expect: func(t *testing.T, averageRTT time.Duration) {
+			expect: func(t *testing.T, averageRTT *atomic.Duration) {
 				assert := assert.New(t)
-				assert.Equal(averageRTT, mockRawProbe.RTT)
+				assert.Equal(averageRTT, atomic.NewDuration(mockProbe.RTT))
 			},
 		},
 		{
@@ -322,26 +322,26 @@ func TestProbes_AverageRTT(t *testing.T) {
 			mock: func(probes Probes) {
 				probes.StoreProbe(NewProbe(mockHost, 31*time.Millisecond, time.Now()))
 				probes.StoreProbe(NewProbe(mockHost, 32*time.Millisecond, time.Now()))
-				probes.StoreProbe(mockRawProbe)
+				probes.StoreProbe(mockProbe)
 			},
-			expect: func(t *testing.T, averageRTT time.Duration) {
+			expect: func(t *testing.T, averageRTT *atomic.Duration) {
 				assert := assert.New(t)
-				aver := float64(31 * time.Millisecond)
-				aver = aver*DefaultMovingAverageValue +
-					float64(32*time.Millisecond)*(1-DefaultMovingAverageValue)
-				aver = aver*DefaultMovingAverageValue +
-					float64(mockRawProbe.RTT)*(1-DefaultMovingAverageValue)
+				average := float64(31 * time.Millisecond)
+				average = average*DefaultSlidingMeanParameter +
+					float64(32*time.Millisecond)*(1-DefaultSlidingMeanParameter)
+				average = average*DefaultSlidingMeanParameter +
+					float64(mockProbe.RTT)*(1-DefaultSlidingMeanParameter)
 
-				assert.Equal(averageRTT, time.Duration(aver))
+				assert.Equal(averageRTT, atomic.NewDuration(time.Duration(average)))
 			},
 		},
 		{
 			name:   "get average rtt from probes which has no probes",
 			probes: NewProbes(mockConfig, mockSrcHost),
 			mock:   func(probes Probes) {},
-			expect: func(t *testing.T, averageRTT time.Duration) {
+			expect: func(t *testing.T, averageRTT *atomic.Duration) {
 				assert := assert.New(t)
-				assert.Equal(averageRTT, time.Duration(0))
+				assert.Equal(averageRTT, atomic.NewDuration(time.Duration(0)))
 			},
 		},
 	}

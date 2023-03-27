@@ -2,13 +2,15 @@ package networktopology
 
 import (
 	"container/list"
+	"go.uber.org/atomic"
 	"time"
 
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
-const DefaultMovingAverageValue = 0.1
+// DefaultSlidingMeanParameter adjusts the impact of the previous values.
+const DefaultSlidingMeanParameter = 0.1
 
 type Probes interface {
 	// LoadProbe return the latest probe.
@@ -21,10 +23,10 @@ type Probes interface {
 	GetProbes() *list.List
 
 	// UpdatedAt gets the probe update time.
-	UpdatedAt() time.Time
+	UpdatedAt() *atomic.Time
 
 	// AverageRTT gets the average RTT of probes.
-	AverageRTT() time.Duration
+	AverageRTT() *atomic.Duration
 }
 
 type probes struct {
@@ -38,10 +40,13 @@ type probes struct {
 	items *list.List
 
 	// averageRTT is the average round-trip time of probes.
-	averageRTT time.Duration
+	averageRTT *atomic.Duration
+
+	// createdAt is the creation time of probes.
+	createdAt *atomic.Time
 
 	// updatedAt is the update time to store probe.
-	updatedAt time.Time
+	updatedAt *atomic.Time
 }
 
 // NewProbes creates a new probe list instance.
@@ -50,8 +55,9 @@ func NewProbes(cfg *config.Config, host *resource.Host) Probes {
 		config:     cfg,
 		host:       host,
 		items:      list.New(),
-		averageRTT: time.Duration(0),
-		updatedAt:  time.Time{},
+		averageRTT: atomic.NewDuration(0),
+		createdAt:  atomic.NewTime(time.Now()),
+		updatedAt:  atomic.NewTime(time.Time{}),
 	}
 }
 
@@ -69,15 +75,15 @@ func (p *probes) LoadProbe() (*Probe, bool) {
 }
 
 // StoreProbe stores probe in probe list.
-func (p *probes) StoreProbe(pro *Probe) bool {
+func (p *probes) StoreProbe(probe *Probe) bool {
 	if p.items.Len() == p.config.NetworkTopology.Probe.QueueLength {
 		front := p.items.Front()
 		p.items.Remove(front)
 	}
-	p.items.PushBack(pro)
+	p.items.PushBack(probe)
 
 	//update updatedAt
-	p.updatedAt = pro.CreatedAt
+	p.updatedAt = atomic.NewTime(probe.CreatedAt)
 
 	//update AverageRtt by moving average method
 	front, ok := p.items.Front().Value.(*Probe)
@@ -89,11 +95,11 @@ func (p *probes) StoreProbe(pro *Probe) bool {
 				return loaded
 			}
 
-			averageRTT = float64(averageRTT)*DefaultMovingAverageValue +
-				float64(rawProbe.RTT)*(1-DefaultMovingAverageValue)
+			averageRTT = float64(averageRTT)*DefaultSlidingMeanParameter +
+				float64(rawProbe.RTT)*(1-DefaultSlidingMeanParameter)
 		}
 
-		p.averageRTT = time.Duration(averageRTT)
+		p.averageRTT = atomic.NewDuration(time.Duration(averageRTT))
 	}
 
 	return ok
@@ -105,11 +111,11 @@ func (p *probes) GetProbes() *list.List {
 }
 
 // UpdatedAt gets the probe update time.
-func (p *probes) UpdatedAt() time.Time {
+func (p *probes) UpdatedAt() *atomic.Time {
 	return p.updatedAt
 }
 
 // AverageRTT gets the average RTT of probes.
-func (p *probes) AverageRTT() time.Duration {
+func (p *probes) AverageRTT() *atomic.Duration {
 	return p.averageRTT
 }
