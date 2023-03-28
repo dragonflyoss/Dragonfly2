@@ -327,6 +327,9 @@ type TrainerConfig struct {
 	// Enable trainer service.
 	Enable bool `yaml:"enable" mapstructure:"enable"`
 
+	// Addrs is trainer service address
+	Addrs []string `yaml:"addrs" mapstructure:"addrs"`
+
 	// TrainingInterval is the interval of training.
 	TrainingInterval time.Duration `yaml:"trainingInterval" mapstructure:"trainingInterval"`
 }
