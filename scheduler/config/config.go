@@ -562,23 +562,23 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.NetworkTopology.SyncInterval <= 0 {
-		return errors.New("networkTopology requires parameter SyncInterval")
+		return errors.New("networkTopology requires parameter syncInterval")
 	}
 
 	if cfg.NetworkTopology.CollectInterval <= 0 {
-		return errors.New("networkTopology requires parameter CollectInterval")
+		return errors.New("networkTopology requires parameter collectInterval")
 	}
 
 	if cfg.NetworkTopology.Probe.QueueLength <= 0 {
-		return errors.New("probe requires parameter QueueLength")
+		return errors.New("probe requires parameter queueLength")
 	}
 
 	if cfg.NetworkTopology.Probe.SyncInterval <= 0 {
-		return errors.New("probe requires parameter SyncInterval")
+		return errors.New("probe requires parameter syncInterval")
 	}
 
 	if cfg.NetworkTopology.Probe.SyncCount <= 0 {
-		return errors.New("probe requires parameter SyncCount")
+		return errors.New("probe requires parameter syncCount")
 	}
 
 	return nil
