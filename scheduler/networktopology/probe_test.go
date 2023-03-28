@@ -1,7 +1,6 @@
 package networktopology
 
 import (
-	"d7y.io/dragonfly/v2/scheduler/config"
 	"testing"
 	"time"
 
@@ -10,6 +9,7 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/types"
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
