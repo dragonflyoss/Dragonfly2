@@ -10,8 +10,8 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
-// DefaultSlidingMeanParameter adjusts the impact of the previous values.
-const DefaultSlidingMeanParameter = 0.1
+// DefaultSlidingMeanWeight is the weight in the sliding mean method.
+const DefaultSlidingMeanWeight = 0.1
 
 type Probes interface {
 	// LoadProbe return the latest probe.
@@ -20,7 +20,7 @@ type Probes interface {
 	// StoreProbe stores probe in probe list.
 	StoreProbe(*Probe) bool
 
-	// GetProbes gets the probes list from struct probes
+	// GetProbes gets the probes list from struct probes.
 	GetProbes() *list.List
 
 	// UpdatedAt gets the probe update time.
@@ -62,6 +62,7 @@ func NewProbes(cfg *config.Config, host *resource.Host) Probes {
 	}
 }
 
+// LoadProbe return the latest probe.
 func (p *probes) LoadProbe() (*Probe, bool) {
 	if p.items.Len() == 0 {
 		return nil, false
@@ -83,30 +84,30 @@ func (p *probes) StoreProbe(probe *Probe) bool {
 	}
 	p.items.PushBack(probe)
 
-	// Update AverageRtt by moving average method
+	// Update AverageRtt by sliding mean method.
 	front, ok := p.items.Front().Value.(*Probe)
-	if ok {
-		averageRTT := float64(front.RTT)
-		for e := p.items.Front().Next(); e != nil; e = e.Next() {
-			tmpProbe, loaded := e.Value.(*Probe)
-			if !loaded {
-				return loaded
-			}
-
-			averageRTT = averageRTT*DefaultSlidingMeanParameter +
-				float64(tmpProbe.RTT)*(1-DefaultSlidingMeanParameter)
+	if !ok {
+		return ok
+	}
+	averageRTT := float64(front.RTT)
+	for e := p.items.Front(); e != nil; e = e.Next() {
+		frontProbe, loaded := e.Value.(*Probe)
+		if !loaded {
+			return loaded
 		}
 
-		p.averageRTT = atomic.NewDuration(time.Duration(averageRTT))
+		averageRTT = averageRTT*DefaultSlidingMeanWeight +
+			float64(frontProbe.RTT)*(1-DefaultSlidingMeanWeight)
 	}
 
-	// Update updatedAt
-	p.updatedAt = atomic.NewTime(probe.CreatedAt)
+	p.averageRTT = atomic.NewDuration(time.Duration(averageRTT))
 
-	return ok
+	// Update updatedAt.
+	p.updatedAt = atomic.NewTime(probe.CreatedAt)
+	return true
 }
 
-// GetProbes gets the probes list from struct probes
+// GetProbes gets the probes list from struct probes.
 func (p *probes) GetProbes() *list.List {
 	return p.items
 }

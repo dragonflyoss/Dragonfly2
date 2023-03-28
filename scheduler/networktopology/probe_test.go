@@ -1,6 +1,7 @@
 package networktopology
 
 import (
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"testing"
 	"time"
 
@@ -17,6 +18,27 @@ var (
 		ID:              idgen.HostIDV2("127.0.0.1", "HostName"),
 		Type:            types.HostTypeNormal,
 		Hostname:        "hostname",
+		IP:              "127.0.0.1",
+		Port:            8003,
+		DownloadPort:    8001,
+		OS:              "darwin",
+		Platform:        "darwin",
+		PlatformFamily:  "Standalone Workstation",
+		PlatformVersion: "11.1",
+		KernelVersion:   "20.2.0",
+		CPU:             mockCPU,
+		Memory:          mockMemory,
+		Network:         mockNetwork,
+		Disk:            mockDisk,
+		Build:           mockBuild,
+		CreatedAt:       atomic.NewTime(time.Now()),
+		UpdatedAt:       atomic.NewTime(time.Now()),
+	}
+
+	mockSeedHost = &resource.Host{
+		ID:              idgen.HostIDV2("127.0.0.1", "hostname_seed"),
+		Type:            types.HostTypeSuperSeed,
+		Hostname:        "hostname_seed",
 		IP:              "127.0.0.1",
 		Port:            8003,
 		DownloadPort:    8001,
@@ -96,6 +118,19 @@ var (
 		Host:      mockHost,
 		RTT:       30 * time.Millisecond,
 		CreatedAt: time.Now(),
+	}
+
+	mockConfig = &config.Config{
+		NetworkTopology: config.NetworkTopologyConfig{
+			Enable:          true,
+			SyncInterval:    30 * time.Second,
+			CollectInterval: 60 * time.Second,
+			Probe: config.ProbeConfig{
+				QueueLength:  5,
+				SyncInterval: 30 * time.Second,
+				SyncCount:    50,
+			},
+		},
 	}
 )
 

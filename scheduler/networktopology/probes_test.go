@@ -8,47 +8,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/atomic"
-
-	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/types"
-	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/resource"
-)
-
-var (
-	mockSeedHost = &resource.Host{
-		ID:              idgen.HostIDV2("127.0.0.1", "hostname_seed"),
-		Type:            types.HostTypeSuperSeed,
-		Hostname:        "hostname_seed",
-		IP:              "127.0.0.1",
-		Port:            8003,
-		DownloadPort:    8001,
-		OS:              "darwin",
-		Platform:        "darwin",
-		PlatformFamily:  "Standalone Workstation",
-		PlatformVersion: "11.1",
-		KernelVersion:   "20.2.0",
-		CPU:             mockCPU,
-		Memory:          mockMemory,
-		Network:         mockNetwork,
-		Disk:            mockDisk,
-		Build:           mockBuild,
-		CreatedAt:       atomic.NewTime(time.Now()),
-		UpdatedAt:       atomic.NewTime(time.Now()),
-	}
-
-	mockConfig = &config.Config{
-		NetworkTopology: config.NetworkTopologyConfig{
-			Enable:          true,
-			SyncInterval:    30 * time.Second,
-			CollectInterval: 60 * time.Second,
-			Probe: config.ProbeConfig{
-				QueueLength:  5,
-				SyncInterval: 30 * time.Second,
-				SyncCount:    50,
-			},
-		},
-	}
 )
 
 func Test_NewProbes(t *testing.T) {
@@ -173,14 +132,14 @@ func TestProbes_StoreProbe(t *testing.T) {
 				front, ok := p.GetProbes().Front().Value.(*Probe)
 				assert.Equal(ok, true)
 				averageRTT := float64(front.RTT)
-				for e := p.GetProbes().Front().Next(); e != nil; e = e.Next() {
+				for e := p.GetProbes().Front(); e != nil; e = e.Next() {
 					probe, loaded := e.Value.(*Probe)
 					assert.Equal(loaded, true)
-					averageRTT = float64(averageRTT)*DefaultSlidingMeanParameter +
-						float64(probe.RTT)*(1-DefaultSlidingMeanParameter)
+					averageRTT = float64(averageRTT)*DefaultSlidingMeanWeight +
+						float64(probe.RTT)*(1-DefaultSlidingMeanWeight)
 				}
 
-				assert.Equal(p.AverageRTT(), atomic.NewDuration(time.Duration(averageRTT)))
+				assert.Equal(p.AverageRTT().Load(), time.Duration(averageRTT))
 
 				probe, loaded := p.LoadProbe()
 				assert.Equal(loaded, true)
@@ -203,7 +162,7 @@ func TestProbes_GetProbes(t *testing.T) {
 		name   string
 		probes Probes
 		mock   func(probes Probes)
-		expect func(t *testing.T, queue *list.List)
+		expect func(t *testing.T, probes *list.List)
 	}{
 		{
 			name:   "get probes list from probes which has only one probe",
@@ -211,9 +170,13 @@ func TestProbes_GetProbes(t *testing.T) {
 			mock: func(probes Probes) {
 				probes.StoreProbe(mockProbe)
 			},
-			expect: func(t *testing.T, queue *list.List) {
+			expect: func(t *testing.T, probes *list.List) {
 				assert := assert.New(t)
-				assert.Equal(queue.Len(), 1)
+				assert.Equal(probes.Len(), 1)
+				probe, ok := probes.Front().Value.(Probe)
+				assert.Equal(ok, true)
+				assert.Equal(probe.Host.ID, mockProbe.Host.ID)
+
 			},
 		},
 		{
@@ -224,18 +187,28 @@ func TestProbes_GetProbes(t *testing.T) {
 				probes.StoreProbe(NewProbe(mockHost, 32*time.Millisecond, time.Now()))
 				probes.StoreProbe(mockProbe)
 			},
-			expect: func(t *testing.T, queue *list.List) {
+			expect: func(t *testing.T, probes *list.List) {
 				assert := assert.New(t)
-				assert.Equal(queue.Len(), 3)
+				assert.Equal(probes.Len(), 3)
+
+				frontProbe, ok := probes.Front().Value.(Probe)
+				assert.Equal(ok, true)
+				assert.Equal(frontProbe.Host.ID, mockHost.ID)
+				assert.Equal(frontProbe.RTT, 31*time.Millisecond)
+
+				backProbe, ok := probes.Back().Value.(Probe)
+				assert.Equal(ok, true)
+				assert.Equal(backProbe.Host.ID, mockProbe.Host.ID)
+				assert.Equal(backProbe.RTT, mockProbe.RTT)
 			},
 		},
 		{
 			name:   "get probes list from probes which has no probe",
 			probes: NewProbes(mockConfig, mockSeedHost),
 			mock:   func(probes Probes) {},
-			expect: func(t *testing.T, queue *list.List) {
+			expect: func(t *testing.T, probes *list.List) {
 				assert := assert.New(t)
-				assert.Equal(queue.Len(), 0)
+				assert.Equal(probes.Len(), 0)
 			},
 		},
 	}
@@ -263,7 +236,7 @@ func TestProbes_UpdatedAt(t *testing.T) {
 			},
 			expect: func(t *testing.T, updatedAt *atomic.Time) {
 				assert := assert.New(t)
-				assert.Equal(updatedAt, atomic.NewTime(mockProbe.CreatedAt))
+				assert.Equal(updatedAt.Load(), mockProbe.CreatedAt)
 			},
 		},
 		{
@@ -276,7 +249,7 @@ func TestProbes_UpdatedAt(t *testing.T) {
 			},
 			expect: func(t *testing.T, updatedAt *atomic.Time) {
 				assert := assert.New(t)
-				assert.Equal(updatedAt, atomic.NewTime(mockProbe.CreatedAt))
+				assert.Equal(updatedAt.Load(), mockProbe.CreatedAt)
 			},
 		},
 		{
@@ -285,7 +258,7 @@ func TestProbes_UpdatedAt(t *testing.T) {
 			mock:   func(probes Probes) {},
 			expect: func(t *testing.T, updatedAt *atomic.Time) {
 				assert := assert.New(t)
-				assert.Equal(updatedAt, atomic.NewTime(time.Time{}))
+				assert.Equal(updatedAt.Load(), time.Time{})
 			},
 		},
 	}
@@ -313,7 +286,7 @@ func TestProbes_AverageRTT(t *testing.T) {
 			},
 			expect: func(t *testing.T, averageRTT *atomic.Duration) {
 				assert := assert.New(t)
-				assert.Equal(averageRTT, atomic.NewDuration(mockProbe.RTT))
+				assert.Equal(averageRTT.Load(), mockProbe.RTT)
 			},
 		},
 		{
@@ -326,13 +299,7 @@ func TestProbes_AverageRTT(t *testing.T) {
 			},
 			expect: func(t *testing.T, averageRTT *atomic.Duration) {
 				assert := assert.New(t)
-				average := float64(31 * time.Millisecond)
-				average = average*DefaultSlidingMeanParameter +
-					float64(32*time.Millisecond)*(1-DefaultSlidingMeanParameter)
-				average = average*DefaultSlidingMeanParameter +
-					float64(mockProbe.RTT)*(1-DefaultSlidingMeanParameter)
-
-				assert.Equal(averageRTT, atomic.NewDuration(time.Duration(average)))
+				assert.Equal(averageRTT.Load(), time.Duration(3.019e7))
 			},
 		},
 		{
@@ -341,7 +308,7 @@ func TestProbes_AverageRTT(t *testing.T) {
 			mock:   func(probes Probes) {},
 			expect: func(t *testing.T, averageRTT *atomic.Duration) {
 				assert := assert.New(t)
-				assert.Equal(averageRTT, atomic.NewDuration(time.Duration(0)))
+				assert.Equal(averageRTT.Load(), time.Duration(0))
 			},
 		},
 	}
