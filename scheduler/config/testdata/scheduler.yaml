@@ -90,3 +90,4 @@ networkTopology:
 
 trainer:
   enable: false
+  trainingInterval: 10m

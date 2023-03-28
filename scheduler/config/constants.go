@@ -171,3 +171,8 @@ const (
 	// DefaultProbeSyncCount is the default number of probing hosts.
 	DefaultProbeSyncCount = 50
 )
+
+const (
+	// DefaultTrainingInterval is the default interval of training
+	DefaultTrainingInterval = 7 * 24 * time.Hour
+)

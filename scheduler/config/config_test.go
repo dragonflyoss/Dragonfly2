@@ -166,7 +166,8 @@ func TestConfig_Load(t *testing.T) {
 			},
 		},
 		Trainer: TrainerConfig{
-			Enable: false,
+			Enable:           false,
+			TrainingInterval: 10 * time.Minute,
 		},
 	}
 
@@ -710,6 +711,20 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "probe requires parameter SyncCount")
+			},
+		},
+		{
+			name:   "trainer requires parameter trainingInterval",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Job = mockJobConfig
+				cfg.Trainer.Enable = true
+				cfg.Trainer.TrainingInterval = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "trainer requires parameter trainingInterval")
 			},
 		},
 	}
