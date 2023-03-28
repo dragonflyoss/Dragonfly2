@@ -173,7 +173,7 @@ func TestProbes_GetProbes(t *testing.T) {
 			expect: func(t *testing.T, probes *list.List) {
 				assert := assert.New(t)
 				assert.Equal(probes.Len(), 1)
-				probe, ok := probes.Front().Value.(Probe)
+				probe, ok := probes.Front().Value.(*Probe)
 				assert.Equal(ok, true)
 				assert.Equal(probe.Host.ID, mockProbe.Host.ID)
 
@@ -191,12 +191,12 @@ func TestProbes_GetProbes(t *testing.T) {
 				assert := assert.New(t)
 				assert.Equal(probes.Len(), 3)
 
-				frontProbe, ok := probes.Front().Value.(Probe)
+				frontProbe, ok := probes.Front().Value.(*Probe)
 				assert.Equal(ok, true)
 				assert.Equal(frontProbe.Host.ID, mockHost.ID)
 				assert.Equal(frontProbe.RTT, 31*time.Millisecond)
 
-				backProbe, ok := probes.Back().Value.(Probe)
+				backProbe, ok := probes.Back().Value.(*Probe)
 				assert.Equal(ok, true)
 				assert.Equal(backProbe.Host.ID, mockProbe.Host.ID)
 				assert.Equal(backProbe.RTT, mockProbe.RTT)
