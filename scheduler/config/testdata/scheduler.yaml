@@ -90,5 +90,5 @@ networkTopology:
 
 trainer:
   enable: false
-  addrs: [ "127.0.0.1:9000" ]
+  addrs: [ "foo", "bar" ]
   trainingInterval: 10m

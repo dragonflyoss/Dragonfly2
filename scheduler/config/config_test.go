@@ -167,7 +167,7 @@ func TestConfig_Load(t *testing.T) {
 		},
 		Trainer: TrainerConfig{
 			Enable:           false,
-			Addrs:            []string{"127.0.0.1:9000"},
+			Addrs:            []string{"foo", "bar"},
 			TrainingInterval: 10 * time.Minute,
 		},
 	}
