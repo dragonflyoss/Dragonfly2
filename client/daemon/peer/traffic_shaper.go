@@ -262,7 +262,8 @@ func (ts *samplingTrafficShaper) Record(taskID string, n int) {
 	ts.RLock()
 	if task, ok := ts.tasks[taskID]; ok {
 		task.lastSecondBandwidth.Add(int64(n))
-		ts.Debugf("the task %s is not found when record it", taskID)
+	} else {
+		ts.Warnf("the task %s is not found when record it", taskID)
 	}
 	ts.RUnlock()
 }
