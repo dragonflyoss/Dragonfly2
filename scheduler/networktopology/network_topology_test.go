@@ -1,7 +1,6 @@
 package networktopology
 
 import (
-	"d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
 	"reflect"
 	"sync"
 	"testing"
@@ -9,6 +8,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
+	"d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
@@ -75,7 +75,7 @@ func TestNewNetworkTopology_LoadParents(t *testing.T) {
 				assert.Equal(probes.host.ID, mockHost.ID)
 				assert.Equal(probes.Length(), 1)
 				probe, ok := probes.Peek()
-				assert.Equal(loaded, true)
+				assert.Equal(ok, true)
 				assert.Equal(probe.Host.ID, mockProbe.Host.ID)
 			},
 		},
@@ -116,7 +116,7 @@ func TestNewNetworkTopology_LoadParents(t *testing.T) {
 				assert.Equal(probes.host.ID, mockHost.ID)
 				assert.Equal(probes.Length(), 1)
 				probe, ok := probes.Peek()
-				assert.Equal(loaded, true)
+				assert.Equal(ok, true)
 				assert.Equal(probe.Host.ID, mockProbe.Host.ID)
 			},
 		},
@@ -173,7 +173,7 @@ func TestNewNetworkTopology_StoreParents(t *testing.T) {
 				assert.Equal(probes.host.ID, mockHost.ID)
 				assert.Equal(probes.Length(), 1)
 				probe, ok := probes.Peek()
-				assert.Equal(loaded, true)
+				assert.Equal(ok, true)
 				assert.Equal(probe.Host.ID, mockProbe.Host.ID)
 			},
 		},
@@ -203,7 +203,7 @@ func TestNewNetworkTopology_StoreParents(t *testing.T) {
 				assert.Equal(probes.host.ID, mockHost.ID)
 				assert.Equal(probes.Length(), 1)
 				probe, ok := probes.Peek()
-				assert.Equal(loaded, true)
+				assert.Equal(ok, true)
 				assert.Equal(probe.Host.ID, mockProbe.Host.ID)
 			},
 		},
@@ -282,7 +282,7 @@ func TestNetworkTopology_DeleteParents(t *testing.T) {
 				assert.Equal(probes.host.ID, mockHost.ID)
 				assert.Equal(probes.Length(), 1)
 				probe, ok := probes.Peek()
-				assert.Equal(loaded, true)
+				assert.Equal(ok, true)
 				assert.Equal(probe.Host.ID, mockProbe.Host.ID)
 			},
 		},
