@@ -59,7 +59,7 @@ func TestNewNetworkTopology_LoadParents(t *testing.T) {
 					return
 				}
 
-				var m *sync.Map
+				m := &sync.Map{}
 				m.Store(mockHost.ID, probes)
 				networkTopology.StoreParents(mockSeedHost.ID, m)
 			},
@@ -100,7 +100,7 @@ func TestNewNetworkTopology_LoadParents(t *testing.T) {
 					return
 				}
 
-				var m *sync.Map
+				m := &sync.Map{}
 				m.Store(mockHost.ID, probes)
 				networkTopology.StoreParents("", m)
 			},
@@ -157,7 +157,7 @@ func TestNewNetworkTopology_StoreParents(t *testing.T) {
 					return
 				}
 
-				var m *sync.Map
+				m := &sync.Map{}
 				m.Store(mockHost.ID, probes)
 				networkTopology.StoreParents(mockSeedHost.ID, m)
 			},
@@ -187,7 +187,7 @@ func TestNewNetworkTopology_StoreParents(t *testing.T) {
 					return
 				}
 
-				var m *sync.Map
+				m := &sync.Map{}
 				m.Store(mockHost.ID, probes)
 				networkTopology.StoreParents("", m)
 			},
@@ -243,7 +243,7 @@ func TestNetworkTopology_DeleteParents(t *testing.T) {
 					return
 				}
 
-				var m *sync.Map
+				m := &sync.Map{}
 				m.Store(mockHost.ID, probes)
 				networkTopology.StoreParents(mockSeedHost.ID, m)
 			},
@@ -265,7 +265,7 @@ func TestNetworkTopology_DeleteParents(t *testing.T) {
 					return
 				}
 
-				var m *sync.Map
+				m := &sync.Map{}
 				m.Store(mockHost.ID, probes)
 				networkTopology.StoreParents(mockSeedHost.ID, m)
 			},
