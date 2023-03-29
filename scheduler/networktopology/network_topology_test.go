@@ -13,7 +13,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
-func TestNetworkTopology_NewNetworkTopology(t *testing.T) {
+func Test_NewNetworkTopology(t *testing.T) {
 	tests := []struct {
 		name   string
 		config *config.Config
@@ -42,7 +42,46 @@ func TestNetworkTopology_NewNetworkTopology(t *testing.T) {
 	}
 }
 
-func TestNewNetworkTopology_LoadParents(t *testing.T) {
+func TestNetworkTopology_GetHost(t *testing.T) {
+	tests := []struct {
+		name   string
+		config *config.Config
+		mock   func(res resource.Resource)
+		expect func(t *testing.T, networkTopology NetworkTopology)
+	}{
+		{
+			name:   "get host",
+			config: config.New(),
+			mock: func(res resource.Resource) {
+				res.HostManager().Store(mockHost)
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology) {
+				assert := assert.New(t)
+				host, ok := networkTopology.GetHost(mockHost.ID)
+				assert.Equal(ok, true)
+				assert.EqualValues(host, mockHost)
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+
+			mockManagerClient := mocks.NewMockV2(ctl)
+			res := resource.NewMockResource(ctl)
+			tc.mock(res)
+
+			n, err := NewNetworkTopology(tc.config, res, mockManagerClient, WithTransportCredentials(nil))
+			if err != nil {
+				t.Fatal(err)
+			}
+			tc.expect(t, n)
+		})
+	}
+}
+
+func TestNetworkTopology_LoadParents(t *testing.T) {
 	tests := []struct {
 		name   string
 		config *config.Config
@@ -72,11 +111,11 @@ func TestNewNetworkTopology_LoadParents(t *testing.T) {
 
 				probes, loaded := value.(*probes)
 				assert.Equal(loaded, true)
-				assert.Equal(probes.host.ID, mockHost.ID)
+				assert.EqualValues(probes.host, mockHost)
 				assert.Equal(probes.Length(), 1)
 				probe, ok := probes.Peek()
 				assert.Equal(ok, true)
-				assert.Equal(probe.Host.ID, mockProbe.Host.ID)
+				assert.EqualValues(probe.Host, mockProbe.Host)
 			},
 		},
 		{
@@ -113,11 +152,11 @@ func TestNewNetworkTopology_LoadParents(t *testing.T) {
 
 				probes, loaded := value.(*probes)
 				assert.Equal(loaded, true)
-				assert.Equal(probes.host.ID, mockHost.ID)
+				assert.EqualValues(probes.host, mockHost)
 				assert.Equal(probes.Length(), 1)
 				probe, ok := probes.Peek()
 				assert.Equal(ok, true)
-				assert.Equal(probe.Host.ID, mockProbe.Host.ID)
+				assert.EqualValues(probe.Host, mockProbe.Host)
 			},
 		},
 	}
@@ -170,11 +209,11 @@ func TestNewNetworkTopology_StoreParents(t *testing.T) {
 
 				probes, loaded := value.(*probes)
 				assert.Equal(loaded, true)
-				assert.Equal(probes.host.ID, mockHost.ID)
+				assert.EqualValues(probes.host, mockHost)
 				assert.Equal(probes.Length(), 1)
 				probe, ok := probes.Peek()
 				assert.Equal(ok, true)
-				assert.Equal(probe.Host.ID, mockProbe.Host.ID)
+				assert.EqualValues(probe.Host, mockProbe.Host)
 			},
 		},
 		{
@@ -200,11 +239,11 @@ func TestNewNetworkTopology_StoreParents(t *testing.T) {
 
 				probes, loaded := value.(*probes)
 				assert.Equal(loaded, true)
-				assert.Equal(probes.host.ID, mockHost.ID)
+				assert.EqualValues(probes.host, mockHost)
 				assert.Equal(probes.Length(), 1)
 				probe, ok := probes.Peek()
 				assert.Equal(ok, true)
-				assert.Equal(probe.Host.ID, mockProbe.Host.ID)
+				assert.EqualValues(probe.Host, mockProbe.Host)
 			},
 		},
 	}
@@ -279,11 +318,11 @@ func TestNetworkTopology_DeleteParents(t *testing.T) {
 
 				probes, loaded := value.(*probes)
 				assert.Equal(loaded, true)
-				assert.Equal(probes.host.ID, mockHost.ID)
+				assert.EqualValues(probes.host, mockHost)
 				assert.Equal(probes.Length(), 1)
 				probe, ok := probes.Peek()
 				assert.Equal(ok, true)
-				assert.Equal(probe.Host.ID, mockProbe.Host.ID)
+				assert.EqualValues(probe.Host, mockProbe.Host)
 			},
 		},
 	}

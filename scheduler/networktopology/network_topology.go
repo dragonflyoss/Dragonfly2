@@ -22,15 +22,6 @@ type NetworkTopology interface {
 
 	// DeleteParents deletes parents based on the source host id.
 	DeleteParents(string)
-
-	// LoadEdge returns edge between tow hosts.
-	LoadEdge(src, dest string) (*Probes, bool)
-
-	// StoreEdge stores edge between two hosts.
-	StoreEdge(src, dest string, probes *Probes) bool
-
-	// DeleteEdge deletes edge between two hosts.
-	DeleteEdge(src, dest string) bool
 }
 
 type networkTopology struct {
@@ -79,6 +70,7 @@ func NewNetworkTopology(cfg *config.Config, resource resource.Resource, managerC
 	return n, nil
 }
 
+// GetHost returns host from host id.
 func (n *networkTopology) GetHost(hostID string) (*resource.Host, bool) {
 	host, ok := n.resource.HostManager().Load(hostID)
 	if !ok {
@@ -87,6 +79,7 @@ func (n *networkTopology) GetHost(hostID string) (*resource.Host, bool) {
 	return host, ok
 }
 
+// LoadParents returns parents based on the source host id.
 func (n *networkTopology) LoadParents(key string) (*sync.Map, bool) {
 	value, ok := n.Map.Load(key)
 	if !ok {
@@ -101,60 +94,12 @@ func (n *networkTopology) LoadParents(key string) (*sync.Map, bool) {
 	return parents, ok && loaded
 }
 
+// StoreParents stores parents.
 func (n *networkTopology) StoreParents(key string, parents *sync.Map) {
 	n.Map.Store(key, parents)
 }
 
+// DeleteParents deletes parents based on the source host id.
 func (n *networkTopology) DeleteParents(key string) {
 	n.Map.Delete(key)
-}
-
-func (n *networkTopology) LoadEdge(src, dest string) (*Probes, bool) {
-	parents, ok := n.Map.Load(src)
-	if !ok {
-		return nil, ok
-	}
-
-	edge, ok := parents.(*sync.Map).Load(dest)
-	if !ok {
-		return nil, ok
-	}
-
-	probes, loaded := edge.(*Probes)
-	if !loaded {
-		return nil, loaded
-	}
-
-	return probes, ok && loaded
-}
-
-func (n *networkTopology) StoreEdge(src, dest string, probes *Probes) bool {
-	value, ok := n.Map.Load(src)
-	if !ok {
-		return ok
-	}
-
-	parents, loaded := value.(*sync.Map)
-	if !loaded {
-		return loaded
-	}
-
-	parents.Store(dest, probes)
-	return ok && loaded
-
-}
-
-func (n *networkTopology) DeleteEdge(src, dest string) bool {
-	value, ok := n.Map.Load(src)
-	if !ok {
-		return ok
-	}
-
-	parents, loaded := value.(*sync.Map)
-	if !loaded {
-		return loaded
-	}
-
-	parents.Delete(dest)
-	return ok && loaded
 }
