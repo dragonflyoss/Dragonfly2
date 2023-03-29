@@ -238,7 +238,15 @@ func (ts *samplingTrafficShaper) AddTask(taskID string, ptc *peerTaskConductor) 
 func (ts *samplingTrafficShaper) RemoveTask(taskID string) {
 	ts.Lock()
 	defer ts.Unlock()
-	limit := ts.tasks[taskID].ptc.limiter.Limit()
+
+	var limit rate.Limit
+	if task, ok := ts.tasks[taskID]; ok {
+		limit = task.ptc.limiter.Limit()
+	} else {
+		ts.Debugf("the task %s is already removed", taskID)
+		return
+	}
+
 	delete(ts.tasks, taskID)
 	ratio := ts.totalRateLimit / (ts.totalRateLimit - limit)
 	// increase all running tasks' bandwidth
@@ -252,7 +260,10 @@ func (ts *samplingTrafficShaper) RemoveTask(taskID string) {
 func (ts *samplingTrafficShaper) Record(taskID string, n int) {
 	ts.usingBandWidth.Add(int64(n))
 	ts.RLock()
-	ts.tasks[taskID].lastSecondBandwidth.Add(int64(n))
+	if task, ok := ts.tasks[taskID]; ok {
+		task.lastSecondBandwidth.Add(int64(n))
+		ts.Debugf("the task %s is not found when record it", taskID)
+	}
 	ts.RUnlock()
 }
 
