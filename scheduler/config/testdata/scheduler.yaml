@@ -91,4 +91,4 @@ networkTopology:
 trainer:
   enable: false
   addr: "127.0.0.1:9000"
-  trainingInterval: 10m
+  interval: 10m
