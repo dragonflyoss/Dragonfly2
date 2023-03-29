@@ -593,6 +593,7 @@ func (cfg *Config) Validate() error {
 		if cfg.Trainer.Addr == "" {
 			return errors.New("trainer requires parameter addr")
 		}
+
 		if cfg.Trainer.Interval <= 0 {
 			return errors.New("trainer requires parameter interval")
 		}
