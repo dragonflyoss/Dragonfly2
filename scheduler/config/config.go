@@ -327,11 +327,11 @@ type TrainerConfig struct {
 	// Enable trainer service.
 	Enable bool `yaml:"enable" mapstructure:"enable"`
 
-	// Addrs is trainer service addresses.
-	Addrs []string `yaml:"addrs" mapstructure:"addrs"`
+	// Addr is trainer service address.
+	Addr string `yaml:"addr" mapstructure:"addr"`
 
-	// TrainingInterval is the interval of training.
-	TrainingInterval time.Duration `yaml:"trainingInterval" mapstructure:"trainingInterval"`
+	// Interval is the interval of training.
+	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
 }
 
 // New default configuration.
@@ -414,8 +414,9 @@ func New() *Config {
 			},
 		},
 		Trainer: TrainerConfig{
-			Enable:           false,
-			TrainingInterval: DefaultTrainingInterval,
+			Enable:   false,
+			Addr:     DefaultTrainerAddr,
+			Interval: DefaultTrainerInterval,
 		},
 	}
 }
@@ -589,8 +590,11 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.Trainer.Enable {
-		if cfg.Trainer.TrainingInterval <= 0 {
-			return errors.New("trainer requires parameter trainingInterval")
+		if cfg.Trainer.Addr == "" {
+			return errors.New("trainer requires parameter addr")
+		}
+		if cfg.Trainer.Interval <= 0 {
+			return errors.New("trainer requires parameter interval")
 		}
 	}
 
