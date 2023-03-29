@@ -46,13 +46,13 @@ func TestNetworkTopology_GetHost(t *testing.T) {
 	tests := []struct {
 		name   string
 		config *config.Config
-		mock   func(res resource.Resource)
+		mock   func(res *resource.MockResource)
 		expect func(t *testing.T, networkTopology NetworkTopology)
 	}{
 		{
 			name:   "get host",
 			config: config.New(),
-			mock: func(res resource.Resource) {
+			mock: func(res *resource.MockResource) {
 				res.HostManager().Store(mockHost)
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology) {
@@ -60,6 +60,17 @@ func TestNetworkTopology_GetHost(t *testing.T) {
 				host, ok := networkTopology.GetHost(mockHost.ID)
 				assert.Equal(ok, true)
 				assert.EqualValues(host, mockHost)
+			},
+		},
+		{
+			name:   "host does not exist",
+			config: config.New(),
+			mock:   func(res *resource.MockResource) {},
+			expect: func(t *testing.T, networkTopology NetworkTopology) {
+				assert := assert.New(t)
+				host, ok := networkTopology.GetHost(mockHost.ID)
+				assert.Equal(ok, false)
+				assert.Nil(host)
 			},
 		},
 	}
