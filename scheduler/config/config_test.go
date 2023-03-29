@@ -650,7 +650,7 @@ func TestConfig_Validate(t *testing.T) {
 			},
 		},
 		{
-			name:   "networkTopology requires parameter SyncInterval",
+			name:   "networkTopology requires parameter syncInterval",
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
@@ -659,11 +659,11 @@ func TestConfig_Validate(t *testing.T) {
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "networkTopology requires parameter SyncInterval")
+				assert.EqualError(err, "networkTopology requires parameter syncInterval")
 			},
 		},
 		{
-			name:   "networkTopology requires parameter CollectInterval",
+			name:   "networkTopology requires parameter collectInterval",
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
@@ -672,11 +672,11 @@ func TestConfig_Validate(t *testing.T) {
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "networkTopology requires parameter CollectInterval")
+				assert.EqualError(err, "networkTopology requires parameter collectInterval")
 			},
 		},
 		{
-			name:   "probe requires parameter QueueLength",
+			name:   "probe requires parameter queueLength",
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
@@ -685,7 +685,7 @@ func TestConfig_Validate(t *testing.T) {
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "probe requires parameter QueueLength")
+				assert.EqualError(err, "probe requires parameter queueLength")
 			},
 		},
 		{
@@ -698,7 +698,7 @@ func TestConfig_Validate(t *testing.T) {
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "probe requires parameter SyncInterval")
+				assert.EqualError(err, "probe requires parameter syncInterval")
 			},
 		},
 		{
@@ -711,7 +711,7 @@ func TestConfig_Validate(t *testing.T) {
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "probe requires parameter SyncCount")
+				assert.EqualError(err, "probe requires parameter syncCount")
 			},
 		},
 		{
