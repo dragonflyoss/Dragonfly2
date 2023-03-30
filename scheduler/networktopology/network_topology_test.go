@@ -16,12 +16,10 @@ import (
 func Test_NewNetworkTopology(t *testing.T) {
 	tests := []struct {
 		name   string
-		config *config.Config
 		expect func(t *testing.T, networkTopology NetworkTopology, err error)
 	}{
 		{
-			name:   "new network topology",
-			config: config.New(),
+			name: "new network topology",
 			expect: func(t *testing.T, n NetworkTopology, err error) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(n).Elem().Name(), "networkTopology")
@@ -36,7 +34,7 @@ func Test_NewNetworkTopology(t *testing.T) {
 			defer ctl.Finish()
 			mockManagerClient := mocks.NewMockV2(ctl)
 			res := resource.NewMockResource(ctl)
-			n, err := NewNetworkTopology(tc.config, res, mockManagerClient, WithTransportCredentials(nil))
+			n, err := NewNetworkTopology(config.New(), res, mockManagerClient, WithTransportCredentials(nil))
 			tc.expect(t, n, err)
 		})
 	}
@@ -45,13 +43,11 @@ func Test_NewNetworkTopology(t *testing.T) {
 func TestNetworkTopology_GetHost(t *testing.T) {
 	tests := []struct {
 		name   string
-		config *config.Config
 		mock   func(res *resource.MockResource, hostManager *resource.MockHostManager)
 		expect func(t *testing.T, networkTopology NetworkTopology)
 	}{
 		{
-			name:   "get host",
-			config: config.New(),
+			name: "get host",
 			mock: func(res *resource.MockResource, hostManager *resource.MockHostManager) {
 				hostManager.Store(mockHost)
 				res.EXPECT().HostManager().Return(hostManager).AnyTimes()
@@ -64,9 +60,8 @@ func TestNetworkTopology_GetHost(t *testing.T) {
 			},
 		},
 		{
-			name:   "host does not exist",
-			config: config.New(),
-			mock:   func(res *resource.MockResource, hostManager *resource.MockHostManager) {},
+			name: "host does not exist",
+			mock: func(res *resource.MockResource, hostManager *resource.MockHostManager) {},
 			expect: func(t *testing.T, networkTopology NetworkTopology) {
 				assert := assert.New(t)
 				host, ok := networkTopology.GetHost(mockHost.ID)
@@ -85,7 +80,7 @@ func TestNetworkTopology_GetHost(t *testing.T) {
 			hostManager := resource.NewMockHostManager(ctl)
 			tc.mock(res, hostManager)
 
-			n, err := NewNetworkTopology(tc.config, res, mockManagerClient, WithTransportCredentials(nil))
+			n, err := NewNetworkTopology(config.New(), res, mockManagerClient, WithTransportCredentials(nil))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -97,13 +92,11 @@ func TestNetworkTopology_GetHost(t *testing.T) {
 func TestNetworkTopology_LoadParents(t *testing.T) {
 	tests := []struct {
 		name   string
-		config *config.Config
 		mock   func(networkTopology NetworkTopology, config *config.Config)
 		expect func(t *testing.T, networkTopology NetworkTopology)
 	}{
 		{
-			name:   "load parents",
-			config: config.New(),
+			name: "load parents",
 			mock: func(networkTopology NetworkTopology, config *config.Config) {
 				probes := NewProbes(config.NetworkTopology.Probe.QueueLength, mockHost)
 				err := probes.Enqueue(mockProbe)
@@ -132,9 +125,8 @@ func TestNetworkTopology_LoadParents(t *testing.T) {
 			},
 		},
 		{
-			name:   "parents does not exist",
-			config: config.New(),
-			mock:   func(networkTopology NetworkTopology, config *config.Config) {},
+			name: "parents does not exist",
+			mock: func(networkTopology NetworkTopology, config *config.Config) {},
 			expect: func(t *testing.T, networkTopology NetworkTopology) {
 				assert := assert.New(t)
 				parents, loaded := networkTopology.LoadParents(mockSeedHost.ID)
@@ -143,8 +135,7 @@ func TestNetworkTopology_LoadParents(t *testing.T) {
 			},
 		},
 		{
-			name:   "load key is empty",
-			config: config.New(),
+			name: "load key is empty",
 			mock: func(networkTopology NetworkTopology, config *config.Config) {
 				probes := NewProbes(config.NetworkTopology.Probe.QueueLength, mockHost)
 				err := probes.Enqueue(mockProbe)
@@ -181,12 +172,12 @@ func TestNetworkTopology_LoadParents(t *testing.T) {
 
 			mockManagerClient := mocks.NewMockV2(ctl)
 			res := resource.NewMockResource(ctl)
-			n, err := NewNetworkTopology(tc.config, res, mockManagerClient, WithTransportCredentials(nil))
+			n, err := NewNetworkTopology(config.New(), res, mockManagerClient, WithTransportCredentials(nil))
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			tc.mock(n, tc.config)
+			tc.mock(n, config.New())
 			tc.expect(t, n)
 		})
 	}
@@ -195,13 +186,11 @@ func TestNetworkTopology_LoadParents(t *testing.T) {
 func TestNewNetworkTopology_StoreParents(t *testing.T) {
 	tests := []struct {
 		name   string
-		config *config.Config
 		mock   func(networkTopology NetworkTopology, config *config.Config)
 		expect func(t *testing.T, networkTopology NetworkTopology)
 	}{
 		{
-			name:   "store parents",
-			config: config.New(),
+			name: "store parents",
 			mock: func(networkTopology NetworkTopology, config *config.Config) {
 				probes := NewProbes(config.NetworkTopology.Probe.QueueLength, mockHost)
 				err := probes.Enqueue(mockProbe)
@@ -230,8 +219,7 @@ func TestNewNetworkTopology_StoreParents(t *testing.T) {
 			},
 		},
 		{
-			name:   "store key is empty",
-			config: config.New(),
+			name: "store key is empty",
 			mock: func(networkTopology NetworkTopology, config *config.Config) {
 				probes := NewProbes(config.NetworkTopology.Probe.QueueLength, mockHost)
 				err := probes.Enqueue(mockProbe)
@@ -267,12 +255,12 @@ func TestNewNetworkTopology_StoreParents(t *testing.T) {
 			defer ctl.Finish()
 			mockManagerClient := mocks.NewMockV2(ctl)
 			res := resource.NewMockResource(ctl)
-			n, err := NewNetworkTopology(tc.config, res, mockManagerClient, WithTransportCredentials(nil))
+			n, err := NewNetworkTopology(config.New(), res, mockManagerClient, WithTransportCredentials(nil))
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			tc.mock(n, tc.config)
+			tc.mock(n, config.New())
 			tc.expect(t, n)
 		})
 	}
@@ -281,13 +269,11 @@ func TestNewNetworkTopology_StoreParents(t *testing.T) {
 func TestNetworkTopology_DeleteParents(t *testing.T) {
 	tests := []struct {
 		name   string
-		config *config.Config
 		mock   func(networkTopology NetworkTopology, config *config.Config)
 		expect func(t *testing.T, networkTopology NetworkTopology)
 	}{
 		{
-			name:   "delete parents",
-			config: config.New(),
+			name: "delete parents",
 			mock: func(networkTopology NetworkTopology, config *config.Config) {
 				probes := NewProbes(config.NetworkTopology.Probe.QueueLength, mockHost)
 				err := probes.Enqueue(mockProbe)
@@ -308,8 +294,7 @@ func TestNetworkTopology_DeleteParents(t *testing.T) {
 			},
 		},
 		{
-			name:   "delete key does not exist",
-			config: config.New(),
+			name: "delete key does not exist",
 			mock: func(networkTopology NetworkTopology, config *config.Config) {
 				probes := NewProbes(config.NetworkTopology.Probe.QueueLength, mockHost)
 				err := probes.Enqueue(mockProbe)
@@ -347,12 +332,12 @@ func TestNetworkTopology_DeleteParents(t *testing.T) {
 
 			mockManagerClient := mocks.NewMockV2(ctl)
 			res := resource.NewMockResource(ctl)
-			n, err := NewNetworkTopology(tc.config, res, mockManagerClient, WithTransportCredentials(nil))
+			n, err := NewNetworkTopology(config.New(), res, mockManagerClient, WithTransportCredentials(nil))
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			tc.mock(n, tc.config)
+			tc.mock(n, config.New())
 			tc.expect(t, n)
 		})
 	}
