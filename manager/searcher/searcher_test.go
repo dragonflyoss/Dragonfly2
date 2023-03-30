@@ -22,6 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/models"
 )
 
@@ -751,7 +752,7 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			searcher := New(pluginDir)
-			clusters, found := searcher.FindSchedulerClusters(context.Background(), tc.schedulerClusters, "128.168.1.0", "foo", tc.conditions)
+			clusters, found := searcher.FindSchedulerClusters(context.Background(), tc.schedulerClusters, "128.168.1.0", "foo", tc.conditions, &logger.SugaredLoggerOnWith{})
 			tc.expect(t, clusters, found)
 		})
 	}
