@@ -85,7 +85,8 @@ type Scopes struct {
 
 type Searcher interface {
 	// FindSchedulerClusters finds scheduler clusters that best matches the evaluation.
-	FindSchedulerClusters(ctx context.Context, schedulerClusters []models.SchedulerCluster, ip, hostname string, conditions map[string]string) ([]models.SchedulerCluster, error)
+	FindSchedulerClusters(ctx context.Context, schedulerClusters []models.SchedulerCluster, ip, hostname string,
+		conditions map[string]string, log *logger.SugaredLoggerOnWith) ([]models.SchedulerCluster, error)
 }
 
 type searcher struct {
@@ -104,7 +105,8 @@ func New(pluginDir string) Searcher {
 }
 
 // FindSchedulerClusters finds scheduler clusters that best matches the evaluation.
-func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters []models.SchedulerCluster, ip, hostname string, conditions map[string]string) ([]models.SchedulerCluster, error) {
+func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters []models.SchedulerCluster, ip, hostname string,
+	conditions map[string]string, log *logger.SugaredLoggerOnWith) ([]models.SchedulerCluster, error) {
 	if len(schedulerClusters) <= 0 {
 		return nil, errors.New("empty scheduler clusters")
 	}
@@ -119,16 +121,16 @@ func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters 
 		func(i, j int) bool {
 			var si, sj Scopes
 			if err := mapstructure.Decode(clusters[i].Scopes, &si); err != nil {
-				logger.Errorf("cluster %s decode scopes failed: %v", clusters[i].Name, err)
+				log.Errorf("cluster %s decode scopes failed: %v", clusters[i].Name, err)
 				return false
 			}
 
 			if err := mapstructure.Decode(clusters[j].Scopes, &sj); err != nil {
-				logger.Errorf("cluster %s decode scopes failed: %v", clusters[i].Name, err)
+				log.Errorf("cluster %s decode scopes failed: %v", clusters[i].Name, err)
 				return false
 			}
 
-			return Evaluate(ip, hostname, conditions, si, clusters[i]) > Evaluate(ip, hostname, conditions, sj, clusters[j])
+			return Evaluate(ip, hostname, conditions, si, clusters[i], log) > Evaluate(ip, hostname, conditions, sj, clusters[j], log)
 		},
 	)
 
@@ -177,9 +179,9 @@ func FilterSchedulerClusters(conditions map[string]string, schedulerClusters []m
 }
 
 // Evaluate the degree of matching between scheduler cluster and dfdaemon.
-func Evaluate(ip, hostname string, conditions map[string]string, scopes Scopes, cluster models.SchedulerCluster) float64 {
+func Evaluate(ip, hostname string, conditions map[string]string, scopes Scopes, cluster models.SchedulerCluster, log *logger.SugaredLoggerOnWith) float64 {
 	return securityDomainAffinityWeight*calculateSecurityDomainAffinityScore(conditions[ConditionSecurityDomain], cluster.SecurityGroup.SecurityRules) +
-		cidrAffinityWeight*calculateCIDRAffinityScore(ip, scopes.CIDRs) +
+		cidrAffinityWeight*calculateCIDRAffinityScore(ip, scopes.CIDRs, log) +
 		idcAffinityWeight*calculateIDCAffinityScore(conditions[ConditionIDC], scopes.IDC) +
 		locationAffinityWeight*calculateMultiElementAffinityScore(conditions[ConditionLocation], scopes.Location) +
 		clusterTypeWeight*calculateClusterTypeScore(cluster)
@@ -199,18 +201,18 @@ func calculateSecurityDomainAffinityScore(securityDomain string, securityRules [
 }
 
 // calculateCIDRAffinityScore 0.0~1.0 larger and better.
-func calculateCIDRAffinityScore(ip string, cidrs []string) float64 {
+func calculateCIDRAffinityScore(ip string, cidrs []string, log *logger.SugaredLoggerOnWith) float64 {
 	// Construct CIDR ranger.
 	ranger := cidranger.NewPCTrieRanger()
 	for _, cidr := range cidrs {
 		_, network, err := net.ParseCIDR(cidr)
 		if err != nil {
-			logger.Error(err)
+			log.Error(err)
 			continue
 		}
 
 		if err := ranger.Insert(cidranger.NewBasicRangerEntry(*network)); err != nil {
-			logger.Error(err)
+			log.Error(err)
 			continue
 		}
 	}
@@ -218,7 +220,7 @@ func calculateCIDRAffinityScore(ip string, cidrs []string) float64 {
 	// Determine whether an IP is contained in the constructed networks ranger.
 	contains, err := ranger.Contains(net.ParseIP(ip))
 	if err != nil {
-		logger.Error(err)
+		log.Error(err)
 		return minScore
 	}
 
