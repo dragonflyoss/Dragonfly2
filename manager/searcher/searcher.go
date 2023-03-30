@@ -28,6 +28,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/yl2chen/cidranger"
+	"go.uber.org/zap"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/models"
@@ -86,12 +87,10 @@ type Scopes struct {
 type Searcher interface {
 	// FindSchedulerClusters finds scheduler clusters that best matches the evaluation.
 	FindSchedulerClusters(ctx context.Context, schedulerClusters []models.SchedulerCluster, ip, hostname string,
-		conditions map[string]string, log *logger.SugaredLoggerOnWith) ([]models.SchedulerCluster, error)
+		conditions map[string]string, log *zap.SugaredLogger) ([]models.SchedulerCluster, error)
 }
 
-type searcher struct {
-	cidrs []string
-}
+type searcher struct{}
 
 func New(pluginDir string) Searcher {
 	s, err := LoadPlugin(pluginDir)
@@ -106,7 +105,9 @@ func New(pluginDir string) Searcher {
 
 // FindSchedulerClusters finds scheduler clusters that best matches the evaluation.
 func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters []models.SchedulerCluster, ip, hostname string,
-	conditions map[string]string, log *logger.SugaredLoggerOnWith) ([]models.SchedulerCluster, error) {
+	conditions map[string]string, log *zap.SugaredLogger) ([]models.SchedulerCluster, error) {
+	log = log.With("ip", ip, "hostname", hostname, "conditions", conditions)
+
 	if len(schedulerClusters) <= 0 {
 		return nil, errors.New("empty scheduler clusters")
 	}
@@ -179,7 +180,7 @@ func FilterSchedulerClusters(conditions map[string]string, schedulerClusters []m
 }
 
 // Evaluate the degree of matching between scheduler cluster and dfdaemon.
-func Evaluate(ip, hostname string, conditions map[string]string, scopes Scopes, cluster models.SchedulerCluster, log *logger.SugaredLoggerOnWith) float64 {
+func Evaluate(ip, hostname string, conditions map[string]string, scopes Scopes, cluster models.SchedulerCluster, log *zap.SugaredLogger) float64 {
 	return securityDomainAffinityWeight*calculateSecurityDomainAffinityScore(conditions[ConditionSecurityDomain], cluster.SecurityGroup.SecurityRules) +
 		cidrAffinityWeight*calculateCIDRAffinityScore(ip, scopes.CIDRs, log) +
 		idcAffinityWeight*calculateIDCAffinityScore(conditions[ConditionIDC], scopes.IDC) +
@@ -201,7 +202,7 @@ func calculateSecurityDomainAffinityScore(securityDomain string, securityRules [
 }
 
 // calculateCIDRAffinityScore 0.0~1.0 larger and better.
-func calculateCIDRAffinityScore(ip string, cidrs []string, log *logger.SugaredLoggerOnWith) float64 {
+func calculateCIDRAffinityScore(ip string, cidrs []string, log *zap.SugaredLogger) float64 {
 	// Construct CIDR ranger.
 	ranger := cidranger.NewPCTrieRanger()
 	for _, cidr := range cidrs {
