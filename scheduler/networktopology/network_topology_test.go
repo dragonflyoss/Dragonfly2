@@ -43,15 +43,15 @@ func Test_NewNetworkTopology(t *testing.T) {
 func TestNetworkTopology_GetHost(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(res *resource.MockResource, hostManager *resource.MockHostManager)
+		mock   func(mr *resource.MockResourceMockRecorder, hostManager *resource.MockHostManager, mh *resource.MockHostManagerMockRecorder)
 		expect func(t *testing.T, networkTopology NetworkTopology)
 	}{
 		{
 			name: "get host",
-			mock: func(res *resource.MockResource, hostManager *resource.MockHostManager) {
+			mock: func(mr *resource.MockResourceMockRecorder, hostManager *resource.MockHostManager, mh *resource.MockHostManagerMockRecorder) {
 				gomock.InOrder(
-					res.EXPECT().HostManager().Return(hostManager).Times(1),
-					hostManager.EXPECT().Load(gomock.Eq(mockHost.ID)).Return(mockHost, true).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Eq(mockHost.ID)).Return(mockHost, true).Times(1),
 				)
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology) {
@@ -63,7 +63,11 @@ func TestNetworkTopology_GetHost(t *testing.T) {
 		},
 		{
 			name: "host does not exist",
-			mock: func(res *resource.MockResource, hostManager *resource.MockHostManager) {},
+			mock: func(mr *resource.MockResourceMockRecorder, hostManager *resource.MockHostManager, mh *resource.MockHostManagerMockRecorder) {
+				gomock.InOrder(
+					mr.HostManager().Return(hostManager).Times(1),
+				)
+			},
 			expect: func(t *testing.T, networkTopology NetworkTopology) {
 				assert := assert.New(t)
 				host, ok := networkTopology.GetHost(mockHost.ID)
@@ -80,7 +84,7 @@ func TestNetworkTopology_GetHost(t *testing.T) {
 			mockManagerClient := mocks.NewMockV2(ctl)
 			res := resource.NewMockResource(ctl)
 			hostManager := resource.NewMockHostManager(ctl)
-			tc.mock(res, hostManager)
+			tc.mock(res.EXPECT(), hostManager, hostManager.EXPECT())
 
 			n, err := NewNetworkTopology(config.New(), res, mockManagerClient, WithTransportCredentials(nil))
 			if err != nil {
