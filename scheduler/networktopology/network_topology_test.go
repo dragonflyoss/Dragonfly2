@@ -54,6 +54,7 @@ func TestNetworkTopology_GetHost(t *testing.T) {
 			config: config.New(),
 			mock: func(res *resource.MockResource, hostManager *resource.MockHostManager) {
 				hostManager.Store(mockHost)
+				res.EXPECT().HostManager().Return(hostManager).AnyTimes()
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology) {
 				assert := assert.New(t)
