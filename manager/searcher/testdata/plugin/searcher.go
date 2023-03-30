@@ -20,11 +20,13 @@ import (
 	"context"
 
 	"d7y.io/dragonfly/v2/manager/models"
+	"go.uber.org/zap"
 )
 
 type searcher struct{}
 
-func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters []models.SchedulerCluster, hostname, ip string, conditions map[string]string) ([]models.SchedulerCluster, error) {
+func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters []models.SchedulerCluster, hostname, ip string,
+	conditions map[string]string, log *zap.SugaredLogger) ([]models.SchedulerCluster, error) {
 	return []models.SchedulerCluster{{Name: "foo"}}, nil
 }
 

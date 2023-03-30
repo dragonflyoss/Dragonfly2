@@ -43,6 +43,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 	pkgcache "d7y.io/dragonfly/v2/pkg/cache"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
+	"d7y.io/dragonfly/v2/pkg/structure"
 )
 
 // managerServerV1 is v1 version of the manager grpc server.
@@ -328,9 +329,10 @@ func (s *managerServerV1) GetScheduler(ctx context.Context, req *managerv1.GetSc
 		}
 	}
 
-	var features map[string]bool
-	for k, v := range scheduler.Features {
-		features[k] = v.(bool)
+	// Marshal features of scheduler.
+	features, err := scheduler.Features.MarshalJSON()
+	if err != nil {
+		return nil, status.Error(codes.DataLoss, err.Error())
 	}
 
 	// Construct scheduler.
@@ -400,6 +402,12 @@ func (s *managerServerV1) UpdateScheduler(ctx context.Context, req *managerv1.Up
 		log.Warn(err)
 	}
 
+	// Marshal features of scheduler.
+	features, err := scheduler.Features.MarshalJSON()
+	if err != nil {
+		return nil, status.Error(codes.DataLoss, err.Error())
+	}
+
 	return &managerv1.Scheduler{
 		Id:                 uint64(scheduler.ID),
 		Hostname:           scheduler.Hostname,
@@ -407,6 +415,7 @@ func (s *managerServerV1) UpdateScheduler(ctx context.Context, req *managerv1.Up
 		Location:           scheduler.Location,
 		Ip:                 scheduler.IP,
 		Port:               scheduler.Port,
+		Features:           features,
 		SchedulerClusterId: uint64(scheduler.SchedulerClusterID),
 		State:              scheduler.State,
 	}, nil
@@ -414,12 +423,18 @@ func (s *managerServerV1) UpdateScheduler(ctx context.Context, req *managerv1.Up
 
 // Create scheduler and associate cluster.
 func (s *managerServerV1) createScheduler(ctx context.Context, req *managerv1.UpdateSchedulerRequest) (*managerv1.Scheduler, error) {
+	features, err := structure.StructToMap(types.DefaultSchedulerFeatures)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	scheduler := models.Scheduler{
 		Hostname:           req.Hostname,
 		IDC:                req.Idc,
 		Location:           req.Location,
 		IP:                 req.Ip,
 		Port:               req.Port,
+		Features:           features,
 		SchedulerClusterID: uint(req.SchedulerClusterId),
 	}
 
@@ -471,10 +486,10 @@ func (s *managerServerV1) ListSchedulers(ctx context.Context, req *managerv1.Lis
 
 	// Cache miss.
 	var schedulerClusters []models.SchedulerCluster
-	if err := s.db.WithContext(ctx).Preload("SecurityGroup.SecurityRules").Preload("SeedPeerClusters.SeedPeers", "state = ?", "active").Preload("Schedulers", "state = ?", "active").Find(&schedulerClusters).Error; err != nil {
+	if err := s.db.WithContext(ctx).Preload("SecurityGroup.SecurityRules").Preload("SeedPeerClusters.SeedPeers", "state = ?", "active").
+		Preload("Schedulers", "state = ?", "active").Find(&schedulerClusters).Error; err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-
 	log.Debugf("list scheduler clusters %v with hostInfo %#v", getSchedulerClusterNames(schedulerClusters), req.HostInfo)
 
 	// Search optimal scheduler clusters.
@@ -484,7 +499,7 @@ func (s *managerServerV1) ListSchedulers(ctx context.Context, req *managerv1.Lis
 		candidateSchedulerClusters []models.SchedulerCluster
 		err                        error
 	)
-	candidateSchedulerClusters, err = s.searcher.FindSchedulerClusters(ctx, schedulerClusters, req.Hostname, req.Ip, req.HostInfo)
+	candidateSchedulerClusters, err = s.searcher.FindSchedulerClusters(ctx, schedulerClusters, req.Hostname, req.Ip, req.HostInfo, logger.CoreLogger)
 	if err != nil {
 		log.Error(err)
 		metrics.SearchSchedulerClusterFailureCount.WithLabelValues(req.Version, req.Commit).Inc()
@@ -521,6 +536,12 @@ func (s *managerServerV1) ListSchedulers(ctx context.Context, req *managerv1.Lis
 			}
 		}
 
+		// Marshal features of scheduler.
+		features, err := scheduler.Features.MarshalJSON()
+		if err != nil {
+			return nil, status.Error(codes.DataLoss, err.Error())
+		}
+
 		pbListSchedulersResponse.Schedulers = append(pbListSchedulersResponse.Schedulers, &managerv1.Scheduler{
 			Id:                 uint64(scheduler.ID),
 			Hostname:           scheduler.Hostname,
@@ -529,6 +550,7 @@ func (s *managerServerV1) ListSchedulers(ctx context.Context, req *managerv1.Lis
 			Ip:                 scheduler.IP,
 			Port:               scheduler.Port,
 			State:              scheduler.State,
+			Features:           features,
 			SchedulerClusterId: uint64(scheduler.SchedulerClusterID),
 			SeedPeers:          seedPeers,
 		})
