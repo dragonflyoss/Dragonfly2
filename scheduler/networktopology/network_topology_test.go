@@ -50,7 +50,6 @@ func TestNetworkTopology_GetHost(t *testing.T) {
 			name: "get host",
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager *resource.MockHostManager, mh *resource.MockHostManagerMockRecorder) {
 				gomock.InOrder(
-					mh.Load(gomock.Any()).AnyTimes(),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockHost.ID)).Return(mockHost, true).Times(1),
 				)
@@ -66,7 +65,6 @@ func TestNetworkTopology_GetHost(t *testing.T) {
 			name: "host does not exist",
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager *resource.MockHostManager, mh *resource.MockHostManagerMockRecorder) {
 				gomock.InOrder(
-					mh.Load(gomock.Any()).AnyTimes(),
 					mr.HostManager().Return(hostManager).Times(1),
 				)
 			},
