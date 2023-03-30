@@ -61,6 +61,21 @@ func TestNetworkTopology_GetHost(t *testing.T) {
 				assert.EqualValues(host, mockHost)
 			},
 		},
+		{
+			name: "host does not exist",
+			mock: func(mr *resource.MockResourceMockRecorder, hostManager *resource.MockHostManager, mh *resource.MockHostManagerMockRecorder) {
+				gomock.InOrder(
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Eq(mockHost.ID)).Return(mockHost, true).Times(1),
+				)
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology) {
+				assert := assert.New(t)
+				host, ok := networkTopology.GetHost(mockSeedHost.ID)
+				assert.Equal(ok, false)
+				assert.Nil(host)
+			},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
