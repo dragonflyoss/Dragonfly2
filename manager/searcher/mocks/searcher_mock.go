@@ -8,9 +8,9 @@ import (
 	context "context"
 	reflect "reflect"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 	models "d7y.io/dragonfly/v2/manager/models"
 	gomock "github.com/golang/mock/gomock"
+	zap "go.uber.org/zap"
 )
 
 // MockSearcher is a mock of Searcher interface.
@@ -37,7 +37,7 @@ func (m *MockSearcher) EXPECT() *MockSearcherMockRecorder {
 }
 
 // FindSchedulerClusters mocks base method.
-func (m *MockSearcher) FindSchedulerClusters(ctx context.Context, schedulerClusters []models.SchedulerCluster, ip, hostname string, conditions map[string]string, log *logger.SugaredLoggerOnWith) ([]models.SchedulerCluster, error) {
+func (m *MockSearcher) FindSchedulerClusters(ctx context.Context, schedulerClusters []models.SchedulerCluster, ip, hostname string, conditions map[string]string, log *zap.SugaredLogger) ([]models.SchedulerCluster, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindSchedulerClusters", ctx, schedulerClusters, ip, hostname, conditions, log)
 	ret0, _ := ret[0].([]models.SchedulerCluster)
