@@ -17,11 +17,14 @@
 package rpcserver
 
 import (
+	"bytes"
 	"context"
+	"d7y.io/dragonfly/v2/pkg/digest"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	cachev8 "github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
@@ -685,6 +688,61 @@ func (s *managerServerV1) ListApplications(ctx context.Context, req *managerv1.L
 // TODO(MinH-09) Implement function.
 // CreateModel creates model and update data of model to object storage.
 func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.CreateModelRequest) (*emptypb.Empty, error) {
+	if !s.objectStorageConfig.Enable {
+		return nil, status.Error(codes.Internal, "object storage is disabled")
+	}
+
+	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
+
+	bucketName := "modelData"
+	var modelType string
+	modelVersion := time.Now().Format("YYYY-MM-DD")
+	modelState := models.ModelVersionStateInactive
+	var modelEvaluation models.JSONMap
+	var modelKey string
+	switch ModelUploadRequest := req.GetRequest().(type) {
+	case *managerv1.CreateModelRequest_CreateGnnRequest:
+		modelType = models.ModelTypeGNN
+		modelEvaluation["Precision"] = ModelUploadRequest.CreateGnnRequest.Precision
+		modelEvaluation["Recall"] = ModelUploadRequest.CreateGnnRequest.Recall
+		modelEvaluation["F1Score"] = ModelUploadRequest.CreateGnnRequest.F1Score
+		modelKey = bucketName + "/" + req.Hostname + req.Ip + string(req.ClusterId) + "/Gnn/" + modelVersion + ".pb"
+		if err := s.objectStorage.PutObject(ctx, bucketName, modelKey, digest.AlgorithmMD5, bytes.NewReader(req.GetCreateGnnRequest().Data)); err != nil {
+			log.Errorf("putObject Gnn model fail because of %s", err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	case *managerv1.CreateModelRequest_CreateMlpRequest:
+		modelType = models.ModelTypeMLP
+		modelEvaluation["Mse"] = ModelUploadRequest.CreateMlpRequest.Mse
+		modelEvaluation["Mae"] = ModelUploadRequest.CreateMlpRequest.Mae
+		modelKey = bucketName + "/" + req.Hostname + req.Ip + string(req.ClusterId) + "/Mlp/" + modelVersion + ".pb"
+		if err := s.objectStorage.PutObject(ctx, bucketName, modelKey, digest.AlgorithmMD5, bytes.NewReader(req.GetCreateMlpRequest().Data)); err != nil {
+			log.Errorf("putObject Mlp model fail because of %s", err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	scheduler := models.Scheduler{}
+	if err := s.db.WithContext(ctx).First(&scheduler, &models.Scheduler{
+		Hostname:           req.Hostname,
+		SchedulerClusterID: uint(req.ClusterId),
+	}).Error; err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	model := models.Model{
+		Type:        modelType,
+		Version:     modelVersion,
+		State:       modelState,
+		Evaluation:  modelEvaluation,
+		SchedulerID: scheduler.ID,
+		Scheduler:   scheduler,
+	}
+
+	if err := s.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	return new(emptypb.Empty), nil
 }
 
