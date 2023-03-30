@@ -19,7 +19,7 @@ package log
 import (
 	"go.uber.org/zap/zapcore"
 
-	"d7y.io/dragonfly/v2/internal/dflog"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 )
 
@@ -35,7 +35,6 @@ func SetGrpcLevel(level zapcore.Level) {
 
 // SetupDaemon sets daemon log config: path, console
 func SetupDaemon(logDir string, verbose bool, console bool) error {
-
 	var options []dfpath.Option
 	if logDir != "" {
 		options = append(options, dfpath.WithLogDir(logDir))

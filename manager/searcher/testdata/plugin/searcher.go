@@ -19,14 +19,14 @@ package main
 import (
 	"context"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/models"
+	"go.uber.org/zap"
 )
 
 type searcher struct{}
 
 func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters []models.SchedulerCluster, hostname, ip string,
-	conditions map[string]string, log *logger.SugaredLoggerOnWith) ([]models.SchedulerCluster, error) {
+	conditions map[string]string, log *zap.SugaredLogger) ([]models.SchedulerCluster, error) {
 	return []models.SchedulerCluster{{Name: "foo"}}, nil
 }
 

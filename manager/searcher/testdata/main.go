@@ -33,7 +33,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	clusters, err := s.FindSchedulerClusters(context.Background(), []models.SchedulerCluster{}, "127.0.0.1", "foo", map[string]string{}, &logger.SugaredLoggerOnWith{})
+	clusters, err := s.FindSchedulerClusters(context.Background(), []models.SchedulerCluster{}, "127.0.0.1", "foo", map[string]string{}, logger.CoreLogger)
 	if err != nil {
 		fmt.Println("scheduler cluster not found")
 		os.Exit(1)
