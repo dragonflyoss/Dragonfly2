@@ -699,7 +699,7 @@ func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.Create
 	var modelType string
 	modelVersion := time.Now().Format("YYYY-MM-DD")
 	modelState := models.ModelVersionStateInactive
-	var modelEvaluation models.JSONMap
+	modelEvaluation := make(map[string]any)
 	var modelKey string
 	switch ModelUploadRequest := req.GetRequest().(type) {
 	case *managerv1.CreateModelRequest_CreateGnnRequest:
