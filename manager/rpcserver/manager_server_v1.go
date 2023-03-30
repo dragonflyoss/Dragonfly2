@@ -19,11 +19,11 @@ package rpcserver
 import (
 	"bytes"
 	"context"
-	"d7y.io/dragonfly/v2/pkg/digest"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"time"
 
 	cachev8 "github.com/go-redis/cache/v8"
@@ -45,6 +45,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/manager/types"
 	pkgcache "d7y.io/dragonfly/v2/pkg/cache"
+	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
 )
 
@@ -703,19 +704,19 @@ func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.Create
 	switch ModelUploadRequest := req.GetRequest().(type) {
 	case *managerv1.CreateModelRequest_CreateGnnRequest:
 		modelType = models.ModelTypeGNN
-		modelEvaluation["Precision"] = ModelUploadRequest.CreateGnnRequest.Precision
-		modelEvaluation["Recall"] = ModelUploadRequest.CreateGnnRequest.Recall
-		modelEvaluation["F1Score"] = ModelUploadRequest.CreateGnnRequest.F1Score
-		modelKey = bucketName + "/" + req.Hostname + req.Ip + string(req.ClusterId) + "/Gnn/" + modelVersion + ".pb"
+		modelEvaluation["Precision"] = ModelUploadRequest.CreateGnnRequest.GetPrecision()
+		modelEvaluation["Recall"] = ModelUploadRequest.CreateGnnRequest.GetRecall()
+		modelEvaluation["F1Score"] = ModelUploadRequest.CreateGnnRequest.GetF1Score()
+		modelKey = bucketName + "/" + req.Hostname + req.Ip + strconv.FormatUint(req.ClusterId, 10) + "/Gnn/" + modelVersion + ".pb"
 		if err := s.objectStorage.PutObject(ctx, bucketName, modelKey, digest.AlgorithmMD5, bytes.NewReader(req.GetCreateGnnRequest().Data)); err != nil {
 			log.Errorf("putObject Gnn model fail because of %s", err.Error())
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	case *managerv1.CreateModelRequest_CreateMlpRequest:
 		modelType = models.ModelTypeMLP
-		modelEvaluation["Mse"] = ModelUploadRequest.CreateMlpRequest.Mse
-		modelEvaluation["Mae"] = ModelUploadRequest.CreateMlpRequest.Mae
-		modelKey = bucketName + "/" + req.Hostname + req.Ip + string(req.ClusterId) + "/Mlp/" + modelVersion + ".pb"
+		modelEvaluation["Mse"] = ModelUploadRequest.CreateMlpRequest.GetMse()
+		modelEvaluation["Mae"] = ModelUploadRequest.CreateMlpRequest.GetMae()
+		modelKey = bucketName + "/" + req.Hostname + req.Ip + strconv.FormatUint(req.ClusterId, 10) + "/Mlp/" + modelVersion + ".pb"
 		if err := s.objectStorage.PutObject(ctx, bucketName, modelKey, digest.AlgorithmMD5, bytes.NewReader(req.GetCreateMlpRequest().Data)); err != nil {
 			log.Errorf("putObject Mlp model fail because of %s", err.Error())
 			return nil, status.Error(codes.Internal, err.Error())
