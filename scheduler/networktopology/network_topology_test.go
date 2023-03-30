@@ -66,7 +66,7 @@ func TestNetworkTopology_GetHost(t *testing.T) {
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager *resource.MockHostManager, mh *resource.MockHostManagerMockRecorder) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
-					mh.Load(gomock.Eq(mockHost.ID)).Return(mockHost, true).Times(1),
+					mh.Load(gomock.Eq(mockSeedHost.ID)).Return(nil, false).Times(1),
 				)
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology) {
