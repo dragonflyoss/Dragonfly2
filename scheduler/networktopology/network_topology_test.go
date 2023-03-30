@@ -46,14 +46,15 @@ func TestNetworkTopology_GetHost(t *testing.T) {
 	tests := []struct {
 		name   string
 		config *config.Config
-		mock   func(res *resource.MockResource)
+		mock   func(res *resource.MockResource, hostManager *resource.MockHostManager)
 		expect func(t *testing.T, networkTopology NetworkTopology)
 	}{
 		{
 			name:   "get host",
 			config: config.New(),
-			mock: func(res *resource.MockResource) {
-				res.HostManager().Store(mockHost)
+			mock: func(res *resource.MockResource, hostManager *resource.MockHostManager) {
+				res.EXPECT().HostManager().Return(hostManager).Times(1)
+				hostManager.EXPECT().Load(mockHost.ID).Return(mockHost, true).Times(1)
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology) {
 				assert := assert.New(t)
@@ -65,7 +66,7 @@ func TestNetworkTopology_GetHost(t *testing.T) {
 		{
 			name:   "host does not exist",
 			config: config.New(),
-			mock:   func(res *resource.MockResource) {},
+			mock:   func(res *resource.MockResource, hostManager *resource.MockHostManager) {},
 			expect: func(t *testing.T, networkTopology NetworkTopology) {
 				assert := assert.New(t)
 				host, ok := networkTopology.GetHost(mockHost.ID)
@@ -81,7 +82,8 @@ func TestNetworkTopology_GetHost(t *testing.T) {
 
 			mockManagerClient := mocks.NewMockV2(ctl)
 			res := resource.NewMockResource(ctl)
-			tc.mock(res)
+			hostManager := resource.NewMockHostManager(ctl)
+			tc.mock(res, hostManager)
 
 			n, err := NewNetworkTopology(tc.config, res, mockManagerClient, WithTransportCredentials(nil))
 			if err != nil {
