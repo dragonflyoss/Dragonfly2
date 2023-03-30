@@ -16,26 +16,36 @@
 
 package types
 
+var (
+	// DefaultSchedulerFeatures is the default features of scheduler.
+	DefaultSchedulerFeatures = &SchedulerFeatures{
+		Schedule: true,
+		Preheat:  true,
+	}
+)
+
 type SchedulerParams struct {
 	ID uint `uri:"id" binding:"required"`
 }
 
 type CreateSchedulerRequest struct {
-	Hostname           string `json:"host_name" binding:"required"`
-	IDC                string `json:"idc" binding:"omitempty"`
-	Location           string `json:"location" binding:"omitempty"`
-	IP                 string `json:"ip" binding:"required"`
-	Port               int32  `json:"port" binding:"required"`
-	SchedulerClusterID uint   `json:"scheduler_cluster_id" binding:"required"`
+	Hostname           string             `json:"host_name" binding:"required"`
+	IDC                string             `json:"idc" binding:"omitempty"`
+	Location           string             `json:"location" binding:"omitempty"`
+	IP                 string             `json:"ip" binding:"required"`
+	Port               int32              `json:"port" binding:"required"`
+	Features           *SchedulerFeatures `json:"features" binding:"omitempty"`
+	SchedulerClusterID uint               `json:"scheduler_cluster_id" binding:"required"`
 }
 
 type UpdateSchedulerRequest struct {
-	IDC                string `json:"idc" binding:"omitempty"`
-	Location           string `json:"location" binding:"omitempty"`
-	IP                 string `json:"ip" binding:"omitempty"`
-	Port               int32  `json:"port" binding:"omitempty"`
-	SchedulerID        uint   `json:"scheduler_id" binding:"omitempty"`
-	SchedulerClusterID uint   `json:"scheduler_cluster_id" binding:"omitempty"`
+	IDC                string             `json:"idc" binding:"omitempty"`
+	Location           string             `json:"location" binding:"omitempty"`
+	IP                 string             `json:"ip" binding:"omitempty"`
+	Port               int32              `json:"port" binding:"omitempty"`
+	SchedulerID        uint               `json:"scheduler_id" binding:"omitempty"`
+	Features           *SchedulerFeatures `json:"features" binding:"omitempty"`
+	SchedulerClusterID uint               `json:"scheduler_cluster_id" binding:"omitempty"`
 }
 
 type GetSchedulersQuery struct {
@@ -47,4 +57,9 @@ type GetSchedulersQuery struct {
 	IP                 string `form:"ip" binding:"omitempty"`
 	State              string `form:"state" binding:"omitempty,oneof=active inactive"`
 	SchedulerClusterID uint   `form:"scheduler_cluster_id" binding:"omitempty"`
+}
+
+type SchedulerFeatures struct {
+	Schedule bool `yaml:"schedule" mapstructure:"schedule" json:"schedule" binding:"required"`
+	Preheat  bool `yaml:"preheat" mapstructure:"preheat" json:"preheat" binding:"required"`
 }

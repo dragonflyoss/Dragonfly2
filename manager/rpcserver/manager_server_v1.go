@@ -328,6 +328,11 @@ func (s *managerServerV1) GetScheduler(ctx context.Context, req *managerv1.GetSc
 		}
 	}
 
+	var features map[string]bool
+	for k, v := range scheduler.Features {
+		features[k] = v.(bool)
+	}
+
 	// Construct scheduler.
 	pbScheduler = managerv1.Scheduler{
 		Id:                 uint64(scheduler.ID),
@@ -337,6 +342,7 @@ func (s *managerServerV1) GetScheduler(ctx context.Context, req *managerv1.GetSc
 		Ip:                 scheduler.IP,
 		Port:               scheduler.Port,
 		State:              scheduler.State,
+		Features:           features,
 		SchedulerClusterId: uint64(scheduler.SchedulerClusterID),
 		SchedulerCluster: &managerv1.SchedulerCluster{
 			Id:           uint64(scheduler.SchedulerCluster.ID),
