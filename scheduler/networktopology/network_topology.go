@@ -1,8 +1,9 @@
 package networktopology
 
 import (
-	"google.golang.org/grpc/credentials"
 	"sync"
+	
+	"google.golang.org/grpc/credentials"
 
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -44,8 +45,6 @@ type networkTopology struct {
 
 	// TransportCredentials stores the Authenticator required to set up a client connection.
 	transportCredentials credentials.TransportCredentials
-
-	done chan struct{}
 }
 
 // Option is a functional option for configuring the networkTopology.
