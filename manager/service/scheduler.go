@@ -21,18 +21,12 @@ import (
 
 	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
-	"d7y.io/dragonfly/v2/pkg/structure"
 )
 
 func (s *service) CreateScheduler(ctx context.Context, json types.CreateSchedulerRequest) (*models.Scheduler, error) {
-	rawFeatures := types.DefaultSchedulerFeatures
+	features := types.DefaultSchedulerFeatures
 	if json.Features != nil {
-		rawFeatures = json.Features
-	}
-
-	features, err := structure.StructToMap(rawFeatures)
-	if err != nil {
-		return nil, err
+		features = json.Features
 	}
 
 	scheduler := models.Scheduler{
@@ -66,24 +60,13 @@ func (s *service) DestroyScheduler(ctx context.Context, id uint) error {
 }
 
 func (s *service) UpdateScheduler(ctx context.Context, id uint, json types.UpdateSchedulerRequest) (*models.Scheduler, error) {
-	var (
-		features map[string]any
-		err      error
-	)
-	if json.Features != nil {
-		features, err = structure.StructToMap(json.Features)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	scheduler := models.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, id).Updates(models.Scheduler{
 		IDC:                json.IDC,
 		Location:           json.Location,
 		IP:                 json.IP,
 		Port:               json.Port,
-		Features:           features,
+		Features:           json.Features,
 		SchedulerClusterID: json.SchedulerClusterID,
 	}).Error; err != nil {
 		return nil, err
