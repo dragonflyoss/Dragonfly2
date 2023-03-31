@@ -98,7 +98,7 @@ func (s *managerServerV1) GetSeedPeer(ctx context.Context, req *managerv1.GetSee
 	// Cache hit.
 	var pbSeedPeer managerv1.SeedPeer
 	if err := s.cache.Get(ctx, cacheKey, &pbSeedPeer); err != nil {
-		log.Errorf("%s cache miss because of %s", cacheKey, err.Error())
+		log.Warnf("%s cache miss because of %s", cacheKey, err.Error())
 	} else {
 		log.Debugf("%s cache hit", cacheKey)
 		return &pbSeedPeer, nil
@@ -270,7 +270,7 @@ func (s *managerServerV1) GetScheduler(ctx context.Context, req *managerv1.GetSc
 	// Cache hit.
 	var pbScheduler managerv1.Scheduler
 	if err := s.cache.Get(ctx, cacheKey, &pbScheduler); err != nil {
-		log.Errorf("%s cache miss because of %s", cacheKey, err.Error())
+		log.Warnf("%s cache miss because of %s", cacheKey, err.Error())
 	} else {
 		log.Debugf("%s cache hit", cacheKey)
 		return &pbScheduler, nil
@@ -487,7 +487,7 @@ func (s *managerServerV1) ListSchedulers(ctx context.Context, req *managerv1.Lis
 	cacheKey := cache.MakeSchedulersCacheKeyForPeer(req.Hostname, req.Ip)
 
 	if err := s.cache.Get(ctx, cacheKey, &pbListSchedulersResponse); err != nil {
-		log.Errorf("%s cache miss because of %s", cacheKey, err.Error())
+		log.Warnf("%s cache miss because of %s", cacheKey, err.Error())
 	} else {
 		log.Debugf("%s cache hit", cacheKey)
 		return &pbListSchedulersResponse, nil
@@ -630,7 +630,7 @@ func (s *managerServerV1) ListBuckets(ctx context.Context, req *managerv1.ListBu
 
 	// Cache hit.
 	if err := s.cache.Get(ctx, cacheKey, &pbListBucketsResponse); err != nil {
-		log.Errorf("%s cache miss because of %s", cacheKey, err.Error())
+		log.Warnf("%s cache miss because of %s", cacheKey, err.Error())
 	} else {
 		log.Debugf("%s cache hit", cacheKey)
 		return &pbListBucketsResponse, nil
@@ -670,7 +670,7 @@ func (s *managerServerV1) ListApplications(ctx context.Context, req *managerv1.L
 	var pbListApplicationsResponse managerv1.ListApplicationsResponse
 	cacheKey := cache.MakeApplicationsCacheKey()
 	if err := s.cache.Get(ctx, cacheKey, &pbListApplicationsResponse); err != nil {
-		log.Errorf("%s cache miss because of %s", cacheKey, err.Error())
+		log.Warnf("%s cache miss because of %s", cacheKey, err.Error())
 	} else {
 		log.Debugf("%s cache hit", cacheKey)
 		return &pbListApplicationsResponse, nil
