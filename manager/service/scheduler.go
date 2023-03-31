@@ -24,12 +24,18 @@ import (
 )
 
 func (s *service) CreateScheduler(ctx context.Context, json types.CreateSchedulerRequest) (*models.Scheduler, error) {
+	features := types.DefaultSchedulerFeatures
+	if json.Features != nil {
+		features = json.Features
+	}
+
 	scheduler := models.Scheduler{
 		Hostname:           json.Hostname,
 		IDC:                json.IDC,
 		Location:           json.Location,
 		IP:                 json.IP,
 		Port:               json.Port,
+		Features:           features,
 		SchedulerClusterID: json.SchedulerClusterID,
 	}
 
@@ -60,6 +66,7 @@ func (s *service) UpdateScheduler(ctx context.Context, id uint, json types.Updat
 		Location:           json.Location,
 		IP:                 json.IP,
 		Port:               json.Port,
+		Features:           json.Features,
 		SchedulerClusterID: json.SchedulerClusterID,
 	}).Error; err != nil {
 		return nil, err
