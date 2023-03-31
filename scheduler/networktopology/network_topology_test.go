@@ -301,10 +301,7 @@ func TestNewNetworkTopology_LoadProbes(t *testing.T) {
 				}
 				m := &sync.Map{}
 				networkTopology.StoreParents(mockSeedHost.ID, m)
-				ok := networkTopology.StoreProbes(mockSeedHost.ID, mockHost.ID, probes)
-				if !ok {
-					return
-				}
+				networkTopology.StoreProbes(mockSeedHost.ID, mockHost.ID, probes)
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology) {
 				assert := assert.New(t)
@@ -361,10 +358,7 @@ func TestNewNetworkTopology_LoadProbes(t *testing.T) {
 
 				m := &sync.Map{}
 				networkTopology.StoreParents("", m)
-				ok := networkTopology.StoreProbes("", mockHost.ID, probes)
-				if !ok {
-					return
-				}
+				networkTopology.StoreProbes("", mockHost.ID, probes)
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology) {
 				assert := assert.New(t)
@@ -390,10 +384,7 @@ func TestNewNetworkTopology_LoadProbes(t *testing.T) {
 
 				m := &sync.Map{}
 				networkTopology.StoreParents(mockSeedHost.ID, m)
-				ok := networkTopology.StoreProbes(mockSeedHost.ID, "", probes)
-				if !ok {
-					return
-				}
+				networkTopology.StoreProbes(mockSeedHost.ID, "", probes)
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology) {
 				assert := assert.New(t)
@@ -444,10 +435,7 @@ func TestNewNetworkTopology_StoreProbes(t *testing.T) {
 				}
 				m := &sync.Map{}
 				networkTopology.StoreParents(mockSeedHost.ID, m)
-				ok := networkTopology.StoreProbes(mockSeedHost.ID, mockHost.ID, probes)
-				if !ok {
-					return
-				}
+				networkTopology.StoreProbes(mockSeedHost.ID, mockHost.ID, probes)
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology) {
 				assert := assert.New(t)
@@ -473,10 +461,7 @@ func TestNewNetworkTopology_StoreProbes(t *testing.T) {
 
 				m := &sync.Map{}
 				networkTopology.StoreParents("", m)
-				ok := networkTopology.StoreProbes("", mockHost.ID, probes)
-				if !ok {
-					return
-				}
+				networkTopology.StoreProbes("", mockHost.ID, probes)
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology) {
 				assert := assert.New(t)
@@ -502,10 +487,7 @@ func TestNewNetworkTopology_StoreProbes(t *testing.T) {
 
 				m := &sync.Map{}
 				networkTopology.StoreParents(mockSeedHost.ID, m)
-				ok := networkTopology.StoreProbes(mockSeedHost.ID, "", probes)
-				if !ok {
-					return
-				}
+				networkTopology.StoreProbes(mockSeedHost.ID, "", probes)
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology) {
 				assert := assert.New(t)
@@ -525,10 +507,7 @@ func TestNewNetworkTopology_StoreProbes(t *testing.T) {
 			mock: func(networkTopology NetworkTopology, config *config.Config) {
 				m := &sync.Map{}
 				networkTopology.StoreParents(mockSeedHost.ID, m)
-				ok := networkTopology.StoreProbes(mockSeedHost.ID, mockHost.ID, nil)
-				if !ok {
-					return
-				}
+				networkTopology.StoreProbes(mockSeedHost.ID, mockHost.ID, nil)
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology) {
 				assert := assert.New(t)
