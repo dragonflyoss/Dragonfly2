@@ -245,7 +245,7 @@ func TestNetworkTopology_DeleteParents(t *testing.T) {
 			},
 		},
 		{
-			name: "delete key does not exist",
+			name: "delete key is empty",
 			mock: func(networkTopology NetworkTopology, config *config.Config) {
 				probes := NewProbes(config.NetworkTopology.Probe.QueueLength, mockHost)
 				err := probes.Enqueue(mockProbe)
@@ -255,23 +255,14 @@ func TestNetworkTopology_DeleteParents(t *testing.T) {
 
 				m := &sync.Map{}
 				m.Store(mockHost.ID, probes)
-				networkTopology.StoreParents(mockSeedHost.ID, m)
+				networkTopology.StoreParents("", m)
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology) {
 				assert := assert.New(t)
-				networkTopology.DeleteParents(mockHost.ID)
-				parents, ok := networkTopology.LoadParents(mockSeedHost.ID)
-				assert.Equal(ok, true)
-				value, ok := parents.Load(mockHost.ID)
-				assert.Equal(ok, true)
-
-				probes, loaded := value.(*probes)
-				assert.Equal(loaded, true)
-				assert.EqualValues(probes.host, mockHost)
-				assert.Equal(probes.Length(), 1)
-				probe, ok := probes.Peek()
-				assert.Equal(ok, true)
-				assert.EqualValues(probe.Host, mockProbe.Host)
+				networkTopology.DeleteParents("")
+				parents, ok := networkTopology.LoadParents("")
+				assert.Equal(ok, false)
+				assert.Nil(parents)
 			},
 		},
 	}
@@ -598,7 +589,7 @@ func TestNetworkTopology_DeleteProbes(t *testing.T) {
 			},
 		},
 		{
-			name: "delete source host does not exist",
+			name: "delete source host is empty",
 			mock: func(networkTopology NetworkTopology, config *config.Config) {
 				probes := NewProbes(config.NetworkTopology.Probe.QueueLength, mockHost)
 				err := probes.Enqueue(mockProbe)
@@ -607,18 +598,18 @@ func TestNetworkTopology_DeleteProbes(t *testing.T) {
 				}
 
 				m := &sync.Map{}
-				networkTopology.StoreParents(mockSeedHost.ID, m)
-				networkTopology.StoreProbes(mockSeedHost.ID, mockHost.ID, probes)
+				networkTopology.StoreParents("", m)
+				networkTopology.StoreProbes("", mockHost.ID, probes)
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology) {
 				assert := assert.New(t)
-				ok := networkTopology.DeleteProbes(mockHost.ID, mockSeedHost.ID)
-				assert.Equal(ok, false)
-				parents, ok := networkTopology.LoadParents(mockHost.ID)
-				assert.Equal(ok, false)
-				assert.Nil(parents)
+				ok := networkTopology.DeleteProbes("", mockHost.ID)
+				assert.Equal(ok, true)
+				parents, ok := networkTopology.LoadParents("")
+				assert.Equal(ok, true)
+				assert.NotNil(parents)
 
-				p, ok := networkTopology.LoadProbes(mockHost.ID, mockSeedHost.ID)
+				p, ok := networkTopology.LoadProbes("", mockHost.ID)
 				assert.Equal(ok, false)
 				assert.Nil(p)
 			},
@@ -634,17 +625,17 @@ func TestNetworkTopology_DeleteProbes(t *testing.T) {
 
 				m := &sync.Map{}
 				networkTopology.StoreParents(mockSeedHost.ID, m)
-				networkTopology.StoreProbes(mockSeedHost.ID, mockHost.ID, probes)
+				networkTopology.StoreProbes(mockSeedHost.ID, "", probes)
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology) {
 				assert := assert.New(t)
-				ok := networkTopology.DeleteProbes(mockSeedHost.ID, mockSeedHost.ID)
-				assert.Equal(ok, false)
+				ok := networkTopology.DeleteProbes(mockSeedHost.ID, "")
+				assert.Equal(ok, true)
 				parents, ok := networkTopology.LoadParents(mockSeedHost.ID)
 				assert.Equal(ok, true)
 				assert.NotNil(parents)
 
-				p, ok := networkTopology.LoadProbes(mockSeedHost.ID, mockSeedHost.ID)
+				p, ok := networkTopology.LoadProbes(mockSeedHost.ID, "")
 				assert.Equal(ok, false)
 				assert.Nil(p)
 			},

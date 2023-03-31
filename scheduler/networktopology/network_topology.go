@@ -2,7 +2,7 @@ package networktopology
 
 import (
 	"sync"
-	
+
 	"google.golang.org/grpc/credentials"
 
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
