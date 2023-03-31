@@ -171,3 +171,11 @@ const (
 	// DefaultProbeSyncCount is the default number of probing hosts.
 	DefaultProbeSyncCount = 50
 )
+
+const (
+	// DefaultTrainerAddr is the default address of trainer.
+	DefaultTrainerAddr = "127.0.0.1:9000"
+
+	// DefaultTrainerInterval is the default interval of training.
+	DefaultTrainerInterval = 7 * 24 * time.Hour
+)
