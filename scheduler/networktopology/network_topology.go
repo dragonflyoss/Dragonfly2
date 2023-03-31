@@ -1,9 +1,8 @@
 package networktopology
 
 import (
-	"sync"
-
 	"google.golang.org/grpc/credentials"
+	"sync"
 
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -11,20 +10,27 @@ import (
 )
 
 type NetworkTopology interface {
-	// GetHost returns host from host id.
-	GetHost(hostID string) (*resource.Host, bool)
-
-	// LoadParents returns parents based on the source host id.
+	// LoadParents returns parents for a key.
 	LoadParents(string) (*sync.Map, bool)
 
 	// StoreParents stores parents.
 	StoreParents(key string, parents *sync.Map)
 
-	// DeleteParents deletes parents based on the source host id.
+	// DeleteParents deletes parents for a key.
 	DeleteParents(string)
+
+	// LoadProbes returns probes between tow hosts.
+	LoadProbes(src, dest string) (Probes, bool)
+
+	// StoreProbes stores probes between two hosts.
+	StoreProbes(src, dest string, probes Probes) bool
+
+	// DeleteProbes deletes probes between tow hosts.
+	DeleteProbes(src, dest string) bool
 }
 
 type networkTopology struct {
+	// network topology
 	*sync.Map
 
 	// Scheduler config.
@@ -55,7 +61,6 @@ func WithTransportCredentials(creds credentials.TransportCredentials) Option {
 
 // New network topology interface.
 func NewNetworkTopology(cfg *config.Config, resource resource.Resource, managerClient managerclient.V2, options ...Option) (NetworkTopology, error) {
-
 	n := &networkTopology{
 		config:        cfg,
 		Map:           &sync.Map{},
@@ -70,28 +75,19 @@ func NewNetworkTopology(cfg *config.Config, resource resource.Resource, managerC
 	return n, nil
 }
 
-// GetHost returns host from host id.
-func (n *networkTopology) GetHost(hostID string) (*resource.Host, bool) {
-	host, ok := n.resource.HostManager().Load(hostID)
-	if !ok {
-		return nil, ok
-	}
-	return host, ok
-}
-
-// LoadParents returns parents based on the source host id.
+// LoadParents returns parents for a key.
 func (n *networkTopology) LoadParents(key string) (*sync.Map, bool) {
-	value, ok := n.Map.Load(key)
-	if !ok {
-		return nil, ok
-	}
-
-	parents, loaded := value.(*sync.Map)
+	value, loaded := n.Map.Load(key)
 	if !loaded {
-		return nil, loaded
+		return nil, false
 	}
 
-	return parents, ok && loaded
+	parents, ok := value.(*sync.Map)
+	if !ok {
+		return nil, false
+	}
+
+	return parents, true
 }
 
 // StoreParents stores parents.
@@ -99,7 +95,65 @@ func (n *networkTopology) StoreParents(key string, parents *sync.Map) {
 	n.Map.Store(key, parents)
 }
 
-// DeleteParents deletes parents based on the source host id.
+// DeleteParents deletes parents for a key.
 func (n *networkTopology) DeleteParents(key string) {
 	n.Map.Delete(key)
+}
+
+// LoadProbes returns probes between two hosts.
+func (n *networkTopology) LoadProbes(src, dest string) (Probes, bool) {
+	value, loaded := n.Map.Load(src)
+	if !loaded {
+		return nil, false
+	}
+
+	parents, ok := value.(*sync.Map)
+	if !ok {
+		return nil, false
+	}
+
+	p, loaded := parents.Load(dest)
+	if !loaded {
+		return nil, false
+	}
+
+	probes, ok := p.(*probes)
+	if !ok {
+		return nil, false
+	}
+
+	return probes, true
+}
+
+// StoreProbes stores probes between two hosts.
+func (n *networkTopology) StoreProbes(src, dest string, probes Probes) bool {
+	value, loaded := n.Map.Load(src)
+	if !loaded {
+		return false
+	}
+
+	parents, ok := value.(*sync.Map)
+	if !ok {
+		return false
+	}
+
+	parents.Store(dest, probes)
+	return true
+
+}
+
+// DeleteProbes deletes probes between tow hosts.
+func (n *networkTopology) DeleteProbes(src, dest string) bool {
+	value, loaded := n.Map.Load(src)
+	if !loaded {
+		return false
+	}
+
+	parents, ok := value.(*sync.Map)
+	if !ok {
+		return false
+	}
+
+	parents.Delete(dest)
+	return true
 }

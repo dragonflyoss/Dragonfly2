@@ -40,62 +40,6 @@ func Test_NewNetworkTopology(t *testing.T) {
 	}
 }
 
-func TestNetworkTopology_GetHost(t *testing.T) {
-	tests := []struct {
-		name   string
-		mock   func(mr *resource.MockResourceMockRecorder, hostManager *resource.MockHostManager, mh *resource.MockHostManagerMockRecorder)
-		expect func(t *testing.T, networkTopology NetworkTopology)
-	}{
-		{
-			name: "get host",
-			mock: func(mr *resource.MockResourceMockRecorder, hostManager *resource.MockHostManager, mh *resource.MockHostManagerMockRecorder) {
-				gomock.InOrder(
-					mr.HostManager().Return(hostManager).Times(1),
-					mh.Load(gomock.Eq(mockHost.ID)).Return(mockHost, true).Times(1),
-				)
-			},
-			expect: func(t *testing.T, networkTopology NetworkTopology) {
-				assert := assert.New(t)
-				host, ok := networkTopology.GetHost(mockHost.ID)
-				assert.Equal(ok, true)
-				assert.EqualValues(host, mockHost)
-			},
-		},
-		{
-			name: "host does not exist",
-			mock: func(mr *resource.MockResourceMockRecorder, hostManager *resource.MockHostManager, mh *resource.MockHostManagerMockRecorder) {
-				gomock.InOrder(
-					mr.HostManager().Return(hostManager).Times(1),
-					mh.Load(gomock.Eq(mockSeedHost.ID)).Return(nil, false).Times(1),
-				)
-			},
-			expect: func(t *testing.T, networkTopology NetworkTopology) {
-				assert := assert.New(t)
-				host, ok := networkTopology.GetHost(mockSeedHost.ID)
-				assert.Equal(ok, false)
-				assert.Nil(host)
-			},
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			ctl := gomock.NewController(t)
-			defer ctl.Finish()
-
-			mockManagerClient := mocks.NewMockV2(ctl)
-			res := resource.NewMockResource(ctl)
-			hostManager := resource.NewMockHostManager(ctl)
-			tc.mock(res.EXPECT(), hostManager, hostManager.EXPECT())
-
-			n, err := NewNetworkTopology(config.New(), res, mockManagerClient, WithTransportCredentials(nil))
-			if err != nil {
-				t.Fatal(err)
-			}
-			tc.expect(t, n)
-		})
-	}
-}
-
 func TestNetworkTopology_LoadParents(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -332,6 +276,380 @@ func TestNetworkTopology_DeleteParents(t *testing.T) {
 		},
 	}
 
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+
+			mockManagerClient := mocks.NewMockV2(ctl)
+			res := resource.NewMockResource(ctl)
+			n, err := NewNetworkTopology(config.New(), res, mockManagerClient, WithTransportCredentials(nil))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			tc.mock(n, config.New())
+			tc.expect(t, n)
+		})
+	}
+}
+
+func TestNewNetworkTopology_LoadProbes(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(networkTopology NetworkTopology, config *config.Config)
+		expect func(t *testing.T, networkTopology NetworkTopology)
+	}{
+		{
+			name: "load probes",
+			mock: func(networkTopology NetworkTopology, config *config.Config) {
+				probes := NewProbes(config.NetworkTopology.Probe.QueueLength, mockHost)
+				err := probes.Enqueue(mockProbe)
+				if err != nil {
+					return
+				}
+				m := &sync.Map{}
+				networkTopology.StoreParents(mockSeedHost.ID, m)
+				ok := networkTopology.StoreProbes(mockSeedHost.ID, mockHost.ID, probes)
+				if !ok {
+					return
+				}
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology) {
+				assert := assert.New(t)
+				p, ok := networkTopology.LoadProbes(mockSeedHost.ID, mockHost.ID)
+				assert.Equal(ok, true)
+
+				probes := p.(*probes)
+				assert.EqualValues(probes.host, mockHost)
+				assert.Equal(probes.Length(), 1)
+				probe, ok := probes.Peek()
+				assert.Equal(ok, true)
+				assert.EqualValues(probe.Host, mockProbe.Host)
+			},
+		},
+		{
+			name: "parents does not exist",
+			mock: func(networkTopology NetworkTopology, config *config.Config) {},
+			expect: func(t *testing.T, networkTopology NetworkTopology) {
+				assert := assert.New(t)
+				parents, loaded := networkTopology.LoadParents(mockSeedHost.ID)
+				assert.Equal(loaded, false)
+				assert.Nil(parents)
+
+				edge, loaded := networkTopology.LoadProbes(mockSeedHost.ID, mockHost.ID)
+				assert.Equal(loaded, false)
+				assert.Nil(edge)
+			},
+		},
+		{
+			name: "parents exists but probes does not exist",
+			mock: func(networkTopology NetworkTopology, config *config.Config) {
+				m := &sync.Map{}
+				networkTopology.StoreParents(mockSeedHost.ID, m)
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology) {
+				assert := assert.New(t)
+				parents, loaded := networkTopology.LoadParents(mockSeedHost.ID)
+				assert.Equal(loaded, true)
+				assert.NotNil(parents)
+
+				edge, loaded := networkTopology.LoadProbes(mockSeedHost.ID, mockHost.ID)
+				assert.Equal(loaded, false)
+				assert.Nil(edge)
+			},
+		},
+		{
+			name: "load source key is empty",
+			mock: func(networkTopology NetworkTopology, config *config.Config) {
+				probes := NewProbes(config.NetworkTopology.Probe.QueueLength, mockHost)
+				err := probes.Enqueue(mockProbe)
+				if err != nil {
+					return
+				}
+
+				m := &sync.Map{}
+				networkTopology.StoreParents("", m)
+				ok := networkTopology.StoreProbes("", mockHost.ID, probes)
+				if !ok {
+					return
+				}
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology) {
+				assert := assert.New(t)
+				p, ok := networkTopology.LoadProbes("", mockHost.ID)
+				assert.Equal(ok, true)
+
+				probes := p.(*probes)
+				assert.EqualValues(probes.host, mockHost)
+				assert.Equal(probes.Length(), 1)
+				probe, ok := probes.Peek()
+				assert.Equal(ok, true)
+				assert.EqualValues(probe.Host, mockProbe.Host)
+			},
+		},
+		{
+			name: "load destination key is empty",
+			mock: func(networkTopology NetworkTopology, config *config.Config) {
+				probes := NewProbes(config.NetworkTopology.Probe.QueueLength, mockHost)
+				err := probes.Enqueue(mockProbe)
+				if err != nil {
+					return
+				}
+
+				m := &sync.Map{}
+				networkTopology.StoreParents(mockSeedHost.ID, m)
+				ok := networkTopology.StoreProbes(mockSeedHost.ID, "", probes)
+				if !ok {
+					return
+				}
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology) {
+				assert := assert.New(t)
+				p, ok := networkTopology.LoadProbes(mockSeedHost.ID, "")
+				assert.Equal(ok, true)
+
+				probes := p.(*probes)
+				assert.EqualValues(probes.host, mockHost)
+				assert.Equal(probes.Length(), 1)
+				probe, ok := probes.Peek()
+				assert.Equal(ok, true)
+				assert.EqualValues(probe.Host, mockProbe.Host)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+
+			mockManagerClient := mocks.NewMockV2(ctl)
+			res := resource.NewMockResource(ctl)
+			n, err := NewNetworkTopology(config.New(), res, mockManagerClient, WithTransportCredentials(nil))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			tc.mock(n, config.New())
+			tc.expect(t, n)
+		})
+	}
+}
+
+func TestNewNetworkTopology_StoreProbes(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(networkTopology NetworkTopology, config *config.Config)
+		expect func(t *testing.T, networkTopology NetworkTopology)
+	}{
+		{
+			name: "store probes",
+			mock: func(networkTopology NetworkTopology, config *config.Config) {
+				probes := NewProbes(config.NetworkTopology.Probe.QueueLength, mockHost)
+				err := probes.Enqueue(mockProbe)
+				if err != nil {
+					return
+				}
+				m := &sync.Map{}
+				networkTopology.StoreParents(mockSeedHost.ID, m)
+				ok := networkTopology.StoreProbes(mockSeedHost.ID, mockHost.ID, probes)
+				if !ok {
+					return
+				}
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology) {
+				assert := assert.New(t)
+				p, ok := networkTopology.LoadProbes(mockSeedHost.ID, mockHost.ID)
+				assert.Equal(ok, true)
+
+				probes := p.(*probes)
+				assert.EqualValues(probes.host, mockHost)
+				assert.Equal(probes.Length(), 1)
+				probe, ok := probes.Peek()
+				assert.Equal(ok, true)
+				assert.EqualValues(probe.Host, mockProbe.Host)
+			},
+		},
+		{
+			name: "store source key is empty",
+			mock: func(networkTopology NetworkTopology, config *config.Config) {
+				probes := NewProbes(config.NetworkTopology.Probe.QueueLength, mockHost)
+				err := probes.Enqueue(mockProbe)
+				if err != nil {
+					return
+				}
+
+				m := &sync.Map{}
+				networkTopology.StoreParents("", m)
+				ok := networkTopology.StoreProbes("", mockHost.ID, probes)
+				if !ok {
+					return
+				}
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology) {
+				assert := assert.New(t)
+				p, ok := networkTopology.LoadProbes("", mockHost.ID)
+				assert.Equal(ok, true)
+
+				probes := p.(*probes)
+				assert.EqualValues(probes.host, mockHost)
+				assert.Equal(probes.Length(), 1)
+				probe, ok := probes.Peek()
+				assert.Equal(ok, true)
+				assert.EqualValues(probe.Host, mockProbe.Host)
+			},
+		},
+		{
+			name: "store destination key is empty",
+			mock: func(networkTopology NetworkTopology, config *config.Config) {
+				probes := NewProbes(config.NetworkTopology.Probe.QueueLength, mockHost)
+				err := probes.Enqueue(mockProbe)
+				if err != nil {
+					return
+				}
+
+				m := &sync.Map{}
+				networkTopology.StoreParents(mockSeedHost.ID, m)
+				ok := networkTopology.StoreProbes(mockSeedHost.ID, "", probes)
+				if !ok {
+					return
+				}
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology) {
+				assert := assert.New(t)
+				p, ok := networkTopology.LoadProbes(mockSeedHost.ID, "")
+				assert.Equal(ok, true)
+
+				probes := p.(*probes)
+				assert.EqualValues(probes.host, mockHost)
+				assert.Equal(probes.Length(), 1)
+				probe, ok := probes.Peek()
+				assert.Equal(ok, true)
+				assert.EqualValues(probe.Host, mockProbe.Host)
+			},
+		},
+		{
+			name: "store probes is empty",
+			mock: func(networkTopology NetworkTopology, config *config.Config) {
+				m := &sync.Map{}
+				networkTopology.StoreParents(mockSeedHost.ID, m)
+				ok := networkTopology.StoreProbes(mockSeedHost.ID, mockHost.ID, nil)
+				if !ok {
+					return
+				}
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology) {
+				assert := assert.New(t)
+				p, ok := networkTopology.LoadProbes(mockSeedHost.ID, mockHost.ID)
+				assert.Equal(ok, false)
+				assert.Nil(p)
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+
+			mockManagerClient := mocks.NewMockV2(ctl)
+			res := resource.NewMockResource(ctl)
+			n, err := NewNetworkTopology(config.New(), res, mockManagerClient, WithTransportCredentials(nil))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			tc.mock(n, config.New())
+			tc.expect(t, n)
+		})
+	}
+}
+
+func TestNetworkTopology_DeleteProbes(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(networkTopology NetworkTopology, config *config.Config)
+		expect func(t *testing.T, networkTopology NetworkTopology)
+	}{
+		{
+			name: "delete parents",
+			mock: func(networkTopology NetworkTopology, config *config.Config) {
+				probes := NewProbes(config.NetworkTopology.Probe.QueueLength, mockHost)
+				err := probes.Enqueue(mockProbe)
+				if err != nil {
+					return
+				}
+
+				m := &sync.Map{}
+				networkTopology.StoreParents(mockSeedHost.ID, m)
+				networkTopology.StoreProbes(mockSeedHost.ID, mockHost.ID, probes)
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology) {
+				assert := assert.New(t)
+				ok := networkTopology.DeleteProbes(mockSeedHost.ID, mockHost.ID)
+				assert.Equal(ok, true)
+				parents, ok := networkTopology.LoadParents(mockSeedHost.ID)
+				assert.Equal(ok, false)
+				assert.Nil(parents)
+
+				p, ok := networkTopology.LoadProbes(mockSeedHost.ID, mockHost.ID)
+				assert.Equal(ok, false)
+				assert.Nil(p)
+			},
+		},
+		{
+			name: "delete source host does not exist",
+			mock: func(networkTopology NetworkTopology, config *config.Config) {
+				probes := NewProbes(config.NetworkTopology.Probe.QueueLength, mockHost)
+				err := probes.Enqueue(mockProbe)
+				if err != nil {
+					return
+				}
+
+				m := &sync.Map{}
+				networkTopology.StoreParents(mockSeedHost.ID, m)
+				networkTopology.StoreProbes(mockSeedHost.ID, mockHost.ID, probes)
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology) {
+				assert := assert.New(t)
+				ok := networkTopology.DeleteProbes(mockHost.ID, mockSeedHost.ID)
+				assert.Equal(ok, false)
+				parents, ok := networkTopology.LoadParents(mockHost.ID)
+				assert.Equal(ok, false)
+				assert.Nil(parents)
+
+				p, ok := networkTopology.LoadProbes(mockHost.ID, mockSeedHost.ID)
+				assert.Equal(ok, false)
+				assert.Nil(p)
+			},
+		},
+		{
+			name: "delete destination host does not exist",
+			mock: func(networkTopology NetworkTopology, config *config.Config) {
+				probes := NewProbes(config.NetworkTopology.Probe.QueueLength, mockHost)
+				err := probes.Enqueue(mockProbe)
+				if err != nil {
+					return
+				}
+
+				m := &sync.Map{}
+				networkTopology.StoreParents(mockSeedHost.ID, m)
+				networkTopology.StoreProbes(mockSeedHost.ID, mockHost.ID, probes)
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology) {
+				assert := assert.New(t)
+				ok := networkTopology.DeleteProbes(mockSeedHost.ID, mockSeedHost.ID)
+				assert.Equal(ok, false)
+				parents, ok := networkTopology.LoadParents(mockSeedHost.ID)
+				assert.Equal(ok, true)
+				assert.NotNil(parents)
+
+				p, ok := networkTopology.LoadProbes(mockSeedHost.ID, mockSeedHost.ID)
+				assert.Equal(ok, false)
+				assert.Nil(p)
+			},
+		},
+	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			ctl := gomock.NewController(t)
