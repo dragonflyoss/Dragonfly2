@@ -104,7 +104,7 @@ func (s *managerServerV1) GetSeedPeer(ctx context.Context, req *managerv1.GetSee
 		return &pbSeedPeer, nil
 	}
 
-	// Cache miss.
+	// Cache miss and search seed peer.
 	seedPeer := models.SeedPeer{}
 	if err := s.db.WithContext(ctx).Preload("SeedPeerCluster").Preload("SeedPeerCluster.SchedulerClusters.Schedulers", &models.Scheduler{
 		State: models.SchedulerStateActive,
@@ -276,7 +276,7 @@ func (s *managerServerV1) GetScheduler(ctx context.Context, req *managerv1.GetSc
 		return &pbScheduler, nil
 	}
 
-	// Cache miss.
+	// Cache miss and search scheduler.
 	scheduler := models.Scheduler{}
 	if err := s.db.WithContext(ctx).Preload("SchedulerCluster").Preload("SchedulerCluster.SeedPeerClusters.SeedPeers", &models.SeedPeer{
 		State: models.SeedPeerStateActive,
@@ -636,7 +636,7 @@ func (s *managerServerV1) ListBuckets(ctx context.Context, req *managerv1.ListBu
 		return &pbListBucketsResponse, nil
 	}
 
-	// Cache miss.
+	// Cache miss and search buckets.
 	buckets, err := s.objectStorage.ListBucketMetadatas(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -676,7 +676,7 @@ func (s *managerServerV1) ListApplications(ctx context.Context, req *managerv1.L
 		return &pbListApplicationsResponse, nil
 	}
 
-	// Cache miss.
+	// Cache miss and search applications.
 	var applications []models.Application
 	if err := s.db.WithContext(ctx).Find(&applications, "priority != ?", "").Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
