@@ -695,20 +695,18 @@ func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.Create
 
 	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
 
-	bucketName := "modelData"
 	var modelType string
 	modelVersion := time.Now().Format("YYYY-MM-DD")
 	modelState := models.ModelVersionStateInactive
 	modelEvaluation := make(map[string]any)
-	var modelKey string
 	switch ModelUploadRequest := req.GetRequest().(type) {
 	case *managerv1.CreateModelRequest_CreateGnnRequest:
 		modelType = models.ModelTypeGNN
 		modelEvaluation["Precision"] = ModelUploadRequest.CreateGnnRequest.GetPrecision()
 		modelEvaluation["Recall"] = ModelUploadRequest.CreateGnnRequest.GetRecall()
 		modelEvaluation["F1Score"] = ModelUploadRequest.CreateGnnRequest.GetF1Score()
-		modelKey = bucketName + "/" + req.Hostname + req.Ip + strconv.FormatUint(req.ClusterId, 10) + "/Gnn/" + modelVersion + ".pb"
-		if err := s.objectStorage.PutObject(ctx, bucketName, modelKey, digest.AlgorithmMD5, bytes.NewReader(req.GetCreateGnnRequest().Data)); err != nil {
+		modelKey := fmt.Sprintf("%s%s%s/Gnn/%s.pb", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10), modelVersion)
+		if err := s.objectStorage.PutObject(ctx, "model", modelKey, digest.AlgorithmMD5, bytes.NewReader(req.GetCreateGnnRequest().GetData())); err != nil {
 			log.Errorf("putObject Gnn model fail because of %s", err.Error())
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -716,8 +714,8 @@ func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.Create
 		modelType = models.ModelTypeMLP
 		modelEvaluation["Mse"] = ModelUploadRequest.CreateMlpRequest.GetMse()
 		modelEvaluation["Mae"] = ModelUploadRequest.CreateMlpRequest.GetMae()
-		modelKey = bucketName + "/" + req.Hostname + req.Ip + strconv.FormatUint(req.ClusterId, 10) + "/Mlp/" + modelVersion + ".pb"
-		if err := s.objectStorage.PutObject(ctx, bucketName, modelKey, digest.AlgorithmMD5, bytes.NewReader(req.GetCreateMlpRequest().Data)); err != nil {
+		modelKey := fmt.Sprintf("%s%s%s/Mlp/%s.pb", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10), modelVersion)
+		if err := s.objectStorage.PutObject(ctx, "model", modelKey, digest.AlgorithmMD5, bytes.NewReader(req.GetCreateMlpRequest().GetData())); err != nil {
 			log.Errorf("putObject Mlp model fail because of %s", err.Error())
 			return nil, status.Error(codes.Internal, err.Error())
 		}
