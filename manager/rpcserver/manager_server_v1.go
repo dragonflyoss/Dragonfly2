@@ -699,12 +699,12 @@ func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.Create
 	modelVersion := time.Now().Format("YYYY-MM-DD")
 	modelState := models.ModelVersionStateInactive
 	modelEvaluation := make(map[string]any)
-	switch ModelUploadRequest := req.GetRequest().(type) {
+	switch modelUploadRequest := req.GetRequest().(type) {
 	case *managerv1.CreateModelRequest_CreateGnnRequest:
 		modelType = models.ModelTypeGNN
-		modelEvaluation["Precision"] = ModelUploadRequest.CreateGnnRequest.GetPrecision()
-		modelEvaluation["Recall"] = ModelUploadRequest.CreateGnnRequest.GetRecall()
-		modelEvaluation["F1Score"] = ModelUploadRequest.CreateGnnRequest.GetF1Score()
+		modelEvaluation["Precision"] = modelUploadRequest.CreateGnnRequest.GetPrecision()
+		modelEvaluation["Recall"] = modelUploadRequest.CreateGnnRequest.GetRecall()
+		modelEvaluation["F1Score"] = modelUploadRequest.CreateGnnRequest.GetF1Score()
 		modelKey := fmt.Sprintf("%s%s%s/Gnn/%s.pb", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10), modelVersion)
 		if err := s.objectStorage.PutObject(ctx, "model", modelKey, digest.AlgorithmMD5, bytes.NewReader(req.GetCreateGnnRequest().GetData())); err != nil {
 			log.Errorf("putObject Gnn model fail because of %s", err.Error())
@@ -712,8 +712,8 @@ func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.Create
 		}
 	case *managerv1.CreateModelRequest_CreateMlpRequest:
 		modelType = models.ModelTypeMLP
-		modelEvaluation["Mse"] = ModelUploadRequest.CreateMlpRequest.GetMse()
-		modelEvaluation["Mae"] = ModelUploadRequest.CreateMlpRequest.GetMae()
+		modelEvaluation["Mse"] = modelUploadRequest.CreateMlpRequest.GetMse()
+		modelEvaluation["Mae"] = modelUploadRequest.CreateMlpRequest.GetMae()
 		modelKey := fmt.Sprintf("%s%s%s/Mlp/%s.pb", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10), modelVersion)
 		if err := s.objectStorage.PutObject(ctx, "model", modelKey, digest.AlgorithmMD5, bytes.NewReader(req.GetCreateMlpRequest().GetData())); err != nil {
 			log.Errorf("putObject Mlp model fail because of %s", err.Error())
