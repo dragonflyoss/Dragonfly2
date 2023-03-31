@@ -227,7 +227,7 @@ func newDownRequest(cfg *config.DfgetConfig, hdr map[string]string) *dfdaemonv1.
 	} else {
 		rg = cfg.Range
 	}
-	return &dfdaemonv1.DownRequest{
+	request := &dfdaemonv1.DownRequest{
 		Url:               cfg.URL,
 		Output:            cfg.Output,
 		Timeout:           uint64(cfg.Timeout),
@@ -246,6 +246,19 @@ func newDownRequest(cfg *config.DfgetConfig, hdr map[string]string) *dfdaemonv1.
 		Gid:                int64(os.Getgid()),
 		KeepOriginalOffset: cfg.KeepOriginalOffset,
 	}
+
+	_url, err := url.Parse(cfg.URL)
+	if err == nil {
+		inj, ok := source.ShouldInjectAuthInfo(_url.Scheme)
+		if ok {
+			err = inj.Inject(_url, request.UrlMeta)
+			if err != nil {
+				logger.Errorf("inject auth info error: %s", err)
+			}
+		}
+	}
+
+	return request
 }
 
 func newProgressBar(max int64) *progressbar.ProgressBar {
