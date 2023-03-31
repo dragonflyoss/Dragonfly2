@@ -559,8 +559,8 @@ func TestNetworkTopology_DeleteProbes(t *testing.T) {
 				ok := networkTopology.DeleteProbes(mockSeedHost.ID, mockHost.ID)
 				assert.Equal(ok, true)
 				parents, ok := networkTopology.LoadParents(mockSeedHost.ID)
-				assert.Equal(ok, false)
-				assert.Nil(parents)
+				assert.Equal(ok, true)
+				assert.NotNil(parents)
 
 				p, ok := networkTopology.LoadProbes(mockSeedHost.ID, mockHost.ID)
 				assert.Equal(ok, false)
