@@ -19,7 +19,7 @@ type NetworkTopology interface {
 	// DeleteParents deletes parents for a key.
 	DeleteParents(string)
 
-	// LoadProbes returns probes between tow hosts.
+	// LoadProbes returns probes between two hosts.
 	LoadProbes(src, dest string) (Probes, bool)
 
 	// StoreProbes stores probes between two hosts.
