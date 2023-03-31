@@ -326,6 +326,12 @@ type ProbeConfig struct {
 type TrainerConfig struct {
 	// Enable trainer service.
 	Enable bool `yaml:"enable" mapstructure:"enable"`
+
+	// Addr is trainer service address.
+	Addr string `yaml:"addr" mapstructure:"addr"`
+
+	// Interval is the interval of training.
+	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
 }
 
 // New default configuration.
@@ -408,7 +414,9 @@ func New() *Config {
 			},
 		},
 		Trainer: TrainerConfig{
-			Enable: false,
+			Enable:   false,
+			Addr:     DefaultTrainerAddr,
+			Interval: DefaultTrainerInterval,
 		},
 	}
 }
@@ -579,6 +587,16 @@ func (cfg *Config) Validate() error {
 
 	if cfg.NetworkTopology.Probe.SyncCount <= 0 {
 		return errors.New("probe requires parameter syncCount")
+	}
+
+	if cfg.Trainer.Enable {
+		if cfg.Trainer.Addr == "" {
+			return errors.New("trainer requires parameter addr")
+		}
+
+		if cfg.Trainer.Interval <= 0 {
+			return errors.New("trainer requires parameter interval")
+		}
 	}
 
 	return nil

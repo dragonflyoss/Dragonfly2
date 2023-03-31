@@ -166,7 +166,9 @@ func TestConfig_Load(t *testing.T) {
 			},
 		},
 		Trainer: TrainerConfig{
-			Enable: false,
+			Enable:   false,
+			Addr:     "127.0.0.1:9000",
+			Interval: 10 * time.Minute,
 		},
 	}
 
@@ -710,6 +712,34 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "probe requires parameter syncCount")
+			},
+		},
+		{
+			name:   "trainer requires parameter addr",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Job = mockJobConfig
+				cfg.Trainer.Enable = true
+				cfg.Trainer.Addr = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "trainer requires parameter addr")
+			},
+		},
+		{
+			name:   "trainer requires parameter interval",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Job = mockJobConfig
+				cfg.Trainer.Enable = true
+				cfg.Trainer.Interval = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "trainer requires parameter interval")
 			},
 		},
 	}
