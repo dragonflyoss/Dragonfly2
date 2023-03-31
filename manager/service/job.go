@@ -27,51 +27,24 @@ import (
 	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/retry"
+	"d7y.io/dragonfly/v2/pkg/slices"
 	"d7y.io/dragonfly/v2/pkg/structure"
 )
 
 func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheatJobRequest) (*models.Job, error) {
-	var schedulers []models.Scheduler
-	var schedulerClusters []models.SchedulerCluster
-
-	if len(json.SchedulerClusterIDs) != 0 {
-		for _, schedulerClusterID := range json.SchedulerClusterIDs {
-			schedulerCluster := models.SchedulerCluster{}
-			if err := s.db.WithContext(ctx).First(&schedulerCluster, schedulerClusterID).Error; err != nil {
-				return nil, err
-			}
-			schedulerClusters = append(schedulerClusters, schedulerCluster)
-
-			scheduler := models.Scheduler{}
-			if err := s.db.WithContext(ctx).First(&scheduler, models.Scheduler{
-				SchedulerClusterID: schedulerCluster.ID,
-				State:              models.SchedulerStateActive,
-			}).Error; err != nil {
-				return nil, err
-			}
-			schedulers = append(schedulers, scheduler)
-		}
-	} else {
-		if err := s.db.WithContext(ctx).Find(&schedulerClusters).Error; err != nil {
-			return nil, err
-		}
-
-		for _, schedulerCluster := range schedulerClusters {
-			scheduler := models.Scheduler{}
-			if err := s.db.WithContext(ctx).First(&scheduler, models.Scheduler{
-				SchedulerClusterID: schedulerCluster.ID,
-				State:              models.SchedulerStateActive,
-			}).Error; err != nil {
-				continue
-			}
-
-			schedulers = append(schedulers, scheduler)
-		}
-	}
-
-	groupJobState, err := s.job.CreatePreheat(ctx, schedulers, json.Args)
+	candidateSchedulers, err := s.findCandidateSchedulers(ctx, json.SchedulerClusterIDs)
 	if err != nil {
 		return nil, err
+	}
+
+	groupJobState, err := s.job.CreatePreheat(ctx, candidateSchedulers, json.Args)
+	if err != nil {
+		return nil, err
+	}
+
+	var candidateSchedulerClusters []models.SchedulerCluster
+	for _, candidateScheduler := range candidateSchedulers {
+		candidateSchedulerClusters = append(candidateSchedulerClusters, candidateScheduler.SchedulerCluster)
 	}
 
 	args, err := structure.StructToMap(json.Args)
@@ -86,7 +59,7 @@ func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheat
 		State:             groupJobState.State,
 		Args:              args,
 		UserID:            json.UserID,
-		SchedulerClusters: schedulerClusters,
+		SchedulerClusters: candidateSchedulerClusters,
 	}
 
 	if err := s.db.WithContext(ctx).Create(&job).Error; err != nil {
@@ -96,6 +69,65 @@ func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheat
 	go s.pollingJob(context.Background(), job.ID, job.TaskID)
 
 	return &job, nil
+}
+
+func (s *service) findCandidateSchedulers(ctx context.Context, schedulerClusterIDs []uint) ([]models.Scheduler, error) {
+	var candidateSchedulers []models.Scheduler
+	if len(schedulerClusterIDs) != 0 {
+		// Find the scheduler clusters by request.
+		for _, schedulerClusterID := range schedulerClusterIDs {
+			schedulerCluster := models.SchedulerCluster{}
+			if err := s.db.WithContext(ctx).First(&schedulerCluster, schedulerClusterID).Error; err != nil {
+				return nil, err
+			}
+
+			var schedulers []models.Scheduler
+			if err := s.db.WithContext(ctx).Preload("SchedulerCluster").Find(&schedulers, models.Scheduler{
+				SchedulerClusterID: schedulerCluster.ID,
+				State:              models.SchedulerStateActive,
+			}).Error; err != nil {
+				return nil, err
+			}
+
+			// Scan the schedulers to find the first scheduler that supports preheat.
+			for _, scheduler := range schedulers {
+				if slices.Contains(scheduler.Features, types.SchedulerFeaturePreheat) {
+					candidateSchedulers = append(candidateSchedulers, scheduler)
+					break
+				}
+			}
+		}
+	} else {
+		// Find all of the scheduler clusters that has active schedulers.
+		var candidateSchedulerClusters []models.SchedulerCluster
+		if err := s.db.WithContext(ctx).Find(&candidateSchedulerClusters).Error; err != nil {
+			return nil, err
+		}
+
+		for _, candidateSchedulerCluster := range candidateSchedulerClusters {
+			var schedulers []models.Scheduler
+			if err := s.db.WithContext(ctx).Preload("SchedulerCluster").Find(&schedulers, models.Scheduler{
+				SchedulerClusterID: candidateSchedulerCluster.ID,
+				State:              models.SchedulerStateActive,
+			}).Error; err != nil {
+				continue
+			}
+
+			// Scan the schedulers to find the first scheduler that supports preheat.
+			for _, scheduler := range schedulers {
+				if slices.Contains(scheduler.Features, types.SchedulerFeaturePreheat) {
+					candidateSchedulers = append(candidateSchedulers, scheduler)
+					break
+				}
+			}
+		}
+	}
+
+	if len(candidateSchedulers) == 0 {
+		return nil, errors.New("candidate schedulers not found")
+	}
+
+	return candidateSchedulers, nil
 }
 
 func (s *service) pollingJob(ctx context.Context, id uint, groupID string) {

@@ -32,6 +32,7 @@ type Scheduler struct {
 	IP                 string           `gorm:"column:ip;type:varchar(256);not null;comment:ip address" json:"ip"`
 	Port               int32            `gorm:"column:port;not null;comment:grpc service listening port" json:"port"`
 	State              string           `gorm:"column:state;type:varchar(256);default:'inactive';comment:service state" json:"state"`
+	Features           Array            `gorm:"column:features;comment:feature flags" json:"features"`
 	SchedulerClusterID uint             `gorm:"index:uk_scheduler,unique;not null;comment:scheduler cluster id"`
 	SchedulerCluster   SchedulerCluster `json:"-"`
 	Models             []Model          `json:"-"`

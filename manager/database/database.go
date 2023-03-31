@@ -17,6 +17,7 @@
 package database
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/go-redis/redis/v8"
@@ -25,6 +26,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/models"
+	"d7y.io/dragonfly/v2/manager/types"
 	schedulerconfig "d7y.io/dragonfly/v2/scheduler/config"
 )
 
@@ -93,6 +95,7 @@ func migrate(db *gorm.DB) error {
 }
 
 func seed(cfg *config.Config, db *gorm.DB) error {
+	// Create default scheduler cluster.
 	var schedulerClusterCount int64
 	if err := db.Model(models.SchedulerCluster{}).Count(&schedulerClusterCount).Error; err != nil {
 		return err
@@ -119,6 +122,7 @@ func seed(cfg *config.Config, db *gorm.DB) error {
 		}
 	}
 
+	// Create default seed peer cluster.
 	var seedPeerClusterCount int64
 	if err := db.Model(models.SeedPeerCluster{}).Count(&seedPeerClusterCount).Error; err != nil {
 		return err
@@ -150,6 +154,28 @@ func seed(cfg *config.Config, db *gorm.DB) error {
 
 		if err := db.Model(&seedPeerCluster).Association("SchedulerClusters").Append(&schedulerCluster); err != nil {
 			return err
+		}
+	}
+
+	// TODO Compatible with old version.
+	// Update scheduler features when features is NULL.
+	var schedulers []models.Scheduler
+	if err := db.Model(models.Scheduler{}).Find(&schedulers).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil
+		}
+
+		return err
+	}
+
+	for _, scheduler := range schedulers {
+		if scheduler.Features == nil {
+			if err := db.Model(&scheduler).Update("features", models.Array(types.DefaultSchedulerFeatures)).Error; err != nil {
+				logger.Errorf("update scheduler %d features: %s", scheduler.ID, err.Error())
+				continue
+			}
+
+			logger.Infof("update scheduler %d default features", scheduler.ID)
 		}
 	}
 

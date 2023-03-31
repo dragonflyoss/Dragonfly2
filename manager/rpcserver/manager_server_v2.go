@@ -43,6 +43,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 	pkgcache "d7y.io/dragonfly/v2/pkg/cache"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
+	"d7y.io/dragonfly/v2/pkg/slices"
 )
 
 // managerServerV2 is v2 version of the manager grpc server.
@@ -124,6 +125,12 @@ func (s *managerServerV2) GetSeedPeer(ctx context.Context, req *managerv2.GetSee
 	var pbSchedulers []*managerv2.Scheduler
 	for _, schedulerCluster := range seedPeer.SeedPeerCluster.SchedulerClusters {
 		for _, scheduler := range schedulerCluster.Schedulers {
+			// Marshal features of scheduler.
+			features, err := scheduler.Features.MarshalJSON()
+			if err != nil {
+				return nil, status.Error(codes.DataLoss, err.Error())
+			}
+
 			pbSchedulers = append(pbSchedulers, &managerv2.Scheduler{
 				Id:       uint64(scheduler.ID),
 				Hostname: scheduler.Hostname,
@@ -132,6 +139,7 @@ func (s *managerServerV2) GetSeedPeer(ctx context.Context, req *managerv2.GetSee
 				Ip:       scheduler.IP,
 				Port:     scheduler.Port,
 				State:    scheduler.State,
+				Features: features,
 			})
 		}
 	}
@@ -328,6 +336,12 @@ func (s *managerServerV2) GetScheduler(ctx context.Context, req *managerv2.GetSc
 		}
 	}
 
+	// Marshal features of scheduler.
+	features, err := scheduler.Features.MarshalJSON()
+	if err != nil {
+		return nil, status.Error(codes.DataLoss, err.Error())
+	}
+
 	// Construct scheduler.
 	pbScheduler = managerv2.Scheduler{
 		Id:                 uint64(scheduler.ID),
@@ -337,6 +351,7 @@ func (s *managerServerV2) GetScheduler(ctx context.Context, req *managerv2.GetSc
 		Ip:                 scheduler.IP,
 		Port:               scheduler.Port,
 		State:              scheduler.State,
+		Features:           features,
 		SchedulerClusterId: uint64(scheduler.SchedulerClusterID),
 		SchedulerCluster: &managerv2.SchedulerCluster{
 			Id:           uint64(scheduler.SchedulerCluster.ID),
@@ -394,6 +409,12 @@ func (s *managerServerV2) UpdateScheduler(ctx context.Context, req *managerv2.Up
 		log.Warn(err)
 	}
 
+	// Marshal features of scheduler.
+	features, err := scheduler.Features.MarshalJSON()
+	if err != nil {
+		return nil, status.Error(codes.DataLoss, err.Error())
+	}
+
 	return &managerv2.Scheduler{
 		Id:                 uint64(scheduler.ID),
 		Hostname:           scheduler.Hostname,
@@ -401,8 +422,9 @@ func (s *managerServerV2) UpdateScheduler(ctx context.Context, req *managerv2.Up
 		Location:           scheduler.Location,
 		Ip:                 scheduler.IP,
 		Port:               scheduler.Port,
-		SchedulerClusterId: uint64(scheduler.SchedulerClusterID),
+		Features:           features,
 		State:              scheduler.State,
+		SchedulerClusterId: uint64(scheduler.SchedulerClusterID),
 	}, nil
 }
 
@@ -414,11 +436,18 @@ func (s *managerServerV2) createScheduler(ctx context.Context, req *managerv2.Up
 		Location:           req.Location,
 		IP:                 req.Ip,
 		Port:               req.Port,
+		Features:           types.DefaultSchedulerFeatures,
 		SchedulerClusterID: uint(req.SchedulerClusterId),
 	}
 
 	if err := s.db.WithContext(ctx).Create(&scheduler).Error; err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// Marshal features of scheduler.
+	features, err := scheduler.Features.MarshalJSON()
+	if err != nil {
+		return nil, status.Error(codes.DataLoss, err.Error())
 	}
 
 	return &managerv2.Scheduler{
@@ -429,6 +458,7 @@ func (s *managerServerV2) createScheduler(ctx context.Context, req *managerv2.Up
 		Ip:                 scheduler.IP,
 		Port:               scheduler.Port,
 		State:              scheduler.State,
+		Features:           features,
 		SchedulerClusterId: uint64(scheduler.SchedulerClusterID),
 	}, nil
 }
@@ -463,12 +493,29 @@ func (s *managerServerV2) ListSchedulers(ctx context.Context, req *managerv2.Lis
 		return &pbListSchedulersResponse, nil
 	}
 
-	// Cache miss.
+	// Cache miss and search scheduler cluster.
 	var schedulerClusters []models.SchedulerCluster
 	if err := s.db.WithContext(ctx).Preload("SecurityGroup.SecurityRules").Preload("SeedPeerClusters.SeedPeers", "state = ?", "active").Preload("Schedulers", "state = ?", "active").Find(&schedulerClusters).Error; err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	log.Debugf("list scheduler clusters %v with hostInfo %#v", getSchedulerClusterNames(schedulerClusters), req.HostInfo)
+
+	// Remove schedulers which not have scehdule featrue. As OceanBase does not support JSON type,
+	// it is not possible to use datatypes.JSONQuery for filtering.
+	var tmpSchedulerClusters []models.SchedulerCluster
+	for _, schedulerCluster := range schedulerClusters {
+		var tmpSchedulers []models.Scheduler
+		for _, scheduler := range schedulerCluster.Schedulers {
+			if slices.Contains(scheduler.Features, types.SchedulerFeatureSchedule) {
+				tmpSchedulers = append(tmpSchedulers, scheduler)
+			}
+		}
+
+		if len(tmpSchedulers) != 0 {
+			schedulerCluster.Schedulers = tmpSchedulers
+			tmpSchedulerClusters = append(tmpSchedulerClusters, schedulerCluster)
+		}
+	}
+	log.Debugf("list scheduler clusters %v with hostInfo %#v", getSchedulerClusterNames(tmpSchedulerClusters), req.HostInfo)
 
 	// Search optimal scheduler clusters.
 	// If searcher can not found candidate scheduler cluster,
@@ -477,13 +524,13 @@ func (s *managerServerV2) ListSchedulers(ctx context.Context, req *managerv2.Lis
 		candidateSchedulerClusters []models.SchedulerCluster
 		err                        error
 	)
-	candidateSchedulerClusters, err = s.searcher.FindSchedulerClusters(ctx, schedulerClusters, req.Hostname, req.Ip, req.HostInfo, logger.CoreLogger)
+	candidateSchedulerClusters, err = s.searcher.FindSchedulerClusters(ctx, tmpSchedulerClusters, req.Hostname, req.Ip, req.HostInfo, logger.CoreLogger)
 	if err != nil {
 		log.Error(err)
 		metrics.SearchSchedulerClusterFailureCount.WithLabelValues(req.Version, req.Commit).Inc()
 		candidateSchedulerClusters = schedulerClusters
 	}
-	log.Debugf("find matching scheduler cluster %v", getSchedulerClusterNames(schedulerClusters))
+	log.Debugf("find matching scheduler cluster %v", getSchedulerClusterNames(candidateSchedulerClusters))
 
 	schedulers := []models.Scheduler{}
 	for _, candidateSchedulerCluster := range candidateSchedulerClusters {
@@ -514,6 +561,12 @@ func (s *managerServerV2) ListSchedulers(ctx context.Context, req *managerv2.Lis
 			}
 		}
 
+		// Marshal features of scheduler.
+		features, err := scheduler.Features.MarshalJSON()
+		if err != nil {
+			return nil, status.Error(codes.DataLoss, err.Error())
+		}
+
 		pbListSchedulersResponse.Schedulers = append(pbListSchedulersResponse.Schedulers, &managerv2.Scheduler{
 			Id:                 uint64(scheduler.ID),
 			Hostname:           scheduler.Hostname,
@@ -522,6 +575,7 @@ func (s *managerServerV2) ListSchedulers(ctx context.Context, req *managerv2.Lis
 			Ip:                 scheduler.IP,
 			Port:               scheduler.Port,
 			State:              scheduler.State,
+			Features:           features,
 			SchedulerClusterId: uint64(scheduler.SchedulerClusterID),
 			SeedPeers:          seedPeers,
 		})
