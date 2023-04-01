@@ -21,11 +21,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"regexp"
 	"strings"
+
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/source"
@@ -35,7 +37,9 @@ const (
 	ociAcceptHeader  = "application/vnd.oci.image.manifest.v1+json"
 	jsonAcceptHeader = "application/json"
 	scheme           = "oras"
-	authFilePath     = "/.singularity/docker-config.json"
+	configFilePath   = "/.singularity/docker-config.json"
+
+	authHeader = "X-Dragonfly-Oras-Authorization"
 )
 
 var _ source.ResourceClient = (*orasSourceClient)(nil)
@@ -49,7 +53,9 @@ type Manifest struct {
 }
 
 func init() {
-	source.RegisterBuilder(scheme, source.NewPlainResourceClientBuilder(Builder))
+	source.RegisterBuilder(scheme,
+		source.NewPlainResourceClientBuilder(Builder),
+		source.WithAuthInfoInjector(source.NewPlainAuthInfoInjector(AuthInfoInjector)))
 }
 
 func Builder(optionYaml []byte) (source.ResourceClient, source.RequestAdapter, []source.Hook, error) {
@@ -62,6 +68,16 @@ func Builder(optionYaml []byte) (source.ResourceClient, source.RequestAdapter, [
 		httpClient: httpClient,
 	}
 	return client, client.adaptor, nil, nil
+}
+
+func AuthInfoInjector(_url *url.URL, urlMeta *commonv1.UrlMeta) error {
+	auth, err := fetchAuthInfo(_url.Host, false)
+	if err != nil {
+		return err
+	}
+
+	urlMeta.Header[authHeader] = "Basic " + auth
+	return nil
 }
 
 func (client *orasSourceClient) adaptor(request *source.Request) *source.Request {
@@ -108,30 +124,53 @@ func (client *orasSourceClient) Download(request *source.Request) (*source.Respo
 	return imageFetchResponse, nil
 }
 
+func fetchAuthInfo(host string, skipCheckExist bool) (string, error) {
+	configFile := os.Getenv("HOME") + configFilePath
+	if !skipCheckExist && !fileExists(configFile) {
+		return "", nil
+	}
+
+	var auth string
+	databytes, err := os.ReadFile(configFile)
+	if err != nil {
+		return "", err
+	}
+
+	var jsonData map[string]interface{}
+	if err = json.Unmarshal(databytes, &jsonData); err != nil {
+		return "", err
+	}
+
+	for _, v := range jsonData {
+		for registry, v1 := range (v).(map[string]interface{}) {
+			for _, credentials := range (v1).(map[string]interface{}) {
+				if registry == host {
+					auth = credentials.(string)
+				}
+			}
+		}
+	}
+	return auth, nil
+}
+
 func (client *orasSourceClient) fetchToken(request *source.Request, path string) (string, error) {
 	var response *http.Response
 	var err error
 	tokenFetchURL := fmt.Sprintf("https://%s/service/token/?scope=repository:%s:pull&service=harbor-registry", request.URL.Host, path)
-	if fileExists(os.Getenv("HOME") + authFilePath) {
-		var auth string
-		databytes, err := os.ReadFile(os.Getenv("HOME") + authFilePath)
+	if authHeaderVal := request.Header.Get(authHeader); authHeaderVal != "" {
+		// remove the internal auth header
+		request.Header.Del(authHeader)
+		response, err = client.doRequest(request, jsonAcceptHeader, authHeaderVal, tokenFetchURL)
 		if err != nil {
 			return "", err
 		}
-		var jsonData map[string]interface{}
-		if err := json.Unmarshal(databytes, &jsonData); err != nil {
+	} else if fileExists(os.Getenv("HOME") + configFilePath) {
+		var auth string
+		auth, err = fetchAuthInfo(request.URL.Host, true)
+		if err != nil {
 			return "", err
 		}
-		for _, v := range jsonData {
-			for registry, v1 := range (v).(map[string]interface{}) {
-				for _, credentials := range (v1).(map[string]interface{}) {
-					if registry == request.URL.Host {
-						auth = credentials.(string)
-					}
-				}
-			}
-		}
-		authHeaderVal := "Basic " + auth
+		authHeaderVal = "Basic " + auth
 		response, err = client.doRequest(request, jsonAcceptHeader, authHeaderVal, tokenFetchURL)
 		if err != nil {
 			return "", err
@@ -142,13 +181,13 @@ func (client *orasSourceClient) fetchToken(request *source.Request, path string)
 			return "", err
 		}
 	}
-	token, err := ioutil.ReadAll(response.Body)
+	token, err := io.ReadAll(response.Body)
 	if err != nil {
 		return "", err
 	}
 	defer response.Body.Close()
 	var tokenData map[string]interface{}
-	if err := json.Unmarshal(token, &tokenData); err != nil {
+	if err = json.Unmarshal(token, &tokenData); err != nil {
 		return "", err
 	}
 	logger.Info(fmt.Sprintf("fetching token for %s  successful", request.URL))
