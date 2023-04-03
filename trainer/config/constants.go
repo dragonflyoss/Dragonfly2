@@ -25,7 +25,7 @@ var (
 	DefaultCertIPAddresses = []net.IP{ip.IPv4, ip.IPv6}
 
 	// DefaultCertDNSNames is default dns names of certificate.
-	DefaultCertDNSNames = []string{"dragonfly-scheduler", "dragonfly-scheduler.dragonfly-system.svc", "dragonfly-scheduler.dragonfly-system.svc.cluster.local"}
+	DefaultCertDNSNames = []string{"dragonfly-trainer", "dragonfly-trainer.dragonfly-system.svc", "dragonfly-trainer.dragonfly-system.svc.cluster.local"}
 
 	// DefaultCertValidityPeriod is default validity period of certificate.
 	DefaultCertValidityPeriod = 180 * 24 * time.Hour
