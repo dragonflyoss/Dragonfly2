@@ -39,7 +39,7 @@ type ResourceClientBuilder interface {
 
 // Director will handle request with some actions, like:
 // 1. inject auth information for target url and metadata, eg: fetch docker config for different users
-// 2. rewrite a common request into an unique request, eg: oras://harbor/user:latest to oras://harbor/user@sha256:abcde
+// 2. rewrite a common request into an unique request, eg: oras://harbor/user:latest to oras://harbor/user:lastest?digest=sha256:12345
 type Director interface {
 	Direct(rawURL *url.URL, urlMeta *commonv1.UrlMeta) error
 }

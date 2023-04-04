@@ -42,7 +42,7 @@ const (
 
 	authHeader  = "X-Dragonfly-Oras-Authorization"
 	tokenHeader = "X-Dragonfly-Oras-Token"
-	blobSha256  = "sha256"
+	blobDigest  = "digest"
 )
 
 var client *orasSourceClient
@@ -101,14 +101,16 @@ func Director(rawURL *url.URL, urlMeta *commonv1.UrlMeta) error {
 		return err
 	}
 
-	// 3. fetch manifest sha256
-	sha256, err := client.fetchManifest(ctx, host, token, path, tag)
+	// 3. fetch manifest digest, normal is sha256
+	digest, err := client.fetchManifest(ctx, host, token, path, tag)
 	if err != nil {
 		return err
 	}
 
-	// 4. update unique blob sha256 in url
-	rawURL.Query()[blobSha256] = []string{sha256}
+	// 4. update unique blob digest in url
+	values := rawURL.Query()
+	values.Set(blobDigest, digest)
+	rawURL.RawQuery = values.Encode()
 
 	// 5. update token in header
 	urlMeta.Header[tokenHeader] = token
@@ -147,14 +149,14 @@ func (client *orasSourceClient) Download(request *source.Request) (*source.Respo
 	}
 
 	var (
-		sha256 string
+		digest string
 		token  string
 	)
 
 	// if there is blob sha256 and token, just goto fetch image
-	if sha256Query, ok1 := request.URL.Query()[blobSha256]; ok1 && len(sha256Query) > 0 {
+	if digestQuery, ok1 := request.URL.Query()[blobDigest]; ok1 && len(digestQuery) > 0 {
 		if tokenHdr, ok2 := request.Header[tokenHeader]; ok2 && len(tokenHdr) > 0 {
-			sha256 = sha256Query[0]
+			digest = digestQuery[0]
 			token = tokenHdr[0]
 			goto fetch
 		}
@@ -165,13 +167,13 @@ func (client *orasSourceClient) Download(request *source.Request) (*source.Respo
 		return nil, err
 	}
 
-	sha256, err = client.fetchManifest(ctx, host, token, path, tag)
+	digest, err = client.fetchManifest(ctx, host, token, path, tag)
 	if err != nil {
 		return nil, err
 	}
 
 fetch:
-	imageFetchResponse, err := client.fetchImage(ctx, host, token, path, sha256)
+	imageFetchResponse, err := client.fetchImage(ctx, host, token, path, digest)
 	if err != nil {
 		return nil, err
 	}
