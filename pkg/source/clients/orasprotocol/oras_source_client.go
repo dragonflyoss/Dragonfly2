@@ -112,7 +112,10 @@ func Director(rawURL *url.URL, urlMeta *commonv1.UrlMeta) error {
 	values.Set(blobDigest, digest)
 	rawURL.RawQuery = values.Encode()
 
-	// 5. update token in header
+	// 5. update digest for peer data check
+	urlMeta.Digest = digest
+
+	// 6. update token in header
 	urlMeta.Header[tokenHeader] = token
 
 	return nil
