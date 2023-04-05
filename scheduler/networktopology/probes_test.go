@@ -529,8 +529,7 @@ func TestProbes_CreatedAt(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			probes := NewProbes(mockQueueLength, mockHost)
-			tc.expect(t, probes.CreatedAt())
+			tc.expect(t, mockProbes.CreatedAt())
 		})
 	}
 }
