@@ -522,14 +522,15 @@ func TestProbes_CreatedAt(t *testing.T) {
 			name: "get creation time of probes",
 			expect: func(t *testing.T, createdAt time.Time) {
 				assert := assert.New(t)
-				assert.Equal(createdAt, mockProbes.createdAt)
+				assert.Equal(createdAt, mockProbes.createdAt.Load())
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, mockProbes.CreatedAt())
+			probes := NewProbes(mockQueueLength, mockHost)
+			tc.expect(t, probes.CreatedAt())
 		})
 	}
 }

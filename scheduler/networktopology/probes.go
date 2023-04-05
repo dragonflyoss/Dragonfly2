@@ -70,7 +70,7 @@ type Probes interface {
 	// Length gets the length of probes.
 	Length() int
 
-	// CreatedAt is the creation time to of probes.
+	// CreatedAt is the creation time of probes.
 	CreatedAt() time.Time
 
 	// UpdatedAt is the updated time to store probe.
@@ -193,7 +193,7 @@ func (p *probes) Length() int {
 	return p.items.Len()
 }
 
-// CreatedAt is the creation time to of probes.
+// CreatedAt is the creation time of probes.
 func (p *probes) CreatedAt() time.Time {
 	return p.createdAt.Load()
 }
