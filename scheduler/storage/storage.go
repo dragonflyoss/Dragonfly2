@@ -385,7 +385,7 @@ func (s *storage) create(data any) error {
 		}
 		defer file.Close()
 
-		if err := gocsv.MarshalWithoutHeaders(data.(Record), file); err != nil {
+		if err := gocsv.MarshalWithoutHeaders(data, file); err != nil {
 			return err
 		}
 
@@ -397,7 +397,7 @@ func (s *storage) create(data any) error {
 		}
 		defer file.Close()
 
-		if err := gocsv.MarshalWithoutHeaders(data.(Probes), file); err != nil {
+		if err := gocsv.MarshalWithoutHeaders(data, file); err != nil {
 			return err
 		}
 
