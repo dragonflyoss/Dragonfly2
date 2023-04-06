@@ -598,7 +598,7 @@ func TestStorage_ListProbes(t *testing.T) {
 			},
 		},
 		{
-			name:       "list records of a file",
+			name:       "list probes of a file",
 			baseDir:    os.TempDir(),
 			bufferSize: 1,
 			probes:     mockProbes,
@@ -651,8 +651,8 @@ func TestStorage_ListProbes(t *testing.T) {
 				multiProbes, err := s.ListProbes()
 				assert.NoError(err)
 				assert.Equal(len(multiProbes), 2)
-				assert.EqualValues(multiProbes[0].AverageRTT, 2)
-				assert.Equal(multiProbes[0].AverageRTT, 1)
+				assert.Equal(multiProbes[0].AverageRTT, int64(2))
+				assert.Equal(multiProbes[1].AverageRTT, int64(1))
 			},
 		},
 	}
@@ -887,8 +887,8 @@ func TestStorage_OpenProbes(t *testing.T) {
 				err = gocsv.UnmarshalWithoutHeaders(readCloser, &multiProbes)
 				assert.NoError(err)
 				assert.Equal(len(multiProbes), 2)
-				assert.Equal(multiProbes[0].AverageRTT, 2)
-				assert.Equal(multiProbes[1].AverageRTT, 1)
+				assert.Equal(multiProbes[0].AverageRTT, int64(2))
+				assert.Equal(multiProbes[1].AverageRTT, int64(1))
 			},
 		},
 	}
