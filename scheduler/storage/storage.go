@@ -62,10 +62,13 @@ const (
 // Storage is the interface used for storage.
 type Storage interface {
 	// Create inserts the data into csv file.
-	Create(data any) error
+	Create(any) error
 
-	// List returns specified data in csv file.
-	List(data any) (any, error)
+	// ListRecord returns all records in csv file.
+	ListRecord() ([]Record, error)
+
+	// ListProbes returns all probes in csv file.
+	ListProbes() ([]Probes, error)
 
 	// RecordCount returns the count of records.
 	RecordCount() int64
@@ -73,11 +76,17 @@ type Storage interface {
 	// ProbesCount returns the count of probes.
 	ProbesCount() int64
 
-	// Open opens storage for read, it returns io.ReadCloser of specified storage files.
-	Open(data any) (io.ReadCloser, error)
+	// OpenRecord opens storage for read, it returns io.ReadCloser of record storage files.
+	OpenRecord() (io.ReadCloser, error)
 
-	// Clear removes specified data.
-	Clear(data any) error
+	// OpenProbes opens storage for read, it returns io.ReadCloser of probes storage files.
+	OpenProbes() (io.ReadCloser, error)
+
+	// ClearRecord removes all record files.
+	ClearRecord() error
+
+	// ClearProbes removes all probes files.
+	ClearProbes() error
 }
 
 // storage provides storage function.
@@ -132,12 +141,11 @@ func (s *storage) Create(data any) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Write without buffer.
-
 	switch data.(type) {
 	case Record:
+		// Write without buffer.
 		if s.bufferSize == 0 {
-			if err := s.create(s.recordBuffer); err != nil {
+			if err := s.create(s.recordBuffer, RecordFilePrefix, RecordFileExt); err != nil {
 				return err
 			}
 
@@ -148,7 +156,7 @@ func (s *storage) Create(data any) error {
 
 		// Write records to file.
 		if len(s.recordBuffer) >= s.bufferSize {
-			if err := s.create(s.recordBuffer); err != nil {
+			if err := s.create(s.recordBuffer, RecordFilePrefix, RecordFileExt); err != nil {
 				return err
 			}
 
@@ -163,8 +171,9 @@ func (s *storage) Create(data any) error {
 		s.recordBuffer = append(s.recordBuffer, data.(Record))
 		return nil
 	case Probes:
+		// Write without buffer.
 		if s.bufferSize == 0 {
-			if err := s.create(s.probesBuffer); err != nil {
+			if err := s.create(s.probesBuffer, ProbesFilePrefix, ProbesFileExt); err != nil {
 				return err
 			}
 
@@ -175,7 +184,7 @@ func (s *storage) Create(data any) error {
 
 		// Write probes to file.
 		if len(s.probesBuffer) >= s.bufferSize {
-			if err := s.create(s.probesBuffer); err != nil {
+			if err := s.create(s.probesBuffer, ProbesFilePrefix, ProbesFileExt); err != nil {
 				return err
 			}
 
@@ -194,12 +203,12 @@ func (s *storage) Create(data any) error {
 	}
 }
 
-// List returns specified data in csv file.
-func (s *storage) List(data any) (any, error) {
+// ListRecord returns all records in csv file.
+func (s *storage) ListRecord() ([]Record, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	fileInfos, err := s.backups(data)
+	fileInfos, err := s.backups(RecordFilePrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -224,24 +233,50 @@ func (s *storage) List(data any) (any, error) {
 		readClosers = append(readClosers, file)
 	}
 
-	switch data.(type) {
-	case Record:
-		var records []Record
-		if err := gocsv.UnmarshalWithoutHeaders(io.MultiReader(readers...), &records); err != nil {
-			return nil, err
-		}
-
-		return records, nil
-	case Probes:
-		var probes []Probes
-		if err := gocsv.UnmarshalWithoutHeaders(io.MultiReader(readers...), &probes); err != nil {
-			return nil, err
-		}
-
-		return probes, nil
-	default:
-		return nil, errors.New("invalid data type")
+	var records []Record
+	if err := gocsv.UnmarshalWithoutHeaders(io.MultiReader(readers...), &records); err != nil {
+		return nil, err
 	}
+
+	return records, nil
+}
+
+// ListProbes returns all probes in csv file.
+func (s *storage) ListProbes() ([]Probes, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	fileInfos, err := s.backups(ProbesFilePrefix)
+	if err != nil {
+		return nil, err
+	}
+
+	var readers []io.Reader
+	var readClosers []io.ReadCloser
+	defer func() {
+		for _, readCloser := range readClosers {
+			if err := readCloser.Close(); err != nil {
+				logger.Error(err)
+			}
+		}
+	}()
+
+	for _, fileInfo := range fileInfos {
+		file, err := os.Open(filepath.Join(s.baseDir, fileInfo.Name()))
+		if err != nil {
+			return nil, err
+		}
+
+		readers = append(readers, file)
+		readClosers = append(readClosers, file)
+	}
+
+	var probes []Probes
+	if err := gocsv.UnmarshalWithoutHeaders(io.MultiReader(readers...), &probes); err != nil {
+		return nil, err
+	}
+
+	return probes, nil
 }
 
 // RecordCount returns the count of records.
@@ -254,12 +289,12 @@ func (s *storage) ProbesCount() int64 {
 	return s.probesCount
 }
 
-// Open opens storage for read, it returns io.ReadCloser of specified storage files.
-func (s *storage) Open(data any) (io.ReadCloser, error) {
+// OpenRecord opens storage for read, it returns io.ReadCloser of record storage files.
+func (s *storage) OpenRecord() (io.ReadCloser, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	fileInfos, err := s.backups(data)
+	fileInfos, err := s.backups(RecordFilePrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -277,12 +312,55 @@ func (s *storage) Open(data any) (io.ReadCloser, error) {
 	return pkgio.MultiReadCloser(readClosers...), nil
 }
 
-// Clear removes specified data.
-func (s *storage) Clear(data any) error {
+// OpenProbes opens storage for read, it returns io.ReadCloser of record storage files.
+func (s *storage) OpenProbes() (io.ReadCloser, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	fileInfos, err := s.backups(ProbesFilePrefix)
+	if err != nil {
+		return nil, err
+	}
+
+	var readClosers []io.ReadCloser
+	for _, fileInfo := range fileInfos {
+		file, err := os.Open(filepath.Join(s.baseDir, fileInfo.Name()))
+		if err != nil {
+			return nil, err
+		}
+
+		readClosers = append(readClosers, file)
+	}
+
+	return pkgio.MultiReadCloser(readClosers...), nil
+}
+
+// ClearRecord removes all record files.
+func (s *storage) ClearRecord() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	fileInfos, err := s.backups(data)
+	fileInfos, err := s.backups(RecordFilePrefix)
+	if err != nil {
+		return err
+	}
+
+	for _, fileInfo := range fileInfos {
+		filename := filepath.Join(s.baseDir, fileInfo.Name())
+		if err := os.Remove(filename); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// ClearProbes removes all probes files.
+func (s *storage) ClearProbes() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	fileInfos, err := s.backups(ProbesFilePrefix)
 	if err != nil {
 		return err
 	}
@@ -298,8 +376,8 @@ func (s *storage) Clear(data any) error {
 }
 
 // create inserts the data into csv file.
-func (s *storage) create(data any) error {
-	file, err := s.openFile(data)
+func (s *storage) create(data any, filePrefix, fileExt string) error {
+	file, err := s.openFile(filePrefix, fileExt)
 	if err != nil {
 		return err
 	}
@@ -312,28 +390,21 @@ func (s *storage) create(data any) error {
 	return nil
 }
 
-// openFile opens the data file and removes data files that exceed the total size.
-func (s *storage) openFile(data any) (*os.File, error) {
-
-	var filename string
-	switch data.(type) {
-	case Record:
-		filename = s.recordFilename
-	case Probes:
-		filename = s.probesFilename
-	}
-	fileInfo, err := os.Stat(filename)
+// openFile opens the specified data file and removes specified data files that exceed the total size.
+func (s *storage) openFile(filePrefix, fileExt string) (*os.File, error) {
+	fileInfo, err := os.Stat(filepath.Join(s.baseDir, fmt.Sprintf("%s.%s", filePrefix, fileExt)))
 	if err != nil {
 		return nil, err
 	}
 
 	if s.maxSize <= fileInfo.Size() {
-		if err := os.Rename(filename, s.backupFilename(data)); err != nil {
+		if err := os.Rename(filepath.Join(s.baseDir, fmt.Sprintf("%s.%s", filePrefix, fileExt)),
+			s.backupFilename(filePrefix, fileExt)); err != nil {
 			return nil, err
 		}
 	}
 
-	fileInfos, err := s.backups(data)
+	fileInfos, err := s.backups(filePrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -345,7 +416,8 @@ func (s *storage) openFile(data any) (*os.File, error) {
 		}
 	}
 
-	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	file, err := os.OpenFile(filepath.Join(s.baseDir, fmt.Sprintf("%s.%s", filePrefix, fileExt)),
+		os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
 		return nil, err
 	}
@@ -353,37 +425,20 @@ func (s *storage) openFile(data any) (*os.File, error) {
 	return file, nil
 }
 
-// backupFilename generates file name of backup files.
-func (s *storage) backupFilename(data any) string {
+// backupFilename generates file name of specified backup files.
+func (s *storage) backupFilename(filePrefix, fileExt string) string {
 	timestamp := time.Now().Format(backupTimeFormat)
-	switch data.(type) {
-	case Record:
-		return filepath.Join(s.baseDir, fmt.Sprintf("%s-%s.%s", RecordFilePrefix, timestamp, RecordFileExt))
-	case Probes:
-		return filepath.Join(s.baseDir, fmt.Sprintf("%s-%s.%s", ProbesFilePrefix, timestamp, ProbesFileExt))
-	default:
-		return ""
-	}
+	return filepath.Join(s.baseDir, fmt.Sprintf("%s-%s.%s", filePrefix, timestamp, fileExt))
 }
 
-// backupFilename returns backup file information.
-func (s *storage) backups(data any) ([]fs.FileInfo, error) {
+// backupFilename returns specified backup file information.
+func (s *storage) backups(filePrefix string) ([]fs.FileInfo, error) {
 	fileInfos, err := ioutil.ReadDir(s.baseDir)
 	if err != nil {
 		return nil, err
 	}
 
-	var (
-		backups    []fs.FileInfo
-		filePrefix string
-	)
-	switch data.(type) {
-	case Record:
-		filePrefix = RecordFilePrefix
-	case Probes:
-		filePrefix = ProbesFilePrefix
-	}
-
+	var backups []fs.FileInfo
 	regexp := regexp.MustCompile(filePrefix)
 	for _, fileInfo := range fileInfos {
 		if !fileInfo.IsDir() && regexp.MatchString(fileInfo.Name()) {
