@@ -35,36 +35,36 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 	return m.recorder
 }
 
-// Clear mocks base method.
-func (m *MockStorage) Clear() error {
+// ClearProbes mocks base method.
+func (m *MockStorage) ClearProbes() error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Clear")
+	ret := m.ctrl.Call(m, "ClearProbes")
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Clear indicates an expected call of Clear.
-func (mr *MockStorageMockRecorder) Clear() *gomock.Call {
+// ClearProbes indicates an expected call of ClearProbes.
+func (mr *MockStorageMockRecorder) ClearProbes() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Clear", reflect.TypeOf((*MockStorage)(nil).Clear))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClearProbes", reflect.TypeOf((*MockStorage)(nil).ClearProbes))
 }
 
-// Count mocks base method.
-func (m *MockStorage) Count() int64 {
+// ClearRecord mocks base method.
+func (m *MockStorage) ClearRecord() error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Count")
-	ret0, _ := ret[0].(int64)
+	ret := m.ctrl.Call(m, "ClearRecord")
+	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Count indicates an expected call of Count.
-func (mr *MockStorageMockRecorder) Count() *gomock.Call {
+// ClearRecord indicates an expected call of ClearRecord.
+func (mr *MockStorageMockRecorder) ClearRecord() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockStorage)(nil).Count))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClearRecord", reflect.TypeOf((*MockStorage)(nil).ClearRecord))
 }
 
 // Create mocks base method.
-func (m *MockStorage) Create(arg0 storage.Record) error {
+func (m *MockStorage) Create(arg0 any) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", arg0)
 	ret0, _ := ret[0].(error)
@@ -77,32 +77,90 @@ func (mr *MockStorageMockRecorder) Create(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockStorage)(nil).Create), arg0)
 }
 
-// List mocks base method.
-func (m *MockStorage) List() ([]storage.Record, error) {
+// ListProbes mocks base method.
+func (m *MockStorage) ListProbes() ([]storage.Probes, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List")
+	ret := m.ctrl.Call(m, "ListProbes")
+	ret0, _ := ret[0].([]storage.Probes)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListProbes indicates an expected call of ListProbes.
+func (mr *MockStorageMockRecorder) ListProbes() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListProbes", reflect.TypeOf((*MockStorage)(nil).ListProbes))
+}
+
+// ListRecord mocks base method.
+func (m *MockStorage) ListRecord() ([]storage.Record, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListRecord")
 	ret0, _ := ret[0].([]storage.Record)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// List indicates an expected call of List.
-func (mr *MockStorageMockRecorder) List() *gomock.Call {
+// ListRecord indicates an expected call of ListRecord.
+func (mr *MockStorageMockRecorder) ListRecord() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockStorage)(nil).List))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRecord", reflect.TypeOf((*MockStorage)(nil).ListRecord))
 }
 
-// Open mocks base method.
-func (m *MockStorage) Open() (io.ReadCloser, error) {
+// OpenProbes mocks base method.
+func (m *MockStorage) OpenProbes() (io.ReadCloser, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Open")
+	ret := m.ctrl.Call(m, "OpenProbes")
 	ret0, _ := ret[0].(io.ReadCloser)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Open indicates an expected call of Open.
-func (mr *MockStorageMockRecorder) Open() *gomock.Call {
+// OpenProbes indicates an expected call of OpenProbes.
+func (mr *MockStorageMockRecorder) OpenProbes() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Open", reflect.TypeOf((*MockStorage)(nil).Open))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OpenProbes", reflect.TypeOf((*MockStorage)(nil).OpenProbes))
+}
+
+// OpenRecord mocks base method.
+func (m *MockStorage) OpenRecord() (io.ReadCloser, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OpenRecord")
+	ret0, _ := ret[0].(io.ReadCloser)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// OpenRecord indicates an expected call of OpenRecord.
+func (mr *MockStorageMockRecorder) OpenRecord() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OpenRecord", reflect.TypeOf((*MockStorage)(nil).OpenRecord))
+}
+
+// ProbesCount mocks base method.
+func (m *MockStorage) ProbesCount() int64 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ProbesCount")
+	ret0, _ := ret[0].(int64)
+	return ret0
+}
+
+// ProbesCount indicates an expected call of ProbesCount.
+func (mr *MockStorageMockRecorder) ProbesCount() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProbesCount", reflect.TypeOf((*MockStorage)(nil).ProbesCount))
+}
+
+// RecordCount mocks base method.
+func (m *MockStorage) RecordCount() int64 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RecordCount")
+	ret0, _ := ret[0].(int64)
+	return ret0
+}
+
+// RecordCount indicates an expected call of RecordCount.
+func (mr *MockStorageMockRecorder) RecordCount() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecordCount", reflect.TypeOf((*MockStorage)(nil).RecordCount))
 }

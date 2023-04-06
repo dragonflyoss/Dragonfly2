@@ -306,8 +306,15 @@ func (s *Server) Stop() {
 		logger.Info("stop resource closed")
 	}
 
-	// Clean storage.
-	if err := s.storage.Clear(); err != nil {
+	// Clean record storage.
+	if err := s.storage.ClearRecord(); err != nil {
+		logger.Errorf("clean storage failed %s", err.Error())
+	} else {
+		logger.Info("clean storage completed")
+	}
+
+	// Clean probes storage.
+	if err := s.storage.ClearProbes(); err != nil {
 		logger.Errorf("clean storage failed %s", err.Error())
 	} else {
 		logger.Info("clean storage completed")
