@@ -141,8 +141,8 @@ github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d h1:pVrfxiGfwel
 github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d/go.mod h1:H0wQNHz2YrLsuXOZozoeDmnHXkNCRmMW0gwFWDfEZDA=
 github.com/casbin/casbin/v2 v2.1.2/go.mod h1:YcPU1XXisHhLzuxH9coDNf2FbKpjGlbCg3n9yuLkIJQ=
 github.com/casbin/casbin/v2 v2.55.1/go.mod h1:vByNa/Fchek0KZUgG5wEsl7iFsiviAYKRtgrQfcJqHg=
-github.com/casbin/casbin/v2 v2.65.2 h1:a8XUm1Xls9sXc4RISPFEDQZrqpsv5y1KwwB174W7i74=
-github.com/casbin/casbin/v2 v2.65.2/go.mod h1:vByNa/Fchek0KZUgG5wEsl7iFsiviAYKRtgrQfcJqHg=
+github.com/casbin/casbin/v2 v2.66.1 h1:HOFlZYTUYx8ktgv5fLNFo6hr4K18ogGFq/lnYXv1OfA=
+github.com/casbin/casbin/v2 v2.66.1/go.mod h1:vByNa/Fchek0KZUgG5wEsl7iFsiviAYKRtgrQfcJqHg=
 github.com/casbin/gorm-adapter/v3 v3.15.0 h1:SLGhY5d/jN+zWLGmHlS8x/2zxYXVWf/d201aGv5EIyc=
 github.com/casbin/gorm-adapter/v3 v3.15.0/go.mod h1:jqaf4bUITbCyMPUellaTd8IQJ77JfVAbe77gZZnx98w=
 github.com/cenkalti/backoff v2.2.1+incompatible/go.mod h1:90ReRw6GdpyfrHakVjL/QHaoyV4aDUVVkXQJJJ3NXXM=
