@@ -145,7 +145,7 @@ func (s *storage) Create(data any) error {
 	case Record:
 		// Write without buffer.
 		if s.bufferSize == 0 {
-			if err := s.create(s.recordBuffer, RecordFilePrefix, RecordFileExt); err != nil {
+			if err := s.create(s.recordBuffer); err != nil {
 				return err
 			}
 
@@ -156,7 +156,7 @@ func (s *storage) Create(data any) error {
 
 		// Write records to file.
 		if len(s.recordBuffer) >= s.bufferSize {
-			if err := s.create(s.recordBuffer, RecordFilePrefix, RecordFileExt); err != nil {
+			if err := s.create(s.recordBuffer); err != nil {
 				return err
 			}
 
@@ -173,7 +173,7 @@ func (s *storage) Create(data any) error {
 	case Probes:
 		// Write without buffer.
 		if s.bufferSize == 0 {
-			if err := s.create(s.probesBuffer, ProbesFilePrefix, ProbesFileExt); err != nil {
+			if err := s.create(s.probesBuffer); err != nil {
 				return err
 			}
 
@@ -184,7 +184,7 @@ func (s *storage) Create(data any) error {
 
 		// Write probes to file.
 		if len(s.probesBuffer) >= s.bufferSize {
-			if err := s.create(s.probesBuffer, ProbesFilePrefix, ProbesFileExt); err != nil {
+			if err := s.create(s.probesBuffer); err != nil {
 				return err
 			}
 
@@ -376,18 +376,35 @@ func (s *storage) ClearProbes() error {
 }
 
 // create inserts the data into csv file.
-func (s *storage) create(data any, filePrefix, fileExt string) error {
-	file, err := s.openFile(filePrefix, fileExt)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
+func (s *storage) create(data any) error {
+	switch data.(type) {
+	case Record:
+		file, err := s.openFile(RecordFilePrefix, RecordFileExt)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
 
-	if err := gocsv.MarshalWithoutHeaders(data, file); err != nil {
-		return err
-	}
+		if err := gocsv.MarshalWithoutHeaders(data.(Record), file); err != nil {
+			return err
+		}
 
-	return nil
+		return nil
+	case Probes:
+		file, err := s.openFile(ProbesFilePrefix, ProbesFileExt)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		if err := gocsv.MarshalWithoutHeaders(data.(Probes), file); err != nil {
+			return err
+		}
+
+		return nil
+	default:
+		return errors.New("invalid storage type")
+	}
 }
 
 // openFile opens the specified data file and removes specified data files that exceed the total size.

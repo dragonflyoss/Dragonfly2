@@ -189,12 +189,14 @@ var (
 		CreatedAt: time.Now().UnixNano(),
 	}
 
+	mockItems = append(make([]Probe, 19), mockProbe)
+
 	mockProbes = Probes{
 		Host:       mockSeedHost,
 		AverageRTT: time.Duration(0).Nanoseconds(),
 		CreatedAt:  time.Now().UnixNano(),
 		UpdatedAt:  mockProbe.CreatedAt,
-		Items:      []Probe{},
+		Items:      mockItems,
 	}
 )
 
@@ -615,10 +617,10 @@ func TestStorage_ListProbes(t *testing.T) {
 				if err := s.Create(probes); err != nil {
 					t.Fatal(err)
 				}
-				records, err := s.ListProbes()
+				multiProbes, err := s.ListProbes()
 				assert.NoError(err)
-				assert.Equal(len(records), 1)
-				assert.EqualValues(records[0], probes)
+				assert.Equal(len(multiProbes), 1)
+				assert.EqualValues(multiProbes[0], probes)
 			},
 		},
 		{
@@ -1034,7 +1036,7 @@ func TestStorage_create(t *testing.T) {
 			mock:    func(s Storage) {},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
-				err := s.(*storage).create(Record{}, RecordFilePrefix, RecordFileExt)
+				err := s.(*storage).create(Record{})
 				assert.NoError(err)
 			},
 		},
@@ -1044,7 +1046,7 @@ func TestStorage_create(t *testing.T) {
 			mock:    func(s Storage) {},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
-				err := s.(*storage).create(Probes{}, ProbesFilePrefix, ProbesFileExt)
+				err := s.(*storage).create(Probes{})
 				assert.NoError(err)
 			},
 		},
@@ -1056,7 +1058,7 @@ func TestStorage_create(t *testing.T) {
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
-				err := s.(*storage).create(Record{}, RecordFilePrefix, RecordFileExt)
+				err := s.(*storage).create(Record{})
 				assert.Error(err)
 				s.(*storage).baseDir = baseDir
 			},
