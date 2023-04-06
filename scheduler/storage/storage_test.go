@@ -1034,7 +1034,7 @@ func TestStorage_create(t *testing.T) {
 			mock:    func(s Storage) {},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
-				err := s.(*storage).create(Record{})
+				err := s.(*storage).create([]Record{})
 				assert.NoError(err)
 			},
 		},
@@ -1044,7 +1044,7 @@ func TestStorage_create(t *testing.T) {
 			mock:    func(s Storage) {},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
-				err := s.(*storage).create(Probes{})
+				err := s.(*storage).create([]Probes{})
 				assert.NoError(err)
 			},
 		},
@@ -1056,7 +1056,7 @@ func TestStorage_create(t *testing.T) {
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
-				err := s.(*storage).create(Record{})
+				err := s.(*storage).create([]Record{})
 				assert.Error(err)
 				s.(*storage).baseDir = baseDir
 			},
