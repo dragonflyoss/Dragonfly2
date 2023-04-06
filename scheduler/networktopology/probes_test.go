@@ -18,6 +18,7 @@ package networktopology
 
 import (
 	"container/list"
+	"sync"
 	"testing"
 	"time"
 
@@ -134,6 +135,16 @@ var (
 		Host:      mockHost,
 		RTT:       30 * time.Nanosecond,
 		CreatedAt: time.Now(),
+	}
+
+	mockProbes = &probes{
+		host:       mockHost,
+		limit:      mockQueueLength,
+		items:      list.New(),
+		averageRTT: atomic.NewDuration(0),
+		createdAt:  atomic.NewTime(time.Now()),
+		updatedAt:  atomic.NewTime(time.Time{}),
+		mu:         &sync.RWMutex{},
 	}
 
 	mockQueueLength = 5
@@ -498,6 +509,27 @@ func TestProbes_Length(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.mock(tc.probes)
 			tc.expect(t, tc.probes.Length())
+		})
+	}
+}
+
+func TestProbes_CreatedAt(t *testing.T) {
+	tests := []struct {
+		name   string
+		expect func(t *testing.T, updatedAt time.Time)
+	}{
+		{
+			name: "get creation time of probes",
+			expect: func(t *testing.T, createdAt time.Time) {
+				assert := assert.New(t)
+				assert.Equal(createdAt, mockProbes.createdAt.Load())
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.expect(t, mockProbes.CreatedAt())
 		})
 	}
 }
