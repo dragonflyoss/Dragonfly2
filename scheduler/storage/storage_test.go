@@ -299,8 +299,7 @@ func TestStorage_Create(t *testing.T) {
 			name:       "create record without buffer",
 			baseDir:    os.TempDir(),
 			bufferSize: 0,
-			mock: func(s Storage) {
-			},
+			mock:       func(s Storage) {},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
 				err := s.Create(Record{})
@@ -312,8 +311,7 @@ func TestStorage_Create(t *testing.T) {
 			name:       "create probes without buffer",
 			baseDir:    os.TempDir(),
 			bufferSize: 0,
-			mock: func(s Storage) {
-			},
+			mock:       func(s Storage) {},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
 				err := s.Create(Probes{})

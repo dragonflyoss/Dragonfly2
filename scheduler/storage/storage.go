@@ -378,7 +378,7 @@ func (s *storage) ClearProbes() error {
 // create inserts the data into csv file.
 func (s *storage) create(data any) error {
 	switch data.(type) {
-	case Record:
+	case []Record:
 		file, err := s.openFile(RecordFilePrefix, RecordFileExt)
 		if err != nil {
 			return err
@@ -390,7 +390,7 @@ func (s *storage) create(data any) error {
 		}
 
 		return nil
-	case Probes:
+	case []Probes:
 		file, err := s.openFile(ProbesFilePrefix, ProbesFileExt)
 		if err != nil {
 			return err
