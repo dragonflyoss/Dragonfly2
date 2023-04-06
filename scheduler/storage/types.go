@@ -199,3 +199,33 @@ type Record struct {
 	// UpdatedAt is peer update nanosecond time.
 	UpdatedAt int64 `csv:"updatedAt"`
 }
+
+// Probe contains content for probe.
+type Probe struct {
+	// Host is probe destination host.
+	Host Host `csv:"host"`
+
+	// RTT is the round-trip time sent via this pinger.
+	RTT int64 `csv:"rtt"`
+
+	// CreatedAt is the time to create probe.
+	CreatedAt int64 `csv:"createdAt"`
+}
+
+// Probes contains content for probes.
+type Probes struct {
+	// Host is probe source host.
+	Host Host `csv:"host"`
+
+	// AverageRTT is the average round-trip time of probes.
+	AverageRTT int64 `csv:"averageRTT"`
+
+	// CreatedAt is probe create nanosecond time.
+	CreatedAt int64 `csv:"createdAt"`
+
+	// UpdatedAt is probe update nanosecond time.
+	UpdatedAt int64 `csv:"updatedAt"`
+
+	// Items are the list of probe.
+	Items []Probe `csv:"items" csv[]:"20"`
+}
