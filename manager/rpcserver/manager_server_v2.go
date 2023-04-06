@@ -524,7 +524,7 @@ func (s *managerServerV2) ListSchedulers(ctx context.Context, req *managerv2.Lis
 		candidateSchedulerClusters []models.SchedulerCluster
 		err                        error
 	)
-	candidateSchedulerClusters, err = s.searcher.FindSchedulerClusters(ctx, tmpSchedulerClusters, req.Hostname, req.Ip, req.HostInfo, logger.CoreLogger)
+	candidateSchedulerClusters, err = s.searcher.FindSchedulerClusters(ctx, tmpSchedulerClusters, req.Ip, req.Hostname, req.HostInfo, logger.CoreLogger)
 	if err != nil {
 		log.Error(err)
 		metrics.SearchSchedulerClusterFailureCount.WithLabelValues(req.Version, req.Commit).Inc()

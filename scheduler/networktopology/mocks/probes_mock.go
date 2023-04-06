@@ -50,6 +50,20 @@ func (mr *MockProbesMockRecorder) AverageRTT() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AverageRTT", reflect.TypeOf((*MockProbes)(nil).AverageRTT))
 }
 
+// CreatedAt mocks base method.
+func (m *MockProbes) CreatedAt() time.Time {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreatedAt")
+	ret0, _ := ret[0].(time.Time)
+	return ret0
+}
+
+// CreatedAt indicates an expected call of CreatedAt.
+func (mr *MockProbesMockRecorder) CreatedAt() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatedAt", reflect.TypeOf((*MockProbes)(nil).CreatedAt))
+}
+
 // Dequeue mocks base method.
 func (m *MockProbes) Dequeue() (*networktopology.Probe, bool) {
 	m.ctrl.T.Helper()
