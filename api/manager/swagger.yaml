@@ -95,6 +95,10 @@ definitions:
     properties:
       created_at:
         type: string
+      features:
+        items:
+          type: string
+        type: array
       host_name:
         type: string
       id:
@@ -408,6 +412,10 @@ definitions:
     type: object
   d7y_io_dragonfly_v2_manager_types.CreateSchedulerRequest:
     properties:
+      features:
+        items:
+          type: string
+        type: array
       host_name:
         type: string
       idc:
@@ -717,6 +725,10 @@ definitions:
     type: object
   d7y_io_dragonfly_v2_manager_types.UpdateSchedulerRequest:
     properties:
+      features:
+        items:
+          type: string
+        type: array
       idc:
         type: string
       ip:

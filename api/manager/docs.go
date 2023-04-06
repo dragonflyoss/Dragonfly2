@@ -3660,6 +3660,12 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
+                "features": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "host_name": {
                     "type": "string"
                 },
@@ -4135,6 +4141,12 @@ const docTemplate = `{
                 "scheduler_cluster_id"
             ],
             "properties": {
+                "features": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "host_name": {
                     "type": "string"
                 },
@@ -4582,6 +4594,12 @@ const docTemplate = `{
         "d7y_io_dragonfly_v2_manager_types.UpdateSchedulerRequest": {
             "type": "object",
             "properties": {
+                "features": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "idc": {
                     "type": "string"
                 },
