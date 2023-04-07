@@ -152,7 +152,7 @@ func (p *probes) Enqueue(probe *Probe) error {
 			return errors.New("invalid probe")
 		}
 
-		if p.items.Len() == 1 {
+		if e == p.items.Front() {
 			p.averageRTT.Store(probe.RTT)
 			continue
 		}
