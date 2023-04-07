@@ -133,7 +133,7 @@ var (
 
 	mockProbe = &Probe{
 		Host:      mockHost,
-		RTT:       30 * time.Nanosecond,
+		RTT:       30 * time.Millisecond,
 		CreatedAt: time.Now(),
 	}
 
@@ -227,11 +227,11 @@ func TestProbes_Peek(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 31*time.Nanosecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 31*time.Millisecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 32*time.Nanosecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 32*time.Millisecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -289,10 +289,44 @@ func TestProbes_Enqueue(t *testing.T) {
 			},
 		},
 		{
+			name:   "enqueue five probes",
+			probes: NewProbes(mockQueueLength, mockSeedHost),
+			mock: func(probes Probes) {
+				if err := probes.Enqueue(mockProbe); err != nil {
+					t.Fatal(err)
+				}
+
+				if err := probes.Enqueue(NewProbe(mockHost, 31*time.Millisecond, time.Now())); err != nil {
+					t.Fatal(err)
+				}
+
+				if err := probes.Enqueue(NewProbe(mockHost, 32*time.Millisecond, time.Now())); err != nil {
+					t.Fatal(err)
+				}
+
+				if err := probes.Enqueue(NewProbe(mockHost, 33*time.Millisecond, time.Now())); err != nil {
+					t.Fatal(err)
+				}
+
+				if err := probes.Enqueue(NewProbe(mockHost, 34*time.Millisecond, time.Now())); err != nil {
+					t.Fatal(err)
+				}
+			},
+			expect: func(t *testing.T, p Probes) {
+				assert := assert.New(t)
+				assert.Equal(p.Length(), 5)
+				assert.Equal(p.AverageRTT().Nanoseconds(), int64(33888900))
+
+				probe, peeked := p.Peek()
+				assert.True(peeked)
+				assert.EqualValues(probe, mockProbe)
+			},
+		},
+		{
 			name:   "enqueue six probes",
 			probes: NewProbes(mockQueueLength, mockSeedHost),
 			mock: func(probes Probes) {
-				if err := probes.Enqueue(NewProbe(mockHost, 34*time.Nanosecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 34*time.Millisecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
@@ -300,26 +334,26 @@ func TestProbes_Enqueue(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 31*time.Nanosecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 31*time.Millisecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 32*time.Nanosecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 32*time.Millisecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 33*time.Nanosecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 33*time.Millisecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 34*time.Nanosecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 34*time.Millisecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 			},
 			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
 				assert.Equal(p.Length(), 5)
-				assert.Equal(p.AverageRTT().Nanoseconds(), int64(33))
+				assert.Equal(p.AverageRTT().Nanoseconds(), int64(33888900))
 
 				probe, peeked := p.Peek()
 				assert.True(peeked)
@@ -413,7 +447,7 @@ func TestProbes_Items(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 31*time.Nanosecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 31*time.Millisecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
@@ -481,7 +515,7 @@ func TestProbes_Length(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 31*time.Nanosecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 31*time.Millisecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
@@ -558,11 +592,11 @@ func TestProbes_UpdatedAt(t *testing.T) {
 			name:   "enqueue three probe",
 			probes: NewProbes(mockQueueLength, mockSeedHost),
 			mock: func(probes Probes) {
-				if err := probes.Enqueue(NewProbe(mockHost, 10*time.Nanosecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 10*time.Millisecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 100*time.Nanosecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 100*time.Millisecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
@@ -618,54 +652,82 @@ func TestProbes_AverageRTT(t *testing.T) {
 			name:   "queue has three probe",
 			probes: NewProbes(mockQueueLength, mockSeedHost),
 			mock: func(probes Probes) {
-				if err := probes.Enqueue(NewProbe(mockHost, 10*time.Nanosecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 10*time.Millisecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 100*time.Nanosecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 100*time.Millisecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 30*time.Nanosecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 30*time.Millisecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 			},
 			expect: func(t *testing.T, averageRTT time.Duration) {
 				assert := assert.New(t)
-				assert.Equal(averageRTT.Nanoseconds(), int64(36))
+				assert.Equal(averageRTT.Nanoseconds(), int64(36100000))
 			},
 		},
 		{
-			name:   "qeueu has six probe",
+			name:   "queue has five probe",
 			probes: NewProbes(mockQueueLength, mockSeedHost),
 			mock: func(probes Probes) {
-				if err := probes.Enqueue(NewProbe(mockHost, 30*time.Nanosecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 30*time.Millisecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 30*time.Nanosecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 31*time.Millisecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 30*time.Nanosecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 32*time.Millisecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 30*time.Nanosecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 33*time.Millisecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 30*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(NewProbe(mockHost, 100*time.Nanosecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 34*time.Millisecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 			},
 			expect: func(t *testing.T, averageRTT time.Duration) {
 				assert := assert.New(t)
-				assert.Equal(averageRTT.Nanoseconds(), int64(93))
+				assert.Equal(averageRTT.Nanoseconds(), int64(33888900))
+			},
+		},
+		{
+			name:   "queue has six probe",
+			probes: NewProbes(mockQueueLength, mockSeedHost),
+			mock: func(probes Probes) {
+				if err := probes.Enqueue(NewProbe(mockHost, 34*time.Millisecond, time.Now())); err != nil {
+					t.Fatal(err)
+				}
+				if err := probes.Enqueue(NewProbe(mockHost, 30*time.Millisecond, time.Now())); err != nil {
+					t.Fatal(err)
+				}
+
+				if err := probes.Enqueue(NewProbe(mockHost, 31*time.Millisecond, time.Now())); err != nil {
+					t.Fatal(err)
+				}
+
+				if err := probes.Enqueue(NewProbe(mockHost, 32*time.Millisecond, time.Now())); err != nil {
+					t.Fatal(err)
+				}
+
+				if err := probes.Enqueue(NewProbe(mockHost, 33*time.Millisecond, time.Now())); err != nil {
+					t.Fatal(err)
+				}
+
+				if err := probes.Enqueue(NewProbe(mockHost, 34*time.Millisecond, time.Now())); err != nil {
+					t.Fatal(err)
+				}
+			},
+			expect: func(t *testing.T, averageRTT time.Duration) {
+				assert := assert.New(t)
+				assert.Equal(averageRTT.Nanoseconds(), int64(33888900))
 			},
 		},
 		{
