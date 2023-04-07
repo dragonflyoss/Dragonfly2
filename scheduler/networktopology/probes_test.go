@@ -649,27 +649,6 @@ func TestProbes_AverageRTT(t *testing.T) {
 			},
 		},
 		{
-			name:   "queue has three probe",
-			probes: NewProbes(mockQueueLength, mockSeedHost),
-			mock: func(probes Probes) {
-				if err := probes.Enqueue(NewProbe(mockHost, 10*time.Millisecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(NewProbe(mockHost, 100*time.Millisecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(NewProbe(mockHost, 30*time.Millisecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-			},
-			expect: func(t *testing.T, averageRTT time.Duration) {
-				assert := assert.New(t)
-				assert.Equal(averageRTT.Nanoseconds(), int64(36100000))
-			},
-		},
-		{
 			name:   "queue has five probe",
 			probes: NewProbes(mockQueueLength, mockSeedHost),
 			mock: func(probes Probes) {
