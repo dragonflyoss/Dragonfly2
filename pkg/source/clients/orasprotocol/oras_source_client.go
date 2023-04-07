@@ -296,7 +296,7 @@ func (client *orasSourceClient) fetchImage(ctx context.Context, host, token, pat
 	if err != nil {
 		return nil, errors.New("failed to fetch image")
 	}
-	logger.Info(fmt.Sprintf("Fetched image with %s/%s@sha256:%s successfully", host, path, sha256))
+	logger.Info(fmt.Sprintf("Fetched image %s/%s with digest %s successfully", host, path, sha256))
 	return source.NewResponse(resp.Body), nil
 }
 
