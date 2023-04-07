@@ -249,11 +249,14 @@ func newDownRequest(cfg *config.DfgetConfig, hdr map[string]string) *dfdaemonv1.
 
 	_url, err := url.Parse(cfg.URL)
 	if err == nil {
-		inj, ok := source.ShouldInjectAuthInfo(_url.Scheme)
+		director, ok := source.HasDirector(_url.Scheme)
 		if ok {
-			err = inj.Inject(_url, request.UrlMeta)
-			if err != nil {
-				logger.Errorf("inject auth info error: %s", err)
+			err = director.Direct(_url, request.UrlMeta)
+			if err == nil {
+				// write back new url
+				request.Url = _url.String()
+			} else {
+				logger.Errorf("direct resource error: %s", err)
 			}
 		}
 	}
