@@ -64,7 +64,7 @@ func (mr *MockStorageMockRecorder) Count() *gomock.Call {
 }
 
 // Create mocks base method.
-func (m *MockStorage) Create(arg0 storage.Record) error {
+func (m *MockStorage) Create(arg0 storage.Download) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", arg0)
 	ret0, _ := ret[0].(error)
@@ -78,10 +78,10 @@ func (mr *MockStorageMockRecorder) Create(arg0 interface{}) *gomock.Call {
 }
 
 // List mocks base method.
-func (m *MockStorage) List() ([]storage.Record, error) {
+func (m *MockStorage) List() ([]storage.Download, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List")
-	ret0, _ := ret[0].([]storage.Record)
+	ret0, _ := ret[0].([]storage.Download)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

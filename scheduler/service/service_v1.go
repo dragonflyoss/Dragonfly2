@@ -1345,7 +1345,7 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 		parentRecords = append(parentRecords, parentRecord)
 	}
 
-	record := storage.Record{
+	record := storage.Download{
 		ID:          peer.ID,
 		Tag:         peer.Task.Tag,
 		Application: peer.Task.Application,

@@ -56,10 +56,10 @@ const (
 // Storage is the interface used for storage.
 type Storage interface {
 	// Create inserts the record into csv file.
-	Create(Record) error
+	Create(Download) error
 
 	// List returns all of records in csv file.
-	List() ([]Record, error)
+	List() ([]Download, error)
 
 	// Count returns the count of records.
 	Count() int64
@@ -77,7 +77,7 @@ type storage struct {
 	filename   string
 	maxSize    int64
 	maxBackups int
-	buffer     []Record
+	buffer     []Download
 	bufferSize int
 	count      int64
 	mu         *sync.RWMutex
@@ -90,7 +90,7 @@ func New(baseDir string, maxSize, maxBackups, bufferSize int) (Storage, error) {
 		filename:   filepath.Join(baseDir, fmt.Sprintf("%s.%s", RecordFilePrefix, RecordFileExt)),
 		maxSize:    int64(maxSize * megabyte),
 		maxBackups: maxBackups,
-		buffer:     make([]Record, 0, bufferSize),
+		buffer:     make([]Download, 0, bufferSize),
 		bufferSize: bufferSize,
 		mu:         &sync.RWMutex{},
 	}
@@ -105,7 +105,7 @@ func New(baseDir string, maxSize, maxBackups, bufferSize int) (Storage, error) {
 }
 
 // Create inserts the record into csv file.
-func (s *storage) Create(record Record) error {
+func (s *storage) Create(record Download) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -139,7 +139,7 @@ func (s *storage) Create(record Record) error {
 }
 
 // List returns all of records in csv file.
-func (s *storage) List() ([]Record, error) {
+func (s *storage) List() ([]Download, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -168,7 +168,7 @@ func (s *storage) List() ([]Record, error) {
 		readClosers = append(readClosers, file)
 	}
 
-	var records []Record
+	var records []Download
 	if err := gocsv.UnmarshalWithoutHeaders(io.MultiReader(readers...), &records); err != nil {
 		return nil, err
 	}
@@ -225,7 +225,7 @@ func (s *storage) Clear() error {
 }
 
 // create inserts the records into csv file.
-func (s *storage) create(records ...Record) error {
+func (s *storage) create(records ...Download) error {
 	file, err := s.openFile()
 	if err != nil {
 		return err
