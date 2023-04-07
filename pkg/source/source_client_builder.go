@@ -28,7 +28,7 @@ import (
 var (
 	resourceClientBuilder = map[string]ResourceClientBuilder{}
 	resourceClientOptions = map[string]interface{}{}
-	resourceAuthInjector  = map[string]AuthInfoInjector{}
+	resourceDirector      = map[string]Director{}
 )
 
 // ResourceClientBuilder is used to build resource client with custom option
@@ -37,9 +37,11 @@ type ResourceClientBuilder interface {
 	Build(optionYaml []byte) (resourceClient ResourceClient, adaptor RequestAdapter, hooks []Hook, err error)
 }
 
-// AuthInfoInjector will inject auth information for target url and metadata, eg: fetch docker config for different users
-type AuthInfoInjector interface {
-	Inject(_url *url.URL, urlMeta *commonv1.UrlMeta) error
+// Director will handle request with some actions, like:
+// 1. inject auth information for target url and metadata, eg: fetch docker config for different users
+// 2. rewrite a common request into an unique request, eg: oras://harbor/user:latest to oras://harbor/user:lastest?digest=sha256:12345
+type Director interface {
+	Direct(rawURL *url.URL, urlMeta *commonv1.UrlMeta) error
 }
 
 // RegisterOption is used for extra options when registering, like mark target scheme protocol should inject auth information
@@ -57,15 +59,15 @@ func RegisterBuilder(scheme string, builder ResourceClientBuilder, opts ...Regis
 	}
 }
 
-func WithAuthInfoInjector(inj AuthInfoInjector) RegisterOption {
+func WithDirector(director Director) RegisterOption {
 	return func(scheme string) {
-		resourceAuthInjector[scheme] = inj
+		resourceDirector[scheme] = director
 	}
 }
 
-func ShouldInjectAuthInfo(scheme string) (AuthInfoInjector, bool) {
-	inj, ok := resourceAuthInjector[scheme]
-	return inj, ok
+func HasDirector(scheme string) (Director, bool) {
+	director, ok := resourceDirector[scheme]
+	return director, ok
 }
 
 func UnRegisterBuilder(scheme string) {
@@ -116,15 +118,15 @@ func NewPlainResourceClientBuilder(
 	return &plainResourceClientBuilder{build: build}
 }
 
-type plainAuthInfoInjector struct {
-	inject func(url *url.URL, urlMeta *commonv1.UrlMeta) error
+type plainDirector struct {
+	direct func(url *url.URL, urlMeta *commonv1.UrlMeta) error
 }
 
-func (a *plainAuthInfoInjector) Inject(_url *url.URL, urlMeta *commonv1.UrlMeta) error {
-	return a.inject(_url, urlMeta)
+func (a *plainDirector) Direct(rawURL *url.URL, urlMeta *commonv1.UrlMeta) error {
+	return a.direct(rawURL, urlMeta)
 }
 
-func NewPlainAuthInfoInjector(
-	inject func(url *url.URL, urlMeta *commonv1.UrlMeta) error) AuthInfoInjector {
-	return &plainAuthInfoInjector{inject: inject}
+func NewPlainDirector(
+	direct func(url *url.URL, urlMeta *commonv1.UrlMeta) error) Director {
+	return &plainDirector{direct: direct}
 }
