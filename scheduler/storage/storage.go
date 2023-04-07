@@ -38,11 +38,11 @@ import (
 )
 
 const (
-	// RecordFilePrefix is prefix of record file name.
-	RecordFilePrefix = "record"
+	// DownloadFilePrefix is prefix of download file name.
+	DownloadFilePrefix = "download"
 
-	// RecordFileExt is extension of record file name.
-	RecordFileExt = "csv"
+	// DownloadFileExt is extension of download file name.
+	DownloadFileExt = "csv"
 )
 
 const (
@@ -55,19 +55,19 @@ const (
 
 // Storage is the interface used for storage.
 type Storage interface {
-	// Create inserts the record into csv file.
+	// Create inserts the download into csv file.
 	Create(Download) error
 
-	// List returns all of records in csv file.
+	// List returns all downloads in csv file.
 	List() ([]Download, error)
 
-	// Count returns the count of records.
+	// Count returns the count of downloads.
 	Count() int64
 
 	// Open opens storage for read, it returns io.ReadCloser of storage files.
 	Open() (io.ReadCloser, error)
 
-	// Clear removes all record files.
+	// Clear removes all download files.
 	Clear() error
 }
 
@@ -87,7 +87,7 @@ type storage struct {
 func New(baseDir string, maxSize, maxBackups, bufferSize int) (Storage, error) {
 	s := &storage{
 		baseDir:    baseDir,
-		filename:   filepath.Join(baseDir, fmt.Sprintf("%s.%s", RecordFilePrefix, RecordFileExt)),
+		filename:   filepath.Join(baseDir, fmt.Sprintf("%s.%s", DownloadFilePrefix, DownloadFileExt)),
 		maxSize:    int64(maxSize * megabyte),
 		maxBackups: maxBackups,
 		buffer:     make([]Download, 0, bufferSize),
@@ -104,8 +104,8 @@ func New(baseDir string, maxSize, maxBackups, bufferSize int) (Storage, error) {
 	return s, nil
 }
 
-// Create inserts the record into csv file.
-func (s *storage) Create(record Download) error {
+// Create inserts the download into csv file.
+func (s *storage) Create(download Download) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -115,30 +115,30 @@ func (s *storage) Create(record Download) error {
 			return err
 		}
 
-		// Update record count.
+		// Update download count.
 		s.count++
 		return nil
 	}
 
-	// Write records to file.
+	// Write downloads to file.
 	if len(s.buffer) >= s.bufferSize {
 		if err := s.create(s.buffer...); err != nil {
 			return err
 		}
 
-		// Update record count.
+		// Update download count.
 		s.count += int64(s.bufferSize)
 
 		// Keep allocated memory.
 		s.buffer = s.buffer[:0]
 	}
 
-	// Write records to buffer.
-	s.buffer = append(s.buffer, record)
+	// Write downloads to buffer.
+	s.buffer = append(s.buffer, download)
 	return nil
 }
 
-// List returns all of records in csv file.
+// List returns all downloads in csv file.
 func (s *storage) List() ([]Download, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -168,15 +168,15 @@ func (s *storage) List() ([]Download, error) {
 		readClosers = append(readClosers, file)
 	}
 
-	var records []Download
-	if err := gocsv.UnmarshalWithoutHeaders(io.MultiReader(readers...), &records); err != nil {
+	var downloads []Download
+	if err := gocsv.UnmarshalWithoutHeaders(io.MultiReader(readers...), &downloads); err != nil {
 		return nil, err
 	}
 
-	return records, nil
+	return downloads, nil
 }
 
-// Count returns the count of records.
+// Count returns the count of downloads.
 func (s *storage) Count() int64 {
 	return s.count
 }
@@ -204,7 +204,7 @@ func (s *storage) Open() (io.ReadCloser, error) {
 	return pkgio.MultiReadCloser(readClosers...), nil
 }
 
-// Clear removes all records.
+// Clear removes all downloads.
 func (s *storage) Clear() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -224,22 +224,22 @@ func (s *storage) Clear() error {
 	return nil
 }
 
-// create inserts the records into csv file.
-func (s *storage) create(records ...Download) error {
+// create inserts the downloads into csv file.
+func (s *storage) create(downloads ...Download) error {
 	file, err := s.openFile()
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	if err := gocsv.MarshalWithoutHeaders(records, file); err != nil {
+	if err := gocsv.MarshalWithoutHeaders(downloads, file); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// openFile opens the record file and removes record files that exceed the total size.
+// openFile opens the download file and removes download files that exceed the total size.
 func (s *storage) openFile() (*os.File, error) {
 	fileInfo, err := os.Stat(s.filename)
 	if err != nil {
@@ -275,7 +275,7 @@ func (s *storage) openFile() (*os.File, error) {
 // backupFilename generates file name of backup files.
 func (s *storage) backupFilename() string {
 	timestamp := time.Now().Format(backupTimeFormat)
-	return filepath.Join(s.baseDir, fmt.Sprintf("%s-%s.%s", RecordFilePrefix, timestamp, RecordFileExt))
+	return filepath.Join(s.baseDir, fmt.Sprintf("%s-%s.%s", DownloadFilePrefix, timestamp, DownloadFileExt))
 }
 
 // backupFilename returns backup file information.
@@ -286,7 +286,7 @@ func (s *storage) backups() ([]fs.FileInfo, error) {
 	}
 
 	var backups []fs.FileInfo
-	regexp := regexp.MustCompile(RecordFilePrefix)
+	regexp := regexp.MustCompile(DownloadFilePrefix)
 	for _, fileInfo := range fileInfos {
 		if !fileInfo.IsDir() && regexp.MatchString(fileInfo.Name()) {
 			backups = append(backups, fileInfo)

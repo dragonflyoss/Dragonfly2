@@ -164,7 +164,7 @@ type Error struct {
 	Message string `csv:"message"`
 }
 
-// Download contains content for record.
+// Download contains content for download.
 type Download struct {
 	// ID is peer id.
 	ID string `csv:"id"`
