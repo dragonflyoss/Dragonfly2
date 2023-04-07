@@ -83,7 +83,6 @@ Please refer to our [Code of Conduct][codeconduct].
 
 [arch]: docs/images/arch.png
 [logo-linear]: docs/images/logo/dragonfly-linear.svg
-[website]: https://d7y.io
 [discussion]: https://github.com/dragonflyoss/Dragonfly2/discussions
 [contributing]: CONTRIBUTING.md
 [codeconduct]: CODE_OF_CONDUCT.md
