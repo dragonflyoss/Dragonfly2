@@ -70,7 +70,10 @@ type Probes interface {
 	// Length gets the length of probes.
 	Length() int
 
-	// UpdateAt is the updated time to store probe.
+	// CreatedAt is the creation time of probes.
+	CreatedAt() time.Time
+
+	// UpdatedAt is the updated time to store probe.
 	UpdatedAt() time.Time
 
 	// AverageRTT is the average round-trip time of probes.
@@ -190,7 +193,12 @@ func (p *probes) Length() int {
 	return p.items.Len()
 }
 
-// UpdateAt is the updated time to store probe.
+// CreatedAt is the creation time of probes.
+func (p *probes) CreatedAt() time.Time {
+	return p.createdAt.Load()
+}
+
+// UpdatedAt is the updated time to store probe.
 func (p *probes) UpdatedAt() time.Time {
 	return p.updatedAt.Load()
 }
