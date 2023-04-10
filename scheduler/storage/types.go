@@ -199,3 +199,30 @@ type Record struct {
 	// UpdatedAt is peer update nanosecond time.
 	UpdatedAt int64 `csv:"updatedAt"`
 }
+
+// Probes contains content for probes.
+type Probes struct {
+	// Host is probe destination host.
+	Host Host `csv:"host"`
+
+	// AverageRTT is the average round-trip time of probes.
+	AverageRTT int64 `csv:"averageRTT"`
+
+	// CreatedAt is probe create nanosecond time.
+	CreatedAt int64 `csv:"createdAt"`
+
+	// UpdatedAt is probe update nanosecond time.
+	UpdatedAt int64 `csv:"updatedAt"`
+}
+
+// NetworkTopology contains content for network topology.
+type NetworkTopology struct {
+	// ID is network topology id.
+	ID string `csv:"id"`
+
+	// Host is probe source host.
+	Host Host `csv:"host"`
+
+	// Probes is the network information probed from the source host to other hosts.
+	Probes []Probes `csv:"probes" csv[]:"30000"`
+}
