@@ -133,7 +133,7 @@ var (
 
 	mockProbe = &Probe{
 		Host:      mockHost,
-		RTT:       30 * time.Millisecond,
+		RTT:       30000000 * time.Nanosecond,
 		CreatedAt: time.Now(),
 	}
 
@@ -227,11 +227,11 @@ func TestProbes_Peek(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 31*time.Millisecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 31000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 32*time.Millisecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 32000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -296,19 +296,19 @@ func TestProbes_Enqueue(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 31*time.Millisecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 31000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 32*time.Millisecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 32000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 33*time.Millisecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 33000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 34*time.Millisecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 34000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -326,7 +326,7 @@ func TestProbes_Enqueue(t *testing.T) {
 			name:   "enqueue six probes",
 			probes: NewProbes(mockQueueLength, mockSeedHost),
 			mock: func(probes Probes) {
-				if err := probes.Enqueue(NewProbe(mockHost, 34*time.Millisecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 34000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
@@ -334,19 +334,19 @@ func TestProbes_Enqueue(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 31*time.Millisecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 31000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 32*time.Millisecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 32000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 33*time.Millisecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 33000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 34*time.Millisecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 34000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -447,7 +447,7 @@ func TestProbes_Items(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 31*time.Millisecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 31000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
@@ -515,7 +515,7 @@ func TestProbes_Length(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 31*time.Millisecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 31000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
@@ -592,11 +592,11 @@ func TestProbes_UpdatedAt(t *testing.T) {
 			name:   "enqueue three probe",
 			probes: NewProbes(mockQueueLength, mockSeedHost),
 			mock: func(probes Probes) {
-				if err := probes.Enqueue(NewProbe(mockHost, 10*time.Millisecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 10000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 100*time.Millisecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 100000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
@@ -652,23 +652,23 @@ func TestProbes_AverageRTT(t *testing.T) {
 			name:   "queue has five probe",
 			probes: NewProbes(mockQueueLength, mockSeedHost),
 			mock: func(probes Probes) {
-				if err := probes.Enqueue(NewProbe(mockHost, 30*time.Millisecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 30000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 31*time.Millisecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 31000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 32*time.Millisecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 32000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 33*time.Millisecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 33000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 34*time.Millisecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 34000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -681,26 +681,26 @@ func TestProbes_AverageRTT(t *testing.T) {
 			name:   "queue has six probe",
 			probes: NewProbes(mockQueueLength, mockSeedHost),
 			mock: func(probes Probes) {
-				if err := probes.Enqueue(NewProbe(mockHost, 34*time.Millisecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 34000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
-				if err := probes.Enqueue(NewProbe(mockHost, 30*time.Millisecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(NewProbe(mockHost, 31*time.Millisecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 30000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 32*time.Millisecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 31000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 33*time.Millisecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 32000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := probes.Enqueue(NewProbe(mockHost, 34*time.Millisecond, time.Now())); err != nil {
+				if err := probes.Enqueue(NewProbe(mockHost, 33000000*time.Nanosecond, time.Now())); err != nil {
+					t.Fatal(err)
+				}
+
+				if err := probes.Enqueue(NewProbe(mockHost, 34000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
 				}
 			},
