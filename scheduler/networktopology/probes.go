@@ -146,6 +146,7 @@ func (p *probes) Enqueue(probe *Probe) error {
 	p.items.PushBack(probe)
 
 	// Calculate the average RTT.
+	averageRTT := atomic.NewDuration(0)
 	for e := p.items.Front(); e != nil; e = e.Next() {
 		probe, ok := e.Value.(*Probe)
 		if !ok {
@@ -153,13 +154,14 @@ func (p *probes) Enqueue(probe *Probe) error {
 		}
 
 		if e == p.items.Front() {
-			p.averageRTT.Store(probe.RTT)
+			averageRTT.Store(probe.RTT)
 			continue
 		}
 
-		p.averageRTT.Store(time.Duration(float64(p.averageRTT.Load())*DefaultMovingAverageWeight +
+		averageRTT.Store(time.Duration(float64(averageRTT.Load())*DefaultMovingAverageWeight +
 			float64(probe.RTT)*(1-DefaultMovingAverageWeight)))
 	}
+	p.averageRTT.Store(averageRTT.Load())
 
 	p.updatedAt = atomic.NewTime(probe.CreatedAt)
 	return nil
