@@ -55,9 +55,7 @@ You can find the full documentation on the [d7y.io][d7y.io].
 
 ## Community
 
-Welcome developers to actively participate in community discussions
-and contribute code to Dragonfly. We will remain
-concerned about the issues discussed in the community and respond quickly.
+Join the conversation and help the community.
 
 - **Slack Channel**: [#dragonfly](https://cloud-native.slack.com/messages/dragonfly/) on [CNCF Slack](https://slack.cncf.io/)
 - **Discussion Group**: <dragonfly-discuss@googlegroups.com>
