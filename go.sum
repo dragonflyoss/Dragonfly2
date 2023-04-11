@@ -141,8 +141,8 @@ github.com/bytedance/sonic v1.8.0 h1:ea0Xadu+sHlu7x5O3gKhRpQ1IKiMrSiHttPF0ybECuA
 github.com/bytedance/sonic v1.8.0/go.mod h1:i736AoUSYt75HyZLoJW9ERYxcy6eaN6h4BZXU064P/U=
 github.com/casbin/casbin/v2 v2.1.2/go.mod h1:YcPU1XXisHhLzuxH9coDNf2FbKpjGlbCg3n9yuLkIJQ=
 github.com/casbin/casbin/v2 v2.37.4/go.mod h1:vByNa/Fchek0KZUgG5wEsl7iFsiviAYKRtgrQfcJqHg=
-github.com/casbin/casbin/v2 v2.66.1 h1:HOFlZYTUYx8ktgv5fLNFo6hr4K18ogGFq/lnYXv1OfA=
-github.com/casbin/casbin/v2 v2.66.1/go.mod h1:vByNa/Fchek0KZUgG5wEsl7iFsiviAYKRtgrQfcJqHg=
+github.com/casbin/casbin/v2 v2.66.3 h1:m0/mO4Xpu4YzTMqm0U1bm9JqEMSdIx6IRmnMCORnVDs=
+github.com/casbin/casbin/v2 v2.66.3/go.mod h1:vByNa/Fchek0KZUgG5wEsl7iFsiviAYKRtgrQfcJqHg=
 github.com/casbin/gorm-adapter/v3 v3.5.0 h1:1hPdiloazJMI8Lno4fwmTgsCQ9agReHbzt8+rS13kfc=
 github.com/casbin/gorm-adapter/v3 v3.5.0/go.mod h1:6mIYgpByH/uSkfCv4G/vr/12cVZc3rXBQ9KrqS9oTUU=
 github.com/cenkalti/backoff v2.2.1+incompatible/go.mod h1:90ReRw6GdpyfrHakVjL/QHaoyV4aDUVVkXQJJJ3NXXM=
