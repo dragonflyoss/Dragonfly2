@@ -41,6 +41,9 @@ const (
 	// DefaultGRPCPort is default port for grpc server.
 	DefaultGRPCPort = 65003
 
+	// DefaultGRPCPort is default port for grpc server.
+	DefaultGRPCAdvertisePort = 65003
+
 	// DefaultRESTAddr is default address for rest server.
 	DefaultRESTAddr = ":8080"
 )
@@ -69,13 +72,13 @@ const (
 
 const (
 	// DefaultRedisCacheTTL is default ttl for redis cache.
-	DefaultRedisCacheTTL = 30 * time.Second
+	DefaultRedisCacheTTL = 5 * time.Minute
 
 	// DefaultLFUCacheTTL is default ttl for lfu cache.
-	DefaultLFUCacheTTL = 10 * time.Second
+	DefaultLFUCacheTTL = 3 * time.Minute
 
 	// DefaultLFUCacheSize is default size for lfu cache.
-	DefaultLFUCacheSize = 10000
+	DefaultLFUCacheSize = 200 * 1000
 )
 
 const (

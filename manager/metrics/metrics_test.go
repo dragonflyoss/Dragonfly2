@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2023 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,29 @@
  * limitations under the License.
  */
 
-package model
+package metrics
 
-type Config struct {
-	Model
-	Name   string `gorm:"column:name;type:varchar(256);index:uk_config_name,unique;not null;comment:config name" json:"name"`
-	Value  string `gorm:"column:value;type:varchar(1024);not null;comment:config value" json:"value"`
-	BIO    string `gorm:"column:bio;type:varchar(1024);comment:biography" json:"bio"`
-	UserID uint   `gorm:"comment:user id" json:"user_id"`
-	User   User   `json:"-"`
+import (
+	"net/http"
+	"testing"
+
+	"google.golang.org/grpc"
+
+	"d7y.io/dragonfly/v2/manager/config"
+)
+
+func TestNew(t *testing.T) {
+	cfg := &config.MetricsConfig{
+		Addr: "localhost:8080",
+	}
+	svr := grpc.NewServer()
+	server := New(cfg, svr)
+
+	if server.Addr != cfg.Addr {
+		t.Errorf("expected server.Addr to be %s, but got %s", cfg.Addr, server.Addr)
+	}
+
+	if _, ok := server.Handler.(*http.ServeMux); !ok {
+		t.Errorf("expected server.Handler to be a *http.ServeMux, but got %T", server.Handler)
+	}
 }

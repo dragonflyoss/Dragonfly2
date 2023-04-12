@@ -1,5 +1,6 @@
 server:
   advertiseIP: 127.0.0.1
+  advertisePort: 8004
   listenIP: 0.0.0.0
   port: 8002
   host: foo
@@ -86,3 +87,8 @@ networkTopology:
     queueLength: 5
     syncInterval: 30s
     syncCount: 50
+
+trainer:
+  enable: false
+  addr: "127.0.0.1:9000"
+  interval: 10m

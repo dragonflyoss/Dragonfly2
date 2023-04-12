@@ -88,15 +88,16 @@ func TestConfig_Load(t *testing.T) {
 			},
 		},
 		Server: ServerConfig{
-			AdvertiseIP: net.ParseIP("127.0.0.1"),
-			ListenIP:    net.ParseIP("0.0.0.0"),
-			Port:        8002,
-			Host:        "foo",
-			WorkHome:    "foo",
-			CacheDir:    "foo",
-			LogDir:      "foo",
-			PluginDir:   "foo",
-			DataDir:     "foo",
+			AdvertiseIP:   net.ParseIP("127.0.0.1"),
+			AdvertisePort: 8004,
+			ListenIP:      net.ParseIP("0.0.0.0"),
+			Port:          8002,
+			Host:          "foo",
+			WorkHome:      "foo",
+			CacheDir:      "foo",
+			LogDir:        "foo",
+			PluginDir:     "foo",
+			DataDir:       "foo",
 		},
 		DynConfig: DynConfig{
 			RefreshInterval: 10 * time.Second,
@@ -163,6 +164,11 @@ func TestConfig_Load(t *testing.T) {
 				SyncInterval: 30 * time.Second,
 				SyncCount:    50,
 			},
+		},
+		Trainer: TrainerConfig{
+			Enable:   false,
+			Addr:     "127.0.0.1:9000",
+			Interval: 10 * time.Minute,
 		},
 	}
 
@@ -644,7 +650,7 @@ func TestConfig_Validate(t *testing.T) {
 			},
 		},
 		{
-			name:   "networkTopology requires parameter SyncInterval",
+			name:   "networkTopology requires parameter syncInterval",
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
@@ -653,11 +659,11 @@ func TestConfig_Validate(t *testing.T) {
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "networkTopology requires parameter SyncInterval")
+				assert.EqualError(err, "networkTopology requires parameter syncInterval")
 			},
 		},
 		{
-			name:   "networkTopology requires parameter CollectInterval",
+			name:   "networkTopology requires parameter collectInterval",
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
@@ -666,11 +672,11 @@ func TestConfig_Validate(t *testing.T) {
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "networkTopology requires parameter CollectInterval")
+				assert.EqualError(err, "networkTopology requires parameter collectInterval")
 			},
 		},
 		{
-			name:   "probe requires parameter QueueLength",
+			name:   "probe requires parameter queueLength",
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
@@ -679,7 +685,7 @@ func TestConfig_Validate(t *testing.T) {
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "probe requires parameter QueueLength")
+				assert.EqualError(err, "probe requires parameter queueLength")
 			},
 		},
 		{
@@ -692,7 +698,7 @@ func TestConfig_Validate(t *testing.T) {
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "probe requires parameter SyncInterval")
+				assert.EqualError(err, "probe requires parameter syncInterval")
 			},
 		},
 		{
@@ -705,7 +711,35 @@ func TestConfig_Validate(t *testing.T) {
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "probe requires parameter SyncCount")
+				assert.EqualError(err, "probe requires parameter syncCount")
+			},
+		},
+		{
+			name:   "trainer requires parameter addr",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Job = mockJobConfig
+				cfg.Trainer.Enable = true
+				cfg.Trainer.Addr = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "trainer requires parameter addr")
+			},
+		},
+		{
+			name:   "trainer requires parameter interval",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Job = mockJobConfig
+				cfg.Trainer.Enable = true
+				cfg.Trainer.Interval = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "trainer requires parameter interval")
 			},
 		},
 	}

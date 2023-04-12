@@ -109,13 +109,3 @@ func MakeApplicationsCacheKey() string {
 func MakeBucketCacheKey(name string) string {
 	return MakeCacheKey(BucketsNamespace, name)
 }
-
-// Make cache model key.
-func MakeModelKey(clusterID uint, hostname, ip, id string) string {
-	return MakeCacheKey(SchedulerNamespace, fmt.Sprintf("%d-%s-%s:models:%s", clusterID, hostname, ip, id))
-}
-
-// Make cache model version key.
-func MakeModelVersionKey(clusterID uint, hostname, ip, id, version string) string {
-	return MakeCacheKey(SchedulerNamespace, fmt.Sprintf("%d-%s-%s:models:%s:versions:%s", clusterID, hostname, ip, id, version))
-}

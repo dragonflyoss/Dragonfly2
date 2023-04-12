@@ -38,7 +38,7 @@ const (
 	contextTimeout = 2 * time.Second
 )
 
-// GetClient returns manager client.
+// GetClient returns health client.
 func GetClient(ctx context.Context, target string, opts ...grpc.DialOption) (Client, error) {
 	conn, err := grpc.DialContext(
 		ctx,
@@ -90,7 +90,7 @@ type Client interface {
 	Close() error
 }
 
-// client provides manager grpc function.
+// client provides health grpc function.
 type client struct {
 	healthpb.HealthClient
 	*grpc.ClientConn

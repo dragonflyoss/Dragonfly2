@@ -43,6 +43,9 @@ const (
 const (
 	// DefaultServerPort is default port for server.
 	DefaultServerPort = 8002
+
+	// DefaultServerAdvertisePort is default advertise port for server.
+	DefaultServerAdvertisePort = 8002
 )
 
 const (
@@ -88,7 +91,7 @@ const (
 
 const (
 	// DefaultDynConfigRefreshInterval is default refresh interval for dynamic configuration.
-	DefaultDynConfigRefreshInterval = 10 * time.Second
+	DefaultDynConfigRefreshInterval = 1 * time.Minute
 )
 
 const (
@@ -167,4 +170,12 @@ const (
 	// TODO(XZ): The default setting needs to be changed after testing.
 	// DefaultProbeSyncCount is the default number of probing hosts.
 	DefaultProbeSyncCount = 50
+)
+
+const (
+	// DefaultTrainerAddr is the default address of trainer.
+	DefaultTrainerAddr = "127.0.0.1:9000"
+
+	// DefaultTrainerInterval is the default interval of training.
+	DefaultTrainerInterval = 7 * 24 * time.Hour
 )

@@ -120,7 +120,7 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 					SeedPeers: []*managerv2.SeedPeer{
 						{
 							Id:       1,
-							HostName: "foo",
+							Hostname: "foo",
 							Ip:       "0.0.0.0",
 							Port:     8080,
 						},
@@ -134,7 +134,7 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 							SeedPeers: []*managerv2.SeedPeer{
 								{
 									Id:       1,
-									HostName: "foo",
+									Hostname: "foo",
 									Ip:       "0.0.0.0",
 									Port:     8080,
 								},
@@ -156,7 +156,7 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 					SeedPeers: []*managerv2.SeedPeer{
 						{
 							Id:       1,
-							HostName: "foo",
+							Hostname: "foo",
 							Ip:       "0.0.0.0",
 						},
 					},
@@ -172,7 +172,7 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 							SeedPeers: []*managerv2.SeedPeer{
 								{
 									Id:       1,
-									HostName: "foo",
+									Hostname: "foo",
 									Ip:       "127.0.0.1",
 								},
 							},
@@ -194,7 +194,7 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 					SeedPeers: []*managerv2.SeedPeer{
 						{
 							Id:       1,
-							HostName: "foo",
+							Hostname: "foo",
 							Ip:       "0.0.0.0",
 						},
 					},
@@ -207,7 +207,7 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 							SeedPeers: []*managerv2.SeedPeer{
 								{
 									Id:       1,
-									HostName: "foo",
+									Hostname: "foo",
 									Ip:       "127.0.0.1",
 								},
 							},
@@ -286,7 +286,7 @@ func TestSeedPeerClient_seedPeersToNetAddrs(t *testing.T) {
 				{
 					Id:           1,
 					Type:         pkgtypes.HostTypeSuperSeedName,
-					HostName:     mockRawSeedHost.Hostname,
+					Hostname:     mockRawSeedHost.Hostname,
 					Ip:           mockRawSeedHost.IP,
 					Port:         mockRawSeedHost.Port,
 					DownloadPort: mockRawSeedHost.DownloadPort,

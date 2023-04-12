@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package model
+package models
 
 type Application struct {
-	Model
+	BaseModel
 	Name     string  `gorm:"column:name;type:varchar(256);index:uk_application_name,unique;not null;comment:name" json:"name"`
 	URL      string  `gorm:"column:url;not null;comment:url" json:"url"`
 	BIO      string  `gorm:"column:bio;type:varchar(1024);comment:biography" json:"bio"`

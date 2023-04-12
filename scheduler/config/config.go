@@ -69,6 +69,9 @@ type Config struct {
 
 	// NetworkTopology configuration.
 	NetworkTopology NetworkTopologyConfig `yaml:"networkTopology" mapstructure:"networkTopology"`
+
+	// Trainer configuration.
+	Trainer TrainerConfig `yaml:"trainer" mapstructure:"trainer"`
 }
 
 type ServerConfig struct {
@@ -80,6 +83,9 @@ type ServerConfig struct {
 
 	// AdvertiseIP is advertise ip.
 	AdvertiseIP net.IP `yaml:"advertiseIP" mapstructure:"advertiseIP"`
+
+	// AdvertisePort is advertise port.
+	AdvertisePort int `yaml:"advertisePort" mapstructure:"advertisePort"`
 
 	// ListenIP is listen ip, like: 0.0.0.0, 192.168.0.1.
 	ListenIP net.IP `yaml:"listenIP" mapstructure:"listenIP"`
@@ -317,12 +323,24 @@ type ProbeConfig struct {
 	SyncCount int `mapstructure:"syncCount" yaml:"syncCount"`
 }
 
+type TrainerConfig struct {
+	// Enable trainer service.
+	Enable bool `yaml:"enable" mapstructure:"enable"`
+
+	// Addr is trainer service address.
+	Addr string `yaml:"addr" mapstructure:"addr"`
+
+	// Interval is the interval of training.
+	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
+}
+
 // New default configuration.
 func New() *Config {
 	return &Config{
 		Server: ServerConfig{
-			Port: DefaultServerPort,
-			Host: fqdn.FQDNHostname,
+			Port:          DefaultServerPort,
+			AdvertisePort: DefaultServerAdvertisePort,
+			Host:          fqdn.FQDNHostname,
 		},
 		Scheduler: SchedulerConfig{
 			Algorithm:              DefaultSchedulerAlgorithm,
@@ -395,6 +413,11 @@ func New() *Config {
 				SyncCount:    DefaultProbeSyncCount,
 			},
 		},
+		Trainer: TrainerConfig{
+			Enable:   false,
+			Addr:     DefaultTrainerAddr,
+			Interval: DefaultTrainerInterval,
+		},
 	}
 }
 
@@ -402,6 +425,10 @@ func New() *Config {
 func (cfg *Config) Validate() error {
 	if cfg.Server.AdvertiseIP == nil {
 		return errors.New("server requires parameter advertiseIP")
+	}
+
+	if cfg.Server.AdvertisePort <= 0 {
+		return errors.New("server requires parameter advertisePort")
 	}
 
 	if cfg.Server.ListenIP == nil {
@@ -543,23 +570,33 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.NetworkTopology.SyncInterval <= 0 {
-		return errors.New("networkTopology requires parameter SyncInterval")
+		return errors.New("networkTopology requires parameter syncInterval")
 	}
 
 	if cfg.NetworkTopology.CollectInterval <= 0 {
-		return errors.New("networkTopology requires parameter CollectInterval")
+		return errors.New("networkTopology requires parameter collectInterval")
 	}
 
 	if cfg.NetworkTopology.Probe.QueueLength <= 0 {
-		return errors.New("probe requires parameter QueueLength")
+		return errors.New("probe requires parameter queueLength")
 	}
 
 	if cfg.NetworkTopology.Probe.SyncInterval <= 0 {
-		return errors.New("probe requires parameter SyncInterval")
+		return errors.New("probe requires parameter syncInterval")
 	}
 
 	if cfg.NetworkTopology.Probe.SyncCount <= 0 {
-		return errors.New("probe requires parameter SyncCount")
+		return errors.New("probe requires parameter syncCount")
+	}
+
+	if cfg.Trainer.Enable {
+		if cfg.Trainer.Addr == "" {
+			return errors.New("trainer requires parameter addr")
+		}
+
+		if cfg.Trainer.Interval <= 0 {
+			return errors.New("trainer requires parameter interval")
+		}
 	}
 
 	return nil

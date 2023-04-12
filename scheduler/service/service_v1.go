@@ -662,7 +662,7 @@ func (v *V1) triggerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, 
 
 	// If the task triggers the TaskEventDownload failed and it has no available peer,
 	// let the peer do the scheduling.
-	if !task.FSM.Is(resource.TaskStateRunning) {
+	if task.FSM.Can(resource.TaskEventDownload) {
 		if err := task.FSM.Event(ctx, resource.TaskEventDownload); err != nil {
 			peer.Log.Errorf("task fsm event failed: %s", err.Error())
 			return err
@@ -781,7 +781,7 @@ func (v *V1) storeHost(ctx context.Context, peerHost *schedulerv1.PeerHost) *res
 		}
 
 		host := resource.NewHost(
-			peerHost.Id, peerHost.Ip, peerHost.HostName,
+			peerHost.Id, peerHost.Ip, peerHost.Hostname,
 			peerHost.RpcPort, peerHost.DownPort, types.HostTypeNormal,
 			options...,
 		)
