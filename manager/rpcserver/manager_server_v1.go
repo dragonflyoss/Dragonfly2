@@ -793,7 +793,6 @@ func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.Create
 		State:       modelState,
 		Evaluation:  modelEvaluation,
 		SchedulerID: scheduler.ID,
-		Scheduler:   scheduler,
 	}
 
 	if err := s.db.WithContext(ctx).Create(&model).Error; err != nil {
