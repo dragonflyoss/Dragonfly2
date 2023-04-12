@@ -167,7 +167,7 @@ func TestStorage_New(t *testing.T) {
 				assert.Equal(s.(*storage).bufferSize, config.DefaultStorageBufferSize)
 				assert.Equal(cap(s.(*storage).downloadBuffer), config.DefaultStorageBufferSize)
 				assert.Equal(len(s.(*storage).downloadBuffer), 0)
-				assert.Equal(s.(*storage).downloadBuffer, int64(0))
+				assert.Equal(s.(*storage).downloadCount, int64(0))
 
 				if err := s.ClearDownload(); err != nil {
 					t.Fatal(err)
