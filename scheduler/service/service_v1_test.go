@@ -1220,7 +1220,7 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
 					md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1),
-					ms.Create(gomock.Any()).Do(func(record storage.Record) { wg.Done() }).Return(nil).Times(1),
+					ms.CreateDownload(gomock.Any()).Do(func(download storage.Download) { wg.Done() }).Return(nil).Times(1),
 				)
 
 				assert := assert.New(t)
@@ -1246,7 +1246,7 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
 					md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1),
-					ms.Create(gomock.Any()).Do(func(record storage.Record) { wg.Done() }).Return(nil).Times(1),
+					ms.CreateDownload(gomock.Any()).Do(func(download storage.Download) { wg.Done() }).Return(nil).Times(1),
 				)
 
 				assert := assert.New(t)
@@ -1272,7 +1272,7 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
 					md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1),
-					ms.Create(gomock.Any()).Do(func(record storage.Record) { wg.Done() }).Return(nil).Times(1),
+					ms.CreateDownload(gomock.Any()).Do(func(download storage.Download) { wg.Done() }).Return(nil).Times(1),
 				)
 
 				assert := assert.New(t)
@@ -1298,7 +1298,7 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
 					md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1),
-					ms.Create(gomock.Any()).Do(func(record storage.Record) { wg.Done() }).Return(nil).Times(1),
+					ms.CreateDownload(gomock.Any()).Do(func(download storage.Download) { wg.Done() }).Return(nil).Times(1),
 				)
 
 				assert := assert.New(t)
@@ -1307,7 +1307,7 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 			},
 		},
 		{
-			name: "receive peer success and create record failed",
+			name: "receive peer success and create download failed",
 			req: &schedulerv1.PeerResult{
 				Success: true,
 				PeerId:  mockPeerID,
@@ -1324,7 +1324,7 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
 					md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1),
-					ms.Create(gomock.Any()).Do(func(record storage.Record) { wg.Done() }).Return(nil).Times(1),
+					ms.CreateDownload(gomock.Any()).Do(func(download storage.Download) { wg.Done() }).Return(nil).Times(1),
 				)
 
 				assert := assert.New(t)

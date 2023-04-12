@@ -306,11 +306,11 @@ func (s *Server) Stop() {
 		logger.Info("stop resource closed")
 	}
 
-	// Clean storage.
-	if err := s.storage.Clear(); err != nil {
-		logger.Errorf("clean storage failed %s", err.Error())
+	// Clean download storage.
+	if err := s.storage.ClearDownload(); err != nil {
+		logger.Errorf("clean download storage failed %s", err.Error())
 	} else {
-		logger.Info("clean storage completed")
+		logger.Info("clean download storage completed")
 	}
 
 	// Stop GC.
