@@ -167,11 +167,10 @@ func (p *DaemonOption) Validate() error {
 		if p.Scheduler.Manager.RefreshInterval == 0 {
 			return errors.New("manager refreshInterval is not specified")
 		}
-		return nil
-	}
-
-	if len(p.Scheduler.NetAddrs) == 0 {
-		return errors.New("empty schedulers and config server is not specified")
+	} else {
+		if len(p.Scheduler.NetAddrs) == 0 {
+			return errors.New("empty schedulers and config server is not specified")
+		}
 	}
 
 	if int64(p.Download.TotalRateLimit.Limit) < DefaultMinRate.ToNumber() {

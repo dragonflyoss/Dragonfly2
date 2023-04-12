@@ -131,7 +131,7 @@ func (d *dynconfigLocal) Deregister(l Observer) {
 
 // Notify publishes new events to listeners.
 func (d *dynconfigLocal) Notify() error {
-	var data *DynconfigData
+	data := &DynconfigData{}
 	for _, schedulerAddr := range d.config.Scheduler.NetAddrs {
 		addr := schedulerAddr.Addr
 		host, port, err := net.SplitHostPort(addr)
