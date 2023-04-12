@@ -41,8 +41,8 @@ const (
 	// DownloadFilePrefix is prefix of download file name.
 	DownloadFilePrefix = "download"
 
-	// DownloadFileExt is extension of download file name.
-	DownloadFileExt = "csv"
+	// CSVFileExt is extension of file name.
+	CSVFileExt = "csv"
 )
 
 const (
@@ -55,47 +55,49 @@ const (
 
 // Storage is the interface used for storage.
 type Storage interface {
-	// Create inserts the download into csv file.
-	Create(Download) error
+	// CreateDownload inserts the download into csv file.
+	CreateDownload(Download) error
 
-	// List returns all downloads in csv file.
-	List() ([]Download, error)
+	// ListDownload returns all downloads in csv file.
+	ListDownload() ([]Download, error)
 
-	// Count returns the count of downloads.
-	Count() int64
+	// DownloadCount returns the count of downloads.
+	DownloadCount() int64
 
-	// Open opens storage for read, it returns io.ReadCloser of storage files.
-	Open() (io.ReadCloser, error)
+	// OpenDownload opens download files for read, it returns io.ReadCloser of download files.
+	OpenDownload() (io.ReadCloser, error)
 
-	// Clear removes all download files.
-	Clear() error
+	// ClearDownload removes all download files.
+	ClearDownload() error
 }
 
 // storage provides storage function.
 type storage struct {
 	baseDir    string
-	filename   string
 	maxSize    int64
 	maxBackups int
-	buffer     []Download
 	bufferSize int
-	count      int64
 	mu         *sync.RWMutex
+
+	downloadFilename string
+	downloadBuffer   []Download
+	downloadCount    int64
 }
 
 // New returns a new Storage instence.
 func New(baseDir string, maxSize, maxBackups, bufferSize int) (Storage, error) {
 	s := &storage{
 		baseDir:    baseDir,
-		filename:   filepath.Join(baseDir, fmt.Sprintf("%s.%s", DownloadFilePrefix, DownloadFileExt)),
 		maxSize:    int64(maxSize * megabyte),
 		maxBackups: maxBackups,
-		buffer:     make([]Download, 0, bufferSize),
 		bufferSize: bufferSize,
 		mu:         &sync.RWMutex{},
+
+		downloadFilename: filepath.Join(baseDir, fmt.Sprintf("%s.%s", DownloadFilePrefix, CSVFileExt)),
+		downloadBuffer:   make([]Download, 0, bufferSize),
 	}
 
-	file, err := os.OpenFile(s.filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	file, err := os.OpenFile(s.downloadFilename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return nil, err
 	}
@@ -104,46 +106,46 @@ func New(baseDir string, maxSize, maxBackups, bufferSize int) (Storage, error) {
 	return s, nil
 }
 
-// Create inserts the download into csv file.
-func (s *storage) Create(download Download) error {
+// CreateDownload inserts the download into csv file.
+func (s *storage) CreateDownload(download Download) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	// Write without buffer.
 	if s.bufferSize == 0 {
-		if err := s.create(s.buffer...); err != nil {
+		if err := s.createDownload(s.downloadBuffer...); err != nil {
 			return err
 		}
 
 		// Update download count.
-		s.count++
+		s.downloadCount++
 		return nil
 	}
 
 	// Write downloads to file.
-	if len(s.buffer) >= s.bufferSize {
-		if err := s.create(s.buffer...); err != nil {
+	if len(s.downloadBuffer) >= s.bufferSize {
+		if err := s.createDownload(s.downloadBuffer...); err != nil {
 			return err
 		}
 
 		// Update download count.
-		s.count += int64(s.bufferSize)
+		s.downloadCount += int64(s.bufferSize)
 
 		// Keep allocated memory.
-		s.buffer = s.buffer[:0]
+		s.downloadBuffer = s.downloadBuffer[:0]
 	}
 
 	// Write downloads to buffer.
-	s.buffer = append(s.buffer, download)
+	s.downloadBuffer = append(s.downloadBuffer, download)
 	return nil
 }
 
-// List returns all downloads in csv file.
-func (s *storage) List() ([]Download, error) {
+// ListDownload returns all downloads in csv file.
+func (s *storage) ListDownload() ([]Download, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	fileInfos, err := s.backups()
+	fileInfos, err := s.downloadBackups()
 	if err != nil {
 		return nil, err
 	}
@@ -176,17 +178,17 @@ func (s *storage) List() ([]Download, error) {
 	return downloads, nil
 }
 
-// Count returns the count of downloads.
-func (s *storage) Count() int64 {
-	return s.count
+// DownloadCount returns the count of downloads.
+func (s *storage) DownloadCount() int64 {
+	return s.downloadCount
 }
 
-// Open opens storage for read, it returns io.ReadCloser of storage files.
-func (s *storage) Open() (io.ReadCloser, error) {
+// OpenDownload opens download files for read, it returns io.ReadCloser of download files.
+func (s *storage) OpenDownload() (io.ReadCloser, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	fileInfos, err := s.backups()
+	fileInfos, err := s.downloadBackups()
 	if err != nil {
 		return nil, err
 	}
@@ -204,12 +206,12 @@ func (s *storage) Open() (io.ReadCloser, error) {
 	return pkgio.MultiReadCloser(readClosers...), nil
 }
 
-// Clear removes all downloads.
-func (s *storage) Clear() error {
+// ClearDownload removes all downloads.
+func (s *storage) ClearDownload() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	fileInfos, err := s.backups()
+	fileInfos, err := s.downloadBackups()
 	if err != nil {
 		return err
 	}
@@ -224,9 +226,9 @@ func (s *storage) Clear() error {
 	return nil
 }
 
-// create inserts the downloads into csv file.
-func (s *storage) create(downloads ...Download) error {
-	file, err := s.openFile()
+// createDownload inserts the downloads into csv file.
+func (s *storage) createDownload(downloads ...Download) error {
+	file, err := s.openDownloadFile()
 	if err != nil {
 		return err
 	}
@@ -239,20 +241,20 @@ func (s *storage) create(downloads ...Download) error {
 	return nil
 }
 
-// openFile opens the download file and removes download files that exceed the total size.
-func (s *storage) openFile() (*os.File, error) {
-	fileInfo, err := os.Stat(s.filename)
+// openDownloadFile opens the download file and removes download files that exceed the total size.
+func (s *storage) openDownloadFile() (*os.File, error) {
+	fileInfo, err := os.Stat(s.downloadFilename)
 	if err != nil {
 		return nil, err
 	}
 
 	if s.maxSize <= fileInfo.Size() {
-		if err := os.Rename(s.filename, s.backupFilename()); err != nil {
+		if err := os.Rename(s.downloadFilename, s.downloadBackupFilename()); err != nil {
 			return nil, err
 		}
 	}
 
-	fileInfos, err := s.backups()
+	fileInfos, err := s.downloadBackups()
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +266,7 @@ func (s *storage) openFile() (*os.File, error) {
 		}
 	}
 
-	file, err := os.OpenFile(s.filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	file, err := os.OpenFile(s.downloadFilename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
 		return nil, err
 	}
@@ -272,14 +274,14 @@ func (s *storage) openFile() (*os.File, error) {
 	return file, nil
 }
 
-// backupFilename generates file name of backup files.
-func (s *storage) backupFilename() string {
+// downloadBackupFilename generates download file name of backup files.
+func (s *storage) downloadBackupFilename() string {
 	timestamp := time.Now().Format(backupTimeFormat)
-	return filepath.Join(s.baseDir, fmt.Sprintf("%s-%s.%s", DownloadFilePrefix, timestamp, DownloadFileExt))
+	return filepath.Join(s.baseDir, fmt.Sprintf("%s-%s.%s", DownloadFilePrefix, timestamp, CSVFileExt))
 }
 
-// backupFilename returns backup file information.
-func (s *storage) backups() ([]fs.FileInfo, error) {
+// downloadBackups returns download backup file information.
+func (s *storage) downloadBackups() ([]fs.FileInfo, error) {
 	fileInfos, err := ioutil.ReadDir(s.baseDir)
 	if err != nil {
 		return nil, err
@@ -294,7 +296,7 @@ func (s *storage) backups() ([]fs.FileInfo, error) {
 	}
 
 	if len(backups) <= 0 {
-		return nil, errors.New("backup does not exist")
+		return nil, errors.New("download files backup does not exist")
 	}
 
 	sort.Slice(backups, func(i, j int) bool {
