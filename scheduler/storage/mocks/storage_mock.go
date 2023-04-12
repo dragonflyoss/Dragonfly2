@@ -35,74 +35,74 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 	return m.recorder
 }
 
-// Clear mocks base method.
-func (m *MockStorage) Clear() error {
+// ClearDownload mocks base method.
+func (m *MockStorage) ClearDownload() error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Clear")
+	ret := m.ctrl.Call(m, "ClearDownload")
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Clear indicates an expected call of Clear.
-func (mr *MockStorageMockRecorder) Clear() *gomock.Call {
+// ClearDownload indicates an expected call of ClearDownload.
+func (mr *MockStorageMockRecorder) ClearDownload() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Clear", reflect.TypeOf((*MockStorage)(nil).Clear))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClearDownload", reflect.TypeOf((*MockStorage)(nil).ClearDownload))
 }
 
-// Count mocks base method.
-func (m *MockStorage) Count() int64 {
+// CreateDownload mocks base method.
+func (m *MockStorage) CreateDownload(arg0 storage.Download) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Count")
+	ret := m.ctrl.Call(m, "CreateDownload", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateDownload indicates an expected call of CreateDownload.
+func (mr *MockStorageMockRecorder) CreateDownload(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDownload", reflect.TypeOf((*MockStorage)(nil).CreateDownload), arg0)
+}
+
+// DownloadCount mocks base method.
+func (m *MockStorage) DownloadCount() int64 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DownloadCount")
 	ret0, _ := ret[0].(int64)
 	return ret0
 }
 
-// Count indicates an expected call of Count.
-func (mr *MockStorageMockRecorder) Count() *gomock.Call {
+// DownloadCount indicates an expected call of DownloadCount.
+func (mr *MockStorageMockRecorder) DownloadCount() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockStorage)(nil).Count))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadCount", reflect.TypeOf((*MockStorage)(nil).DownloadCount))
 }
 
-// Create mocks base method.
-func (m *MockStorage) Create(arg0 storage.Record) error {
+// ListDownload mocks base method.
+func (m *MockStorage) ListDownload() ([]storage.Download, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Create indicates an expected call of Create.
-func (mr *MockStorageMockRecorder) Create(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockStorage)(nil).Create), arg0)
-}
-
-// List mocks base method.
-func (m *MockStorage) List() ([]storage.Record, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List")
-	ret0, _ := ret[0].([]storage.Record)
+	ret := m.ctrl.Call(m, "ListDownload")
+	ret0, _ := ret[0].([]storage.Download)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// List indicates an expected call of List.
-func (mr *MockStorageMockRecorder) List() *gomock.Call {
+// ListDownload indicates an expected call of ListDownload.
+func (mr *MockStorageMockRecorder) ListDownload() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockStorage)(nil).List))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDownload", reflect.TypeOf((*MockStorage)(nil).ListDownload))
 }
 
-// Open mocks base method.
-func (m *MockStorage) Open() (io.ReadCloser, error) {
+// OpenDownload mocks base method.
+func (m *MockStorage) OpenDownload() (io.ReadCloser, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Open")
+	ret := m.ctrl.Call(m, "OpenDownload")
 	ret0, _ := ret[0].(io.ReadCloser)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Open indicates an expected call of Open.
-func (mr *MockStorageMockRecorder) Open() *gomock.Call {
+// OpenDownload indicates an expected call of OpenDownload.
+func (mr *MockStorageMockRecorder) OpenDownload() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Open", reflect.TypeOf((*MockStorage)(nil).Open))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OpenDownload", reflect.TypeOf((*MockStorage)(nil).OpenDownload))
 }
