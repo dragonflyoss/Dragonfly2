@@ -308,9 +308,9 @@ func (s *Server) Stop() {
 
 	// Clean download storage.
 	if err := s.storage.ClearDownload(); err != nil {
-		logger.Errorf("clean storage failed %s", err.Error())
+		logger.Errorf("clean download storage failed %s", err.Error())
 	} else {
-		logger.Info("clean storage completed")
+		logger.Info("clean download storage completed")
 	}
 
 	// Stop GC.
