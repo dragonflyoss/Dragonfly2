@@ -1447,7 +1447,7 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 		}
 	}
 
-	if err := v.storage.Create(download); err != nil {
+	if err := v.storage.CreateDownload(download); err != nil {
 		peer.Log.Error(err)
 	}
 }
