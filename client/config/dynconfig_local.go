@@ -21,6 +21,7 @@ import (
 	"errors"
 	"net"
 	"reflect"
+	"strconv"
 	"time"
 
 	"google.golang.org/grpc"
@@ -130,8 +131,27 @@ func (d *dynconfigLocal) Deregister(l Observer) {
 
 // Notify publishes new events to listeners.
 func (d *dynconfigLocal) Notify() error {
+	var data *DynconfigData
+	for _, schedulerAddr := range d.config.Scheduler.NetAddrs {
+		addr := schedulerAddr.Addr
+		host, port, err := net.SplitHostPort(addr)
+		if err != nil {
+			continue
+		}
+
+		p, err := strconv.ParseInt(port, 10, 32)
+		if err != nil {
+			continue
+		}
+
+		data.Schedulers = append(data.Schedulers, &managerv1.Scheduler{
+			Hostname: host,
+			Port:     int32(p),
+		})
+	}
+
 	for o := range d.observers {
-		o.OnNotify(&DynconfigData{})
+		o.OnNotify(data)
 	}
 
 	return nil
