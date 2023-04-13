@@ -55,16 +55,14 @@ You can find the full documentation on the [d7y.io][d7y.io].
 
 ## Community
 
-Welcome developers to actively participate in community discussions
-and contribute code to Dragonfly. We will remain
-concerned about the issues discussed in the community and respond quickly.
+Join the conversation and help the community.
 
 - **Slack Channel**: [#dragonfly](https://cloud-native.slack.com/messages/dragonfly/) on [CNCF Slack](https://slack.cncf.io/)
 - **Discussion Group**: <dragonfly-discuss@googlegroups.com>
 - **Developer Group**: <dragonfly-developers@googlegroups.com>
 - **Github Discussions**: [Dragonfly Discussion Forum][discussion]
 - **Twitter**: [@dragonfly_oss](https://twitter.com/dragonfly_oss)
-- **DingTalk**: [23304666](https://qr.dingtalk.com/action/joingroup?code=v1,k1,3wEdP6zHKQbOzBRwOvv8wyIbxDEU0kXMrxphaOcPz6I=&_dt_no_comment=1&origin=11)
+- **DingTalk**: [22880028764](https://qr.dingtalk.com/action/joingroup?code=v1,k1,pkV9IbsSyDusFQdByPSK3HfCG61ZCLeb8b/lpQ3uUqI=&_dt_no_comment=1&origin=11)
 
 <!-- markdownlint-disable -->
 <div align="center">
@@ -83,7 +81,6 @@ Please refer to our [Code of Conduct][codeconduct].
 
 [arch]: docs/images/arch.png
 [logo-linear]: docs/images/logo/dragonfly-linear.svg
-[website]: https://d7y.io
 [discussion]: https://github.com/dragonflyoss/Dragonfly2/discussions
 [contributing]: CONTRIBUTING.md
 [codeconduct]: CODE_OF_CONDUCT.md
