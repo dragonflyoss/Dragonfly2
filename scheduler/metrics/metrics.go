@@ -30,6 +30,14 @@ import (
 	"d7y.io/dragonfly/v2/version"
 )
 
+const (
+	// TypeBackToSource is metrics type of back-to-source.
+	TypeBackToSource = "BACK_TO_SOURCE"
+
+	// TypeP2p is metrics type of not back-to-source.
+	TypeP2p = "P2P"
+)
+
 var (
 	// HostTrafficUploadType is upload traffic type for host traffic metrics.
 	HostTrafficUploadType = "upload"
@@ -244,7 +252,7 @@ var (
 		Name:      "download_peer_duration_milliseconds",
 		Help:      "Histogram of the time each peer downloading.",
 		Buckets:   []float64{100, 200, 500, 1000, 1500, 2 * 1000, 3 * 1000, 5 * 1000, 10 * 1000, 20 * 1000, 60 * 1000, 120 * 1000, 300 * 1000},
-	}, []string{"priority", "task_type", "task_tag", "task_app", "host_type"})
+	}, []string{"priority", "task_type", "task_tag", "task_app", "host_type", "type"})
 
 	ConcurrentScheduleGauge = promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace: types.MetricsNamespace,
