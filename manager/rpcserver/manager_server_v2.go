@@ -749,7 +749,7 @@ func (s *managerServerV2) CreateModel(ctx context.Context, req *managerv2.Create
 	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
 
 	var modelType string
-	modelVersion := time.Now().Format("YYYY-MM-DD")
+	modelVersion := time.Now().Format("20060102")
 	modelState := models.ModelVersionStateInactive
 	modelEvaluation := make(map[string]any)
 	switch modelUploadRequest := req.GetRequest().(type) {
