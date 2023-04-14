@@ -264,7 +264,7 @@ func (s *pieceTaskSynchronizer) start(request *commonv1.PieceTaskRequest, dstPee
 	credentialOpt := grpc.WithTransportCredentials(s.peerTaskConductor.GRPCCredentials)
 
 	dialCtx, cancel := context.WithTimeout(s.ctx, s.peerTaskConductor.GRPCDialTimeout)
-	grpcClient, err := dfdaemonclient.GetV1(dialCtx, netAddr.String(), credentialOpt)
+	grpcClient, err := dfdaemonclient.GetV1(dialCtx, netAddr.String(), credentialOpt, grpc.WithBlock())
 	cancel()
 
 	if err != nil {
