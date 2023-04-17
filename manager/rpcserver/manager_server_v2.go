@@ -750,7 +750,6 @@ func (s *managerServerV2) CreateModel(ctx context.Context, req *managerv2.Create
 
 	var modelType string
 	modelVersion := time.Now().Format("20060102")
-	modelState := models.ModelVersionStateInactive
 	modelEvaluation := make(map[string]any)
 	switch modelUploadRequest := req.GetRequest().(type) {
 	case *managerv2.CreateModelRequest_CreateGnnRequest:
@@ -788,8 +787,8 @@ func (s *managerServerV2) CreateModel(ctx context.Context, req *managerv2.Create
 
 	model := models.Model{
 		Type:        modelType,
+		BIO:         "",
 		Version:     modelVersion,
-		State:       modelState,
 		Evaluation:  modelEvaluation,
 		SchedulerID: scheduler.ID,
 	}
