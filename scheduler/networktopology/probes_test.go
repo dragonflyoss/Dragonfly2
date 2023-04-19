@@ -138,7 +138,6 @@ var (
 	}
 
 	mockProbes = &probes{
-		host:       mockHost,
 		limit:      mockQueueLength,
 		items:      list.New(),
 		averageRTT: atomic.NewDuration(0),
@@ -181,7 +180,6 @@ func Test_NewProbes(t *testing.T) {
 				assert := assert.New(t)
 				probes := p.(*probes)
 				assert.Equal(probes.limit, mockQueueLength)
-				assert.EqualValues(probes.host, mockSeedHost)
 				assert.Equal(probes.items.Len(), 0)
 				assert.Equal(probes.averageRTT.Load().Nanoseconds(), int64(0))
 				assert.NotEqual(probes.createdAt.Load(), 0)
@@ -191,7 +189,7 @@ func Test_NewProbes(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, NewProbes(mockQueueLength, mockSeedHost))
+			tc.expect(t, NewProbes(mockQueueLength))
 		})
 	}
 }
@@ -205,7 +203,7 @@ func TestProbes_Peek(t *testing.T) {
 	}{
 		{
 			name:   "queue has one probe",
-			probes: NewProbes(mockQueueLength, mockSeedHost),
+			probes: NewProbes(mockQueueLength),
 			mock: func(probes Probes) {
 				if err := probes.Enqueue(mockProbe); err != nil {
 					t.Fatal(err)
@@ -221,7 +219,7 @@ func TestProbes_Peek(t *testing.T) {
 		},
 		{
 			name:   "queue has three probes",
-			probes: NewProbes(mockQueueLength, mockSeedHost),
+			probes: NewProbes(mockQueueLength),
 			mock: func(probes Probes) {
 				if err := probes.Enqueue(mockProbe); err != nil {
 					t.Fatal(err)
@@ -245,7 +243,7 @@ func TestProbes_Peek(t *testing.T) {
 		},
 		{
 			name:   "queue has no probe",
-			probes: NewProbes(mockQueueLength, mockSeedHost),
+			probes: NewProbes(mockQueueLength),
 			mock:   func(probes Probes) {},
 			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
@@ -272,7 +270,7 @@ func TestProbes_Enqueue(t *testing.T) {
 	}{
 		{
 			name:   "enqueue probe",
-			probes: NewProbes(mockQueueLength, mockSeedHost),
+			probes: NewProbes(mockQueueLength),
 			mock: func(probes Probes) {
 				if err := probes.Enqueue(mockProbe); err != nil {
 					t.Fatal(err)
@@ -290,7 +288,7 @@ func TestProbes_Enqueue(t *testing.T) {
 		},
 		{
 			name:   "enqueue five probes",
-			probes: NewProbes(mockQueueLength, mockSeedHost),
+			probes: NewProbes(mockQueueLength),
 			mock: func(probes Probes) {
 				if err := probes.Enqueue(mockProbe); err != nil {
 					t.Fatal(err)
@@ -324,7 +322,7 @@ func TestProbes_Enqueue(t *testing.T) {
 		},
 		{
 			name:   "enqueue six probes",
-			probes: NewProbes(mockQueueLength, mockSeedHost),
+			probes: NewProbes(mockQueueLength),
 			mock: func(probes Probes) {
 				if err := probes.Enqueue(NewProbe(mockHost, 3400000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
@@ -378,7 +376,7 @@ func TestProbes_Dequeue(t *testing.T) {
 	}{
 		{
 			name:   "dequeue probe",
-			probes: NewProbes(mockQueueLength, mockSeedHost),
+			probes: NewProbes(mockQueueLength),
 			mock: func(probes Probes) {
 				if err := probes.Enqueue(mockProbe); err != nil {
 					t.Fatal(err)
@@ -397,7 +395,7 @@ func TestProbes_Dequeue(t *testing.T) {
 		},
 		{
 			name:   "dequeue probe from empty queue",
-			probes: NewProbes(mockQueueLength, mockSeedHost),
+			probes: NewProbes(mockQueueLength),
 			mock:   func(probes Probes) {},
 			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
@@ -424,7 +422,7 @@ func TestProbes_Items(t *testing.T) {
 	}{
 		{
 			name:   "queue has one probe",
-			probes: NewProbes(mockQueueLength, mockSeedHost),
+			probes: NewProbes(mockQueueLength),
 			mock: func(probes Probes) {
 				if err := probes.Enqueue(mockProbe); err != nil {
 					t.Fatal(err)
@@ -441,7 +439,7 @@ func TestProbes_Items(t *testing.T) {
 		},
 		{
 			name:   "queue has three probe",
-			probes: NewProbes(mockQueueLength, mockSeedHost),
+			probes: NewProbes(mockQueueLength),
 			mock: func(probes Probes) {
 				if err := probes.Enqueue(mockProbe); err != nil {
 					t.Fatal(err)
@@ -470,7 +468,7 @@ func TestProbes_Items(t *testing.T) {
 		},
 		{
 			name:   "queue is empty",
-			probes: NewProbes(mockQueueLength, mockSeedHost),
+			probes: NewProbes(mockQueueLength),
 			mock:   func(probes Probes) {},
 			expect: func(t *testing.T, probes *list.List) {
 				assert := assert.New(t)
@@ -496,7 +494,7 @@ func TestProbes_Length(t *testing.T) {
 	}{
 		{
 			name:   "queue has one probe",
-			probes: NewProbes(mockQueueLength, mockSeedHost),
+			probes: NewProbes(mockQueueLength),
 			mock: func(probes Probes) {
 				if err := probes.Enqueue(mockProbe); err != nil {
 					t.Fatal(err)
@@ -509,7 +507,7 @@ func TestProbes_Length(t *testing.T) {
 		},
 		{
 			name:   "queue has three probe",
-			probes: NewProbes(mockQueueLength, mockSeedHost),
+			probes: NewProbes(mockQueueLength),
 			mock: func(probes Probes) {
 				if err := probes.Enqueue(mockProbe); err != nil {
 					t.Fatal(err)
@@ -530,7 +528,7 @@ func TestProbes_Length(t *testing.T) {
 		},
 		{
 			name:   "queue is empty",
-			probes: NewProbes(mockQueueLength, mockSeedHost),
+			probes: NewProbes(mockQueueLength),
 			mock:   func(probes Probes) {},
 			expect: func(t *testing.T, length int) {
 				assert := assert.New(t)
@@ -577,7 +575,7 @@ func TestProbes_UpdatedAt(t *testing.T) {
 	}{
 		{
 			name:   "enqueue one probe",
-			probes: NewProbes(mockQueueLength, mockSeedHost),
+			probes: NewProbes(mockQueueLength),
 			mock: func(probes Probes) {
 				if err := probes.Enqueue(mockProbe); err != nil {
 					t.Fatal(err)
@@ -590,7 +588,7 @@ func TestProbes_UpdatedAt(t *testing.T) {
 		},
 		{
 			name:   "enqueue three probe",
-			probes: NewProbes(mockQueueLength, mockSeedHost),
+			probes: NewProbes(mockQueueLength),
 			mock: func(probes Probes) {
 				if err := probes.Enqueue(NewProbe(mockHost, 1000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
@@ -611,7 +609,7 @@ func TestProbes_UpdatedAt(t *testing.T) {
 		},
 		{
 			name:   "queue is empty",
-			probes: NewProbes(mockQueueLength, mockSeedHost),
+			probes: NewProbes(mockQueueLength),
 			mock:   func(probes Probes) {},
 			expect: func(t *testing.T, updatedAt time.Time) {
 				assert := assert.New(t)
@@ -637,7 +635,7 @@ func TestProbes_AverageRTT(t *testing.T) {
 	}{
 		{
 			name:   "queue has one probe",
-			probes: NewProbes(mockQueueLength, mockSeedHost),
+			probes: NewProbes(mockQueueLength),
 			mock: func(probes Probes) {
 				if err := probes.Enqueue(mockProbe); err != nil {
 					t.Fatal(err)
@@ -650,7 +648,7 @@ func TestProbes_AverageRTT(t *testing.T) {
 		},
 		{
 			name:   "queue has five probe",
-			probes: NewProbes(mockQueueLength, mockSeedHost),
+			probes: NewProbes(mockQueueLength),
 			mock: func(probes Probes) {
 				if err := probes.Enqueue(NewProbe(mockHost, 3000000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
@@ -679,7 +677,7 @@ func TestProbes_AverageRTT(t *testing.T) {
 		},
 		{
 			name:   "queue has six probe",
-			probes: NewProbes(mockQueueLength, mockSeedHost),
+			probes: NewProbes(mockQueueLength),
 			mock: func(probes Probes) {
 				if err := probes.Enqueue(NewProbe(mockHost, 3400000*time.Nanosecond, time.Now())); err != nil {
 					t.Fatal(err)
@@ -711,7 +709,7 @@ func TestProbes_AverageRTT(t *testing.T) {
 		},
 		{
 			name:   "queue is empty",
-			probes: NewProbes(mockQueueLength, mockSeedHost),
+			probes: NewProbes(mockQueueLength),
 			mock:   func(probes Probes) {},
 			expect: func(t *testing.T, averageRTT time.Duration) {
 				assert := assert.New(t)
