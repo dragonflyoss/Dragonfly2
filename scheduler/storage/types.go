@@ -202,9 +202,6 @@ type Download struct {
 
 // Probes contains content for probes.
 type Probes struct {
-	// Host is probe destination host.
-	Host Host `csv:"host"`
-
 	// AverageRTT is the average round-trip time of probes.
 	AverageRTT int64 `csv:"averageRTT"`
 
@@ -215,6 +212,15 @@ type Probes struct {
 	UpdatedAt int64 `csv:"updatedAt"`
 }
 
+// DestHost contains content for destination host.
+type DestHost struct {
+	// Host is probe destination host.
+	Host Host `csv:"host"`
+
+	// Probes is the network information probed to destination host.
+	Probes Probes `csv:"probes"`
+}
+
 // NetworkTopology contains content for network topology.
 type NetworkTopology struct {
 	// ID is network topology id.
@@ -223,6 +229,6 @@ type NetworkTopology struct {
 	// Host is probe source host.
 	Host Host `csv:"host"`
 
-	// Probes is the network information probed from the source host to other hosts.
-	Probes []Probes `csv:"probes" csv[]:"10"`
+	// DestHosts is the destination hosts probed from source host.
+	DestHosts []DestHost `csv:"probes" csv[]:"10"`
 }
