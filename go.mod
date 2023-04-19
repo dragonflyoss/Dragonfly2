@@ -3,7 +3,7 @@ module d7y.io/dragonfly/v2
 go 1.20
 
 require (
-	d7y.io/api v1.8.6
+	d7y.io/api v1.8.7
 	github.com/RichardKnop/machinery v1.10.6
 	github.com/Showmax/go-fqdn v1.0.0
 	github.com/VividCortex/mysqlerr v1.0.0
@@ -84,8 +84,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/mysql v1.4.7
 	gorm.io/driver/postgres v1.5.0
-	gorm.io/gorm v1.24.7-0.20230306060331-85eaf9eeda11
-	gorm.io/plugin/soft_delete v1.2.0
+	gorm.io/gorm v1.25.0
+	gorm.io/plugin/soft_delete v1.2.1
 	k8s.io/component-base v0.26.0
 	logur.dev/adapter/zap v0.5.0
 	moul.io/zapgorm2 v1.3.0
