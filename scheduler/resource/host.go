@@ -266,9 +266,6 @@ type Network struct {
 	// Return count of upload tcp connections opened and status is ESTABLISHED.
 	UploadTCPConnectionCount uint32 `csv:"uploadTCPConnectionCount"`
 
-	// Security domain for network.
-	SecurityDomain string `csv:"securityDomain"`
-
 	// Location path(area|country|province|city|...).
 	Location string `csv:"location"`
 

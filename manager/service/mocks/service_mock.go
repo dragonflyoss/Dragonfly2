@@ -69,20 +69,6 @@ func (mr *MockServiceMockRecorder) AddRoleForUser(arg0, arg1 interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddRoleForUser", reflect.TypeOf((*MockService)(nil).AddRoleForUser), arg0, arg1)
 }
 
-// AddSchedulerClusterToSecurityGroup mocks base method.
-func (m *MockService) AddSchedulerClusterToSecurityGroup(arg0 context.Context, arg1, arg2 uint) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddSchedulerClusterToSecurityGroup", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// AddSchedulerClusterToSecurityGroup indicates an expected call of AddSchedulerClusterToSecurityGroup.
-func (mr *MockServiceMockRecorder) AddSchedulerClusterToSecurityGroup(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSchedulerClusterToSecurityGroup", reflect.TypeOf((*MockService)(nil).AddSchedulerClusterToSecurityGroup), arg0, arg1, arg2)
-}
-
 // AddSchedulerClusterToSeedPeerCluster mocks base method.
 func (m *MockService) AddSchedulerClusterToSeedPeerCluster(arg0 context.Context, arg1, arg2 uint) error {
 	m.ctrl.T.Helper()
@@ -109,34 +95,6 @@ func (m *MockService) AddSchedulerToSchedulerCluster(arg0 context.Context, arg1,
 func (mr *MockServiceMockRecorder) AddSchedulerToSchedulerCluster(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSchedulerToSchedulerCluster", reflect.TypeOf((*MockService)(nil).AddSchedulerToSchedulerCluster), arg0, arg1, arg2)
-}
-
-// AddSecurityRuleToSecurityGroup mocks base method.
-func (m *MockService) AddSecurityRuleToSecurityGroup(arg0 context.Context, arg1, arg2 uint) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddSecurityRuleToSecurityGroup", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// AddSecurityRuleToSecurityGroup indicates an expected call of AddSecurityRuleToSecurityGroup.
-func (mr *MockServiceMockRecorder) AddSecurityRuleToSecurityGroup(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSecurityRuleToSecurityGroup", reflect.TypeOf((*MockService)(nil).AddSecurityRuleToSecurityGroup), arg0, arg1, arg2)
-}
-
-// AddSeedPeerClusterToSecurityGroup mocks base method.
-func (m *MockService) AddSeedPeerClusterToSecurityGroup(arg0 context.Context, arg1, arg2 uint) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddSeedPeerClusterToSecurityGroup", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// AddSeedPeerClusterToSecurityGroup indicates an expected call of AddSeedPeerClusterToSecurityGroup.
-func (mr *MockServiceMockRecorder) AddSeedPeerClusterToSecurityGroup(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSeedPeerClusterToSecurityGroup", reflect.TypeOf((*MockService)(nil).AddSeedPeerClusterToSecurityGroup), arg0, arg1, arg2)
 }
 
 // AddSeedPeerToSeedPeerCluster mocks base method.
@@ -269,36 +227,6 @@ func (m *MockService) CreateSchedulerCluster(arg0 context.Context, arg1 types.Cr
 func (mr *MockServiceMockRecorder) CreateSchedulerCluster(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSchedulerCluster", reflect.TypeOf((*MockService)(nil).CreateSchedulerCluster), arg0, arg1)
-}
-
-// CreateSecurityGroup mocks base method.
-func (m *MockService) CreateSecurityGroup(arg0 context.Context, arg1 types.CreateSecurityGroupRequest) (*models.SecurityGroup, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateSecurityGroup", arg0, arg1)
-	ret0, _ := ret[0].(*models.SecurityGroup)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateSecurityGroup indicates an expected call of CreateSecurityGroup.
-func (mr *MockServiceMockRecorder) CreateSecurityGroup(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSecurityGroup", reflect.TypeOf((*MockService)(nil).CreateSecurityGroup), arg0, arg1)
-}
-
-// CreateSecurityRule mocks base method.
-func (m *MockService) CreateSecurityRule(arg0 context.Context, arg1 types.CreateSecurityRuleRequest) (*models.SecurityRule, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateSecurityRule", arg0, arg1)
-	ret0, _ := ret[0].(*models.SecurityRule)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateSecurityRule indicates an expected call of CreateSecurityRule.
-func (mr *MockServiceMockRecorder) CreateSecurityRule(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSecurityRule", reflect.TypeOf((*MockService)(nil).CreateSecurityRule), arg0, arg1)
 }
 
 // CreateSeedPeer mocks base method.
@@ -487,48 +415,6 @@ func (m *MockService) DestroySchedulerCluster(arg0 context.Context, arg1 uint) e
 func (mr *MockServiceMockRecorder) DestroySchedulerCluster(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroySchedulerCluster", reflect.TypeOf((*MockService)(nil).DestroySchedulerCluster), arg0, arg1)
-}
-
-// DestroySecurityGroup mocks base method.
-func (m *MockService) DestroySecurityGroup(arg0 context.Context, arg1 uint) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DestroySecurityGroup", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DestroySecurityGroup indicates an expected call of DestroySecurityGroup.
-func (mr *MockServiceMockRecorder) DestroySecurityGroup(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroySecurityGroup", reflect.TypeOf((*MockService)(nil).DestroySecurityGroup), arg0, arg1)
-}
-
-// DestroySecurityRule mocks base method.
-func (m *MockService) DestroySecurityRule(arg0 context.Context, arg1 uint) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DestroySecurityRule", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DestroySecurityRule indicates an expected call of DestroySecurityRule.
-func (mr *MockServiceMockRecorder) DestroySecurityRule(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroySecurityRule", reflect.TypeOf((*MockService)(nil).DestroySecurityRule), arg0, arg1)
-}
-
-// DestroySecurityRuleToSecurityGroup mocks base method.
-func (m *MockService) DestroySecurityRuleToSecurityGroup(arg0 context.Context, arg1, arg2 uint) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DestroySecurityRuleToSecurityGroup", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DestroySecurityRuleToSecurityGroup indicates an expected call of DestroySecurityRuleToSecurityGroup.
-func (mr *MockServiceMockRecorder) DestroySecurityRuleToSecurityGroup(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroySecurityRuleToSecurityGroup", reflect.TypeOf((*MockService)(nil).DestroySecurityRuleToSecurityGroup), arg0, arg1, arg2)
 }
 
 // DestroySeedPeer mocks base method.
@@ -847,68 +733,6 @@ func (mr *MockServiceMockRecorder) GetSchedulers(arg0, arg1 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchedulers", reflect.TypeOf((*MockService)(nil).GetSchedulers), arg0, arg1)
 }
 
-// GetSecurityGroup mocks base method.
-func (m *MockService) GetSecurityGroup(arg0 context.Context, arg1 uint) (*models.SecurityGroup, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSecurityGroup", arg0, arg1)
-	ret0, _ := ret[0].(*models.SecurityGroup)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetSecurityGroup indicates an expected call of GetSecurityGroup.
-func (mr *MockServiceMockRecorder) GetSecurityGroup(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSecurityGroup", reflect.TypeOf((*MockService)(nil).GetSecurityGroup), arg0, arg1)
-}
-
-// GetSecurityGroups mocks base method.
-func (m *MockService) GetSecurityGroups(arg0 context.Context, arg1 types.GetSecurityGroupsQuery) ([]models.SecurityGroup, int64, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSecurityGroups", arg0, arg1)
-	ret0, _ := ret[0].([]models.SecurityGroup)
-	ret1, _ := ret[1].(int64)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// GetSecurityGroups indicates an expected call of GetSecurityGroups.
-func (mr *MockServiceMockRecorder) GetSecurityGroups(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSecurityGroups", reflect.TypeOf((*MockService)(nil).GetSecurityGroups), arg0, arg1)
-}
-
-// GetSecurityRule mocks base method.
-func (m *MockService) GetSecurityRule(arg0 context.Context, arg1 uint) (*models.SecurityRule, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSecurityRule", arg0, arg1)
-	ret0, _ := ret[0].(*models.SecurityRule)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetSecurityRule indicates an expected call of GetSecurityRule.
-func (mr *MockServiceMockRecorder) GetSecurityRule(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSecurityRule", reflect.TypeOf((*MockService)(nil).GetSecurityRule), arg0, arg1)
-}
-
-// GetSecurityRules mocks base method.
-func (m *MockService) GetSecurityRules(arg0 context.Context, arg1 types.GetSecurityRulesQuery) ([]models.SecurityRule, int64, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSecurityRules", arg0, arg1)
-	ret0, _ := ret[0].([]models.SecurityRule)
-	ret1, _ := ret[1].(int64)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// GetSecurityRules indicates an expected call of GetSecurityRules.
-func (mr *MockServiceMockRecorder) GetSecurityRules(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSecurityRules", reflect.TypeOf((*MockService)(nil).GetSecurityRules), arg0, arg1)
-}
-
 // GetSeedPeer mocks base method.
 func (m *MockService) GetSeedPeer(arg0 context.Context, arg1 uint) (*models.SeedPeer, error) {
 	m.ctrl.T.Helper()
@@ -1179,36 +1003,6 @@ func (m *MockService) UpdateSchedulerCluster(arg0 context.Context, arg1 uint, ar
 func (mr *MockServiceMockRecorder) UpdateSchedulerCluster(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSchedulerCluster", reflect.TypeOf((*MockService)(nil).UpdateSchedulerCluster), arg0, arg1, arg2)
-}
-
-// UpdateSecurityGroup mocks base method.
-func (m *MockService) UpdateSecurityGroup(arg0 context.Context, arg1 uint, arg2 types.UpdateSecurityGroupRequest) (*models.SecurityGroup, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateSecurityGroup", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*models.SecurityGroup)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// UpdateSecurityGroup indicates an expected call of UpdateSecurityGroup.
-func (mr *MockServiceMockRecorder) UpdateSecurityGroup(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSecurityGroup", reflect.TypeOf((*MockService)(nil).UpdateSecurityGroup), arg0, arg1, arg2)
-}
-
-// UpdateSecurityRule mocks base method.
-func (m *MockService) UpdateSecurityRule(arg0 context.Context, arg1 uint, arg2 types.UpdateSecurityRuleRequest) (*models.SecurityRule, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateSecurityRule", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*models.SecurityRule)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// UpdateSecurityRule indicates an expected call of UpdateSecurityRule.
-func (mr *MockServiceMockRecorder) UpdateSecurityRule(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSecurityRule", reflect.TypeOf((*MockService)(nil).UpdateSecurityRule), arg0, arg1, arg2)
 }
 
 // UpdateSeedPeer mocks base method.
