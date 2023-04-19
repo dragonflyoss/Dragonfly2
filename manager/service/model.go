@@ -18,10 +18,10 @@ package service
 
 import (
 	"context"
-	"d7y.io/dragonfly/v2/pkg/structure"
 
 	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
+	"d7y.io/dragonfly/v2/pkg/structure"
 )
 
 func (s *service) CreateModel(ctx context.Context, json types.CreateModelRequest) (*models.Model, error) {
