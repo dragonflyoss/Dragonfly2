@@ -44,46 +44,10 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 			},
 		},
 		{
-			name: "security_domain does not match",
-			schedulerClusters: []models.SchedulerCluster{
-				{
-					Name: "foo",
-					SecurityGroup: models.SecurityGroup{
-						SecurityRules: []models.SecurityRule{
-							{
-								Domain: "domain-2",
-							},
-						},
-					},
-					Schedulers: []models.Scheduler{
-						{
-							Hostname: "foo",
-							State:    "active",
-						},
-					},
-				},
-				{
-					Name: "bar",
-				},
-			},
-			conditions: map[string]string{"security_domain": "domain-1"},
-			expect: func(t *testing.T, data []models.SchedulerCluster, err error) {
-				assert := assert.New(t)
-				assert.Error(err)
-			},
-		},
-		{
 			name: "scheduler clusters have default cluster",
 			schedulerClusters: []models.SchedulerCluster{
 				{
 					Name: "foo",
-					SecurityGroup: models.SecurityGroup{
-						SecurityRules: []models.SecurityRule{
-							{
-								Domain: "domain-2",
-							},
-						},
-					},
 					Schedulers: []models.Scheduler{
 						{
 							Hostname: "foo",
@@ -111,100 +75,11 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 				},
 			},
-			conditions: map[string]string{"security_domain": "domain-1"},
+			conditions: map[string]string{},
 			expect: func(t *testing.T, data []models.SchedulerCluster, err error) {
 				assert := assert.New(t)
 				assert.Equal(data[0].Name, "bar")
 				assert.Equal(data[1].Name, "baz")
-				assert.Equal(len(data), 2)
-			},
-		},
-		{
-			name: "scheduler cluster SecurityRules does not exist",
-			schedulerClusters: []models.SchedulerCluster{
-				{
-					Name: "foo",
-					SecurityGroup: models.SecurityGroup{
-						SecurityRules: []models.SecurityRule{
-							{
-								Domain: "domain-2",
-							},
-						},
-					},
-					Schedulers: []models.Scheduler{
-						{
-							Hostname: "foo",
-							State:    "active",
-						},
-					},
-				},
-				{
-					Name: "bar",
-					Schedulers: []models.Scheduler{
-						{
-							Hostname: "bar",
-							State:    "active",
-						},
-					},
-				},
-			},
-			conditions: map[string]string{"security_domain": "domain-1"},
-			expect: func(t *testing.T, data []models.SchedulerCluster, err error) {
-				assert := assert.New(t)
-				assert.Equal(data[0].Name, "bar")
-				assert.Equal(len(data), 1)
-			},
-		},
-		{
-			name: "match according to security_domain condition",
-			schedulerClusters: []models.SchedulerCluster{
-				{
-					Name: "foo",
-					SecurityGroup: models.SecurityGroup{
-						SecurityRules: []models.SecurityRule{
-							{
-								Domain: "domain-2",
-							},
-						},
-					},
-					Schedulers: []models.Scheduler{
-						{
-							Hostname: "foo",
-							State:    "active",
-						},
-					},
-				},
-				{
-					Name: "bar",
-					Schedulers: []models.Scheduler{
-						{
-							Hostname: "bar",
-							State:    "active",
-						},
-					},
-				},
-				{
-					Name: "baz",
-					SecurityGroup: models.SecurityGroup{
-						SecurityRules: []models.SecurityRule{
-							{
-								Domain: "domain-1",
-							},
-						},
-					},
-					Schedulers: []models.Scheduler{
-						{
-							Hostname: "baz",
-							State:    "active",
-						},
-					},
-				},
-			},
-			conditions: map[string]string{"security_domain": "domain-1"},
-			expect: func(t *testing.T, data []models.SchedulerCluster, err error) {
-				assert := assert.New(t)
-				assert.Equal(data[0].Name, "baz")
-				assert.Equal(data[1].Name, "bar")
 				assert.Equal(len(data), 2)
 			},
 		},
@@ -348,106 +223,13 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 			},
 		},
 		{
-			name: "match according to security_domain and location conditions",
-			schedulerClusters: []models.SchedulerCluster{
-				{
-					Name: "foo",
-					Scopes: map[string]any{
-						"location": "location-1",
-					},
-					SecurityGroup: models.SecurityGroup{
-						SecurityRules: []models.SecurityRule{
-							{
-								Domain: "domain-1",
-							},
-						},
-					},
-					Schedulers: []models.Scheduler{
-						{
-							Hostname: "foo",
-							State:    "active",
-						},
-					},
-				},
-				{
-					Name: "bar",
-					Schedulers: []models.Scheduler{
-						{
-							Hostname: "bar",
-							State:    "active",
-						},
-					},
-				},
-			},
-			conditions: map[string]string{
-				"security_domain": "domain-1",
-				"location":        "location-1",
-			},
-			expect: func(t *testing.T, data []models.SchedulerCluster, err error) {
-				assert := assert.New(t)
-				assert.Equal(data[0].Name, "foo")
-				assert.Equal(data[1].Name, "bar")
-				assert.Equal(len(data), 2)
-			},
-		},
-		{
-			name: "match according to security_domain and idc conditions",
-			schedulerClusters: []models.SchedulerCluster{
-				{
-					Name: "foo",
-					Scopes: map[string]any{
-						"idc": "idc-1",
-					},
-					SecurityGroup: models.SecurityGroup{
-						SecurityRules: []models.SecurityRule{
-							{
-								Domain: "domain-1",
-							},
-						},
-					},
-					Schedulers: []models.Scheduler{
-						{
-							Hostname: "foo",
-							State:    "active",
-						},
-					},
-				},
-				{
-					Name: "bar",
-					Schedulers: []models.Scheduler{
-						{
-							Hostname: "bar",
-							State:    "active",
-						},
-					},
-				},
-			},
-			conditions: map[string]string{
-				"security_domain": "domain-1",
-				"idc":             "idc-1",
-			},
-			expect: func(t *testing.T, data []models.SchedulerCluster, err error) {
-				assert := assert.New(t)
-				assert.Equal(data[0].Name, "foo")
-				assert.Equal(data[1].Name, "bar")
-				assert.Equal(len(data), 2)
-			},
-		},
-		{
-			name: "match according to security_domain, idc and location conditions",
+			name: "match according to idc and location conditions",
 			schedulerClusters: []models.SchedulerCluster{
 				{
 					Name: "foo",
 					Scopes: map[string]any{
 						"idc":      "idc-1",
 						"location": "location-1",
-					},
-					SecurityGroup: models.SecurityGroup{
-						SecurityRules: []models.SecurityRule{
-							{
-								Domain: "domain-1",
-							},
-						},
 					},
 					Schedulers: []models.Scheduler{
 						{
@@ -462,13 +244,6 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 						"idc":      "idc-2",
 						"location": "location-1|location-2",
 					},
-					SecurityGroup: models.SecurityGroup{
-						SecurityRules: []models.SecurityRule{
-							{
-								Domain: "domain-1",
-							},
-						},
-					},
 					Schedulers: []models.Scheduler{
 						{
 							Hostname: "bar",
@@ -482,13 +257,6 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 						"idc":      "idc-2",
 						"location": "location-1",
 					},
-					SecurityGroup: models.SecurityGroup{
-						SecurityRules: []models.SecurityRule{
-							{
-								Domain: "domain-2",
-							},
-						},
-					},
 					Schedulers: []models.Scheduler{
 						{
 							Hostname: "baz",
@@ -498,9 +266,8 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 				},
 			},
 			conditions: map[string]string{
-				"security_domain": "domain-1",
-				"idc":             "idc-1|idc-2",
-				"location":        "location-1|location-2",
+				"idc":      "idc-1|idc-2",
+				"location": "location-1|location-2",
 			},
 			expect: func(t *testing.T, data []models.SchedulerCluster, err error) {
 				assert := assert.New(t)
@@ -518,13 +285,6 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 						"idc":      "idc-1",
 						"location": "location-2",
 					},
-					SecurityGroup: models.SecurityGroup{
-						SecurityRules: []models.SecurityRule{
-							{
-								Domain: "domain-1",
-							},
-						},
-					},
 					Schedulers: []models.Scheduler{
 						{
 							Hostname: "foo",
@@ -537,13 +297,6 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					Scopes: map[string]any{
 						"idc":      "idc-1",
 						"location": "location-1",
-					},
-					SecurityGroup: models.SecurityGroup{
-						SecurityRules: []models.SecurityRule{
-							{
-								Domain: "domain-1",
-							},
-						},
 					},
 					Schedulers: []models.Scheduler{
 						{
@@ -585,13 +338,6 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 						"idc":      "idc-1",
 						"location": "location-2",
 					},
-					SecurityGroup: models.SecurityGroup{
-						SecurityRules: []models.SecurityRule{
-							{
-								Domain: "domain-2",
-							},
-						},
-					},
 					Schedulers: []models.Scheduler{
 						{
 							Hostname: "bac",
@@ -601,9 +347,8 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 				},
 			},
 			conditions: map[string]string{
-				"security_domain": "domain-1",
-				"idc":             "idc-1|idc-2",
-				"location":        "location-1|location-2",
+				"idc":      "idc-1|idc-2",
+				"location": "location-1|location-2",
 			},
 			expect: func(t *testing.T, data []models.SchedulerCluster, err error) {
 				assert := assert.New(t)
@@ -624,13 +369,6 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 						"location": "LOCATION-2",
 						"cidrs":    []string{"128.168.1.0/24"},
 					},
-					SecurityGroup: models.SecurityGroup{
-						SecurityRules: []models.SecurityRule{
-							{
-								Domain: "DOMAIN-1",
-							},
-						},
-					},
 					Schedulers: []models.Scheduler{
 						{
 							Hostname: "foo",
@@ -644,13 +382,6 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 						"idc":      "IDC-1",
 						"location": "LOCATION-1",
 						"cidrs":    []string{"128.168.1.0/24"},
-					},
-					SecurityGroup: models.SecurityGroup{
-						SecurityRules: []models.SecurityRule{
-							{
-								Domain: "DOMAIN-1",
-							},
-						},
 					},
 					Schedulers: []models.Scheduler{
 						{
@@ -695,13 +426,6 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 						"location": "LOCATION-2",
 						"cidrs":    []string{"128.168.1.0/24"},
 					},
-					SecurityGroup: models.SecurityGroup{
-						SecurityRules: []models.SecurityRule{
-							{
-								Domain: "DOMAIN-2",
-							},
-						},
-					},
 					Schedulers: []models.Scheduler{
 						{
 							Hostname: "bac",
@@ -716,13 +440,6 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 						"location": "LOCATION-2",
 						"cidrs":    []string{"128.168.1.0/24"},
 					},
-					SecurityGroup: models.SecurityGroup{
-						SecurityRules: []models.SecurityRule{
-							{
-								Domain: "DOMAIN-2",
-							},
-						},
-					},
 					Schedulers: []models.Scheduler{
 						{
 							Hostname: "bae",
@@ -733,9 +450,8 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 				},
 			},
 			conditions: map[string]string{
-				"security_domain": "domain-1",
-				"idc":             "idc-1|idc-2",
-				"location":        "location-1|location-2",
+				"idc":      "idc-1|idc-2",
+				"location": "location-1|location-2",
 			},
 			expect: func(t *testing.T, data []models.SchedulerCluster, err error) {
 				assert := assert.New(t)

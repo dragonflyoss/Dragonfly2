@@ -39,7 +39,6 @@ host:
   # geographical location and network topology
   location: ""
   idc: ""
-  securityDomain: ""
 
 # download service option
 download:
