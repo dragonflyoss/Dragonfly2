@@ -74,8 +74,6 @@ host:
   location: ""
   # idc deployed by daemon
   idc: ""
-  # security domain deployed by daemon, network isolation between different security domains
-  securityDomain: ""
  # daemon hostname
   # hostname: ""
 

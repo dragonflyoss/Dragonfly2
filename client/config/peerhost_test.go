@@ -285,11 +285,10 @@ func TestPeerHostOption_Load(t *testing.T) {
 			DisableAutoBackSource: true,
 		},
 		Host: HostOption{
-			Hostname:       "d7y.io",
-			SecurityDomain: "d7y.io",
-			Location:       "0.0.0.0",
-			IDC:            "d7y",
-			AdvertiseIP:    net.IPv4zero,
+			Hostname:    "d7y.io",
+			Location:    "0.0.0.0",
+			IDC:         "d7y",
+			AdvertiseIP: net.IPv4zero,
 		},
 		Download: DownloadOption{
 			TotalRateLimit: util.RateLimit{

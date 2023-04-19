@@ -135,7 +135,6 @@ var (
 	mockNetwork = resource.Network{
 		TCPConnectionCount:       10,
 		UploadTCPConnectionCount: 1,
-		SecurityDomain:           mockHostSecurityDomain,
 		Location:                 mockHostLocation,
 		IDC:                      mockHostIDC,
 	}
@@ -169,7 +168,6 @@ var (
 	mockTaskPieceLength       int32 = 2048
 	mockHostID                      = idgen.HostIDV2("127.0.0.1", "hostname")
 	mockSeedHostID                  = idgen.HostIDV2("127.0.0.1", "hostname_seed")
-	mockHostSecurityDomain          = "security_domain"
 	mockHostLocation                = "location"
 	mockHostIDC                     = "idc"
 	mockPeerID                      = idgen.PeerIDV2()
@@ -1353,7 +1351,6 @@ func TestScheduling_ConstructSuccessSmallTaskResponse(t *testing.T) {
 								Network: &commonv2.Network{
 									TcpConnectionCount:       candidateParent.Host.Network.TCPConnectionCount,
 									UploadTcpConnectionCount: candidateParent.Host.Network.UploadTCPConnectionCount,
-									SecurityDomain:           candidateParent.Host.Network.SecurityDomain,
 									Location:                 candidateParent.Host.Network.Location,
 									Idc:                      candidateParent.Host.Network.IDC,
 								},
@@ -1512,7 +1509,6 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 									Network: &commonv2.Network{
 										TcpConnectionCount:       candidateParents[0].Host.Network.TCPConnectionCount,
 										UploadTcpConnectionCount: candidateParents[0].Host.Network.UploadTCPConnectionCount,
-										SecurityDomain:           candidateParents[0].Host.Network.SecurityDomain,
 										Location:                 candidateParents[0].Host.Network.Location,
 										Idc:                      candidateParents[0].Host.Network.IDC,
 									},
@@ -1645,7 +1641,6 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 									Network: &commonv2.Network{
 										TcpConnectionCount:       candidateParents[0].Host.Network.TCPConnectionCount,
 										UploadTcpConnectionCount: candidateParents[0].Host.Network.UploadTCPConnectionCount,
-										SecurityDomain:           candidateParents[0].Host.Network.SecurityDomain,
 										Location:                 candidateParents[0].Host.Network.Location,
 										Idc:                      candidateParents[0].Host.Network.IDC,
 									},

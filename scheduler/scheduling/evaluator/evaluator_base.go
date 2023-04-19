@@ -77,20 +77,10 @@ func NewEvaluatorBase() Evaluator {
 
 // The larger the value after evaluation, the higher the priority.
 func (eb *evaluatorBase) Evaluate(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
-	parentSecurityDomain := parent.Host.Network.SecurityDomain
 	parentLocation := parent.Host.Network.Location
 	parentIDC := parent.Host.Network.IDC
-	childSecurityDomain := child.Host.Network.SecurityDomain
 	childLocation := child.Host.Network.Location
 	childIDC := child.Host.Network.IDC
-
-	// If the SecurityDomain of hosts exists but is not equal,
-	// it cannot be scheduled as a parent.
-	if parentSecurityDomain != "" &&
-		childSecurityDomain != "" &&
-		parentSecurityDomain != childSecurityDomain {
-		return minScore
-	}
 
 	return finishedPieceWeight*calculatePieceScore(parent, child, totalPieceCount) +
 		parentHostUploadSuccessWeight*calculateParentHostUploadSuccessScore(parent) +

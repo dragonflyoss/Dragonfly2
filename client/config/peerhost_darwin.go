@@ -50,10 +50,9 @@ var peerHostConfig = func() *DaemonOption {
 			ScheduleTimeout: util.Duration{Duration: DefaultScheduleTimeout},
 		},
 		Host: HostOption{
-			Hostname:       fqdn.FQDNHostname,
-			SecurityDomain: "",
-			Location:       "",
-			IDC:            "",
+			Hostname: fqdn.FQDNHostname,
+			Location: "",
+			IDC:      "",
 		},
 		Download: DownloadOption{
 			CalculateDigest:      true,

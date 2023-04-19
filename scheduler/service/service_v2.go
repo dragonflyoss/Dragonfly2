@@ -330,7 +330,6 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 		Network: &commonv2.Network{
 			TcpConnectionCount:       peer.Host.Network.TCPConnectionCount,
 			UploadTcpConnectionCount: peer.Host.Network.UploadTCPConnectionCount,
-			SecurityDomain:           peer.Host.Network.SecurityDomain,
 			Location:                 peer.Host.Network.Location,
 			Idc:                      peer.Host.Network.IDC,
 		},
@@ -504,7 +503,6 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 			options = append(options, resource.WithNetwork(resource.Network{
 				TCPConnectionCount:       req.Host.Network.TcpConnectionCount,
 				UploadTCPConnectionCount: req.Host.Network.UploadTcpConnectionCount,
-				SecurityDomain:           req.Host.Network.SecurityDomain,
 				Location:                 req.Host.Network.Location,
 				IDC:                      req.Host.Network.Idc,
 			}))
@@ -594,7 +592,6 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 		host.Network = resource.Network{
 			TCPConnectionCount:       req.Host.Network.TcpConnectionCount,
 			UploadTCPConnectionCount: req.Host.Network.UploadTcpConnectionCount,
-			SecurityDomain:           req.Host.Network.SecurityDomain,
 			Location:                 req.Host.Network.Location,
 			IDC:                      req.Host.Network.Idc,
 		}

@@ -669,7 +669,6 @@ func ConstructSuccessSmallTaskResponse(candidateParent *resource.Peer) *schedule
 		Network: &commonv2.Network{
 			TcpConnectionCount:       candidateParent.Host.Network.TCPConnectionCount,
 			UploadTcpConnectionCount: candidateParent.Host.Network.UploadTCPConnectionCount,
-			SecurityDomain:           candidateParent.Host.Network.SecurityDomain,
 			Location:                 candidateParent.Host.Network.Location,
 			Idc:                      candidateParent.Host.Network.IDC,
 		},
@@ -844,7 +843,6 @@ func ConstructSuccessNormalTaskResponse(dynconfig config.DynconfigInterface, can
 			Network: &commonv2.Network{
 				TcpConnectionCount:       candidateParent.Host.Network.TCPConnectionCount,
 				UploadTcpConnectionCount: candidateParent.Host.Network.UploadTCPConnectionCount,
-				SecurityDomain:           candidateParent.Host.Network.SecurityDomain,
 				Location:                 candidateParent.Host.Network.Location,
 				Idc:                      candidateParent.Host.Network.IDC,
 			},

@@ -127,14 +127,13 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	}
 
 	host := &schedulerv1.PeerHost{
-		Id:             idgen.HostIDV2(opt.Host.AdvertiseIP.String(), opt.Host.Hostname),
-		Ip:             opt.Host.AdvertiseIP.String(),
-		RpcPort:        int32(opt.Download.PeerGRPC.TCPListen.PortRange.Start),
-		DownPort:       0,
-		Hostname:       opt.Host.Hostname,
-		SecurityDomain: opt.Host.SecurityDomain,
-		Location:       opt.Host.Location,
-		Idc:            opt.Host.IDC,
+		Id:       idgen.HostIDV2(opt.Host.AdvertiseIP.String(), opt.Host.Hostname),
+		Ip:       opt.Host.AdvertiseIP.String(),
+		RpcPort:  int32(opt.Download.PeerGRPC.TCPListen.PortRange.Start),
+		DownPort: 0,
+		Hostname: opt.Host.Hostname,
+		Location: opt.Host.Location,
+		Idc:      opt.Host.IDC,
 	}
 
 	var (

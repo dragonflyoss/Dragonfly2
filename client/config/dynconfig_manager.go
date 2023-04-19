@@ -279,9 +279,8 @@ func (mc *managerClient) Get() (any, error) {
 		Version:    version.GitVersion,
 		Commit:     version.GitCommit,
 		HostInfo: map[string]string{
-			searcher.ConditionSecurityDomain: mc.config.Host.SecurityDomain,
-			searcher.ConditionIDC:            mc.config.Host.IDC,
-			searcher.ConditionLocation:       mc.config.Host.Location,
+			searcher.ConditionIDC:      mc.config.Host.IDC,
+			searcher.ConditionLocation: mc.config.Host.Location,
 		},
 	})
 	if err != nil {
