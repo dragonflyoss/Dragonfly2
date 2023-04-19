@@ -76,10 +76,17 @@ func Builder(optionYaml []byte) (source.ResourceClient, source.RequestAdapter, [
 }
 
 func Director(rawURL *url.URL, urlMeta *commonv1.UrlMeta) error {
+	if err := director(rawURL, urlMeta); err != nil {
+		return fmt.Errorf("While pulling image from oci registry: %s", err.Error())
+	}
+	return nil
+}
+
+func director(rawURL *url.URL, urlMeta *commonv1.UrlMeta) error {
 	// 1. fetch auth info from local user
 	auth, err := fetchAuthInfo(rawURL.Host, false)
 	if err != nil {
-		return err
+		return fmt.Errorf("error fetch auth info: %s", err.Error())
 	}
 	var authHdr string
 	if auth != "" {
@@ -88,7 +95,7 @@ func Director(rawURL *url.URL, urlMeta *commonv1.UrlMeta) error {
 
 	path, tag, err := parseURL(rawURL.Path)
 	if err != nil {
-		return err
+		return fmt.Errorf("error parse url: %s", err.Error())
 	}
 
 	ctx := context.TODO()
@@ -98,13 +105,13 @@ func Director(rawURL *url.URL, urlMeta *commonv1.UrlMeta) error {
 	tokenFetchURL := formatTokenURL(host, path)
 	token, err := client.fetchTokenWithHeader(ctx, authHdr, tokenFetchURL)
 	if err != nil {
-		return err
+		return fmt.Errorf("error fetch token: %s", err.Error())
 	}
 
 	// 3. fetch manifest digest, normal is sha256
 	digest, err := client.fetchManifest(ctx, host, token, path, tag)
 	if err != nil {
-		return err
+		return fmt.Errorf("error fetch manifest: %s", err.Error())
 	}
 
 	// 4. update unique blob digest in url
@@ -143,12 +150,20 @@ func (client *orasSourceClient) IsExpired(request *source.Request, info *source.
 }
 
 func (client *orasSourceClient) Download(request *source.Request) (*source.Response, error) {
+	resp, err := client.download(request)
+	if err != nil {
+		return resp, fmt.Errorf("While pulling image from oci registry: %s", err.Error())
+	}
+	return resp, nil
+}
+
+func (client *orasSourceClient) download(request *source.Request) (*source.Response, error) {
 	ctx := request.Context()
 	host := request.URL.Host
 
 	path, tag, err := parseURL(request.URL.Path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parse url: %s", err.Error())
 	}
 
 	var (
@@ -167,18 +182,18 @@ func (client *orasSourceClient) Download(request *source.Request) (*source.Respo
 
 	token, err = client.fetchToken(request, path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error fetch token: %s", err.Error())
 	}
 
 	digest, err = client.fetchManifest(ctx, host, token, path, tag)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error fetch manifest: %s", err.Error())
 	}
 
 fetch:
 	imageFetchResponse, err := client.fetchImage(ctx, host, token, path, digest)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error fetch image: %s", err.Error())
 	}
 	return imageFetchResponse, nil
 }
