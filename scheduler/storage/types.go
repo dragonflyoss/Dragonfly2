@@ -224,5 +224,5 @@ type NetworkTopology struct {
 	Host Host `csv:"host"`
 
 	// Probes is the network information probed from the source host to other hosts.
-	Probes []Probes `csv:"probes" csv[]:"30000"`
+	Probes []Probes `csv:"probes" csv[]:"10"`
 }
