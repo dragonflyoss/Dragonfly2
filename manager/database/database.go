@@ -84,8 +84,6 @@ func migrate(db *gorm.DB) error {
 		&models.SeedPeer{},
 		&models.SchedulerCluster{},
 		&models.Scheduler{},
-		&models.SecurityRule{},
-		&models.SecurityGroup{},
 		&models.User{},
 		&models.Oauth{},
 		&models.Config{},

@@ -169,26 +169,6 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	sp.GET(":id", h.GetSeedPeer)
 	sp.GET("", h.GetSeedPeers)
 
-	// Security Rule
-	sr := apiv1.Group("/security-rules", jwt.MiddlewareFunc(), rbac)
-	sr.POST("", h.CreateSecurityRule)
-	sr.DELETE(":id", h.DestroySecurityRule)
-	sr.PATCH(":id", h.UpdateSecurityRule)
-	sr.GET(":id", h.GetSecurityRule)
-	sr.GET("", h.GetSecurityRules)
-
-	// Security Group
-	sg := apiv1.Group("/security-groups", jwt.MiddlewareFunc(), rbac)
-	sg.POST("", h.CreateSecurityGroup)
-	sg.DELETE(":id", h.DestroySecurityGroup)
-	sg.PATCH(":id", h.UpdateSecurityGroup)
-	sg.GET(":id", h.GetSecurityGroup)
-	sg.GET("", h.GetSecurityGroups)
-	sg.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToSecurityGroup)
-	sg.PUT(":id/seed-peer-clusters/:seed_peer_cluster_id", h.AddSeedPeerClusterToSecurityGroup)
-	sg.PUT(":id/security-rules/:security_rule_id", h.AddSecurityRuleToSecurityGroup)
-	sg.DELETE(":id/security-rules/:security_rule_id", h.DestroySecurityRuleToSecurityGroup)
-
 	// Bucket
 	bucket := apiv1.Group("/buckets", jwt.MiddlewareFunc(), rbac)
 	bucket.POST("", h.CreateBucket)
