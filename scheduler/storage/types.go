@@ -230,5 +230,5 @@ type NetworkTopology struct {
 	Host Host `csv:"host"`
 
 	// DestHosts is the destination hosts probed from source host.
-	DestHosts []DestHost `csv:"probes" csv[]:"10"`
+	DestHosts []DestHost `csv:"destHosts" csv[]:"10"`
 }
