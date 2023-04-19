@@ -128,7 +128,7 @@ func (h *Handlers) GetModel(ctx *gin.Context) {
 // @Tags Model
 // @Accept json
 // @Produce json
-// @Success 200 {object} []string
+// @Success 200 {object} []models.Model
 // @Failure 400
 // @Failure 404
 // @Failure 500

@@ -21,26 +21,33 @@ type ModelParams struct {
 }
 
 type CreateModelRequest struct {
-	Type        string         `json:"type" binding:"required"`
-	BIO         string         `json:"BIO" binding:"omitempty"`
-	Version     string         `json:"version"  binding:"required"`
-	Evaluation  map[string]any `json:"evaluation" binding:"required"`
-	SchedulerID uint           `json:"scheduler_id" binding:"required"`
+	Type        string           `json:"type" binding:"required"`
+	BIO         string           `json:"BIO" binding:"omitempty"`
+	Version     string           `json:"version"  binding:"required"`
+	Evaluation  *ModelEvaluation `json:"evaluation" binding:"omitempty"`
+	SchedulerID uint             `json:"scheduler_id" binding:"required"`
 }
 
 type UpdateModelRequest struct {
 	BIO         string         `json:"BIO" binding:"omitempty"`
-	State       string         `json:"state" binding:"required"`
+	State       string         `json:"state" binding:"required,oneof=active inactive"`
 	Evaluation  map[string]any `json:"evaluation" binding:"omitempty"`
 	SchedulerID uint           `json:"scheduler_id" binding:"omitempty"`
 }
 
 type GetModelsQuery struct {
-	Type        string         `json:"type" binding:"omitempty"`
-	Version     string         `json:"version"  binding:"omitempty"`
-	State       string         `json:"state" binding:"omitempty,oneof=active inactive"`
-	Evaluation  map[string]any `json:"evaluation" binding:"omitempty"`
-	SchedulerID uint           `json:"scheduler_id" binding:"omitempty"`
-	Page        int            `form:"page" binding:"omitempty,gte=1"`
-	PerPage     int            `form:"per_page" binding:"omitempty,gte=1,lte=50"`
+	Type        string `json:"type" binding:"omitempty"`
+	Version     string `json:"version"  binding:"omitempty"`
+	State       string `json:"state" binding:"omitempty,oneof=active inactive"`
+	SchedulerID uint   `json:"scheduler_id" binding:"omitempty"`
+	Page        int    `form:"page" binding:"omitempty,gte=1"`
+	PerPage     int    `form:"per_page" binding:"omitempty,gte=1,lte=1000"`
+}
+
+type ModelEvaluation struct {
+	Recall    float64 `json:"recall" binding:"omitempty"`
+	Precision float64 `json:"precision" binding:"omitempty"`
+	F1Score   float64 `json:"f1_score" binding:"omitempty"`
+	Mse       float64 `json:"mse" binding:"omitempty"`
+	Mae       float64 `json:"mae" binding:"omitempty"`
 }

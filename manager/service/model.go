@@ -18,17 +18,24 @@ package service
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/pkg/structure"
 
 	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
 func (s *service) CreateModel(ctx context.Context, json types.CreateModelRequest) (*models.Model, error) {
+	evaluation, err := structure.StructToMap(json.Evaluation)
+	if err != nil {
+		return nil, err
+	}
+
 	model := models.Model{
 		Type:        json.Type,
 		BIO:         json.BIO,
 		Version:     json.Version,
-		Evaluation:  json.Evaluation,
+		State:       models.ModelVersionStateInactive,
+		Evaluation:  evaluation,
 		SchedulerID: json.SchedulerID,
 	}
 
@@ -82,7 +89,6 @@ func (s *service) GetModels(ctx context.Context, q types.GetModelsQuery) ([]mode
 		Type:        q.Type,
 		Version:     q.Version,
 		State:       q.State,
-		Evaluation:  q.Evaluation,
 		SchedulerID: q.SchedulerID,
 	}).Find(&model).Limit(-1).Offset(-1).Count(&count).Error; err != nil {
 		return nil, 0, err
