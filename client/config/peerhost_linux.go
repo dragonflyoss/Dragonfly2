@@ -24,7 +24,6 @@ import (
 	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/client/util"
-	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/net/fqdn"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/types"
@@ -46,12 +45,6 @@ var peerHostConfig = func() *DaemonOption {
 					KeepAlive: KeepAliveOption{
 						Interval: 5 * time.Second,
 					},
-				},
-			},
-			NetAddrs: []dfnet.NetAddr{
-				{
-					Type: dfnet.TCP,
-					Addr: "127.0.0.1:8002",
 				},
 			},
 			ScheduleTimeout: util.Duration{Duration: DefaultScheduleTimeout},
