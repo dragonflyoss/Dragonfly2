@@ -9,7 +9,7 @@ require (
 	github.com/VividCortex/mysqlerr v1.0.0
 	github.com/aliyun/aliyun-oss-go-sdk v2.2.7+incompatible
 	github.com/appleboy/gin-jwt/v2 v2.9.1
-	github.com/aws/aws-sdk-go v1.44.234
+	github.com/aws/aws-sdk-go v1.44.244
 	github.com/bits-and-blooms/bitset v1.5.0
 	github.com/casbin/casbin/v2 v2.66.3
 	github.com/casbin/gorm-adapter/v3 v3.5.0
