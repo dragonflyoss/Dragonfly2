@@ -261,7 +261,6 @@ func (a *announcer) newAnnounceHostRequest() (*schedulerv1.AnnounceHostRequest, 
 		Network: &schedulerv1.Network{
 			TcpConnectionCount:       uint32(len(tcpConnections)),
 			UploadTcpConnectionCount: uint32(len(uploadTCPConnections)),
-			SecurityDomain:           a.config.Host.SecurityDomain,
 			Location:                 a.config.Host.Location,
 			Idc:                      a.config.Host.IDC,
 		},

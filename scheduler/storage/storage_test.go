@@ -93,7 +93,6 @@ var (
 		Network: resource.Network{
 			TCPConnectionCount:       400,
 			UploadTCPConnectionCount: 200,
-			SecurityDomain:           "product",
 			Location:                 "china",
 			IDC:                      "e1",
 		},

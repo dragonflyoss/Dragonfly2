@@ -36,7 +36,6 @@ host:
   advertiseIP: 0.0.0.0
   location: 0.0.0.0
   idc: d7y
-  securityDomain: d7y.io
 
 download:
   calculateDigest: true

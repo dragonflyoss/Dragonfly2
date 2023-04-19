@@ -83,7 +83,6 @@ var (
 	mockNetwork = resource.Network{
 		TCPConnectionCount:       10,
 		UploadTCPConnectionCount: 1,
-		SecurityDomain:           mockHostSecurityDomain,
 		Location:                 mockHostLocation,
 		IDC:                      mockHostIDC,
 	}
@@ -106,9 +105,8 @@ var (
 		Platform:   "darwin",
 	}
 
-	mockHostSecurityDomain = "security_domain"
-	mockHostLocation       = "location"
-	mockHostIDC            = "idc"
+	mockHostLocation = "location"
+	mockHostIDC      = "idc"
 
 	mockProbe = &Probe{
 		Host:      mockHost,
