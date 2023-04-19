@@ -65,21 +65,12 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					IsDefault: true,
 				},
-				{
-					Name: "baz",
-					Schedulers: []models.Scheduler{
-						{
-							Hostname: "baz",
-							State:    "active",
-						},
-					},
-				},
 			},
 			conditions: map[string]string{},
 			expect: func(t *testing.T, data []models.SchedulerCluster, err error) {
 				assert := assert.New(t)
 				assert.Equal(data[0].Name, "bar")
-				assert.Equal(data[1].Name, "baz")
+				assert.Equal(data[1].Name, "foo")
 				assert.Equal(len(data), 2)
 			},
 		},
@@ -186,49 +177,12 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 			},
 		},
 		{
-			name: "match according to location and idc condition",
-			schedulerClusters: []models.SchedulerCluster{
-				{
-					Name: "foo",
-					Scopes: map[string]any{
-						"location": "location-1|location-2",
-						"idc":      "idc-1|idc-2",
-					},
-					Schedulers: []models.Scheduler{
-						{
-							Hostname: "foo",
-							State:    "active",
-						},
-					},
-				},
-				{
-					Name: "bar",
-					Schedulers: []models.Scheduler{
-						{
-							Hostname: "bar",
-							State:    "active",
-						},
-					},
-				},
-			},
-			conditions: map[string]string{
-				"location": "location-1",
-				"idc":      "idc-1",
-			},
-			expect: func(t *testing.T, data []models.SchedulerCluster, err error) {
-				assert := assert.New(t)
-				assert.Equal(data[0].Name, "foo")
-				assert.Equal(data[1].Name, "bar")
-				assert.Equal(len(data), 2)
-			},
-		},
-		{
 			name: "match according to idc and location conditions",
 			schedulerClusters: []models.SchedulerCluster{
 				{
 					Name: "foo",
 					Scopes: map[string]any{
-						"idc":      "idc-1",
+						"idc":      "idc-3",
 						"location": "location-1",
 					},
 					Schedulers: []models.Scheduler{
@@ -241,62 +195,8 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 				{
 					Name: "bar",
 					Scopes: map[string]any{
-						"idc":      "idc-2",
-						"location": "location-1|location-2",
-					},
-					Schedulers: []models.Scheduler{
-						{
-							Hostname: "bar",
-							State:    "active",
-						},
-					},
-				},
-				{
-					Name: "baz",
-					Scopes: map[string]any{
-						"idc":      "idc-2",
-						"location": "location-1",
-					},
-					Schedulers: []models.Scheduler{
-						{
-							Hostname: "baz",
-							State:    "active",
-						},
-					},
-				},
-			},
-			conditions: map[string]string{
-				"idc":      "idc-1|idc-2",
-				"location": "location-1|location-2",
-			},
-			expect: func(t *testing.T, data []models.SchedulerCluster, err error) {
-				assert := assert.New(t)
-				assert.Equal(data[0].Name, "bar")
-				assert.Equal(data[1].Name, "foo")
-				assert.Equal(len(data), 2)
-			},
-		},
-		{
-			name: "match according to all conditions",
-			schedulerClusters: []models.SchedulerCluster{
-				{
-					Name: "foo",
-					Scopes: map[string]any{
 						"idc":      "idc-1",
-						"location": "location-2",
-					},
-					Schedulers: []models.Scheduler{
-						{
-							Hostname: "foo",
-							State:    "active",
-						},
-					},
-				},
-				{
-					Name: "bar",
-					Scopes: map[string]any{
-						"idc":      "idc-1",
-						"location": "location-1",
+						"location": "location-3",
 					},
 					Schedulers: []models.Scheduler{
 						{
@@ -321,8 +221,8 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 				{
 					Name: "bax",
 					Scopes: map[string]any{
-						"idc":      "idc-1",
-						"location": "location-2",
+						"idc":      "idc-3",
+						"location": "location-3",
 					},
 					Schedulers: []models.Scheduler{
 						{
@@ -347,16 +247,17 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 				},
 			},
 			conditions: map[string]string{
-				"idc":      "idc-1|idc-2",
+				"idc":      "idc-1",
 				"location": "location-1|location-2",
 			},
 			expect: func(t *testing.T, data []models.SchedulerCluster, err error) {
 				assert := assert.New(t)
-				assert.Equal(data[0].Name, "bar")
-				assert.Equal(data[1].Name, "foo")
-				assert.Equal(data[2].Name, "baz")
-				assert.Equal(data[3].Name, "bax")
-				assert.Equal(len(data), 4)
+				assert.Equal(data[0].Name, "baz")
+				assert.Equal(data[1].Name, "bar")
+				assert.Equal(data[2].Name, "bac")
+				assert.Equal(data[3].Name, "foo")
+				assert.Equal(data[4].Name, "bax")
+				assert.Equal(len(data), 5)
 			},
 		},
 		{
@@ -448,19 +349,36 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 					},
 					IsDefault: true,
 				},
+				{
+					Name: "bat",
+					Scopes: map[string]any{
+						"idc":      "IDC-1",
+						"location": "LOCATION-2",
+						"cidrs":    []string{"192.168.1.0/24"},
+					},
+					Schedulers: []models.Scheduler{
+						{
+							Hostname: "bae",
+							State:    "active",
+						},
+					},
+					IsDefault: true,
+				},
 			},
 			conditions: map[string]string{
-				"idc":      "idc-1|idc-2",
+				"idc":      "idc-1",
 				"location": "location-1|location-2",
 			},
 			expect: func(t *testing.T, data []models.SchedulerCluster, err error) {
 				assert := assert.New(t)
-				assert.Equal(data[0].Name, "bae")
-				assert.Equal(data[1].Name, "bar")
+				assert.Equal(data[0].Name, "bax")
+				assert.Equal(data[1].Name, "bae")
 				assert.Equal(data[2].Name, "foo")
-				assert.Equal(data[3].Name, "baz")
-				assert.Equal(data[4].Name, "bax")
-				assert.Equal(len(data), 5)
+				assert.Equal(data[3].Name, "bar")
+				assert.Equal(data[4].Name, "baz")
+				assert.Equal(data[5].Name, "bac")
+				assert.Equal(data[6].Name, "bat")
+				assert.Equal(len(data), 7)
 			},
 		},
 	}

@@ -191,7 +191,7 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(0))
+				assert.Equal(score, float64(0.35))
 			},
 		},
 		{

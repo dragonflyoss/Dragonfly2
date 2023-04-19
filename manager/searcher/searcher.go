@@ -46,16 +46,16 @@ const (
 
 const (
 	// cidrAffinityWeight is CIDR affinity weight.
-	cidrAffinityWeight float64 = 0.5
+	cidrAffinityWeight float64 = 0.4
 
 	// idcAffinityWeight is IDC affinity weight.
-	idcAffinityWeight float64 = 0.25
+	idcAffinityWeight float64 = 0.35
 
 	// locationAffinityWeight is location affinity weight.
-	locationAffinityWeight = 0.15
+	locationAffinityWeight = 0.24
 
 	// clusterTypeWeight is cluster type weight.
-	clusterTypeWeight float64 = 0.1
+	clusterTypeWeight float64 = 0.01
 )
 
 const (
@@ -141,11 +141,7 @@ func FilterSchedulerClusters(conditions map[string]string, schedulerClusters []m
 			continue
 		}
 
-		// Scheduler cluster is default, matching all dfdaemons
-		if schedulerCluster.IsDefault {
-			clusters = append(clusters, schedulerCluster)
-			continue
-		}
+		clusters = append(clusters, schedulerCluster)
 	}
 
 	return clusters
@@ -196,7 +192,7 @@ func calculateIDCAffinityScore(dst, src string) float64 {
 		return minScore
 	}
 
-	if strings.EqualFold(dst, src) {
+	if dst == src {
 		return maxScore
 	}
 
@@ -205,7 +201,7 @@ func calculateIDCAffinityScore(dst, src string) float64 {
 	// it gets the max score of idc.
 	srcElements := strings.Split(src, types.AffinitySeparator)
 	for _, srcElement := range srcElements {
-		if strings.EqualFold(dst, srcElement) {
+		if dst == srcElement {
 			return maxScore
 		}
 	}
@@ -219,7 +215,7 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 		return minScore
 	}
 
-	if strings.EqualFold(dst, src) {
+	if dst == src {
 		return maxScore
 	}
 
@@ -235,9 +231,10 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 	}
 
 	for i := 0; i < elementLen; i++ {
-		if !strings.EqualFold(dstElements[i], srcElements[i]) {
+		if dstElements[i] != srcElements[i] {
 			break
 		}
+
 		score++
 	}
 
