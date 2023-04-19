@@ -85,7 +85,7 @@ require (
 	gorm.io/driver/mysql v1.4.7
 	gorm.io/driver/postgres v1.5.0
 	gorm.io/gorm v1.25.0
-	gorm.io/plugin/soft_delete v1.2.0
+	gorm.io/plugin/soft_delete v1.2.1
 	k8s.io/component-base v0.26.0
 	logur.dev/adapter/zap v0.5.0
 	moul.io/zapgorm2 v1.3.0
