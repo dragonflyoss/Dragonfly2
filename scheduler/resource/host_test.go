@@ -104,7 +104,6 @@ var (
 	mockNetwork = Network{
 		TCPConnectionCount:       10,
 		UploadTCPConnectionCount: 1,
-		SecurityDomain:           mockHostSecurityDomain,
 		Location:                 mockHostLocation,
 		IDC:                      mockHostIDC,
 	}
@@ -127,11 +126,10 @@ var (
 		Platform:   "darwin",
 	}
 
-	mockHostID             = idgen.HostIDV2("127.0.0.1", "hostname")
-	mockSeedHostID         = idgen.HostIDV2("127.0.0.1", "hostname_seed")
-	mockHostSecurityDomain = "security_domain"
-	mockHostLocation       = "location"
-	mockHostIDC            = "idc"
+	mockHostID       = idgen.HostIDV2("127.0.0.1", "hostname")
+	mockSeedHostID   = idgen.HostIDV2("127.0.0.1", "hostname_seed")
+	mockHostLocation = "location"
+	mockHostIDC      = "idc"
 )
 
 func TestHost_NewHost(t *testing.T) {
