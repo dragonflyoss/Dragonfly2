@@ -24,7 +24,7 @@ type CreateModelRequest struct {
 	Type        string           `json:"type" binding:"required"`
 	BIO         string           `json:"BIO" binding:"omitempty"`
 	Version     string           `json:"version"  binding:"required"`
-	Evaluation  *ModelEvaluation `json:"evaluation" binding:"omitempty"`
+	Evaluation  *ModelEvaluation `json:"evaluation" binding:"required"`
 	SchedulerID uint             `json:"scheduler_id" binding:"required"`
 }
 
