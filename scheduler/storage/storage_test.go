@@ -215,8 +215,6 @@ var (
 		UpdatedAt: time.Now().UnixNano(),
 	}
 
-	mockBaseDir = "foo"
-
 	mockNetworkTopology = NetworkTopology{
 		ID:        "6",
 		Host:      mockSeedHost,
@@ -262,7 +260,7 @@ func TestStorage_New(t *testing.T) {
 		},
 		{
 			name:    "new storage failed",
-			baseDir: mockBaseDir,
+			baseDir: "/foo",
 			expect: func(t *testing.T, s Storage, err error) {
 				assert := assert.New(t)
 				assert.Error(err)
@@ -331,7 +329,7 @@ func TestStorage_CreateDownload(t *testing.T) {
 			baseDir:    os.TempDir(),
 			bufferSize: 0,
 			mock: func(s Storage) {
-				s.(*storage).baseDir = mockBaseDir
+				s.(*storage).baseDir = "foo"
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
@@ -411,7 +409,7 @@ func TestStorage_CreateNetworkTopology(t *testing.T) {
 			baseDir:    os.TempDir(),
 			bufferSize: 0,
 			mock: func(s Storage) {
-				s.(*storage).baseDir = mockBaseDir
+				s.(*storage).baseDir = "foo"
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
@@ -603,7 +601,7 @@ func TestStorage_ListNetworkTopology(t *testing.T) {
 			baseDir:    os.TempDir(),
 			bufferSize: config.DefaultStorageBufferSize,
 			mock: func(t *testing.T, s Storage, baseDir string, networkTopology NetworkTopology) {
-				file, err := os.OpenFile(filepath.Join(baseDir, "network-topology-test.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0300)
+				file, err := os.OpenFile(filepath.Join(baseDir, "networktopology-test.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0300)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -645,7 +643,7 @@ func TestStorage_ListNetworkTopology(t *testing.T) {
 			bufferSize:      1,
 			networkTopology: NetworkTopology{},
 			mock: func(t *testing.T, s Storage, baseDir string, networkTopology NetworkTopology) {
-				file, err := os.OpenFile(filepath.Join(baseDir, "network-topology-test.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+				file, err := os.OpenFile(filepath.Join(baseDir, "networktopology-test.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -877,7 +875,7 @@ func TestStorage_OpenNetworkTopology(t *testing.T) {
 			bufferSize:      1,
 			networkTopology: NetworkTopology{},
 			mock: func(t *testing.T, s Storage, baseDir string, networkTopology NetworkTopology) {
-				file, err := os.OpenFile(filepath.Join(baseDir, "network-topology-test.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+				file, err := os.OpenFile(filepath.Join(baseDir, "networktopology-test.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -1059,7 +1057,7 @@ func TestStorage_createDownload(t *testing.T) {
 			name:    "open file failed",
 			baseDir: os.TempDir(),
 			mock: func(s Storage) {
-				s.(*storage).baseDir = mockBaseDir
+				s.(*storage).baseDir = "foo"
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
@@ -1107,7 +1105,7 @@ func TestStorage_createNetworkTopology(t *testing.T) {
 			name:    "open file failed",
 			baseDir: os.TempDir(),
 			mock: func(s Storage) {
-				s.(*storage).baseDir = mockBaseDir
+				s.(*storage).baseDir = "foo"
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
