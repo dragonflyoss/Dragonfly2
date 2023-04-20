@@ -215,6 +215,8 @@ var (
 		UpdatedAt: time.Now().UnixNano(),
 	}
 
+	mockBaseDir = "foo"
+
 	mockNetworkTopology = NetworkTopology{
 		ID:        "6",
 		Host:      mockSeedHost,
@@ -260,7 +262,7 @@ func TestStorage_New(t *testing.T) {
 		},
 		{
 			name:    "new storage failed",
-			baseDir: "/foo",
+			baseDir: mockBaseDir,
 			expect: func(t *testing.T, s Storage, err error) {
 				assert := assert.New(t)
 				assert.Error(err)
@@ -329,7 +331,7 @@ func TestStorage_CreateDownload(t *testing.T) {
 			baseDir:    os.TempDir(),
 			bufferSize: 0,
 			mock: func(s Storage) {
-				s.(*storage).baseDir = "foo"
+				s.(*storage).baseDir = mockBaseDir
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
@@ -409,7 +411,7 @@ func TestStorage_CreateNetworkTopology(t *testing.T) {
 			baseDir:    os.TempDir(),
 			bufferSize: 0,
 			mock: func(s Storage) {
-				s.(*storage).baseDir = "foo"
+				s.(*storage).baseDir = mockBaseDir
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
@@ -1057,7 +1059,7 @@ func TestStorage_createDownload(t *testing.T) {
 			name:    "open file failed",
 			baseDir: os.TempDir(),
 			mock: func(s Storage) {
-				s.(*storage).baseDir = "foo"
+				s.(*storage).baseDir = mockBaseDir
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
@@ -1105,7 +1107,7 @@ func TestStorage_createNetworkTopology(t *testing.T) {
 			name:    "open file failed",
 			baseDir: os.TempDir(),
 			mock: func(s Storage) {
-				s.(*storage).baseDir = "foo"
+				s.(*storage).baseDir = mockBaseDir
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)

@@ -79,7 +79,7 @@ type Storage interface {
 	// OpenDownload opens download files for read, it returns io.ReadCloser of download files.
 	OpenDownload() (io.ReadCloser, error)
 
-	// OpenNetworkTopology opens network topology files for read, it returns io.ReadCloser of download files.
+	// OpenNetworkTopology opens network topology files for read, it returns io.ReadCloser of network topology files.
 	OpenNetworkTopology() (io.ReadCloser, error)
 
 	// ClearDownload removes all download files.
@@ -308,7 +308,7 @@ func (s *storage) OpenDownload() (io.ReadCloser, error) {
 	return pkgio.MultiReadCloser(readClosers...), nil
 }
 
-// OpenNetworkTopology opens network topology files for read, it returns io.ReadCloser of download files.
+// OpenNetworkTopology opens network topology files for read, it returns io.ReadCloser of network topology files.
 func (s *storage) OpenNetworkTopology() (io.ReadCloser, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -442,7 +442,7 @@ func (s *storage) openNetworkTopologyFile() (*os.File, error) {
 	}
 
 	if s.maxSize <= fileInfo.Size() {
-		if err := os.Rename(s.downloadFilename, s.downloadBackupFilename()); err != nil {
+		if err := os.Rename(s.networkTopologyFilename, s.networkTopologyBackupFilename()); err != nil {
 			return nil, err
 		}
 	}
