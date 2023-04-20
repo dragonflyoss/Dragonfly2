@@ -998,7 +998,7 @@ func TestStorage_ClearNetworkTopology(t *testing.T) {
 				assert.NoError(err)
 
 				var backups []fs.FileInfo
-				regexp := regexp.MustCompile(DownloadFilePrefix)
+				regexp := regexp.MustCompile(NetworkTopologyFilePrefix)
 				for _, fileInfo := range fileInfos {
 					if !fileInfo.IsDir() && regexp.MatchString(fileInfo.Name()) {
 						backups = append(backups, fileInfo)
