@@ -60,9 +60,11 @@ func (s *service) DestroyModel(ctx context.Context, id uint) error {
 }
 
 func (s *service) UpdateModel(ctx context.Context, id uint, json types.UpdateModelRequest) (*models.Model, error) {
-	var evaluation map[string]any
+	var (
+		evaluation map[string]any
+		err        error
+	)
 	if json.Evaluation != nil {
-		var err error
 		evaluation, err = structure.StructToMap(json.Evaluation)
 		if err != nil {
 			return nil, err
@@ -84,7 +86,7 @@ func (s *service) UpdateModel(ctx context.Context, id uint, json types.UpdateMod
 
 func (s *service) GetModel(ctx context.Context, id uint) (*models.Model, error) {
 	model := models.Model{}
-	if err := s.db.WithContext(ctx).First(&model, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Preload("Scheduler").First(&model, id).Error; err != nil {
 		return nil, err
 	}
 
