@@ -391,6 +391,227 @@ const docTemplate = `{
                 }
             }
         },
+        "/clusters": {
+            "get": {
+                "description": "Get Clusters",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cluster"
+                ],
+                "summary": "Get Clusters",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "current page",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "maximum": 50,
+                        "minimum": 2,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "return max item count, default 10, max 50",
+                        "name": "per_page",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.GetClusterResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            },
+            "post": {
+                "description": "Create by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cluster"
+                ],
+                "summary": "Create Cluster",
+                "parameters": [
+                    {
+                        "description": "Cluster",
+                        "name": "Cluster",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.CreateClusterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.CreateClusterResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/clusters/{id}": {
+            "get": {
+                "description": "Get Cluster by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cluster"
+                ],
+                "summary": "Get Cluster",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.GetClusterResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            },
+            "delete": {
+                "description": "Destroy by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cluster"
+                ],
+                "summary": "Destroy Cluster",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            },
+            "patch": {
+                "description": "Update by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cluster"
+                ],
+                "summary": "Update Cluster",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Cluster",
+                        "name": "Cluster",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateClusterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateClusterResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
         "/configs": {
             "get": {
                 "description": "Get Configs",
@@ -3174,9 +3395,6 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
-                "is_default": {
-                    "type": "boolean"
-                },
                 "jobs": {
                     "type": "array",
                     "items": {
@@ -3303,6 +3521,79 @@ const docTemplate = `{
             ],
             "properties": {
                 "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "d7y_io_dragonfly_v2_manager_types.CreateClusterRequest": {
+            "type": "object",
+            "required": [
+                "name",
+                "peer_cluster_config",
+                "scheduler_cluster_config",
+                "seed_peer_cluster_config"
+            ],
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "is_default": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "peer_cluster_config": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterClientConfig"
+                },
+                "scheduler_cluster_config": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterConfig"
+                },
+                "scopes": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes"
+                },
+                "seed_peer_cluster_config": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig"
+                }
+            }
+        },
+        "d7y_io_dragonfly_v2_manager_types.CreateClusterResponse": {
+            "type": "object",
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "isDefault": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "peerClusterConfig": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterClientConfig"
+                },
+                "schedulerClusterConfig": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterConfig"
+                },
+                "schedulerClusterID": {
+                    "type": "integer"
+                },
+                "scopes": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes"
+                },
+                "seedPeerClusterConfig": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig"
+                },
+                "seedPeerClusterID": {
+                    "type": "integer"
+                },
+                "updatedAt": {
                     "type": "string"
                 }
             }
@@ -3492,9 +3783,6 @@ const docTemplate = `{
                 "config": {
                     "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig"
                 },
-                "is_default": {
-                    "type": "boolean"
-                },
                 "name": {
                     "type": "string"
                 }
@@ -3596,6 +3884,47 @@ const docTemplate = `{
                     ]
                 },
                 "object": {
+                    "type": "string"
+                }
+            }
+        },
+        "d7y_io_dragonfly_v2_manager_types.GetClusterResponse": {
+            "type": "object",
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "isDefault": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "peerClusterConfig": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterClientConfig"
+                },
+                "schedulerClusterConfig": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterConfig"
+                },
+                "schedulerClusterID": {
+                    "type": "integer"
+                },
+                "scopes": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes"
+                },
+                "seedPeerClusterConfig": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig"
+                },
+                "seedPeerClusterID": {
+                    "type": "integer"
+                },
+                "updatedAt": {
                     "type": "string"
                 }
             }
@@ -3787,6 +4116,73 @@ const docTemplate = `{
                 }
             }
         },
+        "d7y_io_dragonfly_v2_manager_types.UpdateClusterRequest": {
+            "type": "object",
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "is_default": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "peer_cluster_config": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterClientConfig"
+                },
+                "scheduler_cluster_config": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterConfig"
+                },
+                "scopes": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes"
+                },
+                "seed_peer_cluster_config": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig"
+                }
+            }
+        },
+        "d7y_io_dragonfly_v2_manager_types.UpdateClusterResponse": {
+            "type": "object",
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "isDefault": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "peerClusterConfig": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterClientConfig"
+                },
+                "schedulerClusterConfig": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterConfig"
+                },
+                "schedulerClusterID": {
+                    "type": "integer"
+                },
+                "scopes": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes"
+                },
+                "seedPeerClusterConfig": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig"
+                },
+                "seedPeerClusterID": {
+                    "type": "integer"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
         "d7y_io_dragonfly_v2_manager_types.UpdateConfigRequest": {
             "type": "object",
             "properties": {
@@ -3902,9 +4298,6 @@ const docTemplate = `{
                 },
                 "config": {
                     "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig"
-                },
-                "is_default": {
-                    "type": "boolean"
                 },
                 "name": {
                     "type": "string"

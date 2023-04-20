@@ -31,5 +31,24 @@ func StructToMap(t any) (map[string]any, error) {
 	if err := json.Unmarshal(b, &m); err != nil {
 		return nil, err
 	}
+
 	return m, nil
+}
+
+// MapToStruct converts map to struct.
+func MapToStruct(m map[string]any, t any) error {
+	if m == nil {
+		return nil
+	}
+
+	b, err := json.Marshal(m)
+	if err != nil {
+		return err
+	}
+
+	if err := json.Unmarshal(b, t); err != nil {
+		return err
+	}
+
+	return nil
 }

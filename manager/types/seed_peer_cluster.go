@@ -31,17 +31,15 @@ type AddSchedulerClusterToSeedPeerClusterParams struct {
 }
 
 type CreateSeedPeerClusterRequest struct {
-	Name      string                 `json:"name" binding:"required"`
-	BIO       string                 `json:"bio" binding:"omitempty"`
-	Config    *SeedPeerClusterConfig `json:"config" binding:"required"`
-	IsDefault bool                   `json:"is_default" binding:"omitempty"`
+	Name   string                 `json:"name" binding:"required"`
+	BIO    string                 `json:"bio" binding:"omitempty"`
+	Config *SeedPeerClusterConfig `json:"config" binding:"required"`
 }
 
 type UpdateSeedPeerClusterRequest struct {
-	Name      string                 `json:"name" binding:"omitempty"`
-	BIO       string                 `json:"bio" binding:"omitempty"`
-	Config    *SeedPeerClusterConfig `json:"config" binding:"omitempty"`
-	IsDefault bool                   `json:"is_default" binding:"omitempty"`
+	Name   string                 `json:"name" binding:"omitempty"`
+	BIO    string                 `json:"bio" binding:"omitempty"`
+	Config *SeedPeerClusterConfig `json:"config" binding:"omitempty"`
 }
 
 type GetSeedPeerClustersQuery struct {

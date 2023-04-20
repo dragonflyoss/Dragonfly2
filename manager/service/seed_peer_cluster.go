@@ -32,10 +32,9 @@ func (s *service) CreateSeedPeerCluster(ctx context.Context, json types.CreateSe
 	}
 
 	seedPeerCluster := models.SeedPeerCluster{
-		Name:      json.Name,
-		BIO:       json.BIO,
-		Config:    config,
-		IsDefault: json.IsDefault,
+		Name:   json.Name,
+		BIO:    json.BIO,
+		Config: config,
 	}
 
 	if err := s.db.WithContext(ctx).Create(&seedPeerCluster).Error; err != nil {
@@ -81,14 +80,6 @@ func (s *service) UpdateSeedPeerCluster(ctx context.Context, id uint, json types
 		Config: config,
 	}).Error; err != nil {
 		return nil, err
-	}
-
-	// Updates does not accept bool as false.
-	// Refer to https://stackoverflow.com/questions/56653423/gorm-doesnt-update-boolean-field-to-false.
-	if json.IsDefault != seedPeerCluster.IsDefault {
-		if err := s.db.WithContext(ctx).First(&seedPeerCluster, id).Update("is_default", json.IsDefault).Error; err != nil {
-			return nil, err
-		}
 	}
 
 	return &seedPeerCluster, nil
@@ -144,12 +135,7 @@ func (s *service) AddSchedulerClusterToSeedPeerCluster(ctx context.Context, id, 
 		return err
 	}
 
-	seedPeerClusters := []models.SeedPeerCluster{}
-	if err := s.db.WithContext(ctx).Model(&schedulerCluster).Association("SeedPeerClusters").Find(&seedPeerClusters); err != nil {
-		return err
-	}
-
-	if err := s.db.WithContext(ctx).Model(&schedulerCluster).Association("SeedPeerClusters").Delete(seedPeerClusters); err != nil {
+	if err := s.db.WithContext(ctx).Model(&schedulerCluster).Association("SeedPeerClusters").Clear(); err != nil {
 		return err
 	}
 

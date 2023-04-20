@@ -186,8 +186,6 @@ definitions:
         type: string
       id:
         type: integer
-      is_default:
-        type: boolean
       jobs:
         items:
           $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.Job'
@@ -274,6 +272,55 @@ definitions:
         type: string
     required:
     - name
+    type: object
+  d7y_io_dragonfly_v2_manager_types.CreateClusterRequest:
+    properties:
+      bio:
+        type: string
+      is_default:
+        type: boolean
+      name:
+        type: string
+      peer_cluster_config:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterClientConfig'
+      scheduler_cluster_config:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterConfig'
+      scopes:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes'
+      seed_peer_cluster_config:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig'
+    required:
+    - name
+    - peer_cluster_config
+    - scheduler_cluster_config
+    - seed_peer_cluster_config
+    type: object
+  d7y_io_dragonfly_v2_manager_types.CreateClusterResponse:
+    properties:
+      bio:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: integer
+      isDefault:
+        type: boolean
+      name:
+        type: string
+      peerClusterConfig:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterClientConfig'
+      schedulerClusterConfig:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterConfig'
+      schedulerClusterID:
+        type: integer
+      scopes:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes'
+      seedPeerClusterConfig:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig'
+      seedPeerClusterID:
+        type: integer
+      updatedAt:
+        type: string
     type: object
   d7y_io_dragonfly_v2_manager_types.CreateConfigRequest:
     properties:
@@ -398,8 +445,6 @@ definitions:
         type: string
       config:
         $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig'
-      is_default:
-        type: boolean
       name:
         type: string
     required:
@@ -474,6 +519,33 @@ definitions:
     required:
     - action
     - object
+    type: object
+  d7y_io_dragonfly_v2_manager_types.GetClusterResponse:
+    properties:
+      bio:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: integer
+      isDefault:
+        type: boolean
+      name:
+        type: string
+      peerClusterConfig:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterClientConfig'
+      schedulerClusterConfig:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterConfig'
+      schedulerClusterID:
+        type: integer
+      scopes:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes'
+      seedPeerClusterConfig:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig'
+      seedPeerClusterID:
+        type: integer
+      updatedAt:
+        type: string
     type: object
   d7y_io_dragonfly_v2_manager_types.GetV1PreheatResponse:
     properties:
@@ -605,6 +677,50 @@ definitions:
     required:
     - user_id
     type: object
+  d7y_io_dragonfly_v2_manager_types.UpdateClusterRequest:
+    properties:
+      bio:
+        type: string
+      is_default:
+        type: boolean
+      name:
+        type: string
+      peer_cluster_config:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterClientConfig'
+      scheduler_cluster_config:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterConfig'
+      scopes:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes'
+      seed_peer_cluster_config:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig'
+    type: object
+  d7y_io_dragonfly_v2_manager_types.UpdateClusterResponse:
+    properties:
+      bio:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: integer
+      isDefault:
+        type: boolean
+      name:
+        type: string
+      peerClusterConfig:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterClientConfig'
+      schedulerClusterConfig:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterConfig'
+      schedulerClusterID:
+        type: integer
+      scopes:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes'
+      seedPeerClusterConfig:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig'
+      seedPeerClusterID:
+        type: integer
+      updatedAt:
+        type: string
+    type: object
   d7y_io_dragonfly_v2_manager_types.UpdateConfigRequest:
     properties:
       bio:
@@ -681,8 +797,6 @@ definitions:
         type: string
       config:
         $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig'
-      is_default:
-        type: boolean
       name:
         type: string
     type: object
@@ -988,6 +1102,154 @@ paths:
       summary: Get Bucket
       tags:
       - Bucket
+  /clusters:
+    get:
+      consumes:
+      - application/json
+      description: Get Clusters
+      parameters:
+      - default: 0
+        description: current page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - default: 10
+        description: return max item count, default 10, max 50
+        in: query
+        maximum: 50
+        minimum: 2
+        name: per_page
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.GetClusterResponse'
+            type: array
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Get Clusters
+      tags:
+      - Cluster
+    post:
+      consumes:
+      - application/json
+      description: Create by json config
+      parameters:
+      - description: Cluster
+        in: body
+        name: Cluster
+        required: true
+        schema:
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.CreateClusterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.CreateClusterResponse'
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Create Cluster
+      tags:
+      - Cluster
+  /clusters/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Destroy by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Destroy Cluster
+      tags:
+      - Cluster
+    get:
+      consumes:
+      - application/json
+      description: Get Cluster by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.GetClusterResponse'
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Get Cluster
+      tags:
+      - Cluster
+    patch:
+      consumes:
+      - application/json
+      description: Update by json config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Cluster
+        in: body
+        name: Cluster
+        required: true
+        schema:
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateClusterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateClusterResponse'
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Update Cluster
+      tags:
+      - Cluster
   /configs:
     get:
       consumes:
