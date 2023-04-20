@@ -81,9 +81,6 @@ type Probes interface {
 }
 
 type probes struct {
-	// host stores host metadata.
-	host *resource.Host
-
 	// limit is the length limit of probe queue.
 	limit int
 
@@ -104,10 +101,9 @@ type probes struct {
 }
 
 // NewProbes creates a new probe list instance.
-func NewProbes(limit int, host *resource.Host) Probes {
+func NewProbes(limit int) Probes {
 	return &probes{
 		limit:      limit,
-		host:       host,
 		items:      list.New(),
 		averageRTT: atomic.NewDuration(0),
 		createdAt:  atomic.NewTime(time.Now()),
