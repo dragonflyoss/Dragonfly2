@@ -140,6 +140,21 @@ func (mr *MockServiceMockRecorder) CreateBucket(arg0, arg1 interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBucket", reflect.TypeOf((*MockService)(nil).CreateBucket), arg0, arg1)
 }
 
+// CreateCluster mocks base method.
+func (m *MockService) CreateCluster(arg0 context.Context, arg1 types.CreateClusterRequest) (*types.CreateClusterResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateCluster", arg0, arg1)
+	ret0, _ := ret[0].(*types.CreateClusterResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateCluster indicates an expected call of CreateCluster.
+func (mr *MockServiceMockRecorder) CreateCluster(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCluster", reflect.TypeOf((*MockService)(nil).CreateCluster), arg0, arg1)
+}
+
 // CreateConfig mocks base method.
 func (m *MockService) CreateConfig(arg0 context.Context, arg1 types.CreateConfigRequest) (*models.Config, error) {
 	m.ctrl.T.Helper()
@@ -332,6 +347,20 @@ func (mr *MockServiceMockRecorder) DestroyBucket(arg0, arg1 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroyBucket", reflect.TypeOf((*MockService)(nil).DestroyBucket), arg0, arg1)
 }
 
+// DestroyCluster mocks base method.
+func (m *MockService) DestroyCluster(arg0 context.Context, arg1 uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DestroyCluster", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DestroyCluster indicates an expected call of DestroyCluster.
+func (mr *MockServiceMockRecorder) DestroyCluster(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroyCluster", reflect.TypeOf((*MockService)(nil).DestroyCluster), arg0, arg1)
+}
+
 // DestroyConfig mocks base method.
 func (m *MockService) DestroyConfig(arg0 context.Context, arg1 uint) error {
 	m.ctrl.T.Helper()
@@ -504,6 +533,37 @@ func (m *MockService) GetBuckets(arg0 context.Context) ([]*objectstorage.BucketM
 func (mr *MockServiceMockRecorder) GetBuckets(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBuckets", reflect.TypeOf((*MockService)(nil).GetBuckets), arg0)
+}
+
+// GetCluster mocks base method.
+func (m *MockService) GetCluster(arg0 context.Context, arg1 uint) (*types.GetClusterResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCluster", arg0, arg1)
+	ret0, _ := ret[0].(*types.GetClusterResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCluster indicates an expected call of GetCluster.
+func (mr *MockServiceMockRecorder) GetCluster(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCluster", reflect.TypeOf((*MockService)(nil).GetCluster), arg0, arg1)
+}
+
+// GetClusters mocks base method.
+func (m *MockService) GetClusters(arg0 context.Context, arg1 types.GetClustersQuery) ([]types.GetClusterResponse, int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetClusters", arg0, arg1)
+	ret0, _ := ret[0].([]types.GetClusterResponse)
+	ret1, _ := ret[1].(int64)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetClusters indicates an expected call of GetClusters.
+func (mr *MockServiceMockRecorder) GetClusters(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusters", reflect.TypeOf((*MockService)(nil).GetClusters), arg0, arg1)
 }
 
 // GetConfig mocks base method.
@@ -928,6 +988,21 @@ func (m *MockService) UpdateApplication(arg0 context.Context, arg1 uint, arg2 ty
 func (mr *MockServiceMockRecorder) UpdateApplication(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateApplication", reflect.TypeOf((*MockService)(nil).UpdateApplication), arg0, arg1, arg2)
+}
+
+// UpdateCluster mocks base method.
+func (m *MockService) UpdateCluster(arg0 context.Context, arg1 uint, arg2 types.UpdateClusterRequest) (*types.UpdateClusterResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateCluster", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*types.UpdateClusterResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateCluster indicates an expected call of UpdateCluster.
+func (mr *MockServiceMockRecorder) UpdateCluster(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCluster", reflect.TypeOf((*MockService)(nil).UpdateCluster), arg0, arg1, arg2)
 }
 
 // UpdateConfig mocks base method.

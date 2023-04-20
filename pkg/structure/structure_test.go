@@ -78,3 +78,49 @@ func TestStructToMap(t *testing.T) {
 		})
 	}
 }
+
+func TestMapToStruct(t *testing.T) {
+	type person struct {
+		Name string
+		Age  float64
+	}
+
+	tests := []struct {
+		name   string
+		m      map[string]any
+		expect func(*testing.T, *person, error)
+	}{
+		{
+			name: "conver struct to map",
+			m: map[string]any{
+				"Name": "foo",
+				"Age":  float64(18),
+			},
+			expect: func(t *testing.T, s *person, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(s, &person{
+					Name: "foo",
+					Age:  18,
+				})
+			},
+		},
+		{
+			name: "conver nil to map",
+			m:    nil,
+			expect: func(t *testing.T, s *person, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(s, &person{Name: "", Age: 0})
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s := &person{}
+			err := MapToStruct(tc.m, s)
+			tc.expect(t, s, err)
+		})
+	}
+}
