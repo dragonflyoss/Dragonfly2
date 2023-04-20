@@ -25,24 +25,15 @@ import (
 )
 
 func (s *service) CreateModel(ctx context.Context, json types.CreateModelRequest) (*models.Model, error) {
-	var err error
-	var evaluation map[string]any
-	switch json.Type {
-	case models.ModelTypeMLP:
-		evaluation, err = structure.StructToMap(json.Evaluation.MLPModelEvaluation)
-		if err != nil {
-			return nil, err
-		}
-	case models.ModelTypeGNN:
-		evaluation, err = structure.StructToMap(json.Evaluation.GNNModelEvaluation)
-		if err != nil {
-			return nil, err
-		}
+	evaluation, err := structure.StructToMap(json.Evaluation)
+	if err != nil {
+		return nil, err
 	}
 
 	model := models.Model{
 		Type:        json.Type,
 		BIO:         json.BIO,
+		Version:     json.Version,
 		State:       models.ModelVersionStateInactive,
 		Evaluation:  evaluation,
 		SchedulerID: json.SchedulerID,
@@ -68,29 +59,18 @@ func (s *service) DestroyModel(ctx context.Context, id uint) error {
 }
 
 func (s *service) UpdateModel(ctx context.Context, id uint, json types.UpdateModelRequest) (*models.Model, error) {
-	var err error
-	var evaluation map[string]any
-	switch json.Type {
-	case models.ModelTypeMLP:
-		evaluation, err = structure.StructToMap(json.Evaluation.MLPModelEvaluation)
-		if err != nil {
-			return nil, err
-		}
-	case models.ModelTypeGNN:
-		evaluation, err = structure.StructToMap(json.Evaluation.GNNModelEvaluation)
-		if err != nil {
-			return nil, err
-		}
+	evaluation, err := structure.StructToMap(json.Evaluation)
+	if err != nil {
+		return nil, err
 	}
 
-	model := models.Model{
-		Type:        json.Type,
+	model := models.Model{}
+	if err := s.db.WithContext(ctx).First(&model, id).Updates(models.Model{
 		BIO:         json.BIO,
-		State:       models.ModelVersionStateInactive,
+		State:       json.State,
 		Evaluation:  evaluation,
 		SchedulerID: json.SchedulerID,
-	}
-	if err := s.db.WithContext(ctx).First(&model, id).Updates(model).Error; err != nil {
+	}).Error; err != nil {
 		return nil, err
 	}
 
