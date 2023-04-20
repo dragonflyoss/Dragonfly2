@@ -520,11 +520,11 @@ func (cfg *Config) Validate() error {
 			return errors.New("job requires parameter addrs")
 		}
 
-		if cfg.Job.Redis.BrokerDB <= 0 {
+		if cfg.Job.Redis.BrokerDB < 0 {
 			return errors.New("job requires parameter redis brokerDB")
 		}
 
-		if cfg.Job.Redis.BackendDB <= 0 {
+		if cfg.Job.Redis.BackendDB < 0 {
 			return errors.New("job requires parameter redis backendDB")
 		}
 	}
