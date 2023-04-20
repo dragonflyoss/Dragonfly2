@@ -29,6 +29,7 @@ type CreateModelRequest struct {
 }
 
 type UpdateModelRequest struct {
+	Type        string           `json:"type" binding:"required"`
 	BIO         string           `json:"BIO" binding:"omitempty"`
 	State       string           `json:"state" binding:"required,oneof=active inactive"`
 	Evaluation  *ModelEvaluation `json:"evaluation" binding:"omitempty"`
@@ -45,9 +46,17 @@ type GetModelsQuery struct {
 }
 
 type ModelEvaluation struct {
+	GNNModelEvaluation *GNNModelEvaluation `json:"gnn_model_evaluation" binding:"omitempty"`
+	MLPModelEvaluation *MLPModelEvaluation `json:"mlp_model_evaluation" binding:"omitempty"`
+}
+
+type GNNModelEvaluation struct {
 	Recall    float64 `json:"recall" binding:"omitempty"`
 	Precision float64 `json:"precision" binding:"omitempty"`
 	F1Score   float64 `json:"f1_score" binding:"omitempty"`
-	Mse       float64 `json:"mse" binding:"omitempty"`
-	Mae       float64 `json:"mae" binding:"omitempty"`
+}
+
+type MLPModelEvaluation struct {
+	Mse float64 `json:"mse" binding:"omitempty"`
+	Mae float64 `json:"mae" binding:"omitempty"`
 }
