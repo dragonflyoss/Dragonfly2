@@ -506,7 +506,7 @@ func TestConfig_Validate(t *testing.T) {
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
 				cfg.Job = mockJobConfig
-				cfg.Job.Redis.BrokerDB = 0
+				cfg.Job.Redis.BrokerDB = -1
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
@@ -519,7 +519,7 @@ func TestConfig_Validate(t *testing.T) {
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
 				cfg.Job = mockJobConfig
-				cfg.Job.Redis.BackendDB = 0
+				cfg.Job.Redis.BackendDB = -1
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
