@@ -122,11 +122,17 @@ func New(baseDir string, maxSize, maxBackups, bufferSize int) (Storage, error) {
 		networkTopologyBuffer:   make([]NetworkTopology, 0, bufferSize),
 	}
 
-	file, err := os.OpenFile(s.downloadFilename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	downloadFile, err := os.OpenFile(s.downloadFilename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return nil, err
 	}
-	file.Close()
+	downloadFile.Close()
+
+	networkTopologyFile, err := os.OpenFile(s.networkTopologyFilename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		return nil, err
+	}
+	networkTopologyFile.Close()
 
 	return s, nil
 }
