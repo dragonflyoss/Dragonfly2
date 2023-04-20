@@ -193,7 +193,7 @@ func (s *storage) CreateNetworkTopology(networkTopology NetworkTopology) error {
 			return err
 		}
 
-		// Update download count.
+		// Update network topology count.
 		s.networkTopologyCount += int64(s.bufferSize)
 
 		// Keep allocated memory.
