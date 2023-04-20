@@ -29,10 +29,10 @@ type CreateModelRequest struct {
 }
 
 type UpdateModelRequest struct {
-	BIO         string         `json:"BIO" binding:"omitempty"`
-	State       string         `json:"state" binding:"required,oneof=active inactive"`
-	Evaluation  map[string]any `json:"evaluation" binding:"omitempty"`
-	SchedulerID uint           `json:"scheduler_id" binding:"omitempty"`
+	BIO         string           `json:"BIO" binding:"omitempty"`
+	State       string           `json:"state" binding:"required,oneof=active inactive"`
+	Evaluation  *ModelEvaluation `json:"evaluation" binding:"omitempty"`
+	SchedulerID uint             `json:"scheduler_id" binding:"omitempty"`
 }
 
 type GetModelsQuery struct {

@@ -60,11 +60,16 @@ func (s *service) DestroyModel(ctx context.Context, id uint) error {
 }
 
 func (s *service) UpdateModel(ctx context.Context, id uint, json types.UpdateModelRequest) (*models.Model, error) {
+	evaluation, err := structure.StructToMap(json.Evaluation)
+	if err != nil {
+		return nil, err
+	}
+
 	model := models.Model{}
 	if err := s.db.WithContext(ctx).First(&model, id).Updates(models.Model{
 		BIO:         json.BIO,
 		State:       json.State,
-		Evaluation:  json.Evaluation,
+		Evaluation:  evaluation,
 		SchedulerID: json.SchedulerID,
 	}).Error; err != nil {
 		return nil, err
