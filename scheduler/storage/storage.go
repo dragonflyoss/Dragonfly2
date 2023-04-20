@@ -95,12 +95,13 @@ type storage struct {
 	maxSize    int64
 	maxBackups int
 	bufferSize int
-	mu         *sync.RWMutex
 
+	downloadRWMutex  *sync.RWMutex
 	downloadFilename string
 	downloadBuffer   []Download
 	downloadCount    int64
 
+	networkTopologyRWMutex  *sync.RWMutex
 	networkTopologyFilename string
 	networkTopologyBuffer   []NetworkTopology
 	networkTopologyCount    int64
@@ -113,11 +114,12 @@ func New(baseDir string, maxSize, maxBackups, bufferSize int) (Storage, error) {
 		maxSize:    int64(maxSize * megabyte),
 		maxBackups: maxBackups,
 		bufferSize: bufferSize,
-		mu:         &sync.RWMutex{},
 
+		downloadRWMutex:  &sync.RWMutex{},
 		downloadFilename: filepath.Join(baseDir, fmt.Sprintf("%s.%s", DownloadFilePrefix, CSVFileExt)),
 		downloadBuffer:   make([]Download, 0, bufferSize),
 
+		networkTopologyRWMutex:  &sync.RWMutex{},
 		networkTopologyFilename: filepath.Join(baseDir, fmt.Sprintf("%s.%s", NetworkTopologyFilePrefix, CSVFileExt)),
 		networkTopologyBuffer:   make([]NetworkTopology, 0, bufferSize),
 	}
@@ -139,8 +141,8 @@ func New(baseDir string, maxSize, maxBackups, bufferSize int) (Storage, error) {
 
 // CreateDownload inserts the download into csv file.
 func (s *storage) CreateDownload(download Download) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.downloadRWMutex.Lock()
+	defer s.downloadRWMutex.Unlock()
 
 	// Write without buffer.
 	if s.bufferSize == 0 {
@@ -173,8 +175,8 @@ func (s *storage) CreateDownload(download Download) error {
 
 // CreateNetworkTopology inserts the network topology into csv file.
 func (s *storage) CreateNetworkTopology(networkTopology NetworkTopology) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.networkTopologyRWMutex.Lock()
+	defer s.networkTopologyRWMutex.Unlock()
 
 	// Write without buffer.
 	if s.bufferSize == 0 {
@@ -207,8 +209,8 @@ func (s *storage) CreateNetworkTopology(networkTopology NetworkTopology) error {
 
 // ListDownload returns all downloads in csv file.
 func (s *storage) ListDownload() ([]Download, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.downloadRWMutex.RLock()
+	defer s.downloadRWMutex.RUnlock()
 
 	fileInfos, err := s.downloadBackups()
 	if err != nil {
@@ -245,8 +247,8 @@ func (s *storage) ListDownload() ([]Download, error) {
 
 // ListNetworkTopology returns all network topologies in csv file.
 func (s *storage) ListNetworkTopology() ([]NetworkTopology, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.networkTopologyRWMutex.RLock()
+	defer s.networkTopologyRWMutex.RUnlock()
 
 	fileInfos, err := s.networkTopologyBackups()
 	if err != nil {
@@ -293,8 +295,8 @@ func (s *storage) NetworkTopologyCount() int64 {
 
 // OpenDownload opens download files for read, it returns io.ReadCloser of download files.
 func (s *storage) OpenDownload() (io.ReadCloser, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.downloadRWMutex.RLock()
+	defer s.downloadRWMutex.RUnlock()
 
 	fileInfos, err := s.downloadBackups()
 	if err != nil {
@@ -316,8 +318,8 @@ func (s *storage) OpenDownload() (io.ReadCloser, error) {
 
 // OpenNetworkTopology opens network topology files for read, it returns io.ReadCloser of network topology files.
 func (s *storage) OpenNetworkTopology() (io.ReadCloser, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.networkTopologyRWMutex.RLock()
+	defer s.networkTopologyRWMutex.RUnlock()
 
 	fileInfos, err := s.networkTopologyBackups()
 	if err != nil {
@@ -339,8 +341,8 @@ func (s *storage) OpenNetworkTopology() (io.ReadCloser, error) {
 
 // ClearDownload removes all downloads.
 func (s *storage) ClearDownload() error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.downloadRWMutex.Lock()
+	defer s.downloadRWMutex.Unlock()
 
 	fileInfos, err := s.downloadBackups()
 	if err != nil {
@@ -359,8 +361,8 @@ func (s *storage) ClearDownload() error {
 
 // ClearNetworkTopology removes all network topologies.
 func (s *storage) ClearNetworkTopology() error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.networkTopologyRWMutex.Lock()
+	defer s.networkTopologyRWMutex.Unlock()
 
 	fileInfos, err := s.networkTopologyBackups()
 	if err != nil {
