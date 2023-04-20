@@ -409,7 +409,7 @@ func TestStorage_CreateNetworkTopology(t *testing.T) {
 			baseDir:    os.TempDir(),
 			bufferSize: 0,
 			mock: func(s Storage) {
-				s.(*storage).baseDir = "foo"
+				s.(*storage).baseDir = "ba"
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
@@ -1105,7 +1105,7 @@ func TestStorage_createNetworkTopology(t *testing.T) {
 			name:    "open file failed",
 			baseDir: os.TempDir(),
 			mock: func(s Storage) {
-				s.(*storage).baseDir = "foo"
+				s.(*storage).baseDir = "ba"
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
