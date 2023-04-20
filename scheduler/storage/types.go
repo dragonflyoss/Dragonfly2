@@ -164,8 +164,8 @@ type Error struct {
 	Message string `csv:"message"`
 }
 
-// Record contains content for record.
-type Record struct {
+// Download contains content for download.
+type Download struct {
 	// ID is peer id.
 	ID string `csv:"id"`
 
@@ -198,4 +198,37 @@ type Record struct {
 
 	// UpdatedAt is peer update nanosecond time.
 	UpdatedAt int64 `csv:"updatedAt"`
+}
+
+// Probes contains content for probes.
+type Probes struct {
+	// AverageRTT is the average round-trip time of probes.
+	AverageRTT int64 `csv:"averageRTT"`
+
+	// CreatedAt is probe create nanosecond time.
+	CreatedAt int64 `csv:"createdAt"`
+
+	// UpdatedAt is probe update nanosecond time.
+	UpdatedAt int64 `csv:"updatedAt"`
+}
+
+// DestHost contains content for destination host.
+type DestHost struct {
+	// Host is probe destination host.
+	Host Host `csv:"host"`
+
+	// Probes is the network information probed to destination host.
+	Probes Probes `csv:"probes"`
+}
+
+// NetworkTopology contains content for network topology.
+type NetworkTopology struct {
+	// ID is network topology id.
+	ID string `csv:"id"`
+
+	// Host is probe source host.
+	Host Host `csv:"host"`
+
+	// DestHosts is the destination hosts probed from source host.
+	DestHosts []DestHost `csv:"destHosts" csv[]:"10"`
 }

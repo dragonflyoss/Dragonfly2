@@ -513,7 +513,6 @@ func (v *V1) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequ
 			options = append(options, resource.WithNetwork(resource.Network{
 				TCPConnectionCount:       req.Network.TcpConnectionCount,
 				UploadTCPConnectionCount: req.Network.UploadTcpConnectionCount,
-				SecurityDomain:           req.Network.SecurityDomain,
 				Location:                 req.Network.Location,
 				IDC:                      req.Network.Idc,
 			}))
@@ -602,7 +601,6 @@ func (v *V1) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequ
 		host.Network = resource.Network{
 			TCPConnectionCount:       req.Network.TcpConnectionCount,
 			UploadTCPConnectionCount: req.Network.UploadTcpConnectionCount,
-			SecurityDomain:           req.Network.SecurityDomain,
 			Location:                 req.Network.Location,
 			IDC:                      req.Network.Idc,
 		}
@@ -772,9 +770,8 @@ func (v *V1) storeHost(ctx context.Context, peerHost *schedulerv1.PeerHost) *res
 	host, loaded := v.resource.HostManager().Load(peerHost.Id)
 	if !loaded {
 		options := []resource.HostOption{resource.WithNetwork(resource.Network{
-			SecurityDomain: peerHost.SecurityDomain,
-			Location:       peerHost.Location,
-			IDC:            peerHost.Idc,
+			Location: peerHost.Location,
+			IDC:      peerHost.Idc,
 		})}
 		if clientConfig, err := v.dynconfig.GetSchedulerClusterClientConfig(); err == nil && clientConfig.LoadLimit > 0 {
 			options = append(options, resource.WithConcurrentUploadLimit(int32(clientConfig.LoadLimit)))
@@ -793,7 +790,6 @@ func (v *V1) storeHost(ctx context.Context, peerHost *schedulerv1.PeerHost) *res
 
 	host.Port = peerHost.RpcPort
 	host.DownloadPort = peerHost.DownPort
-	host.Network.SecurityDomain = peerHost.SecurityDomain
 	host.Network.Location = peerHost.Location
 	host.Network.IDC = peerHost.Idc
 	host.UpdatedAt.Store(time.Now())
@@ -1306,7 +1302,6 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 		parentRecord.Host.Network = resource.Network{
 			TCPConnectionCount:       parent.Host.Network.TCPConnectionCount,
 			UploadTCPConnectionCount: parent.Host.Network.UploadTCPConnectionCount,
-			SecurityDomain:           parent.Host.Network.SecurityDomain,
 			Location:                 parent.Host.Network.Location,
 			IDC:                      parent.Host.Network.IDC,
 		}
@@ -1345,7 +1340,7 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 		parentRecords = append(parentRecords, parentRecord)
 	}
 
-	record := storage.Record{
+	download := storage.Download{
 		ID:          peer.ID,
 		Tag:         peer.Task.Tag,
 		Application: peer.Task.Application,
@@ -1387,7 +1382,7 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 		},
 	}
 
-	record.Host.CPU = resource.CPU{
+	download.Host.CPU = resource.CPU{
 		LogicalCount:   peer.Host.CPU.LogicalCount,
 		PhysicalCount:  peer.Host.CPU.PhysicalCount,
 		Percent:        peer.Host.CPU.Percent,
@@ -1406,7 +1401,7 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 		},
 	}
 
-	record.Host.Memory = resource.Memory{
+	download.Host.Memory = resource.Memory{
 		Total:              peer.Host.Memory.Total,
 		Available:          peer.Host.Memory.Available,
 		Used:               peer.Host.Memory.Used,
@@ -1415,15 +1410,14 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 		Free:               peer.Host.Memory.Free,
 	}
 
-	record.Host.Network = resource.Network{
+	download.Host.Network = resource.Network{
 		TCPConnectionCount:       peer.Host.Network.TCPConnectionCount,
 		UploadTCPConnectionCount: peer.Host.Network.UploadTCPConnectionCount,
-		SecurityDomain:           peer.Host.Network.SecurityDomain,
 		Location:                 peer.Host.Network.Location,
 		IDC:                      peer.Host.Network.IDC,
 	}
 
-	record.Host.Disk = resource.Disk{
+	download.Host.Disk = resource.Disk{
 		Total:             peer.Host.Disk.Total,
 		Free:              peer.Host.Disk.Free,
 		Used:              peer.Host.Disk.Used,
@@ -1434,7 +1428,7 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 		InodesUsedPercent: peer.Host.Disk.InodesUsedPercent,
 	}
 
-	record.Host.Build = resource.Build{
+	download.Host.Build = resource.Build{
 		GitVersion: peer.Host.Build.GitVersion,
 		GitCommit:  peer.Host.Build.GitCommit,
 		GoVersion:  peer.Host.Build.GoVersion,
@@ -1442,12 +1436,12 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 	}
 
 	if req.Code != commonv1.Code_Success {
-		record.Error = storage.Error{
+		download.Error = storage.Error{
 			Code: req.Code.String(),
 		}
 	}
 
-	if err := v.storage.Create(record); err != nil {
+	if err := v.storage.CreateDownload(download); err != nil {
 		peer.Log.Error(err)
 	}
 }

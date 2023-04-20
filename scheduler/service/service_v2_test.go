@@ -201,7 +201,6 @@ func TestServiceV2_StatPeer(t *testing.T) {
 						Network: &commonv2.Network{
 							TcpConnectionCount:       peer.Host.Network.TCPConnectionCount,
 							UploadTcpConnectionCount: peer.Host.Network.UploadTCPConnectionCount,
-							SecurityDomain:           peer.Host.Network.SecurityDomain,
 							Location:                 peer.Host.Network.Location,
 							Idc:                      peer.Host.Network.IDC,
 						},
@@ -456,7 +455,6 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 					Network: &commonv2.Network{
 						TcpConnectionCount:       mockNetwork.TCPConnectionCount,
 						UploadTcpConnectionCount: mockNetwork.UploadTCPConnectionCount,
-						SecurityDomain:           mockNetwork.SecurityDomain,
 						Location:                 mockNetwork.Location,
 						Idc:                      mockNetwork.IDC,
 					},
@@ -561,7 +559,6 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 					Network: &commonv2.Network{
 						TcpConnectionCount:       mockNetwork.TCPConnectionCount,
 						UploadTcpConnectionCount: mockNetwork.UploadTCPConnectionCount,
-						SecurityDomain:           mockNetwork.SecurityDomain,
 						Location:                 mockNetwork.Location,
 						Idc:                      mockNetwork.IDC,
 					},
@@ -666,7 +663,6 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 					Network: &commonv2.Network{
 						TcpConnectionCount:       mockNetwork.TCPConnectionCount,
 						UploadTcpConnectionCount: mockNetwork.UploadTCPConnectionCount,
-						SecurityDomain:           mockNetwork.SecurityDomain,
 						Location:                 mockNetwork.Location,
 						Idc:                      mockNetwork.IDC,
 					},
@@ -767,7 +763,6 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 					Network: &commonv2.Network{
 						TcpConnectionCount:       mockNetwork.TCPConnectionCount,
 						UploadTcpConnectionCount: mockNetwork.UploadTCPConnectionCount,
-						SecurityDomain:           mockNetwork.SecurityDomain,
 						Location:                 mockNetwork.Location,
 						Idc:                      mockNetwork.IDC,
 					},

@@ -285,11 +285,10 @@ func TestPeerHostOption_Load(t *testing.T) {
 			DisableAutoBackSource: true,
 		},
 		Host: HostOption{
-			Hostname:       "d7y.io",
-			SecurityDomain: "d7y.io",
-			Location:       "0.0.0.0",
-			IDC:            "d7y",
-			AdvertiseIP:    net.IPv4zero,
+			Hostname:    "d7y.io",
+			Location:    "0.0.0.0",
+			IDC:         "d7y",
+			AdvertiseIP: net.IPv4zero,
 		},
 		Download: DownloadOption{
 			TotalRateLimit: util.RateLimit{
@@ -534,7 +533,14 @@ func TestPeerHostOption_Validate(t *testing.T) {
 		{
 			name:   "valid config",
 			config: NewDaemonConfig(),
-			mock:   func(cfg *DaemonConfig) {},
+			mock: func(cfg *DaemonConfig) {
+				cfg.Scheduler.NetAddrs = []dfnet.NetAddr{
+					{
+						Type: dfnet.TCP,
+						Addr: "127.0.0.1:8002",
+					},
+				}
+			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
@@ -585,6 +591,12 @@ func TestPeerHostOption_Validate(t *testing.T) {
 			name:   "download rate limit must be greater",
 			config: NewDaemonConfig(),
 			mock: func(cfg *DaemonConfig) {
+				cfg.Scheduler.NetAddrs = []dfnet.NetAddr{
+					{
+						Type: dfnet.TCP,
+						Addr: "127.0.0.1:8002",
+					},
+				}
 				cfg.Download.TotalRateLimit.Limit = rate.Limit(10 * unit.MB)
 			},
 			expect: func(t *testing.T, err error) {
@@ -597,6 +609,12 @@ func TestPeerHostOption_Validate(t *testing.T) {
 			name:   "upload rate limit must be greater",
 			config: NewDaemonConfig(),
 			mock: func(cfg *DaemonConfig) {
+				cfg.Scheduler.NetAddrs = []dfnet.NetAddr{
+					{
+						Type: dfnet.TCP,
+						Addr: "127.0.0.1:8002",
+					},
+				}
 				cfg.Upload.RateLimit.Limit = rate.Limit(10 * unit.MB)
 			},
 			expect: func(t *testing.T, err error) {
@@ -609,6 +627,12 @@ func TestPeerHostOption_Validate(t *testing.T) {
 			name:   "max replicas must be greater than 0",
 			config: NewDaemonConfig(),
 			mock: func(cfg *DaemonConfig) {
+				cfg.Scheduler.NetAddrs = []dfnet.NetAddr{
+					{
+						Type: dfnet.TCP,
+						Addr: "127.0.0.1:8002",
+					},
+				}
 				cfg.ObjectStorage.Enable = true
 				cfg.ObjectStorage.MaxReplicas = 0
 			},
@@ -621,6 +645,12 @@ func TestPeerHostOption_Validate(t *testing.T) {
 			name:   "reload interval too short, must great than 1 second",
 			config: NewDaemonConfig(),
 			mock: func(cfg *DaemonConfig) {
+				cfg.Scheduler.NetAddrs = []dfnet.NetAddr{
+					{
+						Type: dfnet.TCP,
+						Addr: "127.0.0.1:8002",
+					},
+				}
 				cfg.Reload.Interval.Duration = time.Millisecond
 			},
 			expect: func(t *testing.T, err error) {
@@ -632,6 +662,12 @@ func TestPeerHostOption_Validate(t *testing.T) {
 			name:   "gcInterval must be greater than 0",
 			config: NewDaemonConfig(),
 			mock: func(cfg *DaemonConfig) {
+				cfg.Scheduler.NetAddrs = []dfnet.NetAddr{
+					{
+						Type: dfnet.TCP,
+						Addr: "127.0.0.1:8002",
+					},
+				}
 				cfg.GCInterval.Duration = 0
 			},
 			expect: func(t *testing.T, err error) {
@@ -643,6 +679,12 @@ func TestPeerHostOption_Validate(t *testing.T) {
 			name:   "security requires parameter caCert",
 			config: NewDaemonConfig(),
 			mock: func(cfg *DaemonConfig) {
+				cfg.Scheduler.NetAddrs = []dfnet.NetAddr{
+					{
+						Type: dfnet.TCP,
+						Addr: "127.0.0.1:8002",
+					},
+				}
 				cfg.Security.AutoIssueCert = true
 				cfg.Security.CACert = ""
 			},
@@ -655,6 +697,12 @@ func TestPeerHostOption_Validate(t *testing.T) {
 			name:   "certSpec requires parameter ipAddresses",
 			config: NewDaemonConfig(),
 			mock: func(cfg *DaemonConfig) {
+				cfg.Scheduler.NetAddrs = []dfnet.NetAddr{
+					{
+						Type: dfnet.TCP,
+						Addr: "127.0.0.1:8002",
+					},
+				}
 				cfg.Security.AutoIssueCert = true
 				cfg.Security.CACert = "test"
 				cfg.Security.CertSpec.IPAddresses = nil
@@ -668,6 +716,12 @@ func TestPeerHostOption_Validate(t *testing.T) {
 			name:   "certSpec requires parameter dnsNames",
 			config: NewDaemonConfig(),
 			mock: func(cfg *DaemonConfig) {
+				cfg.Scheduler.NetAddrs = []dfnet.NetAddr{
+					{
+						Type: dfnet.TCP,
+						Addr: "127.0.0.1:8002",
+					},
+				}
 				cfg.Security.AutoIssueCert = true
 				cfg.Security.CACert = "test"
 				cfg.Security.CertSpec.IPAddresses = []net.IP{net.ParseIP("127.0.0.1")}
@@ -682,6 +736,12 @@ func TestPeerHostOption_Validate(t *testing.T) {
 			name:   "certSpec requires parameter validityPeriod",
 			config: NewDaemonConfig(),
 			mock: func(cfg *DaemonConfig) {
+				cfg.Scheduler.NetAddrs = []dfnet.NetAddr{
+					{
+						Type: dfnet.TCP,
+						Addr: "127.0.0.1:8002",
+					},
+				}
 				cfg.Security.AutoIssueCert = true
 				cfg.Security.CACert = "testcert"
 				cfg.Security.CertSpec.ValidityPeriod = 0

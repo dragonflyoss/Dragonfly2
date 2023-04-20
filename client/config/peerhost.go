@@ -167,11 +167,10 @@ func (p *DaemonOption) Validate() error {
 		if p.Scheduler.Manager.RefreshInterval == 0 {
 			return errors.New("manager refreshInterval is not specified")
 		}
-		return nil
-	}
-
-	if len(p.Scheduler.NetAddrs) == 0 {
-		return errors.New("empty schedulers and config server is not specified")
+	} else {
+		if len(p.Scheduler.NetAddrs) == 0 {
+			return errors.New("empty schedulers and config server is not specified")
+		}
 	}
 
 	if int64(p.Download.TotalRateLimit.Limit) < DefaultMinRate.ToNumber() {
@@ -282,8 +281,6 @@ type KeepAliveOption struct {
 }
 
 type HostOption struct {
-	// SecurityDomain is the security domain
-	SecurityDomain string `mapstructure:"securityDomain" yaml:"securityDomain"`
 	// IDC for scheduler
 	IDC string `mapstructure:"idc" yaml:"idc"`
 	// Location for scheduler

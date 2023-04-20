@@ -142,7 +142,6 @@ var (
 	mockNetwork = resource.Network{
 		TCPConnectionCount:       10,
 		UploadTCPConnectionCount: 1,
-		SecurityDomain:           mockHostSecurityDomain,
 		Location:                 mockHostLocation,
 		IDC:                      mockHostIDC,
 	}
@@ -166,14 +165,13 @@ var (
 	}
 
 	mockPeerHost = &schedulerv1.PeerHost{
-		Id:             mockHostID,
-		Ip:             "127.0.0.1",
-		RpcPort:        8003,
-		DownPort:       8001,
-		Hostname:       "hostname",
-		SecurityDomain: mockHostSecurityDomain,
-		Location:       mockHostLocation,
-		Idc:            mockHostIDC,
+		Id:       mockHostID,
+		Ip:       "127.0.0.1",
+		RpcPort:  8003,
+		DownPort: 8001,
+		Hostname: "hostname",
+		Location: mockHostLocation,
+		Idc:      mockHostIDC,
 	}
 
 	mockTaskBackToSourceLimit int32 = 200
@@ -187,7 +185,6 @@ var (
 	mockTaskPieceLength       int32 = 2048
 	mockHostID                      = idgen.HostIDV2("127.0.0.1", "hostname")
 	mockSeedHostID                  = idgen.HostIDV2("127.0.0.1", "hostname_seed")
-	mockHostSecurityDomain          = "security_domain"
 	mockHostLocation                = "location"
 	mockHostIDC                     = "idc"
 	mockPeerID                      = idgen.PeerIDV2()
@@ -1220,7 +1217,7 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
 					md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1),
-					ms.Create(gomock.Any()).Do(func(record storage.Record) { wg.Done() }).Return(nil).Times(1),
+					ms.CreateDownload(gomock.Any()).Do(func(download storage.Download) { wg.Done() }).Return(nil).Times(1),
 				)
 
 				assert := assert.New(t)
@@ -1246,7 +1243,7 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
 					md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1),
-					ms.Create(gomock.Any()).Do(func(record storage.Record) { wg.Done() }).Return(nil).Times(1),
+					ms.CreateDownload(gomock.Any()).Do(func(download storage.Download) { wg.Done() }).Return(nil).Times(1),
 				)
 
 				assert := assert.New(t)
@@ -1272,7 +1269,7 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
 					md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1),
-					ms.Create(gomock.Any()).Do(func(record storage.Record) { wg.Done() }).Return(nil).Times(1),
+					ms.CreateDownload(gomock.Any()).Do(func(download storage.Download) { wg.Done() }).Return(nil).Times(1),
 				)
 
 				assert := assert.New(t)
@@ -1298,7 +1295,7 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
 					md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1),
-					ms.Create(gomock.Any()).Do(func(record storage.Record) { wg.Done() }).Return(nil).Times(1),
+					ms.CreateDownload(gomock.Any()).Do(func(download storage.Download) { wg.Done() }).Return(nil).Times(1),
 				)
 
 				assert := assert.New(t)
@@ -1307,7 +1304,7 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 			},
 		},
 		{
-			name: "receive peer success and create record failed",
+			name: "receive peer success and create download failed",
 			req: &schedulerv1.PeerResult{
 				Success: true,
 				PeerId:  mockPeerID,
@@ -1324,7 +1321,7 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
 					md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1),
-					ms.Create(gomock.Any()).Do(func(record storage.Record) { wg.Done() }).Return(nil).Times(1),
+					ms.CreateDownload(gomock.Any()).Do(func(download storage.Download) { wg.Done() }).Return(nil).Times(1),
 				)
 
 				assert := assert.New(t)
@@ -1963,7 +1960,6 @@ func TestServiceV1_AnnounceHost(t *testing.T) {
 				Network: &schedulerv1.Network{
 					TcpConnectionCount:       mockNetwork.TCPConnectionCount,
 					UploadTcpConnectionCount: mockNetwork.UploadTCPConnectionCount,
-					SecurityDomain:           mockNetwork.SecurityDomain,
 					Location:                 mockNetwork.Location,
 					Idc:                      mockNetwork.IDC,
 				},
@@ -2066,7 +2062,6 @@ func TestServiceV1_AnnounceHost(t *testing.T) {
 				Network: &schedulerv1.Network{
 					TcpConnectionCount:       mockNetwork.TCPConnectionCount,
 					UploadTcpConnectionCount: mockNetwork.UploadTCPConnectionCount,
-					SecurityDomain:           mockNetwork.SecurityDomain,
 					Location:                 mockNetwork.Location,
 					Idc:                      mockNetwork.IDC,
 				},
@@ -2169,7 +2164,6 @@ func TestServiceV1_AnnounceHost(t *testing.T) {
 				Network: &schedulerv1.Network{
 					TcpConnectionCount:       mockNetwork.TCPConnectionCount,
 					UploadTcpConnectionCount: mockNetwork.UploadTCPConnectionCount,
-					SecurityDomain:           mockNetwork.SecurityDomain,
 					Location:                 mockNetwork.Location,
 					Idc:                      mockNetwork.IDC,
 				},
@@ -2268,7 +2262,6 @@ func TestServiceV1_AnnounceHost(t *testing.T) {
 				Network: &schedulerv1.Network{
 					TcpConnectionCount:       mockNetwork.TCPConnectionCount,
 					UploadTcpConnectionCount: mockNetwork.UploadTCPConnectionCount,
-					SecurityDomain:           mockNetwork.SecurityDomain,
 					Location:                 mockNetwork.Location,
 					Idc:                      mockNetwork.IDC,
 				},
@@ -3144,7 +3137,6 @@ func TestServiceV1_storeHost(t *testing.T) {
 				assert.Equal(host.ID, mockRawHost.ID)
 				assert.Equal(host.Port, mockRawHost.Port)
 				assert.Equal(host.DownloadPort, mockRawHost.DownloadPort)
-				assert.Equal(host.Network.SecurityDomain, mockRawHost.Network.SecurityDomain)
 				assert.Equal(host.Network.Location, mockRawHost.Network.Location)
 				assert.Equal(host.Network.IDC, mockRawHost.Network.IDC)
 				assert.NotEqual(host.UpdatedAt.Load(), mockRawHost.UpdatedAt.Load())
