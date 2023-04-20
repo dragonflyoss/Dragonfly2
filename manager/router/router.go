@@ -126,6 +126,14 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	oa.GET(":id", h.GetOauth)
 	oa.GET("", h.GetOauths)
 
+	// Cluster
+	c := apiv1.Group("/clusters", jwt.MiddlewareFunc(), rbac)
+	c.POST("", h.CreateCluster)
+	c.DELETE(":id", h.DestroyCluster)
+	c.PATCH(":id", h.UpdateCluster)
+	c.GET(":id", h.GetCluster)
+	c.GET("", h.GetClusters)
+
 	// Scheduler Cluster
 	sc := apiv1.Group("/scheduler-clusters", jwt.MiddlewareFunc(), rbac)
 	sc.POST("", h.CreateSchedulerCluster)
