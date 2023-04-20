@@ -1345,7 +1345,7 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 		parentRecords = append(parentRecords, parentRecord)
 	}
 
-	record := storage.Record{
+	download := storage.Download{
 		ID:          peer.ID,
 		Tag:         peer.Task.Tag,
 		Application: peer.Task.Application,
@@ -1387,7 +1387,7 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 		},
 	}
 
-	record.Host.CPU = resource.CPU{
+	download.Host.CPU = resource.CPU{
 		LogicalCount:   peer.Host.CPU.LogicalCount,
 		PhysicalCount:  peer.Host.CPU.PhysicalCount,
 		Percent:        peer.Host.CPU.Percent,
@@ -1406,7 +1406,7 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 		},
 	}
 
-	record.Host.Memory = resource.Memory{
+	download.Host.Memory = resource.Memory{
 		Total:              peer.Host.Memory.Total,
 		Available:          peer.Host.Memory.Available,
 		Used:               peer.Host.Memory.Used,
@@ -1415,7 +1415,7 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 		Free:               peer.Host.Memory.Free,
 	}
 
-	record.Host.Network = resource.Network{
+	download.Host.Network = resource.Network{
 		TCPConnectionCount:       peer.Host.Network.TCPConnectionCount,
 		UploadTCPConnectionCount: peer.Host.Network.UploadTCPConnectionCount,
 		SecurityDomain:           peer.Host.Network.SecurityDomain,
@@ -1423,7 +1423,7 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 		IDC:                      peer.Host.Network.IDC,
 	}
 
-	record.Host.Disk = resource.Disk{
+	download.Host.Disk = resource.Disk{
 		Total:             peer.Host.Disk.Total,
 		Free:              peer.Host.Disk.Free,
 		Used:              peer.Host.Disk.Used,
@@ -1434,7 +1434,7 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 		InodesUsedPercent: peer.Host.Disk.InodesUsedPercent,
 	}
 
-	record.Host.Build = resource.Build{
+	download.Host.Build = resource.Build{
 		GitVersion: peer.Host.Build.GitVersion,
 		GitCommit:  peer.Host.Build.GitCommit,
 		GoVersion:  peer.Host.Build.GoVersion,
@@ -1442,12 +1442,12 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 	}
 
 	if req.Code != commonv1.Code_Success {
-		record.Error = storage.Error{
+		download.Error = storage.Error{
 			Code: req.Code.String(),
 		}
 	}
 
-	if err := v.storage.Create(record); err != nil {
+	if err := v.storage.CreateDownload(download); err != nil {
 		peer.Log.Error(err)
 	}
 }
