@@ -92,22 +92,6 @@ type Service interface {
 	GetScheduler(context.Context, uint) (*models.Scheduler, error)
 	GetSchedulers(context.Context, types.GetSchedulersQuery) ([]models.Scheduler, int64, error)
 
-	CreateSecurityRule(context.Context, types.CreateSecurityRuleRequest) (*models.SecurityRule, error)
-	DestroySecurityRule(context.Context, uint) error
-	UpdateSecurityRule(context.Context, uint, types.UpdateSecurityRuleRequest) (*models.SecurityRule, error)
-	GetSecurityRule(context.Context, uint) (*models.SecurityRule, error)
-	GetSecurityRules(context.Context, types.GetSecurityRulesQuery) ([]models.SecurityRule, int64, error)
-
-	CreateSecurityGroup(context.Context, types.CreateSecurityGroupRequest) (*models.SecurityGroup, error)
-	DestroySecurityGroup(context.Context, uint) error
-	UpdateSecurityGroup(context.Context, uint, types.UpdateSecurityGroupRequest) (*models.SecurityGroup, error)
-	GetSecurityGroup(context.Context, uint) (*models.SecurityGroup, error)
-	GetSecurityGroups(context.Context, types.GetSecurityGroupsQuery) ([]models.SecurityGroup, int64, error)
-	AddSchedulerClusterToSecurityGroup(context.Context, uint, uint) error
-	AddSeedPeerClusterToSecurityGroup(context.Context, uint, uint) error
-	AddSecurityRuleToSecurityGroup(context.Context, uint, uint) error
-	DestroySecurityRuleToSecurityGroup(context.Context, uint, uint) error
-
 	CreateBucket(context.Context, types.CreateBucketRequest) error
 	DestroyBucket(context.Context, string) error
 	GetBucket(context.Context, string) (*objectstorage.BucketMetadata, error)

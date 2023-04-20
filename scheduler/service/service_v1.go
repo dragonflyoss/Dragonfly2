@@ -513,7 +513,6 @@ func (v *V1) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequ
 			options = append(options, resource.WithNetwork(resource.Network{
 				TCPConnectionCount:       req.Network.TcpConnectionCount,
 				UploadTCPConnectionCount: req.Network.UploadTcpConnectionCount,
-				SecurityDomain:           req.Network.SecurityDomain,
 				Location:                 req.Network.Location,
 				IDC:                      req.Network.Idc,
 			}))
@@ -602,7 +601,6 @@ func (v *V1) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequ
 		host.Network = resource.Network{
 			TCPConnectionCount:       req.Network.TcpConnectionCount,
 			UploadTCPConnectionCount: req.Network.UploadTcpConnectionCount,
-			SecurityDomain:           req.Network.SecurityDomain,
 			Location:                 req.Network.Location,
 			IDC:                      req.Network.Idc,
 		}
@@ -772,9 +770,8 @@ func (v *V1) storeHost(ctx context.Context, peerHost *schedulerv1.PeerHost) *res
 	host, loaded := v.resource.HostManager().Load(peerHost.Id)
 	if !loaded {
 		options := []resource.HostOption{resource.WithNetwork(resource.Network{
-			SecurityDomain: peerHost.SecurityDomain,
-			Location:       peerHost.Location,
-			IDC:            peerHost.Idc,
+			Location: peerHost.Location,
+			IDC:      peerHost.Idc,
 		})}
 		if clientConfig, err := v.dynconfig.GetSchedulerClusterClientConfig(); err == nil && clientConfig.LoadLimit > 0 {
 			options = append(options, resource.WithConcurrentUploadLimit(int32(clientConfig.LoadLimit)))
@@ -793,7 +790,6 @@ func (v *V1) storeHost(ctx context.Context, peerHost *schedulerv1.PeerHost) *res
 
 	host.Port = peerHost.RpcPort
 	host.DownloadPort = peerHost.DownPort
-	host.Network.SecurityDomain = peerHost.SecurityDomain
 	host.Network.Location = peerHost.Location
 	host.Network.IDC = peerHost.Idc
 	host.UpdatedAt.Store(time.Now())
@@ -1306,7 +1302,6 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 		parentRecord.Host.Network = resource.Network{
 			TCPConnectionCount:       parent.Host.Network.TCPConnectionCount,
 			UploadTCPConnectionCount: parent.Host.Network.UploadTCPConnectionCount,
-			SecurityDomain:           parent.Host.Network.SecurityDomain,
 			Location:                 parent.Host.Network.Location,
 			IDC:                      parent.Host.Network.IDC,
 		}
@@ -1418,7 +1413,6 @@ func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *sc
 	download.Host.Network = resource.Network{
 		TCPConnectionCount:       peer.Host.Network.TCPConnectionCount,
 		UploadTCPConnectionCount: peer.Host.Network.UploadTCPConnectionCount,
-		SecurityDomain:           peer.Host.Network.SecurityDomain,
 		Location:                 peer.Host.Network.Location,
 		IDC:                      peer.Host.Network.IDC,
 	}

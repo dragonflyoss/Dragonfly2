@@ -281,8 +281,6 @@ type KeepAliveOption struct {
 }
 
 type HostOption struct {
-	// SecurityDomain is the security domain
-	SecurityDomain string `mapstructure:"securityDomain" yaml:"securityDomain"`
 	// IDC for scheduler
 	IDC string `mapstructure:"idc" yaml:"idc"`
 	// Location for scheduler

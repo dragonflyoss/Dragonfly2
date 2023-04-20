@@ -37,9 +37,6 @@ import (
 )
 
 const (
-	// Condition security domain key.
-	ConditionSecurityDomain = "security_domain"
-
 	// Condition IDC key.
 	ConditionIDC = "idc"
 
@@ -48,20 +45,17 @@ const (
 )
 
 const (
-	// securityDomainAffinityWeight is security domain affinity weight.
-	securityDomainAffinityWeight float64 = 0.4
-
 	// cidrAffinityWeight is CIDR affinity weight.
-	cidrAffinityWeight float64 = 0.3
+	cidrAffinityWeight float64 = 0.4
 
 	// idcAffinityWeight is IDC affinity weight.
-	idcAffinityWeight float64 = 0.15
+	idcAffinityWeight float64 = 0.35
 
 	// locationAffinityWeight is location affinity weight.
-	locationAffinityWeight = 0.1
+	locationAffinityWeight = 0.24
 
 	// clusterTypeWeight is cluster type weight.
-	clusterTypeWeight float64 = 0.05
+	clusterTypeWeight float64 = 0.01
 )
 
 const (
@@ -141,39 +135,13 @@ func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters 
 // Filter the scheduler clusters that dfdaemon can be used.
 func FilterSchedulerClusters(conditions map[string]string, schedulerClusters []models.SchedulerCluster) []models.SchedulerCluster {
 	var clusters []models.SchedulerCluster
-	securityDomain := conditions[ConditionSecurityDomain]
 	for _, schedulerCluster := range schedulerClusters {
 		// There are no active schedulers in the scheduler cluster
 		if len(schedulerCluster.Schedulers) == 0 {
 			continue
 		}
 
-		// Dfdaemon security_domain does not exist, matching all scheduler clusters
-		if securityDomain == "" {
-			clusters = append(clusters, schedulerCluster)
-			continue
-		}
-
-		// Scheduler cluster is default, matching all dfdaemons
-		if schedulerCluster.IsDefault {
-			clusters = append(clusters, schedulerCluster)
-			continue
-		}
-
-		// Scheduler cluster SecurityRules does not exist, matching all dfdaemons
-		if len(schedulerCluster.SecurityGroup.SecurityRules) == 0 {
-			clusters = append(clusters, schedulerCluster)
-			continue
-		}
-
-		// If security_domain exists for dfdaemon and
-		// scheduler cluster SecurityRules also exists,
-		// then security_domain and SecurityRules are equal to match.
-		for _, securityRule := range schedulerCluster.SecurityGroup.SecurityRules {
-			if strings.EqualFold(securityRule.Domain, securityDomain) {
-				clusters = append(clusters, schedulerCluster)
-			}
-		}
+		clusters = append(clusters, schedulerCluster)
 	}
 
 	return clusters
@@ -181,24 +149,10 @@ func FilterSchedulerClusters(conditions map[string]string, schedulerClusters []m
 
 // Evaluate the degree of matching between scheduler cluster and dfdaemon.
 func Evaluate(ip, hostname string, conditions map[string]string, scopes Scopes, cluster models.SchedulerCluster, log *zap.SugaredLogger) float64 {
-	return securityDomainAffinityWeight*calculateSecurityDomainAffinityScore(conditions[ConditionSecurityDomain], cluster.SecurityGroup.SecurityRules) +
-		cidrAffinityWeight*calculateCIDRAffinityScore(ip, scopes.CIDRs, log) +
+	return cidrAffinityWeight*calculateCIDRAffinityScore(ip, scopes.CIDRs, log) +
 		idcAffinityWeight*calculateIDCAffinityScore(conditions[ConditionIDC], scopes.IDC) +
 		locationAffinityWeight*calculateMultiElementAffinityScore(conditions[ConditionLocation], scopes.Location) +
 		clusterTypeWeight*calculateClusterTypeScore(cluster)
-}
-
-// calculateSecurityDomainAffinityScore 0.0~1.0 larger and better.
-func calculateSecurityDomainAffinityScore(securityDomain string, securityRules []models.SecurityRule) float64 {
-	if securityDomain == "" {
-		return minScore
-	}
-
-	if len(securityRules) == 0 {
-		return minScore
-	}
-
-	return maxScore
 }
 
 // calculateCIDRAffinityScore 0.0~1.0 larger and better.
@@ -238,7 +192,7 @@ func calculateIDCAffinityScore(dst, src string) float64 {
 		return minScore
 	}
 
-	if strings.EqualFold(dst, src) {
+	if dst == src {
 		return maxScore
 	}
 
@@ -247,7 +201,7 @@ func calculateIDCAffinityScore(dst, src string) float64 {
 	// it gets the max score of idc.
 	srcElements := strings.Split(src, types.AffinitySeparator)
 	for _, srcElement := range srcElements {
-		if strings.EqualFold(dst, srcElement) {
+		if dst == srcElement {
 			return maxScore
 		}
 	}
@@ -261,7 +215,7 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 		return minScore
 	}
 
-	if strings.EqualFold(dst, src) {
+	if dst == src {
 		return maxScore
 	}
 
@@ -277,9 +231,10 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 	}
 
 	for i := 0; i < elementLen; i++ {
-		if !strings.EqualFold(dstElements[i], srcElements[i]) {
+		if dstElements[i] != srcElements[i] {
 			break
 		}
+
 		score++
 	}
 
