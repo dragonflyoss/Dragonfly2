@@ -23,9 +23,6 @@ const (
 	// SchedulerName is name of scheduler.
 	SchedulerName = "scheduler"
 
-	// TrainerName is name of trainer.
-	TrainerName = "trainer"
-
 	// DfdaemonName is name of dfdaemon.
 	DfdaemonName = "dfdaemon"
 
@@ -54,9 +51,6 @@ const (
 
 	// DfdaemonMetricsName is name of dfdaemon metrics.
 	DfdaemonMetricsName = "dfdaemon"
-
-	// DfdaemonMetricsName is name of trainer metrics.
-	TrainerMetricsName = "trainer"
 )
 
 const (
