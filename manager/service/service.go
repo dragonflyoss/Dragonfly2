@@ -63,6 +63,12 @@ type Service interface {
 	GetOauth(context.Context, uint) (*models.Oauth, error)
 	GetOauths(context.Context, types.GetOauthsQuery) ([]models.Oauth, int64, error)
 
+	CreateCluster(context.Context, types.CreateClusterRequest) (*types.CreateClusterResponse, error)
+	DestroyCluster(context.Context, uint) error
+	UpdateCluster(context.Context, uint, types.UpdateClusterRequest) (*types.UpdateClusterResponse, error)
+	GetCluster(context.Context, uint) (*types.GetClusterResponse, error)
+	GetClusters(context.Context, types.GetClustersQuery) ([]types.GetClusterResponse, int64, error)
+
 	CreateSeedPeerCluster(context.Context, types.CreateSeedPeerClusterRequest) (*models.SeedPeerCluster, error)
 	DestroySeedPeerCluster(context.Context, uint) error
 	UpdateSeedPeerCluster(context.Context, uint, types.UpdateSeedPeerClusterRequest) (*models.SeedPeerCluster, error)
