@@ -249,11 +249,20 @@ func TestStorage_New(t *testing.T) {
 				assert.Equal(s.(*storage).maxSize, int64(config.DefaultStorageMaxSize*megabyte))
 				assert.Equal(s.(*storage).maxBackups, config.DefaultStorageMaxBackups)
 				assert.Equal(s.(*storage).bufferSize, config.DefaultStorageBufferSize)
+
 				assert.Equal(cap(s.(*storage).downloadBuffer), config.DefaultStorageBufferSize)
 				assert.Equal(len(s.(*storage).downloadBuffer), 0)
 				assert.Equal(s.(*storage).downloadCount, int64(0))
 
+				assert.Equal(cap(s.(*storage).networkTopologyBuffer), config.DefaultStorageBufferSize)
+				assert.Equal(len(s.(*storage).networkTopologyBuffer), 0)
+				assert.Equal(s.(*storage).networkTopologyCount, int64(0))
+
 				if err := s.ClearDownload(); err != nil {
+					t.Fatal(err)
+				}
+
+				if err := s.ClearNetworkTopology(); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -409,7 +418,7 @@ func TestStorage_CreateNetworkTopology(t *testing.T) {
 			baseDir:    os.TempDir(),
 			bufferSize: 0,
 			mock: func(s Storage) {
-				s.(*storage).baseDir = "ba"
+				s.(*storage).baseDir = "bar"
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
@@ -1105,7 +1114,7 @@ func TestStorage_createNetworkTopology(t *testing.T) {
 			name:    "open file failed",
 			baseDir: os.TempDir(),
 			mock: func(s Storage) {
-				s.(*storage).baseDir = "ba"
+				s.(*storage).baseDir = "bar"
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
