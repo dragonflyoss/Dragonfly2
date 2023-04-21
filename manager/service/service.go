@@ -123,6 +123,12 @@ type Service interface {
 	UpdateApplication(context.Context, uint, types.UpdateApplicationRequest) (*models.Application, error)
 	GetApplication(context.Context, uint) (*models.Application, error)
 	GetApplications(context.Context, types.GetApplicationsQuery) ([]models.Application, int64, error)
+
+	CreateModel(context.Context, types.CreateModelRequest) (*models.Model, error)
+	DestroyModel(context.Context, uint) error
+	UpdateModel(context.Context, uint, types.UpdateModelRequest) (*models.Model, error)
+	GetModel(context.Context, uint) (*models.Model, error)
+	GetModels(context.Context, types.GetModelsQuery) ([]models.Model, int64, error)
 }
 
 type service struct {
