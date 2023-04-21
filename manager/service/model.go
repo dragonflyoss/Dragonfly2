@@ -34,7 +34,6 @@ func (s *service) CreateModel(ctx context.Context, json types.CreateModelRequest
 		Type:        json.Type,
 		BIO:         json.BIO,
 		Version:     json.Version,
-		State:       models.ModelVersionStateInactive,
 		Evaluation:  evaluation,
 		SchedulerID: json.SchedulerID,
 	}
@@ -98,7 +97,7 @@ func (s *service) GetModels(ctx context.Context, q types.GetModelsQuery) ([]mode
 	var model []models.Model
 	if err := s.db.WithContext(ctx).Scopes(models.Paginate(q.Page, q.PerPage)).Where(&models.Model{
 		Type:        q.Type,
-		State:       q.State,
+		Version:     q.Version,
 		SchedulerID: q.SchedulerID,
 	}).Find(&model).Limit(-1).Offset(-1).Count(&count).Error; err != nil {
 		return nil, 0, err
