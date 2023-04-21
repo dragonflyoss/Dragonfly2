@@ -200,12 +200,6 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	job.GET(":id", h.GetJob)
 	job.GET("", h.GetJobs)
 
-	// Compatible with the V1 preheat.
-	pv1 := r.Group("/preheats")
-	r.GET("_ping", h.GetHealth)
-	pv1.POST("", h.CreateV1Preheat)
-	pv1.GET(":id", h.GetV1Preheat)
-
 	// Model
 	model := apiv1.Group("/models", jwt.MiddlewareFunc(), rbac)
 	model.POST("", h.CreateModel)
@@ -213,6 +207,12 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	model.PATCH(":id", h.UpdateModel)
 	model.GET(":id", h.GetModel)
 	model.GET("", h.GetModels)
+
+	// Compatible with the V1 preheat.
+	pv1 := r.Group("/preheats")
+	r.GET("_ping", h.GetHealth)
+	pv1.POST("", h.CreateV1Preheat)
+	pv1.GET(":id", h.GetV1Preheat)
 
 	// Health Check
 	r.GET("/healthy", h.GetHealth)
