@@ -1302,28 +1302,28 @@ paths:
         name: id
         required: true
         type: string
-      - description: Model
+      - description: Cluster
         in: body
-        name: Model
+        name: Cluster
         required: true
         schema:
-          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateModelRequest'
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateClusterRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.Model'
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateClusterResponse'
         "400":
           description: Bad Request
         "404":
           description: Not Found
         "500":
           description: Internal Server Error
-      summary: Update Model
+      summary: Update Cluster
       tags:
-      - Model
+      - Cluster
   /configs:
     get:
       consumes:
@@ -1738,6 +1738,38 @@ paths:
         "500":
           description: Internal Server Error
       summary: Get Model
+      tags:
+      - Model
+    patch:
+      consumes:
+      - application/json
+      description: Update by json config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Model
+        in: body
+        name: Model
+        required: true
+        schema:
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.UpdateModelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.Model'
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Update Model
       tags:
       - Model
   /oauth:

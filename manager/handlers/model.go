@@ -73,7 +73,7 @@ func (h *Handlers) DestroyModel(ctx *gin.Context) {
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /clusters/{id} [patch]
+// @Router /models/{id} [patch]
 func (h *Handlers) UpdateModel(ctx *gin.Context) {
 	var params types.ModelParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
