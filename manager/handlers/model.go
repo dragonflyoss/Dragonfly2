@@ -19,7 +19,7 @@ import (
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /clusters [post]
+// @Router /models [post]
 func (h *Handlers) CreateModel(ctx *gin.Context) {
 	var json types.CreateModelRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
@@ -46,7 +46,7 @@ func (h *Handlers) CreateModel(ctx *gin.Context) {
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /clusters/{id} [delete]
+// @Router /models/{id} [delete]
 func (h *Handlers) DestroyModel(ctx *gin.Context) {
 	var params types.ModelParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
@@ -106,7 +106,7 @@ func (h *Handlers) UpdateModel(ctx *gin.Context) {
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /clusters/{id} [get]
+// @Router /models/{id} [get]
 func (h *Handlers) GetModel(ctx *gin.Context) {
 	var params types.ModelParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
@@ -132,7 +132,7 @@ func (h *Handlers) GetModel(ctx *gin.Context) {
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /clusters [get]
+// @Router /models [get]
 func (h *Handlers) GetModels(ctx *gin.Context) {
 	var query types.GetModelsQuery
 	if err := ctx.ShouldBindQuery(&query); err != nil {

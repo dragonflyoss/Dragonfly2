@@ -207,7 +207,7 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	pv1.GET(":id", h.GetV1Preheat)
 
 	// Model
-	model := apiv1.Group("/clusters", jwt.MiddlewareFunc(), rbac)
+	model := apiv1.Group("/models", jwt.MiddlewareFunc(), rbac)
 	model.POST("", h.CreateModel)
 	model.DELETE(":id", h.DestroyModel)
 	model.PATCH(":id", h.UpdateModel)
