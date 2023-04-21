@@ -39,7 +39,7 @@ func (s *service) CreateModel(ctx context.Context, json types.CreateModelRequest
 		SchedulerID: json.SchedulerID,
 	}
 
-	if err := s.db.WithContext(ctx).Preload("Scheduler").Create(&model).Error; err != nil {
+	if err := s.db.WithContext(ctx).Create(&model).Error; err != nil {
 		return nil, err
 	}
 
@@ -72,7 +72,7 @@ func (s *service) UpdateModel(ctx context.Context, id uint, json types.UpdateMod
 	}
 
 	model := models.Model{}
-	if err := s.db.WithContext(ctx).Preload("Scheduler").First(&model, id).Updates(models.Model{
+	if err := s.db.WithContext(ctx).First(&model, id).Updates(models.Model{
 		BIO:         json.BIO,
 		State:       json.State,
 		Evaluation:  evaluation,
@@ -86,7 +86,7 @@ func (s *service) UpdateModel(ctx context.Context, id uint, json types.UpdateMod
 
 func (s *service) GetModel(ctx context.Context, id uint) (*models.Model, error) {
 	model := models.Model{}
-	if err := s.db.WithContext(ctx).Preload("Scheduler").First(&model, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&model, id).Error; err != nil {
 		return nil, err
 	}
 
@@ -96,7 +96,7 @@ func (s *service) GetModel(ctx context.Context, id uint) (*models.Model, error) 
 func (s *service) GetModels(ctx context.Context, q types.GetModelsQuery) ([]models.Model, int64, error) {
 	var count int64
 	var model []models.Model
-	if err := s.db.WithContext(ctx).Scopes(models.Paginate(q.Page, q.PerPage)).Preload("Scheduler").Where(&models.Model{
+	if err := s.db.WithContext(ctx).Scopes(models.Paginate(q.Page, q.PerPage)).Where(&models.Model{
 		Type:        q.Type,
 		State:       q.State,
 		SchedulerID: q.SchedulerID,
