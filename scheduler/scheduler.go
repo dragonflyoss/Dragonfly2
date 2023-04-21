@@ -313,6 +313,13 @@ func (s *Server) Stop() {
 		logger.Info("clean download storage completed")
 	}
 
+	// Clean network topology storage.
+	if err := s.storage.ClearNetworkTopology(); err != nil {
+		logger.Errorf("clean network topology storage failed %s", err.Error())
+	} else {
+		logger.Info("clean network topology storage completed")
+	}
+
 	// Stop GC.
 	s.gc.Stop()
 	logger.Info("gc closed")
