@@ -37,7 +37,6 @@ type UpdateModelRequest struct {
 
 type GetModelsQuery struct {
 	Type        string `json:"type" binding:"omitempty"`
-	Version     string `json:"version"  binding:"omitempty"`
 	State       string `json:"state" binding:"omitempty,oneof=active inactive"`
 	SchedulerID uint   `json:"scheduler_id" binding:"omitempty"`
 	Page        int    `form:"page" binding:"omitempty,gte=1"`
