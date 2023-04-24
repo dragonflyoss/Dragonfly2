@@ -27,6 +27,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
+	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
 	schedulerconfig "d7y.io/dragonfly/v2/scheduler/config"
 )
 
@@ -65,7 +66,13 @@ func New(cfg *config.Config) (*Database, error) {
 		return nil, fmt.Errorf("invalid database type %s", cfg.Database.Type)
 	}
 
-	rdb, err := NewRedis(&cfg.Database.Redis)
+	rdb, err := pkgredis.NewRedis(&redis.UniversalOptions{
+		Addrs:      cfg.Database.Redis.Addrs,
+		MasterName: cfg.Database.Redis.MasterName,
+		DB:         cfg.Database.Redis.DB,
+		Username:   cfg.Database.Redis.Username,
+		Password:   cfg.Database.Redis.Password,
+	})
 	if err != nil {
 		logger.Errorf("redis: %s", err.Error())
 		return nil, err
