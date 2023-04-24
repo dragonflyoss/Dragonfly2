@@ -32,46 +32,32 @@ import (
 
 // Variables declared for metrics.
 var (
-	TrainStartedCount = promauto.NewCounterVec(prometheus.CounterOpts{
+	TrainCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.TrainerMetricsName,
-		Name:      "training_started_total",
-		Help:      "Counter of the number of the training started.",
+		Name:      "training_total",
+		Help:      "Counter of the number of the training.",
 	}, []string{"model_type", "scheduler_id"})
 
-	TrainStartedFailureCount = promauto.NewCounterVec(prometheus.CounterOpts{
+	TrainFailureCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.TrainerMetricsName,
-		Name:      "training_started_failure_total",
-		Help:      "Counter of the number of failed of the training started.",
+		Name:      "training_failure_total",
+		Help:      "Counter of the number of failed of the training.",
 	}, []string{"model_type", "scheduler_id"})
 
-	TrainFinishedCount = promauto.NewCounterVec(prometheus.CounterOpts{
+	CreateModelCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.TrainerMetricsName,
-		Name:      "training_finished_total",
-		Help:      "Counter of the number of the training finished.",
-	}, []string{"model_type", "scheduler_id"})
-
-	TrainFinishedFailureCount = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: types.MetricsNamespace,
-		Subsystem: types.TrainerMetricsName,
-		Name:      "training_finished_failure_total",
-		Help:      "Counter of the number of failed of the training finished.",
-	}, []string{"model_type", "scheduler_id"})
-
-	UploadModelCount = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: types.MetricsNamespace,
-		Subsystem: types.TrainerMetricsName,
-		Name:      "upload_total",
-		Help:      "Counter of the number of the upload trained model.",
+		Name:      "create_model_total",
+		Help:      "Counter of the number of the create trained model in object storage via manager.",
 	})
 
-	UploadModelFailureCount = promauto.NewCounter(prometheus.CounterOpts{
+	CreateModelFailureCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.TrainerMetricsName,
-		Name:      "upload_failure_total",
-		Help:      "Counter of the number of failed of the upload trained model.",
+		Name:      "create_model_failure_total",
+		Help:      "Counter of the number of failed of the create trained model in object storage via manager.",
 	})
 
 	EvaluateCount = promauto.NewCounterVec(prometheus.CounterOpts{
