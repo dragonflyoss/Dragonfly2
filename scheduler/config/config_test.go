@@ -43,14 +43,6 @@ var (
 		GlobalWorkerNum:    DefaultJobGlobalWorkerNum,
 		SchedulerWorkerNum: DefaultJobSchedulerWorkerNum,
 		LocalWorkerNum:     DefaultJobLocalWorkerNum,
-		Redis: RedisConfig{
-			Addrs:      []string{"127.0.0.1:6379"},
-			MasterName: "master",
-			Username:   "foo",
-			Password:   "bar",
-			BrokerDB:   DefaultJobRedisBrokerDB,
-			BackendDB:  DefaultJobRedisBackendDB,
-		},
 	}
 
 	mockMetricsConfig = MetricsConfig{
@@ -67,6 +59,16 @@ var (
 			IPAddresses:    DefaultCertIPAddresses,
 			ValidityPeriod: DefaultCertValidityPeriod,
 		},
+	}
+
+	mockRedisConfig = RedisConfig{
+		Addrs:      []string{"127.0.0.0:6379"},
+		MasterName: "master",
+		Username:   "baz",
+		Password:   "bax",
+		DB:         DefaultRedisDB,
+		BrokerDB:   DefaultRedisBrokerDB,
+		BackendDB:  DefaultRedisBackendDB,
 	}
 )
 
@@ -121,15 +123,6 @@ func TestConfig_Load(t *testing.T) {
 			GlobalWorkerNum:    1,
 			SchedulerWorkerNum: 1,
 			LocalWorkerNum:     5,
-			Redis: RedisConfig{
-				Addrs:      []string{"foo", "bar"},
-				MasterName: "baz",
-				Host:       "127.0.0.1",
-				Port:       6379,
-				Password:   "foo",
-				BrokerDB:   1,
-				BackendDB:  2,
-			},
 		},
 		Storage: StorageConfig{
 			MaxSize:    1,
@@ -169,6 +162,18 @@ func TestConfig_Load(t *testing.T) {
 			Enable:   false,
 			Addr:     "127.0.0.1:9000",
 			Interval: 10 * time.Minute,
+		},
+		Database: DatabaseConfig{
+			Redis: RedisConfig{
+				Host:       "bar",
+				Password:   "bar",
+				Addrs:      []string{"foo", "bar"},
+				MasterName: "baz",
+				Port:       6379,
+				DB:         0,
+				BrokerDB:   1,
+				BackendDB:  2,
+			},
 		},
 	}
 
@@ -488,45 +493,6 @@ func TestConfig_Validate(t *testing.T) {
 			},
 		},
 		{
-			name:   "job requires parameter addrs",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Job = mockJobConfig
-				cfg.Job.Redis.Addrs = []string{}
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "job requires parameter addrs")
-			},
-		},
-		{
-			name:   "job requires parameter redis brokerDB",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Job = mockJobConfig
-				cfg.Job.Redis.BrokerDB = -1
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "job requires parameter redis brokerDB")
-			},
-		},
-		{
-			name:   "job requires parameter redis backendDB",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Job = mockJobConfig
-				cfg.Job.Redis.BackendDB = -1
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "job requires parameter redis backendDB")
-			},
-		},
-		{
 			name:   "storage requires parameter maxSize",
 			config: New(),
 			mock: func(cfg *Config) {
@@ -740,6 +706,54 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "trainer requires parameter interval")
+			},
+		},
+		{
+			name:   "redis requires parameter addrs",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Database.Redis.Addrs = []string{}
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "redis requires parameter addrs")
+			},
+		},
+		{
+			name:   "redis requires parameter db",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Database.Redis.DB = -1
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "redis requires parameter db")
+			},
+		},
+		{
+			name:   "redis requires parameter brokerDB",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Database.Redis.BrokerDB = -1
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "redis requires parameter brokerDB")
+			},
+		},
+		{
+			name:   "redis requires parameter backendDB",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Database.Redis.BackendDB = -1
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "redis requires parameter backendDB")
 			},
 		},
 	}

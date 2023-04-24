@@ -72,6 +72,9 @@ type Config struct {
 
 	// Trainer configuration.
 	Trainer TrainerConfig `yaml:"trainer" mapstructure:"trainer"`
+
+	// Database configuration.
+	Database DatabaseConfig `yaml:"database" mapstructure:"database"`
 }
 
 type ServerConfig struct {
@@ -207,9 +210,6 @@ type JobConfig struct {
 
 	// Number of workers in local queue.
 	LocalWorkerNum uint `yaml:"localWorkerNum" mapstructure:"localWorkerNum"`
-
-	// Redis configuration.
-	Redis RedisConfig `yaml:"redis" mapstructure:"redis"`
 }
 
 type StorageConfig struct {
@@ -242,6 +242,9 @@ type RedisConfig struct {
 
 	// Password is server password.
 	Password string `yaml:"password" mapstructure:"password"`
+
+	// DB is server cache DB name.
+	DB int `yaml:"db" mapstructure:"db"`
 
 	// BrokerDB is broker database name.
 	BrokerDB int `yaml:"brokerDB" mapstructure:"brokerDB"`
@@ -334,6 +337,11 @@ type TrainerConfig struct {
 	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
 }
 
+type DatabaseConfig struct {
+	// Redis configuration.
+	Redis RedisConfig `yaml:"redis" mapstructure:"redis"`
+}
+
 // New default configuration.
 func New() *Config {
 	return &Config{
@@ -375,10 +383,6 @@ func New() *Config {
 			GlobalWorkerNum:    DefaultJobGlobalWorkerNum,
 			SchedulerWorkerNum: DefaultJobSchedulerWorkerNum,
 			LocalWorkerNum:     DefaultJobLocalWorkerNum,
-			Redis: RedisConfig{
-				BrokerDB:  DefaultJobRedisBrokerDB,
-				BackendDB: DefaultJobRedisBackendDB,
-			},
 		},
 		Storage: StorageConfig{
 			MaxSize:    DefaultStorageMaxSize,
@@ -417,6 +421,13 @@ func New() *Config {
 			Enable:   false,
 			Addr:     DefaultTrainerAddr,
 			Interval: DefaultTrainerInterval,
+		},
+		Database: DatabaseConfig{
+			Redis: RedisConfig{
+				DB:        DefaultRedisDB,
+				BrokerDB:  DefaultRedisBrokerDB,
+				BackendDB: DefaultRedisBackendDB,
+			},
 		},
 	}
 }
@@ -515,18 +526,6 @@ func (cfg *Config) Validate() error {
 		if cfg.Job.LocalWorkerNum == 0 {
 			return errors.New("job requires parameter localWorkerNum")
 		}
-
-		if len(cfg.Job.Redis.Addrs) == 0 {
-			return errors.New("job requires parameter addrs")
-		}
-
-		if cfg.Job.Redis.BrokerDB < 0 {
-			return errors.New("job requires parameter redis brokerDB")
-		}
-
-		if cfg.Job.Redis.BackendDB < 0 {
-			return errors.New("job requires parameter redis backendDB")
-		}
 	}
 
 	if cfg.Storage.MaxSize <= 0 {
@@ -598,6 +597,21 @@ func (cfg *Config) Validate() error {
 			return errors.New("trainer requires parameter interval")
 		}
 	}
+	if len(cfg.Database.Redis.Addrs) == 0 {
+		return errors.New("redis requires parameter addrs")
+	}
+
+	if cfg.Database.Redis.DB < 0 {
+		return errors.New("redis requires parameter db")
+	}
+
+	if cfg.Database.Redis.BrokerDB < 0 {
+		return errors.New("redis requires parameter brokerDB")
+	}
+
+	if cfg.Database.Redis.BackendDB < 0 {
+		return errors.New("redis requires parameter backendDB")
+	}
 
 	return nil
 }
@@ -614,8 +628,8 @@ func (cfg *Config) Convert() error {
 	}
 
 	// TODO Compatible with deprecated fields host and port.
-	if len(cfg.Job.Redis.Addrs) == 0 && cfg.Job.Redis.Host != "" && cfg.Job.Redis.Port > 0 {
-		cfg.Job.Redis.Addrs = []string{fmt.Sprintf("%s:%d", cfg.Job.Redis.Host, cfg.Job.Redis.Port)}
+	if len(cfg.Database.Redis.Addrs) == 0 && cfg.Database.Redis.Host != "" && cfg.Database.Redis.Port > 0 {
+		cfg.Database.Redis.Addrs = []string{fmt.Sprintf("%s:%d", cfg.Database.Redis.Host, cfg.Database.Redis.Port)}
 	}
 
 	// TODO Compatible with deprecated fields ip.

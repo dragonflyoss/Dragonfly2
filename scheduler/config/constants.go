@@ -179,3 +179,14 @@ const (
 	// DefaultTrainerInterval is the default interval of training.
 	DefaultTrainerInterval = 7 * 24 * time.Hour
 )
+
+const (
+	// DefaultRedisDB is default db for redis.
+	DefaultRedisDB = 0
+
+	// DefaultRedisBrokerDB is default db for redis broker.
+	DefaultRedisBrokerDB = 1
+
+	// DefaultRedisBackendDB is default db for redis backend.
+	DefaultRedisBackendDB = 2
+)
