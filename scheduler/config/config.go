@@ -243,6 +243,12 @@ type RedisConfig struct {
 	// Password is server password.
 	Password string `yaml:"password" mapstructure:"password"`
 
+	// BrokerDB is broker database name.
+	BrokerDB int `yaml:"brokerDB" mapstructure:"brokerDB"`
+
+	// BackendDB is backend database name.
+	BackendDB int `yaml:"backendDB" mapstructure:"backendDB"`
+
 	// NetworkTopologyDB is backend database name.
 	NetworkTopologyDB int `yaml:"networkTopologyDB" mapstructure:"networkTopologyDB"`
 }
@@ -591,6 +597,14 @@ func (cfg *Config) Validate() error {
 	}
 	if len(cfg.Database.Redis.Addrs) == 0 {
 		return errors.New("redis requires parameter addrs")
+	}
+
+	if cfg.Database.Redis.BrokerDB <= 0 {
+		return errors.New("redis requires parameter brokerDB")
+	}
+
+	if cfg.Database.Redis.BackendDB <= 0 {
+		return errors.New("redis requires parameter backendDB")
 	}
 
 	if cfg.Database.Redis.NetworkTopologyDB < 0 {

@@ -66,6 +66,8 @@ var (
 		MasterName:        "master",
 		Username:          "baz",
 		Password:          "bax",
+		BrokerDB:          DefaultJobRedisBrokerDB,
+		BackendDB:         DefaultJobRedisBackendDB,
 		NetworkTopologyDB: DefaultNetworkTopologyDB,
 	}
 )
@@ -168,6 +170,8 @@ func TestConfig_Load(t *testing.T) {
 				Addrs:             []string{"foo", "bar"},
 				MasterName:        "baz",
 				Port:              6379,
+				BrokerDB:          DefaultJobRedisBrokerDB,
+				BackendDB:         DefaultJobRedisBackendDB,
 				NetworkTopologyDB: DefaultNetworkTopologyDB,
 			},
 		},
@@ -719,7 +723,33 @@ func TestConfig_Validate(t *testing.T) {
 			},
 		},
 		{
-			name:   "redis requires parameter db",
+			name:   "redis requires parameter brokerDB",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Database.Redis.BrokerDB = -1
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "redis requires parameter brokerDB")
+			},
+		},
+		{
+			name:   "redis requires parameter backendDB",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Database.Redis.BackendDB = -1
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "redis requires parameter backendDB")
+			},
+		},
+		{
+			name:   "redis requires parameter networkTopologyDB",
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig

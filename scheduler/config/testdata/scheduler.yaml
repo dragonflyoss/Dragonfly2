@@ -92,4 +92,6 @@ database:
     password: bar
     host: bar
     port: 6379
+    brokerDB: 1
+    backendDB: 2
     networkTopologyDB: 3
