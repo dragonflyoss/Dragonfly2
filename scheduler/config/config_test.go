@@ -712,6 +712,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "redis requires parameter addrs",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
 				cfg.Database.Redis = mockRedisConfig
 				cfg.Database.Redis.Addrs = []string{}
 			},
@@ -724,6 +725,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "redis requires parameter db",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
 				cfg.Database.Redis = mockRedisConfig
 				cfg.Database.Redis.DB = -1
 			},
@@ -736,6 +738,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "redis requires parameter brokerDB",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
 				cfg.Database.Redis = mockRedisConfig
 				cfg.Database.Redis.BrokerDB = -1
 			},
@@ -748,6 +751,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "redis requires parameter backendDB",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
 				cfg.Database.Redis = mockRedisConfig
 				cfg.Database.Redis.BackendDB = -1
 			},
