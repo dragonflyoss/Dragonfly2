@@ -200,6 +200,7 @@ func TestConfig_Validate(t *testing.T) {
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
 				cfg.Job = mockJobConfig
+				cfg.Database.Redis = mockRedisConfig
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
