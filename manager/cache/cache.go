@@ -21,9 +21,10 @@ import (
 	"time"
 
 	"github.com/go-redis/cache/v8"
+	"github.com/go-redis/redis/v8"
 
 	"d7y.io/dragonfly/v2/manager/config"
-	"d7y.io/dragonfly/v2/manager/database"
+	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
 )
 
 const (
@@ -54,7 +55,13 @@ func New(cfg *config.Config) (*Cache, error) {
 	var localCache *cache.TinyLFU
 	localCache = cache.NewTinyLFU(cfg.Cache.Local.Size, cfg.Cache.Local.TTL)
 
-	rdb, err := database.NewRedis(&cfg.Database.Redis)
+	rdb, err := pkgredis.NewRedis(&redis.UniversalOptions{
+		Addrs:      cfg.Database.Redis.Addrs,
+		MasterName: cfg.Database.Redis.MasterName,
+		DB:         cfg.Database.Redis.DB,
+		Username:   cfg.Database.Redis.Username,
+		Password:   cfg.Database.Redis.Password,
+	})
 	if err != nil {
 		return nil, err
 	}
