@@ -66,8 +66,8 @@ var (
 		MasterName:        "master",
 		Username:          "baz",
 		Password:          "bax",
-		BrokerDB:          DefaultJobRedisBrokerDB,
-		BackendDB:         DefaultJobRedisBackendDB,
+		BrokerDB:          DefaultRedisBrokerDB,
+		BackendDB:         DefaultRedisBackendDB,
 		NetworkTopologyDB: DefaultNetworkTopologyDB,
 	}
 )
@@ -170,8 +170,8 @@ func TestConfig_Load(t *testing.T) {
 				Addrs:             []string{"foo", "bar"},
 				MasterName:        "baz",
 				Port:              6379,
-				BrokerDB:          DefaultJobRedisBrokerDB,
-				BackendDB:         DefaultJobRedisBackendDB,
+				BrokerDB:          DefaultRedisBrokerDB,
+				BackendDB:         DefaultRedisBackendDB,
 				NetworkTopologyDB: DefaultNetworkTopologyDB,
 			},
 		},
