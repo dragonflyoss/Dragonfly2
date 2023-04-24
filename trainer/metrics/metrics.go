@@ -32,19 +32,19 @@ import (
 
 // Variables declared for metrics.
 var (
-	TrainCount = promauto.NewCounterVec(prometheus.CounterOpts{
+	TrainCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.TrainerMetricsName,
 		Name:      "training_total",
 		Help:      "Counter of the number of the training.",
-	}, []string{"model_type", "scheduler_id"})
+	})
 
-	TrainFailureCount = promauto.NewCounterVec(prometheus.CounterOpts{
+	TrainFailureCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.TrainerMetricsName,
 		Name:      "training_failure_total",
 		Help:      "Counter of the number of failed of the training.",
-	}, []string{"model_type", "scheduler_id"})
+	})
 
 	VersionGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: types.MetricsNamespace,
