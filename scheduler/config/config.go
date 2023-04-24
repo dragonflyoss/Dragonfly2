@@ -424,6 +424,8 @@ func New() *Config {
 		},
 		Database: DatabaseConfig{
 			Redis: RedisConfig{
+				BrokerDB:          DefaultRedisBrokerDB,
+				BackendDB:         DefaultRedisBackendDB,
 				NetworkTopologyDB: DefaultNetworkTopologyDB,
 			},
 		},
