@@ -144,9 +144,6 @@ type V2 interface {
 	// SyncProbes sync probes of the host.
 	SyncProbes(context.Context, *schedulerv2.SyncProbesRequest, ...grpc.CallOption) (schedulerv2.Scheduler_SyncProbesClient, error)
 
-	// SyncNetworkTopology sync network topology of the hosts.
-	SyncNetworkTopology(context.Context, *schedulerv2.SyncNetworkTopologyRequest, ...grpc.CallOption) (schedulerv2.Scheduler_SyncNetworkTopologyClient, error)
-
 	// Close tears down the ClientConn and all underlying connections.
 	Close() error
 }
@@ -281,17 +278,6 @@ func (v *v2) LeaveHost(ctx context.Context, req *schedulerv2.LeaveHostRequest, o
 // SyncProbes sync probes of the host.
 func (v *v2) SyncProbes(ctx context.Context, req *schedulerv2.SyncProbesRequest, opts ...grpc.CallOption) (schedulerv2.Scheduler_SyncProbesClient, error) {
 	stream, err := v.SchedulerClient.SyncProbes(ctx, opts...)
-	if err != nil {
-		return nil, err
-	}
-
-	// Send begin of piece.
-	return stream, stream.Send(req)
-}
-
-// SyncNetworkTopology sync network topology of the hosts.
-func (v *v2) SyncNetworkTopology(ctx context.Context, req *schedulerv2.SyncNetworkTopologyRequest, opts ...grpc.CallOption) (schedulerv2.Scheduler_SyncNetworkTopologyClient, error) {
-	stream, err := v.SchedulerClient.SyncNetworkTopology(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}

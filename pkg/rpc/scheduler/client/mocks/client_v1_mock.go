@@ -205,26 +205,6 @@ func (mr *MockV1MockRecorder) StatTask(arg0, arg1 interface{}, arg2 ...interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatTask", reflect.TypeOf((*MockV1)(nil).StatTask), varargs...)
 }
 
-// SyncNetworkTopology mocks base method.
-func (m *MockV1) SyncNetworkTopology(arg0 context.Context, arg1 *scheduler.SyncNetworkTopologyRequest, arg2 ...grpc.CallOption) (scheduler.Scheduler_SyncNetworkTopologyClient, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{arg0, arg1}
-	for _, a := range arg2 {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "SyncNetworkTopology", varargs...)
-	ret0, _ := ret[0].(scheduler.Scheduler_SyncNetworkTopologyClient)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// SyncNetworkTopology indicates an expected call of SyncNetworkTopology.
-func (mr *MockV1MockRecorder) SyncNetworkTopology(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncNetworkTopology", reflect.TypeOf((*MockV1)(nil).SyncNetworkTopology), varargs...)
-}
-
 // SyncProbes mocks base method.
 func (m *MockV1) SyncProbes(arg0 context.Context, arg1 *scheduler.SyncProbesRequest, arg2 ...grpc.CallOption) (scheduler.Scheduler_SyncProbesClient, error) {
 	m.ctrl.T.Helper()

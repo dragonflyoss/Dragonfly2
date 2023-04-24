@@ -68,10 +68,6 @@ func (d *dummySchedulerClient) SyncProbes(ctx context.Context, req *schedulerv1.
 	panic("should not call this function")
 }
 
-func (d *dummySchedulerClient) SyncNetworkTopology(ctx context.Context, req *schedulerv1.SyncNetworkTopologyRequest, opts ...grpc.CallOption) (schedulerv1.Scheduler_SyncNetworkTopologyClient, error) {
-	panic("should not call this function")
-}
-
 func (d *dummySchedulerClient) Close() error {
 	return nil
 }
