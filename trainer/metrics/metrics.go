@@ -46,20 +46,6 @@ var (
 		Help:      "Counter of the number of failed of the training.",
 	}, []string{"model_type", "scheduler_id"})
 
-	CreateModelCount = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: types.MetricsNamespace,
-		Subsystem: types.TrainerMetricsName,
-		Name:      "create_model_total",
-		Help:      "Counter of the number of the creating trained model in object storage via manager.",
-	})
-
-	CreateModelFailureCount = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: types.MetricsNamespace,
-		Subsystem: types.TrainerMetricsName,
-		Name:      "create_model_failure_total",
-		Help:      "Counter of the number of failed of the creating trained model in object storage via manager.",
-	})
-
 	VersionGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.TrainerMetricsName,
