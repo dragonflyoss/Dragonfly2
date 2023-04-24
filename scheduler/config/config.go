@@ -249,7 +249,7 @@ type RedisConfig struct {
 	// BackendDB is backend database name.
 	BackendDB int `yaml:"backendDB" mapstructure:"backendDB"`
 
-	// NetworkTopologyDB is backend database name.
+	// NetworkTopologyDB is network topology database name.
 	NetworkTopologyDB int `yaml:"networkTopologyDB" mapstructure:"networkTopologyDB"`
 }
 
