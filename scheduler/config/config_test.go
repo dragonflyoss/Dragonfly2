@@ -165,8 +165,8 @@ func TestConfig_Load(t *testing.T) {
 		},
 		Database: DatabaseConfig{
 			Redis: RedisConfig{
-				Host:              "bar",
-				Password:          "bar",
+				Host:              "127.0.0.1",
+				Password:          "foo",
 				Addrs:             []string{"foo", "bar"},
 				MasterName:        "baz",
 				Port:              6379,
