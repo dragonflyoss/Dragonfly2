@@ -62,13 +62,11 @@ var (
 	}
 
 	mockRedisConfig = RedisConfig{
-		Addrs:      []string{"127.0.0.0:6379"},
-		MasterName: "master",
-		Username:   "baz",
-		Password:   "bax",
-		DB:         DefaultRedisDB,
-		BrokerDB:   DefaultRedisBrokerDB,
-		BackendDB:  DefaultRedisBackendDB,
+		Addrs:             []string{"127.0.0.0:6379"},
+		MasterName:        "master",
+		Username:          "baz",
+		Password:          "bax",
+		NetworkTopologyDB: DefaultNetworkTopologyDB,
 	}
 )
 
@@ -165,14 +163,12 @@ func TestConfig_Load(t *testing.T) {
 		},
 		Database: DatabaseConfig{
 			Redis: RedisConfig{
-				Host:       "bar",
-				Password:   "bar",
-				Addrs:      []string{"foo", "bar"},
-				MasterName: "baz",
-				Port:       6379,
-				DB:         0,
-				BrokerDB:   1,
-				BackendDB:  2,
+				Host:              "bar",
+				Password:          "bar",
+				Addrs:             []string{"foo", "bar"},
+				MasterName:        "baz",
+				Port:              6379,
+				NetworkTopologyDB: DefaultNetworkTopologyDB,
 			},
 		},
 	}
@@ -728,37 +724,11 @@ func TestConfig_Validate(t *testing.T) {
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
 				cfg.Database.Redis = mockRedisConfig
-				cfg.Database.Redis.DB = -1
+				cfg.Database.Redis.NetworkTopologyDB = -1
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "redis requires parameter db")
-			},
-		},
-		{
-			name:   "redis requires parameter brokerDB",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Database.Redis = mockRedisConfig
-				cfg.Database.Redis.BrokerDB = -1
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "redis requires parameter brokerDB")
-			},
-		},
-		{
-			name:   "redis requires parameter backendDB",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Database.Redis = mockRedisConfig
-				cfg.Database.Redis.BackendDB = -1
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "redis requires parameter backendDB")
+				assert.EqualError(err, "redis requires parameter networkTopologyDB")
 			},
 		},
 	}

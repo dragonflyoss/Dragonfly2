@@ -181,12 +181,6 @@ const (
 )
 
 const (
-	// DefaultRedisDB is default db for redis.
-	DefaultRedisDB = 0
-
-	// DefaultRedisBrokerDB is default db for redis broker.
-	DefaultRedisBrokerDB = 1
-
-	// DefaultRedisBackendDB is default db for redis backend.
-	DefaultRedisBackendDB = 2
+	// DefaultNetworkTopologyDB is default db for network topology.
+	DefaultNetworkTopologyDB = 3
 )
