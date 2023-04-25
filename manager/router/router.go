@@ -69,6 +69,7 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	// CORS
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowAllOrigins = true
+	corsConfig.AllowCredentials = true
 
 	// Middleware
 	r.Use(gin.Recovery())
