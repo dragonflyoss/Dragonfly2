@@ -37,6 +37,9 @@ const (
 
 	// DfstoreName is dfstore name of dfdaemon.
 	DfstoreName = "dfstore"
+
+	// TrainerName is name of trainer.
+	TrainerName = "trainer"
 )
 
 const (
@@ -51,6 +54,9 @@ const (
 
 	// DfdaemonMetricsName is name of dfdaemon metrics.
 	DfdaemonMetricsName = "dfdaemon"
+
+	// TrainerMetricsName is name of trainer metrics.
+	TrainerMetricsName = "trainer"
 )
 
 const (
