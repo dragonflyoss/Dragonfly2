@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2023 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,9 @@ import (
 	"context"
 
 	"github.com/go-redis/redis/v8"
-
-	"d7y.io/dragonfly/v2/manager/config"
 )
 
-func NewRedis(cfg *config.RedisConfig) (redis.UniversalClient, error) {
+func NewRedis(cfg *redis.UniversalOptions) (redis.UniversalClient, error) {
 	redis.SetLogger(&redisLogger{})
 	client := redis.NewUniversalClient(&redis.UniversalOptions{
 		Addrs:      cfg.Addrs,
