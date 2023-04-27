@@ -123,6 +123,15 @@ func TestConfig_Load(t *testing.T) {
 			GlobalWorkerNum:    1,
 			SchedulerWorkerNum: 1,
 			LocalWorkerNum:     5,
+			Redis: RedisConfig{
+				Host:       "127.0.0.1",
+				Password:   "foo",
+				Addrs:      []string{"foo", "bar"},
+				MasterName: "baz",
+				Port:       6379,
+				BrokerDB:   DefaultRedisBrokerDB,
+				BackendDB:  DefaultRedisBackendDB,
+			},
 		},
 		Storage: StorageConfig{
 			MaxSize:    1,

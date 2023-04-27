@@ -210,6 +210,9 @@ type JobConfig struct {
 
 	// Number of workers in local queue.
 	LocalWorkerNum uint `yaml:"localWorkerNum" mapstructure:"localWorkerNum"`
+
+	// DEPRECATED: Please use the `Database.Redis` field instead.
+	Redis RedisConfig `yaml:"redis" mapstructure:"redis"`
 }
 
 type StorageConfig struct {
@@ -627,9 +630,29 @@ func (cfg *Config) Convert() error {
 		cfg.Scheduler.RetryBackToSourceLimit = cfg.Scheduler.RetryBackSourceLimit
 	}
 
-	// TODO Compatible with deprecated fields host and port.
-	if len(cfg.Database.Redis.Addrs) == 0 && cfg.Database.Redis.Host != "" && cfg.Database.Redis.Port > 0 {
-		cfg.Database.Redis.Addrs = []string{fmt.Sprintf("%s:%d", cfg.Database.Redis.Host, cfg.Database.Redis.Port)}
+	// TODO Compatible with deprecated fields address of redis of job.
+	if len(cfg.Database.Redis.Addrs) == 0 && len(cfg.Job.Redis.Addrs) != 0 {
+		cfg.Database.Redis.Addrs = cfg.Job.Redis.Addrs
+	}
+
+	// TODO Compatible with deprecated fields host and port of redis of job.
+	if len(cfg.Database.Redis.Addrs) == 0 && len(cfg.Job.Redis.Addrs) == 0 && cfg.Job.Redis.Host != "" && cfg.Job.Redis.Port > 0 {
+		cfg.Database.Redis.Addrs = []string{fmt.Sprintf("%s:%d", cfg.Job.Redis.Host, cfg.Job.Redis.Port)}
+	}
+
+	// TODO Compatible with deprecated fields master name of redis of job.
+	if cfg.Database.Redis.MasterName == "" && cfg.Job.Redis.MasterName != "" {
+		cfg.Database.Redis.MasterName = cfg.Job.Redis.MasterName
+	}
+
+	// TODO Compatible with deprecated fields user name of redis of job.
+	if cfg.Database.Redis.Username == "" && cfg.Job.Redis.Username != "" {
+		cfg.Database.Redis.Username = cfg.Job.Redis.Username
+	}
+
+	// TODO Compatible with deprecated fields password of redis of job.
+	if cfg.Database.Redis.Password == "" && cfg.Job.Redis.Password != "" {
+		cfg.Database.Redis.Password = cfg.Job.Redis.Password
 	}
 
 	// TODO Compatible with deprecated fields ip.
