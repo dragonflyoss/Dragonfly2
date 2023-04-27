@@ -107,10 +107,7 @@ job:
   schedulerWorkerNum: 1
   # Number of workers in local queue.
   localWorkerNum: 5
-
-# Database info used for server.
-database:
-  # Redis configure.
+  # Redis configuration.
   redis:
     # Redis addresses.
     addrs:
@@ -123,8 +120,6 @@ database:
     brokerDB: 1
     # Redis backendDB name.
     backendDB: 2
-    # Redis networkTopologyDB name.
-    networkTopologyDB: 3
 
 # Store task download information.
 storage:
