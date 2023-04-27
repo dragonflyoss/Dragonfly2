@@ -30,5 +30,5 @@ type DestHost struct {
 type Scheduler struct {
 	ID        string     `gorm:"column:id;type:varchar(1024);comment:network topology id" json:"id"`
 	Host      string     `gorm:"column:host;type:varchar(1024);comment:probe source host" json:"host"`
-	DestHosts []DestHost `gorm:"many2many:job_scheduler_cluster;" json:"scheduler_clusters"`
+	DestHosts []DestHost `gorm:"foreignKey:job_scheduler_cluster;" json:"scheduler_clusters"`
 }
