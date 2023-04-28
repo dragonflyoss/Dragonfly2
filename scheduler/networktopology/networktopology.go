@@ -31,14 +31,14 @@ import (
 )
 
 type NetworkTopology interface {
-	// LoadParents returns parents for a key.
-	LoadParents(string) (*sync.Map, bool)
+	// LoadDestHosts returns parents for a key.
+	LoadDestHosts(string) (*sync.Map, bool)
 
-	// StoreParents stores parents.
-	StoreParents(key string, parents *sync.Map)
+	// StoreDestHosts stores parents.
+	StoreDestHosts(key string, parents *sync.Map)
 
-	// DeleteParents deletes parents for a key.
-	DeleteParents(string)
+	// DeleteDestHosts deletes parents for a key.
+	DeleteDestHosts(string)
 
 	// LoadProbes returns probes between two hosts.
 	LoadProbes(src, dest string) (Probes, bool)
@@ -94,8 +94,8 @@ func NewNetworkTopology(cfg *config.Config, resource resource.Resource, storage 
 	}, nil
 }
 
-// LoadParents returns parents for a key.
-func (n *networkTopology) LoadParents(key string) (*sync.Map, bool) {
+// LoadDestHosts returns parents for a key.
+func (n *networkTopology) LoadDestHosts(key string) (*sync.Map, bool) {
 	value, loaded := n.Map.Load(key)
 	if !loaded {
 		return nil, false
@@ -109,13 +109,13 @@ func (n *networkTopology) LoadParents(key string) (*sync.Map, bool) {
 	return parents, true
 }
 
-// StoreParents stores parents.
-func (n *networkTopology) StoreParents(key string, parents *sync.Map) {
+// StoreDestHosts stores parents.
+func (n *networkTopology) StoreDestHosts(key string, parents *sync.Map) {
 	n.Map.Store(key, parents)
 }
 
-// DeleteParents deletes parents for a key.
-func (n *networkTopology) DeleteParents(key string) {
+// DeleteDestHosts deletes parents for a key.
+func (n *networkTopology) DeleteDestHosts(key string) {
 	n.Map.Delete(key)
 }
 
@@ -175,3 +175,5 @@ func (n *networkTopology) DeleteProbes(src, dest string) bool {
 	parents.Delete(dest)
 	return true
 }
+
+// StoreProbe 只用写这个
