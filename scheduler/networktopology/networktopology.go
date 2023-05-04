@@ -32,28 +32,28 @@ import (
 
 type NetworkTopology interface {
 	// LoadDestHosts returns parents for a key.
-	LoadDestHosts(string) (*sync.Map, bool)
+	LoadDestHosts(key string) ([]string, error)
 
 	// StoreDestHosts stores parents.
-	StoreDestHosts(key string, parents *sync.Map)
+	StoreDestHosts(key string, destHosts []string)
 
 	// DeleteDestHosts deletes parents for a key.
-	DeleteDestHosts(string)
+	DeleteDestHosts(key string)
 
 	// LoadProbes returns probes between two hosts.
-	LoadProbes(src, dest string) (Probes, bool)
+	LoadProbes(src, dest string) (Probes, error)
 
 	// StoreProbes stores probes between two hosts.
-	StoreProbes(src, dest string, probes Probes) bool
+	StoreProbes(src, dest string, probes Probes) error
 
 	// DeleteProbes deletes probes between two hosts.
-	DeleteProbes(src, dest string) bool
+	DeleteProbes(src, dest string) error
+
+	// StoreProbe stores probe between two hosts.
+	StoreProbe(src, dest string, probe Probe) error
 }
 
 type networkTopology struct {
-	// network topology
-	*sync.Map
-
 	// Redis universal client interface.
 	rdb redis.UniversalClient
 
@@ -68,6 +68,9 @@ type networkTopology struct {
 
 	// Manager client interface
 	managerClient managerclient.V2
+
+	// mu locks for network topology.
+	mu *sync.RWMutex
 }
 
 // New network topology interface.
@@ -85,7 +88,6 @@ func NewNetworkTopology(cfg *config.Config, resource resource.Resource, storage 
 	}
 
 	return &networkTopology{
-		Map:           &sync.Map{},
 		rdb:           rdb,
 		config:        cfg,
 		resource:      resource,
@@ -95,85 +97,53 @@ func NewNetworkTopology(cfg *config.Config, resource resource.Resource, storage 
 }
 
 // LoadDestHosts returns parents for a key.
-func (n *networkTopology) LoadDestHosts(key string) (*sync.Map, bool) {
-	value, loaded := n.Map.Load(key)
-	if !loaded {
-		return nil, false
-	}
+func (n *networkTopology) LoadDestHosts(key string) ([]string, error) {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
 
-	parents, ok := value.(*sync.Map)
-	if !ok {
-		return nil, false
-	}
-
-	return parents, true
+	return nil, nil
 }
 
 // StoreDestHosts stores parents.
-func (n *networkTopology) StoreDestHosts(key string, parents *sync.Map) {
-	n.Map.Store(key, parents)
+func (n *networkTopology) StoreDestHosts(key string, dest []string) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
 }
 
 // DeleteDestHosts deletes parents for a key.
 func (n *networkTopology) DeleteDestHosts(key string) {
-	n.Map.Delete(key)
+	n.mu.Lock()
+	defer n.mu.Unlock()
 }
 
 // LoadProbes returns probes between two hosts.
-func (n *networkTopology) LoadProbes(src, dest string) (Probes, bool) {
-	value, loaded := n.Map.Load(src)
-	if !loaded {
-		return nil, false
-	}
+func (n *networkTopology) LoadProbes(src, dest string) (Probes, error) {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
 
-	parents, ok := value.(*sync.Map)
-	if !ok {
-		return nil, false
-	}
-
-	p, loaded := parents.Load(dest)
-	if !loaded {
-		return nil, false
-	}
-
-	probes, ok := p.(*probes)
-	if !ok {
-		return nil, false
-	}
-
-	return probes, true
+	return nil, nil
 }
 
 // StoreProbes stores probes between two hosts.
-func (n *networkTopology) StoreProbes(src, dest string, probes Probes) bool {
-	value, loaded := n.Map.Load(src)
-	if !loaded {
-		return false
-	}
+func (n *networkTopology) StoreProbes(src, dest string, probes Probes) error {
+	n.mu.Lock()
+	defer n.mu.Unlock()
 
-	parents, ok := value.(*sync.Map)
-	if !ok {
-		return false
-	}
-
-	parents.Store(dest, probes)
-	return true
+	return nil
 }
 
 // DeleteProbes deletes probes between two hosts.
-func (n *networkTopology) DeleteProbes(src, dest string) bool {
-	value, loaded := n.Map.Load(src)
-	if !loaded {
-		return false
-	}
+func (n *networkTopology) DeleteProbes(src, dest string) error {
+	n.mu.Lock()
+	defer n.mu.Unlock()
 
-	parents, ok := value.(*sync.Map)
-	if !ok {
-		return false
-	}
-
-	parents.Delete(dest)
-	return true
+	return nil
 }
 
-// StoreProbe 只用写这个
+// StoreProbe stores probe between two hosts.
+func (n *networkTopology) StoreProbe(src, dest string, probe Probe) error {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+
+	return nil
+}
