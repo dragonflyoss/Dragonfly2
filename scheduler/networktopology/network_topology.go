@@ -32,28 +32,31 @@ import (
 
 type NetworkTopology interface {
 	// LoadDestHosts returns parents for a key.
-	LoadDestHosts(key string) ([]string, error)
+	LoadDestHosts(key string) (*sync.Map, bool)
 
 	// StoreDestHosts stores parents.
-	StoreDestHosts(key string, destHosts []string)
+	StoreDestHosts(key string, destHosts *sync.Map)
 
 	// DeleteDestHosts deletes parents for a key.
 	DeleteDestHosts(key string)
 
 	// LoadProbes returns probes between two hosts.
-	LoadProbes(src, dest string) (Probes, error)
+	LoadProbes(src, dest string) (Probes, bool)
 
 	// StoreProbes stores probes between two hosts.
-	StoreProbes(src, dest string, probes Probes) error
+	StoreProbes(src, dest string, probes Probes) bool
 
 	// DeleteProbes deletes probes between two hosts.
-	DeleteProbes(src, dest string) error
+	DeleteProbes(src, dest string) bool
 
 	// StoreProbe stores probe between two hosts.
-	StoreProbe(src, dest string, probe Probe) error
+	StoreProbe(src, dest string, probe *Probe) bool
 }
 
 type networkTopology struct {
+	// network topology
+	*sync.Map
+
 	// Redis universal client interface.
 	rdb redis.UniversalClient
 
@@ -88,6 +91,7 @@ func NewNetworkTopology(cfg *config.Config, resource resource.Resource, storage 
 	}
 
 	return &networkTopology{
+		Map:           &sync.Map{},
 		rdb:           rdb,
 		config:        cfg,
 		resource:      resource,
@@ -96,54 +100,114 @@ func NewNetworkTopology(cfg *config.Config, resource resource.Resource, storage 
 	}, nil
 }
 
-// LoadDestHosts returns parents for a key.
-func (n *networkTopology) LoadDestHosts(key string) ([]string, error) {
-	n.mu.RLock()
-	defer n.mu.RUnlock()
+// LoadDestHosts returns destination hosts for a key.
+func (n *networkTopology) LoadDestHosts(key string) (*sync.Map, bool) {
+	value, loaded := n.Map.Load(key)
+	if !loaded {
+		return nil, false
+	}
 
-	return nil, nil
+	destHosts, ok := value.(*sync.Map)
+	if !ok {
+		return nil, false
+	}
+
+	return destHosts, true
 }
 
-// StoreDestHosts stores parents.
-func (n *networkTopology) StoreDestHosts(key string, dest []string) {
-	n.mu.Lock()
-	defer n.mu.Unlock()
+// StoreDestHosts stores destination hosts.
+func (n *networkTopology) StoreDestHosts(key string, parents *sync.Map) {
+	n.Map.Store(key, parents)
 }
 
-// DeleteDestHosts deletes parents for a key.
+// DeleteDestHosts deletes destination hosts for a key.
 func (n *networkTopology) DeleteDestHosts(key string) {
-	n.mu.Lock()
-	defer n.mu.Unlock()
+	n.Map.Delete(key)
 }
 
 // LoadProbes returns probes between two hosts.
-func (n *networkTopology) LoadProbes(src, dest string) (Probes, error) {
-	n.mu.RLock()
-	defer n.mu.RUnlock()
+func (n *networkTopology) LoadProbes(src, dest string) (Probes, bool) {
+	value, loaded := n.Map.Load(src)
+	if !loaded {
+		return nil, false
+	}
 
-	return nil, nil
+	destHosts, ok := value.(*sync.Map)
+	if !ok {
+		return nil, false
+	}
+
+	p, loaded := destHosts.Load(dest)
+	if !loaded {
+		return nil, false
+	}
+
+	probes, ok := p.(*probes)
+	if !ok {
+		return nil, false
+	}
+
+	return probes, true
 }
 
 // StoreProbes stores probes between two hosts.
-func (n *networkTopology) StoreProbes(src, dest string, probes Probes) error {
-	n.mu.Lock()
-	defer n.mu.Unlock()
+func (n *networkTopology) StoreProbes(src, dest string, probes Probes) bool {
+	value, loaded := n.Map.Load(src)
+	if !loaded {
+		return false
+	}
 
-	return nil
+	destHosts, ok := value.(*sync.Map)
+	if !ok {
+		return false
+	}
+
+	destHosts.Store(dest, probes)
+	return true
 }
 
 // DeleteProbes deletes probes between two hosts.
-func (n *networkTopology) DeleteProbes(src, dest string) error {
-	n.mu.Lock()
-	defer n.mu.Unlock()
+func (n *networkTopology) DeleteProbes(src, dest string) bool {
+	value, loaded := n.Map.Load(src)
+	if !loaded {
+		return false
+	}
 
-	return nil
+	destHosts, ok := value.(*sync.Map)
+	if !ok {
+		return false
+	}
+
+	destHosts.Delete(dest)
+	return true
 }
 
 // StoreProbe stores probe between two hosts.
-func (n *networkTopology) StoreProbe(src, dest string, probe Probe) error {
-	n.mu.Lock()
-	defer n.mu.Unlock()
+func (n *networkTopology) StoreProbe(src, dest string, probe *Probe) bool {
+	value, loaded := n.Map.Load(src)
+	if !loaded {
+		return false
+	}
 
-	return nil
+	destHosts, ok := value.(*sync.Map)
+	if !ok {
+		return false
+	}
+
+	p, loaded := destHosts.Load(dest)
+	if !loaded {
+		return false
+	}
+
+	probes, ok := p.(*probes)
+	if !ok {
+		return false
+	}
+
+	err := probes.Enqueue(probe)
+	if err != nil {
+		return false
+	}
+
+	return false
 }
