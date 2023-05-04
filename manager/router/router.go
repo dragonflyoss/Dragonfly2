@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/casbin/casbin/v2"
-	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/static"
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
@@ -66,17 +65,12 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 		r.Use(otelgin.Middleware(OtelServiceName))
 	}
 
-	// CORS
-	corsConfig := cors.DefaultConfig()
-	corsConfig.AllowAllOrigins = true
-	corsConfig.AllowCredentials = true
-
 	// Middleware
 	r.Use(gin.Recovery())
 	r.Use(ginzap.Ginzap(logger.GinLogger.Desugar(), time.RFC3339, true))
 	r.Use(ginzap.RecoveryWithZap(logger.GinLogger.Desugar(), true))
 	r.Use(middlewares.Error())
-	r.Use(cors.New(corsConfig))
+	r.Use(middlewares.CORS())
 
 	rbac := middlewares.RBAC(enforcer)
 	jwt, err := middlewares.Jwt(cfg.Auth.JWT, service)
