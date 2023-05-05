@@ -21,6 +21,7 @@ package trainer
 import (
 	"bytes"
 	"context"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"encoding/gob"
 	"time"
 
@@ -72,7 +73,7 @@ func (t *trainer) Serve() error {
 		select {
 		case <-tick.C:
 			if err := t.sendDataToTrainer(); err != nil {
-				return err
+				logger.Error("scheduler send data to trainer error: %s", err.Error())
 			}
 		case <-t.done:
 			return nil
