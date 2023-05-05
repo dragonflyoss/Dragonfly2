@@ -27,7 +27,6 @@ import (
 	"github.com/gofrs/flock"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/client/config"
 	server "d7y.io/dragonfly/v2/client/daemon"
@@ -178,10 +177,6 @@ func runDaemon(d dfpath.Dfpath) error {
 	}()
 
 	logger.Infof("daemon is launched by pid: %d", viper.GetInt("launcher"))
-
-	// daemon config values
-	s, _ := yaml.Marshal(cfg)
-	logger.Infof("client daemon configuration:\n%s", string(s))
 
 	ff := dependency.InitMonitor(cfg.PProfPort, cfg.Telemetry)
 	defer ff()

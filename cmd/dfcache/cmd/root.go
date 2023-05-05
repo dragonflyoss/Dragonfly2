@@ -24,7 +24,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/cmd/dependency"
@@ -136,11 +135,7 @@ func runDfcacheSubcmd(cmdName string, args []string) error {
 	if err := logger.InitDfcache(dfcacheConfig.Console, d.LogDir()); err != nil {
 		return fmt.Errorf("init client dfcache logger: %w", err)
 	}
-	logger.Infof("Version:\n%s", version.Version())
-
-	// Dfcache config values
-	s, _ := yaml.Marshal(dfcacheConfig)
-	logger.Infof("client dfcache configuration:\n%s", string(s))
+	logger.Infof("version:\n%s", version.Version())
 
 	ff := dependency.InitMonitor(dfcacheConfig.PProfPort, dfcacheConfig.Telemetry)
 	defer ff()

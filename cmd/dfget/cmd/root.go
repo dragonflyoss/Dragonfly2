@@ -30,7 +30,6 @@ import (
 	"github.com/gofrs/flock"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/dfget"
@@ -217,11 +216,7 @@ func initDfgetDfpath(cfg *config.ClientOption) (dfpath.Dfpath, error) {
 
 // runDfget does some init operations and starts to download.
 func runDfget(cmd *cobra.Command, dfgetLockPath, daemonSockPath string) error {
-	logger.Infof("Version:\n%s", version.Version())
-
-	// Dfget config values
-	s, _ := yaml.Marshal(dfgetConfig)
-	logger.Infof("client dfget configuration:\n%s", string(s))
+	logger.Infof("version:\n%s", version.Version())
 
 	ff := dependency.InitMonitor(dfgetConfig.PProfPort, dfgetConfig.Telemetry)
 	defer ff()

@@ -22,7 +22,6 @@ import (
 	"path"
 
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -112,15 +111,7 @@ func initDfpath(cfg *config.ServerConfig) (dfpath.Dfpath, error) {
 }
 
 func runManager(d dfpath.Dfpath) error {
-	logger.Infof("Version:\n%s", version.Version())
-	// manager config values.
-	s, err := yaml.Marshal(cfg)
-
-	if err != nil {
-		return err
-	}
-
-	logger.Infof("manager configuration:\n%s", string(s))
+	logger.Infof("version:\n%s", version.Version())
 
 	ff := dependency.InitMonitor(cfg.PProfPort, cfg.Telemetry)
 	defer ff()
