@@ -42,6 +42,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	securityclient "d7y.io/dragonfly/v2/pkg/rpc/security/client"
+	trainerclient "d7y.io/dragonfly/v2/pkg/rpc/trainer/client"
 	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/announcer"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -51,6 +52,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/rpcserver"
 	"d7y.io/dragonfly/v2/scheduler/scheduling"
 	"d7y.io/dragonfly/v2/scheduler/storage"
+	"d7y.io/dragonfly/v2/scheduler/trainer"
 )
 
 const (
@@ -89,6 +91,9 @@ type Server struct {
 
 	// Announcer interface.
 	announcer announcer.Announcer
+
+	// Trainer interface.
+	trainer trainer.Trainer
 
 	// GC service.
 	gc gc.GC
@@ -226,6 +231,31 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		s.metricsServer = metrics.New(&cfg.Metrics, s.grpcServer)
 	}
 
+	if cfg.Trainer.Enable {
+		// Initialize trainer client and dial options of trainer grpc client.
+		trainerDialOptions := []grpc.DialOption{}
+		if cfg.Security.AutoIssueCert {
+			trainerClientTransportCredentials, err := rpc.NewClientCredentials(cfg.Security.TLSPolicy, nil, []byte(cfg.Security.CACert))
+			if err != nil {
+				return nil, err
+			}
+
+			trainerDialOptions = append(trainerDialOptions, grpc.WithTransportCredentials(trainerClientTransportCredentials))
+		} else {
+			trainerDialOptions = append(trainerDialOptions, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		}
+
+		// Initialize trainer client.
+		trainerClient, err := trainerclient.GetV1ByAddr(ctx, cfg.Trainer.Addr, trainerDialOptions...)
+		if err != nil {
+			return nil, err
+		}
+		s.trainer, err = trainer.New(&cfg.Trainer, dynconfig, trainerClient, storage)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return s, nil
 }
 
@@ -286,6 +316,16 @@ func (s *Server) Serve() error {
 	if err := s.grpcServer.Serve(listener); err != nil {
 		logger.Errorf("stoped grpc server: %s", err.Error())
 		return err
+	}
+
+	// Serve trainer.
+	if s.config.Trainer.Enable {
+		go func() {
+			if err := s.trainer.Serve(); err != nil {
+				logger.Fatalf("trainer failed to start: %s", err.Error())
+			}
+			logger.Info("trainer start successfully")
+		}()
 	}
 
 	return nil
@@ -355,6 +395,15 @@ func (s *Server) Stop() {
 			logger.Errorf("security client failed to stop: %s", err.Error())
 		} else {
 			logger.Info("security client closed")
+		}
+	}
+
+	// Stop trainer server.
+	if s.config.Trainer.Enable {
+		if err := s.trainer.Stop(); err != nil {
+			logger.Errorf("stop trainer failed %s", err.Error())
+		} else {
+			logger.Info("stop trainer closed")
 		}
 	}
 
