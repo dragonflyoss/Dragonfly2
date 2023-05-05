@@ -296,7 +296,7 @@ func (v *V1) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult) 
 			metrics.DownloadPeerBackToSourceFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
 				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
-			go v.createRecord(peer, parents, req)
+			go v.createDownloadRecord(peer, parents, req)
 			v.handleTaskFailure(ctx, peer.Task, req.GetSourceError(), nil)
 			v.handlePeerFailure(ctx, peer)
 			return nil
@@ -306,7 +306,7 @@ func (v *V1) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult) 
 		metrics.DownloadPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
 			peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
-		go v.createRecord(peer, parents, req)
+		go v.createDownloadRecord(peer, parents, req)
 		v.handlePeerFailure(ctx, peer)
 		return nil
 	}
@@ -317,13 +317,13 @@ func (v *V1) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult) 
 
 	peer.Log.Info("report success peer")
 	if peer.FSM.Is(resource.PeerStateBackToSource) {
-		go v.createRecord(peer, parents, req)
+		go v.createDownloadRecord(peer, parents, req)
 		v.handleTaskSuccess(ctx, peer.Task, req)
 		v.handlePeerSuccess(ctx, peer)
 		return nil
 	}
 
-	go v.createRecord(peer, parents, req)
+	go v.createDownloadRecord(peer, parents, req)
 	v.handlePeerSuccess(ctx, peer)
 	return nil
 }
@@ -1237,8 +1237,8 @@ func (v *V1) handleTaskFailure(ctx context.Context, task *resource.Task, backToS
 	}
 }
 
-// createRecord stores peer download records.
-func (v *V1) createRecord(peer *resource.Peer, parents []*resource.Peer, req *schedulerv1.PeerResult) {
+// createDownloadRecord stores peer download records.
+func (v *V1) createDownloadRecord(peer *resource.Peer, parents []*resource.Peer, req *schedulerv1.PeerResult) {
 	var parentRecords []storage.Parent
 	for _, parent := range parents {
 		parentRecord := storage.Parent{
