@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2023 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,29 +14,29 @@
  * limitations under the License.
  */
 
-package database
+package metrics
 
 import (
-	"context"
+	"net/http"
+	"testing"
 
-	"github.com/go-redis/redis/v8"
+	"google.golang.org/grpc"
 
-	"d7y.io/dragonfly/v2/manager/config"
+	"d7y.io/dragonfly/v2/trainer/config"
 )
 
-func NewRedis(cfg *config.RedisConfig) (redis.UniversalClient, error) {
-	redis.SetLogger(&redisLogger{})
-	client := redis.NewUniversalClient(&redis.UniversalOptions{
-		Addrs:      cfg.Addrs,
-		MasterName: cfg.MasterName,
-		DB:         cfg.DB,
-		Username:   cfg.Username,
-		Password:   cfg.Password,
-	})
+func TestNew(t *testing.T) {
+	cfg := &config.MetricsConfig{
+		Addr: "localhost:8080",
+	}
+	svr := grpc.NewServer()
+	server := New(cfg, svr)
 
-	if err := client.Ping(context.Background()).Err(); err != nil {
-		return nil, err
+	if server.Addr != cfg.Addr {
+		t.Errorf("expected server.Addr to be %s, but got %s", cfg.Addr, server.Addr)
 	}
 
-	return client, nil
+	if _, ok := server.Handler.(*http.ServeMux); !ok {
+		t.Errorf("expected server.Handler to be a *http.ServeMux, but got %T", server.Handler)
+	}
 }
