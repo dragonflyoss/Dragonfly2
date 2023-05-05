@@ -27,6 +27,7 @@ import (
 	managerv2 "d7y.io/api/pkg/apis/manager/v2"
 	trainerv1 "d7y.io/api/pkg/apis/trainer/v1"
 	trainerv1mocks "d7y.io/api/pkg/apis/trainer/v1/mocks"
+
 	trainerclientmocks "d7y.io/dragonfly/v2/pkg/rpc/trainer/client/mocks"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	configmocks "d7y.io/dragonfly/v2/scheduler/config/mocks"
