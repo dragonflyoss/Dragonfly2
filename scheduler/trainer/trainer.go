@@ -21,12 +21,12 @@ package trainer
 import (
 	"bytes"
 	"context"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"encoding/gob"
 	"time"
 
 	trainerv1 "d7y.io/api/pkg/apis/trainer/v1"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	trainerclient "d7y.io/dragonfly/v2/pkg/rpc/trainer/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/storage"
