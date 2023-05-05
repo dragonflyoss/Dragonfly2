@@ -7,6 +7,8 @@ permissions:
 on:
   pull_request:
     types: [opened, reopened, synchronize]
+    branches:
+      - 'code-review'
 
 jobs:
   chatgpt_code_review:

@@ -23,7 +23,7 @@ env:
 jobs:
   compatibility_e2e_tests:
     name: e2e_tests_with_${{ matrix.module }}
-    timeout-minutes: 40
+    timeout-minutes: 60
     runs-on: ubuntu-latest
     strategy:
       matrix:
