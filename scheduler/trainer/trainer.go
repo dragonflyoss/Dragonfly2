@@ -99,12 +99,12 @@ func (t *trainer) sendDataToTrainer() error {
 	}
 
 	var b bytes.Buffer
-	download, err := t.storage.ListDownload()
+	downloads, err := t.storage.ListDownload()
 	if err != nil {
 		return err
 	}
-	for _, data := range download {
-		if err := gob.NewEncoder(&b).Encode(data); err != nil {
+	for _, download := range downloads {
+		if err := gob.NewEncoder(&b).Encode(download); err != nil {
 			return err
 		}
 
@@ -122,12 +122,12 @@ func (t *trainer) sendDataToTrainer() error {
 		}
 	}
 
-	networkTopology, err := t.storage.ListNetworkTopology()
+	networkTopologies, err := t.storage.ListNetworkTopology()
 	if err != nil {
 		return err
 	}
-	for _, data := range networkTopology {
-		if err := gob.NewEncoder(&b).Encode(data); err != nil {
+	for _, networkTopology := range networkTopologies {
+		if err := gob.NewEncoder(&b).Encode(networkTopology); err != nil {
 			return err
 		}
 

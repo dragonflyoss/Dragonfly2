@@ -248,11 +248,9 @@ func Test_New(t *testing.T) {
 		expect func(t *testing.T, tr Trainer, err error)
 	}{
 		{
-			name: "get trainerStream fail",
+			name: "get trainerStream error",
 			mock: func(m *trainerclientmocks.MockV1MockRecorder, stream trainerv1.Trainer_TrainClient) {
-				gomock.InOrder(
-					m.Train(gomock.Any()).Return(nil, errors.New("foo")),
-				)
+				m.Train(gomock.Any()).Return(nil, errors.New("foo"))
 			},
 			expect: func(t *testing.T, tr Trainer, err error) {
 				assert := assert.New(t)
@@ -262,9 +260,7 @@ func Test_New(t *testing.T) {
 		{
 			name: "new trainer",
 			mock: func(m *trainerclientmocks.MockV1MockRecorder, stream trainerv1.Trainer_TrainClient) {
-				gomock.InOrder(
-					m.Train(gomock.Any()).Return(stream, nil),
-				)
+				m.Train(gomock.Any()).Return(stream, nil)
 			},
 			expect: func(t *testing.T, tr Trainer, err error) {
 				assert := assert.New(t)
@@ -288,16 +284,16 @@ func Test_New(t *testing.T) {
 	}
 }
 
-func TestTrainer_sendtoTrainer(t *testing.T) {
+func TestTrainer_sendDataToTrainer(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(stream trainerv1.Trainer_TrainClient, m *trainerclientmocks.MockV1MockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder, ms *storagemocks.MockStorageMockRecorder, mts *trainerv1mocks.MockTrainer_TrainClientMockRecorder)
+		mock   func(stream trainerv1.Trainer_TrainClient, mt *trainerclientmocks.MockV1MockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder, ms *storagemocks.MockStorageMockRecorder, mts *trainerv1mocks.MockTrainer_TrainClientMockRecorder)
 		except func(t *testing.T, tr Trainer, err error)
 	}{
 		{
-			name: "get scheduler fail",
-			mock: func(stream trainerv1.Trainer_TrainClient, m *trainerclientmocks.MockV1MockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder, ms *storagemocks.MockStorageMockRecorder, mts *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
-				m.Train(gomock.Any()).Return(stream, nil)
+			name: "get scheduler error",
+			mock: func(stream trainerv1.Trainer_TrainClient, mt *trainerclientmocks.MockV1MockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder, ms *storagemocks.MockStorageMockRecorder, mts *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
+				mt.Train(gomock.Any()).Return(stream, nil)
 				md.GetScheduler().Return(nil, errors.New("foo"))
 			},
 			except: func(t *testing.T, tr Trainer, err error) {
@@ -306,10 +302,16 @@ func TestTrainer_sendtoTrainer(t *testing.T) {
 			},
 		},
 		{
-			name: "list download fail",
-			mock: func(stream trainerv1.Trainer_TrainClient, m *trainerclientmocks.MockV1MockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder, ms *storagemocks.MockStorageMockRecorder, mts *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
-				m.Train(gomock.Any()).Return(stream, nil)
-				md.GetScheduler().Return(nil, nil)
+			name: "list download error",
+			mock: func(stream trainerv1.Trainer_TrainClient, mt *trainerclientmocks.MockV1MockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder, ms *storagemocks.MockStorageMockRecorder, mts *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
+				mt.Train(gomock.Any()).Return(stream, nil)
+				md.GetScheduler().Return(&managerv2.Scheduler{
+					Hostname: "foo",
+					Ip:       "127.0.0.1",
+					SchedulerCluster: &managerv2.SchedulerCluster{
+						Id: 1,
+					},
+				}, nil)
 				ms.ListDownload().Return(nil, errors.New("foo"))
 			},
 			except: func(t *testing.T, tr Trainer, err error) {
@@ -318,9 +320,9 @@ func TestTrainer_sendtoTrainer(t *testing.T) {
 			},
 		},
 		{
-			name: "send download fail",
-			mock: func(stream trainerv1.Trainer_TrainClient, m *trainerclientmocks.MockV1MockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder, ms *storagemocks.MockStorageMockRecorder, mts *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
-				m.Train(gomock.Any()).Return(stream, nil)
+			name: "send download error",
+			mock: func(stream trainerv1.Trainer_TrainClient, mt *trainerclientmocks.MockV1MockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder, ms *storagemocks.MockStorageMockRecorder, mts *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
+				mt.Train(gomock.Any()).Return(stream, nil)
 				md.GetScheduler().Return(&managerv2.Scheduler{
 					Hostname: "foo",
 					Ip:       "127.0.0.1",
@@ -337,9 +339,9 @@ func TestTrainer_sendtoTrainer(t *testing.T) {
 			},
 		},
 		{
-			name: "list networktopology fail",
-			mock: func(stream trainerv1.Trainer_TrainClient, m *trainerclientmocks.MockV1MockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder, ms *storagemocks.MockStorageMockRecorder, mts *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
-				m.Train(gomock.Any()).Return(stream, nil)
+			name: "list networkTopology error",
+			mock: func(stream trainerv1.Trainer_TrainClient, mt *trainerclientmocks.MockV1MockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder, ms *storagemocks.MockStorageMockRecorder, mts *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
+				mt.Train(gomock.Any()).Return(stream, nil)
 				md.GetScheduler().Return(&managerv2.Scheduler{
 					Hostname: "foo",
 					Ip:       "127.0.0.1",
@@ -357,9 +359,9 @@ func TestTrainer_sendtoTrainer(t *testing.T) {
 			},
 		},
 		{
-			name: "send networktopology fail",
-			mock: func(stream trainerv1.Trainer_TrainClient, m *trainerclientmocks.MockV1MockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder, ms *storagemocks.MockStorageMockRecorder, mts *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
-				m.Train(gomock.Any()).Return(stream, nil)
+			name: "send networkTopology error",
+			mock: func(stream trainerv1.Trainer_TrainClient, mt *trainerclientmocks.MockV1MockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder, ms *storagemocks.MockStorageMockRecorder, mts *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
+				mt.Train(gomock.Any()).Return(stream, nil)
 				md.GetScheduler().Return(&managerv2.Scheduler{
 					Hostname: "foo",
 					Ip:       "127.0.0.1",
@@ -378,9 +380,9 @@ func TestTrainer_sendtoTrainer(t *testing.T) {
 			},
 		},
 		{
-			name: "close stream fail",
-			mock: func(stream trainerv1.Trainer_TrainClient, m *trainerclientmocks.MockV1MockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder, ms *storagemocks.MockStorageMockRecorder, mts *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
-				m.Train(gomock.Any()).Return(stream, nil)
+			name: "close stream error",
+			mock: func(stream trainerv1.Trainer_TrainClient, mt *trainerclientmocks.MockV1MockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder, ms *storagemocks.MockStorageMockRecorder, mts *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
+				mt.Train(gomock.Any()).Return(stream, nil)
 				md.GetScheduler().Return(&managerv2.Scheduler{
 					Hostname: "foo",
 					Ip:       "127.0.0.1",
@@ -389,15 +391,11 @@ func TestTrainer_sendtoTrainer(t *testing.T) {
 					},
 				}, nil)
 				ms.ListDownload().Return([]storage.Download{mockDownload}, nil)
-				mts.Send(gomock.Any()).DoAndReturn(
-					func(t *trainerv1.TrainRequest) error {
-						return nil
-					})
 				ms.ListNetworkTopology().Return([]storage.NetworkTopology{mockNetworkTopology}, nil)
 				mts.Send(gomock.Any()).DoAndReturn(
 					func(t *trainerv1.TrainRequest) error {
 						return nil
-					})
+					}).AnyTimes()
 				mts.CloseAndRecv().Return(nil, errors.New("foo"))
 			},
 			except: func(t *testing.T, tr Trainer, err error) {
@@ -407,8 +405,8 @@ func TestTrainer_sendtoTrainer(t *testing.T) {
 		},
 		{
 			name: "send success",
-			mock: func(stream trainerv1.Trainer_TrainClient, m *trainerclientmocks.MockV1MockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder, ms *storagemocks.MockStorageMockRecorder, mts *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
-				m.Train(gomock.Any()).Return(stream, nil)
+			mock: func(stream trainerv1.Trainer_TrainClient, mt *trainerclientmocks.MockV1MockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder, ms *storagemocks.MockStorageMockRecorder, mts *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
+				mt.Train(gomock.Any()).Return(stream, nil)
 				md.GetScheduler().Return(&managerv2.Scheduler{
 					Hostname: "foo",
 					Ip:       "127.0.0.1",
@@ -417,15 +415,11 @@ func TestTrainer_sendtoTrainer(t *testing.T) {
 					},
 				}, nil)
 				ms.ListDownload().Return([]storage.Download{mockDownload}, nil)
-				mts.Send(gomock.Any()).DoAndReturn(
-					func(t *trainerv1.TrainRequest) error {
-						return nil
-					})
 				ms.ListNetworkTopology().Return([]storage.NetworkTopology{mockNetworkTopology}, nil)
 				mts.Send(gomock.Any()).DoAndReturn(
 					func(t *trainerv1.TrainRequest) error {
 						return nil
-					})
+					}).AnyTimes()
 				mts.CloseAndRecv().Return(nil, nil)
 			},
 			except: func(t *testing.T, tr Trainer, err error) {
