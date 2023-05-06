@@ -130,7 +130,6 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 	s.storage = storage
 
-	// serve announcer
 	var announcerOptions []announcer.Option
 	if cfg.Trainer.Enable {
 		// Initialize trainer client and dial options of trainer grpc client.
