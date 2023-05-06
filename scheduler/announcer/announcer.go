@@ -106,17 +106,20 @@ func (a *announcer) Serve() error {
 
 	if a.config.Trainer.Enable {
 		logger.Info("announce dataset to trainer")
-		tick := time.NewTicker(a.config.Trainer.Interval)
-		for {
-			select {
-			case <-tick.C:
-				if err := a.announceToTrainer(); err != nil {
-					return err
+		go func() {
+			tick := time.NewTicker(a.config.Trainer.Interval)
+			for {
+				select {
+				case <-tick.C:
+					if err := a.announceToTrainer(); err != nil {
+						logger.Errorf("scheduler send data to trainer error: %s", err.Error())
+					}
+				case <-a.done:
+					logger.Infof("announceToTrainer stopped")
+					return
 				}
-			case <-a.done:
-				return nil
 			}
-		}
+		}()
 	}
 
 	return nil
