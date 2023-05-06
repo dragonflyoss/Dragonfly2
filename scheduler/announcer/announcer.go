@@ -21,7 +21,6 @@ package announcer
 import (
 	"bytes"
 	"context"
-	"d7y.io/dragonfly/v2/scheduler/storage"
 	"encoding/gob"
 	"time"
 
@@ -32,6 +31,7 @@ import (
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	trainerclient "d7y.io/dragonfly/v2/pkg/rpc/trainer/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
 // Announcer is the interface used for announce service.
@@ -49,9 +49,7 @@ type announcer struct {
 	managerClient managerclient.V2
 	trainerClient trainerclient.V1
 	storage       storage.Storage
-	stream        trainerv1.Trainer_TrainClient
-
-	done chan struct{}
+	done          chan struct{}
 }
 
 // Option is a functional option for configuring the announcer.
@@ -108,12 +106,6 @@ func (a *announcer) Serve() error {
 
 	if a.config.Trainer.Enable {
 		logger.Info("announce dataset to trainer")
-		if stream, err := a.trainerClient.Train(context.Background()); err != nil {
-			return err
-		} else {
-			a.stream = stream
-		}
-
 		tick := time.NewTicker(a.config.Trainer.Interval)
 		for {
 			select {
@@ -158,6 +150,11 @@ func (a *announcer) announceToManager() error {
 
 // announceToTrainer announces dataset to trainer for training model.
 func (a *announcer) announceToTrainer() error {
+	stream, err := a.trainerClient.Train(context.Background())
+	if err != nil {
+		return err
+	}
+
 	var b bytes.Buffer
 	downloads, err := a.storage.ListDownload()
 	if err != nil {
@@ -168,7 +165,7 @@ func (a *announcer) announceToTrainer() error {
 			return err
 		}
 
-		if err := a.stream.Send(&trainerv1.TrainRequest{
+		if err := stream.Send(&trainerv1.TrainRequest{
 			Hostname:  a.config.Server.Host,
 			Ip:        a.config.Server.AdvertiseIP.String(),
 			ClusterId: uint64(a.config.Manager.SchedulerClusterID),
@@ -191,7 +188,7 @@ func (a *announcer) announceToTrainer() error {
 			return err
 		}
 
-		if err = a.stream.Send(&trainerv1.TrainRequest{
+		if err = stream.Send(&trainerv1.TrainRequest{
 			Hostname:  a.config.Server.Host,
 			Ip:        a.config.Server.AdvertiseIP.String(),
 			ClusterId: uint64(a.config.Manager.SchedulerClusterID),
@@ -205,7 +202,7 @@ func (a *announcer) announceToTrainer() error {
 		}
 	}
 
-	if _, err := a.stream.CloseAndRecv(); err != nil {
+	if _, err := stream.CloseAndRecv(); err != nil {
 		return err
 	}
 	return nil
