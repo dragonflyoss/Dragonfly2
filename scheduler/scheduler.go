@@ -76,6 +76,9 @@ type Server struct {
 	// Security client.
 	securityClient securityclient.V1
 
+	// trainer client
+	trainerClient trainerclient.V1
+
 	// Resource interface.
 	resource resource.Resource
 
@@ -147,6 +150,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 
 		// Initialize trainer client.
 		trainerClient, err := trainerclient.GetV1ByAddr(ctx, cfg.Trainer.Addr, trainerDialOptions...)
+		s.trainerClient = trainerClient
 		if err != nil {
 			return nil, err
 		}
@@ -363,6 +367,15 @@ func (s *Server) Stop() {
 		logger.Errorf("stop announcer failed %s", err.Error())
 	} else {
 		logger.Info("stop announcer closed")
+	}
+
+	// Stop trainer client.
+	if s.trainerClient != nil {
+		if err := s.trainerClient.Close(); err != nil {
+			logger.Errorf("trainer client failed to stop: %s", err.Error())
+		} else {
+			logger.Info("trainer client closed")
+		}
 	}
 
 	// Stop manager client.

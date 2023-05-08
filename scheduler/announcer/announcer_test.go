@@ -17,6 +17,7 @@
 package announcer
 
 import (
+	"context"
 	"errors"
 	"net"
 	"testing"
@@ -314,7 +315,7 @@ func TestAnnouncer_New(t *testing.T) {
 	}
 }
 
-func TestAnnouncer_announcerToTrainer(t *testing.T) {
+func TestAnnouncer_transferDataToTrainer(t *testing.T) {
 	tests := []struct {
 		name   string
 		config *config.Config
@@ -498,7 +499,7 @@ func TestAnnouncer_announcerToTrainer(t *testing.T) {
 
 			tc.mock(stream, mockManagerClient.EXPECT(), mockTrainerClient.EXPECT(), mockStorage.EXPECT(), stream.EXPECT())
 			a, _ := New(tc.config, mockManagerClient, WithTrainerClient(mockTrainerClient), WithStorage(mockStorage))
-			err := a.(*announcer).announceToTrainer()
+			err := a.(*announcer).transferDataToTrainer(context.Background())
 			tc.except(t, a, err)
 		})
 	}
