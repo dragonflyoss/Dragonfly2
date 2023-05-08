@@ -34,27 +34,6 @@ var (
 		UpdatedAt:       atomic.NewTime(time.Now()),
 	}
 
-	mockSeedHost = &resource.Host{
-		ID:              idgen.HostIDV2("127.0.0.1", "HostName_seed"),
-		Type:            types.HostTypeSuperSeed,
-		Hostname:        "hostname_seed",
-		IP:              "127.0.0.1",
-		Port:            8003,
-		DownloadPort:    8001,
-		OS:              "darwin",
-		Platform:        "darwin",
-		PlatformFamily:  "Standalone Workstation",
-		PlatformVersion: "11.1",
-		KernelVersion:   "20.2.0",
-		CPU:             mockCPU,
-		Memory:          mockMemory,
-		Network:         mockNetwork,
-		Disk:            mockDisk,
-		Build:           mockBuild,
-		CreatedAt:       atomic.NewTime(time.Now()),
-		UpdatedAt:       atomic.NewTime(time.Now()),
-	}
-
 	mockCPU = resource.CPU{
 		LogicalCount:   4,
 		PhysicalCount:  2,

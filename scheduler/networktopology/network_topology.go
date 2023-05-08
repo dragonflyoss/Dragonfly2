@@ -296,6 +296,9 @@ func (n *networkTopology) StoreProbe(src, dest string, probe *Probe) bool {
 		}
 
 		averageRtt, err := strconv.ParseFloat(value, 64)
+		if err != nil {
+			return false
+		}
 		if _, err := n.rdb.Pipelined(context.Background(), func(rdb redis.Pipeliner) error {
 			rdb.HSet(context.Background(), key, "averageRTT", float64(averageRtt)*DefaultMovingAverageWeight+
 				float64(probe.RTT)*(1-DefaultMovingAverageWeight))
