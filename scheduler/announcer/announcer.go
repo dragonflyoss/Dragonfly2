@@ -105,7 +105,24 @@ func (a *announcer) Serve() error {
 	}
 
 	if a.config.Trainer.Enable {
-		a.announceToTrainer()
+		logger.Info("announce dataset to trainer")
+		ctx, cancel := context.WithCancel(context.Background())
+		go func() {
+			tick := time.NewTicker(a.config.Trainer.Interval)
+			for {
+				select {
+				case <-tick.C:
+					if err := a.announceToTrainer(ctx); err != nil {
+						logger.Errorf("scheduler send data to trainer error: %s", err.Error())
+						cancel()
+					}
+				case <-a.done:
+					logger.Info("announceToTrainer stopped")
+					cancel()
+					return
+				}
+			}
+		}()
 	}
 
 	return nil
@@ -131,28 +148,7 @@ func (a *announcer) announceToManager() error {
 }
 
 // announceToTrainer announces dataset to trainer for training model.
-func (a *announcer) announceToTrainer() {
-	logger.Info("announce dataset to trainer")
-	ctx, cancel := context.WithCancel(context.Background())
-	go func() {
-		tick := time.NewTicker(a.config.Trainer.Interval)
-		for {
-			select {
-			case <-tick.C:
-				if err := a.transferDataToTrainer(ctx); err != nil {
-					logger.Errorf("scheduler send data to trainer error: %s", err.Error())
-					cancel()
-				}
-			case <-a.done:
-				logger.Info("announceToTrainer stopped")
-				cancel()
-				return
-			}
-		}
-	}()
-}
-
-func (a *announcer) transferDataToTrainer(ctx context.Context) error {
+func (a *announcer) announceToTrainer(ctx context.Context) error {
 	stream, err := a.trainerClient.Train(ctx)
 	if err != nil {
 		return err

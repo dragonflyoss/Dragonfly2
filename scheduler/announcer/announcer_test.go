@@ -315,7 +315,7 @@ func TestAnnouncer_New(t *testing.T) {
 	}
 }
 
-func TestAnnouncer_transferDataToTrainer(t *testing.T) {
+func TestAnnouncer_announceToTrainer(t *testing.T) {
 	tests := []struct {
 		name   string
 		config *config.Config
@@ -499,7 +499,7 @@ func TestAnnouncer_transferDataToTrainer(t *testing.T) {
 
 			tc.mock(stream, mockManagerClient.EXPECT(), mockTrainerClient.EXPECT(), mockStorage.EXPECT(), stream.EXPECT())
 			a, _ := New(tc.config, mockManagerClient, WithTrainerClient(mockTrainerClient), WithStorage(mockStorage))
-			err := a.(*announcer).transferDataToTrainer(context.Background())
+			err := a.(*announcer).announceToTrainer(context.Background())
 			tc.except(t, a, err)
 		})
 	}
