@@ -77,10 +77,11 @@ func NewPieceManager(pieceDownloadTimeout time.Duration, opts ...PieceManagerOpt
 		calculateDigest:  true,
 	}
 
-	pm.pieceDownloader = NewPieceDownloader(pieceDownloadTimeout, pm.certPool)
 	for _, opt := range opts {
 		opt(pm)
 	}
+
+	pm.pieceDownloader = NewPieceDownloader(pieceDownloadTimeout, pm.certPool)
 
 	return pm, nil
 }
