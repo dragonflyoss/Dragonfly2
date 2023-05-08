@@ -76,7 +76,7 @@ type Server struct {
 	// Security client.
 	securityClient securityclient.V1
 
-	// trainer client
+	// trainer client.
 	trainerClient trainerclient.V1
 
 	// Resource interface.

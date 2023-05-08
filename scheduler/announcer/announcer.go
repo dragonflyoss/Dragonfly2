@@ -144,7 +144,7 @@ func (a *announcer) announceToTrainer() {
 					cancel()
 				}
 			case <-a.done:
-				logger.Infof("announceToTrainer stopped")
+				logger.Info("announceToTrainer stopped")
 				cancel()
 				return
 			}
