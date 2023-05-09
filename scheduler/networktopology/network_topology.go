@@ -20,6 +20,7 @@ package networktopology
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
@@ -115,7 +116,7 @@ func (n *networkTopology) Peek(src, dest string) (*Probe, bool) {
 		return nil, false
 	}
 
-	err = probe.UnmarshalBinary([]byte(jsonStr))
+	err = json.Unmarshal([]byte(jsonStr), probe)
 	if err != nil {
 		return nil, false
 	}
@@ -141,7 +142,7 @@ func (n *networkTopology) Dequeue(src, dest string) (*Probe, bool) {
 		return nil, false
 	}
 
-	err = probe.UnmarshalBinary([]byte(jsonStr))
+	err = json.Unmarshal([]byte(jsonStr), probe)
 	if err != nil {
 		return nil, false
 	}
@@ -159,7 +160,7 @@ func (n *networkTopology) Items(src, dest string) []*Probe {
 			break
 		}
 
-		err = probe.UnmarshalBinary([]byte(jsonStr))
+		err = json.Unmarshal([]byte(jsonStr), probe)
 		if err != nil {
 			return probes
 		}

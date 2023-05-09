@@ -17,7 +17,6 @@
 package networktopology
 
 import (
-	"encoding/json"
 	"time"
 
 	"d7y.io/dragonfly/v2/scheduler/resource"
@@ -41,14 +40,6 @@ func NewProbe(host *resource.Host, rtt time.Duration, createdAt time.Time) *Prob
 		RTT:       rtt,
 		CreatedAt: createdAt,
 	}
-}
-
-func (p *Probe) MarshalBinary() (data []byte, err error) {
-	return json.Marshal(p)
-}
-
-func (p *Probe) UnmarshalBinary(data []byte) (err error) {
-	return json.Unmarshal(data, p)
 }
 
 type Probes struct {

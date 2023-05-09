@@ -1,6 +1,7 @@
 package networktopology
 
 import (
+	"encoding/json"
 	"errors"
 	"testing"
 	"time"
@@ -23,7 +24,7 @@ func TestNetworkTopology_Peek(t *testing.T) {
 		{
 			name: "queue has one probe",
 			mock: func(clientMock redismock.ClientMock) {
-				data, err := mockProbe.MarshalBinary()
+				data, err := json.Marshal(mockProbe)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -42,19 +43,19 @@ func TestNetworkTopology_Peek(t *testing.T) {
 		{
 			name: "queue has three probes",
 			mock: func(clientMock redismock.ClientMock) {
-				data, err := mockProbe.MarshalBinary()
+				data, err := json.Marshal(mockProbe)
 				if err != nil {
 					t.Fatal(err)
 				}
 				clientMock.ExpectLIndex("probes:"+mockSeedHost.ID+":"+mockHost.ID, 0).SetVal(string(data))
 
-				data1, err := NewProbe(mockHost, 3100000*time.Nanosecond, time.Now()).MarshalBinary()
+				data1, err := json.Marshal(NewProbe(mockHost, 3100000*time.Nanosecond, time.Now()))
 				if err != nil {
 					t.Fatal(err)
 				}
 				clientMock.ExpectLIndex("probes:"+mockSeedHost.ID+":"+mockHost.ID, 1).SetVal(string(data1))
 
-				data2, err := NewProbe(mockHost, 3200000*time.Nanosecond, time.Now()).MarshalBinary()
+				data2, err := json.Marshal(NewProbe(mockHost, 3200000*time.Nanosecond, time.Now()))
 				if err != nil {
 					t.Fatal(err)
 				}
