@@ -1,7 +1,6 @@
 package networktopology
 
 import (
-	"d7y.io/dragonfly/v2/scheduler/config"
 	"errors"
 	"testing"
 	"time"
@@ -10,6 +9,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	storagemocks "d7y.io/dragonfly/v2/scheduler/storage/mocks"
 )
