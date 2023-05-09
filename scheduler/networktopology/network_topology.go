@@ -27,7 +27,6 @@ import (
 	"github.com/go-redis/redis/v8"
 
 	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
-	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/storage"
@@ -85,13 +84,10 @@ type networkTopology struct {
 
 	// Storage interface
 	storage storage.Storage
-
-	// Manager client interface
-	managerClient managerclient.V2
 }
 
 // New network topology interface.
-func NewNetworkTopology(cfg *config.Config, resource resource.Resource, storage storage.Storage, managerClient managerclient.V2) (NetworkTopology, error) {
+func NewNetworkTopology(cfg *config.Config, resource resource.Resource, storage storage.Storage) (NetworkTopology, error) {
 	rdb, err := pkgredis.NewRedis(&redis.UniversalOptions{
 		Addrs:      cfg.Database.Redis.Addrs,
 		MasterName: cfg.Database.Redis.MasterName,
@@ -104,11 +100,10 @@ func NewNetworkTopology(cfg *config.Config, resource resource.Resource, storage 
 	}
 
 	return &networkTopology{
-		rdb:           rdb,
-		config:        cfg,
-		resource:      resource,
-		storage:       storage,
-		managerClient: managerClient,
+		rdb:      rdb,
+		config:   cfg,
+		resource: resource,
+		storage:  storage,
 	}, nil
 }
 

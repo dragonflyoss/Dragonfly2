@@ -147,7 +147,7 @@ func Test_NewProbes(t *testing.T) {
 			name: "new probes",
 			expect: func(t *testing.T, p *Probes) {
 				assert := assert.New(t)
-				assert.Equal(p.AverageRTT, int64(0))
+				assert.Equal(p.AverageRTT, time.Duration(0))
 				assert.NotEqual(p.CreatedAt, time.Now())
 				assert.Equal(p.UpdatedAt, time.Time{})
 			},

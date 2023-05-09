@@ -9,7 +9,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
-	managerclientmocks "d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	storagemocks "d7y.io/dragonfly/v2/scheduler/storage/mocks"
@@ -18,14 +17,15 @@ import (
 func TestNetworkTopology_NewNetworkTopology(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(n NetworkTopology)
+		config *config.Config
+		mock   func(config *config.Config)
 		expect func(t *testing.T, networkTopology NetworkTopology)
 	}{
 		{
-			name: "new network topology",
-			mock: func(n NetworkTopology) {
-				rdb, _ := redismock.NewClientMock()
-				n.(*networkTopology).rdb = rdb
+			name:   "new network topology",
+			config: config.New(),
+			mock: func(config *config.Config) {
+				config.Database.Redis.Addrs = []string{"127.0.0.1:6379"}
 			},
 			expect: func(t *testing.T, n NetworkTopology) {
 				assert := assert.New(t)
@@ -34,7 +34,6 @@ func TestNetworkTopology_NewNetworkTopology(t *testing.T) {
 				assert.NotNil(instance.config)
 				assert.NotNil(instance.resource)
 				assert.NotNil(instance.storage)
-				assert.NotNil(instance.managerClient)
 			},
 		},
 	}
@@ -43,15 +42,15 @@ func TestNetworkTopology_NewNetworkTopology(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
-			mockManagerClient := managerclientmocks.NewMockV2(ctl)
+
 			res := resource.NewMockResource(ctl)
 			mockStorage := storagemocks.NewMockStorage(ctl)
-			n, err := NewNetworkTopology(config.New(), res, mockStorage, mockManagerClient)
+			tc.mock(tc.config)
+			n, err := NewNetworkTopology(tc.config, res, mockStorage)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			tc.mock(n)
 			tc.expect(t, n)
 		})
 	}
@@ -60,11 +59,27 @@ func TestNetworkTopology_NewNetworkTopology(t *testing.T) {
 func TestNetworkTopology_Peek(t *testing.T) {
 	tests := []struct {
 		name   string
+		config *config.Config
 		mock   func(n NetworkTopology)
 		expect func(t *testing.T, n NetworkTopology)
 	}{
 		{
 			name: "queue has one probe",
+			config: &config.Config{
+				Database: config.DatabaseConfig{
+					Redis: config.RedisConfig{
+						Host:              "127.0.0.1",
+						Port:              6379,
+						Addrs:             []string{"127.0.0.1:6379"},
+						MasterName:        "master_name",
+						Username:          "user_name",
+						Password:          "123456",
+						BrokerDB:          1,
+						BackendDB:         2,
+						NetworkTopologyDB: 3,
+					},
+				},
+			},
 			mock: func(n NetworkTopology) {
 				rdb, clientMock := redismock.NewClientMock()
 				n.(*networkTopology).rdb = rdb
@@ -140,8 +155,7 @@ func TestNetworkTopology_Peek(t *testing.T) {
 
 			res := resource.NewMockResource(ctl)
 			mockStorage := storagemocks.NewMockStorage(ctl)
-			mockManagerClient := managerclientmocks.NewMockV2(ctl)
-			n, err := NewNetworkTopology(config.New(), res, mockStorage, mockManagerClient)
+			n, err := NewNetworkTopology(tc.config, res, mockStorage)
 			if err != nil {
 				t.Fatal(err)
 			}
