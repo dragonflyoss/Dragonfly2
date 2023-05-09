@@ -111,12 +111,6 @@ const (
 
 	// DefaultJobGlobalWorkerNum is default local worker number for job.
 	DefaultJobLocalWorkerNum = 1000
-
-	// DefaultJobRedisBrokerDB is default db for redis broker.
-	DefaultJobRedisBrokerDB = 1
-
-	// DefaultJobRedisBackendDB is default db for redis backend.
-	DefaultJobRedisBackendDB = 2
 )
 
 const (
@@ -178,4 +172,15 @@ const (
 
 	// DefaultTrainerInterval is the default interval of training.
 	DefaultTrainerInterval = 7 * 24 * time.Hour
+)
+
+const (
+	// DefaultRedisBrokerDB is default db for redis broker.
+	DefaultRedisBrokerDB = 1
+
+	// DefaultRedisBackendDB is default db for redis backend.
+	DefaultRedisBackendDB = 2
+
+	// DefaultNetworkTopologyDB is default db for network topology.
+	DefaultNetworkTopologyDB = 3
 )
