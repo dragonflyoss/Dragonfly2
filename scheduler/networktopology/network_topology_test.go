@@ -24,12 +24,13 @@ func TestNetworkTopology_Peek(t *testing.T) {
 		{
 			name: "queue has one probe",
 			mock: func(clientMock redismock.ClientMock) {
+				clientMock.ExpectLLen("probes:" + mockSeedHost.ID + ":" + mockHost.ID).SetVal(1)
 				data, err := json.Marshal(mockProbe)
 				if err != nil {
 					t.Fatal(err)
 				}
 				clientMock.ExpectLIndex("probes:"+mockSeedHost.ID+":"+mockHost.ID, 0).SetVal(string(data))
-				clientMock.ExpectLLen("probes:" + mockSeedHost.ID + ":" + mockHost.ID).SetVal(1)
+
 			},
 			expect: func(t *testing.T, n *networkTopology) {
 				probe, peeked := n.Peek(mockSeedHost.ID, mockHost.ID)
@@ -43,6 +44,7 @@ func TestNetworkTopology_Peek(t *testing.T) {
 		{
 			name: "queue has three probes",
 			mock: func(clientMock redismock.ClientMock) {
+				clientMock.ExpectLLen("probes:" + mockSeedHost.ID + ":" + mockHost.ID).SetVal(3)
 				data, err := json.Marshal(mockProbe)
 				if err != nil {
 					t.Fatal(err)
@@ -61,7 +63,6 @@ func TestNetworkTopology_Peek(t *testing.T) {
 				}
 				clientMock.ExpectLIndex("probes:"+mockSeedHost.ID+":"+mockHost.ID, 2).SetVal(string(data2))
 
-				clientMock.ExpectLLen("probes:" + mockSeedHost.ID + ":" + mockHost.ID).SetVal(3)
 			},
 			expect: func(t *testing.T, n *networkTopology) {
 				probe, peeked := n.Peek(mockSeedHost.ID, mockHost.ID)
@@ -75,8 +76,8 @@ func TestNetworkTopology_Peek(t *testing.T) {
 		{
 			name: "queue has no probe",
 			mock: func(clientMock redismock.ClientMock) {
-				clientMock.ExpectLIndex("probes:"+mockSeedHost.ID+":"+mockHost.ID, 0).SetErr(errors.New("no probe"))
 				clientMock.ExpectLLen("probes:" + mockSeedHost.ID + ":" + mockHost.ID).SetVal(0)
+				clientMock.ExpectLIndex("probes:"+mockSeedHost.ID+":"+mockHost.ID, 0).SetErr(errors.New("no probe"))
 			},
 			expect: func(t *testing.T, n *networkTopology) {
 				assert := assert.New(t)
