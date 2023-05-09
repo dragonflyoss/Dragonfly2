@@ -31,11 +31,12 @@ func TestNetworkTopology_Peek(t *testing.T) {
 				clientMock.ExpectLLen("probes:" + mockSeedHost.ID + ":" + mockHost.ID).SetVal(1)
 			},
 			expect: func(t *testing.T, n *networkTopology) {
-				assert := assert.New(t)
 				probe, peeked := n.Peek(mockSeedHost.ID, mockHost.ID)
+				assert.ObjectsAreEqualValues(probe, mockProbe)
+
+				assert := assert.New(t)
 				assert.True(peeked)
-				assert.EqualValues(probe, mockProbe)
-				assert.Equal(n.Length(mockSeedHost.ID, mockHost.ID), 1)
+				assert.Equal(n.Length(mockSeedHost.ID, mockHost.ID), int64(1))
 			},
 		},
 		{
@@ -45,28 +46,29 @@ func TestNetworkTopology_Peek(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-
 				clientMock.ExpectLIndex("probes:"+mockSeedHost.ID+":"+mockHost.ID, 0).SetVal(string(data))
+
 				data1, err := NewProbe(mockHost, 3100000*time.Nanosecond, time.Now()).MarshalBinary()
 				if err != nil {
 					t.Fatal(err)
 				}
-
 				clientMock.ExpectLIndex("probes:"+mockSeedHost.ID+":"+mockHost.ID, 1).SetVal(string(data1))
+
 				data2, err := NewProbe(mockHost, 3200000*time.Nanosecond, time.Now()).MarshalBinary()
 				if err != nil {
 					t.Fatal(err)
 				}
-
 				clientMock.ExpectLIndex("probes:"+mockSeedHost.ID+":"+mockHost.ID, 2).SetVal(string(data2))
+
 				clientMock.ExpectLLen("probes:" + mockSeedHost.ID + ":" + mockHost.ID).SetVal(3)
 			},
 			expect: func(t *testing.T, n *networkTopology) {
-				assert := assert.New(t)
 				probe, peeked := n.Peek(mockSeedHost.ID, mockHost.ID)
+				assert.ObjectsAreEqualValues(probe, mockProbe)
+
+				assert := assert.New(t)
 				assert.True(peeked)
-				assert.EqualValues(probe, mockProbe)
-				assert.Equal(n.Length(mockSeedHost.ID, mockHost.ID), 3)
+				assert.Equal(n.Length(mockSeedHost.ID, mockHost.ID), int64(3))
 			},
 		},
 		{
@@ -79,7 +81,7 @@ func TestNetworkTopology_Peek(t *testing.T) {
 				assert := assert.New(t)
 				_, peeked := n.Peek(mockSeedHost.ID, mockHost.ID)
 				assert.False(peeked)
-				assert.Equal(n.Length(mockSeedHost.ID, mockHost.ID), 0)
+				assert.Equal(n.Length(mockSeedHost.ID, mockHost.ID), int64(0))
 			},
 		},
 	}

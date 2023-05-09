@@ -114,7 +114,7 @@ var (
 	mockProbe = &Probe{
 		Host:      mockHost,
 		RTT:       3000000 * time.Nanosecond,
-		CreatedAt: time.Now(),
+		CreatedAt: time.Now().UTC(),
 	}
 )
 
