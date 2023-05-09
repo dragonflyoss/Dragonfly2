@@ -309,5 +309,7 @@ func (n *networkTopology) StoreProbe(src, dest string, probe *Probe) bool {
 		}
 	}
 
+	// Update visit times
+
 	return true
 }

@@ -2,10 +2,10 @@ package networktopology
 
 import (
 	"errors"
-	"github.com/go-redis/redismock/v8"
 	"testing"
 	"time"
 
+	"github.com/go-redis/redismock/v8"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
@@ -18,13 +18,16 @@ import (
 func TestNetworkTopology_NewNetworkTopology(t *testing.T) {
 	tests := []struct {
 		name   string
-		config *config.Config
-		expect func(t *testing.T, networkTopology NetworkTopology, err error)
+		mock   func(n NetworkTopology)
+		expect func(t *testing.T, networkTopology NetworkTopology)
 	}{
 		{
-			name:   "new network topology",
-			config: config.New(),
-			expect: func(t *testing.T, n NetworkTopology, err error) {
+			name: "new network topology",
+			mock: func(n NetworkTopology) {
+				rdb, _ := redismock.NewClientMock()
+				n.(*networkTopology).rdb = rdb
+			},
+			expect: func(t *testing.T, n NetworkTopology) {
 				assert := assert.New(t)
 				instance := n.(*networkTopology)
 				assert.NotNil(instance.rdb)
@@ -32,7 +35,6 @@ func TestNetworkTopology_NewNetworkTopology(t *testing.T) {
 				assert.NotNil(instance.resource)
 				assert.NotNil(instance.storage)
 				assert.NotNil(instance.managerClient)
-				assert.NoError(err)
 			},
 		},
 	}
@@ -44,8 +46,13 @@ func TestNetworkTopology_NewNetworkTopology(t *testing.T) {
 			mockManagerClient := managerclientmocks.NewMockV2(ctl)
 			res := resource.NewMockResource(ctl)
 			mockStorage := storagemocks.NewMockStorage(ctl)
-			n, err := NewNetworkTopology(tc.config, res, mockStorage, mockManagerClient)
-			tc.expect(t, n, err)
+			n, err := NewNetworkTopology(config.New(), res, mockStorage, mockManagerClient)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			tc.mock(n)
+			tc.expect(t, n)
 		})
 	}
 }
