@@ -92,3 +92,14 @@ trainer:
   enable: false
   addr: "127.0.0.1:9000"
   interval: 10m
+
+database:
+  redis:
+    addrs: [ "foo", "bar" ]
+    masterName: "baz"
+    host: 127.0.0.1
+    port: 6379
+    password: foo
+    brokerDB: 1
+    backendDB: 2
+    networkTopologyDB: 3
