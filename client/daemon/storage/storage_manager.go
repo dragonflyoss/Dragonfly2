@@ -25,6 +25,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -136,6 +137,7 @@ type storageManager struct {
 	dataPathStat       *syscall.Stat_t
 	gcCallback         func(CommonTaskRequest)
 	gcInterval         time.Duration
+	dataDirMode        fs.FileMode
 
 	indexRWMutex       sync.RWMutex
 	indexTask2PeerTask map[string][]*localTaskStore // key: task id, value: slice of localTaskStore
@@ -149,7 +151,11 @@ var _ Manager = (*storageManager)(nil)
 
 type GCCallback func(request CommonTaskRequest)
 
-func NewStorageManager(storeStrategy config.StoreStrategy, opt *config.StorageOption, gcCallback GCCallback, moreOpts ...func(*storageManager) error) (Manager, error) {
+func NewStorageManager(storeStrategy config.StoreStrategy, opt *config.StorageOption, gcCallback GCCallback, dataDirMode fs.FileMode, moreOpts ...func(*storageManager) error) (Manager, error) {
+	// If dirMode isn't in config, use default
+	if dataDirMode == os.FileMode(0) {
+		dataDirMode = defaultDirectoryMode
+	}
 	if !path.IsAbs(opt.DataPath) {
 		abs, err := filepath.Abs(opt.DataPath)
 		if err != nil {
@@ -159,7 +165,7 @@ func NewStorageManager(storeStrategy config.StoreStrategy, opt *config.StorageOp
 	}
 	stat, err := os.Stat(opt.DataPath)
 	if os.IsNotExist(err) {
-		if err := os.MkdirAll(opt.DataPath, defaultDirectoryMode); err != nil {
+		if err := os.MkdirAll(opt.DataPath, dataDirMode); err != nil {
 			return nil, err
 		}
 		stat, err = os.Stat(opt.DataPath)
@@ -182,6 +188,7 @@ func NewStorageManager(storeStrategy config.StoreStrategy, opt *config.StorageOp
 		dataPathStat:          stat.Sys().(*syscall.Stat_t),
 		gcCallback:            gcCallback,
 		gcInterval:            time.Minute,
+		dataDirMode:           dataDirMode,
 		indexTask2PeerTask:    map[string][]*localTaskStore{},
 		subIndexTask2PeerTask: map[string][]*localSubTaskStore{},
 	}
@@ -409,7 +416,7 @@ func (s *storageManager) CreateTask(req *RegisterTaskRequest) (TaskStorageDriver
 
 		SugaredLoggerOnWith: logger.With("task", req.TaskID, "peer", req.PeerID, "component", "localTaskStore"),
 	}
-	if err := os.MkdirAll(t.dataDir, defaultDirectoryMode); err != nil && !os.IsExist(err) {
+	if err := os.MkdirAll(t.dataDir, s.dataDirMode); err != nil && !os.IsExist(err) {
 		return nil, err
 	}
 	t.touch()
