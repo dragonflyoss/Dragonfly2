@@ -19,19 +19,16 @@
 package announcer
 
 import (
-	"bytes"
 	"context"
-	"encoding/gob"
-	"time"
-
 	managerv2 "d7y.io/api/pkg/apis/manager/v2"
 	trainerv1 "d7y.io/api/pkg/apis/trainer/v1"
-
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	trainerclient "d7y.io/dragonfly/v2/pkg/rpc/trainer/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/storage"
+	"io"
+	"time"
 )
 
 // Announcer is the interface used for announce service.
@@ -106,23 +103,7 @@ func (a *announcer) Serve() error {
 
 	if a.config.Trainer.Enable {
 		logger.Info("announce dataset to trainer")
-		ctx, cancel := context.WithCancel(context.Background())
-		go func() {
-			tick := time.NewTicker(a.config.Trainer.Interval)
-			for {
-				select {
-				case <-tick.C:
-					if err := a.announceToTrainer(ctx); err != nil {
-						logger.Errorf("scheduler send data to trainer error: %s", err.Error())
-						cancel()
-					}
-				case <-a.done:
-					logger.Info("announceToTrainer stopped")
-					cancel()
-					return
-				}
-			}
-		}()
+		a.announceToTrainer()
 	}
 
 	return nil
@@ -148,29 +129,54 @@ func (a *announcer) announceToManager() error {
 }
 
 // announceToTrainer announces dataset to trainer for training model.
-func (a *announcer) announceToTrainer(ctx context.Context) error {
+func (a *announcer) announceToTrainer() {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		tick := time.NewTicker(a.config.Trainer.Interval)
+		for {
+			select {
+			case <-tick.C:
+				if err := a.transferDataToTrainer(ctx); err != nil {
+					logger.Errorf("scheduler send data to trainer error: %s", err.Error())
+					cancel()
+				}
+			case <-a.done:
+				logger.Info("announceToTrainer stopped")
+				cancel()
+				return
+			}
+		}
+	}()
+}
+
+func (a *announcer) transferDataToTrainer(ctx context.Context) error {
 	stream, err := a.trainerClient.Train(ctx)
 	if err != nil {
 		return err
 	}
 
-	var b bytes.Buffer
-	downloads, err := a.storage.ListDownload()
+	readCloser, err := a.storage.OpenDownload()
 	if err != nil {
-		return err
+		panic(err)
 	}
-	for _, download := range downloads {
-		if err := gob.NewEncoder(&b).Encode(download); err != nil {
-			return err
-		}
+	defer readCloser.Close()
 
+	buffer := make([]byte, 1024)
+	for {
+		n, err := readCloser.Read(buffer)
+		if err != nil && err != io.EOF {
+			panic(err)
+		}
+		if n == 0 {
+			break
+		}
 		if err := stream.Send(&trainerv1.TrainRequest{
 			Hostname:  a.config.Server.Host,
 			Ip:        a.config.Server.AdvertiseIP.String(),
 			ClusterId: uint64(a.config.Manager.SchedulerClusterID),
 			Request: &trainerv1.TrainRequest_TrainMlpRequest{
 				TrainMlpRequest: &trainerv1.TrainMLPRequest{
-					Dataset: b.Bytes(),
+					Dataset: buffer,
 				},
 			},
 		}); err != nil {
@@ -178,22 +184,26 @@ func (a *announcer) announceToTrainer(ctx context.Context) error {
 		}
 	}
 
-	networkTopologies, err := a.storage.ListNetworkTopology()
+	readCloser, err = a.storage.OpenNetworkTopology()
 	if err != nil {
-		return err
+		panic(err)
 	}
-	for _, networkTopology := range networkTopologies {
-		if err := gob.NewEncoder(&b).Encode(networkTopology); err != nil {
-			return err
+	defer readCloser.Close()
+	for {
+		n, err := readCloser.Read(buffer)
+		if err != nil && err != io.EOF {
+			panic(err)
 		}
-
-		if err = stream.Send(&trainerv1.TrainRequest{
+		if n == 0 {
+			break
+		}
+		if err := stream.Send(&trainerv1.TrainRequest{
 			Hostname:  a.config.Server.Host,
 			Ip:        a.config.Server.AdvertiseIP.String(),
 			ClusterId: uint64(a.config.Manager.SchedulerClusterID),
 			Request: &trainerv1.TrainRequest_TrainGnnRequest{
 				TrainGnnRequest: &trainerv1.TrainGNNRequest{
-					Dataset: b.Bytes(),
+					Dataset: buffer,
 				},
 			},
 		}); err != nil {
