@@ -93,7 +93,7 @@ type Server struct {
 	// Announcer interface.
 	announcer announcer.Announcer
 
-	// Network topology interface
+	// Network topology interface.
 	networkTopology networktopology.NetworkTopology
 
 	// GC service.
