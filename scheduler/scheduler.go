@@ -19,8 +19,10 @@ package scheduler
 import (
 	"context"
 	"crypto/tls"
+	"d7y.io/dragonfly/v2/scheduler/networktopology"
 	"errors"
 	"fmt"
+	"github.com/go-redis/redis/v8"
 	"net"
 	"net/http"
 	"path/filepath"
@@ -39,6 +41,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/issuer"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
+	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	securityclient "d7y.io/dragonfly/v2/pkg/rpc/security/client"
@@ -90,12 +93,27 @@ type Server struct {
 	// Announcer interface.
 	announcer announcer.Announcer
 
+	// Network topology interface
+	networkTopology networktopology.NetworkTopology
+
 	// GC service.
 	gc gc.GC
 }
 
 func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	s := &Server{config: cfg}
+
+	// Initialize redis database for network topology
+	rdb, err := pkgredis.NewRedis(&redis.UniversalOptions{
+		Addrs:      cfg.Database.Redis.Addrs,
+		MasterName: cfg.Database.Redis.MasterName,
+		DB:         cfg.Database.Redis.NetworkTopologyDB,
+		Username:   cfg.Database.Redis.Username,
+		Password:   cfg.Database.Redis.Password,
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	// Initialize manager client and dial options of manager grpc client.
 	managerDialOptions := []grpc.DialOption{}
@@ -224,6 +242,14 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	// Initialize metrics.
 	if cfg.Metrics.Enable {
 		s.metricsServer = metrics.New(&cfg.Metrics, s.grpcServer)
+	}
+
+	// Initialize network topology service.
+	if cfg.NetworkTopology.Enable {
+		s.networkTopology, err = networktopology.NewNetworkTopology(cfg, rdb, resource, s.storage)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return s, nil
