@@ -37,10 +37,10 @@ type networkTopology struct {
 	// Redis universal client interface.
 	rdb redis.UniversalClient
 
-	// Resource interface
+	// Resource interface.
 	resource resource.Resource
 
-	// Storage interface
+	// Storage interface.
 	storage storage.Storage
 }
 
