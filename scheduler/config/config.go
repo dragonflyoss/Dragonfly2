@@ -655,6 +655,16 @@ func (cfg *Config) Convert() error {
 		cfg.Database.Redis.Password = cfg.Job.Redis.Password
 	}
 
+	// TODO Compatible with deprecated fields broker database of redis of job.
+	if cfg.Database.Redis.BrokerDB == 0 && cfg.Job.Redis.BrokerDB != 0 {
+		cfg.Database.Redis.BrokerDB = cfg.Job.Redis.BrokerDB
+	}
+
+	// TODO Compatible with deprecated fields backend database of redis of job.
+	if cfg.Database.Redis.BackendDB == 0 && cfg.Job.Redis.BackendDB != 0 {
+		cfg.Database.Redis.BackendDB = cfg.Job.Redis.BackendDB
+	}
+
 	// TODO Compatible with deprecated fields ip.
 	if cfg.Server.IP != "" && cfg.Server.AdvertiseIP == nil {
 		cfg.Server.AdvertiseIP = net.ParseIP(cfg.Server.IP)
