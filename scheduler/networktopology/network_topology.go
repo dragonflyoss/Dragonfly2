@@ -24,7 +24,10 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
+// TODO(XZ): implement the network topology interface function after merging.
 type NetworkTopology interface {
+	// Peek returns the oldest probe without removing it.
+	Peek(src, dest string) (*Probe, bool)
 }
 
 type networkTopology struct {
@@ -49,4 +52,9 @@ func NewNetworkTopology(cfg *config.Config, rdb redis.UniversalClient, resource 
 		resource: resource,
 		storage:  storage,
 	}, nil
+}
+
+// Peek returns the oldest probe without removing it.
+func (n *networkTopology) Peek(src, dest string) (*Probe, bool) {
+	return nil, false
 }
