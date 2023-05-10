@@ -417,7 +417,14 @@ func (s *storageManager) CreateTask(req *RegisterTaskRequest) (TaskStorageDriver
 
 		SugaredLoggerOnWith: logger.With("task", req.TaskID, "peer", req.PeerID, "component", "localTaskStore"),
 	}
-	if err := os.MkdirAll(t.dataDir, s.dataDirMode); err != nil && !os.IsExist(err) {
+
+	dataDirMode := defaultDirectoryMode
+	// If dirMode isn't in config, use default
+	if s.dataDirMode != os.FileMode(0) {
+		dataDirMode = s.dataDirMode
+	}
+
+	if err := os.MkdirAll(t.dataDir, dataDirMode); err != nil && !os.IsExist(err) {
 		return nil, err
 	}
 	t.touch()
