@@ -133,7 +133,7 @@ func initDaemonDfpath(cfg *config.DaemonOption) (dfpath.Dfpath, error) {
 	}
 	options = append(options, dfpath.WithDataDir(dataDir))
 
-    dataDirMode := dfpath.DefaultDataDirMode
+	dataDirMode := dfpath.DefaultDataDirMode
 	if os.FileMode(cfg.DataDirMode) != os.FileMode(0) {
 		dataDirMode = os.FileMode(cfg.DataDirMode)
 	}
