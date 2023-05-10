@@ -604,11 +604,11 @@ func (cfg *Config) Validate() error {
 		return errors.New("redis requires parameter addrs")
 	}
 
-	if cfg.Database.Redis.BrokerDB <= 0 {
+	if cfg.Database.Redis.BrokerDB < 0 {
 		return errors.New("redis requires parameter brokerDB")
 	}
 
-	if cfg.Database.Redis.BackendDB <= 0 {
+	if cfg.Database.Redis.BackendDB < 0 {
 		return errors.New("redis requires parameter backendDB")
 	}
 
