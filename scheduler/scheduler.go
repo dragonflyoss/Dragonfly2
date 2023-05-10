@@ -21,12 +21,12 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/go-redis/redis/v8"
 	"net"
 	"net/http"
 	"path/filepath"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/johanbrandhorst/certify"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
