@@ -19,7 +19,6 @@ package scheduler
 import (
 	"context"
 	"crypto/tls"
-	"d7y.io/dragonfly/v2/scheduler/networktopology"
 	"errors"
 	"fmt"
 	"github.com/go-redis/redis/v8"
@@ -50,6 +49,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/job"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
+	"d7y.io/dragonfly/v2/scheduler/networktopology"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/rpcserver"
 	"d7y.io/dragonfly/v2/scheduler/scheduling"

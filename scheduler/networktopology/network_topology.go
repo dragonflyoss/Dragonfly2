@@ -1,10 +1,11 @@
 package networktopology
 
 import (
+	"github.com/go-redis/redis/v8"
+
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/storage"
-	"github.com/go-redis/redis/v8"
 )
 
 type NetworkTopology interface {
