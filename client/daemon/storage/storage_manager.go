@@ -152,7 +152,7 @@ var _ Manager = (*storageManager)(nil)
 type GCCallback func(request CommonTaskRequest)
 
 func NewStorageManager(storeStrategy config.StoreStrategy, opt *config.StorageOption, gcCallback GCCallback, dirMode fs.FileMode, moreOpts ...func(*storageManager) error) (Manager, error) {
-    dataDirMode = defaultDirectoryMode
+    dataDirMode := defaultDirectoryMode
 	// If dirMode isn't in config, use default
 	if dirMode != os.FileMode(0) {
 		dataDirMode = defaultDirectoryMode
