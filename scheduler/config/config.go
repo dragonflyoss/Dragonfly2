@@ -211,7 +211,7 @@ type JobConfig struct {
 	// Number of workers in local queue.
 	LocalWorkerNum uint `yaml:"localWorkerNum" mapstructure:"localWorkerNum"`
 
-	// DEPRECATED: Please use the `Database.Redis` field instead.
+	// DEPRECATED: Please use the `database.redis` field instead.
 	Redis RedisConfig `yaml:"redis" mapstructure:"redis"`
 }
 
