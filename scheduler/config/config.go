@@ -453,6 +453,10 @@ func (cfg *Config) Validate() error {
 		return errors.New("server requires parameter host")
 	}
 
+	if len(cfg.Database.Redis.Addrs) == 0 {
+		return errors.New("redis requires parameter addrs")
+	}
+
 	if cfg.Database.Redis.BrokerDB < 0 {
 		return errors.New("redis requires parameter brokerDB")
 	}
@@ -603,9 +607,6 @@ func (cfg *Config) Validate() error {
 		if cfg.Trainer.Interval <= 0 {
 			return errors.New("trainer requires parameter interval")
 		}
-	}
-	if len(cfg.Database.Redis.Addrs) == 0 {
-		return errors.New("redis requires parameter addrs")
 	}
 
 	return nil
