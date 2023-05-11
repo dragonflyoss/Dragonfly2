@@ -101,6 +101,18 @@ func TestConfig_Load(t *testing.T) {
 			PluginDir:     "foo",
 			DataDir:       "foo",
 		},
+		Database: DatabaseConfig{
+			Redis: RedisConfig{
+				Host:              "127.0.0.1",
+				Password:          "foo",
+				Addrs:             []string{"foo", "bar"},
+				MasterName:        "baz",
+				Port:              6379,
+				BrokerDB:          DefaultRedisBrokerDB,
+				BackendDB:         DefaultRedisBackendDB,
+				NetworkTopologyDB: DefaultNetworkTopologyDB,
+			},
+		},
 		DynConfig: DynConfig{
 			RefreshInterval: 10 * time.Second,
 		},
@@ -150,30 +162,17 @@ func TestConfig_Load(t *testing.T) {
 		},
 		NetworkTopology: NetworkTopologyConfig{
 			Enable:          true,
-			SyncInterval:    30 * time.Second,
 			CollectInterval: 60 * time.Second,
 			Probe: ProbeConfig{
 				QueueLength:  5,
 				SyncInterval: 30 * time.Second,
-				SyncCount:    50,
+				SyncCount:    10,
 			},
 		},
 		Trainer: TrainerConfig{
 			Enable:   false,
 			Addr:     "127.0.0.1:9000",
 			Interval: 10 * time.Minute,
-		},
-		Database: DatabaseConfig{
-			Redis: RedisConfig{
-				Host:              "127.0.0.1",
-				Password:          "foo",
-				Addrs:             []string{"foo", "bar"},
-				MasterName:        "baz",
-				Port:              6379,
-				BrokerDB:          DefaultRedisBrokerDB,
-				BackendDB:         DefaultRedisBackendDB,
-				NetworkTopologyDB: DefaultNetworkTopologyDB,
-			},
 		},
 	}
 
@@ -257,6 +256,58 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "server requires parameter host")
+			},
+		},
+		{
+			name:   "redis requires parameter addrs",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Database.Redis.Addrs = []string{}
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "redis requires parameter addrs")
+			},
+		},
+		{
+			name:   "redis requires parameter brokerDB",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Database.Redis.BrokerDB = -1
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "redis requires parameter brokerDB")
+			},
+		},
+		{
+			name:   "redis requires parameter backendDB",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Database.Redis.BackendDB = -1
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "redis requires parameter backendDB")
+			},
+		},
+		{
+			name:   "redis requires parameter networkTopologyDB",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Database.Redis.NetworkTopologyDB = -1
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "redis requires parameter networkTopologyDB")
 			},
 		},
 		{
@@ -617,19 +668,6 @@ func TestConfig_Validate(t *testing.T) {
 			},
 		},
 		{
-			name:   "networkTopology requires parameter syncInterval",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Job = mockJobConfig
-				cfg.NetworkTopology.SyncInterval = 0
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "networkTopology requires parameter syncInterval")
-			},
-		},
-		{
 			name:   "networkTopology requires parameter collectInterval",
 			config: New(),
 			mock: func(cfg *Config) {
@@ -707,58 +745,6 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "trainer requires parameter interval")
-			},
-		},
-		{
-			name:   "redis requires parameter addrs",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Database.Redis = mockRedisConfig
-				cfg.Database.Redis.Addrs = []string{}
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "redis requires parameter addrs")
-			},
-		},
-		{
-			name:   "redis requires parameter brokerDB",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Database.Redis = mockRedisConfig
-				cfg.Database.Redis.BrokerDB = -1
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "redis requires parameter brokerDB")
-			},
-		},
-		{
-			name:   "redis requires parameter backendDB",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Database.Redis = mockRedisConfig
-				cfg.Database.Redis.BackendDB = -1
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "redis requires parameter backendDB")
-			},
-		},
-		{
-			name:   "redis requires parameter networkTopologyDB",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Database.Redis = mockRedisConfig
-				cfg.Database.Redis.NetworkTopologyDB = -1
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "redis requires parameter networkTopologyDB")
 			},
 		},
 	}

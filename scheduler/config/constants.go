@@ -49,6 +49,17 @@ const (
 )
 
 const (
+	// DefaultRedisBrokerDB is default db for redis broker.
+	DefaultRedisBrokerDB = 1
+
+	// DefaultRedisBackendDB is default db for redis backend.
+	DefaultRedisBackendDB = 2
+
+	// DefaultNetworkTopologyDB is default db for network topology.
+	DefaultNetworkTopologyDB = 3
+)
+
+const (
 	// DefaultSchedulerAlgorithm is default algorithm for scheduler.
 	DefaultSchedulerAlgorithm = "default"
 
@@ -174,15 +185,4 @@ const (
 
 	// DefaultTrainerInterval is the default interval of training.
 	DefaultTrainerInterval = 7 * 24 * time.Hour
-)
-
-const (
-	// DefaultRedisBrokerDB is default db for redis broker.
-	DefaultRedisBrokerDB = 1
-
-	// DefaultRedisBackendDB is default db for redis backend.
-	DefaultRedisBackendDB = 2
-
-	// DefaultNetworkTopologyDB is default db for network topology.
-	DefaultNetworkTopologyDB = 3
 )

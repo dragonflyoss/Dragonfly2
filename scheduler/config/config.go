@@ -40,6 +40,9 @@ type Config struct {
 	// Server configuration.
 	Server ServerConfig `yaml:"server" mapstructure:"server"`
 
+	// Database configuration.
+	Database DatabaseConfig `yaml:"database" mapstructure:"database"`
+
 	// Dynconfig configuration.
 	DynConfig DynConfig `yaml:"dynConfig" mapstructure:"dynConfig"`
 
@@ -72,9 +75,6 @@ type Config struct {
 
 	// Trainer configuration.
 	Trainer TrainerConfig `yaml:"trainer" mapstructure:"trainer"`
-
-	// Database configuration.
-	Database DatabaseConfig `yaml:"database" mapstructure:"database"`
 }
 
 type ServerConfig struct {
@@ -113,6 +113,11 @@ type ServerConfig struct {
 
 	// Server storage data directory.
 	DataDir string `yaml:"dataDir" mapstructure:"dataDir"`
+}
+
+type DatabaseConfig struct {
+	// Redis configuration.
+	Redis RedisConfig `yaml:"redis" mapstructure:"redis"`
 }
 
 type SchedulerConfig struct {
@@ -308,9 +313,6 @@ type NetworkTopologyConfig struct {
 	// Enable network topology service, including probe, network topology collection and synchronization service.
 	Enable bool `yaml:"enable" mapstructure:"enable"`
 
-	// SyncInterval is the interval of synchronizing network topology between schedulers.
-	SyncInterval time.Duration `mapstructure:"syncInterval" yaml:"syncInterval"`
-
 	// CollectInterval is the interval of collecting network topology.
 	CollectInterval time.Duration `mapstructure:"collectInterval" yaml:"collectInterval"`
 
@@ -340,11 +342,6 @@ type TrainerConfig struct {
 	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
 }
 
-type DatabaseConfig struct {
-	// Redis configuration.
-	Redis RedisConfig `yaml:"redis" mapstructure:"redis"`
-}
-
 // New default configuration.
 func New() *Config {
 	return &Config{
@@ -352,6 +349,13 @@ func New() *Config {
 			Port:          DefaultServerPort,
 			AdvertisePort: DefaultServerAdvertisePort,
 			Host:          fqdn.FQDNHostname,
+		},
+		Database: DatabaseConfig{
+			Redis: RedisConfig{
+				BrokerDB:          DefaultRedisBrokerDB,
+				BackendDB:         DefaultRedisBackendDB,
+				NetworkTopologyDB: DefaultNetworkTopologyDB,
+			},
 		},
 		Scheduler: SchedulerConfig{
 			Algorithm:              DefaultSchedulerAlgorithm,
@@ -412,7 +416,6 @@ func New() *Config {
 		},
 		NetworkTopology: NetworkTopologyConfig{
 			Enable:          true,
-			SyncInterval:    DefaultNetworkTopologySyncInterval,
 			CollectInterval: DefaultNetworkTopologyCollectInterval,
 			Probe: ProbeConfig{
 				QueueLength:  DefaultProbeQueueLength,
@@ -424,13 +427,6 @@ func New() *Config {
 			Enable:   false,
 			Addr:     DefaultTrainerAddr,
 			Interval: DefaultTrainerInterval,
-		},
-		Database: DatabaseConfig{
-			Redis: RedisConfig{
-				BrokerDB:          DefaultRedisBrokerDB,
-				BackendDB:         DefaultRedisBackendDB,
-				NetworkTopologyDB: DefaultNetworkTopologyDB,
-			},
 		},
 	}
 }
@@ -455,6 +451,18 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Server.Host == "" {
 		return errors.New("server requires parameter host")
+	}
+
+	if cfg.Database.Redis.BrokerDB < 0 {
+		return errors.New("redis requires parameter brokerDB")
+	}
+
+	if cfg.Database.Redis.BackendDB < 0 {
+		return errors.New("redis requires parameter backendDB")
+	}
+
+	if cfg.Database.Redis.NetworkTopologyDB < 0 {
+		return errors.New("redis requires parameter networkTopologyDB")
 	}
 
 	if cfg.Scheduler.Algorithm == "" {
@@ -571,10 +579,6 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	if cfg.NetworkTopology.SyncInterval <= 0 {
-		return errors.New("networkTopology requires parameter syncInterval")
-	}
-
 	if cfg.NetworkTopology.CollectInterval <= 0 {
 		return errors.New("networkTopology requires parameter collectInterval")
 	}
@@ -602,18 +606,6 @@ func (cfg *Config) Validate() error {
 	}
 	if len(cfg.Database.Redis.Addrs) == 0 {
 		return errors.New("redis requires parameter addrs")
-	}
-
-	if cfg.Database.Redis.BrokerDB < 0 {
-		return errors.New("redis requires parameter brokerDB")
-	}
-
-	if cfg.Database.Redis.BackendDB < 0 {
-		return errors.New("redis requires parameter backendDB")
-	}
-
-	if cfg.Database.Redis.NetworkTopologyDB < 0 {
-		return errors.New("redis requires parameter networkTopologyDB")
 	}
 
 	return nil
