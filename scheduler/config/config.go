@@ -256,6 +256,9 @@ type RedisConfig struct {
 
 	// BackendDB is backend database name.
 	BackendDB int `yaml:"backendDB" mapstructure:"backendDB"`
+
+	// NetworkTopologyDB is network topology database name.
+	NetworkTopologyDB int `yaml:"networkTopologyDB" mapstructure:"networkTopologyDB"`
 }
 
 type MetricsConfig struct {
@@ -390,10 +393,6 @@ func New() *Config {
 			GlobalWorkerNum:    DefaultJobGlobalWorkerNum,
 			SchedulerWorkerNum: DefaultJobSchedulerWorkerNum,
 			LocalWorkerNum:     DefaultJobLocalWorkerNum,
-			Redis: RedisConfig{
-				BrokerDB:  DefaultJobRedisBrokerDB,
-				BackendDB: DefaultJobRedisBackendDB,
-			},
 		},
 		Storage: StorageConfig{
 			MaxSize:    DefaultStorageMaxSize,
@@ -420,7 +419,6 @@ func New() *Config {
 		},
 		NetworkTopology: NetworkTopologyConfig{
 			Enable:          true,
-			SyncInterval:    DefaultNetworkTopologySyncInterval,
 			CollectInterval: DefaultNetworkTopologyCollectInterval,
 			Probe: ProbeConfig{
 				QueueLength:  DefaultProbeQueueLength,
