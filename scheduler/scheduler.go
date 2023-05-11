@@ -103,7 +103,7 @@ type Server struct {
 func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	s := &Server{config: cfg}
 
-	// Initialize redis database for network topology.
+	// Initialize redis client.
 	rdb, err := pkgredis.NewRedis(&redis.UniversalOptions{
 		Addrs:      cfg.Database.Redis.Addrs,
 		MasterName: cfg.Database.Redis.MasterName,

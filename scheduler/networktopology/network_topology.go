@@ -24,7 +24,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
-// TODO(XZ): implement the network topology interface function after merging.
+// TODO(fcgxz2003): implement the network topology.
 type NetworkTopology interface {
 	// Peek returns the oldest probe without removing it.
 	Peek(src, dest string) (*Probe, bool)
