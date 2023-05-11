@@ -49,6 +49,17 @@ const (
 )
 
 const (
+	// DefaultRedisBrokerDB is default db for redis broker.
+	DefaultRedisBrokerDB = 1
+
+	// DefaultRedisBackendDB is default db for redis backend.
+	DefaultRedisBackendDB = 2
+
+	// DefaultNetworkTopologyDB is default db for network topology.
+	DefaultNetworkTopologyDB = 3
+)
+
+const (
 	// DefaultSchedulerAlgorithm is default algorithm for scheduler.
 	DefaultSchedulerAlgorithm = "default"
 
@@ -152,24 +163,20 @@ const (
 )
 
 const (
-	// TODO(XZ): The default setting needs to be changed after testing.
-	// DefaultNetworkTopologySyncInterval is the default interval of synchronizing network topology between schedulers.
-	DefaultNetworkTopologySyncInterval = 30 * time.Second
-
-	// TODO(XZ): The default setting needs to be changed after testing.
+	// TODO(fcgxz2003): The default setting needs to be changed after testing.
 	// DefaultNetworkTopologyCollectInterval is the default interval of collecting network topology.
 	DefaultNetworkTopologyCollectInterval = 60 * time.Second
 
 	// DefaultProbeQueueLength is the default length of probe queue in directed graph.
 	DefaultProbeQueueLength = 5
 
-	// TODO(XZ): The default setting needs to be changed after testing.
+	// TODO(fcgxz2003): The default setting needs to be changed after testing.
 	// DefaultProbeSyncInterval is the default interval of synchronizing host's probes.
 	DefaultProbeSyncInterval = 30 * time.Second
 
-	// TODO(XZ): The default setting needs to be changed after testing.
+	// TODO(fcgxz2003): The default setting needs to be changed after testing.
 	// DefaultProbeSyncCount is the default number of probing hosts.
-	DefaultProbeSyncCount = 50
+	DefaultProbeSyncCount = 10
 )
 
 const (
