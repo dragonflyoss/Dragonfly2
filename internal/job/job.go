@@ -58,16 +58,6 @@ func New(cfg *Config, queue Queue) (*Job, error) {
 		MasterName: cfg.MasterName,
 		Username:   cfg.Username,
 		Password:   cfg.Password,
-		DB:         cfg.BrokerDB,
-	}); err != nil {
-		return nil, err
-	}
-
-	if err := ping(&redis.UniversalOptions{
-		Addrs:      cfg.Addrs,
-		MasterName: cfg.MasterName,
-		Username:   cfg.Username,
-		Password:   cfg.Password,
 		DB:         cfg.BackendDB,
 	}); err != nil {
 		return nil, err
@@ -98,8 +88,7 @@ func New(cfg *Config, queue Queue) (*Job, error) {
 }
 
 func ping(options *redis.UniversalOptions) error {
-	client := redis.NewUniversalClient(options)
-	return client.Ping(context.Background()).Err()
+	return redis.NewUniversalClient(options).Ping(context.Background()).Err()
 }
 
 func (t *Job) RegisterJob(namedJobFuncs map[string]any) error {
