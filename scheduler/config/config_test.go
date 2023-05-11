@@ -198,8 +198,8 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
-				cfg.Job = mockJobConfig
 				cfg.Database.Redis = mockRedisConfig
+				cfg.Job = mockJobConfig
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
@@ -315,6 +315,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Scheduler.Algorithm = ""
 			},
@@ -328,6 +329,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Scheduler.BackToSourceCount = 0
 			},
@@ -341,6 +343,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Scheduler.RetryBackToSourceLimit = 0
 			},
@@ -354,6 +357,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Scheduler.RetryLimit = 0
 			},
@@ -367,6 +371,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Scheduler.RetryInterval = 0
 			},
@@ -380,6 +385,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Scheduler.GC.PieceDownloadTimeout = 0
 			},
@@ -393,6 +399,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Scheduler.GC.PeerTTL = 0
 			},
@@ -406,6 +413,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Scheduler.GC.PeerGCInterval = 0
 			},
@@ -419,6 +427,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Scheduler.GC.TaskGCInterval = 0
 			},
@@ -432,6 +441,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Scheduler.GC.HostGCInterval = 0
 			},
@@ -445,6 +455,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Scheduler.GC.HostTTL = 0
 			},
@@ -458,6 +469,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.DynConfig.RefreshInterval = 0
 			},
@@ -471,6 +483,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Manager.Addr = ""
 			},
@@ -484,6 +497,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Manager.SchedulerClusterID = 0
 			},
@@ -497,6 +511,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Manager.KeepAlive.Interval = 0
 			},
@@ -510,6 +525,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Job.GlobalWorkerNum = 0
 			},
@@ -523,6 +539,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Job.SchedulerWorkerNum = 0
 			},
@@ -536,6 +553,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Job.LocalWorkerNum = 0
 			},
@@ -549,6 +567,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Storage.MaxSize = 0
 			},
@@ -562,6 +581,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Storage.MaxBackups = 0
 			},
@@ -575,6 +595,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Storage.BufferSize = 0
 			},
@@ -588,6 +609,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Metrics = mockMetricsConfig
 				cfg.Metrics.Addr = ""
@@ -602,6 +624,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Security = mockSecurityConfig
 				cfg.Security.CACert = ""
@@ -616,6 +639,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Security = mockSecurityConfig
 				cfg.Security.TLSPolicy = ""
@@ -630,6 +654,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Security = mockSecurityConfig
 				cfg.Security.CertSpec.IPAddresses = []net.IP{}
@@ -644,6 +669,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Security = mockSecurityConfig
 				cfg.Security.CertSpec.DNSNames = []string{}
@@ -658,6 +684,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Security = mockSecurityConfig
 				cfg.Security.CertSpec.ValidityPeriod = 0
@@ -672,6 +699,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.NetworkTopology.CollectInterval = 0
 			},
@@ -685,6 +713,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.NetworkTopology.Probe.QueueLength = 0
 			},
@@ -698,6 +727,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.NetworkTopology.Probe.SyncInterval = 0
 			},
@@ -711,6 +741,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.NetworkTopology.Probe.SyncCount = 0
 			},
@@ -724,6 +755,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Trainer.Enable = true
 				cfg.Trainer.Addr = ""
@@ -738,6 +770,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
 				cfg.Trainer.Enable = true
 				cfg.Trainer.Interval = 0
