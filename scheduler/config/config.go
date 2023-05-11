@@ -78,12 +78,6 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	// DEPRECATED: Please use the `advertiseIP` field instead.
-	IP string `yaml:"ip" mapstructure:"ip"`
-
-	// DEPRECATED: Please use the `listenIP` field instead.
-	Listen string `yaml:"listen" mapstructure:"listen"`
-
 	// AdvertiseIP is advertise ip.
 	AdvertiseIP net.IP `yaml:"advertiseIP" mapstructure:"advertiseIP"`
 
@@ -123,12 +117,6 @@ type DatabaseConfig struct {
 type SchedulerConfig struct {
 	// Algorithm is scheduling algorithm used by the scheduler.
 	Algorithm string `yaml:"algorithm" mapstructure:"algorithm"`
-
-	// DEPRECATED: Please use the `backToSourceCount` field instead.
-	BackSourceCount int `yaml:"backSourceCount" mapstructure:"backSourceCount"`
-
-	// DEPRECATED: Please use the `retryBackToSourceLimit` field instead.
-	RetryBackSourceLimit int `yaml:"retryBackSourceLimit" mapstructure:"retryBackSourceLimit"`
 
 	// BackToSourceCount is single task allows the peer to back-to-source count.
 	BackToSourceCount int `yaml:"backToSourceCount" mapstructure:"backToSourceCount"`
@@ -613,16 +601,6 @@ func (cfg *Config) Validate() error {
 }
 
 func (cfg *Config) Convert() error {
-	// TODO Compatible with deprecated fields backSourceCount.
-	if cfg.Scheduler.BackSourceCount != 0 {
-		cfg.Scheduler.BackToSourceCount = cfg.Scheduler.BackSourceCount
-	}
-
-	// TODO Compatible with deprecated fields retryBackSourceLimit.
-	if cfg.Scheduler.RetryBackSourceLimit != 0 {
-		cfg.Scheduler.RetryBackToSourceLimit = cfg.Scheduler.RetryBackSourceLimit
-	}
-
 	// TODO Compatible with deprecated fields address of redis of job.
 	if len(cfg.Database.Redis.Addrs) == 0 && len(cfg.Job.Redis.Addrs) != 0 {
 		cfg.Database.Redis.Addrs = cfg.Job.Redis.Addrs
@@ -656,16 +634,6 @@ func (cfg *Config) Convert() error {
 	// TODO Compatible with deprecated fields backend database of redis of job.
 	if cfg.Database.Redis.BackendDB == 0 && cfg.Job.Redis.BackendDB != 0 {
 		cfg.Database.Redis.BackendDB = cfg.Job.Redis.BackendDB
-	}
-
-	// TODO Compatible with deprecated fields ip.
-	if cfg.Server.IP != "" && cfg.Server.AdvertiseIP == nil {
-		cfg.Server.AdvertiseIP = net.ParseIP(cfg.Server.IP)
-	}
-
-	// TODO Compatible with deprecated fields listen.
-	if cfg.Server.Listen != "" && cfg.Server.ListenIP == nil {
-		cfg.Server.ListenIP = net.ParseIP(cfg.Server.Listen)
 	}
 
 	if cfg.Server.AdvertiseIP == nil {
