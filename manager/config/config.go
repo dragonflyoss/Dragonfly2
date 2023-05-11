@@ -249,9 +249,6 @@ type MetricsConfig struct {
 }
 
 type GRPCConfig struct {
-	// DEPRECATED: Please use the `listenIP` field instead.
-	Listen string `mapstructure:"listen" yaml:"listen"`
-
 	// AdvertiseIP is advertise ip.
 	AdvertiseIP net.IP `yaml:"advertiseIP" mapstructure:"advertiseIP"`
 
@@ -599,11 +596,6 @@ func (cfg *Config) Convert() error {
 	// TODO Compatible with deprecated fields host and port.
 	if len(cfg.Database.Redis.Addrs) == 0 && cfg.Database.Redis.Host != "" && cfg.Database.Redis.Port > 0 {
 		cfg.Database.Redis.Addrs = []string{fmt.Sprintf("%s:%d", cfg.Database.Redis.Host, cfg.Database.Redis.Port)}
-	}
-
-	// TODO Compatible with deprecated fields listen.
-	if cfg.Server.GRPC.Listen != "" && cfg.Server.GRPC.ListenIP == nil {
-		cfg.Server.GRPC.ListenIP = net.ParseIP(cfg.Server.GRPC.Listen)
 	}
 
 	if cfg.Server.GRPC.AdvertiseIP == nil {
