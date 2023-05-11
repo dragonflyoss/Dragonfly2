@@ -53,6 +53,7 @@ job:
     password: foo
     brokerDB: 1
     backendDB: 2
+    networkTopologyDB: 3
 
 storage:
   maxSize: 1
