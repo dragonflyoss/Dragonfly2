@@ -20,6 +20,9 @@ package announcer
 
 import (
 	"context"
+	"io"
+	"time"
+
 	managerv2 "d7y.io/api/pkg/apis/manager/v2"
 	trainerv1 "d7y.io/api/pkg/apis/trainer/v1"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -27,8 +30,6 @@ import (
 	trainerclient "d7y.io/dragonfly/v2/pkg/rpc/trainer/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/storage"
-	"io"
-	"time"
 )
 
 // Announcer is the interface used for announce service.
@@ -155,17 +156,16 @@ func (a *announcer) transferDataToTrainer(ctx context.Context) error {
 		return err
 	}
 
-	readCloser, err := a.storage.OpenDownload()
-	if err != nil {
-		panic(err)
-	}
-	defer readCloser.Close()
-
 	buffer := make([]byte, 1024)
+	downloadReadCloser, err := a.storage.OpenDownload()
+	if err != nil {
+		return err
+	}
+	defer downloadReadCloser.Close()
 	for {
-		n, err := readCloser.Read(buffer)
+		n, err := downloadReadCloser.Read(buffer)
 		if err != nil && err != io.EOF {
-			panic(err)
+			return err
 		}
 		if n == 0 {
 			break
@@ -184,15 +184,15 @@ func (a *announcer) transferDataToTrainer(ctx context.Context) error {
 		}
 	}
 
-	readCloser, err = a.storage.OpenNetworkTopology()
+	networkTopologyReadCloser, err := a.storage.OpenNetworkTopology()
 	if err != nil {
-		panic(err)
+		return err
 	}
-	defer readCloser.Close()
+	defer networkTopologyReadCloser.Close()
 	for {
-		n, err := readCloser.Read(buffer)
+		n, err := networkTopologyReadCloser.Read(buffer)
 		if err != nil && err != io.EOF {
-			panic(err)
+			return err
 		}
 		if n == 0 {
 			break
