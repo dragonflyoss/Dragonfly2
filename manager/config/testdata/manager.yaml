@@ -49,8 +49,6 @@ database:
     addrs: [foo, bar]
     masterName: baz
     password: bar
-    host: bar
-    port: 6379
     db: 0
     brokerDB: 1
     backendDB: 2
