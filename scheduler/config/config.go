@@ -40,6 +40,9 @@ type Config struct {
 	// Server configuration.
 	Server ServerConfig `yaml:"server" mapstructure:"server"`
 
+	// Database configuration.
+	Database DatabaseConfig `yaml:"database" mapstructure:"database"`
+
 	// Dynconfig configuration.
 	DynConfig DynConfig `yaml:"dynConfig" mapstructure:"dynConfig"`
 
@@ -72,9 +75,6 @@ type Config struct {
 
 	// Trainer configuration.
 	Trainer TrainerConfig `yaml:"trainer" mapstructure:"trainer"`
-
-	// Database configuration.
-	Database DatabaseConfig `yaml:"database" mapstructure:"database"`
 }
 
 type ServerConfig struct {
@@ -113,6 +113,11 @@ type ServerConfig struct {
 
 	// Server storage data directory.
 	DataDir string `yaml:"dataDir" mapstructure:"dataDir"`
+}
+
+type DatabaseConfig struct {
+	// Redis configuration.
+	Redis RedisConfig `yaml:"redis" mapstructure:"redis"`
 }
 
 type SchedulerConfig struct {
@@ -211,7 +216,7 @@ type JobConfig struct {
 	// Number of workers in local queue.
 	LocalWorkerNum uint `yaml:"localWorkerNum" mapstructure:"localWorkerNum"`
 
-	// DEPRECATED: Please use the `Database.Redis` field instead.
+	// Redis configuration.
 	Redis RedisConfig `yaml:"redis" mapstructure:"redis"`
 }
 
@@ -251,9 +256,6 @@ type RedisConfig struct {
 
 	// BackendDB is backend database name.
 	BackendDB int `yaml:"backendDB" mapstructure:"backendDB"`
-
-	// NetworkTopologyDB is network topology database name.
-	NetworkTopologyDB int `yaml:"networkTopologyDB" mapstructure:"networkTopologyDB"`
 }
 
 type MetricsConfig struct {
@@ -340,11 +342,6 @@ type TrainerConfig struct {
 	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
 }
 
-type DatabaseConfig struct {
-	// Redis configuration.
-	Redis RedisConfig `yaml:"redis" mapstructure:"redis"`
-}
-
 // New default configuration.
 func New() *Config {
 	return &Config{
@@ -352,6 +349,13 @@ func New() *Config {
 			Port:          DefaultServerPort,
 			AdvertisePort: DefaultServerAdvertisePort,
 			Host:          fqdn.FQDNHostname,
+		},
+		Database: DatabaseConfig{
+			Redis: RedisConfig{
+				BrokerDB:          DefaultRedisBrokerDB,
+				BackendDB:         DefaultRedisBackendDB,
+				NetworkTopologyDB: DefaultNetworkTopologyDB,
+			},
 		},
 		Scheduler: SchedulerConfig{
 			Algorithm:              DefaultSchedulerAlgorithm,
@@ -386,6 +390,10 @@ func New() *Config {
 			GlobalWorkerNum:    DefaultJobGlobalWorkerNum,
 			SchedulerWorkerNum: DefaultJobSchedulerWorkerNum,
 			LocalWorkerNum:     DefaultJobLocalWorkerNum,
+			Redis: RedisConfig{
+				BrokerDB:  DefaultJobRedisBrokerDB,
+				BackendDB: DefaultJobRedisBackendDB,
+			},
 		},
 		Storage: StorageConfig{
 			MaxSize:    DefaultStorageMaxSize,
@@ -425,13 +433,6 @@ func New() *Config {
 			Addr:     DefaultTrainerAddr,
 			Interval: DefaultTrainerInterval,
 		},
-		Database: DatabaseConfig{
-			Redis: RedisConfig{
-				BrokerDB:          DefaultRedisBrokerDB,
-				BackendDB:         DefaultRedisBackendDB,
-				NetworkTopologyDB: DefaultNetworkTopologyDB,
-			},
-		},
 	}
 }
 
@@ -455,6 +456,22 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Server.Host == "" {
 		return errors.New("server requires parameter host")
+	}
+
+	if len(cfg.Database.Redis.Addrs) == 0 {
+		return errors.New("redis requires parameter addrs")
+	}
+
+	if cfg.Database.Redis.BrokerDB < 0 {
+		return errors.New("redis requires parameter brokerDB")
+	}
+
+	if cfg.Database.Redis.BackendDB < 0 {
+		return errors.New("redis requires parameter backendDB")
+	}
+
+	if cfg.Database.Redis.NetworkTopologyDB < 0 {
+		return errors.New("redis requires parameter networkTopologyDB")
 	}
 
 	if cfg.Scheduler.Algorithm == "" {
@@ -529,6 +546,18 @@ func (cfg *Config) Validate() error {
 		if cfg.Job.LocalWorkerNum == 0 {
 			return errors.New("job requires parameter localWorkerNum")
 		}
+
+		if len(cfg.Job.Redis.Addrs) == 0 {
+			return errors.New("job requires parameter addrs")
+		}
+
+		if cfg.Job.Redis.BrokerDB < 0 {
+			return errors.New("job requires parameter redis brokerDB")
+		}
+
+		if cfg.Job.Redis.BackendDB < 0 {
+			return errors.New("job requires parameter redis backendDB")
+		}
 	}
 
 	if cfg.Storage.MaxSize <= 0 {
@@ -600,21 +629,6 @@ func (cfg *Config) Validate() error {
 			return errors.New("trainer requires parameter interval")
 		}
 	}
-	if len(cfg.Database.Redis.Addrs) == 0 {
-		return errors.New("redis requires parameter addrs")
-	}
-
-	if cfg.Database.Redis.BrokerDB <= 0 {
-		return errors.New("redis requires parameter brokerDB")
-	}
-
-	if cfg.Database.Redis.BackendDB <= 0 {
-		return errors.New("redis requires parameter backendDB")
-	}
-
-	if cfg.Database.Redis.NetworkTopologyDB < 0 {
-		return errors.New("redis requires parameter networkTopologyDB")
-	}
 
 	return nil
 }
@@ -653,6 +667,16 @@ func (cfg *Config) Convert() error {
 	// TODO Compatible with deprecated fields password of redis of job.
 	if cfg.Database.Redis.Password == "" && cfg.Job.Redis.Password != "" {
 		cfg.Database.Redis.Password = cfg.Job.Redis.Password
+	}
+
+	// TODO Compatible with deprecated fields broker database of redis of job.
+	if cfg.Database.Redis.BrokerDB == 0 && cfg.Job.Redis.BrokerDB != 0 {
+		cfg.Database.Redis.BrokerDB = cfg.Job.Redis.BrokerDB
+	}
+
+	// TODO Compatible with deprecated fields backend database of redis of job.
+	if cfg.Database.Redis.BackendDB == 0 && cfg.Job.Redis.BackendDB != 0 {
+		cfg.Database.Redis.BackendDB = cfg.Job.Redis.BackendDB
 	}
 
 	// TODO Compatible with deprecated fields ip.
