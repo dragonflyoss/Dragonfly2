@@ -137,25 +137,3 @@ func Test_NewProbe(t *testing.T) {
 		})
 	}
 }
-
-func Test_NewProbes(t *testing.T) {
-	tests := []struct {
-		name   string
-		expect func(t *testing.T, p *Probes)
-	}{
-		{
-			name: "new probes",
-			expect: func(t *testing.T, p *Probes) {
-				assert := assert.New(t)
-				assert.Equal(p.AverageRTT, time.Duration(0))
-				assert.NotEqual(p.CreatedAt, time.Now())
-				assert.Equal(p.UpdatedAt, time.Time{})
-			},
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, NewProbes())
-		})
-	}
-}

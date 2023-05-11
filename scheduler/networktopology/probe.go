@@ -41,23 +41,3 @@ func NewProbe(host *resource.Host, rtt time.Duration, createdAt time.Time) *Prob
 		CreatedAt: createdAt,
 	}
 }
-
-type Probes struct {
-	// AverageRTT is the average round-trip time of probes.
-	AverageRTT time.Duration
-
-	// CreatedAt is the creation time of probes.
-	CreatedAt time.Time
-
-	// UpdatedAt is the update time to store probe.
-	UpdatedAt time.Time
-}
-
-// NewProbes creates a new probe list instance.
-func NewProbes() *Probes {
-	return &Probes{
-		AverageRTT: 0,
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Time{},
-	}
-}

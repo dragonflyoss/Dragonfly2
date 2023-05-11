@@ -27,7 +27,6 @@ import (
 
 	"github.com/go-redis/redis/v8"
 
-	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/storage"
@@ -63,6 +62,9 @@ type NetworkTopology interface {
 	// AverageRTT is the average round-trip time of probes.
 	AverageRTT(src, dest string) time.Duration
 
+	// VisitTimes is the visit times of host.
+	VisitTimes(key string) int64
+
 	// LoadDestHosts returns parents for source.
 	LoadDestHosts(src string) ([]string, bool)
 
@@ -88,21 +90,10 @@ type networkTopology struct {
 }
 
 // New network topology interface.
-func NewNetworkTopology(cfg *config.Config, resource resource.Resource, storage storage.Storage) (NetworkTopology, error) {
-	rdb, err := pkgredis.NewRedis(&redis.UniversalOptions{
-		Addrs:      cfg.Database.Redis.Addrs,
-		MasterName: cfg.Database.Redis.MasterName,
-		DB:         cfg.Database.Redis.NetworkTopologyDB,
-		Username:   cfg.Database.Redis.Username,
-		Password:   cfg.Database.Redis.Password,
-	})
-	if err != nil {
-		return nil, err
-	}
-
+func NewNetworkTopology(cfg *config.Config, rdb redis.UniversalClient, resource resource.Resource, storage storage.Storage) (NetworkTopology, error) {
 	return &networkTopology{
-		rdb:      rdb,
 		config:   cfg,
+		rdb:      rdb,
 		resource: resource,
 		storage:  storage,
 	}, nil
@@ -223,6 +214,11 @@ func (n *networkTopology) AverageRTT(src, dest string) time.Duration {
 	}
 
 	return averageRTT
+}
+
+// VisitTimes is the visit times of host.
+func (n *networkTopology) VisitTimes(key string) int64 {
+	return 0
 }
 
 // LoadDestHosts returns destination hosts for source.
