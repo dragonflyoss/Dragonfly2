@@ -60,7 +60,7 @@ func TestConfig_Load(t *testing.T) {
 			AdvertiseIP:   net.ParseIP("127.0.0.1"),
 			AdvertisePort: 9090,
 			ListenIP:      net.ParseIP("0.0.0.0"),
-			Port:          9092,
+			Port:          9090,
 			LogDir:        "foo",
 			DataDir:       "foo",
 		},
