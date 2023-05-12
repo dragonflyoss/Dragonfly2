@@ -33,6 +33,9 @@ import (
 )
 
 const (
+	// TimeFormat is the time storage format.
+	TimeFormat = "Mon, 02 Jan 2006 15:04:05 GMT"
+
 	// DefaultMovingAverageWeight is the weight of the moving average.
 	DefaultMovingAverageWeight = 0.1
 )
@@ -46,9 +49,6 @@ type NetworkTopology interface {
 
 	// Dequeue removes and returns the oldest probe.
 	Dequeue(src, dest string) (*Probe, bool)
-
-	// Items returns the probes list.
-	Items(src, dest string) []*Probe
 
 	// Length gets the length of probes.
 	Length(src, dest string) int64
@@ -146,26 +146,6 @@ func (n *networkTopology) Dequeue(src, dest string) (*Probe, bool) {
 	return probe, true
 }
 
-// Items returns the probes list.
-func (n *networkTopology) Items(src, dest string) []*Probe {
-	probes := make([]*Probe, 0)
-	for {
-		probe := &Probe{}
-		jsonStr, err := n.rdb.LPop(context.Background(), "probes:"+src+":"+dest).Result()
-		if err == redis.Nil {
-			break
-		}
-
-		err = json.Unmarshal([]byte(jsonStr), probe)
-		if err != nil {
-			return probes
-		}
-
-		probes = append(probes, probe)
-	}
-	return probes
-}
-
 // Length gets the length of probes.
 func (n *networkTopology) Length(src, dest string) int64 {
 	length, err := n.rdb.LLen(context.Background(), "probes:"+src+":"+dest).Result()
@@ -183,7 +163,7 @@ func (n *networkTopology) CreatedAt(src, dest string) time.Time {
 		return time.Time{}
 	}
 
-	createdAt, err := time.Parse(http.TimeFormat, value)
+	createdAt, err := time.Parse(TimeFormat, value)
 	if err != nil {
 		return time.Time{}
 	}
@@ -279,7 +259,7 @@ func (n *networkTopology) StoreProbe(src, dest string, probe *Probe) bool {
 	if length == 0 {
 		if _, err := n.rdb.Pipelined(context.Background(), func(rdb redis.Pipeliner) error {
 			rdb.HSet(context.Background(), key, "averageRTT", probe.RTT)
-			rdb.HSet(context.Background(), key, "createdAt", time.Now())
+			rdb.HSet(context.Background(), key, "createdAt", time.Now().Format(TimeFormat))
 			rdb.HSet(context.Background(), key, "updatedAt", probe.CreatedAt)
 			return nil
 		}); err != nil {

@@ -114,10 +114,8 @@ var (
 	mockProbe = &Probe{
 		Host:      mockHost,
 		RTT:       3000000 * time.Nanosecond,
-		CreatedAt: time.Now().UTC(),
+		CreatedAt: time.Now(),
 	}
-
-	mockProbesCreateAt = time.Now()
 )
 
 func Test_NewProbe(t *testing.T) {
