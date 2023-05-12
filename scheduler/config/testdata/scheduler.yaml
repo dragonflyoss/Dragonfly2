@@ -10,6 +10,17 @@ server:
   pluginDir: foo
   dataDir: foo
 
+database:
+  redis:
+    addrs: [ "foo", "bar" ]
+    masterName: "baz"
+    host: 127.0.0.1
+    port: 6379
+    password: foo
+    brokerDB: 1
+    backendDB: 2
+    networkTopologyDB: 3
+
 scheduler:
   algorithm: default
   backToSourceCount: 3
@@ -45,14 +56,6 @@ job:
   globalWorkerNum: 1
   schedulerWorkerNum: 1
   localWorkerNum: 5
-  redis:
-    addrs: [ "foo", "bar" ]
-    masterName: "baz"
-    host: 127.0.0.1
-    port: 6379
-    password: foo
-    brokerDB: 1
-    backendDB: 2
 
 storage:
   maxSize: 1
@@ -81,12 +84,11 @@ network:
 
 networkTopology:
   enable: true
-  syncInterval: 30s
   collectInterval: 60s
   probe:
     queueLength: 5
     syncInterval: 30s
-    syncCount: 50
+    syncCount: 10
 
 trainer:
   enable: false

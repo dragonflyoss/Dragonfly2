@@ -66,6 +66,22 @@ scheduler:
     # then HostTTl will be reset.
     hostTTL: 1h
 
+# Database info used for server.
+database:
+  # Redis configuration.
+  redis:
+    # Redis addresses.
+    addrs:
+      - "__IP__:6379"
+    # Redis username.
+    username: ''
+    # Redis password.
+    password: dragonfly
+    # Redis brokerDB name.
+    brokerDB: 1
+    # Redis backendDB name.
+    backendDB: 2
+
 # Dynamic data configuration.
 dynConfig:
   # Dynamic config refresh interval.
@@ -107,19 +123,6 @@ job:
   schedulerWorkerNum: 1
   # Number of workers in local queue.
   localWorkerNum: 5
-  # Redis configuration.
-  redis:
-    # Redis addresses.
-    addrs:
-      - "__IP__:6379"
-    # Redis username.
-    username: ''
-    # Redis password.
-    password: dragonfly
-    # Redis brokerDB name.
-    brokerDB: 1
-    # Redis backendDB name.
-    backendDB: 2
 
 # Store task download information.
 storage:
