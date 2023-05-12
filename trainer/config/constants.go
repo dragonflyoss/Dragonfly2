@@ -25,7 +25,7 @@ import (
 
 const (
 	// DefaultServerPort is default port for server.
-	DefaultServerPort = 9092
+	DefaultServerPort = 9090
 
 	// DefaultServerAdvertisePort is default advertise port for server.
 	DefaultServerAdvertisePort = 9090
