@@ -117,7 +117,12 @@ func (n *networkTopology) Peek(src, dest string) (*Probe, bool) {
 
 // Enqueue enqueues probe into the queue.
 func (n *networkTopology) Enqueue(src, dest string, probe *Probe) error {
-	err := n.rdb.RPush(context.Background(), "probes:"+src+":"+dest, probe).Err()
+	data, err := json.Marshal(probe)
+	if err != nil {
+		return err
+	}
+
+	err = n.rdb.RPush(context.Background(), "probes:"+src+":"+dest, data).Err()
 	if err != nil {
 		return err
 	}
@@ -273,7 +278,6 @@ func (n *networkTopology) StoreProbe(src, dest string, probe *Probe) bool {
 	key := "network-topology:" + src + ":" + "dest"
 	if length == 0 {
 		if _, err := n.rdb.Pipelined(context.Background(), func(rdb redis.Pipeliner) error {
-			rdb.HSet(context.Background(), key, "length", probe.RTT)
 			rdb.HSet(context.Background(), key, "averageRTT", probe.RTT)
 			rdb.HSet(context.Background(), key, "createdAt", time.Now())
 			rdb.HSet(context.Background(), key, "updatedAt", probe.CreatedAt)
@@ -287,12 +291,13 @@ func (n *networkTopology) StoreProbe(src, dest string, probe *Probe) bool {
 			return false
 		}
 
-		averageRtt, err := strconv.ParseFloat(value, 64)
+		averageRTT, err := strconv.ParseFloat(value, 64)
 		if err != nil {
 			return false
 		}
+
 		if _, err := n.rdb.Pipelined(context.Background(), func(rdb redis.Pipeliner) error {
-			rdb.HSet(context.Background(), key, "averageRTT", float64(averageRtt)*DefaultMovingAverageWeight+
+			rdb.HSet(context.Background(), key, "averageRTT", float64(averageRTT)*DefaultMovingAverageWeight+
 				float64(probe.RTT)*(1-DefaultMovingAverageWeight))
 			rdb.HSet(context.Background(), key, "updatedAt", probe.CreatedAt)
 			return nil

@@ -116,6 +116,8 @@ var (
 		RTT:       3000000 * time.Nanosecond,
 		CreatedAt: time.Now().UTC(),
 	}
+
+	mockProbesCreateAt = time.Now()
 )
 
 func Test_NewProbe(t *testing.T) {
