@@ -33,6 +33,11 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
+const (
+	// BufferSize is the size of buffer for sending dataset to trainer.
+	BufferSize = 2048
+)
+
 // Announcer is the interface used for announce service.
 type Announcer interface {
 	// Started announcer server.
@@ -139,7 +144,7 @@ func (a *announcer) announceToTrainer() {
 			select {
 			case <-tick.C:
 				if err := a.transferDataToTrainer(ctx); err != nil {
-					logger.Errorf("scheduler send data to trainer error: %s", err.Error())
+					logger.Errorf("announce dataset to trainer error: %s", err.Error())
 					cancel()
 				}
 			case <-a.done:
@@ -157,7 +162,7 @@ func (a *announcer) transferDataToTrainer(ctx context.Context) error {
 		return err
 	}
 
-	buffer := make([]byte, 1024)
+	buffer := make([]byte, BufferSize)
 	downloadReadCloser, err := a.storage.OpenDownload()
 	if err != nil {
 		return err
@@ -168,7 +173,7 @@ func (a *announcer) transferDataToTrainer(ctx context.Context) error {
 		if err != nil && err != io.EOF {
 			return err
 		}
-		if n == 0 {
+		if err == io.EOF || n == 0 {
 			break
 		}
 		if err := stream.Send(&trainerv1.TrainRequest{
@@ -195,7 +200,7 @@ func (a *announcer) transferDataToTrainer(ctx context.Context) error {
 		if err != nil && err != io.EOF {
 			return err
 		}
-		if n == 0 {
+		if err == io.EOF || n == 0 {
 			break
 		}
 		if err := stream.Send(&trainerv1.TrainRequest{
