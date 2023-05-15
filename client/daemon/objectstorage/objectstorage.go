@@ -245,7 +245,7 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 		bucketName = params.ID
 		objectKey  = strings.TrimPrefix(params.ObjectKey, string(os.PathSeparator))
 		filter     = query.Filter
-		rg         nethttp.Range
+		rg         *nethttp.Range
 		err        error
 	)
 
@@ -277,11 +277,12 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 	// Parse http range header.
 	rangeHeader := ctx.GetHeader(headers.Range)
 	if len(rangeHeader) > 0 {
-		rg, err = nethttp.ParseOneRange(rangeHeader, math.MaxInt64)
+		rangeValue, err := nethttp.ParseOneRange(rangeHeader, math.MaxInt64)
 		if err != nil {
 			ctx.JSON(http.StatusRequestedRangeNotSatisfiable, gin.H{"errors": err.Error()})
 			return
 		}
+		rg = &rangeValue
 
 		// Range header in dragonfly is without "bytes=".
 		urlMeta.Range = strings.TrimLeft(rangeHeader, "bytes=")
@@ -304,7 +305,7 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 	reader, attr, err := o.peerTaskManager.StartStreamTask(ctx, &peer.StreamTaskRequest{
 		URL:     signURL,
 		URLMeta: urlMeta,
-		Range:   &rg,
+		Range:   rg,
 		PeerID:  o.peerIDGenerator.PeerID(),
 	})
 	if err != nil {

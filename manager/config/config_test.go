@@ -162,11 +162,9 @@ func TestConfig_Load(t *testing.T) {
 				Migrate:  true,
 			},
 			Redis: RedisConfig{
-				Host:       "bar",
 				Password:   "bar",
 				Addrs:      []string{"foo", "bar"},
 				MasterName: "baz",
-				Port:       6379,
 				DB:         0,
 				BrokerDB:   1,
 				BackendDB:  2,
