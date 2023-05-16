@@ -797,7 +797,7 @@ func (v *V2) handleDownloadPeerFinishedRequest(ctx context.Context, peerID strin
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 	// TODO to be determined which traffic type to use, temporarily use TrafficType_REMOTE_PEER instead
 	metrics.DownloadPeerDuration.WithLabelValues(priority.String(), peer.Task.Type.String(),
-		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name(), commonv2.TrafficType_REMOTE_PEER.String()).Observe(float64(peer.Cost.Load()))
+		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Observe(float64(peer.Cost.Load()))
 
 	return nil
 }
@@ -848,7 +848,7 @@ func (v *V2) handleDownloadPeerBackToSourceFinishedRequest(ctx context.Context, 
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 	// TODO to be determined which traffic type to use, temporarily use TrafficType_REMOTE_PEER instead
 	metrics.DownloadPeerDuration.WithLabelValues(priority.String(), peer.Task.Type.String(),
-		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name(), commonv2.TrafficType_REMOTE_PEER.String()).Observe(float64(peer.Cost.Load()))
+		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Observe(float64(peer.Cost.Load()))
 
 	return nil
 }
