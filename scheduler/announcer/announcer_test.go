@@ -148,7 +148,7 @@ func TestAnnouncer_transferDataToTrainer(t *testing.T) {
 		},
 		{
 			name: "open download error",
-			data: []byte{},
+			data: []byte("hello, world"),
 			config: &config.Config{
 				Server: config.ServerConfig{
 					Host:        "localhost",
