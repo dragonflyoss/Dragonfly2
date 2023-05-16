@@ -311,17 +311,18 @@ func (v *V1) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult) 
 		return nil
 	}
 
-	// Collect DownloadPeerDuration metrics.
-	metrics.DownloadPeerDuration.WithLabelValues(priority.String(), peer.Task.Type.String(),
-		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Observe(float64(req.Cost))
-
 	peer.Log.Info("report success peer")
 	if peer.FSM.Is(resource.PeerStateBackToSource) {
 		go v.createDownloadRecord(peer, parents, req)
 		v.handleTaskSuccess(ctx, peer.Task, req)
 		v.handlePeerSuccess(ctx, peer)
+		metrics.DownloadPeerDuration.WithLabelValues(priority.String(), peer.Task.Type.String(),
+			peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name(), commonv2.TrafficType_BACK_TO_SOURCE.String()).Observe(float64(req.Cost))
 		return nil
 	}
+
+	metrics.DownloadPeerDuration.WithLabelValues(priority.String(), peer.Task.Type.String(),
+		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name(), commonv2.TrafficType_REMOTE_PEER.String()).Observe(float64(req.Cost))
 
 	go v.createDownloadRecord(peer, parents, req)
 	v.handlePeerSuccess(ctx, peer)
