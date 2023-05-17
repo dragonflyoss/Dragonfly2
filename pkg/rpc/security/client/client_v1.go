@@ -34,7 +34,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
-	"d7y.io/dragonfly/v2/pkg/reachable"
+	healthclient "d7y.io/dragonfly/v2/pkg/rpc/health/client"
 )
 
 const (
@@ -84,15 +84,14 @@ func GetV1(ctx context.Context, target string, opts ...grpc.DialOption) (V1, err
 // GetClientV1ByAddr returns v1 version of the security client with addresses.
 func GetV1ByAddr(ctx context.Context, netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (V1, error) {
 	for _, netAddr := range netAddrs {
-		ipReachable := reachable.New(&reachable.Config{Address: netAddr.Addr})
-		if err := ipReachable.Check(); err == nil {
-			logger.Infof("use %s address for security grpc client", netAddr.Addr)
+		if err := healthclient.Check(context.Background(), netAddr.String(), opts...); err == nil {
+			logger.Infof("manager address %s is reachable", netAddr.String())
 			return GetV1(ctx, netAddr.Addr, opts...)
 		}
-		logger.Warnf("%s security address can not reachable", netAddr.Addr)
+		logger.Warnf("manager address %s is unreachable", netAddr.String())
 	}
 
-	return nil, errors.New("can not find available security addresses")
+	return nil, errors.New("can not find reachable manager addresses")
 }
 
 // ClientV1 is the interface for v1 version of the grpc client.
