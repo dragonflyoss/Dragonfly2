@@ -7,12 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/resource"
-	storagemocks "d7y.io/dragonfly/v2/scheduler/storage/mocks"
 	"github.com/go-redis/redismock/v8"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+
+	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/resource"
+	storagemocks "d7y.io/dragonfly/v2/scheduler/storage/mocks"
 )
 
 var (
@@ -453,6 +454,42 @@ func TestNetworkTopology_LoadDestHosts(t *testing.T) {
 				destHosts, ok := n.LoadDestHosts(mockSeedHost.ID)
 				a.False(ok)
 				a.Equal(len(destHosts), 0)
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+
+			rdb, clientMock := redismock.NewClientMock()
+			res := resource.NewMockResource(ctl)
+			mockStorage := storagemocks.NewMockStorage(ctl)
+			tc.mock(clientMock)
+			n, err := NewNetworkTopology(config.New(), rdb, res, mockStorage)
+			tc.expect(t, n, err)
+		})
+	}
+}
+
+func TestNetworkTopology_DeleteHost(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(clientMock redismock.ClientMock)
+		expect func(t *testing.T, n NetworkTopology, err error)
+	}{
+		{
+			name: "delete host",
+			mock: func(clientMock redismock.ClientMock) {
+				clientMock.ExpectKeys("network-topology:" + mockSeedHost.ID + ":*").SetVal([]string{"network-topology:" + mockSeedHost.ID + ":" + mockHost.ID})
+			},
+			expect: func(t *testing.T, n NetworkTopology, err error) {
+				a := assert.New(t)
+				a.Nil(err)
+				destHosts, ok := n.LoadDestHosts(mockSeedHost.ID)
+				a.True(ok)
+				a.Equal(destHosts[0], mockHost.ID)
+				a.Equal(len(destHosts), 1)
 			},
 		},
 	}
