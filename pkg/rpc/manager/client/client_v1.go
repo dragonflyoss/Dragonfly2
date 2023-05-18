@@ -37,7 +37,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
-	"d7y.io/dragonfly/v2/pkg/reachable"
+	healthclient "d7y.io/dragonfly/v2/pkg/rpc/health/client"
 )
 
 // GetV1ByAddr returns v1 version of the manager client by address.
@@ -76,15 +76,14 @@ func GetV1ByAddr(ctx context.Context, target string, opts ...grpc.DialOption) (V
 // GetV1ByNetAddrs returns v1 version of the manager client with net addresses.
 func GetV1ByNetAddrs(ctx context.Context, netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (V1, error) {
 	for _, netAddr := range netAddrs {
-		ipReachable := reachable.New(&reachable.Config{Address: netAddr.Addr})
-		if err := ipReachable.Check(); err == nil {
-			logger.Infof("use %s address for manager grpc client", netAddr.Addr)
+		if err := healthclient.Check(context.Background(), netAddr.String(), opts...); err == nil {
+			logger.Infof("manager address %s is reachable", netAddr.String())
 			return GetV1ByAddr(ctx, netAddr.Addr, opts...)
 		}
-		logger.Warnf("%s manager address can not reachable", netAddr.Addr)
+		logger.Warnf("manager address %s is unreachable", netAddr.String())
 	}
 
-	return nil, errors.New("can not find available manager addresses")
+	return nil, errors.New("can not find reachable manager addresses")
 }
 
 // V1 is the interface for v1 version of the grpc client.
