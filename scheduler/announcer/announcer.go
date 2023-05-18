@@ -52,6 +52,7 @@ type announcer struct {
 	config        *config.Config
 	managerClient managerclient.V2
 	trainerClient trainerclient.V1
+	stream        trainerv1.Trainer_TrainClient
 	storage       storage.Storage
 	done          chan struct{}
 }
@@ -103,14 +104,20 @@ func New(cfg *config.Config, managerClient managerclient.V2, options ...Option) 
 
 // Started announcer server.
 func (a *announcer) Serve() error {
+	if a.trainerClient != nil {
+		logger.Info("announce dataset to trainer")
+		if trainerStream, err := a.trainerClient.Train(context.Background()); err != nil {
+			return err
+		} else {
+			a.stream = trainerStream
+		}
+
+		a.announceToTrainer()
+	}
+
 	logger.Info("announce scheduler to manager")
 	if err := a.announceToManager(); err != nil {
 		return err
-	}
-
-	if a.config.Trainer.Enable {
-		logger.Info("announce dataset to trainer")
-		a.announceToTrainer()
 	}
 
 	return nil
@@ -135,48 +142,54 @@ func (a *announcer) announceToManager() error {
 	return nil
 }
 
-// announceToTrainer announces dataset to trainer for training model.
+// announceToTrainer announces regularly dataset to trainer for training model.
 func (a *announcer) announceToTrainer() {
-	ctx, cancel := context.WithCancel(context.Background())
-	go func() {
-		tick := time.NewTicker(a.config.Trainer.Interval)
-		for {
-			select {
-			case <-tick.C:
-				if err := a.transferDataToTrainer(ctx); err != nil {
-					logger.Errorf("announce dataset to trainer error: %s", err.Error())
-					cancel()
+	if a.config.Trainer.Enable {
+		go func() {
+			tick := time.NewTicker(a.config.Trainer.Interval)
+			for {
+				select {
+				case <-tick.C:
+					go func() {
+						if err := a.transferDownloadToTrainer(); err != nil {
+							logger.Error(err)
+						}
+					}()
+
+					go func() {
+						if err := a.transferNetworkTopologyToTrainer(); err != nil {
+							logger.Error(err)
+						}
+					}()
+				case <-a.done:
+					logger.Info("announceToTrainer stopped")
+					return
 				}
-			case <-a.done:
-				logger.Info("announceToTrainer stopped")
-				cancel()
-				return
 			}
-		}
-	}()
+		}()
+	}
 }
 
-func (a *announcer) transferDataToTrainer(ctx context.Context) error {
-	stream, err := a.trainerClient.Train(ctx)
-	if err != nil {
-		return err
-	}
-
+// transferDataToTrainer transfers the download dataset to trainer.
+func (a *announcer) transferDownloadToTrainer() error {
 	buffer := make([]byte, BufferSize)
 	downloadReadCloser, err := a.storage.OpenDownload()
 	if err != nil {
 		return err
 	}
 	defer downloadReadCloser.Close()
+
 	for {
-		n, err := downloadReadCloser.Read(buffer)
-		if err != nil && err != io.EOF {
+		_, err := downloadReadCloser.Read(buffer)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+
 			return err
 		}
-		if err == io.EOF || n == 0 {
-			break
-		}
-		if err := stream.Send(&trainerv1.TrainRequest{
+
+		if err := a.stream.Send(&trainerv1.TrainRequest{
 			Hostname:  a.config.Server.Host,
 			Ip:        a.config.Server.AdvertiseIP.String(),
 			ClusterId: uint64(a.config.Manager.SchedulerClusterID),
@@ -186,24 +199,36 @@ func (a *announcer) transferDataToTrainer(ctx context.Context) error {
 				},
 			},
 		}); err != nil {
-			return err
+			if _, err := a.stream.CloseAndRecv(); err != nil {
+				return err
+			}
 		}
 	}
 
+	return nil
+}
+
+// transferDataToTrainer transfers the networkTopology dataset to trainer.
+func (a *announcer) transferNetworkTopologyToTrainer() error {
+	buffer := make([]byte, BufferSize)
 	networkTopologyReadCloser, err := a.storage.OpenNetworkTopology()
 	if err != nil {
 		return err
 	}
 	defer networkTopologyReadCloser.Close()
+
 	for {
-		n, err := networkTopologyReadCloser.Read(buffer)
-		if err != nil && err != io.EOF {
+		_, err := networkTopologyReadCloser.Read(buffer)
+
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+
 			return err
 		}
-		if err == io.EOF || n == 0 {
-			break
-		}
-		if err := stream.Send(&trainerv1.TrainRequest{
+
+		if err := a.stream.Send(&trainerv1.TrainRequest{
 			Hostname:  a.config.Server.Host,
 			Ip:        a.config.Server.AdvertiseIP.String(),
 			ClusterId: uint64(a.config.Manager.SchedulerClusterID),
@@ -213,12 +238,11 @@ func (a *announcer) transferDataToTrainer(ctx context.Context) error {
 				},
 			},
 		}); err != nil {
-			return err
+			if _, err := a.stream.CloseAndRecv(); err != nil {
+				return err
+			}
 		}
 	}
 
-	if _, err := stream.CloseAndRecv(); err != nil {
-		return err
-	}
 	return nil
 }

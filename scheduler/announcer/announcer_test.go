@@ -18,7 +18,6 @@ package announcer
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"io"
 	"net"
@@ -115,7 +114,7 @@ func TestAnnouncer_New(t *testing.T) {
 	}
 }
 
-func TestAnnouncer_transferDataToTrainer(t *testing.T) {
+func TestAnnouncer_transferDownloadToTrainer(t *testing.T) {
 	tests := []struct {
 		name   string
 		config *config.Config
@@ -124,31 +123,8 @@ func TestAnnouncer_transferDataToTrainer(t *testing.T) {
 		except func(t *testing.T, announcer Announcer, err error)
 	}{
 		{
-			name: "get stream error",
-			config: &config.Config{
-				Server: config.ServerConfig{
-					Host:        "localhost",
-					AdvertiseIP: net.ParseIP("127.0.0.1"),
-				},
-				Manager: config.ManagerConfig{
-					SchedulerClusterID: 1,
-				},
-			},
-			data: []byte{},
-			mock: func(t *testing.T, stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
-				gomock.InOrder(
-					m.UpdateScheduler(gomock.Any(), gomock.Any()).Return(nil, nil).Times(1),
-					mtc.Train(gomock.Any()).Return(nil, errors.New("foo")).Times(1),
-				)
-			},
-			except: func(t *testing.T, a Announcer, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "foo")
-			},
-		},
-		{
 			name: "open download error",
-			data: []byte("hello, world"),
+			data: []byte{},
 			config: &config.Config{
 				Server: config.ServerConfig{
 					Host:        "localhost",
@@ -161,7 +137,6 @@ func TestAnnouncer_transferDataToTrainer(t *testing.T) {
 			mock: func(t *testing.T, stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
 				gomock.InOrder(
 					m.UpdateScheduler(gomock.Any(), gomock.Any()).Return(nil, nil).Times(1),
-					mtc.Train(gomock.Any()).Return(stream, nil),
 					ms.OpenDownload().Return(nil, errors.New("foo")),
 				)
 			},
@@ -172,7 +147,7 @@ func TestAnnouncer_transferDataToTrainer(t *testing.T) {
 		},
 		{
 			name: "send download error",
-			data: []byte("hello, world"),
+			data: []byte("hello world"),
 			config: &config.Config{
 				Server: config.ServerConfig{
 					Host:        "localhost",
@@ -185,107 +160,14 @@ func TestAnnouncer_transferDataToTrainer(t *testing.T) {
 			mock: func(t *testing.T, stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
 				gomock.InOrder(
 					m.UpdateScheduler(gomock.Any(), gomock.Any()).Return(nil, nil).Times(1),
-					mtc.Train(gomock.Any()).Return(stream, nil).Times(1),
 					ms.OpenDownload().Return(io.NopCloser(bytes.NewBuffer(data)), nil).AnyTimes(),
 					mt.Send(gomock.Any()).Return(errors.New("foo")).Times(1),
+					mt.CloseAndRecv().Return(nil, nil).Times(1),
 				)
 			},
 			except: func(t *testing.T, a Announcer, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "foo")
-			},
-		},
-		{
-			name: "open networkTopology error",
-			data: []byte("hello, world"),
-			config: &config.Config{
-				Server: config.ServerConfig{
-					Host:        "localhost",
-					AdvertiseIP: net.ParseIP("127.0.0.1"),
-				},
-				Manager: config.ManagerConfig{
-					SchedulerClusterID: 1,
-				},
-			},
-			mock: func(t *testing.T, stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
-				gomock.InOrder(
-					m.UpdateScheduler(gomock.Any(), gomock.Any()).Return(nil, nil).Times(1),
-					mtc.Train(gomock.Any()).Return(stream, nil).Times(1),
-					ms.OpenDownload().Return(io.NopCloser(bytes.NewBuffer(data)), nil),
-					mt.Send(gomock.Any()).DoAndReturn(
-						func(t *trainerv1.TrainRequest) error {
-							return nil
-						}).AnyTimes(),
-					ms.OpenNetworkTopology().Return(nil, errors.New("foo")),
-				)
-			},
-			except: func(t *testing.T, a Announcer, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "foo")
-			},
-		},
-		{
-			name: "send networkTopology error",
-			data: []byte("hello, world"),
-			config: &config.Config{
-				Server: config.ServerConfig{
-					Host:        "localhost",
-					AdvertiseIP: net.ParseIP("127.0.0.1"),
-				},
-				Manager: config.ManagerConfig{
-					SchedulerClusterID: 1,
-				},
-			},
-			mock: func(t *testing.T, stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
-				gomock.InOrder(
-					m.UpdateScheduler(gomock.Any(), gomock.Any()).Return(nil, nil).Times(1),
-					mtc.Train(gomock.Any()).Return(stream, nil).Times(1),
-					ms.OpenDownload().Return(io.NopCloser(bytes.NewBuffer(data)), nil),
-					mt.Send(gomock.Any()).DoAndReturn(
-						func(t *trainerv1.TrainRequest) error {
-							return nil
-						}).AnyTimes(),
-					ms.OpenNetworkTopology().Return(io.NopCloser(bytes.NewBuffer(data)), nil).Times(1),
-					mt.Send(gomock.Any()).Return(errors.New("foo")).Times(1),
-				)
-			},
-			except: func(t *testing.T, a Announcer, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "foo")
-			},
-		},
-		{
-			name: "close stream error",
-			data: []byte("hello, world"),
-			config: &config.Config{
-				Server: config.ServerConfig{
-					Host:        "localhost",
-					AdvertiseIP: net.ParseIP("127.0.0.1"),
-				},
-				Manager: config.ManagerConfig{
-					SchedulerClusterID: 1,
-				},
-			},
-			mock: func(t *testing.T, stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
-				gomock.InOrder(
-					m.UpdateScheduler(gomock.Any(), gomock.Any()).Return(nil, nil).Times(1),
-					mtc.Train(gomock.Any()).Return(stream, nil).Times(1),
-					ms.OpenDownload().Return(io.NopCloser(bytes.NewBuffer(data)), nil),
-					mt.Send(gomock.Any()).DoAndReturn(
-						func(t *trainerv1.TrainRequest) error {
-							return nil
-						}).AnyTimes(),
-					ms.OpenNetworkTopology().Return(io.NopCloser(bytes.NewBuffer(data)), nil),
-					mt.Send(gomock.Any()).DoAndReturn(
-						func(t *trainerv1.TrainRequest) error {
-							return nil
-						}).AnyTimes(),
-					mt.CloseAndRecv().Return(nil, errors.New("foo")).Times(1),
-				)
-			},
-			except: func(t *testing.T, a Announcer, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "foo")
+				assert.NoError(err)
 			},
 		},
 		{
@@ -299,22 +181,15 @@ func TestAnnouncer_transferDataToTrainer(t *testing.T) {
 					SchedulerClusterID: 1,
 				},
 			},
-			data: []byte("hello, world"),
+			data: []byte("hello world"),
 			mock: func(t *testing.T, stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
 				gomock.InOrder(
 					m.UpdateScheduler(gomock.Any(), gomock.Any()).Return(nil, nil).Times(1),
-					mtc.Train(gomock.Any()).Return(stream, nil).Times(1),
 					ms.OpenDownload().Return(io.NopCloser(bytes.NewBuffer(data)), nil).Times(1),
 					mt.Send(gomock.Any()).DoAndReturn(
 						func(t *trainerv1.TrainRequest) error {
 							return nil
 						}).AnyTimes(),
-					ms.OpenNetworkTopology().Return(io.NopCloser(bytes.NewBuffer(data)), nil).Times(1),
-					mt.Send(gomock.Any()).DoAndReturn(
-						func(t *trainerv1.TrainRequest) error {
-							return nil
-						}).AnyTimes(),
-					mt.CloseAndRecv().Return(nil, nil).Times(1),
 				)
 			},
 			except: func(t *testing.T, a Announcer, err error) {
@@ -323,7 +198,6 @@ func TestAnnouncer_transferDataToTrainer(t *testing.T) {
 			},
 		},
 	}
-
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			ctl := gomock.NewController(t)
@@ -338,7 +212,115 @@ func TestAnnouncer_transferDataToTrainer(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			err = a.(*announcer).transferDataToTrainer(context.Background())
+			a.(*announcer).stream = stream
+
+			err = a.(*announcer).transferDownloadToTrainer()
+			tc.except(t, a, err)
+		})
+	}
+}
+
+func TestAnnouncer_transferNetworkTopologyToTrainer(t *testing.T) {
+	tests := []struct {
+		name   string
+		config *config.Config
+		data   []byte
+		mock   func(t *testing.T, stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder)
+		except func(t *testing.T, announcer Announcer, err error)
+	}{
+		{
+			name: "open networkTopology error",
+			data: []byte{},
+			config: &config.Config{
+				Server: config.ServerConfig{
+					Host:        "localhost",
+					AdvertiseIP: net.ParseIP("127.0.0.1"),
+				},
+				Manager: config.ManagerConfig{
+					SchedulerClusterID: 1,
+				},
+			},
+			mock: func(t *testing.T, stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
+				gomock.InOrder(
+					m.UpdateScheduler(gomock.Any(), gomock.Any()).Return(nil, nil).Times(1),
+					ms.OpenNetworkTopology().Return(nil, errors.New("foo")),
+				)
+			},
+			except: func(t *testing.T, a Announcer, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "foo")
+			},
+		},
+		{
+			name: "send networkTopology error",
+			data: []byte("hello world"),
+			config: &config.Config{
+				Server: config.ServerConfig{
+					Host:        "localhost",
+					AdvertiseIP: net.ParseIP("127.0.0.1"),
+				},
+				Manager: config.ManagerConfig{
+					SchedulerClusterID: 1,
+				},
+			},
+			mock: func(t *testing.T, stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
+				gomock.InOrder(
+					m.UpdateScheduler(gomock.Any(), gomock.Any()).Return(nil, nil).Times(1),
+					ms.OpenNetworkTopology().Return(io.NopCloser(bytes.NewBuffer(data)), nil).AnyTimes(),
+					mt.Send(gomock.Any()).Return(errors.New("foo")).Times(1),
+					mt.CloseAndRecv().Return(nil, nil).Times(1),
+				)
+			},
+			except: func(t *testing.T, a Announcer, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+			},
+		},
+		{
+			name: "send success",
+			config: &config.Config{
+				Server: config.ServerConfig{
+					Host:        "localhost",
+					AdvertiseIP: net.ParseIP("127.0.0.1"),
+				},
+				Manager: config.ManagerConfig{
+					SchedulerClusterID: 1,
+				},
+			},
+			data: []byte("hello world"),
+			mock: func(t *testing.T, stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
+				gomock.InOrder(
+					m.UpdateScheduler(gomock.Any(), gomock.Any()).Return(nil, nil).Times(1),
+					ms.OpenNetworkTopology().Return(io.NopCloser(bytes.NewBuffer(data)), nil).Times(1),
+					mt.Send(gomock.Any()).DoAndReturn(
+						func(t *trainerv1.TrainRequest) error {
+							return nil
+						}).AnyTimes(),
+				)
+			},
+			except: func(t *testing.T, a Announcer, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			stream := trainerv1mocks.NewMockTrainer_TrainClient(ctl)
+			mockManagerClient := managerclientmocks.NewMockV2(ctl)
+			mockTrainerClient := trainerclientmocks.NewMockV1(ctl)
+			mockStorage := storagemocks.NewMockStorage(ctl)
+
+			tc.mock(t, stream, tc.data, mockManagerClient.EXPECT(), mockTrainerClient.EXPECT(), mockStorage.EXPECT(), stream.EXPECT())
+			a, err := New(tc.config, mockManagerClient, WithTrainerClient(mockTrainerClient), WithStorage(mockStorage))
+			if err != nil {
+				t.Fatal(err)
+			}
+			a.(*announcer).stream = stream
+
+			err = a.(*announcer).transferNetworkTopologyToTrainer()
 			tc.except(t, a, err)
 		})
 	}
