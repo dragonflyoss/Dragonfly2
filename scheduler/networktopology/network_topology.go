@@ -21,6 +21,7 @@ package networktopology
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -72,6 +73,9 @@ type NetworkTopology interface {
 
 	// StoreProbe stores probe between two hosts.
 	StoreProbe(src, dest string, probe *Probe) bool
+
+	// LoadNetworkTopology loads the network topology from redis and inserts the network topology into csv file.
+	LoadAndCreateNetworkTopology() error
 }
 
 type networkTopology struct {
@@ -246,7 +250,7 @@ func (n *networkTopology) DeleteHost(key string) error {
 	}
 
 	// Delete probes which send to key, and return delete number for updating visit times.
-	count, err := n.rdb.Del(context.Background(), "probes:"+"*:"+key).Result()
+	count, err := n.rdb.Del(context.Background(), "probes:*:"+key).Result()
 	if err != nil {
 		return err
 	}
@@ -262,28 +266,27 @@ func (n *networkTopology) DeleteHost(key string) error {
 
 // StoreProbe stores probe between two hosts.
 func (n *networkTopology) StoreProbe(src, dest string, probe *Probe) bool {
-
 	// Update probe list
 	length := n.Length(src, dest)
-	if length == config.DefaultProbeQueueLength {
-		err := n.Enqueue(src, dest, probe)
-		if err != nil {
+	if length == int64(n.config.NetworkTopology.Probe.QueueLength) {
+		_, ok := n.Dequeue(src, dest)
+		if !ok {
 			return false
 		}
 	}
 
-	_, ok := n.Dequeue(src, dest)
-	if ok != false {
+	err := n.Enqueue(src, dest, probe)
+	if err != nil {
 		return false
 	}
 
 	// Update probes struct
-	key := "network-topology:" + src + ":" + "dest"
+	key := "network-topology:" + src + ":" + dest
 	if length == 0 {
 		if _, err := n.rdb.Pipelined(context.Background(), func(rdb redis.Pipeliner) error {
 			rdb.HSet(context.Background(), key, "averageRTT", probe.RTT)
 			rdb.HSet(context.Background(), key, "createdAt", time.Now().Format(TimeFormat))
-			rdb.HSet(context.Background(), key, "updatedAt", probe.CreatedAt)
+			rdb.HSet(context.Background(), key, "updatedAt", probe.CreatedAt.Format(TimeFormat))
 			return nil
 		}); err != nil {
 			return false
@@ -294,6 +297,7 @@ func (n *networkTopology) StoreProbe(src, dest string, probe *Probe) bool {
 			return false
 		}
 
+		fmt.Println(value)
 		averageRTT, err := strconv.ParseFloat(value, 64)
 		if err != nil {
 			return false
@@ -302,7 +306,7 @@ func (n *networkTopology) StoreProbe(src, dest string, probe *Probe) bool {
 		if _, err := n.rdb.Pipelined(context.Background(), func(rdb redis.Pipeliner) error {
 			rdb.HSet(context.Background(), key, "averageRTT", float64(averageRTT)*DefaultMovingAverageWeight+
 				float64(probe.RTT)*(1-DefaultMovingAverageWeight))
-			rdb.HSet(context.Background(), key, "updatedAt", probe.CreatedAt)
+			rdb.HSet(context.Background(), key, "updatedAt", probe.CreatedAt.Format(TimeFormat))
 			return nil
 		}); err != nil {
 			return false
@@ -310,10 +314,27 @@ func (n *networkTopology) StoreProbe(src, dest string, probe *Probe) bool {
 	}
 
 	// Update visit times
-	_, err := n.rdb.Incr(context.Background(), "visitTime:"+dest).Result()
+	_, err = n.rdb.Incr(context.Background(), "visitTimes:"+dest).Result()
 	if err != nil {
 		return false
 	}
 
 	return true
+}
+
+// LoadNetworkTopology loads the network topology from redis and inserts the network topology into csv file.
+func (n *networkTopology) LoadAndCreateNetworkTopology() error {
+	// str := "network-topology:*"
+	// keys, err := n.rdb.Keys(context.Background(), str).Result()
+	// if err != nil {
+	// 	return err
+	// }
+
+	// for _, key := range keys {
+	// 	if err := n.rdb.HGet(context.Background(), "key", "str1", "int").Scan(&model2); err != nil {
+	// 		return err
+	// 	}
+	// }
+
+	return nil
 }
