@@ -1,21 +1,22 @@
 package networktopology
 
 import (
-	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/resource"
-	storagemocks "d7y.io/dragonfly/v2/scheduler/storage/mocks"
 	"encoding/json"
 	"errors"
-	"github.com/go-redis/redismock/v8"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
 	"time"
+
+	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/resource"
+	storagemocks "d7y.io/dragonfly/v2/scheduler/storage/mocks"
+	"github.com/go-redis/redismock/v8"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
-	mockProbesCreatedAt = time.Now().Format(TimeFormat)
+	mockProbesCreatedAt = time.Now()
 )
 
 func Test_NewNetworkTopology(t *testing.T) {
@@ -254,12 +255,204 @@ func TestNetworkTopology_CreatedAt(t *testing.T) {
 		{
 			name: "get creation time of probes",
 			mock: func(clientMock redismock.ClientMock) {
-				clientMock.ExpectHGet("network-topology:"+mockSeedHost.ID+":"+mockHost.ID, "createdAt").SetVal(mockProbesCreatedAt)
+				clientMock.ExpectHGet("network-topology:"+mockSeedHost.ID+":"+mockHost.ID, "createdAt").SetVal(mockProbesCreatedAt.Format(TimeFormat))
 			},
 			expect: func(t *testing.T, n NetworkTopology, err error) {
 				a := assert.New(t)
 				a.Nil(err)
-				a.Equal(n.CreatedAt(mockSeedHost.ID, mockHost.ID), mockProbesCreatedAt)
+				a.Equal(n.CreatedAt(mockSeedHost.ID, mockHost.ID).Format(TimeFormat), mockProbesCreatedAt.Format(TimeFormat))
+			},
+		},
+		{
+			name: "get creation time of probes error",
+			mock: func(clientMock redismock.ClientMock) {
+				clientMock.ExpectHGet("network-topology:"+mockSeedHost.ID+":"+mockHost.ID, "createdAt").SetErr(errors.New("probes do not exist"))
+			},
+			expect: func(t *testing.T, n NetworkTopology, err error) {
+				a := assert.New(t)
+				a.Nil(err)
+				a.Equal(n.CreatedAt(mockSeedHost.ID, mockHost.ID).Format(TimeFormat), time.Time{}.Format(TimeFormat))
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+
+			rdb, clientMock := redismock.NewClientMock()
+			res := resource.NewMockResource(ctl)
+			mockStorage := storagemocks.NewMockStorage(ctl)
+			tc.mock(clientMock)
+			n, err := NewNetworkTopology(config.New(), rdb, res, mockStorage)
+			tc.expect(t, n, err)
+		})
+	}
+}
+
+func TestNetworkTopology_UpdateAt(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(clientMock redismock.ClientMock)
+		expect func(t *testing.T, n NetworkTopology, err error)
+	}{
+		{
+			name: "get update time of probes",
+			mock: func(clientMock redismock.ClientMock) {
+				clientMock.ExpectHGet("network-topology:"+mockSeedHost.ID+":"+mockHost.ID, "updatedAt").SetVal(mockHost.CreatedAt.Load().Format(TimeFormat))
+			},
+			expect: func(t *testing.T, n NetworkTopology, err error) {
+				a := assert.New(t)
+				a.Nil(err)
+				a.Equal(n.UpdatedAt(mockSeedHost.ID, mockHost.ID).Format(TimeFormat), mockHost.CreatedAt.Load().Format(TimeFormat))
+			},
+		},
+		{
+			name: "get update time of probes error",
+			mock: func(clientMock redismock.ClientMock) {
+				clientMock.ExpectHGet("network-topology:"+mockSeedHost.ID+":"+mockHost.ID, "updatedAt").SetErr(errors.New("probes do not exist"))
+			},
+			expect: func(t *testing.T, n NetworkTopology, err error) {
+				a := assert.New(t)
+				a.Nil(err)
+				a.Equal(n.UpdatedAt(mockSeedHost.ID, mockHost.ID).Format(TimeFormat), time.Time{}.Format(TimeFormat))
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+
+			rdb, clientMock := redismock.NewClientMock()
+			res := resource.NewMockResource(ctl)
+			mockStorage := storagemocks.NewMockStorage(ctl)
+			tc.mock(clientMock)
+			n, err := NewNetworkTopology(config.New(), rdb, res, mockStorage)
+			tc.expect(t, n, err)
+		})
+	}
+}
+
+func TestNetworkTopology_AverageRTT(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(clientMock redismock.ClientMock)
+		expect func(t *testing.T, n NetworkTopology, err error)
+	}{
+		{
+			name: "get averageRTT of probes",
+			mock: func(clientMock redismock.ClientMock) {
+				clientMock.ExpectHGet("network-topology:"+mockSeedHost.ID+":"+mockHost.ID, "averageRTT").SetVal(mockProbe.RTT.String())
+			},
+			expect: func(t *testing.T, n NetworkTopology, err error) {
+				a := assert.New(t)
+				a.Nil(err)
+				a.Equal(n.AverageRTT(mockSeedHost.ID, mockHost.ID), mockProbe.RTT)
+			},
+		},
+		{
+			name: "get averageRTT of probes error",
+			mock: func(clientMock redismock.ClientMock) {
+				clientMock.ExpectHGet("network-topology:"+mockSeedHost.ID+":"+mockHost.ID, "averageRTT").SetErr(errors.New("probes do not exist"))
+			},
+			expect: func(t *testing.T, n NetworkTopology, err error) {
+				a := assert.New(t)
+				a.Nil(err)
+				a.Equal(n.AverageRTT(mockSeedHost.ID, mockHost.ID), time.Duration(0))
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+
+			rdb, clientMock := redismock.NewClientMock()
+			res := resource.NewMockResource(ctl)
+			mockStorage := storagemocks.NewMockStorage(ctl)
+			tc.mock(clientMock)
+			n, err := NewNetworkTopology(config.New(), rdb, res, mockStorage)
+			tc.expect(t, n, err)
+		})
+	}
+}
+
+func TestNetworkTopology_VisitTimes(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(clientMock redismock.ClientMock)
+		expect func(t *testing.T, n NetworkTopology, err error)
+	}{
+		{
+			name: "get visit times of host",
+			mock: func(clientMock redismock.ClientMock) {
+				clientMock.ExpectGet("visitTimes:" + mockHost.ID).SetVal("1")
+			},
+			expect: func(t *testing.T, n NetworkTopology, err error) {
+				a := assert.New(t)
+				a.Nil(err)
+				a.Equal(n.VisitTimes(mockHost.ID), int64(1))
+			},
+		},
+		{
+			name: "get visit times of host error",
+			mock: func(clientMock redismock.ClientMock) {
+				clientMock.ExpectGet("visitTimes:" + mockHost.ID).SetErr(errors.New("host do not exist"))
+			},
+			expect: func(t *testing.T, n NetworkTopology, err error) {
+				a := assert.New(t)
+				a.Nil(err)
+				a.Equal(n.VisitTimes(mockHost.ID), int64(0))
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+
+			rdb, clientMock := redismock.NewClientMock()
+			res := resource.NewMockResource(ctl)
+			mockStorage := storagemocks.NewMockStorage(ctl)
+			tc.mock(clientMock)
+			n, err := NewNetworkTopology(config.New(), rdb, res, mockStorage)
+			tc.expect(t, n, err)
+		})
+	}
+}
+
+func TestNetworkTopology_LoadDestHosts(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(clientMock redismock.ClientMock)
+		expect func(t *testing.T, n NetworkTopology, err error)
+	}{
+		{
+			name: "load one destination host",
+			mock: func(clientMock redismock.ClientMock) {
+				clientMock.ExpectKeys("network-topology:" + mockSeedHost.ID + ":*").SetVal([]string{"network-topology:" + mockSeedHost.ID + ":" + mockHost.ID})
+			},
+			expect: func(t *testing.T, n NetworkTopology, err error) {
+				a := assert.New(t)
+				a.Nil(err)
+				destHosts, ok := n.LoadDestHosts(mockSeedHost.ID)
+				a.True(ok)
+				a.Equal(destHosts[0], mockHost.ID)
+				a.Equal(len(destHosts), 1)
+			},
+		},
+		{
+			name: "load destination hosts error",
+			mock: func(clientMock redismock.ClientMock) {
+				clientMock.ExpectKeys("network-topology:" + mockSeedHost.ID + ":*").SetErr(errors.New("destination hosts do not exist"))
+			},
+			expect: func(t *testing.T, n NetworkTopology, err error) {
+				a := assert.New(t)
+				a.Nil(err)
+				destHosts, ok := n.LoadDestHosts(mockSeedHost.ID)
+				a.False(ok)
+				a.Equal(len(destHosts), 0)
 			},
 		},
 	}

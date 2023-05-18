@@ -21,7 +21,6 @@ package networktopology
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 	"strconv"
 	"time"
 
@@ -34,7 +33,7 @@ import (
 
 const (
 	// TimeFormat is the time storage format.
-	TimeFormat = "Mon, 02 Jan 2006 15:04:05 GMT"
+	TimeFormat = "2006-01-02 15:04:05.00 +0000 UTC"
 
 	// DefaultMovingAverageWeight is the weight of the moving average.
 	DefaultMovingAverageWeight = 0.1
@@ -44,7 +43,7 @@ type NetworkTopology interface {
 	// Peek returns the oldest probe without removing it.
 	Peek(src, dest string) (*Probe, bool)
 
-	// Enqueue enqueues probe into the queue.
+	// Enqueue enqueues probe into the list.
 	Enqueue(src, dest string, probe *Probe) error
 
 	// Dequeue removes and returns the oldest probe.
@@ -68,8 +67,8 @@ type NetworkTopology interface {
 	// LoadDestHosts returns parents for source.
 	LoadDestHosts(src string) ([]string, bool)
 
-	// DeleteDestHosts deletes parents for source.
-	DeleteDestHosts(src string) error
+	// DeleteHost deletes host.
+	DeleteHost(src string) error
 
 	// StoreProbe stores probe between two hosts.
 	StoreProbe(src, dest string, probe *Probe) bool
@@ -115,7 +114,7 @@ func (n *networkTopology) Peek(src, dest string) (*Probe, bool) {
 	return probe, true
 }
 
-// Enqueue enqueues probe into the queue.
+// Enqueue enqueues probe into the list.
 func (n *networkTopology) Enqueue(src, dest string, probe *Probe) error {
 	data, err := json.Marshal(probe)
 	if err != nil {
@@ -173,12 +172,12 @@ func (n *networkTopology) CreatedAt(src, dest string) time.Time {
 
 // UpdatedAt is the updated time to store probe.
 func (n *networkTopology) UpdatedAt(src, dest string) time.Time {
-	value, err := n.rdb.HGet(context.Background(), "network-topology"+src+":"+dest, "updatedAt").Result()
+	value, err := n.rdb.HGet(context.Background(), "network-topology:"+src+":"+dest, "updatedAt").Result()
 	if err != nil {
 		return time.Time{}
 	}
 
-	updatedAt, err := time.Parse(http.TimeFormat, value)
+	updatedAt, err := time.Parse(TimeFormat, value)
 	if err != nil {
 		return time.Time{}
 	}
@@ -188,14 +187,14 @@ func (n *networkTopology) UpdatedAt(src, dest string) time.Time {
 
 // AverageRTT is the average round-trip time of probes.
 func (n *networkTopology) AverageRTT(src, dest string) time.Duration {
-	value, err := n.rdb.HGet(context.Background(), "network-topology"+src+":"+dest, "averageRTT").Result()
+	value, err := n.rdb.HGet(context.Background(), "network-topology:"+src+":"+dest, "averageRTT").Result()
 	if err != nil {
-		return 0
+		return time.Duration(0)
 	}
 
 	averageRTT, err := time.ParseDuration(value)
 	if err != nil {
-		return 0
+		return time.Duration(0)
 	}
 
 	return averageRTT
@@ -203,7 +202,17 @@ func (n *networkTopology) AverageRTT(src, dest string) time.Duration {
 
 // VisitTimes is the visit times of host.
 func (n *networkTopology) VisitTimes(key string) int64 {
-	return 0
+	value, err := n.rdb.Get(context.Background(), "visitTimes:"+key).Result()
+	if err != nil {
+		return 0
+	}
+
+	visitTimes, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return 0
+	}
+
+	return visitTimes
 }
 
 // LoadDestHosts returns destination hosts for source.
@@ -216,20 +225,34 @@ func (n *networkTopology) LoadDestHosts(src string) ([]string, bool) {
 
 	destHosts := make([]string, 0)
 	for _, key := range keys {
-		destHosts = append(destHosts, key[len(str):])
+		destHosts = append(destHosts, key[len(str)-1:])
 	}
 
 	return destHosts, true
 }
 
-// DeleteDestHosts deletes destination hosts for source.
-func (n *networkTopology) DeleteDestHosts(src string) error {
-	err := n.rdb.Del(context.Background(), "network-topology:"+src+":*").Err()
+// DeleteHost deletes host.
+func (n *networkTopology) DeleteHost(key string) error {
+	// Delete network topology.
+	err := n.rdb.Del(context.Background(), "network-topology:"+key+":*").Err()
 	if err != nil {
 		return err
 	}
 
-	err = n.rdb.Del(context.Background(), "probes:"+src+":*").Err()
+	// Delete probes which sent by key.
+	err = n.rdb.Del(context.Background(), "probes:"+key+":*").Err()
+	if err != nil {
+		return err
+	}
+
+	// Delete probes which send to key, and return delete number for updating visit times.
+	count, err := n.rdb.Del(context.Background(), "probes:"+"*:"+key).Result()
+	if err != nil {
+		return err
+	}
+
+	// Delete visit times.
+	err = n.rdb.DecrBy(context.Background(), "visitTimes:"+key, count).Err()
 	if err != nil {
 		return err
 	}
@@ -287,6 +310,10 @@ func (n *networkTopology) StoreProbe(src, dest string, probe *Probe) bool {
 	}
 
 	// Update visit times
+	_, err := n.rdb.Incr(context.Background(), "visitTime:"+dest).Result()
+	if err != nil {
+		return false
+	}
 
 	return true
 }
