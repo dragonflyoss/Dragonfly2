@@ -162,12 +162,11 @@ func TestAnnouncer_transferDownloadToTrainer(t *testing.T) {
 					m.UpdateScheduler(gomock.Any(), gomock.Any()).Return(nil, nil).Times(1),
 					ms.OpenDownload().Return(io.NopCloser(bytes.NewBuffer(data)), nil).AnyTimes(),
 					mt.Send(gomock.Any()).Return(errors.New("foo")).Times(1),
-					mt.CloseAndRecv().Return(nil, nil).Times(1),
 				)
 			},
 			except: func(t *testing.T, a Announcer, err error) {
 				assert := assert.New(t)
-				assert.NoError(err)
+				assert.EqualError(err, "foo")
 			},
 		},
 		{
@@ -268,12 +267,11 @@ func TestAnnouncer_transferNetworkTopologyToTrainer(t *testing.T) {
 					m.UpdateScheduler(gomock.Any(), gomock.Any()).Return(nil, nil).Times(1),
 					ms.OpenNetworkTopology().Return(io.NopCloser(bytes.NewBuffer(data)), nil).AnyTimes(),
 					mt.Send(gomock.Any()).Return(errors.New("foo")).Times(1),
-					mt.CloseAndRecv().Return(nil, nil).Times(1),
 				)
 			},
 			except: func(t *testing.T, a Announcer, err error) {
 				assert := assert.New(t)
-				assert.NoError(err)
+				assert.EqualError(err, "foo")
 			},
 		},
 		{

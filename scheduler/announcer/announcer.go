@@ -211,9 +211,7 @@ func (a *announcer) transferDownloadToTrainer() error {
 				},
 			},
 		}); err != nil {
-			if _, err := a.stream.CloseAndRecv(); err != nil {
-				return err
-			}
+			return err
 		}
 	}
 
@@ -250,9 +248,7 @@ func (a *announcer) transferNetworkTopologyToTrainer() error {
 				},
 			},
 		}); err != nil {
-			if _, err := a.stream.CloseAndRecv(); err != nil {
-				return err
-			}
+			return err
 		}
 	}
 
