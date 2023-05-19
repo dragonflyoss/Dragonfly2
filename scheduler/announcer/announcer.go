@@ -106,12 +106,6 @@ func New(cfg *config.Config, managerClient managerclient.V2, options ...Option) 
 func (a *announcer) Serve() error {
 	if a.trainerClient != nil {
 		logger.Info("announce dataset to trainer")
-		if trainerStream, err := a.trainerClient.Train(context.Background()); err != nil {
-			return err
-		} else {
-			a.stream = trainerStream
-		}
-
 		a.announceToTrainer()
 	}
 
@@ -150,6 +144,13 @@ func (a *announcer) announceToTrainer() {
 			for {
 				select {
 				case <-tick.C:
+					if trainerStream, err := a.trainerClient.Train(context.Background()); err != nil {
+						logger.Error(err)
+						break
+					} else {
+						a.stream = trainerStream
+					}
+
 					go func() {
 						if err := a.transferDownloadToTrainer(); err != nil {
 							logger.Error(err)
