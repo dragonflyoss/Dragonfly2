@@ -73,7 +73,7 @@ type NetworkTopology interface {
 	// StoreProbe stores probe between two hosts.
 	StoreProbe(src, dest string, probe *Probe) bool
 
-	// LoadNetworkTopology loads the network topology from redis and inserts the network topology into csv file.
+	// LoadAndCreateNetworkTopology loads the network topology from redis and inserts the network topology into csv file.
 	LoadAndCreateNetworkTopology() error
 }
 
@@ -320,7 +320,7 @@ func (n *networkTopology) StoreProbe(src, dest string, probe *Probe) bool {
 	return true
 }
 
-// LoadNetworkTopology loads the network topology from redis and inserts the network topology into csv file.
+// TODO: LoadAndCreateNetworkTopology loads the network topology from redis and inserts the network topology into csv file.
 func (n *networkTopology) LoadAndCreateNetworkTopology() error {
 	// str := "network-topology:*"
 	// keys, err := n.rdb.Keys(context.Background(), str).Result()
