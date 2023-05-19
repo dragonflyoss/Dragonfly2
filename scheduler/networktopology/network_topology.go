@@ -21,7 +21,6 @@ package networktopology
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -297,7 +296,6 @@ func (n *networkTopology) StoreProbe(src, dest string, probe *Probe) bool {
 			return false
 		}
 
-		fmt.Println(value)
 		averageRTT, err := strconv.ParseFloat(value, 64)
 		if err != nil {
 			return false
