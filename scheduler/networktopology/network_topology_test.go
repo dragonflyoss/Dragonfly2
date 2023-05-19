@@ -573,11 +573,11 @@ func TestNetworkTopology_StoreProbe(t *testing.T) {
 			name: "store probe when probe list has not element",
 			mock: func(clientMock redismock.ClientMock) {
 				clientMock.ExpectLLen("probes:" + mockSeedHost.ID + ":" + mockHost.ID).SetVal(0)
+
 				data, err := json.Marshal(mockProbe)
 				if err != nil {
 					t.Fatal(err)
 				}
-
 				clientMock.ExpectRPush("probes:"+mockSeedHost.ID+":"+mockHost.ID, data).SetVal(1)
 
 				key := "network-topology:" + mockSeedHost.ID + ":" + mockHost.ID

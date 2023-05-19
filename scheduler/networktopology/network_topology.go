@@ -21,7 +21,10 @@ package networktopology
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -72,6 +75,9 @@ type NetworkTopology interface {
 
 	// StoreProbe stores probe between two hosts.
 	StoreProbe(src, dest string, probe *Probe) bool
+
+	// LoadNetworkTopology loads the network topology from redis and inserts the network topology into csv file.
+	LoadAndCreateNetworkTopology() error
 }
 
 type networkTopology struct {
@@ -100,8 +106,9 @@ func NewNetworkTopology(cfg *config.Config, rdb redis.UniversalClient, resource 
 
 // Peek returns the oldest probe without removing it.
 func (n *networkTopology) Peek(src, dest string) (*Probe, bool) {
+	str := fmt.Sprintf("probes:%s:%s", src, dest)
 	probe := &Probe{}
-	jsonStr, err := n.rdb.LIndex(context.Background(), "probes:"+src+":"+dest, 0).Result()
+	jsonStr, err := n.rdb.LIndex(context.Background(), str, 0).Result()
 	if err != nil {
 		return nil, false
 	}
@@ -116,12 +123,13 @@ func (n *networkTopology) Peek(src, dest string) (*Probe, bool) {
 
 // Enqueue enqueues probe into the list.
 func (n *networkTopology) Enqueue(src, dest string, probe *Probe) error {
+	str := fmt.Sprintf("probes:%s:%s", src, dest)
 	data, err := json.Marshal(probe)
 	if err != nil {
 		return err
 	}
 
-	err = n.rdb.RPush(context.Background(), "probes:"+src+":"+dest, data).Err()
+	err = n.rdb.RPush(context.Background(), str, data).Err()
 	if err != nil {
 		return err
 	}
@@ -131,8 +139,9 @@ func (n *networkTopology) Enqueue(src, dest string, probe *Probe) error {
 
 // Dequeue removes and returns the oldest probe.
 func (n *networkTopology) Dequeue(src, dest string) (*Probe, bool) {
+	str := fmt.Sprintf("probes:%s:%s", src, dest)
 	probe := &Probe{}
-	jsonStr, err := n.rdb.LPop(context.Background(), "probes:"+src+":"+dest).Result()
+	jsonStr, err := n.rdb.LPop(context.Background(), str).Result()
 	if err != nil {
 		return nil, false
 	}
@@ -147,7 +156,8 @@ func (n *networkTopology) Dequeue(src, dest string) (*Probe, bool) {
 
 // Length gets the length of probes.
 func (n *networkTopology) Length(src, dest string) int64 {
-	length, err := n.rdb.LLen(context.Background(), "probes:"+src+":"+dest).Result()
+	str := fmt.Sprintf("probes:%s:%s", src, dest)
+	length, err := n.rdb.LLen(context.Background(), str).Result()
 	if err != nil {
 		return 0
 	}
@@ -157,7 +167,8 @@ func (n *networkTopology) Length(src, dest string) int64 {
 
 // CreatedAt is the creation time of probes.
 func (n *networkTopology) CreatedAt(src, dest string) time.Time {
-	value, err := n.rdb.HGet(context.Background(), "network-topology:"+src+":"+dest, "createdAt").Result()
+	str := fmt.Sprintf("network-topology:%s:%s", src, dest)
+	value, err := n.rdb.HGet(context.Background(), str, "createdAt").Result()
 	if err != nil {
 		return time.Time{}
 	}
@@ -172,7 +183,8 @@ func (n *networkTopology) CreatedAt(src, dest string) time.Time {
 
 // UpdatedAt is the updated time to store probe.
 func (n *networkTopology) UpdatedAt(src, dest string) time.Time {
-	value, err := n.rdb.HGet(context.Background(), "network-topology:"+src+":"+dest, "updatedAt").Result()
+	str := fmt.Sprintf("network-topology:%s:%s", src, dest)
+	value, err := n.rdb.HGet(context.Background(), str, "updatedAt").Result()
 	if err != nil {
 		return time.Time{}
 	}
@@ -187,7 +199,8 @@ func (n *networkTopology) UpdatedAt(src, dest string) time.Time {
 
 // AverageRTT is the average round-trip time of probes.
 func (n *networkTopology) AverageRTT(src, dest string) time.Duration {
-	value, err := n.rdb.HGet(context.Background(), "network-topology:"+src+":"+dest, "averageRTT").Result()
+	str := fmt.Sprintf("network-topology:%s:%s", src, dest)
+	value, err := n.rdb.HGet(context.Background(), str, "averageRTT").Result()
 	if err != nil {
 		return time.Duration(0)
 	}
@@ -202,7 +215,8 @@ func (n *networkTopology) AverageRTT(src, dest string) time.Duration {
 
 // VisitTimes is the visit times of host.
 func (n *networkTopology) VisitTimes(key string) int64 {
-	value, err := n.rdb.Get(context.Background(), "visitTimes:"+key).Result()
+	str := fmt.Sprintf("visitTimes:%s", key)
+	value, err := n.rdb.Get(context.Background(), str).Result()
 	if err != nil {
 		return 0
 	}
@@ -217,7 +231,7 @@ func (n *networkTopology) VisitTimes(key string) int64 {
 
 // LoadDestHosts returns destination hosts for source.
 func (n *networkTopology) LoadDestHosts(src string) ([]string, bool) {
-	str := "network-topology:" + src + ":*"
+	str := fmt.Sprintf("network-topology:%s:*", src)
 	keys, err := n.rdb.Keys(context.Background(), str).Result()
 	if err != nil {
 		return []string{}, false
@@ -234,25 +248,29 @@ func (n *networkTopology) LoadDestHosts(src string) ([]string, bool) {
 // DeleteHost deletes host.
 func (n *networkTopology) DeleteHost(key string) error {
 	// Delete network topology.
-	err := n.rdb.Del(context.Background(), "network-topology:"+key+":*").Err()
+	str := fmt.Sprintf("network-topology:%s:*", key)
+	err := n.rdb.Del(context.Background(), str).Err()
 	if err != nil {
 		return err
 	}
 
 	// Delete probes which sent by key.
-	err = n.rdb.Del(context.Background(), "probes:"+key+":*").Err()
+	str = fmt.Sprintf("probes:%s:*", key)
+	err = n.rdb.Del(context.Background(), str).Err()
 	if err != nil {
 		return err
 	}
 
 	// Delete probes which send to key, and return delete number for updating visit times.
-	count, err := n.rdb.Del(context.Background(), "probes:*:"+key).Result()
+	str = fmt.Sprintf("probes:*:%s", key)
+	count, err := n.rdb.Del(context.Background(), str).Result()
 	if err != nil {
 		return err
 	}
 
 	// Delete visit times.
-	err = n.rdb.DecrBy(context.Background(), "visitTimes:"+key, count).Err()
+	str = fmt.Sprintf("visitTimes:%s", key)
+	err = n.rdb.DecrBy(context.Background(), str, count).Err()
 	if err != nil {
 		return err
 	}
@@ -277,18 +295,18 @@ func (n *networkTopology) StoreProbe(src, dest string, probe *Probe) bool {
 	}
 
 	// Update probes struct
-	key := "network-topology:" + src + ":" + dest
+	str := fmt.Sprintf("network-topology:%s:%s", src, dest)
 	if length == 0 {
 		if _, err := n.rdb.Pipelined(context.Background(), func(rdb redis.Pipeliner) error {
-			rdb.HSet(context.Background(), key, "averageRTT", probe.RTT)
-			rdb.HSet(context.Background(), key, "createdAt", time.Now().Format(TimeFormat))
-			rdb.HSet(context.Background(), key, "updatedAt", probe.CreatedAt.Format(TimeFormat))
+			rdb.HSet(context.Background(), str, "averageRTT", probe.RTT)
+			rdb.HSet(context.Background(), str, "createdAt", time.Now().Format(TimeFormat))
+			rdb.HSet(context.Background(), str, "updatedAt", probe.CreatedAt.Format(TimeFormat))
 			return nil
 		}); err != nil {
 			return false
 		}
 	} else {
-		value, err := n.rdb.HGet(context.Background(), key, "averageRTT").Result()
+		value, err := n.rdb.HGet(context.Background(), str, "averageRTT").Result()
 		if err != nil {
 			return false
 		}
@@ -299,9 +317,9 @@ func (n *networkTopology) StoreProbe(src, dest string, probe *Probe) bool {
 		}
 
 		if _, err := n.rdb.Pipelined(context.Background(), func(rdb redis.Pipeliner) error {
-			rdb.HSet(context.Background(), key, "averageRTT", float64(averageRTT)*DefaultMovingAverageWeight+
+			rdb.HSet(context.Background(), str, "averageRTT", float64(averageRTT)*DefaultMovingAverageWeight+
 				float64(probe.RTT)*(1-DefaultMovingAverageWeight))
-			rdb.HSet(context.Background(), key, "updatedAt", probe.CreatedAt.Format(TimeFormat))
+			rdb.HSet(context.Background(), str, "updatedAt", probe.CreatedAt.Format(TimeFormat))
 			return nil
 		}); err != nil {
 			return false
@@ -309,10 +327,207 @@ func (n *networkTopology) StoreProbe(src, dest string, probe *Probe) bool {
 	}
 
 	// Update visit times
-	_, err = n.rdb.Incr(context.Background(), "visitTimes:"+dest).Result()
+	str = fmt.Sprintf("visitTimes:%s", dest)
+	_, err = n.rdb.Incr(context.Background(), str).Result()
 	if err != nil {
 		return false
 	}
 
 	return true
+}
+
+// LoadNetworkTopology loads the network topology from redis and inserts the network topology into csv file.
+func (n *networkTopology) LoadAndCreateNetworkTopology() error {
+	id := time.Now().Format(TimeFormat)
+
+	str := fmt.Sprintf("network-topology:*")
+	keys, err := n.rdb.Keys(context.Background(), str).Result()
+	if err != nil {
+		return err
+	}
+
+	for _, key := range keys {
+		words := strings.Split(key, ":")
+		srcStr := words[1]
+
+		str = fmt.Sprintf("network-topology:%s:*", srcStr)
+		destKeys, err := n.rdb.Keys(context.Background(), str).Result()
+		if err != nil {
+			return err
+		}
+
+		destHosts := make([]storage.DestHost, 0)
+		for _, destKey := range destKeys {
+			destWords := strings.Split(destKey, ":")
+			destStr := destWords[2]
+
+			probes := storage.Probes{
+				AverageRTT: int64(n.AverageRTT(srcStr, destStr)),
+				CreatedAt:  int64(n.CreatedAt(srcStr, destStr).Nanosecond()),
+				UpdatedAt:  int64(n.UpdatedAt(srcStr, destStr).Nanosecond()),
+			}
+
+			dest, ok := n.resource.HostManager().Load(destStr)
+			if !ok {
+				return errors.New(destStr + " does not exist.")
+			}
+
+			destHost := storage.DestHost{
+				Host: storage.Host{
+					ID:                    dest.ID,
+					Type:                  dest.Type.Name(),
+					Hostname:              dest.Hostname,
+					IP:                    dest.IP,
+					Port:                  dest.Port,
+					DownloadPort:          dest.DownloadPort,
+					OS:                    dest.OS,
+					Platform:              dest.Platform,
+					PlatformFamily:        dest.PlatformFamily,
+					PlatformVersion:       dest.PlatformVersion,
+					KernelVersion:         dest.KernelVersion,
+					ConcurrentUploadLimit: dest.ConcurrentUploadLimit.Load(),
+					ConcurrentUploadCount: dest.ConcurrentUploadCount.Load(),
+					UploadCount:           dest.UploadCount.Load(),
+					UploadFailedCount:     dest.UploadFailedCount.Load(),
+					CPU: resource.CPU{
+						LogicalCount:   dest.CPU.LogicalCount,
+						PhysicalCount:  dest.CPU.PhysicalCount,
+						Percent:        dest.CPU.Percent,
+						ProcessPercent: dest.CPU.ProcessPercent,
+						Times: resource.CPUTimes{
+							User:      dest.CPU.Times.User,
+							System:    dest.CPU.Times.System,
+							Idle:      dest.CPU.Times.Idle,
+							Nice:      dest.CPU.Times.Nice,
+							Iowait:    dest.CPU.Times.Iowait,
+							Irq:       dest.CPU.Times.Irq,
+							Softirq:   dest.CPU.Times.Softirq,
+							Steal:     dest.CPU.Times.Steal,
+							Guest:     dest.CPU.Times.Guest,
+							GuestNice: dest.CPU.Times.GuestNice,
+						},
+					},
+					Memory: resource.Memory{
+						Total:              dest.Memory.Total,
+						Available:          dest.Memory.Available,
+						Used:               dest.Memory.Used,
+						UsedPercent:        dest.Memory.UsedPercent,
+						ProcessUsedPercent: dest.Memory.ProcessUsedPercent,
+						Free:               dest.Memory.Free,
+					},
+					Network: resource.Network{
+						TCPConnectionCount:       dest.Network.TCPConnectionCount,
+						UploadTCPConnectionCount: dest.Network.UploadTCPConnectionCount,
+						Location:                 dest.Network.Location,
+						IDC:                      dest.Network.IDC,
+					},
+					Disk: resource.Disk{
+						Total:             dest.Disk.Total,
+						Free:              dest.Disk.Free,
+						Used:              dest.Disk.Used,
+						UsedPercent:       dest.Disk.UsedPercent,
+						InodesTotal:       dest.Disk.InodesTotal,
+						InodesUsed:        dest.Disk.InodesUsed,
+						InodesFree:        dest.Disk.InodesFree,
+						InodesUsedPercent: dest.Disk.InodesUsedPercent,
+					},
+					Build: resource.Build{
+						GitVersion: dest.Build.GitVersion,
+						GitCommit:  dest.Build.GitCommit,
+						GoVersion:  dest.Build.GoVersion,
+						Platform:   dest.Build.Platform,
+					},
+					CreatedAt: int64(dest.CreatedAt.Load().Nanosecond()),
+					UpdatedAt: int64(dest.UpdatedAt.Load().Nanosecond()),
+				},
+				Probes: probes,
+			}
+
+			destHosts = append(destHosts, destHost)
+		}
+
+		src, ok := n.resource.HostManager().Load(srcStr)
+		if !ok {
+			return errors.New(srcStr + " does not exist.")
+		}
+
+		networkTopology := storage.NetworkTopology{
+			ID: id,
+			Host: storage.Host{
+				ID:                    src.ID,
+				Type:                  src.Type.Name(),
+				Hostname:              src.Hostname,
+				IP:                    src.IP,
+				Port:                  src.Port,
+				DownloadPort:          src.DownloadPort,
+				OS:                    src.OS,
+				Platform:              src.Platform,
+				PlatformFamily:        src.PlatformFamily,
+				PlatformVersion:       src.PlatformVersion,
+				KernelVersion:         src.KernelVersion,
+				ConcurrentUploadLimit: src.ConcurrentUploadLimit.Load(),
+				ConcurrentUploadCount: src.ConcurrentUploadCount.Load(),
+				UploadCount:           src.UploadCount.Load(),
+				UploadFailedCount:     src.UploadFailedCount.Load(),
+				CPU: resource.CPU{
+					LogicalCount:   src.CPU.LogicalCount,
+					PhysicalCount:  src.CPU.PhysicalCount,
+					Percent:        src.CPU.Percent,
+					ProcessPercent: src.CPU.ProcessPercent,
+					Times: resource.CPUTimes{
+						User:      src.CPU.Times.User,
+						System:    src.CPU.Times.System,
+						Idle:      src.CPU.Times.Idle,
+						Nice:      src.CPU.Times.Nice,
+						Iowait:    src.CPU.Times.Iowait,
+						Irq:       src.CPU.Times.Irq,
+						Softirq:   src.CPU.Times.Softirq,
+						Steal:     src.CPU.Times.Steal,
+						Guest:     src.CPU.Times.Guest,
+						GuestNice: src.CPU.Times.GuestNice,
+					},
+				},
+				Memory: resource.Memory{
+					Total:              src.Memory.Total,
+					Available:          src.Memory.Available,
+					Used:               src.Memory.Used,
+					UsedPercent:        src.Memory.UsedPercent,
+					ProcessUsedPercent: src.Memory.ProcessUsedPercent,
+					Free:               src.Memory.Free,
+				},
+				Network: resource.Network{
+					TCPConnectionCount:       src.Network.TCPConnectionCount,
+					UploadTCPConnectionCount: src.Network.UploadTCPConnectionCount,
+					Location:                 src.Network.Location,
+					IDC:                      src.Network.IDC,
+				},
+				Disk: resource.Disk{
+					Total:             src.Disk.Total,
+					Free:              src.Disk.Free,
+					Used:              src.Disk.Used,
+					UsedPercent:       src.Disk.UsedPercent,
+					InodesTotal:       src.Disk.InodesTotal,
+					InodesUsed:        src.Disk.InodesUsed,
+					InodesFree:        src.Disk.InodesFree,
+					InodesUsedPercent: src.Disk.InodesUsedPercent,
+				},
+				Build: resource.Build{
+					GitVersion: src.Build.GitVersion,
+					GitCommit:  src.Build.GitCommit,
+					GoVersion:  src.Build.GoVersion,
+					Platform:   src.Build.Platform,
+				},
+				CreatedAt: int64(src.CreatedAt.Load().Nanosecond()),
+				UpdatedAt: int64(src.UpdatedAt.Load().Nanosecond()),
+			},
+			DestHosts: destHosts,
+		}
+
+		err = n.storage.CreateNetworkTopology(networkTopology)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
