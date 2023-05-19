@@ -21,6 +21,7 @@ package announcer
 import (
 	"context"
 	"io"
+	"sync"
 	"time"
 
 	managerv2 "d7y.io/api/pkg/apis/manager/v2"
@@ -145,23 +146,33 @@ func (a *announcer) announceToTrainer() {
 				select {
 				case <-tick.C:
 					if trainerStream, err := a.trainerClient.Train(context.Background()); err != nil {
-						logger.Error(err)
+						logger.Errorf("get stream failed: %s", err.Error())
 						break
 					} else {
 						a.stream = trainerStream
 					}
 
+					var wg sync.WaitGroup
+					wg.Add(2)
 					go func() {
 						if err := a.transferDownloadToTrainer(); err != nil {
-							logger.Error(err)
+							logger.Errorf("transfer download to trainer failed: %s", err.Error())
 						}
+						wg.Done()
 					}()
 
 					go func() {
 						if err := a.transferNetworkTopologyToTrainer(); err != nil {
-							logger.Error(err)
+							logger.Errorf("transfer networkTopology to trainer failed: %s", err.Error())
 						}
+						wg.Done()
 					}()
+
+					wg.Wait()
+					if _, err := a.stream.CloseAndRecv(); err != nil {
+						logger.Errorf("recv stream failed: %s", err.Error())
+						break
+					}
 				case <-a.done:
 					logger.Info("announceToTrainer stopped")
 					return
