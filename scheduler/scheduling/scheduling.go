@@ -391,15 +391,6 @@ func (s *scheduling) FindCandidateParents(ctx context.Context, peer *resource.Pe
 		return []*resource.Peer{}, false
 	}
 
-	// Sort candidate parents by evaluation score.
-	taskTotalPieceCount := peer.Task.TotalPieceCount.Load()
-	sort.Slice(
-		candidateParents,
-		func(i, j int) bool {
-			return s.evaluator.Evaluate(candidateParents[i], peer, taskTotalPieceCount) > s.evaluator.Evaluate(candidateParents[j], peer, taskTotalPieceCount)
-		},
-	)
-
 	var parentIDs []string
 	for _, candidateParent := range candidateParents {
 		parentIDs = append(parentIDs, candidateParent.ID)
@@ -433,15 +424,6 @@ func (s *scheduling) FindSuccessParent(ctx context.Context, peer *resource.Peer,
 		}
 	}
 
-	// Sort candidate parents by evaluation score.
-	taskTotalPieceCount := peer.Task.TotalPieceCount.Load()
-	sort.Slice(
-		successParents,
-		func(i, j int) bool {
-			return s.evaluator.Evaluate(successParents[i], peer, taskTotalPieceCount) > s.evaluator.Evaluate(successParents[j], peer, taskTotalPieceCount)
-		},
-	)
-
 	peer.Log.Infof("scheduling success parent is %s", successParents[0].ID)
 	return successParents[0], true
 }
@@ -460,11 +442,20 @@ func (s *scheduling) filterCandidateParents(peer *resource.Peer, blocklist set.S
 		}
 	}
 
+	taskTotalPieceCount := peer.Task.TotalPieceCount.Load()
+	randomPeers := peer.Task.LoadRandomPeers(uint(filterParentRangeLimit))
+	sort.Slice(
+		randomPeers,
+		func(i, j int) bool {
+			return s.evaluator.Evaluate(randomPeers[i], peer, taskTotalPieceCount) > s.evaluator.Evaluate(randomPeers[j], peer, taskTotalPieceCount)
+		},
+	)
+
 	var (
 		candidateParents   []*resource.Peer
 		candidateParentIDs []string
 	)
-	for _, candidateParent := range peer.Task.LoadRandomPeers(uint(filterParentRangeLimit)) {
+	for _, candidateParent := range randomPeers {
 		// Parent length limit after filtering.
 		if len(candidateParents) >= filterParentLimit {
 			break
