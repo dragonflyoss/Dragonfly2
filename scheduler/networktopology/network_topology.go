@@ -371,6 +371,8 @@ func (n *networkTopology) LoadAndCreateNetworkTopology() error {
 			if !ok {
 				return errors.New(destStr + " does not exist.")
 			}
+			fmt.Println(ok)
+			fmt.Println(dest)
 
 			destHost := storage.DestHost{
 				Host: storage.Host{
@@ -447,6 +449,8 @@ func (n *networkTopology) LoadAndCreateNetworkTopology() error {
 		}
 
 		src, ok := n.resource.HostManager().Load(srcStr)
+		fmt.Println(ok)
+		fmt.Println(src)
 		if !ok {
 			return errors.New(srcStr + " does not exist.")
 		}
