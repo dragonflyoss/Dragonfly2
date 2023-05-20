@@ -105,9 +105,11 @@ type storage struct {
 
 	downloadMu     *sync.RWMutex
 	downloadBuffer map[string][]byte
+	downloadCount  map[string]int64
 
 	networkTopologyMu     *sync.RWMutex
 	networkTopologyBuffer map[string][]byte
+	networkTopologyCount  map[string]int64
 }
 
 // New returns a new Storage instance.
@@ -120,39 +122,35 @@ func New(baseDir string, maxSize, maxBackups, bufferSize int) (Storage, error) {
 
 		downloadMu:     &sync.RWMutex{},
 		downloadBuffer: make(map[string][]byte),
+		downloadCount:  make(map[string]int64),
 
 		networkTopologyMu:     &sync.RWMutex{},
 		networkTopologyBuffer: make(map[string][]byte),
+		networkTopologyCount:  make(map[string]int64),
 	}
 
 	return s, nil
 }
 
 // CreateDownload inserts the byte downloads into csv file based on the given model key.
-func (s *storage) CreateDownload(download []byte, modelKey string) error {
+func (s *storage) CreateDownload(downloads []byte, modelKey string) error {
 	s.downloadMu.Lock()
 	defer s.downloadMu.Unlock()
 
-	downloadFilename := filepath.Join(s.baseDir, fmt.Sprintf("%s-%s.%s", DownloadFilePrefix, modelKey, CSVFileExt))
-
-	// Init downloadBuffer and download file based on modelKey
+	// Init download buffer and download count based on modelKey.
 	_, err := s.downloadBuffer[modelKey]
 	if !err {
 		s.downloadBuffer[modelKey] = make([]byte, 0, s.bufferSize)
-		downloadFile, e := os.OpenFile(downloadFilename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-		if e != nil {
-			return e
-		}
-
-		downloadFile.Close()
+		s.downloadCount[modelKey] = int64(0)
 	}
 
 	// Write without buffer.
 	if s.bufferSize == 0 {
-		if err := s.createDownload(s.downloadBuffer[modelKey], modelKey); err != nil {
+		if err := s.createDownload(downloads, modelKey); err != nil {
 			return err
 		}
-
+		// Update download count.
+		s.downloadCount[modelKey] += int64(len(downloads))
 		return nil
 	}
 
@@ -161,53 +159,54 @@ func (s *storage) CreateDownload(download []byte, modelKey string) error {
 		if err := s.createDownload(s.downloadBuffer[modelKey], modelKey); err != nil {
 			return err
 		}
+		// Update download count.
+		s.downloadCount[modelKey] += int64(len(s.downloadBuffer[modelKey]))
 
 		// Keep allocated memory.
 		s.downloadBuffer[modelKey] = s.downloadBuffer[modelKey][:0]
 	}
 	// Write downloads to buffer.
-	s.downloadBuffer[modelKey] = append(s.downloadBuffer[modelKey], download...)
+	s.downloadBuffer[modelKey] = append(s.downloadBuffer[modelKey], downloads...)
 	return nil
 }
 
 // CreateNetworkTopology inserts the byte network topologies into csv file based on the given model key.
-func (s *storage) CreateNetworkTopology(networkTopology []byte, modelKey string) error {
+func (s *storage) CreateNetworkTopology(networkTopologies []byte, modelKey string) error {
 	s.networkTopologyMu.Lock()
 	defer s.networkTopologyMu.Unlock()
 
-	networkTopologyFilename := filepath.Join(s.baseDir, fmt.Sprintf("%s-%s.%s", NetworkTopologyFilePrefix, modelKey, CSVFileExt))
-
-	// Construct networkTopologyBuffer based on modelKey
+	// Init network topology buffer and network topology count based on modelKey.
 	_, err := s.networkTopologyBuffer[modelKey]
 	if !err {
 		s.networkTopologyBuffer[modelKey] = make([]byte, 0, s.bufferSize)
-		networkTopologyFile, e := os.OpenFile(networkTopologyFilename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-		if e != nil {
-			return e
-		}
-		networkTopologyFile.Close()
+		s.networkTopologyCount[modelKey] = int64(0)
 	}
 
 	// Write without buffer.
 	if s.bufferSize == 0 {
-		if err := s.createNetworkTopology(s.networkTopologyBuffer[modelKey], modelKey); err != nil {
+		if err := s.createNetworkTopology(networkTopologies, modelKey); err != nil {
 			return err
 		}
+		// Update network topology count.
+		s.networkTopologyCount[modelKey] += int64(len(networkTopologies))
 		return nil
 	}
 
 	// Write network topologies to file.
-	if len(s.networkTopologyBuffer) >= s.bufferSize {
+	if len(s.networkTopologyBuffer[modelKey]) >= s.bufferSize {
 		if err := s.createNetworkTopology(s.networkTopologyBuffer[modelKey], modelKey); err != nil {
 			return err
 		}
+
+		// Update network topology count.
+		s.networkTopologyCount[modelKey] += int64(len(s.networkTopologyBuffer[modelKey]))
 
 		// Keep allocated memory.
 		s.networkTopologyBuffer[modelKey] = s.networkTopologyBuffer[modelKey][:0]
 	}
 
 	// Write network topologies to buffer.
-	s.networkTopologyBuffer[modelKey] = append(s.networkTopologyBuffer[modelKey], networkTopology...)
+	s.networkTopologyBuffer[modelKey] = append(s.networkTopologyBuffer[modelKey], networkTopologies...)
 	return nil
 }
 
@@ -356,7 +355,8 @@ func (s *storage) ClearDownload() error {
 			}
 		}
 	}
-
+	s.downloadBuffer = make(map[string][]byte)
+	s.downloadCount = make(map[string]int64)
 	return nil
 }
 
@@ -383,6 +383,8 @@ func (s *storage) ClearNetworkTopology() error {
 			}
 		}
 	}
+	s.networkTopologyBuffer = make(map[string][]byte)
+	s.networkTopologyCount = make(map[string]int64)
 	return nil
 }
 
@@ -418,11 +420,19 @@ func (s *storage) createNetworkTopology(networkTopologies []byte, modelKey strin
 
 // openDownloadFile opens the download file and removes download files that exceed the total size based on given model key.
 func (s *storage) openDownloadFile(modelKey string) (*os.File, error) {
-
 	downloadFilename := filepath.Join(s.baseDir, fmt.Sprintf("%s-%s.%s", DownloadFilePrefix, modelKey, CSVFileExt))
-	fileInfo, err := os.Stat(downloadFilename)
 
+	fileInfo, err := os.Stat(downloadFilename)
 	if err != nil {
+		if _, ok := s.downloadBuffer[modelKey]; ok {
+			file, e := os.OpenFile(downloadFilename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+			if e != nil {
+				return nil, e
+			}
+
+			return file, nil
+		}
+
 		return nil, err
 	}
 
@@ -458,6 +468,15 @@ func (s *storage) openNetworkTopologyFile(modelKey string) (*os.File, error) {
 
 	fileInfo, err := os.Stat(networkTopologyFilename)
 	if err != nil {
+		if _, ok := s.networkTopologyBuffer[modelKey]; ok {
+			file, e := os.OpenFile(networkTopologyFilename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+			if e != nil {
+				return nil, e
+			}
+
+			return file, nil
+		}
+
 		return nil, err
 	}
 
