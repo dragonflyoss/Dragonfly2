@@ -58,6 +58,7 @@ func TestNetworkTopology_Peek(t *testing.T) {
 		{
 			name: "queue has one probe",
 			mock: func(clientMock redismock.ClientMock) {
+				clientMock.MatchExpectationsInOrder(true)
 				data, err := json.Marshal(mockProbe)
 				if err != nil {
 					t.Fatal(err)
@@ -79,6 +80,7 @@ func TestNetworkTopology_Peek(t *testing.T) {
 		{
 			name: "queue has no probe",
 			mock: func(clientMock redismock.ClientMock) {
+				clientMock.MatchExpectationsInOrder(true)
 				key := fmt.Sprintf("probes:%s:%s", mockSeedHost.ID, mockHost.ID)
 				clientMock.ExpectLLen(key).SetVal(0)
 				clientMock.ExpectLIndex(key, 0).SetErr(errors.New("no probe"))
@@ -117,6 +119,7 @@ func TestNetworkTopology_Enqueue(t *testing.T) {
 		{
 			name: "enqueue one probe",
 			mock: func(clientMock redismock.ClientMock) {
+				clientMock.MatchExpectationsInOrder(true)
 				data, err := json.Marshal(mockProbe)
 				if err != nil {
 					t.Fatal(err)
@@ -165,6 +168,7 @@ func TestNetworkTopology_Dequeue(t *testing.T) {
 		{
 			name: "dequeue probe",
 			mock: func(clientMock redismock.ClientMock) {
+				clientMock.MatchExpectationsInOrder(true)
 				data, err := json.Marshal(mockProbe)
 				if err != nil {
 					t.Fatal(err)
@@ -190,6 +194,7 @@ func TestNetworkTopology_Dequeue(t *testing.T) {
 		{
 			name: "dequeue probe from empty probes",
 			mock: func(clientMock redismock.ClientMock) {
+				clientMock.MatchExpectationsInOrder(true)
 				key := fmt.Sprintf("probes:%s:%s", mockSeedHost.ID, mockHost.ID)
 				clientMock.ExpectLPop(key).RedisNil()
 				clientMock.ExpectLIndex(key, 0).RedisNil()
@@ -508,6 +513,7 @@ func TestNetworkTopology_DeleteHost(t *testing.T) {
 		{
 			name: "delete host",
 			mock: func(clientMock redismock.ClientMock) {
+				clientMock.MatchExpectationsInOrder(true)
 				key := fmt.Sprintf("network-topology:%s:*", mockSeedHost.ID)
 				clientMock.ExpectDel(key).SetVal(1)
 
@@ -530,6 +536,7 @@ func TestNetworkTopology_DeleteHost(t *testing.T) {
 		{
 			name: "delete network topology error",
 			mock: func(clientMock redismock.ClientMock) {
+				clientMock.MatchExpectationsInOrder(true)
 				key := fmt.Sprintf("network-topology:%s:*", mockSeedHost.ID)
 				clientMock.ExpectDel(key).SetErr(errors.New("delete network topology error"))
 			},
@@ -543,6 +550,7 @@ func TestNetworkTopology_DeleteHost(t *testing.T) {
 		{
 			name: "delete probes which sent by host error",
 			mock: func(clientMock redismock.ClientMock) {
+				clientMock.MatchExpectationsInOrder(true)
 				key := fmt.Sprintf("network-topology:%s:*", mockSeedHost.ID)
 				clientMock.ExpectDel(key).SetVal(1)
 
@@ -559,6 +567,7 @@ func TestNetworkTopology_DeleteHost(t *testing.T) {
 		{
 			name: "delete probes which sent to host error",
 			mock: func(clientMock redismock.ClientMock) {
+				clientMock.MatchExpectationsInOrder(true)
 				key := fmt.Sprintf("network-topology:%s:*", mockSeedHost.ID)
 				clientMock.ExpectDel(key).SetVal(1)
 
@@ -578,6 +587,7 @@ func TestNetworkTopology_DeleteHost(t *testing.T) {
 		{
 			name: "delete visit times error",
 			mock: func(clientMock redismock.ClientMock) {
+				clientMock.MatchExpectationsInOrder(true)
 				key := fmt.Sprintf("network-topology:%s:*", mockSeedHost.ID)
 				clientMock.ExpectDel(key).SetVal(1)
 
@@ -623,7 +633,7 @@ func TestNetworkTopology_StoreProbe(t *testing.T) {
 		{
 			name: "store probe when probe list has not element",
 			mock: func(clientMock redismock.ClientMock) {
-				clientMock.MatchExpectationsInOrder(false)
+				clientMock.MatchExpectationsInOrder(true)
 				key := fmt.Sprintf("probes:%s:%s", mockSeedHost.ID, mockHost.ID)
 				clientMock.ExpectLLen(key).SetVal(0)
 
@@ -633,11 +643,13 @@ func TestNetworkTopology_StoreProbe(t *testing.T) {
 				}
 				clientMock.ExpectRPush(key, data).SetVal(1)
 
+				clientMock.MatchExpectationsInOrder(false)
 				key = fmt.Sprintf("network-topology:%s:%s", mockSeedHost.ID, mockHost.ID)
 				clientMock.ExpectHSet(key, "averageRTT", mockProbe.RTT).SetVal(0)
 				clientMock.ExpectHSet(key, "createdAt", mockProbesCreatedAt.Format(TimeFormat)).SetVal(0)
 				clientMock.ExpectHSet(key, "updatedAt", mockProbe.CreatedAt.Format(TimeFormat)).SetVal(0)
 
+				clientMock.MatchExpectationsInOrder(true)
 				key = fmt.Sprintf("visitTimes:%s", mockHost.ID)
 				clientMock.ExpectIncr(key).SetVal(1)
 			},
@@ -651,7 +663,7 @@ func TestNetworkTopology_StoreProbe(t *testing.T) {
 		{
 			name: "store probe when probe list has five elements",
 			mock: func(clientMock redismock.ClientMock) {
-				clientMock.MatchExpectationsInOrder(false)
+				clientMock.MatchExpectationsInOrder(true)
 				key := fmt.Sprintf("probes:%s:%s", mockSeedHost.ID, mockHost.ID)
 				clientMock.ExpectLLen(key).SetVal(5)
 
@@ -670,9 +682,12 @@ func TestNetworkTopology_StoreProbe(t *testing.T) {
 
 				key = fmt.Sprintf("network-topology:%s:%s", mockSeedHost.ID, mockHost.ID)
 				clientMock.ExpectHGet(key, "averageRTT").SetVal("3100000")
+
+				clientMock.MatchExpectationsInOrder(false)
 				clientMock.ExpectHSet(key, "averageRTT", float64(3010000)).SetVal(0)
 				clientMock.ExpectHSet(key, "updatedAt", mockProbe.CreatedAt.Format(TimeFormat)).SetVal(0)
 
+				clientMock.MatchExpectationsInOrder(true)
 				key = fmt.Sprintf("visitTimes:%s", mockHost.ID)
 				clientMock.ExpectIncr(key).SetVal(1)
 			},
