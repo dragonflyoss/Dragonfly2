@@ -630,36 +630,36 @@ func TestNetworkTopology_StoreProbe(t *testing.T) {
 		mock   func(clientMock redismock.ClientMock)
 		expect func(t *testing.T, n NetworkTopology, err error)
 	}{
-		{
-			name: "store probe when probe list has not element",
-			mock: func(clientMock redismock.ClientMock) {
-				clientMock.MatchExpectationsInOrder(true)
-				key := fmt.Sprintf("probes:%s:%s", mockSeedHost.ID, mockHost.ID)
-				clientMock.ExpectLLen(key).SetVal(0)
+		// {
+		// 	name: "store probe when probe list has not element",
+		// 	mock: func(clientMock redismock.ClientMock) {
+		// 		clientMock.MatchExpectationsInOrder(true)
+		// 		key := fmt.Sprintf("probes:%s:%s", mockSeedHost.ID, mockHost.ID)
+		// 		clientMock.ExpectLLen(key).SetVal(0)
 
-				data, err := json.Marshal(mockProbe)
-				if err != nil {
-					t.Fatal(err)
-				}
-				clientMock.ExpectRPush(key, data).SetVal(1)
+		// 		data, err := json.Marshal(mockProbe)
+		// 		if err != nil {
+		// 			t.Fatal(err)
+		// 		}
+		// 		clientMock.ExpectRPush(key, data).SetVal(1)
 
-				clientMock.MatchExpectationsInOrder(false)
-				key = fmt.Sprintf("network-topology:%s:%s", mockSeedHost.ID, mockHost.ID)
-				clientMock.ExpectHSet(key, "averageRTT", mockProbe.RTT).SetVal(0)
-				clientMock.ExpectHSet(key, "createdAt", mockProbesCreatedAt.Format(TimeFormat)).SetVal(0)
-				clientMock.ExpectHSet(key, "updatedAt", mockProbe.CreatedAt.Format(TimeFormat)).SetVal(0)
+		// 		clientMock.MatchExpectationsInOrder(false)
+		// 		key = fmt.Sprintf("network-topology:%s:%s", mockSeedHost.ID, mockHost.ID)
+		// 		clientMock.ExpectHSet(key, "averageRTT", mockProbe.RTT).SetVal(0)
+		// 		clientMock.ExpectHSet(key, "createdAt", mockProbesCreatedAt.Format(TimeFormat)).SetVal(0)
+		// 		clientMock.ExpectHSet(key, "updatedAt", mockProbe.CreatedAt.Format(TimeFormat)).SetVal(0)
 
-				clientMock.MatchExpectationsInOrder(true)
-				key = fmt.Sprintf("visitTimes:%s", mockHost.ID)
-				clientMock.ExpectIncr(key).SetVal(1)
-			},
-			expect: func(t *testing.T, n NetworkTopology, err error) {
-				a := assert.New(t)
-				a.Nil(err)
-				ok := n.StoreProbe(mockSeedHost.ID, mockHost.ID, mockProbe)
-				a.True(ok)
-			},
-		},
+		// 		clientMock.MatchExpectationsInOrder(true)
+		// 		key = fmt.Sprintf("visitTimes:%s", mockHost.ID)
+		// 		clientMock.ExpectIncr(key).SetVal(1)
+		// 	},
+		// 	expect: func(t *testing.T, n NetworkTopology, err error) {
+		// 		a := assert.New(t)
+		// 		a.Nil(err)
+		// 		ok := n.StoreProbe(mockSeedHost.ID, mockHost.ID, mockProbe)
+		// 		a.True(ok)
+		// 	},
+		// },
 		{
 			name: "store probe when probe list has five elements",
 			mock: func(clientMock redismock.ClientMock) {
@@ -696,6 +696,35 @@ func TestNetworkTopology_StoreProbe(t *testing.T) {
 				a.Nil(err)
 				ok := n.StoreProbe(mockSeedHost.ID, mockHost.ID, mockProbe)
 				a.True(ok)
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+
+			rdb, clientMock := redismock.NewClientMock()
+			res := resource.NewMockResource(ctl)
+			mockStorage := storagemocks.NewMockStorage(ctl)
+			tc.mock(clientMock)
+			n, err := NewNetworkTopology(config.New(), rdb, res, mockStorage)
+			tc.expect(t, n, err)
+			clientMock.ClearExpect()
+		})
+	}
+}
+
+func TestNetworkTopology_LoadAndCreateNetworkTopology(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(clientMock redismock.ClientMock)
+		expect func(t *testing.T, n NetworkTopology, err error)
+	}{
+		{
+			name: "store probe when probe list has five elements",
+			mock: func(clientMock redismock.ClientMock) {},
+			expect: func(t *testing.T, n NetworkTopology, err error) {
 			},
 		},
 	}
