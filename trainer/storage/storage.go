@@ -144,8 +144,8 @@ func (s *storage) CreateDownload(downloads []byte, modelKey string) error {
 	defer s.downloadMu.Unlock()
 
 	// Init download buffer and download count based on modelKey.
-	_, err := s.downloadBuffer[modelKey]
-	if !err {
+	_, ok := s.downloadBuffer[modelKey]
+	if !ok {
 		s.downloadBuffer[modelKey] = make([]byte, 0, s.bufferSize)
 		s.downloadCount[modelKey] = int64(0)
 	}
@@ -153,6 +153,7 @@ func (s *storage) CreateDownload(downloads []byte, modelKey string) error {
 	// Write without buffer.
 	if s.bufferSize == 0 {
 		if err := s.createDownload(downloads, modelKey); err != nil {
+
 			return err
 		}
 		// Update download count.
