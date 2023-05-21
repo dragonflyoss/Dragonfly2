@@ -429,10 +429,8 @@ func (s *storage) openDownloadFile(modelKey string) (*os.File, error) {
 			if e != nil {
 				return nil, e
 			}
-
 			return file, nil
 		}
-
 		return nil, err
 	}
 
@@ -473,10 +471,8 @@ func (s *storage) openNetworkTopologyFile(modelKey string) (*os.File, error) {
 			if e != nil {
 				return nil, e
 			}
-
 			return file, nil
 		}
-
 		return nil, err
 	}
 
