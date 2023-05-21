@@ -95,6 +95,12 @@ type Storage interface {
 
 	// ClearNetworkTopology removes all network topology files.
 	ClearNetworkTopology() error
+
+	// DownloadCount returns the count of downloads.
+	DownloadCount(string) int64
+
+	//NetworkTopologyCount returns the count of network topologies
+	NetworkTopologyCount(string) int64
 }
 
 type storage struct {
@@ -386,6 +392,16 @@ func (s *storage) ClearNetworkTopology() error {
 	s.networkTopologyBuffer = make(map[string][]byte)
 	s.networkTopologyCount = make(map[string]int64)
 	return nil
+}
+
+// DownloadCount returns the count of downloads.
+func (s *storage) DownloadCount(modelKey string) int64 {
+	return s.downloadCount[modelKey]
+}
+
+// NetworkTopologyCount returns the count of network topologies
+func (s *storage) NetworkTopologyCount(modelKey string) int64 {
+	return s.networkTopologyCount[modelKey]
 }
 
 // createDownload inserts the byte downloads into csv file based on given model key.
