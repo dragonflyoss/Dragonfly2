@@ -48,7 +48,7 @@ var servers = map[string]server{
 		name:       managerServerName,
 		namespace:  dragonflyNamespace,
 		logDirName: managerServerName,
-		replicas:   3,
+		replicas:   1,
 	},
 	schedulerServerName: {
 		name:       schedulerServerName,
