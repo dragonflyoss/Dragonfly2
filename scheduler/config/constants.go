@@ -185,4 +185,7 @@ const (
 
 	// DefaultTrainerInterval is the default interval of training.
 	DefaultTrainerInterval = 7 * 24 * time.Hour
+
+	// DefaultTrainerUploadTimeout is the default timeout of uploading dataset to trainer.
+	DefaultTrainerUploadTimeout = 1 * time.Hour
 )
