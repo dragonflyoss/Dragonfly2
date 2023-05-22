@@ -139,6 +139,23 @@ func TestNew(t *testing.T) {
 				assert.Equal(d.DaemonSockPath(), "foo")
 			},
 		},
+		{
+			name:    "new dfpath by dataDir",
+			options: []Option{WithDataDir("foo")},
+			expect: func(t *testing.T, options []Option) {
+				assert := assert.New(t)
+				cache.Once = sync.Once{}
+				cache.err = &multierror.Error{}
+				d, err := New(options...)
+				assert.NoError(err)
+				assert.Equal(d.WorkHome(), DefaultWorkHome)
+				assert.Equal(d.CacheDir(), DefaultCacheDir)
+				assert.Equal(d.LogDir(), DefaultLogDir)
+				assert.Equal(d.DataDir(), "foo")
+				assert.Equal(d.PluginDir(), DefaultPluginDir)
+				assert.Equal(d.DaemonSockPath(), DefaultDownloadUnixSocketPath)
+			},
+		},
 	}
 
 	for _, tc := range tests {
