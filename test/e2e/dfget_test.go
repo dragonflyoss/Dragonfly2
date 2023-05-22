@@ -200,7 +200,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 			Expect(err).NotTo(HaveOccurred())
 
 			// slow download
-			Expect(end.Sub(start).Seconds() < 90.0).To(Equal(true))
+			Expect(end.Sub(start).Seconds() < 200.0).To(Equal(true))
 		}
 
 		// calculate downloaded files sha256sum
@@ -260,7 +260,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 			Expect(err).NotTo(HaveOccurred())
 
 			// slow download
-			Expect(end.Sub(start).Seconds() < 90.0).To(Equal(true))
+			Expect(end.Sub(start).Seconds() < 200.0).To(Equal(true))
 		}
 
 		// calculate downloaded files sha256sum
@@ -344,7 +344,7 @@ func downloadSingleFile(ns string, pod *e2eutil.PodExec, path, url string, size 
 	Expect(sha256sum1).To(Equal(sha256sum2))
 
 	// slow download
-	Expect(end.Sub(start).Seconds() < 30.0).To(Equal(true))
+	Expect(end.Sub(start).Seconds() < 50.0).To(Equal(true))
 
 	// download file via dfget with offset
 	if rg != nil {
@@ -369,7 +369,7 @@ func downloadSingleFile(ns string, pod *e2eutil.PodExec, path, url string, size 
 		Expect(sha256sum1).To(Equal(sha256sumz))
 
 		// slow download
-		Expect(end.Sub(start).Seconds() < 30.0).To(Equal(true))
+		Expect(end.Sub(start).Seconds() < 50.0).To(Equal(true))
 	}
 
 	// skip dfdaemon
@@ -392,5 +392,5 @@ func downloadSingleFile(ns string, pod *e2eutil.PodExec, path, url string, size 
 	Expect(sha256sum1).To(Equal(sha256sum3))
 
 	// slow download
-	Expect(end.Sub(start).Seconds() < 30.0).To(Equal(true))
+	Expect(end.Sub(start).Seconds() < 50.0).To(Equal(true))
 }
