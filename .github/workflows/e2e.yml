@@ -73,7 +73,7 @@ jobs:
 
       - name: Get dependencies
         run: |
-          go install github.com/onsi/ginkgo/v2/ginkgo@v2.8.3
+          go install github.com/onsi/ginkgo/v2/ginkgo@v2.9.4
           mkdir -p /tmp/artifact
 
       - name: Setup buildx
