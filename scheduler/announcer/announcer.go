@@ -160,6 +160,7 @@ func (a *announcer) announceToTrainer() {
 						}
 						wg.Done()
 					}()
+
 					go func() {
 						if err := a.transferNetworkTopologyToTrainer(); err != nil {
 							logger.Errorf("transfer networkTopology to trainer failed: %s", err.Error())
