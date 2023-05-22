@@ -316,6 +316,10 @@ func TestStorage_CreateDownload(t *testing.T) {
 				err := s.CreateDownload(Download{})
 				assert.NoError(err)
 				assert.Equal(s.(*storage).downloadCount, int64(1))
+
+				downloads, err := s.ListDownload()
+				assert.NoError(err)
+				assert.Equal(len(downloads), 1)
 			},
 		},
 		{
@@ -396,6 +400,10 @@ func TestStorage_CreateNetworkTopology(t *testing.T) {
 				err := s.CreateNetworkTopology(NetworkTopology{})
 				assert.NoError(err)
 				assert.Equal(s.(*storage).networkTopologyCount, int64(1))
+
+				networkTopologies, err := s.ListNetworkTopology()
+				assert.NoError(err)
+				assert.Equal(len(networkTopologies), 1)
 			},
 		},
 		{

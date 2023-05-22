@@ -146,7 +146,7 @@ func (s *storage) CreateDownload(download Download) error {
 
 	// Write without buffer.
 	if s.bufferSize == 0 {
-		if err := s.createDownload(s.downloadBuffer...); err != nil {
+		if err := s.createDownload(download); err != nil {
 			return err
 		}
 
@@ -180,7 +180,7 @@ func (s *storage) CreateNetworkTopology(networkTopology NetworkTopology) error {
 
 	// Write without buffer.
 	if s.bufferSize == 0 {
-		if err := s.createNetworkTopology(s.networkTopologyBuffer...); err != nil {
+		if err := s.createNetworkTopology(networkTopology); err != nil {
 			return err
 		}
 
