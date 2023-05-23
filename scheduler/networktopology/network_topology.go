@@ -102,12 +102,12 @@ func NewNetworkTopology(cfg *config.Config, rdb redis.UniversalClient, resource 
 // Peek returns the oldest probe without removing it.
 func (n *networkTopology) Peek(src, dest string) (*Probe, bool) {
 	key := fmt.Sprintf("probes:%s:%s", src, dest)
-	probe := &Probe{}
 	jsonStr, err := n.rdb.LIndex(context.Background(), key, 0).Result()
 	if err != nil {
 		return nil, false
 	}
 
+	probe := &Probe{}
 	err = json.Unmarshal([]byte(jsonStr), probe)
 	if err != nil {
 		return nil, false
@@ -135,12 +135,12 @@ func (n *networkTopology) Enqueue(src, dest string, probe *Probe) error {
 // Dequeue removes and returns the oldest probe.
 func (n *networkTopology) Dequeue(src, dest string) (*Probe, bool) {
 	key := fmt.Sprintf("probes:%s:%s", src, dest)
-	probe := &Probe{}
 	jsonStr, err := n.rdb.LPop(context.Background(), key).Result()
 	if err != nil {
 		return nil, false
 	}
 
+	probe := &Probe{}
 	err = json.Unmarshal([]byte(jsonStr), probe)
 	if err != nil {
 		return nil, false
@@ -249,21 +249,21 @@ func (n *networkTopology) DeleteHost(hostID string) error {
 		return err
 	}
 
-	// Delete probes which sent by key.
+	// Delete probes sent by the host.
 	key = fmt.Sprintf("probes:%s:*", hostID)
 	err = n.rdb.Del(context.Background(), key).Err()
 	if err != nil {
 		return err
 	}
 
-	// Delete probes which send to key, and return delete number for updating visit times.
+	// Delete probes sent to the host, and return the number of probes deleted for updating visit times.
 	key = fmt.Sprintf("probes:*:%s", hostID)
 	count, err := n.rdb.Del(context.Background(), key).Result()
 	if err != nil {
 		return err
 	}
 
-	// Delete visit times.
+	// Delete visit times of host.
 	key = fmt.Sprintf("visit-times:%s", hostID)
 	err = n.rdb.DecrBy(context.Background(), key, count).Err()
 	if err != nil {
