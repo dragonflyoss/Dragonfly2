@@ -208,7 +208,7 @@ func (n *networkTopology) AverageRTT(src, dest string) time.Duration {
 	return averageRTT
 }
 
-// VisitTimes is the visit times of host.
+// VisitTimes is the number of times the host has been probed.
 func (n *networkTopology) VisitTimes(hostID string) int64 {
 	key := fmt.Sprintf("visit-times:%s", hostID)
 	value, err := n.rdb.Get(context.Background(), key).Result()
