@@ -24,15 +24,16 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
-	"d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
+	clientmocks "d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
 	"d7y.io/dragonfly/v2/scheduler/config"
+	storagemocks "d7y.io/dragonfly/v2/scheduler/storage/mocks"
 )
 
 func TestAnnouncer_New(t *testing.T) {
 	tests := []struct {
 		name   string
 		config *config.Config
-		mock   func(m *mocks.MockV2MockRecorder)
+		mock   func(m *clientmocks.MockV2MockRecorder)
 		expect func(t *testing.T, announcer Announcer, err error)
 	}{
 		{
@@ -52,7 +53,7 @@ func TestAnnouncer_New(t *testing.T) {
 					SchedulerClusterID: 1,
 				},
 			},
-			mock: func(m *mocks.MockV2MockRecorder) {
+			mock: func(m *clientmocks.MockV2MockRecorder) {
 				m.UpdateScheduler(gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
 			},
 			expect: func(t *testing.T, a Announcer, err error) {
@@ -80,7 +81,7 @@ func TestAnnouncer_New(t *testing.T) {
 					SchedulerClusterID: 1,
 				},
 			},
-			mock: func(m *mocks.MockV2MockRecorder) {
+			mock: func(m *clientmocks.MockV2MockRecorder) {
 				m.UpdateScheduler(gomock.Any(), gomock.Any()).Return(nil, errors.New("foo")).Times(1)
 			},
 			expect: func(t *testing.T, a Announcer, err error) {
@@ -94,10 +95,11 @@ func TestAnnouncer_New(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
-			mockManagerClient := mocks.NewMockV2(ctl)
+			mockManagerClient := clientmocks.NewMockV2(ctl)
+			mockStorage := storagemocks.NewMockStorage(ctl)
 			tc.mock(mockManagerClient.EXPECT())
 
-			a, err := New(tc.config, mockManagerClient)
+			a, err := New(tc.config, mockManagerClient, mockStorage)
 			tc.expect(t, a, err)
 		})
 	}
