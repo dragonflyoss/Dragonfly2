@@ -38,7 +38,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/huaweicloud/huaweicloud-sdk-go-obs v3.22.11+incompatible
+	github.com/huaweicloud/huaweicloud-sdk-go-obs v3.23.4+incompatible
 	github.com/jarcoal/httpmock v1.3.0
 	github.com/johanbrandhorst/certify v1.9.0
 	github.com/juju/ratelimit v1.0.2
