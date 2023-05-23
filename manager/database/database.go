@@ -113,8 +113,8 @@ func seed(cfg *config.Config, db *gorm.DB) error {
 			},
 			Name: DefaultSchedulerClusterName,
 			Config: map[string]any{
-				"filter_parent_limit":       schedulerconfig.DefaultSchedulerFilterParentLimit,
-				"filter_parent_range_limit": schedulerconfig.DefaultSchedulerFilterParentRangeLimit,
+				"candidate_parent_limit": schedulerconfig.DefaultSchedulerCandidateParentLimit,
+				"filter_parent_limit":    schedulerconfig.DefaultSchedulerFilterParentLimit,
 			},
 			ClientConfig: map[string]any{
 				"load_limit":             schedulerconfig.DefaultPeerConcurrentUploadLimit,

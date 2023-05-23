@@ -135,7 +135,7 @@ type SchedulerConfig struct {
 }
 
 type GCConfig struct {
-	// PieceDownloadTimeout is timout of downloading piece.
+	// PieceDownloadTimeout is timeout of downloading piece.
 	PieceDownloadTimeout time.Duration `yaml:"pieceDownloadTimeout" mapstructure:"pieceDownloadTimeout"`
 
 	// PeerGCInterval is interval of peer gc.
@@ -328,6 +328,9 @@ type TrainerConfig struct {
 
 	// Interval is the interval of training.
 	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
+
+	// UploadTimeout is the timeout of uploading dataset to trainer.
+	UploadTimeout time.Duration `yaml:"uploadTimeout" mapstructure:"uploadTimeout"`
 }
 
 // New default configuration.
@@ -412,9 +415,10 @@ func New() *Config {
 			},
 		},
 		Trainer: TrainerConfig{
-			Enable:   false,
-			Addr:     DefaultTrainerAddr,
-			Interval: DefaultTrainerInterval,
+			Enable:        false,
+			Addr:          DefaultTrainerAddr,
+			Interval:      DefaultTrainerInterval,
+			UploadTimeout: DefaultTrainerUploadTimeout,
 		},
 	}
 }
@@ -594,6 +598,10 @@ func (cfg *Config) Validate() error {
 
 		if cfg.Trainer.Interval <= 0 {
 			return errors.New("trainer requires parameter interval")
+		}
+
+		if cfg.Trainer.UploadTimeout <= 0 {
+			return errors.New("trainer requires parameter uploadTimeout")
 		}
 	}
 
