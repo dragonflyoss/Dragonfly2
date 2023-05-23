@@ -53,13 +53,13 @@ type DaemonOption struct {
 	Metrics    string        `mapstructure:"metrics" yaml:"metrics"`
 
 	WorkHome     string `mapstructure:"workHome" yaml:"workHome"`
-	WorkHomeMode int    `mapstructure:"workHomeMode" yaml:"workHomeMode"`
+	WorkHomeMode uint32 `mapstructure:"workHomeMode" yaml:"workHomeMode"`
 	CacheDir     string `mapstructure:"cacheDir" yaml:"cacheDir"`
-	CacheDirMode int    `mapstructure:"cacheDirMode" yaml:"cacheDirMode"`
+	CacheDirMode uint32 `mapstructure:"cacheDirMode" yaml:"cacheDirMode"`
 	LogDir       string `mapstructure:"logDir" yaml:"logDir"`
 	PluginDir    string `mapstructure:"pluginDir" yaml:"pluginDir"`
 	DataDir      string `mapstructure:"dataDir" yaml:"dataDir"`
-	DataDirMode  int    `mapstructure:"dataDirMode" yaml:"dataDirMode"`
+	DataDirMode  uint32 `mapstructure:"dataDirMode" yaml:"dataDirMode"`
 	KeepStorage  bool   `mapstructure:"keepStorage" yaml:"keepStorage"`
 
 	Security      GlobalSecurityOption `mapstructure:"security" yaml:"security"`
@@ -214,18 +214,6 @@ func (p *DaemonOption) Validate() error {
 		if p.Security.CertSpec.ValidityPeriod <= 0 {
 			return errors.New("certSpec requires parameter validityPeriod")
 		}
-	}
-
-	if os.FileMode(p.WorkHomeMode) == 0 {
-		return errors.New("invalid value for WorkHomeMode")
-	}
-
-	if os.FileMode(p.CacheDirMode) == 0 {
-		return errors.New("invalid value for CacheDirMode")
-	}
-
-	if os.FileMode(p.DataDirMode) == 0 {
-		return errors.New("invalid value for DataDirMode")
 	}
 
 	return nil
