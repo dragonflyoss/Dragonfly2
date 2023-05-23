@@ -44,6 +44,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	securityclient "d7y.io/dragonfly/v2/pkg/rpc/security/client"
+	trainerclient "d7y.io/dragonfly/v2/pkg/rpc/trainer/client"
 	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/announcer"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -77,6 +78,9 @@ type Server struct {
 
 	// Security client.
 	securityClient securityclient.V1
+
+	// Trainer client.
+	trainerClient trainerclient.V1
 
 	// Resource interface.
 	resource resource.Resource
@@ -115,7 +119,19 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		return nil, err
 	}
 
-	// Initialize manager client and dial options of manager grpc client.
+	// Initialize Storage.
+	storage, err := storage.New(
+		d.DataDir(),
+		cfg.Storage.MaxSize,
+		cfg.Storage.MaxBackups,
+		cfg.Storage.BufferSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	s.storage = storage
+
+	// Initialize dial options of manager grpc client.
 	managerDialOptions := []grpc.DialOption{}
 	if cfg.Security.AutoIssueCert {
 		clientTransportCredentials, err := rpc.NewClientCredentials(cfg.Security.TLSPolicy, nil, []byte(cfg.Security.CACert))
@@ -135,8 +151,36 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 	s.managerClient = managerClient
 
+	// Initialize dial options of trainer grpc client.
+	if cfg.Trainer.Enable {
+		trainerDialOptions := []grpc.DialOption{}
+		if cfg.Security.AutoIssueCert {
+			clientTransportCredentials, err := rpc.NewClientCredentials(cfg.Security.TLSPolicy, nil, []byte(cfg.Security.CACert))
+			if err != nil {
+				return nil, err
+			}
+
+			trainerDialOptions = append(trainerDialOptions, grpc.WithTransportCredentials(clientTransportCredentials))
+		} else {
+			trainerDialOptions = append(trainerDialOptions, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		}
+
+		// Initialize trainer client.
+		trainerClient, err := trainerclient.GetV1ByAddr(ctx, cfg.Trainer.Addr, trainerDialOptions...)
+		if err != nil {
+			return nil, err
+		}
+		s.trainerClient = trainerClient
+	}
+
+	// Initialize dial options of announcer.
+	announcerOptions := []announcer.Option{}
+	if s.trainerClient != nil {
+		announcerOptions = append(announcerOptions, announcer.WithTrainerClient(s.trainerClient))
+	}
+
 	// Initialize announcer.
-	announcer, err := announcer.New(cfg, s.managerClient)
+	announcer, err := announcer.New(cfg, s.managerClient, storage, announcerOptions...)
 	if err != nil {
 		return nil, err
 	}
@@ -203,19 +247,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	// Initialize scheduling.
 	scheduling := scheduling.New(&cfg.Scheduler, dynconfig, d.PluginDir())
 
-	// Initialize Storage.
-	storage, err := storage.New(
-		d.DataDir(),
-		cfg.Storage.MaxSize,
-		cfg.Storage.MaxBackups,
-		cfg.Storage.BufferSize,
-	)
-	if err != nil {
-		return nil, err
-	}
-	s.storage = storage
-
-	// Initialize grpc service and server options of scheduler grpc server.
+	// Initialize server options of scheduler grpc server.
 	schedulerServerOptions := []grpc.ServerOption{}
 	if certifyClient != nil {
 		serverTransportCredentials, err := rpc.NewServerCredentialsByCertify(cfg.Security.TLSPolicy, cfg.Security.TLSVerify, []byte(cfg.Security.CACert), certifyClient)
@@ -372,6 +404,15 @@ func (s *Server) Stop() {
 			logger.Errorf("manager client failed to stop: %s", err.Error())
 		} else {
 			logger.Info("manager client closed")
+		}
+	}
+
+	// Stop trainer client.
+	if s.trainerClient != nil {
+		if err := s.trainerClient.Close(); err != nil {
+			logger.Errorf("trainer client failed to stop: %s", err.Error())
+		} else {
+			logger.Info("trainer client closed")
 		}
 	}
 
