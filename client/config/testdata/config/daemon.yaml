@@ -7,10 +7,13 @@ metrics: ":8000"
 aliveTime: 0s
 gcInterval: 1m0s
 workHome: /tmp/dragonfly/dfdaemon/
+workHomeMode: 0755
 cacheDir: /var/cache/dragonfly/
+cacheDirMode: 0700
 logDir: /var/log/dragonfly/
 pluginDir: /tmp/dragonfly/dfdaemon/plugins/
 dataDir: /var/lib/dragonfly/
+dataDirMode: 0700
 keepStorage: false
 scheduler:
   manager:
