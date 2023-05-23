@@ -63,13 +63,13 @@ type NetworkTopology interface {
 	AverageRTT(src, dest string) time.Duration
 
 	// VisitTimes is the visit times of host.
-	VisitTimes(key string) int64
+	VisitTimes(hostID string) int64
 
-	// LoadDestHosts returns parents for source.
-	LoadDestHosts(src string) ([]string, bool)
+	// LoadDestHosts returns destination hosts for source host.
+	LoadDestHosts(hostID string) ([]string, bool)
 
 	// DeleteHost deletes host.
-	DeleteHost(src string) error
+	DeleteHost(hostID string) error
 
 	// StoreProbe stores probe between two hosts.
 	StoreProbe(src, dest string, probe *Probe) bool
@@ -82,10 +82,10 @@ type networkTopology struct {
 	// Scheduler config.
 	config *config.Config
 
-	// Resource interface
+	// Resource interface.
 	resource resource.Resource
 
-	// Storage interface
+	// Storage interface.
 	storage storage.Storage
 }
 
@@ -101,9 +101,9 @@ func NewNetworkTopology(cfg *config.Config, rdb redis.UniversalClient, resource 
 
 // Peek returns the oldest probe without removing it.
 func (n *networkTopology) Peek(src, dest string) (*Probe, bool) {
-	str := fmt.Sprintf("probes:%s:%s", src, dest)
+	key := fmt.Sprintf("probes:%s:%s", src, dest)
 	probe := &Probe{}
-	jsonStr, err := n.rdb.LIndex(context.Background(), str, 0).Result()
+	jsonStr, err := n.rdb.LIndex(context.Background(), key, 0).Result()
 	if err != nil {
 		return nil, false
 	}
@@ -118,13 +118,13 @@ func (n *networkTopology) Peek(src, dest string) (*Probe, bool) {
 
 // Enqueue enqueues probe into the list.
 func (n *networkTopology) Enqueue(src, dest string, probe *Probe) error {
-	str := fmt.Sprintf("probes:%s:%s", src, dest)
+	key := fmt.Sprintf("probes:%s:%s", src, dest)
 	data, err := json.Marshal(probe)
 	if err != nil {
 		return err
 	}
 
-	err = n.rdb.RPush(context.Background(), str, data).Err()
+	err = n.rdb.RPush(context.Background(), key, data).Err()
 	if err != nil {
 		return err
 	}
@@ -134,9 +134,9 @@ func (n *networkTopology) Enqueue(src, dest string, probe *Probe) error {
 
 // Dequeue removes and returns the oldest probe.
 func (n *networkTopology) Dequeue(src, dest string) (*Probe, bool) {
-	str := fmt.Sprintf("probes:%s:%s", src, dest)
+	key := fmt.Sprintf("probes:%s:%s", src, dest)
 	probe := &Probe{}
-	jsonStr, err := n.rdb.LPop(context.Background(), str).Result()
+	jsonStr, err := n.rdb.LPop(context.Background(), key).Result()
 	if err != nil {
 		return nil, false
 	}
@@ -151,8 +151,8 @@ func (n *networkTopology) Dequeue(src, dest string) (*Probe, bool) {
 
 // Length gets the length of probes.
 func (n *networkTopology) Length(src, dest string) int64 {
-	str := fmt.Sprintf("probes:%s:%s", src, dest)
-	length, err := n.rdb.LLen(context.Background(), str).Result()
+	key := fmt.Sprintf("probes:%s:%s", src, dest)
+	length, err := n.rdb.LLen(context.Background(), key).Result()
 	if err != nil {
 		return 0
 	}
@@ -162,8 +162,8 @@ func (n *networkTopology) Length(src, dest string) int64 {
 
 // CreatedAt is the creation time of probes.
 func (n *networkTopology) CreatedAt(src, dest string) time.Time {
-	str := fmt.Sprintf("network-topology:%s:%s", src, dest)
-	value, err := n.rdb.HGet(context.Background(), str, "createdAt").Result()
+	key := fmt.Sprintf("network-topology:%s:%s", src, dest)
+	value, err := n.rdb.HGet(context.Background(), key, "createdAt").Result()
 	if err != nil {
 		return time.Time{}
 	}
@@ -178,8 +178,8 @@ func (n *networkTopology) CreatedAt(src, dest string) time.Time {
 
 // UpdatedAt is the updated time to store probe.
 func (n *networkTopology) UpdatedAt(src, dest string) time.Time {
-	str := fmt.Sprintf("network-topology:%s:%s", src, dest)
-	value, err := n.rdb.HGet(context.Background(), str, "updatedAt").Result()
+	key := fmt.Sprintf("network-topology:%s:%s", src, dest)
+	value, err := n.rdb.HGet(context.Background(), key, "updatedAt").Result()
 	if err != nil {
 		return time.Time{}
 	}
@@ -194,8 +194,8 @@ func (n *networkTopology) UpdatedAt(src, dest string) time.Time {
 
 // AverageRTT is the average round-trip time of probes.
 func (n *networkTopology) AverageRTT(src, dest string) time.Duration {
-	str := fmt.Sprintf("network-topology:%s:%s", src, dest)
-	value, err := n.rdb.HGet(context.Background(), str, "averageRTT").Result()
+	key := fmt.Sprintf("network-topology:%s:%s", src, dest)
+	value, err := n.rdb.HGet(context.Background(), key, "averageRTT").Result()
 	if err != nil {
 		return time.Duration(0)
 	}
@@ -209,9 +209,9 @@ func (n *networkTopology) AverageRTT(src, dest string) time.Duration {
 }
 
 // VisitTimes is the visit times of host.
-func (n *networkTopology) VisitTimes(key string) int64 {
-	str := fmt.Sprintf("visitTimes:%s", key)
-	value, err := n.rdb.Get(context.Background(), str).Result()
+func (n *networkTopology) VisitTimes(hostID string) int64 {
+	key := fmt.Sprintf("visit-times:%s", hostID)
+	value, err := n.rdb.Get(context.Background(), key).Result()
 	if err != nil {
 		return 0
 	}
@@ -224,48 +224,48 @@ func (n *networkTopology) VisitTimes(key string) int64 {
 	return visitTimes
 }
 
-// LoadDestHosts returns destination hosts for source.
-func (n *networkTopology) LoadDestHosts(src string) ([]string, bool) {
-	str := fmt.Sprintf("network-topology:%s:*", src)
-	keys, err := n.rdb.Keys(context.Background(), str).Result()
+// LoadDestHosts returns destination hosts for source host.
+func (n *networkTopology) LoadDestHosts(hostID string) ([]string, bool) {
+	key := fmt.Sprintf("network-topology:%s:*", hostID)
+	keys, err := n.rdb.Keys(context.Background(), key).Result()
 	if err != nil {
 		return []string{}, false
 	}
 
 	destHosts := make([]string, 0)
-	for _, key := range keys {
-		destHosts = append(destHosts, key[len(str)-1:])
+	for _, k := range keys {
+		destHosts = append(destHosts, k[len(key)-1:])
 	}
 
 	return destHosts, true
 }
 
 // DeleteHost deletes host.
-func (n *networkTopology) DeleteHost(key string) error {
+func (n *networkTopology) DeleteHost(hostID string) error {
 	// Delete network topology.
-	str := fmt.Sprintf("network-topology:%s:*", key)
-	err := n.rdb.Del(context.Background(), str).Err()
+	key := fmt.Sprintf("network-topology:%s:*", hostID)
+	err := n.rdb.Del(context.Background(), key).Err()
 	if err != nil {
 		return err
 	}
 
 	// Delete probes which sent by key.
-	str = fmt.Sprintf("probes:%s:*", key)
-	err = n.rdb.Del(context.Background(), str).Err()
+	key = fmt.Sprintf("probes:%s:*", hostID)
+	err = n.rdb.Del(context.Background(), key).Err()
 	if err != nil {
 		return err
 	}
 
 	// Delete probes which send to key, and return delete number for updating visit times.
-	str = fmt.Sprintf("probes:*:%s", key)
-	count, err := n.rdb.Del(context.Background(), str).Result()
+	key = fmt.Sprintf("probes:*:%s", hostID)
+	count, err := n.rdb.Del(context.Background(), key).Result()
 	if err != nil {
 		return err
 	}
 
 	// Delete visit times.
-	str = fmt.Sprintf("visitTimes:%s", key)
-	err = n.rdb.DecrBy(context.Background(), str, count).Err()
+	key = fmt.Sprintf("visit-times:%s", hostID)
+	err = n.rdb.DecrBy(context.Background(), key, count).Err()
 	if err != nil {
 		return err
 	}
@@ -275,7 +275,7 @@ func (n *networkTopology) DeleteHost(key string) error {
 
 // StoreProbe stores probe between two hosts.
 func (n *networkTopology) StoreProbe(src, dest string, probe *Probe) bool {
-	// Update probe list
+	// Update probe list.
 	length := n.Length(src, dest)
 	if length == int64(n.config.NetworkTopology.Probe.QueueLength) {
 		_, ok := n.Dequeue(src, dest)
@@ -289,19 +289,19 @@ func (n *networkTopology) StoreProbe(src, dest string, probe *Probe) bool {
 		return false
 	}
 
-	// Update probes struct
-	str := fmt.Sprintf("network-topology:%s:%s", src, dest)
+	// Update averageRTT, createdAt and updatedAt.
+	key := fmt.Sprintf("network-topology:%s:%s", src, dest)
 	if length == 0 {
 		if _, err := n.rdb.Pipelined(context.Background(), func(rdb redis.Pipeliner) error {
-			rdb.HSet(context.Background(), str, "averageRTT", probe.RTT)
-			rdb.HSet(context.Background(), str, "createdAt", probe.CreatedAt.Format(TimeFormat))
-			rdb.HSet(context.Background(), str, "updatedAt", probe.CreatedAt.Format(TimeFormat))
+			rdb.HSet(context.Background(), key, "averageRTT", probe.RTT)
+			rdb.HSet(context.Background(), key, "createdAt", probe.CreatedAt.Format(TimeFormat))
+			rdb.HSet(context.Background(), key, "updatedAt", probe.CreatedAt.Format(TimeFormat))
 			return nil
 		}); err != nil {
 			return false
 		}
 	} else {
-		value, err := n.rdb.HGet(context.Background(), str, "averageRTT").Result()
+		value, err := n.rdb.HGet(context.Background(), key, "averageRTT").Result()
 		if err != nil {
 			return false
 		}
@@ -312,18 +312,18 @@ func (n *networkTopology) StoreProbe(src, dest string, probe *Probe) bool {
 		}
 
 		if _, err := n.rdb.Pipelined(context.Background(), func(rdb redis.Pipeliner) error {
-			rdb.HSet(context.Background(), str, "averageRTT", float64(averageRTT)*DefaultMovingAverageWeight+
+			rdb.HSet(context.Background(), key, "averageRTT", float64(averageRTT)*DefaultMovingAverageWeight+
 				float64(probe.RTT)*(1-DefaultMovingAverageWeight))
-			rdb.HSet(context.Background(), str, "updatedAt", probe.CreatedAt.Format(TimeFormat))
+			rdb.HSet(context.Background(), key, "updatedAt", probe.CreatedAt.Format(TimeFormat))
 			return nil
 		}); err != nil {
 			return false
 		}
 	}
 
-	// Update visit times
-	str = fmt.Sprintf("visitTimes:%s", dest)
-	_, err = n.rdb.Incr(context.Background(), str).Result()
+	// Update visit times.
+	key = fmt.Sprintf("visit-times:%s", dest)
+	_, err = n.rdb.Incr(context.Background(), key).Result()
 	if err != nil {
 		return false
 	}
