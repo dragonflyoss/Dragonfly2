@@ -33,11 +33,11 @@ const (
 	// DefaultPeerConcurrentPieceCount is default number for pieces to concurrent downloading.
 	DefaultPeerConcurrentPieceCount = 4
 
-	// DefaultSchedulerFilterParentLimit is default limit the number for filter traversals.
-	DefaultSchedulerFilterParentLimit = 4
+	// DefaultSchedulerCandidateParentLimit is default limit the number of candidate parent.
+	DefaultSchedulerCandidateParentLimit = 4
 
-	// DefaultSchedulerFilterParentRangeLimit is default limit the range for filter traversals.
-	DefaultSchedulerFilterParentRangeLimit = 40
+	// DefaultSchedulerFilterParentLimit is default limit the number for filter parent.
+	DefaultSchedulerFilterParentLimit = 40
 )
 
 const (
@@ -185,4 +185,7 @@ const (
 
 	// DefaultTrainerInterval is the default interval of training.
 	DefaultTrainerInterval = 7 * 24 * time.Hour
+
+	// DefaultTrainerUploadTimeout is the default timeout of uploading dataset to trainer.
+	DefaultTrainerUploadTimeout = 1 * time.Hour
 )
