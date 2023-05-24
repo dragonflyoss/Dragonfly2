@@ -31,9 +31,12 @@ import (
 // Dfpath is the interface used for init project path.
 type Dfpath interface {
 	WorkHome() string
+	WorkHomeMode() fs.FileMode
 	CacheDir() string
+	CacheDirMode() fs.FileMode
 	LogDir() string
 	DataDir() string
+	DataDirMode() fs.FileMode
 	PluginDir() string
 	DaemonSockPath() string
 	DaemonLockPath() string
