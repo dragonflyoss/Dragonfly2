@@ -20,20 +20,18 @@ package networktopology
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
 	"github.com/go-redis/redis/v8"
 
+	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
+// NetworkTopology is an interface for network topology.
 type NetworkTopology interface {
-	// ProbeCount is the number of times the host probes.
-	ProbeCount(hostID string) int64
-
 	// ProbedCount is the number of times the host has been probed.
 	ProbedCount(hostID string) int64
 
@@ -47,6 +45,7 @@ type NetworkTopology interface {
 	StoreProbe(src, dest string, probe *Probe) bool
 }
 
+// networkTopology is an implementation of network topology.
 type networkTopology struct {
 	// Redis universal client interface.
 	rdb redis.UniversalClient
@@ -71,26 +70,9 @@ func NewNetworkTopology(cfg *config.Config, rdb redis.UniversalClient, resource 
 	}, nil
 }
 
-// ProbeCount is the number of times the host probes.
-func (n *networkTopology) ProbeCount(hostID string) int64 {
-	key := fmt.Sprintf("probe-count:%s", hostID)
-	value, err := n.rdb.Get(context.Background(), key).Result()
-	if err != nil {
-		return 0
-	}
-
-	probeCount, err := strconv.ParseInt(value, 10, 64)
-	if err != nil {
-		return 0
-	}
-
-	return probeCount
-}
-
 // ProbedCount is the number of times the host has been probed.
 func (n *networkTopology) ProbedCount(hostID string) int64 {
-	key := fmt.Sprintf("probed-count:%s", hostID)
-	value, err := n.rdb.Get(context.Background(), key).Result()
+	value, err := n.rdb.Get(context.Background(), pkgredis.MakeProbedCountKeyInScheduler(hostID)).Result()
 	if err != nil {
 		return 0
 	}
@@ -105,7 +87,7 @@ func (n *networkTopology) ProbedCount(hostID string) int64 {
 
 // LoadDestHosts returns destination hosts for source host.
 func (n *networkTopology) LoadDestHosts(hostID string) ([]string, bool) {
-	key := fmt.Sprintf("network-topology:%s:*", hostID)
+	key := pkgredis.MakeNetworkTopologyKeyInScheduler(hostID, "*")
 	keys, err := n.rdb.Keys(context.Background(), key).Result()
 	if err != nil {
 		return []string{}, false
@@ -122,33 +104,23 @@ func (n *networkTopology) LoadDestHosts(hostID string) ([]string, bool) {
 // DeleteHost deletes host.
 func (n *networkTopology) DeleteHost(hostID string) error {
 	// Delete network topology.
-	key := fmt.Sprintf("network-topology:%s:*", hostID)
-	if err := n.rdb.Del(context.Background(), key).Err(); err != nil {
+	if err := n.rdb.Del(context.Background(), pkgredis.MakeNetworkTopologyKeyInScheduler(hostID, "*")).Err(); err != nil {
 		return err
 	}
 
 	// Delete probes sent by the host.
-	key = fmt.Sprintf("probes:%s:*", hostID)
-	if err := n.rdb.Del(context.Background(), key).Err(); err != nil {
+	if err := n.rdb.Del(context.Background(), pkgredis.MakeProbesKeyInScheduler(hostID, "*")).Err(); err != nil {
 		return err
 	}
 
 	// Delete probes sent to the host, and return the number of probes deleted for updating probed count.
-	key = fmt.Sprintf("probes:*:%s", hostID)
-	count, err := n.rdb.Del(context.Background(), key).Result()
+	count, err := n.rdb.Del(context.Background(), pkgredis.MakeProbesKeyInScheduler("*", hostID)).Result()
 	if err != nil {
 		return err
 	}
 
-	// Delete probe count of host.
-	key = fmt.Sprintf("probe-count:%s", hostID)
-	if err = n.rdb.Del(context.Background(), key).Err(); err != nil {
-		return err
-	}
-
 	// Decrease probed count of host.
-	key = fmt.Sprintf("probed-count:%s", hostID)
-	if err = n.rdb.DecrBy(context.Background(), key, count).Err(); err != nil {
+	if err = n.rdb.DecrBy(context.Background(), pkgredis.MakeProbedCountKeyInScheduler(hostID), count).Err(); err != nil {
 		return err
 	}
 
@@ -163,14 +135,12 @@ func (n *networkTopology) StoreProbe(src, dest string, probe *Probe) bool {
 	}
 
 	// Update probe count.
-	key := fmt.Sprintf("probe-count:%s", src)
-	if err := n.rdb.Incr(context.Background(), key).Err(); err != nil {
+	if err := n.rdb.Incr(context.Background(), pkgredis.MakeProbedCountKeyInScheduler(src)).Err(); err != nil {
 		return false
 	}
 
 	// Update probed count.
-	key = fmt.Sprintf("probed-count:%s", dest)
-	if err := n.rdb.Incr(context.Background(), key).Err(); err != nil {
+	if err := n.rdb.Incr(context.Background(), pkgredis.MakeProbedCountKeyInScheduler(dest)).Err(); err != nil {
 		return false
 	}
 

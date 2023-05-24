@@ -43,6 +43,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 	pkgcache "d7y.io/dragonfly/v2/pkg/cache"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
+	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
 	"d7y.io/dragonfly/v2/pkg/slices"
 )
 
@@ -93,7 +94,7 @@ func newManagerServerV1(
 // Get SeedPeer and SeedPeer cluster configuration.
 func (s *managerServerV1) GetSeedPeer(ctx context.Context, req *managerv1.GetSeedPeerRequest) (*managerv1.SeedPeer, error) {
 	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
-	cacheKey := cache.MakeSeedPeerCacheKey(uint(req.SeedPeerClusterId), req.Hostname, req.Ip)
+	cacheKey := pkgredis.MakeSeedPeerKeyInManager(uint(req.SeedPeerClusterId), req.Hostname, req.Ip)
 
 	// Cache hit.
 	var pbSeedPeer managerv1.SeedPeer
@@ -209,7 +210,7 @@ func (s *managerServerV1) UpdateSeedPeer(ctx context.Context, req *managerv1.Upd
 
 	if err := s.cache.Delete(
 		ctx,
-		cache.MakeSeedPeerCacheKey(seedPeer.SeedPeerClusterID, seedPeer.Hostname, seedPeer.IP),
+		pkgredis.MakeSeedPeerKeyInManager(seedPeer.SeedPeerClusterID, seedPeer.Hostname, seedPeer.IP),
 	); err != nil {
 		log.Warn(err)
 	}
@@ -265,7 +266,7 @@ func (s *managerServerV1) createSeedPeer(ctx context.Context, req *managerv1.Upd
 // Get Scheduler and Scheduler cluster configuration.
 func (s *managerServerV1) GetScheduler(ctx context.Context, req *managerv1.GetSchedulerRequest) (*managerv1.Scheduler, error) {
 	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
-	cacheKey := cache.MakeSchedulerCacheKey(uint(req.SchedulerClusterId), req.Hostname, req.Ip)
+	cacheKey := pkgredis.MakeSchedulerKeyInManager(uint(req.SchedulerClusterId), req.Hostname, req.Ip)
 
 	// Cache hit.
 	var pbScheduler managerv1.Scheduler
@@ -404,7 +405,7 @@ func (s *managerServerV1) UpdateScheduler(ctx context.Context, req *managerv1.Up
 
 	if err := s.cache.Delete(
 		ctx,
-		cache.MakeSchedulerCacheKey(scheduler.SchedulerClusterID, scheduler.Hostname, scheduler.IP),
+		pkgredis.MakeSchedulerKeyInManager(scheduler.SchedulerClusterID, scheduler.Hostname, scheduler.IP),
 	); err != nil {
 		log.Warn(err)
 	}
@@ -484,7 +485,7 @@ func (s *managerServerV1) ListSchedulers(ctx context.Context, req *managerv1.Lis
 
 	// Cache hit.
 	var pbListSchedulersResponse managerv1.ListSchedulersResponse
-	cacheKey := cache.MakeSchedulersCacheKeyForPeer(req.Hostname, req.Ip)
+	cacheKey := pkgredis.MakeSchedulersKeyForPeerInManager(req.Hostname, req.Ip)
 
 	if err := s.cache.Get(ctx, cacheKey, &pbListSchedulersResponse); err != nil {
 		log.Warnf("%s cache miss because of %s", cacheKey, err.Error())
@@ -626,7 +627,7 @@ func (s *managerServerV1) ListBuckets(ctx context.Context, req *managerv1.ListBu
 
 	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
 	var pbListBucketsResponse managerv1.ListBucketsResponse
-	cacheKey := cache.MakeBucketCacheKey(s.objectStorageConfig.Name)
+	cacheKey := pkgredis.MakeBucketKeyInManager(s.objectStorageConfig.Name)
 
 	// Cache hit.
 	if err := s.cache.Get(ctx, cacheKey, &pbListBucketsResponse); err != nil {
@@ -668,7 +669,7 @@ func (s *managerServerV1) ListApplications(ctx context.Context, req *managerv1.L
 
 	// Cache hit.
 	var pbListApplicationsResponse managerv1.ListApplicationsResponse
-	cacheKey := cache.MakeApplicationsCacheKey()
+	cacheKey := pkgredis.MakeApplicationsKeyInManager()
 	if err := s.cache.Get(ctx, cacheKey, &pbListApplicationsResponse); err != nil {
 		log.Warnf("%s cache miss because of %s", cacheKey, err.Error())
 	} else {
@@ -771,7 +772,7 @@ func (s *managerServerV1) KeepAlive(stream managerv1.Manager_KeepAliveServer) er
 
 		if err := s.cache.Delete(
 			context.TODO(),
-			cache.MakeSchedulerCacheKey(clusterID, hostname, ip),
+			pkgredis.MakeSchedulerKeyInManager(clusterID, hostname, ip),
 		); err != nil {
 			log.Warnf("refresh keepalive status failed: %s", err.Error())
 		}
@@ -791,7 +792,7 @@ func (s *managerServerV1) KeepAlive(stream managerv1.Manager_KeepAliveServer) er
 
 		if err := s.cache.Delete(
 			context.TODO(),
-			cache.MakeSeedPeerCacheKey(clusterID, hostname, ip),
+			pkgredis.MakeSeedPeerKeyInManager(clusterID, hostname, ip),
 		); err != nil {
 			log.Warnf("refresh keepalive status failed: %s", err.Error())
 		}
@@ -814,7 +815,7 @@ func (s *managerServerV1) KeepAlive(stream managerv1.Manager_KeepAliveServer) er
 
 				if err := s.cache.Delete(
 					context.TODO(),
-					cache.MakeSchedulerCacheKey(clusterID, hostname, ip),
+					pkgredis.MakeSchedulerKeyInManager(clusterID, hostname, ip),
 				); err != nil {
 					log.Warnf("refresh keepalive status failed: %s", err.Error())
 				}
@@ -834,7 +835,7 @@ func (s *managerServerV1) KeepAlive(stream managerv1.Manager_KeepAliveServer) er
 
 				if err := s.cache.Delete(
 					context.TODO(),
-					cache.MakeSeedPeerCacheKey(clusterID, hostname, ip),
+					pkgredis.MakeSeedPeerKeyInManager(clusterID, hostname, ip),
 				); err != nil {
 					log.Warnf("refresh keepalive status failed: %s", err.Error())
 				}

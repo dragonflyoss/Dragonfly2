@@ -20,11 +20,11 @@ import (
 	"context"
 	"strings"
 
-	"d7y.io/dragonfly/v2/manager/cache"
+	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
 )
 
 func (s *service) GetPeers(ctx context.Context) ([]string, error) {
-	rawKeys, err := s.rdb.Keys(ctx, cache.MakeCacheKey(cache.PeerNamespace, "*")).Result()
+	rawKeys, err := s.rdb.Keys(ctx, pkgredis.MakeKeyInManager(pkgredis.PeersNamespace, "*")).Result()
 	if err != nil {
 		return nil, err
 	}

@@ -63,20 +63,6 @@ func (mr *MockNetworkTopologyMockRecorder) LoadDestHosts(hostID interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadDestHosts", reflect.TypeOf((*MockNetworkTopology)(nil).LoadDestHosts), hostID)
 }
 
-// ProbeCount mocks base method.
-func (m *MockNetworkTopology) ProbeCount(hostID string) int64 {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ProbeCount", hostID)
-	ret0, _ := ret[0].(int64)
-	return ret0
-}
-
-// ProbeCount indicates an expected call of ProbeCount.
-func (mr *MockNetworkTopologyMockRecorder) ProbeCount(hostID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProbeCount", reflect.TypeOf((*MockNetworkTopology)(nil).ProbeCount), hostID)
-}
-
 // ProbedCount mocks base method.
 func (m *MockNetworkTopology) ProbedCount(hostID string) int64 {
 	m.ctrl.T.Helper()

@@ -18,8 +18,37 @@ package database
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-redis/redis/v8"
+
+	"d7y.io/dragonfly/v2/pkg/types"
+)
+
+const (
+	// SeedPeerNamespace prefix of seed peers namespace cache key.
+	SeedPeersNamespace = "seed-peers"
+
+	// PeersNamespace prefix of peers namespace cache key.
+	PeersNamespace = "peers"
+
+	// SchedulersNamespace prefix of schedulers namespace cache key.
+	SchedulersNamespace = "schedulers"
+
+	// ApplicationsNamespace prefix of applications namespace cache key.
+	ApplicationsNamespace = "applications"
+
+	// BucketsNamespace prefix of buckets namespace cache key.
+	BucketsNamespace = "buckets"
+
+	// NetworkTopologyNamespace prefix of network topology namespace cache key.
+	NetworkTopologyNamespace = "network-topology"
+
+	// ProbesNamespace prefix of probes namespace cache key.
+	ProbesNamespace = "probes"
+
+	// ProbedCountNamespace prefix of probed count namespace cache key.
+	ProbedCountNamespace = "probed-count"
 )
 
 func NewRedis(cfg *redis.UniversalOptions) (redis.UniversalClient, error) {
@@ -37,4 +66,69 @@ func NewRedis(cfg *redis.UniversalOptions) (redis.UniversalClient, error) {
 	}
 
 	return client, nil
+}
+
+// MakeNamespaceKeyInManager make namespace key in manager.
+func MakeNamespaceKeyInManager(namespace string) string {
+	return fmt.Sprintf("%s:%s", types.ManagerName, namespace)
+}
+
+// MakeKeyInManager make key in manager.
+func MakeKeyInManager(namespace, id string) string {
+	return fmt.Sprintf("%s:%s", MakeNamespaceKeyInManager(namespace), id)
+}
+
+// MakeSeedPeerKeyInManager make seed peer key in manager.
+func MakeSeedPeerKeyInManager(clusterID uint, hostname, ip string) string {
+	return MakeKeyInManager(SeedPeersNamespace, fmt.Sprintf("%d-%s-%s", clusterID, hostname, ip))
+}
+
+// MakeSchedulerKeyInManager make scheduler key in manager.
+func MakeSchedulerKeyInManager(clusterID uint, hostname, ip string) string {
+	return MakeKeyInManager(SchedulersNamespace, fmt.Sprintf("%d-%s-%s", clusterID, hostname, ip))
+}
+
+// MakePeerKeyInManager make peer key in manager.
+func MakePeerKeyInManager(hostname, ip string) string {
+	return MakeKeyInManager(PeersNamespace, fmt.Sprintf("%s-%s", hostname, ip))
+}
+
+// MakeSchedulersKeyForPeerInManager make schedulers key for peer in manager.
+func MakeSchedulersKeyForPeerInManager(hostname, ip string) string {
+	return MakeKeyInManager(PeersNamespace, fmt.Sprintf("%s-%s:schedulers", hostname, ip))
+}
+
+// MakeApplicationsKeyInManager make applications key in manager.
+func MakeApplicationsKeyInManager() string {
+	return MakeNamespaceKeyInManager(ApplicationsNamespace)
+}
+
+// MakeBucketKeyInManager make bucket key in manager.
+func MakeBucketKeyInManager(name string) string {
+	return MakeKeyInManager(BucketsNamespace, name)
+}
+
+// MakeNamespaceKeyInScheduler make namespace key in scheduler.
+func MakeNamespaceKeyInScheduler(namespace string) string {
+	return fmt.Sprintf("%s:%s", types.SchedulerName, namespace)
+}
+
+// MakeKeyInScheduler make key in scheduler.
+func MakeKeyInScheduler(namespace, id string) string {
+	return fmt.Sprintf("%s:%s", MakeNamespaceKeyInManager(namespace), id)
+}
+
+// MakeNetworkTopologyKeyInScheduler make network topology key in scheduler.
+func MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID string) string {
+	return MakeKeyInScheduler(NetworkTopologyNamespace, fmt.Sprintf("%s:%s", srcHostID, destHostID))
+}
+
+// MakeProbesKeyInScheduler make probes key in scheduler.
+func MakeProbesKeyInScheduler(srcHostID, destHostID string) string {
+	return MakeKeyInScheduler(ProbesNamespace, fmt.Sprintf("%s:%s", srcHostID, destHostID))
+}
+
+// MakeProbedCountKeyInScheduler make probed count key in scheduler.
+func MakeProbedCountKeyInScheduler(hostID string) string {
+	return MakeKeyInScheduler(ProbedCountNamespace, hostID)
 }
