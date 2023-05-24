@@ -30,11 +30,6 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
-const (
-	// defaultMovingAverageWeight is the weight of the moving average.
-	defaultMovingAverageWeight = 0.1
-)
-
 // Probe is the probe metadata.
 type Probe struct {
 	// Host metadata.
