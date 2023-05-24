@@ -135,7 +135,7 @@ func TestAnnouncer_Serve(t *testing.T) {
 		option []Option
 		sleep  func()
 		mock   func(stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder)
-		except func(a Announcer)
+		except func(t *testing.T, a Announcer)
 	}{
 		{
 			name: "started announcer server success",
@@ -175,9 +175,11 @@ func TestAnnouncer_Serve(t *testing.T) {
 				mt.Send(gomock.Any()).Return(nil).AnyTimes()
 				mt.CloseAndRecv().Return(nil, nil).AnyTimes()
 			},
-			except: func(a Announcer) {
+			except: func(t *testing.T, a Announcer) {
+				assert := assert.New(t)
 				go func() {
-					a.Serve()
+					err := a.Serve()
+					assert.NoError(err)
 				}()
 			},
 		},
@@ -210,9 +212,11 @@ func TestAnnouncer_Serve(t *testing.T) {
 				m.UpdateScheduler(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
 				m.KeepAlive(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 			},
-			except: func(a Announcer) {
+			except: func(t *testing.T, a Announcer) {
+				assert := assert.New(t)
 				go func() {
-					a.Serve()
+					err := a.Serve()
+					assert.NoError(err)
 				}()
 			},
 		},
@@ -229,9 +233,11 @@ func TestAnnouncer_Serve(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			tc.except(a)
+			tc.except(t, a)
 			tc.sleep()
-			a.Stop()
+			if err := a.Stop(); err != nil {
+				t.Fatal(err)
+			}
 		})
 	}
 }
@@ -242,7 +248,7 @@ func TestAnnouncer_announceToManager(t *testing.T) {
 		config *config.Config
 		sleep  func()
 		mock   func(m *managerclientmocks.MockV2MockRecorder)
-		expect func(a Announcer, err error)
+		except func(t *testing.T, a Announcer)
 	}{
 		{
 			name: "announce to manager success",
@@ -265,8 +271,10 @@ func TestAnnouncer_announceToManager(t *testing.T) {
 				m.UpdateScheduler(gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
 				m.KeepAlive(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 			},
-			expect: func(a Announcer, err error) {
-				err = a.(*announcer).announceToManager()
+			except: func(t *testing.T, a Announcer) {
+				assert := assert.New(t)
+				err := a.(*announcer).announceToManager()
+				assert.NoError(err)
 			},
 		},
 	}
@@ -285,8 +293,10 @@ func TestAnnouncer_announceToManager(t *testing.T) {
 				t.Fatal(err)
 			}
 			tc.sleep()
-			tc.expect(a, err)
-			a.Stop()
+			tc.except(t, a)
+			if err := a.Stop(); err != nil {
+				t.Fatal(err)
+			}
 		})
 	}
 }
@@ -298,7 +308,7 @@ func TestAnnouncer_announceToTrainer(t *testing.T) {
 		data   []byte
 		sleep  func()
 		mock   func(stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder)
-		except func(announcer Announcer)
+		except func(t *testing.T, a Announcer)
 	}{
 		{
 			name: "announce to trainer failed",
@@ -323,9 +333,11 @@ func TestAnnouncer_announceToTrainer(t *testing.T) {
 				m.UpdateScheduler(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
 				mtc.Train(gomock.Any()).Return(nil, errors.New("foo")).AnyTimes()
 			},
-			except: func(a Announcer) {
+			except: func(t *testing.T, a Announcer) {
+				assert := assert.New(t)
 				go func() {
-					a.(*announcer).announceToTrainer()
+					err := a.(*announcer).announceToTrainer()
+					assert.EqualError(err, "foo")
 				}()
 			},
 		},
@@ -356,9 +368,11 @@ func TestAnnouncer_announceToTrainer(t *testing.T) {
 				mt.Send(gomock.Any()).Return(nil).AnyTimes()
 				mt.CloseAndRecv().Return(nil, nil).AnyTimes()
 			},
-			except: func(a Announcer) {
+			except: func(t *testing.T, a Announcer) {
+				assert := assert.New(t)
 				go func() {
-					a.(*announcer).announceToTrainer()
+					err := a.(*announcer).announceToTrainer()
+					assert.NoError(err)
 				}()
 			},
 		},
@@ -378,9 +392,11 @@ func TestAnnouncer_announceToTrainer(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			tc.except(a)
+			tc.except(t, a)
 			tc.sleep()
-			a.Stop()
+			if err := a.Stop(); err != nil {
+				t.Fatal(err)
+			}
 		})
 	}
 }
