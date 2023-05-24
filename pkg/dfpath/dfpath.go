@@ -196,8 +196,16 @@ func (d *dfpath) WorkHome() string {
 	return d.workHome
 }
 
+func (d *dfpath) WorkHomeMode() fs.FileMode {
+	return d.workHomeMode
+}
+
 func (d *dfpath) CacheDir() string {
 	return d.cacheDir
+}
+
+func (d *dfpath) CacheDirMode() fs.FileMode {
+	return d.cacheDirMode
 }
 
 func (d *dfpath) LogDir() string {
@@ -206,6 +214,10 @@ func (d *dfpath) LogDir() string {
 
 func (d *dfpath) DataDir() string {
 	return d.dataDir
+}
+
+func (d *dfpath) DataDirMode() fs.FileMode {
+	return d.dataDirMode
 }
 
 func (d *dfpath) PluginDir() string {
