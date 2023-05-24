@@ -31,8 +31,8 @@ import (
 )
 
 const (
-	// DefaultMovingAverageWeight is the weight of the moving average.
-	DefaultMovingAverageWeight = 0.1
+	// defaultMovingAverageWeight is the weight of the moving average.
+	defaultMovingAverageWeight = 0.1
 )
 
 // Probe is the probe metadata.
