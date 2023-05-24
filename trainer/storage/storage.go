@@ -70,12 +70,6 @@ const (
 
 // Storage is the interface used for storage.
 type Storage interface {
-	// CreateDownloadTempFile creates download temp file.
-	CreateDownloadTempFile([]byte, string) error
-
-	// CreateNetworkTopologyTempFile creates network topology temp file.
-	CreateNetworkTopologyTempFile([]byte, string) error
-
 	// CreateDownload inserts downloads into csv files from temp file based on the given model key.
 	CreateDownload(string) error
 
@@ -108,11 +102,11 @@ type storage struct {
 
 	downloadMu       *sync.RWMutex
 	downloadTempFile map[string]*os.File
-	downloadModelKey []string
+	downloadModelKey map[string][]string
 
 	networkTopologyMu       *sync.RWMutex
 	networkTopologyTempFile map[string]*os.File
-	networkTopologyModelKey []string
+	networkTopologyModelKey map[string][]string
 }
 
 // New returns a new Storage instance.
@@ -122,20 +116,15 @@ func New(baseDir string, maxSize, maxBackups int) (Storage, error) {
 		maxSize:    int64(maxSize * megabyte),
 		maxBackups: maxBackups,
 
-		downloadMu:       &sync.RWMutex{},
-		downloadTempFile: make(map[string]*os.File),
-		downloadModelKey: []string{},
-
-		networkTopologyMu:       &sync.RWMutex{},
-		networkTopologyTempFile: make(map[string]*os.File),
-		networkTopologyModelKey: []string{},
+		downloadMu:        &sync.RWMutex{},
+		networkTopologyMu: &sync.RWMutex{},
 	}
 
 	return s, nil
 }
 
-// CreateDownloadTempFile creates download temp file.
-func (s *storage) CreateDownloadTempFile(downloads []byte, modelKey string) error {
+// createTempDownload creates download temp file.
+func (s *storage) createTempDownload(downloads []byte, modelKey string) error {
 
 	// Init download temp file based on modelKey.
 	filename := filepath.Join(s.baseDir, fmt.Sprintf("%s-%s-%s.%s", DownloadFilePrefix, TempFileInfix, modelKey, CSVFileExt))
@@ -146,12 +135,6 @@ func (s *storage) CreateDownloadTempFile(downloads []byte, modelKey string) erro
 			return err
 		}
 		defer tempFile.Close()
-
-		// Update download temp file map
-		s.downloadTempFile[modelKey] = tempFile
-
-		// Update model key list.
-		s.downloadModelKey = append(s.downloadModelKey, modelKey)
 	}
 
 	// Write downloads to temp file.
