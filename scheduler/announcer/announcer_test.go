@@ -152,13 +152,13 @@ func TestAnnouncer_Serve(t *testing.T) {
 				},
 				Manager: config.ManagerConfig{
 					KeepAlive: config.KeepAliveConfig{
-						Interval: 500 * time.Millisecond,
+						Interval: 50 * time.Millisecond,
 					},
 					SchedulerClusterID: 1,
 				},
 				Trainer: config.TrainerConfig{
-					Interval:      500 * time.Millisecond,
-					UploadTimeout: 10 * time.Second,
+					Interval:      50 * time.Millisecond,
+					UploadTimeout: 1 * time.Second,
 				},
 			},
 			data:   []byte("buffer data"),
@@ -198,7 +198,7 @@ func TestAnnouncer_Serve(t *testing.T) {
 				},
 				Manager: config.ManagerConfig{
 					KeepAlive: config.KeepAliveConfig{
-						Interval: 500 * time.Millisecond,
+						Interval: 50 * time.Millisecond,
 					},
 					SchedulerClusterID: 1,
 				},
@@ -254,12 +254,18 @@ func TestAnnouncer_announceToManager(t *testing.T) {
 			name: "announce to manager success",
 			config: &config.Config{
 				Server: config.ServerConfig{
-					Host:        "localhost",
-					AdvertiseIP: net.ParseIP("127.0.0.1"),
+					Host:          "localhost",
+					AdvertiseIP:   net.ParseIP("127.0.0.1"),
+					AdvertisePort: 8004,
+					Port:          8080,
+				},
+				Host: config.HostConfig{
+					IDC:      "foo",
+					Location: "bar",
 				},
 				Manager: config.ManagerConfig{
 					KeepAlive: config.KeepAliveConfig{
-						Interval: 500 * time.Millisecond,
+						Interval: 50 * time.Millisecond,
 					},
 					SchedulerClusterID: 1,
 				},
@@ -314,15 +320,21 @@ func TestAnnouncer_announceToTrainer(t *testing.T) {
 			name: "announce to trainer failed",
 			config: &config.Config{
 				Server: config.ServerConfig{
-					Host:        "localhost",
-					AdvertiseIP: net.ParseIP("127.0.0.1"),
+					Host:          "localhost",
+					AdvertiseIP:   net.ParseIP("127.0.0.1"),
+					AdvertisePort: 8004,
+					Port:          8080,
+				},
+				Host: config.HostConfig{
+					IDC:      "foo",
+					Location: "bar",
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
 				},
 				Trainer: config.TrainerConfig{
 					Interval:      50 * time.Millisecond,
-					UploadTimeout: 10 * time.Second,
+					UploadTimeout: 1 * time.Second,
 				},
 			},
 			data: []byte("buffer data"),
@@ -345,14 +357,20 @@ func TestAnnouncer_announceToTrainer(t *testing.T) {
 			name: "announce to trainer success",
 			config: &config.Config{
 				Server: config.ServerConfig{
-					Host:        "localhost",
-					AdvertiseIP: net.ParseIP("127.0.0.1"),
+					Host:          "localhost",
+					AdvertiseIP:   net.ParseIP("127.0.0.1"),
+					AdvertisePort: 8004,
+					Port:          8080,
+				},
+				Host: config.HostConfig{
+					IDC:      "foo",
+					Location: "bar",
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
 				},
 				Trainer: config.TrainerConfig{
-					Interval:      10 * time.Millisecond,
+					Interval:      50 * time.Millisecond,
 					UploadTimeout: 1 * time.Second,
 				},
 			},
@@ -413,8 +431,14 @@ func TestAnnouncer_train(t *testing.T) {
 			name: "get stream failed",
 			config: &config.Config{
 				Server: config.ServerConfig{
-					Host:        "localhost",
-					AdvertiseIP: net.ParseIP("127.0.0.1"),
+					Host:          "localhost",
+					AdvertiseIP:   net.ParseIP("127.0.0.1"),
+					AdvertisePort: 8004,
+					Port:          8080,
+				},
+				Host: config.HostConfig{
+					IDC:      "foo",
+					Location: "bar",
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -434,8 +458,14 @@ func TestAnnouncer_train(t *testing.T) {
 			name: "upload download failed",
 			config: &config.Config{
 				Server: config.ServerConfig{
-					Host:        "localhost",
-					AdvertiseIP: net.ParseIP("127.0.0.1"),
+					Host:          "localhost",
+					AdvertiseIP:   net.ParseIP("127.0.0.1"),
+					AdvertisePort: 8004,
+					Port:          8080,
+				},
+				Host: config.HostConfig{
+					IDC:      "foo",
+					Location: "bar",
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -458,8 +488,14 @@ func TestAnnouncer_train(t *testing.T) {
 			name: "upload network topology failed",
 			config: &config.Config{
 				Server: config.ServerConfig{
-					Host:        "localhost",
-					AdvertiseIP: net.ParseIP("127.0.0.1"),
+					Host:          "localhost",
+					AdvertiseIP:   net.ParseIP("127.0.0.1"),
+					AdvertisePort: 8004,
+					Port:          8080,
+				},
+				Host: config.HostConfig{
+					IDC:      "foo",
+					Location: "bar",
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -482,8 +518,14 @@ func TestAnnouncer_train(t *testing.T) {
 			name: "close stream failed",
 			config: &config.Config{
 				Server: config.ServerConfig{
-					Host:        "localhost",
-					AdvertiseIP: net.ParseIP("127.0.0.1"),
+					Host:          "localhost",
+					AdvertiseIP:   net.ParseIP("127.0.0.1"),
+					AdvertisePort: 8004,
+					Port:          8080,
+				},
+				Host: config.HostConfig{
+					IDC:      "foo",
+					Location: "bar",
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -507,8 +549,14 @@ func TestAnnouncer_train(t *testing.T) {
 			name: "train success",
 			config: &config.Config{
 				Server: config.ServerConfig{
-					Host:        "localhost",
-					AdvertiseIP: net.ParseIP("127.0.0.1"),
+					Host:          "localhost",
+					AdvertiseIP:   net.ParseIP("127.0.0.1"),
+					AdvertisePort: 8004,
+					Port:          8080,
+				},
+				Host: config.HostConfig{
+					IDC:      "foo",
+					Location: "bar",
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -563,8 +611,14 @@ func TestAnnouncer_uploadDownloadToTrainer(t *testing.T) {
 			data: []byte{},
 			config: &config.Config{
 				Server: config.ServerConfig{
-					Host:        "localhost",
-					AdvertiseIP: net.ParseIP("127.0.0.1"),
+					Host:          "localhost",
+					AdvertiseIP:   net.ParseIP("127.0.0.1"),
+					AdvertisePort: 8004,
+					Port:          8080,
+				},
+				Host: config.HostConfig{
+					IDC:      "foo",
+					Location: "bar",
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -586,8 +640,14 @@ func TestAnnouncer_uploadDownloadToTrainer(t *testing.T) {
 			data: []byte{},
 			config: &config.Config{
 				Server: config.ServerConfig{
-					Host:        "localhost",
-					AdvertiseIP: net.ParseIP("127.0.0.1"),
+					Host:          "localhost",
+					AdvertiseIP:   net.ParseIP("127.0.0.1"),
+					AdvertisePort: 8004,
+					Port:          8080,
+				},
+				Host: config.HostConfig{
+					IDC:      "foo",
+					Location: "bar",
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -609,8 +669,14 @@ func TestAnnouncer_uploadDownloadToTrainer(t *testing.T) {
 			data: []byte("download buffer"),
 			config: &config.Config{
 				Server: config.ServerConfig{
-					Host:        "localhost",
-					AdvertiseIP: net.ParseIP("127.0.0.1"),
+					Host:          "localhost",
+					AdvertiseIP:   net.ParseIP("127.0.0.1"),
+					AdvertisePort: 8004,
+					Port:          8080,
+				},
+				Host: config.HostConfig{
+					IDC:      "foo",
+					Location: "bar",
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -632,8 +698,14 @@ func TestAnnouncer_uploadDownloadToTrainer(t *testing.T) {
 			name: "send download request success",
 			config: &config.Config{
 				Server: config.ServerConfig{
-					Host:        "localhost",
-					AdvertiseIP: net.ParseIP("127.0.0.1"),
+					Host:          "localhost",
+					AdvertiseIP:   net.ParseIP("127.0.0.1"),
+					AdvertisePort: 8004,
+					Port:          8080,
+				},
+				Host: config.HostConfig{
+					IDC:      "foo",
+					Location: "bar",
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -690,8 +762,14 @@ func TestAnnouncer_uploadNetworkTopologyToTrainer(t *testing.T) {
 			data: []byte{},
 			config: &config.Config{
 				Server: config.ServerConfig{
-					Host:        "localhost",
-					AdvertiseIP: net.ParseIP("127.0.0.1"),
+					Host:          "localhost",
+					AdvertiseIP:   net.ParseIP("127.0.0.1"),
+					AdvertisePort: 8004,
+					Port:          8080,
+				},
+				Host: config.HostConfig{
+					IDC:      "foo",
+					Location: "bar",
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -713,8 +791,14 @@ func TestAnnouncer_uploadNetworkTopologyToTrainer(t *testing.T) {
 			data: []byte{},
 			config: &config.Config{
 				Server: config.ServerConfig{
-					Host:        "localhost",
-					AdvertiseIP: net.ParseIP("127.0.0.1"),
+					Host:          "localhost",
+					AdvertiseIP:   net.ParseIP("127.0.0.1"),
+					AdvertisePort: 8004,
+					Port:          8080,
+				},
+				Host: config.HostConfig{
+					IDC:      "foo",
+					Location: "bar",
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -736,8 +820,14 @@ func TestAnnouncer_uploadNetworkTopologyToTrainer(t *testing.T) {
 			data: []byte("download buffer"),
 			config: &config.Config{
 				Server: config.ServerConfig{
-					Host:        "localhost",
-					AdvertiseIP: net.ParseIP("127.0.0.1"),
+					Host:          "localhost",
+					AdvertiseIP:   net.ParseIP("127.0.0.1"),
+					AdvertisePort: 8004,
+					Port:          8080,
+				},
+				Host: config.HostConfig{
+					IDC:      "foo",
+					Location: "bar",
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -759,8 +849,14 @@ func TestAnnouncer_uploadNetworkTopologyToTrainer(t *testing.T) {
 			name: "send network topology success",
 			config: &config.Config{
 				Server: config.ServerConfig{
-					Host:        "localhost",
-					AdvertiseIP: net.ParseIP("127.0.0.1"),
+					Host:          "localhost",
+					AdvertiseIP:   net.ParseIP("127.0.0.1"),
+					AdvertisePort: 8004,
+					Port:          8080,
+				},
+				Host: config.HostConfig{
+					IDC:      "foo",
+					Location: "bar",
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
