@@ -22,13 +22,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/go-redis/redis/v8"
 
 	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
@@ -81,32 +81,32 @@ type Probes interface {
 }
 
 type probes struct {
+	// config is the probe config.
+	config config.ProbeConfig
+
 	// Redis universal client interface.
 	rdb redis.UniversalClient
 
-	// limit is the length limit of probe queue.
-	limit int
-
 	// src is the source host id.
-	src string
+	srcHostID string
 
 	// dest is the destination host id.
-	dest string
+	destHostID string
 }
 
 // NewProbes creates a probes interface.
-func NewProbes(rdb redis.UniversalClient, limit int, src string, dest string) Probes {
+func NewProbes(cfg config.ProbeConfig, rdb redis.UniversalClient, srcHostID string, destHostID string) Probes {
 	return &probes{
-		rdb:   rdb,
-		limit: limit,
-		src:   src,
-		dest:  dest,
+		config:     cfg,
+		rdb:        rdb,
+		srcHostID:  srcHostID,
+		destHostID: destHostID,
 	}
 }
 
 // Peek returns the oldest probe without removing it.
 func (p *probes) Peek() (*Probe, bool) {
-	str, err := p.rdb.LIndex(context.Background(), pkgredis.MakeProbesKeyInScheduler(p.src, p.dest), 0).Result()
+	str, err := p.rdb.LIndex(context.Background(), pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID), 0).Result()
 	if err != nil {
 		return nil, false
 	}
@@ -122,13 +122,13 @@ func (p *probes) Peek() (*Probe, bool) {
 // Enqueue enqueues probe into the queue.
 func (p *probes) Enqueue(probe *Probe) error {
 	length := p.Length()
-	if length == int64(p.limit) {
+	if length == int64(p.config.QueueLength) {
 		if _, ok := p.Dequeue(); !ok {
 			return errors.New("remove the oldest probe error")
 		}
 	}
 
-	probesKey := pkgredis.MakeProbesKeyInScheduler(p.src, p.dest)
+	probesKey := pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID)
 	data, err := json.Marshal(probe)
 	if err != nil {
 		return err
@@ -138,7 +138,7 @@ func (p *probes) Enqueue(probe *Probe) error {
 		return err
 	}
 
-	networkTopologyKey := pkgredis.MakeNetworkTopologyKeyInScheduler(p.src, p.dest)
+	networkTopologyKey := pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID)
 	if length == 0 {
 		if _, err := p.rdb.Pipelined(context.Background(), func(rdb redis.Pipeliner) error {
 			rdb.HSet(context.Background(), networkTopologyKey, "averageRTT", probe.RTT.Nanoseconds())
@@ -180,7 +180,7 @@ func (p *probes) Enqueue(probe *Probe) error {
 
 // Dequeue removes and returns the oldest probe.
 func (p *probes) Dequeue() (*Probe, bool) {
-	str, err := p.rdb.LPop(context.Background(), pkgredis.MakeProbesKeyInScheduler(p.src, p.dest)).Result()
+	str, err := p.rdb.LPop(context.Background(), pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID)).Result()
 	if err != nil {
 		return nil, false
 	}
@@ -195,7 +195,7 @@ func (p *probes) Dequeue() (*Probe, bool) {
 
 // Length gets the length of probes.
 func (p *probes) Length() int64 {
-	length, err := p.rdb.LLen(context.Background(), pkgredis.MakeProbesKeyInScheduler(p.src, p.dest)).Result()
+	length, err := p.rdb.LLen(context.Background(), pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID)).Result()
 	if err != nil {
 		return 0
 	}
@@ -205,7 +205,7 @@ func (p *probes) Length() int64 {
 
 // CreatedAt is the creation time of probes.
 func (p *probes) CreatedAt() time.Time {
-	value, err := p.rdb.HGet(context.Background(), pkgredis.MakeNetworkTopologyKeyInScheduler(p.src, p.dest), "createdAt").Result()
+	value, err := p.rdb.HGet(context.Background(), pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "createdAt").Result()
 	if err != nil {
 		return time.Time{}
 	}
@@ -220,7 +220,7 @@ func (p *probes) CreatedAt() time.Time {
 
 // UpdatedAt is the updated time to store probe.
 func (p *probes) UpdatedAt() time.Time {
-	value, err := p.rdb.HGet(context.Background(), fmt.Sprintf("network-topology:%s:%s", p.src, p.dest), "updatedAt").Result()
+	value, err := p.rdb.HGet(context.Background(), pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "updatedAt").Result()
 	if err != nil {
 		return time.Time{}
 	}
@@ -235,7 +235,7 @@ func (p *probes) UpdatedAt() time.Time {
 
 // AverageRTT is the average round-trip time of probes.
 func (p *probes) AverageRTT() time.Duration {
-	value, err := p.rdb.HGet(context.Background(), fmt.Sprintf("network-topology:%s:%s", p.src, p.dest), "averageRTT").Result()
+	value, err := p.rdb.HGet(context.Background(), pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "averageRTT").Result()
 	if err != nil {
 		return time.Duration(0)
 	}

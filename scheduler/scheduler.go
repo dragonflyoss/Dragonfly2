@@ -278,7 +278,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 
 	// Initialize network topology service.
 	if cfg.NetworkTopology.Enable {
-		s.networkTopology, err = networktopology.NewNetworkTopology(cfg, rdb, resource, s.storage)
+		s.networkTopology, err = networktopology.NewNetworkTopology(cfg.NetworkTopology, rdb, resource, s.storage)
 		if err != nil {
 			return nil, err
 		}
