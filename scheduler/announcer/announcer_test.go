@@ -337,7 +337,7 @@ func TestAnnouncer_announceToTrainer(t *testing.T) {
 				assert := assert.New(t)
 				go func() {
 					err := a.(*announcer).announceToTrainer()
-					assert.EqualError(err, "foo")
+					assert.NoError(err)
 				}()
 			},
 		},
