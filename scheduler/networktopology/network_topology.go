@@ -20,7 +20,7 @@ package networktopology
 
 import (
 	"context"
-	"strconv"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 
@@ -30,19 +30,24 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
+const (
+	// contextTimeout is the timeout of redis invoke.
+	contextTimeout = 2 * time.Minute
+)
+
 // NetworkTopology is an interface for network topology.
 type NetworkTopology interface {
-	// ProbedCount is the number of times the host has been probed.
-	ProbedCount(hostID string) int64
-
-	// LoadDestHosts returns destination hosts for source host.
-	LoadDestHosts(hostID string) ([]string, bool)
+	// LoadDestHostIDs loads destination host ids by source host id.
+	LoadDestHostIDs(string) ([]string, error)
 
 	// DeleteHost deletes host.
-	DeleteHost(hostID string) error
+	DeleteHost(string) error
 
-	// StoreProbe stores probe between two hosts.
-	StoreProbe(src, dest string, probe *Probe) bool
+	// ProbedCount is the number of times the host has been probed.
+	ProbedCount(string) (uint64, error)
+
+	// LoadProbes loads probes by source host id and destination host id.
+	LoadProbes(string, string) Probes
 }
 
 // networkTopology is an implementation of network topology.
@@ -50,8 +55,8 @@ type networkTopology struct {
 	// Redis universal client interface.
 	rdb redis.UniversalClient
 
-	// Scheduler config.
-	config *config.Config
+	// config is the network topology config.
+	config config.NetworkTopologyConfig
 
 	// Resource interface.
 	resource resource.Resource
@@ -61,7 +66,7 @@ type networkTopology struct {
 }
 
 // New network topology interface.
-func NewNetworkTopology(cfg *config.Config, rdb redis.UniversalClient, resource resource.Resource, storage storage.Storage) (NetworkTopology, error) {
+func NewNetworkTopology(cfg config.NetworkTopologyConfig, rdb redis.UniversalClient, resource resource.Resource, storage storage.Storage) (NetworkTopology, error) {
 	return &networkTopology{
 		config:   cfg,
 		rdb:      rdb,
@@ -70,79 +75,48 @@ func NewNetworkTopology(cfg *config.Config, rdb redis.UniversalClient, resource 
 	}, nil
 }
 
-// ProbedCount is the number of times the host has been probed.
-func (n *networkTopology) ProbedCount(hostID string) int64 {
-	value, err := n.rdb.Get(context.Background(), pkgredis.MakeProbedCountKeyInScheduler(hostID)).Result()
-	if err != nil {
-		return 0
-	}
+// LoadDestHostIDs loads destination host ids by source host id.
+func (nt *networkTopology) LoadDestHostIDs(hostID string) ([]string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
 
-	probedCount, err := strconv.ParseInt(value, 10, 64)
-	if err != nil {
-		return 0
-	}
-
-	return probedCount
-}
-
-// LoadDestHosts returns destination hosts for source host.
-func (n *networkTopology) LoadDestHosts(hostID string) ([]string, bool) {
-	key := pkgredis.MakeNetworkTopologyKeyInScheduler(hostID, "*")
-	keys, err := n.rdb.Keys(context.Background(), key).Result()
-	if err != nil {
-		return []string{}, false
-	}
-
-	destHosts := make([]string, 0)
-	for _, k := range keys {
-		destHosts = append(destHosts, k[len(key)-1:])
-	}
-
-	return destHosts, true
+	return nt.rdb.Keys(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(hostID, "*")).Result()
 }
 
 // DeleteHost deletes host.
-func (n *networkTopology) DeleteHost(hostID string) error {
-	// Delete network topology.
-	if err := n.rdb.Del(context.Background(), pkgredis.MakeNetworkTopologyKeyInScheduler(hostID, "*")).Err(); err != nil {
+func (nt *networkTopology) DeleteHost(hostID string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	if err := nt.rdb.Del(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(hostID, "*")).Err(); err != nil {
 		return err
 	}
 
-	// Delete probes sent by the host.
-	if err := n.rdb.Del(context.Background(), pkgredis.MakeProbesKeyInScheduler(hostID, "*")).Err(); err != nil {
+	if err := nt.rdb.Del(ctx, pkgredis.MakeProbesKeyInScheduler(hostID, "*")).Err(); err != nil {
 		return err
 	}
 
-	// Delete probes sent to the host, and return the number of probes deleted for updating probed count.
-	count, err := n.rdb.Del(context.Background(), pkgredis.MakeProbesKeyInScheduler("*", hostID)).Result()
+	count, err := nt.rdb.Del(ctx, pkgredis.MakeProbesKeyInScheduler("*", hostID)).Result()
 	if err != nil {
 		return err
 	}
 
-	// Decrease probed count of host.
-	if err = n.rdb.DecrBy(context.Background(), pkgredis.MakeProbedCountKeyInScheduler(hostID), count).Err(); err != nil {
+	if err = nt.rdb.DecrBy(ctx, pkgredis.MakeProbedCountKeyInScheduler(hostID), count).Err(); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// StoreProbe stores probe between two hosts.
-func (n *networkTopology) StoreProbe(src, dest string, probe *Probe) bool {
-	probes := NewProbes(n.rdb, n.config.NetworkTopology.Probe.QueueLength, src, dest)
-	if err := probes.Enqueue(probe); err != nil {
-		return false
-	}
+// ProbedCount is the number of times the host has been probed.
+func (nt *networkTopology) ProbedCount(hostID string) (uint64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
 
-	// Update probe count.
-	if err := n.rdb.Incr(context.Background(), pkgredis.MakeProbedCountKeyInScheduler(src)).Err(); err != nil {
-		return false
-	}
+	return nt.rdb.Get(ctx, pkgredis.MakeProbedCountKeyInScheduler(hostID)).Uint64()
+}
 
-	// Update probed count.
-	if err := n.rdb.Incr(context.Background(), pkgredis.MakeProbedCountKeyInScheduler(dest)).Err(); err != nil {
-		return false
-	}
-
-	return true
+// LoadProbes loads probes by source host id and destination host id.
+func (nt *networkTopology) LoadProbes(srcHostID, destHostID string) Probes {
+	return NewProbes(nt.config.Probe, nt.rdb, srcHostID, destHostID)
 }
