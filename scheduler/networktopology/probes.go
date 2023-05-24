@@ -19,12 +19,14 @@
 package networktopology
 
 import (
-	"container/list"
+	"context"
+	"encoding/json"
 	"errors"
-	"sync"
+	"fmt"
+	"strconv"
 	"time"
 
-	"go.uber.org/atomic"
+	"github.com/go-redis/redis/v8"
 
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
@@ -36,13 +38,13 @@ const (
 
 type Probe struct {
 	// Host metadata.
-	Host *resource.Host
+	Host *resource.Host `json:"host"`
 
 	// RTT is the round-trip time sent via this pinger.
-	RTT time.Duration
+	RTT time.Duration `json:"rtt"`
 
 	// CreatedAt is the time to create probe.
-	CreatedAt time.Time
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 // NewProbe creates a new probe instance.
@@ -64,11 +66,8 @@ type Probes interface {
 	// Dequeue removes and returns the oldest probe.
 	Dequeue() (*Probe, bool)
 
-	// Items returns the probes list.
-	Items() *list.List
-
 	// Length gets the length of probes.
-	Length() int
+	Length() int64
 
 	// CreatedAt is the creation time of probes.
 	CreatedAt() time.Time
@@ -81,48 +80,39 @@ type Probes interface {
 }
 
 type probes struct {
+	// Redis universal client interface.
+	rdb redis.UniversalClient
+
 	// limit is the length limit of probe queue.
 	limit int
 
-	// items are the list of probe.
-	items *list.List
+	// src is the source host id.
+	src string
 
-	// averageRTT is the average round-trip time of probes.
-	averageRTT *atomic.Duration
-
-	// createdAt is the creation time of probes.
-	createdAt *atomic.Time
-
-	// updatedAt is the update time to store probe.
-	updatedAt *atomic.Time
-
-	// mu locks for probe queue.
-	mu *sync.RWMutex
+	// dest is the destination host id.
+	dest string
 }
 
-// NewProbes creates a new probe list instance.
-func NewProbes(limit int) Probes {
+// NewProbes creates a probes interface.
+func NewProbes(rdb redis.UniversalClient, limit int, src string, dest string) Probes {
 	return &probes{
-		limit:      limit,
-		items:      list.New(),
-		averageRTT: atomic.NewDuration(0),
-		createdAt:  atomic.NewTime(time.Now()),
-		updatedAt:  atomic.NewTime(time.Time{}),
-		mu:         &sync.RWMutex{},
+		rdb:   rdb,
+		limit: limit,
+		src:   src,
+		dest:  dest,
 	}
 }
 
 // Peek returns the oldest probe without removing it.
 func (p *probes) Peek() (*Probe, bool) {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-
-	if p.items.Len() == 0 {
+	key := fmt.Sprintf("probes:%s:%s", p.src, p.dest)
+	str, err := p.rdb.LIndex(context.Background(), key, 0).Result()
+	if err != nil {
 		return nil, false
 	}
 
-	probe, ok := p.items.Front().Value.(*Probe)
-	if !ok {
+	probe := &Probe{}
+	if err = json.Unmarshal([]byte(str), probe); err != nil {
 		return nil, false
 	}
 
@@ -131,77 +121,134 @@ func (p *probes) Peek() (*Probe, bool) {
 
 // Enqueue enqueues probe into the queue.
 func (p *probes) Enqueue(probe *Probe) error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	// Remove the oldest probe if the queue is full.
-	if p.items.Len() == p.limit {
-		front := p.items.Front()
-		p.items.Remove(front)
+	length := p.Length()
+	if length == int64(p.limit) {
+		if _, ok := p.Dequeue(); !ok {
+			return errors.New("remove the oldest probe error")
+		}
 	}
-	p.items.PushBack(probe)
 
-	// Calculate the average RTT.
-	var averageRTT time.Duration
-	for e := p.items.Front(); e != nil; e = e.Next() {
-		probe, ok := e.Value.(*Probe)
-		if !ok {
-			return errors.New("invalid probe")
+	probesKey := fmt.Sprintf("probes:%s:%s", p.src, p.dest)
+	data, err := json.Marshal(probe)
+	if err != nil {
+		return err
+	}
+
+	if err = p.rdb.RPush(context.Background(), probesKey, data).Err(); err != nil {
+		return err
+	}
+
+	networkTopologyKey := fmt.Sprintf("network-topology:%s:%s", p.src, p.dest)
+	if length == 0 {
+		if _, err := p.rdb.Pipelined(context.Background(), func(rdb redis.Pipeliner) error {
+			rdb.HSet(context.Background(), networkTopologyKey, "averageRTT", probe.RTT.Nanoseconds())
+			rdb.HSet(context.Background(), networkTopologyKey, "createdAt", probe.CreatedAt.UnixNano())
+			rdb.HSet(context.Background(), networkTopologyKey, "updatedAt", probe.CreatedAt.UnixNano())
+			return nil
+		}); err != nil {
+			return err
 		}
 
-		if e == p.items.Front() {
-			averageRTT = probe.RTT
-			continue
+		return nil
+	}
+	values, err := p.rdb.LRange(context.Background(), probesKey, 0, -1).Result()
+	if err != nil {
+		return err
+	}
+
+	var averageRTT time.Duration
+	for _, value := range values {
+		probe := &Probe{}
+		if err = json.Unmarshal([]byte(value), probe); err != nil {
+			return err
 		}
 
 		averageRTT = time.Duration(float64(averageRTT)*DefaultMovingAverageWeight +
 			float64(probe.RTT)*(1-DefaultMovingAverageWeight))
 	}
-	p.averageRTT.Store(averageRTT)
 
-	p.updatedAt = atomic.NewTime(probe.CreatedAt)
+	if _, err := p.rdb.Pipelined(context.Background(), func(rdb redis.Pipeliner) error {
+		rdb.HSet(context.Background(), networkTopologyKey, "averageRTT", averageRTT.Nanoseconds())
+		rdb.HSet(context.Background(), networkTopologyKey, "updatedAt", probe.CreatedAt.UnixNano())
+		return nil
+	}); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // Dequeue removes and returns the oldest probe.
 func (p *probes) Dequeue() (*Probe, bool) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	if p.items.Len() == 0 {
+	key := fmt.Sprintf("probes:%s:%s", p.src, p.dest)
+	str, err := p.rdb.LPop(context.Background(), key).Result()
+	if err != nil {
 		return nil, false
 	}
 
-	probe, ok := p.items.Front().Value.(*Probe)
-	if !ok {
+	probe := &Probe{}
+	if err = json.Unmarshal([]byte(str), probe); err != nil {
 		return nil, false
 	}
 
-	p.items.Remove(p.items.Front())
 	return probe, true
 }
 
-// Items returns the probes list.
-func (p *probes) Items() *list.List {
-	return p.items
-}
-
 // Length gets the length of probes.
-func (p *probes) Length() int {
-	return p.items.Len()
+func (p *probes) Length() int64 {
+	key := fmt.Sprintf("probes:%s:%s", p.src, p.dest)
+	length, err := p.rdb.LLen(context.Background(), key).Result()
+	if err != nil {
+		return 0
+	}
+
+	return length
 }
 
 // CreatedAt is the creation time of probes.
 func (p *probes) CreatedAt() time.Time {
-	return p.createdAt.Load()
+	key := fmt.Sprintf("network-topology:%s:%s", p.src, p.dest)
+	value, err := p.rdb.HGet(context.Background(), key, "createdAt").Result()
+	if err != nil {
+		return time.Time{}
+	}
+
+	nano, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return time.Time{}
+	}
+
+	return time.Unix(0, nano)
 }
 
 // UpdatedAt is the updated time to store probe.
 func (p *probes) UpdatedAt() time.Time {
-	return p.updatedAt.Load()
+	key := fmt.Sprintf("network-topology:%s:%s", p.src, p.dest)
+	value, err := p.rdb.HGet(context.Background(), key, "updatedAt").Result()
+	if err != nil {
+		return time.Time{}
+	}
+
+	nano, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return time.Time{}
+	}
+
+	return time.Unix(0, nano)
 }
 
 // AverageRTT is the average round-trip time of probes.
 func (p *probes) AverageRTT() time.Duration {
-	return p.averageRTT.Load()
+	key := fmt.Sprintf("network-topology:%s:%s", p.src, p.dest)
+	value, err := p.rdb.HGet(context.Background(), key, "averageRTT").Result()
+	if err != nil {
+		return time.Duration(0)
+	}
+
+	nano, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return time.Duration(0)
+	}
+
+	return time.Duration(nano)
 }

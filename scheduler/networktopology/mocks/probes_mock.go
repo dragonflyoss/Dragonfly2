@@ -5,7 +5,6 @@
 package mocks
 
 import (
-	list "container/list"
 	reflect "reflect"
 	time "time"
 
@@ -93,25 +92,11 @@ func (mr *MockProbesMockRecorder) Enqueue(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enqueue", reflect.TypeOf((*MockProbes)(nil).Enqueue), arg0)
 }
 
-// Items mocks base method.
-func (m *MockProbes) Items() *list.List {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Items")
-	ret0, _ := ret[0].(*list.List)
-	return ret0
-}
-
-// Items indicates an expected call of Items.
-func (mr *MockProbesMockRecorder) Items() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Items", reflect.TypeOf((*MockProbes)(nil).Items))
-}
-
 // Length mocks base method.
-func (m *MockProbes) Length() int {
+func (m *MockProbes) Length() int64 {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Length")
-	ret0, _ := ret[0].(int)
+	ret0, _ := ret[0].(int64)
 	return ret0
 }
 
