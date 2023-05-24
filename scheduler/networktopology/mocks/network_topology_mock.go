@@ -6,7 +6,6 @@ package mocks
 
 import (
 	reflect "reflect"
-	time "time"
 
 	networktopology "d7y.io/dragonfly/v2/scheduler/networktopology"
 	gomock "github.com/golang/mock/gomock"
@@ -35,133 +34,61 @@ func (m *MockNetworkTopology) EXPECT() *MockNetworkTopologyMockRecorder {
 	return m.recorder
 }
 
-// AverageRTT mocks base method.
-func (m *MockNetworkTopology) AverageRTT(src, dest string) time.Duration {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AverageRTT", src, dest)
-	ret0, _ := ret[0].(time.Duration)
-	return ret0
-}
-
-// AverageRTT indicates an expected call of AverageRTT.
-func (mr *MockNetworkTopologyMockRecorder) AverageRTT(src, dest interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AverageRTT", reflect.TypeOf((*MockNetworkTopology)(nil).AverageRTT), src, dest)
-}
-
-// CreatedAt mocks base method.
-func (m *MockNetworkTopology) CreatedAt(src, dest string) time.Time {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreatedAt", src, dest)
-	ret0, _ := ret[0].(time.Time)
-	return ret0
-}
-
-// CreatedAt indicates an expected call of CreatedAt.
-func (mr *MockNetworkTopologyMockRecorder) CreatedAt(src, dest interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatedAt", reflect.TypeOf((*MockNetworkTopology)(nil).CreatedAt), src, dest)
-}
-
 // DeleteHost mocks base method.
-func (m *MockNetworkTopology) DeleteHost(src string) error {
+func (m *MockNetworkTopology) DeleteHost(hostID string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteHost", src)
+	ret := m.ctrl.Call(m, "DeleteHost", hostID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteHost indicates an expected call of DeleteHost.
-func (mr *MockNetworkTopologyMockRecorder) DeleteHost(src interface{}) *gomock.Call {
+func (mr *MockNetworkTopologyMockRecorder) DeleteHost(hostID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteHost", reflect.TypeOf((*MockNetworkTopology)(nil).DeleteHost), src)
-}
-
-// Dequeue mocks base method.
-func (m *MockNetworkTopology) Dequeue(src, dest string) (*networktopology.Probe, bool) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Dequeue", src, dest)
-	ret0, _ := ret[0].(*networktopology.Probe)
-	ret1, _ := ret[1].(bool)
-	return ret0, ret1
-}
-
-// Dequeue indicates an expected call of Dequeue.
-func (mr *MockNetworkTopologyMockRecorder) Dequeue(src, dest interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Dequeue", reflect.TypeOf((*MockNetworkTopology)(nil).Dequeue), src, dest)
-}
-
-// Enqueue mocks base method.
-func (m *MockNetworkTopology) Enqueue(src, dest string, probe *networktopology.Probe) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Enqueue", src, dest, probe)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Enqueue indicates an expected call of Enqueue.
-func (mr *MockNetworkTopologyMockRecorder) Enqueue(src, dest, probe interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enqueue", reflect.TypeOf((*MockNetworkTopology)(nil).Enqueue), src, dest, probe)
-}
-
-// Length mocks base method.
-func (m *MockNetworkTopology) Length(src, dest string) int64 {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Length", src, dest)
-	ret0, _ := ret[0].(int64)
-	return ret0
-}
-
-// Length indicates an expected call of Length.
-func (mr *MockNetworkTopologyMockRecorder) Length(src, dest interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Length", reflect.TypeOf((*MockNetworkTopology)(nil).Length), src, dest)
-}
-
-// LoadAndCreateNetworkTopology mocks base method.
-func (m *MockNetworkTopology) LoadAndCreateNetworkTopology() error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadAndCreateNetworkTopology")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// LoadAndCreateNetworkTopology indicates an expected call of LoadAndCreateNetworkTopology.
-func (mr *MockNetworkTopologyMockRecorder) LoadAndCreateNetworkTopology() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadAndCreateNetworkTopology", reflect.TypeOf((*MockNetworkTopology)(nil).LoadAndCreateNetworkTopology))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteHost", reflect.TypeOf((*MockNetworkTopology)(nil).DeleteHost), hostID)
 }
 
 // LoadDestHosts mocks base method.
-func (m *MockNetworkTopology) LoadDestHosts(src string) ([]string, bool) {
+func (m *MockNetworkTopology) LoadDestHosts(hostID string) ([]string, bool) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadDestHosts", src)
+	ret := m.ctrl.Call(m, "LoadDestHosts", hostID)
 	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 
 // LoadDestHosts indicates an expected call of LoadDestHosts.
-func (mr *MockNetworkTopologyMockRecorder) LoadDestHosts(src interface{}) *gomock.Call {
+func (mr *MockNetworkTopologyMockRecorder) LoadDestHosts(hostID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadDestHosts", reflect.TypeOf((*MockNetworkTopology)(nil).LoadDestHosts), src)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadDestHosts", reflect.TypeOf((*MockNetworkTopology)(nil).LoadDestHosts), hostID)
 }
 
-// Peek mocks base method.
-func (m *MockNetworkTopology) Peek(src, dest string) (*networktopology.Probe, bool) {
+// ProbeCount mocks base method.
+func (m *MockNetworkTopology) ProbeCount(hostID string) int64 {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Peek", src, dest)
-	ret0, _ := ret[0].(*networktopology.Probe)
-	ret1, _ := ret[1].(bool)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "ProbeCount", hostID)
+	ret0, _ := ret[0].(int64)
+	return ret0
 }
 
-// Peek indicates an expected call of Peek.
-func (mr *MockNetworkTopologyMockRecorder) Peek(src, dest interface{}) *gomock.Call {
+// ProbeCount indicates an expected call of ProbeCount.
+func (mr *MockNetworkTopologyMockRecorder) ProbeCount(hostID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Peek", reflect.TypeOf((*MockNetworkTopology)(nil).Peek), src, dest)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProbeCount", reflect.TypeOf((*MockNetworkTopology)(nil).ProbeCount), hostID)
+}
+
+// ProbedCount mocks base method.
+func (m *MockNetworkTopology) ProbedCount(hostID string) int64 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ProbedCount", hostID)
+	ret0, _ := ret[0].(int64)
+	return ret0
+}
+
+// ProbedCount indicates an expected call of ProbedCount.
+func (mr *MockNetworkTopologyMockRecorder) ProbedCount(hostID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProbedCount", reflect.TypeOf((*MockNetworkTopology)(nil).ProbedCount), hostID)
 }
 
 // StoreProbe mocks base method.
@@ -176,32 +103,4 @@ func (m *MockNetworkTopology) StoreProbe(src, dest string, probe *networktopolog
 func (mr *MockNetworkTopologyMockRecorder) StoreProbe(src, dest, probe interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreProbe", reflect.TypeOf((*MockNetworkTopology)(nil).StoreProbe), src, dest, probe)
-}
-
-// UpdatedAt mocks base method.
-func (m *MockNetworkTopology) UpdatedAt(src, dest string) time.Time {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdatedAt", src, dest)
-	ret0, _ := ret[0].(time.Time)
-	return ret0
-}
-
-// UpdatedAt indicates an expected call of UpdatedAt.
-func (mr *MockNetworkTopologyMockRecorder) UpdatedAt(src, dest interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatedAt", reflect.TypeOf((*MockNetworkTopology)(nil).UpdatedAt), src, dest)
-}
-
-// VisitTimes mocks base method.
-func (m *MockNetworkTopology) VisitTimes(key string) int64 {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "VisitTimes", key)
-	ret0, _ := ret[0].(int64)
-	return ret0
-}
-
-// VisitTimes indicates an expected call of VisitTimes.
-func (mr *MockNetworkTopologyMockRecorder) VisitTimes(key interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VisitTimes", reflect.TypeOf((*MockNetworkTopology)(nil).VisitTimes), key)
 }
