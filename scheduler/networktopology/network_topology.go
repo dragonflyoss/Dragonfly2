@@ -31,8 +31,11 @@ import (
 )
 
 type NetworkTopology interface {
-	// VisitTimes is the visit times of host.
-	VisitTimes(hostID string) int64
+	// ProbeCount is the number of times the host probes.
+	ProbeCount(hostID string) int64
+
+	// ProbedCount is the number of times the host has been probed.
+	ProbedCount(hostID string) int64
 
 	// LoadDestHosts returns destination hosts for source host.
 	LoadDestHosts(hostID string) ([]string, bool)
@@ -68,20 +71,36 @@ func NewNetworkTopology(cfg *config.Config, rdb redis.UniversalClient, resource 
 	}, nil
 }
 
-// VisitTimes is the number of times the host has been probed.
-func (n *networkTopology) VisitTimes(hostID string) int64 {
-	key := fmt.Sprintf("visit-times:%s", hostID)
+// ProbeCount is the number of times the host probes.
+func (n *networkTopology) ProbeCount(hostID string) int64 {
+	key := fmt.Sprintf("probe-count:%s", hostID)
 	value, err := n.rdb.Get(context.Background(), key).Result()
 	if err != nil {
 		return 0
 	}
 
-	visitTimes, err := strconv.ParseInt(value, 10, 64)
+	probeCount, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
 		return 0
 	}
 
-	return visitTimes
+	return probeCount
+}
+
+// ProbedCount is the number of times the host has been probed.
+func (n *networkTopology) ProbedCount(hostID string) int64 {
+	key := fmt.Sprintf("probed-count:%s", hostID)
+	value, err := n.rdb.Get(context.Background(), key).Result()
+	if err != nil {
+		return 0
+	}
+
+	probedCount, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return 0
+	}
+
+	return probedCount
 }
 
 // LoadDestHosts returns destination hosts for source host.
@@ -104,29 +123,32 @@ func (n *networkTopology) LoadDestHosts(hostID string) ([]string, bool) {
 func (n *networkTopology) DeleteHost(hostID string) error {
 	// Delete network topology.
 	key := fmt.Sprintf("network-topology:%s:*", hostID)
-	err := n.rdb.Del(context.Background(), key).Err()
-	if err != nil {
+	if err := n.rdb.Del(context.Background(), key).Err(); err != nil {
 		return err
 	}
 
 	// Delete probes sent by the host.
 	key = fmt.Sprintf("probes:%s:*", hostID)
-	err = n.rdb.Del(context.Background(), key).Err()
-	if err != nil {
+	if err := n.rdb.Del(context.Background(), key).Err(); err != nil {
 		return err
 	}
 
-	// Delete probes sent to the host, and return the number of probes deleted for updating visit times.
+	// Delete probes sent to the host, and return the number of probes deleted for updating probed count.
 	key = fmt.Sprintf("probes:*:%s", hostID)
 	count, err := n.rdb.Del(context.Background(), key).Result()
 	if err != nil {
 		return err
 	}
 
-	// Delete visit times of host.
-	key = fmt.Sprintf("visit-times:%s", hostID)
-	err = n.rdb.DecrBy(context.Background(), key, count).Err()
-	if err != nil {
+	// Delete probe count of host.
+	key = fmt.Sprintf("probe-count:%s", hostID)
+	if err = n.rdb.Del(context.Background(), key).Err(); err != nil {
+		return err
+	}
+
+	// Decrease probed count of host.
+	key = fmt.Sprintf("probed-count:%s", hostID)
+	if err = n.rdb.DecrBy(context.Background(), key, count).Err(); err != nil {
 		return err
 	}
 
@@ -144,10 +166,15 @@ func (n *networkTopology) StoreProbe(src, dest string, probe *Probe) bool {
 		return false
 	}
 
-	// Update visit times.
-	key := fmt.Sprintf("visit-times:%s", dest)
-	_, err = n.rdb.Incr(context.Background(), key).Result()
-	if err != nil {
+	// Update probe count.
+	key := fmt.Sprintf("probe-count:%s", src)
+	if err = n.rdb.Incr(context.Background(), key).Err(); err != nil {
+		return false
+	}
+
+	// Update probed count.
+	key = fmt.Sprintf("probed-count:%s", dest)
+	if err = n.rdb.Incr(context.Background(), key).Err(); err != nil {
 		return false
 	}
 

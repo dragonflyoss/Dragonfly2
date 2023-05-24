@@ -112,8 +112,7 @@ func (p *probes) Peek() (*Probe, bool) {
 	}
 
 	probe := &Probe{}
-	err = json.Unmarshal([]byte(str), probe)
-	if err != nil {
+	if err = json.Unmarshal([]byte(str), probe); err != nil {
 		return nil, false
 	}
 
@@ -124,8 +123,7 @@ func (p *probes) Peek() (*Probe, bool) {
 func (p *probes) Enqueue(probe *Probe) error {
 	length := p.Length()
 	if length == int64(p.limit) {
-		_, ok := p.Dequeue()
-		if !ok {
+		if _, ok := p.Dequeue(); !ok {
 			return errors.New("remove the oldest probe error")
 		}
 	}
@@ -136,8 +134,7 @@ func (p *probes) Enqueue(probe *Probe) error {
 		return err
 	}
 
-	err = p.rdb.RPush(context.Background(), probesKey, data).Err()
-	if err != nil {
+	if err = p.rdb.RPush(context.Background(), probesKey, data).Err(); err != nil {
 		return err
 	}
 
@@ -162,8 +159,7 @@ func (p *probes) Enqueue(probe *Probe) error {
 	var averageRTT time.Duration
 	for _, value := range values {
 		probe := &Probe{}
-		err = json.Unmarshal([]byte(value), probe)
-		if err != nil {
+		if err = json.Unmarshal([]byte(value), probe); err != nil {
 			return err
 		}
 
@@ -191,8 +187,7 @@ func (p *probes) Dequeue() (*Probe, bool) {
 	}
 
 	probe := &Probe{}
-	err = json.Unmarshal([]byte(str), probe)
-	if err != nil {
+	if err = json.Unmarshal([]byte(str), probe); err != nil {
 		return nil, false
 	}
 
