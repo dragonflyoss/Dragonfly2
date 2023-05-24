@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package database
+package redis
 
 import (
 	"context"
