@@ -35,58 +35,59 @@ func (m *MockNetworkTopology) EXPECT() *MockNetworkTopologyMockRecorder {
 }
 
 // DeleteHost mocks base method.
-func (m *MockNetworkTopology) DeleteHost(hostID string) error {
+func (m *MockNetworkTopology) DeleteHost(arg0 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteHost", hostID)
+	ret := m.ctrl.Call(m, "DeleteHost", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteHost indicates an expected call of DeleteHost.
-func (mr *MockNetworkTopologyMockRecorder) DeleteHost(hostID interface{}) *gomock.Call {
+func (mr *MockNetworkTopologyMockRecorder) DeleteHost(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteHost", reflect.TypeOf((*MockNetworkTopology)(nil).DeleteHost), hostID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteHost", reflect.TypeOf((*MockNetworkTopology)(nil).DeleteHost), arg0)
 }
 
-// LoadDestHosts mocks base method.
-func (m *MockNetworkTopology) LoadDestHosts(hostID string) ([]string, bool) {
+// LoadDestHostIDs mocks base method.
+func (m *MockNetworkTopology) LoadDestHostIDs(arg0 string) ([]string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadDestHosts", hostID)
+	ret := m.ctrl.Call(m, "LoadDestHostIDs", arg0)
 	ret0, _ := ret[0].([]string)
-	ret1, _ := ret[1].(bool)
+	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// LoadDestHosts indicates an expected call of LoadDestHosts.
-func (mr *MockNetworkTopologyMockRecorder) LoadDestHosts(hostID interface{}) *gomock.Call {
+// LoadDestHostIDs indicates an expected call of LoadDestHostIDs.
+func (mr *MockNetworkTopologyMockRecorder) LoadDestHostIDs(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadDestHosts", reflect.TypeOf((*MockNetworkTopology)(nil).LoadDestHosts), hostID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadDestHostIDs", reflect.TypeOf((*MockNetworkTopology)(nil).LoadDestHostIDs), arg0)
+}
+
+// LoadProbes mocks base method.
+func (m *MockNetworkTopology) LoadProbes(arg0, arg1 string) networktopology.Probes {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadProbes", arg0, arg1)
+	ret0, _ := ret[0].(networktopology.Probes)
+	return ret0
+}
+
+// LoadProbes indicates an expected call of LoadProbes.
+func (mr *MockNetworkTopologyMockRecorder) LoadProbes(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadProbes", reflect.TypeOf((*MockNetworkTopology)(nil).LoadProbes), arg0, arg1)
 }
 
 // ProbedCount mocks base method.
-func (m *MockNetworkTopology) ProbedCount(hostID string) int64 {
+func (m *MockNetworkTopology) ProbedCount(arg0 string) (uint64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ProbedCount", hostID)
-	ret0, _ := ret[0].(int64)
-	return ret0
+	ret := m.ctrl.Call(m, "ProbedCount", arg0)
+	ret0, _ := ret[0].(uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // ProbedCount indicates an expected call of ProbedCount.
-func (mr *MockNetworkTopologyMockRecorder) ProbedCount(hostID interface{}) *gomock.Call {
+func (mr *MockNetworkTopologyMockRecorder) ProbedCount(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProbedCount", reflect.TypeOf((*MockNetworkTopology)(nil).ProbedCount), hostID)
-}
-
-// StoreProbe mocks base method.
-func (m *MockNetworkTopology) StoreProbe(src, dest string, probe *networktopology.Probe) bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StoreProbe", src, dest, probe)
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// StoreProbe indicates an expected call of StoreProbe.
-func (mr *MockNetworkTopologyMockRecorder) StoreProbe(src, dest, probe interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreProbe", reflect.TypeOf((*MockNetworkTopology)(nil).StoreProbe), src, dest, probe)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProbedCount", reflect.TypeOf((*MockNetworkTopology)(nil).ProbedCount), arg0)
 }
