@@ -94,13 +94,13 @@ type probes struct {
 }
 
 // NewProbes creates a probes interface.
-func NewProbes(rdb redis.UniversalClient, limit int, src string, dest string) (Probes, error) {
+func NewProbes(rdb redis.UniversalClient, limit int, src string, dest string) Probes {
 	return &probes{
 		rdb:   rdb,
 		limit: limit,
 		src:   src,
 		dest:  dest,
-	}, nil
+	}
 }
 
 // Peek returns the oldest probe without removing it.

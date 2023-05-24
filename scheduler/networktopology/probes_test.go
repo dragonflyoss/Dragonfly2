@@ -157,11 +157,11 @@ func Test_NewProbe(t *testing.T) {
 func Test_NewProbes(t *testing.T) {
 	tests := []struct {
 		name   string
-		expect func(t *testing.T, p Probes, err error)
+		expect func(t *testing.T, p Probes)
 	}{
 		{
 			name: "new probes",
-			expect: func(t *testing.T, p Probes, err error) {
+			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
 				probes := p.(*probes)
 				assert.NotNil(probes.rdb)
@@ -174,8 +174,7 @@ func Test_NewProbes(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			rdb, _ := redismock.NewClientMock()
-			p, err := NewProbes(rdb, mockQueueLength, mockSeedHost.ID, mockHost.ID)
-			tc.expect(t, p, err)
+			tc.expect(t, NewProbes(rdb, mockQueueLength, mockSeedHost.ID, mockHost.ID))
 		})
 	}
 }
@@ -184,7 +183,7 @@ func TestProbes_Peek(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(clientMock redismock.ClientMock)
-		expect func(t *testing.T, p Probes, err error)
+		expect func(t *testing.T, p Probes)
 	}{
 		{
 			name: "queue has one probe",
@@ -199,9 +198,8 @@ func TestProbes_Peek(t *testing.T) {
 				clientMock.ExpectLIndex(key, 0).SetVal(string(data))
 				clientMock.ExpectLLen(key).SetVal(1)
 			},
-			expect: func(t *testing.T, p Probes, err error) {
+			expect: func(t *testing.T, p Probes) {
 				a := assert.New(t)
-				a.Nil(err)
 				probe, peeked := p.Peek()
 				assert.ObjectsAreEqualValues(probe, mockProbe)
 				a.True(peeked)
@@ -216,9 +214,8 @@ func TestProbes_Peek(t *testing.T) {
 				clientMock.ExpectLIndex(key, 0).SetErr(errors.New("no probe"))
 				clientMock.ExpectLLen(key).SetVal(0)
 			},
-			expect: func(t *testing.T, p Probes, err error) {
+			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
-				assert.Nil(err)
 				_, peeked := p.Peek()
 				assert.False(peeked)
 				assert.Equal(p.Length(), int64(0))
@@ -232,8 +229,7 @@ func TestProbes_Peek(t *testing.T) {
 
 			rdb, clientMock := redismock.NewClientMock()
 			tc.mock(clientMock)
-			p, err := NewProbes(rdb, mockQueueLength, mockSeedHost.ID, mockHost.ID)
-			tc.expect(t, p, err)
+			tc.expect(t, NewProbes(rdb, mockQueueLength, mockSeedHost.ID, mockHost.ID))
 			clientMock.ClearExpect()
 		})
 	}
@@ -243,7 +239,7 @@ func TestProbes_Enqueue(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(clientMock redismock.ClientMock)
-		expect func(t *testing.T, p Probes, err error)
+		expect func(t *testing.T, p Probes)
 	}{
 		{
 			name: "enqueue one probe when probes queue is null",
@@ -264,10 +260,9 @@ func TestProbes_Enqueue(t *testing.T) {
 				clientMock.ExpectHSet(networkTopologyKey, "createdAt", mockProbe.CreatedAt.UnixNano()).SetVal(1)
 				clientMock.ExpectHSet(networkTopologyKey, "updatedAt", mockProbe.CreatedAt.UnixNano()).SetVal(1)
 			},
-			expect: func(t *testing.T, p Probes, err error) {
+			expect: func(t *testing.T, p Probes) {
 				a := assert.New(t)
-				a.Nil(err)
-				err = p.Enqueue(mockProbe)
+				err := p.Enqueue(mockProbe)
 				a.Nil(err)
 			},
 		},
@@ -295,10 +290,9 @@ func TestProbes_Enqueue(t *testing.T) {
 				clientMock.ExpectHSet(networkTopologyKey, "averageRTT", int64(2979000)).SetVal(1)
 				clientMock.ExpectHSet(networkTopologyKey, "updatedAt", mockProbe.CreatedAt.UnixNano()).SetVal(1)
 			},
-			expect: func(t *testing.T, p Probes, err error) {
+			expect: func(t *testing.T, p Probes) {
 				a := assert.New(t)
-				a.Nil(err)
-				err = p.Enqueue(mockProbe)
+				err := p.Enqueue(mockProbe)
 				a.Nil(err)
 			},
 		},
@@ -310,8 +304,7 @@ func TestProbes_Enqueue(t *testing.T) {
 
 			rdb, clientMock := redismock.NewClientMock()
 			tc.mock(clientMock)
-			p, err := NewProbes(rdb, mockQueueLength, mockSeedHost.ID, mockHost.ID)
-			tc.expect(t, p, err)
+			tc.expect(t, NewProbes(rdb, mockQueueLength, mockSeedHost.ID, mockHost.ID))
 			clientMock.ClearExpect()
 		})
 	}
@@ -321,7 +314,7 @@ func TestProbes_Dequeue(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(clientMock redismock.ClientMock)
-		expect func(t *testing.T, p Probes, err error)
+		expect func(t *testing.T, p Probes)
 	}{
 		{
 			name: "dequeue probe",
@@ -337,9 +330,8 @@ func TestProbes_Dequeue(t *testing.T) {
 				clientMock.ExpectLIndex(key, 0).RedisNil()
 				clientMock.ExpectLLen(key).SetVal(0)
 			},
-			expect: func(t *testing.T, p Probes, err error) {
+			expect: func(t *testing.T, p Probes) {
 				a := assert.New(t)
-				a.Nil(err)
 				probe, ok := p.Dequeue()
 				assert.ObjectsAreEqualValues(probe, mockProbe)
 				a.True(ok)
@@ -358,9 +350,8 @@ func TestProbes_Dequeue(t *testing.T) {
 				clientMock.ExpectLIndex(key, 0).RedisNil()
 				clientMock.ExpectLLen(key).SetVal(0)
 			},
-			expect: func(t *testing.T, p Probes, err error) {
+			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
-				assert.Nil(err)
 				_, ok := p.Dequeue()
 				assert.False(ok)
 
@@ -377,8 +368,7 @@ func TestProbes_Dequeue(t *testing.T) {
 
 			rdb, clientMock := redismock.NewClientMock()
 			tc.mock(clientMock)
-			p, err := NewProbes(rdb, mockQueueLength, mockSeedHost.ID, mockHost.ID)
-			tc.expect(t, p, err)
+			tc.expect(t, NewProbes(rdb, mockQueueLength, mockSeedHost.ID, mockHost.ID))
 			clientMock.ClearExpect()
 		})
 	}
@@ -388,7 +378,7 @@ func TestProbes_Length(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(clientMock redismock.ClientMock)
-		expect func(t *testing.T, p Probes, err error)
+		expect func(t *testing.T, p Probes)
 	}{
 		{
 			name: "queue has one probe",
@@ -396,9 +386,8 @@ func TestProbes_Length(t *testing.T) {
 				key := fmt.Sprintf("probes:%s:%s", mockSeedHost.ID, mockHost.ID)
 				clientMock.ExpectLLen(key).SetVal(1)
 			},
-			expect: func(t *testing.T, p Probes, err error) {
+			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
-				assert.Nil(err)
 				assert.Equal(p.Length(), int64(1))
 			},
 		},
@@ -410,8 +399,7 @@ func TestProbes_Length(t *testing.T) {
 
 			rdb, clientMock := redismock.NewClientMock()
 			tc.mock(clientMock)
-			p, err := NewProbes(rdb, mockQueueLength, mockSeedHost.ID, mockHost.ID)
-			tc.expect(t, p, err)
+			tc.expect(t, NewProbes(rdb, mockQueueLength, mockSeedHost.ID, mockHost.ID))
 			clientMock.ClearExpect()
 		})
 	}
@@ -421,7 +409,7 @@ func TestProbes_CreatedAt(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(clientMock redismock.ClientMock)
-		expect func(t *testing.T, p Probes, err error)
+		expect func(t *testing.T, p Probes)
 	}{
 		{
 			name: "get creation time of probes",
@@ -429,9 +417,8 @@ func TestProbes_CreatedAt(t *testing.T) {
 				key := fmt.Sprintf("network-topology:%s:%s", mockSeedHost.ID, mockHost.ID)
 				clientMock.ExpectHGet(key, "createdAt").SetVal(strconv.FormatInt(mockProbe.CreatedAt.UnixNano(), 10))
 			},
-			expect: func(t *testing.T, p Probes, err error) {
+			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
-				assert.Nil(err)
 				assert.Equal(p.CreatedAt().UnixNano(), mockProbe.CreatedAt.UnixNano())
 			},
 		},
@@ -441,9 +428,8 @@ func TestProbes_CreatedAt(t *testing.T) {
 				key := fmt.Sprintf("network-topology:%s:%s", mockSeedHost.ID, mockHost.ID)
 				clientMock.ExpectHGet(key, "createdAt").SetErr(errors.New("probes do not exist"))
 			},
-			expect: func(t *testing.T, p Probes, err error) {
+			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
-				assert.Nil(err)
 				assert.Equal(p.CreatedAt(), time.Time{})
 			},
 		},
@@ -455,8 +441,7 @@ func TestProbes_CreatedAt(t *testing.T) {
 
 			rdb, clientMock := redismock.NewClientMock()
 			tc.mock(clientMock)
-			p, err := NewProbes(rdb, mockQueueLength, mockSeedHost.ID, mockHost.ID)
-			tc.expect(t, p, err)
+			tc.expect(t, NewProbes(rdb, mockQueueLength, mockSeedHost.ID, mockHost.ID))
 			clientMock.ClearExpect()
 		})
 	}
@@ -466,7 +451,7 @@ func TestProbes_UpdatedAt(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(clientMock redismock.ClientMock)
-		expect func(t *testing.T, p Probes, err error)
+		expect func(t *testing.T, p Probes)
 	}{
 		{
 			name: "get update time of probes",
@@ -475,9 +460,8 @@ func TestProbes_UpdatedAt(t *testing.T) {
 				fmt.Println(mockHost.CreatedAt.Load().Nanosecond())
 				clientMock.ExpectHGet(key, "updatedAt").SetVal(strconv.FormatInt(mockProbe.CreatedAt.UnixNano(), 10))
 			},
-			expect: func(t *testing.T, p Probes, err error) {
+			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
-				assert.Nil(err)
 				assert.Equal(p.UpdatedAt().UnixNano(), mockProbe.CreatedAt.UnixNano())
 			},
 		},
@@ -487,9 +471,8 @@ func TestProbes_UpdatedAt(t *testing.T) {
 				key := fmt.Sprintf("network-topology:%s:%s", mockSeedHost.ID, mockHost.ID)
 				clientMock.ExpectHGet(key, "updatedAt").SetErr(errors.New("probes do not exist"))
 			},
-			expect: func(t *testing.T, p Probes, err error) {
+			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
-				assert.Nil(err)
 				assert.Equal(p.UpdatedAt(), time.Time{})
 			},
 		},
@@ -501,8 +484,7 @@ func TestProbes_UpdatedAt(t *testing.T) {
 
 			rdb, clientMock := redismock.NewClientMock()
 			tc.mock(clientMock)
-			p, err := NewProbes(rdb, mockQueueLength, mockSeedHost.ID, mockHost.ID)
-			tc.expect(t, p, err)
+			tc.expect(t, NewProbes(rdb, mockQueueLength, mockSeedHost.ID, mockHost.ID))
 			clientMock.ClearExpect()
 		})
 	}
@@ -512,7 +494,7 @@ func TestProbes_AverageRTT(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(clientMock redismock.ClientMock)
-		expect func(t *testing.T, p Probes, err error)
+		expect func(t *testing.T, p Probes)
 	}{
 		{
 			name: "get averageRTT of probes",
@@ -520,9 +502,8 @@ func TestProbes_AverageRTT(t *testing.T) {
 				key := fmt.Sprintf("network-topology:%s:%s", mockSeedHost.ID, mockHost.ID)
 				clientMock.ExpectHGet(key, "averageRTT").SetVal(strconv.FormatInt(mockProbe.RTT.Nanoseconds(), 10))
 			},
-			expect: func(t *testing.T, p Probes, err error) {
+			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
-				assert.Nil(err)
 				assert.Equal(p.AverageRTT(), mockProbe.RTT)
 			},
 		},
@@ -532,9 +513,8 @@ func TestProbes_AverageRTT(t *testing.T) {
 				key := fmt.Sprintf("network-topology:%s:%s", mockSeedHost.ID, mockHost.ID)
 				clientMock.ExpectHGet(key, "averageRTT").SetErr(errors.New("probes do not exist"))
 			},
-			expect: func(t *testing.T, p Probes, err error) {
+			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
-				assert.Nil(err)
 				assert.Equal(p.AverageRTT(), time.Duration(0))
 			},
 		},
@@ -546,8 +526,7 @@ func TestProbes_AverageRTT(t *testing.T) {
 
 			rdb, clientMock := redismock.NewClientMock()
 			tc.mock(clientMock)
-			p, err := NewProbes(rdb, mockQueueLength, mockSeedHost.ID, mockHost.ID)
-			tc.expect(t, p, err)
+			tc.expect(t, NewProbes(rdb, mockQueueLength, mockSeedHost.ID, mockHost.ID))
 			clientMock.ClearExpect()
 		})
 	}

@@ -157,24 +157,20 @@ func (n *networkTopology) DeleteHost(hostID string) error {
 
 // StoreProbe stores probe between two hosts.
 func (n *networkTopology) StoreProbe(src, dest string, probe *Probe) bool {
-	probes, err := NewProbes(n.rdb, n.config.NetworkTopology.Probe.QueueLength, src, dest)
-	if err != nil {
-		return false
-	}
-
-	if err = probes.Enqueue(probe); err != nil {
+	probes := NewProbes(n.rdb, n.config.NetworkTopology.Probe.QueueLength, src, dest)
+	if err := probes.Enqueue(probe); err != nil {
 		return false
 	}
 
 	// Update probe count.
 	key := fmt.Sprintf("probe-count:%s", src)
-	if err = n.rdb.Incr(context.Background(), key).Err(); err != nil {
+	if err := n.rdb.Incr(context.Background(), key).Err(); err != nil {
 		return false
 	}
 
 	// Update probed count.
 	key = fmt.Sprintf("probed-count:%s", dest)
-	if err = n.rdb.Incr(context.Background(), key).Err(); err != nil {
+	if err := n.rdb.Incr(context.Background(), key).Err(); err != nil {
 		return false
 	}
 
