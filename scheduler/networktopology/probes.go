@@ -26,8 +26,9 @@ import (
 	"strconv"
 	"time"
 
-	"d7y.io/dragonfly/v2/scheduler/resource"
 	"github.com/go-redis/redis/v8"
+
+	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
 const (
@@ -125,7 +126,7 @@ func (p *probes) Enqueue(probe *Probe) error {
 	if length == int64(p.limit) {
 		_, ok := p.Dequeue()
 		if !ok {
-			return errors.New("remove the oldest probe error!")
+			return errors.New("remove the oldest probe error")
 		}
 	}
 
@@ -152,33 +153,33 @@ func (p *probes) Enqueue(probe *Probe) error {
 		}
 
 		return nil
-	} else {
-		values, err := p.rdb.LRange(context.Background(), probesKey, 0, -1).Result()
+	}
+	values, err := p.rdb.LRange(context.Background(), probesKey, 0, -1).Result()
+	if err != nil {
+		return err
+	}
+
+	var averageRTT time.Duration
+	for _, value := range values {
+		probe := &Probe{}
+		err = json.Unmarshal([]byte(value), probe)
 		if err != nil {
 			return err
 		}
 
-		var averageRTT time.Duration
-		for _, value := range values {
-			probe := &Probe{}
-			err = json.Unmarshal([]byte(value), probe)
-			if err != nil {
-				return err
-			}
-
-			averageRTT = time.Duration(float64(averageRTT)*DefaultMovingAverageWeight +
-				float64(probe.RTT)*(1-DefaultMovingAverageWeight))
-		}
-
-		if _, err := p.rdb.Pipelined(context.Background(), func(rdb redis.Pipeliner) error {
-			rdb.HSet(context.Background(), networkTopologyKey, "averageRTT", averageRTT.Nanoseconds())
-			rdb.HSet(context.Background(), networkTopologyKey, "updatedAt", probe.CreatedAt.UnixNano())
-			return nil
-		}); err != nil {
-			return err
-		}
-		return nil
+		averageRTT = time.Duration(float64(averageRTT)*DefaultMovingAverageWeight +
+			float64(probe.RTT)*(1-DefaultMovingAverageWeight))
 	}
+
+	if _, err := p.rdb.Pipelined(context.Background(), func(rdb redis.Pipeliner) error {
+		rdb.HSet(context.Background(), networkTopologyKey, "averageRTT", averageRTT.Nanoseconds())
+		rdb.HSet(context.Background(), networkTopologyKey, "updatedAt", probe.CreatedAt.UnixNano())
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Dequeue removes and returns the oldest probe.
