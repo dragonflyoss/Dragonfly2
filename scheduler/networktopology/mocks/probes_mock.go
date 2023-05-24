@@ -5,7 +5,6 @@
 package mocks
 
 import (
-	list "container/list"
 	reflect "reflect"
 	time "time"
 
@@ -37,11 +36,12 @@ func (m *MockProbes) EXPECT() *MockProbesMockRecorder {
 }
 
 // AverageRTT mocks base method.
-func (m *MockProbes) AverageRTT() time.Duration {
+func (m *MockProbes) AverageRTT() (time.Duration, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AverageRTT")
 	ret0, _ := ret[0].(time.Duration)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // AverageRTT indicates an expected call of AverageRTT.
@@ -51,11 +51,12 @@ func (mr *MockProbesMockRecorder) AverageRTT() *gomock.Call {
 }
 
 // CreatedAt mocks base method.
-func (m *MockProbes) CreatedAt() time.Time {
+func (m *MockProbes) CreatedAt() (time.Time, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreatedAt")
 	ret0, _ := ret[0].(time.Time)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // CreatedAt indicates an expected call of CreatedAt.
@@ -65,11 +66,11 @@ func (mr *MockProbesMockRecorder) CreatedAt() *gomock.Call {
 }
 
 // Dequeue mocks base method.
-func (m *MockProbes) Dequeue() (*networktopology.Probe, bool) {
+func (m *MockProbes) Dequeue() (*networktopology.Probe, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Dequeue")
 	ret0, _ := ret[0].(*networktopology.Probe)
-	ret1, _ := ret[1].(bool)
+	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
@@ -93,26 +94,13 @@ func (mr *MockProbesMockRecorder) Enqueue(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enqueue", reflect.TypeOf((*MockProbes)(nil).Enqueue), arg0)
 }
 
-// Items mocks base method.
-func (m *MockProbes) Items() *list.List {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Items")
-	ret0, _ := ret[0].(*list.List)
-	return ret0
-}
-
-// Items indicates an expected call of Items.
-func (mr *MockProbesMockRecorder) Items() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Items", reflect.TypeOf((*MockProbes)(nil).Items))
-}
-
 // Length mocks base method.
-func (m *MockProbes) Length() int {
+func (m *MockProbes) Length() (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Length")
-	ret0, _ := ret[0].(int)
-	return ret0
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Length indicates an expected call of Length.
@@ -122,11 +110,11 @@ func (mr *MockProbesMockRecorder) Length() *gomock.Call {
 }
 
 // Peek mocks base method.
-func (m *MockProbes) Peek() (*networktopology.Probe, bool) {
+func (m *MockProbes) Peek() (*networktopology.Probe, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Peek")
 	ret0, _ := ret[0].(*networktopology.Probe)
-	ret1, _ := ret[1].(bool)
+	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
@@ -137,11 +125,12 @@ func (mr *MockProbesMockRecorder) Peek() *gomock.Call {
 }
 
 // UpdatedAt mocks base method.
-func (m *MockProbes) UpdatedAt() time.Time {
+func (m *MockProbes) UpdatedAt() (time.Time, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdatedAt")
 	ret0, _ := ret[0].(time.Time)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // UpdatedAt indicates an expected call of UpdatedAt.
