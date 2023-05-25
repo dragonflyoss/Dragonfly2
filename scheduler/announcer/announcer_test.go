@@ -19,7 +19,6 @@ package announcer
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"testing"
@@ -320,7 +319,6 @@ func TestAnnouncer_announceToManager(t *testing.T) {
 					Ip:         "127.0.0.1",
 					ClusterId:  uint64(1),
 				}), gomock.Any()).AnyTimes()
-				fmt.Println(1)
 			},
 			except: func(t *testing.T, a Announcer) {
 				assert := assert.New(t)
