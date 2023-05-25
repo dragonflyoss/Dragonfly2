@@ -51,6 +51,7 @@ const (
 	ProbedCountNamespace = "probed-count"
 )
 
+// NewRedis returns a new redis client.
 func NewRedis(cfg *redis.UniversalOptions) (redis.UniversalClient, error) {
 	redis.SetLogger(&redisLogger{})
 	client := redis.NewUniversalClient(&redis.UniversalOptions{
@@ -66,6 +67,11 @@ func NewRedis(cfg *redis.UniversalOptions) (redis.UniversalClient, error) {
 	}
 
 	return client, nil
+}
+
+// IsEnabled check redis is enabled.
+func IsEnabled(addrs []string) bool {
+	return len(addrs) != 0
 }
 
 // MakeNamespaceKeyInManager make namespace key in manager.

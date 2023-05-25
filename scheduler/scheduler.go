@@ -107,18 +107,6 @@ type Server struct {
 func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	s := &Server{config: cfg}
 
-	// Initialize redis client.
-	rdb, err := pkgredis.NewRedis(&redis.UniversalOptions{
-		Addrs:      cfg.Database.Redis.Addrs,
-		MasterName: cfg.Database.Redis.MasterName,
-		DB:         cfg.Database.Redis.NetworkTopologyDB,
-		Username:   cfg.Database.Redis.Username,
-		Password:   cfg.Database.Redis.Password,
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	// Initialize Storage.
 	storage, err := storage.New(
 		d.DataDir(),
@@ -263,9 +251,32 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	svr := rpcserver.New(cfg, resource, scheduling, dynconfig, s.storage, schedulerServerOptions...)
 	s.grpcServer = svr
 
+	// Initialize redis client.
+	var rdb redis.UniversalClient
+	if pkgredis.IsEnabled(cfg.Database.Redis.Addrs) {
+		rdb, err = pkgredis.NewRedis(&redis.UniversalOptions{
+			Addrs:      cfg.Database.Redis.Addrs,
+			MasterName: cfg.Database.Redis.MasterName,
+			DB:         cfg.Database.Redis.NetworkTopologyDB,
+			Username:   cfg.Database.Redis.Username,
+			Password:   cfg.Database.Redis.Password,
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// Initialize job service.
-	if cfg.Job.Enable {
+	if cfg.Job.Enable && pkgredis.IsEnabled(cfg.Database.Redis.Addrs) {
 		s.job, err = job.New(cfg, resource)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Initialize network topology service.
+	if cfg.NetworkTopology.Enable && pkgredis.IsEnabled(cfg.Database.Redis.Addrs) {
+		s.networkTopology, err = networktopology.NewNetworkTopology(cfg.NetworkTopology, rdb, resource, s.storage)
 		if err != nil {
 			return nil, err
 		}
@@ -274,14 +285,6 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	// Initialize metrics.
 	if cfg.Metrics.Enable {
 		s.metricsServer = metrics.New(&cfg.Metrics, s.grpcServer)
-	}
-
-	// Initialize network topology service.
-	if cfg.NetworkTopology.Enable {
-		s.networkTopology, err = networktopology.NewNetworkTopology(cfg.NetworkTopology, rdb, resource, s.storage)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	return s, nil
@@ -301,7 +304,7 @@ func (s *Server) Serve() error {
 	logger.Info("gc start successfully")
 
 	// Serve Job.
-	if s.config.Job.Enable {
+	if s.config.Job.Enable && pkgredis.IsEnabled(s.config.Database.Redis.Addrs) {
 		s.job.Serve()
 		logger.Info("job start successfully")
 	}
