@@ -30,6 +30,11 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
+const (
+	// DefaultMovingAverageWeight is the weight of the moving average.
+	DefaultMovingAverageWeight = 0.1
+)
+
 // Probe is the probe metadata.
 type Probe struct {
 	// Host metadata.
@@ -118,9 +123,60 @@ func (p *probes) Peek() (*Probe, error) {
 	return probe, err
 }
 
-// TODO Implement function.
 // Enqueue enqueues probe into the queue.
 func (p *probes) Enqueue(probe *Probe) error {
+	length, err := p.Length()
+	if err != nil {
+		return err
+	}
+
+	if length == int64(p.config.QueueLength) {
+		if _, err := p.Dequeue(); err != nil {
+			return err
+		}
+	}
+
+	if err := p.Enqueue(probe); err != nil {
+		return err
+	}
+
+	if length == 0 {
+		if _, err := p.rdb.Pipelined(context.Background(), func(rdb redis.Pipeliner) error {
+			rdb.HSet(context.Background(), pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "averageRTT", probe.RTT.Nanoseconds())
+			rdb.HSet(context.Background(), pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "createdAt", probe.CreatedAt.UnixNano())
+			rdb.HSet(context.Background(), pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "updatedAt", probe.CreatedAt.UnixNano())
+			return nil
+		}); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	values, err := p.rdb.LRange(context.Background(), pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID), 0, -1).Result()
+	if err != nil {
+		return err
+	}
+
+	var averageRTT time.Duration
+	for _, value := range values {
+		probe := &Probe{}
+		if err = json.Unmarshal([]byte(value), probe); err != nil {
+			return err
+		}
+
+		averageRTT = time.Duration(float64(averageRTT)*DefaultMovingAverageWeight +
+			float64(probe.RTT)*(1-DefaultMovingAverageWeight))
+	}
+
+	if _, err := p.rdb.Pipelined(context.Background(), func(rdb redis.Pipeliner) error {
+		rdb.HSet(context.Background(), pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "averageRTT", averageRTT.Nanoseconds())
+		rdb.HSet(context.Background(), pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "updatedAt", probe.CreatedAt.UnixNano())
+		return nil
+	}); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -166,8 +222,15 @@ func (p *probes) UpdatedAt() (time.Time, error) {
 	return p.rdb.HGet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "updatedAt").Time()
 }
 
-// TODO Implement function.
 // AverageRTT is the average round-trip time of probes.
 func (p *probes) AverageRTT() (time.Duration, error) {
-	return time.Duration(0), nil
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	nano, err := p.rdb.HGet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "averageRTT").Uint64()
+	if err != nil {
+		return time.Duration(0), err
+	}
+
+	return time.Duration(nano), nil
 }
