@@ -276,7 +276,6 @@ func TestAnnouncer_announceToManager(t *testing.T) {
 	tests := []struct {
 		name   string
 		config *config.Config
-		sleep  func()
 		mock   func(m *managerclientmocks.MockV2MockRecorder)
 		except func(t *testing.T, a Announcer)
 	}{
@@ -299,9 +298,6 @@ func TestAnnouncer_announceToManager(t *testing.T) {
 					},
 					SchedulerClusterID: 1,
 				},
-			},
-			sleep: func() {
-				time.Sleep(100 * time.Millisecond)
 			},
 			mock: func(m *managerclientmocks.MockV2MockRecorder) {
 				m.UpdateScheduler(gomock.Any(), gomock.Eq(&managerv2.UpdateSchedulerRequest{
@@ -978,7 +974,7 @@ func TestAnnouncer_uploadNetworkTopologyToTrainer(t *testing.T) {
 		},
 		{
 			name: "send network topology failed",
-			data: []byte("download buffer"),
+			data: []byte("networkTopology buffer"),
 			config: &config.Config{
 				Server: config.ServerConfig{
 					Host:          "localhost",
