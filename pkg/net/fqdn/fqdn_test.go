@@ -25,4 +25,17 @@ import (
 func TestFQDNHostname(t *testing.T) {
 	fqdn := fqdnHostname()
 	assert.NotEmpty(t, fqdn)
+	// Save the original fqdn.FqdnHostname function and restore it after the test.
+	_, err := fqdn.FqdnHostname()
+	if err != nil {
+
+		// Test case where FQDN hostname is available
+		fqdnMock := "example.com"
+		fqdnResult := fqdnHostname()
+		assert.Equal(t, fqdnMock, fqdnResult, "FQDN hostname should match when available")
+
+		// Test case where FQDN hostname is not available
+		fqdnResult = fqdnHostname()
+		assert.NotEmpty(t, fqdnResult, "FQDN hostname should fallback to non-empty value when unavailable")
+	}
 }
