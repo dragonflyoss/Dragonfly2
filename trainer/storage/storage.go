@@ -99,9 +99,6 @@ type Storage interface {
 
 	// ClearNetworkTopology removes all network topology files.
 	ClearNetworkTopology() error
-
-	// ClearTempFile removes all temp files.
-	ClearTempFile() error
 }
 
 type storage struct {
@@ -132,7 +129,7 @@ func New(baseDir string, maxSize, maxBackups int) (Storage, error) {
 	return s, nil
 }
 
-// CreateTempDownload creates download temp file.
+// CreateTempDownload creates temp download.
 func (s *storage) CreateTempDownload(downloads []byte, modelKey string) error {
 	filename := s.downloadTempFilename(modelKey)
 	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
@@ -149,7 +146,7 @@ func (s *storage) CreateTempDownload(downloads []byte, modelKey string) error {
 	return nil
 }
 
-// CreateTempNetworkTopology creates network topology temp file.
+// CreateTempNetworkTopology creates temp network topology.
 func (s *storage) CreateTempNetworkTopology(networkTopologies []byte, modelKey string) error {
 	filename := s.networkTopologyTempFilename(modelKey)
 	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
@@ -400,8 +397,8 @@ func (s *storage) ClearNetworkTopology() error {
 	return nil
 }
 
-// ClearTempFile removes all temp files.
-func (s *storage) ClearTempFile() error {
+// clearDownloadTempFile removes all download temp files.
+func (s *storage) clearDownloadTempFile() error {
 	s.networkTopologyMu.Lock()
 	defer s.networkTopologyMu.Unlock()
 
@@ -417,7 +414,15 @@ func (s *storage) ClearTempFile() error {
 		}
 	}
 
-	fileInfos, err = s.networkTopologyTempFile()
+	return nil
+}
+
+// clearNetworkTopologyTempFile removes all network topology temp files.
+func (s *storage) clearNetworkTopologyTempFile() error {
+	s.networkTopologyMu.Lock()
+	defer s.networkTopologyMu.Unlock()
+
+	fileInfos, err := s.networkTopologyTempFile()
 	if err != nil {
 		return err
 	}
