@@ -445,10 +445,6 @@ func (cfg *Config) Validate() error {
 		return errors.New("server requires parameter host")
 	}
 
-	if len(cfg.Database.Redis.Addrs) == 0 {
-		return errors.New("redis requires parameter addrs")
-	}
-
 	if cfg.Database.Redis.BrokerDB < 0 {
 		return errors.New("redis requires parameter brokerDB")
 	}
