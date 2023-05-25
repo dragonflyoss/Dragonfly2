@@ -387,6 +387,9 @@ func (s *server) Download(req *dfdaemonv1.DownRequest, stream dfdaemonv1.Daemon_
 		return status.Error(codes.FailedPrecondition, "invalid metadata")
 	}
 
+	// currently, we only use daemon to download file via unix domain socket
+	// when request is from unix domain socket, authority is localhost
+	// when request is from tcp, authority is ip:port
 	if len(authority) == 0 || authority[0] != "localhost" {
 		logger.Errorf("invalid incoming source: %v", authority)
 		return status.Error(codes.Unauthenticated, "invalid incoming source")
