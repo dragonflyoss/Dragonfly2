@@ -379,6 +379,19 @@ func (s *server) CheckHealth(context.Context, *emptypb.Empty) (*emptypb.Empty, e
 func (s *server) Download(req *dfdaemonv1.DownRequest, stream dfdaemonv1.Daemon_DownloadServer) error {
 	s.Keep()
 	ctx := stream.Context()
+	pr, ok := grpcpeer.FromContext(ctx)
+
+	if !ok {
+		return status.Error(codes.FailedPrecondition, "invalid grpc peer info")
+	}
+
+	// currently, we only use daemon to download file via unix domain socket
+	if pr.Addr.Network() != "unix" {
+		err := fmt.Sprintf("invalid incoming source: %v", pr.Addr.String())
+		logger.Errorf(err)
+		return status.Error(codes.Unauthenticated, err)
+	}
+
 	if req.Recursive {
 		return s.recursiveDownload(ctx, req, stream)
 	}

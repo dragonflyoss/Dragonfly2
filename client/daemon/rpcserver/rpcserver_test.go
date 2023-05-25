@@ -18,15 +18,16 @@ package rpcserver
 
 import (
 	"context"
-	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
+	"os"
+	"path"
 	"sync"
 	"testing"
 
 	"github.com/distribution/distribution/v3/uuid"
 	"github.com/golang/mock/gomock"
-	"github.com/phayes/freeport"
 	testifyassert "github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
@@ -679,7 +680,13 @@ func TestServer_ServeDownload(t *testing.T) {
 		peerHost:        &schedulerv1.PeerHost{},
 		peerTaskManager: mockPeerTaskManager,
 	}
-	client := setupPeerServerAndClient(t, s, assert, s.ServeDownload)
+
+	socketDir, err := ioutil.TempDir(os.TempDir(), "d7y-test-***")
+	assert.Nil(err, "make temp dir should be ok")
+	socketPath := path.Join(socketDir, "rpc.sock")
+	defer os.RemoveAll(socketDir)
+
+	client := setupPeerServerAndClient(t, socketPath, s, assert, s.ServeDownload)
 	request := &dfdaemonv1.DownRequest{
 		Uuid:              uuid.Generate().String(),
 		Url:               "http://localhost/test",
@@ -745,7 +752,13 @@ func TestServer_ServePeer(t *testing.T) {
 		peerHost:       &schedulerv1.PeerHost{},
 		storageManager: mockStorageManger,
 	}
-	client := setupPeerServerAndClient(t, s, assert, s.ServePeer)
+
+	socketDir, err := ioutil.TempDir(os.TempDir(), "d7y-test-***")
+	assert.Nil(err, "make temp dir should be ok")
+	socketPath := path.Join(socketDir, "rpc.sock")
+	defer os.RemoveAll(socketDir)
+
+	client := setupPeerServerAndClient(t, socketPath, s, assert, s.ServePeer)
 	defer s.peerServer.GracefulStop()
 
 	var tests = []struct {
@@ -1077,7 +1090,12 @@ func TestServer_SyncPieceTasks(t *testing.T) {
 					peerTaskManager: mockTaskManager,
 				}
 
-				client := setupPeerServerAndClient(t, s, assert, s.ServePeer)
+				socketDir, err := ioutil.TempDir(os.TempDir(), "d7y-test-***")
+				assert.Nil(err, "make temp dir should be ok")
+				socketPath := path.Join(socketDir, "rpc.sock")
+				defer os.RemoveAll(socketDir)
+
+				client := setupPeerServerAndClient(t, socketPath, s, assert, s.ServePeer)
 				syncClient, err := client.SyncPieceTasks(
 					context.Background(),
 					&commonv1.PieceTaskRequest{
@@ -1141,19 +1159,15 @@ func TestServer_SyncPieceTasks(t *testing.T) {
 	}
 }
 
-func setupPeerServerAndClient(t *testing.T, srv *server, assert *testifyassert.Assertions, serveFunc func(listener net.Listener) error) dfdaemonclient.V1 {
+func setupPeerServerAndClient(t *testing.T, socket string, srv *server, assert *testifyassert.Assertions, serveFunc func(listener net.Listener) error) dfdaemonclient.V1 {
 	if srv.healthServer == nil {
 		srv.healthServer = health.NewServer()
 	}
 	srv.downloadServer = dfdaemonserver.New(srv, srv.healthServer)
 	srv.peerServer = dfdaemonserver.New(srv, srv.healthServer)
-	port, err := freeport.GetFreePort()
-	if err != nil {
-		t.Fatal(err)
-	}
 
-	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-	assert.Nil(err, "get free port should be ok")
+	ln, err := net.Listen("unix", socket)
+	assert.Nil(err, "listen unix socket should be ok")
 	go func() {
 		if err := serveFunc(ln); err != nil {
 			t.Error(err)
@@ -1161,8 +1175,8 @@ func setupPeerServerAndClient(t *testing.T, srv *server, assert *testifyassert.A
 	}()
 
 	netAddr := &dfnet.NetAddr{
-		Type: dfnet.TCP,
-		Addr: fmt.Sprintf(":%d", port),
+		Type: dfnet.UNIX,
+		Addr: socket,
 	}
 	client, err := dfdaemonclient.GetInsecureV1(context.Background(), netAddr.String())
 	assert.Nil(err, "grpc dial should be ok")
