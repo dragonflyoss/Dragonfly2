@@ -45,6 +45,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/metadata"
 	grpcpeer "google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -379,6 +380,18 @@ func (s *server) CheckHealth(context.Context, *emptypb.Empty) (*emptypb.Empty, e
 func (s *server) Download(req *dfdaemonv1.DownRequest, stream dfdaemonv1.Daemon_DownloadServer) error {
 	s.Keep()
 	ctx := stream.Context()
+	md, ok := metadata.FromIncomingContext(ctx)
+	authority := md.Get(":authority")
+
+	if !ok {
+		return status.Error(codes.FailedPrecondition, "invalid metadata")
+	}
+
+	if len(authority) == 0 || authority[0] != "localhost" {
+		logger.Errorf("invalid incoming source: %v", authority)
+		return status.Error(codes.Unauthenticated, "invalid incoming source")
+	}
+
 	if req.Recursive {
 		return s.recursiveDownload(ctx, req, stream)
 	}
