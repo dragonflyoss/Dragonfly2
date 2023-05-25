@@ -115,7 +115,7 @@ func MakeNamespaceKeyInScheduler(namespace string) string {
 
 // MakeKeyInScheduler make key in scheduler.
 func MakeKeyInScheduler(namespace, id string) string {
-	return fmt.Sprintf("%s:%s", MakeNamespaceKeyInManager(namespace), id)
+	return fmt.Sprintf("%s:%s", MakeNamespaceKeyInScheduler(namespace), id)
 }
 
 // MakeNetworkTopologyKeyInScheduler make network topology key in scheduler.
