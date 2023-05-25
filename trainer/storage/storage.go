@@ -70,6 +70,12 @@ const (
 
 // Storage is the interface used for storage.
 type Storage interface {
+	// CreateTempDownload creates download temp file.
+	CreateTempDownload([]byte, string) error
+
+	// CreateTempNetworkTopology creates network topology temp file.
+	CreateTempNetworkTopology([]byte, string) error
+
 	// CreateDownload inserts downloads into csv files from temp file based on the given model key.
 	CreateDownload(string) error
 
@@ -93,6 +99,9 @@ type Storage interface {
 
 	// ClearNetworkTopology removes all network topology files.
 	ClearNetworkTopology() error
+
+	// ClearTempFile removes all temp files.
+	ClearTempFile() error
 }
 
 type storage struct {
@@ -100,13 +109,11 @@ type storage struct {
 	maxSize    int64
 	maxBackups int
 
-	downloadMu       *sync.RWMutex
-	downloadTempFile map[string]*os.File
-	downloadModelKey map[string][]string
+	downloadMu        *sync.RWMutex
+	networkTopologyMu *sync.RWMutex
 
-	networkTopologyMu       *sync.RWMutex
-	networkTopologyTempFile map[string]*os.File
-	networkTopologyModelKey map[string][]string
+	downloadModelKey        map[string]struct{}
+	networkTopologyModelKey map[string]struct{}
 }
 
 // New returns a new Storage instance.
@@ -116,26 +123,23 @@ func New(baseDir string, maxSize, maxBackups int) (Storage, error) {
 		maxSize:    int64(maxSize * megabyte),
 		maxBackups: maxBackups,
 
-		downloadMu:        &sync.RWMutex{},
-		networkTopologyMu: &sync.RWMutex{},
+		downloadMu:              &sync.RWMutex{},
+		networkTopologyMu:       &sync.RWMutex{},
+		downloadModelKey:        make(map[string]struct{}),
+		networkTopologyModelKey: make(map[string]struct{}),
 	}
 
 	return s, nil
 }
 
-// createTempDownload creates download temp file.
-func (s *storage) createTempDownload(downloads []byte, modelKey string) error {
-
-	// Init download temp file based on modelKey.
-	filename := filepath.Join(s.baseDir, fmt.Sprintf("%s-%s-%s.%s", DownloadFilePrefix, TempFileInfix, modelKey, CSVFileExt))
-	file, ok := s.downloadTempFile[modelKey]
-	if !ok {
-		tempFile, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
-		if err != nil {
-			return err
-		}
-		defer tempFile.Close()
+// CreateTempDownload creates download temp file.
+func (s *storage) CreateTempDownload(downloads []byte, modelKey string) error {
+	filename := s.downloadTempFilename(modelKey)
+	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	if err != nil {
+		return err
 	}
+	defer file.Close()
 
 	// Write downloads to temp file.
 	if _, err := io.Copy(file, bytes.NewReader(downloads)); err != nil {
@@ -145,27 +149,17 @@ func (s *storage) createTempDownload(downloads []byte, modelKey string) error {
 	return nil
 }
 
-// CreateNetworkTopologyTempFile creates network topology temp file.
-func (s *storage) CreateNetworkTopologyTempFile(networkTopologies []byte, modelKey string) error {
-
-	// Init network topology temp file based on model Key.
-	filename := filepath.Join(s.baseDir, fmt.Sprintf("%s-%s-%s.%s", NetworkTopologyFilePrefix, TempFileInfix, modelKey, CSVFileExt))
-	if _, ok := s.networkTopologyTempFile[modelKey]; !ok {
-		file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
-		if err != nil {
-			return err
-		}
-
-		// Update network topology temp file map
-		s.networkTopologyTempFile[modelKey] = file
-		defer file.Close()
-
-		// Update model key list.
-		s.networkTopologyModelKey = append(s.networkTopologyModelKey, modelKey)
+// CreateTempNetworkTopology creates network topology temp file.
+func (s *storage) CreateTempNetworkTopology(networkTopologies []byte, modelKey string) error {
+	filename := s.networkTopologyTempFilename(modelKey)
+	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	if err != nil {
+		return err
 	}
+	defer file.Close()
 
 	// Write network topologies to temp file.
-	if _, err := io.Copy(s.networkTopologyTempFile[modelKey], bytes.NewReader(networkTopologies)); err != nil {
+	if _, err := io.Copy(file, bytes.NewReader(networkTopologies)); err != nil {
 		return err
 	}
 
@@ -174,19 +168,24 @@ func (s *storage) CreateNetworkTopologyTempFile(networkTopologies []byte, modelK
 
 // CreateDownload inserts downloads into csv files from temp file based on the given model key.
 func (s *storage) CreateDownload(modelKey string) error {
+	s.downloadMu.Lock()
+	defer s.downloadMu.Unlock()
+
 	file, err := s.openDownloadFile(modelKey)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	tempFilename := filepath.Join(s.baseDir, fmt.Sprintf("%s-%s-%s.%s", DownloadFilePrefix, TempFileInfix, modelKey, CSVFileExt))
-	if _, err := os.Stat(tempFilename); err != nil {
+	tempFilename := s.downloadTempFilename(modelKey)
+	tempFile, err := os.Open(tempFilename)
+	if err != nil {
 		return err
 	}
+	defer tempFile.Close()
 
 	// Write downloads to download csv file.
-	if _, err := io.Copy(file, s.downloadTempFile[modelKey]); err != nil {
+	if _, err := io.Copy(file, tempFile); err != nil {
 		return err
 	}
 
@@ -195,30 +194,42 @@ func (s *storage) CreateDownload(modelKey string) error {
 		return err
 	}
 
+	// Add model key.
+	s.downloadModelKey[modelKey] = struct{}{}
+
 	return nil
 }
 
 // CreateNetworkTopology inserts network topologies into csv files from temp file based on the given model key.
 func (s *storage) CreateNetworkTopology(modelKey string) error {
+	s.networkTopologyMu.Lock()
+	defer s.networkTopologyMu.Unlock()
+
 	file, err := s.openNetworkTopologyFile(modelKey)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	cacheFilename := filepath.Join(s.baseDir, fmt.Sprintf("%s-%s-%s.%s", NetworkTopologyFilePrefix, TempFileInfix, modelKey, CSVFileExt))
-	if _, err := os.Stat(cacheFilename); err != nil {
+	tempFilename := s.networkTopologyTempFilename(modelKey)
+	tempFile, err := os.Open(tempFilename)
+	if err != nil {
 		return err
 	}
+	defer tempFile.Close()
+
 	// Write network topologies to csv file.
-	if _, err := io.Copy(file, s.networkTopologyTempFile[modelKey]); err != nil {
+	if _, err := io.Copy(file, tempFile); err != nil {
 		return err
 	}
 
 	// Delete network topologies temp file.
-	if err := os.Remove(cacheFilename); err != nil {
+	if err := os.Remove(tempFilename); err != nil {
 		return err
 	}
+
+	// Add model key.
+	s.networkTopologyModelKey[modelKey] = struct{}{}
 
 	return nil
 }
@@ -350,7 +361,7 @@ func (s *storage) ClearDownload() error {
 	s.downloadMu.Lock()
 	defer s.downloadMu.Unlock()
 
-	for _, modelKey := range s.downloadModelKey {
+	for _, modelKey := range s.getDownloadModelKey() {
 		fileInfos, err := s.downloadBackups(modelKey)
 		if err != nil {
 			return err
@@ -364,8 +375,6 @@ func (s *storage) ClearDownload() error {
 		}
 	}
 
-	s.downloadModelKey = []string{}
-	s.downloadTempFile = make(map[string]*os.File)
 	return nil
 }
 
@@ -374,7 +383,7 @@ func (s *storage) ClearNetworkTopology() error {
 	s.networkTopologyMu.Lock()
 	defer s.networkTopologyMu.Unlock()
 
-	for _, modelKey := range s.networkTopologyModelKey {
+	for _, modelKey := range s.getNetworkTopologyModelKey() {
 		fileInfos, err := s.networkTopologyBackups(modelKey)
 		if err != nil {
 			return err
@@ -388,24 +397,46 @@ func (s *storage) ClearNetworkTopology() error {
 		}
 	}
 
-	s.networkTopologyModelKey = []string{}
-	s.networkTopologyTempFile = make(map[string]*os.File)
+	return nil
+}
+
+// ClearTempFile removes all temp files.
+func (s *storage) ClearTempFile() error {
+	s.networkTopologyMu.Lock()
+	defer s.networkTopologyMu.Unlock()
+
+	fileInfos, err := s.downloadTempFile()
+	if err != nil {
+		return err
+	}
+
+	for _, fileInfo := range fileInfos {
+		filename := filepath.Join(s.baseDir, fileInfo.Name())
+		if err := os.Remove(filename); err != nil {
+			return err
+		}
+	}
+
+	fileInfos, err = s.networkTopologyTempFile()
+	if err != nil {
+		return err
+	}
+
+	for _, fileInfo := range fileInfos {
+		filename := filepath.Join(s.baseDir, fileInfo.Name())
+		if err := os.Remove(filename); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
 // openDownloadFile opens the download file and removes download files that exceed the total size based on given model key.
 func (s *storage) openDownloadFile(modelKey string) (*os.File, error) {
-	downloadFilename := filepath.Join(s.baseDir, fmt.Sprintf("%s-%s.%s", DownloadFilePrefix, modelKey, CSVFileExt))
-
+	downloadFilename := s.downloadFilename(modelKey)
 	fileInfo, err := os.Stat(downloadFilename)
 	if err != nil {
-		if _, ok := s.downloadTempFile[modelKey]; ok {
-			file, e := os.OpenFile(downloadFilename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
-			if e != nil {
-				return nil, e
-			}
-			return file, nil
-		}
 		return nil, err
 	}
 
@@ -437,17 +468,10 @@ func (s *storage) openDownloadFile(modelKey string) (*os.File, error) {
 
 // openNetworkTopologyFile opens the network topology file and removes network topology files that exceed the total size based on given model key.
 func (s *storage) openNetworkTopologyFile(modelKey string) (*os.File, error) {
-	networkTopologyFilename := filepath.Join(s.baseDir, fmt.Sprintf("%s-%s.%s", NetworkTopologyFilePrefix, modelKey, CSVFileExt))
+	networkTopologyFilename := s.networkTopologyFilename(modelKey)
 
 	fileInfo, err := os.Stat(networkTopologyFilename)
 	if err != nil {
-		if _, ok := s.networkTopologyTempFile[modelKey]; ok {
-			file, e := os.OpenFile(networkTopologyFilename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
-			if e != nil {
-				return nil, e
-			}
-			return file, nil
-		}
 		return nil, err
 	}
 
@@ -541,4 +565,96 @@ func (s *storage) networkTopologyBackups(modelKey string) ([]fs.FileInfo, error)
 	})
 
 	return backups, nil
+}
+
+// downloadTempFile returns download temp file information based on given model key.
+func (s *storage) downloadTempFile() ([]fs.FileInfo, error) {
+	fileInfos, err := ioutil.ReadDir(s.baseDir)
+	if err != nil {
+		return nil, err
+	}
+
+	var tempFiles []fs.FileInfo
+	regexp := regexp.MustCompile(fmt.Sprintf("%s-%s", DownloadFilePrefix, TempFileInfix))
+
+	for _, fileInfo := range fileInfos {
+		if !fileInfo.IsDir() && regexp.MatchString(fileInfo.Name()) {
+			tempFiles = append(tempFiles, fileInfo)
+		}
+	}
+
+	if len(tempFiles) <= 0 {
+		return nil, errors.New("download temp files do not exist")
+	}
+
+	return tempFiles, nil
+}
+
+// networkTopologyTempFile returns network topology temp file information based on given model key.
+func (s *storage) networkTopologyTempFile() ([]fs.FileInfo, error) {
+	fileInfos, err := ioutil.ReadDir(s.baseDir)
+	if err != nil {
+		return nil, err
+	}
+
+	var tempFiles []fs.FileInfo
+	regexp := regexp.MustCompile(fmt.Sprintf("%s-%s", NetworkTopologyFilePrefix, TempFileInfix))
+
+	for _, fileInfo := range fileInfos {
+		if !fileInfo.IsDir() && regexp.MatchString(fileInfo.Name()) {
+			tempFiles = append(tempFiles, fileInfo)
+		}
+	}
+
+	if len(tempFiles) <= 0 {
+		return nil, errors.New("network topolog temp file does not exist")
+	}
+
+	return tempFiles, nil
+}
+
+// getDownloadModelKey returns the model key list of downloads.
+func (s *storage) getDownloadModelKey() []string {
+	s.downloadMu.RLock()
+	defer s.downloadMu.RUnlock()
+
+	var keys []string
+	for key := range s.downloadModelKey {
+		keys = append(keys, key)
+	}
+
+	return keys
+}
+
+// getNetworkTopologyModelKey returns the model key list of downloads.
+func (s *storage) getNetworkTopologyModelKey() []string {
+	s.downloadMu.RLock()
+	defer s.downloadMu.RUnlock()
+
+	var keys []string
+	for key := range s.networkTopologyModelKey {
+		keys = append(keys, key)
+	}
+
+	return keys
+}
+
+// downloadFilename generates download file name based on given model key.
+func (s *storage) downloadFilename(modelKey string) string {
+	return filepath.Join(s.baseDir, fmt.Sprintf("%s-%s.%s", DownloadFilePrefix, modelKey, CSVFileExt))
+}
+
+// networkTopologyFilename generates network topology file name based on given model key.
+func (s *storage) networkTopologyFilename(modelKey string) string {
+	return filepath.Join(s.baseDir, fmt.Sprintf("%s-%s.%s", NetworkTopologyFilePrefix, modelKey, CSVFileExt))
+}
+
+// downloadFilename generates download temp file name based on given model key.
+func (s *storage) downloadTempFilename(modelKey string) string {
+	return filepath.Join(s.baseDir, fmt.Sprintf("%s-%s-%s.%s", DownloadFilePrefix, TempFileInfix, modelKey, CSVFileExt))
+}
+
+// networkTopologyFilename generates network topology temp file name based on given model key.
+func (s *storage) networkTopologyTempFilename(modelKey string) string {
+	return filepath.Join(s.baseDir, fmt.Sprintf("%s-%s-%s.%s", NetworkTopologyFilePrefix, TempFileInfix, modelKey, CSVFileExt))
 }
