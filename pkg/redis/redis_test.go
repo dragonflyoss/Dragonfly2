@@ -72,7 +72,7 @@ func Test_MakeSeedPeerKeyInManager(t *testing.T) {
 		expect    func(t *testing.T, s string)
 	}{
 		{
-			name:      "make key in manager",
+			name:      "make seed peer key in manager",
 			clusterID: 1,
 			hostname:  "hostname",
 			ip:        "127.0.0.1",
@@ -98,7 +98,7 @@ func Test_MakeSchedulerKeyInManager(t *testing.T) {
 		expect    func(t *testing.T, s string)
 	}{
 		{
-			name:      "make key in manager",
+			name:      "make scheduler key in manager",
 			clusterID: 1,
 			hostname:  "hostname",
 			ip:        "127.0.0.1",
@@ -123,7 +123,7 @@ func Test_MakePeerKeyInManager(t *testing.T) {
 		expect   func(t *testing.T, s string)
 	}{
 		{
-			name:     "make key in manager",
+			name:     "make peer key in manager",
 			hostname: "hostname",
 			ip:       "127.0.0.1",
 			expect: func(t *testing.T, s string) {
@@ -147,7 +147,7 @@ func Test_MakeSchedulersKeyForPeerInManager(t *testing.T) {
 		expect   func(t *testing.T, s string)
 	}{
 		{
-			name:     "make key in manager",
+			name:     "make scheduler key for peer in manager",
 			hostname: "hostname",
 			ip:       "127.0.0.1",
 			expect: func(t *testing.T, s string) {
@@ -171,7 +171,7 @@ func Test_MakeApplicationsKeyInManager(t *testing.T) {
 		expect   func(t *testing.T, s string)
 	}{
 		{
-			name:     "make key in manager",
+			name:     "make applications key in manager",
 			hostname: "hostname",
 			ip:       "127.0.0.1",
 			expect: func(t *testing.T, s string) {
@@ -194,7 +194,7 @@ func Test_MakeBucketKeyInManager(t *testing.T) {
 		expect    func(t *testing.T, s string)
 	}{
 		{
-			name:      "make key in manager",
+			name:      "make bucket key in manager",
 			namespace: "namespace",
 			expect: func(t *testing.T, s string) {
 				assert := assert.New(t)
@@ -216,7 +216,7 @@ func Test_MakeNamespaceKeyInScheduler(t *testing.T) {
 		expect    func(t *testing.T, s string)
 	}{
 		{
-			name:      "make key in manager",
+			name:      "make namespace key in scheduler",
 			namespace: "namespace",
 			expect: func(t *testing.T, s string) {
 				assert := assert.New(t)
@@ -239,12 +239,12 @@ func Test_MakeKeyInScheduler(t *testing.T) {
 		expect    func(t *testing.T, s string)
 	}{
 		{
-			name:      "make key in manager",
+			name:      "make key in scheduler",
 			namespace: "namespace",
 			id:        "id",
 			expect: func(t *testing.T, s string) {
 				assert := assert.New(t)
-				assert.Equal(s, "manager:namespace:id")
+				assert.Equal(s, "scheduler:namespace:id")
 			},
 		},
 	}
@@ -263,12 +263,12 @@ func Test_MakeNetworkTopologyKeyInScheduler(t *testing.T) {
 		expect     func(t *testing.T, s string)
 	}{
 		{
-			name:       "make key in manager",
+			name:       "make network topology key in scheduler",
 			srcHostID:  "src",
 			destHostID: "dest",
 			expect: func(t *testing.T, s string) {
 				assert := assert.New(t)
-				assert.Equal(s, "manager:network-topology:src:dest")
+				assert.Equal(s, "scheduler:network-topology:src:dest")
 			},
 		},
 	}
@@ -287,12 +287,12 @@ func Test_MakeProbesKeyInScheduler(t *testing.T) {
 		expect     func(t *testing.T, s string)
 	}{
 		{
-			name:       "make key in manager",
+			name:       "make probes key in scheduler",
 			srcHostID:  "src",
 			destHostID: "dest",
 			expect: func(t *testing.T, s string) {
 				assert := assert.New(t)
-				assert.Equal(s, "manager:probes:src:dest")
+				assert.Equal(s, "scheduler:probes:src:dest")
 			},
 		},
 	}
@@ -310,11 +310,11 @@ func Test_MakeProbedCountKeyInScheduler(t *testing.T) {
 		expect func(t *testing.T, s string)
 	}{
 		{
-			name:   "make key in manager",
+			name:   "make probed count key in scheduler",
 			hostID: "host_id",
 			expect: func(t *testing.T, s string) {
 				assert := assert.New(t)
-				assert.Equal(s, "manager:probed-count:host_id")
+				assert.Equal(s, "scheduler:probed-count:host_id")
 			},
 		},
 	}
