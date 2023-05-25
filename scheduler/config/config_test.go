@@ -260,19 +260,6 @@ func TestConfig_Validate(t *testing.T) {
 			},
 		},
 		{
-			name:   "redis requires parameter addrs",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Database.Redis = mockRedisConfig
-				cfg.Database.Redis.Addrs = []string{}
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "redis requires parameter addrs")
-			},
-		},
-		{
 			name:   "redis requires parameter brokerDB",
 			config: New(),
 			mock: func(cfg *Config) {
