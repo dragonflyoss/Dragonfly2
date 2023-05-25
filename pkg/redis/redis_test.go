@@ -20,6 +20,14 @@ func Test_MakeNamespaceKeyInManager(t *testing.T) {
 				assert.Equal(s, "manager:namespace")
 			},
 		},
+		{
+			name:      "namespace is null",
+			namespace: "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "manager:")
+			},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -42,6 +50,33 @@ func Test_MakeKeyInManager(t *testing.T) {
 			expect: func(t *testing.T, s string) {
 				assert := assert.New(t)
 				assert.Equal(s, "manager:namespace:id")
+			},
+		},
+		{
+			name:      "namespace is null",
+			namespace: "",
+			id:        "id",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "manager::id")
+			},
+		},
+		{
+			name:      "key is null",
+			namespace: "namespace",
+			id:        "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "manager:namespace:")
+			},
+		},
+		{
+			name:      "namespace and key are null",
+			namespace: "",
+			id:        "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "manager::")
 			},
 		},
 	}
@@ -70,6 +105,36 @@ func Test_MakeSeedPeerKeyInManager(t *testing.T) {
 				assert.Equal(s, "manager:seed-peers:1-hostname-127.0.0.1")
 			},
 		},
+		{
+			name:      "hostname is null",
+			clusterID: 1,
+			hostname:  "",
+			ip:        "127.0.0.1",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "manager:seed-peers:1--127.0.0.1")
+			},
+		},
+		{
+			name:      "ip is null",
+			clusterID: 1,
+			hostname:  "hostname",
+			ip:        "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "manager:seed-peers:1-hostname-")
+			},
+		},
+		{
+			name:      "hostname and ip are null",
+			clusterID: 1,
+			hostname:  "",
+			ip:        "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "manager:seed-peers:1--")
+			},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -96,6 +161,36 @@ func Test_MakeSchedulerKeyInManager(t *testing.T) {
 				assert.Equal(s, "manager:schedulers:1-hostname-127.0.0.1")
 			},
 		},
+		{
+			name:      "hostname is null",
+			clusterID: 1,
+			hostname:  "",
+			ip:        "127.0.0.1",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "manager:schedulers:1--127.0.0.1")
+			},
+		},
+		{
+			name:      "ip is null",
+			clusterID: 1,
+			hostname:  "hostname",
+			ip:        "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "manager:schedulers:1-hostname-")
+			},
+		},
+		{
+			name:      "hostname and ip are null",
+			clusterID: 1,
+			hostname:  "",
+			ip:        "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "manager:schedulers:1--")
+			},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -118,6 +213,33 @@ func Test_MakePeerKeyInManager(t *testing.T) {
 			expect: func(t *testing.T, s string) {
 				assert := assert.New(t)
 				assert.Equal(s, "manager:peers:hostname-127.0.0.1")
+			},
+		},
+		{
+			name:     "hostname is null",
+			hostname: "",
+			ip:       "127.0.0.1",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "manager:peers:-127.0.0.1")
+			},
+		},
+		{
+			name:     "ip is null",
+			hostname: "hostname",
+			ip:       "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "manager:peers:hostname-")
+			},
+		},
+		{
+			name:     "hostname and ip are null",
+			hostname: "",
+			ip:       "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "manager:peers:-")
 			},
 		},
 	}
@@ -144,6 +266,33 @@ func Test_MakeSchedulersKeyForPeerInManager(t *testing.T) {
 				assert.Equal(s, "manager:peers:hostname-127.0.0.1:schedulers")
 			},
 		},
+		{
+			name:     "hostname is null",
+			hostname: "",
+			ip:       "127.0.0.1",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "manager:peers:-127.0.0.1:schedulers")
+			},
+		},
+		{
+			name:     "ip is null",
+			hostname: "hostname",
+			ip:       "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "manager:peers:hostname-:schedulers")
+			},
+		},
+		{
+			name:     "hostname and ip are null",
+			hostname: "",
+			ip:       "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "manager:peers:-:schedulers")
+			},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -154,15 +303,11 @@ func Test_MakeSchedulersKeyForPeerInManager(t *testing.T) {
 
 func Test_MakeApplicationsKeyInManager(t *testing.T) {
 	tests := []struct {
-		name     string
-		hostname string
-		ip       string
-		expect   func(t *testing.T, s string)
+		name   string
+		expect func(t *testing.T, s string)
 	}{
 		{
-			name:     "make applications key in manager",
-			hostname: "hostname",
-			ip:       "127.0.0.1",
+			name: "make applications key in manager",
 			expect: func(t *testing.T, s string) {
 				assert := assert.New(t)
 				assert.Equal(s, "manager:applications")
@@ -190,6 +335,14 @@ func Test_MakeBucketKeyInManager(t *testing.T) {
 				assert.Equal(s, "manager:buckets:namespace")
 			},
 		},
+		{
+			name:      "namespace is null",
+			namespace: "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "manager:buckets:")
+			},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -210,6 +363,14 @@ func Test_MakeNamespaceKeyInScheduler(t *testing.T) {
 			expect: func(t *testing.T, s string) {
 				assert := assert.New(t)
 				assert.Equal(s, "scheduler:namespace")
+			},
+		},
+		{
+			name:      "namespace is null",
+			namespace: "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "scheduler:")
 			},
 		},
 	}
@@ -236,6 +397,33 @@ func Test_MakeKeyInScheduler(t *testing.T) {
 				assert.Equal(s, "scheduler:namespace:id")
 			},
 		},
+		{
+			name:      "namespace is null",
+			namespace: "",
+			id:        "id",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "scheduler::id")
+			},
+		},
+		{
+			name:      "id is null",
+			namespace: "namespace",
+			id:        "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "scheduler:namespace:")
+			},
+		},
+		{
+			name:      "namespace and id are null",
+			namespace: "",
+			id:        "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "scheduler::")
+			},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -258,6 +446,33 @@ func Test_MakeNetworkTopologyKeyInScheduler(t *testing.T) {
 			expect: func(t *testing.T, s string) {
 				assert := assert.New(t)
 				assert.Equal(s, "scheduler:network-topology:src:dest")
+			},
+		},
+		{
+			name:       "source host id is null",
+			srcHostID:  "",
+			destHostID: "dest",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "scheduler:network-topology::dest")
+			},
+		},
+		{
+			name:       "destination host id is null",
+			srcHostID:  "src",
+			destHostID: "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "scheduler:network-topology:src:")
+			},
+		},
+		{
+			name:       "source host id and destination host id are null",
+			srcHostID:  "",
+			destHostID: "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "scheduler:network-topology::")
 			},
 		},
 	}
@@ -284,6 +499,33 @@ func Test_MakeProbesKeyInScheduler(t *testing.T) {
 				assert.Equal(s, "scheduler:probes:src:dest")
 			},
 		},
+		{
+			name:       "source host id is null",
+			srcHostID:  "",
+			destHostID: "dest",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "scheduler:probes::dest")
+			},
+		},
+		{
+			name:       "destination host id is null",
+			srcHostID:  "src",
+			destHostID: "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "scheduler:probes:src:")
+			},
+		},
+		{
+			name:       "source host id and destination host id are null",
+			srcHostID:  "",
+			destHostID: "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "scheduler:probes::")
+			},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -304,6 +546,14 @@ func Test_MakeProbedCountKeyInScheduler(t *testing.T) {
 			expect: func(t *testing.T, s string) {
 				assert := assert.New(t)
 				assert.Equal(s, "scheduler:probed-count:host_id")
+			},
+		},
+		{
+			name:   "host id is null",
+			hostID: "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "scheduler:probed-count:")
 			},
 		},
 	}
