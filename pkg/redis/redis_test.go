@@ -21,7 +21,7 @@ func Test_MakeNamespaceKeyInManager(t *testing.T) {
 			},
 		},
 		{
-			name:      "namespace is null",
+			name:      "namespace is empty",
 			namespace: "",
 			expect: func(t *testing.T, s string) {
 				assert := assert.New(t)
@@ -53,7 +53,7 @@ func Test_MakeKeyInManager(t *testing.T) {
 			},
 		},
 		{
-			name:      "namespace is null",
+			name:      "namespace is empty",
 			namespace: "",
 			id:        "id",
 			expect: func(t *testing.T, s string) {
@@ -62,7 +62,7 @@ func Test_MakeKeyInManager(t *testing.T) {
 			},
 		},
 		{
-			name:      "key is null",
+			name:      "key is empty",
 			namespace: "namespace",
 			id:        "",
 			expect: func(t *testing.T, s string) {
@@ -71,7 +71,7 @@ func Test_MakeKeyInManager(t *testing.T) {
 			},
 		},
 		{
-			name:      "namespace and key are null",
+			name:      "namespace and key are empty",
 			namespace: "",
 			id:        "",
 			expect: func(t *testing.T, s string) {
@@ -106,7 +106,7 @@ func Test_MakeSeedPeerKeyInManager(t *testing.T) {
 			},
 		},
 		{
-			name:      "hostname is null",
+			name:      "hostname is empty",
 			clusterID: 1,
 			hostname:  "",
 			ip:        "127.0.0.1",
@@ -116,7 +116,7 @@ func Test_MakeSeedPeerKeyInManager(t *testing.T) {
 			},
 		},
 		{
-			name:      "ip is null",
+			name:      "ip is empty",
 			clusterID: 1,
 			hostname:  "hostname",
 			ip:        "",
@@ -126,7 +126,7 @@ func Test_MakeSeedPeerKeyInManager(t *testing.T) {
 			},
 		},
 		{
-			name:      "hostname and ip are null",
+			name:      "hostname and ip are empty",
 			clusterID: 1,
 			hostname:  "",
 			ip:        "",
@@ -162,7 +162,7 @@ func Test_MakeSchedulerKeyInManager(t *testing.T) {
 			},
 		},
 		{
-			name:      "hostname is null",
+			name:      "hostname is empty",
 			clusterID: 1,
 			hostname:  "",
 			ip:        "127.0.0.1",
@@ -172,7 +172,7 @@ func Test_MakeSchedulerKeyInManager(t *testing.T) {
 			},
 		},
 		{
-			name:      "ip is null",
+			name:      "ip is empty",
 			clusterID: 1,
 			hostname:  "hostname",
 			ip:        "",
@@ -182,7 +182,7 @@ func Test_MakeSchedulerKeyInManager(t *testing.T) {
 			},
 		},
 		{
-			name:      "hostname and ip are null",
+			name:      "hostname and ip are empty",
 			clusterID: 1,
 			hostname:  "",
 			ip:        "",
@@ -216,7 +216,7 @@ func Test_MakePeerKeyInManager(t *testing.T) {
 			},
 		},
 		{
-			name:     "hostname is null",
+			name:     "hostname is empty",
 			hostname: "",
 			ip:       "127.0.0.1",
 			expect: func(t *testing.T, s string) {
@@ -225,7 +225,7 @@ func Test_MakePeerKeyInManager(t *testing.T) {
 			},
 		},
 		{
-			name:     "ip is null",
+			name:     "ip is empty",
 			hostname: "hostname",
 			ip:       "",
 			expect: func(t *testing.T, s string) {
@@ -234,7 +234,7 @@ func Test_MakePeerKeyInManager(t *testing.T) {
 			},
 		},
 		{
-			name:     "hostname and ip are null",
+			name:     "hostname and ip are empty",
 			hostname: "",
 			ip:       "",
 			expect: func(t *testing.T, s string) {
@@ -267,7 +267,7 @@ func Test_MakeSchedulersKeyForPeerInManager(t *testing.T) {
 			},
 		},
 		{
-			name:     "hostname is null",
+			name:     "hostname is empty",
 			hostname: "",
 			ip:       "127.0.0.1",
 			expect: func(t *testing.T, s string) {
@@ -276,7 +276,7 @@ func Test_MakeSchedulersKeyForPeerInManager(t *testing.T) {
 			},
 		},
 		{
-			name:     "ip is null",
+			name:     "ip is empty",
 			hostname: "hostname",
 			ip:       "",
 			expect: func(t *testing.T, s string) {
@@ -285,7 +285,7 @@ func Test_MakeSchedulersKeyForPeerInManager(t *testing.T) {
 			},
 		},
 		{
-			name:     "hostname and ip are null",
+			name:     "hostname and ip are empty",
 			hostname: "",
 			ip:       "",
 			expect: func(t *testing.T, s string) {
@@ -336,7 +336,7 @@ func Test_MakeBucketKeyInManager(t *testing.T) {
 			},
 		},
 		{
-			name:      "namespace is null",
+			name:      "namespace is empty",
 			namespace: "",
 			expect: func(t *testing.T, s string) {
 				assert := assert.New(t)
@@ -366,7 +366,7 @@ func Test_MakeNamespaceKeyInScheduler(t *testing.T) {
 			},
 		},
 		{
-			name:      "namespace is null",
+			name:      "namespace is empty",
 			namespace: "",
 			expect: func(t *testing.T, s string) {
 				assert := assert.New(t)
@@ -398,7 +398,7 @@ func Test_MakeKeyInScheduler(t *testing.T) {
 			},
 		},
 		{
-			name:      "namespace is null",
+			name:      "namespace is empty",
 			namespace: "",
 			id:        "id",
 			expect: func(t *testing.T, s string) {
@@ -407,7 +407,7 @@ func Test_MakeKeyInScheduler(t *testing.T) {
 			},
 		},
 		{
-			name:      "id is null",
+			name:      "id is empty",
 			namespace: "namespace",
 			id:        "",
 			expect: func(t *testing.T, s string) {
@@ -416,7 +416,7 @@ func Test_MakeKeyInScheduler(t *testing.T) {
 			},
 		},
 		{
-			name:      "namespace and id are null",
+			name:      "namespace and id are empty",
 			namespace: "",
 			id:        "",
 			expect: func(t *testing.T, s string) {
@@ -449,7 +449,7 @@ func Test_MakeNetworkTopologyKeyInScheduler(t *testing.T) {
 			},
 		},
 		{
-			name:       "source host id is null",
+			name:       "source host id is empty",
 			srcHostID:  "",
 			destHostID: "dest",
 			expect: func(t *testing.T, s string) {
@@ -458,7 +458,7 @@ func Test_MakeNetworkTopologyKeyInScheduler(t *testing.T) {
 			},
 		},
 		{
-			name:       "destination host id is null",
+			name:       "destination host id is empty",
 			srcHostID:  "src",
 			destHostID: "",
 			expect: func(t *testing.T, s string) {
@@ -467,7 +467,7 @@ func Test_MakeNetworkTopologyKeyInScheduler(t *testing.T) {
 			},
 		},
 		{
-			name:       "source host id and destination host id are null",
+			name:       "source host id and destination host id are empty",
 			srcHostID:  "",
 			destHostID: "",
 			expect: func(t *testing.T, s string) {
@@ -500,7 +500,7 @@ func Test_MakeProbesKeyInScheduler(t *testing.T) {
 			},
 		},
 		{
-			name:       "source host id is null",
+			name:       "source host id is empty",
 			srcHostID:  "",
 			destHostID: "dest",
 			expect: func(t *testing.T, s string) {
@@ -509,7 +509,7 @@ func Test_MakeProbesKeyInScheduler(t *testing.T) {
 			},
 		},
 		{
-			name:       "destination host id is null",
+			name:       "destination host id is empty",
 			srcHostID:  "src",
 			destHostID: "",
 			expect: func(t *testing.T, s string) {
@@ -518,7 +518,7 @@ func Test_MakeProbesKeyInScheduler(t *testing.T) {
 			},
 		},
 		{
-			name:       "source host id and destination host id are null",
+			name:       "source host id and destination host id are empty",
 			srcHostID:  "",
 			destHostID: "",
 			expect: func(t *testing.T, s string) {
@@ -549,7 +549,7 @@ func Test_MakeProbedCountKeyInScheduler(t *testing.T) {
 			},
 		},
 		{
-			name:   "host id is null",
+			name:   "host id is empty",
 			hostID: "",
 			expect: func(t *testing.T, s string) {
 				assert := assert.New(t)
