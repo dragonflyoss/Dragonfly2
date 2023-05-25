@@ -3,18 +3,7 @@ package redis
 import (
 	"testing"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
-)
-
-var (
-	mockUniversalOptions = &redis.UniversalOptions{
-		Addrs:      []string{"127.0.0.0:6379"},
-		MasterName: "master",
-		DB:         3,
-		Username:   "baz",
-		Password:   "bax",
-	}
 )
 
 func Test_MakeNamespaceKeyInManager(t *testing.T) {
