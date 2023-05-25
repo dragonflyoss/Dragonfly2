@@ -341,7 +341,6 @@ func TestAnnouncer_announceToManager(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			tc.sleep()
 			tc.except(t, a)
 			if err := a.Stop(); err != nil {
 				t.Fatal(err)
