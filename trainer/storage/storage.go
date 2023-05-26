@@ -131,6 +131,9 @@ func New(baseDir string, maxSize, maxBackups int) (Storage, error) {
 
 // CreateTempDownload creates temp download.
 func (s *storage) CreateTempDownload(downloads []byte, modelKey string) error {
+	s.downloadMu.Lock()
+	defer s.downloadMu.Unlock()
+
 	filename := s.downloadTempFilename(modelKey)
 	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
@@ -148,6 +151,9 @@ func (s *storage) CreateTempDownload(downloads []byte, modelKey string) error {
 
 // CreateTempNetworkTopology creates temp network topology.
 func (s *storage) CreateTempNetworkTopology(networkTopologies []byte, modelKey string) error {
+	s.downloadMu.Lock()
+	defer s.downloadMu.Unlock()
+
 	filename := s.networkTopologyTempFilename(modelKey)
 	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
@@ -172,7 +178,6 @@ func (s *storage) CreateDownload(modelKey string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
 
 	tempFilename := s.downloadTempFilename(modelKey)
 	tempFile, err := os.Open(tempFilename)
@@ -183,8 +188,10 @@ func (s *storage) CreateDownload(modelKey string) error {
 
 	// Write downloads to download csv file.
 	if _, err := io.Copy(file, tempFile); err != nil {
+		os.Remove(file.Name())
 		return err
 	}
+	defer file.Close()
 
 	// Delete download temp file.
 	if err := os.Remove(tempFilename); err != nil {
@@ -193,7 +200,6 @@ func (s *storage) CreateDownload(modelKey string) error {
 
 	// Add model key.
 	s.downloadModelKey[modelKey] = struct{}{}
-
 	return nil
 }
 
@@ -206,7 +212,6 @@ func (s *storage) CreateNetworkTopology(modelKey string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
 
 	tempFilename := s.networkTopologyTempFilename(modelKey)
 	tempFile, err := os.Open(tempFilename)
@@ -217,8 +222,10 @@ func (s *storage) CreateNetworkTopology(modelKey string) error {
 
 	// Write network topologies to csv file.
 	if _, err := io.Copy(file, tempFile); err != nil {
+		os.Remove(file.Name())
 		return err
 	}
+	defer file.Close()
 
 	// Delete network topologies temp file.
 	if err := os.Remove(tempFilename); err != nil {
@@ -227,7 +234,6 @@ func (s *storage) CreateNetworkTopology(modelKey string) error {
 
 	// Add model key.
 	s.networkTopologyModelKey[modelKey] = struct{}{}
-
 	return nil
 }
 
@@ -372,6 +378,7 @@ func (s *storage) ClearDownload() error {
 		}
 	}
 
+	s.downloadModelKey = make(map[string]struct{})
 	return nil
 }
 
@@ -394,6 +401,7 @@ func (s *storage) ClearNetworkTopology() error {
 		}
 	}
 
+	s.networkTopologyModelKey = make(map[string]struct{})
 	return nil
 }
 
@@ -442,7 +450,12 @@ func (s *storage) openDownloadFile(modelKey string) (*os.File, error) {
 	downloadFilename := s.downloadFilename(modelKey)
 	fileInfo, err := os.Stat(downloadFilename)
 	if err != nil {
-		return nil, err
+		file, err := os.OpenFile(downloadFilename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+		if err != nil {
+			return nil, err
+		}
+
+		return file, nil
 	}
 
 	if s.maxSize <= fileInfo.Size() {
@@ -477,7 +490,12 @@ func (s *storage) openNetworkTopologyFile(modelKey string) (*os.File, error) {
 
 	fileInfo, err := os.Stat(networkTopologyFilename)
 	if err != nil {
-		return nil, err
+		file, err := os.OpenFile(networkTopologyFilename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+		if err != nil {
+			return nil, err
+		}
+
+		return file, nil
 	}
 
 	if s.maxSize <= fileInfo.Size() {
@@ -620,8 +638,6 @@ func (s *storage) networkTopologyTempFile() ([]fs.FileInfo, error) {
 
 // getDownloadModelKey returns the model key list of downloads.
 func (s *storage) getDownloadModelKey() []string {
-	s.downloadMu.RLock()
-	defer s.downloadMu.RUnlock()
 
 	var keys []string
 	for key := range s.downloadModelKey {
@@ -633,8 +649,6 @@ func (s *storage) getDownloadModelKey() []string {
 
 // getNetworkTopologyModelKey returns the model key list of downloads.
 func (s *storage) getNetworkTopologyModelKey() []string {
-	s.downloadMu.RLock()
-	defer s.downloadMu.RUnlock()
 
 	var keys []string
 	for key := range s.networkTopologyModelKey {
