@@ -114,7 +114,7 @@ func TestStorage_CreateTempDownload(t *testing.T) {
 			name:    "open temp file failed",
 			baseDir: os.TempDir(),
 			mock: func(s Storage, baseDir string) {
-				s.(*storage).baseDir = "baz"
+				s.(*storage).baseDir = "foo"
 			},
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
 				assert := assert.New(t)
@@ -190,7 +190,7 @@ func TestStorage_CreateTempNetworkTopology(t *testing.T) {
 			name:    "open temp file failed",
 			baseDir: os.TempDir(),
 			mock: func(s Storage, baseDir string) {
-				s.(*storage).baseDir = "baz"
+				s.(*storage).baseDir = "baw"
 			},
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
 				assert := assert.New(t)
@@ -256,7 +256,7 @@ func TestStorage_CreateDownload(t *testing.T) {
 				if err := s.(*storage).CreateTempDownload(download, modelKey); err != nil {
 					t.Fatal(err)
 				}
-				s.(*storage).baseDir = "bar"
+				s.(*storage).baseDir = "bae"
 			},
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string) {
 				assert := assert.New(t)
@@ -337,7 +337,7 @@ func TestStorage_CreateNetworkTopology(t *testing.T) {
 				if err := s.(*storage).CreateTempNetworkTopology(download, modelKey); err != nil {
 					t.Fatal(err)
 				}
-				s.(*storage).baseDir = "bar"
+				s.(*storage).baseDir = "bae"
 			},
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string) {
 				assert := assert.New(t)
@@ -519,7 +519,7 @@ func TestStorage_ListNetworkTopology(t *testing.T) {
 			name:    "get file infos failed",
 			baseDir: os.TempDir(),
 			mock: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
-				s.(*storage).baseDir = "bae"
+				s.(*storage).baseDir = "foo"
 			},
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
 				assert := assert.New(t)
@@ -625,7 +625,7 @@ func TestStorage_OpenDownload(t *testing.T) {
 			name:    "open file infos failed",
 			baseDir: os.TempDir(),
 			mock: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
-				s.(*storage).baseDir = "bas"
+				s.(*storage).baseDir = "baw"
 			},
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
 				assert := assert.New(t)
