@@ -164,9 +164,9 @@ func TestConfig_Load(t *testing.T) {
 			Enable:          true,
 			CollectInterval: 60 * time.Second,
 			Probe: ProbeConfig{
-				QueueLength:  5,
-				SyncInterval: 30 * time.Second,
-				SyncCount:    10,
+				QueueLength: 5,
+				Interval:    30 * time.Second,
+				Count:       10,
 			},
 		},
 		Trainer: TrainerConfig{
@@ -711,31 +711,31 @@ func TestConfig_Validate(t *testing.T) {
 			},
 		},
 		{
-			name:   "probe requires parameter SyncInterval",
+			name:   "probe requires parameter interval",
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
 				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
-				cfg.NetworkTopology.Probe.SyncInterval = 0
+				cfg.NetworkTopology.Probe.Interval = 0
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "probe requires parameter syncInterval")
+				assert.EqualError(err, "probe requires parameter interval")
 			},
 		},
 		{
-			name:   "probe requires parameter SyncCount",
+			name:   "probe requires parameter count",
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
 				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
-				cfg.NetworkTopology.Probe.SyncCount = 0
+				cfg.NetworkTopology.Probe.Count = 0
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "probe requires parameter syncCount")
+				assert.EqualError(err, "probe requires parameter count")
 			},
 		},
 		{
