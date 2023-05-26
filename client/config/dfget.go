@@ -202,8 +202,8 @@ func (cfg *ClientOption) Convert(args []string) error {
 }
 
 func (cfg *ClientOption) String() string {
-	js, _ := json.Marshal(cfg)
-	return string(js)
+	data, _ := json.Marshal(cfg)
+	return string(data)
 }
 
 // checkHeader is for checking the header format

@@ -96,8 +96,8 @@ func (p *PodExec) CurlCommand(method string, header map[string]string, data map[
 		}
 	}
 	if data != nil {
-		jsonData, _ := json.Marshal(data)
-		extArgs = append(extArgs, "-d", string(jsonData))
+		b, _ := json.Marshal(data)
+		extArgs = append(extArgs, "-d", string(b))
 	}
 	return p.Command(extArgs...)
 }

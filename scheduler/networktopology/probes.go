@@ -30,6 +30,11 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
+const (
+	// defaultMovingAverageWeight is the default weight of moving average.
+	defaultMovingAverageWeight = 0.1
+)
+
 // Probe is the probe metadata.
 type Probe struct {
 	// Host metadata.
@@ -65,13 +70,10 @@ type Probes interface {
 	// Length gets the length of probes.
 	Length() (int64, error)
 
-	// CreatedAt is the creation time of probes.
-	CreatedAt() (time.Time, error)
-
 	// UpdatedAt is the updated time to store probe.
 	UpdatedAt() (time.Time, error)
 
-	// AverageRTT is the average round-trip time of probes.
+	// AverageRTT is the moving average round-trip time of probes.
 	AverageRTT() (time.Duration, error)
 }
 
@@ -118,9 +120,73 @@ func (p *probes) Peek() (*Probe, error) {
 	return probe, err
 }
 
-// TODO Implement function.
 // Enqueue enqueues probe into the queue.
 func (p *probes) Enqueue(probe *Probe) error {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	// Get the length of the queue.
+	length, err := p.Length()
+	if err != nil {
+		return err
+	}
+
+	// If the queue is full, remove the oldest probe.
+	if length >= int64(p.config.QueueLength) {
+		if _, err := p.Dequeue(); err != nil {
+			return err
+		}
+	}
+
+	// Push the probe into the queue.
+	data, err := json.Marshal(probe)
+	if err != nil {
+		return err
+	}
+
+	if err := p.rdb.RPush(ctx, pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID), data).Err(); err != nil {
+		return err
+	}
+
+	// Calculate the moving average round-trip time.
+	var averageRTT time.Duration
+	if length > 0 {
+		// If the queue is not empty, calculate the
+		// moving average round-trip time.
+		rawProbes, err := p.rdb.LRange(context.Background(), pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID), 0, -1).Result()
+		if err != nil {
+			return err
+		}
+
+		for index, rawProbe := range rawProbes {
+			probe := &Probe{}
+			if err = json.Unmarshal([]byte(rawProbe), probe); err != nil {
+				return err
+			}
+
+			if index == 0 {
+				averageRTT = probe.RTT
+				continue
+			}
+
+			averageRTT = time.Duration(float64(averageRTT)*defaultMovingAverageWeight +
+				float64(probe.RTT)*(1-defaultMovingAverageWeight))
+		}
+	} else {
+		// If the queue is empty, use the probe round-trip time as
+		// the moving average round-trip time.
+		averageRTT = probe.RTT
+	}
+
+	// Update the moving average round-trip time and updated time.
+	if _, err := p.rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+		pipe.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "averageRTT", averageRTT.Nanoseconds())
+		pipe.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "updatedAt", probe.CreatedAt.Format(time.RFC3339Nano))
+		return nil
+	}); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -150,14 +216,6 @@ func (p *probes) Length() (int64, error) {
 	return p.rdb.LLen(ctx, pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID)).Result()
 }
 
-// CreatedAt is the creation time of probes.
-func (p *probes) CreatedAt() (time.Time, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
-	defer cancel()
-
-	return p.rdb.HGet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "createdAt").Time()
-}
-
 // UpdatedAt is the updated time to store probe.
 func (p *probes) UpdatedAt() (time.Time, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
@@ -166,8 +224,15 @@ func (p *probes) UpdatedAt() (time.Time, error) {
 	return p.rdb.HGet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "updatedAt").Time()
 }
 
-// TODO Implement function.
-// AverageRTT is the average round-trip time of probes.
+// AverageRTT is the moving average round-trip time of probes.
 func (p *probes) AverageRTT() (time.Duration, error) {
-	return time.Duration(0), nil
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	averageRTT, err := p.rdb.HGet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "averageRTT").Int64()
+	if err != nil {
+		return 0, err
+	}
+
+	return time.Duration(averageRTT), nil
 }

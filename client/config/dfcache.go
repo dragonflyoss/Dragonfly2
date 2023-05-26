@@ -180,8 +180,8 @@ func (cfg *CacheOption) Convert(cmd string, args []string) error {
 }
 
 func (cfg *CacheOption) String() string {
-	js, _ := json.Marshal(cfg)
-	return string(js)
+	data, _ := json.Marshal(cfg)
+	return string(data)
 }
 
 func (cfg *CacheOption) checkInput() error {
