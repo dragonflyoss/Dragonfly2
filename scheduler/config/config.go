@@ -298,7 +298,7 @@ type NetworkConfig struct {
 }
 
 type NetworkTopologyConfig struct {
-	// Enable network topology service, including probe, network topology collection and synchronization service.
+	// Enable network topology service, including probe, network topology collection.
 	Enable bool `yaml:"enable" mapstructure:"enable"`
 
 	// CollectInterval is the interval of collecting network topology.
@@ -309,14 +309,14 @@ type NetworkTopologyConfig struct {
 }
 
 type ProbeConfig struct {
-	// QueueLength is the length of probe queue in directed graph.
+	// QueueLength is the length of probe queue.
 	QueueLength int `mapstructure:"queueLength" yaml:"queueLength"`
 
-	// SyncInterval is the interval of synchronizing host's probes.
-	SyncInterval time.Duration `mapstructure:"syncInterval" yaml:"syncInterval"`
+	// Interval is the interval of probing hosts.
+	Interval time.Duration `mapstructure:"interval" yaml:"interval"`
 
-	// SyncCount is the number of probing hosts.
-	SyncCount int `mapstructure:"syncCount" yaml:"syncCount"`
+	// Count is the number of probing hosts.
+	Count int `mapstructure:"count" yaml:"count"`
 }
 
 type TrainerConfig struct {
@@ -409,9 +409,9 @@ func New() *Config {
 			Enable:          true,
 			CollectInterval: DefaultNetworkTopologyCollectInterval,
 			Probe: ProbeConfig{
-				QueueLength:  DefaultProbeQueueLength,
-				SyncInterval: DefaultProbeSyncInterval,
-				SyncCount:    DefaultProbeSyncCount,
+				QueueLength: DefaultProbeQueueLength,
+				Interval:    DefaultProbeInterval,
+				Count:       DefaultProbeCount,
 			},
 		},
 		Trainer: TrainerConfig{
@@ -579,12 +579,12 @@ func (cfg *Config) Validate() error {
 		return errors.New("probe requires parameter queueLength")
 	}
 
-	if cfg.NetworkTopology.Probe.SyncInterval <= 0 {
-		return errors.New("probe requires parameter syncInterval")
+	if cfg.NetworkTopology.Probe.Interval <= 0 {
+		return errors.New("probe requires parameter interval")
 	}
 
-	if cfg.NetworkTopology.Probe.SyncCount <= 0 {
-		return errors.New("probe requires parameter syncCount")
+	if cfg.NetworkTopology.Probe.Count <= 0 {
+		return errors.New("probe requires parameter count")
 	}
 
 	if cfg.Trainer.Enable {
