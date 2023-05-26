@@ -163,20 +163,17 @@ const (
 )
 
 const (
-	// TODO(fcgxz2003): The default setting needs to be changed after testing.
 	// DefaultNetworkTopologyCollectInterval is the default interval of collecting network topology.
-	DefaultNetworkTopologyCollectInterval = 60 * time.Second
+	DefaultNetworkTopologyCollectInterval = 2 * time.Hour
 
-	// DefaultProbeQueueLength is the default length of probe queue in directed graph.
+	// DefaultProbeQueueLength is the default length of probe queue.
 	DefaultProbeQueueLength = 5
 
-	// TODO(fcgxz2003): The default setting needs to be changed after testing.
-	// DefaultProbeSyncInterval is the default interval of synchronizing host's probes.
-	DefaultProbeSyncInterval = 30 * time.Second
+	// DefaultProbeInterval is the default interval of probing host.
+	DefaultProbeInterval = 15 * time.Minute
 
-	// TODO(fcgxz2003): The default setting needs to be changed after testing.
-	// DefaultProbeSyncCount is the default number of probing hosts.
-	DefaultProbeSyncCount = 10
+	// DefaultProbeCount is the default number of probing hosts.
+	DefaultProbeCount = 10
 )
 
 const (
