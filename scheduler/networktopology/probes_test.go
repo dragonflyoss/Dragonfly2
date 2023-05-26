@@ -3,7 +3,6 @@ package networktopology
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strconv"
 	"testing"
 	"time"
@@ -196,15 +195,12 @@ func TestProbes_Peek(t *testing.T) {
 				QueueLength: 5,
 			},
 			mock: func(clientMock redismock.ClientMock) {
-				clientMock.MatchExpectationsInOrder(true)
-
 				data, err := json.Marshal(mockProbe)
 				if err != nil {
 					t.Fatal(err)
 				}
 
 				clientMock.ExpectLIndex(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0).SetVal(string(data))
-				clientMock.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(1)
 			},
 			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
@@ -241,10 +237,7 @@ func TestProbes_Peek(t *testing.T) {
 				QueueLength: 5,
 			},
 			mock: func(clientMock redismock.ClientMock) {
-				clientMock.MatchExpectationsInOrder(true)
-				key := fmt.Sprintf("probes:%s:%s", mockSeedHost.ID, mockHost.ID)
-				clientMock.ExpectLIndex(key, 0).SetErr(errors.New("no probe"))
-				clientMock.ExpectLLen(key).SetVal(0)
+				clientMock.ExpectLIndex(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0).SetErr(errors.New("no probe"))
 			},
 			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
@@ -412,14 +405,12 @@ func TestProbes_Dequeue(t *testing.T) {
 				QueueLength: 5,
 			},
 			mock: func(clientMock redismock.ClientMock) {
-				clientMock.MatchExpectationsInOrder(true)
 				data, err := json.Marshal(mockProbe)
 				if err != nil {
 					t.Fatal(err)
 				}
 
 				clientMock.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(string(data))
-				clientMock.ExpectLIndex(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0).RedisNil()
 			},
 			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
@@ -456,7 +447,6 @@ func TestProbes_Dequeue(t *testing.T) {
 				QueueLength: 5,
 			},
 			mock: func(clientMock redismock.ClientMock) {
-				clientMock.MatchExpectationsInOrder(true)
 				clientMock.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).RedisNil()
 			},
 			expect: func(t *testing.T, p Probes) {
