@@ -281,6 +281,7 @@ func TestProbes_Peek(t *testing.T) {
 			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
 				probe, err := p.Peek()
+				assert.Nil(err)
 				assert.Equal(probe.RTT, mockProbe.RTT)
 
 				err = p.Enqueue(mockProbe)
@@ -349,8 +350,7 @@ func TestProbes_Enqueue(t *testing.T) {
 			},
 			expect: func(t *testing.T, p Probes) {
 				a := assert.New(t)
-				err := p.Enqueue(mockProbe)
-				a.Nil(err)
+				a.Nil(p.Enqueue(mockProbe))
 			},
 		},
 		{
@@ -380,8 +380,7 @@ func TestProbes_Enqueue(t *testing.T) {
 			},
 			expect: func(t *testing.T, p Probes) {
 				a := assert.New(t)
-				err := p.Enqueue(mockProbe)
-				a.Nil(err)
+				a.Nil(p.Enqueue(mockProbe))
 			},
 		},
 		{
@@ -434,8 +433,7 @@ func TestProbes_Enqueue(t *testing.T) {
 			},
 			expect: func(t *testing.T, p Probes) {
 				a := assert.New(t)
-				err := p.Enqueue(mockProbe)
-				a.Nil(err)
+				a.Nil(p.Enqueue(mockProbe))
 			},
 		},
 	}
@@ -550,8 +548,7 @@ func TestProbes_Dequeue(t *testing.T) {
 			},
 			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
-				err := p.Enqueue(mockProbe)
-				assert.Nil(err)
+				assert.Nil(p.Enqueue(mockProbe))
 
 				probe, err := p.Dequeue()
 				assert.Nil(err)
@@ -663,8 +660,7 @@ func TestProbes_Length(t *testing.T) {
 				assert.Nil(err)
 				assert.Equal(len, int64(5))
 
-				err = p.Enqueue(mockProbe)
-				assert.Nil(err)
+				assert.Nil(p.Enqueue(mockProbe))
 
 				len, err = p.Length()
 				assert.Nil(err)
