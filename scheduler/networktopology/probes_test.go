@@ -3,7 +3,6 @@ package networktopology
 import (
 	"encoding/json"
 	"errors"
-	"strconv"
 	"testing"
 	"time"
 
@@ -260,138 +259,6 @@ func TestProbes_Peek(t *testing.T) {
 	}
 }
 
-func TestProbes_Enqueue(t *testing.T) {
-	tests := []struct {
-		name   string
-		config config.ProbeConfig
-		mock   func(clientMock redismock.ClientMock)
-		expect func(t *testing.T, p Probes)
-	}{
-		{
-			name: "enqueue one probe when probes queue is empty",
-			config: config.ProbeConfig{
-				QueueLength: 5,
-			},
-			mock: func(clientMock redismock.ClientMock) {
-				clientMock.MatchExpectationsInOrder(true)
-				clientMock.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(0)
-
-				data, err := json.Marshal(mockProbe)
-				if err != nil {
-					t.Fatal(err)
-				}
-				clientMock.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), data).SetVal(1)
-
-				clientMock.MatchExpectationsInOrder(false)
-				clientMock.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", mockProbe.RTT.Nanoseconds()).SetVal(1)
-				clientMock.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "createdAt", mockProbe.CreatedAt.Format(time.RFC3339Nano)).SetVal(1)
-				clientMock.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", mockProbe.CreatedAt.Format(time.RFC3339Nano)).SetVal(1)
-			},
-			expect: func(t *testing.T, p Probes) {
-				a := assert.New(t)
-				err := p.Enqueue(mockProbe)
-				a.Nil(err)
-			},
-		},
-		{
-			name: "enqueue one probe when probes queue has one probe",
-			config: config.ProbeConfig{
-				QueueLength: 5,
-			},
-			mock: func(clientMock redismock.ClientMock) {
-				clientMock.MatchExpectationsInOrder(true)
-				clientMock.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(1)
-
-				data, err := json.Marshal(mockProbe)
-				if err != nil {
-					t.Fatal(err)
-				}
-				clientMock.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), data).SetVal(1)
-
-				mockData, err := json.Marshal(NewProbe(mockHost, 3100000*time.Nanosecond, time.Now()))
-				if err != nil {
-					t.Fatal(err)
-				}
-				clientMock.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal([]string{string(mockData), string(data)})
-
-				clientMock.MatchExpectationsInOrder(false)
-				clientMock.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", int64(3010000)).SetVal(1)
-				clientMock.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", mockProbe.CreatedAt.Format(time.RFC3339Nano)).SetVal(1)
-			},
-			expect: func(t *testing.T, p Probes) {
-				a := assert.New(t)
-				err := p.Enqueue(mockProbe)
-				a.Nil(err)
-			},
-		},
-		{
-			name: "enqueue one probe when probes queue has five probes",
-			config: config.ProbeConfig{
-				QueueLength: 5,
-			},
-			mock: func(clientMock redismock.ClientMock) {
-				clientMock.MatchExpectationsInOrder(true)
-				clientMock.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(5)
-
-				mockPopProbe, err := json.Marshal(NewProbe(mockHost, 3500000*time.Nanosecond, time.Now()))
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				clientMock.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(string(mockPopProbe))
-
-				data, err := json.Marshal(mockProbe)
-				if err != nil {
-					t.Fatal(err)
-				}
-				clientMock.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), data).SetVal(1)
-
-				mockIndex0Probe, err := json.Marshal(NewProbe(mockHost, 3100000*time.Nanosecond, time.Now()))
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				mockIndex1Probe, err := json.Marshal(NewProbe(mockHost, 3200000*time.Nanosecond, time.Now()))
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				mockIndex2Probe, err := json.Marshal(NewProbe(mockHost, 3300000*time.Nanosecond, time.Now()))
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				mockIndex3Probe, err := json.Marshal(NewProbe(mockHost, 3400000*time.Nanosecond, time.Now()))
-				if err != nil {
-					t.Fatal(err)
-				}
-				clientMock.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal([]string{
-					string(mockIndex0Probe), string(mockIndex1Probe), string(mockIndex2Probe), string(mockIndex3Probe), string(data)})
-
-				clientMock.MatchExpectationsInOrder(false)
-				clientMock.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", int64(3038890)).SetVal(1)
-				clientMock.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", mockProbe.CreatedAt.Format(time.RFC3339Nano)).SetVal(1)
-			},
-			expect: func(t *testing.T, p Probes) {
-				a := assert.New(t)
-				err := p.Enqueue(mockProbe)
-				a.Nil(err)
-			},
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			ctl := gomock.NewController(t)
-			defer ctl.Finish()
-
-			rdb, clientMock := redismock.NewClientMock()
-			tc.mock(clientMock)
-			tc.expect(t, NewProbes(tc.config, rdb, mockSeedHost.ID, mockHost.ID))
-			clientMock.ClearExpect()
-		})
-	}
-}
-
 func TestProbes_Dequeue(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -617,56 +484,6 @@ func TestProbes_UpdatedAt(t *testing.T) {
 			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
 				_, err := p.UpdatedAt()
-				assert.Error(err)
-			},
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			ctl := gomock.NewController(t)
-			defer ctl.Finish()
-
-			rdb, clientMock := redismock.NewClientMock()
-			tc.mock(clientMock)
-			tc.expect(t, NewProbes(tc.config, rdb, mockSeedHost.ID, mockHost.ID))
-			clientMock.ClearExpect()
-		})
-	}
-}
-
-func TestProbes_AverageRTT(t *testing.T) {
-	tests := []struct {
-		name   string
-		config config.ProbeConfig
-		mock   func(clientMock redismock.ClientMock)
-		expect func(t *testing.T, p Probes)
-	}{
-		{
-			name: "get averageRTT of probes",
-			config: config.ProbeConfig{
-				QueueLength: 5,
-			},
-			mock: func(clientMock redismock.ClientMock) {
-				clientMock.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT").SetVal(strconv.FormatInt(mockProbe.RTT.Nanoseconds(), 10))
-			},
-			expect: func(t *testing.T, p Probes) {
-				assert := assert.New(t)
-				averageRTT, err := p.AverageRTT()
-				assert.Nil(err)
-				assert.Equal(averageRTT, mockProbe.RTT)
-			},
-		},
-		{
-			name: "get averageRTT of probes error",
-			config: config.ProbeConfig{
-				QueueLength: 5,
-			},
-			mock: func(clientMock redismock.ClientMock) {
-				clientMock.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT").SetErr(errors.New("get averageRTT of probes error"))
-			},
-			expect: func(t *testing.T, p Probes) {
-				assert := assert.New(t)
-				_, err := p.AverageRTT()
 				assert.Error(err)
 			},
 		},

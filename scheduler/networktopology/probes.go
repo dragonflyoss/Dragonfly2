@@ -123,73 +123,9 @@ func (p *probes) Peek() (*Probe, error) {
 	return probe, err
 }
 
+// TODO Implement function.
 // Enqueue enqueues probe into the queue.
 func (p *probes) Enqueue(probe *Probe) error {
-	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
-	defer cancel()
-
-	length, err := p.Length()
-	if err != nil {
-		return err
-	}
-
-	if length == int64(p.config.QueueLength) {
-		if _, err := p.Dequeue(); err != nil {
-			return err
-		}
-	}
-
-	data, err := json.Marshal(probe)
-	if err != nil {
-		return err
-	}
-
-	if err := p.rdb.RPush(ctx, pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID), data).Err(); err != nil {
-		return err
-	}
-
-	if length == 0 {
-		if _, err := p.rdb.Pipelined(context.Background(), func(rdb redis.Pipeliner) error {
-			rdb.HSet(context.Background(), pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "averageRTT", probe.RTT.Nanoseconds())
-			rdb.HSet(context.Background(), pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "createdAt", probe.CreatedAt.Format(time.RFC3339Nano))
-			rdb.HSet(context.Background(), pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "updatedAt", probe.CreatedAt.Format(time.RFC3339Nano))
-			return nil
-		}); err != nil {
-			return err
-		}
-
-		return nil
-	}
-
-	values, err := p.rdb.LRange(context.Background(), pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID), 0, -1).Result()
-	if err != nil {
-		return err
-	}
-
-	var averageRTT time.Duration
-	for index, value := range values {
-		probe := &Probe{}
-		if err = json.Unmarshal([]byte(value), probe); err != nil {
-			return err
-		}
-
-		if index == 0 {
-			averageRTT = probe.RTT
-			continue
-		}
-
-		averageRTT = time.Duration(float64(averageRTT)*DefaultMovingAverageWeight +
-			float64(probe.RTT)*(1-DefaultMovingAverageWeight))
-	}
-
-	if _, err := p.rdb.Pipelined(context.Background(), func(rdb redis.Pipeliner) error {
-		rdb.HSet(context.Background(), pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "averageRTT", averageRTT.Nanoseconds())
-		rdb.HSet(context.Background(), pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "updatedAt", probe.CreatedAt.Format(time.RFC3339Nano))
-		return nil
-	}); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -235,15 +171,8 @@ func (p *probes) UpdatedAt() (time.Time, error) {
 	return p.rdb.HGet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "updatedAt").Time()
 }
 
+// TODO Implement function.
 // AverageRTT is the average round-trip time of probes.
 func (p *probes) AverageRTT() (time.Duration, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
-	defer cancel()
-
-	nano, err := p.rdb.HGet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "averageRTT").Uint64()
-	if err != nil {
-		return time.Duration(0), err
-	}
-
-	return time.Duration(nano), nil
+	return time.Duration(0), nil
 }
