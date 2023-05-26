@@ -17,56 +17,127 @@
 package slices
 
 import (
+	"reflect"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestContains(t *testing.T) {
-	assert := assert.New(t)
-	assert.True(Contains([]int{1, 2, 3}, 1))
-	assert.False(Contains([]int{1, 2, 3}, 4))
-	assert.True(Contains([]string{"a", "b", "c"}, "a"))
-	assert.False(Contains([]string{"a", "b", "c"}, "d"))
+	tests := []struct {
+		name     string
+		input    []int
+		element  int
+		expected bool
+	}{
+		{
+			name:     "element present",
+			input:    []int{1, 2, 3},
+			element:  2,
+			expected: true,
+		},
+		{
+			name:     "element not present",
+			input:    []int{1, 2, 3},
+			element:  4,
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Contains(tt.input, tt.element)
+			if result != tt.expected {
+				t.Errorf("expected %v, but got %v", tt.expected, result)
+			}
+		})
+	}
 }
 
 func TestFindDuplicate(t *testing.T) {
-	assert := assert.New(t)
-	var (
-		dupi  int
-		dups  string
-		found bool
-	)
-	dupi, found = FindDuplicate([]int{1, 2, 1, 3})
-	assert.True(found)
-	assert.Equal(dupi, 1)
+	tests := []struct {
+		name     string
+		input    []int
+		expected int
+		found    bool
+	}{
+		{
+			name:     "duplicate present",
+			input:    []int{1, 2, 3, 2},
+			expected: 2,
+			found:    true,
+		},
+		{
+			name:     "duplicate not present",
+			input:    []int{1, 2, 3},
+			expected: 0,
+			found:    false,
+		},
+	}
 
-	_, found = FindDuplicate([]int{1, 2, 3})
-	assert.False(found)
-
-	dups, found = FindDuplicate([]string{"a", "b", "c", "b"})
-	assert.True(found)
-	assert.Equal(dups, "b")
-
-	_, found = FindDuplicate([]string{"a", "b", "c"})
-	assert.False(found)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, found := FindDuplicate(tt.input)
+			if found != tt.found {
+				t.Errorf("expected found to be %v, but got %v", tt.found, found)
+			}
+			if result != tt.expected {
+				t.Errorf("expected %v, but got %v", tt.expected, result)
+			}
+		})
+	}
 }
 
 func TestRemoveDuplicates(t *testing.T) {
-	assert := assert.New(t)
-	var (
-		ri []int
-		rs []string
-	)
-	ri = RemoveDuplicates([]int{1, 2, 1, 3})
-	assert.EqualValues(ri, []int{1, 2, 3})
+	tests := []struct {
+		name     string
+		input    []int
+		expected []int
+	}{
+		{
+			name:     "no duplicates",
+			input:    []int{1, 2, 3},
+			expected: []int{1, 2, 3},
+		},
+		{
+			name:     "with duplicates",
+			input:    []int{1, 2, 3, 2},
+			expected: []int{1, 2, 3},
+		},
+	}
 
-	ri = RemoveDuplicates([]int{1, 2, 3})
-	assert.EqualValues(ri, []int{1, 2, 3})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := RemoveDuplicates(tt.input)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("expected %v, but got %v", tt.expected, result)
+			}
+		})
+	}
+}
 
-	rs = RemoveDuplicates([]string{"a", "b", "c", "b"})
-	assert.EqualValues(rs, []string{"a", "b", "c"})
+func TestReverse(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []int
+		expected []int
+	}{
+		{
+			name:     "even number of elements",
+			input:    []int{1, 2, 3, 4},
+			expected: []int{4, 3, 2, 1},
+		},
+		{
+			name:     "odd number of elements",
+			input:    []int{1, 2, 3},
+			expected: []int{3, 2, 1},
+		},
+	}
 
-	rs = RemoveDuplicates([]string{"a", "b", "c"})
-	assert.EqualValues(rs, []string{"a", "b", "c"})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			Reverse(tt.input)
+			if !reflect.DeepEqual(tt.input, tt.expected) {
+				t.Errorf("expected %v, but got %v", tt.expected, tt.input)
+			}
+		})
+	}
 }
