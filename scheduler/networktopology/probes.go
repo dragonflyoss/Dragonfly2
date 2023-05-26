@@ -125,6 +125,9 @@ func (p *probes) Peek() (*Probe, error) {
 
 // Enqueue enqueues probe into the queue.
 func (p *probes) Enqueue(probe *Probe) error {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
 	length, err := p.Length()
 	if err != nil {
 		return err
@@ -136,15 +139,20 @@ func (p *probes) Enqueue(probe *Probe) error {
 		}
 	}
 
-	if err := p.Enqueue(probe); err != nil {
+	data, err := json.Marshal(probe)
+	if err != nil {
+		return err
+	}
+
+	if err := p.rdb.RPush(ctx, pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID), data).Err(); err != nil {
 		return err
 	}
 
 	if length == 0 {
 		if _, err := p.rdb.Pipelined(context.Background(), func(rdb redis.Pipeliner) error {
 			rdb.HSet(context.Background(), pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "averageRTT", probe.RTT.Nanoseconds())
-			rdb.HSet(context.Background(), pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "createdAt", probe.CreatedAt.UnixNano())
-			rdb.HSet(context.Background(), pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "updatedAt", probe.CreatedAt.UnixNano())
+			rdb.HSet(context.Background(), pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "createdAt", probe.CreatedAt.Format(time.RFC3339Nano))
+			rdb.HSet(context.Background(), pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "updatedAt", probe.CreatedAt.Format(time.RFC3339Nano))
 			return nil
 		}); err != nil {
 			return err
@@ -159,10 +167,15 @@ func (p *probes) Enqueue(probe *Probe) error {
 	}
 
 	var averageRTT time.Duration
-	for _, value := range values {
+	for index, value := range values {
 		probe := &Probe{}
 		if err = json.Unmarshal([]byte(value), probe); err != nil {
 			return err
+		}
+
+		if index == 0 {
+			averageRTT = probe.RTT
+			continue
 		}
 
 		averageRTT = time.Duration(float64(averageRTT)*DefaultMovingAverageWeight +
@@ -171,7 +184,7 @@ func (p *probes) Enqueue(probe *Probe) error {
 
 	if _, err := p.rdb.Pipelined(context.Background(), func(rdb redis.Pipeliner) error {
 		rdb.HSet(context.Background(), pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "averageRTT", averageRTT.Nanoseconds())
-		rdb.HSet(context.Background(), pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "updatedAt", probe.CreatedAt.UnixNano())
+		rdb.HSet(context.Background(), pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "updatedAt", probe.CreatedAt.Format(time.RFC3339Nano))
 		return nil
 	}); err != nil {
 		return err
