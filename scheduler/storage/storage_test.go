@@ -225,7 +225,6 @@ var (
 		Host: mockHost,
 		Probes: Probes{
 			AverageRTT: 10,
-			CreatedAt:  time.Now().UnixNano(),
 			UpdatedAt:  time.Now().UnixNano(),
 		},
 	}

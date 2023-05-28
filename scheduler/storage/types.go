@@ -205,9 +205,6 @@ type Probes struct {
 	// AverageRTT is the average round-trip time of probes.
 	AverageRTT int64 `csv:"averageRTT"`
 
-	// CreatedAt is probe create nanosecond time.
-	CreatedAt int64 `csv:"createdAt"`
-
 	// UpdatedAt is probe update nanosecond time.
 	UpdatedAt int64 `csv:"updatedAt"`
 }
