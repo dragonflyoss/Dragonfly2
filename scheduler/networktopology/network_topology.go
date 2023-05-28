@@ -20,6 +20,8 @@ package networktopology
 
 import (
 	"context"
+	"errors"
+	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -80,7 +82,22 @@ func (nt *networkTopology) LoadDestHostIDs(hostID string) ([]string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	return nt.rdb.Keys(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(hostID, "*")).Result()
+	keys, err := nt.rdb.Keys(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(hostID, "*")).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	destHostIDs := make([]string, 0)
+	for _, key := range keys {
+		fields := strings.Split(key, ":")
+		if len(fields) != 4 {
+			return nil, errors.New("network topology redis key error")
+		}
+
+		destHostIDs = append(destHostIDs, fields[3])
+	}
+
+	return destHostIDs, nil
 }
 
 // DeleteHost deletes host.
