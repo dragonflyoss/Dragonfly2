@@ -20,6 +20,8 @@ package networktopology
 
 import (
 	"context"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -48,6 +50,9 @@ type NetworkTopology interface {
 
 	// LoadProbes loads probes by source host id and destination host id.
 	LoadProbes(string, string) Probes
+
+	// FindProbes finds hosts for source host probing.
+	FindProbes(HostID string) ([]string, error)
 }
 
 // networkTopology is an implementation of network topology.
@@ -119,4 +124,41 @@ func (nt *networkTopology) ProbedCount(hostID string) (uint64, error) {
 // LoadProbes loads probes by source host id and destination host id.
 func (nt *networkTopology) LoadProbes(srcHostID, destHostID string) Probes {
 	return NewProbes(nt.config.Probe, nt.rdb, srcHostID, destHostID)
+}
+
+// FindProbes finds hosts for source host probing.
+func (nt *networkTopology) FindProbes(HostID string) ([]string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	keys, err := nt.rdb.Keys(ctx, pkgredis.MakeProbedCountKeyInScheduler("*")).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		hostProbedCount = make(map[string]uint64)
+		probeHosts      = make([]string, len(hostProbedCount))
+	)
+
+	for _, key := range keys {
+		fields := strings.Split(key, ":")
+		probedCount, err := nt.ProbedCount(fields[2])
+		if err != nil {
+			return nil, err
+		}
+
+		hostProbedCount[fields[2]] = probedCount
+		probeHosts = append(probeHosts, fields[2])
+	}
+
+	if len(hostProbedCount) <= nt.config.Probe.Count {
+		return probeHosts, nil
+	}
+
+	sort.Slice(probeHosts, func(i, j int) bool {
+		return hostProbedCount[probeHosts[i]] < hostProbedCount[probeHosts[j]]
+	})
+
+	return probeHosts[0:nt.config.Probe.Count], nil
 }
