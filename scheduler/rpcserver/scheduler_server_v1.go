@@ -28,6 +28,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
+	"d7y.io/dragonfly/v2/scheduler/networktopology"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/scheduling"
 	"d7y.io/dragonfly/v2/scheduler/service"
@@ -47,8 +48,9 @@ func newSchedulerServerV1(
 	scheduling scheduling.Scheduling,
 	dynconfig config.DynconfigInterface,
 	storage storage.Storage,
+	networkTopology networktopology.NetworkTopology,
 ) schedulerv1.SchedulerServer {
-	return &schedulerServerV1{service.NewV1(cfg, resource, scheduling, dynconfig, storage)}
+	return &schedulerServerV1{service.NewV1(cfg, resource, scheduling, dynconfig, storage, networkTopology)}
 }
 
 // RegisterPeerTask registers peer and triggers seed peer download task.
@@ -157,8 +159,7 @@ func (s *schedulerServerV1) LeaveHost(ctx context.Context, req *schedulerv1.Leav
 	return new(emptypb.Empty), nil
 }
 
-// TODO Implement SyncProbes
 // SyncProbes sync probes of the host.
 func (s *schedulerServerV1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
-	return nil
+	return s.service.SyncProbes(stream)
 }

@@ -48,6 +48,9 @@ type NetworkTopology interface {
 
 	// LoadProbes loads probes by source host id and destination host id.
 	LoadProbes(string, string) Probes
+
+	// FindProbes finds hosts for source host probing.
+	FindProbes(HostID string) ([]string, error)
 }
 
 // networkTopology is an implementation of network topology.
@@ -119,4 +122,9 @@ func (nt *networkTopology) ProbedCount(hostID string) (uint64, error) {
 // LoadProbes loads probes by source host id and destination host id.
 func (nt *networkTopology) LoadProbes(srcHostID, destHostID string) Probes {
 	return NewProbes(nt.config.Probe, nt.rdb, srcHostID, destHostID)
+}
+
+// FindProbes finds hosts for source host probing.
+func (nt *networkTopology) FindProbes(HostID string) ([]string, error) {
+	return nil, nil
 }

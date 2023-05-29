@@ -27,6 +27,7 @@ import (
 
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	commonv2 "d7y.io/api/pkg/apis/common/v2"
@@ -43,6 +44,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
+	"d7y.io/dragonfly/v2/scheduler/networktopology"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/scheduling"
 	"d7y.io/dragonfly/v2/scheduler/storage"
@@ -64,6 +66,9 @@ type V1 struct {
 
 	// Storage interface.
 	storage storage.Storage
+
+	// Network topology interface
+	networkTopology networktopology.NetworkTopology
 }
 
 // New v1 version of service instance.
@@ -73,13 +78,15 @@ func NewV1(
 	scheduling scheduling.Scheduling,
 	dynconfig config.DynconfigInterface,
 	storage storage.Storage,
+	networkTopology networktopology.NetworkTopology,
 ) *V1 {
 	return &V1{
-		resource:   resource,
-		scheduling: scheduling,
-		config:     cfg,
-		dynconfig:  dynconfig,
-		storage:    storage,
+		resource:        resource,
+		scheduling:      scheduling,
+		config:          cfg,
+		dynconfig:       dynconfig,
+		storage:         storage,
+		networkTopology: networkTopology,
 	}
 }
 
@@ -644,6 +651,72 @@ func (v *V1) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostRequest) e
 	}
 
 	host.LeavePeers()
+	return nil
+}
+
+// SyncProbes sync probes of the host.
+func (v *V1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
+	req, err := stream.Recv()
+	if err != nil {
+		if err == io.EOF {
+			return nil
+		}
+
+		logger.Errorf("receive error: %s", err.Error())
+		return err
+	}
+
+	srcHostID := req.ProbesOfHost.Host.Id
+	if len(req.ProbesOfHost.Probes) > 0 {
+		destHostID := req.ProbesOfHost.Probes[0].Host.Id
+		destHost, loaded := v.resource.HostManager().Load(destHostID)
+		if !loaded {
+			logger.Error(fmt.Sprintf("host %s not found", destHostID))
+			return errors.New(fmt.Sprintf("host %s not found", destHostID))
+		}
+
+		for _, probe := range req.ProbesOfHost.Probes {
+			probes := v.networkTopology.LoadProbes(srcHostID, destHostID)
+			if err := probes.Enqueue(&networktopology.Probe{
+				Host:      destHost,
+				RTT:       probe.Rtt.AsDuration(),
+				CreatedAt: probe.CreatedAt.AsTime(),
+			}); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Find probe hosts for probing.
+	probeIDs, err := v.networkTopology.FindProbes(srcHostID)
+	if err != nil {
+		return err
+	}
+
+	hosts := make([]*commonv1.Host, 0)
+	for _, probeID := range probeIDs {
+		probeHost, loaded := v.resource.HostManager().Load(probeID)
+		if !loaded {
+			logger.Error(fmt.Sprintf("host %s not found", probeID))
+			return errors.New(fmt.Sprintf("host %s not found", probeID))
+		}
+
+		hosts = append(hosts, &commonv1.Host{
+			Id:           probeHost.ID,
+			Ip:           probeHost.IP,
+			Hostname:     probeHost.Hostname,
+			Port:         probeHost.Port,
+			DownloadPort: probeHost.DownloadPort,
+			Location:     probeHost.Network.Location,
+			Idc:          probeHost.Network.IDC,
+		})
+	}
+
+	// Send probe hosts.
+	if err := stream.Send(&schedulerv1.SyncProbesResponse{Hosts: hosts, ProbeInterval: durationpb.New(v.config.NetworkTopology.CollectInterval)}); err != nil {
+		return err
+	}
+
 	return nil
 }
 

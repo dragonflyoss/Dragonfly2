@@ -48,6 +48,21 @@ func (mr *MockNetworkTopologyMockRecorder) DeleteHost(arg0 interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteHost", reflect.TypeOf((*MockNetworkTopology)(nil).DeleteHost), arg0)
 }
 
+// FindProbes mocks base method.
+func (m *MockNetworkTopology) FindProbes(HostID string) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindProbes", HostID)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindProbes indicates an expected call of FindProbes.
+func (mr *MockNetworkTopologyMockRecorder) FindProbes(HostID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindProbes", reflect.TypeOf((*MockNetworkTopology)(nil).FindProbes), HostID)
+}
+
 // LoadDestHostIDs mocks base method.
 func (m *MockNetworkTopology) LoadDestHostIDs(arg0 string) ([]string, error) {
 	m.ctrl.T.Helper()
