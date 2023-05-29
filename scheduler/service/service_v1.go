@@ -672,7 +672,7 @@ func (v *V1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
 		destHost, loaded := v.resource.HostManager().Load(destHostID)
 		if !loaded {
 			logger.Error(fmt.Sprintf("host %s not found", destHostID))
-			return errors.New(fmt.Sprintf("host %s not found", destHostID))
+			return fmt.Errorf("host %s not found", destHostID)
 		}
 
 		for _, probe := range req.ProbesOfHost.Probes {
@@ -698,7 +698,7 @@ func (v *V1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
 		probeHost, loaded := v.resource.HostManager().Load(probeID)
 		if !loaded {
 			logger.Error(fmt.Sprintf("host %s not found", probeID))
-			return errors.New(fmt.Sprintf("host %s not found", probeID))
+			return fmt.Errorf("host %s not found", probeID)
 		}
 
 		hosts = append(hosts, &commonv1.Host{
