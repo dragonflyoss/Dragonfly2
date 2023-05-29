@@ -9,17 +9,17 @@ import (
 
 	v1 "d7y.io/api/pkg/apis/common/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
-	"d7y.io/dragonfly/v2/client/config"
 	pkgbalancer "d7y.io/dragonfly/v2/pkg/balancer"
 	"d7y.io/dragonfly/v2/pkg/net/ping"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
+
+	"d7y.io/dragonfly/v2/client/config"
 )
 
 const (
 	DefaultProbeInterval = 20 * time.Minute
 )
 
-// Probe is the interface used for probeManager service.
 type Probe interface {
 	// Serve starts probe server.
 	Serve() error
@@ -127,7 +127,6 @@ func (p *probe) Serve() error {
 				return err
 			}
 
-			tick = time.NewTicker(syncProbesResponse.ProbeInterval.AsDuration())
 		case <-p.done:
 			return nil
 		}
