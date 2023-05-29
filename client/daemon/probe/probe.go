@@ -9,11 +9,12 @@ import (
 
 	v1 "d7y.io/api/pkg/apis/common/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
+	"d7y.io/dragonfly/v2/client/config"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	pkgbalancer "d7y.io/dragonfly/v2/pkg/balancer"
 	"d7y.io/dragonfly/v2/pkg/net/ping"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
-
-	"d7y.io/dragonfly/v2/client/config"
 )
 
 const (
@@ -52,7 +53,85 @@ func NewProbe(cfg *config.DaemonOption, hostID string, daemonPort int32, daemonD
 	}
 }
 
+// Serve starts probe server.
 func (p *probe) Serve() error {
+	logger.Info("upload probes to scheduler")
+	if err := p.syncProbes(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Stop stops probe server.
+func (p *probe) Stop() error {
+	close(p.done)
+	return nil
+}
+
+// syncProbes uploads probes to scheduler for synchronizing probe results.
+func (p *probe) syncProbes() error {
+	if err := p.uploadProbesToScheduler([]*schedulerv1.Probe{}); err != nil {
+		logger.Error(err)
+	}
+
+	syncProbesResponse, err := p.syncProbesStream.Recv()
+	if err != nil {
+		return err
+	}
+
+	tick := time.NewTicker(syncProbesResponse.ProbeInterval.AsDuration())
+	for {
+		select {
+		case <-tick.C:
+			probes := p.collectProbes(syncProbesResponse.Hosts)
+			if err := p.uploadProbesToScheduler(probes); err != nil {
+				logger.Error(err)
+			}
+
+			syncProbesResponse, err = p.syncProbesStream.Recv()
+			if err != nil {
+				return err
+			}
+
+		case <-p.done:
+			return nil
+		}
+	}
+}
+
+// collectProbes probes hosts and collect result.
+func (p *probe) collectProbes(hosts []*v1.Host) []*schedulerv1.Probe {
+	probes := make([]*schedulerv1.Probe, 0)
+	for _, host := range hosts {
+		statistics, err := ping.Ping(host.Ip)
+		if err != nil {
+			continue
+		}
+
+		probe := &schedulerv1.Probe{
+			Host: &v1.Host{
+				Id:           host.Id,
+				Ip:           host.Ip,
+				Hostname:     host.Hostname,
+				Port:         host.Port,
+				DownloadPort: host.DownloadPort,
+				Location:     host.Location,
+				Idc:          host.Idc,
+			},
+			Rtt:       durationpb.New(statistics.AvgRtt),
+			CreatedAt: timestamppb.New(time.Now()),
+		}
+
+		probes = append(probes, probe)
+	}
+
+	return probes
+}
+
+// uploadProbesToScheduler uploads probes to scheduler.
+func (p *probe) uploadProbesToScheduler(probes []*schedulerv1.Probe) error {
+	ctx := context.WithValue(context.Background(), pkgbalancer.ContextKey, p.hostID)
 	daemonHost := &v1.Host{
 		Id:           p.hostID,
 		Ip:           p.config.Host.AdvertiseIP.String(),
@@ -65,77 +144,15 @@ func (p *probe) Serve() error {
 
 	probesOfHost := &schedulerv1.ProbesOfHost{
 		Host:   daemonHost,
-		Probes: make([]*schedulerv1.Probe, 0),
+		Probes: probes,
 	}
 
 	syncProbesRequest := &schedulerv1.SyncProbesRequest{ProbesOfHost: probesOfHost}
-	syncProbesClient, err := p.schedulerClient.SyncProbes(context.WithValue(context.Background(), pkgbalancer.ContextKey, p.hostID), syncProbesRequest)
+	schedulerSyncProbesClient, err := p.schedulerClient.SyncProbes(ctx, syncProbesRequest)
 	if err != nil {
 		return err
 	}
 
-	p.syncProbesStream = syncProbesClient
-	syncProbesResponse, err := p.syncProbesStream.Recv()
-	if err != nil {
-		return err
-	}
-
-	// The interval is modified according to the probe configuration of the scheduler.
-	tick := time.NewTicker(syncProbesResponse.ProbeInterval.AsDuration())
-	for {
-		select {
-		case <-tick.C:
-			probes := make([]*schedulerv1.Probe, 0)
-			for _, host := range syncProbesResponse.Hosts {
-				statistics, err := ping.Ping(host.Ip)
-				if err != nil {
-					continue
-				}
-
-				probe := &schedulerv1.Probe{
-					Host: &v1.Host{
-						Id:           host.Id,
-						Ip:           host.Ip,
-						Hostname:     host.Hostname,
-						Port:         host.Port,
-						DownloadPort: host.DownloadPort,
-						Location:     host.Location,
-						Idc:          host.Idc,
-					},
-					Rtt:       durationpb.New(statistics.AvgRtt),
-					CreatedAt: timestamppb.New(time.Now()),
-				}
-
-				probes = append(probes, probe)
-			}
-
-			probesOfHost := &schedulerv1.ProbesOfHost{
-				Host:   daemonHost,
-				Probes: probes,
-			}
-
-			syncProbesRequest := &schedulerv1.SyncProbesRequest{ProbesOfHost: probesOfHost}
-			schedulerSyncProbesClient, err := p.schedulerClient.SyncProbes(context.WithValue(context.Background(), pkgbalancer.ContextKey, p.hostID),
-				syncProbesRequest)
-			if err != nil {
-				return err
-			}
-
-			p.syncProbesStream = schedulerSyncProbesClient
-			syncProbesResponse, err = p.syncProbesStream.Recv()
-			if err != nil {
-				return err
-			}
-
-		case <-p.done:
-			return nil
-		}
-
-		return nil
-	}
-}
-
-func (p *probe) Stop() error {
-	close(p.done)
+	p.syncProbesStream = schedulerSyncProbesClient
 	return nil
 }
