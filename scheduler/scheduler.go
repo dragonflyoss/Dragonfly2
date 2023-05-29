@@ -248,7 +248,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		schedulerServerOptions = append(schedulerServerOptions, grpc.Creds(insecure.NewCredentials()))
 	}
 
-	svr := rpcserver.New(cfg, resource, scheduling, dynconfig, s.storage, schedulerServerOptions...)
+	svr := rpcserver.New(cfg, resource, scheduling, dynconfig, s.storage, s.networkTopology, schedulerServerOptions...)
 	s.grpcServer = svr
 
 	// Initialize redis client.
