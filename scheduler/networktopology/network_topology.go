@@ -160,5 +160,5 @@ func (nt *networkTopology) FindProbes(HostID string) ([]string, error) {
 		return hostProbedCount[probeHosts[i]] < hostProbedCount[probeHosts[j]]
 	})
 
-	return probeHosts[0:nt.config.Probe.Count], nil
+	return probeHosts[:nt.config.Probe.Count], nil
 }
