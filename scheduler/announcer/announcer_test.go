@@ -885,7 +885,10 @@ func TestAnnouncer_uploadDownloadToTrainer(t *testing.T) {
 						SchedulerClusterId: uint64(1),
 					})).Times(1),
 					ms.OpenDownload().Return(io.NopCloser(bytes.NewBuffer(data)), nil).Times(1),
-					mt.Send(gomock.Any()).Return(errors.New("foo")),
+					mt.Send(gomock.Any()).DoAndReturn(
+						func(t *trainerv1.TrainRequest) error {
+							return nil
+						}).Return(errors.New("foo")),
 				)
 			},
 			except: func(t *testing.T, a Announcer, err error) {
@@ -1067,7 +1070,10 @@ func TestAnnouncer_uploadNetworkTopologyToTrainer(t *testing.T) {
 						SchedulerClusterId: uint64(1),
 					})).Times(1),
 					ms.OpenNetworkTopology().Return(io.NopCloser(bytes.NewBuffer(data)), nil).Times(1),
-					mt.Send(gomock.Any()).Return(errors.New("foo")),
+					mt.Send(gomock.Any()).DoAndReturn(
+						func(t *trainerv1.TrainRequest) error {
+							return nil
+						}).Return(errors.New("foo")),
 				)
 			},
 			except: func(t *testing.T, a Announcer, err error) {
