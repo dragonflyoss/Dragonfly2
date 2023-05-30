@@ -48,6 +48,9 @@ type NetworkTopology interface {
 
 	// LoadProbes loads probes by source host id and destination host id.
 	LoadProbes(string, string) Probes
+
+	// StoreProbe stores probe in queue and updates probed count.
+	StoreProbe(srcHostID, destHostID string, probe *Probe) error
 }
 
 // networkTopology is an implementation of network topology.
@@ -73,6 +76,42 @@ func NewNetworkTopology(cfg config.NetworkTopologyConfig, rdb redis.UniversalCli
 		resource: resource,
 		storage:  storage,
 	}, nil
+}
+
+// StoreProbe stores probe in queue and updates probed count.
+func (nt *networkTopology) StoreProbe(srcHostID, destHostID string, probe *Probe) error {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	exists, err := nt.rdb.Exists(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID)).Result()
+	if err != nil {
+		return err
+	}
+
+	if exists == 0 {
+		if _, err := nt.rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+			pipe.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID), "averageRTT", "0")
+			pipe.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID), "updatedAt", "0")
+			return nil
+		}); err != nil {
+			return err
+		}
+
+		if err := nt.rdb.Set(ctx, pkgredis.MakeProbedCountKeyInScheduler(destHostID), 0, 0).Err(); err != nil {
+			return err
+		}
+	}
+
+	probes := nt.LoadProbes(srcHostID, destHostID)
+	if err := probes.Enqueue(probe); err != nil {
+		return err
+	}
+
+	if err := nt.rdb.Incr(ctx, pkgredis.MakeProbedCountKeyInScheduler(destHostID)).Err(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // LoadDestHostIDs loads destination host ids by source host id.

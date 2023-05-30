@@ -91,3 +91,17 @@ func (mr *MockNetworkTopologyMockRecorder) ProbedCount(arg0 interface{}) *gomock
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProbedCount", reflect.TypeOf((*MockNetworkTopology)(nil).ProbedCount), arg0)
 }
+
+// StoreProbe mocks base method.
+func (m *MockNetworkTopology) StoreProbe(srcHostID, destHostID string, probe *networktopology.Probe) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StoreProbe", srcHostID, destHostID, probe)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// StoreProbe indicates an expected call of StoreProbe.
+func (mr *MockNetworkTopologyMockRecorder) StoreProbe(srcHostID, destHostID, probe interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreProbe", reflect.TypeOf((*MockNetworkTopology)(nil).StoreProbe), srcHostID, destHostID, probe)
+}
