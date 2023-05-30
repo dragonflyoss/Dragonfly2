@@ -238,7 +238,7 @@ func TestNetworkTopology_DeleteHost(t *testing.T) {
 				clientMock.ExpectDel(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*")).SetVal(1)
 				clientMock.ExpectDel(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, "*")).SetVal(1)
 				clientMock.ExpectDel(pkgredis.MakeProbesKeyInScheduler("*", mockSeedHost.ID)).SetVal(1)
-				clientMock.ExpectDecrBy(pkgredis.MakeProbedCountKeyInScheduler(mockSeedHost.ID), 1).SetErr(errors.New("delete visit times error"))
+				clientMock.ExpectDecrBy(pkgredis.MakeProbedCountKeyInScheduler(mockSeedHost.ID), 1).SetErr(errors.New("decrease probed count error"))
 			},
 			expect: func(t *testing.T, n NetworkTopology, err error) {
 				assert := assert.New(t)
