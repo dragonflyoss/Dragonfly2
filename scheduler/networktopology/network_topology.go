@@ -52,11 +52,11 @@ type NetworkTopology interface {
 
 // networkTopology is an implementation of network topology.
 type networkTopology struct {
-	// rdb is Redis universal client interface.
-	rdb redis.UniversalClient
-
 	// config is the network topology config.
 	config config.NetworkTopologyConfig
+
+	// rdb is Redis universal client interface.
+	rdb redis.UniversalClient
 
 	// resource is resource interface.
 	resource resource.Resource
