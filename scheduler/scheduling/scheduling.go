@@ -400,6 +400,18 @@ func (s *scheduling) FindCandidateParents(ctx context.Context, peer *resource.Pe
 		},
 	)
 
+	// Get the parents with candidateParentLimit.
+	candidateParentLimit := config.DefaultSchedulerCandidateParentLimit
+	if config, err := s.dynconfig.GetSchedulerClusterConfig(); err == nil {
+		if config.CandidateParentLimit > 0 {
+			candidateParentLimit = int(config.CandidateParentLimit)
+		}
+	}
+
+	if len(candidateParents) > candidateParentLimit {
+		candidateParents = candidateParents[:candidateParentLimit]
+	}
+
 	var parentIDs []string
 	for _, candidateParent := range candidateParents {
 		parentIDs = append(parentIDs, candidateParent.ID)
@@ -449,14 +461,9 @@ func (s *scheduling) FindSuccessParent(ctx context.Context, peer *resource.Peer,
 // filterCandidateParents filters the candidate parents that can be scheduled.
 func (s *scheduling) filterCandidateParents(peer *resource.Peer, blocklist set.SafeSet[string]) []*resource.Peer {
 	filterParentLimit := config.DefaultSchedulerFilterParentLimit
-	filterParentRangeLimit := config.DefaultSchedulerFilterParentRangeLimit
 	if config, err := s.dynconfig.GetSchedulerClusterConfig(); err == nil {
 		if config.FilterParentLimit > 0 {
 			filterParentLimit = int(config.FilterParentLimit)
-		}
-
-		if config.FilterParentRangeLimit > 0 {
-			filterParentRangeLimit = int(config.FilterParentRangeLimit)
 		}
 	}
 
@@ -464,12 +471,7 @@ func (s *scheduling) filterCandidateParents(peer *resource.Peer, blocklist set.S
 		candidateParents   []*resource.Peer
 		candidateParentIDs []string
 	)
-	for _, candidateParent := range peer.Task.LoadRandomPeers(uint(filterParentRangeLimit)) {
-		// Parent length limit after filtering.
-		if len(candidateParents) >= filterParentLimit {
-			break
-		}
-
+	for _, candidateParent := range peer.Task.LoadRandomPeers(uint(filterParentLimit)) {
 		// Candidate parent is in blocklist.
 		if blocklist.Contains(candidateParent.ID) {
 			peer.Log.Debugf("parent %s is not selected because it is in blocklist", candidateParent.ID)

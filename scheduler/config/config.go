@@ -135,7 +135,7 @@ type SchedulerConfig struct {
 }
 
 type GCConfig struct {
-	// PieceDownloadTimeout is timout of downloading piece.
+	// PieceDownloadTimeout is timeout of downloading piece.
 	PieceDownloadTimeout time.Duration `yaml:"pieceDownloadTimeout" mapstructure:"pieceDownloadTimeout"`
 
 	// PeerGCInterval is interval of peer gc.
@@ -298,7 +298,7 @@ type NetworkConfig struct {
 }
 
 type NetworkTopologyConfig struct {
-	// Enable network topology service, including probe, network topology collection and synchronization service.
+	// Enable network topology service, including probe, network topology collection.
 	Enable bool `yaml:"enable" mapstructure:"enable"`
 
 	// CollectInterval is the interval of collecting network topology.
@@ -309,14 +309,14 @@ type NetworkTopologyConfig struct {
 }
 
 type ProbeConfig struct {
-	// QueueLength is the length of probe queue in directed graph.
+	// QueueLength is the length of probe queue.
 	QueueLength int `mapstructure:"queueLength" yaml:"queueLength"`
 
-	// SyncInterval is the interval of synchronizing host's probes.
-	SyncInterval time.Duration `mapstructure:"syncInterval" yaml:"syncInterval"`
+	// Interval is the interval of probing hosts.
+	Interval time.Duration `mapstructure:"interval" yaml:"interval"`
 
-	// SyncCount is the number of probing hosts.
-	SyncCount int `mapstructure:"syncCount" yaml:"syncCount"`
+	// Count is the number of probing hosts.
+	Count int `mapstructure:"count" yaml:"count"`
 }
 
 type TrainerConfig struct {
@@ -328,6 +328,9 @@ type TrainerConfig struct {
 
 	// Interval is the interval of training.
 	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
+
+	// UploadTimeout is the timeout of uploading dataset to trainer.
+	UploadTimeout time.Duration `yaml:"uploadTimeout" mapstructure:"uploadTimeout"`
 }
 
 // New default configuration.
@@ -406,15 +409,16 @@ func New() *Config {
 			Enable:          true,
 			CollectInterval: DefaultNetworkTopologyCollectInterval,
 			Probe: ProbeConfig{
-				QueueLength:  DefaultProbeQueueLength,
-				SyncInterval: DefaultProbeSyncInterval,
-				SyncCount:    DefaultProbeSyncCount,
+				QueueLength: DefaultProbeQueueLength,
+				Interval:    DefaultProbeInterval,
+				Count:       DefaultProbeCount,
 			},
 		},
 		Trainer: TrainerConfig{
-			Enable:   false,
-			Addr:     DefaultTrainerAddr,
-			Interval: DefaultTrainerInterval,
+			Enable:        false,
+			Addr:          DefaultTrainerAddr,
+			Interval:      DefaultTrainerInterval,
+			UploadTimeout: DefaultTrainerUploadTimeout,
 		},
 	}
 }
@@ -439,10 +443,6 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Server.Host == "" {
 		return errors.New("server requires parameter host")
-	}
-
-	if len(cfg.Database.Redis.Addrs) == 0 {
-		return errors.New("redis requires parameter addrs")
 	}
 
 	if cfg.Database.Redis.BrokerDB < 0 {
@@ -579,12 +579,12 @@ func (cfg *Config) Validate() error {
 		return errors.New("probe requires parameter queueLength")
 	}
 
-	if cfg.NetworkTopology.Probe.SyncInterval <= 0 {
-		return errors.New("probe requires parameter syncInterval")
+	if cfg.NetworkTopology.Probe.Interval <= 0 {
+		return errors.New("probe requires parameter interval")
 	}
 
-	if cfg.NetworkTopology.Probe.SyncCount <= 0 {
-		return errors.New("probe requires parameter syncCount")
+	if cfg.NetworkTopology.Probe.Count <= 0 {
+		return errors.New("probe requires parameter count")
 	}
 
 	if cfg.Trainer.Enable {
@@ -594,6 +594,10 @@ func (cfg *Config) Validate() error {
 
 		if cfg.Trainer.Interval <= 0 {
 			return errors.New("trainer requires parameter interval")
+		}
+
+		if cfg.Trainer.UploadTimeout <= 0 {
+			return errors.New("trainer requires parameter uploadTimeout")
 		}
 	}
 

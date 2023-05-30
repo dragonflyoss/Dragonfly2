@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/status"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
@@ -84,8 +85,7 @@ func NewV1(
 
 // RegisterPeerTask registers peer and triggers seed peer download task.
 func (v *V1) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest) (*schedulerv1.RegisterResult, error) {
-	logger.WithPeer(req.PeerHost.Id, req.TaskId, req.PeerId).Infof("register peer task request: %#v %#v",
-		req, req.UrlMeta)
+	logger.WithPeer(req.PeerHost.Id, req.TaskId, req.PeerId).Infof("register peer task request: %#v", req)
 
 	// Store resource.
 	task := v.storeTask(ctx, req, commonv2.TaskType_DFDAEMON)
@@ -725,8 +725,11 @@ func (v *V1) triggerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, 
 
 // triggerSeedPeerTask starts to trigger seed peer task.
 func (v *V1) triggerSeedPeerTask(ctx context.Context, rg *http.Range, task *resource.Task) {
+	ctx, cancel := context.WithCancel(trace.ContextWithSpan(context.Background(), trace.SpanFromContext(ctx)))
+	defer cancel()
+
 	task.Log.Info("trigger seed peer")
-	peer, endOfPiece, err := v.resource.SeedPeer().TriggerTask(ctx, rg, task)
+	seedPeer, endOfPiece, err := v.resource.SeedPeer().TriggerTask(ctx, rg, task)
 	if err != nil {
 		task.Log.Errorf("trigger seed peer failed: %s", err.Error())
 		v.handleTaskFailure(ctx, task, nil, err)
@@ -734,9 +737,9 @@ func (v *V1) triggerSeedPeerTask(ctx context.Context, rg *http.Range, task *reso
 	}
 
 	// Update the task status first to help peer scheduling evaluation and scoring.
-	peer.Log.Info("trigger seed peer successfully")
+	seedPeer.Log.Info("trigger seed peer successfully")
 	v.handleTaskSuccess(ctx, task, endOfPiece)
-	v.handlePeerSuccess(ctx, peer)
+	v.handlePeerSuccess(ctx, seedPeer)
 }
 
 // storeTask stores a new task or reuses a previous task.

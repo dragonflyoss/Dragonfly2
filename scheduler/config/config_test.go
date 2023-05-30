@@ -164,15 +164,16 @@ func TestConfig_Load(t *testing.T) {
 			Enable:          true,
 			CollectInterval: 60 * time.Second,
 			Probe: ProbeConfig{
-				QueueLength:  5,
-				SyncInterval: 30 * time.Second,
-				SyncCount:    10,
+				QueueLength: 5,
+				Interval:    30 * time.Second,
+				Count:       10,
 			},
 		},
 		Trainer: TrainerConfig{
-			Enable:   false,
-			Addr:     "127.0.0.1:9000",
-			Interval: 10 * time.Minute,
+			Enable:        false,
+			Addr:          "127.0.0.1:9000",
+			Interval:      10 * time.Minute,
+			UploadTimeout: 2 * time.Hour,
 		},
 	}
 
@@ -256,19 +257,6 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "server requires parameter host")
-			},
-		},
-		{
-			name:   "redis requires parameter addrs",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Database.Redis = mockRedisConfig
-				cfg.Database.Redis.Addrs = []string{}
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "redis requires parameter addrs")
 			},
 		},
 		{
@@ -723,31 +711,31 @@ func TestConfig_Validate(t *testing.T) {
 			},
 		},
 		{
-			name:   "probe requires parameter SyncInterval",
+			name:   "probe requires parameter interval",
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
 				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
-				cfg.NetworkTopology.Probe.SyncInterval = 0
+				cfg.NetworkTopology.Probe.Interval = 0
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "probe requires parameter syncInterval")
+				assert.EqualError(err, "probe requires parameter interval")
 			},
 		},
 		{
-			name:   "probe requires parameter SyncCount",
+			name:   "probe requires parameter count",
 			config: New(),
 			mock: func(cfg *Config) {
 				cfg.Manager = mockManagerConfig
 				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
-				cfg.NetworkTopology.Probe.SyncCount = 0
+				cfg.NetworkTopology.Probe.Count = 0
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "probe requires parameter syncCount")
+				assert.EqualError(err, "probe requires parameter count")
 			},
 		},
 		{
@@ -778,6 +766,21 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "trainer requires parameter interval")
+			},
+		},
+		{
+			name:   "trainer requires parameter interval",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Job = mockJobConfig
+				cfg.Trainer.Enable = true
+				cfg.Trainer.UploadTimeout = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "trainer requires parameter uploadTimeout")
 			},
 		},
 	}

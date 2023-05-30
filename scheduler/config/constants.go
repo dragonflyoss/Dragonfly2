@@ -33,11 +33,11 @@ const (
 	// DefaultPeerConcurrentPieceCount is default number for pieces to concurrent downloading.
 	DefaultPeerConcurrentPieceCount = 4
 
-	// DefaultSchedulerFilterParentLimit is default limit the number for filter traversals.
-	DefaultSchedulerFilterParentLimit = 4
+	// DefaultSchedulerCandidateParentLimit is default limit the number of candidate parent.
+	DefaultSchedulerCandidateParentLimit = 4
 
-	// DefaultSchedulerFilterParentRangeLimit is default limit the range for filter traversals.
-	DefaultSchedulerFilterParentRangeLimit = 40
+	// DefaultSchedulerFilterParentLimit is default limit the number for filter parent.
+	DefaultSchedulerFilterParentLimit = 40
 )
 
 const (
@@ -163,20 +163,17 @@ const (
 )
 
 const (
-	// TODO(fcgxz2003): The default setting needs to be changed after testing.
 	// DefaultNetworkTopologyCollectInterval is the default interval of collecting network topology.
-	DefaultNetworkTopologyCollectInterval = 60 * time.Second
+	DefaultNetworkTopologyCollectInterval = 2 * time.Hour
 
-	// DefaultProbeQueueLength is the default length of probe queue in directed graph.
+	// DefaultProbeQueueLength is the default length of probe queue.
 	DefaultProbeQueueLength = 5
 
-	// TODO(fcgxz2003): The default setting needs to be changed after testing.
-	// DefaultProbeSyncInterval is the default interval of synchronizing host's probes.
-	DefaultProbeSyncInterval = 30 * time.Second
+	// DefaultProbeInterval is the default interval of probing host.
+	DefaultProbeInterval = 15 * time.Minute
 
-	// TODO(fcgxz2003): The default setting needs to be changed after testing.
-	// DefaultProbeSyncCount is the default number of probing hosts.
-	DefaultProbeSyncCount = 10
+	// DefaultProbeCount is the default number of probing hosts.
+	DefaultProbeCount = 10
 )
 
 const (
@@ -185,4 +182,7 @@ const (
 
 	// DefaultTrainerInterval is the default interval of training.
 	DefaultTrainerInterval = 7 * 24 * time.Hour
+
+	// DefaultTrainerUploadTimeout is the default timeout of uploading dataset to trainer.
+	DefaultTrainerUploadTimeout = 1 * time.Hour
 )

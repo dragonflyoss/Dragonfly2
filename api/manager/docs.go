@@ -4289,12 +4289,12 @@ const docTemplate = `{
         "d7y_io_dragonfly_v2_manager_types.SchedulerClusterConfig": {
             "type": "object",
             "properties": {
-                "filter_parent_limit": {
+                "candidate_parent_limit": {
                     "type": "integer",
                     "maximum": 20,
                     "minimum": 1
                 },
-                "filter_parent_range_limit": {
+                "filter_parent_limit": {
                     "type": "integer",
                     "maximum": 1000,
                     "minimum": 10
