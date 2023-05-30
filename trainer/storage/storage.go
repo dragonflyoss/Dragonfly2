@@ -24,7 +24,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sync"
 
 	"github.com/gocarina/gocsv"
 
@@ -78,26 +77,15 @@ type Storage interface {
 }
 
 type storage struct {
-	baseDir    string
-	maxSize    int64
-	maxBackups int
-
-	downloadMu        *sync.RWMutex
-	networkTopologyMu *sync.RWMutex
-
+	baseDir                  string
 	downloadModelKeys        set.SafeSet[string]
 	networkTopologyModelKeys set.SafeSet[string]
 }
 
 // New returns a new Storage instance.
-func New(baseDir string, maxSize, maxBackups int) (Storage, error) {
+func New(baseDir string) (Storage, error) {
 	s := &storage{
-		baseDir:    baseDir,
-		maxSize:    int64(maxSize * megabyte),
-		maxBackups: maxBackups,
-
-		downloadMu:               &sync.RWMutex{},
-		networkTopologyMu:        &sync.RWMutex{},
+		baseDir:                  baseDir,
 		downloadModelKeys:        set.NewSafeSet[string](),
 		networkTopologyModelKeys: set.NewSafeSet[string](),
 	}
@@ -107,9 +95,6 @@ func New(baseDir string, maxSize, maxBackups int) (Storage, error) {
 
 // CreateDownload inserts downloads into csv files based on the given model key.
 func (s *storage) CreateDownload(downloads []byte, modelKey string) error {
-	s.downloadMu.Lock()
-	defer s.downloadMu.Unlock()
-
 	filename := s.downloadFilename(modelKey)
 	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
@@ -133,9 +118,6 @@ func (s *storage) CreateDownload(downloads []byte, modelKey string) error {
 
 // CreateNetworkTopology inserts network topologies into csv files based on the given model key.
 func (s *storage) CreateNetworkTopology(networkTopologies []byte, modelKey string) error {
-	s.networkTopologyMu.Lock()
-	defer s.networkTopologyMu.Unlock()
-
 	filename := s.networkTopologyFilename(modelKey)
 	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
@@ -158,9 +140,6 @@ func (s *storage) CreateNetworkTopology(networkTopologies []byte, modelKey strin
 
 // ListDownload returns downloads in csv files based on the given model key.
 func (s *storage) ListDownload(modelKey string) ([]Download, error) {
-	s.downloadMu.RLock()
-	defer s.downloadMu.RUnlock()
-
 	filename := s.downloadFilename(modelKey)
 	file, err := os.Open(filename)
 	if err != nil {
@@ -178,9 +157,6 @@ func (s *storage) ListDownload(modelKey string) ([]Download, error) {
 
 // ListNetworkTopology returns network topologies in csv files based on the given model key.
 func (s *storage) ListNetworkTopology(modelKey string) ([]NetworkTopology, error) {
-	s.networkTopologyMu.RLock()
-	defer s.networkTopologyMu.RUnlock()
-
 	filename := s.networkTopologyFilename(modelKey)
 	file, err := os.Open(filename)
 	if err != nil {
@@ -198,9 +174,6 @@ func (s *storage) ListNetworkTopology(modelKey string) ([]NetworkTopology, error
 
 // OpenDownload opens download files for read based on the given model key, it returns io.ReadCloser of download files.
 func (s *storage) OpenDownload(modelKey string) (io.ReadCloser, error) {
-	s.downloadMu.RLock()
-	defer s.downloadMu.RUnlock()
-
 	filename := s.downloadFilename(modelKey)
 	file, err := os.Open(filename)
 	if err != nil {
@@ -212,9 +185,6 @@ func (s *storage) OpenDownload(modelKey string) (io.ReadCloser, error) {
 
 // OpenNetworkTopology opens network topology files for read based on the given model key, it returns io.ReadCloser of network topology files.
 func (s *storage) OpenNetworkTopology(modelKey string) (io.ReadCloser, error) {
-	s.networkTopologyMu.RLock()
-	defer s.networkTopologyMu.RUnlock()
-
 	filename := s.networkTopologyFilename(modelKey)
 	file, err := os.Open(filename)
 	if err != nil {
@@ -226,9 +196,6 @@ func (s *storage) OpenNetworkTopology(modelKey string) (io.ReadCloser, error) {
 
 // ClearDownload removes downloads based on the given model key.
 func (s *storage) ClearDownload(modelKey string) error {
-	s.downloadMu.Lock()
-	defer s.downloadMu.Unlock()
-
 	filename := s.downloadFilename(modelKey)
 	if err := os.Remove(filename); err != nil {
 		return err
@@ -240,9 +207,6 @@ func (s *storage) ClearDownload(modelKey string) error {
 
 // ClearNetworkTopology removes network topologies based on the given model key.
 func (s *storage) ClearNetworkTopology(modelKey string) error {
-	s.networkTopologyMu.Lock()
-	defer s.networkTopologyMu.Unlock()
-
 	filename := s.networkTopologyFilename(modelKey)
 	if err := os.Remove(filename); err != nil {
 		return err
@@ -254,9 +218,6 @@ func (s *storage) ClearNetworkTopology(modelKey string) error {
 
 // ClearNetworkTopology removes all files.
 func (s *storage) Clear() error {
-	s.networkTopologyMu.Lock()
-	defer s.networkTopologyMu.Unlock()
-
 	for _, modelKey := range s.downloadModelKeys.Values() {
 		filename := s.downloadFilename(modelKey)
 		if err := os.Remove(filename); err != nil {
