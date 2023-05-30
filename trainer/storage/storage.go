@@ -67,13 +67,13 @@ type Storage interface {
 	// OpenNetworkTopology opens network topology files for read based on the given model key, it returns io.ReadCloser of network topology files.
 	OpenNetworkTopology(string) (io.ReadCloser, error)
 
-	// ClearDownload removes all download files based on the given model key.
+	// ClearDownload removes all downloads based on the given model key.
 	ClearDownload(string) error
 
-	// ClearNetworkTopology removes all network topology files the given model key.
+	// ClearNetworkTopology removes network topologies based on the given model key.
 	ClearNetworkTopology(string) error
 
-	// Clear removes all network topology files
+	// Clear removes all files.
 	Clear() error
 }
 
@@ -257,16 +257,14 @@ func (s *storage) Clear() error {
 	s.networkTopologyMu.Lock()
 	defer s.networkTopologyMu.Unlock()
 
-	modelKeys := s.downloadModelKeys.Values()
-	for _, modelKey := range modelKeys {
+	for _, modelKey := range s.downloadModelKeys.Values() {
 		filename := s.downloadFilename(modelKey)
 		if err := os.Remove(filename); err != nil {
 			return err
 		}
 	}
 
-	modelKeys = s.networkTopologyModelKeys.Values()
-	for _, modelKey := range modelKeys {
+	for _, modelKey := range s.networkTopologyModelKeys.Values() {
 		filename := s.networkTopologyFilename(modelKey)
 		if err := os.Remove(filename); err != nil {
 			return err
