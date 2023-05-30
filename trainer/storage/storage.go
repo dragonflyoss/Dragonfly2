@@ -278,12 +278,12 @@ func (s *storage) Clear() error {
 	return nil
 }
 
-// downloadFilename generates download file name based on given model key.
+// downloadFilename generates download file name based on the given model key.
 func (s *storage) downloadFilename(modelKey string) string {
 	return filepath.Join(s.baseDir, fmt.Sprintf("%s-%s.%s", DownloadFilePrefix, modelKey, CSVFileExt))
 }
 
-// networkTopologyFilename generates network topology file name based on given model key.
+// networkTopologyFilename generates network topology file name based on the given model key.
 func (s *storage) networkTopologyFilename(modelKey string) string {
 	return filepath.Join(s.baseDir, fmt.Sprintf("%s-%s.%s", NetworkTopologyFilePrefix, modelKey, CSVFileExt))
 }
