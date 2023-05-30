@@ -195,19 +195,14 @@ func TestProbes_Peek(t *testing.T) {
 			config: config.ProbeConfig{
 				QueueLength: 5,
 			},
-			probes: []*Probe{mockProbe},
+			probes: []*Probe{},
 			mock: func(mockRDBClient redismock.ClientMock, probes []*Probe) {
-				mockStr := make([]string, 0)
-				for _, p := range probes {
-					data, err := json.Marshal(p)
-					if err != nil {
-						t.Fatal(err)
-					}
-
-					mockStr = append(mockStr, string(data))
+				data, err := json.Marshal(mockProbe)
+				if err != nil {
+					t.Fatal(err)
 				}
 
-				mockRDBClient.ExpectLIndex(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0).SetVal(mockStr[0])
+				mockRDBClient.ExpectLIndex(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0).SetVal(string(data))
 			},
 			expect: func(t *testing.T, p Probes) {
 				assert := assert.New(t)
