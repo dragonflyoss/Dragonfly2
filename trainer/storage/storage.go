@@ -41,11 +41,6 @@ const (
 	CSVFileExt = "csv"
 )
 
-const (
-	// megabyte is the converted factor of MaxSize and bytes.
-	megabyte = 1024 * 1024
-)
-
 // Storage is the interface used for storage.
 type Storage interface {
 	// CreateDownload inserts downloads into csv files based on the given model key.
@@ -83,27 +78,24 @@ type storage struct {
 }
 
 // New returns a new Storage instance.
-func New(baseDir string) (Storage, error) {
-	s := &storage{
+func New(baseDir string) Storage {
+	return &storage{
 		baseDir:                  baseDir,
 		downloadModelKeys:        set.NewSafeSet[string](),
 		networkTopologyModelKeys: set.NewSafeSet[string](),
 	}
-
-	return s, nil
 }
 
 // CreateDownload inserts downloads into csv files based on the given model key.
 func (s *storage) CreateDownload(downloads []byte, modelKey string) error {
-	filename := s.downloadFilename(modelKey)
-	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	file, err := os.OpenFile(s.downloadFilename(modelKey), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
 		return err
 	}
 
 	// Write downloads to download csv file.
 	if _, err := io.Copy(file, bytes.NewReader(downloads)); err != nil {
-		if err := os.Remove(filename); err != nil {
+		if err := os.Remove(s.downloadFilename(modelKey)); err != nil {
 			return err
 		}
 
@@ -118,15 +110,14 @@ func (s *storage) CreateDownload(downloads []byte, modelKey string) error {
 
 // CreateNetworkTopology inserts network topologies into csv files based on the given model key.
 func (s *storage) CreateNetworkTopology(networkTopologies []byte, modelKey string) error {
-	filename := s.networkTopologyFilename(modelKey)
-	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	file, err := os.OpenFile(s.networkTopologyFilename(modelKey), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
 		return err
 	}
 
 	// Write network topologies to csv file.
 	if _, err := io.Copy(file, bytes.NewReader(networkTopologies)); err != nil {
-		if err := os.Remove(filename); err != nil {
+		if err := os.Remove(s.networkTopologyFilename(modelKey)); err != nil {
 			return err
 		}
 		return err
@@ -140,8 +131,7 @@ func (s *storage) CreateNetworkTopology(networkTopologies []byte, modelKey strin
 
 // ListDownload returns downloads in csv files based on the given model key.
 func (s *storage) ListDownload(modelKey string) ([]Download, error) {
-	filename := s.downloadFilename(modelKey)
-	file, err := os.Open(filename)
+	file, err := os.Open(s.downloadFilename(modelKey))
 	if err != nil {
 		return nil, err
 	}
@@ -157,8 +147,7 @@ func (s *storage) ListDownload(modelKey string) ([]Download, error) {
 
 // ListNetworkTopology returns network topologies in csv files based on the given model key.
 func (s *storage) ListNetworkTopology(modelKey string) ([]NetworkTopology, error) {
-	filename := s.networkTopologyFilename(modelKey)
-	file, err := os.Open(filename)
+	file, err := os.Open(s.networkTopologyFilename(modelKey))
 	if err != nil {
 		return nil, err
 	}
@@ -174,8 +163,7 @@ func (s *storage) ListNetworkTopology(modelKey string) ([]NetworkTopology, error
 
 // OpenDownload opens download files for read based on the given model key, it returns io.ReadCloser of download files.
 func (s *storage) OpenDownload(modelKey string) (io.ReadCloser, error) {
-	filename := s.downloadFilename(modelKey)
-	file, err := os.Open(filename)
+	file, err := os.Open(s.downloadFilename(modelKey))
 	if err != nil {
 		return nil, err
 	}
@@ -185,8 +173,7 @@ func (s *storage) OpenDownload(modelKey string) (io.ReadCloser, error) {
 
 // OpenNetworkTopology opens network topology files for read based on the given model key, it returns io.ReadCloser of network topology files.
 func (s *storage) OpenNetworkTopology(modelKey string) (io.ReadCloser, error) {
-	filename := s.networkTopologyFilename(modelKey)
-	file, err := os.Open(filename)
+	file, err := os.Open(s.networkTopologyFilename(modelKey))
 	if err != nil {
 		return nil, err
 	}
@@ -196,8 +183,7 @@ func (s *storage) OpenNetworkTopology(modelKey string) (io.ReadCloser, error) {
 
 // ClearDownload removes downloads based on the given model key.
 func (s *storage) ClearDownload(modelKey string) error {
-	filename := s.downloadFilename(modelKey)
-	if err := os.Remove(filename); err != nil {
+	if err := os.Remove(s.downloadFilename(modelKey)); err != nil {
 		return err
 	}
 
@@ -207,8 +193,7 @@ func (s *storage) ClearDownload(modelKey string) error {
 
 // ClearNetworkTopology removes network topologies based on the given model key.
 func (s *storage) ClearNetworkTopology(modelKey string) error {
-	filename := s.networkTopologyFilename(modelKey)
-	if err := os.Remove(filename); err != nil {
+	if err := os.Remove(s.networkTopologyFilename(modelKey)); err != nil {
 		return err
 	}
 
@@ -219,15 +204,13 @@ func (s *storage) ClearNetworkTopology(modelKey string) error {
 // ClearNetworkTopology removes all files.
 func (s *storage) Clear() error {
 	for _, modelKey := range s.downloadModelKeys.Values() {
-		filename := s.downloadFilename(modelKey)
-		if err := os.Remove(filename); err != nil {
+		if err := os.Remove(s.downloadFilename(modelKey)); err != nil {
 			return err
 		}
 	}
 
 	for _, modelKey := range s.networkTopologyModelKeys.Values() {
-		filename := s.networkTopologyFilename(modelKey)
-		if err := os.Remove(filename); err != nil {
+		if err := os.Remove(s.networkTopologyFilename(modelKey)); err != nil {
 			return err
 		}
 	}
