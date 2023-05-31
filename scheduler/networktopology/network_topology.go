@@ -83,7 +83,8 @@ func (nt *networkTopology) StoreProbe(srcHostID, destHostID string, probe *Probe
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	// If network topology from srcHost to destHost does not exist, create a new hash table in redis and set creation time.
+	// If network topology from source host to destination host does not exist,
+	// create a new hash table in redis and set creation time.
 	exists, err := nt.rdb.Exists(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID)).Result()
 	if err != nil {
 		return err
@@ -95,7 +96,8 @@ func (nt *networkTopology) StoreProbe(srcHostID, destHostID string, probe *Probe
 		}
 	}
 
-	// If probed count of destHost does not exist, create a new key-value and set the initial value to 0.
+	// If probed count of host does not exist, create a new key-value
+	// in redis and set the initial value to 0.
 	exists, err = nt.rdb.Exists(ctx, pkgredis.MakeProbedCountKeyInScheduler(destHostID)).Result()
 	if err != nil {
 		return err
