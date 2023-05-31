@@ -154,13 +154,13 @@ type Parent struct {
 	UpdatedAt int64 `csv:"updatedAt"`
 }
 
-// Error co0ntains content for error.
+// Error contains content for error.
 type Error struct {
 	time.Duration
 	// Code is the code of error.
 	Code string `csv:"code"`
 
-	// Message is thzxre message of error.
+	// Message is the message of error.
 	Message string `csv:"message"`
 }
 

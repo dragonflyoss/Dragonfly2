@@ -201,7 +201,7 @@ func (s *storage) ClearNetworkTopology(modelKey string) error {
 	return nil
 }
 
-// ClearNetworkTopology removes all files.
+// Clear removes all files.
 func (s *storage) Clear() error {
 	for _, modelKey := range s.downloadModelKeys.Values() {
 		if err := os.Remove(s.downloadFilename(modelKey)); err != nil {
