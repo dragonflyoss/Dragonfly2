@@ -82,7 +82,7 @@ func NewNetworkTopology(cfg config.NetworkTopologyConfig, rdb redis.UniversalCli
 	}, nil
 }
 
-// Has checks whether network topology between src host and destination host exist.
+// Has checks whether network topology between src host and destination host exists.
 func (nt *networkTopology) Has(srcHostID string, destHostID string) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
