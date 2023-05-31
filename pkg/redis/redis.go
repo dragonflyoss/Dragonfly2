@@ -49,6 +49,9 @@ const (
 
 	// ProbedCountNamespace prefix of probed count namespace cache key.
 	ProbedCountNamespace = "probed-count"
+
+	// ProbedAtNamespace prefix of last probed time namespace cache key.
+	ProbedAtNamespace = "probed-at"
 )
 
 // NewRedis returns a new redis client.
@@ -137,4 +140,9 @@ func MakeProbesKeyInScheduler(srcHostID, destHostID string) string {
 // MakeProbedCountKeyInScheduler make probed count key in scheduler.
 func MakeProbedCountKeyInScheduler(hostID string) string {
 	return MakeKeyInScheduler(ProbedCountNamespace, hostID)
+}
+
+// MakeProbedAtKeyInScheduler make last probed time in scheduler.
+func MakeProbedAtKeyInScheduler(hostID string) string {
+	return MakeKeyInScheduler(ProbedAtNamespace, hostID)
 }

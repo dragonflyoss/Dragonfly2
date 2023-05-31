@@ -176,6 +176,7 @@ func (p *probes) Enqueue(probe *Probe) error {
 	if _, err := p.rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
 		pipe.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "averageRTT", averageRTT.Nanoseconds())
 		pipe.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "updatedAt", probe.CreatedAt.Format(time.RFC3339Nano))
+		pipe.Set(ctx, pkgredis.MakeProbedAtKeyInScheduler(p.destHostID), probe.CreatedAt.Format(time.RFC3339Nano), 0)
 		pipe.Incr(ctx, pkgredis.MakeProbedCountKeyInScheduler(p.destHostID))
 		return nil
 	}); err != nil {
