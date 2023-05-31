@@ -85,27 +85,27 @@ func (nt *networkTopology) StoreProbe(srcHostID, destHostID string, probe *Probe
 
 	// If network topology from source host to destination host does not exist,
 	// create a new hash table in redis and set creation time.
-	exists, err := nt.rdb.Exists(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID)).Result()
+	networkTopologyExists, err := nt.rdb.Exists(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID)).Result()
 	if err != nil {
 		return err
 	}
 
-	if exists == 0 {
+	if networkTopologyExists == 0 {
 		if err := nt.rdb.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID), "createdAt", time.Now().Format(time.RFC3339Nano)).Err(); err != nil {
 			return err
 		}
-	}
 
-	// If probed count of host does not exist, create a new key-value
-	// in redis and set the initial value to 0.
-	exists, err = nt.rdb.Exists(ctx, pkgredis.MakeProbedCountKeyInScheduler(destHostID)).Result()
-	if err != nil {
-		return err
-	}
-
-	if exists == 0 {
-		if err := nt.rdb.Set(ctx, pkgredis.MakeProbedCountKeyInScheduler(destHostID), 0, 0).Err(); err != nil {
+		// If probed count of host does not exist, create a new key-value
+		// in redis and set the initial value to 0.
+		probedCountExists, err := nt.rdb.Exists(ctx, pkgredis.MakeProbedCountKeyInScheduler(destHostID)).Result()
+		if err != nil {
 			return err
+		}
+
+		if probedCountExists == 0 {
+			if err := nt.rdb.Set(ctx, pkgredis.MakeProbedCountKeyInScheduler(destHostID), 0, 0).Err(); err != nil {
+				return err
+			}
 		}
 
 		// Update probed count.

@@ -201,7 +201,7 @@ func TestNetworkTopology_StoreProbe(t *testing.T) {
 		expect func(t *testing.T, networkTopology NetworkTopology, err error)
 	}{
 		{
-			name: "store probe when probes queue is empty",
+			name: "store probe when probes queue is empty and there are no other probes to the same destination",
 			probes: []*Probe{
 				mockProbe,
 			},
@@ -232,6 +232,36 @@ func TestNetworkTopology_StoreProbe(t *testing.T) {
 			},
 		},
 		{
+			name: "store probe when probes queue is empty and there are other probes to the same destination",
+			probes: []*Probe{
+				mockProbe,
+			},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectExists(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(0)
+				mockRDBClient.Regexp().ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "createdAt", `.*`).SetVal(1)
+
+				mockRDBClient.ExpectExists(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(1)
+				mockRDBClient.ExpectIncr(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(2)
+
+				data, err := json.Marshal(ps[0])
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(0)
+				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), data).SetVal(1)
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", mockProbe.RTT.Nanoseconds()).SetVal(1)
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", mockProbe.CreatedAt.Format(time.RFC3339Nano)).SetVal(1)
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+
+				assert.NoError(networkTopology.StoreProbe(mockSeedHost.ID, mockHost.ID, mockProbe))
+			},
+		},
+		{
 			name: "store probe when probes queue has one probe",
 			probes: []*Probe{
 				mockProbe,
@@ -240,7 +270,6 @@ func TestNetworkTopology_StoreProbe(t *testing.T) {
 			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
 				mockRDBClient.MatchExpectationsInOrder(true)
 				mockRDBClient.ExpectExists(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(1)
-				mockRDBClient.ExpectExists(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(1)
 
 				var rawProbes []string
 				for _, p := range ps {
@@ -277,7 +306,6 @@ func TestNetworkTopology_StoreProbe(t *testing.T) {
 			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
 				mockRDBClient.MatchExpectationsInOrder(true)
 				mockRDBClient.ExpectExists(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(1)
-				mockRDBClient.ExpectExists(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(1)
 
 				var rawProbes []string
 				for _, p := range ps {
