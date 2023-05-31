@@ -107,15 +107,15 @@ func (nt *networkTopology) StoreProbe(srcHostID, destHostID string, probe *Probe
 		if err := nt.rdb.Set(ctx, pkgredis.MakeProbedCountKeyInScheduler(destHostID), 0, 0).Err(); err != nil {
 			return err
 		}
+
+		// Update probed count.
+		if err := nt.rdb.Incr(ctx, pkgredis.MakeProbedCountKeyInScheduler(destHostID)).Err(); err != nil {
+			return err
+		}
 	}
 
 	// Store probe in queue.
 	if err := nt.LoadProbes(srcHostID, destHostID).Enqueue(probe); err != nil {
-		return err
-	}
-
-	// Update probed count.
-	if err := nt.rdb.Incr(ctx, pkgredis.MakeProbedCountKeyInScheduler(destHostID)).Err(); err != nil {
 		return err
 	}
 
