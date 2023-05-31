@@ -17,6 +17,7 @@
 package networktopology
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -186,6 +187,141 @@ func Test_NewNetworkTopology(t *testing.T) {
 
 			networkTopology, err := NewNetworkTopology(mockNetworkTopologyConfig, rdb, res, storage)
 			tc.expect(t, networkTopology, err)
+		})
+	}
+}
+
+func TestNetworkTopology_StoreProbe(t *testing.T) {
+	tests := []struct {
+		name   string
+		probes []*Probe
+		mock   func(mockRDBClient redismock.ClientMock, ps []*Probe)
+		expect func(t *testing.T, networkTopology NetworkTopology, err error)
+	}{
+		{
+			name: "store probe when probes queue is empty",
+			probes: []*Probe{
+				mockProbe,
+			},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectExists(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(0)
+				mockRDBClient.Regexp().ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "createdAt", `.*`).SetVal(1)
+
+				mockRDBClient.ExpectExists(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(0)
+				mockRDBClient.ExpectSet(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID), 0, 0).SetVal("ok")
+
+				data, err := json.Marshal(ps[0])
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(0)
+				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), data).SetVal(1)
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", mockProbe.RTT.Nanoseconds()).SetVal(1)
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", mockProbe.CreatedAt.Format(time.RFC3339Nano)).SetVal(1)
+
+				mockRDBClient.ExpectIncr(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(1)
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+
+				assert.NoError(networkTopology.StoreProbe(mockSeedHost.ID, mockHost.ID, mockProbe))
+			},
+		},
+		{
+			name: "store probe when probes queue has one probe",
+			probes: []*Probe{
+				mockProbe,
+				NewProbe(mockHost, 31*time.Millisecond, time.Now()),
+			},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectExists(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(1)
+				mockRDBClient.ExpectExists(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(1)
+
+				var rawProbes []string
+				for _, p := range ps {
+					data, err := json.Marshal(p)
+					if err != nil {
+						t.Fatal(err)
+					}
+
+					rawProbes = append(rawProbes, string(data))
+				}
+
+				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(1)
+				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), []byte(rawProbes[0])).SetVal(1)
+				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal([]string{rawProbes[1], rawProbes[0]})
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", int64(30100000)).SetVal(1)
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", mockProbe.CreatedAt.Format(time.RFC3339Nano)).SetVal(1)
+
+				mockRDBClient.ExpectIncr(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(2)
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+
+				assert.NoError(networkTopology.StoreProbe(mockSeedHost.ID, mockHost.ID, mockProbe))
+			},
+		},
+		{
+			name: "store probe when probes queue has five probes",
+			probes: []*Probe{
+				NewProbe(mockHost, 31*time.Millisecond, time.Now()),
+				NewProbe(mockHost, 32*time.Millisecond, time.Now()),
+				NewProbe(mockHost, 33*time.Millisecond, time.Now()),
+				NewProbe(mockHost, 34*time.Millisecond, time.Now()),
+				mockProbe,
+			},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectExists(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(1)
+				mockRDBClient.ExpectExists(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(1)
+
+				var rawProbes []string
+				for _, p := range ps {
+					data, err := json.Marshal(p)
+					if err != nil {
+						t.Fatal(err)
+					}
+
+					rawProbes = append(rawProbes, string(data))
+				}
+
+				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(5)
+				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(rawProbes[0])
+				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), []byte(rawProbes[4])).SetVal(1)
+				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(rawProbes)
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", int64(30388900)).SetVal(1)
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", mockProbe.CreatedAt.Format(time.RFC3339Nano)).SetVal(1)
+
+				mockRDBClient.ExpectIncr(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(5)
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+
+				assert.NoError(networkTopology.StoreProbe(mockSeedHost.ID, mockHost.ID, mockProbe))
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+
+			rdb, mockRDBClient := redismock.NewClientMock()
+			res := resource.NewMockResource(ctl)
+			storage := storagemocks.NewMockStorage(ctl)
+			tc.mock(mockRDBClient, tc.probes)
+
+			networkTopology, err := NewNetworkTopology(mockNetworkTopologyConfig, rdb, res, storage)
+			tc.expect(t, networkTopology, err)
+
+			mockRDBClient.ClearExpect()
 		})
 	}
 }

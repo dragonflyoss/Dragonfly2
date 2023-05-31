@@ -83,30 +83,36 @@ func (nt *networkTopology) StoreProbe(srcHostID, destHostID string, probe *Probe
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
+	// If network topology from srcHost to destHost does not exist, create a new hash table in redis and set creation time.
 	exists, err := nt.rdb.Exists(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID)).Result()
 	if err != nil {
 		return err
 	}
 
 	if exists == 0 {
-		if _, err := nt.rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
-			pipe.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID), "averageRTT", "0")
-			pipe.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID), "updatedAt", "0")
-			return nil
-		}); err != nil {
+		if err := nt.rdb.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID), "createdAt", time.Now()).Err(); err != nil {
 			return err
 		}
+	}
 
+	// If probed count of destHost does not exist, create a new key-value and set the initial value to 0.
+	exists, err = nt.rdb.Exists(ctx, pkgredis.MakeProbedCountKeyInScheduler(destHostID)).Result()
+	if err != nil {
+		return err
+	}
+
+	if exists == 0 {
 		if err := nt.rdb.Set(ctx, pkgredis.MakeProbedCountKeyInScheduler(destHostID), 0, 0).Err(); err != nil {
 			return err
 		}
 	}
 
-	probes := nt.LoadProbes(srcHostID, destHostID)
-	if err := probes.Enqueue(probe); err != nil {
+	// Store probe in queue.
+	if err := nt.LoadProbes(srcHostID, destHostID).Enqueue(probe); err != nil {
 		return err
 	}
 
+	// Update probed count.
 	if err := nt.rdb.Incr(ctx, pkgredis.MakeProbedCountKeyInScheduler(destHostID)).Err(); err != nil {
 		return err
 	}
