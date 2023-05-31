@@ -25,213 +25,13 @@ import (
 	"reflect"
 	"regexp"
 	"testing"
-	"time"
 
+	"github.com/gocarina/gocsv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
 var (
-	mockTask = Task{
-		ID:                    "1",
-		URL:                   "example.com",
-		Type:                  "normal",
-		ContentLength:         2048,
-		TotalPieceCount:       1,
-		BackToSourceLimit:     10,
-		BackToSourcePeerCount: 2,
-		State:                 "Succeeded",
-		CreatedAt:             time.Now().UnixNano(),
-		UpdatedAt:             time.Now().UnixNano(),
-	}
-
-	mockHost = Host{
-		ID:                    "2",
-		Type:                  "normal",
-		Hostname:              "localhost",
-		IP:                    "127.0.0.1",
-		Port:                  8080,
-		DownloadPort:          8081,
-		OS:                    "linux",
-		Platform:              "ubuntu",
-		PlatformFamily:        "debian",
-		PlatformVersion:       "1.0.0",
-		KernelVersion:         "1.0.0",
-		ConcurrentUploadLimit: 100,
-		ConcurrentUploadCount: 40,
-		UploadCount:           20,
-		UploadFailedCount:     3,
-		CPU: resource.CPU{
-			LogicalCount:   24,
-			PhysicalCount:  12,
-			Percent:        0.8,
-			ProcessPercent: 0.4,
-			Times: resource.CPUTimes{
-				User:      100,
-				System:    101,
-				Idle:      102,
-				Nice:      103,
-				Iowait:    104,
-				Irq:       105,
-				Softirq:   106,
-				Steal:     107,
-				Guest:     108,
-				GuestNice: 109,
-			},
-		},
-		Memory: resource.Memory{
-			Total:              20,
-			Available:          19,
-			Used:               16,
-			UsedPercent:        0.7,
-			ProcessUsedPercent: 0.2,
-			Free:               15,
-		},
-		Network: resource.Network{
-			TCPConnectionCount:       400,
-			UploadTCPConnectionCount: 200,
-			Location:                 "china",
-			IDC:                      "e1",
-		},
-		Disk: resource.Disk{
-			Total:             100,
-			Free:              88,
-			Used:              56,
-			UsedPercent:       0.9,
-			InodesTotal:       200,
-			InodesUsed:        180,
-			InodesFree:        160,
-			InodesUsedPercent: 0.6,
-		},
-		Build: resource.Build{
-			GitVersion: "3.0.0",
-			GitCommit:  "2bf4d5e",
-			GoVersion:  "1.19",
-			Platform:   "linux",
-		},
-		CreatedAt: time.Now().UnixNano(),
-		UpdatedAt: time.Now().UnixNano(),
-	}
-
-	mockSeedHost = Host{
-		ID:                    "3",
-		Type:                  "super",
-		Hostname:              "seed_host",
-		IP:                    "127.0.0.1",
-		Port:                  8080,
-		DownloadPort:          8081,
-		OS:                    "linux",
-		Platform:              "ubuntu",
-		PlatformFamily:        "debian",
-		PlatformVersion:       "1.0.0",
-		KernelVersion:         "1.0.0",
-		ConcurrentUploadLimit: 100,
-		ConcurrentUploadCount: 40,
-		UploadCount:           20,
-		UploadFailedCount:     3,
-		CPU: resource.CPU{
-			LogicalCount:   24,
-			PhysicalCount:  12,
-			Percent:        0.8,
-			ProcessPercent: 0.4,
-			Times: resource.CPUTimes{
-				User:      100,
-				System:    101,
-				Idle:      102,
-				Nice:      103,
-				Iowait:    104,
-				Irq:       105,
-				Softirq:   106,
-				Steal:     107,
-				Guest:     108,
-				GuestNice: 109,
-			},
-		},
-		Memory: resource.Memory{
-			Total:              20,
-			Available:          19,
-			Used:               16,
-			UsedPercent:        0.7,
-			ProcessUsedPercent: 0.2,
-			Free:               15,
-		},
-		Network: resource.Network{
-			TCPConnectionCount:       400,
-			UploadTCPConnectionCount: 200,
-			Location:                 "china",
-			IDC:                      "e1",
-		},
-		Disk: resource.Disk{
-			Total:             100,
-			Free:              88,
-			Used:              56,
-			UsedPercent:       0.9,
-			InodesTotal:       200,
-			InodesUsed:        180,
-			InodesFree:        160,
-			InodesUsedPercent: 0.6,
-		},
-		Build: resource.Build{
-			GitVersion: "3.0.0",
-			GitCommit:  "2bf4d5e",
-			GoVersion:  "1.19",
-			Platform:   "linux",
-		},
-		CreatedAt: time.Now().UnixNano(),
-		UpdatedAt: time.Now().UnixNano(),
-	}
-
-	mockParent = Parent{
-		ID:               "4",
-		Tag:              "m",
-		Application:      "db",
-		State:            "Succeeded",
-		Cost:             1000,
-		UploadPieceCount: 10,
-		Host:             mockHost,
-		CreatedAt:        time.Now().UnixNano(),
-		UpdatedAt:        time.Now().UnixNano(),
-	}
-
-	mockParents = append(make([]Parent, 19), mockParent)
-
-	mockDownload = Download{
-		ID:          "5",
-		Tag:         "d",
-		Application: "mq",
-		State:       "Succeeded",
-		Error: Error{
-			Code:    "unknow",
-			Message: "unknow",
-		},
-		Cost:      1000,
-		Task:      mockTask,
-		Host:      mockHost,
-		Parents:   mockParents,
-		CreatedAt: time.Now().UnixNano(),
-		UpdatedAt: time.Now().UnixNano(),
-	}
-
-	mockNetworkTopology = NetworkTopology{
-		ID:        "6",
-		Host:      mockSeedHost,
-		DestHosts: mockDestHosts,
-	}
-
-	mockDestHost = DestHost{
-		Host: mockHost,
-		Probes: Probes{
-			AverageRTT: 10,
-			CreatedAt:  time.Now().UnixNano(),
-			UpdatedAt:  time.Now().UnixNano(),
-		},
-	}
-
-	mockDestHosts = append(make([]DestHost, 9), mockDestHost)
-
 	mockModelKey = "hostname_127.0.0.1_2"
 )
 
@@ -248,122 +48,68 @@ func TestStorage_New(t *testing.T) {
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(reflect.TypeOf(s).Elem().Name(), "storage")
-				assert.Equal(s.(*storage).maxSize, int64(DefaultStorageMaxSize*megabyte))
-				assert.Equal(s.(*storage).maxBackups, DefaultStorageMaxBackups)
-				assert.Equal(s.(*storage).bufferSize, DefaultStorageBufferSize)
-				assert.Equal(len(s.(*storage).downloadBuffer), 0)
-				assert.Equal(len(s.(*storage).networkTopologyBuffer), 0)
-				assert.Equal(len(s.(*storage).downloadCount), 0)
-				assert.Equal(len(s.(*storage).networkTopologyCount), 0)
-
+				assert.Equal(len(s.(*storage).downloadModelKeys.Values()), 0)
+				assert.Equal(len(s.(*storage).networkTopologyModelKeys.Values()), 0)
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s, err := New(tc.baseDir, DefaultStorageMaxSize, DefaultStorageMaxBackups, DefaultStorageBufferSize)
-			tc.expect(t, s, err)
+			s, error := New(tc.baseDir)
+			tc.expect(t, s, error)
 		})
 	}
 }
 
 func TestStorage_CreateDownload(t *testing.T) {
 	require := require.New(t)
-	testDownloadBytes, err := os.ReadFile("./testdata/download_bytes.csv")
+	testData, err := os.ReadFile("./testdata/download.csv")
 	require.Nil(err, "load test file")
 
 	tests := []struct {
-		name       string
-		baseDir    string
-		bufferSize int
-		mock       func(s Storage, baseDir string)
-		expect     func(t *testing.T, s Storage, baseDir, modelKey string, download []byte)
+		name    string
+		baseDir string
+		mock    func(s Storage, baseDir, modelKey string)
+		expect  func(t *testing.T, s Storage, baseDir, modelKey string, download []byte)
 	}{
 		{
-			name:       "create download",
-			baseDir:    os.TempDir(),
-			bufferSize: 1,
-			mock: func(s Storage, baseDir string) {
-				file, err := os.OpenFile(filepath.Join(baseDir, "download-hostname_127.0.0.1_2.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-				if err != nil {
-					t.Fatal(err)
-				}
-				file.Close()
-			},
+			name:    "create download",
+			baseDir: os.TempDir(),
+			mock:    func(s Storage, baseDir, modelKey string) {},
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
 				assert := assert.New(t)
-				err := s.CreateDownload(download, modelKey)
-				assert.NoError(err)
-				assert.Equal(len(s.(*storage).downloadBuffer), 1)
-				assert.Equal(len(s.(*storage).downloadBuffer[modelKey]), 2719)
-				assert.Equal(s.(*storage).downloadCount[modelKey], int64(0))
+				assert.Equal(len(s.(*storage).downloadModelKeys.Values()), 0)
+				assert.NoError(s.CreateDownload(download, modelKey))
+				assert.Equal(len(s.(*storage).downloadModelKeys.Values()), 1)
 			},
 		},
 		{
-			name:       "create download without buffer",
-			baseDir:    os.TempDir(),
-			bufferSize: 0,
-			mock:       func(s Storage, baseDir string) {},
-			expect: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
-				assert := assert.New(t)
-				err := s.CreateDownload(download, modelKey)
-				assert.NoError(err)
-				assert.Equal(len(s.(*storage).downloadBuffer), 1)
-				assert.Equal(len(s.(*storage).downloadBuffer[modelKey]), 0)
-				assert.Equal(s.(*storage).downloadCount[modelKey], int64(2719))
-			},
-		},
-		{
-			name:       "write download to file",
-			baseDir:    os.TempDir(),
-			bufferSize: 1,
-			mock:       func(s Storage, baseDir string) {},
-			expect: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
-				assert := assert.New(t)
-				err := s.CreateDownload(download, modelKey)
-				assert.NoError(err)
-				assert.Equal(len(s.(*storage).downloadBuffer), 1)
-				assert.Equal(len(s.(*storage).downloadBuffer[modelKey]), 2719)
-				assert.Equal(s.(*storage).downloadCount[modelKey], int64(0))
-				err = s.CreateDownload(download, modelKey)
-				assert.NoError(err)
-				assert.Equal(len(s.(*storage).downloadBuffer), 1)
-				assert.Equal(len(s.(*storage).downloadBuffer[modelKey]), 2719)
-				assert.Equal(s.(*storage).downloadCount[modelKey], int64(2719))
-			},
-		},
-		{
-			name:       "open file failed",
-			baseDir:    os.TempDir(),
-			bufferSize: 0,
-			mock: func(s Storage, baseDir string) {
-				file, err := os.OpenFile(filepath.Join(baseDir, "download-hostname_127.0.0.1_2.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-				if err != nil {
-					t.Fatal(err)
-				}
-				file.Close()
-				s.(*storage).baseDir = "foo"
+			name:    "open file failed",
+			baseDir: os.TempDir(),
+			mock: func(s Storage, baseDir, modelKey string) {
+				s.(*storage).baseDir = "bae"
 			},
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
 				assert := assert.New(t)
-				err := s.CreateDownload(download, modelKey)
-				assert.Error(err)
+				assert.Error(s.CreateDownload(download, modelKey))
 				s.(*storage).baseDir = baseDir
+				assert.NoError(s.CreateDownload(download, modelKey))
+				assert.Equal(len(s.(*storage).downloadModelKeys.Values()), 1)
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s, err := New(tc.baseDir, DefaultStorageMaxSize, DefaultStorageMaxBackups, tc.bufferSize)
+			s, err := New(tc.baseDir)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			tc.mock(s, tc.baseDir)
-			tc.expect(t, s, tc.baseDir, mockModelKey, testDownloadBytes)
-			if err := s.ClearDownload(); err != nil {
+			tc.mock(s, tc.baseDir, mockModelKey)
+			tc.expect(t, s, tc.baseDir, mockModelKey, testData)
+			if err := s.ClearDownload(mockModelKey); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -372,100 +118,390 @@ func TestStorage_CreateDownload(t *testing.T) {
 
 func TestStorage_CreateNetworkTopology(t *testing.T) {
 	require := require.New(t)
-	testNetworkTopologyBytes, err := os.ReadFile("./testdata/networktopology_bytes.csv")
+	testData, err := os.ReadFile("./testdata/networktopology.csv")
 	require.Nil(err, "load test file")
 
 	tests := []struct {
-		name       string
-		baseDir    string
-		bufferSize int
-		mock       func(s Storage, baseDir string)
-		expect     func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte)
+		name    string
+		baseDir string
+		mock    func(s Storage, baseDir, modelKey string)
+		expect  func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte)
 	}{
 		{
-			name:       "create network topology",
-			baseDir:    os.TempDir(),
-			bufferSize: 1,
-			mock: func(s Storage, baseDir string) {
-				file, err := os.OpenFile(filepath.Join(baseDir, "networktopology-hostname_127.0.0.1_2.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-				if err != nil {
-					t.Fatal(err)
-				}
-				file.Close()
-			},
+			name:    "create networkTopology",
+			baseDir: os.TempDir(),
+			mock:    func(s Storage, baseDir, modelKey string) {},
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
 				assert := assert.New(t)
-				err := s.CreateNetworkTopology(networkTopology, modelKey)
-				assert.NoError(err)
-				assert.Equal(len(s.(*storage).networkTopologyBuffer), 1)
-				assert.Equal(len(s.(*storage).networkTopologyBuffer[modelKey]), 1455)
-				assert.Equal(s.(*storage).networkTopologyCount[modelKey], int64(0))
+				assert.Equal(len(s.(*storage).networkTopologyModelKeys.Values()), 0)
+				assert.NoError(s.CreateNetworkTopology(networkTopology, modelKey))
+				assert.Equal(len(s.(*storage).networkTopologyModelKeys.Values()), 1)
 			},
 		},
 		{
-			name:       "create network topology without buffer",
-			baseDir:    os.TempDir(),
-			bufferSize: 0,
-			mock:       func(s Storage, baseDir string) {},
-			expect: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
-				assert := assert.New(t)
-				err := s.CreateNetworkTopology(networkTopology, modelKey)
-				assert.NoError(err)
-				assert.Equal(len(s.(*storage).networkTopologyBuffer), 1)
-				assert.Equal(len(s.(*storage).networkTopologyBuffer[modelKey]), 0)
-				assert.Equal(s.(*storage).networkTopologyCount[modelKey], int64(1455))
-			},
-		},
-		{
-			name:       "write network topology to file",
-			baseDir:    os.TempDir(),
-			bufferSize: 1,
-			mock:       func(s Storage, baseDir string) {},
-			expect: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
-				assert := assert.New(t)
-				err := s.CreateNetworkTopology(networkTopology, modelKey)
-				assert.NoError(err)
-				assert.Equal(len(s.(*storage).networkTopologyBuffer), 1)
-				assert.Equal(len(s.(*storage).networkTopologyBuffer[modelKey]), 1455)
-				assert.Equal(s.(*storage).networkTopologyCount[modelKey], int64(0))
-				err = s.CreateNetworkTopology(networkTopology, modelKey)
-				assert.NoError(err)
-				assert.Equal(len(s.(*storage).networkTopologyBuffer), 1)
-				assert.Equal(len(s.(*storage).networkTopologyBuffer[modelKey]), 1455)
-				assert.Equal(s.(*storage).networkTopologyCount[modelKey], int64(1455))
-			},
-		},
-		{
-			name:       "open file failed",
-			baseDir:    os.TempDir(),
-			bufferSize: 0,
-			mock: func(s Storage, baseDir string) {
-				file, err := os.OpenFile(filepath.Join(baseDir, "networktopology-hostname_127.0.0.1_2.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-				if err != nil {
-					t.Fatal(err)
-				}
-				file.Close()
-				s.(*storage).baseDir = "baw"
+			name:    "open file failed",
+			baseDir: os.TempDir(),
+			mock: func(s Storage, baseDir, modelKey string) {
+				s.(*storage).baseDir = "bae"
 			},
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
 				assert := assert.New(t)
-				err := s.CreateNetworkTopology(networkTopology, modelKey)
-				assert.Error(err)
+				assert.Error(s.CreateNetworkTopology(networkTopology, modelKey))
 				s.(*storage).baseDir = baseDir
+				assert.NoError(s.CreateNetworkTopology(networkTopology, modelKey))
+				assert.Equal(len(s.(*storage).networkTopologyModelKeys.Values()), 1)
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s, err := New(tc.baseDir, DefaultStorageMaxSize, DefaultStorageMaxBackups, tc.bufferSize)
+			s, err := New(tc.baseDir)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			tc.mock(s, tc.baseDir)
-			tc.expect(t, s, tc.baseDir, mockModelKey, testNetworkTopologyBytes)
-			if err := s.ClearNetworkTopology(); err != nil {
+			tc.mock(s, tc.baseDir, mockModelKey)
+			tc.expect(t, s, tc.baseDir, mockModelKey, testData)
+			if err := s.ClearNetworkTopology(mockModelKey); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestStorage_ListDownload(t *testing.T) {
+	require := require.New(t)
+	testData, err := os.ReadFile("./testdata/download.csv")
+	require.Nil(err, "load test file")
+
+	tests := []struct {
+		name    string
+		baseDir string
+		mock    func(t *testing.T, s Storage, baseDir, modelKey string, download []byte)
+		expect  func(t *testing.T, s Storage, baseDir, modelKey string, download []byte)
+	}{
+		{
+			name:    "empty csv file given for selected model",
+			baseDir: os.TempDir(),
+			mock: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
+				file, err := os.OpenFile(filepath.Join(baseDir, "download-hostname_127.0.0.1_2.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+				if err != nil {
+					t.Fatal(err)
+				}
+				file.Close()
+			},
+			expect: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
+				assert := assert.New(t)
+				_, err := s.ListDownload(modelKey)
+				assert.Error(err)
+			},
+		},
+		{
+			name:    "get file infos failed",
+			baseDir: os.TempDir(),
+			mock: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
+				if err := s.CreateDownload(download, modelKey); err != nil {
+					t.Fatal(err)
+				}
+				s.(*storage).baseDir = "bas"
+			},
+			expect: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
+				assert := assert.New(t)
+				_, err := s.ListDownload(modelKey)
+				assert.Error(err)
+				s.(*storage).baseDir = baseDir
+			},
+		},
+		{
+			name:    "list downloads of a file",
+			baseDir: os.TempDir(),
+			mock: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
+				if err := s.CreateDownload(download, modelKey); err != nil {
+					t.Fatal(err)
+				}
+			},
+			expect: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
+				assert := assert.New(t)
+				_, err := s.ListDownload(modelKey)
+				assert.NoError(err)
+
+				if err := s.CreateDownload(download, modelKey); err != nil {
+					t.Fatal(err)
+				}
+
+				downloads, err := s.ListDownload(modelKey)
+				assert.NoError(err)
+				assert.Equal(len(downloads), 2)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s, err := New(tc.baseDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			tc.mock(t, s, tc.baseDir, mockModelKey, testData)
+			tc.expect(t, s, tc.baseDir, mockModelKey, testData)
+			if err := s.ClearDownload(mockModelKey); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestStorage_ListNetworkTopology(t *testing.T) {
+	require := require.New(t)
+	testData, err := os.ReadFile("./testdata/networktopology.csv")
+	require.Nil(err, "load test file")
+
+	tests := []struct {
+		name    string
+		baseDir string
+		mock    func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte)
+		expect  func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte)
+	}{
+		{
+			name:    "empty csv file given for selected model",
+			baseDir: os.TempDir(),
+			mock: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
+				file, err := os.OpenFile(filepath.Join(baseDir, "networktopology-hostname_127.0.0.1_2.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+				if err != nil {
+					t.Fatal(err)
+				}
+				file.Close()
+			},
+			expect: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
+				assert := assert.New(t)
+				_, err := s.ListNetworkTopology(modelKey)
+				assert.Error(err)
+			},
+		},
+		{
+			name:    "get file infos failed",
+			baseDir: os.TempDir(),
+			mock: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
+				if err := s.CreateNetworkTopology(networkTopology, modelKey); err != nil {
+					t.Fatal(err)
+				}
+				s.(*storage).baseDir = "foo"
+			},
+			expect: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
+				assert := assert.New(t)
+				_, err := s.ListNetworkTopology(modelKey)
+				assert.Error(err)
+				s.(*storage).baseDir = baseDir
+			},
+		},
+		{
+			name:    "list network topologies of a file",
+			baseDir: os.TempDir(),
+			mock: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
+				if err := s.CreateNetworkTopology(networkTopology, modelKey); err != nil {
+					t.Fatal(err)
+				}
+			},
+			expect: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
+				assert := assert.New(t)
+				_, err := s.ListNetworkTopology(modelKey)
+				assert.NoError(err)
+
+				if err := s.CreateNetworkTopology(networkTopology, modelKey); err != nil {
+					t.Fatal(err)
+				}
+
+				networkTopologies, err := s.ListNetworkTopology(modelKey)
+				assert.NoError(err)
+				assert.Equal(len(networkTopologies), 2)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s, err := New(tc.baseDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			tc.mock(t, s, tc.baseDir, mockModelKey, testData)
+			tc.expect(t, s, tc.baseDir, mockModelKey, testData)
+			if err := s.ClearNetworkTopology(mockModelKey); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestStorage_OpenDownload(t *testing.T) {
+	require := require.New(t)
+	testData, err := os.ReadFile("./testdata/download.csv")
+	require.Nil(err, "load test file")
+
+	tests := []struct {
+		name    string
+		baseDir string
+		mock    func(t *testing.T, s Storage, baseDir, modelKey string, download []byte)
+		expect  func(t *testing.T, s Storage, baseDir, modelKey string, download []byte)
+	}{
+		{
+			name:    "open storage with empty download csv file and model key given",
+			baseDir: os.TempDir(),
+			mock: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
+				file, err := os.OpenFile(filepath.Join(baseDir, "download-hostname_127.0.0.1_2.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+				if err != nil {
+					t.Fatal(err)
+				}
+				file.Close()
+			},
+			expect: func(t *testing.T, s Storage, baseDir, modelKey string, downloads []byte) {
+				assert := assert.New(t)
+				_, err := s.OpenDownload(modelKey)
+				assert.NoError(err)
+			},
+		},
+		{
+			name:    "open file infos failed",
+			baseDir: os.TempDir(),
+			mock: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
+				if err := s.CreateDownload(download, modelKey); err != nil {
+					t.Fatal(err)
+				}
+				s.(*storage).baseDir = "baw"
+			},
+			expect: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
+				assert := assert.New(t)
+				_, err := s.OpenDownload(modelKey)
+				assert.Error(err)
+				s.(*storage).baseDir = baseDir
+			},
+		},
+		{
+			name:    "open storage with downloads of a file",
+			baseDir: os.TempDir(),
+			mock: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
+				if err := s.CreateDownload(download, modelKey); err != nil {
+					t.Fatal(err)
+				}
+			},
+			expect: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
+				assert := assert.New(t)
+				_, err := s.OpenDownload(modelKey)
+				assert.NoError(err)
+
+				if err := s.CreateDownload(download, modelKey); err != nil {
+					t.Fatal(err)
+				}
+
+				readCloser, err := s.OpenDownload(modelKey)
+				assert.NoError(err)
+
+				var downloads []Download
+				err = gocsv.UnmarshalWithoutHeaders(readCloser, &downloads)
+				assert.NoError(err)
+				assert.Equal(len(downloads), 2)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s, err := New(tc.baseDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			tc.mock(t, s, tc.baseDir, mockModelKey, testData)
+			tc.expect(t, s, tc.baseDir, mockModelKey, testData)
+			if err := s.ClearDownload(mockModelKey); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestStorage_OpenNetworkTopology(t *testing.T) {
+	require := require.New(t)
+	testData, err := os.ReadFile("./testdata/networktopology.csv")
+	require.Nil(err, "load test file")
+
+	tests := []struct {
+		name    string
+		baseDir string
+		mock    func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte)
+		expect  func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte)
+	}{
+		{
+			name:    "open storage with empty csv file and model key given",
+			baseDir: os.TempDir(),
+			mock: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
+				file, err := os.OpenFile(filepath.Join(baseDir, "networktopology-hostname_127.0.0.1_2.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+				if err != nil {
+					t.Fatal(err)
+				}
+				file.Close()
+			},
+			expect: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
+				assert := assert.New(t)
+				_, err := s.OpenNetworkTopology(modelKey)
+				assert.NoError(err)
+			},
+		},
+		{
+			name:    "open file infos failed",
+			baseDir: os.TempDir(),
+			mock: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
+				if err := s.CreateNetworkTopology(networkTopology, modelKey); err != nil {
+					t.Fatal(err)
+				}
+				s.(*storage).baseDir = "bas"
+			},
+			expect: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
+				assert := assert.New(t)
+				_, err := s.OpenNetworkTopology(modelKey)
+				assert.Error(err)
+				s.(*storage).baseDir = baseDir
+			},
+		},
+		{
+			name:    "open storage with network topologies of a file",
+			baseDir: os.TempDir(),
+			mock: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
+				if err := s.CreateNetworkTopology(networkTopology, modelKey); err != nil {
+					t.Fatal(err)
+				}
+			},
+			expect: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
+				assert := assert.New(t)
+				_, err := s.OpenNetworkTopology(modelKey)
+				assert.NoError(err)
+
+				if err := s.CreateNetworkTopology(networkTopology, modelKey); err != nil {
+					t.Fatal(err)
+				}
+
+				readCloser, err := s.OpenNetworkTopology(modelKey)
+				assert.NoError(err)
+
+				var networkTopologies []NetworkTopology
+				err = gocsv.UnmarshalWithoutHeaders(readCloser, &networkTopologies)
+				assert.NoError(err)
+				assert.Equal(len(networkTopologies), 2)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s, err := New(tc.baseDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			tc.mock(t, s, tc.baseDir, mockModelKey, testData)
+			tc.expect(t, s, tc.baseDir, mockModelKey, testData)
+			if err := s.ClearNetworkTopology(mockModelKey); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -473,27 +509,28 @@ func TestStorage_CreateNetworkTopology(t *testing.T) {
 }
 
 func TestStorage_ClearDownload(t *testing.T) {
+	require := require.New(t)
+	testData, err := os.ReadFile("./testdata/download.csv")
+	require.Nil(err, "load test file")
+
 	tests := []struct {
 		name    string
 		baseDir string
-		mock    func(s Storage, baseDir, modelKey string)
+		mock    func(t *testing.T, s Storage, baseDir, modelKey string, download []byte)
 		expect  func(t *testing.T, s Storage, baseDir, modelKey string)
 	}{
 		{
 			name:    "clear file",
 			baseDir: os.TempDir(),
-			mock: func(s Storage, baseDir, modelKey string) {
-				file, err := os.OpenFile(filepath.Join(baseDir, "download-hostname_127.0.0.1_2.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-				if err != nil {
+			mock: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
+				if err := s.CreateDownload(download, modelKey); err != nil {
 					t.Fatal(err)
 				}
-				file.Close()
-				s.(*storage).downloadBuffer[modelKey] = make([]byte, 0, s.(*storage).bufferSize)
-
 			},
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string) {
 				assert := assert.New(t)
-				assert.NoError(s.ClearDownload())
+				assert.Equal(len(s.(*storage).downloadModelKeys.Values()), 1)
+				assert.NoError(s.ClearDownload(modelKey))
 				fileInfos, err := ioutil.ReadDir(filepath.Join(baseDir))
 				assert.NoError(err)
 
@@ -506,65 +543,64 @@ func TestStorage_ClearDownload(t *testing.T) {
 					}
 				}
 				assert.Equal(len(backups), 0)
+				assert.Equal(len(s.(*storage).downloadModelKeys.Values()), 0)
 			},
 		},
 		{
 			name:    "open file failed",
 			baseDir: os.TempDir(),
-			mock: func(s Storage, baseDir, modelKey string) {
-				file, err := os.OpenFile(filepath.Join(baseDir, "download-hostname_127.0.0.1_2.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-				if err != nil {
+			mock: func(t *testing.T, s Storage, baseDir, modelKey string, downloads []byte) {
+				if err := s.CreateDownload(downloads, modelKey); err != nil {
 					t.Fatal(err)
 				}
-				file.Close()
-				s.(*storage).downloadBuffer[modelKey] = make([]byte, 0, s.(*storage).bufferSize)
 				s.(*storage).baseDir = "baz"
 			},
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string) {
 				assert := assert.New(t)
-				assert.Error(s.ClearDownload())
+				assert.Error(s.ClearDownload(modelKey))
 
 				s.(*storage).baseDir = baseDir
-				assert.NoError(s.ClearDownload())
+				assert.NoError(s.ClearDownload(modelKey))
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s, err := New(tc.baseDir, DefaultStorageMaxSize, DefaultStorageMaxBackups, DefaultStorageBufferSize)
+			s, err := New(tc.baseDir)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			tc.mock(s, tc.baseDir, mockModelKey)
+			tc.mock(t, s, tc.baseDir, mockModelKey, testData)
 			tc.expect(t, s, tc.baseDir, mockModelKey)
 		})
 	}
 }
 
 func TestStorage_ClearNetworkTopology(t *testing.T) {
+	require := require.New(t)
+	testData, err := os.ReadFile("./testdata/networktopology.csv")
+	require.Nil(err, "load test file")
+
 	tests := []struct {
 		name    string
 		baseDir string
-		mock    func(s Storage, baseDir, modelKey string)
+		mock    func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte)
 		expect  func(t *testing.T, s Storage, baseDir, modelKey string)
 	}{
 		{
 			name:    "clear file",
 			baseDir: os.TempDir(),
-			mock: func(s Storage, baseDir, modelKey string) {
-				file, err := os.OpenFile(filepath.Join(baseDir, "networktopology-hostname_127.0.0.1_2.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-				if err != nil {
+			mock: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
+				if err := s.CreateNetworkTopology(networkTopology, modelKey); err != nil {
 					t.Fatal(err)
 				}
-				file.Close()
-				s.(*storage).networkTopologyBuffer[modelKey] = make([]byte, 0, s.(*storage).bufferSize)
-
 			},
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string) {
 				assert := assert.New(t)
-				assert.NoError(s.ClearNetworkTopology())
+				assert.Equal(len(s.(*storage).networkTopologyModelKeys.Values()), 1)
+				assert.NoError(s.ClearNetworkTopology(modelKey))
 				fileInfos, err := ioutil.ReadDir(filepath.Join(baseDir))
 				assert.NoError(err)
 
@@ -576,513 +612,151 @@ func TestStorage_ClearNetworkTopology(t *testing.T) {
 					}
 				}
 				assert.Equal(len(backups), 0)
+				assert.Equal(len(s.(*storage).networkTopologyModelKeys.Values()), 0)
 			},
 		},
 		{
 			name:    "open file failed",
 			baseDir: os.TempDir(),
-			mock: func(s Storage, baseDir, modelKey string) {
-				file, err := os.OpenFile(filepath.Join(baseDir, "networktopology-hostname_127.0.0.1_2.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-				if err != nil {
+			mock: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
+				if err := s.CreateNetworkTopology(networkTopology, modelKey); err != nil {
 					t.Fatal(err)
 				}
-				file.Close()
-				s.(*storage).networkTopologyBuffer[modelKey] = make([]byte, 0, s.(*storage).bufferSize)
 				s.(*storage).baseDir = "baz"
 			},
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string) {
 				assert := assert.New(t)
-				assert.Error(s.ClearNetworkTopology())
+				assert.Error(s.ClearNetworkTopology(modelKey))
 
 				s.(*storage).baseDir = baseDir
-				assert.NoError(s.ClearNetworkTopology())
+				assert.NoError(s.ClearNetworkTopology(modelKey))
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s, err := New(tc.baseDir, DefaultStorageMaxSize, DefaultStorageMaxBackups, DefaultStorageBufferSize)
+			s, err := New(tc.baseDir)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			tc.mock(s, tc.baseDir, mockModelKey)
+			tc.mock(t, s, tc.baseDir, mockModelKey, testData)
 			tc.expect(t, s, tc.baseDir, mockModelKey)
 		})
 	}
 }
 
-func TestStorage_createDownload(t *testing.T) {
+func TestStorage_Clear(t *testing.T) {
 	require := require.New(t)
-	testDownloadBytes, err := os.ReadFile("./testdata/download_bytes.csv")
+	testDownloadData, err := os.ReadFile("./testdata/download.csv")
+	testNetworkTopologyData, err := os.ReadFile("./testdata/networktopology.csv")
 	require.Nil(err, "load test file")
-
 	tests := []struct {
 		name    string
 		baseDir string
-		mock    func(s Storage, baseDir, modelKey string)
-		expect  func(t *testing.T, s Storage, baseDir, modelKey string, download []byte)
-	}{
-		{
-			name:    "create download",
-			baseDir: os.TempDir(),
-			mock: func(s Storage, baseDir, modelKey string) {
-				s.(*storage).downloadBuffer[modelKey] = make([]byte, 0, s.(*storage).bufferSize)
-			},
-			expect: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
-				assert := assert.New(t)
-				err := s.(*storage).createDownload(download, modelKey)
-				assert.NoError(err)
-			},
-		},
-		{
-			name:    "open file failed",
-			baseDir: os.TempDir(),
-			mock: func(s Storage, baseDir, modelKey string) {
-				file, err := os.OpenFile(filepath.Join(baseDir, "download-hostname_127.0.0.1_2.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-				if err != nil {
-					t.Fatal(err)
-				}
-				file.Close()
-				s.(*storage).baseDir = "foo"
-			},
-			expect: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
-				assert := assert.New(t)
-				err := s.(*storage).createDownload(download, modelKey)
-				assert.Error(err)
-				s.(*storage).baseDir = baseDir
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			s, err := New(tc.baseDir, config.DefaultStorageMaxSize, config.DefaultStorageMaxBackups, config.DefaultStorageBufferSize)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			tc.mock(s, tc.baseDir, mockModelKey)
-			tc.expect(t, s, tc.baseDir, mockModelKey, testDownloadBytes)
-			if err := s.ClearDownload(); err != nil {
-				t.Fatal(err)
-			}
-		})
-	}
-}
-
-func TestStorage_createNetworkTopology(t *testing.T) {
-	require := require.New(t)
-	testNetworkTopologyBytes, err := os.ReadFile("./testdata/networktopology_bytes.csv")
-	require.Nil(err, "load test file")
-
-	tests := []struct {
-		name    string
-		baseDir string
-		mock    func(s Storage, baseDir, modelKey string)
-		expect  func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte)
-	}{
-		{
-			name:    "create network topology",
-			baseDir: os.TempDir(),
-			mock: func(s Storage, baseDir, modelKey string) {
-				s.(*storage).networkTopologyBuffer[modelKey] = make([]byte, 0, s.(*storage).bufferSize)
-			},
-			expect: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
-				assert := assert.New(t)
-				err := s.(*storage).createNetworkTopology(networkTopology, modelKey)
-				assert.NoError(err)
-			},
-		},
-		{
-			name:    "open file failed",
-			baseDir: os.TempDir(),
-			mock: func(s Storage, baseDir, modelKey string) {
-				file, err := os.OpenFile(filepath.Join(baseDir, "networktopology-hostname_127.0.0.1_2.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-				if err != nil {
-					t.Fatal(err)
-				}
-				file.Close()
-				s.(*storage).baseDir = "baw"
-			},
-			expect: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
-				assert := assert.New(t)
-				err := s.(*storage).createNetworkTopology(networkTopology, modelKey)
-				assert.Error(err)
-				s.(*storage).baseDir = baseDir
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			s, err := New(tc.baseDir, config.DefaultStorageMaxSize, config.DefaultStorageMaxBackups, config.DefaultStorageBufferSize)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			tc.mock(s, tc.baseDir, mockModelKey)
-			tc.expect(t, s, tc.baseDir, mockModelKey, testNetworkTopologyBytes)
-			if err := s.ClearNetworkTopology(); err != nil {
-				t.Fatal(err)
-			}
-		})
-	}
-}
-
-func TestStorage_openDownloadFile(t *testing.T) {
-	require := require.New(t)
-	testDownloadBytes, err := os.ReadFile("./testdata/download_bytes.csv")
-	require.Nil(err, "load test file")
-
-	tests := []struct {
-		name       string
-		baseDir    string
-		maxSize    int
-		maxBackups int
-
-		bufferSize int
-		mock       func(t *testing.T, s Storage, baseDir, modelKey string, download []byte)
-		expect     func(t *testing.T, s Storage, baseDir, modelKey string)
-	}{
-		{
-			name:       "open file failed",
-			baseDir:    os.TempDir(),
-			maxSize:    DefaultStorageMaxSize,
-			maxBackups: DefaultStorageMaxBackups,
-			bufferSize: DefaultStorageBufferSize,
-			mock: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
-				file, err := os.OpenFile(filepath.Join(baseDir, "download-hostname_127.0.0.1_2.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-				if err != nil {
-					t.Fatal(err)
-				}
-				file.Close()
-				s.(*storage).baseDir = "bat"
-			},
-			expect: func(t *testing.T, s Storage, baseDir, modelKey string) {
-				assert := assert.New(t)
-				_, err := s.(*storage).openDownloadFile(modelKey)
-				assert.Error(err)
-				s.(*storage).baseDir = baseDir
-			},
-		},
-		{
-			name:       "open new download file",
-			baseDir:    os.TempDir(),
-			maxSize:    0,
-			maxBackups: DefaultStorageMaxBackups,
-			bufferSize: 1,
-			mock: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
-				if err := s.CreateDownload(download, modelKey); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := s.CreateDownload(download, modelKey); err != nil {
-					t.Fatal(err)
-				}
-			},
-			expect: func(t *testing.T, s Storage, baseDir, modelKey string) {
-				assert := assert.New(t)
-				file, err := s.(*storage).openDownloadFile(modelKey)
-				assert.NoError(err)
-				assert.Equal(file.Name(), filepath.Join(baseDir, fmt.Sprintf("%s-%s.%s", DownloadFilePrefix, modelKey, CSVFileExt)))
-				defer file.Close()
-			},
-		},
-		{
-			name:       "remove download file",
-			baseDir:    os.TempDir(),
-			maxSize:    0,
-			maxBackups: 1,
-			bufferSize: 1,
-			mock: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
-				if err := s.CreateDownload(download, modelKey); err != nil {
-					t.Fatal(err)
-				}
-			},
-			expect: func(t *testing.T, s Storage, baseDir, modelKey string) {
-				assert := assert.New(t)
-				file, err := s.(*storage).openDownloadFile(modelKey)
-				assert.NoError(err)
-				assert.Equal(file.Name(), filepath.Join(baseDir, fmt.Sprintf("%s-%s.%s", DownloadFilePrefix, modelKey, CSVFileExt)))
-				defer file.Close()
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			s, err := New(tc.baseDir, tc.maxSize, tc.maxBackups, tc.bufferSize)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			tc.mock(t, s, tc.baseDir, mockModelKey, testDownloadBytes)
-			tc.expect(t, s, tc.baseDir, mockModelKey)
-			if err := s.ClearDownload(); err != nil {
-				t.Fatal(err)
-			}
-		})
-	}
-}
-
-func TestStorage_openNetworkTopologyFile(t *testing.T) {
-	require := require.New(t)
-	testNetworkTopologyBytes, err := os.ReadFile("./testdata/networktopology_bytes.csv")
-	require.Nil(err, "load test file")
-	tests := []struct {
-		name       string
-		baseDir    string
-		maxSize    int
-		maxBackups int
-
-		bufferSize int
-		mock       func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte)
-		expect     func(t *testing.T, s Storage, baseDir, modelKey string)
-	}{
-		{
-			name:       "open file failed",
-			baseDir:    os.TempDir(),
-			maxSize:    DefaultStorageMaxSize,
-			maxBackups: DefaultStorageMaxBackups,
-			bufferSize: DefaultStorageBufferSize,
-			mock: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
-				file, err := os.OpenFile(filepath.Join(baseDir, "networktopology-hostname_127.0.0.1_2.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-				if err != nil {
-					t.Fatal(err)
-				}
-				file.Close()
-				s.(*storage).baseDir = "bat"
-			},
-			expect: func(t *testing.T, s Storage, baseDir, modelKey string) {
-				assert := assert.New(t)
-				_, err := s.(*storage).openNetworkTopologyFile(modelKey)
-				assert.Error(err)
-				s.(*storage).baseDir = baseDir
-			},
-		},
-		{
-			name:       "open new network topology file",
-			baseDir:    os.TempDir(),
-			maxSize:    0,
-			maxBackups: config.DefaultStorageMaxBackups,
-			bufferSize: 1,
-			mock: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
-				if err := s.CreateNetworkTopology(networkTopology, modelKey); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := s.CreateNetworkTopology(networkTopology, modelKey); err != nil {
-					t.Fatal(err)
-				}
-			},
-			expect: func(t *testing.T, s Storage, baseDir, modelKey string) {
-				assert := assert.New(t)
-				file, err := s.(*storage).openNetworkTopologyFile(modelKey)
-				assert.NoError(err)
-				assert.Equal(file.Name(), filepath.Join(baseDir, fmt.Sprintf("%s-%s.%s", NetworkTopologyFilePrefix, modelKey, CSVFileExt)))
-				defer file.Close()
-			},
-		},
-		{
-			name:       "remove network topology file",
-			baseDir:    os.TempDir(),
-			maxSize:    0,
-			maxBackups: 1,
-			bufferSize: 1,
-			mock: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
-				if err := s.CreateNetworkTopology(networkTopology, modelKey); err != nil {
-					t.Fatal(err)
-				}
-			},
-			expect: func(t *testing.T, s Storage, baseDir, modelKey string) {
-				assert := assert.New(t)
-				file, err := s.(*storage).openNetworkTopologyFile(modelKey)
-				assert.NoError(err)
-				assert.Equal(file.Name(), filepath.Join(baseDir, fmt.Sprintf("%s-%s.%s", NetworkTopologyFilePrefix, modelKey, CSVFileExt)))
-				defer file.Close()
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			s, err := New(tc.baseDir, tc.maxSize, tc.maxBackups, tc.bufferSize)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			tc.mock(t, s, tc.baseDir, mockModelKey, testNetworkTopologyBytes)
-			tc.expect(t, s, tc.baseDir, mockModelKey)
-			if err := s.ClearNetworkTopology(); err != nil {
-				t.Fatal(err)
-			}
-		})
-	}
-}
-
-func TestStorage_downloadBackupFilename(t *testing.T) {
-	baseDir := os.TempDir()
-	s, err := New(baseDir, DefaultStorageMaxSize, DefaultStorageMaxBackups, DefaultStorageBufferSize)
-	if err != nil {
-		t.Fatal(err)
-	}
-	file, err := os.OpenFile(filepath.Join(baseDir, "download-hostname_127.0.0.1_2.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-	if err != nil {
-		t.Fatal(err)
-	}
-	file.Close()
-
-	filename := s.(*storage).downloadBackupFilename(mockModelKey)
-	regexp := regexp.MustCompile(fmt.Sprintf("%s-%s.*.%s$", DownloadFilePrefix, mockModelKey, CSVFileExt))
-	assert := assert.New(t)
-	assert.True(regexp.MatchString(filename))
-
-	if err := s.ClearDownload(); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestStorage_networkTopologyBackupFilename(t *testing.T) {
-	baseDir := os.TempDir()
-	s, err := New(baseDir, config.DefaultStorageMaxSize, config.DefaultStorageMaxBackups, config.DefaultStorageBufferSize)
-	if err != nil {
-		t.Fatal(err)
-	}
-	file, err := os.OpenFile(filepath.Join(baseDir, "networktopology-hostname_127.0.0.1_2.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-	if err != nil {
-		t.Fatal(err)
-	}
-	file.Close()
-
-	filename := s.(*storage).networkTopologyBackupFilename(mockModelKey)
-	regexp := regexp.MustCompile(fmt.Sprintf("%s-%s.*.%s$", NetworkTopologyFilePrefix, mockModelKey, CSVFileExt))
-	assert := assert.New(t)
-	assert.True(regexp.MatchString(filename))
-
-	if err := s.ClearNetworkTopology(); err != nil {
-		t.Fatal(err)
-	}
-}
-
-// func TestStorage_downloadBackups(t *testing.T) {
-// 	tests := []struct {
-// 		name    string
-// 		baseDir string
-// 		mock    func(t *testing.T, s Storage, baseDir string)
-// 		expect  func(t *testing.T, s Storage, baseDir, modelKey string)
-// 	}{
-// 		{
-// 			name:    "open file failed",
-// 			baseDir: os.TempDir(),
-// 			mock: func(t *testing.T, s Storage, baseDir string) {
-// 				file, err := os.OpenFile(filepath.Join(baseDir, "download-hostname_127.0.0.1_2.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-// 				if err != nil {
-// 					t.Fatal(err)
-// 				}
-// 				file.Close()
-// 				s.(*storage).baseDir = "bar"
-// 			},
-// 			expect: func(t *testing.T, s Storage, baseDir, modelKey string) {
-// 				assert := assert.New(t)
-// 				_, err := s.(*storage).downloadBackups(modelKey)
-// 				assert.Error(err)
-// 				s.(*storage).baseDir = baseDir
-// 				if err := s.ClearDownload(); err != nil {
-// 					t.Fatal(err)
-// 				}
-// 			},
-// 		},
-// 		{
-// 			name:    "not found download file",
-// 			baseDir: os.TempDir(),
-// 			mock: func(t *testing.T, s Storage, baseDir string) {
-// 				file, err := os.OpenFile(filepath.Join(baseDir, "download-hostname_127.0.0.1_2.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-// 				if err != nil {
-// 					t.Fatal(err)
-// 				}
-// 				file.Close()
-// 			},
-// 			expect: func(t *testing.T, s Storage, baseDir, modelKey string) {
-// 				assert := assert.New(t)
-// 				if err := s.ClearDownload(); err != nil {
-// 					t.Fatal(err)
-// 				}
-
-// 				_, err := s.(*storage).downloadBackups(modelKey)
-// 				assert.Error(err)
-// 			},
-// 		},
-// 	}
-
-// 	for _, tc := range tests {
-// 		t.Run(tc.name, func(t *testing.T) {
-// 			s, err := New(tc.baseDir, config.DefaultStorageMaxSize, config.DefaultStorageMaxBackups, config.DefaultStorageBufferSize)
-// 			if err != nil {
-// 				t.Fatal(err)
-// 			}
-
-// 			tc.mock(t, s, tc.baseDir)
-// 			tc.expect(t, s, tc.baseDir, mockModelKey)
-// 		})
-// 	}
-// }
-
-func TestStorage_networkTopologyBackups(t *testing.T) {
-	require := require.New(t)
-	testNetworkTopologyBytes, err := os.ReadFile("./testdata/networkTopology_bytes.csv")
-	require.Nil(err, "load test file")
-
-	tests := []struct {
-		name    string
-		baseDir string
-		mock    func(t *testing.T, s Storage)
+		mock    func(t *testing.T, s Storage, baseDir, modelKey string, download, networkTopology []byte)
 		expect  func(t *testing.T, s Storage, baseDir, modelKey string)
 	}{
 		{
+			name:    "clear file",
+			baseDir: os.TempDir(),
+			mock: func(t *testing.T, s Storage, baseDir, modelKey string, download, networkTopology []byte) {
+				if err := s.CreateDownload(download, modelKey); err != nil {
+					t.Fatal(err)
+				}
+
+				if err := s.CreateNetworkTopology(networkTopology, modelKey); err != nil {
+					t.Fatal(err)
+				}
+			},
+			expect: func(t *testing.T, s Storage, baseDir, modelKey string) {
+				assert := assert.New(t)
+				assert.Equal(len(s.(*storage).downloadModelKeys.Values()), 1)
+				assert.Equal(len(s.(*storage).networkTopologyModelKeys.Values()), 1)
+				assert.NoError(s.Clear())
+				fileInfos, err := ioutil.ReadDir(filepath.Join(baseDir))
+				assert.NoError(err)
+
+				var downloadFiles []fs.FileInfo
+				downloadRegexp := regexp.MustCompile(fmt.Sprintf("%s-%s", DownloadFilePrefix, modelKey))
+				for _, fileInfo := range fileInfos {
+					if !fileInfo.IsDir() && downloadRegexp.MatchString(fileInfo.Name()) {
+						downloadFiles = append(downloadFiles, fileInfo)
+					}
+				}
+				assert.Equal(len(downloadFiles), 0)
+				assert.Equal(len(s.(*storage).downloadModelKeys.Values()), 0)
+
+				var networkTopologyFiles []fs.FileInfo
+				networkTopologyRegexp := regexp.MustCompile(fmt.Sprintf("%s-%s", NetworkTopologyFilePrefix, modelKey))
+				for _, fileInfo := range fileInfos {
+					if !fileInfo.IsDir() && networkTopologyRegexp.MatchString(fileInfo.Name()) {
+						networkTopologyFiles = append(networkTopologyFiles, fileInfo)
+					}
+				}
+				assert.Equal(len(networkTopologyFiles), 0)
+				assert.Equal(len(s.(*storage).networkTopologyModelKeys.Values()), 0)
+			},
+		},
+		{
 			name:    "open file failed",
 			baseDir: os.TempDir(),
-			mock: func(t *testing.T, s Storage) {
-				s.CreateNetworkTopology(testNetworkTopologyBytes, mockModelKey)
+			mock: func(t *testing.T, s Storage, baseDir, modelKey string, download, networkTopology []byte) {
+				if err := s.CreateDownload(download, modelKey); err != nil {
+					t.Fatal(err)
+				}
+
+				if err := s.CreateNetworkTopology(networkTopology, modelKey); err != nil {
+					t.Fatal(err)
+				}
 				s.(*storage).baseDir = "bar"
 			},
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string) {
 				assert := assert.New(t)
-				_, err := s.(*storage).networkTopologyBackups(modelKey)
-				assert.Error(err)
+				assert.Error(s.Clear())
+
 				s.(*storage).baseDir = baseDir
-				if err := s.ClearNetworkTopology(); err != nil {
-					t.Fatal(err)
-				}
-			},
-		},
-		{
-			name:    "not found network topology file",
-			baseDir: os.TempDir(),
-			mock:    func(t *testing.T, s Storage) {},
-			expect: func(t *testing.T, s Storage, baseDir, modelKey string) {
-				assert := assert.New(t)
-
-				if err := s.ClearNetworkTopology(); err != nil {
-					t.Fatal(err)
-				}
-
-				_, err := s.(*storage).networkTopologyBackups(modelKey)
-				assert.Error(err)
+				assert.NoError(s.Clear())
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s, err := New(tc.baseDir, DefaultStorageMaxSize, DefaultStorageMaxBackups, DefaultStorageBufferSize)
+			s, err := New(tc.baseDir)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			tc.mock(t, s)
+			tc.mock(t, s, tc.baseDir, mockModelKey, testDownloadData, testNetworkTopologyData)
 			tc.expect(t, s, tc.baseDir, mockModelKey)
 		})
 	}
+}
+
+func TestStorage_downloadFilename(t *testing.T) {
+	baseDir := os.TempDir()
+	s, err := New(baseDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	filename := s.(*storage).downloadFilename(mockModelKey)
+	regexp := regexp.MustCompile(fmt.Sprintf("%s-%s.*.%s$", DownloadFilePrefix, mockModelKey, CSVFileExt))
+	assert := assert.New(t)
+	assert.True(regexp.MatchString(filename))
+}
+
+func TestStorage_networkTopologyFilename(t *testing.T) {
+	baseDir := os.TempDir()
+	s, err := New(baseDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	filename := s.(*storage).networkTopologyFilename(mockModelKey)
+	regexp := regexp.MustCompile(fmt.Sprintf("%s-%s.*.%s$", NetworkTopologyFilePrefix, mockModelKey, CSVFileExt))
+	assert := assert.New(t)
+	assert.True(regexp.MatchString(filename))
 }

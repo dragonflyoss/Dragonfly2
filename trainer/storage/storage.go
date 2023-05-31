@@ -78,12 +78,12 @@ type storage struct {
 }
 
 // New returns a new Storage instance.
-func New(baseDir string) Storage {
+func New(baseDir string) (Storage, error) {
 	return &storage{
 		baseDir:                  baseDir,
 		downloadModelKeys:        set.NewSafeSet[string](),
 		networkTopologyModelKeys: set.NewSafeSet[string](),
-	}
+	}, nil
 }
 
 // CreateDownload inserts downloads into csv files based on the given model key.
