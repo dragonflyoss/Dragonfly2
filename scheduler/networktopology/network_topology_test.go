@@ -159,6 +159,8 @@ var (
 			Count:       10,
 		},
 	}
+
+	mockProbesCreatedAt = time.Now()
 )
 
 func Test_NewNetworkTopology(t *testing.T) {

@@ -73,6 +73,9 @@ type Probes interface {
 	// UpdatedAt is the updated time to store probe.
 	UpdatedAt() (time.Time, error)
 
+	// CreatedAt is the creation time of probes.
+	CreatedAt() (time.Time, error)
+
 	// AverageRTT is the moving average round-trip time of probes.
 	AverageRTT() (time.Duration, error)
 }
@@ -222,6 +225,14 @@ func (p *probes) UpdatedAt() (time.Time, error) {
 	defer cancel()
 
 	return p.rdb.HGet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "updatedAt").Time()
+}
+
+// CreatedAt is the creation time of probes.
+func (p *probes) CreatedAt() (time.Time, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	return p.rdb.HGet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "createdAt").Time()
 }
 
 // AverageRTT is the moving average round-trip time of probes.

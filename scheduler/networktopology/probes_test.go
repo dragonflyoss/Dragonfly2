@@ -562,6 +562,51 @@ func TestProbes_UpdatedAt(t *testing.T) {
 	}
 }
 
+func TestProbes_CreatedAt(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(mockRDBClient redismock.ClientMock)
+		expect func(t *testing.T, ps Probes)
+	}{
+		{
+			name: "get creation time of probes",
+			mock: func(mockRDBClient redismock.ClientMock) {
+				mockRDBClient.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "createdAt").SetVal(mockProbesCreatedAt.Format(time.RFC3339Nano))
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				createdAt, err := ps.CreatedAt()
+				assert.NoError(err)
+				assert.True(createdAt.Equal(mockProbesCreatedAt))
+			},
+		},
+		{
+			name: "get creation time of probes error",
+			mock: func(mockRDBClient redismock.ClientMock) {
+				mockRDBClient.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "createdAt").SetErr(errors.New("get creation time of probes error"))
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				_, err := ps.CreatedAt()
+				assert.Error(err)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+
+			rdb, mockRDBClient := redismock.NewClientMock()
+			tc.mock(mockRDBClient)
+
+			tc.expect(t, NewProbes(mockNetworkTopologyConfig.Probe, rdb, mockSeedHost.ID, mockHost.ID))
+			mockRDBClient.ClearExpect()
+		})
+	}
+}
+
 func TestProbes_AverageRTT(t *testing.T) {
 	tests := []struct {
 		name   string

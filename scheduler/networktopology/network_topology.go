@@ -91,7 +91,7 @@ func (nt *networkTopology) StoreProbe(srcHostID, destHostID string, probe *Probe
 	}
 
 	if exists == 0 {
-		if err := nt.rdb.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID), "createdAt", time.Now()).Err(); err != nil {
+		if err := nt.rdb.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID), "createdAt", time.Now().Format(time.RFC3339Nano)).Err(); err != nil {
 			return err
 		}
 	}
