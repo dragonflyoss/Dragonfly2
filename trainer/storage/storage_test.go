@@ -650,8 +650,9 @@ func TestStorage_ClearNetworkTopology(t *testing.T) {
 func TestStorage_Clear(t *testing.T) {
 	require := require.New(t)
 	testDownloadData, err := os.ReadFile("./testdata/download.csv")
+	require.Nil(err, "load download test file")
 	testNetworkTopologyData, err := os.ReadFile("./testdata/networktopology.csv")
-	require.Nil(err, "load test file")
+	require.Nil(err, "load networktopology test file")
 	tests := []struct {
 		name    string
 		baseDir string
