@@ -200,7 +200,7 @@ func TestNewNetworkTopology_Has(t *testing.T) {
 		expect func(t *testing.T, networkTopology NetworkTopology, err error)
 	}{
 		{
-			name: "network topology between src host and destination host exist",
+			name: "network topology between src host and destination host exists",
 			mock: func(mockRDBClient redismock.ClientMock) {
 				mockRDBClient.ExpectExists(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(1)
 			},
@@ -212,7 +212,7 @@ func TestNewNetworkTopology_Has(t *testing.T) {
 			},
 		},
 		{
-			name: "network topology between src host and destination host not exist",
+			name: "network topology between src host and destination host does not exist",
 			mock: func(mockRDBClient redismock.ClientMock) {
 				mockRDBClient.ExpectExists(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(0)
 			},
@@ -385,14 +385,14 @@ func TestNewNetworkTopology_DeleteHost(t *testing.T) {
 			},
 		},
 		{
-			name: "delete ProbedAt error when delete host",
+			name: "delete the time of the last probe error when delete host",
 			mock: func(mockRDBClient redismock.ClientMock) {
 				mockRDBClient.MatchExpectationsInOrder(false)
 				mockRDBClient.ExpectDel(pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, "*")).SetVal(1)
 				mockRDBClient.ExpectDel(pkgredis.MakeNetworkTopologyKeyInScheduler("*", mockHost.ID)).SetVal(1)
 				mockRDBClient.ExpectDel(pkgredis.MakeProbesKeyInScheduler(mockHost.ID, "*")).SetVal(1)
 				mockRDBClient.ExpectDel(pkgredis.MakeProbesKeyInScheduler("*", mockHost.ID)).SetVal(1)
-				mockRDBClient.ExpectDel(pkgredis.MakeProbedAtKeyInScheduler(mockHost.ID)).SetErr(errors.New("delete ProbedAt error"))
+				mockRDBClient.ExpectDel(pkgredis.MakeProbedAtKeyInScheduler(mockHost.ID)).SetErr(errors.New("delete the time of the last probe error"))
 				mockRDBClient.ExpectDel(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(1)
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
@@ -403,7 +403,7 @@ func TestNewNetworkTopology_DeleteHost(t *testing.T) {
 			},
 		},
 		{
-			name: "delete ProbedCount error when delete host",
+			name: "delete probed count error when delete host",
 			mock: func(mockRDBClient redismock.ClientMock) {
 				mockRDBClient.MatchExpectationsInOrder(false)
 				mockRDBClient.ExpectDel(pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, "*")).SetVal(1)
@@ -411,7 +411,7 @@ func TestNewNetworkTopology_DeleteHost(t *testing.T) {
 				mockRDBClient.ExpectDel(pkgredis.MakeProbesKeyInScheduler(mockHost.ID, "*")).SetVal(1)
 				mockRDBClient.ExpectDel(pkgredis.MakeProbesKeyInScheduler("*", mockHost.ID)).SetVal(1)
 				mockRDBClient.ExpectDel(pkgredis.MakeProbedAtKeyInScheduler(mockHost.ID)).SetVal(1)
-				mockRDBClient.ExpectDel(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetErr(errors.New("delete ProbedCount error"))
+				mockRDBClient.ExpectDel(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetErr(errors.New("delete probed count error"))
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
@@ -498,7 +498,7 @@ func TestNewNetworkTopology_ProbedAt(t *testing.T) {
 		expect func(t *testing.T, networkTopology NetworkTopology, err error)
 	}{
 		{
-			name: "get probedAt",
+			name: "get the time of the last probe",
 			mock: func(mockRDBClient redismock.ClientMock) {
 				mockRDBClient.ExpectGet(pkgredis.MakeProbedAtKeyInScheduler(mockHost.ID)).SetVal(mockProbe.CreatedAt.Format(time.RFC3339Nano))
 			},
@@ -512,9 +512,9 @@ func TestNewNetworkTopology_ProbedAt(t *testing.T) {
 			},
 		},
 		{
-			name: "get probedAt error",
+			name: "get the time of the last probe error",
 			mock: func(mockRDBClient redismock.ClientMock) {
-				mockRDBClient.ExpectGet(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetErr(errors.New("get probedAt error"))
+				mockRDBClient.ExpectGet(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetErr(errors.New("get the time of the last probe error"))
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
