@@ -122,27 +122,32 @@ func (nt *networkTopology) DeleteHost(hostID string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	if err := nt.rdb.Del(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(hostID, "*")).Err(); err != nil {
+	deleteKeys := []string{pkgredis.MakeProbedAtKeyInScheduler(hostID), pkgredis.MakeProbedCountKeyInScheduler(hostID)}
+	srcNetworkTopologyKeys, err := nt.rdb.Keys(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(hostID, "*")).Result()
+	if err != nil {
 		return err
 	}
+	deleteKeys = append(deleteKeys, srcNetworkTopologyKeys...)
 
-	if err := nt.rdb.Del(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler("*", hostID)).Err(); err != nil {
+	destNetworkTopologyKeys, err := nt.rdb.Keys(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler("*", hostID)).Result()
+	if err != nil {
 		return err
 	}
+	deleteKeys = append(deleteKeys, destNetworkTopologyKeys...)
 
-	if err := nt.rdb.Del(ctx, pkgredis.MakeProbesKeyInScheduler(hostID, "*")).Err(); err != nil {
+	srcProbesKeys, err := nt.rdb.Keys(ctx, pkgredis.MakeProbesKeyInScheduler(hostID, "*")).Result()
+	if err != nil {
 		return err
 	}
+	deleteKeys = append(deleteKeys, srcProbesKeys...)
 
-	if err := nt.rdb.Del(ctx, pkgredis.MakeProbesKeyInScheduler("*", hostID)).Err(); err != nil {
+	destProbesKeys, err := nt.rdb.Keys(ctx, pkgredis.MakeProbesKeyInScheduler("*", hostID)).Result()
+	if err != nil {
 		return err
 	}
+	deleteKeys = append(deleteKeys, destProbesKeys...)
 
-	if err := nt.rdb.Del(ctx, pkgredis.MakeProbedAtKeyInScheduler(hostID)).Err(); err != nil {
-		return err
-	}
-
-	if err := nt.rdb.Del(ctx, pkgredis.MakeProbedCountKeyInScheduler(hostID)).Err(); err != nil {
+	if err := nt.rdb.Del(ctx, deleteKeys...).Err(); err != nil {
 		return err
 	}
 
