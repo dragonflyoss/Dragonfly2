@@ -106,11 +106,11 @@ func (nt *networkTopology) Store(srcHostID string, destHostID string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	if _, err := nt.rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
-		pipe.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID), "createdAt", time.Now().Format(time.RFC3339Nano))
-		pipe.Set(ctx, pkgredis.MakeProbedCountKeyInScheduler(destHostID), 0, 0)
-		return nil
-	}); err != nil {
+	if err := nt.rdb.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID), "createdAt", time.Now().Format(time.RFC3339Nano)).Err(); err != nil {
+		return err
+	}
+
+	if err := nt.rdb.Set(ctx, pkgredis.MakeProbedCountKeyInScheduler(destHostID), 0, 0).Err(); err != nil {
 		return err
 	}
 
@@ -122,15 +122,27 @@ func (nt *networkTopology) DeleteHost(hostID string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	if _, err := nt.rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
-		pipe.Del(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(hostID, "*"))
-		pipe.Del(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler("*", hostID))
-		pipe.Del(ctx, pkgredis.MakeProbesKeyInScheduler(hostID, "*"))
-		pipe.Del(ctx, pkgredis.MakeProbesKeyInScheduler("*", hostID))
-		pipe.Del(ctx, pkgredis.MakeProbedAtKeyInScheduler(hostID))
-		pipe.Del(ctx, pkgredis.MakeProbedCountKeyInScheduler(hostID))
-		return nil
-	}); err != nil {
+	if err := nt.rdb.Del(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(hostID, "*")).Err(); err != nil {
+		return err
+	}
+
+	if err := nt.rdb.Del(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler("*", hostID)).Err(); err != nil {
+		return err
+	}
+
+	if err := nt.rdb.Del(ctx, pkgredis.MakeProbesKeyInScheduler(hostID, "*")).Err(); err != nil {
+		return err
+	}
+
+	if err := nt.rdb.Del(ctx, pkgredis.MakeProbesKeyInScheduler("*", hostID)).Err(); err != nil {
+		return err
+	}
+
+	if err := nt.rdb.Del(ctx, pkgredis.MakeProbedAtKeyInScheduler(hostID)).Err(); err != nil {
+		return err
+	}
+
+	if err := nt.rdb.Del(ctx, pkgredis.MakeProbedCountKeyInScheduler(hostID)).Err(); err != nil {
 		return err
 	}
 
