@@ -35,18 +35,18 @@ func (m *MockNetworkTopology) EXPECT() *MockNetworkTopologyMockRecorder {
 	return m.recorder
 }
 
-// Delete mocks base method.
-func (m *MockNetworkTopology) Delete(arg0, arg1 string) error {
+// DeleteHost mocks base method.
+func (m *MockNetworkTopology) DeleteHost(arg0 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", arg0, arg1)
+	ret := m.ctrl.Call(m, "DeleteHost", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Delete indicates an expected call of Delete.
-func (mr *MockNetworkTopologyMockRecorder) Delete(arg0, arg1 interface{}) *gomock.Call {
+// DeleteHost indicates an expected call of DeleteHost.
+func (mr *MockNetworkTopologyMockRecorder) DeleteHost(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockNetworkTopology)(nil).Delete), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteHost", reflect.TypeOf((*MockNetworkTopology)(nil).DeleteHost), arg0)
 }
 
 // Has mocks base method.
