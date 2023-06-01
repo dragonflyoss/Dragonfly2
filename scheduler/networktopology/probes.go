@@ -207,6 +207,35 @@ func (p *probes) Dequeue() (*Probe, error) {
 		return nil, err
 	}
 
+	rawProbes, err := p.rdb.LRange(context.Background(), pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID), 0, -1).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	// Calculate the moving average round-trip time.
+	var averageRTT time.Duration
+	if len(rawProbes) > 0 {
+		// If the queue is not empty, calculate the
+		// moving average round-trip time.
+		for index, rawProbe := range rawProbes {
+			probe := &Probe{}
+			if err = json.Unmarshal([]byte(rawProbe), probe); err != nil {
+				return nil, err
+			}
+
+			if index == 0 {
+				averageRTT = probe.RTT
+				continue
+			}
+
+			averageRTT = time.Duration(float64(averageRTT)*defaultMovingAverageWeight +
+				float64(probe.RTT)*(1-defaultMovingAverageWeight))
+		}
+	} else {
+		// If the queue is empty, set round-trip time to 0.
+		averageRTT = 0
+	}
+
 	return probe, nil
 }
 
