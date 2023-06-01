@@ -38,13 +38,13 @@ const (
 
 // NetworkTopology is an interface for network topology.
 type NetworkTopology interface {
-	// Has checks whether src host and destination host exist.
+	// Has to check if there is a connection between source host and destination host.
 	Has(string, string) bool
 
-	// Store stores src host and destination host.
+	// Store stores source host and destination host.
 	Store(string, string) error
 
-	// DeleteHost deletes src host and destination hosts of the src host.
+	// DeleteHost deletes source host and all destination host connected to source host.
 	DeleteHost(string) error
 
 	// Probes loads probes interface by source host id and destination host id.
@@ -53,7 +53,7 @@ type NetworkTopology interface {
 	// ProbedCount is the number of times the host has been probed.
 	ProbedCount(string) (uint64, error)
 
-	// ProbedAt is the time of the last probe.
+	// ProbedAt is the time when the host was last probed.
 	ProbedAt(string) (time.Time, error)
 }
 
@@ -82,7 +82,7 @@ func NewNetworkTopology(cfg config.NetworkTopologyConfig, rdb redis.UniversalCli
 	}, nil
 }
 
-// Has checks whether network topology between src host and destination host exists.
+// Has to check if there is a connection between source host and destination host.
 func (nt *networkTopology) Has(srcHostID string, destHostID string) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
@@ -96,7 +96,7 @@ func (nt *networkTopology) Has(srcHostID string, destHostID string) bool {
 	return networkTopologyCount == 1
 }
 
-// Store stores network topology between src host and destination host.
+// Store stores source host and destination host.
 func (nt *networkTopology) Store(srcHostID string, destHostID string) error {
 	// If the network topology already exists, skip it.
 	if nt.Has(srcHostID, destHostID) {
@@ -117,7 +117,7 @@ func (nt *networkTopology) Store(srcHostID string, destHostID string) error {
 	return nil
 }
 
-// DeleteHost deletes host.
+// DeleteHost deletes source host and all destination host connected to source host.
 func (nt *networkTopology) DeleteHost(hostID string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
@@ -153,7 +153,7 @@ func (nt *networkTopology) ProbedAt(hostID string) (time.Time, error) {
 	return nt.rdb.Get(ctx, pkgredis.MakeProbedAtKeyInScheduler(hostID)).Time()
 }
 
-// Probes loads probes interface by source host id and destination host id.
+// ProbedAt is the time when the host was last probed.
 func (nt *networkTopology) Probes(srcHostID, destHostID string) Probes {
 	return NewProbes(nt.config.Probe, nt.rdb, srcHostID, destHostID)
 }
