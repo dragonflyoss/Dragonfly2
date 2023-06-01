@@ -82,7 +82,7 @@ func NewNetworkTopology(cfg config.NetworkTopologyConfig, rdb redis.UniversalCli
 	}, nil
 }
 
-// Has checks whether src host and destination host exist.
+// Has checks whether network topology between src host and destination host exists.
 func (nt *networkTopology) Has(srcHostID string, destHostID string) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
@@ -96,7 +96,7 @@ func (nt *networkTopology) Has(srcHostID string, destHostID string) bool {
 	return networkTopologyCount == 1
 }
 
-// Store stores src host and destination host.
+// Store stores network topology between src host and destination host.
 func (nt *networkTopology) Store(srcHostID string, destHostID string) error {
 	// If the network topology already exists, skip it.
 	if nt.Has(srcHostID, destHostID) {
@@ -117,14 +117,16 @@ func (nt *networkTopology) Store(srcHostID string, destHostID string) error {
 	return nil
 }
 
-// DeleteHost deletes src host and destination hosts of the src host.
+// DeleteHost deletes host.
 func (nt *networkTopology) DeleteHost(hostID string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
 	if _, err := nt.rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
 		pipe.Del(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(hostID, "*"))
+		pipe.Del(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler("*", hostID))
 		pipe.Del(ctx, pkgredis.MakeProbesKeyInScheduler(hostID, "*"))
+		pipe.Del(ctx, pkgredis.MakeProbesKeyInScheduler("*", hostID))
 		pipe.Del(ctx, pkgredis.MakeProbedAtKeyInScheduler(hostID))
 		pipe.Del(ctx, pkgredis.MakeProbedCountKeyInScheduler(hostID))
 		return nil
