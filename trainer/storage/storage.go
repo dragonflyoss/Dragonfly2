@@ -1,5 +1,5 @@
 /*
- *     Copyright 2022 The Dragonfly Authors
+ *     Copyright 2023 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,11 +43,11 @@ const (
 
 // Storage is the interface used for storage.
 type Storage interface {
-	// CreateDownload inserts downloads into csv files based on the given model key.
-	CreateDownload([]byte, string) error
+	// WriteDownload writes download data into csv files based on the given model key.
+	WriteDownload([]byte, string) error
 
-	// CreateNetworkTopology inserts network topologies into csv files based on the given model key.
-	CreateNetworkTopology([]byte, string) error
+	// WriteNetworkTopology writes network topology data into csv files based on the given model key.
+	WriteNetworkTopology([]byte, string) error
 
 	// ListDownload returns downloads in csv files based on the given model key.
 	ListDownload(string) ([]Download, error)
@@ -86,14 +86,14 @@ func New(baseDir string) (Storage, error) {
 	}, nil
 }
 
-// CreateDownload inserts downloads into csv files based on the given model key.
-func (s *storage) CreateDownload(downloads []byte, modelKey string) error {
+// WriteDownload writes download data into csv files based on the given model key.
+func (s *storage) WriteDownload(downloads []byte, modelKey string) error {
 	file, err := os.OpenFile(s.downloadFilename(modelKey), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
 		return err
 	}
 
-	// Write downloads to download csv file.
+	// Write data to download csv file.
 	if _, err := io.Copy(file, bytes.NewReader(downloads)); err != nil {
 		if err := os.Remove(s.downloadFilename(modelKey)); err != nil {
 			return err
@@ -108,14 +108,14 @@ func (s *storage) CreateDownload(downloads []byte, modelKey string) error {
 	return nil
 }
 
-// CreateNetworkTopology inserts network topologies into csv files based on the given model key.
-func (s *storage) CreateNetworkTopology(networkTopologies []byte, modelKey string) error {
+// WriteNetworkTopology writes network topology data into csv files based on the given model key.
+func (s *storage) WriteNetworkTopology(networkTopologies []byte, modelKey string) error {
 	file, err := os.OpenFile(s.networkTopologyFilename(modelKey), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
 		return err
 	}
 
-	// Write network topologies to csv file.
+	// Write data to csv file.
 	if _, err := io.Copy(file, bytes.NewReader(networkTopologies)); err != nil {
 		if err := os.Remove(s.networkTopologyFilename(modelKey)); err != nil {
 			return err

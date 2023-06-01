@@ -1,5 +1,5 @@
 /*
- *     Copyright 2022 The Dragonfly Authors
+ *     Copyright 2023 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ func TestStorage_New(t *testing.T) {
 	}
 }
 
-func TestStorage_CreateDownload(t *testing.T) {
+func TestStorage_WriteDownload(t *testing.T) {
 	require := require.New(t)
 	testData, err := os.ReadFile("./testdata/download.csv")
 	require.Nil(err, "load test file")
@@ -80,7 +80,7 @@ func TestStorage_CreateDownload(t *testing.T) {
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
 				assert := assert.New(t)
 				assert.Equal(len(s.(*storage).downloadModelKeys.Values()), 0)
-				assert.NoError(s.CreateDownload(download, modelKey))
+				assert.NoError(s.WriteDownload(download, modelKey))
 				assert.Equal(len(s.(*storage).downloadModelKeys.Values()), 1)
 			},
 		},
@@ -92,9 +92,9 @@ func TestStorage_CreateDownload(t *testing.T) {
 			},
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
 				assert := assert.New(t)
-				assert.Error(s.CreateDownload(download, modelKey))
+				assert.Error(s.WriteDownload(download, modelKey))
 				s.(*storage).baseDir = baseDir
-				assert.NoError(s.CreateDownload(download, modelKey))
+				assert.NoError(s.WriteDownload(download, modelKey))
 				assert.Equal(len(s.(*storage).downloadModelKeys.Values()), 1)
 			},
 		},
@@ -116,7 +116,7 @@ func TestStorage_CreateDownload(t *testing.T) {
 	}
 }
 
-func TestStorage_CreateNetworkTopology(t *testing.T) {
+func TestStorage_WriteNetworkTopology(t *testing.T) {
 	require := require.New(t)
 	testData, err := os.ReadFile("./testdata/networktopology.csv")
 	require.Nil(err, "load test file")
@@ -134,7 +134,7 @@ func TestStorage_CreateNetworkTopology(t *testing.T) {
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
 				assert := assert.New(t)
 				assert.Equal(len(s.(*storage).networkTopologyModelKeys.Values()), 0)
-				assert.NoError(s.CreateNetworkTopology(networkTopology, modelKey))
+				assert.NoError(s.WriteNetworkTopology(networkTopology, modelKey))
 				assert.Equal(len(s.(*storage).networkTopologyModelKeys.Values()), 1)
 			},
 		},
@@ -146,9 +146,9 @@ func TestStorage_CreateNetworkTopology(t *testing.T) {
 			},
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
 				assert := assert.New(t)
-				assert.Error(s.CreateNetworkTopology(networkTopology, modelKey))
+				assert.Error(s.WriteNetworkTopology(networkTopology, modelKey))
 				s.(*storage).baseDir = baseDir
-				assert.NoError(s.CreateNetworkTopology(networkTopology, modelKey))
+				assert.NoError(s.WriteNetworkTopology(networkTopology, modelKey))
 				assert.Equal(len(s.(*storage).networkTopologyModelKeys.Values()), 1)
 			},
 		},
@@ -201,7 +201,7 @@ func TestStorage_ListDownload(t *testing.T) {
 			name:    "get file infos failed",
 			baseDir: os.TempDir(),
 			mock: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
-				if err := s.CreateDownload(download, modelKey); err != nil {
+				if err := s.WriteDownload(download, modelKey); err != nil {
 					t.Fatal(err)
 				}
 				s.(*storage).baseDir = "bas"
@@ -217,7 +217,7 @@ func TestStorage_ListDownload(t *testing.T) {
 			name:    "list downloads of a file",
 			baseDir: os.TempDir(),
 			mock: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
-				if err := s.CreateDownload(download, modelKey); err != nil {
+				if err := s.WriteDownload(download, modelKey); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -226,7 +226,7 @@ func TestStorage_ListDownload(t *testing.T) {
 				_, err := s.ListDownload(modelKey)
 				assert.NoError(err)
 
-				if err := s.CreateDownload(download, modelKey); err != nil {
+				if err := s.WriteDownload(download, modelKey); err != nil {
 					t.Fatal(err)
 				}
 
@@ -283,7 +283,7 @@ func TestStorage_ListNetworkTopology(t *testing.T) {
 			name:    "get file infos failed",
 			baseDir: os.TempDir(),
 			mock: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
-				if err := s.CreateNetworkTopology(networkTopology, modelKey); err != nil {
+				if err := s.WriteNetworkTopology(networkTopology, modelKey); err != nil {
 					t.Fatal(err)
 				}
 				s.(*storage).baseDir = "foo"
@@ -299,7 +299,7 @@ func TestStorage_ListNetworkTopology(t *testing.T) {
 			name:    "list network topologies of a file",
 			baseDir: os.TempDir(),
 			mock: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
-				if err := s.CreateNetworkTopology(networkTopology, modelKey); err != nil {
+				if err := s.WriteNetworkTopology(networkTopology, modelKey); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -308,7 +308,7 @@ func TestStorage_ListNetworkTopology(t *testing.T) {
 				_, err := s.ListNetworkTopology(modelKey)
 				assert.NoError(err)
 
-				if err := s.CreateNetworkTopology(networkTopology, modelKey); err != nil {
+				if err := s.WriteNetworkTopology(networkTopology, modelKey); err != nil {
 					t.Fatal(err)
 				}
 
@@ -366,7 +366,7 @@ func TestStorage_OpenDownload(t *testing.T) {
 			name:    "open file infos failed",
 			baseDir: os.TempDir(),
 			mock: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
-				if err := s.CreateDownload(download, modelKey); err != nil {
+				if err := s.WriteDownload(download, modelKey); err != nil {
 					t.Fatal(err)
 				}
 				s.(*storage).baseDir = "baw"
@@ -382,7 +382,7 @@ func TestStorage_OpenDownload(t *testing.T) {
 			name:    "open storage with downloads of a file",
 			baseDir: os.TempDir(),
 			mock: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
-				if err := s.CreateDownload(download, modelKey); err != nil {
+				if err := s.WriteDownload(download, modelKey); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -391,7 +391,7 @@ func TestStorage_OpenDownload(t *testing.T) {
 				_, err := s.OpenDownload(modelKey)
 				assert.NoError(err)
 
-				if err := s.CreateDownload(download, modelKey); err != nil {
+				if err := s.WriteDownload(download, modelKey); err != nil {
 					t.Fatal(err)
 				}
 
@@ -452,7 +452,7 @@ func TestStorage_OpenNetworkTopology(t *testing.T) {
 			name:    "open file infos failed",
 			baseDir: os.TempDir(),
 			mock: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
-				if err := s.CreateNetworkTopology(networkTopology, modelKey); err != nil {
+				if err := s.WriteNetworkTopology(networkTopology, modelKey); err != nil {
 					t.Fatal(err)
 				}
 				s.(*storage).baseDir = "bas"
@@ -468,7 +468,7 @@ func TestStorage_OpenNetworkTopology(t *testing.T) {
 			name:    "open storage with network topologies of a file",
 			baseDir: os.TempDir(),
 			mock: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
-				if err := s.CreateNetworkTopology(networkTopology, modelKey); err != nil {
+				if err := s.WriteNetworkTopology(networkTopology, modelKey); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -477,7 +477,7 @@ func TestStorage_OpenNetworkTopology(t *testing.T) {
 				_, err := s.OpenNetworkTopology(modelKey)
 				assert.NoError(err)
 
-				if err := s.CreateNetworkTopology(networkTopology, modelKey); err != nil {
+				if err := s.WriteNetworkTopology(networkTopology, modelKey); err != nil {
 					t.Fatal(err)
 				}
 
@@ -523,7 +523,7 @@ func TestStorage_ClearDownload(t *testing.T) {
 			name:    "clear file",
 			baseDir: os.TempDir(),
 			mock: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
-				if err := s.CreateDownload(download, modelKey); err != nil {
+				if err := s.WriteDownload(download, modelKey); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -550,7 +550,7 @@ func TestStorage_ClearDownload(t *testing.T) {
 			name:    "open file failed",
 			baseDir: os.TempDir(),
 			mock: func(t *testing.T, s Storage, baseDir, modelKey string, downloads []byte) {
-				if err := s.CreateDownload(downloads, modelKey); err != nil {
+				if err := s.WriteDownload(downloads, modelKey); err != nil {
 					t.Fatal(err)
 				}
 				s.(*storage).baseDir = "baz"
@@ -593,7 +593,7 @@ func TestStorage_ClearNetworkTopology(t *testing.T) {
 			name:    "clear file",
 			baseDir: os.TempDir(),
 			mock: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
-				if err := s.CreateNetworkTopology(networkTopology, modelKey); err != nil {
+				if err := s.WriteNetworkTopology(networkTopology, modelKey); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -619,7 +619,7 @@ func TestStorage_ClearNetworkTopology(t *testing.T) {
 			name:    "open file failed",
 			baseDir: os.TempDir(),
 			mock: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
-				if err := s.CreateNetworkTopology(networkTopology, modelKey); err != nil {
+				if err := s.WriteNetworkTopology(networkTopology, modelKey); err != nil {
 					t.Fatal(err)
 				}
 				s.(*storage).baseDir = "baz"
@@ -663,11 +663,11 @@ func TestStorage_Clear(t *testing.T) {
 			name:    "clear file",
 			baseDir: os.TempDir(),
 			mock: func(t *testing.T, s Storage, baseDir, modelKey string, download, networkTopology []byte) {
-				if err := s.CreateDownload(download, modelKey); err != nil {
+				if err := s.WriteDownload(download, modelKey); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := s.CreateNetworkTopology(networkTopology, modelKey); err != nil {
+				if err := s.WriteNetworkTopology(networkTopology, modelKey); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -704,11 +704,11 @@ func TestStorage_Clear(t *testing.T) {
 			name:    "open file failed",
 			baseDir: os.TempDir(),
 			mock: func(t *testing.T, s Storage, baseDir, modelKey string, download, networkTopology []byte) {
-				if err := s.CreateDownload(download, modelKey); err != nil {
+				if err := s.WriteDownload(download, modelKey); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := s.CreateNetworkTopology(networkTopology, modelKey); err != nil {
+				if err := s.WriteNetworkTopology(networkTopology, modelKey); err != nil {
 					t.Fatal(err)
 				}
 				s.(*storage).baseDir = "bar"

@@ -77,34 +77,6 @@ func (mr *MockStorageMockRecorder) ClearNetworkTopology(arg0 interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClearNetworkTopology", reflect.TypeOf((*MockStorage)(nil).ClearNetworkTopology), arg0)
 }
 
-// CreateDownload mocks base method.
-func (m *MockStorage) CreateDownload(arg0 []byte, arg1 string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateDownload", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CreateDownload indicates an expected call of CreateDownload.
-func (mr *MockStorageMockRecorder) CreateDownload(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDownload", reflect.TypeOf((*MockStorage)(nil).CreateDownload), arg0, arg1)
-}
-
-// CreateNetworkTopology mocks base method.
-func (m *MockStorage) CreateNetworkTopology(arg0 []byte, arg1 string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateNetworkTopology", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CreateNetworkTopology indicates an expected call of CreateNetworkTopology.
-func (mr *MockStorageMockRecorder) CreateNetworkTopology(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateNetworkTopology", reflect.TypeOf((*MockStorage)(nil).CreateNetworkTopology), arg0, arg1)
-}
-
 // ListDownload mocks base method.
 func (m *MockStorage) ListDownload(arg0 string) ([]storage.Download, error) {
 	m.ctrl.T.Helper()
@@ -163,4 +135,32 @@ func (m *MockStorage) OpenNetworkTopology(arg0 string) (io.ReadCloser, error) {
 func (mr *MockStorageMockRecorder) OpenNetworkTopology(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OpenNetworkTopology", reflect.TypeOf((*MockStorage)(nil).OpenNetworkTopology), arg0)
+}
+
+// WriteDownload mocks base method.
+func (m *MockStorage) WriteDownload(arg0 []byte, arg1 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WriteDownload", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// WriteDownload indicates an expected call of WriteDownload.
+func (mr *MockStorageMockRecorder) WriteDownload(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteDownload", reflect.TypeOf((*MockStorage)(nil).WriteDownload), arg0, arg1)
+}
+
+// WriteNetworkTopology mocks base method.
+func (m *MockStorage) WriteNetworkTopology(arg0 []byte, arg1 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WriteNetworkTopology", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// WriteNetworkTopology indicates an expected call of WriteNetworkTopology.
+func (mr *MockStorageMockRecorder) WriteNetworkTopology(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteNetworkTopology", reflect.TypeOf((*MockStorage)(nil).WriteNetworkTopology), arg0, arg1)
 }
