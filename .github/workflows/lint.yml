@@ -25,7 +25,8 @@ jobs:
       - name: Golangci lint
         uses: golangci/golangci-lint-action@v3
         with:
-          version: latest
+          version: v1.52.2
+          args: --verbose
 
       - name: Markdown lint
         uses: docker://avtodev/markdown-lint:v1
