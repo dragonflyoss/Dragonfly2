@@ -117,7 +117,8 @@ func (nt *networkTopology) Store(srcHostID string, destHostID string) error {
 	return nil
 }
 
-// DeleteHost deletes source host and all destination host connected to source host.
+// DeleteHost deletes the last probed time and probed count of source host, as well as the network topology and probes queue
+// from source host to all destination hosts and all destination hosts to source host.
 func (nt *networkTopology) DeleteHost(hostID string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
