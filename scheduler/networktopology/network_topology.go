@@ -162,7 +162,7 @@ func (nt *networkTopology) ProbedCount(hostID string) (uint64, error) {
 	return nt.rdb.Get(ctx, pkgredis.MakeProbedCountKeyInScheduler(hostID)).Uint64()
 }
 
-// ProbedAt is the time of the last probe.
+// ProbedAt is the time when the host was last probed.
 func (nt *networkTopology) ProbedAt(hostID string) (time.Time, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
@@ -170,7 +170,7 @@ func (nt *networkTopology) ProbedAt(hostID string) (time.Time, error) {
 	return nt.rdb.Get(ctx, pkgredis.MakeProbedAtKeyInScheduler(hostID)).Time()
 }
 
-// ProbedAt is the time when the host was last probed.
+// Probes is the interface to store probes.
 func (nt *networkTopology) Probes(srcHostID, destHostID string) Probes {
 	return NewProbes(nt.config.Probe, nt.rdb, srcHostID, destHostID)
 }
