@@ -217,7 +217,6 @@ func TestNewNetworkTopology_DeleteHost(t *testing.T) {
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-
 				assert.NoError(networkTopology.DeleteHost(mockHost.ID))
 			},
 		},
@@ -231,7 +230,6 @@ func TestNewNetworkTopology_DeleteHost(t *testing.T) {
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-
 				assert.Error(networkTopology.DeleteHost(mockHost.ID))
 			},
 		},
@@ -247,7 +245,6 @@ func TestNewNetworkTopology_DeleteHost(t *testing.T) {
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-
 				assert.Error(networkTopology.DeleteHost(mockHost.ID))
 			},
 		},
@@ -264,7 +261,6 @@ func TestNewNetworkTopology_DeleteHost(t *testing.T) {
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-
 				assert.Error(networkTopology.DeleteHost(mockHost.ID))
 			},
 		},
@@ -281,7 +277,6 @@ func TestNewNetworkTopology_DeleteHost(t *testing.T) {
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-
 				assert.Error(networkTopology.DeleteHost(mockHost.ID))
 			},
 		},
@@ -302,7 +297,6 @@ func TestNewNetworkTopology_DeleteHost(t *testing.T) {
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-
 				assert.Error(networkTopology.DeleteHost(mockHost.ID))
 			},
 		},
