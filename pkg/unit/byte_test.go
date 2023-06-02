@@ -23,6 +23,66 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+func Test_Set(t *testing.T) {
+	assert := testifyassert.New(t)
+	testCases := []struct {
+		sizeString string
+		sizeNumber int64
+		failed     bool
+	}{
+		{
+			sizeString: "",
+			sizeNumber: 0,
+		},
+		{
+			sizeString: "1B",
+			sizeNumber: 1,
+		},
+		{
+			sizeString: "2KB",
+			sizeNumber: 2 * 1024,
+		},
+		{
+			sizeString: "3MB",
+			sizeNumber: 3 * 1024 * 1024,
+		},
+		{
+			sizeString: "4GB",
+			sizeNumber: 4 * 1024 * 1024 * 1024,
+		},
+		{
+			sizeString: "5TB",
+			sizeNumber: 5 * 1024 * 1024 * 1024 * 1024,
+		},
+		{
+			sizeString: "6PB",
+			sizeNumber: 6 * 1024 * 1024 * 1024 * 1024 * 1024,
+		},
+		{
+			sizeString: "7EB",
+			sizeNumber: 7 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
+		},
+		{
+			sizeString: "8unknown",
+			failed:     true,
+		},
+	}
+
+	for _, tc := range testCases {
+		var b Bytes
+		err := b.Set(tc.sizeString)
+		if tc.failed {
+			assert.NotNil(err)
+		} else {
+			assert.Nil(err)
+		}
+		if err != nil {
+			continue
+		}
+		assert.Equal(tc.sizeNumber, b.ToNumber())
+	}
+}
+
 func Test_parseByte(t *testing.T) {
 	assert := testifyassert.New(t)
 	testCases := []struct {
