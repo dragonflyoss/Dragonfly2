@@ -419,7 +419,7 @@ func TestProbes_Enqueue(t *testing.T) {
 	}
 }
 
-func TestProbes_Dequeue(t *testing.T) {
+func TestProbes_dequeue(t *testing.T) {
 	tests := []struct {
 		name   string
 		probes []*Probe
@@ -441,7 +441,7 @@ func TestProbes_Dequeue(t *testing.T) {
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
-				probe, err := ps.Dequeue()
+				probe, err := ps.(*probes).dequeue()
 				assert.NoError(err)
 				assert.Equal(probe.Host.ID, mockProbe.Host.ID)
 				assert.Equal(probe.Host.Type, mockProbe.Host.Type)
@@ -502,7 +502,7 @@ func TestProbes_Dequeue(t *testing.T) {
 				assert := assert.New(t)
 				assert.NoError(ps.Enqueue(mockProbe))
 
-				probe, err := ps.Dequeue()
+				probe, err := ps.(*probes).dequeue()
 				assert.NoError(err)
 				assert.Equal(probe.RTT, 31*time.Millisecond)
 			},
@@ -515,7 +515,7 @@ func TestProbes_Dequeue(t *testing.T) {
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
-				_, err := ps.Dequeue()
+				_, err := ps.(*probes).dequeue()
 				assert.Error(err)
 			},
 		},

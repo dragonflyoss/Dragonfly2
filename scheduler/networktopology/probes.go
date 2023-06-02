@@ -55,9 +55,6 @@ type Probes interface {
 	// Enqueue enqueues probe into the queue.
 	Enqueue(*Probe) error
 
-	// Dequeue removes and returns the oldest probe.
-	Dequeue() (*Probe, error)
-
 	// Len gets the length of probes.
 	Len() (int64, error)
 
@@ -127,7 +124,7 @@ func (p *probes) Enqueue(probe *Probe) error {
 
 	// If the queue is full, remove the oldest probe.
 	if length >= int64(p.config.QueueLength) {
-		if _, err := p.Dequeue(); err != nil {
+		if _, err := p.dequeue(); err != nil {
 			return err
 		}
 	}
@@ -192,24 +189,6 @@ func (p *probes) Enqueue(probe *Probe) error {
 	return nil
 }
 
-// Dequeue removes and returns the oldest probe.
-func (p *probes) Dequeue() (*Probe, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
-	defer cancel()
-
-	rawProbe, err := p.rdb.LPop(ctx, pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID)).Bytes()
-	if err != nil {
-		return nil, err
-	}
-
-	probe := &Probe{}
-	if err = json.Unmarshal(rawProbe, probe); err != nil {
-		return nil, err
-	}
-
-	return probe, nil
-}
-
 // Length gets the length of probes.
 func (p *probes) Len() (int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
@@ -245,4 +224,22 @@ func (p *probes) AverageRTT() (time.Duration, error) {
 	}
 
 	return time.Duration(averageRTT), nil
+}
+
+// dequeue removes and returns the oldest probe.
+func (p *probes) dequeue() (*Probe, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	rawProbe, err := p.rdb.LPop(ctx, pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID)).Bytes()
+	if err != nil {
+		return nil, err
+	}
+
+	probe := &Probe{}
+	if err = json.Unmarshal(rawProbe, probe); err != nil {
+		return nil, err
+	}
+
+	return probe, nil
 }
