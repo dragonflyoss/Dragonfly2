@@ -236,6 +236,15 @@ func (p *probes) Dequeue() (*Probe, error) {
 		averageRTT = 0
 	}
 
+	// Update the moving average round-trip time and updated time.
+	if err := p.rdb.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "averageRTT", averageRTT.Nanoseconds()).Err(); err != nil {
+		return nil, err
+	}
+
+	if err := p.rdb.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "updatedAt", time.Now().Format(time.RFC3339Nano)).Err(); err != nil {
+		return nil, err
+	}
+
 	return probe, nil
 }
 

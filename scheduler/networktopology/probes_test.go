@@ -258,6 +258,10 @@ func TestProbes_Peek(t *testing.T) {
 				mockRDBClient.ExpectLIndex(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0).SetVal(rawProbes[4])
 				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(5)
 				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(rawProbes[4])
+				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(append(rawProbes[:3]))
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", int64(32890000)).SetVal(1)
+				mockRDBClient.Regexp().ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", ".*").SetVal(1)
+
 				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), []byte(rawProbes[4])).SetVal(1)
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(rawProbes)
 				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", int64(30388900)).SetVal(1)
@@ -391,6 +395,10 @@ func TestProbes_Enqueue(t *testing.T) {
 				mockRDBClient.MatchExpectationsInOrder(true)
 				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(5)
 				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(rawProbes[0])
+				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(append(rawProbes[:3]))
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", int64(32890000)).SetVal(1)
+				mockRDBClient.Regexp().ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", ".*").SetVal(1)
+
 				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), []byte(rawProbes[4])).SetVal(1)
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(rawProbes)
 				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", int64(30388900)).SetVal(1)
@@ -437,7 +445,11 @@ func TestProbes_Dequeue(t *testing.T) {
 					t.Fatal(err)
 				}
 
+				mockRDBClient.MatchExpectationsInOrder(true)
 				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(string(data))
+				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal([]string{})
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", time.Duration(0).Nanoseconds()).SetVal(1)
+				mockRDBClient.Regexp().ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", ".*").SetVal(1)
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
@@ -490,13 +502,22 @@ func TestProbes_Dequeue(t *testing.T) {
 				mockRDBClient.MatchExpectationsInOrder(true)
 				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(5)
 				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(string(rawProbes[4]))
+				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(rawProbes[:3])
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", int64(32890000)).SetVal(1)
+				mockRDBClient.Regexp().ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", ".*").SetVal(1)
+
 				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), []byte(rawProbes[4])).SetVal(1)
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(rawProbes)
 				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", int64(30388900)).SetVal(1)
 				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", mockProbe.CreatedAt.Format(time.RFC3339Nano)).SetVal(1)
 				mockRDBClient.ExpectSet(pkgredis.MakeProbedAtKeyInScheduler(mockHost.ID), mockProbe.CreatedAt.Format(time.RFC3339Nano), 0).SetVal("ok")
 				mockRDBClient.ExpectIncr(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(6)
+
 				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(string(rawProbes[0]))
+				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(append(rawProbes[1:]))
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", int64(30389000)).SetVal(1)
+				mockRDBClient.Regexp().ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", ".*").SetVal(1)
+
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
@@ -512,6 +533,107 @@ func TestProbes_Dequeue(t *testing.T) {
 			probes: []*Probe{},
 			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
 				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).RedisNil()
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				_, err := ps.Dequeue()
+				assert.Error(err)
+			},
+		},
+		{
+			name:   "pop probe unmarshal error",
+			probes: []*Probe{},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal("foo")
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				_, err := ps.Dequeue()
+				assert.Error(err)
+			},
+		},
+		{
+			name: "get the probes list error",
+			probes: []*Probe{
+				mockProbe,
+			},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				data, err := json.Marshal(ps[0])
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(string(data))
+				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetErr(errors.New("get the probes list error"))
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				_, err := ps.Dequeue()
+				assert.Error(err)
+			},
+		},
+		{
+			name: "unmarshal probe from probes list error",
+			probes: []*Probe{
+				mockProbe,
+			},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				data, err := json.Marshal(ps[0])
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(string(data))
+				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal([]string{"foo"})
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				_, err := ps.Dequeue()
+				assert.Error(err)
+			},
+		},
+		{
+			name: "update the moving average round-trip time error",
+			probes: []*Probe{
+				mockProbe,
+			},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				data, err := json.Marshal(ps[0])
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(string(data))
+				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal([]string{})
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT",
+					time.Duration(0).Nanoseconds()).SetErr(errors.New("update the moving average round-trip time error"))
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				_, err := ps.Dequeue()
+				assert.Error(err)
+			},
+		},
+		{
+			name: "update the updated time error",
+			probes: []*Probe{
+				mockProbe,
+			},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				data, err := json.Marshal(ps[0])
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(string(data))
+				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal([]string{})
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT",
+					time.Duration(0).Nanoseconds()).SetVal(1)
+				mockRDBClient.Regexp().ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt",
+					".*").SetErr(errors.New("update the updated time error"))
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
@@ -578,6 +700,10 @@ func TestProbes_Len(t *testing.T) {
 				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(5)
 				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(5)
 				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(string(rawProbes[4]))
+				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(append(rawProbes[:3]))
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", int64(32890000)).SetVal(1)
+				mockRDBClient.Regexp().ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", ".*").SetVal(1)
+
 				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), []byte(rawProbes[4])).SetVal(1)
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(rawProbes)
 				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", int64(30388900)).SetVal(1)
