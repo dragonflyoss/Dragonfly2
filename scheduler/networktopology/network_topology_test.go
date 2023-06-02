@@ -388,7 +388,7 @@ func TestNewNetworkTopology_ProbedAt(t *testing.T) {
 		expect func(t *testing.T, networkTopology NetworkTopology, err error)
 	}{
 		{
-			name: "get the time of the last probe",
+			name: "get the time when the host was last probed",
 			mock: func(mockRDBClient redismock.ClientMock) {
 				mockRDBClient.ExpectGet(pkgredis.MakeProbedAtKeyInScheduler(mockHost.ID)).SetVal(mockProbe.CreatedAt.Format(time.RFC3339Nano))
 			},
@@ -402,9 +402,9 @@ func TestNewNetworkTopology_ProbedAt(t *testing.T) {
 			},
 		},
 		{
-			name: "get the time of the last probe error",
+			name: "get the time when the host was last probed error",
 			mock: func(mockRDBClient redismock.ClientMock) {
-				mockRDBClient.ExpectGet(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetErr(errors.New("get the time of the last probe error"))
+				mockRDBClient.ExpectGet(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetErr(errors.New("get the time when the host was last probed error"))
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
