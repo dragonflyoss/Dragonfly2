@@ -563,6 +563,7 @@ func TestProbes_Dequeue(t *testing.T) {
 					t.Fatal(err)
 				}
 
+				mockRDBClient.MatchExpectationsInOrder(true)
 				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(string(data))
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetErr(errors.New("get the probes list error"))
 			},
