@@ -149,6 +149,16 @@ var (
 		CreatedAt: time.Now(),
 	}
 
+	mockMarshalErrorProbe = &Probe{
+		Host: &resource.Host{
+			CPU: resource.CPU{
+				Percent: math.NaN(),
+			},
+		},
+		RTT:       30 * time.Millisecond,
+		CreatedAt: time.Now(),
+	}
+
 	mockNetworkTopologyConfig = config.NetworkTopologyConfig{
 		Enable:          true,
 		CollectInterval: 2 * time.Hour,
@@ -447,14 +457,7 @@ func TestProbes_Enqueue(t *testing.T) {
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
-				assert.Error(ps.Enqueue(&Probe{&resource.Host{
-					CPU: resource.CPU{
-						Percent: math.NaN(),
-					},
-				},
-					30 * time.Millisecond,
-					time.Now(),
-				}))
+				assert.Error(ps.Enqueue(mockMarshalErrorProbe))
 			},
 		},
 		{
