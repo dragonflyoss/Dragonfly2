@@ -76,7 +76,6 @@ func TestNewNetworkTopology_Has(t *testing.T) {
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-
 				assert.True(networkTopology.Has(mockSeedHost.ID, mockHost.ID))
 			},
 		},
@@ -88,7 +87,18 @@ func TestNewNetworkTopology_Has(t *testing.T) {
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-
+				assert.False(networkTopology.Has(mockSeedHost.ID, mockHost.ID))
+			},
+		},
+		{
+			name: "check network topology between src host and destination host exist error",
+			mock: func(mockRDBClient redismock.ClientMock) {
+				mockRDBClient.ExpectExists(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetErr(
+					errors.New("check network topology between src host and destination host exist error"))
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
 				assert.False(networkTopology.Has(mockSeedHost.ID, mockHost.ID))
 			},
 		},
