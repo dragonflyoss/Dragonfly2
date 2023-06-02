@@ -193,121 +193,131 @@ func TestNewNetworkTopology_Store(t *testing.T) {
 	}
 }
 
-// TODO Fix DeleteHost test.
-// func TestNewNetworkTopology_DeleteHost(t *testing.T) {
-// tests := []struct {
-// name   string
-// mock   func(mockRDBClient redismock.ClientMock)
-// expect func(t *testing.T, networkTopology NetworkTopology, err error)
-// }{
-// {
-// name: "delete host",
-// mock: func(mockRDBClient redismock.ClientMock) {
-// mockRDBClient.MatchExpectationsInOrder(false)
-// mockRDBClient.ExpectDel(pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, "*")).SetVal(1)
-// mockRDBClient.ExpectDel(pkgredis.MakeNetworkTopologyKeyInScheduler("*", mockHost.ID)).SetVal(1)
-// mockRDBClient.ExpectDel(pkgredis.MakeProbesKeyInScheduler(mockHost.ID, "*")).SetVal(1)
-// mockRDBClient.ExpectDel(pkgredis.MakeProbesKeyInScheduler("*", mockHost.ID)).SetVal(1)
-// mockRDBClient.ExpectDel(pkgredis.MakeProbedAtKeyInScheduler(mockHost.ID)).SetVal(1)
-// mockRDBClient.ExpectDel(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(1)
-// },
-// expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
-// assert := assert.New(t)
-// assert.NoError(err)
+func TestNewNetworkTopology_DeleteHost(t *testing.T) {
+	tests := []struct {
+		name       string
+		deleteKeys []string
+		mock       func(mockRDBClient redismock.ClientMock, keys []string)
+		expect     func(t *testing.T, networkTopology NetworkTopology, err error)
+	}{
+		{
+			name: "delete host",
+			deleteKeys: []string{pkgredis.MakeProbedAtKeyInScheduler(mockHost.ID),
+				pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID),
+				pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID),
+				pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)},
+			mock: func(mockRDBClient redismock.ClientMock, keys []string) {
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, "*")).SetVal([]string{})
+				mockRDBClient.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler("*", mockHost.ID)).SetVal([]string{keys[2]})
+				mockRDBClient.ExpectKeys(pkgredis.MakeProbesKeyInScheduler(mockHost.ID, "*")).SetVal([]string{})
+				mockRDBClient.ExpectKeys(pkgredis.MakeProbesKeyInScheduler("*", mockHost.ID)).SetVal([]string{keys[3]})
+				mockRDBClient.ExpectDel(keys...).SetVal(4)
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.NoError(networkTopology.DeleteHost(mockHost.ID))
+			},
+		},
+		{
+			name:       "get source network topology keys error",
+			deleteKeys: []string{},
+			mock: func(mockRDBClient redismock.ClientMock, keys []string) {
+				mockRDBClient.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, "*")).SetErr(
+					errors.New("get source network topology keys error"))
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Error(networkTopology.DeleteHost(mockHost.ID))
+			},
+		},
+		{
+			name:       "get destination network topology keys error",
+			deleteKeys: []string{},
+			mock: func(mockRDBClient redismock.ClientMock, keys []string) {
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, "*")).SetVal([]string{})
+				mockRDBClient.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler("*", mockHost.ID)).SetErr(
+					errors.New("get destination network topology keys error"))
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Error(networkTopology.DeleteHost(mockHost.ID))
+			},
+		},
+		{
+			name:       "get source probes keys error",
+			deleteKeys: []string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)},
+			mock: func(mockRDBClient redismock.ClientMock, keys []string) {
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, "*")).SetVal([]string{})
+				mockRDBClient.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler("*", mockHost.ID)).SetVal([]string{keys[0]})
+				mockRDBClient.ExpectKeys(pkgredis.MakeProbesKeyInScheduler(mockHost.ID, "*")).SetErr(
+					errors.New("get source probes keys error"))
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Error(networkTopology.DeleteHost(mockHost.ID))
+			},
+		},
+		{
+			name:       "get destination probes keys error",
+			deleteKeys: []string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)},
+			mock: func(mockRDBClient redismock.ClientMock, keys []string) {
+				mockRDBClient.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, "*")).SetVal([]string{})
+				mockRDBClient.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler("*", mockHost.ID)).SetVal([]string{keys[0]})
+				mockRDBClient.ExpectKeys(pkgredis.MakeProbesKeyInScheduler(mockHost.ID, "*")).SetVal([]string{})
+				mockRDBClient.ExpectKeys(pkgredis.MakeProbesKeyInScheduler("*", mockHost.ID)).SetErr(
+					errors.New("get destination probes keys error"))
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Error(networkTopology.DeleteHost(mockHost.ID))
+			},
+		},
+		{
+			name: "delete network topology and probes error",
+			deleteKeys: []string{pkgredis.MakeProbedAtKeyInScheduler(mockHost.ID),
+				pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID),
+				pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID),
+				pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)},
+			mock: func(mockRDBClient redismock.ClientMock, keys []string) {
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, "*")).SetVal([]string{})
+				mockRDBClient.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler("*", mockHost.ID)).SetVal([]string{keys[2]})
+				mockRDBClient.ExpectKeys(pkgredis.MakeProbesKeyInScheduler(mockHost.ID, "*")).SetVal([]string{})
+				mockRDBClient.ExpectKeys(pkgredis.MakeProbesKeyInScheduler("*", mockHost.ID)).SetVal([]string{keys[3]})
+				mockRDBClient.ExpectDel(keys...).SetErr(errors.New("delete network topology and probes error"))
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Error(networkTopology.DeleteHost(mockHost.ID))
+			},
+		},
+	}
 
-// assert.NoError(networkTopology.DeleteHost(mockHost.ID))
-// },
-// },
-// {
-// name: "delete network topology error when delete host",
-// mock: func(mockRDBClient redismock.ClientMock) {
-// mockRDBClient.MatchExpectationsInOrder(false)
-// mockRDBClient.ExpectDel(pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, "*")).SetErr(errors.New("delete network topology error"))
-// mockRDBClient.ExpectDel(pkgredis.MakeNetworkTopologyKeyInScheduler("*", mockHost.ID)).SetVal(1)
-// mockRDBClient.ExpectDel(pkgredis.MakeProbesKeyInScheduler(mockHost.ID, "*")).SetVal(1)
-// mockRDBClient.ExpectDel(pkgredis.MakeProbesKeyInScheduler("*", mockHost.ID)).SetVal(1)
-// mockRDBClient.ExpectDel(pkgredis.MakeProbedAtKeyInScheduler(mockHost.ID)).SetVal(1)
-// mockRDBClient.ExpectDel(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(1)
-// },
-// expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
-// assert := assert.New(t)
-// assert.NoError(err)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
 
-// assert.Error(networkTopology.DeleteHost(mockHost.ID))
-// },
-// },
-// {
-// name: "delete probes error when delete host",
-// mock: func(mockRDBClient redismock.ClientMock) {
-// mockRDBClient.MatchExpectationsInOrder(false)
-// mockRDBClient.ExpectDel(pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, "*")).SetVal(1)
-// mockRDBClient.ExpectDel(pkgredis.MakeNetworkTopologyKeyInScheduler("*", mockHost.ID)).SetVal(1)
-// mockRDBClient.ExpectDel(pkgredis.MakeProbesKeyInScheduler(mockHost.ID, "*")).SetErr(errors.New("delete probes error"))
-// mockRDBClient.ExpectDel(pkgredis.MakeProbesKeyInScheduler("*", mockHost.ID)).SetVal(1)
-// mockRDBClient.ExpectDel(pkgredis.MakeProbedAtKeyInScheduler(mockHost.ID)).SetVal(1)
-// mockRDBClient.ExpectDel(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(1)
-// },
-// expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
-// assert := assert.New(t)
-// assert.NoError(err)
+			rdb, mockRDBClient := redismock.NewClientMock()
+			res := resource.NewMockResource(ctl)
+			storage := storagemocks.NewMockStorage(ctl)
+			tc.mock(mockRDBClient, tc.deleteKeys)
 
-// assert.Error(networkTopology.DeleteHost(mockHost.ID))
-// },
-// },
-// {
-// name: "delete the time of the last probe error when delete host",
-// mock: func(mockRDBClient redismock.ClientMock) {
-// mockRDBClient.MatchExpectationsInOrder(false)
-// mockRDBClient.ExpectDel(pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, "*")).SetVal(1)
-// mockRDBClient.ExpectDel(pkgredis.MakeNetworkTopologyKeyInScheduler("*", mockHost.ID)).SetVal(1)
-// mockRDBClient.ExpectDel(pkgredis.MakeProbesKeyInScheduler(mockHost.ID, "*")).SetVal(1)
-// mockRDBClient.ExpectDel(pkgredis.MakeProbesKeyInScheduler("*", mockHost.ID)).SetVal(1)
-// mockRDBClient.ExpectDel(pkgredis.MakeProbedAtKeyInScheduler(mockHost.ID)).SetErr(errors.New("delete the time of the last probe error"))
-// mockRDBClient.ExpectDel(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(1)
-// },
-// expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
-// assert := assert.New(t)
-// assert.NoError(err)
-
-// assert.Error(networkTopology.DeleteHost(mockHost.ID))
-// },
-// },
-// {
-// name: "delete probed count error when delete host",
-// mock: func(mockRDBClient redismock.ClientMock) {
-// mockRDBClient.MatchExpectationsInOrder(false)
-// mockRDBClient.ExpectDel(pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, "*")).SetVal(1)
-// mockRDBClient.ExpectDel(pkgredis.MakeNetworkTopologyKeyInScheduler("*", mockHost.ID)).SetVal(1)
-// mockRDBClient.ExpectDel(pkgredis.MakeProbesKeyInScheduler(mockHost.ID, "*")).SetVal(1)
-// mockRDBClient.ExpectDel(pkgredis.MakeProbesKeyInScheduler("*", mockHost.ID)).SetVal(1)
-// mockRDBClient.ExpectDel(pkgredis.MakeProbedAtKeyInScheduler(mockHost.ID)).SetVal(1)
-// mockRDBClient.ExpectDel(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetErr(errors.New("delete probed count error"))
-// },
-// expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
-// assert := assert.New(t)
-// assert.NoError(err)
-
-// assert.Error(networkTopology.DeleteHost(mockHost.ID))
-// },
-// },
-// }
-
-// for _, tc := range tests {
-// t.Run(tc.name, func(t *testing.T) {
-// ctl := gomock.NewController(t)
-// defer ctl.Finish()
-
-// rdb, mockRDBClient := redismock.NewClientMock()
-// res := resource.NewMockResource(ctl)
-// storage := storagemocks.NewMockStorage(ctl)
-// tc.mock(mockRDBClient)
-
-// networkTopology, err := NewNetworkTopology(mockNetworkTopologyConfig, rdb, res, storage)
-// tc.expect(t, networkTopology, err)
-// mockRDBClient.ClearExpect()
-// })
-// }
-// }
+			networkTopology, err := NewNetworkTopology(mockNetworkTopologyConfig, rdb, res, storage)
+			tc.expect(t, networkTopology, err)
+			mockRDBClient.ClearExpect()
+		})
+	}
+}
 
 func TestNewNetworkTopology_ProbedCount(t *testing.T) {
 	tests := []struct {
