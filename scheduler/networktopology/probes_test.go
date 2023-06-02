@@ -420,17 +420,6 @@ func TestProbes_Enqueue(t *testing.T) {
 			name:   "get the length of the queue error",
 			probes: []*Probe{},
 			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
-				var rawProbes []string
-				for _, p := range ps {
-					data, err := json.Marshal(p)
-					if err != nil {
-						t.Fatal(err)
-					}
-
-					rawProbes = append(rawProbes, string(data))
-				}
-
-				mockRDBClient.MatchExpectationsInOrder(true)
 				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetErr(errors.New("get the length of the queue error"))
 			},
 			expect: func(t *testing.T, ps Probes) {
