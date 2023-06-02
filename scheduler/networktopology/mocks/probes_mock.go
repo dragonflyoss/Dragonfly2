@@ -65,21 +65,6 @@ func (mr *MockProbesMockRecorder) CreatedAt() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatedAt", reflect.TypeOf((*MockProbes)(nil).CreatedAt))
 }
 
-// Dequeue mocks base method.
-func (m *MockProbes) Dequeue() (*networktopology.Probe, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Dequeue")
-	ret0, _ := ret[0].(*networktopology.Probe)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Dequeue indicates an expected call of Dequeue.
-func (mr *MockProbesMockRecorder) Dequeue() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Dequeue", reflect.TypeOf((*MockProbes)(nil).Dequeue))
-}
-
 // Enqueue mocks base method.
 func (m *MockProbes) Enqueue(arg0 *networktopology.Probe) error {
 	m.ctrl.T.Helper()
