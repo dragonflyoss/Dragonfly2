@@ -170,7 +170,7 @@ func (nt *networkTopology) ProbedAt(hostID string) (time.Time, error) {
 	return nt.rdb.Get(ctx, pkgredis.MakeProbedAtKeyInScheduler(hostID)).Time()
 }
 
-// Probes creates a probes interface.
+// NewProbes creates a probes interface.
 func (nt *networkTopology) Probes(srcHostID, destHostID string) Probes {
 	return NewProbes(nt.config.Probe, nt.rdb, srcHostID, destHostID)
 }

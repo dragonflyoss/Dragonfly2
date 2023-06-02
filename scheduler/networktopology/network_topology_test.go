@@ -135,7 +135,6 @@ func TestNewNetworkTopology_Store(t *testing.T) {
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-
 				assert.NoError(networkTopology.Store(mockSeedHost.ID, mockHost.ID))
 			},
 		},
@@ -150,7 +149,6 @@ func TestNewNetworkTopology_Store(t *testing.T) {
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-
 				assert.NoError(networkTopology.Store(mockSeedHost.ID, mockHost.ID))
 			},
 		},
@@ -165,8 +163,7 @@ func TestNewNetworkTopology_Store(t *testing.T) {
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-
-				assert.Error(networkTopology.Store(mockSeedHost.ID, mockHost.ID))
+				assert.EqualError(networkTopology.Store(mockSeedHost.ID, mockHost.ID), "")
 			},
 		},
 		{
@@ -180,8 +177,7 @@ func TestNewNetworkTopology_Store(t *testing.T) {
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-
-				assert.Error(networkTopology.Store(mockSeedHost.ID, mockHost.ID))
+				assert.EqualError(networkTopology.Store(mockSeedHost.ID, mockHost.ID), "set probed count error")
 			},
 		},
 	}
@@ -240,7 +236,7 @@ func TestNewNetworkTopology_DeleteHost(t *testing.T) {
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-				assert.Error(networkTopology.DeleteHost(mockHost.ID))
+				assert.EqualError(networkTopology.DeleteHost(mockHost.ID), "get source network topology keys error")
 			},
 		},
 		{
@@ -255,7 +251,7 @@ func TestNewNetworkTopology_DeleteHost(t *testing.T) {
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-				assert.Error(networkTopology.DeleteHost(mockHost.ID))
+				assert.EqualError(networkTopology.DeleteHost(mockHost.ID), "get destination network topology keys error")
 			},
 		},
 		{
@@ -271,7 +267,7 @@ func TestNewNetworkTopology_DeleteHost(t *testing.T) {
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-				assert.Error(networkTopology.DeleteHost(mockHost.ID))
+				assert.EqualError(networkTopology.DeleteHost(mockHost.ID), "get source probes keys error")
 			},
 		},
 		{
@@ -287,7 +283,7 @@ func TestNewNetworkTopology_DeleteHost(t *testing.T) {
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-				assert.Error(networkTopology.DeleteHost(mockHost.ID))
+				assert.EqualError(networkTopology.DeleteHost(mockHost.ID), "get destination probes keys error")
 			},
 		},
 		{
@@ -307,7 +303,7 @@ func TestNewNetworkTopology_DeleteHost(t *testing.T) {
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-				assert.Error(networkTopology.DeleteHost(mockHost.ID))
+				assert.EqualError(networkTopology.DeleteHost(mockHost.ID), "delete network topology and probes error")
 			},
 		},
 	}
@@ -359,7 +355,7 @@ func TestNewNetworkTopology_ProbedCount(t *testing.T) {
 				assert.NoError(err)
 
 				_, err = networkTopology.ProbedCount(mockHost.ID)
-				assert.Error(err)
+				assert.EqualError(err, "get probed count error")
 			},
 		},
 	}
@@ -411,7 +407,7 @@ func TestNewNetworkTopology_ProbedAt(t *testing.T) {
 				assert.NoError(err)
 
 				_, err = networkTopology.ProbedAt(mockHost.ID)
-				assert.Error(err)
+				assert.EqualError(err, "get the time when the host was last probed error")
 			},
 		},
 	}

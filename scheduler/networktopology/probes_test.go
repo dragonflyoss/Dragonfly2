@@ -149,16 +149,6 @@ var (
 		CreatedAt: time.Now(),
 	}
 
-	mockMarshalErrorProbe = &Probe{
-		Host: &resource.Host{
-			CPU: resource.CPU{
-				Percent: math.NaN(),
-			},
-		},
-		RTT:       30 * time.Millisecond,
-		CreatedAt: time.Now(),
-	}
-
 	mockNetworkTopologyConfig = config.NetworkTopologyConfig{
 		Enable:          true,
 		CollectInterval: 2 * time.Hour,
@@ -298,7 +288,7 @@ func TestProbes_Peek(t *testing.T) {
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
 				_, err := ps.Peek()
-				assert.Error(err)
+				assert.EqualError(err, "no probe")
 			},
 		},
 		{
@@ -310,7 +300,7 @@ func TestProbes_Peek(t *testing.T) {
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
 				_, err := ps.Peek()
-				assert.Error(err)
+				assert.EqualError(err, "invalid character 'o' in literal false (expecting 'a')")
 			},
 		},
 	}
@@ -434,7 +424,7 @@ func TestProbes_Enqueue(t *testing.T) {
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
-				assert.Error(ps.Enqueue(mockProbe))
+				assert.EqualError(ps.Enqueue(mockProbe), "get the length of the queue error")
 			},
 		},
 		{
@@ -446,7 +436,7 @@ func TestProbes_Enqueue(t *testing.T) {
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
-				assert.Error(ps.Enqueue(mockProbe))
+				assert.EqualError(ps.Enqueue(mockProbe), "remove the oldest probe error when the queue is full")
 			},
 		},
 		{
@@ -457,7 +447,15 @@ func TestProbes_Enqueue(t *testing.T) {
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
-				assert.Error(ps.Enqueue(mockMarshalErrorProbe))
+				assert.EqualError(ps.Enqueue(&Probe{
+					Host: &resource.Host{
+						CPU: resource.CPU{
+							Percent: math.NaN(),
+						},
+					},
+					RTT:       30 * time.Millisecond,
+					CreatedAt: time.Now(),
+				}), "json: unsupported value: NaN")
 			},
 		},
 		{
@@ -475,7 +473,7 @@ func TestProbes_Enqueue(t *testing.T) {
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
-				assert.Error(ps.Enqueue(mockProbe))
+				assert.EqualError(ps.Enqueue(mockProbe), "push probe in queue error")
 			},
 		},
 		{
@@ -502,7 +500,7 @@ func TestProbes_Enqueue(t *testing.T) {
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
-				assert.Error(ps.Enqueue(mockProbe))
+				assert.EqualError(ps.Enqueue(mockProbe), "get probes error")
 			},
 		},
 		{
@@ -528,7 +526,7 @@ func TestProbes_Enqueue(t *testing.T) {
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
-				assert.Error(ps.Enqueue(mockProbe))
+				assert.EqualError(ps.Enqueue(mockProbe), "invalid character 'o' in literal false (expecting 'a')")
 			},
 		},
 		{
@@ -547,7 +545,7 @@ func TestProbes_Enqueue(t *testing.T) {
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
-				assert.Error(ps.Enqueue(mockProbe))
+				assert.EqualError(ps.Enqueue(mockProbe), "update the moving average round-trip time error")
 			},
 		},
 		{
@@ -568,7 +566,7 @@ func TestProbes_Enqueue(t *testing.T) {
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
-				assert.Error(ps.Enqueue(mockProbe))
+				assert.EqualError(ps.Enqueue(mockProbe), "update the updated time error")
 			},
 		},
 		{
@@ -591,7 +589,7 @@ func TestProbes_Enqueue(t *testing.T) {
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
-				assert.Error(ps.Enqueue(mockProbe))
+				assert.EqualError(ps.Enqueue(mockProbe), "update the time of the last probe error")
 			},
 		},
 		{
@@ -614,7 +612,7 @@ func TestProbes_Enqueue(t *testing.T) {
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
-				assert.Error(ps.Enqueue(mockProbe))
+				assert.EqualError(ps.Enqueue(mockProbe), "update the number of times the host has been probed error")
 			},
 		},
 	}
@@ -719,7 +717,7 @@ func TestProbes_Len(t *testing.T) {
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
 				_, err := ps.Len()
-				assert.Error(err)
+				assert.EqualError(err, "get queue length error")
 			},
 		},
 	}
@@ -764,7 +762,7 @@ func TestProbes_CreatedAt(t *testing.T) {
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
 				_, err := ps.CreatedAt()
-				assert.Error(err)
+				assert.EqualError(err, "get creation time of probes error")
 			},
 		},
 	}
@@ -809,7 +807,7 @@ func TestProbes_UpdatedAt(t *testing.T) {
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
 				_, err := ps.UpdatedAt()
-				assert.Error(err)
+				assert.EqualError(err, "get update time of probes error")
 			},
 		},
 	}
@@ -854,7 +852,7 @@ func TestProbes_AverageRTT(t *testing.T) {
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
 				_, err := ps.AverageRTT()
-				assert.Error(err)
+				assert.EqualError(err, "get averageRTT of probes error")
 			},
 		},
 	}
@@ -972,7 +970,7 @@ func TestProbes_dequeue(t *testing.T) {
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
 				_, err := ps.(*probes).dequeue()
-				assert.Error(err)
+				assert.EqualError(err, "redis: nil")
 			},
 		},
 		{
@@ -984,7 +982,7 @@ func TestProbes_dequeue(t *testing.T) {
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
 				_, err := ps.(*probes).dequeue()
-				assert.Error(err)
+				assert.EqualError(err, "invalid character 'o' in literal false (expecting 'a')")
 			},
 		},
 	}
