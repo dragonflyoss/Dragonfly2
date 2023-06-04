@@ -19,7 +19,6 @@
 package storage
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -92,16 +91,16 @@ func (s *storage) WriteDownload(downloads []byte, modelKey string) error {
 	if err != nil {
 		return err
 	}
+	defer file.Close()
 
 	// Write data to download csv file.
-	if _, err := io.Copy(file, bytes.NewReader(downloads)); err != nil {
+	if _, err := file.Write(downloads); err != nil {
 		if err := os.Remove(s.downloadFilename(modelKey)); err != nil {
 			return err
 		}
 
 		return err
 	}
-	defer file.Close()
 
 	// Add model key.
 	s.downloadModelKeys.Add(modelKey)
@@ -114,15 +113,15 @@ func (s *storage) WriteNetworkTopology(networkTopologies []byte, modelKey string
 	if err != nil {
 		return err
 	}
+	defer file.Close()
 
 	// Write data to csv file.
-	if _, err := io.Copy(file, bytes.NewReader(networkTopologies)); err != nil {
+	if _, err := file.Write(networkTopologies); err != nil {
 		if err := os.Remove(s.networkTopologyFilename(modelKey)); err != nil {
 			return err
 		}
 		return err
 	}
-	defer file.Close()
 
 	// Add model key.
 	s.networkTopologyModelKeys.Add(modelKey)
