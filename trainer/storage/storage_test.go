@@ -701,24 +701,33 @@ func TestStorage_Clear(t *testing.T) {
 			},
 		},
 		{
-			name:    "open file failed",
+			name:    "remove download file failed",
 			baseDir: os.TempDir(),
 			mock: func(t *testing.T, s Storage, baseDir, modelKey string, download, networkTopology []byte) {
 				if err := s.WriteDownload(download, modelKey); err != nil {
 					t.Fatal(err)
 				}
-
-				if err := s.WriteNetworkTopology(networkTopology, modelKey); err != nil {
-					t.Fatal(err)
-				}
-				s.(*storage).baseDir = "bar"
 			},
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string) {
 				assert := assert.New(t)
+				s.(*storage).baseDir = "bar"
 				assert.Error(s.Clear())
-
 				s.(*storage).baseDir = baseDir
-				assert.NoError(s.Clear())
+			},
+		},
+		{
+			name:    "remove network topology file failed",
+			baseDir: os.TempDir(),
+			mock: func(t *testing.T, s Storage, baseDir, modelKey string, download, networkTopology []byte) {
+				if err := s.WriteNetworkTopology(networkTopology, modelKey); err != nil {
+					t.Fatal(err)
+				}
+			},
+			expect: func(t *testing.T, s Storage, baseDir, modelKey string) {
+				assert := assert.New(t)
+				s.(*storage).baseDir = "bar"
+				assert.Error(s.Clear())
+				s.(*storage).baseDir = baseDir
 			},
 		},
 	}
