@@ -34,6 +34,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
+	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
 var (
@@ -161,6 +162,155 @@ var (
 
 	mockProbesCreatedAt = time.Now()
 	mockProbedCount     = 10
+
+	mockDestHost = storage.DestHost{
+		Host: storage.Host{
+			ID:                    mockHost.ID,
+			Type:                  mockHost.Type.Name(),
+			Hostname:              mockHost.Hostname,
+			IP:                    mockHost.IP,
+			Port:                  mockHost.Port,
+			DownloadPort:          mockHost.DownloadPort,
+			OS:                    mockHost.OS,
+			Platform:              mockHost.Platform,
+			PlatformFamily:        mockHost.PlatformFamily,
+			PlatformVersion:       mockHost.PlatformVersion,
+			KernelVersion:         mockHost.KernelVersion,
+			ConcurrentUploadLimit: int32(300),
+			ConcurrentUploadCount: int32(0),
+			UploadCount:           int64(0),
+			UploadFailedCount:     int64(0),
+			CPU: resource.CPU{
+				LogicalCount:   mockHost.CPU.LogicalCount,
+				PhysicalCount:  mockHost.CPU.PhysicalCount,
+				Percent:        mockHost.CPU.Percent,
+				ProcessPercent: mockHost.CPU.ProcessPercent,
+				Times: resource.CPUTimes{
+					User:      mockHost.CPU.Times.User,
+					System:    mockHost.CPU.Times.System,
+					Idle:      mockHost.CPU.Times.Idle,
+					Nice:      mockHost.CPU.Times.Nice,
+					Iowait:    mockHost.CPU.Times.Iowait,
+					Irq:       mockHost.CPU.Times.Irq,
+					Softirq:   mockHost.CPU.Times.Softirq,
+					Steal:     mockHost.CPU.Times.Steal,
+					Guest:     mockHost.CPU.Times.Guest,
+					GuestNice: mockHost.CPU.Times.GuestNice,
+				},
+			},
+			Memory: resource.Memory{
+				Total:              mockHost.Memory.Total,
+				Available:          mockHost.Memory.Available,
+				Used:               mockHost.Memory.Used,
+				UsedPercent:        mockHost.Memory.UsedPercent,
+				ProcessUsedPercent: mockHost.Memory.ProcessUsedPercent,
+				Free:               mockHost.Memory.Free,
+			},
+			Network: resource.Network{
+				TCPConnectionCount:       mockHost.Network.TCPConnectionCount,
+				UploadTCPConnectionCount: mockHost.Network.UploadTCPConnectionCount,
+				Location:                 mockHost.Network.Location,
+				IDC:                      mockHost.Network.IDC,
+			},
+			Disk: resource.Disk{
+				Total:             mockHost.Disk.Total,
+				Free:              mockHost.Disk.Free,
+				Used:              mockHost.Disk.Used,
+				UsedPercent:       mockHost.Disk.UsedPercent,
+				InodesTotal:       mockHost.Disk.InodesTotal,
+				InodesUsed:        mockHost.Disk.InodesUsed,
+				InodesFree:        mockHost.Disk.InodesFree,
+				InodesUsedPercent: mockHost.Disk.InodesUsedPercent,
+			},
+			Build: resource.Build{
+				GitVersion: mockHost.Build.GitVersion,
+				GitCommit:  mockHost.Build.GitCommit,
+				GoVersion:  mockHost.Build.GoVersion,
+				Platform:   mockHost.Build.Platform,
+			},
+			CreatedAt: int64(mockHost.CreatedAt.Load().Nanosecond()),
+			UpdatedAt: int64(mockHost.UpdatedAt.Load().Nanosecond()),
+		},
+		Probes: storage.Probes{
+			AverageRTT: mockProbe.RTT.Nanoseconds(),
+			CreatedAt:  mockProbesCreatedAt.UnixNano(),
+			UpdatedAt:  mockProbe.CreatedAt.UnixNano(),
+		},
+	}
+
+	mockNetworkTopologyID = time.Now().String()
+
+	mockNetworkTopology = storage.NetworkTopology{
+		ID: mockNetworkTopologyID,
+		Host: storage.Host{
+			ID:                    mockSeedHost.ID,
+			Type:                  mockSeedHost.Type.Name(),
+			Hostname:              mockSeedHost.Hostname,
+			IP:                    mockSeedHost.IP,
+			Port:                  mockSeedHost.Port,
+			DownloadPort:          mockSeedHost.DownloadPort,
+			OS:                    mockSeedHost.OS,
+			Platform:              mockSeedHost.Platform,
+			PlatformFamily:        mockSeedHost.PlatformFamily,
+			PlatformVersion:       mockSeedHost.PlatformVersion,
+			KernelVersion:         mockSeedHost.KernelVersion,
+			ConcurrentUploadLimit: int32(300),
+			ConcurrentUploadCount: int32(0),
+			UploadCount:           int64(0),
+			UploadFailedCount:     int64(0),
+			CPU: resource.CPU{
+				LogicalCount:   mockSeedHost.CPU.LogicalCount,
+				PhysicalCount:  mockSeedHost.CPU.PhysicalCount,
+				Percent:        mockSeedHost.CPU.Percent,
+				ProcessPercent: mockSeedHost.CPU.ProcessPercent,
+				Times: resource.CPUTimes{
+					User:      mockSeedHost.CPU.Times.User,
+					System:    mockSeedHost.CPU.Times.System,
+					Idle:      mockSeedHost.CPU.Times.Idle,
+					Nice:      mockSeedHost.CPU.Times.Nice,
+					Iowait:    mockSeedHost.CPU.Times.Iowait,
+					Irq:       mockSeedHost.CPU.Times.Irq,
+					Softirq:   mockSeedHost.CPU.Times.Softirq,
+					Steal:     mockSeedHost.CPU.Times.Steal,
+					Guest:     mockSeedHost.CPU.Times.Guest,
+					GuestNice: mockSeedHost.CPU.Times.GuestNice,
+				},
+			},
+			Memory: resource.Memory{
+				Total:              mockSeedHost.Memory.Total,
+				Available:          mockSeedHost.Memory.Available,
+				Used:               mockSeedHost.Memory.Used,
+				UsedPercent:        mockSeedHost.Memory.UsedPercent,
+				ProcessUsedPercent: mockSeedHost.Memory.ProcessUsedPercent,
+				Free:               mockSeedHost.Memory.Free,
+			},
+			Network: resource.Network{
+				TCPConnectionCount:       mockSeedHost.Network.TCPConnectionCount,
+				UploadTCPConnectionCount: mockSeedHost.Network.UploadTCPConnectionCount,
+				Location:                 mockSeedHost.Network.Location,
+				IDC:                      mockSeedHost.Network.IDC,
+			},
+			Disk: resource.Disk{
+				Total:             mockSeedHost.Disk.Total,
+				Free:              mockSeedHost.Disk.Free,
+				Used:              mockSeedHost.Disk.Used,
+				UsedPercent:       mockSeedHost.Disk.UsedPercent,
+				InodesTotal:       mockSeedHost.Disk.InodesTotal,
+				InodesUsed:        mockSeedHost.Disk.InodesUsed,
+				InodesFree:        mockSeedHost.Disk.InodesFree,
+				InodesUsedPercent: mockSeedHost.Disk.InodesUsedPercent,
+			},
+			Build: resource.Build{
+				GitVersion: mockSeedHost.Build.GitVersion,
+				GitCommit:  mockSeedHost.Build.GitCommit,
+				GoVersion:  mockSeedHost.Build.GoVersion,
+				Platform:   mockSeedHost.Build.Platform,
+			},
+			CreatedAt: int64(mockSeedHost.CreatedAt.Load().Nanosecond()),
+			UpdatedAt: int64(mockSeedHost.UpdatedAt.Load().Nanosecond()),
+		},
+		DestHosts: []storage.DestHost{mockDestHost},
+	}
 )
 
 func Test_NewProbes(t *testing.T) {

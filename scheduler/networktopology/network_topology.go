@@ -20,6 +20,8 @@ package networktopology
 
 import (
 	"context"
+	"errors"
+	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -34,10 +36,22 @@ import (
 const (
 	// contextTimeout is the timeout of redis invoke.
 	contextTimeout = 2 * time.Minute
+
+	// srcHostIDIndex is the source host id index of the network topology key.
+	srcHostIDIndex = 2
+
+	// destHostIDIndex is the destination host id index of the network topology key.
+	destHostIDIndex = 3
 )
 
 // NetworkTopology is an interface for network topology.
 type NetworkTopology interface {
+	// Started network topology server.
+	Serve() error
+
+	// Stop network topology server.
+	Stop() error
+
 	// Has to check if there is a connection between source host and destination host.
 	Has(string, string) bool
 
@@ -70,6 +84,9 @@ type networkTopology struct {
 
 	// storage is storage interface.
 	storage storage.Storage
+
+	// done channel will be closed when network topology serve stop.
+	done chan struct{}
 }
 
 // New network topology interface.
@@ -79,7 +96,24 @@ func NewNetworkTopology(cfg config.NetworkTopologyConfig, rdb redis.UniversalCli
 		rdb:      rdb,
 		resource: resource,
 		storage:  storage,
+		done:     make(chan struct{}),
 	}, nil
+}
+
+// Started network topology server.
+func (nt *networkTopology) Serve() error {
+	logger.Info("store network topology records")
+	if err := nt.createNetworkTopologyRecords(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Stop network topology server.
+func (nt *networkTopology) Stop() error {
+	close(nt.done)
+	return nil
 }
 
 // Has to check if there is a connection between source host and destination host.
@@ -173,4 +207,228 @@ func (nt *networkTopology) ProbedAt(hostID string) (time.Time, error) {
 // Probes is the interface to store probes.
 func (nt *networkTopology) Probes(srcHostID, destHostID string) Probes {
 	return NewProbes(nt.config.Probe, nt.rdb, srcHostID, destHostID)
+}
+
+// createNetworkTopologyRecords stores network topology records.
+func (nt *networkTopology) createNetworkTopologyRecords() error {
+	tick := time.NewTicker(nt.config.CollectInterval)
+	for {
+		select {
+		case <-tick.C:
+			if err := nt.create(time.Now().String()); err != nil {
+				logger.Error(err)
+			}
+		case <-nt.done:
+			return nil
+		}
+	}
+}
+
+// create loads network topology from redis and inserts it into csv file.
+func (nt *networkTopology) create(networkTopologyID string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	srcKeys, err := nt.rdb.Keys(ctx, pkgredis.MakeKeyInScheduler(pkgredis.NetworkTopologyNamespace, "*")).Result()
+	if err != nil {
+		return err
+	}
+
+	for _, srcKey := range srcKeys {
+		srcWords := strings.Split(srcKey, ":")
+		tmpSrcHostID := srcWords[srcHostIDIndex]
+		destKeys, err := nt.rdb.Keys(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(tmpSrcHostID, "*")).Result()
+		if err != nil {
+			return err
+		}
+
+		destHosts := make([]storage.DestHost, 0)
+		for _, destKey := range destKeys {
+			destWords := strings.Split(destKey, ":")
+			tmpDestHostID := destWords[destHostIDIndex]
+
+			p := nt.Probes(tmpSrcHostID, tmpDestHostID)
+			averageRTT, err := p.AverageRTT()
+			if err != nil {
+				return err
+			}
+
+			createdAt, err := p.CreatedAt()
+			if err != nil {
+				return err
+			}
+
+			updatedAt, err := p.UpdatedAt()
+			if err != nil {
+				return err
+			}
+
+			probes := storage.Probes{
+				AverageRTT: averageRTT.Nanoseconds(),
+				CreatedAt:  createdAt.UnixNano(),
+				UpdatedAt:  updatedAt.UnixNano(),
+			}
+
+			dest, ok := nt.resource.HostManager().Load(tmpDestHostID)
+			if !ok {
+				return errors.New(tmpDestHostID + " does not exist")
+			}
+
+			destHost := storage.DestHost{
+				Host: storage.Host{
+					ID:                    dest.ID,
+					Type:                  dest.Type.Name(),
+					Hostname:              dest.Hostname,
+					IP:                    dest.IP,
+					Port:                  dest.Port,
+					DownloadPort:          dest.DownloadPort,
+					OS:                    dest.OS,
+					Platform:              dest.Platform,
+					PlatformFamily:        dest.PlatformFamily,
+					PlatformVersion:       dest.PlatformVersion,
+					KernelVersion:         dest.KernelVersion,
+					ConcurrentUploadLimit: dest.ConcurrentUploadLimit.Load(),
+					ConcurrentUploadCount: dest.ConcurrentUploadCount.Load(),
+					UploadCount:           dest.UploadCount.Load(),
+					UploadFailedCount:     dest.UploadFailedCount.Load(),
+					CPU: resource.CPU{
+						LogicalCount:   dest.CPU.LogicalCount,
+						PhysicalCount:  dest.CPU.PhysicalCount,
+						Percent:        dest.CPU.Percent,
+						ProcessPercent: dest.CPU.ProcessPercent,
+						Times: resource.CPUTimes{
+							User:      dest.CPU.Times.User,
+							System:    dest.CPU.Times.System,
+							Idle:      dest.CPU.Times.Idle,
+							Nice:      dest.CPU.Times.Nice,
+							Iowait:    dest.CPU.Times.Iowait,
+							Irq:       dest.CPU.Times.Irq,
+							Softirq:   dest.CPU.Times.Softirq,
+							Steal:     dest.CPU.Times.Steal,
+							Guest:     dest.CPU.Times.Guest,
+							GuestNice: dest.CPU.Times.GuestNice,
+						},
+					},
+					Memory: resource.Memory{
+						Total:              dest.Memory.Total,
+						Available:          dest.Memory.Available,
+						Used:               dest.Memory.Used,
+						UsedPercent:        dest.Memory.UsedPercent,
+						ProcessUsedPercent: dest.Memory.ProcessUsedPercent,
+						Free:               dest.Memory.Free,
+					},
+					Network: resource.Network{
+						TCPConnectionCount:       dest.Network.TCPConnectionCount,
+						UploadTCPConnectionCount: dest.Network.UploadTCPConnectionCount,
+						Location:                 dest.Network.Location,
+						IDC:                      dest.Network.IDC,
+					},
+					Disk: resource.Disk{
+						Total:             dest.Disk.Total,
+						Free:              dest.Disk.Free,
+						Used:              dest.Disk.Used,
+						UsedPercent:       dest.Disk.UsedPercent,
+						InodesTotal:       dest.Disk.InodesTotal,
+						InodesUsed:        dest.Disk.InodesUsed,
+						InodesFree:        dest.Disk.InodesFree,
+						InodesUsedPercent: dest.Disk.InodesUsedPercent,
+					},
+					Build: resource.Build{
+						GitVersion: dest.Build.GitVersion,
+						GitCommit:  dest.Build.GitCommit,
+						GoVersion:  dest.Build.GoVersion,
+						Platform:   dest.Build.Platform,
+					},
+					CreatedAt: int64(dest.CreatedAt.Load().Nanosecond()),
+					UpdatedAt: int64(dest.UpdatedAt.Load().Nanosecond()),
+				},
+				Probes: probes,
+			}
+
+			destHosts = append(destHosts, destHost)
+		}
+
+		src, ok := nt.resource.HostManager().Load(tmpSrcHostID)
+		if !ok {
+			return errors.New(tmpSrcHostID + " does not exist")
+		}
+
+		networkTopology := storage.NetworkTopology{
+			ID: networkTopologyID,
+			Host: storage.Host{
+				ID:                    src.ID,
+				Type:                  src.Type.Name(),
+				Hostname:              src.Hostname,
+				IP:                    src.IP,
+				Port:                  src.Port,
+				DownloadPort:          src.DownloadPort,
+				OS:                    src.OS,
+				Platform:              src.Platform,
+				PlatformFamily:        src.PlatformFamily,
+				PlatformVersion:       src.PlatformVersion,
+				KernelVersion:         src.KernelVersion,
+				ConcurrentUploadLimit: src.ConcurrentUploadLimit.Load(),
+				ConcurrentUploadCount: src.ConcurrentUploadCount.Load(),
+				UploadCount:           src.UploadCount.Load(),
+				UploadFailedCount:     src.UploadFailedCount.Load(),
+				CPU: resource.CPU{
+					LogicalCount:   src.CPU.LogicalCount,
+					PhysicalCount:  src.CPU.PhysicalCount,
+					Percent:        src.CPU.Percent,
+					ProcessPercent: src.CPU.ProcessPercent,
+					Times: resource.CPUTimes{
+						User:      src.CPU.Times.User,
+						System:    src.CPU.Times.System,
+						Idle:      src.CPU.Times.Idle,
+						Nice:      src.CPU.Times.Nice,
+						Iowait:    src.CPU.Times.Iowait,
+						Irq:       src.CPU.Times.Irq,
+						Softirq:   src.CPU.Times.Softirq,
+						Steal:     src.CPU.Times.Steal,
+						Guest:     src.CPU.Times.Guest,
+						GuestNice: src.CPU.Times.GuestNice,
+					},
+				},
+				Memory: resource.Memory{
+					Total:              src.Memory.Total,
+					Available:          src.Memory.Available,
+					Used:               src.Memory.Used,
+					UsedPercent:        src.Memory.UsedPercent,
+					ProcessUsedPercent: src.Memory.ProcessUsedPercent,
+					Free:               src.Memory.Free,
+				},
+				Network: resource.Network{
+					TCPConnectionCount:       src.Network.TCPConnectionCount,
+					UploadTCPConnectionCount: src.Network.UploadTCPConnectionCount,
+					Location:                 src.Network.Location,
+					IDC:                      src.Network.IDC,
+				},
+				Disk: resource.Disk{
+					Total:             src.Disk.Total,
+					Free:              src.Disk.Free,
+					Used:              src.Disk.Used,
+					UsedPercent:       src.Disk.UsedPercent,
+					InodesTotal:       src.Disk.InodesTotal,
+					InodesUsed:        src.Disk.InodesUsed,
+					InodesFree:        src.Disk.InodesFree,
+					InodesUsedPercent: src.Disk.InodesUsedPercent,
+				},
+				Build: resource.Build{
+					GitVersion: src.Build.GitVersion,
+					GitCommit:  src.Build.GitCommit,
+					GoVersion:  src.Build.GoVersion,
+					Platform:   src.Build.Platform,
+				},
+				CreatedAt: int64(src.CreatedAt.Load().Nanosecond()),
+				UpdatedAt: int64(src.UpdatedAt.Load().Nanosecond()),
+			},
+			DestHosts: destHosts,
+		}
+
+		if err = nt.storage.CreateNetworkTopology(networkTopology); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
