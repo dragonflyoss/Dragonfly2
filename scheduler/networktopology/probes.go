@@ -47,15 +47,6 @@ type Probe struct {
 	CreatedAt time.Time `json:"createdAt"`
 }
 
-// NewProbe creates a new probe instance.
-func NewProbe(host *resource.Host, rtt time.Duration, createdAt time.Time) *Probe {
-	return &Probe{
-		Host:      host,
-		RTT:       rtt,
-		CreatedAt: createdAt,
-	}
-}
-
 // Probes is the interface to store probes.
 type Probes interface {
 	// Peek returns the oldest probe without removing it.
@@ -64,11 +55,11 @@ type Probes interface {
 	// Enqueue enqueues probe into the queue.
 	Enqueue(*Probe) error
 
-	// Dequeue removes and returns the oldest probe.
-	Dequeue() (*Probe, error)
+	// Len gets the length of probes.
+	Len() (int64, error)
 
-	// Length gets the length of probes.
-	Length() (int64, error)
+	// CreatedAt is the creation time of probes.
+	CreatedAt() (time.Time, error)
 
 	// UpdatedAt is the updated time to store probe.
 	UpdatedAt() (time.Time, error)
@@ -117,7 +108,7 @@ func (p *probes) Peek() (*Probe, error) {
 		return nil, err
 	}
 
-	return probe, err
+	return probe, nil
 }
 
 // Enqueue enqueues probe into the queue.
@@ -126,14 +117,14 @@ func (p *probes) Enqueue(probe *Probe) error {
 	defer cancel()
 
 	// Get the length of the queue.
-	length, err := p.Length()
+	length, err := p.Len()
 	if err != nil {
 		return err
 	}
 
 	// If the queue is full, remove the oldest probe.
 	if length >= int64(p.config.QueueLength) {
-		if _, err := p.Dequeue(); err != nil {
+		if _, err := p.dequeue(); err != nil {
 			return err
 		}
 	}
@@ -179,41 +170,39 @@ func (p *probes) Enqueue(probe *Probe) error {
 	}
 
 	// Update the moving average round-trip time and updated time.
-	if _, err := p.rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
-		pipe.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "averageRTT", averageRTT.Nanoseconds())
-		pipe.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "updatedAt", probe.CreatedAt.Format(time.RFC3339Nano))
-		return nil
-	}); err != nil {
+	if err := p.rdb.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "averageRTT", averageRTT.Nanoseconds()).Err(); err != nil {
+		return err
+	}
+
+	if err := p.rdb.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "updatedAt", probe.CreatedAt.Format(time.RFC3339Nano)).Err(); err != nil {
+		return err
+	}
+
+	if err := p.rdb.Set(ctx, pkgredis.MakeProbedAtKeyInScheduler(p.destHostID), probe.CreatedAt.Format(time.RFC3339Nano), 0).Err(); err != nil {
+		return err
+	}
+
+	if err := p.rdb.Incr(ctx, pkgredis.MakeProbedCountKeyInScheduler(p.destHostID)).Err(); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// Dequeue removes and returns the oldest probe.
-func (p *probes) Dequeue() (*Probe, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
-	defer cancel()
-
-	rawProbe, err := p.rdb.LPop(ctx, pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID)).Bytes()
-	if err != nil {
-		return nil, err
-	}
-
-	probe := &Probe{}
-	if err = json.Unmarshal(rawProbe, probe); err != nil {
-		return nil, err
-	}
-
-	return probe, nil
-}
-
 // Length gets the length of probes.
-func (p *probes) Length() (int64, error) {
+func (p *probes) Len() (int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
 	return p.rdb.LLen(ctx, pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID)).Result()
+}
+
+// CreatedAt is the creation time of probes.
+func (p *probes) CreatedAt() (time.Time, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	return p.rdb.HGet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "createdAt").Time()
 }
 
 // UpdatedAt is the updated time to store probe.
@@ -235,4 +224,22 @@ func (p *probes) AverageRTT() (time.Duration, error) {
 	}
 
 	return time.Duration(averageRTT), nil
+}
+
+// dequeue removes and returns the oldest probe.
+func (p *probes) dequeue() (*Probe, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	rawProbe, err := p.rdb.LPop(ctx, pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID)).Bytes()
+	if err != nil {
+		return nil, err
+	}
+
+	probe := &Probe{}
+	if err = json.Unmarshal(rawProbe, probe); err != nil {
+		return nil, err
+	}
+
+	return probe, nil
 }

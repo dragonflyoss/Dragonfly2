@@ -50,19 +50,19 @@ func (mr *MockProbesMockRecorder) AverageRTT() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AverageRTT", reflect.TypeOf((*MockProbes)(nil).AverageRTT))
 }
 
-// Dequeue mocks base method.
-func (m *MockProbes) Dequeue() (*networktopology.Probe, error) {
+// CreatedAt mocks base method.
+func (m *MockProbes) CreatedAt() (time.Time, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Dequeue")
-	ret0, _ := ret[0].(*networktopology.Probe)
+	ret := m.ctrl.Call(m, "CreatedAt")
+	ret0, _ := ret[0].(time.Time)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Dequeue indicates an expected call of Dequeue.
-func (mr *MockProbesMockRecorder) Dequeue() *gomock.Call {
+// CreatedAt indicates an expected call of CreatedAt.
+func (mr *MockProbesMockRecorder) CreatedAt() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Dequeue", reflect.TypeOf((*MockProbes)(nil).Dequeue))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatedAt", reflect.TypeOf((*MockProbes)(nil).CreatedAt))
 }
 
 // Enqueue mocks base method.
@@ -79,19 +79,19 @@ func (mr *MockProbesMockRecorder) Enqueue(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enqueue", reflect.TypeOf((*MockProbes)(nil).Enqueue), arg0)
 }
 
-// Length mocks base method.
-func (m *MockProbes) Length() (int64, error) {
+// Len mocks base method.
+func (m *MockProbes) Len() (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Length")
+	ret := m.ctrl.Call(m, "Len")
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Length indicates an expected call of Length.
-func (mr *MockProbesMockRecorder) Length() *gomock.Call {
+// Len indicates an expected call of Len.
+func (mr *MockProbesMockRecorder) Len() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Length", reflect.TypeOf((*MockProbes)(nil).Length))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Len", reflect.TypeOf((*MockProbes)(nil).Len))
 }
 
 // Peek mocks base method.

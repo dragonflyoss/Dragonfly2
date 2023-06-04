@@ -6,6 +6,7 @@ package mocks
 
 import (
 	reflect "reflect"
+	time "time"
 
 	networktopology "d7y.io/dragonfly/v2/scheduler/networktopology"
 	gomock "github.com/golang/mock/gomock"
@@ -48,33 +49,33 @@ func (mr *MockNetworkTopologyMockRecorder) DeleteHost(arg0 interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteHost", reflect.TypeOf((*MockNetworkTopology)(nil).DeleteHost), arg0)
 }
 
-// LoadDestHostIDs mocks base method.
-func (m *MockNetworkTopology) LoadDestHostIDs(arg0 string) ([]string, error) {
+// Has mocks base method.
+func (m *MockNetworkTopology) Has(arg0, arg1 string) bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadDestHostIDs", arg0)
-	ret0, _ := ret[0].([]string)
+	ret := m.ctrl.Call(m, "Has", arg0, arg1)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Has indicates an expected call of Has.
+func (mr *MockNetworkTopologyMockRecorder) Has(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Has", reflect.TypeOf((*MockNetworkTopology)(nil).Has), arg0, arg1)
+}
+
+// ProbedAt mocks base method.
+func (m *MockNetworkTopology) ProbedAt(arg0 string) (time.Time, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ProbedAt", arg0)
+	ret0, _ := ret[0].(time.Time)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// LoadDestHostIDs indicates an expected call of LoadDestHostIDs.
-func (mr *MockNetworkTopologyMockRecorder) LoadDestHostIDs(arg0 interface{}) *gomock.Call {
+// ProbedAt indicates an expected call of ProbedAt.
+func (mr *MockNetworkTopologyMockRecorder) ProbedAt(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadDestHostIDs", reflect.TypeOf((*MockNetworkTopology)(nil).LoadDestHostIDs), arg0)
-}
-
-// LoadProbes mocks base method.
-func (m *MockNetworkTopology) LoadProbes(arg0, arg1 string) networktopology.Probes {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadProbes", arg0, arg1)
-	ret0, _ := ret[0].(networktopology.Probes)
-	return ret0
-}
-
-// LoadProbes indicates an expected call of LoadProbes.
-func (mr *MockNetworkTopologyMockRecorder) LoadProbes(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadProbes", reflect.TypeOf((*MockNetworkTopology)(nil).LoadProbes), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProbedAt", reflect.TypeOf((*MockNetworkTopology)(nil).ProbedAt), arg0)
 }
 
 // ProbedCount mocks base method.
@@ -90,4 +91,32 @@ func (m *MockNetworkTopology) ProbedCount(arg0 string) (uint64, error) {
 func (mr *MockNetworkTopologyMockRecorder) ProbedCount(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProbedCount", reflect.TypeOf((*MockNetworkTopology)(nil).ProbedCount), arg0)
+}
+
+// Probes mocks base method.
+func (m *MockNetworkTopology) Probes(arg0, arg1 string) networktopology.Probes {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Probes", arg0, arg1)
+	ret0, _ := ret[0].(networktopology.Probes)
+	return ret0
+}
+
+// Probes indicates an expected call of Probes.
+func (mr *MockNetworkTopologyMockRecorder) Probes(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Probes", reflect.TypeOf((*MockNetworkTopology)(nil).Probes), arg0, arg1)
+}
+
+// Store mocks base method.
+func (m *MockNetworkTopology) Store(arg0, arg1 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Store", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Store indicates an expected call of Store.
+func (mr *MockNetworkTopologyMockRecorder) Store(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Store", reflect.TypeOf((*MockNetworkTopology)(nil).Store), arg0, arg1)
 }
