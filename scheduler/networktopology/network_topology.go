@@ -24,6 +24,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
@@ -37,17 +38,23 @@ const (
 
 // NetworkTopology is an interface for network topology.
 type NetworkTopology interface {
-	// LoadDestHostIDs loads destination host ids by source host id.
-	LoadDestHostIDs(string) ([]string, error)
+	// Has to check if there is a connection between source host and destination host.
+	Has(string, string) bool
 
-	// DeleteHost deletes host.
+	// Store stores source host and destination host.
+	Store(string, string) error
+
+	// DeleteHost deletes source host and all destination host connected to source host.
 	DeleteHost(string) error
+
+	// Probes loads probes interface by source host id and destination host id.
+	Probes(string, string) Probes
 
 	// ProbedCount is the number of times the host has been probed.
 	ProbedCount(string) (uint64, error)
 
-	// LoadProbes loads probes by source host id and destination host id.
-	LoadProbes(string, string) Probes
+	// ProbedAt is the time when the host was last probed.
+	ProbedAt(string) (time.Time, error)
 }
 
 // networkTopology is an implementation of network topology.
@@ -75,33 +82,72 @@ func NewNetworkTopology(cfg config.NetworkTopologyConfig, rdb redis.UniversalCli
 	}, nil
 }
 
-// LoadDestHostIDs loads destination host ids by source host id.
-func (nt *networkTopology) LoadDestHostIDs(hostID string) ([]string, error) {
+// Has to check if there is a connection between source host and destination host.
+func (nt *networkTopology) Has(srcHostID string, destHostID string) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	return nt.rdb.Keys(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(hostID, "*")).Result()
+	networkTopologyCount, err := nt.rdb.Exists(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID)).Result()
+	if err != nil {
+		logger.Errorf("failed to check whether network topology exists: %s", err.Error())
+		return false
+	}
+
+	return networkTopologyCount == 1
 }
 
-// DeleteHost deletes host.
+// Store stores source host and destination host.
+func (nt *networkTopology) Store(srcHostID string, destHostID string) error {
+	// If the network topology already exists, skip it.
+	if nt.Has(srcHostID, destHostID) {
+		return nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	if err := nt.rdb.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID), "createdAt", time.Now().Format(time.RFC3339Nano)).Err(); err != nil {
+		return err
+	}
+
+	if err := nt.rdb.Set(ctx, pkgredis.MakeProbedCountKeyInScheduler(destHostID), 0, 0).Err(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// DeleteHost deletes source host and all destination host connected to source host.
 func (nt *networkTopology) DeleteHost(hostID string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	if err := nt.rdb.Del(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(hostID, "*")).Err(); err != nil {
-		return err
-	}
-
-	if err := nt.rdb.Del(ctx, pkgredis.MakeProbesKeyInScheduler(hostID, "*")).Err(); err != nil {
-		return err
-	}
-
-	count, err := nt.rdb.Del(ctx, pkgredis.MakeProbesKeyInScheduler("*", hostID)).Result()
+	deleteKeys := []string{pkgredis.MakeProbedAtKeyInScheduler(hostID), pkgredis.MakeProbedCountKeyInScheduler(hostID)}
+	srcNetworkTopologyKeys, err := nt.rdb.Keys(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(hostID, "*")).Result()
 	if err != nil {
 		return err
 	}
+	deleteKeys = append(deleteKeys, srcNetworkTopologyKeys...)
 
-	if err = nt.rdb.DecrBy(ctx, pkgredis.MakeProbedCountKeyInScheduler(hostID), count).Err(); err != nil {
+	destNetworkTopologyKeys, err := nt.rdb.Keys(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler("*", hostID)).Result()
+	if err != nil {
+		return err
+	}
+	deleteKeys = append(deleteKeys, destNetworkTopologyKeys...)
+
+	srcProbesKeys, err := nt.rdb.Keys(ctx, pkgredis.MakeProbesKeyInScheduler(hostID, "*")).Result()
+	if err != nil {
+		return err
+	}
+	deleteKeys = append(deleteKeys, srcProbesKeys...)
+
+	destProbesKeys, err := nt.rdb.Keys(ctx, pkgredis.MakeProbesKeyInScheduler("*", hostID)).Result()
+	if err != nil {
+		return err
+	}
+	deleteKeys = append(deleteKeys, destProbesKeys...)
+
+	if err := nt.rdb.Del(ctx, deleteKeys...).Err(); err != nil {
 		return err
 	}
 
@@ -116,7 +162,15 @@ func (nt *networkTopology) ProbedCount(hostID string) (uint64, error) {
 	return nt.rdb.Get(ctx, pkgredis.MakeProbedCountKeyInScheduler(hostID)).Uint64()
 }
 
-// LoadProbes loads probes by source host id and destination host id.
-func (nt *networkTopology) LoadProbes(srcHostID, destHostID string) Probes {
+// ProbedAt is the time when the host was last probed.
+func (nt *networkTopology) ProbedAt(hostID string) (time.Time, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	return nt.rdb.Get(ctx, pkgredis.MakeProbedAtKeyInScheduler(hostID)).Time()
+}
+
+// Probes is the interface to store probes.
+func (nt *networkTopology) Probes(srcHostID, destHostID string) Probes {
 	return NewProbes(nt.config.Probe, nt.rdb, srcHostID, destHostID)
 }
