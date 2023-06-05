@@ -62,9 +62,70 @@ func Test_NewNetworkTopology(t *testing.T) {
 	}
 }
 
-// TODO(fcgxz2003): implement this unit test.
 func TestNetworkTopology_Serve(t *testing.T) {
+	tests := []struct {
+		name  string
+		sleep func()
+		mock  func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
+			mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, clientMock redismock.ClientMock)
+		expect func(t *testing.T, networkTopology NetworkTopology, err error)
+	}{
+		{
+			name: "start network topology server",
+			sleep: func() {
+				time.Sleep(15 * time.Millisecond)
+			},
+			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
+				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, clientMock redismock.ClientMock) {
+				clientMock.MatchExpectationsInOrder(true)
+				clientMock.ExpectKeys(pkgredis.MakeKeyInScheduler(pkgredis.NetworkTopologyNamespace, "*")).SetVal(
+					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)})
+				clientMock.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*")).SetVal(
+					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)})
+				clientMock.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT").SetVal(
+					strconv.FormatInt(mockProbe.RTT.Nanoseconds(), 10))
+				clientMock.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "createdAt").SetVal(
+					mockProbesCreatedAt.Format(time.RFC3339Nano))
+				clientMock.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt").SetVal(
+					mockProbe.CreatedAt.Format(time.RFC3339Nano))
+				gomock.InOrder(
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Eq(mockHost.ID)).Return(mockHost, true),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Eq(mockSeedHost.ID)).Return(mockSeedHost, true),
+					ms.CreateNetworkTopology(gomock.Any()).Return(nil).Times(1),
+				)
+			},
+			expect: func(t *testing.T, n NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				go func() {
+					assert.NoError(n.Serve())
+				}()
+			},
+		},
+	}
 
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+
+			rdb, clientMock := redismock.NewClientMock()
+			res := resource.NewMockResource(ctl)
+			hostManager := resource.NewMockHostManager(ctl)
+			storage := storagemocks.NewMockStorage(ctl)
+			tc.mock(res.EXPECT(), hostManager, hostManager.EXPECT(), storage.EXPECT(), clientMock)
+
+			mockNetworkTopologyConfig.CollectInterval = 10 * time.Millisecond
+			networkTopology, err := NewNetworkTopology(mockNetworkTopologyConfig, rdb, res, storage)
+			tc.expect(t, networkTopology, err)
+			tc.sleep()
+			if err := networkTopology.Stop(); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
 }
 
 func TestNewNetworkTopology_Has(t *testing.T) {
@@ -469,9 +530,89 @@ func TestNewNetworkTopology_Probes(t *testing.T) {
 	}
 }
 
-// TODO(fcgxz2003): implement this unit test.
-func TestNetworkTopology_createNetworkTopology(t *testing.T) {
+func TestNetworkTopology_createNetworkTopologyRecords(t *testing.T) {
+	tests := []struct {
+		name  string
+		sleep func()
+		mock  func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
+			mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, clientMock redismock.ClientMock)
+		expect func(t *testing.T, networkTopology NetworkTopology, err error)
+	}{
+		{
+			name: "create network topology",
+			sleep: func() {
+				time.Sleep(15 * time.Millisecond)
+			},
+			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
+				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, clientMock redismock.ClientMock) {
+				clientMock.MatchExpectationsInOrder(true)
+				clientMock.ExpectKeys(pkgredis.MakeKeyInScheduler(pkgredis.NetworkTopologyNamespace, "*")).SetVal(
+					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)})
+				clientMock.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*")).SetVal(
+					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)})
+				clientMock.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT").SetVal(
+					strconv.FormatInt(mockProbe.RTT.Nanoseconds(), 10))
+				clientMock.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "createdAt").SetVal(
+					mockProbesCreatedAt.Format(time.RFC3339Nano))
+				clientMock.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt").SetVal(
+					mockProbe.CreatedAt.Format(time.RFC3339Nano))
+				gomock.InOrder(
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Eq(mockHost.ID)).Return(mockHost, true),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Eq(mockSeedHost.ID)).Return(mockSeedHost, true),
+					ms.CreateNetworkTopology(gomock.Any()).Return(nil).Times(1),
+				)
+			},
+			expect: func(t *testing.T, n NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				go func() {
+					assert.NoError(n.(*networkTopology).createNetworkTopologyRecords())
+				}()
+			},
+		},
+		{
+			name: "get source keys error when create network topology",
+			sleep: func() {
+				time.Sleep(15 * time.Millisecond)
+			},
+			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
+				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, clientMock redismock.ClientMock) {
+				clientMock.MatchExpectationsInOrder(true)
+				clientMock.ExpectKeys(pkgredis.MakeKeyInScheduler(pkgredis.NetworkTopologyNamespace, "*")).SetErr(
+					errors.New("get source keys error"))
+			},
+			expect: func(t *testing.T, n NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				go func() {
+					assert.NoError(n.(*networkTopology).createNetworkTopologyRecords())
+				}()
+			},
+		},
+	}
 
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+
+			rdb, clientMock := redismock.NewClientMock()
+			res := resource.NewMockResource(ctl)
+			hostManager := resource.NewMockHostManager(ctl)
+			storage := storagemocks.NewMockStorage(ctl)
+			tc.mock(res.EXPECT(), hostManager, hostManager.EXPECT(), storage.EXPECT(), clientMock)
+
+			mockNetworkTopologyConfig.CollectInterval = 10 * time.Millisecond
+			networkTopology, err := NewNetworkTopology(mockNetworkTopologyConfig, rdb, res, storage)
+			tc.expect(t, networkTopology, err)
+			tc.sleep()
+			if err := networkTopology.Stop(); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
 }
 
 func TestNetworkTopology_create(t *testing.T) {
@@ -692,10 +833,10 @@ func TestNetworkTopology_create(t *testing.T) {
 			rdb, clientMock := redismock.NewClientMock()
 			res := resource.NewMockResource(ctl)
 			hostManager := resource.NewMockHostManager(ctl)
-			mockStorage := storagemocks.NewMockStorage(ctl)
-			tc.mock(res.EXPECT(), hostManager, hostManager.EXPECT(), mockStorage.EXPECT(), clientMock)
+			storage := storagemocks.NewMockStorage(ctl)
+			tc.mock(res.EXPECT(), hostManager, hostManager.EXPECT(), storage.EXPECT(), clientMock)
 
-			networkTopology, err := NewNetworkTopology(mockNetworkTopologyConfig, rdb, res, mockStorage)
+			networkTopology, err := NewNetworkTopology(mockNetworkTopologyConfig, rdb, res, storage)
 			tc.expect(t, networkTopology, err)
 			clientMock.ClearExpect()
 		})

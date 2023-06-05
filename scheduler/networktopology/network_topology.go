@@ -28,6 +28,8 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
+	"d7y.io/dragonfly/v2/pkg/slices"
+
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/storage"
@@ -234,8 +236,14 @@ func (nt *networkTopology) create(networkTopologyID string) error {
 		return err
 	}
 
+	srcHostIDsWithoutDuplicates := make([]string, 0)
 	for _, srcKey := range srcKeys {
 		srcHostID := strings.Split(srcKey, ":")[srcHostIDIndex]
+		if slices.Contains(srcHostIDsWithoutDuplicates, srcHostID) {
+			continue
+		}
+
+		srcHostIDsWithoutDuplicates = append(srcHostIDsWithoutDuplicates, srcHostID)
 		destKeys, err := nt.rdb.Keys(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, "*")).Result()
 		if err != nil {
 			return err
@@ -244,7 +252,6 @@ func (nt *networkTopology) create(networkTopologyID string) error {
 		destHosts := make([]storage.DestHost, 0)
 		for _, destKey := range destKeys {
 			destHostID := strings.Split(destKey, ":")[destHostIDIndex]
-
 			p := nt.Probes(srcHostID, destHostID)
 			averageRTT, err := p.AverageRTT()
 			if err != nil {
