@@ -219,6 +219,7 @@ var (
 		ID:        "6",
 		Host:      mockSeedHost,
 		DestHosts: mockDestHosts,
+		CreatedAt: time.Now().UnixNano(),
 	}
 
 	mockDestHost = DestHost{

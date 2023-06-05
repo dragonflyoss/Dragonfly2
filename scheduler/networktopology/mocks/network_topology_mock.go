@@ -107,6 +107,48 @@ func (mr *MockNetworkTopologyMockRecorder) Probes(arg0, arg1 interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Probes", reflect.TypeOf((*MockNetworkTopology)(nil).Probes), arg0, arg1)
 }
 
+// Serve mocks base method.
+func (m *MockNetworkTopology) Serve() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Serve")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Serve indicates an expected call of Serve.
+func (mr *MockNetworkTopologyMockRecorder) Serve() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Serve", reflect.TypeOf((*MockNetworkTopology)(nil).Serve))
+}
+
+// Snapshot mocks base method.
+func (m *MockNetworkTopology) Snapshot() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Snapshot")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Snapshot indicates an expected call of Snapshot.
+func (mr *MockNetworkTopologyMockRecorder) Snapshot() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Snapshot", reflect.TypeOf((*MockNetworkTopology)(nil).Snapshot))
+}
+
+// Stop mocks base method.
+func (m *MockNetworkTopology) Stop() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Stop")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Stop indicates an expected call of Stop.
+func (mr *MockNetworkTopologyMockRecorder) Stop() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockNetworkTopology)(nil).Stop))
+}
+
 // Store mocks base method.
 func (m *MockNetworkTopology) Store(arg0, arg1 string) error {
 	m.ctrl.T.Helper()

@@ -19,10 +19,16 @@ package redis
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/go-redis/redis/v8"
 
 	"d7y.io/dragonfly/v2/pkg/types"
+)
+
+const (
+	// KeySeparator is the separator of redis key.
+	KeySeparator = ":"
 )
 
 const (
@@ -130,6 +136,16 @@ func MakeKeyInScheduler(namespace, id string) string {
 // MakeNetworkTopologyKeyInScheduler make network topology key in scheduler.
 func MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID string) string {
 	return MakeKeyInScheduler(NetworkTopologyNamespace, fmt.Sprintf("%s:%s", srcHostID, destHostID))
+}
+
+// ParseNetworkTopologyKeyInScheduler parse network topology key in scheduler.
+func ParseNetworkTopologyKeyInScheduler(key string) (string, string, string, string, error) {
+	elements := strings.Split(key, KeySeparator)
+	if len(elements) != 4 {
+		return "", "", "", "", fmt.Errorf("invalid network topology key: %s", key)
+	}
+
+	return elements[0], elements[1], elements[2], elements[3], nil
 }
 
 // MakeProbesKeyInScheduler make probes key in scheduler.

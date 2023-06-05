@@ -231,4 +231,7 @@ type NetworkTopology struct {
 
 	// DestHosts is the destination hosts probed from source host.
 	DestHosts []DestHost `csv:"destHosts" csv[]:"10"`
+
+	// CreatedAt is network topology create nanosecond time.
+	CreatedAt int64 `csv:"createdAt"`
 }
