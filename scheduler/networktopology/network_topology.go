@@ -235,19 +235,17 @@ func (nt *networkTopology) create(networkTopologyID string) error {
 	}
 
 	for _, srcKey := range srcKeys {
-		srcWords := strings.Split(srcKey, ":")
-		tmpSrcHostID := srcWords[srcHostIDIndex]
-		destKeys, err := nt.rdb.Keys(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(tmpSrcHostID, "*")).Result()
+		srcHostID := strings.Split(srcKey, ":")[srcHostIDIndex]
+		destKeys, err := nt.rdb.Keys(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, "*")).Result()
 		if err != nil {
 			return err
 		}
 
 		destHosts := make([]storage.DestHost, 0)
 		for _, destKey := range destKeys {
-			destWords := strings.Split(destKey, ":")
-			tmpDestHostID := destWords[destHostIDIndex]
+			destHostID := strings.Split(destKey, ":")[destHostIDIndex]
 
-			p := nt.Probes(tmpSrcHostID, tmpDestHostID)
+			p := nt.Probes(srcHostID, destHostID)
 			averageRTT, err := p.AverageRTT()
 			if err != nil {
 				return err
@@ -269,9 +267,9 @@ func (nt *networkTopology) create(networkTopologyID string) error {
 				UpdatedAt:  updatedAt.UnixNano(),
 			}
 
-			dest, ok := nt.resource.HostManager().Load(tmpDestHostID)
+			dest, ok := nt.resource.HostManager().Load(destHostID)
 			if !ok {
-				return errors.New(tmpDestHostID + " does not exist")
+				return errors.New(destHostID + " does not exist")
 			}
 
 			destHost := storage.DestHost{
@@ -348,9 +346,9 @@ func (nt *networkTopology) create(networkTopologyID string) error {
 			destHosts = append(destHosts, destHost)
 		}
 
-		src, ok := nt.resource.HostManager().Load(tmpSrcHostID)
+		src, ok := nt.resource.HostManager().Load(srcHostID)
 		if !ok {
-			return errors.New(tmpSrcHostID + " does not exist")
+			return errors.New(srcHostID + " does not exist")
 		}
 
 		networkTopology := storage.NetworkTopology{
