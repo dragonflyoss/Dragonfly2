@@ -611,10 +611,10 @@ func Test_MakeProbedCountKeyInScheduler(t *testing.T) {
 	}{
 		{
 			name:   "make probed count key in scheduler",
-			hostID: "host_id",
+			hostID: "host-id",
 			expect: func(t *testing.T, s string) {
 				assert := assert.New(t)
-				assert.Equal(s, "scheduler:probed-count:host_id")
+				assert.Equal(s, "scheduler:probed-count:host-id")
 			},
 		},
 		{
@@ -641,12 +641,12 @@ func Test_ParseProbedCountKeyInScheduler(t *testing.T) {
 	}{
 		{
 			name: "parse probed count key in scheduler",
-			key:  "schedulers:probed-count:host_id",
+			key:  "schedulers:probed-count:host-id",
 			expect: func(t *testing.T, schedulerNamespace, probedCountNamespace, hostID string, err error) {
 				assert := assert.New(t)
 				assert.Equal(schedulerNamespace, SchedulersNamespace)
 				assert.Equal(probedCountNamespace, probedCountNamespace)
-				assert.Equal(hostID, "host_id")
+				assert.Equal(hostID, "host-id")
 				assert.NoError(err)
 			},
 		},
@@ -678,10 +678,10 @@ func Test_MakeProbedAtKeyInScheduler(t *testing.T) {
 	}{
 		{
 			name:   "make probed at key in scheduler",
-			hostID: "host_id",
+			hostID: "host-id",
 			expect: func(t *testing.T, s string) {
 				assert := assert.New(t)
-				assert.Equal("scheduler:probed-at:host_id", s)
+				assert.Equal("scheduler:probed-at:host-id", s)
 			},
 		},
 		{
