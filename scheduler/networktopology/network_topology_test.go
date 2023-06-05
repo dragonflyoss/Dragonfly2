@@ -96,11 +96,11 @@ func TestNetworkTopology_Serve(t *testing.T) {
 					ms.CreateNetworkTopology(gomock.Any()).Return(nil).Times(1),
 				)
 			},
-			expect: func(t *testing.T, n NetworkTopology, err error) {
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
 				go func() {
-					assert.NoError(n.Serve())
+					assert.NoError(networkTopology.Serve())
 				}()
 			},
 		},
@@ -132,11 +132,11 @@ func TestNetworkTopology_Serve(t *testing.T) {
 					ms.CreateNetworkTopology(gomock.Any()).Return(nil).Times(1),
 				)
 			},
-			expect: func(t *testing.T, n NetworkTopology, err error) {
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
 				go func() {
-					assert.NoError(n.Serve())
+					assert.NoError(networkTopology.Serve())
 				}()
 			},
 		},
@@ -571,7 +571,7 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 		name string
 		mock func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
 			mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, clientMock redismock.ClientMock)
-		expect func(t *testing.T, n NetworkTopology, err error)
+		expect func(t *testing.T, networkTopology NetworkTopology, err error)
 	}{
 		{
 			name: "writes the current network topology to the storage",
