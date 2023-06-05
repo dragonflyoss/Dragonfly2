@@ -521,13 +521,13 @@ func Test_ParseNetworkTopologyKeyInScheduler(t *testing.T) {
 	}{
 		{
 			name: "parse network topology key in scheduler",
-			key:  "schedulers:network-topology:srcHostID:destHostID",
+			key:  "schedulers:network-topology:src:dest",
 			expect: func(t *testing.T, schedulerNamespace, networkTopologyNamespace, srcHostID, destHostID string, err error) {
 				assert := assert.New(t)
 				assert.Equal(schedulerNamespace, SchedulersNamespace)
 				assert.Equal(networkTopologyNamespace, NetworkTopologyNamespace)
-				assert.Equal(srcHostID, "srcHostID")
-				assert.Equal(destHostID, "destHostID")
+				assert.Equal(srcHostID, "src")
+				assert.Equal(destHostID, "dest")
 				assert.NoError(err)
 			},
 		},
@@ -641,12 +641,12 @@ func Test_ParseProbedCountKeyInScheduler(t *testing.T) {
 	}{
 		{
 			name: "parse probed count key in scheduler",
-			key:  "schedulers:probed-count:hostID",
+			key:  "schedulers:probed-count:host_id",
 			expect: func(t *testing.T, schedulerNamespace, probedCountNamespace, hostID string, err error) {
 				assert := assert.New(t)
 				assert.Equal(schedulerNamespace, SchedulersNamespace)
 				assert.Equal(probedCountNamespace, probedCountNamespace)
-				assert.Equal(hostID, "hostID")
+				assert.Equal(hostID, "host_id")
 				assert.NoError(err)
 			},
 		},
