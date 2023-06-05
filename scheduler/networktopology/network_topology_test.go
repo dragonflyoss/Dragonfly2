@@ -28,7 +28,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
-
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	storagemocks "d7y.io/dragonfly/v2/scheduler/storage/mocks"
 )
