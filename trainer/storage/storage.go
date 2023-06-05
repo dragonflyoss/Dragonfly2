@@ -20,7 +20,6 @@ package storage
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 
@@ -55,10 +54,10 @@ type Storage interface {
 	ListNetworkTopology(string) ([]NetworkTopology, error)
 
 	// OpenDownload opens download files for read based on the given model key, it returns io.ReadCloser of download files.
-	OpenDownload(string) (io.ReadCloser, error)
+	OpenDownload(string) (*os.File, error)
 
 	// OpenNetworkTopology opens network topology files for read based on the given model key, it returns io.ReadCloser of network topology files.
-	OpenNetworkTopology(string) (io.ReadCloser, error)
+	OpenNetworkTopology(string) (*os.File, error)
 
 	// ClearDownload removes all downloads based on the given model key.
 	ClearDownload(string) error
@@ -87,7 +86,7 @@ func New(baseDir string) (Storage, error) {
 
 // WriteDownload writes download data into csv files based on the given model key.
 func (s *storage) WriteDownload(downloads []byte, modelKey string) error {
-	file, err := os.OpenFile(s.downloadFilename(modelKey), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	file, err := s.OpenDownload(modelKey)
 	if err != nil {
 		return err
 	}
@@ -98,7 +97,6 @@ func (s *storage) WriteDownload(downloads []byte, modelKey string) error {
 		if err := os.Remove(s.downloadFilename(modelKey)); err != nil {
 			return err
 		}
-
 		return err
 	}
 
@@ -109,7 +107,7 @@ func (s *storage) WriteDownload(downloads []byte, modelKey string) error {
 
 // WriteNetworkTopology writes network topology data into csv files based on the given model key.
 func (s *storage) WriteNetworkTopology(networkTopologies []byte, modelKey string) error {
-	file, err := os.OpenFile(s.networkTopologyFilename(modelKey), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	file, err := s.OpenNetworkTopology(modelKey)
 	if err != nil {
 		return err
 	}
@@ -130,7 +128,7 @@ func (s *storage) WriteNetworkTopology(networkTopologies []byte, modelKey string
 
 // ListDownload returns downloads in csv files based on the given model key.
 func (s *storage) ListDownload(modelKey string) ([]Download, error) {
-	file, err := os.Open(s.downloadFilename(modelKey))
+	file, err := s.OpenDownload(modelKey)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +144,7 @@ func (s *storage) ListDownload(modelKey string) ([]Download, error) {
 
 // ListNetworkTopology returns network topologies in csv files based on the given model key.
 func (s *storage) ListNetworkTopology(modelKey string) ([]NetworkTopology, error) {
-	file, err := os.Open(s.networkTopologyFilename(modelKey))
+	file, err := s.OpenNetworkTopology(modelKey)
 	if err != nil {
 		return nil, err
 	}
@@ -161,8 +159,8 @@ func (s *storage) ListNetworkTopology(modelKey string) ([]NetworkTopology, error
 }
 
 // OpenDownload opens download files for read based on the given model key, it returns io.ReadCloser of download files.
-func (s *storage) OpenDownload(modelKey string) (io.ReadCloser, error) {
-	file, err := os.Open(s.downloadFilename(modelKey))
+func (s *storage) OpenDownload(modelKey string) (*os.File, error) {
+	file, err := os.OpenFile(s.downloadFilename(modelKey), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
 		return nil, err
 	}
@@ -171,8 +169,8 @@ func (s *storage) OpenDownload(modelKey string) (io.ReadCloser, error) {
 }
 
 // OpenNetworkTopology opens network topology files for read based on the given model key, it returns io.ReadCloser of network topology files.
-func (s *storage) OpenNetworkTopology(modelKey string) (io.ReadCloser, error) {
-	file, err := os.Open(s.networkTopologyFilename(modelKey))
+func (s *storage) OpenNetworkTopology(modelKey string) (*os.File, error) {
+	file, err := os.OpenFile(s.networkTopologyFilename(modelKey), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
 		return nil, err
 	}
