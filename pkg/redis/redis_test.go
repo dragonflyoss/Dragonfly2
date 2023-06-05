@@ -6,6 +6,36 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func Test_IsEnabled(t *testing.T) {
+	tests := []struct {
+		name   string
+		addrs  []string
+		expect func(t *testing.T, ok bool)
+	}{
+		{
+			name:  "check redis is enabled",
+			addrs: []string{"172.0.0.1"},
+			expect: func(t *testing.T, ok bool) {
+				assert := assert.New(t)
+				assert.True(ok)
+			},
+		},
+		{
+			name:  "addrs is empty",
+			addrs: []string{},
+			expect: func(t *testing.T, ok bool) {
+				assert := assert.New(t)
+				assert.False(ok)
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.expect(t, IsEnabled(tc.addrs))
+		})
+	}
+}
+
 func Test_MakeNamespaceKeyInManager(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -483,6 +513,45 @@ func Test_MakeNetworkTopologyKeyInScheduler(t *testing.T) {
 	}
 }
 
+func Test_ParseNetworkTopologyKeyInScheduler(t *testing.T) {
+	tests := []struct {
+		name   string
+		key    string
+		expect func(t *testing.T, schedulerNamespace, networkTopologyNamespace, srcHostID, destHostID string, err error)
+	}{
+		{
+			name: "parse network topology key in scheduler",
+			key:  "schedulers:network-topology:srcHostID:destHostID",
+			expect: func(t *testing.T, schedulerNamespace, networkTopologyNamespace, srcHostID, destHostID string, err error) {
+				assert := assert.New(t)
+				assert.Equal(schedulerNamespace, SchedulersNamespace)
+				assert.Equal(networkTopologyNamespace, NetworkTopologyNamespace)
+				assert.Equal(srcHostID, "srcHostID")
+				assert.Equal(destHostID, "destHostID")
+				assert.NoError(err)
+			},
+		},
+		{
+			name: "parse network topology key in scheduler error",
+			key:  "foo",
+			expect: func(t *testing.T, schedulerNamespace, networkTopologyNamespace, srcHostID, destHostID string, err error) {
+				assert := assert.New(t)
+				assert.Equal(schedulerNamespace, "")
+				assert.Equal(networkTopologyNamespace, "")
+				assert.Equal(srcHostID, "")
+				assert.Equal(destHostID, "")
+				assert.EqualError(err, "invalid network topology key: foo")
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			schedulerNamespace, networkTopologyNamespace, srcHostID, destHostID, err := ParseNetworkTopologyKeyInScheduler(tc.key)
+			tc.expect(t, schedulerNamespace, networkTopologyNamespace, srcHostID, destHostID, err)
+		})
+	}
+}
+
 func Test_MakeProbesKeyInScheduler(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -560,6 +629,43 @@ func Test_MakeProbedCountKeyInScheduler(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.expect(t, MakeProbedCountKeyInScheduler(tc.hostID))
+		})
+	}
+}
+
+func Test_ParseProbedCountKeyInScheduler(t *testing.T) {
+	tests := []struct {
+		name   string
+		key    string
+		expect func(t *testing.T, schedulerNamespace, probedCountNamespace, hostID string, err error)
+	}{
+		{
+			name: "parse probed count key in scheduler",
+			key:  "schedulers:probed-count:hostID",
+			expect: func(t *testing.T, schedulerNamespace, probedCountNamespace, hostID string, err error) {
+				assert := assert.New(t)
+				assert.Equal(schedulerNamespace, SchedulersNamespace)
+				assert.Equal(probedCountNamespace, probedCountNamespace)
+				assert.Equal(hostID, "hostID")
+				assert.NoError(err)
+			},
+		},
+		{
+			name: "parse probed count key in scheduler error",
+			key:  "foo",
+			expect: func(t *testing.T, schedulerNamespace, probedCountNamespace, hostID string, err error) {
+				assert := assert.New(t)
+				assert.Equal(schedulerNamespace, "")
+				assert.Equal(probedCountNamespace, "")
+				assert.Equal(hostID, "")
+				assert.EqualError(err, "invalid probed count key: foo")
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			schedulerNamespace, probedCountNamespace, hostID, err := ParseProbedCountKeyInScheduler(tc.key)
+			tc.expect(t, schedulerNamespace, probedCountNamespace, hostID, err)
 		})
 	}
 }

@@ -570,23 +570,23 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 	tests := []struct {
 		name string
 		mock func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
-			mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, clientMock redismock.ClientMock)
+			mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, mockRDBClient redismock.ClientMock)
 		expect func(t *testing.T, networkTopology NetworkTopology, err error)
 	}{
 		{
 			name: "writes the current network topology to the storage",
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
-				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, clientMock redismock.ClientMock) {
-				clientMock.MatchExpectationsInOrder(true)
-				clientMock.ExpectKeys(pkgredis.MakeProbedCountKeyInScheduler("*")).SetVal(
+				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, mockRDBClient redismock.ClientMock) {
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectKeys(pkgredis.MakeProbedCountKeyInScheduler("*")).SetVal(
 					[]string{pkgredis.MakeProbedCountKeyInScheduler(mockSeedHost.ID)})
-				clientMock.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*")).SetVal(
+				mockRDBClient.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*")).SetVal(
 					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)})
-				clientMock.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT").SetVal(
+				mockRDBClient.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT").SetVal(
 					strconv.FormatInt(mockProbe.RTT.Nanoseconds(), 10))
-				clientMock.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "createdAt").SetVal(
+				mockRDBClient.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "createdAt").SetVal(
 					mockProbesCreatedAt.Format(time.RFC3339Nano))
-				clientMock.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt").SetVal(
+				mockRDBClient.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt").SetVal(
 					mockProbe.CreatedAt.Format(time.RFC3339Nano))
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
@@ -605,9 +605,9 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 		{
 			name: "get probed count keys error",
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
-				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, clientMock redismock.ClientMock) {
-				clientMock.MatchExpectationsInOrder(true)
-				clientMock.ExpectKeys(pkgredis.MakeProbedCountKeyInScheduler("*")).SetErr(
+				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, mockRDBClient redismock.ClientMock) {
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectKeys(pkgredis.MakeProbedCountKeyInScheduler("*")).SetErr(
 					errors.New("get probed count keys error"))
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
@@ -619,8 +619,8 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 		{
 			name: "parse probed count keys in scheduler error",
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
-				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, clientMock redismock.ClientMock) {
-				clientMock.ExpectKeys(pkgredis.MakeProbedCountKeyInScheduler("*")).SetVal(
+				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, mockRDBClient redismock.ClientMock) {
+				mockRDBClient.ExpectKeys(pkgredis.MakeProbedCountKeyInScheduler("*")).SetVal(
 					[]string{"foo"})
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
@@ -632,11 +632,11 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 		{
 			name: "get network topology keys error",
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
-				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, clientMock redismock.ClientMock) {
-				clientMock.MatchExpectationsInOrder(true)
-				clientMock.ExpectKeys(pkgredis.MakeProbedCountKeyInScheduler("*")).SetVal(
+				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, mockRDBClient redismock.ClientMock) {
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectKeys(pkgredis.MakeProbedCountKeyInScheduler("*")).SetVal(
 					[]string{pkgredis.MakeProbedCountKeyInScheduler(mockSeedHost.ID)})
-				clientMock.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*")).SetErr(
+				mockRDBClient.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*")).SetErr(
 					errors.New("get network topology keys error"))
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
@@ -648,10 +648,10 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 		{
 			name: "parse network topology keys in scheduler error",
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
-				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, clientMock redismock.ClientMock) {
-				clientMock.ExpectKeys(pkgredis.MakeProbedCountKeyInScheduler("*")).SetVal(
+				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, mockRDBClient redismock.ClientMock) {
+				mockRDBClient.ExpectKeys(pkgredis.MakeProbedCountKeyInScheduler("*")).SetVal(
 					[]string{pkgredis.MakeProbedCountKeyInScheduler(mockSeedHost.ID)})
-				clientMock.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*")).SetVal(
+				mockRDBClient.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*")).SetVal(
 					[]string{"foo"})
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
@@ -668,11 +668,11 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 		{
 			name: "construct destination hosts for network topology error",
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
-				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, clientMock redismock.ClientMock) {
-				clientMock.MatchExpectationsInOrder(true)
-				clientMock.ExpectKeys(pkgredis.MakeProbedCountKeyInScheduler("*")).SetVal(
+				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, mockRDBClient redismock.ClientMock) {
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectKeys(pkgredis.MakeProbedCountKeyInScheduler("*")).SetVal(
 					[]string{pkgredis.MakeProbedCountKeyInScheduler(mockSeedHost.ID)})
-				clientMock.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*")).SetVal(
+				mockRDBClient.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*")).SetVal(
 					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)})
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
@@ -691,13 +691,13 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 		{
 			name: "get averageRTT error",
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
-				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, clientMock redismock.ClientMock) {
-				clientMock.MatchExpectationsInOrder(true)
-				clientMock.ExpectKeys(pkgredis.MakeProbedCountKeyInScheduler("*")).SetVal(
+				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, mockRDBClient redismock.ClientMock) {
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectKeys(pkgredis.MakeProbedCountKeyInScheduler("*")).SetVal(
 					[]string{pkgredis.MakeProbedCountKeyInScheduler(mockSeedHost.ID)})
-				clientMock.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*")).SetVal(
+				mockRDBClient.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*")).SetVal(
 					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)})
-				clientMock.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT").SetErr(
+				mockRDBClient.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT").SetErr(
 					errors.New("get averageRTT error"))
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
@@ -716,15 +716,15 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 		{
 			name: "get createdAt error",
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
-				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, clientMock redismock.ClientMock) {
-				clientMock.MatchExpectationsInOrder(true)
-				clientMock.ExpectKeys(pkgredis.MakeProbedCountKeyInScheduler("*")).SetVal(
+				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, mockRDBClient redismock.ClientMock) {
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectKeys(pkgredis.MakeProbedCountKeyInScheduler("*")).SetVal(
 					[]string{pkgredis.MakeProbedCountKeyInScheduler(mockSeedHost.ID)})
-				clientMock.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*")).SetVal(
+				mockRDBClient.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*")).SetVal(
 					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)})
-				clientMock.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT").SetVal(
+				mockRDBClient.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT").SetVal(
 					strconv.FormatInt(mockProbe.RTT.Nanoseconds(), 10))
-				clientMock.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "createdAt").SetErr(
+				mockRDBClient.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "createdAt").SetErr(
 					errors.New("get createdAt error"))
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
@@ -743,17 +743,17 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 		{
 			name: "get updatedAt error",
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
-				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, clientMock redismock.ClientMock) {
-				clientMock.MatchExpectationsInOrder(true)
-				clientMock.ExpectKeys(pkgredis.MakeProbedCountKeyInScheduler("*")).SetVal(
+				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, mockRDBClient redismock.ClientMock) {
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectKeys(pkgredis.MakeProbedCountKeyInScheduler("*")).SetVal(
 					[]string{pkgredis.MakeProbedCountKeyInScheduler(mockSeedHost.ID)})
-				clientMock.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*")).SetVal(
+				mockRDBClient.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*")).SetVal(
 					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)})
-				clientMock.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT").SetVal(
+				mockRDBClient.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT").SetVal(
 					strconv.FormatInt(mockProbe.RTT.Nanoseconds(), 10))
-				clientMock.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "createdAt").SetVal(
+				mockRDBClient.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "createdAt").SetVal(
 					mockProbesCreatedAt.Format(time.RFC3339Nano))
-				clientMock.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt").SetErr(
+				mockRDBClient.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt").SetErr(
 					errors.New("get updatedAt error"))
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
@@ -772,17 +772,17 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 		{
 			name: "construct source hosts for network topology error",
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
-				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, clientMock redismock.ClientMock) {
-				clientMock.MatchExpectationsInOrder(true)
-				clientMock.ExpectKeys(pkgredis.MakeProbedCountKeyInScheduler("*")).SetVal(
+				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, mockRDBClient redismock.ClientMock) {
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectKeys(pkgredis.MakeProbedCountKeyInScheduler("*")).SetVal(
 					[]string{pkgredis.MakeProbedCountKeyInScheduler(mockSeedHost.ID)})
-				clientMock.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*")).SetVal(
+				mockRDBClient.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*")).SetVal(
 					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)})
-				clientMock.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT").SetVal(
+				mockRDBClient.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT").SetVal(
 					strconv.FormatInt(mockProbe.RTT.Nanoseconds(), 10))
-				clientMock.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "createdAt").SetVal(
+				mockRDBClient.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "createdAt").SetVal(
 					mockProbesCreatedAt.Format(time.RFC3339Nano))
-				clientMock.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt").SetVal(
+				mockRDBClient.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt").SetVal(
 					mockProbe.CreatedAt.Format(time.RFC3339Nano))
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
@@ -800,17 +800,17 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 		{
 			name: "inserts the network topology into csv file error",
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
-				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, clientMock redismock.ClientMock) {
-				clientMock.MatchExpectationsInOrder(true)
-				clientMock.ExpectKeys(pkgredis.MakeProbedCountKeyInScheduler("*")).SetVal(
+				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, mockRDBClient redismock.ClientMock) {
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectKeys(pkgredis.MakeProbedCountKeyInScheduler("*")).SetVal(
 					[]string{pkgredis.MakeProbedCountKeyInScheduler(mockSeedHost.ID)})
-				clientMock.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*")).SetVal(
+				mockRDBClient.ExpectKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*")).SetVal(
 					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)})
-				clientMock.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT").SetVal(
+				mockRDBClient.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT").SetVal(
 					strconv.FormatInt(mockProbe.RTT.Nanoseconds(), 10))
-				clientMock.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "createdAt").SetVal(
+				mockRDBClient.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "createdAt").SetVal(
 					mockProbesCreatedAt.Format(time.RFC3339Nano))
-				clientMock.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt").SetVal(
+				mockRDBClient.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt").SetVal(
 					mockProbe.CreatedAt.Format(time.RFC3339Nano))
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
@@ -833,15 +833,15 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 
-			rdb, clientMock := redismock.NewClientMock()
+			rdb, mockRDBClient := redismock.NewClientMock()
 			res := resource.NewMockResource(ctl)
 			hostManager := resource.NewMockHostManager(ctl)
 			storage := storagemocks.NewMockStorage(ctl)
-			tc.mock(res.EXPECT(), hostManager, hostManager.EXPECT(), storage.EXPECT(), clientMock)
+			tc.mock(res.EXPECT(), hostManager, hostManager.EXPECT(), storage.EXPECT(), mockRDBClient)
 
 			networkTopology, err := NewNetworkTopology(mockNetworkTopologyConfig, rdb, res, storage)
 			tc.expect(t, networkTopology, err)
-			clientMock.ClearExpect()
+			mockRDBClient.ClearExpect()
 		})
 	}
 }
