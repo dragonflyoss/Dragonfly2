@@ -5,7 +5,7 @@
 package mocks
 
 import (
-	io "io"
+	os "os"
 	reflect "reflect"
 
 	storage "d7y.io/dragonfly/v2/trainer/storage"
@@ -108,10 +108,10 @@ func (mr *MockStorageMockRecorder) ListNetworkTopology(arg0 interface{}) *gomock
 }
 
 // OpenDownload mocks base method.
-func (m *MockStorage) OpenDownload(arg0 string) (io.ReadCloser, error) {
+func (m *MockStorage) OpenDownload(arg0 string) (*os.File, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "OpenDownload", arg0)
-	ret0, _ := ret[0].(io.ReadCloser)
+	ret0, _ := ret[0].(*os.File)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -123,10 +123,10 @@ func (mr *MockStorageMockRecorder) OpenDownload(arg0 interface{}) *gomock.Call {
 }
 
 // OpenNetworkTopology mocks base method.
-func (m *MockStorage) OpenNetworkTopology(arg0 string) (io.ReadCloser, error) {
+func (m *MockStorage) OpenNetworkTopology(arg0 string) (*os.File, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "OpenNetworkTopology", arg0)
-	ret0, _ := ret[0].(io.ReadCloser)
+	ret0, _ := ret[0].(*os.File)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
