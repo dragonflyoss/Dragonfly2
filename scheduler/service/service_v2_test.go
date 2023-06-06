@@ -625,7 +625,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 				Host: &commonv2.Host{
 					Id:              mockHostID,
 					Type:            uint32(pkgtypes.HostTypeNormal),
-					Hostname:        "hostname",
+					Hostname:        "foo",
 					Ip:              "127.0.0.1",
 					Port:            8003,
 					DownloadPort:    8001,
@@ -725,7 +725,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 				Host: &commonv2.Host{
 					Id:              mockHostID,
 					Type:            uint32(pkgtypes.HostTypeNormal),
-					Hostname:        "hostname",
+					Hostname:        "foo",
 					Ip:              "127.0.0.1",
 					Port:            8003,
 					DownloadPort:    8001,

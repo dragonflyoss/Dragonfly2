@@ -153,6 +153,16 @@ func MakeProbesKeyInScheduler(srcHostID, destHostID string) string {
 	return MakeKeyInScheduler(ProbesNamespace, fmt.Sprintf("%s:%s", srcHostID, destHostID))
 }
 
+// ParseProbedCountKeyInScheduler parse probed count key in scheduler.
+func ParseProbedCountKeyInScheduler(key string) (string, string, string, error) {
+	elements := strings.Split(key, KeySeparator)
+	if len(elements) != 3 {
+		return "", "", "", fmt.Errorf("invalid probed count key: %s", key)
+	}
+
+	return elements[0], elements[1], elements[2], nil
+}
+
 // MakeProbedCountKeyInScheduler make probed count key in scheduler.
 func MakeProbedCountKeyInScheduler(hostID string) string {
 	return MakeKeyInScheduler(ProbedCountNamespace, hostID)
