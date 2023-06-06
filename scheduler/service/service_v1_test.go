@@ -72,7 +72,7 @@ var (
 	mockRawHost = resource.Host{
 		ID:              mockHostID,
 		Type:            pkgtypes.HostTypeNormal,
-		Hostname:        "hostname",
+		Hostname:        "foo",
 		IP:              "127.0.0.1",
 		Port:            8003,
 		DownloadPort:    8001,
@@ -93,7 +93,7 @@ var (
 	mockRawSeedHost = resource.Host{
 		ID:              mockSeedHostID,
 		Type:            pkgtypes.HostTypeSuperSeed,
-		Hostname:        "hostname_seed",
+		Hostname:        "bar",
 		IP:              "127.0.0.1",
 		Port:            8003,
 		DownloadPort:    8001,
@@ -169,7 +169,7 @@ var (
 		Ip:       "127.0.0.1",
 		RpcPort:  8003,
 		DownPort: 8001,
-		Hostname: "hostname",
+		Hostname: "baz",
 		Location: mockHostLocation,
 		Idc:      mockHostIDC,
 	}
@@ -183,10 +183,10 @@ var (
 	mockTaskFilters                 = []string{"bar"}
 	mockTaskHeader                  = map[string]string{"content-length": "100"}
 	mockTaskPieceLength       int32 = 2048
-	mockHostID                      = idgen.HostIDV2("127.0.0.1", "hostname")
-	mockSeedHostID                  = idgen.HostIDV2("127.0.0.1", "hostname_seed")
-	mockHostLocation                = "location"
-	mockHostIDC                     = "idc"
+	mockHostID                      = idgen.HostIDV2("127.0.0.1", "foo")
+	mockSeedHostID                  = idgen.HostIDV2("127.0.0.1", "bar")
+	mockHostLocation                = "bas"
+	mockHostIDC                     = "baz"
 	mockPeerID                      = idgen.PeerIDV2()
 	mockSeedPeerID                  = idgen.PeerIDV2()
 	mockPeerRange                   = nethttp.Range{
@@ -2126,7 +2126,7 @@ func TestServiceV1_AnnounceHost(t *testing.T) {
 			req: &schedulerv1.AnnounceHostRequest{
 				Id:              mockHostID,
 				Type:            pkgtypes.HostTypeNormal.Name(),
-				Hostname:        "hostname",
+				Hostname:        "foo",
 				Ip:              "127.0.0.1",
 				Port:            8003,
 				DownloadPort:    8001,
@@ -2224,7 +2224,7 @@ func TestServiceV1_AnnounceHost(t *testing.T) {
 			req: &schedulerv1.AnnounceHostRequest{
 				Id:              mockHostID,
 				Type:            pkgtypes.HostTypeNormal.Name(),
-				Hostname:        "hostname",
+				Hostname:        "foo",
 				Ip:              "127.0.0.1",
 				Port:            8003,
 				DownloadPort:    8001,

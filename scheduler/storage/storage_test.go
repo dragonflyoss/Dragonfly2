@@ -119,7 +119,7 @@ var (
 	mockSeedHost = Host{
 		ID:                    "3",
 		Type:                  "super",
-		Hostname:              "seed_host",
+		Hostname:              "foo",
 		IP:                    "127.0.0.1",
 		Port:                  8080,
 		DownloadPort:          8081,

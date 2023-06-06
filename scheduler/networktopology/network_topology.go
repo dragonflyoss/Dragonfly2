@@ -226,7 +226,13 @@ func (nt *networkTopology) Snapshot() error {
 		return err
 	}
 
-	for _, srcHostID := range probedCountKeys {
+	for _, probedCountKey := range probedCountKeys {
+		_, _, srcHostID, err := pkgredis.ParseProbedCountKeyInScheduler(probedCountKey)
+		if err != nil {
+			logger.Error(err)
+			continue
+		}
+
 		// Construct destination hosts for network topology.
 		networkTopologyKeys, err := nt.rdb.Keys(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, "*")).Result()
 		if err != nil {
