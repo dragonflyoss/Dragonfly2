@@ -38,9 +38,9 @@ import (
 
 var (
 	mockHost = &resource.Host{
-		ID:                    idgen.HostIDV2("127.0.0.1", "hostname"),
+		ID:                    idgen.HostIDV2("127.0.0.1", "foo"),
 		Type:                  types.HostTypeNormal,
-		Hostname:              "hostname",
+		Hostname:              "foo",
 		IP:                    "127.0.0.1",
 		Port:                  8003,
 		DownloadPort:          8001,
@@ -63,9 +63,9 @@ var (
 	}
 
 	mockSeedHost = &resource.Host{
-		ID:                    idgen.HostIDV2("127.0.0.1", "hostname_seed"),
+		ID:                    idgen.HostIDV2("127.0.0.1", "bar"),
 		Type:                  types.HostTypeSuperSeed,
-		Hostname:              "hostname_seed",
+		Hostname:              "bar",
 		IP:                    "127.0.0.1",
 		Port:                  8003,
 		DownloadPort:          8001,

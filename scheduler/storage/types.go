@@ -212,10 +212,46 @@ type Probes struct {
 	UpdatedAt int64 `csv:"updatedAt"`
 }
 
+// SrcHost contains content for source host.
+type SrcHost struct {
+	// ID is host id.
+	ID string `csv:"id"`
+
+	// Type is host type.
+	Type string `csv:"type"`
+
+	// Hostname is host name.
+	Hostname string `csv:"hostname"`
+
+	// IP is host ip.
+	IP string `csv:"ip"`
+
+	// Port is grpc service port.
+	Port int32 `csv:"port"`
+
+	// Network Stat.
+	Network resource.Network `csv:"network"`
+}
+
 // DestHost contains content for destination host.
 type DestHost struct {
-	// Host is probe destination host.
-	Host Host `csv:"host"`
+	// ID is host id.
+	ID string `csv:"id"`
+
+	// Type is host type.
+	Type string `csv:"type"`
+
+	// Hostname is host name.
+	Hostname string `csv:"hostname"`
+
+	// IP is host ip.
+	IP string `csv:"ip"`
+
+	// Port is grpc service port.
+	Port int32 `csv:"port"`
+
+	// Network Stat.
+	Network resource.Network `csv:"network"`
 
 	// Probes is the network information probed to destination host.
 	Probes Probes `csv:"probes"`
@@ -227,10 +263,10 @@ type NetworkTopology struct {
 	ID string `csv:"id"`
 
 	// Host is probe source host.
-	Host Host `csv:"host"`
+	Host SrcHost `csv:"host"`
 
 	// DestHosts is the destination hosts probed from source host.
-	DestHosts []DestHost `csv:"destHosts" csv[]:"10"`
+	DestHosts []DestHost `csv:"destHosts" csv[]:"5"`
 
 	// CreatedAt is network topology create nanosecond time.
 	CreatedAt int64 `csv:"createdAt"`
