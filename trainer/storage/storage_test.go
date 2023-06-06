@@ -60,7 +60,7 @@ func TestStorage_New(t *testing.T) {
 
 func TestStorage_ListDownload(t *testing.T) {
 	require := require.New(t)
-	testData, err := os.ReadFile("./testdata/download.csv")
+	testData, err := os.ReadFile("../testdata/download.csv")
 	require.Nil(err, "load test file")
 
 	tests := []struct {
@@ -144,7 +144,7 @@ func TestStorage_ListDownload(t *testing.T) {
 
 func TestStorage_ListNetworkTopology(t *testing.T) {
 	require := require.New(t)
-	testData, err := os.ReadFile("./testdata/networktopology.csv")
+	testData, err := os.ReadFile("../testdata/networktopology.csv")
 	require.Nil(err, "load test file")
 
 	tests := []struct {
@@ -228,7 +228,7 @@ func TestStorage_ListNetworkTopology(t *testing.T) {
 
 func TestStorage_OpenDownload(t *testing.T) {
 	require := require.New(t)
-	testData, err := os.ReadFile("./testdata/download.csv")
+	testData, err := os.ReadFile("../testdata/download.csv")
 	require.Nil(err, "load test file")
 
 	tests := []struct {
@@ -295,7 +295,7 @@ func TestStorage_OpenDownload(t *testing.T) {
 
 func TestStorage_OpenNetworkTopology(t *testing.T) {
 	require := require.New(t)
-	testData, err := os.ReadFile("./testdata/networktopology.csv")
+	testData, err := os.ReadFile("../testdata/networktopology.csv")
 	require.Nil(err, "load test file")
 
 	tests := []struct {
