@@ -116,74 +116,6 @@ var (
 		UpdatedAt: time.Now().UnixNano(),
 	}
 
-	mockSeedHost = Host{
-		ID:                    "3",
-		Type:                  "super",
-		Hostname:              "foo",
-		IP:                    "127.0.0.1",
-		Port:                  8080,
-		DownloadPort:          8081,
-		OS:                    "linux",
-		Platform:              "ubuntu",
-		PlatformFamily:        "debian",
-		PlatformVersion:       "1.0.0",
-		KernelVersion:         "1.0.0",
-		ConcurrentUploadLimit: 100,
-		ConcurrentUploadCount: 40,
-		UploadCount:           20,
-		UploadFailedCount:     3,
-		CPU: resource.CPU{
-			LogicalCount:   24,
-			PhysicalCount:  12,
-			Percent:        0.8,
-			ProcessPercent: 0.4,
-			Times: resource.CPUTimes{
-				User:      100,
-				System:    101,
-				Idle:      102,
-				Nice:      103,
-				Iowait:    104,
-				Irq:       105,
-				Softirq:   106,
-				Steal:     107,
-				Guest:     108,
-				GuestNice: 109,
-			},
-		},
-		Memory: resource.Memory{
-			Total:              20,
-			Available:          19,
-			Used:               16,
-			UsedPercent:        0.7,
-			ProcessUsedPercent: 0.2,
-			Free:               15,
-		},
-		Network: resource.Network{
-			TCPConnectionCount:       400,
-			UploadTCPConnectionCount: 200,
-			Location:                 "china",
-			IDC:                      "e1",
-		},
-		Disk: resource.Disk{
-			Total:             100,
-			Free:              88,
-			Used:              56,
-			UsedPercent:       0.9,
-			InodesTotal:       200,
-			InodesUsed:        180,
-			InodesFree:        160,
-			InodesUsedPercent: 0.6,
-		},
-		Build: resource.Build{
-			GitVersion: "3.0.0",
-			GitCommit:  "2bf4d5e",
-			GoVersion:  "1.19",
-			Platform:   "linux",
-		},
-		CreatedAt: time.Now().UnixNano(),
-		UpdatedAt: time.Now().UnixNano(),
-	}
-
 	mockParent = Parent{
 		ID:               "4",
 		Tag:              "m",
@@ -215,15 +147,32 @@ var (
 		UpdatedAt: time.Now().UnixNano(),
 	}
 
-	mockNetworkTopology = NetworkTopology{
-		ID:        "6",
-		Host:      mockSeedHost,
-		DestHosts: mockDestHosts,
-		CreatedAt: time.Now().UnixNano(),
+	mockSrcHost = SrcHost{
+		ID:       "3",
+		Type:     "super",
+		Hostname: "foo",
+		IP:       "127.0.0.1",
+		Port:     8080,
+		Network: resource.Network{
+			TCPConnectionCount:       400,
+			UploadTCPConnectionCount: 200,
+			Location:                 "china",
+			IDC:                      "e1",
+		},
 	}
 
 	mockDestHost = DestHost{
-		Host: mockHost,
+		ID:       "2",
+		Type:     "normal",
+		Hostname: "localhost",
+		IP:       "127.0.0.1",
+		Port:     8080,
+		Network: resource.Network{
+			TCPConnectionCount:       400,
+			UploadTCPConnectionCount: 200,
+			Location:                 "china",
+			IDC:                      "e1",
+		},
 		Probes: Probes{
 			AverageRTT: 10,
 			CreatedAt:  time.Now().UnixNano(),
@@ -231,7 +180,14 @@ var (
 		},
 	}
 
-	mockDestHosts = append(make([]DestHost, 9), mockDestHost)
+	mockDestHosts = []DestHost{mockDestHost, mockDestHost, mockDestHost, mockDestHost, mockDestHost}
+
+	mockNetworkTopology = NetworkTopology{
+		ID:        "6",
+		Host:      mockSrcHost,
+		DestHosts: mockDestHosts,
+		CreatedAt: time.Now().UnixNano(),
+	}
 )
 
 func TestStorage_New(t *testing.T) {
