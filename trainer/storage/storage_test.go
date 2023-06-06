@@ -95,11 +95,11 @@ func TestStorage_ListDownload(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
+				defer file.Close()
 
 				if _, err = file.Write(download); err != nil {
 					t.Fatal(err)
 				}
-				file.Close()
 				s.(*storage).baseDir = "bas"
 			},
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
@@ -117,11 +117,11 @@ func TestStorage_ListDownload(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
+				defer file.Close()
 
 				if _, err = file.Write(download); err != nil {
 					t.Fatal(err)
 				}
-				file.Close()
 			},
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
 				assert := assert.New(t)
@@ -179,11 +179,11 @@ func TestStorage_ListNetworkTopology(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
+				defer file.Close()
 
 				if _, err = file.Write(networkTopology); err != nil {
 					t.Fatal(err)
 				}
-				file.Close()
 				s.(*storage).baseDir = "foo"
 			},
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
@@ -201,11 +201,11 @@ func TestStorage_ListNetworkTopology(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
+				defer file.Close()
 
 				if _, err = file.Write(networkTopology); err != nil {
 					t.Fatal(err)
 				}
-				file.Close()
 			},
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
 				assert := assert.New(t)
@@ -265,11 +265,11 @@ func TestStorage_OpenDownload(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
+				defer file.Close()
 
 				if _, err = file.Write(download); err != nil {
 					t.Fatal(err)
 				}
-				file.Close()
 			},
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
 				assert := assert.New(t)
@@ -332,11 +332,11 @@ func TestStorage_OpenNetworkTopology(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
+				defer file.Close()
 
 				if _, err = file.Write(networkTopology); err != nil {
 					t.Fatal(err)
 				}
-				file.Close()
 			},
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
 				assert := assert.New(t)
@@ -539,9 +539,9 @@ func TestStorage_downloadFilename(t *testing.T) {
 	s := New(baseDir)
 
 	filename := s.(*storage).downloadFilename(mockModelKey)
-	regexp := regexp.MustCompile(fmt.Sprintf("%s-%s.%s$", DownloadFilePrefix, mockModelKey, CSVFileExt))
+	re := regexp.MustCompile(fmt.Sprintf("%s-%s.%s$", DownloadFilePrefix, mockModelKey, CSVFileExt))
 	assert := assert.New(t)
-	assert.True(regexp.MatchString(filename))
+	assert.True(re.MatchString(filename))
 }
 
 func TestStorage_networkTopologyFilename(t *testing.T) {
@@ -549,7 +549,7 @@ func TestStorage_networkTopologyFilename(t *testing.T) {
 	s := New(baseDir)
 
 	filename := s.(*storage).networkTopologyFilename(mockModelKey)
-	regexp := regexp.MustCompile(fmt.Sprintf("%s-%s.%s$", NetworkTopologyFilePrefix, mockModelKey, CSVFileExt))
+	re := regexp.MustCompile(fmt.Sprintf("%s-%s.%s$", NetworkTopologyFilePrefix, mockModelKey, CSVFileExt))
 	assert := assert.New(t)
-	assert.True(regexp.MatchString(filename))
+	assert.True(re.MatchString(filename))
 }
