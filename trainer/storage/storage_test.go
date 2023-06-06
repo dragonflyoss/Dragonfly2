@@ -55,8 +55,7 @@ func TestStorage_New(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s := New(tc.baseDir)
-			tc.expect(t, s)
+			tc.expect(t, New(tc.baseDir))
 		})
 	}
 }
@@ -540,7 +539,7 @@ func TestStorage_downloadFilename(t *testing.T) {
 	s := New(baseDir)
 
 	filename := s.(*storage).downloadFilename(mockModelKey)
-	regexp := regexp.MustCompile(fmt.Sprintf("%s-%s.*.%s$", DownloadFilePrefix, mockModelKey, CSVFileExt))
+	regexp := regexp.MustCompile(fmt.Sprintf("%s-%s.%s$", DownloadFilePrefix, mockModelKey, CSVFileExt))
 	assert := assert.New(t)
 	assert.True(regexp.MatchString(filename))
 }
@@ -550,7 +549,7 @@ func TestStorage_networkTopologyFilename(t *testing.T) {
 	s := New(baseDir)
 
 	filename := s.(*storage).networkTopologyFilename(mockModelKey)
-	regexp := regexp.MustCompile(fmt.Sprintf("%s-%s.*.%s$", NetworkTopologyFilePrefix, mockModelKey, CSVFileExt))
+	regexp := regexp.MustCompile(fmt.Sprintf("%s-%s.%s$", NetworkTopologyFilePrefix, mockModelKey, CSVFileExt))
 	assert := assert.New(t)
 	assert.True(regexp.MatchString(filename))
 }
