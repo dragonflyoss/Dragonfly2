@@ -33,9 +33,7 @@ import (
 	schedulerstorage "d7y.io/dragonfly/v2/scheduler/storage"
 )
 
-var (
-	mockModelKey = "bar"
-)
+var mockModelKey = "bar"
 
 func TestStorage_New(t *testing.T) {
 	tests := []struct {
@@ -72,7 +70,7 @@ func TestStorage_ListDownload(t *testing.T) {
 		expect  func(t *testing.T, s Storage, baseDir, modelKey string, download []byte)
 	}{
 		{
-			name:    "empty csv file given for selected model",
+			name:    "empty csv file given",
 			baseDir: os.TempDir(),
 			mock: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
 				file, err := os.OpenFile(filepath.Join(baseDir, "download-bar.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
@@ -88,7 +86,7 @@ func TestStorage_ListDownload(t *testing.T) {
 			},
 		},
 		{
-			name:    "get file infos failed",
+			name:    "get file failed",
 			baseDir: os.TempDir(),
 			mock: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
 				file, err := os.OpenFile(filepath.Join(baseDir, "download-bar.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
@@ -156,7 +154,7 @@ func TestStorage_ListNetworkTopology(t *testing.T) {
 		expect  func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte)
 	}{
 		{
-			name:    "empty csv file given for selected model",
+			name:    "empty csv file given",
 			baseDir: os.TempDir(),
 			mock: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
 				file, err := os.OpenFile(filepath.Join(baseDir, "networktopology-bar.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
@@ -172,7 +170,7 @@ func TestStorage_ListNetworkTopology(t *testing.T) {
 			},
 		},
 		{
-			name:    "get file infos failed",
+			name:    "get file failed",
 			baseDir: os.TempDir(),
 			mock: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
 				file, err := os.OpenFile(filepath.Join(baseDir, "networktopology-bar.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
@@ -240,7 +238,7 @@ func TestStorage_OpenDownload(t *testing.T) {
 		expect  func(t *testing.T, s Storage, baseDir, modelKey string, download []byte)
 	}{
 		{
-			name:    "open file infos failed",
+			name:    "open file failed",
 			baseDir: os.TempDir(),
 			mock: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
 				file, err := os.OpenFile(filepath.Join(baseDir, "download-bar.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
@@ -307,7 +305,7 @@ func TestStorage_OpenNetworkTopology(t *testing.T) {
 		expect  func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte)
 	}{
 		{
-			name:    "open file infos failed",
+			name:    "open file failed",
 			baseDir: os.TempDir(),
 			mock: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
 				file, err := os.OpenFile(filepath.Join(baseDir, "networktopology-bar.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
@@ -386,10 +384,10 @@ func TestStorage_ClearDownload(t *testing.T) {
 				assert.NoError(err)
 
 				var backups []fs.FileInfo
-				regexp := regexp.MustCompile(fmt.Sprintf("%s-%s", DownloadFilePrefix, modelKey))
+				re := regexp.MustCompile(fmt.Sprintf("%s-%s", DownloadFilePrefix, modelKey))
 
 				for _, fileInfo := range fileInfos {
-					if !fileInfo.IsDir() && regexp.MatchString(fileInfo.Name()) {
+					if !fileInfo.IsDir() && re.MatchString(fileInfo.Name()) {
 						backups = append(backups, fileInfo)
 					}
 				}
@@ -450,9 +448,9 @@ func TestStorage_ClearNetworkTopology(t *testing.T) {
 				assert.NoError(err)
 
 				var backups []fs.FileInfo
-				regexp := regexp.MustCompile(fmt.Sprintf("%s-%s", NetworkTopologyFilePrefix, modelKey))
+				re := regexp.MustCompile(fmt.Sprintf("%s-%s", NetworkTopologyFilePrefix, modelKey))
 				for _, fileInfo := range fileInfos {
-					if !fileInfo.IsDir() && regexp.MatchString(fileInfo.Name()) {
+					if !fileInfo.IsDir() && re.MatchString(fileInfo.Name()) {
 						backups = append(backups, fileInfo)
 					}
 				}
@@ -499,7 +497,7 @@ func TestStorage_Clear(t *testing.T) {
 			name:    "clear file",
 			baseDir: os.TempDir(),
 			mock: func(t *testing.T, s Storage, baseDir string) {
-				s.(*storage).baseDir = filepath.Join(baseDir, "testDir")
+				s.(*storage).baseDir = filepath.Join(baseDir, "bae")
 				if err := os.MkdirAll(s.(*storage).baseDir, os.ModePerm); err != nil {
 					t.Fatal(err)
 				}
@@ -519,8 +517,8 @@ func TestStorage_Clear(t *testing.T) {
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
 				assert.NoError(s.Clear())
-				_, err := os.Stat(filepath.Join(baseDir, "testDir"))
-				assert.Error(err)
+				_, err := os.Stat(filepath.Join(baseDir, "bae"))
+				assert.EqualError(err, fmt.Sprintf("stat %s: no such file or directory", filepath.Join(baseDir, "bae")))
 			},
 		},
 	}
