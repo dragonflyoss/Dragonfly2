@@ -173,7 +173,7 @@ const (
 	DefaultProbeInterval = 15 * time.Minute
 
 	// DefaultProbeCount is the default number of probing hosts.
-	DefaultProbeCount = 10
+	DefaultProbeCount = 5
 )
 
 const (
