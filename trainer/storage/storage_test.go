@@ -85,7 +85,7 @@ func TestStorage_ListDownload(t *testing.T) {
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
 				assert := assert.New(t)
 				_, err := s.ListDownload(modelKey)
-				assert.Error(err)
+				assert.EqualError(err, "empty csv file given")
 			},
 		},
 		{
@@ -106,7 +106,7 @@ func TestStorage_ListDownload(t *testing.T) {
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
 				assert := assert.New(t)
 				_, err := s.ListDownload(modelKey)
-				assert.Error(err)
+				assert.EqualError(err, "open bas/download-hostname_127.0.0.1_2.csv: no such file or directory")
 				s.(*storage).baseDir = baseDir
 			},
 		},
@@ -169,7 +169,7 @@ func TestStorage_ListNetworkTopology(t *testing.T) {
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
 				assert := assert.New(t)
 				_, err := s.ListNetworkTopology(modelKey)
-				assert.Error(err)
+				assert.EqualError(err, "empty csv file given")
 			},
 		},
 		{
@@ -190,7 +190,7 @@ func TestStorage_ListNetworkTopology(t *testing.T) {
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
 				assert := assert.New(t)
 				_, err := s.ListNetworkTopology(modelKey)
-				assert.Error(err)
+				assert.EqualError(err, "open foo/networktopology-hostname_127.0.0.1_2.csv: no such file or directory")
 				s.(*storage).baseDir = baseDir
 			},
 		},
@@ -254,7 +254,7 @@ func TestStorage_OpenDownload(t *testing.T) {
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string, download []byte) {
 				assert := assert.New(t)
 				_, err := s.OpenDownload(modelKey)
-				assert.Error(err)
+				assert.EqualError(err, "open baw/download-hostname_127.0.0.1_2.csv: no such file or directory")
 				s.(*storage).baseDir = baseDir
 			},
 		},
@@ -321,7 +321,7 @@ func TestStorage_OpenNetworkTopology(t *testing.T) {
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string, networkTopology []byte) {
 				assert := assert.New(t)
 				_, err := s.OpenNetworkTopology(modelKey)
-				assert.Error(err)
+				assert.EqualError(err, "open bas/networktopology-hostname_127.0.0.1_2.csv: no such file or directory")
 				s.(*storage).baseDir = baseDir
 			},
 		},
@@ -410,7 +410,7 @@ func TestStorage_ClearDownload(t *testing.T) {
 			},
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string) {
 				assert := assert.New(t)
-				assert.Error(s.ClearDownload(modelKey))
+				assert.EqualError(s.ClearDownload(modelKey), "remove baz/download-hostname_127.0.0.1_2.csv: no such file or directory")
 
 				s.(*storage).baseDir = baseDir
 				assert.NoError(s.ClearDownload(modelKey))
@@ -473,8 +473,7 @@ func TestStorage_ClearNetworkTopology(t *testing.T) {
 			},
 			expect: func(t *testing.T, s Storage, baseDir, modelKey string) {
 				assert := assert.New(t)
-				assert.Error(s.ClearNetworkTopology(modelKey))
-
+				assert.EqualError(s.ClearNetworkTopology(modelKey), "remove baz/networktopology-hostname_127.0.0.1_2.csv: no such file or directory")
 				s.(*storage).baseDir = baseDir
 				assert.NoError(s.ClearNetworkTopology(modelKey))
 			},
