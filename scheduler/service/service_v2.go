@@ -677,7 +677,7 @@ func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
 	}
 
 	// Find probe hosts for probing.
-	hostIDs := v.networkTopology.FindProbes(srcHostID)
+	hostIDs := v.networkTopology.FindDestHostIDs(srcHostID)
 	hosts := make([]*commonv2.Host, 0)
 	for _, hostID := range hostIDs {
 		host, ok := v.resource.HostManager().Load(hostID)
