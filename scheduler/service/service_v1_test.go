@@ -36,8 +36,6 @@ import (
 	"go.uber.org/atomic"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	commonv2 "d7y.io/api/pkg/apis/common/v2"
@@ -70,16 +68,6 @@ var (
 		RetryBackToSourceLimit: 3,
 		RetryInterval:          10 * time.Millisecond,
 		BackToSourceCount:      int(mockTaskBackToSourceLimit),
-	}
-
-	mockNetworkTopologyConfig = config.NetworkTopologyConfig{
-		Enable:          true,
-		CollectInterval: 2 * time.Hour,
-		Probe: config.ProbeConfig{
-			QueueLength: 5,
-			Interval:    15 * time.Minute,
-			Count:       10,
-		},
 	}
 
 	mockRawHost = resource.Host{
@@ -217,20 +205,6 @@ var (
 		TrafficType: commonv2.TrafficType_REMOTE_PEER,
 		Cost:        1 * time.Minute,
 		CreatedAt:   time.Now(),
-	}
-
-	mockProbe = &schedulerv1.Probe{
-		Host: &commonv1.Host{
-			Id:           mockRawHost.ID,
-			Ip:           mockRawHost.IP,
-			Hostname:     mockRawHost.Hostname,
-			Port:         mockRawHost.Port,
-			DownloadPort: mockRawHost.DownloadPort,
-			Location:     mockRawHost.Network.Location,
-			Idc:          mockRawHost.Network.IDC,
-		},
-		Rtt:       durationpb.New(30 * time.Millisecond),
-		CreatedAt: timestamppb.Now(),
 	}
 )
 
