@@ -154,5 +154,5 @@ func (s *schedulerServerV2) LeaveHost(ctx context.Context, req *schedulerv2.Leav
 
 // SyncProbes sync probes of the host.
 func (s *schedulerServerV2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
-	return nil
+	return s.service.SyncProbes(stream)
 }

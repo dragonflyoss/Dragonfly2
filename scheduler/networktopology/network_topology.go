@@ -68,6 +68,9 @@ type NetworkTopology interface {
 
 	// Snapshot writes the current network topology to the storage.
 	Snapshot() error
+
+	// FindProbes finds hosts for source host probing.
+	FindProbes(string) []string
 }
 
 // networkTopology is an implementation of network topology.
@@ -325,5 +328,11 @@ func (nt *networkTopology) Snapshot() error {
 		}
 	}
 
+	return nil
+}
+
+// TODO: implement this function.
+// FindProbes finds hosts for source host probing.
+func (nt *networkTopology) FindProbes(string) []string {
 	return nil
 }

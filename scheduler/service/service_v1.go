@@ -27,6 +27,7 @@ import (
 
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	commonv2 "d7y.io/api/pkg/apis/common/v2"
@@ -650,6 +651,66 @@ func (v *V1) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostRequest) e
 	}
 
 	host.LeavePeers()
+	return nil
+}
+
+// SyncProbes sync probes of the host.
+func (v *V1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
+	req, err := stream.Recv()
+	if err != nil {
+		if err == io.EOF {
+			return nil
+		}
+
+		logger.Errorf("receive error: %s", err.Error())
+		return err
+	}
+
+	srcHostID := req.ProbesOfHost.Host.Id
+	if len(req.ProbesOfHost.Probes) > 0 {
+		for _, probe := range req.ProbesOfHost.Probes {
+			destHostID := probe.Host.Id
+			if err := v.networkTopology.Store(srcHostID, destHostID); err != nil {
+				return err
+			}
+
+			if err := v.networkTopology.Probes(srcHostID, destHostID).Enqueue(&networktopology.Probe{
+				Host: resource.NewHost(probe.Host.Id, probe.Host.Ip, probe.Host.Hostname, probe.Host.Port,
+					probe.Host.DownloadPort, types.HostTypeNormal),
+				RTT:       probe.Rtt.AsDuration(),
+				CreatedAt: probe.CreatedAt.AsTime(),
+			}); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Find probes hosts for probing.
+	hostIDs := v.networkTopology.FindProbes(srcHostID)
+	hosts := make([]*commonv1.Host, 0)
+	for _, hostID := range hostIDs {
+		host, ok := v.resource.HostManager().Load(hostID)
+		if !ok {
+			logger.Error(fmt.Sprintf("host %s not found", hostID))
+			continue
+		}
+
+		hosts = append(hosts, &commonv1.Host{
+			Id:           host.ID,
+			Ip:           host.IP,
+			Hostname:     host.Hostname,
+			Port:         host.Port,
+			DownloadPort: host.DownloadPort,
+			Location:     host.Network.Location,
+			Idc:          host.Network.IDC,
+		})
+	}
+
+	// Send probe hosts.
+	if err := stream.Send(&schedulerv1.SyncProbesResponse{Hosts: hosts, ProbeInterval: durationpb.New(v.config.NetworkTopology.CollectInterval)}); err != nil {
+		return err
+	}
+
 	return nil
 }
 
