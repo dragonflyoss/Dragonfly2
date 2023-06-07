@@ -660,7 +660,8 @@ func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
 		for _, probe := range req.ProbesOfHost.Probes {
 			destHostID := probe.Host.Id
 			if err := v.networkTopology.Store(srcHostID, destHostID); err != nil {
-				return err
+				logger.Errorf("store error: %s", err.Error())
+				continue
 			}
 
 			if err := v.networkTopology.Probes(srcHostID, destHostID).Enqueue(&networktopology.Probe{
@@ -669,7 +670,8 @@ func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
 				RTT:       probe.Rtt.AsDuration(),
 				CreatedAt: probe.CreatedAt.AsTime(),
 			}); err != nil {
-				return err
+				logger.Errorf("enqueue error: %s", err.Error())
+				continue
 			}
 		}
 	}
