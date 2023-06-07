@@ -143,7 +143,7 @@ func TestAnnouncer_New(t *testing.T) {
 			},
 			expect: func(t *testing.T, a Announcer, err error) {
 				assert := assert.New(t)
-				assert.Error(err)
+				assert.EqualError(err, "foo")
 			},
 		},
 	}
