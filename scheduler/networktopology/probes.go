@@ -19,189 +19,227 @@
 package networktopology
 
 import (
-	"container/list"
-	"errors"
-	"sync"
+	"context"
+	"encoding/json"
 	"time"
 
-	"go.uber.org/atomic"
+	"github.com/go-redis/redis/v8"
 
+	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
 const (
-	// DefaultMovingAverageWeight is the weight of the moving average.
-	DefaultMovingAverageWeight = 0.1
+	// defaultMovingAverageWeight is the default weight of moving average.
+	defaultMovingAverageWeight = 0.1
 )
 
+// Probe is the probe metadata.
 type Probe struct {
 	// Host metadata.
-	Host *resource.Host
+	Host *resource.Host `json:"host"`
 
 	// RTT is the round-trip time sent via this pinger.
-	RTT time.Duration
+	RTT time.Duration `json:"rtt"`
 
 	// CreatedAt is the time to create probe.
-	CreatedAt time.Time
+	CreatedAt time.Time `json:"createdAt"`
 }
 
-// NewProbe creates a new probe instance.
-func NewProbe(host *resource.Host, rtt time.Duration, createdAt time.Time) *Probe {
-	return &Probe{
-		Host:      host,
-		RTT:       rtt,
-		CreatedAt: createdAt,
-	}
-}
-
+// Probes is the interface to store probes.
 type Probes interface {
 	// Peek returns the oldest probe without removing it.
-	Peek() (*Probe, bool)
+	Peek() (*Probe, error)
 
 	// Enqueue enqueues probe into the queue.
 	Enqueue(*Probe) error
 
-	// Dequeue removes and returns the oldest probe.
-	Dequeue() (*Probe, bool)
-
-	// Items returns the probes list.
-	Items() *list.List
-
-	// Length gets the length of probes.
-	Length() int
+	// Len gets the length of probes.
+	Len() (int64, error)
 
 	// CreatedAt is the creation time of probes.
-	CreatedAt() time.Time
+	CreatedAt() (time.Time, error)
 
 	// UpdatedAt is the updated time to store probe.
-	UpdatedAt() time.Time
+	UpdatedAt() (time.Time, error)
 
-	// AverageRTT is the average round-trip time of probes.
-	AverageRTT() time.Duration
+	// AverageRTT is the moving average round-trip time of probes.
+	AverageRTT() (time.Duration, error)
 }
 
+// probes is the implementation of Probes.
 type probes struct {
-	// limit is the length limit of probe queue.
-	limit int
+	// config is the probe config.
+	config config.ProbeConfig
 
-	// items are the list of probe.
-	items *list.List
+	// rdb is redis universal client interface.
+	rdb redis.UniversalClient
 
-	// averageRTT is the average round-trip time of probes.
-	averageRTT *atomic.Duration
+	// srcHostID is the source host id.
+	srcHostID string
 
-	// createdAt is the creation time of probes.
-	createdAt *atomic.Time
-
-	// updatedAt is the update time to store probe.
-	updatedAt *atomic.Time
-
-	// mu locks for probe queue.
-	mu *sync.RWMutex
+	// destHostID is the destination host id.
+	destHostID string
 }
 
-// NewProbes creates a new probe list instance.
-func NewProbes(limit int) Probes {
+// NewProbes creates a probes interface.
+func NewProbes(cfg config.ProbeConfig, rdb redis.UniversalClient, srcHostID string, destHostID string) Probes {
 	return &probes{
-		limit:      limit,
-		items:      list.New(),
-		averageRTT: atomic.NewDuration(0),
-		createdAt:  atomic.NewTime(time.Now()),
-		updatedAt:  atomic.NewTime(time.Time{}),
-		mu:         &sync.RWMutex{},
+		config:     cfg,
+		rdb:        rdb,
+		srcHostID:  srcHostID,
+		destHostID: destHostID,
 	}
 }
 
 // Peek returns the oldest probe without removing it.
-func (p *probes) Peek() (*Probe, bool) {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
+func (p *probes) Peek() (*Probe, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
 
-	if p.items.Len() == 0 {
-		return nil, false
+	rawProbe, err := p.rdb.LIndex(ctx, pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID), 0).Bytes()
+	if err != nil {
+		return nil, err
 	}
 
-	probe, ok := p.items.Front().Value.(*Probe)
-	if !ok {
-		return nil, false
+	probe := &Probe{}
+	if err = json.Unmarshal(rawProbe, probe); err != nil {
+		return nil, err
 	}
 
-	return probe, true
+	return probe, nil
 }
 
 // Enqueue enqueues probe into the queue.
 func (p *probes) Enqueue(probe *Probe) error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
 
-	// Remove the oldest probe if the queue is full.
-	if p.items.Len() == p.limit {
-		front := p.items.Front()
-		p.items.Remove(front)
+	// Get the length of the queue.
+	length, err := p.Len()
+	if err != nil {
+		return err
 	}
-	p.items.PushBack(probe)
 
-	// Calculate the average RTT.
+	// If the queue is full, remove the oldest probe.
+	if length >= int64(p.config.QueueLength) {
+		if _, err := p.dequeue(); err != nil {
+			return err
+		}
+	}
+
+	// Push the probe into the queue.
+	data, err := json.Marshal(probe)
+	if err != nil {
+		return err
+	}
+
+	if err := p.rdb.RPush(ctx, pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID), data).Err(); err != nil {
+		return err
+	}
+
+	// Calculate the moving average round-trip time.
 	var averageRTT time.Duration
-	for e := p.items.Front(); e != nil; e = e.Next() {
-		probe, ok := e.Value.(*Probe)
-		if !ok {
-			return errors.New("invalid probe")
+	if length > 0 {
+		// If the queue is not empty, calculate the
+		// moving average round-trip time.
+		rawProbes, err := p.rdb.LRange(context.Background(), pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID), 0, -1).Result()
+		if err != nil {
+			return err
 		}
 
-		if e == p.items.Front() {
-			averageRTT = probe.RTT
-			continue
-		}
+		for index, rawProbe := range rawProbes {
+			probe := &Probe{}
+			if err = json.Unmarshal([]byte(rawProbe), probe); err != nil {
+				return err
+			}
 
-		averageRTT = time.Duration(float64(averageRTT)*DefaultMovingAverageWeight +
-			float64(probe.RTT)*(1-DefaultMovingAverageWeight))
+			if index == 0 {
+				averageRTT = probe.RTT
+				continue
+			}
+
+			averageRTT = time.Duration(float64(averageRTT)*defaultMovingAverageWeight +
+				float64(probe.RTT)*(1-defaultMovingAverageWeight))
+		}
+	} else {
+		// If the queue is empty, use the probe round-trip time as
+		// the moving average round-trip time.
+		averageRTT = probe.RTT
 	}
-	p.averageRTT.Store(averageRTT)
 
-	p.updatedAt = atomic.NewTime(probe.CreatedAt)
+	// Update the moving average round-trip time and updated time.
+	if err := p.rdb.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "averageRTT", averageRTT.Nanoseconds()).Err(); err != nil {
+		return err
+	}
+
+	if err := p.rdb.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "updatedAt", probe.CreatedAt.Format(time.RFC3339Nano)).Err(); err != nil {
+		return err
+	}
+
+	if err := p.rdb.Set(ctx, pkgredis.MakeProbedAtKeyInScheduler(p.destHostID), probe.CreatedAt.Format(time.RFC3339Nano), 0).Err(); err != nil {
+		return err
+	}
+
+	if err := p.rdb.Incr(ctx, pkgredis.MakeProbedCountKeyInScheduler(p.destHostID)).Err(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
-// Dequeue removes and returns the oldest probe.
-func (p *probes) Dequeue() (*Probe, bool) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	if p.items.Len() == 0 {
-		return nil, false
-	}
-
-	probe, ok := p.items.Front().Value.(*Probe)
-	if !ok {
-		return nil, false
-	}
-
-	p.items.Remove(p.items.Front())
-	return probe, true
-}
-
-// Items returns the probes list.
-func (p *probes) Items() *list.List {
-	return p.items
-}
-
 // Length gets the length of probes.
-func (p *probes) Length() int {
-	return p.items.Len()
+func (p *probes) Len() (int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	return p.rdb.LLen(ctx, pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID)).Result()
 }
 
 // CreatedAt is the creation time of probes.
-func (p *probes) CreatedAt() time.Time {
-	return p.createdAt.Load()
+func (p *probes) CreatedAt() (time.Time, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	return p.rdb.HGet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "createdAt").Time()
 }
 
 // UpdatedAt is the updated time to store probe.
-func (p *probes) UpdatedAt() time.Time {
-	return p.updatedAt.Load()
+func (p *probes) UpdatedAt() (time.Time, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	return p.rdb.HGet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "updatedAt").Time()
 }
 
-// AverageRTT is the average round-trip time of probes.
-func (p *probes) AverageRTT() time.Duration {
-	return p.averageRTT.Load()
+// AverageRTT is the moving average round-trip time of probes.
+func (p *probes) AverageRTT() (time.Duration, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	averageRTT, err := p.rdb.HGet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "averageRTT").Int64()
+	if err != nil {
+		return 0, err
+	}
+
+	return time.Duration(averageRTT), nil
+}
+
+// dequeue removes and returns the oldest probe.
+func (p *probes) dequeue() (*Probe, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	rawProbe, err := p.rdb.LPop(ctx, pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID)).Bytes()
+	if err != nil {
+		return nil, err
+	}
+
+	probe := &Probe{}
+	if err = json.Unmarshal(rawProbe, probe); err != nil {
+		return nil, err
+	}
+
+	return probe, nil
 }

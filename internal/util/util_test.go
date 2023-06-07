@@ -75,3 +75,36 @@ func TestComputePieceSize(t *testing.T) {
 		})
 	}
 }
+
+func TestComputePieceCount(t *testing.T) {
+	type args struct {
+		length int64
+	}
+	tests := []struct {
+		name string
+		args args
+		want int32
+	}{
+		{
+			name: "less than one piece",
+			args: args{
+				length: DefaultPieceSize - 1,
+			},
+			want: 1,
+		},
+		{
+			name: "extra incomplete piece",
+			args: args{
+				length: DefaultPieceSize + (DefaultPieceSize - 1),
+			},
+			want: 2,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ComputePieceCount(tt.args.length, DefaultPieceSize); got != tt.want {
+				t.Errorf("ComputePieceCount() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

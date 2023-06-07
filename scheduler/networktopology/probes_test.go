@@ -17,39 +17,74 @@
 package networktopology
 
 import (
-	"container/list"
-	"sync"
+	"encoding/json"
+	"errors"
+	"math"
+	"strconv"
 	"testing"
 	"time"
 
+	"github.com/go-redis/redismock/v8"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/atomic"
 
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
 	"d7y.io/dragonfly/v2/pkg/types"
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
 var (
 	mockHost = &resource.Host{
-		ID:              idgen.HostIDV2("127.0.0.1", "HostName"),
-		Type:            types.HostTypeNormal,
-		Hostname:        "hostname",
-		IP:              "127.0.0.1",
-		Port:            8003,
-		DownloadPort:    8001,
-		OS:              "darwin",
-		Platform:        "darwin",
-		PlatformFamily:  "Standalone Workstation",
-		PlatformVersion: "11.1",
-		KernelVersion:   "20.2.0",
-		CPU:             mockCPU,
-		Memory:          mockMemory,
-		Network:         mockNetwork,
-		Disk:            mockDisk,
-		Build:           mockBuild,
-		CreatedAt:       atomic.NewTime(time.Now()),
-		UpdatedAt:       atomic.NewTime(time.Now()),
+		ID:                    idgen.HostIDV2("127.0.0.1", "foo"),
+		Type:                  types.HostTypeNormal,
+		Hostname:              "foo",
+		IP:                    "127.0.0.1",
+		Port:                  8003,
+		DownloadPort:          8001,
+		OS:                    "darwin",
+		Platform:              "darwin",
+		PlatformFamily:        "Standalone Workstation",
+		PlatformVersion:       "11.1",
+		KernelVersion:         "20.2.0",
+		ConcurrentUploadLimit: atomic.NewInt32(int32(300)),
+		ConcurrentUploadCount: atomic.NewInt32(0),
+		UploadCount:           atomic.NewInt64(0),
+		UploadFailedCount:     atomic.NewInt64(0),
+		CPU:                   mockCPU,
+		Memory:                mockMemory,
+		Network:               mockNetwork,
+		Disk:                  mockDisk,
+		Build:                 mockBuild,
+		CreatedAt:             atomic.NewTime(time.Now()),
+		UpdatedAt:             atomic.NewTime(time.Now()),
+	}
+
+	mockSeedHost = &resource.Host{
+		ID:                    idgen.HostIDV2("127.0.0.1", "bar"),
+		Type:                  types.HostTypeSuperSeed,
+		Hostname:              "bar",
+		IP:                    "127.0.0.1",
+		Port:                  8003,
+		DownloadPort:          8001,
+		OS:                    "darwin",
+		Platform:              "darwin",
+		PlatformFamily:        "Standalone Workstation",
+		PlatformVersion:       "11.1",
+		KernelVersion:         "20.2.0",
+		ConcurrentUploadLimit: atomic.NewInt32(int32(300)),
+		ConcurrentUploadCount: atomic.NewInt32(0),
+		UploadCount:           atomic.NewInt64(0),
+		UploadFailedCount:     atomic.NewInt64(0),
+		CPU:                   mockCPU,
+		Memory:                mockMemory,
+		Network:               mockNetwork,
+		Disk:                  mockDisk,
+		Build:                 mockBuild,
+		CreatedAt:             atomic.NewTime(time.Now()),
+		UpdatedAt:             atomic.NewTime(time.Now()),
 	}
 
 	mockCPU = resource.CPU{
@@ -110,63 +145,46 @@ var (
 
 	mockProbe = &Probe{
 		Host:      mockHost,
-		RTT:       3000000 * time.Nanosecond,
+		RTT:       30 * time.Millisecond,
 		CreatedAt: time.Now(),
 	}
 
-	mockProbes = &probes{
-		limit:      mockQueueLength,
-		items:      list.New(),
-		averageRTT: atomic.NewDuration(0),
-		createdAt:  atomic.NewTime(time.Now()),
-		updatedAt:  atomic.NewTime(time.Time{}),
-		mu:         &sync.RWMutex{},
-	}
-
-	mockQueueLength = 5
-)
-
-func Test_NewProbe(t *testing.T) {
-	tests := []struct {
-		name   string
-		expect func(t *testing.T, p *Probe)
-	}{
-		{
-			name: "new probe",
-			expect: func(t *testing.T, p *Probe) {
-				assert := assert.New(t)
-				assert.EqualValues(p, mockProbe)
-			},
+	mockNetworkTopologyConfig = config.NetworkTopologyConfig{
+		Enable:          true,
+		CollectInterval: 2 * time.Hour,
+		Probe: config.ProbeConfig{
+			QueueLength: 5,
+			Interval:    15 * time.Minute,
+			Count:       10,
 		},
 	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, NewProbe(mockProbe.Host, mockProbe.RTT, mockProbe.CreatedAt))
-		})
-	}
-}
+
+	mockProbesCreatedAt = time.Now()
+	mockProbedCount     = 10
+)
 
 func Test_NewProbes(t *testing.T) {
 	tests := []struct {
 		name   string
-		expect func(t *testing.T, p Probes)
+		expect func(t *testing.T, rawProbes Probes)
 	}{
 		{
 			name: "new probes",
-			expect: func(t *testing.T, p Probes) {
+			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
-				probes := p.(*probes)
-				assert.Equal(probes.limit, mockQueueLength)
-				assert.Equal(probes.items.Len(), 0)
-				assert.Equal(probes.averageRTT.Load().Nanoseconds(), int64(0))
-				assert.NotEqual(probes.createdAt.Load(), 0)
-				assert.Equal(probes.updatedAt.Load(), time.Time{})
+				probes := ps.(*probes)
+				assert.Equal(probes.config.QueueLength, 5)
+				assert.NotNil(probes.rdb)
+				assert.Equal(probes.srcHostID, mockSeedHost.ID)
+				assert.Equal(probes.destHostID, mockHost.ID)
 			},
 		},
 	}
+
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, NewProbes(mockQueueLength))
+			rdb, _ := redismock.NewClientMock()
+			tc.expect(t, NewProbes(mockNetworkTopologyConfig.Probe, rdb, mockSeedHost.ID, mockHost.ID))
 		})
 	}
 }
@@ -174,66 +192,129 @@ func Test_NewProbes(t *testing.T) {
 func TestProbes_Peek(t *testing.T) {
 	tests := []struct {
 		name   string
-		probes Probes
-		mock   func(probes Probes)
+		probes []*Probe
+		mock   func(mockRDBClient redismock.ClientMock, ps []*Probe)
 		expect func(t *testing.T, p Probes)
 	}{
 		{
 			name:   "queue has one probe",
-			probes: NewProbes(mockQueueLength),
-			mock: func(probes Probes) {
-				if err := probes.Enqueue(mockProbe); err != nil {
+			probes: []*Probe{},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				data, err := json.Marshal(mockProbe)
+				if err != nil {
 					t.Fatal(err)
 				}
+
+				mockRDBClient.ExpectLIndex(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0).SetVal(string(data))
 			},
-			expect: func(t *testing.T, p Probes) {
+			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
-				probe, peeked := p.Peek()
-				assert.True(peeked)
-				assert.EqualValues(probe, mockProbe)
-				assert.Equal(p.Length(), 1)
+				probe, err := ps.Peek()
+				assert.NoError(err)
+				assert.Equal(probe.Host.ID, mockProbe.Host.ID)
+				assert.Equal(probe.Host.Type, mockProbe.Host.Type)
+				assert.Equal(probe.Host.Hostname, mockProbe.Host.Hostname)
+				assert.Equal(probe.Host.IP, mockProbe.Host.IP)
+				assert.Equal(probe.Host.Port, mockProbe.Host.Port)
+				assert.Equal(probe.Host.DownloadPort, mockProbe.Host.DownloadPort)
+				assert.Equal(probe.Host.OS, mockProbe.Host.OS)
+				assert.Equal(probe.Host.Platform, mockProbe.Host.Platform)
+				assert.Equal(probe.Host.PlatformFamily, mockProbe.Host.PlatformFamily)
+				assert.Equal(probe.Host.PlatformVersion, mockProbe.Host.PlatformVersion)
+				assert.Equal(probe.Host.KernelVersion, mockProbe.Host.KernelVersion)
+				assert.Equal(probe.Host.ConcurrentUploadLimit, mockProbe.Host.ConcurrentUploadLimit)
+				assert.Equal(probe.Host.ConcurrentUploadCount, mockProbe.Host.ConcurrentUploadCount)
+				assert.Equal(probe.Host.UploadCount, mockProbe.Host.UploadCount)
+				assert.Equal(probe.Host.UploadFailedCount, mockProbe.Host.UploadFailedCount)
+				assert.EqualValues(probe.Host.CPU, mockProbe.Host.CPU)
+				assert.EqualValues(probe.Host.Memory, mockProbe.Host.Memory)
+				assert.EqualValues(probe.Host.Network, mockProbe.Host.Network)
+				assert.EqualValues(probe.Host.Disk, mockProbe.Host.Disk)
+				assert.EqualValues(probe.Host.Build, mockProbe.Host.Build)
+				assert.Equal(probe.RTT, mockProbe.RTT)
+				assert.True(probe.CreatedAt.Equal(mockProbe.CreatedAt))
 			},
 		},
 		{
-			name:   "queue has three probes",
-			probes: NewProbes(mockQueueLength),
-			mock: func(probes Probes) {
-				if err := probes.Enqueue(mockProbe); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(NewProbe(mockHost, 3100000*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(NewProbe(mockHost, 3200000*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
+			name: "queue has six probe",
+			probes: []*Probe{
+				{mockHost, 31 * time.Millisecond, time.Now()},
+				{mockHost, 32 * time.Millisecond, time.Now()},
+				{mockHost, 33 * time.Millisecond, time.Now()},
+				{mockHost, 34 * time.Millisecond, time.Now()},
+				mockProbe,
 			},
-			expect: func(t *testing.T, p Probes) {
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				var rawProbes []string
+				for _, p := range ps {
+					data, err := json.Marshal(p)
+					if err != nil {
+						t.Fatal(err)
+					}
+
+					rawProbes = append(rawProbes, string(data))
+				}
+
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectLIndex(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0).SetVal(rawProbes[4])
+				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(5)
+				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(rawProbes[4])
+				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), []byte(rawProbes[4])).SetVal(1)
+				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(rawProbes)
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", int64(30388900)).SetVal(1)
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", mockProbe.CreatedAt.Format(time.RFC3339Nano)).SetVal(1)
+				mockRDBClient.ExpectSet(pkgredis.MakeProbedAtKeyInScheduler(mockHost.ID), mockProbe.CreatedAt.Format(time.RFC3339Nano), 0).SetVal("ok")
+				mockRDBClient.ExpectIncr(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(6)
+				mockRDBClient.ExpectLIndex(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0).SetVal(rawProbes[0])
+			},
+			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
-				probe, peeked := p.Peek()
-				assert.True(peeked)
-				assert.EqualValues(probe, mockProbe)
-				assert.Equal(p.Length(), 3)
+				probe, err := ps.Peek()
+				assert.NoError(err)
+				assert.Equal(probe.RTT, mockProbe.RTT)
+				assert.NoError(ps.Enqueue(mockProbe))
+
+				probe, err = ps.Peek()
+				assert.NoError(err)
+				assert.Equal(probe.RTT, 31*time.Millisecond)
 			},
 		},
 		{
 			name:   "queue has no probe",
-			probes: NewProbes(mockQueueLength),
-			mock:   func(probes Probes) {},
-			expect: func(t *testing.T, p Probes) {
+			probes: []*Probe{},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				mockRDBClient.ExpectLIndex(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0).SetErr(errors.New("no probe"))
+			},
+			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
-				_, peeked := p.Peek()
-				assert.False(peeked)
-				assert.Equal(p.Length(), 0)
+				_, err := ps.Peek()
+				assert.EqualError(err, "no probe")
+			},
+		},
+		{
+			name:   "unmarshal probe error",
+			probes: []*Probe{},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				mockRDBClient.ExpectLIndex(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0).SetVal("foo")
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				_, err := ps.Peek()
+				assert.EqualError(err, "invalid character 'o' in literal false (expecting 'a')")
 			},
 		},
 	}
+
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.mock(tc.probes)
-			tc.expect(t, tc.probes)
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+
+			rdb, mockRDBClient := redismock.NewClientMock()
+			tc.mock(mockRDBClient, tc.probes)
+
+			tc.expect(t, NewProbes(mockNetworkTopologyConfig.Probe, rdb, mockSeedHost.ID, mockHost.ID))
+			mockRDBClient.ClearExpect()
 		})
 	}
 }
@@ -241,283 +322,416 @@ func TestProbes_Peek(t *testing.T) {
 func TestProbes_Enqueue(t *testing.T) {
 	tests := []struct {
 		name   string
-		probes Probes
-		mock   func(probes Probes)
-		expect func(t *testing.T, p Probes)
+		probes []*Probe
+		mock   func(mockRDBClient redismock.ClientMock, ps []*Probe)
+		expect func(t *testing.T, ps Probes)
 	}{
 		{
-			name:   "enqueue probe",
-			probes: NewProbes(mockQueueLength),
-			mock: func(probes Probes) {
-				if err := probes.Enqueue(mockProbe); err != nil {
+			name: "enqueue probe when probes queue is empty",
+			probes: []*Probe{
+				mockProbe,
+			},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				data, err := json.Marshal(ps[0])
+				if err != nil {
 					t.Fatal(err)
 				}
-			},
-			expect: func(t *testing.T, p Probes) {
-				assert := assert.New(t)
-				assert.Equal(p.Length(), 1)
 
-				probe, peeked := p.Peek()
-				assert.True(peeked)
-				assert.EqualValues(probe, mockProbe)
-				assert.Equal(p.AverageRTT(), probe.RTT)
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(0)
+				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), data).SetVal(1)
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", mockProbe.RTT.Nanoseconds()).SetVal(1)
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", mockProbe.CreatedAt.Format(time.RFC3339Nano)).SetVal(1)
+				mockRDBClient.ExpectSet(pkgredis.MakeProbedAtKeyInScheduler(mockHost.ID), mockProbe.CreatedAt.Format(time.RFC3339Nano), 0).SetVal("ok")
+				mockRDBClient.ExpectIncr(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(1)
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				assert.NoError(ps.Enqueue(mockProbe))
 			},
 		},
 		{
-			name:   "enqueue five probes",
-			probes: NewProbes(mockQueueLength),
-			mock: func(probes Probes) {
-				if err := probes.Enqueue(mockProbe); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(NewProbe(mockHost, 3100000*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(NewProbe(mockHost, 3200000*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(NewProbe(mockHost, 3300000*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(NewProbe(mockHost, 3400000*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
+			name: "enqueue probe when probes queue has one probe",
+			probes: []*Probe{
+				mockProbe,
+				{mockHost, 31 * time.Millisecond, time.Now()},
 			},
-			expect: func(t *testing.T, p Probes) {
-				assert := assert.New(t)
-				assert.Equal(p.Length(), 5)
-				assert.Equal(p.AverageRTT().Nanoseconds(), int64(3388890))
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				var rawProbes []string
+				for _, p := range ps {
+					data, err := json.Marshal(p)
+					if err != nil {
+						t.Fatal(err)
+					}
 
-				probe, peeked := p.Peek()
-				assert.True(peeked)
-				assert.EqualValues(probe, mockProbe)
+					rawProbes = append(rawProbes, string(data))
+				}
+
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(1)
+				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), []byte(rawProbes[0])).SetVal(1)
+				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal([]string{rawProbes[1], rawProbes[0]})
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", int64(30100000)).SetVal(1)
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", mockProbe.CreatedAt.Format(time.RFC3339Nano)).SetVal(1)
+				mockRDBClient.ExpectSet(pkgredis.MakeProbedAtKeyInScheduler(mockHost.ID), mockProbe.CreatedAt.Format(time.RFC3339Nano), 0).SetVal("ok")
+				mockRDBClient.ExpectIncr(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(2)
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				assert.NoError(ps.Enqueue(mockProbe))
 			},
 		},
 		{
-			name:   "enqueue six probes",
-			probes: NewProbes(mockQueueLength),
-			mock: func(probes Probes) {
-				if err := probes.Enqueue(NewProbe(mockHost, 3400000*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(mockProbe); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(NewProbe(mockHost, 3100000*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(NewProbe(mockHost, 3200000*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(NewProbe(mockHost, 3300000*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(NewProbe(mockHost, 3400000*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
+			name: "enqueue probe when probes queue has five probes",
+			probes: []*Probe{
+				{mockHost, 31 * time.Millisecond, time.Now()},
+				{mockHost, 32 * time.Millisecond, time.Now()},
+				{mockHost, 33 * time.Millisecond, time.Now()},
+				{mockHost, 34 * time.Millisecond, time.Now()},
+				mockProbe,
 			},
-			expect: func(t *testing.T, p Probes) {
-				assert := assert.New(t)
-				assert.Equal(p.Length(), 5)
-				assert.Equal(p.AverageRTT().Nanoseconds(), int64(3388890))
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				var rawProbes []string
+				for _, p := range ps {
+					data, err := json.Marshal(p)
+					if err != nil {
+						t.Fatal(err)
+					}
 
-				probe, peeked := p.Peek()
-				assert.True(peeked)
-				assert.EqualValues(probe, mockProbe)
+					rawProbes = append(rawProbes, string(data))
+				}
+
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(5)
+				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(rawProbes[0])
+				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), []byte(rawProbes[4])).SetVal(1)
+				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(rawProbes)
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", int64(30388900)).SetVal(1)
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", mockProbe.CreatedAt.Format(time.RFC3339Nano)).SetVal(1)
+				mockRDBClient.ExpectSet(pkgredis.MakeProbedAtKeyInScheduler(mockHost.ID), mockProbe.CreatedAt.Format(time.RFC3339Nano), 0).SetVal("ok")
+				mockRDBClient.ExpectIncr(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(6)
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				assert.NoError(ps.Enqueue(mockProbe))
+			},
+		},
+		{
+			name:   "get the length of the queue error",
+			probes: []*Probe{},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetErr(errors.New("get the length of the queue error"))
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				assert.EqualError(ps.Enqueue(mockProbe), "get the length of the queue error")
+			},
+		},
+		{
+			name:   "remove the oldest probe error when the queue is full",
+			probes: []*Probe{},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(5)
+				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetErr(errors.New("remove the oldest probe error when the queue is full"))
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				assert.EqualError(ps.Enqueue(mockProbe), "remove the oldest probe error when the queue is full")
+			},
+		},
+		{
+			name:   "marshal probe error",
+			probes: []*Probe{},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(0)
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				assert.EqualError(ps.Enqueue(&Probe{
+					Host: &resource.Host{
+						CPU: resource.CPU{
+							Percent: math.NaN(),
+						},
+					},
+					RTT:       30 * time.Millisecond,
+					CreatedAt: time.Now(),
+				}), "json: unsupported value: NaN")
+			},
+		},
+		{
+			name:   "push probe in queue error",
+			probes: []*Probe{mockProbe},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				data, err := json.Marshal(ps[0])
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(0)
+				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), data).SetErr(
+					errors.New("push probe in queue error"))
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				assert.EqualError(ps.Enqueue(mockProbe), "push probe in queue error")
+			},
+		},
+		{
+			name: "get probes error",
+			probes: []*Probe{
+				{mockHost, 31 * time.Millisecond, time.Now()},
+				mockProbe,
+			},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				var rawProbes []string
+				for _, p := range ps {
+					data, err := json.Marshal(p)
+					if err != nil {
+						t.Fatal(err)
+					}
+
+					rawProbes = append(rawProbes, string(data))
+				}
+
+				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(1)
+				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), []byte(rawProbes[1])).SetVal(1)
+				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetErr(
+					errors.New("get probes error"))
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				assert.EqualError(ps.Enqueue(mockProbe), "get probes error")
+			},
+		},
+		{
+			name: "unmarshal probe error",
+			probes: []*Probe{
+				{mockHost, 31 * time.Millisecond, time.Now()},
+				mockProbe,
+			},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				var rawProbes []string
+				for _, p := range ps {
+					data, err := json.Marshal(p)
+					if err != nil {
+						t.Fatal(err)
+					}
+
+					rawProbes = append(rawProbes, string(data))
+				}
+
+				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(1)
+				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), []byte(rawProbes[1])).SetVal(1)
+				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal([]string{"foo"})
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				assert.EqualError(ps.Enqueue(mockProbe), "invalid character 'o' in literal false (expecting 'a')")
+			},
+		},
+		{
+			name:   "update the moving average round-trip time error",
+			probes: []*Probe{},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				data, err := json.Marshal(mockProbe)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(0)
+				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), data).SetVal(1)
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID),
+					"averageRTT", mockProbe.RTT.Nanoseconds()).SetErr(errors.New("update the moving average round-trip time error"))
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				assert.EqualError(ps.Enqueue(mockProbe), "update the moving average round-trip time error")
+			},
+		},
+		{
+			name:   "update the updated time error",
+			probes: []*Probe{},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				data, err := json.Marshal(mockProbe)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(0)
+				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), data).SetVal(1)
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID),
+					"averageRTT", mockProbe.RTT.Nanoseconds()).SetVal(1)
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID),
+					"updatedAt", mockProbe.CreatedAt.Format(time.RFC3339Nano)).SetErr(errors.New("update the updated time error"))
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				assert.EqualError(ps.Enqueue(mockProbe), "update the updated time error")
+			},
+		},
+		{
+			name:   "update the time of the last probe error",
+			probes: []*Probe{},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				data, err := json.Marshal(mockProbe)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(0)
+				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), data).SetVal(1)
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID),
+					"averageRTT", mockProbe.RTT.Nanoseconds()).SetVal(1)
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID),
+					"updatedAt", mockProbe.CreatedAt.Format(time.RFC3339Nano)).SetVal(1)
+				mockRDBClient.ExpectSet(pkgredis.MakeProbedAtKeyInScheduler(mockHost.ID), mockProbe.CreatedAt.Format(time.RFC3339Nano), 0).SetErr(
+					errors.New("update the time of the last probe error"))
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				assert.EqualError(ps.Enqueue(mockProbe), "update the time of the last probe error")
+			},
+		},
+		{
+			name:   "update the number of times the host has been probed error",
+			probes: []*Probe{},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				data, err := json.Marshal(mockProbe)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(0)
+				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), data).SetVal(1)
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID),
+					"averageRTT", mockProbe.RTT.Nanoseconds()).SetVal(1)
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID),
+					"updatedAt", mockProbe.CreatedAt.Format(time.RFC3339Nano)).SetVal(1)
+				mockRDBClient.ExpectSet(pkgredis.MakeProbedAtKeyInScheduler(mockHost.ID), mockProbe.CreatedAt.Format(time.RFC3339Nano), 0).SetVal("ok")
+				mockRDBClient.ExpectIncr(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetErr(errors.New("update the number of times the host has been probed error"))
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				assert.EqualError(ps.Enqueue(mockProbe), "update the number of times the host has been probed error")
 			},
 		},
 	}
+
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.mock(tc.probes)
-			tc.expect(t, tc.probes)
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+
+			rdb, mockRDBClient := redismock.NewClientMock()
+			tc.mock(mockRDBClient, tc.probes)
+
+			tc.expect(t, NewProbes(mockNetworkTopologyConfig.Probe, rdb, mockSeedHost.ID, mockHost.ID))
+			mockRDBClient.ClearExpect()
 		})
 	}
 }
 
-func TestProbes_Dequeue(t *testing.T) {
+func TestProbes_Len(t *testing.T) {
 	tests := []struct {
 		name   string
-		probes Probes
-		mock   func(probes Probes)
-		expect func(t *testing.T, p Probes)
-	}{
-		{
-			name:   "dequeue probe",
-			probes: NewProbes(mockQueueLength),
-			mock: func(probes Probes) {
-				if err := probes.Enqueue(mockProbe); err != nil {
-					t.Fatal(err)
-				}
-			},
-			expect: func(t *testing.T, p Probes) {
-				assert := assert.New(t)
-				assert.Equal(p.Length(), 1)
-
-				probe, ok := p.Dequeue()
-				assert.True(ok)
-				assert.EqualValues(probe, mockProbe)
-				assert.Equal(p.AverageRTT(), probe.RTT)
-				assert.Equal(p.Length(), 0)
-			},
-		},
-		{
-			name:   "dequeue probe from empty queue",
-			probes: NewProbes(mockQueueLength),
-			mock:   func(probes Probes) {},
-			expect: func(t *testing.T, p Probes) {
-				assert := assert.New(t)
-
-				_, ok := p.Dequeue()
-				assert.False(ok)
-			},
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			tc.mock(tc.probes)
-			tc.expect(t, tc.probes)
-		})
-	}
-}
-
-func TestProbes_Items(t *testing.T) {
-	tests := []struct {
-		name   string
-		probes Probes
-		mock   func(probes Probes)
-		expect func(t *testing.T, probes *list.List)
+		probes []*Probe
+		mock   func(mockRDBClient redismock.ClientMock, ps []*Probe)
+		expect func(t *testing.T, ps Probes)
 	}{
 		{
 			name:   "queue has one probe",
-			probes: NewProbes(mockQueueLength),
-			mock: func(probes Probes) {
-				if err := probes.Enqueue(mockProbe); err != nil {
-					t.Fatal(err)
-				}
+			probes: []*Probe{},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(1)
 			},
-			expect: func(t *testing.T, probes *list.List) {
+			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
-				assert.Equal(probes.Len(), 1)
-
-				probe, ok := probes.Front().Value.(*Probe)
-				assert.True(ok)
-				assert.EqualValues(probe, mockProbe)
+				length, err := ps.Len()
+				assert.NoError(err)
+				assert.Equal(length, int64(1))
 			},
 		},
 		{
-			name:   "queue has three probe",
-			probes: NewProbes(mockQueueLength),
-			mock: func(probes Probes) {
-				if err := probes.Enqueue(mockProbe); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(NewProbe(mockHost, 3100000*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(mockProbe); err != nil {
-					t.Fatal(err)
-				}
+			name: "queue has six probe",
+			probes: []*Probe{
+				{mockHost, 31 * time.Millisecond, time.Now()},
+				{mockHost, 32 * time.Millisecond, time.Now()},
+				{mockHost, 33 * time.Millisecond, time.Now()},
+				{mockHost, 34 * time.Millisecond, time.Now()},
+				mockProbe,
 			},
-			expect: func(t *testing.T, probes *list.List) {
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				var rawProbes []string
+				for _, p := range ps {
+					data, err := json.Marshal(p)
+					if err != nil {
+						t.Fatal(err)
+					}
+
+					rawProbes = append(rawProbes, string(data))
+				}
+
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(5)
+				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(5)
+				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(string(rawProbes[4]))
+				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), []byte(rawProbes[4])).SetVal(1)
+				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(rawProbes)
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", int64(30388900)).SetVal(1)
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", mockProbe.CreatedAt.Format(time.RFC3339Nano)).SetVal(1)
+				mockRDBClient.ExpectSet(pkgredis.MakeProbedAtKeyInScheduler(mockHost.ID), mockProbe.CreatedAt.Format(time.RFC3339Nano), 0).SetVal("ok")
+				mockRDBClient.ExpectIncr(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(6)
+				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(5)
+			},
+			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
-				assert.Equal(probes.Len(), 3)
+				length, err := ps.Len()
+				assert.NoError(err)
+				assert.Equal(length, int64(5))
+				assert.NoError(ps.Enqueue(mockProbe))
 
-				frontProbe, ok := probes.Front().Value.(*Probe)
-				assert.True(ok)
-				assert.EqualValues(frontProbe, mockProbe)
-
-				backProbe, ok := probes.Back().Value.(*Probe)
-				assert.True(ok)
-				assert.EqualValues(backProbe, mockProbe)
+				length, err = ps.Len()
+				assert.NoError(err)
+				assert.Equal(length, int64(5))
 			},
 		},
 		{
-			name:   "queue is empty",
-			probes: NewProbes(mockQueueLength),
-			mock:   func(probes Probes) {},
-			expect: func(t *testing.T, probes *list.List) {
+			name:   "queue has no probe",
+			probes: []*Probe{},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(0)
+			},
+			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
-				assert.Equal(probes.Len(), 0)
+				length, err := ps.Len()
+				assert.NoError(err)
+				assert.Equal(length, int64(0))
+			},
+		},
+		{
+			name:   "get queue length error",
+			probes: []*Probe{},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetErr(errors.New("get queue length error"))
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				_, err := ps.Len()
+				assert.EqualError(err, "get queue length error")
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.mock(tc.probes)
-			tc.expect(t, tc.probes.Items())
-		})
-	}
-}
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
 
-func TestProbes_Length(t *testing.T) {
-	tests := []struct {
-		name   string
-		probes Probes
-		mock   func(probes Probes)
-		expect func(t *testing.T, length int)
-	}{
-		{
-			name:   "queue has one probe",
-			probes: NewProbes(mockQueueLength),
-			mock: func(probes Probes) {
-				if err := probes.Enqueue(mockProbe); err != nil {
-					t.Fatal(err)
-				}
-			},
-			expect: func(t *testing.T, length int) {
-				assert := assert.New(t)
-				assert.Equal(length, 1)
-			},
-		},
-		{
-			name:   "queue has three probe",
-			probes: NewProbes(mockQueueLength),
-			mock: func(probes Probes) {
-				if err := probes.Enqueue(mockProbe); err != nil {
-					t.Fatal(err)
-				}
+			rdb, mockRDBClient := redismock.NewClientMock()
+			tc.mock(mockRDBClient, tc.probes)
 
-				if err := probes.Enqueue(NewProbe(mockHost, 3100000*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(mockProbe); err != nil {
-					t.Fatal(err)
-				}
-			},
-			expect: func(t *testing.T, length int) {
-				assert := assert.New(t)
-				assert.Equal(length, 3)
-			},
-		},
-		{
-			name:   "queue is empty",
-			probes: NewProbes(mockQueueLength),
-			mock:   func(probes Probes) {},
-			expect: func(t *testing.T, length int) {
-				assert := assert.New(t)
-				assert.Equal(length, 0)
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			tc.mock(tc.probes)
-			tc.expect(t, tc.probes.Length())
+			tc.expect(t, NewProbes(mockNetworkTopologyConfig.Probe, rdb, mockSeedHost.ID, mockHost.ID))
+			mockRDBClient.ClearExpect()
 		})
 	}
 }
@@ -525,20 +739,44 @@ func TestProbes_Length(t *testing.T) {
 func TestProbes_CreatedAt(t *testing.T) {
 	tests := []struct {
 		name   string
-		expect func(t *testing.T, updatedAt time.Time)
+		mock   func(mockRDBClient redismock.ClientMock)
+		expect func(t *testing.T, ps Probes)
 	}{
 		{
 			name: "get creation time of probes",
-			expect: func(t *testing.T, createdAt time.Time) {
+			mock: func(mockRDBClient redismock.ClientMock) {
+				mockRDBClient.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "createdAt").SetVal(mockProbesCreatedAt.Format(time.RFC3339Nano))
+			},
+			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
-				assert.Equal(createdAt, mockProbes.createdAt.Load())
+				createdAt, err := ps.CreatedAt()
+				assert.NoError(err)
+				assert.True(createdAt.Equal(mockProbesCreatedAt))
+			},
+		},
+		{
+			name: "get creation time of probes error",
+			mock: func(mockRDBClient redismock.ClientMock) {
+				mockRDBClient.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "createdAt").SetErr(errors.New("get creation time of probes error"))
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				_, err := ps.CreatedAt()
+				assert.EqualError(err, "get creation time of probes error")
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, mockProbes.CreatedAt())
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+
+			rdb, mockRDBClient := redismock.NewClientMock()
+			tc.mock(mockRDBClient)
+
+			tc.expect(t, NewProbes(mockNetworkTopologyConfig.Probe, rdb, mockSeedHost.ID, mockHost.ID))
+			mockRDBClient.ClearExpect()
 		})
 	}
 }
@@ -546,59 +784,44 @@ func TestProbes_CreatedAt(t *testing.T) {
 func TestProbes_UpdatedAt(t *testing.T) {
 	tests := []struct {
 		name   string
-		probes Probes
-		mock   func(probes Probes)
-		expect func(t *testing.T, updatedAt time.Time)
+		mock   func(mockRDBClient redismock.ClientMock)
+		expect func(t *testing.T, ps Probes)
 	}{
 		{
-			name:   "enqueue one probe",
-			probes: NewProbes(mockQueueLength),
-			mock: func(probes Probes) {
-				if err := probes.Enqueue(mockProbe); err != nil {
-					t.Fatal(err)
-				}
+			name: "get update time of probes",
+			mock: func(mockRDBClient redismock.ClientMock) {
+				mockRDBClient.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt").SetVal(mockProbe.CreatedAt.Format(time.RFC3339Nano))
 			},
-			expect: func(t *testing.T, updatedAt time.Time) {
+			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
-				assert.Equal(updatedAt, mockProbe.CreatedAt)
+				updatedAt, err := ps.UpdatedAt()
+				assert.NoError(err)
+				assert.True(updatedAt.Equal(mockProbe.CreatedAt))
 			},
 		},
 		{
-			name:   "enqueue three probe",
-			probes: NewProbes(mockQueueLength),
-			mock: func(probes Probes) {
-				if err := probes.Enqueue(NewProbe(mockHost, 1000000*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(NewProbe(mockHost, 10000000*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(mockProbe); err != nil {
-					t.Fatal(err)
-				}
+			name: "get update time of probes error",
+			mock: func(mockRDBClient redismock.ClientMock) {
+				mockRDBClient.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt").SetErr(errors.New("get update time of probes error"))
 			},
-			expect: func(t *testing.T, updatedAt time.Time) {
+			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
-				assert.Equal(updatedAt, mockProbe.CreatedAt)
-			},
-		},
-		{
-			name:   "queue is empty",
-			probes: NewProbes(mockQueueLength),
-			mock:   func(probes Probes) {},
-			expect: func(t *testing.T, updatedAt time.Time) {
-				assert := assert.New(t)
-				assert.Equal(updatedAt, time.Time{})
+				_, err := ps.UpdatedAt()
+				assert.EqualError(err, "get update time of probes error")
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.mock(tc.probes)
-			tc.expect(t, tc.probes.UpdatedAt())
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+
+			rdb, mockRDBClient := redismock.NewClientMock()
+			tc.mock(mockRDBClient)
+
+			tc.expect(t, NewProbes(mockNetworkTopologyConfig.Probe, rdb, mockSeedHost.ID, mockHost.ID))
+			mockRDBClient.ClearExpect()
 		})
 	}
 }
@@ -606,99 +829,173 @@ func TestProbes_UpdatedAt(t *testing.T) {
 func TestProbes_AverageRTT(t *testing.T) {
 	tests := []struct {
 		name   string
-		probes Probes
-		mock   func(probes Probes)
-		expect func(t *testing.T, averageRTT time.Duration)
+		mock   func(mockRDBClient redismock.ClientMock)
+		expect func(t *testing.T, ps Probes)
 	}{
 		{
-			name:   "queue has one probe",
-			probes: NewProbes(mockQueueLength),
-			mock: func(probes Probes) {
-				if err := probes.Enqueue(mockProbe); err != nil {
-					t.Fatal(err)
-				}
+			name: "get averageRTT of probes",
+			mock: func(mockRDBClient redismock.ClientMock) {
+				mockRDBClient.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT").SetVal(strconv.FormatInt(mockProbe.RTT.Nanoseconds(), 10))
 			},
-			expect: func(t *testing.T, averageRTT time.Duration) {
+			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
+				averageRTT, err := ps.AverageRTT()
+				assert.NoError(err)
 				assert.Equal(averageRTT, mockProbe.RTT)
 			},
 		},
 		{
-			name:   "queue has five probe",
-			probes: NewProbes(mockQueueLength),
-			mock: func(probes Probes) {
-				if err := probes.Enqueue(NewProbe(mockHost, 3000000*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(NewProbe(mockHost, 3100000*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(NewProbe(mockHost, 3200000*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(NewProbe(mockHost, 3300000*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(NewProbe(mockHost, 3400000*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
+			name: "get averageRTT of probes error",
+			mock: func(mockRDBClient redismock.ClientMock) {
+				mockRDBClient.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT").SetErr(errors.New("get averageRTT of probes error"))
 			},
-			expect: func(t *testing.T, averageRTT time.Duration) {
+			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
-				assert.Equal(averageRTT.Nanoseconds(), int64(3388890))
-			},
-		},
-		{
-			name:   "queue has six probe",
-			probes: NewProbes(mockQueueLength),
-			mock: func(probes Probes) {
-				if err := probes.Enqueue(NewProbe(mockHost, 3400000*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-				if err := probes.Enqueue(NewProbe(mockHost, 3000000*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(NewProbe(mockHost, 3100000*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(NewProbe(mockHost, 3200000*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(NewProbe(mockHost, 3300000*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := probes.Enqueue(NewProbe(mockHost, 3400000*time.Nanosecond, time.Now())); err != nil {
-					t.Fatal(err)
-				}
-			},
-			expect: func(t *testing.T, averageRTT time.Duration) {
-				assert := assert.New(t)
-				assert.Equal(averageRTT.Nanoseconds(), int64(3388890))
-			},
-		},
-		{
-			name:   "queue is empty",
-			probes: NewProbes(mockQueueLength),
-			mock:   func(probes Probes) {},
-			expect: func(t *testing.T, averageRTT time.Duration) {
-				assert := assert.New(t)
-				assert.Equal(averageRTT, time.Duration(0))
+				_, err := ps.AverageRTT()
+				assert.EqualError(err, "get averageRTT of probes error")
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.mock(tc.probes)
-			tc.expect(t, tc.probes.AverageRTT())
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+
+			rdb, mockRDBClient := redismock.NewClientMock()
+			tc.mock(mockRDBClient)
+
+			tc.expect(t, NewProbes(mockNetworkTopologyConfig.Probe, rdb, mockSeedHost.ID, mockHost.ID))
+			mockRDBClient.ClearExpect()
+		})
+	}
+}
+
+func TestProbes_dequeue(t *testing.T) {
+	tests := []struct {
+		name   string
+		probes []*Probe
+		mock   func(mockRDBClient redismock.ClientMock, ps []*Probe)
+		expect func(t *testing.T, ps Probes)
+	}{
+		{
+			name: "queue has one probe",
+			probes: []*Probe{
+				mockProbe,
+			},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				data, err := json.Marshal(ps[0])
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(string(data))
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				probe, err := ps.(*probes).dequeue()
+				assert.NoError(err)
+				assert.Equal(probe.Host.ID, mockProbe.Host.ID)
+				assert.Equal(probe.Host.Type, mockProbe.Host.Type)
+				assert.Equal(probe.Host.Hostname, mockProbe.Host.Hostname)
+				assert.Equal(probe.Host.IP, mockProbe.Host.IP)
+				assert.Equal(probe.Host.Port, mockProbe.Host.Port)
+				assert.Equal(probe.Host.DownloadPort, mockProbe.Host.DownloadPort)
+				assert.Equal(probe.Host.OS, mockProbe.Host.OS)
+				assert.Equal(probe.Host.Platform, mockProbe.Host.Platform)
+				assert.Equal(probe.Host.PlatformFamily, mockProbe.Host.PlatformFamily)
+				assert.Equal(probe.Host.PlatformVersion, mockProbe.Host.PlatformVersion)
+				assert.Equal(probe.Host.KernelVersion, mockProbe.Host.KernelVersion)
+				assert.Equal(probe.Host.ConcurrentUploadLimit, mockProbe.Host.ConcurrentUploadLimit)
+				assert.Equal(probe.Host.ConcurrentUploadCount, mockProbe.Host.ConcurrentUploadCount)
+				assert.Equal(probe.Host.UploadCount, mockProbe.Host.UploadCount)
+				assert.Equal(probe.Host.UploadFailedCount, mockProbe.Host.UploadFailedCount)
+				assert.EqualValues(probe.Host.CPU, mockProbe.Host.CPU)
+				assert.EqualValues(probe.Host.Memory, mockProbe.Host.Memory)
+				assert.EqualValues(probe.Host.Network, mockProbe.Host.Network)
+				assert.EqualValues(probe.Host.Disk, mockProbe.Host.Disk)
+				assert.EqualValues(probe.Host.Build, mockProbe.Host.Build)
+				assert.Equal(probe.RTT, mockProbe.RTT)
+				assert.True(probe.CreatedAt.Equal(mockProbe.CreatedAt))
+			},
+		},
+		{
+			name: "queue has six probe",
+			probes: []*Probe{
+				{mockHost, 31 * time.Millisecond, time.Now()},
+				{mockHost, 32 * time.Millisecond, time.Now()},
+				{mockHost, 33 * time.Millisecond, time.Now()},
+				{mockHost, 34 * time.Millisecond, time.Now()},
+				mockProbe,
+			},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				var rawProbes []string
+				for _, p := range ps {
+					data, err := json.Marshal(p)
+					if err != nil {
+						t.Fatal(err)
+					}
+
+					rawProbes = append(rawProbes, string(data))
+				}
+
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectLLen(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(5)
+				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(string(rawProbes[4]))
+				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), []byte(rawProbes[4])).SetVal(1)
+				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(rawProbes)
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", int64(30388900)).SetVal(1)
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", mockProbe.CreatedAt.Format(time.RFC3339Nano)).SetVal(1)
+				mockRDBClient.ExpectSet(pkgredis.MakeProbedAtKeyInScheduler(mockHost.ID), mockProbe.CreatedAt.Format(time.RFC3339Nano), 0).SetVal("ok")
+				mockRDBClient.ExpectIncr(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(6)
+				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(string(rawProbes[0]))
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				assert.NoError(ps.Enqueue(mockProbe))
+
+				probe, err := ps.(*probes).dequeue()
+				assert.NoError(err)
+				assert.Equal(probe.RTT, 31*time.Millisecond)
+			},
+		},
+		{
+			name: "dequeue probe from empty probes",
+			probes: []*Probe{
+				mockProbe,
+			},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).RedisNil()
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				_, err := ps.(*probes).dequeue()
+				assert.EqualError(err, "redis: nil")
+			},
+		},
+		{
+			name:   "unmarshal probe error",
+			probes: []*Probe{},
+			mock: func(mockRDBClient redismock.ClientMock, ps []*Probe) {
+				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal("foo")
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				_, err := ps.(*probes).dequeue()
+				assert.EqualError(err, "invalid character 'o' in literal false (expecting 'a')")
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+
+			rdb, mockRDBClient := redismock.NewClientMock()
+			tc.mock(mockRDBClient, tc.probes)
+
+			tc.expect(t, NewProbes(mockNetworkTopologyConfig.Probe, rdb, mockSeedHost.ID, mockHost.ID))
+			mockRDBClient.ClearExpect()
 		})
 	}
 }
