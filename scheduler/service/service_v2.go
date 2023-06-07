@@ -674,7 +674,7 @@ func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
 		}
 	}
 
-	// Find probes hosts for probing.
+	// Find probe hosts for probing.
 	hostIDs := v.networkTopology.FindProbes(srcHostID)
 	hosts := make([]*commonv2.Host, 0)
 	for _, hostID := range hostIDs {
@@ -695,7 +695,10 @@ func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
 	}
 
 	// Send probe hosts.
-	if err := stream.Send(&schedulerv2.SyncProbesResponse{Hosts: hosts, ProbeInterval: durationpb.New(v.config.NetworkTopology.CollectInterval)}); err != nil {
+	if err := stream.Send(&schedulerv2.SyncProbesResponse{
+		Hosts:         hosts,
+		ProbeInterval: durationpb.New(v.config.NetworkTopology.CollectInterval),
+	}); err != nil {
 		return err
 	}
 
