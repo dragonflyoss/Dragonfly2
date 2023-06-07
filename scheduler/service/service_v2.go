@@ -37,6 +37,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
+	"d7y.io/dragonfly/v2/scheduler/networktopology"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/scheduling"
 	"d7y.io/dragonfly/v2/scheduler/storage"
@@ -58,6 +59,9 @@ type V2 struct {
 
 	// Storage interface.
 	storage storage.Storage
+
+	// Network topology interface.
+	networkTopology networktopology.NetworkTopology
 }
 
 // New v2 version of service instance.
@@ -67,13 +71,15 @@ func NewV2(
 	scheduling scheduling.Scheduling,
 	dynconfig config.DynconfigInterface,
 	storage storage.Storage,
+	networkTopology networktopology.NetworkTopology,
 ) *V2 {
 	return &V2{
-		resource:   resource,
-		scheduling: scheduling,
-		config:     cfg,
-		dynconfig:  dynconfig,
-		storage:    storage,
+		resource:        resource,
+		scheduling:      scheduling,
+		config:          cfg,
+		dynconfig:       dynconfig,
+		storage:         storage,
+		networkTopology: networkTopology,
 	}
 }
 

@@ -235,22 +235,6 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	// Initialize scheduling.
 	scheduling := scheduling.New(&cfg.Scheduler, dynconfig, d.PluginDir())
 
-	// Initialize server options of scheduler grpc server.
-	schedulerServerOptions := []grpc.ServerOption{}
-	if certifyClient != nil {
-		serverTransportCredentials, err := rpc.NewServerCredentialsByCertify(cfg.Security.TLSPolicy, cfg.Security.TLSVerify, []byte(cfg.Security.CACert), certifyClient)
-		if err != nil {
-			return nil, err
-		}
-
-		schedulerServerOptions = append(schedulerServerOptions, grpc.Creds(serverTransportCredentials))
-	} else {
-		schedulerServerOptions = append(schedulerServerOptions, grpc.Creds(insecure.NewCredentials()))
-	}
-
-	svr := rpcserver.New(cfg, resource, scheduling, dynconfig, s.storage, schedulerServerOptions...)
-	s.grpcServer = svr
-
 	// Initialize redis client.
 	var rdb redis.UniversalClient
 	if pkgredis.IsEnabled(cfg.Database.Redis.Addrs) {
@@ -281,6 +265,22 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 			return nil, err
 		}
 	}
+
+	// Initialize server options of scheduler grpc server.
+	schedulerServerOptions := []grpc.ServerOption{}
+	if certifyClient != nil {
+		serverTransportCredentials, err := rpc.NewServerCredentialsByCertify(cfg.Security.TLSPolicy, cfg.Security.TLSVerify, []byte(cfg.Security.CACert), certifyClient)
+		if err != nil {
+			return nil, err
+		}
+
+		schedulerServerOptions = append(schedulerServerOptions, grpc.Creds(serverTransportCredentials))
+	} else {
+		schedulerServerOptions = append(schedulerServerOptions, grpc.Creds(insecure.NewCredentials()))
+	}
+
+	svr := rpcserver.New(cfg, resource, scheduling, dynconfig, s.storage, s.networkTopology, schedulerServerOptions...)
+	s.grpcServer = svr
 
 	// Initialize metrics.
 	if cfg.Metrics.Enable {
