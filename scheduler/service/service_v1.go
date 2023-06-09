@@ -666,26 +666,26 @@ func (v *V1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
 		logger.Errorf("receive error: %s", err.Error())
 		return err
 	}
-	// metrics.DownloadPeerBackToSourceFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-	// peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
-	var srcHostID string
+	var srcHost *commonv1.Host
 	switch syncProbesRequest := req.GetRequest().(type) {
 	case *schedulerv1.SyncProbesRequest_ProbeStartedRequest:
-		srcHostID = syncProbesRequest.ProbeStartedRequest.GetHost().Id
-		logger.Infof("receive SyncProbesRequest_ProbeStartedRequest: %s", srcHostID)
+		srcHost = syncProbesRequest.ProbeStartedRequest.GetHost()
+		logger.Infof("receive SyncProbesRequest_ProbeStartedRequest: %s", srcHost.Id)
+		metrics.SyncProbesStartedCount.WithLabelValues(srcHost.Id, srcHost.Ip, srcHost.Hostname).Inc()
 		break
 	case *schedulerv1.SyncProbesRequest_ProbeFinishedRequest:
-		srcHostID = syncProbesRequest.ProbeFinishedRequest.GetHost().Id
-		logger.Infof("receive SyncProbesRequest_ProbeFinishedRequest: %s", srcHostID)
+		srcHost = syncProbesRequest.ProbeFinishedRequest.GetHost()
+		logger.Infof("receive SyncProbesRequest_ProbeFinishedRequest: %s", srcHost.Id)
+
 		for _, probe := range syncProbesRequest.ProbeFinishedRequest.Probes {
-			destHostID := probe.Host.Id
-			if err := v.networkTopology.Store(srcHostID, destHostID); err != nil {
+			destHost := probe.Host
+			if err := v.networkTopology.Store(srcHost.Id, destHost.Id); err != nil {
 				logger.Errorf("store error: %s", err.Error())
 				continue
 			}
 
-			if err := v.networkTopology.Probes(srcHostID, destHostID).Enqueue(&networktopology.Probe{
+			if err := v.networkTopology.Probes(srcHost.Id, destHost.Id).Enqueue(&networktopology.Probe{
 				Host: resource.NewHost(probe.Host.Id, probe.Host.Ip, probe.Host.Hostname, probe.Host.Port,
 					probe.Host.DownloadPort, types.HostTypeNormal),
 				RTT:       probe.Rtt.AsDuration(),
@@ -694,17 +694,24 @@ func (v *V1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
 				logger.Errorf("enqueue error: %s", err.Error())
 				continue
 			}
+
+			metrics.SyncProbesFinishedCount.WithLabelValues(srcHost.Id, srcHost.Ip, srcHost.Hostname,
+				destHost.Id, destHost.Ip, destHost.Hostname, probe.Rtt.String(), probe.CreatedAt.String()).Inc()
 		}
 
 		break
 	case *schedulerv1.SyncProbesRequest_ProbeFailedRequest:
-		srcHostID = syncProbesRequest.ProbeFailedRequest.GetHost().Id
-		logger.Infof("receive SyncProbesRequest_ProbeFailedRequest: %s", srcHostID)
+		srcHost = syncProbesRequest.ProbeFailedRequest.GetHost()
+		logger.Infof("receive SyncProbesRequest_ProbeFailedRequest: %s", srcHost.Id)
+
 		for _, failedProbe := range syncProbesRequest.ProbeFailedRequest.FailedProbes {
 			if err := v.networkTopology.DeleteHost(failedProbe.Host.Id); err != nil {
 				logger.Errorf("delete host error: %s", err.Error())
 				continue
 			}
+
+			metrics.SyncProbesFinishedCount.WithLabelValues(srcHost.Id, srcHost.Ip, srcHost.Hostname,
+				failedProbe.Host.Id, failedProbe.Host.Ip, failedProbe.Host.Hostname).Inc()
 		}
 
 		break
@@ -714,8 +721,7 @@ func (v *V1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
 		return status.Error(codes.FailedPrecondition, msg)
 	}
 
-	// Find probe hosts for probing.
-	destHostIDs := v.networkTopology.FindDestHostIDs(srcHostID)
+	destHostIDs := v.networkTopology.FindDestHostIDs(srcHost.Id)
 	destHosts := make([]*commonv1.Host, 0)
 	for _, destHostID := range destHostIDs {
 		destHost, ok := v.resource.HostManager().Load(destHostID)

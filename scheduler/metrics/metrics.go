@@ -273,6 +273,27 @@ var (
 		Name:      "synchronize_probes_failure_total",
 		Help:      "Counter of the number of failed of the synchronizing probes.",
 	})
+
+	SyncProbesStartedCount = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "synchronize_probes_started_total",
+		Help:      "Counter of the number of the synchronizing probes started.",
+	}, []string{"host_id", "host_ip", "host_name"})
+
+	SyncProbesFinishedCount = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "synchronize_probes_finished_total",
+		Help:      "Counter of the number of the synchronizing probes finished.",
+	}, []string{"src_host_id", "src_host_ip", "src_host_name", "dest_host_id", "dest_host_ip", "dest_host_name", "rtt", "createdAt"})
+
+	SyncProbesFailedCount = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "synchronize_probes_failed_total",
+		Help:      "Counter of the number of the synchronizing probes failed.",
+	}, []string{"src_host_id", "src_host_ip", "src_host_name", "dest_host_id", "dest_host_ip", "dest_host_name"})
 )
 
 func New(cfg *config.MetricsConfig, svr *grpc.Server) *http.Server {
