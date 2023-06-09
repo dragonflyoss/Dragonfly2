@@ -92,8 +92,8 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 			if err == io.EOF {
 				logger.Infof("receive streaming requests successfully")
 				err = stream.SendAndClose(new(emptypb.Empty))
-				// TODDO (fyx) Add training logiic.
 
+				// TODDO (fyx) Add training logiic.
 				if err != nil {
 					logger.Infof("train error %s", err.Error())
 					return err
@@ -121,7 +121,7 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 		case *trainerv1.TrainRequest_TrainGnnRequest:
 			logger.Infof("receive TrainRequest_TrainGnnRequest: %#v", trainRequest.TrainGnnRequest)
 			if err := v.handleTrainGNNRequest(modelKey, trainRequest.TrainGnnRequest.Dataset); err != nil {
-				logger.Errorf("recieve network topologies error: %s", err.Error())
+				logger.Errorf("handle network topologies error: %s", err.Error())
 
 				if err := v.storage.ClearNetworkTopology(modelKey); err != nil {
 					logger.Errorf("clear network topologies error: %s", err.Error())
@@ -133,7 +133,7 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 			logger.Infof("receive TrainRequest_TrainMlpRequest: %#v", trainRequest.TrainMlpRequest)
 
 			if err := v.handleTrainMLPRequest(modelKey, trainRequest.TrainMlpRequest.Dataset); err != nil {
-				logger.Errorf("recieve downloads error: %s", err.Error())
+				logger.Errorf("handle downloads error: %s", err.Error())
 
 				if err := v.storage.ClearDownload(modelKey); err != nil {
 					logger.Errorf("clear downloads error: %s", err.Error())
@@ -142,7 +142,7 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 				return err
 			}
 		default:
-			msg := fmt.Sprintf("receive unknow request: %#v", trainRequest)
+			msg := fmt.Sprintf("receive unknown request: %#v", trainRequest)
 			logger.Error(msg)
 			return status.Error(codes.FailedPrecondition, msg)
 		}
