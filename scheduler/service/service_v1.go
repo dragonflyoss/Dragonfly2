@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -666,9 +667,17 @@ func (v *V1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
 		return err
 	}
 
-	srcHostID := req.ProbesOfHost.Host.Id
-	if len(req.ProbesOfHost.Probes) > 0 {
-		for _, probe := range req.ProbesOfHost.Probes {
+	var srcHostID string
+	switch syncProbesRequest := req.GetRequest().(type) {
+	case *schedulerv1.SyncProbesRequest_ProbeStartedRequest:
+		srcHostID = syncProbesRequest.ProbeStartedRequest.GetHost().Id
+		logger.Infof("receive SyncProbesRequest_ProbeStartedRequest: %s", srcHostID)
+		break
+	case *schedulerv1.SyncProbesRequest_ProbeFinishedRequest:
+		srcHostID = syncProbesRequest.ProbeFinishedRequest.GetHost().Id
+		logger.Infof("receive SyncProbesRequest_ProbeFinishedRequest: %s", srcHostID)
+
+		for _, probe := range syncProbesRequest.ProbeFinishedRequest.Probes {
 			destHostID := probe.Host.Id
 			if err := v.networkTopology.Store(srcHostID, destHostID); err != nil {
 				logger.Errorf("store error: %s", err.Error())
@@ -685,31 +694,50 @@ func (v *V1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
 				continue
 			}
 		}
+
+		break
+	case *schedulerv1.SyncProbesRequest_ProbeFailedRequest:
+		srcHostID = syncProbesRequest.ProbeFailedRequest.GetHost().Id
+		logger.Infof("receive SyncProbesRequest_ProbeFailedRequest: %s", srcHostID)
+
+		for _, failedProbe := range syncProbesRequest.ProbeFailedRequest.FailedProbes {
+			destHostID := failedProbe.Host.Id
+			if err := v.networkTopology.DeleteHost(destHostID); err != nil {
+				logger.Errorf("delete host error: %s", err.Error())
+				continue
+			}
+		}
+
+		break
+	default:
+		msg := fmt.Sprintf("receive unknow request: %#v", syncProbesRequest)
+		logger.Error(msg)
+		return status.Error(codes.FailedPrecondition, msg)
 	}
 
 	// Find probe hosts for probing.
-	hostIDs := v.networkTopology.FindDestHostIDs(srcHostID)
-	hosts := make([]*commonv1.Host, 0)
-	for _, hostID := range hostIDs {
-		host, ok := v.resource.HostManager().Load(hostID)
+	destHostIDs := v.networkTopology.FindDestHostIDs(srcHostID)
+	destHosts := make([]*commonv1.Host, 0)
+	for _, destHostID := range destHostIDs {
+		destHost, ok := v.resource.HostManager().Load(destHostID)
 		if !ok {
-			logger.Error(fmt.Sprintf("host %s not found", hostID))
+			logger.Error(fmt.Sprintf("host %s not found", destHostID))
 			continue
 		}
 
-		hosts = append(hosts, &commonv1.Host{
-			Id:           host.ID,
-			Ip:           host.IP,
-			Hostname:     host.Hostname,
-			Port:         host.Port,
-			DownloadPort: host.DownloadPort,
-			Location:     host.Network.Location,
-			Idc:          host.Network.IDC,
+		destHosts = append(destHosts, &commonv1.Host{
+			Id:           destHost.ID,
+			Ip:           destHost.IP,
+			Hostname:     destHost.Hostname,
+			Port:         destHost.Port,
+			DownloadPort: destHost.DownloadPort,
+			Location:     destHost.Network.Location,
+			Idc:          destHost.Network.IDC,
 		})
 	}
 
 	if err := stream.Send(&schedulerv1.SyncProbesResponse{
-		Hosts:         hosts,
+		Hosts:         destHosts,
 		ProbeInterval: durationpb.New(v.config.NetworkTopology.CollectInterval),
 	}); err != nil {
 		return err

@@ -645,65 +645,6 @@ func (v *V2) LeaveHost(ctx context.Context, req *schedulerv2.LeaveHostRequest) e
 
 // SyncProbes sync probes of the host.
 func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
-	req, err := stream.Recv()
-	if err != nil {
-		if err == io.EOF {
-			return nil
-		}
-
-		logger.Errorf("receive error: %s", err.Error())
-		return err
-	}
-
-	srcHostID := req.ProbesOfHost.Host.Id
-	if len(req.ProbesOfHost.Probes) > 0 {
-		for _, probe := range req.ProbesOfHost.Probes {
-			destHostID := probe.Host.Id
-			if err := v.networkTopology.Store(srcHostID, destHostID); err != nil {
-				logger.Errorf("store error: %s", err.Error())
-				continue
-			}
-
-			if err := v.networkTopology.Probes(srcHostID, destHostID).Enqueue(&networktopology.Probe{
-				Host: resource.NewHost(probe.Host.Id, probe.Host.Ip, probe.Host.Hostname, probe.Host.Port,
-					probe.Host.DownloadPort, types.HostTypeNormal),
-				RTT:       probe.Rtt.AsDuration(),
-				CreatedAt: probe.CreatedAt.AsTime(),
-			}); err != nil {
-				logger.Errorf("enqueue error: %s", err.Error())
-				continue
-			}
-		}
-	}
-
-	// Find probe hosts for probing.
-	hostIDs := v.networkTopology.FindDestHostIDs(srcHostID)
-	hosts := make([]*commonv2.Host, 0)
-	for _, hostID := range hostIDs {
-		host, ok := v.resource.HostManager().Load(hostID)
-		if !ok {
-			logger.Error(fmt.Sprintf("host %s not found", hostID))
-			continue
-		}
-
-		hosts = append(hosts, &commonv2.Host{
-			Id:           host.ID,
-			Type:         uint32(host.Type),
-			Hostname:     host.Hostname,
-			Ip:           host.IP,
-			Port:         host.Port,
-			DownloadPort: host.DownloadPort,
-		})
-	}
-
-	// Send probe hosts.
-	if err := stream.Send(&schedulerv2.SyncProbesResponse{
-		Hosts:         hosts,
-		ProbeInterval: durationpb.New(v.config.NetworkTopology.CollectInterval),
-	}); err != nil {
-		return err
-	}
-
 	return nil
 }
 
