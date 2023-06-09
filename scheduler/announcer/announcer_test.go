@@ -49,26 +49,6 @@ func (m *mockReadCloserWithReadError) Close() error {
 	return nil
 }
 
-type mockAnnouncerWithAnnounceToManagerError struct{}
-
-func (a *mockAnnouncerWithAnnounceToManagerError) announceToManager() error {
-	return errors.New("foo")
-}
-
-func (a *mockAnnouncerWithAnnounceToManagerError) announceToTrainer() error {
-	return nil
-}
-
-type mockAnnouncerWithAnnounceToTrainerError struct{}
-
-func (a *mockAnnouncerWithAnnounceToTrainerError) announceToManager() error {
-	return errors.New("foo")
-}
-
-func (a *mockAnnouncerWithAnnounceToTrainerError) announceToTrainer() error {
-	return nil
-}
-
 func TestAnnouncer_New(t *testing.T) {
 	ctl := gomock.NewController(t)
 	defer ctl.Finish()
