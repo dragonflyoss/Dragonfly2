@@ -2995,7 +2995,7 @@ func TestServiceV1_SyncProbes(t *testing.T) {
 			},
 		},
 		{
-			name: "send synchronize probes respone error",
+			name: "send synchronize probes response error",
 			mock: func(mr *resource.MockResourceMockRecorder, probes *networktopologymocks.MockProbes, mp *networktopologymocks.MockProbesMockRecorder,
 				mn *networktopologymocks.MockNetworkTopologyMockRecorder, hostManager resource.HostManager, mh *resource.MockHostManagerMockRecorder,
 				ms *schedulerv1mocks.MockScheduler_SyncProbesServerMockRecorder) {
@@ -3031,12 +3031,12 @@ func TestServiceV1_SyncProbes(t *testing.T) {
 							},
 						},
 						ProbeInterval: durationpb.New(mockNetworkTopologyConfig.CollectInterval),
-					})).Return(errors.New("send synchronize probes respone error")).Times(1),
+					})).Return(errors.New("send synchronize probes response error")).Times(1),
 				)
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "send synchronize probes respone error")
+				assert.EqualError(err, "send synchronize probes response error")
 			},
 		},
 	}
