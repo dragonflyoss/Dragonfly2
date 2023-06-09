@@ -45,6 +45,7 @@ import (
 	managerv2 "d7y.io/api/pkg/apis/manager/v2"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	schedulerv1mocks "d7y.io/api/pkg/apis/scheduler/v1/mocks"
+	schedulerv2 "d7y.io/api/pkg/apis/scheduler/v2"
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/manager/types"
@@ -209,7 +210,7 @@ var (
 		CreatedAt:   time.Now(),
 	}
 
-	mockProbe = &schedulerv1.Probe{
+	mockSchedulerv1Probe = &schedulerv1.Probe{
 		Host: &commonv1.Host{
 			Id:           mockRawHost.ID,
 			Ip:           mockRawHost.IP,
@@ -218,6 +219,19 @@ var (
 			DownloadPort: mockRawHost.DownloadPort,
 			Location:     mockRawHost.Network.Location,
 			Idc:          mockRawHost.Network.IDC,
+		},
+		Rtt:       durationpb.New(30 * time.Millisecond),
+		CreatedAt: timestamppb.Now(),
+	}
+
+	mockSchedulerv2Probe = &schedulerv2.Probe{
+		Host: &commonv2.Host{
+			Id:           mockRawHost.ID,
+			Type:         uint32(mockRawSeedHost.Type),
+			Hostname:     mockRawHost.Hostname,
+			Ip:           mockRawHost.IP,
+			Port:         mockRawHost.Port,
+			DownloadPort: mockRawHost.DownloadPort,
 		},
 		Rtt:       durationpb.New(30 * time.Millisecond),
 		CreatedAt: timestamppb.Now(),
@@ -2662,7 +2676,7 @@ func TestServiceV1_SyncProbes(t *testing.T) {
 									Location:     mockRawSeedHost.Network.Location,
 									Idc:          mockRawSeedHost.Network.IDC,
 								},
-								Probes: []*schedulerv1.Probe{mockProbe},
+								Probes: []*schedulerv1.Probe{mockSchedulerv1Probe},
 							},
 						},
 					}, nil).Times(1),
@@ -2807,7 +2821,7 @@ func TestServiceV1_SyncProbes(t *testing.T) {
 									Location:     mockRawSeedHost.Network.Location,
 									Idc:          mockRawSeedHost.Network.IDC,
 								},
-								Probes: []*schedulerv1.Probe{mockProbe},
+								Probes: []*schedulerv1.Probe{mockSchedulerv1Probe},
 							},
 						},
 					}, nil).Times(1),
@@ -2854,7 +2868,7 @@ func TestServiceV1_SyncProbes(t *testing.T) {
 									Location:     mockRawSeedHost.Network.Location,
 									Idc:          mockRawSeedHost.Network.IDC,
 								},
-								Probes: []*schedulerv1.Probe{mockProbe},
+								Probes: []*schedulerv1.Probe{mockSchedulerv1Probe},
 							},
 						},
 					}, nil).Times(1),

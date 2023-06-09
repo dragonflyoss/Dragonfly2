@@ -698,7 +698,7 @@ func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
 				continue
 			}
 
-			metrics.SyncProbesFinishedCount.WithLabelValues(srcHost.Id, srcHost.Ip, srcHost.Hostname,
+			metrics.SyncProbesFailedCount.WithLabelValues(srcHost.Id, srcHost.Ip, srcHost.Hostname,
 				failedProbe.Host.Id, failedProbe.Host.Ip, failedProbe.Host.Hostname).Inc()
 		}
 
