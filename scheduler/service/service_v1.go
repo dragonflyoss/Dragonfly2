@@ -666,6 +666,8 @@ func (v *V1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
 		logger.Errorf("receive error: %s", err.Error())
 		return err
 	}
+	// metrics.DownloadPeerBackToSourceFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+	// peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
 	var srcHostID string
 	switch syncProbesRequest := req.GetRequest().(type) {

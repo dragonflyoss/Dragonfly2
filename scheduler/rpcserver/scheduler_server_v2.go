@@ -154,5 +154,13 @@ func (s *schedulerServerV2) LeaveHost(ctx context.Context, req *schedulerv2.Leav
 
 // SyncProbes sync probes of the host.
 func (s *schedulerServerV2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
-	return s.service.SyncProbes(stream)
+	// Collect SyncProbesCount metrics.
+	metrics.SyncProbesCount.Inc()
+	if err := s.service.SyncProbes(stream); err != nil {
+		// Collect SyncProbesFailureCount metrics.
+		metrics.SyncProbesFailureCount.Inc()
+		return err
+	}
+
+	return nil
 }

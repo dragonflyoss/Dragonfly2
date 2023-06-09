@@ -259,6 +259,20 @@ var (
 		Name:      "version",
 		Help:      "Version info of the service.",
 	}, []string{"major", "minor", "git_version", "git_commit", "platform", "build_time", "go_version", "go_tags", "go_gcflags"})
+
+	SyncProbesCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "synchronize_probes_total",
+		Help:      "Counter of the number of the synchronizing probes.",
+	})
+
+	SyncProbesFailureCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "synchronize_probes_failure_total",
+		Help:      "Counter of the number of failed of the synchronizing probes.",
+	})
 )
 
 func New(cfg *config.MetricsConfig, svr *grpc.Server) *http.Server {
