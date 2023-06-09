@@ -49,6 +49,26 @@ func (m *mockReadCloserWithReadError) Close() error {
 	return nil
 }
 
+type mockAnnouncerWithAnnounceToManagerError struct{}
+
+func (a *mockAnnouncerWithAnnounceToManagerError) announceToManager() error {
+	return errors.New("foo")
+}
+
+func (a *mockAnnouncerWithAnnounceToManagerError) announceToTrainer() error {
+	return nil
+}
+
+type mockAnnouncerWithAnnounceToTrainerError struct{}
+
+func (a *mockAnnouncerWithAnnounceToTrainerError) announceToManager() error {
+	return errors.New("foo")
+}
+
+func (a *mockAnnouncerWithAnnounceToTrainerError) announceToTrainer() error {
+	return nil
+}
+
 func TestAnnouncer_New(t *testing.T) {
 	ctl := gomock.NewController(t)
 	defer ctl.Finish()
@@ -287,8 +307,7 @@ func TestAnnouncer_Serve(t *testing.T) {
 			except: func(t *testing.T, a Announcer) {
 				assert := assert.New(t)
 				go func() {
-					err := a.Serve()
-					assert.NoError(err)
+					assert.NoError(a.Serve())
 				}()
 			},
 		},
@@ -366,8 +385,7 @@ func TestAnnouncer_announceToManager(t *testing.T) {
 			},
 			except: func(t *testing.T, a Announcer) {
 				assert := assert.New(t)
-				err := a.(*announcer).announceToManager()
-				assert.NoError(err)
+				assert.NoError(a.(*announcer).announceToManager())
 			},
 		},
 	}
@@ -498,8 +516,7 @@ func TestAnnouncer_announceToTrainer(t *testing.T) {
 			except: func(t *testing.T, a Announcer) {
 				assert := assert.New(t)
 				go func() {
-					err := a.(*announcer).announceToTrainer()
-					assert.NoError(err)
+					assert.NoError(a.(*announcer).announceToTrainer())
 				}()
 			},
 		},
