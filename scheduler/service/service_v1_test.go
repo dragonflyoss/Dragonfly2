@@ -36,6 +36,8 @@ import (
 	"go.uber.org/atomic"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	commonv2 "d7y.io/api/pkg/apis/common/v2"
@@ -205,6 +207,30 @@ var (
 		TrafficType: commonv2.TrafficType_REMOTE_PEER,
 		Cost:        1 * time.Minute,
 		CreatedAt:   time.Now(),
+	}
+
+	mockProbe = &schedulerv1.Probe{
+		Host: &commonv1.Host{
+			Id:           mockRawHost.ID,
+			Ip:           mockRawHost.IP,
+			Hostname:     mockRawHost.Hostname,
+			Port:         mockRawHost.Port,
+			DownloadPort: mockRawHost.DownloadPort,
+			Location:     mockRawHost.Network.Location,
+			Idc:          mockRawHost.Network.IDC,
+		},
+		Rtt:       durationpb.New(30 * time.Millisecond),
+		CreatedAt: timestamppb.Now(),
+	}
+
+	mockNetworkTopologyConfig = config.NetworkTopologyConfig{
+		Enable:          true,
+		CollectInterval: 2 * time.Hour,
+		Probe: config.ProbeConfig{
+			QueueLength: 5,
+			Interval:    15 * time.Minute,
+			Count:       10,
+		},
 	}
 )
 
@@ -2564,6 +2590,216 @@ func TestServiceV1_LeaveHost(t *testing.T) {
 		})
 	}
 }
+
+func TestServiceV1_SyncProbes(t *testing.T) {
+	tests := []struct {
+		name string
+		mock func(mr *resource.MockResourceMockRecorder, probes *networktopologymocks.MockProbes, mp *networktopologymocks.MockProbesMockRecorder,
+			mn *networktopologymocks.MockNetworkTopologyMockRecorder, hostManager resource.HostManager, mh *resource.MockHostManagerMockRecorder,
+			ms *schedulerv1mocks.MockScheduler_SyncProbesServerMockRecorder)
+		expect func(t *testing.T, err error)
+	}{
+		{
+			name: "synchronize probes when receive ProbeStartedRequest",
+			mock: func(mr *resource.MockResourceMockRecorder, probes *networktopologymocks.MockProbes, mp *networktopologymocks.MockProbesMockRecorder,
+				mn *networktopologymocks.MockNetworkTopologyMockRecorder, hostManager resource.HostManager, mh *resource.MockHostManagerMockRecorder,
+				ms *schedulerv1mocks.MockScheduler_SyncProbesServerMockRecorder) {
+				gomock.InOrder(
+					ms.Recv().Return(&schedulerv1.SyncProbesRequest{
+						Request: &schedulerv1.SyncProbesRequest_ProbeStartedRequest{
+							ProbeStartedRequest: &schedulerv1.ProbeStartedRequest{
+								Host: &commonv1.Host{
+									Id:           mockRawSeedHost.ID,
+									Ip:           mockRawSeedHost.IP,
+									Hostname:     mockRawSeedHost.Hostname,
+									Port:         mockRawSeedHost.Port,
+									DownloadPort: mockRawSeedHost.DownloadPort,
+									Location:     mockRawSeedHost.Network.Location,
+									Idc:          mockRawSeedHost.Network.IDC,
+								},
+							},
+						},
+					}, nil).Times(1),
+					mn.FindDestHostIDs(gomock.Eq(mockRawSeedHost.ID)).Return([]string{mockRawHost.ID}).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Eq(mockRawHost.ID)).Return(&mockRawHost, true),
+					ms.Send(gomock.Eq(&schedulerv1.SyncProbesResponse{
+						Hosts: []*commonv1.Host{
+							{
+								Id:           mockRawHost.ID,
+								Ip:           mockRawHost.IP,
+								Hostname:     mockRawHost.Hostname,
+								Port:         mockRawHost.Port,
+								DownloadPort: mockRawHost.DownloadPort,
+								Location:     mockRawHost.Network.Location,
+								Idc:          mockRawHost.Network.IDC,
+							},
+						},
+						ProbeInterval: durationpb.New(mockNetworkTopologyConfig.CollectInterval),
+					})).Return(nil).Times(1),
+				)
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+			},
+		},
+		{
+			name: "synchronize probes when receive ProbeFinishedRequest",
+			mock: func(mr *resource.MockResourceMockRecorder, probes *networktopologymocks.MockProbes, mp *networktopologymocks.MockProbesMockRecorder,
+				mn *networktopologymocks.MockNetworkTopologyMockRecorder, hostManager resource.HostManager, mh *resource.MockHostManagerMockRecorder,
+				ms *schedulerv1mocks.MockScheduler_SyncProbesServerMockRecorder) {
+				gomock.InOrder(
+					ms.Recv().Return(&schedulerv1.SyncProbesRequest{
+						Request: &schedulerv1.SyncProbesRequest_ProbeFinishedRequest{
+							ProbeFinishedRequest: &schedulerv1.ProbeFinishedRequest{
+								Host: &commonv1.Host{
+									Id:           mockRawSeedHost.ID,
+									Ip:           mockRawSeedHost.IP,
+									Hostname:     mockRawSeedHost.Hostname,
+									Port:         mockRawSeedHost.Port,
+									DownloadPort: mockRawSeedHost.DownloadPort,
+									Location:     mockRawSeedHost.Network.Location,
+									Idc:          mockRawSeedHost.Network.IDC,
+								},
+								Probes: []*schedulerv1.Probe{mockProbe},
+							},
+						},
+					}, nil).Times(1),
+					mn.Store(gomock.Eq(mockRawSeedHost.ID), gomock.Eq(mockRawHost.ID)).Return(nil).Times(1),
+					mn.Probes(gomock.Eq(mockRawSeedHost.ID), gomock.Eq(mockRawHost.ID)).Return(probes).Times(1),
+					mp.Enqueue(gomock.Any()).Return(nil).Times(1),
+					mn.FindDestHostIDs(gomock.Eq(mockRawSeedHost.ID)).Return([]string{mockRawHost.ID}).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Eq(mockRawHost.ID)).Return(&mockRawHost, true),
+					ms.Send(gomock.Eq(&schedulerv1.SyncProbesResponse{
+						Hosts: []*commonv1.Host{
+							{
+								Id:           mockRawHost.ID,
+								Ip:           mockRawHost.IP,
+								Hostname:     mockRawHost.Hostname,
+								Port:         mockRawHost.Port,
+								DownloadPort: mockRawHost.DownloadPort,
+								Location:     mockRawHost.Network.Location,
+								Idc:          mockRawHost.Network.IDC,
+							},
+						},
+						ProbeInterval: durationpb.New(mockNetworkTopologyConfig.CollectInterval),
+					})).Return(nil).Times(1),
+				)
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+			},
+		},
+		{
+			name: "synchronize probes when receive ProbeFailedRequest",
+			mock: func(mr *resource.MockResourceMockRecorder, probes *networktopologymocks.MockProbes, mp *networktopologymocks.MockProbesMockRecorder,
+				mn *networktopologymocks.MockNetworkTopologyMockRecorder, hostManager resource.HostManager, mh *resource.MockHostManagerMockRecorder,
+				ms *schedulerv1mocks.MockScheduler_SyncProbesServerMockRecorder) {
+				gomock.InOrder(
+					ms.Recv().Return(&schedulerv1.SyncProbesRequest{
+						Request: &schedulerv1.SyncProbesRequest_ProbeFailedRequest{
+							ProbeFailedRequest: &schedulerv1.ProbeFailedRequest{
+								Host: &commonv1.Host{
+									Id:           mockRawSeedHost.ID,
+									Ip:           mockRawSeedHost.IP,
+									Hostname:     mockRawSeedHost.Hostname,
+									Port:         mockRawSeedHost.Port,
+									DownloadPort: mockRawSeedHost.DownloadPort,
+									Location:     mockRawSeedHost.Network.Location,
+									Idc:          mockRawSeedHost.Network.IDC,
+								},
+								FailedProbes: []*schedulerv1.FailedProbe{
+									{
+										Host: &commonv1.Host{
+											Id:           mockRawHost.ID,
+											Ip:           mockRawHost.IP,
+											Hostname:     mockRawHost.Hostname,
+											Port:         mockRawHost.Port,
+											DownloadPort: mockRawHost.DownloadPort,
+											Location:     mockRawHost.Network.Location,
+											Idc:          mockRawHost.Network.IDC,
+										},
+										Description: "foo",
+									},
+								},
+							},
+						},
+					}, nil).Times(1),
+					mn.DeleteHost(gomock.Eq(mockRawHost.ID)).Return(nil).Times(1),
+					mn.FindDestHostIDs(gomock.Eq(mockRawSeedHost.ID)).Return([]string{mockRawHost.ID}).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Eq(mockRawHost.ID)).Return(&mockRawHost, true),
+					ms.Send(gomock.Eq(&schedulerv1.SyncProbesResponse{
+						Hosts: []*commonv1.Host{
+							{
+								Id:           mockRawHost.ID,
+								Ip:           mockRawHost.IP,
+								Hostname:     mockRawHost.Hostname,
+								Port:         mockRawHost.Port,
+								DownloadPort: mockRawHost.DownloadPort,
+								Location:     mockRawHost.Network.Location,
+								Idc:          mockRawHost.Network.IDC,
+							},
+						},
+						ProbeInterval: durationpb.New(mockNetworkTopologyConfig.CollectInterval),
+					})).Return(nil).Times(1),
+				)
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+			},
+		},
+		{
+			name: "receive error",
+			mock: func(mr *resource.MockResourceMockRecorder, probes *networktopologymocks.MockProbes, mp *networktopologymocks.MockProbesMockRecorder,
+				mn *networktopologymocks.MockNetworkTopologyMockRecorder, hostManager resource.HostManager, mh *resource.MockHostManagerMockRecorder,
+				ms *schedulerv1mocks.MockScheduler_SyncProbesServerMockRecorder) {
+				ms.Recv().Return(nil, errors.New("receive error")).Times(1)
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "receive error")
+			},
+		},
+		{
+			name: "receive end of file",
+			mock: func(mr *resource.MockResourceMockRecorder, probes *networktopologymocks.MockProbes, mp *networktopologymocks.MockProbesMockRecorder,
+				mn *networktopologymocks.MockNetworkTopologyMockRecorder, hostManager resource.HostManager, mh *resource.MockHostManagerMockRecorder,
+				ms *schedulerv1mocks.MockScheduler_SyncProbesServerMockRecorder) {
+				ms.Recv().Return(nil, io.EOF).Times(1)
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+
+			scheduling := mocks.NewMockScheduling(ctl)
+			res := resource.NewMockResource(ctl)
+			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
+			storage := storagemocks.NewMockStorage(ctl)
+			probes := networktopologymocks.NewMockProbes(ctl)
+			networkTopology := networktopologymocks.NewMockNetworkTopology(ctl)
+			hostManager := resource.NewMockHostManager(ctl)
+			stream := schedulerv1mocks.NewMockScheduler_SyncProbesServer(ctl)
+			svc := NewV1(&config.Config{NetworkTopology: mockNetworkTopologyConfig, Metrics: config.MetricsConfig{EnableHost: true}}, res, scheduling, dynconfig, storage, networkTopology)
+
+			tc.mock(res.EXPECT(), probes, probes.EXPECT(), networkTopology.EXPECT(), hostManager, hostManager.EXPECT(), stream.EXPECT())
+			tc.expect(t, svc.SyncProbes(stream))
+		})
+	}
+}
+
 func TestServiceV1_triggerTask(t *testing.T) {
 	tests := []struct {
 		name   string
