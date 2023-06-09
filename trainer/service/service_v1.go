@@ -26,6 +26,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	trainerv1 "d7y.io/api/pkg/apis/trainer/v1"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/trainer/config"
@@ -179,6 +180,6 @@ func (v *V1) handleTrainGNNRequest(modelKey string, dataset []byte) error {
 	return nil
 }
 
-func (v *V1) createModelKey(hostname, ip string, clusterId uint) (string, error) {
-	return digest.HashFile(fmt.Sprintf("%s-%s-%d", hostname, ip, clusterId), DefaultHashAlgorithm)
+func (v *V1) createModelKey(hostname, ip string, clusterID uint) (string, error) {
+	return digest.HashFile(fmt.Sprintf("%s-%s-%d", hostname, ip, clusterID), DefaultHashAlgorithm)
 }
