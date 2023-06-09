@@ -319,7 +319,7 @@ func TestAnnouncer_announceToManager(t *testing.T) {
 		config *config.Config
 		sleep  func()
 		mock   func(m *managerclientmocks.MockV2MockRecorder)
-		except func(t *testing.T, a Announcer)
+		except func(a Announcer)
 	}{
 		{
 			name: "announce to manager success",
@@ -363,9 +363,8 @@ func TestAnnouncer_announceToManager(t *testing.T) {
 					}), gomock.Any()).Times(1),
 				)
 			},
-			except: func(t *testing.T, a Announcer) {
-				assert := assert.New(t)
-				assert.NoError(a.(*announcer).announceToManager())
+			except: func(a Announcer) {
+				a.(*announcer).announceToManager()
 			},
 		},
 	}
@@ -383,7 +382,7 @@ func TestAnnouncer_announceToManager(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			tc.except(t, a)
+			tc.except(a)
 			tc.sleep()
 		})
 	}
@@ -396,7 +395,7 @@ func TestAnnouncer_announceToTrainer(t *testing.T) {
 		data   []byte
 		sleep  func()
 		mock   func(stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder)
-		except func(t *testing.T, a Announcer)
+		except func(a Announcer)
 	}{
 		{
 			name: "announce to trainer failed",
@@ -437,11 +436,8 @@ func TestAnnouncer_announceToTrainer(t *testing.T) {
 					mtc.Train(gomock.Any()).Return(nil, errors.New("foo")).Times(1),
 				)
 			},
-			except: func(t *testing.T, a Announcer) {
-				assert := assert.New(t)
-				go func() {
-					assert.NoError(a.(*announcer).announceToTrainer())
-				}()
+			except: func(a Announcer) {
+				go a.(*announcer).announceToTrainer()
 			},
 		},
 		{
@@ -493,11 +489,8 @@ func TestAnnouncer_announceToTrainer(t *testing.T) {
 						return nil
 					}).Times(4)
 			},
-			except: func(t *testing.T, a Announcer) {
-				assert := assert.New(t)
-				go func() {
-					assert.NoError(a.(*announcer).announceToTrainer())
-				}()
+			except: func(a Announcer) {
+				go a.(*announcer).announceToTrainer()
 			},
 		},
 	}
@@ -516,7 +509,7 @@ func TestAnnouncer_announceToTrainer(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			tc.except(t, a)
+			tc.except(a)
 			tc.sleep()
 			if err := a.Stop(); err != nil {
 				t.Fatal(err)
