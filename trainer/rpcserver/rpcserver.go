@@ -17,10 +17,11 @@
 package rpcserver
 
 import (
+	"google.golang.org/grpc"
+
 	"d7y.io/dragonfly/v2/pkg/rpc/trainer/server"
 	"d7y.io/dragonfly/v2/trainer/config"
 	"d7y.io/dragonfly/v2/trainer/storage"
-	"google.golang.org/grpc"
 )
 
 func New(

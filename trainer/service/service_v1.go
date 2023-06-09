@@ -21,11 +21,11 @@ import (
 	"fmt"
 	"io"
 
-	trainerv1 "d7y.io/api/pkg/apis/trainer/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	trainerv1 "d7y.io/api/pkg/apis/trainer/v1"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/trainer/config"
