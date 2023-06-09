@@ -101,15 +101,11 @@ func New(cfg *config.Config, managerClient managerclient.V2, storage storage.Sto
 // Started announcer server.
 func (a *announcer) Serve() error {
 	logger.Info("announce scheduler to manager")
-	if err := a.announceToManager(); err != nil {
-		return err
-	}
+	go a.announceToManager()
 
 	if a.trainerClient != nil {
 		logger.Info("announce scheduler to trainer")
-		if err := a.announceToTrainer(); err != nil {
-			return err
-		}
+		a.announceToTrainer()
 	}
 
 	return nil
@@ -122,22 +118,17 @@ func (a *announcer) Stop() error {
 }
 
 // announceSeedPeer announces peer information to manager.
-func (a *announcer) announceToManager() error {
-	// Start keepalive to manager.
-	go func() {
-		a.managerClient.KeepAlive(a.config.Manager.KeepAlive.Interval, &managerv2.KeepAliveRequest{
-			SourceType: managerv2.SourceType_SCHEDULER_SOURCE,
-			Hostname:   a.config.Server.Host,
-			Ip:         a.config.Server.AdvertiseIP.String(),
-			ClusterId:  uint64(a.config.Manager.SchedulerClusterID),
-		}, a.done)
-	}()
-
-	return nil
+func (a *announcer) announceToManager() {
+	a.managerClient.KeepAlive(a.config.Manager.KeepAlive.Interval, &managerv2.KeepAliveRequest{
+		SourceType: managerv2.SourceType_SCHEDULER_SOURCE,
+		Hostname:   a.config.Server.Host,
+		Ip:         a.config.Server.AdvertiseIP.String(),
+		ClusterId:  uint64(a.config.Manager.SchedulerClusterID),
+	}, a.done)
 }
 
 // announceSeedPeer announces dataset to trainer.
-func (a *announcer) announceToTrainer() error {
+func (a *announcer) announceToTrainer() {
 	tick := time.NewTicker(a.config.Trainer.Interval)
 	for {
 		select {
@@ -146,7 +137,7 @@ func (a *announcer) announceToTrainer() error {
 				logger.Error(err)
 			}
 		case <-a.done:
-			return nil
+			return
 		}
 	}
 }
