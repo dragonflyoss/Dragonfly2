@@ -33,8 +33,8 @@ import (
 )
 
 const (
-	// Algorithm is the digest algorithm used to generate the digest of the model.
-	Algorithm = "sha256"
+	// DefaultHashAlgorithm is the default hash algorithm used to generate the digest of the model key.
+	DefaultHashAlgorithm = "sha256"
 )
 
 // V1 is the interface for v1 version of the service.
@@ -180,5 +180,5 @@ func (v *V1) handleTrainGNNRequest(modelKey string, dataset []byte) error {
 }
 
 func (v *V1) createModelKey(hostname, ip string, clusterId uint) (string, error) {
-	return digest.HashFile(fmt.Sprintf("%s-%s-%d", hostname, ip, clusterId), Algorithm)
+	return digest.HashFile(fmt.Sprintf("%s-%s-%d", hostname, ip, clusterId), DefaultHashAlgorithm)
 }

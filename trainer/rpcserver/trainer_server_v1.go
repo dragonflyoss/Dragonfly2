@@ -18,7 +18,6 @@ package rpcserver
 
 import (
 	trainerv1 "d7y.io/api/pkg/apis/trainer/v1"
-
 	"d7y.io/dragonfly/v2/trainer/config"
 	"d7y.io/dragonfly/v2/trainer/metrics"
 	"d7y.io/dragonfly/v2/trainer/service"
