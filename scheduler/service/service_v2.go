@@ -645,6 +645,88 @@ func (v *V2) LeaveHost(ctx context.Context, req *schedulerv2.LeaveHostRequest) e
 
 // SyncProbes sync probes of the host.
 func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
+	req, err := stream.Recv()
+	if err != nil {
+		if err == io.EOF {
+			return nil
+		}
+
+		logger.Errorf("receive error: %s", err.Error())
+		return err
+	}
+
+	var srcHostID string
+	switch syncProbesRequest := req.GetRequest().(type) {
+	case *schedulerv2.SyncProbesRequest_ProbeStartedRequest:
+		srcHostID = syncProbesRequest.ProbeStartedRequest.GetHost().Id
+		logger.Infof("receive SyncProbesRequest_ProbeStartedRequest: %s", srcHostID)
+		break
+	case *schedulerv2.SyncProbesRequest_ProbeFinishedRequest:
+		srcHostID = syncProbesRequest.ProbeFinishedRequest.GetHost().Id
+		logger.Infof("receive SyncProbesRequest_ProbeFinishedRequest: %s", srcHostID)
+		for _, probe := range syncProbesRequest.ProbeFinishedRequest.Probes {
+			destHostID := probe.Host.Id
+			if err := v.networkTopology.Store(srcHostID, destHostID); err != nil {
+				logger.Errorf("store error: %s", err.Error())
+				continue
+			}
+
+			if err := v.networkTopology.Probes(srcHostID, destHostID).Enqueue(&networktopology.Probe{
+				Host: resource.NewHost(probe.Host.Id, probe.Host.Ip, probe.Host.Hostname, probe.Host.Port,
+					probe.Host.DownloadPort, types.HostTypeNormal),
+				RTT:       probe.Rtt.AsDuration(),
+				CreatedAt: probe.CreatedAt.AsTime(),
+			}); err != nil {
+				logger.Errorf("enqueue error: %s", err.Error())
+				continue
+			}
+		}
+
+		break
+	case *schedulerv2.SyncProbesRequest_ProbeFailedRequest:
+		srcHostID = syncProbesRequest.ProbeFailedRequest.GetHost().Id
+		logger.Infof("receive SyncProbesRequest_ProbeFailedRequest: %s", srcHostID)
+		for _, failedProbe := range syncProbesRequest.ProbeFailedRequest.FailedProbes {
+			if err := v.networkTopology.DeleteHost(failedProbe.Host.Id); err != nil {
+				logger.Errorf("delete host error: %s", err.Error())
+				continue
+			}
+		}
+
+		break
+	default:
+		msg := fmt.Sprintf("receive unknow request: %#v", syncProbesRequest)
+		logger.Error(msg)
+		return status.Error(codes.FailedPrecondition, msg)
+	}
+
+	// Find probe hosts for probing.
+	desthostIDs := v.networkTopology.FindDestHostIDs(srcHostID)
+	destHosts := make([]*commonv2.Host, 0)
+	for _, desthostID := range desthostIDs {
+		desthost, ok := v.resource.HostManager().Load(desthostID)
+		if !ok {
+			logger.Error(fmt.Sprintf("host %s not found", desthostID))
+			continue
+		}
+
+		destHosts = append(destHosts, &commonv2.Host{
+			Id:           desthost.ID,
+			Type:         uint32(desthost.Type),
+			Hostname:     desthost.Hostname,
+			Ip:           desthost.IP,
+			Port:         desthost.Port,
+			DownloadPort: desthost.DownloadPort,
+		})
+	}
+
+	if err := stream.Send(&schedulerv2.SyncProbesResponse{
+		Hosts:         destHosts,
+		ProbeInterval: durationpb.New(v.config.NetworkTopology.CollectInterval),
+	}); err != nil {
+		return err
+	}
+
 	return nil
 }
 

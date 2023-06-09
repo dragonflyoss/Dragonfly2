@@ -676,7 +676,6 @@ func (v *V1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
 	case *schedulerv1.SyncProbesRequest_ProbeFinishedRequest:
 		srcHostID = syncProbesRequest.ProbeFinishedRequest.GetHost().Id
 		logger.Infof("receive SyncProbesRequest_ProbeFinishedRequest: %s", srcHostID)
-
 		for _, probe := range syncProbesRequest.ProbeFinishedRequest.Probes {
 			destHostID := probe.Host.Id
 			if err := v.networkTopology.Store(srcHostID, destHostID); err != nil {
@@ -699,10 +698,8 @@ func (v *V1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
 	case *schedulerv1.SyncProbesRequest_ProbeFailedRequest:
 		srcHostID = syncProbesRequest.ProbeFailedRequest.GetHost().Id
 		logger.Infof("receive SyncProbesRequest_ProbeFailedRequest: %s", srcHostID)
-
 		for _, failedProbe := range syncProbesRequest.ProbeFailedRequest.FailedProbes {
-			destHostID := failedProbe.Host.Id
-			if err := v.networkTopology.DeleteHost(destHostID); err != nil {
+			if err := v.networkTopology.DeleteHost(failedProbe.Host.Id); err != nil {
 				logger.Errorf("delete host error: %s", err.Error())
 				continue
 			}
