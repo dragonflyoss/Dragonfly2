@@ -54,6 +54,10 @@ type NetworkTopology interface {
 	// Store stores source host and destination host.
 	Store(string, string) error
 
+	// TODO Implement function.
+	// FindProbedHostIDs finds the most candidate destination host to be probed.
+	FindProbedHostIDs(string) ([]string, error)
+
 	// DeleteHost deletes source host and all destination host connected to source host.
 	DeleteHost(string) error
 
@@ -155,6 +159,12 @@ func (nt *networkTopology) Store(srcHostID string, destHostID string) error {
 	}
 
 	return nil
+}
+
+// TODO Implement function.
+// FindProbedHostIDs finds the most candidate destination host to be probed.
+func (nt *networkTopology) FindProbedHostIDs(hostID string) ([]string, error) {
+	return nil, nil
 }
 
 // DeleteHost deletes source host and all destination host connected to source host.
