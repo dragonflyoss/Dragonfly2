@@ -750,7 +750,8 @@ func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
 
 			logger.Infof("probe started: %#v", probedHosts)
 			if err := stream.Send(&schedulerv2.SyncProbesResponse{
-				Hosts: probedHosts,
+				Hosts:         probedHosts,
+				ProbeInterval: durationpb.New(v.config.NetworkTopology.Probe.Interval),
 			}); err != nil {
 				logger.Error(err)
 				return err
