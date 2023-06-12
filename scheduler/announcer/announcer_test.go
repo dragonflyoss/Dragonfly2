@@ -32,7 +32,6 @@ import (
 	trainerv1 "d7y.io/api/pkg/apis/trainer/v1"
 	trainerv1mocks "d7y.io/api/pkg/apis/trainer/v1/mocks"
 
-	pkgio "d7y.io/dragonfly/v2/pkg/io"
 	managerclientmocks "d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
 	trainerclientmocks "d7y.io/dragonfly/v2/pkg/rpc/trainer/client/mocks"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -850,7 +849,7 @@ func TestAnnouncer_uploadDownloadToTrainer(t *testing.T) {
 						Location:           "bar",
 						SchedulerClusterId: uint64(1),
 					})).Times(1),
-					ms.OpenDownload().Return(pkgio.MultiReadCloser(&mockReadCloserWithReadError{}), nil).Times(1),
+					ms.OpenDownload().Return(&mockReadCloserWithReadError{}, nil).Times(1),
 				)
 			},
 			except: func(t *testing.T, a Announcer, err error) {
@@ -1035,7 +1034,7 @@ func TestAnnouncer_uploadNetworkTopologyToTrainer(t *testing.T) {
 						Location:           "bar",
 						SchedulerClusterId: uint64(1),
 					})).Times(1),
-					ms.OpenNetworkTopology().Return(pkgio.MultiReadCloser(&mockReadCloserWithReadError{}), nil).Times(1),
+					ms.OpenNetworkTopology().Return(&mockReadCloserWithReadError{}, nil).Times(1),
 				)
 			},
 			except: func(t *testing.T, a Announcer, err error) {
