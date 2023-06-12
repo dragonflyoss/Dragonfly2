@@ -78,17 +78,6 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 
 		req, err := stream.Recv()
 
-		if !initialized {
-			initialized = true
-
-			//Initialize modelKey.
-			modelKey, err = v.createModelKey(req.Hostname, req.Ip, uint(req.ClusterId))
-			if err != nil {
-				logger.Errorf("create model key error: %s", err.Error())
-				return err
-			}
-		}
-
 		if err != nil {
 			if err == io.EOF {
 				logger.Infof("receive streaming requests successfully")
@@ -99,6 +88,11 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 					logger.Infof("train error %s", err.Error())
 					return err
 				}
+			}
+
+			if !initialized {
+				logger.Errorf("receive error at the time of beginning: %s", err.Error())
+				return err
 			}
 
 			// If receive stream request fails,
@@ -117,8 +111,18 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 			return err
 		}
 
-		switch trainRequest := req.GetRequest().(type) {
+		if !initialized {
+			initialized = true
 
+			//Initialize modelKey.
+			modelKey, err = v.createModelKey(req.Hostname, req.Ip, uint(req.ClusterId))
+			if err != nil {
+				logger.Errorf("create model key error: %s", err.Error())
+				return err
+			}
+		}
+
+		switch trainRequest := req.GetRequest().(type) {
 		case *trainerv1.TrainRequest_TrainGnnRequest:
 			logger.Infof("receive TrainRequest_TrainGnnRequest: %#v", trainRequest.TrainGnnRequest)
 			if err := v.handleTrainGNNRequest(modelKey, trainRequest.TrainGnnRequest.Dataset); err != nil {
@@ -132,7 +136,6 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 			}
 		case *trainerv1.TrainRequest_TrainMlpRequest:
 			logger.Infof("receive TrainRequest_TrainMlpRequest: %#v", trainRequest.TrainMlpRequest)
-
 			if err := v.handleTrainMLPRequest(modelKey, trainRequest.TrainMlpRequest.Dataset); err != nil {
 				logger.Errorf("handle downloads error: %s", err.Error())
 
@@ -151,7 +154,6 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 }
 
 func (v *V1) handleTrainMLPRequest(modelKey string, dataset []byte) error {
-
 	file, err := v.storage.OpenDownload(modelKey)
 	if err != nil {
 		return err
@@ -166,7 +168,6 @@ func (v *V1) handleTrainMLPRequest(modelKey string, dataset []byte) error {
 }
 
 func (v *V1) handleTrainGNNRequest(modelKey string, dataset []byte) error {
-
 	file, err := v.storage.OpenNetworkTopology(modelKey)
 	if err != nil {
 		return err
