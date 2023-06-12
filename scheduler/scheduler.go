@@ -324,9 +324,7 @@ func (s *Server) Serve() error {
 
 	// Serve announcer.
 	go func() {
-		if err := s.announcer.Serve(); err != nil {
-			logger.Fatalf("announcer start failed %s", err.Error())
-		}
+		s.announcer.Serve()
 		logger.Info("announcer start successfully")
 	}()
 
@@ -395,11 +393,8 @@ func (s *Server) Stop() {
 	}
 
 	// Stop announcer.
-	if err := s.announcer.Stop(); err != nil {
-		logger.Errorf("stop announcer failed %s", err.Error())
-	} else {
-		logger.Info("stop announcer closed")
-	}
+	s.announcer.Stop()
+	logger.Info("stop announcer closed")
 
 	// Stop manager client.
 	if s.managerClient != nil {
