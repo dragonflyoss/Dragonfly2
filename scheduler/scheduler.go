@@ -330,6 +330,14 @@ func (s *Server) Serve() error {
 		logger.Info("announcer start successfully")
 	}()
 
+	// Serve network topology.
+	if s.networkTopology != nil {
+		go func() {
+			s.networkTopology.Serve()
+			logger.Info("network topology start successfully")
+		}()
+	}
+
 	// Generate GRPC limit listener.
 	ip, ok := ip.FormatIP(s.config.Server.ListenIP.String())
 	if !ok {
@@ -425,6 +433,15 @@ func (s *Server) Stop() {
 			logger.Errorf("security client failed to stop: %s", err.Error())
 		} else {
 			logger.Info("security client closed")
+		}
+	}
+
+	// Stop network topology.
+	if s.networkTopology != nil {
+		if err := s.networkTopology.Stop(); err != nil {
+			logger.Errorf("network topology failed to stop: %s", err.Error())
+		} else {
+			logger.Info("network topology closed")
 		}
 	}
 

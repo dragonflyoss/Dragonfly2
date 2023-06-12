@@ -100,7 +100,7 @@ func TestNetworkTopology_Serve(t *testing.T) {
 				assert := assert.New(t)
 				assert.NoError(err)
 				go func() {
-					assert.NoError(networkTopology.Serve())
+					networkTopology.Serve()
 				}()
 			},
 		},
@@ -136,7 +136,7 @@ func TestNetworkTopology_Serve(t *testing.T) {
 				assert := assert.New(t)
 				assert.NoError(err)
 				go func() {
-					assert.NoError(networkTopology.Serve())
+					networkTopology.Serve()
 				}()
 			},
 		},

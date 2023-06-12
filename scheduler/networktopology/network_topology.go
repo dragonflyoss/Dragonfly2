@@ -43,7 +43,7 @@ const (
 // NetworkTopology is an interface for network topology.
 type NetworkTopology interface {
 	// Started network topology server.
-	Serve() error
+	Serve()
 
 	// Stop network topology server.
 	Stop() error
@@ -104,7 +104,7 @@ func NewNetworkTopology(cfg config.NetworkTopologyConfig, rdb redis.UniversalCli
 }
 
 // Started network topology server.
-func (nt *networkTopology) Serve() error {
+func (nt *networkTopology) Serve() {
 	logger.Info("collect network topology records")
 	tick := time.NewTicker(nt.config.CollectInterval)
 	for {
@@ -115,7 +115,7 @@ func (nt *networkTopology) Serve() error {
 				break
 			}
 		case <-nt.done:
-			return nil
+			return
 		}
 	}
 }
