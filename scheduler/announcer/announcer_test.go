@@ -159,6 +159,162 @@ func TestAnnouncer_New(t *testing.T) {
 	}
 }
 
+func TestAnnouncer_Serve(t *testing.T) {
+	ctl := gomock.NewController(t)
+	defer ctl.Finish()
+	mockTrainerClient := trainerclientmocks.NewMockV1(ctl)
+
+	tests := []struct {
+		name   string
+		config *config.Config
+		data   []byte
+		option []Option
+		sleep  func()
+		mock   func(stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder)
+		except func(t *testing.T, a Announcer)
+	}{
+		{
+			name: "started announcer server success",
+			config: &config.Config{
+				Server: config.ServerConfig{
+					Host:          "localhost",
+					AdvertiseIP:   net.ParseIP("127.0.0.1"),
+					AdvertisePort: 8004,
+					Port:          8080,
+				},
+				Host: config.HostConfig{
+					IDC:      "foo",
+					Location: "bar",
+				},
+				Manager: config.ManagerConfig{
+					KeepAlive: config.KeepAliveConfig{
+						Interval: 50 * time.Millisecond,
+					},
+					SchedulerClusterID: 1,
+				},
+				Trainer: config.TrainerConfig{
+					Interval:      80 * time.Millisecond,
+					UploadTimeout: 10 * time.Second,
+				},
+			},
+			data:   []byte("bar"),
+			option: []Option{WithTrainerClient(mockTrainerClient)},
+			sleep: func() {
+				time.Sleep(100 * time.Millisecond)
+			},
+			mock: func(stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
+				var wg sync.WaitGroup
+				wg.Add(4)
+				gomock.InOrder(
+					m.UpdateScheduler(gomock.Any(), gomock.Eq(&managerv2.UpdateSchedulerRequest{
+						SourceType:         managerv2.SourceType_SCHEDULER_SOURCE,
+						Hostname:           "localhost",
+						Ip:                 "127.0.0.1",
+						Port:               int32(8004),
+						Idc:                "foo",
+						Location:           "bar",
+						SchedulerClusterId: uint64(1),
+					})).Times(1),
+					m.KeepAlive(gomock.Eq(50*time.Millisecond), gomock.Eq(&managerv2.KeepAliveRequest{
+						SourceType: managerv2.SourceType_SCHEDULER_SOURCE,
+						Hostname:   "localhost",
+						Ip:         "127.0.0.1",
+						ClusterId:  uint64(1),
+					}), gomock.Any()).Times(1),
+					mtc.Train(gomock.Any()).Return(stream, nil).Times(1),
+					mt.CloseAndRecv().Do(func() { wg.Wait() }).Return(nil, nil).Times(1),
+				)
+
+				gomock.InOrder(
+					ms.OpenNetworkTopology().Return(io.NopCloser(bytes.NewBuffer(data)), nil).Times(1),
+					mt.Send(gomock.Any()).DoAndReturn(
+						func(t *trainerv1.TrainRequest) error {
+							wg.Done()
+							return nil
+						}).Times(2),
+				)
+
+				gomock.InOrder(
+					ms.OpenDownload().Return(io.NopCloser(bytes.NewBuffer(data)), nil).Times(1),
+					mt.Send(gomock.Any()).DoAndReturn(
+						func(t *trainerv1.TrainRequest) error {
+							wg.Done()
+							return nil
+						}).Times(2),
+				)
+			},
+			except: func(t *testing.T, a Announcer) {
+				go a.Serve()
+			},
+		},
+		{
+			name: "started announcer server success without trainer client",
+			config: &config.Config{
+				Server: config.ServerConfig{
+					Host:          "localhost",
+					AdvertiseIP:   net.ParseIP("127.0.0.1"),
+					AdvertisePort: 8004,
+					Port:          8080,
+				},
+				Host: config.HostConfig{
+					IDC:      "foo",
+					Location: "bar",
+				},
+				Manager: config.ManagerConfig{
+					KeepAlive: config.KeepAliveConfig{
+						Interval: 50 * time.Millisecond,
+					},
+					SchedulerClusterID: 1,
+				},
+			},
+			data:   []byte("bar"),
+			option: []Option{},
+			sleep: func() {
+				time.Sleep(100 * time.Millisecond)
+			},
+			mock: func(stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
+				gomock.InOrder(
+					m.UpdateScheduler(gomock.Any(), gomock.Eq(&managerv2.UpdateSchedulerRequest{
+						SourceType:         managerv2.SourceType_SCHEDULER_SOURCE,
+						Hostname:           "localhost",
+						Ip:                 "127.0.0.1",
+						Port:               int32(8004),
+						Idc:                "foo",
+						Location:           "bar",
+						SchedulerClusterId: uint64(1),
+					})).Times(1),
+					m.KeepAlive(gomock.Eq(50*time.Millisecond), gomock.Eq(&managerv2.KeepAliveRequest{
+						SourceType: managerv2.SourceType_SCHEDULER_SOURCE,
+						Hostname:   "localhost",
+						Ip:         "127.0.0.1",
+						ClusterId:  uint64(1),
+					}), gomock.Any()).Times(1),
+				)
+			},
+			except: func(t *testing.T, a Announcer) {
+				go a.Serve()
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			stream := trainerv1mocks.NewMockTrainer_TrainClient(ctl)
+			mockManagerClient := managerclientmocks.NewMockV2(ctl)
+			mockStorage := storagemocks.NewMockStorage(ctl)
+
+			tc.mock(stream, tc.data, mockManagerClient.EXPECT(), mockTrainerClient.EXPECT(), mockStorage.EXPECT(), stream.EXPECT())
+			a, err := New(tc.config, mockManagerClient, mockStorage, tc.option...)
+			if err != nil {
+				t.Fatal(err)
+			}
+			tc.except(t, a)
+			tc.sleep()
+			a.Stop()
+		})
+	}
+}
+
 func TestAnnouncer_announceToManager(t *testing.T) {
 	tests := []struct {
 		name   string

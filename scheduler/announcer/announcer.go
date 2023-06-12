@@ -130,9 +130,6 @@ func (a *announcer) announceToTrainer() {
 	for {
 		select {
 		case <-tick.C:
-			fmt.Println("1111111111")
-			fmt.Println(a.config.Trainer.Interval)
-			fmt.Println("1111111111")
 			if err := a.train(); err != nil {
 				logger.Error(err)
 			}
