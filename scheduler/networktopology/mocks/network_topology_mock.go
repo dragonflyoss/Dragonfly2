@@ -123,11 +123,9 @@ func (mr *MockNetworkTopologyMockRecorder) Probes(arg0, arg1 interface{}) *gomoc
 }
 
 // Serve mocks base method.
-func (m *MockNetworkTopology) Serve() error {
+func (m *MockNetworkTopology) Serve() {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Serve")
-	ret0, _ := ret[0].(error)
-	return ret0
+	m.ctrl.Call(m, "Serve")
 }
 
 // Serve indicates an expected call of Serve.
@@ -151,11 +149,9 @@ func (mr *MockNetworkTopologyMockRecorder) Snapshot() *gomock.Call {
 }
 
 // Stop mocks base method.
-func (m *MockNetworkTopology) Stop() error {
+func (m *MockNetworkTopology) Stop() {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Stop")
-	ret0, _ := ret[0].(error)
-	return ret0
+	m.ctrl.Call(m, "Stop")
 }
 
 // Stop indicates an expected call of Stop.
