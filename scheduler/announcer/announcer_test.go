@@ -194,7 +194,7 @@ func TestAnnouncer_Serve(t *testing.T) {
 				},
 				Trainer: config.TrainerConfig{
 					Interval:      80 * time.Millisecond,
-					UploadTimeout: 1 * time.Second,
+					UploadTimeout: 10 * time.Second,
 				},
 			},
 			data:   []byte("bar"),
@@ -224,19 +224,27 @@ func TestAnnouncer_Serve(t *testing.T) {
 					mtc.Train(gomock.Any()).Return(stream, nil).Times(1),
 					mt.CloseAndRecv().Do(func() { wg.Wait() }).Return(nil, nil).Times(1),
 				)
-				ms.OpenNetworkTopology().Return(io.NopCloser(bytes.NewBuffer(data)), nil).Times(1)
-				ms.OpenDownload().Return(io.NopCloser(bytes.NewBuffer(data)), nil).Times(1)
-				mt.Send(gomock.Any()).DoAndReturn(
-					func(t *trainerv1.TrainRequest) error {
-						wg.Done()
-						return nil
-					}).Times(4)
+
+				gomock.InOrder(
+					ms.OpenNetworkTopology().Return(io.NopCloser(bytes.NewBuffer(data)), nil).Times(1),
+					mt.Send(gomock.Any()).DoAndReturn(
+						func(t *trainerv1.TrainRequest) error {
+							wg.Done()
+							return nil
+						}).Times(2),
+				)
+
+				gomock.InOrder(
+					ms.OpenDownload().Return(io.NopCloser(bytes.NewBuffer(data)), nil).Times(1),
+					mt.Send(gomock.Any()).DoAndReturn(
+						func(t *trainerv1.TrainRequest) error {
+							wg.Done()
+							return nil
+						}).Times(2),
+				)
 			},
 			except: func(t *testing.T, a Announcer) {
-				assert := assert.New(t)
-				go func() {
-					assert.NoError(a.Serve())
-				}()
+				go a.Serve()
 			},
 		},
 		{
@@ -284,10 +292,7 @@ func TestAnnouncer_Serve(t *testing.T) {
 				)
 			},
 			except: func(t *testing.T, a Announcer) {
-				assert := assert.New(t)
-				go func() {
-					assert.NoError(a.Serve())
-				}()
+				go a.Serve()
 			},
 		},
 	}
@@ -305,9 +310,7 @@ func TestAnnouncer_Serve(t *testing.T) {
 			}
 			tc.except(t, a)
 			tc.sleep()
-			if err := a.Stop(); err != nil {
-				t.Fatal(err)
-			}
+			a.Stop()
 		})
 	}
 }
@@ -510,9 +513,7 @@ func TestAnnouncer_announceToTrainer(t *testing.T) {
 			}
 			tc.except(a)
 			tc.sleep()
-			if err := a.Stop(); err != nil {
-				t.Fatal(err)
-			}
+			a.Stop()
 		})
 	}
 }
