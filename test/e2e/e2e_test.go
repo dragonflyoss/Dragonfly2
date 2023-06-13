@@ -117,8 +117,9 @@ var _ = AfterSuite(func() {
 			out, err = pod.Command("sh", "-c", fmt.Sprintf(`
               set -x
               cp -r /var/log/dragonfly/%s /tmp/artifact/%s-%d
+              cp -r /var/log/dragonfly/dfget /tmp/artifact/%s-%d-dfget
               find /tmp/artifact -type d -exec chmod 777 {} \;
-              `, server.logDirName, server.name, i)).CombinedOutput()
+              `, server.logDirName, server.name, i, server.name, i)).CombinedOutput()
 			if err != nil {
 				fmt.Printf("copy log output: %q, error: %s, retry after 10s\n", string(out), err)
 				// pod maybe restart due to panic, wait it running again
