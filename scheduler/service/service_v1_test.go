@@ -2883,7 +2883,7 @@ func TestServiceV1_SyncProbes(t *testing.T) {
 			},
 		},
 		{
-			name: "load host error when receive SyncProbesRequest",
+			name: "load host error when receive ProbeStartedRequest",
 			mock: func(svc *V1, mr *resource.MockResourceMockRecorder, probes *networktopologymocks.MockProbes, mp *networktopologymocks.MockProbesMockRecorder,
 				mn *networktopologymocks.MockNetworkTopologyMockRecorder, hostManager resource.HostManager, mh *resource.MockHostManagerMockRecorder,
 				ms *schedulerv1mocks.MockScheduler_SyncProbesServerMockRecorder) {
@@ -2910,39 +2910,6 @@ func TestServiceV1_SyncProbes(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "rpc error: code = NotFound desc = probed host not found")
-			},
-		},
-		{
-			name: "store error when receive ProbeFinishedRequest",
-			mock: func(svc *V1, mr *resource.MockResourceMockRecorder, probes *networktopologymocks.MockProbes, mp *networktopologymocks.MockProbesMockRecorder,
-				mn *networktopologymocks.MockNetworkTopologyMockRecorder, hostManager resource.HostManager, mh *resource.MockHostManagerMockRecorder,
-				ms *schedulerv1mocks.MockScheduler_SyncProbesServerMockRecorder) {
-				gomock.InOrder(
-					ms.Recv().Return(&schedulerv1.SyncProbesRequest{
-						Host: &commonv1.Host{
-							Id:           mockRawSeedHost.ID,
-							Ip:           mockRawSeedHost.IP,
-							Hostname:     mockRawSeedHost.Hostname,
-							Port:         mockRawSeedHost.Port,
-							DownloadPort: mockRawSeedHost.DownloadPort,
-							Location:     mockRawSeedHost.Network.Location,
-							Idc:          mockRawSeedHost.Network.IDC,
-						},
-						Request: &schedulerv1.SyncProbesRequest_ProbeFinishedRequest{
-							ProbeFinishedRequest: &schedulerv1.ProbeFinishedRequest{
-								Probes: []*schedulerv1.Probe{mockSchedulerv1Probe},
-							},
-						},
-					}, nil).Times(1),
-					mr.HostManager().Return(hostManager).Times(1),
-					mh.Load(gomock.Eq(mockRawHost.ID)).Return(&mockRawHost, true),
-					mn.Store(gomock.Eq(mockRawSeedHost.ID), gomock.Eq(mockRawHost.ID)).Return(errors.New("store error")).Times(1),
-					ms.Recv().Return(nil, io.EOF).Times(1),
-				)
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.NoError(err)
 			},
 		},
 		{
@@ -3013,6 +2980,39 @@ func TestServiceV1_SyncProbes(t *testing.T) {
 					}, nil).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockRawHost.ID)).Return(nil, false),
+					ms.Recv().Return(nil, io.EOF).Times(1),
+				)
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+			},
+		},
+		{
+			name: "store error when receive ProbeFinishedRequest",
+			mock: func(svc *V1, mr *resource.MockResourceMockRecorder, probes *networktopologymocks.MockProbes, mp *networktopologymocks.MockProbesMockRecorder,
+				mn *networktopologymocks.MockNetworkTopologyMockRecorder, hostManager resource.HostManager, mh *resource.MockHostManagerMockRecorder,
+				ms *schedulerv1mocks.MockScheduler_SyncProbesServerMockRecorder) {
+				gomock.InOrder(
+					ms.Recv().Return(&schedulerv1.SyncProbesRequest{
+						Host: &commonv1.Host{
+							Id:           mockRawSeedHost.ID,
+							Ip:           mockRawSeedHost.IP,
+							Hostname:     mockRawSeedHost.Hostname,
+							Port:         mockRawSeedHost.Port,
+							DownloadPort: mockRawSeedHost.DownloadPort,
+							Location:     mockRawSeedHost.Network.Location,
+							Idc:          mockRawSeedHost.Network.IDC,
+						},
+						Request: &schedulerv1.SyncProbesRequest_ProbeFinishedRequest{
+							ProbeFinishedRequest: &schedulerv1.ProbeFinishedRequest{
+								Probes: []*schedulerv1.Probe{mockSchedulerv1Probe},
+							},
+						},
+					}, nil).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Eq(mockRawHost.ID)).Return(&mockRawHost, true),
+					mn.Store(gomock.Eq(mockRawSeedHost.ID), gomock.Eq(mockRawHost.ID)).Return(errors.New("store error")).Times(1),
 					ms.Recv().Return(nil, io.EOF).Times(1),
 				)
 			},
