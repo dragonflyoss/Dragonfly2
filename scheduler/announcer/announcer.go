@@ -44,10 +44,10 @@ const (
 // Announcer is the interface used for announce service.
 type Announcer interface {
 	// Started announcer server.
-	Serve() error
+	Serve()
 
 	// Stop announcer server.
-	Stop() error
+	Stop()
 }
 
 // announcer provides announce function.
@@ -99,7 +99,7 @@ func New(cfg *config.Config, managerClient managerclient.V2, storage storage.Sto
 }
 
 // Started announcer server.
-func (a *announcer) Serve() error {
+func (a *announcer) Serve() {
 	logger.Info("announce scheduler to manager")
 	go a.announceToManager()
 
@@ -107,14 +107,11 @@ func (a *announcer) Serve() error {
 		logger.Info("announce scheduler to trainer")
 		a.announceToTrainer()
 	}
-
-	return nil
 }
 
 // Stop announcer server.
-func (a *announcer) Stop() error {
+func (a *announcer) Stop() {
 	close(a.done)
-	return nil
 }
 
 // announceSeedPeer announces peer information to manager.
