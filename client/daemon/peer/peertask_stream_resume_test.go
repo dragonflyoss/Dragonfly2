@@ -18,12 +18,14 @@ package peer
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/go-http-utils/headers"
 	"github.com/golang/mock/gomock"
 	testifyassert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -248,24 +250,23 @@ func TestStreamPeerTask_Resume(t *testing.T) {
 			Start:  1024,
 			Length: int64(mockContentLength) - 1024,
 		},
-		//{
-		//	Start:  int64(pieceSize),
-		//	Length: int64(mockContentLength) - int64(pieceSize),
-		//},
 	}
 
 	wg.Add(len(ranges))
 	for _, rg := range ranges {
 		go func(rg *http.Range) {
-			pt, err := ptm.newResumeStreamTask(ctx, ptc, rg)
-			assert.Nil(err, "new stream peer task")
+			pt := ptm.newResumeStreamTask(ctx, ptc, rg)
+			assert.NotNil(pt, "new stream peer task")
 
 			pt.computePieceSize = func(length int64) uint32 {
 				return uint32(pieceSize)
 			}
 
-			rc, _, err := pt.Start(ctx)
+			rc, attr, err := pt.Start(ctx)
 			assert.Nil(err, "start stream peer task")
+
+			assert.Equal(attr[headers.ContentLength], fmt.Sprintf("%d", rg.Length), "content length should match")
+			assert.Equal(attr[headers.ContentRange], fmt.Sprintf("bytes %d-%d/%d", rg.Start, mockContentLength-1, mockContentLength), "content length should match")
 
 			outputBytes, err := io.ReadAll(rc)
 			assert.Nil(err, "load read data")

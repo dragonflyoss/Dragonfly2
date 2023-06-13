@@ -107,7 +107,7 @@ func (ptm *peerTaskManager) newStreamTask(
 func (ptm *peerTaskManager) newResumeStreamTask(
 	ctx context.Context,
 	parent *peerTaskConductor,
-	rg *http.Range) (*resumeStreamTask, error) {
+	rg *http.Range) *resumeStreamTask {
 	ctx, span := tracer.Start(ctx, config.SpanStreamTask, trace.WithSpanKind(trace.SpanKindClient))
 
 	// init log with values
@@ -137,7 +137,7 @@ func (ptm *peerTaskManager) newResumeStreamTask(
 		skipBytes:        rg.Start,
 		computePieceSize: util.ComputePieceSize,
 	}
-	return pt, nil
+	return pt
 }
 
 func (s *streamTask) Start(ctx context.Context) (io.ReadCloser, map[string]string, error) {
@@ -203,7 +203,7 @@ func (s *streamTask) Start(ctx context.Context) (io.ReadCloser, map[string]strin
 
 	pr, pw := io.Pipe()
 	var readCloser io.ReadCloser = pr
-	go s.writeToPipe(firstPiece, pw)
+	go s.writeToPipe(0, firstPiece, pw)
 
 	return readCloser, attr, nil
 }
@@ -229,16 +229,11 @@ func (s *streamTask) writeOnePiece(w io.Writer, pieceNum int32) (int64, error) {
 	return n, pc.Close()
 }
 
-func (s *streamTask) writeToPipe(firstPiece *PieceInfo, pw *io.PipeWriter) {
+func (s *streamTask) writeToPipe(desired int32, piece *PieceInfo, pw *io.PipeWriter) {
 	defer func() {
 		s.span.End()
 	}()
-	var (
-		desired int32
-		piece   *PieceInfo
-		err     error
-	)
-	piece = firstPiece
+	var err error
 	for {
 		if desired == piece.Num || desired <= piece.OrderedNum {
 			desired, err = s.writeOrderedPieces(desired, piece.OrderedNum, pw)
@@ -376,6 +371,8 @@ pieceReady:
 	}
 
 	attr[headers.ContentLength] = fmt.Sprintf("%d", s.peerTaskConductor.GetContentLength()-s.skipBytes)
+	attr[headers.ContentRange] = fmt.Sprintf("bytes %d-%d/%d", s.skipBytes,
+		s.peerTaskConductor.GetContentLength()-1, s.peerTaskConductor.GetContentLength())
 
 	pr, pw := io.Pipe()
 	var readCloser io.ReadCloser = pr
@@ -445,38 +442,4 @@ func (s *resumeStreamTask) writePartialPiece(w io.Writer, pieceNum int32, skipBy
 		return n, err
 	}
 	return n, pc.Close()
-}
-
-func (s *resumeStreamTask) writeToPipe(desired int32, piece *PieceInfo, pw *io.PipeWriter) {
-	defer func() {
-		s.span.End()
-	}()
-	var err error
-	for {
-		if desired == piece.Num || desired <= piece.OrderedNum {
-			desired, err = s.writeOrderedPieces(desired, piece.OrderedNum, pw)
-			if err != nil {
-				return
-			}
-		}
-
-		select {
-		case piece = <-s.pieceCh:
-			continue
-		case <-s.peerTaskConductor.successCh:
-			s.writeRemainingPieces(desired, pw)
-			return
-		case <-s.ctx.Done():
-			err = fmt.Errorf("context done due to: %s", s.ctx.Err())
-			s.Errorf(err.Error())
-			s.closeWithError(pw, err)
-			return
-		case <-s.peerTaskConductor.failCh:
-			err = fmt.Errorf("stream close with peer task fail: %d/%s",
-				s.peerTaskConductor.failedCode, s.peerTaskConductor.failedReason)
-			s.Errorf(err.Error())
-			s.closeWithError(pw, err)
-			return
-		}
-	}
 }

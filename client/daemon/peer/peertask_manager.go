@@ -350,11 +350,8 @@ func (ptm *peerTaskManager) StartStreamTask(ctx context.Context, req *StreamTask
 			if ok && parentTask.GetContentLength() > 0 {
 				// only allow resume for range from breakpoint to end
 				if req.Range.Start+req.Range.Length == parentTask.GetContentLength() {
-					pt, err := ptm.newResumeStreamTask(ctx, parentTask, req.Range)
-					if err == nil {
-						readCloser, attribute, startErr := pt.Start(ctx)
-						return readCloser, attribute, startErr
-					}
+					pt := ptm.newResumeStreamTask(ctx, parentTask, req.Range)
+					return pt.Start(ctx)
 				}
 			}
 		}
