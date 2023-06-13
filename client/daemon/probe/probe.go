@@ -1,7 +1,26 @@
+/*
+ *     Copyright 2022 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+//go:generate mockgen -destination mocks/probe_mock.go -source probe.go -package mocks
+
 package probe
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -13,12 +32,9 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	pkgbalancer "d7y.io/dragonfly/v2/pkg/balancer"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/net/ping"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
-)
-
-const (
-	DefaultProbeInterval = 20 * time.Minute
 )
 
 type Probe interface {
@@ -42,10 +58,9 @@ type probe struct {
 }
 
 // NewProbe returns a new Probe interface.
-func NewProbe(cfg *config.DaemonOption, hostID string, daemonPort int32, daemonDownloadPort int32, schedulerClient schedulerclient.V1) Probe {
+func NewProbe(cfg *config.DaemonOption, daemonPort int32, daemonDownloadPort int32, schedulerClient schedulerclient.V1) Probe {
 	return &probe{
 		config:             cfg,
-		hostID:             hostID,
 		daemonPort:         daemonPort,
 		daemonDownloadPort: daemonDownloadPort,
 		schedulerClient:    schedulerClient,
@@ -55,8 +70,8 @@ func NewProbe(cfg *config.DaemonOption, hostID string, daemonPort int32, daemonD
 
 // Serve starts probe server.
 func (p *probe) Serve() error {
-	logger.Info("upload probes to scheduler")
-	if err := p.syncProbes(); err != nil {
+	logger.Info("collect probes and upload probes to scheduler")
+	if err := p.collectAndUploadProbesToScheduler(); err != nil {
 		return err
 	}
 
@@ -69,14 +84,34 @@ func (p *probe) Stop() error {
 	return nil
 }
 
-// syncProbes uploads probes to scheduler for synchronizing probe results.
-func (p *probe) syncProbes() error {
-	if err := p.uploadProbesToScheduler([]*schedulerv1.Probe{}); err != nil {
-		logger.Error(err)
+// collectAndUploadProbesToScheduler collects probes and uploads probes to scheduler.
+func (p *probe) collectAndUploadProbesToScheduler() error {
+	ctx := context.WithValue(context.Background(), pkgbalancer.ContextKey, p.hostID)
+	stream, err := p.schedulerClient.SyncProbes(ctx, &schedulerv1.SyncProbesRequest{
+		Host: &v1.Host{
+			Id:           idgen.HostIDV2(p.config.Host.AdvertiseIP.String(), p.config.Host.Hostname),
+			Ip:           p.config.Host.AdvertiseIP.String(),
+			Hostname:     p.config.Host.Hostname,
+			Port:         p.daemonPort,
+			DownloadPort: p.daemonDownloadPort,
+			Location:     p.config.Host.Location,
+			Idc:          p.config.Host.IDC,
+		},
+		Request: &schedulerv1.SyncProbesRequest_ProbeStartedRequest{
+			ProbeStartedRequest: &schedulerv1.ProbeStartedRequest{},
+		},
+	})
+	if err != nil {
+		return err
 	}
 
-	syncProbesResponse, err := p.syncProbesStream.Recv()
+	syncProbesResponse, err := stream.Recv()
 	if err != nil {
+		if err == io.EOF {
+			return nil
+		}
+
+		logger.Errorf("receive error: %s", err.Error())
 		return err
 	}
 
@@ -84,75 +119,97 @@ func (p *probe) syncProbes() error {
 	for {
 		select {
 		case <-tick.C:
-			probes := p.collectProbes(syncProbesResponse.Hosts)
-			if err := p.uploadProbesToScheduler(probes); err != nil {
-				logger.Error(err)
-			}
-
-			syncProbesResponse, err = p.syncProbesStream.Recv()
-			if err != nil {
+			probes, failedProbes := p.collectProbes(syncProbesResponse.Hosts)
+			if err := stream.Send(&schedulerv1.SyncProbesRequest{
+				Host: &v1.Host{
+					Id:           idgen.HostIDV2(p.config.Host.AdvertiseIP.String(), p.config.Host.Hostname),
+					Ip:           p.config.Host.AdvertiseIP.String(),
+					Hostname:     p.config.Host.Hostname,
+					Port:         p.daemonPort,
+					DownloadPort: p.daemonDownloadPort,
+					Location:     p.config.Host.Location,
+					Idc:          p.config.Host.IDC,
+				},
+				Request: &schedulerv1.SyncProbesRequest_ProbeFinishedRequest{
+					ProbeFinishedRequest: &schedulerv1.ProbeFinishedRequest{
+						Probes: probes,
+					},
+				},
+			}); err != nil {
 				return err
 			}
 
+			if err := stream.Send(&schedulerv1.SyncProbesRequest{
+				Host: &v1.Host{
+					Id:           idgen.HostIDV2(p.config.Host.AdvertiseIP.String(), p.config.Host.Hostname),
+					Ip:           p.config.Host.AdvertiseIP.String(),
+					Hostname:     p.config.Host.Hostname,
+					Port:         p.daemonPort,
+					DownloadPort: p.daemonDownloadPort,
+					Location:     p.config.Host.Location,
+					Idc:          p.config.Host.IDC,
+				},
+				Request: &schedulerv1.SyncProbesRequest_ProbeFailedRequest{
+					ProbeFailedRequest: &schedulerv1.ProbeFailedRequest{
+						Probes: failedProbes,
+					},
+				},
+			}); err != nil {
+				return err
+			}
+
+			syncProbesResponse, err = stream.Recv()
+			if err != nil {
+				if err == io.EOF {
+					return nil
+				}
+
+				logger.Errorf("receive error: %s", err.Error())
+				return err
+			}
 		case <-p.done:
 			return nil
 		}
 	}
 }
 
-// collectProbes probes hosts and collect result.
-func (p *probe) collectProbes(hosts []*v1.Host) []*schedulerv1.Probe {
+// collectProbes probes hosts and collect probes and failedProbes.
+func (p *probe) collectProbes(desthosts []*v1.Host) ([]*schedulerv1.Probe, []*schedulerv1.FailedProbe) {
 	probes := make([]*schedulerv1.Probe, 0)
-	for _, host := range hosts {
-		statistics, err := ping.Ping(host.Ip)
+	failedProbes := make([]*schedulerv1.FailedProbe, 0)
+	for _, desthost := range desthosts {
+		statistics, err := ping.Ping(desthost.Ip)
 		if err != nil {
+			failedProbes = append(failedProbes, &schedulerv1.FailedProbe{
+				Host: &v1.Host{
+					Id:           desthost.Id,
+					Ip:           desthost.Ip,
+					Hostname:     desthost.Hostname,
+					Port:         desthost.Port,
+					DownloadPort: desthost.DownloadPort,
+					Location:     desthost.Location,
+					Idc:          desthost.Idc,
+				},
+				Description: err.Error(),
+			})
+
 			continue
 		}
 
-		probe := &schedulerv1.Probe{
+		probes = append(probes, &schedulerv1.Probe{
 			Host: &v1.Host{
-				Id:           host.Id,
-				Ip:           host.Ip,
-				Hostname:     host.Hostname,
-				Port:         host.Port,
-				DownloadPort: host.DownloadPort,
-				Location:     host.Location,
-				Idc:          host.Idc,
+				Id:           desthost.Id,
+				Ip:           desthost.Ip,
+				Hostname:     desthost.Hostname,
+				Port:         desthost.Port,
+				DownloadPort: desthost.DownloadPort,
+				Location:     desthost.Location,
+				Idc:          desthost.Idc,
 			},
 			Rtt:       durationpb.New(statistics.AvgRtt),
 			CreatedAt: timestamppb.New(time.Now()),
-		}
-
-		probes = append(probes, probe)
+		})
 	}
 
-	return probes
-}
-
-// uploadProbesToScheduler uploads probes to scheduler.
-func (p *probe) uploadProbesToScheduler(probes []*schedulerv1.Probe) error {
-	ctx := context.WithValue(context.Background(), pkgbalancer.ContextKey, p.hostID)
-	daemonHost := &v1.Host{
-		Id:           p.hostID,
-		Ip:           p.config.Host.AdvertiseIP.String(),
-		Hostname:     p.config.Host.Hostname,
-		Port:         p.daemonPort,
-		DownloadPort: p.daemonDownloadPort,
-		Location:     p.config.Host.Location,
-		Idc:          p.config.Host.IDC,
-	}
-
-	probesOfHost := &schedulerv1.ProbesOfHost{
-		Host:   daemonHost,
-		Probes: probes,
-	}
-
-	syncProbesRequest := &schedulerv1.SyncProbesRequest{ProbesOfHost: probesOfHost}
-	schedulerSyncProbesClient, err := p.schedulerClient.SyncProbes(ctx, syncProbesRequest)
-	if err != nil {
-		return err
-	}
-
-	p.syncProbesStream = schedulerSyncProbesClient
-	return nil
+	return probes, failedProbes
 }
