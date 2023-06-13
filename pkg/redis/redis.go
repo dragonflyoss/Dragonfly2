@@ -19,10 +19,16 @@ package redis
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/go-redis/redis/v8"
 
 	"d7y.io/dragonfly/v2/pkg/types"
+)
+
+const (
+	// KeySeparator is the separator of redis key.
+	KeySeparator = ":"
 )
 
 const (
@@ -49,6 +55,9 @@ const (
 
 	// ProbedCountNamespace prefix of probed count namespace cache key.
 	ProbedCountNamespace = "probed-count"
+
+	// ProbedAtNamespace prefix of last probed time namespace cache key.
+	ProbedAtNamespace = "probed-at"
 )
 
 // NewRedis returns a new redis client.
@@ -129,12 +138,37 @@ func MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID string) string {
 	return MakeKeyInScheduler(NetworkTopologyNamespace, fmt.Sprintf("%s:%s", srcHostID, destHostID))
 }
 
+// ParseNetworkTopologyKeyInScheduler parse network topology key in scheduler.
+func ParseNetworkTopologyKeyInScheduler(key string) (string, string, string, string, error) {
+	elements := strings.Split(key, KeySeparator)
+	if len(elements) != 4 {
+		return "", "", "", "", fmt.Errorf("invalid network topology key: %s", key)
+	}
+
+	return elements[0], elements[1], elements[2], elements[3], nil
+}
+
 // MakeProbesKeyInScheduler make probes key in scheduler.
 func MakeProbesKeyInScheduler(srcHostID, destHostID string) string {
 	return MakeKeyInScheduler(ProbesNamespace, fmt.Sprintf("%s:%s", srcHostID, destHostID))
 }
 
+// ParseProbedCountKeyInScheduler parse probed count key in scheduler.
+func ParseProbedCountKeyInScheduler(key string) (string, string, string, error) {
+	elements := strings.Split(key, KeySeparator)
+	if len(elements) != 3 {
+		return "", "", "", fmt.Errorf("invalid probed count key: %s", key)
+	}
+
+	return elements[0], elements[1], elements[2], nil
+}
+
 // MakeProbedCountKeyInScheduler make probed count key in scheduler.
 func MakeProbedCountKeyInScheduler(hostID string) string {
 	return MakeKeyInScheduler(ProbedCountNamespace, hostID)
+}
+
+// MakeProbedAtKeyInScheduler make last probed time in scheduler.
+func MakeProbedAtKeyInScheduler(hostID string) string {
+	return MakeKeyInScheduler(ProbedAtNamespace, hostID)
 }
