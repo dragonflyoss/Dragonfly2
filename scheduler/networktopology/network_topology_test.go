@@ -157,9 +157,7 @@ func TestNetworkTopology_Serve(t *testing.T) {
 			networkTopology, err := NewNetworkTopology(mockNetworkTopologyConfig, rdb, res, storage)
 			tc.expect(t, networkTopology, err)
 			tc.sleep()
-			if err := networkTopology.Stop(); err != nil {
-				t.Fatal(err)
-			}
+			networkTopology.Stop()
 		})
 	}
 }

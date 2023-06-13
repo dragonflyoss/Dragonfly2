@@ -46,7 +46,7 @@ type NetworkTopology interface {
 	Serve()
 
 	// Stop network topology server.
-	Stop() error
+	Stop()
 
 	// Has to check if there is a connection between source host and destination host.
 	Has(string, string) bool
@@ -121,9 +121,8 @@ func (nt *networkTopology) Serve() {
 }
 
 // Stop network topology server.
-func (nt *networkTopology) Stop() error {
+func (nt *networkTopology) Stop() {
 	close(nt.done)
-	return nil
 }
 
 // Has to check if there is a connection between source host and destination host.

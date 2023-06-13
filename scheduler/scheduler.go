@@ -433,11 +433,8 @@ func (s *Server) Stop() {
 
 	// Stop network topology.
 	if s.networkTopology != nil {
-		if err := s.networkTopology.Stop(); err != nil {
-			logger.Errorf("network topology failed to stop: %s", err.Error())
-		} else {
-			logger.Info("network topology closed")
-		}
+		s.networkTopology.Stop()
+		logger.Info("network topology closed")
 	}
 
 	// Stop GRPC server.
