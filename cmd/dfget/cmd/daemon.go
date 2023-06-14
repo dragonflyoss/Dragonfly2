@@ -103,6 +103,7 @@ func initDaemonDfpath(cfg *config.DaemonOption) (dfpath.Dfpath, error) {
 	if cfg.WorkHome != "" {
 		options = append(options, dfpath.WithWorkHome(cfg.WorkHome))
 	}
+
 	if os.FileMode(cfg.WorkHomeMode) != os.FileMode(0) {
 		options = append(options, dfpath.WithWorkHomeMode(os.FileMode(cfg.WorkHomeMode)))
 	}
@@ -110,6 +111,7 @@ func initDaemonDfpath(cfg *config.DaemonOption) (dfpath.Dfpath, error) {
 	if cfg.CacheDir != "" {
 		options = append(options, dfpath.WithCacheDir(cfg.CacheDir))
 	}
+
 	if os.FileMode(cfg.CacheDirMode) != os.FileMode(0) {
 		options = append(options, dfpath.WithCacheDirMode(os.FileMode(cfg.CacheDirMode)))
 	}
