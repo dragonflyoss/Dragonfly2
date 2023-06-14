@@ -19,8 +19,9 @@ package main
 import (
 	"context"
 
-	"d7y.io/dragonfly/v2/manager/models"
 	"go.uber.org/zap"
+
+	"d7y.io/dragonfly/v2/manager/models"
 )
 
 type searcher struct{}
