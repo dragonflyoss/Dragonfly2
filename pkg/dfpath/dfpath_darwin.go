@@ -19,6 +19,7 @@
 package dfpath
 
 import (
+	"os"
 	"path/filepath"
 
 	"d7y.io/dragonfly/v2/pkg/os/user"
