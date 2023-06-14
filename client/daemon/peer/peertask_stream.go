@@ -394,9 +394,15 @@ pieceReady:
 		} else {
 			num = nextPiece + 1
 			// write partial data to pipe
-			_, err := s.writePartialPiece(pw, nextPiece, skipBytesInNextPiece)
+			n, err := s.writePartialPiece(pw, nextPiece, skipBytesInNextPiece)
 			if err != nil {
 				err = fmt.Errorf("write partial piece %d to pipe failed: %s", nextPiece, err.Error())
+				s.Errorf(err.Error())
+				s.closeWithError(pw, err)
+				return
+			} else if n < int64(pieceSize)-skipBytesInNextPiece {
+				err = fmt.Errorf("write partial piece %d to pipe failed: short write, desire: %d, actual: %d",
+					nextPiece, int64(pieceSize)-skipBytesInNextPiece, n)
 				s.Errorf(err.Error())
 				s.closeWithError(pw, err)
 				return
