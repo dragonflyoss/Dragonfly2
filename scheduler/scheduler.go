@@ -296,6 +296,7 @@ func (s *Server) Serve() error {
 		if err := s.dynconfig.Serve(); err != nil {
 			logger.Fatalf("dynconfig start failed %s", err.Error())
 		}
+
 		logger.Info("dynconfig start successfully")
 	}()
 
@@ -317,6 +318,7 @@ func (s *Server) Serve() error {
 				if err == http.ErrServerClosed {
 					return
 				}
+
 				logger.Fatalf("metrics server closed unexpect: %s", err.Error())
 			}
 		}()
