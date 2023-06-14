@@ -224,6 +224,20 @@ var (
 		Help:      "Counter of the number of failed of the leaving host.",
 	})
 
+	SyncProbesCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "sync_probes_total",
+		Help:      "Counter of the number of the synchronizing probes.",
+	})
+
+	SyncProbesFailureCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "sync_probes_failure_total",
+		Help:      "Counter of the number of failed of the synchronizing probes.",
+	})
+
 	Traffic = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,

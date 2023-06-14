@@ -26,6 +26,7 @@ import (
 
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
+	"d7y.io/dragonfly/v2/scheduler/networktopology"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/scheduling"
 	"d7y.io/dragonfly/v2/scheduler/service"
@@ -46,8 +47,9 @@ func newSchedulerServerV2(
 	scheduling scheduling.Scheduling,
 	dynconfig config.DynconfigInterface,
 	storage storage.Storage,
+	networkTopology networktopology.NetworkTopology,
 ) schedulerv2.SchedulerServer {
-	return &schedulerServerV2{service.NewV2(cfg, resource, scheduling, dynconfig, storage)}
+	return &schedulerServerV2{service.NewV2(cfg, resource, scheduling, dynconfig, storage, networkTopology)}
 }
 
 // AnnouncePeer announces peer to scheduler.
@@ -152,5 +154,13 @@ func (s *schedulerServerV2) LeaveHost(ctx context.Context, req *schedulerv2.Leav
 
 // SyncProbes sync probes of the host.
 func (s *schedulerServerV2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
+	// Collect SyncProbesCount metrics.
+	metrics.SyncProbesCount.Inc()
+	if err := s.service.SyncProbes(stream); err != nil {
+		// Collect SyncProbesFailureCount metrics.
+		metrics.SyncProbesFailureCount.Inc()
+		return err
+	}
+
 	return nil
 }

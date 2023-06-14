@@ -26,7 +26,9 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	commonv2 "d7y.io/api/pkg/apis/common/v2"
@@ -43,6 +45,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
+	"d7y.io/dragonfly/v2/scheduler/networktopology"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/scheduling"
 	"d7y.io/dragonfly/v2/scheduler/storage"
@@ -64,6 +67,9 @@ type V1 struct {
 
 	// Storage interface.
 	storage storage.Storage
+
+	// Network topology interface.
+	networkTopology networktopology.NetworkTopology
 }
 
 // New v1 version of service instance.
@@ -73,13 +79,15 @@ func NewV1(
 	scheduling scheduling.Scheduling,
 	dynconfig config.DynconfigInterface,
 	storage storage.Storage,
+	networktopology networktopology.NetworkTopology,
 ) *V1 {
 	return &V1{
-		resource:   resource,
-		scheduling: scheduling,
-		config:     cfg,
-		dynconfig:  dynconfig,
-		storage:    storage,
+		resource:        resource,
+		scheduling:      scheduling,
+		config:          cfg,
+		dynconfig:       dynconfig,
+		storage:         storage,
+		networkTopology: networktopology,
 	}
 }
 
@@ -645,6 +653,111 @@ func (v *V1) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostRequest) e
 
 	host.LeavePeers()
 	return nil
+}
+
+// SyncProbes sync probes of the host.
+func (v *V1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
+	if v.networkTopology == nil {
+		return status.Errorf(codes.Unimplemented, "network topology is not enabled")
+	}
+
+	for {
+		req, err := stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+
+			logger.Errorf("receive error: %s", err.Error())
+			return err
+		}
+
+		logger := logger.WithHost(req.Host.Id, req.Host.Hostname, req.Host.Ip)
+		switch syncProbesRequest := req.GetRequest().(type) {
+		case *schedulerv1.SyncProbesRequest_ProbeStartedRequest:
+			// Find probed hosts in network topology. Based on the source host information,
+			// the most candidate hosts will be evaluated.
+			logger.Info("receive SyncProbesRequest_ProbeStartedRequest")
+			probedHostIDs, err := v.networkTopology.FindProbedHostIDs(req.Host.Id)
+			if err != nil {
+				logger.Error(err)
+				return status.Error(codes.FailedPrecondition, err.Error())
+			}
+
+			var probedHosts []*commonv1.Host
+			for _, probedHostID := range probedHostIDs {
+				probedHost, loaded := v.resource.HostManager().Load(probedHostID)
+				if !loaded {
+					logger.Warnf("probed host %s not found", probedHostID)
+					continue
+				}
+
+				probedHosts = append(probedHosts, &commonv1.Host{
+					Id:           probedHost.ID,
+					Ip:           probedHost.IP,
+					Hostname:     probedHost.Hostname,
+					Port:         probedHost.Port,
+					DownloadPort: probedHost.DownloadPort,
+					Location:     probedHost.Network.Location,
+					Idc:          probedHost.Network.IDC,
+				})
+			}
+
+			if len(probedHosts) == 0 {
+				logger.Error("probed host not found")
+				return status.Error(codes.NotFound, "probed host not found")
+			}
+
+			logger.Infof("probe started: %#v", probedHosts)
+			if err := stream.Send(&schedulerv1.SyncProbesResponse{
+				Hosts:         probedHosts,
+				ProbeInterval: durationpb.New(v.config.NetworkTopology.Probe.Interval),
+			}); err != nil {
+				logger.Error(err)
+				return err
+			}
+		case *schedulerv1.SyncProbesRequest_ProbeFinishedRequest:
+			// Store probes in network topology. First create the association between
+			// source host and destination host, and then store the value of probe.
+			logger.Info("receive SyncProbesRequest_ProbeFinishedRequest")
+			for _, probe := range syncProbesRequest.ProbeFinishedRequest.Probes {
+				probedHost, loaded := v.resource.HostManager().Load(probe.Host.Id)
+				if !loaded {
+					logger.Errorf("host %s not found", probe.Host.Id)
+					continue
+				}
+
+				if err := v.networkTopology.Store(req.Host.Id, probedHost.ID); err != nil {
+					logger.Errorf("store failed: %s", err.Error())
+					continue
+				}
+
+				if err := v.networkTopology.Probes(req.Host.Id, probe.Host.Id).Enqueue(&networktopology.Probe{
+					Host:      probedHost,
+					RTT:       probe.Rtt.AsDuration(),
+					CreatedAt: probe.CreatedAt.AsTime(),
+				}); err != nil {
+					logger.Errorf("enqueue failed: %s", err.Error())
+					continue
+				}
+
+				logger.Infof("probe finished: %#v", probe)
+			}
+		case *schedulerv1.SyncProbesRequest_ProbeFailedRequest:
+			// Log failed probes.
+			logger.Info("receive SyncProbesRequest_ProbeFailedRequest")
+			var failedProbedHostIDs []string
+			for _, failedProbe := range syncProbesRequest.ProbeFailedRequest.Probes {
+				failedProbedHostIDs = append(failedProbedHostIDs, failedProbe.Host.Id)
+			}
+
+			logger.Warnf("probe failed: %#v", failedProbedHostIDs)
+		default:
+			msg := fmt.Sprintf("receive unknow request: %#v", syncProbesRequest)
+			logger.Error(msg)
+			return status.Error(codes.FailedPrecondition, msg)
+		}
+	}
 }
 
 // triggerTask triggers the first download of the task.

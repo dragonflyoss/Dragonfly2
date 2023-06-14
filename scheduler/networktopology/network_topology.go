@@ -43,16 +43,20 @@ const (
 // NetworkTopology is an interface for network topology.
 type NetworkTopology interface {
 	// Started network topology server.
-	Serve() error
+	Serve()
 
 	// Stop network topology server.
-	Stop() error
+	Stop()
 
 	// Has to check if there is a connection between source host and destination host.
 	Has(string, string) bool
 
 	// Store stores source host and destination host.
 	Store(string, string) error
+
+	// TODO Implement function.
+	// FindProbedHostIDs finds the most candidate destination host to be probed.
+	FindProbedHostIDs(string) ([]string, error)
 
 	// DeleteHost deletes source host and all destination host connected to source host.
 	DeleteHost(string) error
@@ -100,7 +104,7 @@ func NewNetworkTopology(cfg config.NetworkTopologyConfig, rdb redis.UniversalCli
 }
 
 // Started network topology server.
-func (nt *networkTopology) Serve() error {
+func (nt *networkTopology) Serve() {
 	logger.Info("collect network topology records")
 	tick := time.NewTicker(nt.config.CollectInterval)
 	for {
@@ -111,15 +115,14 @@ func (nt *networkTopology) Serve() error {
 				break
 			}
 		case <-nt.done:
-			return nil
+			return
 		}
 	}
 }
 
 // Stop network topology server.
-func (nt *networkTopology) Stop() error {
+func (nt *networkTopology) Stop() {
 	close(nt.done)
-	return nil
 }
 
 // Has to check if there is a connection between source host and destination host.
@@ -155,6 +158,12 @@ func (nt *networkTopology) Store(srcHostID string, destHostID string) error {
 	}
 
 	return nil
+}
+
+// TODO Implement function.
+// FindProbedHostIDs finds the most candidate destination host to be probed.
+func (nt *networkTopology) FindProbedHostIDs(hostID string) ([]string, error) {
+	return nil, nil
 }
 
 // DeleteHost deletes source host and all destination host connected to source host.
