@@ -142,7 +142,7 @@ func TestLocalTaskStore_PutAndGetPiece(t *testing.T) {
 						Duration: time.Minute,
 					},
 				}, func(request CommonTaskRequest) {
-				})
+				}, defaultDirectoryMode)
 			assert.Nil(err)
 
 			_, err = tc.create(sm.(*storageManager), taskID, peerID)

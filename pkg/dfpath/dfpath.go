@@ -31,9 +31,12 @@ import (
 // Dfpath is the interface used for init project path.
 type Dfpath interface {
 	WorkHome() string
+	WorkHomeMode() fs.FileMode
 	CacheDir() string
+	CacheDirMode() fs.FileMode
 	LogDir() string
 	DataDir() string
+	DataDirMode() fs.FileMode
 	PluginDir() string
 	DaemonSockPath() string
 	DaemonLockPath() string
@@ -43,9 +46,12 @@ type Dfpath interface {
 // Dfpath provides init project path function.
 type dfpath struct {
 	workHome       string
+	workHomeMode   fs.FileMode
 	cacheDir       string
+	cacheDirMode   fs.FileMode
 	logDir         string
 	dataDir        string
+	dataDirMode    fs.FileMode
 	pluginDir      string
 	daemonSockPath string
 	daemonLockPath string
@@ -69,10 +75,24 @@ func WithWorkHome(dir string) Option {
 	}
 }
 
+// WithWorkHomeMode sets the workHome directory mode
+func WithWorkHomeMode(mode fs.FileMode) Option {
+	return func(d *dfpath) {
+		d.workHomeMode = mode
+	}
+}
+
 // WithCacheDir set the cache directory.
 func WithCacheDir(dir string) Option {
 	return func(d *dfpath) {
 		d.cacheDir = dir
+	}
+}
+
+// WithCacheDirMode sets the cacheDir mode
+func WithCacheDirMode(mode fs.FileMode) Option {
+	return func(d *dfpath) {
+		d.cacheDirMode = mode
 	}
 }
 
@@ -87,6 +107,13 @@ func WithLogDir(dir string) Option {
 func WithDataDir(dir string) Option {
 	return func(d *dfpath) {
 		d.dataDir = dir
+	}
+}
+
+// WithDataDirMode sets the dataDir mode
+func WithDataDirMode(mode fs.FileMode) Option {
+	return func(d *dfpath) {
+		d.dataDirMode = mode
 	}
 }
 
@@ -109,9 +136,11 @@ func New(options ...Option) (Dfpath, error) {
 	cache.Do(func() {
 		d := &dfpath{
 			workHome:       DefaultWorkHome,
+			workHomeMode:   DefaultWorkHomeMode,
 			logDir:         DefaultLogDir,
 			pluginDir:      DefaultPluginDir,
 			cacheDir:       DefaultCacheDir,
+			cacheDirMode:   DefaultCacheDirMode,
 			daemonSockPath: DefaultDownloadUnixSocketPath,
 		}
 
@@ -124,7 +153,7 @@ func New(options ...Option) (Dfpath, error) {
 		d.dfgetLockPath = filepath.Join(d.workHome, "dfget.lock")
 
 		// Create workhome directory.
-		if err := os.MkdirAll(d.workHome, fs.FileMode(0755)); err != nil {
+		if err := os.MkdirAll(d.workHome, d.workHomeMode); err != nil {
 			cache.err = multierror.Append(cache.err, err)
 		}
 
@@ -144,13 +173,13 @@ func New(options ...Option) (Dfpath, error) {
 		}
 
 		// Create cache directory.
-		if err := os.MkdirAll(d.cacheDir, fs.FileMode(0755)); err != nil {
+		if err := os.MkdirAll(d.cacheDir, d.cacheDirMode); err != nil {
 			cache.err = multierror.Append(cache.err, err)
 		}
 
 		// Create data directory.
 		if d.dataDir != "" {
-			if err := os.MkdirAll(d.dataDir, fs.FileMode(0755)); err != nil {
+			if err := os.MkdirAll(d.dataDir, d.dataDirMode); err != nil {
 				cache.err = multierror.Append(cache.err, err)
 			}
 		}
@@ -170,8 +199,16 @@ func (d *dfpath) WorkHome() string {
 	return d.workHome
 }
 
+func (d *dfpath) WorkHomeMode() fs.FileMode {
+	return d.workHomeMode
+}
+
 func (d *dfpath) CacheDir() string {
 	return d.cacheDir
+}
+
+func (d *dfpath) CacheDirMode() fs.FileMode {
+	return d.cacheDirMode
 }
 
 func (d *dfpath) LogDir() string {
@@ -180,6 +217,10 @@ func (d *dfpath) LogDir() string {
 
 func (d *dfpath) DataDir() string {
 	return d.dataDir
+}
+
+func (d *dfpath) DataDirMode() fs.FileMode {
+	return d.dataDirMode
 }
 
 func (d *dfpath) PluginDir() string {

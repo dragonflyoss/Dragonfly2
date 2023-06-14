@@ -75,7 +75,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 			TaskExpireTime: clientutil.Duration{
 				Duration: -1 * time.Second,
 			},
-		}, func(request storage.CommonTaskRequest) {})
+		}, func(request storage.CommonTaskRequest) {}, os.FileMode(0755))
 
 	hash := md5.New()
 	hash.Write(testBytes)

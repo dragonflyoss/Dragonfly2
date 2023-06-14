@@ -231,7 +231,7 @@ func trafficShaperSetupPeerTaskManagerComponents(ctrl *gomock.Controller, opt tr
 			TaskExpireTime: util.Duration{
 				Duration: -1 * time.Second,
 			},
-		}, func(request storage.CommonTaskRequest) {})
+		}, func(request storage.CommonTaskRequest) {}, os.FileMode(0755))
 	return sched, storageManager
 }
 

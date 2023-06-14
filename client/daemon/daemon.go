@@ -239,8 +239,9 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			logger.Infof("step 4: leave task %s/%s state ok", request.TaskID, request.PeerID)
 		}
 	}
+	dirMode := os.FileMode(opt.DataDirMode)
 	storageManager, err := storage.NewStorageManager(opt.Storage.StoreStrategy, &opt.Storage,
-		gcCallback, storage.WithGCInterval(opt.GCInterval.Duration))
+		gcCallback, dirMode, storage.WithGCInterval(opt.GCInterval.Duration))
 	if err != nil {
 		return nil, err
 	}
