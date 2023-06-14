@@ -1162,7 +1162,7 @@ func TestServiceV2_SyncProbes(t *testing.T) {
 						},
 						Request: &schedulerv2.SyncProbesRequest_ProbeFinishedRequest{
 							ProbeFinishedRequest: &schedulerv2.ProbeFinishedRequest{
-								Probes: []*schedulerv2.Probe{mockSchedulerv2Probe},
+								Probes: []*schedulerv2.Probe{mockV2Probe},
 							},
 						},
 					}, nil).Times(1),
@@ -1172,8 +1172,8 @@ func TestServiceV2_SyncProbes(t *testing.T) {
 					mn.Probes(gomock.Eq(mockRawSeedHost.ID), gomock.Eq(mockRawHost.ID)).Return(probes).Times(1),
 					mp.Enqueue(gomock.Eq(&networktopology.Probe{
 						Host:      &mockRawHost,
-						RTT:       mockSchedulerv2Probe.Rtt.AsDuration(),
-						CreatedAt: mockSchedulerv2Probe.CreatedAt.AsTime(),
+						RTT:       mockV2Probe.Rtt.AsDuration(),
+						CreatedAt: mockV2Probe.CreatedAt.AsTime(),
 					})).Return(nil).Times(1),
 					ms.Recv().Return(nil, io.EOF).Times(1),
 				)
@@ -1809,7 +1809,7 @@ func TestServiceV2_SyncProbes(t *testing.T) {
 						},
 						Request: &schedulerv2.SyncProbesRequest_ProbeFinishedRequest{
 							ProbeFinishedRequest: &schedulerv2.ProbeFinishedRequest{
-								Probes: []*schedulerv2.Probe{mockSchedulerv2Probe},
+								Probes: []*schedulerv2.Probe{mockV2Probe},
 							},
 						},
 					}, nil).Times(1),
@@ -1893,7 +1893,7 @@ func TestServiceV2_SyncProbes(t *testing.T) {
 						},
 						Request: &schedulerv2.SyncProbesRequest_ProbeFinishedRequest{
 							ProbeFinishedRequest: &schedulerv2.ProbeFinishedRequest{
-								Probes: []*schedulerv2.Probe{mockSchedulerv2Probe},
+								Probes: []*schedulerv2.Probe{mockV2Probe},
 							},
 						},
 					}, nil).Times(1),
@@ -1978,7 +1978,7 @@ func TestServiceV2_SyncProbes(t *testing.T) {
 						},
 						Request: &schedulerv2.SyncProbesRequest_ProbeFinishedRequest{
 							ProbeFinishedRequest: &schedulerv2.ProbeFinishedRequest{
-								Probes: []*schedulerv2.Probe{mockSchedulerv2Probe},
+								Probes: []*schedulerv2.Probe{mockV2Probe},
 							},
 						},
 					}, nil).Times(1),

@@ -221,7 +221,7 @@ var (
 		CreatedAt:   time.Now(),
 	}
 
-	mockSchedulerv1Probe = &schedulerv1.Probe{
+	mockV1Probe = &schedulerv1.Probe{
 		Host: &commonv1.Host{
 			Id:           mockRawHost.ID,
 			Ip:           mockRawHost.IP,
@@ -235,7 +235,7 @@ var (
 		CreatedAt: timestamppb.Now(),
 	}
 
-	mockSchedulerv2Probe = &schedulerv2.Probe{
+	mockV2Probe = &schedulerv2.Probe{
 		Host: &commonv2.Host{
 			Id:              mockHostID,
 			Type:            uint32(pkgtypes.HostTypeNormal),
@@ -2743,7 +2743,7 @@ func TestServiceV1_SyncProbes(t *testing.T) {
 						},
 						Request: &schedulerv1.SyncProbesRequest_ProbeFinishedRequest{
 							ProbeFinishedRequest: &schedulerv1.ProbeFinishedRequest{
-								Probes: []*schedulerv1.Probe{mockSchedulerv1Probe},
+								Probes: []*schedulerv1.Probe{mockV1Probe},
 							},
 						},
 					}, nil).Times(1),
@@ -2753,8 +2753,8 @@ func TestServiceV1_SyncProbes(t *testing.T) {
 					mn.Probes(gomock.Eq(mockRawSeedHost.ID), gomock.Eq(mockRawHost.ID)).Return(probes).Times(1),
 					mp.Enqueue(gomock.Eq(&networktopology.Probe{
 						Host:      &mockRawHost,
-						RTT:       mockSchedulerv1Probe.Rtt.AsDuration(),
-						CreatedAt: mockSchedulerv1Probe.CreatedAt.AsTime(),
+						RTT:       mockV1Probe.Rtt.AsDuration(),
+						CreatedAt: mockV1Probe.CreatedAt.AsTime(),
 					})).Return(nil).Times(1),
 					ms.Recv().Return(nil, io.EOF).Times(1),
 				)
@@ -2974,7 +2974,7 @@ func TestServiceV1_SyncProbes(t *testing.T) {
 						},
 						Request: &schedulerv1.SyncProbesRequest_ProbeFinishedRequest{
 							ProbeFinishedRequest: &schedulerv1.ProbeFinishedRequest{
-								Probes: []*schedulerv1.Probe{mockSchedulerv1Probe},
+								Probes: []*schedulerv1.Probe{mockV1Probe},
 							},
 						},
 					}, nil).Times(1),
@@ -3006,7 +3006,7 @@ func TestServiceV1_SyncProbes(t *testing.T) {
 						},
 						Request: &schedulerv1.SyncProbesRequest_ProbeFinishedRequest{
 							ProbeFinishedRequest: &schedulerv1.ProbeFinishedRequest{
-								Probes: []*schedulerv1.Probe{mockSchedulerv1Probe},
+								Probes: []*schedulerv1.Probe{mockV1Probe},
 							},
 						},
 					}, nil).Times(1),
@@ -3039,7 +3039,7 @@ func TestServiceV1_SyncProbes(t *testing.T) {
 						},
 						Request: &schedulerv1.SyncProbesRequest_ProbeFinishedRequest{
 							ProbeFinishedRequest: &schedulerv1.ProbeFinishedRequest{
-								Probes: []*schedulerv1.Probe{mockSchedulerv1Probe},
+								Probes: []*schedulerv1.Probe{mockV1Probe},
 							},
 						},
 					}, nil).Times(1),
