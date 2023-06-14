@@ -59,7 +59,7 @@ func TestNew(t *testing.T) {
 			},
 		},
 		{
-			name:    "new dfpath by workHome",
+			name:    "new dfpath by workHome and workHomeMode",
 			options: []Option{WithWorkHome("foo"), WithWorkHomeMode(os.FileMode(0700))},
 			expect: func(t *testing.T, options []Option) {
 				assert := assert.New(t)
@@ -77,7 +77,7 @@ func TestNew(t *testing.T) {
 			},
 		},
 		{
-			name:    "new dfpath by cacheDir",
+			name:    "new dfpath by cacheDir and cacheDirMode",
 			options: []Option{WithCacheDir("foo"), WithCacheDirMode(os.FileMode(0700))},
 			expect: func(t *testing.T, options []Option) {
 				assert := assert.New(t)
@@ -113,7 +113,7 @@ func TestNew(t *testing.T) {
 			},
 		},
 		{
-			name:    "new dfpath by dataDir",
+			name:    "new dfpath by dataDir and dataDirMode",
 			options: []Option{WithDataDir("foo"), WithDataDirMode(os.FileMode(0700))},
 			expect: func(t *testing.T, options []Option) {
 				assert := assert.New(t)
