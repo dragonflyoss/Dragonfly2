@@ -120,42 +120,46 @@ func (p *probe) collectAndUploadProbesToScheduler() error {
 		select {
 		case <-tick.C:
 			probes, failedProbes := p.collectProbes(syncProbesResponse.Hosts)
-			if err := stream.Send(&schedulerv1.SyncProbesRequest{
-				Host: &v1.Host{
-					Id:           idgen.HostIDV2(p.config.Host.AdvertiseIP.String(), p.config.Host.Hostname),
-					Ip:           p.config.Host.AdvertiseIP.String(),
-					Hostname:     p.config.Host.Hostname,
-					Port:         p.daemonPort,
-					DownloadPort: p.daemonDownloadPort,
-					Location:     p.config.Host.Location,
-					Idc:          p.config.Host.IDC,
-				},
-				Request: &schedulerv1.SyncProbesRequest_ProbeFinishedRequest{
-					ProbeFinishedRequest: &schedulerv1.ProbeFinishedRequest{
-						Probes: probes,
+			if len(probes) != 0 {
+				if err := stream.Send(&schedulerv1.SyncProbesRequest{
+					Host: &v1.Host{
+						Id:           idgen.HostIDV2(p.config.Host.AdvertiseIP.String(), p.config.Host.Hostname),
+						Ip:           p.config.Host.AdvertiseIP.String(),
+						Hostname:     p.config.Host.Hostname,
+						Port:         p.daemonPort,
+						DownloadPort: p.daemonDownloadPort,
+						Location:     p.config.Host.Location,
+						Idc:          p.config.Host.IDC,
 					},
-				},
-			}); err != nil {
-				return err
+					Request: &schedulerv1.SyncProbesRequest_ProbeFinishedRequest{
+						ProbeFinishedRequest: &schedulerv1.ProbeFinishedRequest{
+							Probes: probes,
+						},
+					},
+				}); err != nil {
+					return err
+				}
 			}
 
-			if err := stream.Send(&schedulerv1.SyncProbesRequest{
-				Host: &v1.Host{
-					Id:           idgen.HostIDV2(p.config.Host.AdvertiseIP.String(), p.config.Host.Hostname),
-					Ip:           p.config.Host.AdvertiseIP.String(),
-					Hostname:     p.config.Host.Hostname,
-					Port:         p.daemonPort,
-					DownloadPort: p.daemonDownloadPort,
-					Location:     p.config.Host.Location,
-					Idc:          p.config.Host.IDC,
-				},
-				Request: &schedulerv1.SyncProbesRequest_ProbeFailedRequest{
-					ProbeFailedRequest: &schedulerv1.ProbeFailedRequest{
-						Probes: failedProbes,
+			if len(failedProbes) != 0 {
+				if err := stream.Send(&schedulerv1.SyncProbesRequest{
+					Host: &v1.Host{
+						Id:           idgen.HostIDV2(p.config.Host.AdvertiseIP.String(), p.config.Host.Hostname),
+						Ip:           p.config.Host.AdvertiseIP.String(),
+						Hostname:     p.config.Host.Hostname,
+						Port:         p.daemonPort,
+						DownloadPort: p.daemonDownloadPort,
+						Location:     p.config.Host.Location,
+						Idc:          p.config.Host.IDC,
 					},
-				},
-			}); err != nil {
-				return err
+					Request: &schedulerv1.SyncProbesRequest_ProbeFailedRequest{
+						ProbeFailedRequest: &schedulerv1.ProbeFailedRequest{
+							Probes: failedProbes,
+						},
+					},
+				}); err != nil {
+					return err
+				}
 			}
 
 			syncProbesResponse, err = stream.Recv()
