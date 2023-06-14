@@ -133,9 +133,7 @@ func TestNetworkTopology_Serve(t *testing.T) {
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-				go func() {
-					networkTopology.Serve()
-				}()
+				networkTopology.Serve()
 			},
 		},
 	}
