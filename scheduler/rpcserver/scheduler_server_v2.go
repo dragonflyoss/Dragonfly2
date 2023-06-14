@@ -49,7 +49,7 @@ func newSchedulerServerV2(
 	storage storage.Storage,
 	networkTopology networktopology.NetworkTopology,
 ) schedulerv2.SchedulerServer {
-	return &schedulerServerV2{service: service.NewV2(cfg, resource, scheduling, dynconfig, storage, networkTopology)}
+	return &schedulerServerV2{service.NewV2(cfg, resource, scheduling, dynconfig, storage, networkTopology)}
 }
 
 // AnnouncePeer announces peer to scheduler.
