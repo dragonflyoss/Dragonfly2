@@ -23,6 +23,7 @@ import (
 	"io"
 	"time"
 
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -120,55 +121,59 @@ func (p *probe) collectAndUploadProbesToScheduler() error {
 		select {
 		case <-tick.C:
 			probes, failedProbes := p.collectProbes(syncProbesResponse.Hosts)
-			if len(probes) != 0 {
-				if err := stream.Send(&schedulerv1.SyncProbesRequest{
-					Host: &v1.Host{
-						Id:           idgen.HostIDV2(p.config.Host.AdvertiseIP.String(), p.config.Host.Hostname),
-						Ip:           p.config.Host.AdvertiseIP.String(),
-						Hostname:     p.config.Host.Hostname,
-						Port:         p.daemonPort,
-						DownloadPort: p.daemonDownloadPort,
-						Location:     p.config.Host.Location,
-						Idc:          p.config.Host.IDC,
-					},
-					Request: &schedulerv1.SyncProbesRequest_ProbeFinishedRequest{
-						ProbeFinishedRequest: &schedulerv1.ProbeFinishedRequest{
-							Probes: probes,
+
+			eg := errgroup.Group{}
+			eg.Go(func() error {
+				if len(probes) > 0 {
+					if err := stream.Send(&schedulerv1.SyncProbesRequest{
+						Host: &v1.Host{
+							Id:           idgen.HostIDV2(p.config.Host.AdvertiseIP.String(), p.config.Host.Hostname),
+							Ip:           p.config.Host.AdvertiseIP.String(),
+							Hostname:     p.config.Host.Hostname,
+							Port:         p.daemonPort,
+							DownloadPort: p.daemonDownloadPort,
+							Location:     p.config.Host.Location,
+							Idc:          p.config.Host.IDC,
 						},
-					},
-				}); err != nil {
-					return err
-				}
-			}
-
-			if len(failedProbes) != 0 {
-				if err := stream.Send(&schedulerv1.SyncProbesRequest{
-					Host: &v1.Host{
-						Id:           idgen.HostIDV2(p.config.Host.AdvertiseIP.String(), p.config.Host.Hostname),
-						Ip:           p.config.Host.AdvertiseIP.String(),
-						Hostname:     p.config.Host.Hostname,
-						Port:         p.daemonPort,
-						DownloadPort: p.daemonDownloadPort,
-						Location:     p.config.Host.Location,
-						Idc:          p.config.Host.IDC,
-					},
-					Request: &schedulerv1.SyncProbesRequest_ProbeFailedRequest{
-						ProbeFailedRequest: &schedulerv1.ProbeFailedRequest{
-							Probes: failedProbes,
+						Request: &schedulerv1.SyncProbesRequest_ProbeFinishedRequest{
+							ProbeFinishedRequest: &schedulerv1.ProbeFinishedRequest{
+								Probes: probes,
+							},
 						},
-					},
-				}); err != nil {
-					return err
-				}
-			}
-
-			syncProbesResponse, err = stream.Recv()
-			if err != nil {
-				if err == io.EOF {
-					return nil
+					}); err != nil {
+						return err
+					}
 				}
 
-				logger.Errorf("receive error: %s", err.Error())
+				return nil
+			})
+
+			eg.Go(func() error {
+				if len(failedProbes) > 0 {
+					if err := stream.Send(&schedulerv1.SyncProbesRequest{
+						Host: &v1.Host{
+							Id:           idgen.HostIDV2(p.config.Host.AdvertiseIP.String(), p.config.Host.Hostname),
+							Ip:           p.config.Host.AdvertiseIP.String(),
+							Hostname:     p.config.Host.Hostname,
+							Port:         p.daemonPort,
+							DownloadPort: p.daemonDownloadPort,
+							Location:     p.config.Host.Location,
+							Idc:          p.config.Host.IDC,
+						},
+						Request: &schedulerv1.SyncProbesRequest_ProbeFailedRequest{
+							ProbeFailedRequest: &schedulerv1.ProbeFailedRequest{
+								Probes: failedProbes,
+							},
+						},
+					}); err != nil {
+						return err
+					}
+				}
+
+				return nil
+			})
+
+			if err := eg.Wait(); err != nil {
 				return err
 			}
 		case <-p.done:
