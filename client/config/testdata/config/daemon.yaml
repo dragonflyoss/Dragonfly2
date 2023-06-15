@@ -189,3 +189,7 @@ network:
 
 announcer:
   schedulerInterval: 1s
+
+networkTopology:
+  probe:
+    interval: 20m

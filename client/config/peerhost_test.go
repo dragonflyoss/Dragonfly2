@@ -515,6 +515,11 @@ func TestPeerHostOption_Load(t *testing.T) {
 		Announcer: AnnouncerOption{
 			SchedulerInterval: 1000000000,
 		},
+		NetworkTopology: NetworkTopologyOption{
+			Probe: ProbeOption{
+				Interval: 20 * time.Minute,
+			},
+		},
 	}
 
 	peerHostOptionYAML := &DaemonOption{}
@@ -752,6 +757,23 @@ func TestPeerHostOption_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "certSpec requires parameter validityPeriod")
+			},
+		},
+		{
+			name:   "probe requires parameter interval",
+			config: NewDaemonConfig(),
+			mock: func(cfg *DaemonConfig) {
+				cfg.Scheduler.NetAddrs = []dfnet.NetAddr{
+					{
+						Type: dfnet.TCP,
+						Addr: "127.0.0.1:8002",
+					},
+				}
+				cfg.NetworkTopology.Probe.Interval = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "probe requires parameter interval")
 			},
 		},
 	}

@@ -179,5 +179,10 @@ var peerHostConfig = func() *DaemonOption {
 		Announcer: AnnouncerOption{
 			SchedulerInterval: DefaultAnnouncerSchedulerInterval,
 		},
+		NetworkTopology: NetworkTopologyOption{
+			Probe: ProbeOption{
+				Interval: DefaultProbeInterval,
+			},
+		},
 	}
 }
