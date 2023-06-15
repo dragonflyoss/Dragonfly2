@@ -5,6 +5,7 @@
 package mocks
 
 import (
+	fs "io/fs"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -47,6 +48,20 @@ func (mr *MockDfpathMockRecorder) CacheDir() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CacheDir", reflect.TypeOf((*MockDfpath)(nil).CacheDir))
 }
 
+// CacheDirMode mocks base method.
+func (m *MockDfpath) CacheDirMode() fs.FileMode {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CacheDirMode")
+	ret0, _ := ret[0].(fs.FileMode)
+	return ret0
+}
+
+// CacheDirMode indicates an expected call of CacheDirMode.
+func (mr *MockDfpathMockRecorder) CacheDirMode() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CacheDirMode", reflect.TypeOf((*MockDfpath)(nil).CacheDirMode))
+}
+
 // DaemonLockPath mocks base method.
 func (m *MockDfpath) DaemonLockPath() string {
 	m.ctrl.T.Helper()
@@ -87,6 +102,20 @@ func (m *MockDfpath) DataDir() string {
 func (mr *MockDfpathMockRecorder) DataDir() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DataDir", reflect.TypeOf((*MockDfpath)(nil).DataDir))
+}
+
+// DataDirMode mocks base method.
+func (m *MockDfpath) DataDirMode() fs.FileMode {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DataDirMode")
+	ret0, _ := ret[0].(fs.FileMode)
+	return ret0
+}
+
+// DataDirMode indicates an expected call of DataDirMode.
+func (mr *MockDfpathMockRecorder) DataDirMode() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DataDirMode", reflect.TypeOf((*MockDfpath)(nil).DataDirMode))
 }
 
 // DfgetLockPath mocks base method.
@@ -143,4 +172,18 @@ func (m *MockDfpath) WorkHome() string {
 func (mr *MockDfpathMockRecorder) WorkHome() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WorkHome", reflect.TypeOf((*MockDfpath)(nil).WorkHome))
+}
+
+// WorkHomeMode mocks base method.
+func (m *MockDfpath) WorkHomeMode() fs.FileMode {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WorkHomeMode")
+	ret0, _ := ret[0].(fs.FileMode)
+	return ret0
+}
+
+// WorkHomeMode indicates an expected call of WorkHomeMode.
+func (mr *MockDfpathMockRecorder) WorkHomeMode() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WorkHomeMode", reflect.TypeOf((*MockDfpath)(nil).WorkHomeMode))
 }

@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	commonv2 "d7y.io/api/pkg/apis/common/v2"
@@ -710,8 +709,7 @@ func (v *V1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
 
 			logger.Infof("probe started: %#v", probedHosts)
 			if err := stream.Send(&schedulerv1.SyncProbesResponse{
-				Hosts:         probedHosts,
-				ProbeInterval: durationpb.New(v.config.NetworkTopology.Probe.Interval),
+				Hosts: probedHosts,
 			}); err != nil {
 				logger.Error(err)
 				return err

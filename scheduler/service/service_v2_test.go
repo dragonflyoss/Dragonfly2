@@ -996,7 +996,6 @@ func TestServiceV2_SyncProbes(t *testing.T) {
 								Build:           mockV2Probe.Host.Build,
 							},
 						},
-						ProbeInterval: durationpb.New(mockNetworkTopologyConfig.Probe.Interval),
 					})).Return(nil).Times(1),
 					ms.Recv().Return(nil, io.EOF).Times(1),
 				)
@@ -1300,7 +1299,6 @@ func TestServiceV2_SyncProbes(t *testing.T) {
 								Build:           mockV2Probe.Host.Build,
 							},
 						},
-						ProbeInterval: durationpb.New(mockNetworkTopologyConfig.Probe.Interval),
 					})).Return(errors.New("send synchronize probes response error")).Times(1),
 				)
 			},
