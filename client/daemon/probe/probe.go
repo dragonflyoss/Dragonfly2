@@ -38,12 +38,16 @@ import (
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
 
+const (
+	ProbeInterval = 20 * time.Minute
+)
+
 type Probe interface {
 	// Serve starts probe server.
-	Serve() error
+	Serve()
 
 	// Stop stops probe server.
-	Stop() error
+	Stop()
 }
 
 type probe struct {
@@ -70,71 +74,64 @@ func NewProbe(cfg *config.DaemonOption, daemonPort int32, daemonDownloadPort int
 }
 
 // Serve starts probe server.
-func (p *probe) Serve() error {
+func (p *probe) Serve() {
 	logger.Info("collect probes and upload probes to scheduler")
-	if err := p.collectAndUploadProbesToScheduler(); err != nil {
-		return err
-	}
-
-	return nil
+	p.uploadProbesToScheduler()
 }
 
 // Stop stops probe server.
-func (p *probe) Stop() error {
+func (p *probe) Stop() {
 	close(p.done)
-	return nil
 }
 
-// collectAndUploadProbesToScheduler collects probes and uploads probes to scheduler.
-func (p *probe) collectAndUploadProbesToScheduler() error {
+// uploadProbesToScheduler collects probes and uploads probes to scheduler.
+func (p *probe) uploadProbesToScheduler() error {
 	ctx := context.WithValue(context.Background(), pkgbalancer.ContextKey, p.hostID)
-	stream, err := p.schedulerClient.SyncProbes(ctx, &schedulerv1.SyncProbesRequest{
-		Host: &v1.Host{
-			Id:           idgen.HostIDV2(p.config.Host.AdvertiseIP.String(), p.config.Host.Hostname),
-			Ip:           p.config.Host.AdvertiseIP.String(),
-			Hostname:     p.config.Host.Hostname,
-			Port:         p.daemonPort,
-			DownloadPort: p.daemonDownloadPort,
-			Location:     p.config.Host.Location,
-			Idc:          p.config.Host.IDC,
-		},
-		Request: &schedulerv1.SyncProbesRequest_ProbeStartedRequest{
-			ProbeStartedRequest: &schedulerv1.ProbeStartedRequest{},
-		},
-	})
-	if err != nil {
-		return err
+	host := &v1.Host{
+		Id:           idgen.HostIDV1(p.config.Host.Hostname, p.daemonPort),
+		Ip:           p.config.Host.AdvertiseIP.String(),
+		Hostname:     p.config.Host.Hostname,
+		Port:         p.daemonPort,
+		DownloadPort: p.daemonDownloadPort,
+		Location:     p.config.Host.Location,
+		Idc:          p.config.Host.IDC,
 	}
 
-	syncProbesResponse, err := stream.Recv()
-	if err != nil {
-		if err == io.EOF {
-			return nil
-		}
-
-		logger.Errorf("receive error: %s", err.Error())
-		return err
-	}
-
-	tick := time.NewTicker(syncProbesResponse.ProbeInterval.AsDuration())
+	tick := time.NewTicker(ProbeInterval)
 	for {
 		select {
 		case <-tick.C:
-			probes, failedProbes := p.collectProbes(syncProbesResponse.Hosts)
+			stream, err := p.schedulerClient.SyncProbes(ctx, &schedulerv1.SyncProbesRequest{
+				Host: host,
+				Request: &schedulerv1.SyncProbesRequest_ProbeStartedRequest{
+					ProbeStartedRequest: &schedulerv1.ProbeStartedRequest{},
+				},
+			})
+			if err != nil {
+				return err
+			}
 
+			var syncProbesResponse *schedulerv1.SyncProbesResponse
+			for {
+				response, err := stream.Recv()
+				if err != nil {
+					if err == io.EOF {
+						break
+					}
+
+					logger.Errorf("receive error: %s", err.Error())
+					continue
+				}
+
+				syncProbesResponse = response
+			}
+
+			probes, failedProbes := p.collectProbes(syncProbesResponse.Hosts)
 			eg := errgroup.Group{}
 			eg.Go(func() error {
 				if len(probes) > 0 {
 					if err := stream.Send(&schedulerv1.SyncProbesRequest{
-						Host: &v1.Host{
-							Id:           idgen.HostIDV2(p.config.Host.AdvertiseIP.String(), p.config.Host.Hostname),
-							Ip:           p.config.Host.AdvertiseIP.String(),
-							Hostname:     p.config.Host.Hostname,
-							Port:         p.daemonPort,
-							DownloadPort: p.daemonDownloadPort,
-							Location:     p.config.Host.Location,
-							Idc:          p.config.Host.IDC,
-						},
+						Host: host,
 						Request: &schedulerv1.SyncProbesRequest_ProbeFinishedRequest{
 							ProbeFinishedRequest: &schedulerv1.ProbeFinishedRequest{
 								Probes: probes,
@@ -151,15 +148,7 @@ func (p *probe) collectAndUploadProbesToScheduler() error {
 			eg.Go(func() error {
 				if len(failedProbes) > 0 {
 					if err := stream.Send(&schedulerv1.SyncProbesRequest{
-						Host: &v1.Host{
-							Id:           idgen.HostIDV2(p.config.Host.AdvertiseIP.String(), p.config.Host.Hostname),
-							Ip:           p.config.Host.AdvertiseIP.String(),
-							Hostname:     p.config.Host.Hostname,
-							Port:         p.daemonPort,
-							DownloadPort: p.daemonDownloadPort,
-							Location:     p.config.Host.Location,
-							Idc:          p.config.Host.IDC,
-						},
+						Host: host,
 						Request: &schedulerv1.SyncProbesRequest_ProbeFailedRequest{
 							ProbeFailedRequest: &schedulerv1.ProbeFailedRequest{
 								Probes: failedProbes,
