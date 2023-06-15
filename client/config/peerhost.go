@@ -217,8 +217,10 @@ func (p *DaemonOption) Validate() error {
 		}
 	}
 
-	if p.NetworkTopology.Probe.Interval <= 0 {
-		return errors.New("probe requires parameter interval")
+	if p.NetworkTopology.Enable {
+		if p.NetworkTopology.Probe.Interval <= 0 {
+			return errors.New("probe requires parameter interval")
+		}
 	}
 
 	return nil
@@ -945,6 +947,9 @@ type AnnouncerOption struct {
 }
 
 type NetworkTopologyOption struct {
+	// Enable network topology service.
+	Enable bool `mapstructure:"enable" yaml:"enable"`
+
 	// Probe is the configuration of probe.
 	Probe ProbeOption `mapstructure:"probe" yaml:"probe"`
 }

@@ -516,6 +516,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 			SchedulerInterval: 1000000000,
 		},
 		NetworkTopology: NetworkTopologyOption{
+			Enable: false,
 			Probe: ProbeOption{
 				Interval: 20 * time.Minute,
 			},
@@ -769,6 +770,7 @@ func TestPeerHostOption_Validate(t *testing.T) {
 						Addr: "127.0.0.1:8002",
 					},
 				}
+				cfg.NetworkTopology.Enable = true
 				cfg.NetworkTopology.Probe.Interval = 0
 			},
 			expect: func(t *testing.T, err error) {
