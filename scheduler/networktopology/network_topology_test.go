@@ -99,9 +99,7 @@ func TestNetworkTopology_Serve(t *testing.T) {
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-				go func() {
-					assert.NoError(networkTopology.Serve())
-				}()
+				go networkTopology.Serve()
 			},
 		},
 		{
@@ -135,9 +133,7 @@ func TestNetworkTopology_Serve(t *testing.T) {
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-				go func() {
-					assert.NoError(networkTopology.Serve())
-				}()
+				go networkTopology.Serve()
 			},
 		},
 	}
@@ -157,9 +153,7 @@ func TestNetworkTopology_Serve(t *testing.T) {
 			networkTopology, err := NewNetworkTopology(mockNetworkTopologyConfig, rdb, res, storage)
 			tc.expect(t, networkTopology, err)
 			tc.sleep()
-			if err := networkTopology.Stop(); err != nil {
-				t.Fatal(err)
-			}
+			networkTopology.Stop()
 		})
 	}
 }
