@@ -41,7 +41,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/source"
 )
 
-var writeFileLock = lockable.NewMutexMap[string]()
+var globalFSWriteLock = lockable.NewMutexMap[string]()
 
 type localTaskStore struct {
 	*logger.SugaredLoggerOnWith
@@ -366,8 +366,8 @@ func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) error {
 		return nil
 	}
 
-	writeFileLock.LockKey(req.Destination)
-	defer writeFileLock.UnlockKey(req.Destination)
+	globalFSWriteLock.LockKey(req.Destination)
+	defer globalFSWriteLock.UnlockKey(req.Destination)
 
 	if req.OriginalOffset {
 		return hardlink(t.SugaredLoggerOnWith, req.Destination, t.DataFilePath)
