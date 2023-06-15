@@ -57,6 +57,9 @@ type Config struct {
 
 	// Network configuration.
 	Network NetworkConfig `yaml:"network" mapstructure:"network"`
+
+	// Probe configuration.
+	Probe ProbeConfig `yaml:"probe" mapstructure:"probe"`
 }
 
 type ServerConfig struct {
@@ -331,6 +334,11 @@ type NetworkConfig struct {
 	EnableIPv6 bool `mapstructure:"enableIPv6" yaml:"enableIPv6"`
 }
 
+type ProbeConfig struct {
+	// Interval is the interval of probing hosts.
+	Interval time.Duration `mapstructure:"interval" yaml:"interval"`
+}
+
 // New config instance.
 func New() *Config {
 	return &Config{
@@ -403,6 +411,9 @@ func New() *Config {
 		},
 		Network: NetworkConfig{
 			EnableIPv6: DefaultNetworkEnableIPv6,
+		},
+		Probe: ProbeConfig{
+			Interval: DefaultProbeInterval,
 		},
 	}
 }
@@ -587,6 +598,10 @@ func (cfg *Config) Validate() error {
 		if cfg.Security.CertSpec.ValidityPeriod <= 0 {
 			return errors.New("certSpec requires parameter validityPeriod")
 		}
+	}
+
+	if cfg.Probe.Interval <= 0 {
+		return errors.New("probe requires parameter interval")
 	}
 
 	return nil

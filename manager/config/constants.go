@@ -123,3 +123,8 @@ var (
 	// DefaultNetworkEnableIPv6 is default value of enableIPv6.
 	DefaultNetworkEnableIPv6 = false
 )
+
+var (
+	// DefaultProbeInterval is the default interval of probing host.
+	DefaultProbeInterval = 20 * time.Minute
+)

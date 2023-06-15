@@ -79,7 +79,6 @@ var (
 		CollectInterval: 2 * time.Hour,
 		Probe: config.ProbeConfig{
 			QueueLength: 5,
-			Interval:    15 * time.Minute,
 			Count:       10,
 		},
 	}
@@ -2715,7 +2714,6 @@ func TestServiceV1_SyncProbes(t *testing.T) {
 								Idc:          mockRawHost.Network.IDC,
 							},
 						},
-						ProbeInterval: durationpb.New(mockNetworkTopologyConfig.Probe.Interval),
 					})).Return(nil).Times(1),
 					ms.Recv().Return(nil, io.EOF).Times(1),
 				)
@@ -2947,7 +2945,6 @@ func TestServiceV1_SyncProbes(t *testing.T) {
 								Idc:          mockRawHost.Network.IDC,
 							},
 						},
-						ProbeInterval: durationpb.New(mockNetworkTopologyConfig.Probe.Interval),
 					})).Return(errors.New("send synchronize probes response error")).Times(1),
 				)
 			},
