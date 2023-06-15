@@ -162,10 +162,10 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 			return
 		}
 
-		// prepaired data in minio pod
+		// prepared data in minio pod
 		// test bucket minio-test-bucket
 		// test path /dragonfly-test/usr
-		// test subdirs (no empty dirs)
+		// test sub dirs (no empty dirs)
 		// sha256sum txt: /host/tmp/dragonfly-test.sha256sum.txt
 		subDirs := []string{"bin", "lib64", "libexec", "sbin"}
 
@@ -227,10 +227,10 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 			return
 		}
 
-		// prepaired data in minio pod
+		// prepared data in minio pod
 		// test bucket minio-test-bucket
 		// test path /dragonfly-test/usr
-		// test subdirs (no empty dirs)
+		// test sub dirs (no empty dirs)
 		// sha256sum txt: /host/tmp/dragonfly-test.sha256sum.txt
 		subDirs := []string{"bin", "lib64", "libexec", "sbin"}
 

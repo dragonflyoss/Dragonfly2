@@ -190,9 +190,9 @@ func (s *s3SourceClient) GetLastModified(request *source.Request) (int64, error)
 func (s *s3SourceClient) List(request *source.Request) (urls []source.URLEntry, err error) {
 	client, err := s.newAWSS3Client(request)
 	if err != nil {
-		return nil, fmt.Errorf("get oss client: %w", err)
+		return nil, fmt.Errorf("get s3 client: %w", err)
 	}
-	// if it's a object, just return it.
+	// if it's an object, just return it.
 	isDir, err := s.isDirectory(client, request)
 	if err != nil {
 		return nil, err
@@ -255,7 +255,7 @@ func (s *s3SourceClient) isDirectory(client *s3.S3, request *source.Request) (bo
 			Delimiter: &delimiter,
 		})
 	if err != nil {
-		return false, fmt.Errorf("list oss object %s/%s: %w", request.URL.Host, uPath, err)
+		return false, fmt.Errorf("list s3 object %s/%s: %w", request.URL.Host, uPath, err)
 	}
 	if len(output.Contents)+len(output.CommonPrefixes) > 0 {
 		return true, nil

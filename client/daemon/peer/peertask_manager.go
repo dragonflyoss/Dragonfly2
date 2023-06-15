@@ -342,6 +342,21 @@ func (ptm *peerTaskManager) StartStreamTask(ctx context.Context, req *StreamTask
 	}
 
 	if ptm.Multiplex {
+		// try breakpoint resume for task has range header
+		if req.Range != nil && !ptm.SplitRunningTasks {
+			// find running parent task
+			parentTaskID := idgen.ParentTaskIDV1(req.URL, req.URLMeta)
+			parentTask, ok := ptm.findPeerTaskConductor(parentTaskID)
+			if ok && parentTask.GetContentLength() > 0 {
+				// only allow resume for range from breakpoint to end
+				if req.Range.Start+req.Range.Length == parentTask.GetContentLength() {
+					pt := ptm.newResumeStreamTask(ctx, parentTask, req.Range)
+					return pt.Start(ctx)
+				}
+			}
+		}
+
+		// reuse by completed task
 		r, attr, ok := ptm.tryReuseStreamPeerTask(ctx, req)
 		if ok {
 			metrics.PeerTaskCacheHitCount.Add(1)

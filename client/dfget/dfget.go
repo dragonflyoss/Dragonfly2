@@ -356,22 +356,24 @@ func recursiveDownload(ctx context.Context, client dfdaemonclient.V1, cfg *confi
 				continue
 			}
 
-			logger.Infof("download %s to %s", childCfg.URL, childCfg.Output)
-			if !urlEntry.IsDir {
-				if childCfg.RecursiveList {
-					continue
-				}
-				childCfg.Recursive = false
-				// validate new dfget config
-				if err = childCfg.Validate(); err != nil {
-					logger.Errorf("validate failed: %s", err)
-					return err
-				}
-				if err := singleDownload(ctx, client, &childCfg, logger.With("url", childCfg.URL)); err != nil {
-					return err
-				}
-			} else {
+			if urlEntry.IsDir {
+				logger.Infof("download directory %s to %s", childCfg.URL, childCfg.Output)
 				queue.PushBack(&childCfg)
+				continue
+			}
+
+			if childCfg.RecursiveList {
+				continue
+			}
+			childCfg.Recursive = false
+			// validate new dfget config
+			if err = childCfg.Validate(); err != nil {
+				logger.Errorf("validate failed: %s", err)
+				return err
+			}
+			logger.Infof("download file %s to %s", childCfg.URL, childCfg.Output)
+			if err = singleDownload(ctx, client, &childCfg, logger.With("url", childCfg.URL)); err != nil {
+				return err
 			}
 		}
 	}
