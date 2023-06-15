@@ -88,6 +88,3 @@ metrics:
 
 network:
   enableIPv6: true
-
-probe:
-  interval: 30s
