@@ -17,7 +17,6 @@
 package service
 
 import (
-	"context"
 	"fmt"
 	"io"
 
@@ -60,31 +59,18 @@ func NewV1(
 }
 
 func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
-	ctx, cancel := context.WithCancel(stream.Context())
-	defer cancel()
-
 	var (
 		modelKey    string
 		initialized bool
 	)
 
 	for {
-		select {
-		case <-ctx.Done():
-			logger.Infof("context was done")
-			return ctx.Err()
-		default:
-		}
-
 		req, err := stream.Recv()
-
 		if err != nil {
 			if err == io.EOF {
 				logger.Infof("receive streaming requests successfully")
-				err = stream.SendAndClose(new(emptypb.Empty))
-
 				// TODDO (fyx) Add training logiic.
-				if err != nil {
+				if err := stream.SendAndClose(new(emptypb.Empty)); err != nil {
 					logger.Infof("train error %s", err.Error())
 					return err
 				}
@@ -95,8 +81,8 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 				return err
 			}
 
-			// If receive stream request fails,
-			// Delete the file of downloads and network topologies according to given model key.
+			// If receive stream request fails, delete the file of downloads and
+			// network topologies according to given model key.
 			logger.Errorf("receive error: %s", err.Error())
 			if err := v.storage.ClearDownload(modelKey); err != nil {
 				logger.Errorf("clear downloads error: %s", err.Error())
@@ -127,9 +113,9 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 			logger.Infof("receive TrainRequest_TrainGnnRequest: %#v", trainRequest.TrainGnnRequest)
 			if err := v.handleTrainGNNRequest(modelKey, trainRequest.TrainGnnRequest.Dataset); err != nil {
 				logger.Errorf("handle network topologies error: %s", err.Error())
-
 				if err := v.storage.ClearNetworkTopology(modelKey); err != nil {
 					logger.Errorf("clear network topologies error: %s", err.Error())
+					return err
 				}
 
 				return err
@@ -138,9 +124,9 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 			logger.Infof("receive TrainRequest_TrainMlpRequest: %#v", trainRequest.TrainMlpRequest)
 			if err := v.handleTrainMLPRequest(modelKey, trainRequest.TrainMlpRequest.Dataset); err != nil {
 				logger.Errorf("handle downloads error: %s", err.Error())
-
 				if err := v.storage.ClearDownload(modelKey); err != nil {
 					logger.Errorf("clear downloads error: %s", err.Error())
+					return err
 				}
 
 				return err
