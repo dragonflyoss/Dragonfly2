@@ -34,6 +34,7 @@ func CORS() gin.HandlerFunc {
 
 		c.Header(headers.AccessControlAllowOrigin, origin)
 		c.Header(headers.AccessControlAllowCredentials, "true")
+		c.Header(headers.AccessControlExposeHeaders, strings.Join([]string{headers.Link, headers.Location, headers.Authorization}, ","))
 
 		if c.Request.Method != http.MethodOptions {
 			c.Next()
