@@ -73,6 +73,7 @@ jobs:
         with:
           version: ${{ env.KIND_VERSION }}
           config: ${{ env.KIND_CONFIG_PATH }}
+          cluster_name: kind
 
       - name: Build images
         run: |
