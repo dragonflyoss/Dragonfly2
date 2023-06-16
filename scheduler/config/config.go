@@ -312,9 +312,6 @@ type ProbeConfig struct {
 	// QueueLength is the length of probe queue.
 	QueueLength int `mapstructure:"queueLength" yaml:"queueLength"`
 
-	// Interval is the interval of probing hosts.
-	Interval time.Duration `mapstructure:"interval" yaml:"interval"`
-
 	// Count is the number of probing hosts.
 	Count int `mapstructure:"count" yaml:"count"`
 }
@@ -410,7 +407,6 @@ func New() *Config {
 			CollectInterval: DefaultNetworkTopologyCollectInterval,
 			Probe: ProbeConfig{
 				QueueLength: DefaultProbeQueueLength,
-				Interval:    DefaultProbeInterval,
 				Count:       DefaultProbeCount,
 			},
 		},
@@ -577,10 +573,6 @@ func (cfg *Config) Validate() error {
 
 	if cfg.NetworkTopology.Probe.QueueLength <= 0 {
 		return errors.New("probe requires parameter queueLength")
-	}
-
-	if cfg.NetworkTopology.Probe.Interval <= 0 {
-		return errors.New("probe requires parameter interval")
 	}
 
 	if cfg.NetworkTopology.Probe.Count <= 0 {

@@ -169,9 +169,6 @@ const (
 	// DefaultProbeQueueLength is the default length of probe queue.
 	DefaultProbeQueueLength = 5
 
-	// DefaultProbeInterval is the default interval of probing host.
-	DefaultProbeInterval = 20 * time.Minute
-
 	// DefaultProbeCount is the default number of probing hosts.
 	DefaultProbeCount = 5
 )

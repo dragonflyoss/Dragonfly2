@@ -87,7 +87,6 @@ networkTopology:
   collectInterval: 60s
   probe:
     queueLength: 5
-    interval: 30s
     count: 10
 
 trainer:

@@ -165,7 +165,6 @@ func TestConfig_Load(t *testing.T) {
 			CollectInterval: 60 * time.Second,
 			Probe: ProbeConfig{
 				QueueLength: 5,
-				Interval:    30 * time.Second,
 				Count:       10,
 			},
 		},
@@ -708,20 +707,6 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "probe requires parameter queueLength")
-			},
-		},
-		{
-			name:   "probe requires parameter interval",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Database.Redis = mockRedisConfig
-				cfg.Job = mockJobConfig
-				cfg.NetworkTopology.Probe.Interval = 0
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "probe requires parameter interval")
 			},
 		},
 		{
