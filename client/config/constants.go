@@ -111,3 +111,8 @@ var (
 	// DefaultAnnouncerSchedulerInterval is default interface of announcing scheduler.
 	DefaultAnnouncerSchedulerInterval = 30 * time.Second
 )
+
+const (
+	// DefaultProbeInterval is the default interval of probing host.
+	DefaultProbeInterval = 20 * time.Minute
+)

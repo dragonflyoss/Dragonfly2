@@ -154,7 +154,6 @@ var (
 		CollectInterval: 2 * time.Hour,
 		Probe: config.ProbeConfig{
 			QueueLength: 5,
-			Interval:    15 * time.Minute,
 			Count:       10,
 		},
 	}
