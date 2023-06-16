@@ -16,6 +16,11 @@
 
 package types
 
+const (
+	// ModelBucket is the model bucket name of object storage.
+	ModelBucket = "models"
+)
+
 type ModelParams struct {
 	ID uint `uri:"id" binding:"required"`
 }

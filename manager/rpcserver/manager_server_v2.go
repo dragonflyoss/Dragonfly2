@@ -17,11 +17,15 @@
 package rpcserver
 
 import (
+	"bytes"
 	"context"
+	"d7y.io/dragonfly/v2/pkg/digest"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
+	"time"
 
 	cachev8 "github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
@@ -736,9 +740,67 @@ func (s *managerServerV2) ListApplications(ctx context.Context, req *managerv2.L
 	return &pbListApplicationsResponse, nil
 }
 
-// TODO(MinH-09) Implement function.
-// CreateModel creates model and update data of model to object storage.
 func (s *managerServerV2) CreateModel(ctx context.Context, req *managerv2.CreateModelRequest) (*emptypb.Empty, error) {
+	if !s.objectStorageConfig.Enable {
+		return nil, status.Error(codes.Internal, "object storage is disabled")
+	}
+	if IsExist, err := s.objectStorage.IsBucketExist(ctx, types.ModelBucket); err != nil {
+		return nil, status.Error(codes.Internal, "find bucket exist failed")
+	} else if !IsExist {
+		err := s.objectStorage.CreateBucket(ctx, types.ModelBucket)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "create model bucket failed")
+		}
+	}
+
+	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
+
+	var modelType string
+	modelVersion := time.Now().Format("20060102")
+	modelEvaluation := make(map[string]any)
+	switch modelUploadRequest := req.GetRequest().(type) {
+	case *managerv2.CreateModelRequest_CreateGnnRequest:
+		modelType = models.ModelTypeGNN
+		modelEvaluation = map[string]any{
+			"Precision": modelUploadRequest.CreateGnnRequest.GetPrecision(),
+			"Recall":    modelUploadRequest.CreateGnnRequest.GetRecall(),
+			"F1Score":   modelUploadRequest.CreateGnnRequest.GetF1Score(),
+		}
+		modelObjectKey := fmt.Sprintf("%sGnn/%s.graphdef", strconv.FormatUint(req.ClusterId, 10), modelVersion)
+		if err := s.objectStorage.PutObject(ctx, types.ModelBucket, modelObjectKey, digest.AlgorithmMD5, bytes.NewReader(req.GetCreateGnnRequest().GetData())); err != nil {
+			log.Errorf("putObject Gnn model fail because of %s", err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	case *managerv2.CreateModelRequest_CreateMlpRequest:
+		modelType = models.ModelTypeMLP
+		modelEvaluation = map[string]any{
+			"Mse": modelUploadRequest.CreateMlpRequest.GetMse(),
+			"Mae": modelUploadRequest.CreateMlpRequest.GetMae(),
+		}
+		modelObjectKey := fmt.Sprintf("%s%s%sMlp/%s.graphdef", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10), modelVersion)
+		if err := s.objectStorage.PutObject(ctx, types.ModelBucket, modelObjectKey, digest.AlgorithmMD5, bytes.NewReader(req.GetCreateMlpRequest().GetData())); err != nil {
+			log.Errorf("putObject Mlp model fail because of %s", err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	scheduler := models.Scheduler{}
+	if err := s.db.WithContext(ctx).First(&scheduler, &models.Scheduler{
+		Hostname:           req.Hostname,
+		SchedulerClusterID: uint(req.ClusterId),
+	}).Error; err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if err := s.db.WithContext(ctx).Create(models.Model{
+		Type:        modelType,
+		Version:     modelVersion,
+		Evaluation:  modelEvaluation,
+		SchedulerID: scheduler.ID,
+	}).Error; err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	return new(emptypb.Empty), nil
 }
 
