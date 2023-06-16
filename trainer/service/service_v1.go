@@ -86,11 +86,13 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 		if err != nil {
 			if err == io.EOF {
 				logger.Infof("receive streaming requests successfully")
-				// TODDO (fyx) Add training logiic.
+				// TODO (fyx) Add training logiic.
 				if err := stream.SendAndClose(new(emptypb.Empty)); err != nil {
 					logger.Infof("Send and close error %s", err.Error())
 					return err
 				}
+
+				initialized = false
 				return nil
 			}
 
@@ -176,7 +178,11 @@ func (v *V1) handleTrainGNNRequest(modelKey string, dataset []byte) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			logger.Error(err)
+		}
+	}()
 
 	if _, err = file.Write(dataset); err != nil {
 		return err

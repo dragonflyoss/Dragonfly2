@@ -18,12 +18,16 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	trainerv1 "d7y.io/api/pkg/apis/trainer/v1"
 	trainerv1mocks "d7y.io/api/pkg/apis/trainer/v1/mocks"
@@ -104,6 +108,7 @@ func TestServiceV1_Train(t *testing.T) {
 							},
 						},
 					}, nil).Times(3),
+					mt.SendAndClose(new(emptypb.Empty)).Return(nil).Times(1),
 				)
 			},
 			expect: func(t *testing.T, err error) {
@@ -128,6 +133,7 @@ func TestServiceV1_Train(t *testing.T) {
 							},
 						},
 					}, nil).Times(3),
+					mt.SendAndClose(new(emptypb.Empty)).Return(nil).Times(1),
 				)
 			},
 			expect: func(t *testing.T, err error) {
@@ -162,6 +168,116 @@ func TestServiceV1_Train(t *testing.T) {
 			svc := NewV1(&config.Config{}, storage)
 			tc.mock(stream.EXPECT(), storage.EXPECT())
 			tc.expect(t, svc.Train(stream))
+		})
+	}
+}
+
+func TestServiceV1_handleTrainGNNRequest(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(storage *storagemocks.MockStorageMockRecorder, modelKey string)
+		expect func(t *testing.T, err error, modelKey string)
+	}{
+		{
+			name: "Handle GNN train request",
+			mock: func(storage *storagemocks.MockStorageMockRecorder, modelKey string) {
+				file, err := os.OpenFile(filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s.%s", "networktopology", modelKey, "csv")), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer file.Close()
+
+				gomock.InOrder(
+					storage.OpenNetworkTopology(modelKey).Return(file, nil).Times(1),
+				)
+			},
+			expect: func(t *testing.T, err error, modelKey string) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				if err = os.Remove(filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s.%s", "networktopology", modelKey, "csv"))); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+		{
+			name: "Open file failed",
+			mock: func(storage *storagemocks.MockStorageMockRecorder, modelKey string) {
+				gomock.InOrder(
+					storage.OpenNetworkTopology(modelKey).Return(nil, errors.New("open file failed")).Times(1),
+				)
+			},
+			expect: func(t *testing.T, err error, modelKey string) {
+				assert := assert.New(t)
+				assert.EqualError(err, "open file failed")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			storage := storagemocks.NewMockStorage(ctl)
+			svc := NewV1(&config.Config{}, storage)
+			mockModelKey, _ := svc.createModelKey(mockHostName, mockIP, uint(mockClusterID), DefaultHashAlgorithm)
+
+			tc.mock(storage.EXPECT(), mockModelKey)
+			tc.expect(t, svc.handleTrainGNNRequest(mockModelKey, mockDataset), mockModelKey)
+		})
+	}
+}
+
+func TestServiceV1_handleTrainMLPRequest(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(storage *storagemocks.MockStorageMockRecorder, modelKey string)
+		expect func(t *testing.T, err error, modelKey string)
+	}{
+		{
+			name: "Handle MLP train request",
+			mock: func(storage *storagemocks.MockStorageMockRecorder, modelKey string) {
+				file, err := os.OpenFile(filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s.%s", "download", modelKey, "csv")), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer file.Close()
+
+				gomock.InOrder(
+					storage.OpenDownload(modelKey).Return(file, nil).Times(1),
+				)
+			},
+			expect: func(t *testing.T, err error, modelKey string) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				if err = os.Remove(filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s.%s", "download", modelKey, "csv"))); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+		{
+			name: "Open file failed",
+			mock: func(storage *storagemocks.MockStorageMockRecorder, modelKey string) {
+				gomock.InOrder(
+					storage.OpenDownload(modelKey).Return(nil, errors.New("open file failed")).Times(1),
+				)
+			},
+			expect: func(t *testing.T, err error, modelKey string) {
+				assert := assert.New(t)
+				assert.EqualError(err, "open file failed")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			storage := storagemocks.NewMockStorage(ctl)
+			svc := NewV1(&config.Config{}, storage)
+			mockModelKey, _ := svc.createModelKey(mockHostName, mockIP, uint(mockClusterID), DefaultHashAlgorithm)
+
+			tc.mock(storage.EXPECT(), mockModelKey)
+			tc.expect(t, svc.handleTrainMLPRequest(mockModelKey, mockDataset), mockModelKey)
 		})
 	}
 }
