@@ -229,6 +229,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 	return sched, storageManager
 }
 
+// TestStreamPeerTask_BackSource_Partial_WithContentLength tests that get piece from other peers first, then scheduler says back source
 func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 	assert := testifyassert.New(t)
 	ctrl := gomock.NewController(t)
