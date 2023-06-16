@@ -17,7 +17,13 @@
 package service
 
 import (
+	"crypto/md5"
+	"crypto/sha1"
+	"crypto/sha256"
+	"crypto/sha512"
+	"encoding/hex"
 	"fmt"
+	"hash"
 	"io"
 
 	"google.golang.org/grpc/codes"
@@ -27,12 +33,23 @@ import (
 	trainerv1 "d7y.io/api/pkg/apis/trainer/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/trainer/config"
 	"d7y.io/dragonfly/v2/trainer/storage"
 )
 
 const (
+	// AlgorithmSHA1 is sha1 algorithm name of hash.
+	AlgorithmSHA1 = "sha1"
+
+	// AlgorithmSHA256 is sha256 algorithm name of hash.
+	AlgorithmSHA256 = "sha256"
+
+	// AlgorithmSHA512 is sha512 algorithm name of hash.
+	AlgorithmSHA512 = "sha512"
+
+	// AlgorithmMD5 is md5 algorithm name of hash.
+	AlgorithmMD5 = "md5"
+
 	// DefaultHashAlgorithm is the default hash algorithm used to generate the digest of the model key.
 	DefaultHashAlgorithm = "sha256"
 )
@@ -71,9 +88,10 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 				logger.Infof("receive streaming requests successfully")
 				// TODDO (fyx) Add training logiic.
 				if err := stream.SendAndClose(new(emptypb.Empty)); err != nil {
-					logger.Infof("train error %s", err.Error())
+					logger.Infof("Send and close error %s", err.Error())
 					return err
 				}
+				return nil
 			}
 
 			if !initialized {
@@ -101,7 +119,7 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 			initialized = true
 
 			//Initialize modelKey.
-			modelKey, err = v.createModelKey(req.Hostname, req.Ip, uint(req.ClusterId))
+			modelKey, err = v.createModelKey(req.Hostname, req.Ip, uint(req.ClusterId), DefaultHashAlgorithm)
 			if err != nil {
 				logger.Errorf("create model key error: %s", err.Error())
 				return err
@@ -167,6 +185,24 @@ func (v *V1) handleTrainGNNRequest(modelKey string, dataset []byte) error {
 	return nil
 }
 
-func (v *V1) createModelKey(hostname, ip string, clusterID uint) (string, error) {
-	return digest.HashFile(fmt.Sprintf("%s-%s-%d", hostname, ip, clusterID), DefaultHashAlgorithm)
+func (v *V1) createModelKey(hostname, ip string, clusterID uint, hashAlgorithm string) (string, error) {
+	var h hash.Hash
+	switch hashAlgorithm {
+	case AlgorithmSHA1:
+		h = sha1.New()
+	case AlgorithmSHA256:
+		h = sha256.New()
+	case AlgorithmSHA512:
+		h = sha512.New()
+	case AlgorithmMD5:
+		h = md5.New()
+	default:
+		return "", fmt.Errorf("unsupport hash method: %s", hashAlgorithm)
+	}
+
+	if _, err := h.Write([]byte(fmt.Sprintf("%s-%s-%d", hostname, ip, clusterID))); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
