@@ -516,7 +516,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 			SchedulerInterval: 1000000000,
 		},
 		NetworkTopology: NetworkTopologyOption{
-			Enable: false,
+			Enable: true,
 			Probe: ProbeOption{
 				Interval: 20 * time.Minute,
 			},
