@@ -28,6 +28,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/MysteriousPotato/go-lockable"
 	"github.com/go-http-utils/headers"
 	"go.uber.org/atomic"
 
@@ -39,6 +40,8 @@ import (
 	"d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/source"
 )
+
+var globalFSWriteLock = lockable.NewMutexMap[string]()
 
 type localTaskStore struct {
 	*logger.SugaredLoggerOnWith
@@ -362,6 +365,9 @@ func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) error {
 	if req.MetadataOnly {
 		return nil
 	}
+
+	globalFSWriteLock.LockKey(req.Destination)
+	defer globalFSWriteLock.UnlockKey(req.Destination)
 
 	if req.OriginalOffset {
 		return hardlink(t.SugaredLoggerOnWith, req.Destination, t.DataFilePath)

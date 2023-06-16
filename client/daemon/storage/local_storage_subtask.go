@@ -289,6 +289,9 @@ func (t *localSubTaskStore) Store(ctx context.Context, req *StoreRequest) error 
 		return nil
 	}
 
+	globalFSWriteLock.LockKey(req.Destination)
+	defer globalFSWriteLock.UnlockKey(req.Destination)
+
 	if req.OriginalOffset {
 		return hardlink(t.SugaredLoggerOnWith, req.Destination, t.parent.DataFilePath)
 	}
