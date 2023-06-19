@@ -49,6 +49,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/objectstorage"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
+	"d7y.io/dragonfly/v2/client/daemon/probe"
 	"d7y.io/dragonfly/v2/client/daemon/proxy"
 	"d7y.io/dragonfly/v2/client/daemon/rpcserver"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -107,6 +108,7 @@ type clientDaemon struct {
 	schedulerClient schedulerclient.V1
 	certifyClient   *certify.Certify
 	announcer       announcer.Announcer
+	probe           probe.Probe
 }
 
 func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
@@ -779,6 +781,23 @@ func (cd *clientDaemon) Serve() error {
 				}
 			})
 		}()
+	}
+
+	// serve probe service
+	var p probe.Probe
+	if cd.Option.NetworkTopology.Enable {
+		p, err = probe.NewProbe(&cd.Option, cd.schedPeerHost.Id, cd.schedPeerHost.RpcPort,
+			cd.schedPeerHost.DownPort, cd.schedulerClient)
+		if err != nil {
+			return err
+		}
+
+		go func() {
+			logger.Info("serve probe")
+			p.Serve()
+		}()
+
+		cd.probe = p
 	}
 
 	werr := g.Wait()
