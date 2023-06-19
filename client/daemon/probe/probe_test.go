@@ -30,6 +30,7 @@ import (
 	v1 "d7y.io/api/pkg/apis/common/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	schedulerv1mocks "d7y.io/api/pkg/apis/scheduler/v1/mocks"
+
 	"d7y.io/dragonfly/v2/client/config"
 	pkgbalancer "d7y.io/dragonfly/v2/pkg/balancer"
 	"d7y.io/dragonfly/v2/pkg/idgen"
@@ -129,17 +130,7 @@ func TestProbe_uploadProbesToScheduler(t *testing.T) {
 							ProbeStartedRequest: &schedulerv1.ProbeStartedRequest{},
 						}})).Return(stream, nil).Times(1),
 					ms.Recv().Return(&schedulerv1.SyncProbesResponse{
-						Hosts: []*v1.Host{
-							{
-								Id:           idgen.HostIDV2("127.0.0.1", "foo"),
-								Ip:           "127.0.0.1",
-								Hostname:     "foo",
-								Port:         8003,
-								DownloadPort: 8001,
-								Location:     "location",
-								Idc:          "idc",
-							},
-						},
+						Hosts: []*v1.Host{mockHost},
 					}, nil).Times(1),
 					ms.Recv().Return(nil, io.EOF).Times(1),
 					ms.Send(gomock.Any()).Return(nil).Times(1),
