@@ -141,7 +141,7 @@ func TestServiceV1_Train(t *testing.T) {
 					}, nil).Times(1),
 					storage.OpenNetworkTopology(mockModelKey).Return(networktopologies, nil).Times(1),
 					mt.Recv().Return(nil, io.EOF).Times(1),
-					mt.SendAndClose(nil).Return(errors.New("send and close error")).Times(1),
+					mt.SendAndClose(new(emptypb.Empty)).Return(errors.New("send and close error")).Times(1),
 				)
 			},
 			expect: func(t *testing.T, err error) {
@@ -281,7 +281,7 @@ func TestServiceV1_Train(t *testing.T) {
 					}, nil).Times(1),
 					storage.OpenDownload(mockModelKey).Return(downloads, nil).Times(1),
 					mt.Recv().Return(nil, io.EOF).Times(1),
-					mt.SendAndClose(nil).Return(errors.New("send and close error")).Times(1),
+					mt.SendAndClose(new(emptypb.Empty)).Return(errors.New("send and close error")).Times(1),
 				)
 			},
 			expect: func(t *testing.T, err error) {
