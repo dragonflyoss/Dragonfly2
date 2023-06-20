@@ -52,6 +52,12 @@ const (
 
 	// DefaultHashAlgorithm is the default hash algorithm used to generate the digest of the model key.
 	DefaultHashAlgorithm = "sha256"
+
+	// TrainGNNRequest is the default request type of network topologies.
+	TrainGNNRequest = "GNN"
+
+	// TrainMLPRequest is the default request type of download.
+	TrainMLPRequest = "MLP"
 )
 
 // V1 is the interface for v1 version of the service.
@@ -79,6 +85,7 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 	var (
 		modelKey    string
 		initialized bool
+		reqType     string
 	)
 
 	for {
@@ -86,13 +93,27 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 		if err != nil {
 			if err == io.EOF {
 				logger.Infof("receive streaming requests successfully")
-				// TODO (fyx) Add training logiic.
 				if err := stream.SendAndClose(new(emptypb.Empty)); err != nil {
 					logger.Infof("Send and close error %s", err.Error())
 					return err
 				}
 
-				initialized = false
+				switch reqType {
+				case TrainGNNRequest:
+					// TODO (fyx) Add GNN training logiic.
+					if err := v.storage.ClearNetworkTopology(modelKey); err != nil {
+						logger.Errorf("clear network topologies error: %s", err.Error())
+						return err
+					}
+
+				case TrainMLPRequest:
+					// TODO (fyx) Add MLP training logiic.
+					if err := v.storage.ClearDownload(modelKey); err != nil {
+						logger.Errorf("clear downloads error: %s", err.Error())
+						return err
+					}
+				}
+
 				return nil
 			}
 
@@ -120,11 +141,19 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 		if !initialized {
 			initialized = true
 
-			//Initialize modelKey.
+			// Initialize modelKey.
 			modelKey, err = v.createModelKey(req.Hostname, req.Ip, uint(req.ClusterId), DefaultHashAlgorithm)
 			if err != nil {
 				logger.Errorf("create model key error: %s", err.Error())
 				return err
+			}
+
+			// Initialize reqType.
+			switch req.GetRequest().(type) {
+			case *trainerv1.TrainRequest_TrainGnnRequest:
+				reqType = TrainGNNRequest
+			case *trainerv1.TrainRequest_TrainMlpRequest:
+				reqType = TrainMLPRequest
 			}
 		}
 

@@ -73,7 +73,7 @@ func TestServiceV1_Train(t *testing.T) {
 		mock func(
 			mt *trainerv1mocks.MockTrainer_TrainServerMockRecorder,
 			storage *storagemocks.MockStorageMockRecorder,
-		)
+			downloads *os.File, networktopologies *os.File, mockModelKey string)
 		expect func(t *testing.T, err error)
 	}{
 		{
@@ -81,6 +81,7 @@ func TestServiceV1_Train(t *testing.T) {
 			mock: func(
 				mt *trainerv1mocks.MockTrainer_TrainServerMockRecorder,
 				storage *storagemocks.MockStorageMockRecorder,
+				downloads *os.File, networktopologies *os.File, mockModelKey string,
 			) {
 				gomock.InOrder(
 					mt.Recv().Return(nil, errors.New("receive error at the time of beginning")).Times(1),
@@ -92,10 +93,11 @@ func TestServiceV1_Train(t *testing.T) {
 			},
 		},
 		{
-			name: "receive GNN train request",
+			name: "receive GNN train requests successfully",
 			mock: func(
 				mt *trainerv1mocks.MockTrainer_TrainServerMockRecorder,
 				storage *storagemocks.MockStorageMockRecorder,
+				downloads *os.File, networktopologies *os.File, mockModelKey string,
 			) {
 				gomock.InOrder(
 					mt.Recv().Return(&trainerv1.TrainRequest{
@@ -107,8 +109,11 @@ func TestServiceV1_Train(t *testing.T) {
 								Dataset: mockDataset,
 							},
 						},
-					}, nil).Times(3),
+					}, nil).Times(1),
+					storage.OpenNetworkTopology(mockModelKey).Return(networktopologies, nil).Times(1),
+					mt.Recv().Return(nil, io.EOF).Times(1),
 					mt.SendAndClose(new(emptypb.Empty)).Return(nil).Times(1),
+					storage.ClearNetworkTopology(mockModelKey).Return(nil),
 				)
 			},
 			expect: func(t *testing.T, err error) {
@@ -117,10 +122,122 @@ func TestServiceV1_Train(t *testing.T) {
 			},
 		},
 		{
-			name: "receive MLP train request",
+			name: "receive GNN train requests successfully but send and close failed",
 			mock: func(
 				mt *trainerv1mocks.MockTrainer_TrainServerMockRecorder,
 				storage *storagemocks.MockStorageMockRecorder,
+				downloads *os.File, networktopologies *os.File, mockModelKey string,
+			) {
+				gomock.InOrder(
+					mt.Recv().Return(&trainerv1.TrainRequest{
+						Hostname:  mockHostName,
+						Ip:        mockIP,
+						ClusterId: mockClusterID,
+						Request: &trainerv1.TrainRequest_TrainGnnRequest{
+							TrainGnnRequest: &trainerv1.TrainGNNRequest{
+								Dataset: mockDataset,
+							},
+						},
+					}, nil).Times(1),
+					storage.OpenNetworkTopology(mockModelKey).Return(networktopologies, nil).Times(1),
+					mt.Recv().Return(nil, io.EOF).Times(1),
+					mt.SendAndClose(nil).Return(errors.New("send and close error")).Times(1),
+				)
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "send and close error")
+			},
+		},
+		{
+			name: "receive GNN train requests successfully but clear the file of network topologies failed",
+			mock: func(
+				mt *trainerv1mocks.MockTrainer_TrainServerMockRecorder,
+				storage *storagemocks.MockStorageMockRecorder,
+				downloads *os.File, networktopologies *os.File, mockModelKey string,
+			) {
+				gomock.InOrder(
+					mt.Recv().Return(&trainerv1.TrainRequest{
+						Hostname:  mockHostName,
+						Ip:        mockIP,
+						ClusterId: mockClusterID,
+						Request: &trainerv1.TrainRequest_TrainGnnRequest{
+							TrainGnnRequest: &trainerv1.TrainGNNRequest{
+								Dataset: mockDataset,
+							},
+						},
+					}, nil).Times(1),
+					storage.OpenNetworkTopology(mockModelKey).Return(networktopologies, nil).Times(1),
+					mt.Recv().Return(nil, io.EOF).Times(1),
+					mt.SendAndClose(new(emptypb.Empty)).Return(nil).Times(1),
+					storage.ClearNetworkTopology(mockModelKey).Return(errors.New("clear the file of network topologies error")),
+				)
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "clear the file of network topologies error")
+			},
+		},
+		{
+			name: "open the file of network topologies failed",
+			mock: func(
+				mt *trainerv1mocks.MockTrainer_TrainServerMockRecorder,
+				storage *storagemocks.MockStorageMockRecorder,
+				downloads *os.File, networktopologies *os.File, mockModelKey string,
+			) {
+				gomock.InOrder(
+					mt.Recv().Return(&trainerv1.TrainRequest{
+						Hostname:  mockHostName,
+						Ip:        mockIP,
+						ClusterId: mockClusterID,
+						Request: &trainerv1.TrainRequest_TrainGnnRequest{
+							TrainGnnRequest: &trainerv1.TrainGNNRequest{
+								Dataset: mockDataset,
+							},
+						},
+					}, nil).Times(1),
+					storage.OpenNetworkTopology(mockModelKey).Return(nil, errors.New("open the file of network topologies error")).Times(1),
+					storage.ClearNetworkTopology(mockModelKey).Return(nil),
+				)
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "open the file of network topologies error")
+			},
+		},
+		{
+			name: "open and clear the file of network topologies failed",
+			mock: func(
+				mt *trainerv1mocks.MockTrainer_TrainServerMockRecorder,
+				storage *storagemocks.MockStorageMockRecorder,
+				downloads *os.File, networktopologies *os.File, mockModelKey string,
+			) {
+				gomock.InOrder(
+					mt.Recv().Return(&trainerv1.TrainRequest{
+						Hostname:  mockHostName,
+						Ip:        mockIP,
+						ClusterId: mockClusterID,
+						Request: &trainerv1.TrainRequest_TrainGnnRequest{
+							TrainGnnRequest: &trainerv1.TrainGNNRequest{
+								Dataset: mockDataset,
+							},
+						},
+					}, nil).Times(1),
+					storage.OpenNetworkTopology(mockModelKey).Return(nil, errors.New("open the file of network topologies error")).Times(1),
+					storage.ClearNetworkTopology(mockModelKey).Return(errors.New("clear the file of network topologies error")),
+				)
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "clear the file of network topologies error")
+			},
+		},
+		{
+			name: "receive MLP train requests successfully",
+			mock: func(
+				mt *trainerv1mocks.MockTrainer_TrainServerMockRecorder,
+				storage *storagemocks.MockStorageMockRecorder,
+				downloads *os.File, networktopologies *os.File, mockModelKey string,
 			) {
 				gomock.InOrder(
 					mt.Recv().Return(&trainerv1.TrainRequest{
@@ -132,8 +249,11 @@ func TestServiceV1_Train(t *testing.T) {
 								Dataset: mockDataset,
 							},
 						},
-					}, nil).Times(3),
+					}, nil).Times(1),
+					storage.OpenDownload(mockModelKey).Return(downloads, nil).Times(1),
+					mt.Recv().Return(nil, io.EOF).Times(1),
 					mt.SendAndClose(new(emptypb.Empty)).Return(nil).Times(1),
+					storage.ClearDownload(mockModelKey).Return(nil),
 				)
 			},
 			expect: func(t *testing.T, err error) {
@@ -142,18 +262,114 @@ func TestServiceV1_Train(t *testing.T) {
 			},
 		},
 		{
-			name: "receive EOF",
+			name: "receive MLP train requests successfully but send and close failed",
 			mock: func(
 				mt *trainerv1mocks.MockTrainer_TrainServerMockRecorder,
 				storage *storagemocks.MockStorageMockRecorder,
+				downloads *os.File, networktopologies *os.File, mockModelKey string,
 			) {
 				gomock.InOrder(
-					mt.Recv().Return(mt.SendAndClose, io.EOF).Times(1),
+					mt.Recv().Return(&trainerv1.TrainRequest{
+						Hostname:  mockHostName,
+						Ip:        mockIP,
+						ClusterId: mockClusterID,
+						Request: &trainerv1.TrainRequest_TrainMlpRequest{
+							TrainMlpRequest: &trainerv1.TrainMLPRequest{
+								Dataset: mockDataset,
+							},
+						},
+					}, nil).Times(1),
+					storage.OpenDownload(mockModelKey).Return(downloads, nil).Times(1),
+					mt.Recv().Return(nil, io.EOF).Times(1),
+					mt.SendAndClose(nil).Return(errors.New("send and close error")).Times(1),
 				)
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				assert.NoError(err)
+				assert.EqualError(err, "send and close error")
+			},
+		},
+		{
+			name: "receive MLP train requests successfully but clear the file of downloads failed",
+			mock: func(
+				mt *trainerv1mocks.MockTrainer_TrainServerMockRecorder,
+				storage *storagemocks.MockStorageMockRecorder,
+				downloads *os.File, networktopologies *os.File, mockModelKey string,
+			) {
+				gomock.InOrder(
+					mt.Recv().Return(&trainerv1.TrainRequest{
+						Hostname:  mockHostName,
+						Ip:        mockIP,
+						ClusterId: mockClusterID,
+						Request: &trainerv1.TrainRequest_TrainMlpRequest{
+							TrainMlpRequest: &trainerv1.TrainMLPRequest{
+								Dataset: mockDataset,
+							},
+						},
+					}, nil).Times(1),
+					storage.OpenDownload(mockModelKey).Return(downloads, nil).Times(1),
+					mt.Recv().Return(nil, io.EOF).Times(1),
+					mt.SendAndClose(new(emptypb.Empty)).Return(nil).Times(1),
+					storage.ClearDownload(mockModelKey).Return(errors.New("clear the file of downloads error")).Times(1),
+				)
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "clear the file of downloads error")
+			},
+		},
+		{
+			name: "open the file of downloads failed",
+			mock: func(
+				mt *trainerv1mocks.MockTrainer_TrainServerMockRecorder,
+				storage *storagemocks.MockStorageMockRecorder,
+				downloads *os.File, networktopologies *os.File, mockModelKey string,
+			) {
+				gomock.InOrder(
+					mt.Recv().Return(&trainerv1.TrainRequest{
+						Hostname:  mockHostName,
+						Ip:        mockIP,
+						ClusterId: mockClusterID,
+						Request: &trainerv1.TrainRequest_TrainMlpRequest{
+							TrainMlpRequest: &trainerv1.TrainMLPRequest{
+								Dataset: mockDataset,
+							},
+						},
+					}, nil).Times(1),
+					storage.OpenDownload(mockModelKey).Return(nil, errors.New("open the file of downloads error")).Times(1),
+					storage.ClearDownload(mockModelKey).Return(nil),
+				)
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "open the file of downloads error")
+			},
+		},
+		{
+			name: "open and clear the file of downloads failed",
+			mock: func(
+				mt *trainerv1mocks.MockTrainer_TrainServerMockRecorder,
+				storage *storagemocks.MockStorageMockRecorder,
+				downloads *os.File, networktopologies *os.File, mockModelKey string,
+			) {
+				gomock.InOrder(
+					mt.Recv().Return(&trainerv1.TrainRequest{
+						Hostname:  mockHostName,
+						Ip:        mockIP,
+						ClusterId: mockClusterID,
+						Request: &trainerv1.TrainRequest_TrainMlpRequest{
+							TrainMlpRequest: &trainerv1.TrainMLPRequest{
+								Dataset: mockDataset,
+							},
+						},
+					}, nil).Times(1),
+					storage.OpenDownload(mockModelKey).Return(nil, errors.New("open the file of downloads error")).Times(1),
+					storage.ClearDownload(mockModelKey).Return(errors.New("clear the file of downloads error")),
+				)
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "clear the file of downloads error")
 			},
 		},
 	}
@@ -163,10 +379,26 @@ func TestServiceV1_Train(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 			storage := storagemocks.NewMockStorage(ctl)
-
 			stream := trainerv1mocks.NewMockTrainer_TrainServer(ctl)
 			svc := NewV1(&config.Config{}, storage)
-			tc.mock(stream.EXPECT(), storage.EXPECT())
+			mockModelKey, err := svc.createModelKey(mockHostName, mockIP, uint(mockClusterID), DefaultHashAlgorithm)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			downloads, err := os.OpenFile(filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s.%s", "download", mockModelKey, "csv")), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer downloads.Close()
+
+			networktopologies, err := os.OpenFile(filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s.%s", "networktopology", mockModelKey, "csv")), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer networktopologies.Close()
+
+			tc.mock(stream.EXPECT(), storage.EXPECT(), downloads, networktopologies, mockModelKey)
 			tc.expect(t, svc.Train(stream))
 		})
 	}
@@ -185,7 +417,6 @@ func TestServiceV1_handleTrainGNNRequest(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				defer file.Close()
 
 				gomock.InOrder(
 					storage.OpenNetworkTopology(modelKey).Return(file, nil).Times(1),
@@ -240,7 +471,6 @@ func TestServiceV1_handleTrainMLPRequest(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				defer file.Close()
 
 				gomock.InOrder(
 					storage.OpenDownload(modelKey).Return(file, nil).Times(1),
@@ -278,6 +508,75 @@ func TestServiceV1_handleTrainMLPRequest(t *testing.T) {
 
 			tc.mock(storage.EXPECT(), mockModelKey)
 			tc.expect(t, svc.handleTrainMLPRequest(mockModelKey, mockDataset), mockModelKey)
+		})
+	}
+}
+
+func TestServiceV1_CreateModelKey(t *testing.T) {
+	tests := []struct {
+		name          string
+		hashAlgorithm string
+		expect        func(t *testing.T, svc *V1, hashAlgorithm string)
+	}{
+		{
+			name:          "create model key using sha1",
+			hashAlgorithm: "sha1",
+			expect: func(t *testing.T, svc *V1, hashAlgorithm string) {
+				assert := assert.New(t)
+				modelKey, err := svc.createModelKey(mockHostName, mockIP, uint(mockClusterID), hashAlgorithm)
+				assert.NoError(err)
+				assert.Equal("c00f0b440d1e75e45eec5ba505480e0d41bfca62", modelKey)
+			},
+		},
+		{
+			name:          "create model key using sha512",
+			hashAlgorithm: "sha512",
+			expect: func(t *testing.T, svc *V1, hashAlgorithm string) {
+				assert := assert.New(t)
+				modelKey, err := svc.createModelKey(mockHostName, mockIP, uint(mockClusterID), hashAlgorithm)
+				assert.NoError(err)
+				assert.Equal("25dec121f82b545bdfe0d7476a2fce7ace8f8d98c3d8207b5a9fe89e359a0f56af55d1d343a4cf5c00a1bb3252cc51fc528f5c7a97f757533022f5243244f4fa", modelKey)
+			},
+		},
+		{
+			name:          "create model key using sha256",
+			hashAlgorithm: "sha256",
+			expect: func(t *testing.T, svc *V1, hashAlgorithm string) {
+				assert := assert.New(t)
+				modelKey, err := svc.createModelKey(mockHostName, mockIP, uint(mockClusterID), hashAlgorithm)
+				assert.NoError(err)
+				assert.Equal("29ceb2b30ad4b010f64408df8950cced152b43ae20d5c2c202e08679e097314a", modelKey)
+			},
+		},
+		{
+			name:          "create model key using md5",
+			hashAlgorithm: "md5",
+			expect: func(t *testing.T, svc *V1, hashAlgorithm string) {
+				assert := assert.New(t)
+				modelKey, err := svc.createModelKey(mockHostName, mockIP, uint(mockClusterID), hashAlgorithm)
+				assert.NoError(err)
+				assert.Equal("321287159ebf8006811a88dd40f25cf3", modelKey)
+			},
+		},
+		{
+			name:          "create model key using unsupported hash algorithm",
+			hashAlgorithm: "baz",
+			expect: func(t *testing.T, svc *V1, hashAlgorithm string) {
+				assert := assert.New(t)
+				modelKey, err := svc.createModelKey(mockHostName, mockIP, uint(mockClusterID), hashAlgorithm)
+				assert.EqualError(err, "unsupport hash method: baz")
+				assert.Equal("", modelKey)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			storage := storagemocks.NewMockStorage(ctl)
+			svc := NewV1(&config.Config{}, storage)
+			tc.expect(t, svc, tc.hashAlgorithm)
 		})
 	}
 }
