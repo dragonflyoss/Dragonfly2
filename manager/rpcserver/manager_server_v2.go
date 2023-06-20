@@ -740,6 +740,7 @@ func (s *managerServerV2) ListApplications(ctx context.Context, req *managerv2.L
 	return &pbListApplicationsResponse, nil
 }
 
+// CreateModel creates model and update data of model to object storage.
 func (s *managerServerV2) CreateModel(ctx context.Context, req *managerv2.CreateModelRequest) (*emptypb.Empty, error) {
 	if !s.objectStorageConfig.Enable {
 		return nil, status.Error(codes.Internal, "object storage is disabled")
