@@ -52,12 +52,17 @@ const (
 
 	// DefaultHashAlgorithm is the default hash algorithm used to generate the digest of the model key.
 	DefaultHashAlgorithm = "sha256"
+)
 
+// RequestType is the type of request.
+type RequestType uint
+
+const (
 	// TrainGNNRequest is the default request type of network topologies.
-	TrainGNNRequest = "GNN"
+	TrainGNNRequest RequestType = iota
 
 	// TrainMLPRequest is the default request type of download.
-	TrainMLPRequest = "MLP"
+	TrainMLPRequest
 )
 
 // V1 is the interface for v1 version of the service.
@@ -84,8 +89,8 @@ func NewV1(
 func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 	var (
 		modelKey    string
+		reqType     RequestType
 		initialized bool
-		reqType     string
 	)
 
 	for {
@@ -98,22 +103,7 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 					return err
 				}
 
-				switch reqType {
-				case TrainGNNRequest:
-					// TODO (fyx) Add GNN training logiic.
-					if err := v.storage.ClearNetworkTopology(modelKey); err != nil {
-						logger.Errorf("clear network topologies error: %s", err.Error())
-						return err
-					}
-
-				case TrainMLPRequest:
-					// TODO (fyx) Add MLP training logiic.
-					if err := v.storage.ClearDownload(modelKey); err != nil {
-						logger.Errorf("clear downloads error: %s", err.Error())
-						return err
-					}
-				}
-
+				// TODO (fyx) Add GNN and MLP training logic.
 				return nil
 			}
 
@@ -122,16 +112,9 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 				return err
 			}
 
-			// If receive stream request fails, delete the file of downloads and
+			// If receive stream request fails, clear the file of downloads or
 			// network topologies according to given model key.
-			logger.Errorf("receive error: %s", err.Error())
-			if err := v.storage.ClearDownload(modelKey); err != nil {
-				logger.Errorf("clear downloads error: %s", err.Error())
-				return err
-			}
-
-			if err := v.storage.ClearNetworkTopology(modelKey); err != nil {
-				logger.Errorf("clear network topologies error: %s", err.Error())
+			if err = v.clearFile(modelKey, reqType); err != nil {
 				return err
 			}
 
@@ -147,14 +130,6 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 				logger.Errorf("create model key error: %s", err.Error())
 				return err
 			}
-
-			// Initialize reqType.
-			switch req.GetRequest().(type) {
-			case *trainerv1.TrainRequest_TrainGnnRequest:
-				reqType = TrainGNNRequest
-			case *trainerv1.TrainRequest_TrainMlpRequest:
-				reqType = TrainMLPRequest
-			}
 		}
 
 		switch trainRequest := req.GetRequest().(type) {
@@ -169,6 +144,8 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 
 				return err
 			}
+
+			reqType = TrainGNNRequest
 		case *trainerv1.TrainRequest_TrainMlpRequest:
 			logger.Infof("receive TrainRequest_TrainMlpRequest: %#v", trainRequest.TrainMlpRequest)
 			if err := v.handleTrainMLPRequest(modelKey, trainRequest.TrainMlpRequest.Dataset); err != nil {
@@ -180,12 +157,35 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 
 				return err
 			}
+
+			reqType = TrainMLPRequest
 		default:
 			msg := fmt.Sprintf("receive unknown request: %#v", trainRequest)
 			logger.Error(msg)
 			return status.Error(codes.FailedPrecondition, msg)
 		}
 	}
+}
+
+func (v *V1) clearFile(modelKey string, reqType RequestType) error {
+	switch reqType {
+	case TrainGNNRequest:
+		if err := v.storage.ClearDownload(modelKey); err != nil {
+			logger.Errorf("clear downloads error: %s", err.Error())
+			return err
+		}
+	case TrainMLPRequest:
+		if err := v.storage.ClearNetworkTopology(modelKey); err != nil {
+			logger.Errorf("clear network topologies error: %s", err.Error())
+			return err
+		}
+	default:
+		msg := fmt.Sprintf("receive unknown request: %#v", reqType)
+		logger.Error(msg)
+		return status.Error(codes.FailedPrecondition, msg)
+	}
+
+	return nil
 }
 
 func (v *V1) handleTrainMLPRequest(modelKey string, dataset []byte) error {
