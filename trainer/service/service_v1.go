@@ -137,8 +137,7 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 			logger.Infof("receive TrainRequest_TrainGnnRequest: %#v", trainRequest.TrainGnnRequest)
 			if err := v.handleTrainGNNRequest(modelKey, trainRequest.TrainGnnRequest.Dataset); err != nil {
 				logger.Errorf("handle network topologies error: %s", err.Error())
-				if err := v.storage.ClearNetworkTopology(modelKey); err != nil {
-					logger.Errorf("clear network topologies error: %s", err.Error())
+				if err := v.clearFile(modelKey, TrainGNNRequest); err != nil {
 					return err
 				}
 
@@ -150,8 +149,7 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 			logger.Infof("receive TrainRequest_TrainMlpRequest: %#v", trainRequest.TrainMlpRequest)
 			if err := v.handleTrainMLPRequest(modelKey, trainRequest.TrainMlpRequest.Dataset); err != nil {
 				logger.Errorf("handle downloads error: %s", err.Error())
-				if err := v.storage.ClearDownload(modelKey); err != nil {
-					logger.Errorf("clear downloads error: %s", err.Error())
+				if err := v.clearFile(modelKey, TrainMLPRequest); err != nil {
 					return err
 				}
 
