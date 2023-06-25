@@ -341,14 +341,6 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		}
 	}
 
-	var p probe.Probe
-	if opt.NetworkTopology.Enable {
-		p, err = probe.NewProbe(opt, host.Id, host.RpcPort, host.DownPort, schedulerClient)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	return &clientDaemon{
 		once:            &sync.Once{},
 		done:            make(chan bool),
@@ -368,7 +360,6 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		securityClient:  securityClient,
 		schedulerClient: schedulerClient,
 		certifyClient:   certifyClient,
-		probe:           p,
 	}, nil
 }
 
@@ -792,9 +783,16 @@ func (cd *clientDaemon) Serve() error {
 		}()
 	}
 
-	// serve dynconfig service
-	logger.Infof("probe serve start")
-	go cd.probe.Serve()
+	if cd.Option.NetworkTopology.Enable {
+		cd.probe, err = probe.NewProbe(&cd.Option, cd.schedPeerHost.Id, cd.schedPeerHost.RpcPort, cd.schedPeerHost.DownPort, cd.schedulerClient)
+		if err != nil {
+			return err
+		}
+
+		// serve dynconfig service
+		logger.Infof("probe serve start")
+		go cd.probe.Serve()
+	}
 
 	werr := g.Wait()
 	cd.Stop()
