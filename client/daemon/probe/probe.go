@@ -123,8 +123,8 @@ func (p *probe) uploadProbesToScheduler() {
 
 			probes, failedProbes := p.collectProbes(syncProbesResponse.Hosts)
 			eg := errgroup.Group{}
-			eg.Go(func() error {
-				if len(probes) > 0 {
+			if len(probes) > 0 {
+				eg.Go(func() error {
 					if err := stream.Send(&schedulerv1.SyncProbesRequest{
 						Host: host,
 						Request: &schedulerv1.SyncProbesRequest_ProbeFinishedRequest{
@@ -135,13 +135,13 @@ func (p *probe) uploadProbesToScheduler() {
 					}); err != nil {
 						return fmt.Errorf("synchronize finished probe: %w", err)
 					}
-				}
 
-				return nil
-			})
+					return nil
+				})
+			}
 
-			eg.Go(func() error {
-				if len(failedProbes) > 0 {
+			if len(failedProbes) > 0 {
+				eg.Go(func() error {
 					if err := stream.Send(&schedulerv1.SyncProbesRequest{
 						Host: host,
 						Request: &schedulerv1.SyncProbesRequest_ProbeFailedRequest{
@@ -152,10 +152,10 @@ func (p *probe) uploadProbesToScheduler() {
 					}); err != nil {
 						return fmt.Errorf("synchronize failed probe: %w", err)
 					}
-				}
 
-				return nil
-			})
+					return nil
+				})
+			}
 
 			if err := eg.Wait(); err != nil {
 				logger.Error(err)
