@@ -106,21 +106,17 @@ func (p *probe) uploadProbesToScheduler() {
 				continue
 			}
 
-			var syncProbesResponse *schedulerv1.SyncProbesResponse
-			for {
-				response, err := stream.Recv()
-				if err != nil {
-					if err == io.EOF {
-						break
-					}
-
-					logger.Errorf("receive error: %s", err.Error())
-					continue
+			syncProbesResponse, err := stream.Recv()
+			if err != nil {
+				if err == io.EOF {
+					return
 				}
 
-				syncProbesResponse = response
+				logger.Errorf("receive error: %s", err.Error())
+				continue
 			}
 
+			logger.Infof("colloect probes from: %#v", syncProbesResponse.Hosts)
 			probes, failedProbes := p.collectProbes(syncProbesResponse.Hosts)
 			eg := errgroup.Group{}
 			if len(probes) > 0 {
