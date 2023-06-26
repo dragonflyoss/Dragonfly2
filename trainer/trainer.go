@@ -20,13 +20,14 @@ import (
 	"context"
 	"net/http"
 
+	"google.golang.org/grpc"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/trainer/config"
 	"d7y.io/dragonfly/v2/trainer/metrics"
 	"d7y.io/dragonfly/v2/trainer/rpcserver"
 	"d7y.io/dragonfly/v2/trainer/storage"
-	"google.golang.org/grpc"
 )
 
 type Server struct {
