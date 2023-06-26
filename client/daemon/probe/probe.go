@@ -109,6 +109,7 @@ func (p *probe) uploadProbesToScheduler() {
 			syncProbesResponse, err := stream.Recv()
 			if err != nil {
 				if err == io.EOF {
+					logger.Info("remote SyncProbe done, exit receiving")
 					return
 				}
 
