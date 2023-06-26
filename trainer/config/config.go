@@ -21,6 +21,7 @@ import (
 	"net"
 	"time"
 
+	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/slices"
@@ -28,6 +29,9 @@ import (
 )
 
 type Config struct {
+	// Base options.
+	base.Options `yaml:",inline" mapstructure:",squash"`
+
 	// Network configuration.
 	Network NetworkConfig `yaml:"network" mapstructure:"network"`
 
