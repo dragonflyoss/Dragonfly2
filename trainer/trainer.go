@@ -24,6 +24,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/trainer/config"
 	"d7y.io/dragonfly/v2/trainer/metrics"
+	"d7y.io/dragonfly/v2/trainer/rpcserver"
 	"d7y.io/dragonfly/v2/trainer/storage"
 	"google.golang.org/grpc"
 )
@@ -47,6 +48,9 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 
 	// Initialize Storage.
 	s.storage = storage.New(d.DataDir())
+
+	// Initialize trainer grpc server.
+	s.grpcServer = rpcserver.New(cfg, s.storage)
 
 	// Initialize metrics.
 	if cfg.Metrics.Enable {
@@ -75,10 +79,10 @@ func (s *Server) Serve() error {
 }
 
 func (s *Server) Stop() {
-	// Clean download and network topology storage.
+	// Clean storage file.
 	if err := s.storage.Clear(); err != nil {
-		logger.Errorf("clean download and network topology storage failed %s", err.Error())
+		logger.Errorf("clean storage file failed %s", err.Error())
 	} else {
-		logger.Info("clean download and network topology storage completed")
+		logger.Info("clean storage file completed")
 	}
 }
