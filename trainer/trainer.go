@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"time"
 
 	"google.golang.org/grpc"
 
@@ -32,6 +33,12 @@ import (
 	"d7y.io/dragonfly/v2/trainer/metrics"
 	"d7y.io/dragonfly/v2/trainer/rpcserver"
 	"d7y.io/dragonfly/v2/trainer/storage"
+)
+
+const (
+	// gracefulStopTimeout specifies a time limit for
+	// grpc server to complete a graceful shutdown.
+	gracefulStopTimeout = 10 * time.Minute
 )
 
 type Server struct {
@@ -108,5 +115,30 @@ func (s *Server) Stop() {
 		logger.Errorf("clean storage file failed %s", err.Error())
 	} else {
 		logger.Info("clean storage file completed")
+	}
+
+	// Stop metrics server.
+	if s.metricsServer != nil {
+		if err := s.metricsServer.Shutdown(context.Background()); err != nil {
+			logger.Errorf("metrics server failed to stop: %s", err.Error())
+		} else {
+			logger.Info("metrics server closed under request")
+		}
+	}
+
+	// Stop GRPC server.
+	stopped := make(chan struct{})
+	go func() {
+		s.grpcServer.GracefulStop()
+		logger.Info("grpc server closed under request")
+		close(stopped)
+	}()
+
+	t := time.NewTimer(gracefulStopTimeout)
+	select {
+	case <-t.C:
+		s.grpcServer.Stop()
+	case <-stopped:
+		t.Stop()
 	}
 }
