@@ -18,12 +18,16 @@ package trainer
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"net"
 	"net/http"
 
 	"google.golang.org/grpc"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
+	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/trainer/config"
 	"d7y.io/dragonfly/v2/trainer/metrics"
 	"d7y.io/dragonfly/v2/trainer/rpcserver"
@@ -74,6 +78,25 @@ func (s *Server) Serve() error {
 				logger.Fatalf("metrics server closed unexpect: %s", err.Error())
 			}
 		}()
+	}
+
+	// Generate GRPC limit listener.
+	ip, ok := ip.FormatIP(s.config.Server.ListenIP.String())
+	if !ok {
+		return errors.New("format ip failed")
+	}
+
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", ip, s.config.Server.Port))
+	if err != nil {
+		logger.Fatalf("net listener failed to start: %s", err.Error())
+	}
+	defer listener.Close()
+
+	// Started GRPC server.
+	logger.Infof("started grpc server at %s://%s", listener.Addr().Network(), listener.Addr().String())
+	if err := s.grpcServer.Serve(listener); err != nil {
+		logger.Errorf("stoped grpc server: %s", err.Error())
+		return err
 	}
 
 	return nil
