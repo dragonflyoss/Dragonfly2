@@ -104,6 +104,11 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 				}
 
 				// TODO (fyx) Add GNN and MLP training logic.
+				// Clear downloads or network topologies after training according to train request type and model key.
+				if err = v.clearFile(modelKey, reqType); err != nil {
+					return err
+				}
+
 				return nil
 			}
 
@@ -167,12 +172,12 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 
 func (v *V1) clearFile(modelKey string, reqType RequestType) error {
 	switch reqType {
-	case TrainGNNRequest:
+	case TrainMLPRequest:
 		if err := v.storage.ClearDownload(modelKey); err != nil {
 			logger.Errorf("clear downloads error: %s", err.Error())
 			return err
 		}
-	case TrainMLPRequest:
+	case TrainGNNRequest:
 		if err := v.storage.ClearNetworkTopology(modelKey); err != nil {
 			logger.Errorf("clear network topologies error: %s", err.Error())
 			return err
