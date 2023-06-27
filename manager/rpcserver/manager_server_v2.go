@@ -771,11 +771,12 @@ func (s *managerServerV2) CreateModel(ctx context.Context, req *managerv2.Create
 		if IsExist, err := s.objectStorage.IsObjectExist(ctx, types.ModelBucket, modelConfigKey); err != nil {
 			log.Errorf("find MLP model config failed because of %s", err.Error())
 		} else if !IsExist {
-			s.createModelConfig(ctx, fmt.Sprintf("%sGnn", strconv.FormatUint(req.ClusterId, 10)), modelType, modelVersion)
+			if err = s.createModelConfig(ctx, fmt.Sprintf("%s%s%sMlp", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10)), modelType, modelVersion); err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
 		}
 		modelObjectKey := fmt.Sprintf("%sGnn/%s/model.graphdef", strconv.FormatUint(req.ClusterId, 10), modelVersion)
 		if err := s.objectStorage.PutObject(ctx, types.ModelBucket, modelObjectKey, digest.AlgorithmMD5, bytes.NewReader(req.GetCreateGnnRequest().GetData())); err != nil {
-			log.Errorf("putObject GNN model fail because of %s", err.Error())
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	case *managerv2.CreateModelRequest_CreateMlpRequest:
@@ -788,11 +789,12 @@ func (s *managerServerV2) CreateModel(ctx context.Context, req *managerv2.Create
 		if IsExist, err := s.objectStorage.IsObjectExist(ctx, types.ModelBucket, modelConfigKey); err != nil {
 			log.Errorf("find MLP model config failed because of %s", err.Error())
 		} else if !IsExist {
-			s.createModelConfig(ctx, fmt.Sprintf("%s%s%sMlp", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10)), modelType, modelVersion)
+			if err = s.createModelConfig(ctx, fmt.Sprintf("%s%s%sMlp", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10)), modelType, modelVersion); err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
 		}
 		modelObjectKey := fmt.Sprintf("%s%s%sMlp/%s/model.graphdef", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10), modelVersion)
 		if err := s.objectStorage.PutObject(ctx, types.ModelBucket, modelObjectKey, digest.AlgorithmMD5, bytes.NewReader(req.GetCreateMlpRequest().GetData())); err != nil {
-			log.Errorf("putObject MLP model fail because of %s", err.Error())
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	}
