@@ -33,7 +33,6 @@ import (
 	schedulerv1mocks "d7y.io/api/pkg/apis/scheduler/v1/mocks"
 
 	"d7y.io/dragonfly/v2/client/config"
-	pkgbalancer "d7y.io/dragonfly/v2/pkg/balancer"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/client/mocks"
 	schedulerclientmocks "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client/mocks"
@@ -125,9 +124,8 @@ func TestProbe_Serve(t *testing.T) {
 			},
 			mock: func(mv *mocks.MockV1MockRecorder, stream *schedulerv1mocks.MockScheduler_SyncProbesClient,
 				ms *schedulerv1mocks.MockScheduler_SyncProbesClientMockRecorder) {
-				ctx := context.WithValue(context.Background(), pkgbalancer.ContextKey, mockSeedHost.Id)
 				gomock.InOrder(
-					mv.SyncProbes(gomock.Eq(ctx), gomock.Eq(&schedulerv1.SyncProbesRequest{
+					mv.SyncProbes(gomock.Eq(context.Background()), gomock.Eq(&schedulerv1.SyncProbesRequest{
 						Host: mockSeedHost,
 						Request: &schedulerv1.SyncProbesRequest_ProbeStartedRequest{
 							ProbeStartedRequest: &schedulerv1.ProbeStartedRequest{},
@@ -180,9 +178,8 @@ func TestProbe_uploadProbesToScheduler(t *testing.T) {
 			},
 			mock: func(mv *mocks.MockV1MockRecorder, stream *schedulerv1mocks.MockScheduler_SyncProbesClient,
 				ms *schedulerv1mocks.MockScheduler_SyncProbesClientMockRecorder) {
-				ctx := context.WithValue(context.Background(), pkgbalancer.ContextKey, mockSeedHost.Id)
 				gomock.InOrder(
-					mv.SyncProbes(gomock.Eq(ctx), gomock.Eq(&schedulerv1.SyncProbesRequest{
+					mv.SyncProbes(gomock.Eq(context.Background()), gomock.Eq(&schedulerv1.SyncProbesRequest{
 						Host: mockSeedHost,
 						Request: &schedulerv1.SyncProbesRequest_ProbeStartedRequest{
 							ProbeStartedRequest: &schedulerv1.ProbeStartedRequest{},
@@ -207,9 +204,8 @@ func TestProbe_uploadProbesToScheduler(t *testing.T) {
 			},
 			mock: func(mv *mocks.MockV1MockRecorder, stream *schedulerv1mocks.MockScheduler_SyncProbesClient,
 				ms *schedulerv1mocks.MockScheduler_SyncProbesClientMockRecorder) {
-				ctx := context.WithValue(context.Background(), pkgbalancer.ContextKey, mockSeedHost.Id)
 				gomock.InOrder(
-					mv.SyncProbes(gomock.Eq(ctx), gomock.Eq(&schedulerv1.SyncProbesRequest{
+					mv.SyncProbes(gomock.Eq(context.Background()), gomock.Eq(&schedulerv1.SyncProbesRequest{
 						Host: mockSeedHost,
 						Request: &schedulerv1.SyncProbesRequest_ProbeStartedRequest{
 							ProbeStartedRequest: &schedulerv1.ProbeStartedRequest{},
@@ -264,8 +260,7 @@ func TestProbe_uploadProbesToScheduler(t *testing.T) {
 			},
 			mock: func(mv *mocks.MockV1MockRecorder, stream *schedulerv1mocks.MockScheduler_SyncProbesClient,
 				ms *schedulerv1mocks.MockScheduler_SyncProbesClientMockRecorder) {
-				ctx := context.WithValue(context.Background(), pkgbalancer.ContextKey, mockSeedHost.Id)
-				mv.SyncProbes(gomock.Eq(ctx), gomock.Eq(&schedulerv1.SyncProbesRequest{
+				mv.SyncProbes(gomock.Eq(context.Background()), gomock.Eq(&schedulerv1.SyncProbesRequest{
 					Host: mockSeedHost,
 					Request: &schedulerv1.SyncProbesRequest_ProbeStartedRequest{
 						ProbeStartedRequest: &schedulerv1.ProbeStartedRequest{},
@@ -285,9 +280,8 @@ func TestProbe_uploadProbesToScheduler(t *testing.T) {
 			},
 			mock: func(mv *mocks.MockV1MockRecorder, stream *schedulerv1mocks.MockScheduler_SyncProbesClient,
 				ms *schedulerv1mocks.MockScheduler_SyncProbesClientMockRecorder) {
-				ctx := context.WithValue(context.Background(), pkgbalancer.ContextKey, mockSeedHost.Id)
 				gomock.InOrder(
-					mv.SyncProbes(gomock.Eq(ctx), gomock.Eq(&schedulerv1.SyncProbesRequest{
+					mv.SyncProbes(gomock.Eq(context.Background()), gomock.Eq(&schedulerv1.SyncProbesRequest{
 						Host: mockSeedHost,
 						Request: &schedulerv1.SyncProbesRequest_ProbeStartedRequest{
 							ProbeStartedRequest: &schedulerv1.ProbeStartedRequest{},
@@ -309,9 +303,8 @@ func TestProbe_uploadProbesToScheduler(t *testing.T) {
 			},
 			mock: func(mv *mocks.MockV1MockRecorder, stream *schedulerv1mocks.MockScheduler_SyncProbesClient,
 				ms *schedulerv1mocks.MockScheduler_SyncProbesClientMockRecorder) {
-				ctx := context.WithValue(context.Background(), pkgbalancer.ContextKey, mockSeedHost.Id)
 				gomock.InOrder(
-					mv.SyncProbes(gomock.Eq(ctx), gomock.Eq(&schedulerv1.SyncProbesRequest{
+					mv.SyncProbes(gomock.Eq(context.Background()), gomock.Eq(&schedulerv1.SyncProbesRequest{
 						Host: mockSeedHost,
 						Request: &schedulerv1.SyncProbesRequest_ProbeStartedRequest{
 							ProbeStartedRequest: &schedulerv1.ProbeStartedRequest{},
@@ -333,9 +326,8 @@ func TestProbe_uploadProbesToScheduler(t *testing.T) {
 			},
 			mock: func(mv *mocks.MockV1MockRecorder, stream *schedulerv1mocks.MockScheduler_SyncProbesClient,
 				ms *schedulerv1mocks.MockScheduler_SyncProbesClientMockRecorder) {
-				ctx := context.WithValue(context.Background(), pkgbalancer.ContextKey, mockSeedHost.Id)
 				gomock.InOrder(
-					mv.SyncProbes(gomock.Eq(ctx), gomock.Eq(&schedulerv1.SyncProbesRequest{
+					mv.SyncProbes(gomock.Eq(context.Background()), gomock.Eq(&schedulerv1.SyncProbesRequest{
 						Host: mockSeedHost,
 						Request: &schedulerv1.SyncProbesRequest_ProbeStartedRequest{
 							ProbeStartedRequest: &schedulerv1.ProbeStartedRequest{},
@@ -360,9 +352,8 @@ func TestProbe_uploadProbesToScheduler(t *testing.T) {
 			},
 			mock: func(mv *mocks.MockV1MockRecorder, stream *schedulerv1mocks.MockScheduler_SyncProbesClient,
 				ms *schedulerv1mocks.MockScheduler_SyncProbesClientMockRecorder) {
-				ctx := context.WithValue(context.Background(), pkgbalancer.ContextKey, mockSeedHost.Id)
 				gomock.InOrder(
-					mv.SyncProbes(gomock.Eq(ctx), gomock.Eq(&schedulerv1.SyncProbesRequest{
+					mv.SyncProbes(gomock.Eq(context.Background()), gomock.Eq(&schedulerv1.SyncProbesRequest{
 						Host: mockSeedHost,
 						Request: &schedulerv1.SyncProbesRequest_ProbeStartedRequest{
 							ProbeStartedRequest: &schedulerv1.ProbeStartedRequest{},

@@ -819,6 +819,7 @@ func (cd *clientDaemon) Stop() {
 
 		cd.GCManager.Stop()
 		cd.RPCManager.Stop()
+		cd.probe.Stop()
 		if err := cd.UploadManager.Stop(); err != nil {
 			logger.Errorf("upload manager stop failed %s", err)
 		}

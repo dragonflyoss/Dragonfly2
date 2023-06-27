@@ -20,11 +20,10 @@ package probe
 
 import (
 	"context"
-	"fmt"
 	"io"
+	"sync"
 	"time"
 
-	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -33,7 +32,6 @@ import (
 
 	"d7y.io/dragonfly/v2/client/config"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	pkgbalancer "d7y.io/dragonfly/v2/pkg/balancer"
 	"d7y.io/dragonfly/v2/pkg/net/ping"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
@@ -91,12 +89,11 @@ func (p *probe) uploadProbesToScheduler() {
 		Idc:          p.config.Host.IDC,
 	}
 
-	ctx := context.WithValue(context.Background(), pkgbalancer.ContextKey, host.Id)
 	tick := time.NewTicker(p.config.NetworkTopology.Probe.Interval)
 	for {
 		select {
 		case <-tick.C:
-			stream, err := p.schedulerClient.SyncProbes(ctx, &schedulerv1.SyncProbesRequest{
+			stream, err := p.schedulerClient.SyncProbes(context.Background(), &schedulerv1.SyncProbesRequest{
 				Host: host,
 				Request: &schedulerv1.SyncProbesRequest_ProbeStartedRequest{
 					ProbeStartedRequest: &schedulerv1.ProbeStartedRequest{},
@@ -119,43 +116,30 @@ func (p *probe) uploadProbesToScheduler() {
 
 			logger.Infof("colloect probes from: %#v", syncProbesResponse.Hosts)
 			probes, failedProbes := p.collectProbes(syncProbesResponse.Hosts)
-			eg := errgroup.Group{}
 			if len(probes) > 0 {
-				eg.Go(func() error {
-					if err := stream.Send(&schedulerv1.SyncProbesRequest{
-						Host: host,
-						Request: &schedulerv1.SyncProbesRequest_ProbeFinishedRequest{
-							ProbeFinishedRequest: &schedulerv1.ProbeFinishedRequest{
-								Probes: probes,
-							},
+				if err := stream.Send(&schedulerv1.SyncProbesRequest{
+					Host: host,
+					Request: &schedulerv1.SyncProbesRequest_ProbeFinishedRequest{
+						ProbeFinishedRequest: &schedulerv1.ProbeFinishedRequest{
+							Probes: probes,
 						},
-					}); err != nil {
-						return fmt.Errorf("synchronize finished probe: %w", err)
-					}
-
-					return nil
-				})
+					},
+				}); err != nil {
+					logger.Errorf("synchronize finished probe: %w", err)
+				}
 			}
 
 			if len(failedProbes) > 0 {
-				eg.Go(func() error {
-					if err := stream.Send(&schedulerv1.SyncProbesRequest{
-						Host: host,
-						Request: &schedulerv1.SyncProbesRequest_ProbeFailedRequest{
-							ProbeFailedRequest: &schedulerv1.ProbeFailedRequest{
-								Probes: failedProbes,
-							},
+				if err := stream.Send(&schedulerv1.SyncProbesRequest{
+					Host: host,
+					Request: &schedulerv1.SyncProbesRequest_ProbeFailedRequest{
+						ProbeFailedRequest: &schedulerv1.ProbeFailedRequest{
+							Probes: failedProbes,
 						},
-					}); err != nil {
-						return fmt.Errorf("synchronize failed probe: %w", err)
-					}
-
-					return nil
-				})
-			}
-
-			if err := eg.Wait(); err != nil {
-				logger.Error(err)
+					},
+				}); err != nil {
+					logger.Errorf("synchronize failed probe: %w", err)
+				}
 			}
 		case <-p.done:
 			return
@@ -165,12 +149,36 @@ func (p *probe) uploadProbesToScheduler() {
 
 // collectProbes probes hosts and collect probes and failedProbes.
 func (p *probe) collectProbes(desthosts []*v1.Host) ([]*schedulerv1.Probe, []*schedulerv1.FailedProbe) {
-	probes := make([]*schedulerv1.Probe, 0)
-	failedProbes := make([]*schedulerv1.FailedProbe, 0)
+	var (
+		probes       []*schedulerv1.Probe
+		failedProbes []*schedulerv1.FailedProbe
+	)
+
+	wg := &sync.WaitGroup{}
+	wg.Add(len(desthosts))
 	for _, desthost := range desthosts {
-		statistics, err := ping.Ping(desthost.Ip)
-		if err != nil {
-			failedProbes = append(failedProbes, &schedulerv1.FailedProbe{
+		go func(desthost *v1.Host) {
+			defer wg.Done()
+
+			statistics, err := ping.Ping(desthost.Ip)
+			if err != nil {
+				failedProbes = append(failedProbes, &schedulerv1.FailedProbe{
+					Host: &v1.Host{
+						Id:           desthost.Id,
+						Ip:           desthost.Ip,
+						Hostname:     desthost.Hostname,
+						Port:         desthost.Port,
+						DownloadPort: desthost.DownloadPort,
+						Location:     desthost.Location,
+						Idc:          desthost.Idc,
+					},
+					Description: err.Error(),
+				})
+
+				return
+			}
+
+			probes = append(probes, &schedulerv1.Probe{
 				Host: &v1.Host{
 					Id:           desthost.Id,
 					Ip:           desthost.Ip,
@@ -180,26 +188,12 @@ func (p *probe) collectProbes(desthosts []*v1.Host) ([]*schedulerv1.Probe, []*sc
 					Location:     desthost.Location,
 					Idc:          desthost.Idc,
 				},
-				Description: err.Error(),
+				Rtt:       durationpb.New(statistics.AvgRtt),
+				CreatedAt: timestamppb.New(time.Now()),
 			})
-
-			continue
-		}
-
-		probes = append(probes, &schedulerv1.Probe{
-			Host: &v1.Host{
-				Id:           desthost.Id,
-				Ip:           desthost.Ip,
-				Hostname:     desthost.Hostname,
-				Port:         desthost.Port,
-				DownloadPort: desthost.DownloadPort,
-				Location:     desthost.Location,
-				Idc:          desthost.Idc,
-			},
-			Rtt:       durationpb.New(statistics.AvgRtt),
-			CreatedAt: timestamppb.New(time.Now()),
-		})
+		}(desthost)
 	}
 
+	wg.Wait()
 	return probes, failedProbes
 }
