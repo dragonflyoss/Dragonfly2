@@ -41,6 +41,7 @@ const (
 	gracefulStopTimeout = 10 * time.Minute
 )
 
+// Server is the trainer server.
 type Server struct {
 	// Server configuration.
 	config *config.Config
@@ -55,6 +56,7 @@ type Server struct {
 	storage storage.Storage
 }
 
+// New creates a new Server.
 func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	s := &Server{config: cfg}
 
@@ -72,6 +74,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	return s, nil
 }
 
+// Serve starts the trainer server.
 func (s *Server) Serve() error {
 	// Started metrics server.
 	if s.metricsServer != nil {
@@ -109,6 +112,7 @@ func (s *Server) Serve() error {
 	return nil
 }
 
+// Stop stops the trainer server.
 func (s *Server) Stop() {
 	// Clean storage file.
 	if err := s.storage.Clear(); err != nil {

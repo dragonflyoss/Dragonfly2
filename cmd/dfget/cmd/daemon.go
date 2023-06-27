@@ -128,17 +128,13 @@ func initDaemonDfpath(cfg *config.DaemonOption) (dfpath.Dfpath, error) {
 		options = append(options, dfpath.WithDownloadUnixSocketPath(cfg.Download.DownloadGRPC.UnixListen.Socket))
 	}
 
-	dataDir := dfpath.DefaultDataDir
 	if cfg.DataDir != "" {
-		dataDir = cfg.DataDir
+		options = append(options, dfpath.WithDataDir(cfg.DataDir))
 	}
-	options = append(options, dfpath.WithDataDir(dataDir))
 
-	dataDirMode := dfpath.DefaultDataDirMode
 	if os.FileMode(cfg.DataDirMode) != os.FileMode(0) {
-		dataDirMode = os.FileMode(cfg.DataDirMode)
+		options = append(options, dfpath.WithDataDirMode(os.FileMode(cfg.DataDirMode)))
 	}
-	options = append(options, dfpath.WithDataDirMode(dataDirMode))
 
 	return dfpath.New(options...)
 }

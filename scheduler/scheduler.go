@@ -63,6 +63,7 @@ const (
 	gracefulStopTimeout = 10 * time.Minute
 )
 
+// Server is the scheduler server.
 type Server struct {
 	// Server configuration.
 	config *config.Config
@@ -104,6 +105,7 @@ type Server struct {
 	gc gc.GC
 }
 
+// New creates a new scheduler server.
 func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	s := &Server{config: cfg}
 
@@ -290,6 +292,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	return s, nil
 }
 
+// Serve starts the scheduler server.
 func (s *Server) Serve() error {
 	// Serve dynconfig.
 	go func() {
@@ -360,6 +363,7 @@ func (s *Server) Serve() error {
 	return nil
 }
 
+// Stop stops the scheduler server.
 func (s *Server) Stop() {
 	// Stop dynconfig.
 	if err := s.dynconfig.Stop(); err != nil {

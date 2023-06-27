@@ -24,6 +24,7 @@ import (
 	"d7y.io/dragonfly/v2/trainer/storage"
 )
 
+// New creates a new grpc server.
 func New(
 	cfg *config.Config,
 	storage storage.Storage,
