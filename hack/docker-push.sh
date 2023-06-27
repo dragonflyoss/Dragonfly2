@@ -23,6 +23,9 @@ main() {
         ;;
     manager)
         docker-push manager
+        ;;
+    trainer)
+        docker-push trainer
     esac
 }
 
