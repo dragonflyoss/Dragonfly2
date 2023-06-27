@@ -39,7 +39,6 @@ func InitManager(verbose, console bool, dir string) error {
 	}
 
 	logDir := filepath.Join(dir, types.ManagerName)
-
 	var meta = []logInitMeta{
 		{
 			fileName:             CoreLogFileName,
@@ -72,7 +71,6 @@ func InitScheduler(verbose, console bool, dir string) error {
 	}
 
 	logDir := filepath.Join(dir, types.SchedulerName)
-
 	var meta = []logInitMeta{
 		{
 			fileName:             CoreLogFileName,
@@ -101,7 +99,6 @@ func InitDaemon(verbose, console bool, dir string) error {
 	}
 
 	logDir := filepath.Join(dir, types.DaemonName)
-
 	var meta = []logInitMeta{
 		{
 			fileName:             CoreLogFileName,
@@ -130,7 +127,6 @@ func InitDfget(verbose, console bool, dir string) error {
 	}
 
 	logDir := filepath.Join(dir, types.DfgetName)
-
 	var meta = []logInitMeta{
 		{
 			fileName:             CoreLogFileName,
@@ -143,6 +139,42 @@ func InitDfget(verbose, console bool, dir string) error {
 	}
 
 	return createFileLogger(verbose, meta, logDir)
+}
+
+func InitDfcache(console bool, dir string) error {
+	logDir := filepath.Join(dir, types.DfcacheName)
+	var meta = []logInitMeta{
+		{
+			fileName:             CoreLogFileName,
+			setSugaredLoggerFunc: SetCoreLogger,
+		},
+		{
+			fileName:             GrpcLogFileName,
+			setSugaredLoggerFunc: SetGrpcLogger,
+		},
+	}
+
+	return createFileLogger(console, meta, logDir)
+}
+
+func InitTrainer(verbose, console bool, dir string) error {
+	if console {
+		return createConsoleLogger(verbose)
+	}
+
+	logDir := filepath.Join(dir, types.TrainerName)
+	var meta = []logInitMeta{
+		{
+			fileName:             CoreLogFileName,
+			setSugaredLoggerFunc: SetCoreLogger,
+		},
+		{
+			fileName:             GrpcLogFileName,
+			setSugaredLoggerFunc: SetGrpcLogger,
+		},
+	}
+
+	return createFileLogger(console, meta, logDir)
 }
 
 func createConsoleLogger(verbose bool) error {
@@ -190,42 +222,4 @@ func createFileLogger(verbose bool, meta []logInitMeta, logDir string) error {
 	}
 	startLoggerSignalHandler()
 	return nil
-}
-
-func InitDfcache(console bool, dir string) error {
-	logDir := filepath.Join(dir, types.DfcacheName)
-
-	var meta = []logInitMeta{
-		{
-			fileName:             CoreLogFileName,
-			setSugaredLoggerFunc: SetCoreLogger,
-		},
-		{
-			fileName:             GrpcLogFileName,
-			setSugaredLoggerFunc: SetGrpcLogger,
-		},
-	}
-
-	return createFileLogger(console, meta, logDir)
-}
-
-func InitTrainer(verbose, console bool, dir string) error {
-	if console {
-		return createConsoleLogger(verbose)
-	}
-
-	logDir := filepath.Join(dir, types.TrainerName)
-
-	var meta = []logInitMeta{
-		{
-			fileName:             CoreLogFileName,
-			setSugaredLoggerFunc: SetCoreLogger,
-		},
-		{
-			fileName:             GrpcLogFileName,
-			setSugaredLoggerFunc: SetGrpcLogger,
-		},
-	}
-
-	return createFileLogger(console, meta, logDir)
 }

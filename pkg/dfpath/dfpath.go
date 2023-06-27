@@ -138,6 +138,8 @@ func New(options ...Option) (Dfpath, error) {
 			workHome:       DefaultWorkHome,
 			workHomeMode:   DefaultWorkHomeMode,
 			logDir:         DefaultLogDir,
+			dataDir:        DefaultDataDir,
+			dataDirMode:    DefaultDataDirMode,
 			pluginDir:      DefaultPluginDir,
 			cacheDir:       DefaultCacheDir,
 			cacheDirMode:   DefaultCacheDirMode,
@@ -178,10 +180,8 @@ func New(options ...Option) (Dfpath, error) {
 		}
 
 		// Create data directory.
-		if d.dataDir != "" {
-			if err := os.MkdirAll(d.dataDir, d.dataDirMode); err != nil {
-				cache.err = multierror.Append(cache.err, err)
-			}
+		if err := os.MkdirAll(d.dataDir, d.dataDirMode); err != nil {
+			cache.err = multierror.Append(cache.err, err)
 		}
 
 		cache.d = d
