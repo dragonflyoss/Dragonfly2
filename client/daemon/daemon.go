@@ -49,6 +49,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/objectstorage"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
+	"d7y.io/dragonfly/v2/client/daemon/probe"
 	"d7y.io/dragonfly/v2/client/daemon/proxy"
 	"d7y.io/dragonfly/v2/client/daemon/rpcserver"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -107,6 +108,7 @@ type clientDaemon struct {
 	schedulerClient schedulerclient.V1
 	certifyClient   *certify.Certify
 	announcer       announcer.Announcer
+	probe           probe.Probe
 }
 
 func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
@@ -781,6 +783,17 @@ func (cd *clientDaemon) Serve() error {
 		}()
 	}
 
+	if cd.Option.NetworkTopology.Enable {
+		cd.probe, err = probe.NewProbe(&cd.Option, cd.schedPeerHost.Id, cd.schedPeerHost.RpcPort, cd.schedPeerHost.DownPort, cd.schedulerClient)
+		if err != nil {
+			return err
+		}
+
+		// serve dynconfig service
+		logger.Infof("probe serve start")
+		go cd.probe.Serve()
+	}
+
 	werr := g.Wait()
 	cd.Stop()
 	return werr
@@ -806,6 +819,7 @@ func (cd *clientDaemon) Stop() {
 
 		cd.GCManager.Stop()
 		cd.RPCManager.Stop()
+		cd.probe.Stop()
 		if err := cd.UploadManager.Stop(); err != nil {
 			logger.Errorf("upload manager stop failed %s", err)
 		}
