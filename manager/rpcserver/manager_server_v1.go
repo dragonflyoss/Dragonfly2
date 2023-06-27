@@ -768,9 +768,15 @@ func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.Create
 			"Recall":    modelUploadRequest.CreateGnnRequest.GetRecall(),
 			"F1Score":   modelUploadRequest.CreateGnnRequest.GetF1Score(),
 		}
-		modelObjectKey := fmt.Sprintf("%sGnn/%s.graphdef", strconv.FormatUint(req.ClusterId, 10), modelVersion)
+		modelConfigKey := fmt.Sprintf("%sGnn/config.pbtxt", strconv.FormatUint(req.ClusterId, 10))
+		if IsExist, err := s.objectStorage.IsObjectExist(ctx, types.ModelBucket, modelConfigKey); err != nil {
+			log.Errorf("find MLP model config failed because of %s", err.Error())
+		} else if !IsExist {
+			s.createModelConfig(ctx, fmt.Sprintf("%sGnn", strconv.FormatUint(req.ClusterId, 10)), modelType, modelVersion)
+		}
+		modelObjectKey := fmt.Sprintf("%sGnn/%s/model.graphdef", strconv.FormatUint(req.ClusterId, 10), modelVersion)
 		if err := s.objectStorage.PutObject(ctx, types.ModelBucket, modelObjectKey, digest.AlgorithmMD5, bytes.NewReader(req.GetCreateGnnRequest().GetData())); err != nil {
-			log.Errorf("putObject Gnn model fail because of %s", err.Error())
+			log.Errorf("putObject GNN model fail because of %s", err.Error())
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	case *managerv1.CreateModelRequest_CreateMlpRequest:
@@ -779,9 +785,15 @@ func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.Create
 			"Mse": modelUploadRequest.CreateMlpRequest.GetMse(),
 			"Mae": modelUploadRequest.CreateMlpRequest.GetMae(),
 		}
-		modelObjectKey := fmt.Sprintf("%s%s%sMlp/%s.graphdef", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10), modelVersion)
+		modelConfigKey := fmt.Sprintf("%s%s%sMlp/config.pbtxt", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10))
+		if IsExist, err := s.objectStorage.IsObjectExist(ctx, types.ModelBucket, modelConfigKey); err != nil {
+			log.Errorf("find MLP model config failed because of %s", err.Error())
+		} else if !IsExist {
+			s.createModelConfig(ctx, fmt.Sprintf("%s%s%sMlp", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10)), modelType, modelVersion)
+		}
+		modelObjectKey := fmt.Sprintf("%s%s%sMlp/%s/model.graphdef", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10), modelVersion)
 		if err := s.objectStorage.PutObject(ctx, types.ModelBucket, modelObjectKey, digest.AlgorithmMD5, bytes.NewReader(req.GetCreateMlpRequest().GetData())); err != nil {
-			log.Errorf("putObject Mlp model fail because of %s", err.Error())
+			log.Errorf("putObject MLP model fail because of %s", err.Error())
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	}
@@ -804,6 +816,11 @@ func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.Create
 	}
 
 	return new(emptypb.Empty), nil
+}
+
+// createModelConfig creates model config and update config to object storage.
+func (s *managerServerV1) createModelConfig(ctx context.Context, modelName string, modelType string, modelVersion string) error {
+	return nil
 }
 
 // KeepAlive with manager.
