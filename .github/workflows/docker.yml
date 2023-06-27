@@ -13,13 +13,15 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        module: ["manager", "scheduler", "dfdaemon"]
+        module: ["manager", "scheduler", "dfdaemon", "trainer"]
         include:
           - module: manager
             platforms: linux/amd64,linux/arm64
           - module: scheduler
             platforms: linux/amd64,linux/arm64
           - module: dfdaemon
+            platforms: linux/amd64,linux/arm64
+          - module: trainer
             platforms: linux/amd64,linux/arm64
     timeout-minutes: 60
     steps:

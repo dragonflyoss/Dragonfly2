@@ -105,6 +105,26 @@ builds:
     env:
     - CGO_ENABLED=0
 
+  - main: ./cmd/trainer
+    id: trainer
+    binary: trainer
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -X d7y.io/dragonfly/v2/version.Major={{ .Major }}
+      - -X d7y.io/dragonfly/v2/version.Minor={{ .Minor }}
+      - -X d7y.io/dragonfly/v2/version.GitVersion={{ .Tag }}
+      - -X d7y.io/dragonfly/v2/version.GitCommit={{ .ShortCommit }}
+      - -X d7y.io/dragonfly/v2/version.BuildTime={{ .Date }}
+      - -X "d7y.io/dragonfly/v2/version.Gotags=none"
+      - -X "d7y.io/dragonfly/v2/version.Gogcflags=none"
+    env:
+    - CGO_ENABLED=0
+
 archives:
   - name_template: "dragonfly-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
     rlcp: true
