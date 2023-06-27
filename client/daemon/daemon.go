@@ -47,9 +47,9 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/announcer"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
+	"d7y.io/dragonfly/v2/client/daemon/networktopology"
 	"d7y.io/dragonfly/v2/client/daemon/objectstorage"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
-	"d7y.io/dragonfly/v2/client/daemon/probe"
 	"d7y.io/dragonfly/v2/client/daemon/proxy"
 	"d7y.io/dragonfly/v2/client/daemon/rpcserver"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -108,7 +108,7 @@ type clientDaemon struct {
 	schedulerClient schedulerclient.V1
 	certifyClient   *certify.Certify
 	announcer       announcer.Announcer
-	probe           probe.Probe
+	networkTopology networktopology.NetworkTopology
 }
 
 func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
@@ -686,6 +686,19 @@ func (cd *clientDaemon) Serve() error {
 		}
 	}()
 
+	// serve network topology
+	if cd.Option.NetworkTopology.Enable {
+		cd.networkTopology, err = networktopology.NewNetworkTopology(&cd.Option, cd.schedPeerHost.Id, cd.schedPeerHost.RpcPort, cd.schedPeerHost.DownPort, cd.schedulerClient)
+		if err != nil {
+			logger.Errorf("failed to create network topology: %v", err)
+			return err
+		}
+
+		// serve network topology service
+		logger.Infof("serve network topology")
+		go cd.networkTopology.Serve()
+	}
+
 	if cd.Option.AliveTime.Duration > 0 {
 		g.Go(func() error {
 			for {
@@ -783,17 +796,6 @@ func (cd *clientDaemon) Serve() error {
 		}()
 	}
 
-	if cd.Option.NetworkTopology.Enable {
-		cd.probe, err = probe.NewProbe(&cd.Option, cd.schedPeerHost.Id, cd.schedPeerHost.RpcPort, cd.schedPeerHost.DownPort, cd.schedulerClient)
-		if err != nil {
-			return err
-		}
-
-		// serve dynconfig service
-		logger.Infof("probe serve start")
-		go cd.probe.Serve()
-	}
-
 	werr := g.Wait()
 	cd.Stop()
 	return werr
@@ -819,7 +821,6 @@ func (cd *clientDaemon) Stop() {
 
 		cd.GCManager.Stop()
 		cd.RPCManager.Stop()
-		cd.probe.Stop()
 		if err := cd.UploadManager.Stop(); err != nil {
 			logger.Errorf("upload manager stop failed %s", err)
 		}
@@ -848,6 +849,8 @@ func (cd *clientDaemon) Stop() {
 		if err := cd.announcer.Stop(); err != nil {
 			logger.Errorf("announcer stop failed %s", err)
 		}
+
+		cd.networkTopology.Stop()
 
 		if err := cd.dynconfig.Stop(); err != nil {
 			logger.Errorf("dynconfig client closed failed %s", err)
