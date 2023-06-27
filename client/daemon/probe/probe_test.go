@@ -467,6 +467,47 @@ func TestProbe_collectProbes(t *testing.T) {
 				assert.Equal(len(failProbes), 1)
 			},
 		},
+		{
+			name: "collect probes and fail probes",
+			destHosts: []*v1.Host{
+				{
+					Id:           idgen.HostIDV2("127.0.0.1", "foo"),
+					Ip:           "127.0.0.1",
+					Hostname:     "foo",
+					Port:         8003,
+					DownloadPort: 8001,
+					Location:     "location",
+					Idc:          "idc",
+				},
+				{
+					Id:           idgen.HostIDV2("172.0.0.1", "foo"),
+					Ip:           "172.0.0.1",
+					Hostname:     "foo",
+					Port:         8003,
+					DownloadPort: 8001,
+					Location:     "location",
+					Idc:          "idc",
+				},
+			},
+			expect: func(t *testing.T, p Probe, err error, destHosts []*v1.Host) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				probes, failProbes := p.(*probe).collectProbes(destHosts)
+				assert.Equal(len(probes), 1)
+				assert.Equal(len(failProbes), 1)
+			},
+		},
+		{
+			name:      "dest hosts is empty",
+			destHosts: []*v1.Host{},
+			expect: func(t *testing.T, p Probe, err error, destHosts []*v1.Host) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				probes, failProbes := p.(*probe).collectProbes(destHosts)
+				assert.Equal(len(probes), 0)
+				assert.Equal(len(failProbes), 0)
+			},
+		},
 	}
 
 	for _, tc := range tests {
