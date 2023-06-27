@@ -1,6 +1,6 @@
 #!/bin/bash
 
-components="dfdaemon scheduler manager"
+components="dfdaemon scheduler manager trainer"
 
 set -x
 
