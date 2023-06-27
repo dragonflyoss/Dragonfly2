@@ -746,20 +746,23 @@ func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.Create
 	if !s.objectStorageConfig.Enable {
 		return nil, status.Error(codes.Internal, "object storage is disabled")
 	}
+
 	if IsExist, err := s.objectStorage.IsBucketExist(ctx, types.ModelBucket); err != nil {
 		return nil, status.Error(codes.Internal, "find bucket exist failed")
 	} else if !IsExist {
-		err := s.objectStorage.CreateBucket(ctx, types.ModelBucket)
-		if err != nil {
+		if err := s.objectStorage.CreateBucket(ctx, types.ModelBucket); err != nil {
 			return nil, status.Error(codes.Internal, "create model bucket failed")
 		}
 	}
 
 	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
 
-	var modelType string
-	modelVersion := time.Now().Format("20060102")
-	modelEvaluation := make(map[string]any)
+	var (
+		modelEvaluation map[string]any
+		modelType       string
+		modelVersion    = time.Now().Format(time.DateOnly)
+	)
+
 	switch modelUploadRequest := req.GetRequest().(type) {
 	case *managerv1.CreateModelRequest_CreateGnnRequest:
 		modelType = models.ModelTypeGNN
@@ -768,15 +771,17 @@ func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.Create
 			"Recall":    modelUploadRequest.CreateGnnRequest.GetRecall(),
 			"F1Score":   modelUploadRequest.CreateGnnRequest.GetF1Score(),
 		}
-		modelConfigKey := fmt.Sprintf("%sGnn/config.pbtxt", strconv.FormatUint(req.ClusterId, 10))
+
+		modelConfigKey := fmt.Sprintf("%s_Gnn/config.pbtxt", strconv.FormatUint(req.ClusterId, 10))
 		if IsExist, err := s.objectStorage.IsObjectExist(ctx, types.ModelBucket, modelConfigKey); err != nil {
-			log.Errorf("find MLP model config failed because of %s", err.Error())
+			log.Errorf("find GNN model config failed: %s", err.Error())
 		} else if !IsExist {
-			if err = s.createModelConfig(ctx, fmt.Sprintf("%s%s%sMlp", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10)), modelType, modelVersion); err != nil {
+			if err = s.createGNNModelConfig(ctx, fmt.Sprintf("%s_Gnn", strconv.FormatUint(req.ClusterId, 10)), modelVersion); err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
 		}
-		modelObjectKey := fmt.Sprintf("%sGnn/%s/model.graphdef", strconv.FormatUint(req.ClusterId, 10), modelVersion)
+
+		modelObjectKey := fmt.Sprintf("%s_Gnn/%s/model.graphdef", strconv.FormatUint(req.ClusterId, 10), modelVersion)
 		if err := s.objectStorage.PutObject(ctx, types.ModelBucket, modelObjectKey, digest.AlgorithmMD5, bytes.NewReader(req.GetCreateGnnRequest().GetData())); err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -786,18 +791,24 @@ func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.Create
 			"Mse": modelUploadRequest.CreateMlpRequest.GetMse(),
 			"Mae": modelUploadRequest.CreateMlpRequest.GetMae(),
 		}
-		modelConfigKey := fmt.Sprintf("%s%s%sMlp/config.pbtxt", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10))
+
+		modelConfigKey := fmt.Sprintf("%s%s%s_Mlp/config.pbtxt", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10))
 		if IsExist, err := s.objectStorage.IsObjectExist(ctx, types.ModelBucket, modelConfigKey); err != nil {
-			log.Errorf("find MLP model config failed because of %s", err.Error())
+			log.Errorf("find MLP model config failed: %s", err.Error())
 		} else if !IsExist {
-			if err = s.createModelConfig(ctx, fmt.Sprintf("%s%s%sMlp", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10)), modelType, modelVersion); err != nil {
+			if err = s.createMLPModelConfig(ctx, fmt.Sprintf("%s%s%s_Mlp", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10)), modelVersion); err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
 		}
-		modelObjectKey := fmt.Sprintf("%s%s%sMlp/%s/model.graphdef", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10), modelVersion)
+
+		modelObjectKey := fmt.Sprintf("%s%s%s_Mlp/%s/model.graphdef", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10), modelVersion)
 		if err := s.objectStorage.PutObject(ctx, types.ModelBucket, modelObjectKey, digest.AlgorithmMD5, bytes.NewReader(req.GetCreateMlpRequest().GetData())); err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
+	default:
+		msg := fmt.Sprintf("receive unknow request: %#v", modelUploadRequest)
+		log.Error(msg)
+		return nil, status.Error(codes.FailedPrecondition, msg)
 	}
 
 	scheduler := models.Scheduler{}
@@ -820,8 +831,13 @@ func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.Create
 	return new(emptypb.Empty), nil
 }
 
-// createModelConfig creates model config and update config to object storage.
-func (s *managerServerV1) createModelConfig(ctx context.Context, modelName string, modelType string, modelVersion string) error {
+// createGNNModelConfig creates GNN model config and update GNN config to object storage.
+func (s *managerServerV1) createGNNModelConfig(ctx context.Context, modelName string, modelVersion string) error {
+	return nil
+}
+
+// createMLPModelConfig creates MLP model config and update MLP config to object storage.
+func (s *managerServerV1) createMLPModelConfig(ctx context.Context, modelName string, modelVersion string) error {
 	return nil
 }
 
