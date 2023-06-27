@@ -147,7 +147,7 @@ func (p *probe) uploadProbesToScheduler() {
 	}
 }
 
-// collectProbes probes hosts and collects probes and failed probes.
+// collectProbes probes hosts, collects probes and failed probes.
 func (p *probe) collectProbes(desthosts []*v1.Host) ([]*schedulerv1.Probe, []*schedulerv1.FailedProbe) {
 	var (
 		probes       []*schedulerv1.Probe
