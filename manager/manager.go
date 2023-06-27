@@ -84,6 +84,7 @@ func EmbedFolder(fsEmbed embed.FS, targetPath string) static.ServeFileSystem {
 	}
 }
 
+// Server is the manager server.
 type Server struct {
 	// Server configuration
 	config *config.Config
@@ -98,6 +99,7 @@ type Server struct {
 	metricsServer *http.Server
 }
 
+// New creates a new manager server.
 func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	s := &Server{config: cfg}
 
@@ -227,6 +229,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	return s, nil
 }
 
+// Serve starts the manager server.
 func (s *Server) Serve() error {
 	// Started REST server
 	go func() {
@@ -269,6 +272,7 @@ func (s *Server) Serve() error {
 	return nil
 }
 
+// Stop stops the manager server.
 func (s *Server) Stop() {
 	// Stop REST server
 	if err := s.restServer.Shutdown(context.Background()); err != nil {

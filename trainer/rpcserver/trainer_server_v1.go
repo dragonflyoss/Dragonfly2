@@ -24,12 +24,13 @@ import (
 	storage "d7y.io/dragonfly/v2/trainer/storage"
 )
 
-// schedulerServerV1 is v1 version of the scheduler grpc server.
+// trainerServerV1 is v1 version of the trainer grpc server.
 type trainerServerV1 struct {
 	// Service interface.
 	service *service.V1
 }
 
+// newTrainerServerV1 returns a new trainerServerV1 instance.
 func newTrainerServerV1(cfg *config.Config, st storage.Storage) trainerv1.TrainerServer {
 	return &trainerServerV1{service.NewV1(cfg, st)}
 }
