@@ -277,7 +277,10 @@ func (v *v2) LeaveHost(ctx context.Context, req *schedulerv2.LeaveHostRequest, o
 
 // SyncProbes sync probes of the host.
 func (v *v2) SyncProbes(ctx context.Context, req *schedulerv2.SyncProbesRequest, opts ...grpc.CallOption) (schedulerv2.Scheduler_SyncProbesClient, error) {
-	stream, err := v.SchedulerClient.SyncProbes(ctx, opts...)
+	stream, err := v.SchedulerClient.SyncProbes(
+		context.WithValue(ctx, pkgbalancer.ContextKey, req.Host.Id),
+		opts...,
+	)
 	if err != nil {
 		return nil, err
 	}
