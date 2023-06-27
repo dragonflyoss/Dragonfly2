@@ -426,18 +426,8 @@ func TestProbe_collectProbes(t *testing.T) {
 		expect    func(t *testing.T, p Probe, err error, destHosts []*v1.Host)
 	}{
 		{
-			name: "collect probes",
-			destHosts: []*v1.Host{
-				{
-					Id:           idgen.HostIDV2("127.0.0.1", "foo"),
-					Ip:           "127.0.0.1",
-					Hostname:     "foo",
-					Port:         8003,
-					DownloadPort: 8001,
-					Location:     "location",
-					Idc:          "idc",
-				},
-			},
+			name:      "collect probes",
+			destHosts: []*v1.Host{mockHost},
 			expect: func(t *testing.T, p Probe, err error, destHosts []*v1.Host) {
 				assert := assert.New(t)
 				assert.NoError(err)
@@ -470,15 +460,7 @@ func TestProbe_collectProbes(t *testing.T) {
 		{
 			name: "collect probes and fail probes",
 			destHosts: []*v1.Host{
-				{
-					Id:           idgen.HostIDV2("127.0.0.1", "foo"),
-					Ip:           "127.0.0.1",
-					Hostname:     "foo",
-					Port:         8003,
-					DownloadPort: 8001,
-					Location:     "location",
-					Idc:          "idc",
-				},
+				mockHost,
 				{
 					Id:           idgen.HostIDV2("172.0.0.1", "foo"),
 					Ip:           "172.0.0.1",
