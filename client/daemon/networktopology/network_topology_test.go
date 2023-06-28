@@ -49,15 +49,15 @@ var (
 		NetworkTopology: config.NetworkTopologyOption{
 			Enable: true,
 			Probe: config.ProbeOption{
-				Interval: 2 * time.Second,
+				Interval: 200 * time.Millisecond,
 			},
 		},
 	}
 
 	mockPort         = 8000
 	mockDownloadPort = 8001
-	mockHostLocation = "location"
-	mockHostIDC      = "idc"
+	mockHostLocation = "bar"
+	mockHostIDC      = "baz"
 
 	mockHost = &v1.Host{
 		Id:           "foo",
@@ -109,16 +109,14 @@ func Test_NewNetworkTopology(t *testing.T) {
 
 func TestNetworkTopology_Serve(t *testing.T) {
 	tests := []struct {
-		name     string
-		interval time.Duration
-		sleep    func()
-		mock     func(mv *mocks.MockV1MockRecorder, stream *schedulerv1mocks.MockScheduler_SyncProbesClient,
+		name  string
+		sleep func()
+		mock  func(mv *mocks.MockV1MockRecorder, stream *schedulerv1mocks.MockScheduler_SyncProbesClient,
 			ms *schedulerv1mocks.MockScheduler_SyncProbesClientMockRecorder)
 		expect func(t *testing.T, n NetworkTopology, err error)
 	}{
 		{
-			name:     "synchronize probes",
-			interval: 200 * time.Millisecond,
+			name: "synchronize probes",
 			sleep: func() {
 				time.Sleep(300 * time.Millisecond)
 			},
@@ -143,8 +141,7 @@ func TestNetworkTopology_Serve(t *testing.T) {
 			},
 		},
 		{
-			name:     "synchronize probes error",
-			interval: 200 * time.Millisecond,
+			name: "synchronize probes error",
 			sleep: func() {
 				time.Sleep(300 * time.Millisecond)
 			},
@@ -174,7 +171,6 @@ func TestNetworkTopology_Serve(t *testing.T) {
 			schedulerClient := schedulerclientmocks.NewMockV1(ctl)
 			stream := schedulerv1mocks.NewMockScheduler_SyncProbesClient(ctl)
 			tc.mock(schedulerClient.EXPECT(), stream, stream.EXPECT())
-			mockDaemonConfig.NetworkTopology.Probe.Interval = tc.interval
 			n, err := NewNetworkTopology(mockDaemonConfig, mockSeedHost.Id, int32(mockPort), int32(mockDownloadPort), schedulerClient)
 			tc.expect(t, n, err)
 			tc.sleep()
@@ -191,7 +187,7 @@ func TestNetworkTopology_syncProbes(t *testing.T) {
 		expect func(t *testing.T, n NetworkTopology, err error)
 	}{
 		{
-			name: "collect probes and send ProbeFinishedRequest",
+			name: "synchronize probes and send ProbeFinishedRequest",
 			mock: func(mv *mocks.MockV1MockRecorder, stream *schedulerv1mocks.MockScheduler_SyncProbesClient,
 				ms *schedulerv1mocks.MockScheduler_SyncProbesClientMockRecorder) {
 				gomock.InOrder(
@@ -213,7 +209,7 @@ func TestNetworkTopology_syncProbes(t *testing.T) {
 			},
 		},
 		{
-			name: "collect fail probes and send ProbeFailedRequest",
+			name: "synchronize fail probes and send ProbeFailedRequest",
 			mock: func(mv *mocks.MockV1MockRecorder, stream *schedulerv1mocks.MockScheduler_SyncProbesClient,
 				ms *schedulerv1mocks.MockScheduler_SyncProbesClientMockRecorder) {
 				gomock.InOrder(
@@ -235,6 +231,60 @@ func TestNetworkTopology_syncProbes(t *testing.T) {
 							},
 						},
 					}, nil).Times(1),
+					ms.Send(&schedulerv1.SyncProbesRequest{
+						Host: mockSeedHost,
+						Request: &schedulerv1.SyncProbesRequest_ProbeFailedRequest{
+							ProbeFailedRequest: &schedulerv1.ProbeFailedRequest{
+								Probes: []*schedulerv1.FailedProbe{
+									{
+										Host: &v1.Host{
+											Id:           idgen.HostIDV2("172.0.0.1", "foo"),
+											Ip:           "172.0.0.1",
+											Hostname:     "foo",
+											Port:         8003,
+											DownloadPort: 8001,
+											Location:     "location",
+											Idc:          "idc",
+										},
+										Description: "receive packet failed",
+									},
+								},
+							},
+						},
+					}).Return(nil).Times(1),
+				)
+			},
+			expect: func(t *testing.T, n NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.NoError(n.(*networkTopology).syncProbes())
+			},
+		},
+		{
+			name: "synchronize probes and fail probes, send ProbeFinishedRequest and ProbeFailedRequest",
+			mock: func(mv *mocks.MockV1MockRecorder, stream *schedulerv1mocks.MockScheduler_SyncProbesClient,
+				ms *schedulerv1mocks.MockScheduler_SyncProbesClientMockRecorder) {
+				gomock.InOrder(
+					mv.SyncProbes(gomock.Eq(context.Background()), gomock.Eq(&schedulerv1.SyncProbesRequest{
+						Host: mockSeedHost,
+						Request: &schedulerv1.SyncProbesRequest_ProbeStartedRequest{
+							ProbeStartedRequest: &schedulerv1.ProbeStartedRequest{},
+						}})).Return(stream, nil).Times(1),
+					ms.Recv().Return(&schedulerv1.SyncProbesResponse{
+						Hosts: []*v1.Host{
+							mockHost,
+							{
+								Id:           idgen.HostIDV2("172.0.0.1", "foo"),
+								Ip:           "172.0.0.1",
+								Hostname:     "foo",
+								Port:         8003,
+								DownloadPort: 8001,
+								Location:     "location",
+								Idc:          "idc",
+							},
+						},
+					}, nil).Times(1),
+					ms.Send(gomock.Any()).Return(nil).Times(1),
 					ms.Send(&schedulerv1.SyncProbesRequest{
 						Host: mockSeedHost,
 						Request: &schedulerv1.SyncProbesRequest_ProbeFailedRequest{
@@ -416,7 +466,7 @@ func TestNetworkTopology_pingHosts(t *testing.T) {
 		expect    func(t *testing.T, n NetworkTopology, err error, destHosts []*v1.Host)
 	}{
 		{
-			name:      "collect probes",
+			name:      "ping hosts and collect probes",
 			destHosts: []*v1.Host{mockHost},
 			expect: func(t *testing.T, n NetworkTopology, err error, destHosts []*v1.Host) {
 				assert := assert.New(t)
@@ -427,7 +477,7 @@ func TestNetworkTopology_pingHosts(t *testing.T) {
 			},
 		},
 		{
-			name: "collect fail probes",
+			name: "ping hosts and collect fail probes",
 			destHosts: []*v1.Host{
 				{
 					Id:           idgen.HostIDV2("172.0.0.1", "foo"),
@@ -448,7 +498,7 @@ func TestNetworkTopology_pingHosts(t *testing.T) {
 			},
 		},
 		{
-			name: "collect probes and fail probes",
+			name: "ping hosts, collect probes and fail probes",
 			destHosts: []*v1.Host{
 				mockHost,
 				{
