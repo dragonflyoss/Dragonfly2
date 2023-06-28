@@ -17,6 +17,9 @@
 package types
 
 const (
+	// TimeFormat is the timestamp format as model version.
+	TimeFormat = "20060102"
+
 	// ModelBucket is the model bucket name of object storage.
 	ModelBucket = "models"
 )

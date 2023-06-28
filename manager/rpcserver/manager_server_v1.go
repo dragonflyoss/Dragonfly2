@@ -760,7 +760,7 @@ func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.Create
 	var (
 		modelEvaluation map[string]any
 		modelType       string
-		modelVersion    = time.Now().Format(time.DateOnly)
+		modelVersion    = time.Now().Format(types.TimeFormat)
 	)
 
 	switch modelUploadRequest := req.GetRequest().(type) {
