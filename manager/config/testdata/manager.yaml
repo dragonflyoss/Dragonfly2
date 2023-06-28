@@ -88,3 +88,7 @@ metrics:
 
 network:
   enableIPv6: true
+
+trainer:
+  enable: true
+  bucketName: models

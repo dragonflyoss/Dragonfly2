@@ -123,3 +123,8 @@ var (
 	// DefaultNetworkEnableIPv6 is default value of enableIPv6.
 	DefaultNetworkEnableIPv6 = false
 )
+
+var (
+	// DefaultBucketName is default object storage bucket name of model.
+	DefaultBucketName = "models"
+)
