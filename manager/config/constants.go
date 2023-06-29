@@ -125,6 +125,6 @@ var (
 )
 
 var (
-	// DefaultBucketName is default object storage bucket name of model.
-	DefaultBucketName = "models"
+	// DefaultTrainerBucketName is default object storage bucket name of model.
+	DefaultTrainerBucketName = "models"
 )

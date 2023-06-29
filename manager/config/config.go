@@ -417,7 +417,7 @@ func New() *Config {
 		},
 		Trainer: TrainerConfig{
 			Enable:     false,
-			BucketName: DefaultBucketName,
+			BucketName: DefaultTrainerBucketName,
 		},
 	}
 }

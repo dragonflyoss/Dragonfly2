@@ -106,7 +106,7 @@ var (
 
 	mockTrainerConfig = TrainerConfig{
 		Enable:     true,
-		BucketName: DefaultBucketName,
+		BucketName: DefaultTrainerBucketName,
 	}
 )
 
