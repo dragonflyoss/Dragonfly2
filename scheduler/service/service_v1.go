@@ -677,28 +677,22 @@ func (v *V1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
 			// Find probed hosts in network topology. Based on the source host information,
 			// the most candidate hosts will be evaluated.
 			logger.Info("receive SyncProbesRequest_ProbeStartedRequest")
-			probedHostIDs, err := v.networkTopology.FindProbedHostIDs(req.Host.Id)
+			hosts, err := v.networkTopology.FindProbedHosts(req.Host.Id)
 			if err != nil {
 				logger.Error(err)
 				return status.Error(codes.FailedPrecondition, err.Error())
 			}
 
 			var probedHosts []*commonv1.Host
-			for _, probedHostID := range probedHostIDs {
-				probedHost, loaded := v.resource.HostManager().Load(probedHostID)
-				if !loaded {
-					logger.Warnf("probed host %s not found", probedHostID)
-					continue
-				}
-
+			for _, host := range hosts {
 				probedHosts = append(probedHosts, &commonv1.Host{
-					Id:           probedHost.ID,
-					Ip:           probedHost.IP,
-					Hostname:     probedHost.Hostname,
-					Port:         probedHost.Port,
-					DownloadPort: probedHost.DownloadPort,
-					Location:     probedHost.Network.Location,
-					Idc:          probedHost.Network.IDC,
+					Id:           host.ID,
+					Ip:           host.IP,
+					Hostname:     host.Hostname,
+					Port:         host.Port,
+					DownloadPort: host.DownloadPort,
+					Location:     host.Network.Location,
+					Idc:          host.Network.IDC,
 				})
 			}
 

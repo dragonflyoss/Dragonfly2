@@ -45,18 +45,18 @@ func (mr *MockHostManagerMockRecorder) Delete(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockHostManager)(nil).Delete), arg0)
 }
 
-// GetHostIDs mocks base method.
-func (m *MockHostManager) GetHostIDs(count int) []string {
+// GetDestHosts mocks base method.
+func (m *MockHostManager) GetDestHosts(srcHostID string, count int) []*Host {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetHostIDs", count)
-	ret0, _ := ret[0].([]string)
+	ret := m.ctrl.Call(m, "GetDestHosts", srcHostID, count)
+	ret0, _ := ret[0].([]*Host)
 	return ret0
 }
 
-// GetHostIDs indicates an expected call of GetHostIDs.
-func (mr *MockHostManagerMockRecorder) GetHostIDs(count interface{}) *gomock.Call {
+// GetDestHosts indicates an expected call of GetDestHosts.
+func (mr *MockHostManagerMockRecorder) GetDestHosts(srcHostID, count interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHostIDs", reflect.TypeOf((*MockHostManager)(nil).GetHostIDs), count)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDestHosts", reflect.TypeOf((*MockHostManager)(nil).GetDestHosts), srcHostID, count)
 }
 
 // Load mocks base method.

@@ -307,7 +307,7 @@ func TestHostManager_Delete(t *testing.T) {
 	}
 }
 
-func TestHostManager_GetHostIDs(t *testing.T) {
+func TestHostManager_GetDestHosts(t *testing.T) {
 	tests := []struct {
 		name   string
 		hosts  []*Host
@@ -333,8 +333,8 @@ func TestHostManager_GetHostIDs(t *testing.T) {
 					hostManager.Store(host)
 				}
 
-				h := hostManager.GetHostIDs(2)
-				assert.Equal(len(h), 2)
+				h := hostManager.GetDestHosts(mockRawSeedHost.ID, 2)
+				assert.Equal(len(h), 1)
 			},
 		},
 		{
@@ -356,7 +356,7 @@ func TestHostManager_GetHostIDs(t *testing.T) {
 					hostManager.Store(host)
 				}
 
-				h := hostManager.GetHostIDs(0)
+				h := hostManager.GetDestHosts(mockRawSeedHost.ID, 0)
 				assert.Equal(len(h), 0)
 			},
 		},
@@ -372,7 +372,7 @@ func TestHostManager_GetHostIDs(t *testing.T) {
 					hostManager.Store(host)
 				}
 
-				h := hostManager.GetHostIDs(1)
+				h := hostManager.GetDestHosts(mockRawSeedHost.ID, 1)
 				assert.Equal(len(h), 0)
 			},
 		},
@@ -395,8 +395,8 @@ func TestHostManager_GetHostIDs(t *testing.T) {
 					hostManager.Store(host)
 				}
 
-				h := hostManager.GetHostIDs(3)
-				assert.Equal(len(h), 2)
+				h := hostManager.GetDestHosts(mockRawSeedHost.ID, 3)
+				assert.Equal(len(h), 1)
 			},
 		},
 	}

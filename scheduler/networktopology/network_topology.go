@@ -58,8 +58,8 @@ type NetworkTopology interface {
 	// Store stores source host and destination host.
 	Store(string, string) error
 
-	// FindProbedHostIDs finds the most candidate destination host to be probed.
-	FindProbedHostIDs(string) ([]string, error)
+	// FindProbedHosts finds the most candidate destination host to be probed.
+	FindProbedHosts(string) ([]*resource.Host, error)
 
 	// DeleteHost deletes source host and all destination host connected to source host.
 	DeleteHost(string) error
@@ -163,19 +163,19 @@ func (nt *networkTopology) Store(srcHostID string, destHostID string) error {
 	return nil
 }
 
-// FindProbedHostIDs finds the most candidate destination host to be probed.
-func (nt *networkTopology) FindProbedHostIDs(hostID string) ([]string, error) {
+// FindProbedHosts finds the most candidate destination host to be probed.
+func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	candidateHostIDs := nt.resource.HostManager().GetHostIDs(candidateHostCount)
-	if len(candidateHostIDs) <= nt.config.Probe.Count {
-		return candidateHostIDs, nil
+	candidateHosts := nt.resource.HostManager().GetDestHosts(hostID, candidateHostCount)
+	if len(candidateHosts) <= nt.config.Probe.Count {
+		return candidateHosts, nil
 	}
 
 	var probedCountKeys []string
-	for _, candidateHostID := range candidateHostIDs {
-		probedCountKeys = append(probedCountKeys, pkgredis.MakeProbedCountKeyInScheduler(candidateHostID))
+	for _, candidateHost := range candidateHosts {
+		probedCountKeys = append(probedCountKeys, pkgredis.MakeProbedCountKeyInScheduler(candidateHost.ID))
 	}
 
 	values, err := nt.rdb.MGet(ctx, probedCountKeys...).Result()
@@ -193,11 +193,11 @@ func (nt *networkTopology) FindProbedHostIDs(hostID string) ([]string, error) {
 		probedCounts = append(probedCounts, probedCount)
 	}
 
-	sort.Slice(candidateHostIDs, func(i, j int) bool {
+	sort.Slice(candidateHosts, func(i, j int) bool {
 		return probedCounts[i] < probedCounts[j]
 	})
 
-	return candidateHostIDs[:nt.config.Probe.Count], nil
+	return candidateHosts[:nt.config.Probe.Count], nil
 }
 
 // DeleteHost deletes source host and all destination host connected to source host.
