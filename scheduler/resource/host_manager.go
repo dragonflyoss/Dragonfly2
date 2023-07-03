@@ -47,6 +47,10 @@ type HostManager interface {
 	// Delete deletes host for a key.
 	Delete(string)
 
+	// GetHostIDs returns the specified number of host ids randomly,
+	// or returns all host ids when the number in the map is insufficient.
+	GetHostIDs(count int) []string
+
 	// Try to reclaim host.
 	RunGC() error
 }
@@ -101,6 +105,22 @@ func (h *hostManager) LoadOrStore(host *Host) (*Host, bool) {
 // Delete deletes host for a key.
 func (h *hostManager) Delete(key string) {
 	h.Map.Delete(key)
+}
+
+// GetHostIDs returns the specified number of host ids randomly,
+// or returns all host ids when the number in the map is insufficient.
+func (h *hostManager) GetHostIDs(count int) []string {
+	var result []string
+	h.Map.Range(func(key, _ any) bool {
+		if len(result) >= count {
+			return false
+		}
+
+		result = append(result, key.(string))
+		return true
+	})
+
+	return result
 }
 
 // Try to reclaim host.

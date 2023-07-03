@@ -307,6 +307,117 @@ func TestHostManager_Delete(t *testing.T) {
 	}
 }
 
+func TestHostManager_GetHostIDs(t *testing.T) {
+	tests := []struct {
+		name   string
+		hosts  []*Host
+		mock   func(m *gc.MockGCMockRecorder)
+		expect func(t *testing.T, hostManager HostManager, hosts []*Host)
+	}{
+		{
+			name: "get host ids",
+			hosts: []*Host{
+				NewHost(
+					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type),
+				NewHost(
+					mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
+					mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type),
+			},
+			mock: func(m *gc.MockGCMockRecorder) {
+				m.Add(gomock.Any()).Return(nil).Times(1)
+			},
+			expect: func(t *testing.T, hostManager HostManager, hosts []*Host) {
+				assert := assert.New(t)
+				for _, host := range hosts {
+					hostManager.Store(host)
+				}
+
+				h := hostManager.GetHostIDs(2)
+				assert.Equal(len(h), 2)
+			},
+		},
+		{
+			name: "require 0 host id",
+			hosts: []*Host{
+				NewHost(
+					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type),
+				NewHost(
+					mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
+					mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type),
+			},
+			mock: func(m *gc.MockGCMockRecorder) {
+				m.Add(gomock.Any()).Return(nil).Times(1)
+			},
+			expect: func(t *testing.T, hostManager HostManager, hosts []*Host) {
+				assert := assert.New(t)
+				for _, host := range hosts {
+					hostManager.Store(host)
+				}
+
+				h := hostManager.GetHostIDs(0)
+				assert.Equal(len(h), 0)
+			},
+		},
+		{
+			name:  "map is empty",
+			hosts: []*Host{},
+			mock: func(m *gc.MockGCMockRecorder) {
+				m.Add(gomock.Any()).Return(nil).Times(1)
+			},
+			expect: func(t *testing.T, hostManager HostManager, hosts []*Host) {
+				assert := assert.New(t)
+				for _, host := range hosts {
+					hostManager.Store(host)
+				}
+
+				h := hostManager.GetHostIDs(1)
+				assert.Equal(len(h), 0)
+			},
+		},
+		{
+			name: "the number of hosts in the map is insufficient",
+			hosts: []*Host{
+				NewHost(
+					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type),
+				NewHost(
+					mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
+					mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type),
+			},
+			mock: func(m *gc.MockGCMockRecorder) {
+				m.Add(gomock.Any()).Return(nil).Times(1)
+			},
+			expect: func(t *testing.T, hostManager HostManager, hosts []*Host) {
+				assert := assert.New(t)
+				for _, host := range hosts {
+					hostManager.Store(host)
+				}
+
+				h := hostManager.GetHostIDs(3)
+				assert.Equal(len(h), 2)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			gc := gc.NewMockGC(ctl)
+			tc.mock(gc.EXPECT())
+
+			hostManager, err := newHostManager(mockHostGCConfig, gc)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			tc.expect(t, hostManager, tc.hosts)
+		})
+	}
+}
+
 func TestHostManager_RunGC(t *testing.T) {
 	tests := []struct {
 		name   string

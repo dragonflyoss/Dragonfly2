@@ -158,7 +158,7 @@ func TestNetworkTopology_Serve(t *testing.T) {
 	}
 }
 
-func TestNewNetworkTopology_Has(t *testing.T) {
+func TestNetworkTopology_Has(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(mockRDBClient redismock.ClientMock)
@@ -217,7 +217,7 @@ func TestNewNetworkTopology_Has(t *testing.T) {
 	}
 }
 
-func TestNewNetworkTopology_Store(t *testing.T) {
+func TestNetworkTopology_Store(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(mockRDBClient redismock.ClientMock)
@@ -294,7 +294,7 @@ func TestNewNetworkTopology_Store(t *testing.T) {
 	}
 }
 
-func TestNewNetworkTopology_DeleteHost(t *testing.T) {
+func TestNetworkTopology_DeleteHost(t *testing.T) {
 	tests := []struct {
 		name       string
 		deleteKeys []string
@@ -420,7 +420,7 @@ func TestNewNetworkTopology_DeleteHost(t *testing.T) {
 	}
 }
 
-func TestNewNetworkTopology_Probes(t *testing.T) {
+func TestNetworkTopology_Probes(t *testing.T) {
 	tests := []struct {
 		name   string
 		expect func(t *testing.T, networkTopology NetworkTopology, err error)
@@ -456,7 +456,7 @@ func TestNewNetworkTopology_Probes(t *testing.T) {
 	}
 }
 
-func TestNewNetworkTopology_ProbedCount(t *testing.T) {
+func TestNetworkTopology_ProbedCount(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(mockRDBClient redismock.ClientMock)
@@ -508,7 +508,7 @@ func TestNewNetworkTopology_ProbedCount(t *testing.T) {
 	}
 }
 
-func TestNewNetworkTopology_ProbedAt(t *testing.T) {
+func TestNetworkTopology_ProbedAt(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(mockRDBClient redismock.ClientMock)

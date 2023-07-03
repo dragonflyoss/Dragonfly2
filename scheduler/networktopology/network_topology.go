@@ -20,6 +20,7 @@ package networktopology
 
 import (
 	"context"
+	"sort"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -38,6 +39,9 @@ const (
 
 	// snapshotContextTimeout is the timeout of snapshot network topology.
 	snapshotContextTimeout = 20 * time.Minute
+
+	// candidateHostCount is the number of randomly selected candidate hosts.
+	candidateHostCount = 100
 )
 
 // NetworkTopology is an interface for network topology.
@@ -54,7 +58,6 @@ type NetworkTopology interface {
 	// Store stores source host and destination host.
 	Store(string, string) error
 
-	// TODO Implement function.
 	// FindProbedHostIDs finds the most candidate destination host to be probed.
 	FindProbedHostIDs(string) ([]string, error)
 
@@ -160,10 +163,41 @@ func (nt *networkTopology) Store(srcHostID string, destHostID string) error {
 	return nil
 }
 
-// TODO Implement function.
 // FindProbedHostIDs finds the most candidate destination host to be probed.
 func (nt *networkTopology) FindProbedHostIDs(hostID string) ([]string, error) {
-	return nil, nil
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	candidateHostIDs := nt.resource.HostManager().GetHostIDs(candidateHostCount)
+	if len(candidateHostIDs) <= nt.config.Probe.Count {
+		return candidateHostIDs, nil
+	}
+
+	var probedCountKeys []string
+	for _, candidateHostID := range candidateHostIDs {
+		probedCountKeys = append(probedCountKeys, pkgredis.MakeProbedCountKeyInScheduler(candidateHostID))
+	}
+
+	values, err := nt.rdb.MGet(ctx, probedCountKeys...).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	var probedCounts []uint64
+	for _, value := range values {
+		probedCount, ok := value.(uint64)
+		if !ok {
+			continue
+		}
+
+		probedCounts = append(probedCounts, probedCount)
+	}
+
+	sort.Slice(candidateHostIDs, func(i, j int) bool {
+		return probedCounts[i] < probedCounts[j]
+	})
+
+	return candidateHostIDs[:nt.config.Probe.Count], nil
 }
 
 // DeleteHost deletes source host and all destination host connected to source host.
