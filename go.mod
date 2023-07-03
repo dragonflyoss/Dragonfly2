@@ -80,7 +80,7 @@ require (
 	golang.org/x/time v0.3.0
 	google.golang.org/api v0.128.0
 	google.golang.org/grpc v1.57.0-dev
-	google.golang.org/protobuf v1.30.0
+	google.golang.org/protobuf v1.31.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/mysql v1.5.1
