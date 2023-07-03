@@ -47,9 +47,9 @@ type HostManager interface {
 	// Delete deletes host for a key.
 	Delete(string)
 
-	// GetDestHosts returns the specified number of hosts randomly,
+	// FilterProbedHosts returns the specified number of hosts randomly,
 	// or returns all hosts when the number in the map is insufficient.
-	GetDestHosts(srcHostID string, count int) []*Host
+	FilterProbedHosts(srcHostID string, count int) []*Host
 
 	// Try to reclaim host.
 	RunGC() error
@@ -107,16 +107,16 @@ func (h *hostManager) Delete(key string) {
 	h.Map.Delete(key)
 }
 
-// GetDestHosts returns the specified number of hosts randomly,
+// FilterProbedHosts returns the specified number of hosts randomly,
 // or returns all hosts when the number in the map is insufficient.
-func (h *hostManager) GetDestHosts(srcHostID string, count int) []*Host {
+func (h *hostManager) FilterProbedHosts(hostID string, count int) []*Host {
 	var hosts []*Host
 	h.Map.Range(func(key, value any) bool {
 		if len(hosts) >= count {
 			return false
 		}
 
-		if key != srcHostID {
+		if key != hostID {
 			hosts = append(hosts, value.(*Host))
 		}
 
