@@ -973,8 +973,6 @@ func TestServiceV2_SyncProbes(t *testing.T) {
 						},
 					}, nil).Times(1),
 					mn.FindProbedHosts(gomock.Eq(mockRawSeedHost.ID)).Return([]*resource.Host{&mockRawHost}, nil).Times(1),
-					mr.HostManager().Return(hostManager).Times(1),
-					mh.Load(gomock.Eq(mockRawHost.ID)).Return(&mockRawHost, true),
 					ms.Send(gomock.Eq(&schedulerv2.SyncProbesResponse{
 						Hosts: []*commonv2.Host{
 							{
@@ -1208,45 +1206,6 @@ func TestServiceV2_SyncProbes(t *testing.T) {
 			},
 		},
 		{
-			name: "load host error when receive ProbeStartedRequest",
-			mock: func(svc *V2, mr *resource.MockResourceMockRecorder, probes *networktopologymocks.MockProbes, mp *networktopologymocks.MockProbesMockRecorder,
-				mn *networktopologymocks.MockNetworkTopologyMockRecorder, hostManager resource.HostManager, mh *resource.MockHostManagerMockRecorder,
-				ms *schedulerv2mocks.MockScheduler_SyncProbesServerMockRecorder) {
-				gomock.InOrder(
-					ms.Recv().Return(&schedulerv2.SyncProbesRequest{
-						Host: &commonv2.Host{
-							Id:              mockSeedHostID,
-							Type:            uint32(pkgtypes.HostTypeSuperSeed),
-							Hostname:        "bar",
-							Ip:              "127.0.0.1",
-							Port:            8003,
-							DownloadPort:    8001,
-							Os:              "darwin",
-							Platform:        "darwin",
-							PlatformFamily:  "Standalone Workstation",
-							PlatformVersion: "11.1",
-							KernelVersion:   "20.2.0",
-							Cpu:             mockV2Probe.Host.Cpu,
-							Memory:          mockV2Probe.Host.Memory,
-							Network:         mockV2Probe.Host.Network,
-							Disk:            mockV2Probe.Host.Disk,
-							Build:           mockV2Probe.Host.Build,
-						},
-						Request: &schedulerv2.SyncProbesRequest_ProbeStartedRequest{
-							ProbeStartedRequest: &schedulerv2.ProbeStartedRequest{},
-						},
-					}, nil).Times(1),
-					mn.FindProbedHosts(gomock.Eq(mockRawSeedHost.ID)).Return([]*resource.Host{&mockRawHost}, nil).Times(1),
-					mr.HostManager().Return(hostManager).Times(1),
-					mh.Load(gomock.Eq(mockRawHost.ID)).Return(nil, false),
-				)
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "rpc error: code = NotFound desc = probed host not found")
-			},
-		},
-		{
 			name: "send synchronize probes response error",
 			mock: func(svc *V2, mr *resource.MockResourceMockRecorder, probes *networktopologymocks.MockProbes, mp *networktopologymocks.MockProbesMockRecorder,
 				mn *networktopologymocks.MockNetworkTopologyMockRecorder, hostManager resource.HostManager, mh *resource.MockHostManagerMockRecorder,
@@ -1276,8 +1235,6 @@ func TestServiceV2_SyncProbes(t *testing.T) {
 						},
 					}, nil).Times(1),
 					mn.FindProbedHosts(gomock.Eq(mockRawSeedHost.ID)).Return([]*resource.Host{&mockRawHost}, nil).Times(1),
-					mr.HostManager().Return(hostManager).Times(1),
-					mh.Load(gomock.Eq(mockRawHost.ID)).Return(&mockRawHost, true),
 					ms.Send(gomock.Eq(&schedulerv2.SyncProbesResponse{
 						Hosts: []*commonv2.Host{
 							{
@@ -1305,47 +1262,6 @@ func TestServiceV2_SyncProbes(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "send synchronize probes response error")
-			},
-		},
-		{
-			name: "load host error when receive ProbeFinishedRequest",
-			mock: func(svc *V2, mr *resource.MockResourceMockRecorder, probes *networktopologymocks.MockProbes, mp *networktopologymocks.MockProbesMockRecorder,
-				mn *networktopologymocks.MockNetworkTopologyMockRecorder, hostManager resource.HostManager, mh *resource.MockHostManagerMockRecorder,
-				ms *schedulerv2mocks.MockScheduler_SyncProbesServerMockRecorder) {
-				gomock.InOrder(
-					ms.Recv().Return(&schedulerv2.SyncProbesRequest{
-						Host: &commonv2.Host{
-							Id:              mockSeedHostID,
-							Type:            uint32(pkgtypes.HostTypeSuperSeed),
-							Hostname:        "bar",
-							Ip:              "127.0.0.1",
-							Port:            8003,
-							DownloadPort:    8001,
-							Os:              "darwin",
-							Platform:        "darwin",
-							PlatformFamily:  "Standalone Workstation",
-							PlatformVersion: "11.1",
-							KernelVersion:   "20.2.0",
-							Cpu:             mockV2Probe.Host.Cpu,
-							Memory:          mockV2Probe.Host.Memory,
-							Network:         mockV2Probe.Host.Network,
-							Disk:            mockV2Probe.Host.Disk,
-							Build:           mockV2Probe.Host.Build,
-						},
-						Request: &schedulerv2.SyncProbesRequest_ProbeFinishedRequest{
-							ProbeFinishedRequest: &schedulerv2.ProbeFinishedRequest{
-								Probes: []*schedulerv2.Probe{mockV2Probe},
-							},
-						},
-					}, nil).Times(1),
-					mr.HostManager().Return(hostManager).Times(1),
-					mh.Load(gomock.Eq(mockRawHost.ID)).Return(nil, false),
-					ms.Recv().Return(nil, io.EOF).Times(1),
-				)
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.NoError(err)
 			},
 		},
 		{
