@@ -40,8 +40,8 @@ const (
 	// snapshotContextTimeout is the timeout of snapshot network topology.
 	snapshotContextTimeout = 20 * time.Minute
 
-	// candidateHostCount is the number of randomly selected candidate hosts.
-	candidateHostCount = 100
+	// candidateHostsCount is the number of randomly selected candidate hosts.
+	candidateHostsCount = 100
 )
 
 // NetworkTopology is an interface for network topology.
@@ -168,7 +168,7 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	candidateHosts := nt.resource.HostManager().GetDestHosts(hostID, candidateHostCount)
+	candidateHosts := nt.resource.HostManager().FilterProbedHosts(hostID, candidateHostsCount)
 	if len(candidateHosts) <= nt.config.Probe.Count {
 		return candidateHosts, nil
 	}
