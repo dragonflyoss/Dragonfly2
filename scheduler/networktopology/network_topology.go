@@ -183,18 +183,8 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 		return nil, err
 	}
 
-	var probedCounts []uint64
-	for _, value := range values {
-		probedCount, ok := value.(uint64)
-		if !ok {
-			continue
-		}
-
-		probedCounts = append(probedCounts, probedCount)
-	}
-
 	sort.Slice(candidateHosts, func(i, j int) bool {
-		return probedCounts[i] < probedCounts[j]
+		return values[i].(uint64) < values[j].(uint64)
 	})
 
 	return candidateHosts[:nt.config.Probe.Count], nil
