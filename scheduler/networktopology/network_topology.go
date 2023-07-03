@@ -172,25 +172,25 @@ func (nt *networkTopology) DeleteHost(hostID string) error {
 	defer cancel()
 
 	deleteKeys := []string{pkgredis.MakeProbedAtKeyInScheduler(hostID), pkgredis.MakeProbedCountKeyInScheduler(hostID)}
-	srcNetworkTopologyKeys, err := nt.rdb.Keys(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(hostID, "*")).Result()
+	srcNetworkTopologyKeys, err := nt.getKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(hostID, "*"))
 	if err != nil {
 		return err
 	}
 	deleteKeys = append(deleteKeys, srcNetworkTopologyKeys...)
 
-	destNetworkTopologyKeys, err := nt.rdb.Keys(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler("*", hostID)).Result()
+	destNetworkTopologyKeys, err := nt.getKeys(pkgredis.MakeNetworkTopologyKeyInScheduler("*", hostID))
 	if err != nil {
 		return err
 	}
 	deleteKeys = append(deleteKeys, destNetworkTopologyKeys...)
 
-	srcProbesKeys, err := nt.rdb.Keys(ctx, pkgredis.MakeProbesKeyInScheduler(hostID, "*")).Result()
+	srcProbesKeys, err := nt.getKeys(pkgredis.MakeProbesKeyInScheduler(hostID, "*"))
 	if err != nil {
 		return err
 	}
 	deleteKeys = append(deleteKeys, srcProbesKeys...)
 
-	destProbesKeys, err := nt.rdb.Keys(ctx, pkgredis.MakeProbesKeyInScheduler("*", hostID)).Result()
+	destProbesKeys, err := nt.getKeys(pkgredis.MakeProbesKeyInScheduler("*", hostID))
 	if err != nil {
 		return err
 	}
@@ -226,11 +226,8 @@ func (nt *networkTopology) ProbedAt(hostID string) (time.Time, error) {
 
 // Snapshot writes the current network topology to the storage.
 func (nt *networkTopology) Snapshot() error {
-	ctx, cancel := context.WithTimeout(context.Background(), snapshotContextTimeout)
-	defer cancel()
-
 	now := time.Now()
-	probedCountKeys, err := nt.rdb.Keys(ctx, pkgredis.MakeProbedCountKeyInScheduler("*")).Result()
+	probedCountKeys, err := nt.getKeys(pkgredis.MakeProbedCountKeyInScheduler("*"))
 	if err != nil {
 		return err
 	}
@@ -243,7 +240,7 @@ func (nt *networkTopology) Snapshot() error {
 		}
 
 		// Construct destination hosts for network topology.
-		networkTopologyKeys, err := nt.rdb.Keys(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, "*")).Result()
+		networkTopologyKeys, err := nt.getKeys(pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, "*"))
 		if err != nil {
 			logger.Error(err)
 			continue
@@ -335,4 +332,22 @@ func (nt *networkTopology) Snapshot() error {
 	}
 
 	return nil
+}
+
+// getKeys returns all keys that match the pattern.
+func (nt networkTopology) getKeys(pattern string) ([]string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), snapshotContextTimeout)
+	defer cancel()
+
+	var keys []string
+	iter := nt.rdb.Scan(ctx, 0, pattern, 0).Iterator()
+	for iter.Next(ctx) {
+		keys = append(keys, iter.Val())
+	}
+
+	if err := iter.Err(); err != nil {
+		return nil, err
+	}
+
+	return keys, nil
 }
