@@ -27,6 +27,7 @@ import (
 	"gorm.io/gorm"
 
 	"d7y.io/dragonfly/v2/manager/cache"
+	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/job"
 	"d7y.io/dragonfly/v2/manager/models"
@@ -133,6 +134,7 @@ type Service interface {
 }
 
 type service struct {
+	config        *config.Config
 	db            *gorm.DB
 	rdb           redis.UniversalClient
 	cache         *cache.Cache
@@ -142,8 +144,9 @@ type service struct {
 }
 
 // NewREST returns a new REST instence
-func New(database *database.Database, cache *cache.Cache, job *job.Job, enforcer *casbin.Enforcer, objectStorage objectstorage.ObjectStorage) Service {
+func New(cfg *config.Config, database *database.Database, cache *cache.Cache, job *job.Job, enforcer *casbin.Enforcer, objectStorage objectstorage.ObjectStorage) Service {
 	return &service{
+		config:        cfg,
 		db:            database.DB,
 		rdb:           database.RDB,
 		cache:         cache,

@@ -143,7 +143,7 @@ func (s *service) UpdateActiveModel(ctx context.Context, id uint) error {
 				},
 			},
 		}
-		if err := s.objectStorage.PutObject(ctx, "model", fmt.Sprintf("%s_MLP/config.pbtxt", modelName), digest.AlgorithmMD5, strings.NewReader(pbModelConfig.String())); err != nil {
+		if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName, fmt.Sprintf("%s_MLP/config.pbtxt", modelName), digest.AlgorithmMD5, strings.NewReader(pbModelConfig.String())); err != nil {
 			return err
 		}
 	case models.ModelTypeMLP:
@@ -159,7 +159,7 @@ func (s *service) UpdateActiveModel(ctx context.Context, id uint) error {
 				},
 			},
 		}
-		if err := s.objectStorage.PutObject(ctx, "model", fmt.Sprintf("%s_MLP/config.pbtxt", modelName), digest.AlgorithmMD5, strings.NewReader(pbModelConfig.String())); err != nil {
+		if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName, fmt.Sprintf("%s_MLP/config.pbtxt", modelName), digest.AlgorithmMD5, strings.NewReader(pbModelConfig.String())); err != nil {
 			return err
 		}
 	}
