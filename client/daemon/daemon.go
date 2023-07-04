@@ -504,6 +504,7 @@ func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (
 		caCertPool := x509.NewCertPool()
 		caCertPool.AppendCertsFromPEM([]byte(opt.Security.CACert))
 		tlsConfig.ClientCAs = caCertPool
+		tlsConfig.RootCAs = caCertPool
 		if opt.Security.TLSVerify {
 			tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
 		}
