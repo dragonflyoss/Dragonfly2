@@ -159,7 +159,7 @@ var (
 	}
 
 	mockProbesCreatedAt = time.Now()
-	// mockProbedCount     = 10
+	mockProbedCount     = 10
 )
 
 func Test_NewProbes(t *testing.T) {
