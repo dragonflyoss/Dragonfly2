@@ -1035,6 +1035,20 @@ func (mr *MockServiceMockRecorder) SignUp(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SignUp", reflect.TypeOf((*MockService)(nil).SignUp), arg0, arg1)
 }
 
+// UpdateActiveModel mocks base method.
+func (m *MockService) UpdateActiveModel(arg0 context.Context, arg1 uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateActiveModel", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateActiveModel indicates an expected call of UpdateActiveModel.
+func (mr *MockServiceMockRecorder) UpdateActiveModel(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateActiveModel", reflect.TypeOf((*MockService)(nil).UpdateActiveModel), arg0, arg1)
+}
+
 // UpdateApplication mocks base method.
 func (m *MockService) UpdateApplication(arg0 context.Context, arg1 uint, arg2 types.UpdateApplicationRequest) (*models.Application, error) {
 	m.ctrl.T.Helper()

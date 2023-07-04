@@ -129,6 +129,7 @@ type Service interface {
 	UpdateModel(context.Context, uint, types.UpdateModelRequest) (*models.Model, error)
 	GetModel(context.Context, uint) (*models.Model, error)
 	GetModels(context.Context, types.GetModelsQuery) ([]models.Model, int64, error)
+	UpdateActiveModel(context.Context, uint) error
 }
 
 type service struct {

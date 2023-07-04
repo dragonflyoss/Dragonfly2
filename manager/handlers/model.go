@@ -150,3 +150,29 @@ func (h *Handlers) GetModels(ctx *gin.Context) {
 	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(count))
 	ctx.JSON(http.StatusOK, models)
 }
+
+// @Summary Update ActiveModel
+// @Description Update ActiveModel by id
+// @Tags Model
+// @Accept json
+// @Produce json
+// @Param id path string true "id"
+// @Success 200
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /models/{id} [patch]
+func (h *Handlers) UpdateActiveModel(ctx *gin.Context) {
+	var params types.ModelParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	if err := h.service.UpdateActiveModel(ctx.Request.Context(), params.ID); err != nil {
+		ctx.Error(err) // nolint: errcheck
+		return
+	}
+
+	ctx.Status(http.StatusOK)
+}

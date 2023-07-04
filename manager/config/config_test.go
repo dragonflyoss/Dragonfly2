@@ -103,6 +103,11 @@ var (
 			ValidityPeriod: DefaultCertValidityPeriod,
 		},
 	}
+
+	mockTrainerConfig = TrainerConfig{
+		Enable:     true,
+		BucketName: DefaultTrainerBucketName,
+	}
 )
 
 func TestConfig_Load(t *testing.T) {
@@ -206,6 +211,10 @@ func TestConfig_Load(t *testing.T) {
 		},
 		Network: NetworkConfig{
 			EnableIPv6: true,
+		},
+		Trainer: TrainerConfig{
+			Enable:     true,
+			BucketName: "models",
 		},
 	}
 
@@ -836,6 +845,23 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "certSpec requires parameter validityPeriod")
+			},
+		},
+		{
+			name:   "trainer requires parameter bucketName",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Security = mockSecurityConfig
+				cfg.Trainer = mockTrainerConfig
+				cfg.Trainer.BucketName = ""
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "trainer requires parameter bucketName")
 			},
 		},
 	}
