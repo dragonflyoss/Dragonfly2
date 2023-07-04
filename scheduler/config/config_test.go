@@ -220,6 +220,19 @@ func TestConfig_Validate(t *testing.T) {
 			},
 		},
 		{
+			name:   "server requires parameter advertisePort",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Job = mockJobConfig
+				cfg.Server.AdvertisePort = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "server requires parameter advertisePort")
+			},
+		},
+		{
 			name:   "server requires parameter listenIP",
 			config: New(),
 			mock: func(cfg *Config) {
