@@ -662,6 +662,71 @@ func TestStorage_ListNetworkTopology(t *testing.T) {
 	}
 }
 
+func TestStorage_DownloadCount(t *testing.T) {
+	tests := []struct {
+		name    string
+		baseDir string
+		mock    func(s Storage)
+		expect  func(t *testing.T, s Storage)
+	}{
+		{
+			name:    "get the count of downloads",
+			baseDir: os.TempDir(),
+			mock: func(s Storage) {
+				s.(*storage).downloadCount = 2
+			},
+			expect: func(t *testing.T, s Storage) {
+				assert := assert.New(t)
+				assert.Equal(int64(2), s.DownloadCount())
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s, err := New(tc.baseDir, config.DefaultStorageMaxSize, config.DefaultStorageMaxBackups, config.DefaultStorageBufferSize)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			tc.mock(s)
+			tc.expect(t, s)
+		})
+	}
+}
+
+func TestStorage_NetworkTopologyCount(t *testing.T) {
+	tests := []struct {
+		name    string
+		baseDir string
+		mock    func(s Storage)
+		expect  func(t *testing.T, s Storage)
+	}{
+		{
+			name:    "get the count of network topologies",
+			baseDir: os.TempDir(),
+			mock: func(s Storage) {
+				s.(*storage).networkTopologyCount = 1
+			},
+			expect: func(t *testing.T, s Storage) {
+				assert := assert.New(t)
+				assert.Equal(int64(1), s.NetworkTopologyCount())
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s, err := New(tc.baseDir, config.DefaultStorageMaxSize, config.DefaultStorageMaxBackups, config.DefaultStorageBufferSize)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			tc.mock(s)
+			tc.expect(t, s)
+		})
+	}
+}
+
 func TestStorage_OpenDownload(t *testing.T) {
 	tests := []struct {
 		name       string
