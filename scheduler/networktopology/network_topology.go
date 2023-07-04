@@ -20,6 +20,7 @@ package networktopology
 
 import (
 	"context"
+	"math"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -172,25 +173,25 @@ func (nt *networkTopology) DeleteHost(hostID string) error {
 	defer cancel()
 
 	deleteKeys := []string{pkgredis.MakeProbedAtKeyInScheduler(hostID), pkgredis.MakeProbedCountKeyInScheduler(hostID)}
-	srcNetworkTopologyKeys, err := nt.rdb.Keys(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(hostID, "*")).Result()
+	srcNetworkTopologyKeys, _, err := nt.rdb.Scan(ctx, 0, pkgredis.MakeNetworkTopologyKeyInScheduler(hostID, "*"), math.MaxInt64).Result()
 	if err != nil {
 		return err
 	}
 	deleteKeys = append(deleteKeys, srcNetworkTopologyKeys...)
 
-	destNetworkTopologyKeys, err := nt.rdb.Keys(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler("*", hostID)).Result()
+	destNetworkTopologyKeys, _, err := nt.rdb.Scan(ctx, 0, pkgredis.MakeNetworkTopologyKeyInScheduler("*", hostID), math.MaxInt64).Result()
 	if err != nil {
 		return err
 	}
 	deleteKeys = append(deleteKeys, destNetworkTopologyKeys...)
 
-	srcProbesKeys, err := nt.rdb.Keys(ctx, pkgredis.MakeProbesKeyInScheduler(hostID, "*")).Result()
+	srcProbesKeys, _, err := nt.rdb.Scan(ctx, 0, pkgredis.MakeProbesKeyInScheduler(hostID, "*"), math.MaxInt64).Result()
 	if err != nil {
 		return err
 	}
 	deleteKeys = append(deleteKeys, srcProbesKeys...)
 
-	destProbesKeys, err := nt.rdb.Keys(ctx, pkgredis.MakeProbesKeyInScheduler("*", hostID)).Result()
+	destProbesKeys, _, err := nt.rdb.Scan(ctx, 0, pkgredis.MakeProbesKeyInScheduler("*", hostID), math.MaxInt64).Result()
 	if err != nil {
 		return err
 	}
@@ -230,7 +231,7 @@ func (nt *networkTopology) Snapshot() error {
 	defer cancel()
 
 	now := time.Now()
-	probedCountKeys, err := nt.rdb.Keys(ctx, pkgredis.MakeProbedCountKeyInScheduler("*")).Result()
+	probedCountKeys, _, err := nt.rdb.Scan(ctx, 0, pkgredis.MakeProbedCountKeyInScheduler("*"), math.MaxInt64).Result()
 	if err != nil {
 		return err
 	}
@@ -243,7 +244,7 @@ func (nt *networkTopology) Snapshot() error {
 		}
 
 		// Construct destination hosts for network topology.
-		networkTopologyKeys, err := nt.rdb.Keys(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, "*")).Result()
+		networkTopologyKeys, _, err := nt.rdb.Scan(ctx, 0, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, "*"), math.MaxInt64).Result()
 		if err != nil {
 			logger.Error(err)
 			continue
