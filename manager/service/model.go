@@ -131,7 +131,7 @@ func (s *service) UpdateActiveModel(ctx context.Context, id uint) error {
 
 	switch model.Type {
 	case models.ModelTypeGNN:
-		var modelName = fmt.Sprintf(fmt.Sprintf("%s_GNN", strconv.FormatUint(uint64(scheduler.SchedulerClusterID), 10)))
+		var modelName = fmt.Sprintf("%s_GNN", strconv.FormatUint(uint64(scheduler.SchedulerClusterID), 10))
 		pbModelConfig := inferencev1.ModelConfig{
 			Name:     modelName,
 			Platform: "tensorrt_plan",
@@ -143,11 +143,11 @@ func (s *service) UpdateActiveModel(ctx context.Context, id uint) error {
 				},
 			},
 		}
-		if err := s.objectStorage.PutObject(ctx, "model", fmt.Sprintf("%s_GNN/config.pbtxt", modelName), digest.AlgorithmMD5, strings.NewReader(pbModelConfig.String())); err != nil {
+		if err := s.objectStorage.PutObject(ctx, "model", fmt.Sprintf("%s_MLP/config.pbtxt", modelName), digest.AlgorithmMD5, strings.NewReader(pbModelConfig.String())); err != nil {
 			return err
 		}
 	case models.ModelTypeMLP:
-		var modelName = fmt.Sprintf(fmt.Sprintf("%s%s%s_GNN", scheduler.Hostname, scheduler.IP, strconv.FormatUint(uint64(scheduler.SchedulerClusterID), 10)))
+		var modelName = fmt.Sprintf("%s%s%s_GNN", scheduler.Hostname, scheduler.IP, strconv.FormatUint(uint64(scheduler.SchedulerClusterID), 10))
 		pbModelConfig := inferencev1.ModelConfig{
 			Name:     modelName,
 			Platform: "tensorrt_plan",
