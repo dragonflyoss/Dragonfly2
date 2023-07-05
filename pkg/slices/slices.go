@@ -56,6 +56,11 @@ func RemoveDuplicates[T comparable](s []T) []T {
 	return result
 }
 
+// Remove removes an element from a collection.
+func Remove[T comparable](s []T, i int) []T {
+	return append(s[:i], s[i+1:]...)
+}
+
 // Reverse reverses elements in a collection.
 func Reverse[S ~[]T, T any](s S) {
 	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
