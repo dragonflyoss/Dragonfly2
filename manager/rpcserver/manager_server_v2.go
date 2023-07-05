@@ -19,7 +19,6 @@ package rpcserver
 import (
 	"bytes"
 	"context"
-	"d7y.io/dragonfly/v2/pkg/digest"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -48,6 +47,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/manager/types"
 	pkgcache "d7y.io/dragonfly/v2/pkg/cache"
+	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
 	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
 	"d7y.io/dragonfly/v2/pkg/slices"
