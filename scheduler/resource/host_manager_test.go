@@ -316,7 +316,7 @@ func TestHostManager_LoadRandomHosts(t *testing.T) {
 		expect func(t *testing.T, hm HostManager, hosts []*Host)
 	}{
 		{
-			name: "get host ids",
+			name: "load random hosts",
 			hosts: []*Host{
 				NewHost(
 					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
@@ -341,7 +341,7 @@ func TestHostManager_LoadRandomHosts(t *testing.T) {
 			},
 		},
 		{
-			name: "require 0 host id",
+			name: "load random hosts when the load number is 0",
 			hosts: []*Host{
 				NewHost(
 					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
