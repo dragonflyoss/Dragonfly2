@@ -21,7 +21,6 @@ package networktopology
 import (
 	"context"
 	"errors"
-	"fmt"
 	"math"
 	"sort"
 	"time"
@@ -198,10 +197,7 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 	// Filter invalid probed count. If probed key not exist, the probed count is nil.
 	var probedCounts []uint64
 	for _, rawProbedCount := range rawProbedCounts {
-		fmt.Println(rawProbedCount)
 		probeCount, ok := rawProbedCount.(uint64)
-		fmt.Println(probeCount)
-		fmt.Println(ok)
 		if !ok {
 			return nil, errors.New("invalid probed count")
 		}
