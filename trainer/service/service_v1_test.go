@@ -34,6 +34,7 @@ import (
 
 	"d7y.io/dragonfly/v2/trainer/config"
 	storagemocks "d7y.io/dragonfly/v2/trainer/storage/mocks"
+	trainingmocks "d7y.io/dragonfly/v2/trainer/training/mocks"
 )
 
 var (
@@ -62,7 +63,8 @@ func TestService_NewV1(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 			storage := storagemocks.NewMockStorage(ctl)
-			tc.expect(t, NewV1(&config.Config{}, storage))
+			training := trainingmocks.NewMockTraining(ctl)
+			tc.expect(t, NewV1(&config.Config{}, storage, training))
 		})
 	}
 }
@@ -73,6 +75,7 @@ func TestServiceV1_Train(t *testing.T) {
 		mock func(
 			mt *trainerv1mocks.MockTrainer_TrainServerMockRecorder,
 			storage *storagemocks.MockStorageMockRecorder,
+			training *trainingmocks.MockTrainingMockRecorder,
 			downloads *os.File, networktopologies *os.File, mockModelKey string)
 		expect func(t *testing.T, err error)
 	}{
@@ -81,6 +84,7 @@ func TestServiceV1_Train(t *testing.T) {
 			mock: func(
 				mt *trainerv1mocks.MockTrainer_TrainServerMockRecorder,
 				storage *storagemocks.MockStorageMockRecorder,
+				training *trainingmocks.MockTrainingMockRecorder,
 				downloads *os.File, networktopologies *os.File, mockModelKey string,
 			) {
 				gomock.InOrder(
@@ -97,6 +101,7 @@ func TestServiceV1_Train(t *testing.T) {
 			mock: func(
 				mt *trainerv1mocks.MockTrainer_TrainServerMockRecorder,
 				storage *storagemocks.MockStorageMockRecorder,
+				training *trainingmocks.MockTrainingMockRecorder,
 				downloads *os.File, networktopologies *os.File, mockModelKey string,
 			) {
 				gomock.InOrder(
@@ -113,6 +118,7 @@ func TestServiceV1_Train(t *testing.T) {
 					storage.OpenNetworkTopology(mockModelKey).Return(networktopologies, nil).Times(1),
 					mt.Recv().Return(nil, io.EOF).Times(1),
 					mt.SendAndClose(new(emptypb.Empty)).Return(nil).Times(1),
+					training.GNNTrain().Return(nil).Times(1),
 					storage.ClearNetworkTopology(mockModelKey).Return(nil),
 				)
 			},
@@ -126,6 +132,7 @@ func TestServiceV1_Train(t *testing.T) {
 			mock: func(
 				mt *trainerv1mocks.MockTrainer_TrainServerMockRecorder,
 				storage *storagemocks.MockStorageMockRecorder,
+				training *trainingmocks.MockTrainingMockRecorder,
 				downloads *os.File, networktopologies *os.File, mockModelKey string,
 			) {
 				gomock.InOrder(
@@ -150,10 +157,11 @@ func TestServiceV1_Train(t *testing.T) {
 			},
 		},
 		{
-			name: "receive GNN train requests successfully but clear the file of network topologies failed",
+			name: "receive GNN train requests successfully but train GNN failed",
 			mock: func(
 				mt *trainerv1mocks.MockTrainer_TrainServerMockRecorder,
 				storage *storagemocks.MockStorageMockRecorder,
+				training *trainingmocks.MockTrainingMockRecorder,
 				downloads *os.File, networktopologies *os.File, mockModelKey string,
 			) {
 				gomock.InOrder(
@@ -170,6 +178,36 @@ func TestServiceV1_Train(t *testing.T) {
 					storage.OpenNetworkTopology(mockModelKey).Return(networktopologies, nil).Times(1),
 					mt.Recv().Return(nil, io.EOF).Times(1),
 					mt.SendAndClose(new(emptypb.Empty)).Return(nil).Times(1),
+					training.GNNTrain().Return(errors.New("train GNN failed")))
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "train GNN failed")
+			},
+		},
+		{
+			name: "receive GNN train requests successfully but clear the file of network topologies failed",
+			mock: func(
+				mt *trainerv1mocks.MockTrainer_TrainServerMockRecorder,
+				storage *storagemocks.MockStorageMockRecorder,
+				training *trainingmocks.MockTrainingMockRecorder,
+				downloads *os.File, networktopologies *os.File, mockModelKey string,
+			) {
+				gomock.InOrder(
+					mt.Recv().Return(&trainerv1.TrainRequest{
+						Hostname:  mockHostName,
+						Ip:        mockIP,
+						ClusterId: mockClusterID,
+						Request: &trainerv1.TrainRequest_TrainGnnRequest{
+							TrainGnnRequest: &trainerv1.TrainGNNRequest{
+								Dataset: mockDataset,
+							},
+						},
+					}, nil).Times(1),
+					storage.OpenNetworkTopology(mockModelKey).Return(networktopologies, nil).Times(1),
+					mt.Recv().Return(nil, io.EOF).Times(1),
+					mt.SendAndClose(new(emptypb.Empty)).Return(nil).Times(1),
+					training.GNNTrain().Return(nil).Times(1),
 					storage.ClearNetworkTopology(mockModelKey).Return(errors.New("clear the file of network topologies error")),
 				)
 			},
@@ -179,10 +217,11 @@ func TestServiceV1_Train(t *testing.T) {
 			},
 		},
 		{
-			name: "open the file of network topologies failed",
+			name: "open the file of network topologies failed when receive GNN train requests",
 			mock: func(
 				mt *trainerv1mocks.MockTrainer_TrainServerMockRecorder,
 				storage *storagemocks.MockStorageMockRecorder,
+				training *trainingmocks.MockTrainingMockRecorder,
 				downloads *os.File, networktopologies *os.File, mockModelKey string,
 			) {
 				gomock.InOrder(
@@ -206,10 +245,11 @@ func TestServiceV1_Train(t *testing.T) {
 			},
 		},
 		{
-			name: "open and clear the file of network topologies failed",
+			name: "open and clear the file of network topologies failed when receive GNN train requests",
 			mock: func(
 				mt *trainerv1mocks.MockTrainer_TrainServerMockRecorder,
 				storage *storagemocks.MockStorageMockRecorder,
+				training *trainingmocks.MockTrainingMockRecorder,
 				downloads *os.File, networktopologies *os.File, mockModelKey string,
 			) {
 				gomock.InOrder(
@@ -237,6 +277,7 @@ func TestServiceV1_Train(t *testing.T) {
 			mock: func(
 				mt *trainerv1mocks.MockTrainer_TrainServerMockRecorder,
 				storage *storagemocks.MockStorageMockRecorder,
+				training *trainingmocks.MockTrainingMockRecorder,
 				downloads *os.File, networktopologies *os.File, mockModelKey string,
 			) {
 				gomock.InOrder(
@@ -253,6 +294,7 @@ func TestServiceV1_Train(t *testing.T) {
 					storage.OpenDownload(mockModelKey).Return(downloads, nil).Times(1),
 					mt.Recv().Return(nil, io.EOF).Times(1),
 					mt.SendAndClose(new(emptypb.Empty)).Return(nil).Times(1),
+					training.MLPTrain().Return(nil).Times(1),
 					storage.ClearDownload(mockModelKey).Return(nil),
 				)
 			},
@@ -266,6 +308,7 @@ func TestServiceV1_Train(t *testing.T) {
 			mock: func(
 				mt *trainerv1mocks.MockTrainer_TrainServerMockRecorder,
 				storage *storagemocks.MockStorageMockRecorder,
+				training *trainingmocks.MockTrainingMockRecorder,
 				downloads *os.File, networktopologies *os.File, mockModelKey string,
 			) {
 				gomock.InOrder(
@@ -290,10 +333,11 @@ func TestServiceV1_Train(t *testing.T) {
 			},
 		},
 		{
-			name: "receive MLP train requests successfully but clear the file of downloads failed",
+			name: "receive MLP train requests successfully but train MLP failed",
 			mock: func(
 				mt *trainerv1mocks.MockTrainer_TrainServerMockRecorder,
 				storage *storagemocks.MockStorageMockRecorder,
+				training *trainingmocks.MockTrainingMockRecorder,
 				downloads *os.File, networktopologies *os.File, mockModelKey string,
 			) {
 				gomock.InOrder(
@@ -310,6 +354,37 @@ func TestServiceV1_Train(t *testing.T) {
 					storage.OpenDownload(mockModelKey).Return(downloads, nil).Times(1),
 					mt.Recv().Return(nil, io.EOF).Times(1),
 					mt.SendAndClose(new(emptypb.Empty)).Return(nil).Times(1),
+					training.MLPTrain().Return(errors.New("train MLP failed")),
+				)
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "train MLP failed")
+			},
+		},
+		{
+			name: "receive MLP train requests successfully but clear the file of downloads failed",
+			mock: func(
+				mt *trainerv1mocks.MockTrainer_TrainServerMockRecorder,
+				storage *storagemocks.MockStorageMockRecorder,
+				training *trainingmocks.MockTrainingMockRecorder,
+				downloads *os.File, networktopologies *os.File, mockModelKey string,
+			) {
+				gomock.InOrder(
+					mt.Recv().Return(&trainerv1.TrainRequest{
+						Hostname:  mockHostName,
+						Ip:        mockIP,
+						ClusterId: mockClusterID,
+						Request: &trainerv1.TrainRequest_TrainMlpRequest{
+							TrainMlpRequest: &trainerv1.TrainMLPRequest{
+								Dataset: mockDataset,
+							},
+						},
+					}, nil).Times(1),
+					storage.OpenDownload(mockModelKey).Return(downloads, nil).Times(1),
+					mt.Recv().Return(nil, io.EOF).Times(1),
+					mt.SendAndClose(new(emptypb.Empty)).Return(nil).Times(1),
+					training.MLPTrain().Return(nil).Times(1),
 					storage.ClearDownload(mockModelKey).Return(errors.New("clear the file of downloads error")).Times(1),
 				)
 			},
@@ -319,10 +394,11 @@ func TestServiceV1_Train(t *testing.T) {
 			},
 		},
 		{
-			name: "open the file of downloads failed",
+			name: "open the file of downloads failed when handle MLP train requests",
 			mock: func(
 				mt *trainerv1mocks.MockTrainer_TrainServerMockRecorder,
 				storage *storagemocks.MockStorageMockRecorder,
+				training *trainingmocks.MockTrainingMockRecorder,
 				downloads *os.File, networktopologies *os.File, mockModelKey string,
 			) {
 				gomock.InOrder(
@@ -346,10 +422,11 @@ func TestServiceV1_Train(t *testing.T) {
 			},
 		},
 		{
-			name: "open and clear the file of downloads failed",
+			name: "open and clear the file of downloads failed when handle MLP train requests",
 			mock: func(
 				mt *trainerv1mocks.MockTrainer_TrainServerMockRecorder,
 				storage *storagemocks.MockStorageMockRecorder,
+				training *trainingmocks.MockTrainingMockRecorder,
 				downloads *os.File, networktopologies *os.File, mockModelKey string,
 			) {
 				gomock.InOrder(
@@ -380,7 +457,9 @@ func TestServiceV1_Train(t *testing.T) {
 			defer ctl.Finish()
 			storage := storagemocks.NewMockStorage(ctl)
 			stream := trainerv1mocks.NewMockTrainer_TrainServer(ctl)
-			svc := NewV1(&config.Config{}, storage)
+			training := trainingmocks.NewMockTraining(ctl)
+
+			svc := NewV1(&config.Config{}, storage, training)
 			mockModelKey, err := svc.createModelKey(mockHostName, mockIP, uint(mockClusterID), DefaultHashAlgorithm)
 			if err != nil {
 				t.Fatal(err)
@@ -398,7 +477,7 @@ func TestServiceV1_Train(t *testing.T) {
 			}
 			defer networktopologies.Close()
 
-			tc.mock(stream.EXPECT(), storage.EXPECT(), downloads, networktopologies, mockModelKey)
+			tc.mock(stream.EXPECT(), storage.EXPECT(), training.EXPECT(), downloads, networktopologies, mockModelKey)
 			tc.expect(t, svc.Train(stream))
 
 			if err = os.Remove(filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s.%s", "download", mockModelKey, "csv"))); err != nil {
@@ -497,7 +576,8 @@ func TestServiceV1_clearFile(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 			storage := storagemocks.NewMockStorage(ctl)
-			svc := NewV1(&config.Config{}, storage)
+			training := trainingmocks.NewMockTraining(ctl)
+			svc := NewV1(&config.Config{}, storage, training)
 			mockModelKey, _ := svc.createModelKey(mockHostName, mockIP, uint(mockClusterID), DefaultHashAlgorithm)
 
 			tc.mock(storage.EXPECT(), mockModelKey)
@@ -551,7 +631,8 @@ func TestServiceV1_handleTrainGNNRequest(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 			storage := storagemocks.NewMockStorage(ctl)
-			svc := NewV1(&config.Config{}, storage)
+			training := trainingmocks.NewMockTraining(ctl)
+			svc := NewV1(&config.Config{}, storage, training)
 			mockModelKey, _ := svc.createModelKey(mockHostName, mockIP, uint(mockClusterID), DefaultHashAlgorithm)
 
 			tc.mock(storage.EXPECT(), mockModelKey)
@@ -605,7 +686,8 @@ func TestServiceV1_handleTrainMLPRequest(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 			storage := storagemocks.NewMockStorage(ctl)
-			svc := NewV1(&config.Config{}, storage)
+			training := trainingmocks.NewMockTraining(ctl)
+			svc := NewV1(&config.Config{}, storage, training)
 			mockModelKey, _ := svc.createModelKey(mockHostName, mockIP, uint(mockClusterID), DefaultHashAlgorithm)
 
 			tc.mock(storage.EXPECT(), mockModelKey)
@@ -677,7 +759,9 @@ func TestServiceV1_CreateModelKey(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 			storage := storagemocks.NewMockStorage(ctl)
-			svc := NewV1(&config.Config{}, storage)
+			training := trainingmocks.NewMockTraining(ctl)
+
+			svc := NewV1(&config.Config{}, storage, training)
 			tc.expect(t, svc, tc.hashAlgorithm)
 		})
 	}

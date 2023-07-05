@@ -22,15 +22,17 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/trainer/server"
 	"d7y.io/dragonfly/v2/trainer/config"
 	"d7y.io/dragonfly/v2/trainer/storage"
+	"d7y.io/dragonfly/v2/trainer/training"
 )
 
 // New creates a new grpc server.
 func New(
 	cfg *config.Config,
 	storage storage.Storage,
+	training training.Training,
 	opts ...grpc.ServerOption,
 ) *grpc.Server {
 	return server.New(
-		newTrainerServerV1(cfg, storage),
+		newTrainerServerV1(cfg, storage, training),
 		opts...)
 }

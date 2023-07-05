@@ -33,6 +33,7 @@ import (
 	"d7y.io/dragonfly/v2/trainer/metrics"
 	"d7y.io/dragonfly/v2/trainer/rpcserver"
 	"d7y.io/dragonfly/v2/trainer/storage"
+	"d7y.io/dragonfly/v2/trainer/training"
 )
 
 const (
@@ -54,6 +55,9 @@ type Server struct {
 
 	// Storage interface.
 	storage storage.Storage
+
+	// Training interface.
+	training training.Training
 }
 
 // New creates a new Server.
@@ -63,8 +67,11 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	// Initialize Storage.
 	s.storage = storage.New(d.DataDir())
 
+	// Initialize training.
+	s.training = training.New(cfg, s.storage)
+
 	// Initialize trainer grpc server.
-	s.grpcServer = rpcserver.New(cfg, s.storage)
+	s.grpcServer = rpcserver.New(cfg, s.storage, s.training)
 
 	// Initialize metrics.
 	if cfg.Metrics.Enable {

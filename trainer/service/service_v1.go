@@ -35,6 +35,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/trainer/config"
 	"d7y.io/dragonfly/v2/trainer/storage"
+	"d7y.io/dragonfly/v2/trainer/training"
 )
 
 const (
@@ -72,17 +73,22 @@ type V1 struct {
 
 	// Storage Interface.
 	storage storage.Storage
+
+	// Training Interface.
+	training training.Training
 }
 
 // New v1 version of service instance.
 func NewV1(
 	cfg *config.Config,
 	storage storage.Storage,
+	training training.Training,
 
 ) *V1 {
 	return &V1{
-		config:  cfg,
-		storage: storage,
+		config:   cfg,
+		storage:  storage,
+		training: training,
 	}
 }
 
@@ -104,6 +110,19 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 				}
 
 				// TODO (fyx) Add GNN and MLP training logic.
+				switch reqType {
+				case TrainGNNRequest:
+					if err := v.training.GNNTrain(); err != nil {
+						logger.Infof("train GNN model error %s", err.Error())
+						return err
+					}
+				case TrainMLPRequest:
+					if err := v.training.MLPTrain(); err != nil {
+						logger.Infof("train MLP model error %s", err.Error())
+						return err
+					}
+				}
+
 				// Clear downloads or network topologies after training according to train request type and model key.
 				if err = v.clearFile(modelKey, reqType); err != nil {
 					return err

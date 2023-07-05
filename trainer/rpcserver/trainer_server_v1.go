@@ -23,6 +23,7 @@ import (
 	"d7y.io/dragonfly/v2/trainer/metrics"
 	"d7y.io/dragonfly/v2/trainer/service"
 	storage "d7y.io/dragonfly/v2/trainer/storage"
+	training "d7y.io/dragonfly/v2/trainer/training"
 )
 
 // trainerServerV1 is v1 version of the trainer grpc server.
@@ -32,8 +33,8 @@ type trainerServerV1 struct {
 }
 
 // newTrainerServerV1 returns a new trainerServerV1 instance.
-func newTrainerServerV1(cfg *config.Config, st storage.Storage) trainerv1.TrainerServer {
-	return &trainerServerV1{service.NewV1(cfg, st)}
+func newTrainerServerV1(cfg *config.Config, st storage.Storage, tr training.Training) trainerv1.TrainerServer {
+	return &trainerServerV1{service.NewV1(cfg, st, tr)}
 }
 
 // Train handles the training request from scheduler.
