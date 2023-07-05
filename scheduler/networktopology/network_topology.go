@@ -20,14 +20,18 @@ package networktopology
 
 import (
 	"context"
+	"errors"
 	"math"
+	"sort"
 	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/container/set"
 	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
+	"d7y.io/dragonfly/v2/pkg/slices"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/storage"
@@ -39,6 +43,9 @@ const (
 
 	// snapshotContextTimeout is the timeout of snapshot network topology.
 	snapshotContextTimeout = 20 * time.Minute
+
+	// findProbedCandidateHostsLimit is the limit of find probed candidate hosts.
+	findProbedCandidateHostsLimit = 50
 )
 
 // NetworkTopology is an interface for network topology.
@@ -55,9 +62,9 @@ type NetworkTopology interface {
 	// Store stores source host and destination host.
 	Store(string, string) error
 
-	// TODO Implement function.
-	// FindProbedHostIDs finds the most candidate destination host to be probed.
-	FindProbedHostIDs(string) ([]string, error)
+	// FindProbedHosts finds the most candidate destination host to be probed, randomly find a range of hosts,
+	// and then return the host with a smaller probed count.
+	FindProbedHosts(string) ([]*resource.Host, error)
 
 	// DeleteHost deletes source host and all destination host connected to source host.
 	DeleteHost(string) error
@@ -161,10 +168,52 @@ func (nt *networkTopology) Store(srcHostID string, destHostID string) error {
 	return nil
 }
 
-// TODO Implement function.
-// FindProbedHostIDs finds the most candidate destination host to be probed.
-func (nt *networkTopology) FindProbedHostIDs(hostID string) ([]string, error) {
-	return nil, nil
+// FindProbedHosts finds the most candidate destination host to be probed, randomly find a range of hosts,
+// and then return the host with a smaller probed count.
+func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	blocklist := set.NewSafeSet[string]()
+	blocklist.Add(hostID)
+	candidateHosts := nt.resource.HostManager().LoadRandomHosts(findProbedCandidateHostsLimit, blocklist)
+	if len(candidateHosts) == 0 {
+		return nil, errors.New("probed hosts not found")
+	}
+
+	if len(candidateHosts) <= nt.config.Probe.Count {
+		return candidateHosts, nil
+	}
+
+	var probedCountKeys []string
+	for _, candidateHost := range candidateHosts {
+		probedCountKeys = append(probedCountKeys, pkgredis.MakeProbedCountKeyInScheduler(candidateHost.ID))
+	}
+
+	rawProbedCounts, err := nt.rdb.MGet(ctx, probedCountKeys...).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	// Filter invalid probed count. If probed key not exist, the probed count is nil.
+	probedCounts := make([]interface{}, len(rawProbedCounts))
+	for i, rawProbedCount := range rawProbedCounts {
+		probeCount, ok := rawProbedCount.(uint64)
+		if !ok {
+			slices.Remove(candidateHosts, i)
+			logger.Error("invalid probed count")
+			continue
+		}
+
+		probedCounts = append(probedCounts, probeCount)
+	}
+
+	// Sort candidate hosts by probed count.
+	sort.Slice(candidateHosts, func(i, j int) bool {
+		return probedCounts[i].(uint64) < probedCounts[j].(uint64)
+	})
+
+	return candidateHosts[:nt.config.Probe.Count], nil
 }
 
 // DeleteHost deletes source host and all destination host connected to source host.

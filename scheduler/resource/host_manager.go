@@ -21,6 +21,7 @@ package resource
 import (
 	"sync"
 
+	"d7y.io/dragonfly/v2/pkg/container/set"
 	pkggc "d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -46,6 +47,9 @@ type HostManager interface {
 
 	// Delete deletes host for a key.
 	Delete(string)
+
+	// LoadRandomHosts loads host randomly through the Range of sync.Map.
+	LoadRandomHosts(int, set.SafeSet[string]) []*Host
 
 	// Try to reclaim host.
 	RunGC() error
@@ -101,6 +105,31 @@ func (h *hostManager) LoadOrStore(host *Host) (*Host, bool) {
 // Delete deletes host for a key.
 func (h *hostManager) Delete(key string) {
 	h.Map.Delete(key)
+}
+
+// LoadRandomHosts loads host randomly through the Range of sync.Map.
+func (h *hostManager) LoadRandomHosts(n int, blocklist set.SafeSet[string]) []*Host {
+	hosts := make([]*Host, 0, n)
+	h.Map.Range(func(key, value any) bool {
+		if len(hosts) >= n {
+			return false
+		}
+
+		host, ok := value.(*Host)
+		if !ok {
+			host.Log.Error("invalid host")
+			return true
+		}
+
+		if blocklist.Contains(host.ID) {
+			return true
+		}
+
+		hosts = append(hosts, host)
+		return true
+	})
+
+	return hosts
 }
 
 // Try to reclaim host.

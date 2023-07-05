@@ -666,86 +666,75 @@ func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
 			// Find probed hosts in network topology. Based on the source host information,
 			// the most candidate hosts will be evaluated.
 			logger.Info("receive SyncProbesRequest_ProbeStartedRequest")
-			probedHostIDs, err := v.networkTopology.FindProbedHostIDs(req.Host.Id)
+			hosts, err := v.networkTopology.FindProbedHosts(req.Host.Id)
 			if err != nil {
 				logger.Error(err)
 				return status.Error(codes.FailedPrecondition, err.Error())
 			}
 
 			var probedHosts []*commonv2.Host
-			for _, probedHostID := range probedHostIDs {
-				probedHost, loaded := v.resource.HostManager().Load(probedHostID)
-				if !loaded {
-					logger.Warnf("probed host %s not found", probedHostID)
-					continue
-				}
-
+			for _, host := range hosts {
 				probedHosts = append(probedHosts, &commonv2.Host{
-					Id:              probedHost.ID,
-					Type:            uint32(probedHost.Type),
-					Hostname:        probedHost.Hostname,
-					Ip:              probedHost.IP,
-					Port:            probedHost.Port,
-					DownloadPort:    probedHost.DownloadPort,
-					Os:              probedHost.OS,
-					Platform:        probedHost.Platform,
-					PlatformFamily:  probedHost.PlatformFamily,
-					PlatformVersion: probedHost.PlatformVersion,
-					KernelVersion:   probedHost.KernelVersion,
+					Id:              host.ID,
+					Type:            uint32(host.Type),
+					Hostname:        host.Hostname,
+					Ip:              host.IP,
+					Port:            host.Port,
+					DownloadPort:    host.DownloadPort,
+					Os:              host.OS,
+					Platform:        host.Platform,
+					PlatformFamily:  host.PlatformFamily,
+					PlatformVersion: host.PlatformVersion,
+					KernelVersion:   host.KernelVersion,
 					Cpu: &commonv2.CPU{
-						LogicalCount:   probedHost.CPU.LogicalCount,
-						PhysicalCount:  probedHost.CPU.PhysicalCount,
-						Percent:        probedHost.CPU.Percent,
-						ProcessPercent: probedHost.CPU.ProcessPercent,
+						LogicalCount:   host.CPU.LogicalCount,
+						PhysicalCount:  host.CPU.PhysicalCount,
+						Percent:        host.CPU.Percent,
+						ProcessPercent: host.CPU.ProcessPercent,
 						Times: &commonv2.CPUTimes{
-							User:      probedHost.CPU.Times.User,
-							System:    probedHost.CPU.Times.System,
-							Idle:      probedHost.CPU.Times.Idle,
-							Nice:      probedHost.CPU.Times.Nice,
-							Iowait:    probedHost.CPU.Times.Iowait,
-							Irq:       probedHost.CPU.Times.Irq,
-							Softirq:   probedHost.CPU.Times.Softirq,
-							Steal:     probedHost.CPU.Times.Steal,
-							Guest:     probedHost.CPU.Times.Guest,
-							GuestNice: probedHost.CPU.Times.GuestNice,
+							User:      host.CPU.Times.User,
+							System:    host.CPU.Times.System,
+							Idle:      host.CPU.Times.Idle,
+							Nice:      host.CPU.Times.Nice,
+							Iowait:    host.CPU.Times.Iowait,
+							Irq:       host.CPU.Times.Irq,
+							Softirq:   host.CPU.Times.Softirq,
+							Steal:     host.CPU.Times.Steal,
+							Guest:     host.CPU.Times.Guest,
+							GuestNice: host.CPU.Times.GuestNice,
 						},
 					},
 					Memory: &commonv2.Memory{
-						Total:              probedHost.Memory.Total,
-						Available:          probedHost.Memory.Available,
-						Used:               probedHost.Memory.Used,
-						UsedPercent:        probedHost.Memory.UsedPercent,
-						ProcessUsedPercent: probedHost.Memory.ProcessUsedPercent,
-						Free:               probedHost.Memory.Free,
+						Total:              host.Memory.Total,
+						Available:          host.Memory.Available,
+						Used:               host.Memory.Used,
+						UsedPercent:        host.Memory.UsedPercent,
+						ProcessUsedPercent: host.Memory.ProcessUsedPercent,
+						Free:               host.Memory.Free,
 					},
 					Network: &commonv2.Network{
-						TcpConnectionCount:       probedHost.Network.TCPConnectionCount,
-						UploadTcpConnectionCount: probedHost.Network.UploadTCPConnectionCount,
-						Location:                 probedHost.Network.Location,
-						Idc:                      probedHost.Network.IDC,
+						TcpConnectionCount:       host.Network.TCPConnectionCount,
+						UploadTcpConnectionCount: host.Network.UploadTCPConnectionCount,
+						Location:                 host.Network.Location,
+						Idc:                      host.Network.IDC,
 					},
 					Disk: &commonv2.Disk{
-						Total:             probedHost.Disk.Total,
-						Free:              probedHost.Disk.Free,
-						Used:              probedHost.Disk.Used,
-						UsedPercent:       probedHost.Disk.UsedPercent,
-						InodesTotal:       probedHost.Disk.InodesTotal,
-						InodesUsed:        probedHost.Disk.InodesUsed,
-						InodesFree:        probedHost.Disk.InodesFree,
-						InodesUsedPercent: probedHost.Disk.InodesUsedPercent,
+						Total:             host.Disk.Total,
+						Free:              host.Disk.Free,
+						Used:              host.Disk.Used,
+						UsedPercent:       host.Disk.UsedPercent,
+						InodesTotal:       host.Disk.InodesTotal,
+						InodesUsed:        host.Disk.InodesUsed,
+						InodesFree:        host.Disk.InodesFree,
+						InodesUsedPercent: host.Disk.InodesUsedPercent,
 					},
 					Build: &commonv2.Build{
-						GitVersion: probedHost.Build.GitVersion,
-						GitCommit:  probedHost.Build.GitCommit,
-						GoVersion:  probedHost.Build.GoVersion,
-						Platform:   probedHost.Build.Platform,
+						GitVersion: host.Build.GitVersion,
+						GitCommit:  host.Build.GitCommit,
+						GoVersion:  host.Build.GoVersion,
+						Platform:   host.Build.Platform,
 					},
 				})
-			}
-
-			if len(probedHosts) == 0 {
-				logger.Error("probed host not found")
-				return status.Error(codes.NotFound, "probed host not found")
 			}
 
 			logger.Infof("probe started: %#v", probedHosts)
