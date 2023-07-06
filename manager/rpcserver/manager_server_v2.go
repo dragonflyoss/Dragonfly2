@@ -849,7 +849,6 @@ func (s *managerServerV2) createGNNModelConfig(ctx context.Context, modelName st
 	if err != nil {
 		return err
 	}
-
 	versions = append(versions, version)
 
 	pbModelConfig := inferencev1.ModelConfig{
@@ -878,7 +877,6 @@ func (s *managerServerV2) createMLPModelConfig(ctx context.Context, modelName st
 	if err != nil {
 		return err
 	}
-
 	versions = append(versions, version)
 
 	pbModelConfig := inferencev1.ModelConfig{
