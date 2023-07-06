@@ -845,11 +845,12 @@ func (s *managerServerV2) CreateModel(ctx context.Context, req *managerv2.Create
 // createGNNModelConfig creates GNN model config and update GNN config to object storage.
 func (s *managerServerV2) createGNNModelConfig(ctx context.Context, modelName string, modelVersion string) error {
 	var versions []int64
-	if version, err := strconv.ParseInt(modelVersion, 10, 64); err == nil {
-		versions = append(versions, version)
-	} else if err != nil {
+	version, err := strconv.ParseInt(modelVersion, 10, 64)
+	if err != nil {
 		return err
 	}
+
+	versions = append(versions, version)
 
 	pbModelConfig := inferencev1.ModelConfig{
 		Name:     modelName,
@@ -862,6 +863,7 @@ func (s *managerServerV2) createGNNModelConfig(ctx context.Context, modelName st
 			},
 		},
 	}
+
 	if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName, fmt.Sprintf("%s/config.pbtxt", modelName), digest.AlgorithmMD5, strings.NewReader(pbModelConfig.String())); err != nil {
 		return err
 	}
@@ -872,11 +874,12 @@ func (s *managerServerV2) createGNNModelConfig(ctx context.Context, modelName st
 // createMLPModelConfig creates MLP model config and update MLP config to object storage.
 func (s *managerServerV2) createMLPModelConfig(ctx context.Context, modelName string, modelVersion string) error {
 	var versions []int64
-	if version, err := strconv.ParseInt(modelVersion, 10, 64); err == nil {
-		versions = append(versions, version)
-	} else if err != nil {
+	version, err := strconv.ParseInt(modelVersion, 10, 64)
+	if err != nil {
 		return err
 	}
+
+	versions = append(versions, version)
 
 	pbModelConfig := inferencev1.ModelConfig{
 		Name:     modelName,
@@ -889,6 +892,7 @@ func (s *managerServerV2) createMLPModelConfig(ctx context.Context, modelName st
 			},
 		},
 	}
+
 	if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName, fmt.Sprintf("%s/config.pbtxt", modelName), digest.AlgorithmMD5, strings.NewReader(pbModelConfig.String())); err != nil {
 		return err
 	}
