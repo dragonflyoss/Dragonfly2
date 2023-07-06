@@ -18,9 +18,15 @@ package service
 
 import (
 	"context"
+	"fmt"
+	"strconv"
+	"strings"
+
+	inferencev1 "d7y.io/api/pkg/apis/inference/v1"
 
 	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
+	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/structure"
 )
 
@@ -104,4 +110,73 @@ func (s *service) GetModels(ctx context.Context, q types.GetModelsQuery) ([]mode
 	}
 
 	return model, count, nil
+}
+
+func (s *service) UpdateActiveModel(ctx context.Context, id uint) error {
+	model := models.Model{}
+	if err := s.db.WithContext(ctx).First(&model, id).Error; err != nil {
+		return err
+	}
+	scheduler := models.Scheduler{}
+	if err := s.db.WithContext(ctx).First(&scheduler, model.SchedulerID).Error; err != nil {
+		return err
+	}
+
+	var versions []int64
+	if version, err := strconv.ParseInt(model.Version, 10, 64); err == nil {
+		versions = append(versions, version)
+	} else if err != nil {
+		return err
+	}
+
+	switch model.Type {
+	case models.ModelTypeGNN:
+		var modelName = fmt.Sprintf("%s_GNN", strconv.FormatUint(uint64(scheduler.SchedulerClusterID), 10))
+		pbModelConfig := inferencev1.ModelConfig{
+			Name:     modelName,
+			Platform: "tensorrt_plan",
+			VersionPolicy: &inferencev1.ModelVersionPolicy{
+				PolicyChoice: &inferencev1.ModelVersionPolicy_Specific_{
+					Specific: &inferencev1.ModelVersionPolicy_Specific{
+						Versions: versions,
+					},
+				},
+			},
+		}
+		if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName, fmt.Sprintf("%s_MLP/config.pbtxt", modelName), digest.AlgorithmMD5, strings.NewReader(pbModelConfig.String())); err != nil {
+			return err
+		}
+	case models.ModelTypeMLP:
+		var modelName = fmt.Sprintf("%s%s%s_GNN", scheduler.Hostname, scheduler.IP, strconv.FormatUint(uint64(scheduler.SchedulerClusterID), 10))
+		pbModelConfig := inferencev1.ModelConfig{
+			Name:     modelName,
+			Platform: "tensorrt_plan",
+			VersionPolicy: &inferencev1.ModelVersionPolicy{
+				PolicyChoice: &inferencev1.ModelVersionPolicy_Specific_{
+					Specific: &inferencev1.ModelVersionPolicy_Specific{
+						Versions: versions,
+					},
+				},
+			},
+		}
+		if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName, fmt.Sprintf("%s_MLP/config.pbtxt", modelName), digest.AlgorithmMD5, strings.NewReader(pbModelConfig.String())); err != nil {
+			return err
+		}
+	}
+
+	if err := s.db.WithContext(ctx).First(&model, models.Model{
+		SchedulerID: scheduler.ID,
+		State:       models.SchedulerStateActive,
+	}).Updates(models.Model{
+		State: models.ModelVersionStateInactive,
+	}).Error; err != nil {
+		return err
+	}
+	if err := s.db.WithContext(ctx).First(&model, id).Updates(models.Model{
+		State: models.SeedPeerStateActive,
+	}).Error; err != nil {
+		return err
+	}
+
+	return nil
 }

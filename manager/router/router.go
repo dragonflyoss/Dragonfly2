@@ -202,6 +202,7 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	model.PATCH(":id", h.UpdateModel)
 	model.GET(":id", h.GetModel)
 	model.GET("", h.GetModels)
+	model.PATCH(":id/switch", h.UpdateActiveModel)
 
 	// Compatible with the V1 preheat.
 	pv1 := r.Group("/preheats")
