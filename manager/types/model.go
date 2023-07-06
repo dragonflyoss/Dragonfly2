@@ -32,7 +32,7 @@ const (
 	// MLPModelNameSuffix is suffix of MLP model name.
 	MLPModelNameSuffix = "MLP"
 
-	// DefaultPlatform is default triton backend configuration
+	// DefaultPlatform is default triton backend configuration.
 	DefaultPlatform = "tensorrt_plan"
 )
 

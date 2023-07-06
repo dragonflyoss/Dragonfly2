@@ -762,10 +762,10 @@ func (s *managerServerV2) CreateModel(ctx context.Context, req *managerv2.Create
 	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
 
 	var (
-		modelEvaluation map[string]any
-		modelType       string
-		modelVersion    = time.Now().Format(types.ModelVersionTimeFormat)
 		modelName       string
+		modelType       string
+		modelEvaluation map[string]any
+		modelVersion    = time.Now().Format(types.ModelVersionTimeFormat)
 	)
 
 	switch modelUploadRequest := req.GetRequest().(type) {
