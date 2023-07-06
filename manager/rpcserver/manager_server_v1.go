@@ -53,11 +53,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/slices"
 )
 
-const (
-	// TimeFormat is the timestamp format as model version.
-	TimeFormat = "20060102"
-)
-
 // managerServerV1 is v1 version of the manager grpc server.
 type managerServerV1 struct {
 	// Manager configuration.
@@ -770,7 +765,7 @@ func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.Create
 	var (
 		modelEvaluation map[string]any
 		modelType       string
-		modelVersion    = time.Now().Format(TimeFormat)
+		modelVersion    = time.Now().Format(types.ModelVersionTimeFormat)
 	)
 
 	switch modelUploadRequest := req.GetRequest().(type) {

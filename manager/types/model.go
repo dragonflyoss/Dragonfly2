@@ -16,6 +16,11 @@
 
 package types
 
+const (
+	// ModelVersionTimeFormat is the timestamp format as model version.
+	ModelVersionTimeFormat = "20060102"
+)
+
 type ModelParams struct {
 	ID uint `uri:"id" binding:"required"`
 }
