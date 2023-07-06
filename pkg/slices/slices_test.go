@@ -114,6 +114,43 @@ func TestRemoveDuplicates(t *testing.T) {
 	}
 }
 
+func TestRemove(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []int
+		index    int
+		expected []int
+	}{
+		{
+			name:     "remove any element",
+			input:    []int{1, 2, 3},
+			index:    1,
+			expected: []int{1, 3},
+		},
+		{
+			name:     "remove the first element",
+			input:    []int{1, 2, 3},
+			index:    0,
+			expected: []int{2, 3},
+		},
+		{
+			name:     "remove the last element",
+			input:    []int{1, 2, 3},
+			index:    2,
+			expected: []int{1, 2},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Remove(tt.input, tt.index)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("expected %v, but got %v", tt.expected, result)
+			}
+		})
+	}
+}
+
 func TestReverse(t *testing.T) {
 	tests := []struct {
 		name     string

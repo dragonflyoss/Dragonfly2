@@ -2699,9 +2699,7 @@ func TestServiceV1_SyncProbes(t *testing.T) {
 							ProbeStartedRequest: &schedulerv1.ProbeStartedRequest{},
 						},
 					}, nil).Times(1),
-					mn.FindProbedHostIDs(gomock.Eq(mockRawSeedHost.ID)).Return([]string{mockRawHost.ID}, nil).Times(1),
-					mr.HostManager().Return(hostManager).Times(1),
-					mh.Load(gomock.Eq(mockRawHost.ID)).Return(&mockRawHost, true),
+					mn.FindProbedHosts(gomock.Eq(mockRawSeedHost.ID)).Return([]*resource.Host{&mockRawHost}, nil).Times(1),
 					ms.Send(gomock.Eq(&schedulerv1.SyncProbesResponse{
 						Hosts: []*commonv1.Host{
 							{
@@ -2872,42 +2870,12 @@ func TestServiceV1_SyncProbes(t *testing.T) {
 							ProbeStartedRequest: &schedulerv1.ProbeStartedRequest{},
 						},
 					}, nil).Times(1),
-					mn.FindProbedHostIDs(gomock.Eq(mockRawSeedHost.ID)).Return(nil, errors.New("find probed host ids error")).Times(1),
+					mn.FindProbedHosts(gomock.Eq(mockRawSeedHost.ID)).Return(nil, errors.New("find probed host ids error")).Times(1),
 				)
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "rpc error: code = FailedPrecondition desc = find probed host ids error")
-			},
-		},
-		{
-			name: "load host error when receive ProbeStartedRequest",
-			mock: func(svc *V1, mr *resource.MockResourceMockRecorder, probes *networktopologymocks.MockProbes, mp *networktopologymocks.MockProbesMockRecorder,
-				mn *networktopologymocks.MockNetworkTopologyMockRecorder, hostManager resource.HostManager, mh *resource.MockHostManagerMockRecorder,
-				ms *schedulerv1mocks.MockScheduler_SyncProbesServerMockRecorder) {
-				gomock.InOrder(
-					ms.Recv().Return(&schedulerv1.SyncProbesRequest{
-						Host: &commonv1.Host{
-							Id:           mockRawSeedHost.ID,
-							Ip:           mockRawSeedHost.IP,
-							Hostname:     mockRawSeedHost.Hostname,
-							Port:         mockRawSeedHost.Port,
-							DownloadPort: mockRawSeedHost.DownloadPort,
-							Location:     mockRawSeedHost.Network.Location,
-							Idc:          mockRawSeedHost.Network.IDC,
-						},
-						Request: &schedulerv1.SyncProbesRequest_ProbeStartedRequest{
-							ProbeStartedRequest: &schedulerv1.ProbeStartedRequest{},
-						},
-					}, nil).Times(1),
-					mn.FindProbedHostIDs(gomock.Eq(mockRawSeedHost.ID)).Return([]string{mockRawHost.ID}, nil).Times(1),
-					mr.HostManager().Return(hostManager).Times(1),
-					mh.Load(gomock.Eq(mockRawHost.ID)).Return(nil, false),
-				)
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "rpc error: code = NotFound desc = probed host not found")
 			},
 		},
 		{
@@ -2930,9 +2898,7 @@ func TestServiceV1_SyncProbes(t *testing.T) {
 							ProbeStartedRequest: &schedulerv1.ProbeStartedRequest{},
 						},
 					}, nil).Times(1),
-					mn.FindProbedHostIDs(gomock.Eq(mockRawSeedHost.ID)).Return([]string{mockRawHost.ID}, nil).Times(1),
-					mr.HostManager().Return(hostManager).Times(1),
-					mh.Load(gomock.Eq(mockRawHost.ID)).Return(&mockRawHost, true),
+					mn.FindProbedHosts(gomock.Eq(mockRawSeedHost.ID)).Return([]*resource.Host{&mockRawHost}, nil).Times(1),
 					ms.Send(gomock.Eq(&schedulerv1.SyncProbesResponse{
 						Hosts: []*commonv1.Host{
 							{
