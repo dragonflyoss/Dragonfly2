@@ -754,9 +754,12 @@ func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.Create
 		return nil, status.Error(codes.Internal, "object storage is disabled")
 	}
 
-	if IsExist, err := s.objectStorage.IsBucketExist(ctx, s.config.Trainer.BucketName); err != nil {
+	IsExist, err := s.objectStorage.IsBucketExist(ctx, s.config.Trainer.BucketName)
+	if err != nil {
 		return nil, status.Error(codes.Internal, "find bucket exist failed")
-	} else if !IsExist {
+	}
+
+	if !IsExist {
 		if err := s.objectStorage.CreateBucket(ctx, s.config.Trainer.BucketName); err != nil {
 			return nil, status.Error(codes.Internal, "create model bucket failed")
 		}
@@ -780,9 +783,12 @@ func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.Create
 		}
 
 		modelConfigObjectKey := fmt.Sprintf("%s_GNN/config.pbtxt", strconv.FormatUint(req.ClusterId, 10))
-		if IsExist, err := s.objectStorage.IsObjectExist(ctx, s.config.Trainer.BucketName, modelConfigObjectKey); err != nil {
+		IsExist, err := s.objectStorage.IsObjectExist(ctx, s.config.Trainer.BucketName, modelConfigObjectKey)
+		if err != nil {
 			log.Errorf("find GNN model config failed: %s", err.Error())
-		} else if !IsExist {
+		}
+
+		if !IsExist {
 			if err = s.createGNNModelConfig(ctx, fmt.Sprintf("%s_GNN", strconv.FormatUint(req.ClusterId, 10)), modelVersion); err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
@@ -800,9 +806,12 @@ func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.Create
 		}
 
 		modelConfigObjectKey := fmt.Sprintf("%s%s%s_MLP/config.pbtxt", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10))
-		if IsExist, err := s.objectStorage.IsObjectExist(ctx, s.config.Trainer.BucketName, modelConfigObjectKey); err != nil {
+		IsExist, err := s.objectStorage.IsObjectExist(ctx, s.config.Trainer.BucketName, modelConfigObjectKey)
+		if err != nil {
 			log.Errorf("find MLP model config failed: %s", err.Error())
-		} else if !IsExist {
+		}
+
+		if !IsExist {
 			if err = s.createMLPModelConfig(ctx, fmt.Sprintf("%s%s%s_MLP", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10)), modelVersion); err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
@@ -826,6 +835,7 @@ func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.Create
 	}).Error; err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
 	if err := s.db.WithContext(ctx).Create(models.Model{
 		Type:        modelType,
 		Version:     modelVersion,
@@ -847,7 +857,7 @@ func (s *managerServerV1) createGNNModelConfig(ctx context.Context, modelName st
 		return err
 	}
 
-	modelConfig := inferencev1.ModelConfig{
+	pbModelConfig := inferencev1.ModelConfig{
 		Name:     modelName,
 		Platform: "tensorrt_plan",
 		VersionPolicy: &inferencev1.ModelVersionPolicy{
@@ -858,7 +868,7 @@ func (s *managerServerV1) createGNNModelConfig(ctx context.Context, modelName st
 			},
 		},
 	}
-	if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName, fmt.Sprintf("%s/config.pbtxt", modelName), digest.AlgorithmMD5, strings.NewReader(modelConfig.String())); err != nil {
+	if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName, fmt.Sprintf("%s/config.pbtxt", modelName), digest.AlgorithmMD5, strings.NewReader(pbModelConfig.String())); err != nil {
 		return err
 	}
 
