@@ -19,6 +19,21 @@ package types
 const (
 	// ModelVersionTimeFormat is the timestamp format as model version.
 	ModelVersionTimeFormat = "20060102"
+
+	// ModelFileName is model file name.
+	ModelFileName = "model.graphdef"
+
+	// ModelConfigFileName is model config file name.
+	ModelConfigFileName = "config.pbtxt"
+
+	// GNNModelNameSuffix is suffix of GNN model name.
+	GNNModelNameSuffix = "GNN"
+
+	// MLPModelNameSuffix is suffix of MLP model name.
+	MLPModelNameSuffix = "MLP"
+
+	// DefaultPlatform is default triton backend configuration
+	DefaultPlatform = "tensorrt_plan"
 )
 
 type ModelParams struct {

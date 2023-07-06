@@ -766,10 +766,12 @@ func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.Create
 		modelEvaluation map[string]any
 		modelType       string
 		modelVersion    = time.Now().Format(types.ModelVersionTimeFormat)
+		modelName       string
 	)
 
 	switch modelUploadRequest := req.GetRequest().(type) {
 	case *managerv1.CreateModelRequest_CreateGnnRequest:
+		modelName = fmt.Sprintf("%s_%s", strconv.FormatUint(req.ClusterId, 10), types.GNNModelNameSuffix)
 		modelType = models.ModelTypeGNN
 		modelEvaluation = map[string]any{
 			"Precision": modelUploadRequest.CreateGnnRequest.GetPrecision(),
@@ -777,43 +779,40 @@ func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.Create
 			"F1Score":   modelUploadRequest.CreateGnnRequest.GetF1Score(),
 		}
 
-		modelConfigObjectKey := fmt.Sprintf("%s_GNN/config.pbtxt", strconv.FormatUint(req.ClusterId, 10))
-		IsExist, err := s.objectStorage.IsObjectExist(ctx, s.config.Trainer.BucketName, modelConfigObjectKey)
+		IsExist, err := s.objectStorage.IsObjectExist(ctx, s.config.Trainer.BucketName, fmt.Sprintf("%s/%s", modelName, types.ModelConfigFileName))
 		if err != nil {
 			log.Errorf("find GNN model config failed: %s", err.Error())
 		}
 
 		if !IsExist {
-			if err = s.createGNNModelConfig(ctx, fmt.Sprintf("%s_GNN", strconv.FormatUint(req.ClusterId, 10)), modelVersion); err != nil {
+			if err = s.createGNNModelConfig(ctx, modelName, modelVersion); err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
 		}
 
-		modelObjectKey := fmt.Sprintf("%s_GNN/%s/model.graphdef", strconv.FormatUint(req.ClusterId, 10), modelVersion)
-		if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName, modelObjectKey, digest.AlgorithmMD5, bytes.NewReader(req.GetCreateGnnRequest().GetData())); err != nil {
+		if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName, fmt.Sprintf("%s/%s/%s", modelName, modelVersion, types.ModelFileName), digest.AlgorithmMD5, bytes.NewReader(req.GetCreateGnnRequest().GetData())); err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	case *managerv1.CreateModelRequest_CreateMlpRequest:
+		modelName = fmt.Sprintf("%s%s%s_%s", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10), types.MLPModelNameSuffix)
 		modelType = models.ModelTypeMLP
 		modelEvaluation = map[string]any{
 			"Mse": modelUploadRequest.CreateMlpRequest.GetMse(),
 			"Mae": modelUploadRequest.CreateMlpRequest.GetMae(),
 		}
 
-		modelConfigObjectKey := fmt.Sprintf("%s%s%s_MLP/config.pbtxt", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10))
-		IsExist, err := s.objectStorage.IsObjectExist(ctx, s.config.Trainer.BucketName, modelConfigObjectKey)
+		IsExist, err := s.objectStorage.IsObjectExist(ctx, s.config.Trainer.BucketName, fmt.Sprintf("%s/%s", modelName, types.ModelConfigFileName))
 		if err != nil {
 			log.Errorf("find MLP model config failed: %s", err.Error())
 		}
 
 		if !IsExist {
-			if err = s.createMLPModelConfig(ctx, fmt.Sprintf("%s%s%s_MLP", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10)), modelVersion); err != nil {
+			if err = s.createMLPModelConfig(ctx, modelName, modelVersion); err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
 		}
 
-		modelObjectKey := fmt.Sprintf("%s%s%s_MLP/%s/model.graphdef", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10), modelVersion)
-		if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName, modelObjectKey, digest.AlgorithmMD5, bytes.NewReader(req.GetCreateMlpRequest().GetData())); err != nil {
+		if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName, fmt.Sprintf("%s/%s/%s", modelName, modelVersion, types.ModelFileName), digest.AlgorithmMD5, bytes.NewReader(req.GetCreateMlpRequest().GetData())); err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	default:
@@ -854,7 +853,7 @@ func (s *managerServerV1) createGNNModelConfig(ctx context.Context, modelName st
 
 	pbModelConfig := inferencev1.ModelConfig{
 		Name:     modelName,
-		Platform: "tensorrt_plan",
+		Platform: types.DefaultPlatform,
 		VersionPolicy: &inferencev1.ModelVersionPolicy{
 			PolicyChoice: &inferencev1.ModelVersionPolicy_Specific_{
 				Specific: &inferencev1.ModelVersionPolicy_Specific{
@@ -864,7 +863,7 @@ func (s *managerServerV1) createGNNModelConfig(ctx context.Context, modelName st
 		},
 	}
 
-	if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName, fmt.Sprintf("%s/config.pbtxt", modelName), digest.AlgorithmMD5, strings.NewReader(pbModelConfig.String())); err != nil {
+	if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName, fmt.Sprintf("%s/%s", modelName, types.ModelConfigFileName), digest.AlgorithmMD5, strings.NewReader(pbModelConfig.String())); err != nil {
 		return err
 	}
 
@@ -882,7 +881,7 @@ func (s *managerServerV1) createMLPModelConfig(ctx context.Context, modelName st
 
 	pbModelConfig := inferencev1.ModelConfig{
 		Name:     modelName,
-		Platform: "tensorrt_plan",
+		Platform: types.DefaultPlatform,
 		VersionPolicy: &inferencev1.ModelVersionPolicy{
 			PolicyChoice: &inferencev1.ModelVersionPolicy_Specific_{
 				Specific: &inferencev1.ModelVersionPolicy_Specific{
@@ -892,7 +891,7 @@ func (s *managerServerV1) createMLPModelConfig(ctx context.Context, modelName st
 		},
 	}
 
-	if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName, fmt.Sprintf("%s/config.pbtxt", modelName), digest.AlgorithmMD5, strings.NewReader(pbModelConfig.String())); err != nil {
+	if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName, fmt.Sprintf("%s/%s", modelName, types.ModelConfigFileName), digest.AlgorithmMD5, strings.NewReader(pbModelConfig.String())); err != nil {
 		return err
 	}
 
