@@ -821,6 +821,7 @@ func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.Create
 	scheduler := models.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, &models.Scheduler{
 		Hostname:           req.Hostname,
+		IP:                 req.Ip,
 		SchedulerClusterID: uint(req.ClusterId),
 	}).Error; err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -857,7 +858,7 @@ func (s *managerServerV1) createGNNModelConfig(ctx context.Context, modelName st
 			},
 		},
 	}
-	if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName, fmt.Sprintf("%s_GNN/config.pbtxt", modelName), digest.AlgorithmMD5, strings.NewReader(modelConfig.String())); err != nil {
+	if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName, fmt.Sprintf("%s/config.pbtxt", modelName), digest.AlgorithmMD5, strings.NewReader(modelConfig.String())); err != nil {
 		return err
 	}
 
@@ -884,7 +885,7 @@ func (s *managerServerV1) createMLPModelConfig(ctx context.Context, modelName st
 			},
 		},
 	}
-	if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName, fmt.Sprintf("%s_MLP/config.pbtxt", modelName), digest.AlgorithmMD5, strings.NewReader(pbModelConfig.String())); err != nil {
+	if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName, fmt.Sprintf("%s/config.pbtxt", modelName), digest.AlgorithmMD5, strings.NewReader(pbModelConfig.String())); err != nil {
 		return err
 	}
 
