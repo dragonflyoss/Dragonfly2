@@ -155,7 +155,7 @@ func NewPieceDownloader(timeout time.Duration, caCertPool *x509.CertPool) PieceD
 		pd.scheme = "https"
 		defaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
 			ClientCAs: caCertPool,
-			RootCAs: caCertPool,
+			RootCAs:   caCertPool,
 		}
 	}
 
