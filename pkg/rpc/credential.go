@@ -64,6 +64,7 @@ func NewServerCredentialsByCertify(tlsPolicy string, tlsVerify bool, pemClientCA
 			return certifyClient.GetCertificate(hello)
 		},
 		ClientCAs: certPool,
+		RootCAs:   certPool,
 	}
 
 	if tlsVerify {
