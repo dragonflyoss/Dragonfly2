@@ -135,7 +135,7 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 			// Initialize modelKey.
 			modelKey, err = v.createModelKey(req.Hostname, req.Ip, uint(req.ClusterId), DefaultHashAlgorithm)
 			if err != nil {
-				logger.Errorf("create mod▒el key error: %s", err.Error())
+				logger.Errorf("create model key error: %s", err.Error())
 				return err
 			}
 		}

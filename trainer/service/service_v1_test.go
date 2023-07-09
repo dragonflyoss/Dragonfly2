@@ -28,12 +28,12 @@ import (
 	trainingmocks "d7y.io/dragonfly/v2/trainer/training/mocks"
 )
 
-var (
-	mockHostName  = "localhost"
-	mockIP        = "127.0.0.1"
-	mockClusterID = uint64(1)
-	mockDataset   = []byte("foo")
-)
+// var (
+// 	mockHostName  = "localhost"
+// 	mockIP        = "127.0.0.1"
+// 	mockClusterID = uint64(1)
+// 	mockDataset   = []byte("foo")
+// )
 
 func TestService_NewV1(t *testing.T) {
 	tests := []struct {
