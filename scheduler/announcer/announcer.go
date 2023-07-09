@@ -167,10 +167,12 @@ func (a *announcer) train() error {
 	})
 
 	if err := eg.Wait(); err != nil {
+		logger.Errorf("wait error %s", err.Error())
 		return err
 	}
 
 	if _, err := stream.CloseAndRecv(); err != nil {
+		logger.Errorf("close and recv error %s", err.Error())
 		return err
 	}
 
@@ -192,17 +194,19 @@ func (a *announcer) uploadDownloadToTrainer(stream trainerv1.Trainer_TrainClient
 			return err
 		}
 
-		if err := stream.Send(&trainerv1.TrainRequest{
-			Hostname:  a.config.Server.Host,
-			Ip:        a.config.Server.AdvertiseIP.String(),
-			ClusterId: uint64(a.config.Manager.SchedulerClusterID),
-			Request: &trainerv1.TrainRequest_TrainMlpRequest{
-				TrainMlpRequest: &trainerv1.TrainMLPRequest{
-					Dataset: buf[:n],
+		if n != 0 {
+			if err := stream.Send(&trainerv1.TrainRequest{
+				Hostname:  a.config.Server.Host,
+				Ip:        a.config.Server.AdvertiseIP.String(),
+				ClusterId: uint64(a.config.Manager.SchedulerClusterID),
+				Request: &trainerv1.TrainRequest_TrainMlpRequest{
+					TrainMlpRequest: &trainerv1.TrainMLPRequest{
+						Dataset: buf[:n],
+					},
 				},
-			},
-		}); err != nil {
-			return err
+			}); err != nil {
+				return err
+			}
 		}
 
 		if err == io.EOF {
@@ -228,17 +232,19 @@ func (a *announcer) uploadNetworkTopologyToTrainer(stream trainerv1.Trainer_Trai
 			return err
 		}
 
-		if err := stream.Send(&trainerv1.TrainRequest{
-			Hostname:  a.config.Server.Host,
-			Ip:        a.config.Server.AdvertiseIP.String(),
-			ClusterId: uint64(a.config.Manager.SchedulerClusterID),
-			Request: &trainerv1.TrainRequest_TrainGnnRequest{
-				TrainGnnRequest: &trainerv1.TrainGNNRequest{
-					Dataset: buf[:n],
+		if n != 0 {
+			if err := stream.Send(&trainerv1.TrainRequest{
+				Hostname:  a.config.Server.Host,
+				Ip:        a.config.Server.AdvertiseIP.String(),
+				ClusterId: uint64(a.config.Manager.SchedulerClusterID),
+				Request: &trainerv1.TrainRequest_TrainGnnRequest{
+					TrainGnnRequest: &trainerv1.TrainGNNRequest{
+						Dataset: buf[:n],
+					},
 				},
-			},
-		}); err != nil {
-			return err
+			}); err != nil {
+				return err
+			}
 		}
 
 		if err == io.EOF {
