@@ -129,7 +129,7 @@ type Piece struct {
 	// Length is piece length.
 	Length int64 `csv:"length"`
 
-	// Cost is cost time for downloading piece.
+	// Cost is the cost time for downloading piece.
 	Cost int64 `csv:"cost"`
 
 	// CreatedAt is piece create time.
