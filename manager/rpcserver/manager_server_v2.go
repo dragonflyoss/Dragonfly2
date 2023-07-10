@@ -778,7 +778,7 @@ func (s *managerServerV2) CreateModel(ctx context.Context, req *managerv2.Create
 			"F1Score":   modelUploadRequest.CreateGnnRequest.GetF1Score(),
 		}
 
-		IsExist, err := s.objectStorage.IsObjectExist(ctx, s.config.Trainer.BucketName, fmt.Sprintf("%s/%s", modelName, types.ModelConfigFileName))
+		IsExist, err := s.objectStorage.IsObjectExist(ctx, s.config.Trainer.BucketName, types.MakeObjectKeyOfModelConfigFile(modelName))
 		if err != nil {
 			log.Errorf("find GNN model config failed: %s", err.Error())
 		}
@@ -789,7 +789,8 @@ func (s *managerServerV2) CreateModel(ctx context.Context, req *managerv2.Create
 			}
 		}
 
-		if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName, fmt.Sprintf("%s/%s/%s", modelName, modelVersion, types.ModelFileName), digest.AlgorithmMD5, bytes.NewReader(req.GetCreateGnnRequest().GetData())); err != nil {
+		if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName,
+			types.MakeObjectKeyOfModelFile(modelName, modelVersion), digest.AlgorithmMD5, bytes.NewReader(req.GetCreateGnnRequest().GetData())); err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	case *managerv2.CreateModelRequest_CreateMlpRequest:
@@ -800,7 +801,7 @@ func (s *managerServerV2) CreateModel(ctx context.Context, req *managerv2.Create
 			"Mae": modelUploadRequest.CreateMlpRequest.GetMae(),
 		}
 
-		IsExist, err := s.objectStorage.IsObjectExist(ctx, s.config.Trainer.BucketName, fmt.Sprintf("%s/%s", modelName, types.ModelConfigFileName))
+		IsExist, err := s.objectStorage.IsObjectExist(ctx, s.config.Trainer.BucketName, types.MakeObjectKeyOfModelConfigFile(modelName))
 		if err != nil {
 			log.Errorf("find MLP model config failed: %s", err.Error())
 		}
@@ -811,7 +812,8 @@ func (s *managerServerV2) CreateModel(ctx context.Context, req *managerv2.Create
 			}
 		}
 
-		if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName, fmt.Sprintf("%s/%s/%s", modelName, modelVersion, types.ModelFileName), digest.AlgorithmMD5, bytes.NewReader(req.GetCreateMlpRequest().GetData())); err != nil {
+		if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName,
+			types.MakeObjectKeyOfModelFile(modelName, modelVersion), digest.AlgorithmMD5, bytes.NewReader(req.GetCreateMlpRequest().GetData())); err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	default:
@@ -862,7 +864,8 @@ func (s *managerServerV2) createGNNModelConfig(ctx context.Context, modelName st
 		},
 	}
 
-	if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName, fmt.Sprintf("%s/%s", modelName, types.ModelConfigFileName), digest.AlgorithmMD5, strings.NewReader(pbModelConfig.String())); err != nil {
+	if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName,
+		types.MakeObjectKeyOfModelConfigFile(modelName), digest.AlgorithmMD5, strings.NewReader(pbModelConfig.String())); err != nil {
 		return err
 	}
 
@@ -890,7 +893,8 @@ func (s *managerServerV2) createMLPModelConfig(ctx context.Context, modelName st
 		},
 	}
 
-	if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName, fmt.Sprintf("%s/%s", modelName, types.ModelConfigFileName), digest.AlgorithmMD5, strings.NewReader(pbModelConfig.String())); err != nil {
+	if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName,
+		types.MakeObjectKeyOfModelConfigFile(modelName), digest.AlgorithmMD5, strings.NewReader(pbModelConfig.String())); err != nil {
 		return err
 	}
 

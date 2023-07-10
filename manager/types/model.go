@@ -16,6 +16,11 @@
 
 package types
 
+import (
+	"fmt"
+	"strconv"
+)
+
 const (
 	// ModelVersionTimeFormat is the timestamp format as model version.
 	ModelVersionTimeFormat = "20060102"
@@ -69,4 +74,20 @@ type ModelEvaluation struct {
 	F1Score   float64 `json:"f1_score" binding:"omitempty,gte=0,lte=1"`
 	MSE       float64 `json:"mse" binding:"omitempty,gte=0"`
 	MAE       float64 `json:"mae" binding:"omitempty,gte=0"`
+}
+
+func MakeGNNModelName(clusterID uint64) string {
+	return fmt.Sprintf("%s_%s", strconv.FormatUint(clusterID, 10), GNNModelNameSuffix)
+}
+
+func MakeMLPModelName(hostName, ip string, clusterID uint64) string {
+	return fmt.Sprintf("%s%s%s_%s", hostName, ip, strconv.FormatUint(clusterID, 10), MLPModelNameSuffix)
+}
+
+func MakeObjectKeyOfModelFile(modelName, modelVersion string) string {
+	return fmt.Sprintf("%s/%s/%s", modelName, modelVersion, ModelFileName)
+}
+
+func MakeObjectKeyOfModelConfigFile(modelName string) string {
+	return fmt.Sprintf("%s/%s", modelName, ModelConfigFileName)
 }
