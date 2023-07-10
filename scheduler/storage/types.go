@@ -124,6 +124,18 @@ type Host struct {
 	UpdatedAt int64 `csv:"updatedAt"`
 }
 
+// Piece contains content for piece.
+type Piece struct {
+	// Length is piece length.
+	Length int64 `csv:"length"`
+
+	// Cost is cost time for downloading piece.
+	Cost int64 `csv:"cost"`
+
+	// CreatedAt is piece create time.
+	CreatedAt int64 `csv:"createdAt"`
+}
+
 // Parent contains content for parent.
 type Parent struct {
 	// ID is peer id.
@@ -146,6 +158,9 @@ type Parent struct {
 
 	// Host is peer host.
 	Host Host `csv:"host"`
+
+	// Pieces is downloading pieces from parent host.
+	Pieces []Piece `csv:"pieces" csv[]:"10"`
 
 	// CreatedAt is peer create nanosecond time.
 	CreatedAt int64 `csv:"createdAt"`
