@@ -6,7 +6,6 @@ package mocks
 
 import (
 	reflect "reflect"
-	time "time"
 
 	networktopology "d7y.io/dragonfly/v2/scheduler/networktopology"
 	resource "d7y.io/dragonfly/v2/scheduler/resource"
@@ -77,21 +76,6 @@ func (m *MockNetworkTopology) Has(arg0, arg1 string) bool {
 func (mr *MockNetworkTopologyMockRecorder) Has(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Has", reflect.TypeOf((*MockNetworkTopology)(nil).Has), arg0, arg1)
-}
-
-// ProbedAt mocks base method.
-func (m *MockNetworkTopology) ProbedAt(arg0 string) (time.Time, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ProbedAt", arg0)
-	ret0, _ := ret[0].(time.Time)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ProbedAt indicates an expected call of ProbedAt.
-func (mr *MockNetworkTopologyMockRecorder) ProbedAt(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProbedAt", reflect.TypeOf((*MockNetworkTopology)(nil).ProbedAt), arg0)
 }
 
 // ProbedCount mocks base method.

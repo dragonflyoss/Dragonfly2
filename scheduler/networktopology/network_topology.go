@@ -74,9 +74,6 @@ type NetworkTopology interface {
 	// ProbedCount is the number of times the host has been probed.
 	ProbedCount(string) (uint64, error)
 
-	// ProbedAt is the time when the host was last probed.
-	ProbedAt(string) (time.Time, error)
-
 	// Snapshot writes the current network topology to the storage.
 	Snapshot() error
 }
@@ -218,7 +215,7 @@ func (nt *networkTopology) DeleteHost(hostID string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	deleteKeys := []string{pkgredis.MakeProbedAtKeyInScheduler(hostID), pkgredis.MakeProbedCountKeyInScheduler(hostID)}
+	deleteKeys := []string{pkgredis.MakeProbedCountKeyInScheduler(hostID)}
 	srcNetworkTopologyKeys, _, err := nt.rdb.Scan(ctx, 0, pkgredis.MakeNetworkTopologyKeyInScheduler(hostID, "*"), math.MaxInt64).Result()
 	if err != nil {
 		return err
@@ -261,14 +258,6 @@ func (nt *networkTopology) ProbedCount(hostID string) (uint64, error) {
 	defer cancel()
 
 	return nt.rdb.Get(ctx, pkgredis.MakeProbedCountKeyInScheduler(hostID)).Uint64()
-}
-
-// ProbedAt is the time when the host was last probed.
-func (nt *networkTopology) ProbedAt(hostID string) (time.Time, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
-	defer cancel()
-
-	return nt.rdb.Get(ctx, pkgredis.MakeProbedAtKeyInScheduler(hostID)).Time()
 }
 
 // Snapshot writes the current network topology to the storage.

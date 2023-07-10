@@ -178,10 +178,6 @@ func (p *probes) Enqueue(probe *Probe) error {
 		return err
 	}
 
-	if err := p.rdb.Set(ctx, pkgredis.MakeProbedAtKeyInScheduler(p.destHostID), probe.CreatedAt.Format(time.RFC3339Nano), 0).Err(); err != nil {
-		return err
-	}
-
 	if err := p.rdb.Incr(ctx, pkgredis.MakeProbedCountKeyInScheduler(p.destHostID)).Err(); err != nil {
 		return err
 	}
