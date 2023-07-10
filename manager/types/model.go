@@ -16,6 +16,31 @@
 
 package types
 
+import (
+	"fmt"
+	"strconv"
+)
+
+const (
+	// ModelVersionTimeFormat is the timestamp format as model version.
+	ModelVersionTimeFormat = "20060102"
+
+	// ModelFileName is model file name.
+	ModelFileName = "model.graphdef"
+
+	// ModelConfigFileName is model config file name.
+	ModelConfigFileName = "config.pbtxt"
+
+	// GNNModelNameSuffix is suffix of GNN model name.
+	GNNModelNameSuffix = "GNN"
+
+	// MLPModelNameSuffix is suffix of MLP model name.
+	MLPModelNameSuffix = "MLP"
+
+	// DefaultPlatform is default triton backend configuration.
+	DefaultPlatform = "tensorrt_plan"
+)
+
 type ModelParams struct {
 	ID uint `uri:"id" binding:"required"`
 }
@@ -49,4 +74,20 @@ type ModelEvaluation struct {
 	F1Score   float64 `json:"f1_score" binding:"omitempty,gte=0,lte=1"`
 	MSE       float64 `json:"mse" binding:"omitempty,gte=0"`
 	MAE       float64 `json:"mae" binding:"omitempty,gte=0"`
+}
+
+func MakeGNNModelName(clusterID uint64) string {
+	return fmt.Sprintf("%s_%s", strconv.FormatUint(clusterID, 10), GNNModelNameSuffix)
+}
+
+func MakeMLPModelName(hostName, ip string, clusterID uint64) string {
+	return fmt.Sprintf("%s%s%s_%s", hostName, ip, strconv.FormatUint(clusterID, 10), MLPModelNameSuffix)
+}
+
+func MakeObjectKeyOfModelFile(modelName, modelVersion string) string {
+	return fmt.Sprintf("%s/%s/%s", modelName, modelVersion, ModelFileName)
+}
+
+func MakeObjectKeyOfModelConfigFile(modelName string) string {
+	return fmt.Sprintf("%s/%s", modelName, ModelConfigFileName)
 }
