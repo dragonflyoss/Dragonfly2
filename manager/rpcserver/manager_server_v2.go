@@ -770,7 +770,7 @@ func (s *managerServerV2) CreateModel(ctx context.Context, req *managerv2.Create
 
 	switch modelUploadRequest := req.GetRequest().(type) {
 	case *managerv2.CreateModelRequest_CreateGnnRequest:
-		modelName = fmt.Sprintf("%s_%s", strconv.FormatUint(req.ClusterId, 10), types.GNNModelNameSuffix)
+		modelName = types.MakeGNNModelName(req.GetClusterId())
 		modelType = models.ModelTypeGNN
 		modelEvaluation = map[string]any{
 			"Precision": modelUploadRequest.CreateGnnRequest.GetPrecision(),
@@ -794,7 +794,7 @@ func (s *managerServerV2) CreateModel(ctx context.Context, req *managerv2.Create
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	case *managerv2.CreateModelRequest_CreateMlpRequest:
-		modelName = fmt.Sprintf("%s%s%s_%s", req.Hostname, req.Ip, strconv.FormatUint(req.ClusterId, 10), types.MLPModelNameSuffix)
+		modelName = types.MakeMLPModelName(req.GetHostname(), req.GetIp(), req.GetClusterId())
 		modelType = models.ModelTypeMLP
 		modelEvaluation = map[string]any{
 			"Mse": modelUploadRequest.CreateMlpRequest.GetMse(),
