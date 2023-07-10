@@ -168,3 +168,10 @@ func SHA256FromStrings(data ...string) string {
 
 	return hex.EncodeToString(h.Sum(nil))
 }
+
+// SHA256FromBytes computes the SHA256 checksum with []byte.
+func SHA256FromBytes(bytes []byte) string {
+	h := sha256.New()
+	h.Write(bytes)
+	return hex.EncodeToString(h.Sum(nil))
+}
