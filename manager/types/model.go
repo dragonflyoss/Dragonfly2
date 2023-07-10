@@ -41,22 +41,13 @@ type ModelParams struct {
 	ID uint `uri:"id" binding:"required"`
 }
 
-type CreateModelRequest struct {
-	Type        string           `json:"type" binding:"required"`
-	BIO         string           `json:"BIO" binding:"omitempty"`
-	Version     string           `json:"version"  binding:"required"`
-	Evaluation  *ModelEvaluation `json:"evaluation" binding:"required"`
-	SchedulerID uint             `json:"scheduler_id" binding:"required"`
-}
-
 type UpdateModelRequest struct {
-	BIO         string           `json:"BIO" binding:"omitempty"`
-	State       string           `json:"state" binding:"omitempty,oneof=active inactive"`
-	Evaluation  *ModelEvaluation `json:"evaluation" binding:"omitempty"`
-	SchedulerID uint             `json:"scheduler_id" binding:"omitempty"`
+	BIO   string `json:"BIO" binding:"omitempty"`
+	State string `json:"state" binding:"omitempty,oneof=active"`
 }
 
 type GetModelsQuery struct {
+	Name        string `json:"name" binding:"omitempty"`
 	Type        string `json:"type" binding:"omitempty"`
 	Version     string `json:"version"  binding:"omitempty"`
 	SchedulerID uint   `json:"scheduler_id" binding:"omitempty"`

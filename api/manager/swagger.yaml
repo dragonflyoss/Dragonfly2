@@ -82,6 +82,8 @@ definitions:
         $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.JSONMap'
       id:
         type: integer
+      name:
+        type: string
       scheduler_id:
         type: integer
       state:
@@ -383,24 +385,6 @@ definitions:
     required:
     - type
     type: object
-  d7y_io_dragonfly_v2_manager_types.CreateModelRequest:
-    properties:
-      BIO:
-        type: string
-      evaluation:
-        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.ModelEvaluation'
-      scheduler_id:
-        type: integer
-      type:
-        type: string
-      version:
-        type: string
-    required:
-    - evaluation
-    - scheduler_id
-    - type
-    - version
-    type: object
   d7y_io_dragonfly_v2_manager_types.CreateOauthRequest:
     properties:
       bio:
@@ -597,27 +581,6 @@ definitions:
       status:
         type: string
     type: object
-  d7y_io_dragonfly_v2_manager_types.ModelEvaluation:
-    properties:
-      f1_score:
-        maximum: 1
-        minimum: 0
-        type: number
-      mae:
-        minimum: 0
-        type: number
-      mse:
-        minimum: 0
-        type: number
-      precision:
-        maximum: 1
-        minimum: 0
-        type: number
-      recall:
-        maximum: 1
-        minimum: 0
-        type: number
-    type: object
   d7y_io_dragonfly_v2_manager_types.PriorityConfig:
     properties:
       urls:
@@ -803,14 +766,9 @@ definitions:
     properties:
       BIO:
         type: string
-      evaluation:
-        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.ModelEvaluation'
-      scheduler_id:
-        type: integer
       state:
         enum:
         - active
-        - inactive
         type: string
     type: object
   d7y_io_dragonfly_v2_manager_types.UpdateOauthRequest:
@@ -1660,33 +1618,6 @@ paths:
         "500":
           description: Internal Server Error
       summary: Get Models
-      tags:
-      - Model
-    post:
-      consumes:
-      - application/json
-      description: Create Model by json config
-      parameters:
-      - description: Model
-        in: body
-        name: Model
-        required: true
-        schema:
-          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.CreateModelRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.Model'
-        "400":
-          description: Bad Request
-        "404":
-          description: Not Found
-        "500":
-          description: Internal Server Error
-      summary: Create Model
       tags:
       - Model
   /models/{id}:

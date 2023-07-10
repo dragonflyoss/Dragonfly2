@@ -835,6 +835,7 @@ func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.Create
 
 	// Create model in database.
 	if err := s.db.WithContext(ctx).Model(&scheduler).Association("Models").Append(&models.Model{
+		Name:       name,
 		Type:       typ,
 		Version:    fmt.Sprint(version),
 		State:      models.ModelVersionStateInactive,
