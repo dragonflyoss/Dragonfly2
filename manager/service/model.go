@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	inferencev1 "d7y.io/api/pkg/apis/inference/v1"
@@ -29,29 +30,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/digest"
-	"d7y.io/dragonfly/v2/pkg/structure"
 )
-
-func (s *service) CreateModel(ctx context.Context, json types.CreateModelRequest) (*models.Model, error) {
-	evaluation, err := structure.StructToMap(json.Evaluation)
-	if err != nil {
-		return nil, err
-	}
-
-	model := models.Model{
-		Type:        json.Type,
-		BIO:         json.BIO,
-		Version:     json.Version,
-		Evaluation:  evaluation,
-		SchedulerID: json.SchedulerID,
-	}
-
-	if err := s.db.WithContext(ctx).Create(&model).Error; err != nil {
-		return nil, err
-	}
-
-	return &model, nil
-}
 
 func (s *service) DestroyModel(ctx context.Context, id uint) error {
 	model := models.Model{}
@@ -68,13 +47,23 @@ func (s *service) DestroyModel(ctx context.Context, id uint) error {
 
 func (s *service) UpdateModel(ctx context.Context, id uint, json types.UpdateModelRequest) (*models.Model, error) {
 	model := models.Model{}
-	if err := s.db.WithContext(ctx).Preload("Scheduler").First(&model, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&model, id).Error; err != nil {
 		return nil, err
 	}
 
+	// If the model is active, update the model config and
+	// update the model state.
 	if json.State == models.ModelVersionStateActive {
-		s.updateModelConfig(ctx, types.MakeObjectKeyOfModelFile(model.Scheduler.IP), types.M, model.Version)
+		if err := s.updateModelStateToActive(ctx, &model); err != nil {
+			return nil, err
+		}
+	}
 
+	// Update the model.
+	if err := s.db.WithContext(ctx).Model(&model).Updates(models.Model{
+		BIO: json.BIO,
+	}).Error; err != nil {
+		return nil, err
 	}
 
 	return &model, nil
@@ -103,6 +92,47 @@ func (s *service) GetModels(ctx context.Context, q types.GetModelsQuery) ([]mode
 	return model, count, nil
 }
 
+func (s *service) updateModelStateToActive(ctx context.Context, model *models.Model) error {
+	version, err := strconv.ParseInt(model.Version, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	// Update the model config to object storage.
+	if err := s.updateModelConfig(ctx, model.Name, version); err != nil {
+		return err
+	}
+
+	// Create a transaction to ensure that only one
+	// version is active at a time.
+	tx := s.db.WithContext(ctx).Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	if err := tx.Error; err != nil {
+		return err
+	}
+
+	if err := tx.Model(&models.Model{}).Where("state = ?", models.ModelVersionStateActive).Update("state", models.ModelVersionStateInactive).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Model(model).Update("state", models.ModelVersionStateActive).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if tx.Commit().Error != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *service) updateModelConfig(ctx context.Context, name string, version int64) error {
 	if !s.config.ObjectStorage.Enable {
 		return errors.New("object storage is disabled")
@@ -117,6 +147,10 @@ func (s *service) updateModelConfig(ctx context.Context, name string, version in
 	defer reader.Close()
 
 	data, err := io.ReadAll(reader)
+	if err != nil {
+		return err
+	}
+
 	if err := json.Unmarshal(data, &pbModelConfig); err != nil {
 		return err
 	}

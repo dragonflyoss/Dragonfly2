@@ -23,7 +23,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strconv"
 	"strings"
 	"time"
 
@@ -51,6 +50,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
 	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
 	"d7y.io/dragonfly/v2/pkg/slices"
+	"d7y.io/dragonfly/v2/pkg/structure"
 )
 
 // managerServerV1 is v1 version of the manager grpc server.
@@ -627,11 +627,13 @@ func (s *managerServerV1) GetObjectStorage(ctx context.Context, req *managerv1.G
 
 // List buckets configuration.
 func (s *managerServerV1) ListBuckets(ctx context.Context, req *managerv1.ListBucketsRequest) (*managerv1.ListBucketsResponse, error) {
+	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
+
 	if !s.objectStorageConfig.Enable {
+		log.Warn("object storage is disabled")
 		return nil, status.Error(codes.Internal, "object storage is disabled")
 	}
 
-	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
 	var pbListBucketsResponse managerv1.ListBucketsResponse
 	cacheKey := pkgredis.MakeBucketKeyInManager(s.objectStorageConfig.Name)
 
@@ -745,80 +747,73 @@ func (s *managerServerV1) ListApplications(ctx context.Context, req *managerv1.L
 
 // CreateModel creates model and update data of model to object storage.
 func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.CreateModelRequest) (*emptypb.Empty, error) {
+	log := logger.WithHostnameAndIP(req.GetHostname(), req.GetIp())
+
 	if !s.objectStorageConfig.Enable {
+		log.Warn("object storage is disabled")
 		return nil, status.Error(codes.Internal, "object storage is disabled")
 	}
 
-	IsExist, err := s.objectStorage.IsBucketExist(ctx, s.config.Trainer.BucketName)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "find bucket exist failed")
+	// Create model bucket, if not exist.
+	if err := s.createModelBucket(ctx); err != nil {
+		log.Error(err)
+		return nil, status.Error(codes.Internal, err.Error())
 	}
-
-	if !IsExist {
-		if err := s.objectStorage.CreateBucket(ctx, s.config.Trainer.BucketName); err != nil {
-			return nil, status.Error(codes.Internal, "create model bucket failed")
-		}
-	}
-
-	log := logger.WithHostnameAndIP(req.GetHostname(), req.GetIp())
 
 	var (
-		modelName       string
-		modelType       string
-		modelEvaluation map[string]any
-		modelVersion    = time.Now().Format(types.ModelVersionTimeFormat)
+		name       string
+		typ        string
+		evaluation types.ModelEvaluation
+		version    = time.Now().Nanosecond()
 	)
-
-	switch modelUploadRequest := req.GetRequest().(type) {
+	switch createModelRequest := req.GetRequest().(type) {
 	case *managerv1.CreateModelRequest_CreateGnnRequest:
-		modelName = types.MakeGNNModelName(req.GetClusterId())
-		modelType = models.ModelTypeGNN
-		modelEvaluation = map[string]any{
-			"Precision": modelUploadRequest.CreateGnnRequest.GetPrecision(),
-			"Recall":    modelUploadRequest.CreateGnnRequest.GetRecall(),
-			"F1Score":   modelUploadRequest.CreateGnnRequest.GetF1Score(),
+		name = types.MakeGNNModelName(req.GetIp(), req.GetHostname(), req.GetClusterId())
+		typ = models.ModelTypeGNN
+		evaluation = types.ModelEvaluation{
+			Precision: createModelRequest.CreateGnnRequest.GetPrecision(),
+			Recall:    createModelRequest.CreateGnnRequest.GetRecall(),
+			F1Score:   createModelRequest.CreateGnnRequest.GetF1Score(),
 		}
 
-		IsExist, err := s.objectStorage.IsObjectExist(ctx, s.config.Trainer.BucketName, types.MakeObjectKeyOfModelConfigFile(modelName))
-		if err != nil {
-			log.Errorf("find GNN model config failed: %s", err.Error())
+		// Update GNN model config to object storage.
+		if err := s.createModelConfig(ctx, name); err != nil {
+			log.Error(err)
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 
-		if !IsExist {
-			if err = s.createGNNModelConfig(ctx, modelName, modelVersion); err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-		}
-
+		// Upload GNN model file to object storage.
+		data := createModelRequest.CreateGnnRequest.GetData()
+		dgst := digest.New(digest.AlgorithmSHA256, digest.SHA256FromBytes(data))
 		if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName,
-			types.MakeObjectKeyOfModelFile(modelName, modelVersion), digest.AlgorithmMD5, bytes.NewReader(req.GetCreateGnnRequest().GetData())); err != nil {
+			types.MakeObjectKeyOfModelFile(name, version), dgst.String(), bytes.NewReader(data)); err != nil {
+			log.Error(err)
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	case *managerv1.CreateModelRequest_CreateMlpRequest:
-		modelName = types.MakeMLPModelName(req.GetHostname(), req.GetIp(), req.GetClusterId())
-		modelType = models.ModelTypeMLP
-		modelEvaluation = map[string]any{
-			"Mse": modelUploadRequest.CreateMlpRequest.GetMse(),
-			"Mae": modelUploadRequest.CreateMlpRequest.GetMae(),
+		name = types.MakeMLPModelName(req.GetHostname(), req.GetIp(), req.GetClusterId())
+		typ = models.ModelTypeMLP
+		evaluation = types.ModelEvaluation{
+			MSE: createModelRequest.CreateMlpRequest.GetMse(),
+			MAE: createModelRequest.CreateMlpRequest.GetMae(),
 		}
 
-		IsExist, err := s.objectStorage.IsObjectExist(ctx, s.config.Trainer.BucketName, types.MakeObjectKeyOfModelConfigFile(modelName))
-		if err != nil {
-			log.Errorf("find MLP model config failed: %s", err.Error())
+		// Update MLP model config to object storage.
+		if err := s.createModelConfig(ctx, name); err != nil {
+			log.Error(err)
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 
-		if !IsExist {
-			if err = s.createMLPModelConfig(ctx, modelName, modelVersion); err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-		}
-
+		// Upload MLP model file to object storage.
+		data := createModelRequest.CreateMlpRequest.GetData()
+		dgst := digest.New(digest.AlgorithmSHA256, digest.SHA256FromBytes(data))
 		if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName,
-			types.MakeObjectKeyOfModelFile(modelName, modelVersion), digest.AlgorithmMD5, bytes.NewReader(req.GetCreateMlpRequest().GetData())); err != nil {
+			types.MakeObjectKeyOfModelFile(name, version), dgst.String(), bytes.NewReader(data)); err != nil {
+			log.Error(err)
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	default:
-		msg := fmt.Sprintf("receive unknow request: %#v", modelUploadRequest)
+		msg := fmt.Sprintf("receive unknow request: %#v", createModelRequest)
 		log.Error(msg)
 		return nil, status.Error(codes.FailedPrecondition, msg)
 	}
@@ -829,73 +824,75 @@ func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.Create
 		IP:                 req.Ip,
 		SchedulerClusterID: uint(req.ClusterId),
 	}).Error; err != nil {
+		log.Error(err)
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	if err := s.db.WithContext(ctx).Create(models.Model{
-		Type:        modelType,
-		Version:     modelVersion,
-		Evaluation:  modelEvaluation,
-		SchedulerID: scheduler.ID,
-	}).Error; err != nil {
+	rawEvaluation, err := structure.StructToMap(evaluation)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// Create model in database.
+	if err := s.db.WithContext(ctx).Model(&scheduler).Association("Models").Append(&models.Model{
+		Name:       name,
+		Type:       typ,
+		Version:    fmt.Sprint(version),
+		State:      models.ModelVersionStateInactive,
+		Evaluation: rawEvaluation,
+	}); err != nil {
+		log.Error(err)
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return new(emptypb.Empty), nil
 }
 
-// createGNNModelConfig creates GNN model config and update GNN config to object storage.
-func (s *managerServerV1) createGNNModelConfig(ctx context.Context, modelName string, modelVersion string) error {
-	var versions []int64
-	version, err := strconv.ParseInt(modelVersion, 10, 64)
+// createModelBucket creates model bucket if not exist.
+func (s *managerServerV1) createModelBucket(ctx context.Context) error {
+	// Check bucket exist.
+	isExist, err := s.objectStorage.IsBucketExist(ctx, s.config.Trainer.BucketName)
 	if err != nil {
 		return err
 	}
-	versions = append(versions, version)
 
-	pbModelConfig := inferencev1.ModelConfig{
-		Name:     modelName,
-		Platform: types.DefaultPlatform,
-		VersionPolicy: &inferencev1.ModelVersionPolicy{
-			PolicyChoice: &inferencev1.ModelVersionPolicy_Specific_{
-				Specific: &inferencev1.ModelVersionPolicy_Specific{
-					Versions: versions,
-				},
-			},
-		},
-	}
-
-	if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName,
-		types.MakeObjectKeyOfModelConfigFile(modelName), digest.AlgorithmMD5, strings.NewReader(pbModelConfig.String())); err != nil {
-		return err
+	// Create bucket if not exist.
+	if !isExist {
+		if err := s.objectStorage.CreateBucket(ctx, s.config.Trainer.BucketName); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-// createMLPModelConfig creates MLP model config and update MLP config to object storage.
-func (s *managerServerV1) createMLPModelConfig(ctx context.Context, modelName string, modelVersion string) error {
-	var versions []int64
-	version, err := strconv.ParseInt(modelVersion, 10, 64)
+// createModelConfig creates model config to object storage.
+func (s *managerServerV1) createModelConfig(ctx context.Context, name string) error {
+	objectKey := types.MakeObjectKeyOfModelConfigFile(name)
+	isExist, err := s.objectStorage.IsObjectExist(ctx, s.config.Trainer.BucketName, objectKey)
 	if err != nil {
 		return err
 	}
-	versions = append(versions, version)
 
+	// If the model config already exists, skip it.
+	if isExist {
+		return nil
+	}
+
+	// If the model config does not exist, create a new model config.
 	pbModelConfig := inferencev1.ModelConfig{
-		Name:     modelName,
-		Platform: types.DefaultPlatform,
+		Name:     name,
+		Platform: types.DefaultTritonPlatform,
 		VersionPolicy: &inferencev1.ModelVersionPolicy{
 			PolicyChoice: &inferencev1.ModelVersionPolicy_Specific_{
-				Specific: &inferencev1.ModelVersionPolicy_Specific{
-					Versions: versions,
-				},
+				Specific: &inferencev1.ModelVersionPolicy_Specific{},
 			},
 		},
 	}
 
+	dgst := digest.New(digest.AlgorithmSHA256, digest.SHA256FromStrings(pbModelConfig.String()))
 	if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName,
-		types.MakeObjectKeyOfModelConfigFile(modelName), digest.AlgorithmMD5, strings.NewReader(pbModelConfig.String())); err != nil {
+		types.MakeObjectKeyOfModelConfigFile(name), dgst.String(), strings.NewReader(pbModelConfig.String())); err != nil {
 		return err
 	}
 
