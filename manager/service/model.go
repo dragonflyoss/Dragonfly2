@@ -18,9 +18,17 @@ package service
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"strings"
+
+	inferencev1 "d7y.io/api/pkg/apis/inference/v1"
 
 	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
+	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/structure"
 )
 
@@ -59,25 +67,14 @@ func (s *service) DestroyModel(ctx context.Context, id uint) error {
 }
 
 func (s *service) UpdateModel(ctx context.Context, id uint, json types.UpdateModelRequest) (*models.Model, error) {
-	var (
-		evaluation map[string]any
-		err        error
-	)
-	if json.Evaluation != nil {
-		evaluation, err = structure.StructToMap(json.Evaluation)
-		if err != nil {
-			return nil, err
-		}
+	model := models.Model{}
+	if err := s.db.WithContext(ctx).Preload("Scheduler").First(&model, id).Error; err != nil {
+		return nil, err
 	}
 
-	model := models.Model{}
-	if err := s.db.WithContext(ctx).First(&model, id).Updates(models.Model{
-		BIO:         json.BIO,
-		State:       json.State,
-		Evaluation:  evaluation,
-		SchedulerID: json.SchedulerID,
-	}).Error; err != nil {
-		return nil, err
+	if json.State == models.ModelVersionStateActive {
+		s.updateModelConfig(ctx, types.MakeObjectKeyOfModelFile(model.Scheduler.IP), types.M, model.Version)
+
 	}
 
 	return &model, nil
@@ -104,4 +101,39 @@ func (s *service) GetModels(ctx context.Context, q types.GetModelsQuery) ([]mode
 	}
 
 	return model, count, nil
+}
+
+func (s *service) updateModelConfig(ctx context.Context, name string, version int64) error {
+	if !s.config.ObjectStorage.Enable {
+		return errors.New("object storage is disabled")
+	}
+
+	objectKey := types.MakeObjectKeyOfModelConfigFile(name)
+	var pbModelConfig inferencev1.ModelConfig
+	reader, err := s.objectStorage.GetOject(ctx, s.config.Trainer.BucketName, objectKey)
+	if err != nil {
+		return err
+	}
+	defer reader.Close()
+
+	data, err := io.ReadAll(reader)
+	if err := json.Unmarshal(data, &pbModelConfig); err != nil {
+		return err
+	}
+
+	switch policyChoice := pbModelConfig.VersionPolicy.PolicyChoice.(type) {
+	case *inferencev1.ModelVersionPolicy_Specific_:
+		// If the version already exists, add the version to the existing version list.
+		policyChoice.Specific.Versions = []int64{version}
+	default:
+		return fmt.Errorf("unknown policy choice: %#v", policyChoice)
+	}
+
+	dgst := digest.New(digest.AlgorithmSHA256, digest.SHA256FromStrings(pbModelConfig.String()))
+	if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName,
+		types.MakeObjectKeyOfModelConfigFile(name), dgst.String(), strings.NewReader(pbModelConfig.String())); err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -35,6 +35,7 @@ const (
 // TODO(Gaius) Add regression analysis parameters.
 type Model struct {
 	BaseModel
+	Name        string    `gorm:"column:name;type:varchar(256);index:uk_model_name,unique;not null;comment:name" json:"name"`
 	Type        string    `gorm:"column:type;type:varchar(256);index:uk_model,unique;not null;comment:type" json:"type"`
 	BIO         string    `gorm:"column:bio;type:varchar(1024);comment:biography" json:"bio"`
 	Version     string    `gorm:"column:version;type:varchar(256);index:uk_model,unique;not null;comment:model version" json:"version"`
