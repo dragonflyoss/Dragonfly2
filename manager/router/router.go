@@ -197,7 +197,6 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 
 	// Model
 	model := apiv1.Group("/models", jwt.MiddlewareFunc(), rbac)
-	model.POST("", h.CreateModel)
 	model.DELETE(":id", h.DestroyModel)
 	model.PATCH(":id", h.UpdateModel)
 	model.GET(":id", h.GetModel)

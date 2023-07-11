@@ -16,26 +16,38 @@
 
 package types
 
+import (
+	"fmt"
+)
+
+const (
+	// ModelFileName is model file name.
+	ModelFileName = "model.graphdef"
+
+	// ModelConfigFileName is model config file name.
+	ModelConfigFileName = "config.pbtxt"
+
+	// GNNModelNameSuffix is suffix of GNN model name.
+	GNNModelNameSuffix = "gnn"
+
+	// MLPModelNameSuffix is suffix of MLP model name.
+	MLPModelNameSuffix = "mlp"
+
+	// DefaultTritonPlatform is default triton backend configuration.
+	DefaultTritonPlatform = "tensorrt_plan"
+)
+
 type ModelParams struct {
 	ID uint `uri:"id" binding:"required"`
 }
 
-type CreateModelRequest struct {
-	Type        string           `json:"type" binding:"required"`
-	BIO         string           `json:"BIO" binding:"omitempty"`
-	Version     string           `json:"version"  binding:"required"`
-	Evaluation  *ModelEvaluation `json:"evaluation" binding:"required"`
-	SchedulerID uint             `json:"scheduler_id" binding:"required"`
-}
-
 type UpdateModelRequest struct {
-	BIO         string           `json:"BIO" binding:"omitempty"`
-	State       string           `json:"state" binding:"omitempty,oneof=active inactive"`
-	Evaluation  *ModelEvaluation `json:"evaluation" binding:"omitempty"`
-	SchedulerID uint             `json:"scheduler_id" binding:"omitempty"`
+	BIO   string `json:"BIO" binding:"omitempty"`
+	State string `json:"state" binding:"omitempty,oneof=active"`
 }
 
 type GetModelsQuery struct {
+	Name        string `json:"name" binding:"omitempty"`
 	Type        string `json:"type" binding:"omitempty"`
 	Version     string `json:"version"  binding:"omitempty"`
 	SchedulerID uint   `json:"scheduler_id" binding:"omitempty"`
@@ -49,4 +61,24 @@ type ModelEvaluation struct {
 	F1Score   float64 `json:"f1_score" binding:"omitempty,gte=0,lte=1"`
 	MSE       float64 `json:"mse" binding:"omitempty,gte=0"`
 	MAE       float64 `json:"mae" binding:"omitempty,gte=0"`
+}
+
+// MakeModelName returns model name of GNN.
+func MakeGNNModelName(hostname, ip string, clusterID uint64) string {
+	return fmt.Sprintf("%s_%s_%s_%s", ip, hostname, fmt.Sprint(clusterID), GNNModelNameSuffix)
+}
+
+// MakeModelName returns model name of MLP.
+func MakeMLPModelName(hostname, ip string, clusterID uint64) string {
+	return fmt.Sprintf("%s_%s_%s_%s", ip, hostname, fmt.Sprint(clusterID), MLPModelNameSuffix)
+}
+
+// MakeObjectKeyOfModelFile returns object key of model file.
+func MakeObjectKeyOfModelFile(name string, version int) string {
+	return fmt.Sprintf("%s/%s/%s", name, fmt.Sprint(version), ModelFileName)
+}
+
+// MakeObjectKeyOfModelConfigFile returns object key of model config file.
+func MakeObjectKeyOfModelConfigFile(name string) string {
+	return fmt.Sprintf("%s/%s", name, ModelConfigFileName)
 }

@@ -7,6 +7,7 @@ package resource
 import (
 	reflect "reflect"
 
+	set "d7y.io/dragonfly/v2/pkg/container/set"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -73,6 +74,20 @@ func (m *MockHostManager) LoadOrStore(arg0 *Host) (*Host, bool) {
 func (mr *MockHostManagerMockRecorder) LoadOrStore(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadOrStore", reflect.TypeOf((*MockHostManager)(nil).LoadOrStore), arg0)
+}
+
+// LoadRandomHosts mocks base method.
+func (m *MockHostManager) LoadRandomHosts(arg0 int, arg1 set.SafeSet[string]) []*Host {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadRandomHosts", arg0, arg1)
+	ret0, _ := ret[0].([]*Host)
+	return ret0
+}
+
+// LoadRandomHosts indicates an expected call of LoadRandomHosts.
+func (mr *MockHostManagerMockRecorder) LoadRandomHosts(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadRandomHosts", reflect.TypeOf((*MockHostManager)(nil).LoadRandomHosts), arg0, arg1)
 }
 
 // RunGC mocks base method.

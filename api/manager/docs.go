@@ -1116,47 +1116,6 @@ const docTemplate = `{
                         "description": "Internal Server Error"
                     }
                 }
-            },
-            "post": {
-                "description": "Create Model by json config",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Model"
-                ],
-                "summary": "Create Model",
-                "parameters": [
-                    {
-                        "description": "Model",
-                        "name": "Model",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.CreateModelRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Model"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request"
-                    },
-                    "404": {
-                        "description": "Not Found"
-                    },
-                    "500": {
-                        "description": "Internal Server Error"
-                    }
-                }
             }
         },
         "/models/{id}": {
@@ -3438,6 +3397,9 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "name": {
+                    "type": "string"
+                },
                 "scheduler_id": {
                     "type": "integer"
                 },
@@ -3890,32 +3852,6 @@ const docTemplate = `{
                 }
             }
         },
-        "d7y_io_dragonfly_v2_manager_types.CreateModelRequest": {
-            "type": "object",
-            "required": [
-                "evaluation",
-                "scheduler_id",
-                "type",
-                "version"
-            ],
-            "properties": {
-                "BIO": {
-                    "type": "string"
-                },
-                "evaluation": {
-                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.ModelEvaluation"
-                },
-                "scheduler_id": {
-                    "type": "integer"
-                },
-                "type": {
-                    "type": "string"
-                },
-                "version": {
-                    "type": "string"
-                }
-            }
-        },
         "d7y_io_dragonfly_v2_manager_types.CreateOauthRequest": {
             "type": "object",
             "required": [
@@ -4205,34 +4141,6 @@ const docTemplate = `{
                 }
             }
         },
-        "d7y_io_dragonfly_v2_manager_types.ModelEvaluation": {
-            "type": "object",
-            "properties": {
-                "f1_score": {
-                    "type": "number",
-                    "maximum": 1,
-                    "minimum": 0
-                },
-                "mae": {
-                    "type": "number",
-                    "minimum": 0
-                },
-                "mse": {
-                    "type": "number",
-                    "minimum": 0
-                },
-                "precision": {
-                    "type": "number",
-                    "maximum": 1,
-                    "minimum": 0
-                },
-                "recall": {
-                    "type": "number",
-                    "maximum": 1,
-                    "minimum": 0
-                }
-            }
-        },
         "d7y_io_dragonfly_v2_manager_types.PriorityConfig": {
             "type": "object",
             "required": [
@@ -4504,17 +4412,10 @@ const docTemplate = `{
                 "BIO": {
                     "type": "string"
                 },
-                "evaluation": {
-                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.ModelEvaluation"
-                },
-                "scheduler_id": {
-                    "type": "integer"
-                },
                 "state": {
                     "type": "string",
                     "enum": [
-                        "active",
-                        "inactive"
+                        "active"
                     ]
                 }
             }
