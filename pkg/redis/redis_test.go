@@ -669,33 +669,3 @@ func Test_ParseProbedCountKeyInScheduler(t *testing.T) {
 		})
 	}
 }
-
-func Test_MakeProbedAtKeyInScheduler(t *testing.T) {
-	tests := []struct {
-		name   string
-		hostID string
-		expect func(t *testing.T, s string)
-	}{
-		{
-			name:   "make probed at key in scheduler",
-			hostID: "bas",
-			expect: func(t *testing.T, s string) {
-				assert := assert.New(t)
-				assert.Equal("scheduler:probed-at:bas", s)
-			},
-		},
-		{
-			name:   "host id is empty",
-			hostID: "",
-			expect: func(t *testing.T, s string) {
-				assert := assert.New(t)
-				assert.Equal("scheduler:probed-at:", s)
-			},
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, MakeProbedAtKeyInScheduler(tc.hostID))
-		})
-	}
-}
