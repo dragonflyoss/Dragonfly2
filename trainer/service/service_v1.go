@@ -26,6 +26,7 @@ import (
 	"hash"
 	"io"
 
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -174,10 +175,34 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 		}
 	}
 
-	logger.Infof("begin training GNN model")
-	go v.training.GNNTrain()
-	logger.Infof("begin training MLP model")
-	go v.training.MLPTrain()
+	eg := errgroup.Group{}
+	eg.Go(func() error {
+		logger.Infof("begin training GNN model")
+		v.training.GNNTrain()
+		if err := v.storage.ClearNetworkTopology(modelKey); err != nil {
+			logger.Errorf("clear network topologies error: %s", err.Error())
+			return err
+		}
+
+		return nil
+	})
+
+	eg.Go(func() error {
+		logger.Infof("begin training MLP model")
+		v.training.GNNTrain()
+		if err := v.storage.ClearDownload(modelKey); err != nil {
+			logger.Errorf("clear downloads error: %s", err.Error())
+			return err
+		}
+
+		return nil
+	})
+
+	if err := eg.Wait(); err != nil {
+		logger.Errorf("wait error %s", err.Error())
+		return err
+	}
+
 	return stream.SendAndClose(new(emptypb.Empty))
 }
 
