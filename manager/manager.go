@@ -214,7 +214,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	}
 
 	// Initialize GRPC server
-	_, grpcServer, err := rpcserver.New(cfg, db, cache, searcher, objectStorage, &cfg.ObjectStorage, options...)
+	_, grpcServer, err := rpcserver.New(cfg, db, cache, searcher, objectStorage, options...)
 	if err != nil {
 		return nil, err
 	}
