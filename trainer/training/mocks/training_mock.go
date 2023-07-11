@@ -34,9 +34,11 @@ func (m *MockTraining) EXPECT() *MockTrainingMockRecorder {
 }
 
 // GNNTrain mocks base method.
-func (m *MockTraining) GNNTrain() {
+func (m *MockTraining) GNNTrain() error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "GNNTrain")
+	ret := m.ctrl.Call(m, "GNNTrain")
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // GNNTrain indicates an expected call of GNNTrain.
@@ -46,13 +48,27 @@ func (mr *MockTrainingMockRecorder) GNNTrain() *gomock.Call {
 }
 
 // MLPTrain mocks base method.
-func (m *MockTraining) MLPTrain() {
+func (m *MockTraining) MLPTrain() error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "MLPTrain")
+	ret := m.ctrl.Call(m, "MLPTrain")
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // MLPTrain indicates an expected call of MLPTrain.
 func (mr *MockTrainingMockRecorder) MLPTrain() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MLPTrain", reflect.TypeOf((*MockTraining)(nil).MLPTrain))
+}
+
+// Train mocks base method.
+func (m *MockTraining) Train() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Train")
+}
+
+// Train indicates an expected call of Train.
+func (mr *MockTrainingMockRecorder) Train() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Train", reflect.TypeOf((*MockTraining)(nil).Train))
 }

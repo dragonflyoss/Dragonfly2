@@ -24,11 +24,14 @@ import (
 )
 
 type Training interface {
+	// Train begins training GNN and MLP model.
+	Train()
+
 	// GNNTrain provides the training pipeline to GNN model.
-	GNNTrain()
+	GNNTrain() error
 
 	// MLPTrain provides the training pipeline to MLP model.
-	MLPTrain()
+	MLPTrain() error
 }
 
 type training struct {
@@ -46,12 +49,19 @@ func New(cfg *config.Config, storage storage.Storage) Training {
 	}
 }
 
+// Trainbegins training GNN and MLP model.
+func (t *training) Train() {
+
+}
+
 // TODO (fyx) Add GNN training logic.
 // GNNTrain provides the training pipeline to GNN model.
-func (t *training) GNNTrain() {
+func (t *training) GNNTrain() error {
+	return nil
 }
 
 // TODO (fyx) Add MLP training logic.
 // MLPTrain provides the training pipeline to MLP model.
-func (t *training) MLPTrain() {
+func (t *training) MLPTrain() error {
+	return nil
 }
