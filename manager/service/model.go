@@ -38,6 +38,11 @@ func (s *service) DestroyModel(ctx context.Context, id uint) error {
 		return err
 	}
 
+	// If the model is active, return an error.
+	if model.State == models.ModelVersionStateActive {
+		return errors.New("cannot delete an active model")
+	}
+
 	if err := s.db.WithContext(ctx).Unscoped().Delete(&models.Model{}, id).Error; err != nil {
 		return err
 	}
@@ -116,12 +121,15 @@ func (s *service) updateModelStateToActive(ctx context.Context, model *models.Mo
 		return err
 	}
 
-	if err := tx.Model(&models.Model{}).Where("state = ?", models.ModelVersionStateActive).Update("state", models.ModelVersionStateInactive).Error; err != nil {
+	if err := tx.Model(&models.Model{}).Where(&models.Model{
+		SchedulerID: model.SchedulerID,
+		State:       models.ModelVersionStateActive,
+	}).Updates(&models.Model{State: models.ModelVersionStateInactive}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	if err := tx.Model(model).Update("state", models.ModelVersionStateActive).Error; err != nil {
+	if err := tx.Model(model).Updates(&models.Model{State: models.ModelVersionStateActive}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
