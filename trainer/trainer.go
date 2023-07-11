@@ -29,6 +29,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
+	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/trainer/config"
 	"d7y.io/dragonfly/v2/trainer/metrics"
 	"d7y.io/dragonfly/v2/trainer/rpcserver"
@@ -53,6 +54,9 @@ type Server struct {
 	// Metrics server.
 	metricsServer *http.Server
 
+	// Manager client.
+	managerClient managerclient.V2
+
 	// Storage interface.
 	storage storage.Storage
 
@@ -67,8 +71,15 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	// Initialize Storage.
 	s.storage = storage.New(d.DataDir())
 
+	// Initialize manager client.
+	managerClient, err := managerclient.GetV2ByAddr(ctx, cfg.Manager.Addr)
+	if err != nil {
+		return nil, err
+	}
+	s.managerClient = managerClient
+
 	// Initialize training.
-	s.training = training.New(cfg, s.storage)
+	s.training = training.New(cfg, s.managerClient, s.storage)
 
 	// Initialize trainer grpc server.
 	s.grpcServer = rpcserver.New(cfg, s.storage, s.training)

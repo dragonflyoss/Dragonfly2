@@ -94,6 +94,9 @@ func NewV1(
 
 func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 	var (
+		hostName       string
+		ip             string
+		clusterID      uint64
 		modelKey       string
 		GNNInitialized bool
 		MLPInitialized bool
@@ -123,6 +126,9 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 			return err
 		}
 
+		hostName = req.Hostname
+		ip = req.Ip
+		clusterID = req.ClusterId
 		modelKey, err = v.createModelKey(req.Hostname, req.Ip, uint(req.ClusterId), DefaultHashAlgorithm)
 		if err != nil {
 			logger.Errorf("create model key error: %s", err.Error())
@@ -167,7 +173,17 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 		}
 	}
 
-	v.training.Train(modelKey)
+	if err := v.training.Train(hostName, ip, clusterID); err != nil {
+		logger.Errorf("train error: %s", err.Error())
+		return err
+	}
+
+	logger.Infof("clear download and network topology files")
+	if err := v.storage.Clear(); err != nil {
+		logger.Errorf("clear download and network topology files error: %s", err.Error())
+		return err
+	}
+
 	if err := stream.SendAndClose(new(emptypb.Empty)); err != nil {
 		logger.Errorf("send and close error %s", err.Error())
 		return err

@@ -33,42 +33,16 @@ func (m *MockTraining) EXPECT() *MockTrainingMockRecorder {
 	return m.recorder
 }
 
-// GNNTrain mocks base method.
-func (m *MockTraining) GNNTrain() error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GNNTrain")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// GNNTrain indicates an expected call of GNNTrain.
-func (mr *MockTrainingMockRecorder) GNNTrain() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GNNTrain", reflect.TypeOf((*MockTraining)(nil).GNNTrain))
-}
-
-// MLPTrain mocks base method.
-func (m *MockTraining) MLPTrain() error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "MLPTrain")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// MLPTrain indicates an expected call of MLPTrain.
-func (mr *MockTrainingMockRecorder) MLPTrain() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MLPTrain", reflect.TypeOf((*MockTraining)(nil).MLPTrain))
-}
-
 // Train mocks base method.
-func (m *MockTraining) Train(modelKey string) {
+func (m *MockTraining) Train(hostname, ip string, clusterID uint64) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Train", modelKey)
+	ret := m.ctrl.Call(m, "Train", hostname, ip, clusterID)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // Train indicates an expected call of Train.
-func (mr *MockTrainingMockRecorder) Train(modelKey interface{}) *gomock.Call {
+func (mr *MockTrainingMockRecorder) Train(hostname, ip, clusterID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Train", reflect.TypeOf((*MockTraining)(nil).Train), modelKey)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Train", reflect.TypeOf((*MockTraining)(nil).Train), hostname, ip, clusterID)
 }

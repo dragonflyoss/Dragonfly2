@@ -19,71 +19,107 @@
 package training
 
 import (
+	"context"
+
+	"golang.org/x/sync/errgroup"
+
+	managerv2 "d7y.io/api/pkg/apis/manager/v2"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/trainer/config"
 	"d7y.io/dragonfly/v2/trainer/storage"
 )
 
 type Training interface {
 	// Train begins training GNN and MLP model.
-	Train(modelKey string)
-
-	// GNNTrain provides the training pipeline to GNN model.
-	GNNTrain() error
-
-	// MLPTrain provides the training pipeline to MLP model.
-	MLPTrain() error
+	Train(hostname, ip string, clusterID uint64) error
 }
 
 type training struct {
 	// Storage interface.
 	storage storage.Storage
 
+	// Manager service clent.
+	managerClient managerclient.V2
+
 	// Trainer configuration.
 	config *config.Config
 }
 
-func New(cfg *config.Config, storage storage.Storage) Training {
+func New(cfg *config.Config, managerClient managerclient.V2, storage storage.Storage) Training {
 	return &training{
-		storage: storage,
-		config:  cfg,
+		storage:       storage,
+		managerClient: managerClient,
+		config:        cfg,
 	}
 }
 
-func (t *training) Train(modelKey string) {
-	go func() {
-		logger.Infof("begin GNN model training")
-		if err := t.GNNTrain(); err != nil {
-			logger.Errorf("train GNN model: %s", err.Error())
+// TODO: implement train logic.
+// Train begins training GNN and MLP model.
+func (t *training) Train(hostname, ip string, clusterID uint64) error {
+	logger.Infof("preprocess data set")
+	if err := t.preProcess(); err != nil {
+		logger.Errorf("preprocess data set error: %s", err.Error())
+		return err
+	}
+
+	eg := errgroup.Group{}
+	eg.Go(func() error {
+		logger.Infof("begin training GNN model")
+		if err := t.trainGNN(); err != nil {
+			logger.Errorf("train GNN model error: %s", err.Error())
+			return err
 		}
 
-		logger.Infof("clear network topologies after training GNN model success")
-		if err := t.storage.ClearNetworkTopology(modelKey); err != nil {
-			logger.Errorf("clear network topologies error: %s", err.Error())
+		if err := t.managerClient.CreateModel(context.Background(), &managerv2.CreateModelRequest{
+			Request: &managerv2.CreateModelRequest_CreateGnnRequest{},
+		}); err != nil {
+			logger.Errorf("create GNN model error: %s", err.Error())
+			return err
 		}
-	}()
+		return nil
+	})
 
-	go func() {
-		logger.Infof("begin MLP model training")
-		if err := t.MLPTrain(); err != nil {
-			logger.Errorf("train MLP model: %s", err.Error())
+	eg.Go(func() error {
+		logger.Infof("begin training MLP model")
+		if err := t.trainMLP(); err != nil {
+			logger.Errorf("train MLP model error: %s", err.Error())
+			return err
 		}
 
-		logger.Infof("clear downloads after training MLP model success")
-		if err := t.storage.ClearDownload(modelKey); err != nil {
-			logger.Errorf("clear downloads error: %s", err.Error())
+		if err := t.managerClient.CreateModel(context.Background(), &managerv2.CreateModelRequest{
+			Request: &managerv2.CreateModelRequest_CreateMlpRequest{},
+		}); err != nil {
+			logger.Errorf("create MLP model error: %s", err.Error())
+			return err
 		}
-	}()
-}
 
-// TODO (fyx) Add GNN training logic.
-// GNNTrain provides the training pipeline to GNN model.
-func (t *training) GNNTrain() error {
+		return nil
+	})
+
+	if err := eg.Wait(); err != nil {
+		logger.Errorf("wait error %s", err.Error())
+		return err
+	}
+
 	return nil
 }
 
-// TODO (fyx) Add MLP training logic.
-// MLPTrain provides the training pipeline to MLP model.
-func (t *training) MLPTrain() error {
+// TODO: implement preprocess logic.
+// preProcess preprocesses the training set data.
+func (t *training) preProcess() error {
+	return nil
+}
+
+// TODO: implement GNN training logic.
+// trainGNN provides the training pipeline to GNN model.
+func (t *training) trainGNN() error {
+	return nil
+}
+
+// TODO: implement MLP training logic.
+// trainMLP provides the training pipeline to MLP model.
+func (t *training) trainMLP() error {
 	return nil
 }
