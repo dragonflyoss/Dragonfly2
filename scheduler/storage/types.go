@@ -159,7 +159,7 @@ type Parent struct {
 	// Host is peer host.
 	Host Host `csv:"host"`
 
-	// Pieces is downloading pieces from parent host.
+	// Pieces is downloaded pieces from parent host.
 	Pieces []Piece `csv:"pieces" csv[]:"10"`
 
 	// CreatedAt is peer create nanosecond time.
