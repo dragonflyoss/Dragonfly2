@@ -43,6 +43,15 @@ func (s *service) DestroyModel(ctx context.Context, id uint) error {
 		return errors.New("cannot delete an active model")
 	}
 
+	version, err := strconv.Atoi(model.Version)
+	if err != nil {
+		return err
+	}
+
+	if err := s.objectStorage.DeleteObject(ctx, s.config.Trainer.BucketName, types.MakeObjectKeyOfModelFile(model.Name, version)); err != nil {
+		return err
+	}
+
 	if err := s.db.WithContext(ctx).Unscoped().Delete(&models.Model{}, id).Error; err != nil {
 		return err
 	}
