@@ -176,8 +176,8 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 	return nil
 }
 
-func (v *V1) handleTrainMLPRequest(modelKey string, dataset []byte) error {
-	file, err := v.storage.OpenDownload(modelKey)
+func (v *V1) handleTrainGNNRequest(modelKey string, dataset []byte) error {
+	file, err := v.storage.OpenNetworkTopology(modelKey)
 	if err != nil {
 		return err
 	}
@@ -190,16 +190,12 @@ func (v *V1) handleTrainMLPRequest(modelKey string, dataset []byte) error {
 	return nil
 }
 
-func (v *V1) handleTrainGNNRequest(modelKey string, dataset []byte) error {
-	file, err := v.storage.OpenNetworkTopology(modelKey)
+func (v *V1) handleTrainMLPRequest(modelKey string, dataset []byte) error {
+	file, err := v.storage.OpenDownload(modelKey)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if err := file.Close(); err != nil {
-			logger.Error(err)
-		}
-	}()
+	defer file.Close()
 
 	if _, err = file.Write(dataset); err != nil {
 		return err
