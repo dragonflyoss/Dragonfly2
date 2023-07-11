@@ -171,3 +171,7 @@ func TestDigest_MD5FromBytes(t *testing.T) {
 func TestDigest_SHA256FromStrings(t *testing.T) {
 	assert.Equal(t, "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824", SHA256FromStrings("hello"))
 }
+
+func TestDigest_SHA256FromBytes(t *testing.T) {
+	assert.Equal(t, "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824", SHA256FromBytes([]byte("hello")))
+}

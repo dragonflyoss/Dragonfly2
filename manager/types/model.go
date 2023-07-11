@@ -63,12 +63,12 @@ type ModelEvaluation struct {
 	MAE       float64 `json:"mae" binding:"omitempty,gte=0"`
 }
 
-// MakeModelName returns model name of GNN.
+// MakeGNNModelName returns model name of GNN.
 func MakeGNNModelName(hostname, ip string, clusterID uint64) string {
 	return fmt.Sprintf("%s_%s_%s_%s", ip, hostname, fmt.Sprint(clusterID), GNNModelNameSuffix)
 }
 
-// MakeModelName returns model name of MLP.
+// MakeMLPModelName returns model name of MLP.
 func MakeMLPModelName(hostname, ip string, clusterID uint64) string {
 	return fmt.Sprintf("%s_%s_%s_%s", ip, hostname, fmt.Sprint(clusterID), MLPModelNameSuffix)
 }
