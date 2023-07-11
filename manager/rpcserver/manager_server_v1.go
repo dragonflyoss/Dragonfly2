@@ -75,25 +75,20 @@ type managerServerV1 struct {
 
 	// Object storage interface.
 	objectStorage objectstorage.ObjectStorage
-
-	// Object storage configuration.
-	objectStorageConfig *config.ObjectStorageConfig
 }
 
 // newManagerServerV1 returns v1 version of the manager server.
 func newManagerServerV1(
 	cfg *config.Config, database *database.Database, cache *cache.Cache, peerCache pkgcache.Cache, searcher searcher.Searcher,
-	objectStorage objectstorage.ObjectStorage, objectStorageConfig *config.ObjectStorageConfig,
-) managerv1.ManagerServer {
+	objectStorage objectstorage.ObjectStorage) managerv1.ManagerServer {
 	return &managerServerV1{
-		config:              cfg,
-		db:                  database.DB,
-		rdb:                 database.RDB,
-		cache:               cache,
-		peerCache:           peerCache,
-		searcher:            searcher,
-		objectStorage:       objectStorage,
-		objectStorageConfig: objectStorageConfig,
+		config:        cfg,
+		db:            database.DB,
+		rdb:           database.RDB,
+		cache:         cache,
+		peerCache:     peerCache,
+		searcher:      searcher,
+		objectStorage: objectStorage,
 	}
 }
 
@@ -611,17 +606,17 @@ func (s *managerServerV1) ListSchedulers(ctx context.Context, req *managerv1.Lis
 
 // Get object storage configuration.
 func (s *managerServerV1) GetObjectStorage(ctx context.Context, req *managerv1.GetObjectStorageRequest) (*managerv1.ObjectStorage, error) {
-	if !s.objectStorageConfig.Enable {
+	if !s.config.ObjectStorage.Enable {
 		return nil, status.Error(codes.Internal, "object storage is disabled")
 	}
 
 	return &managerv1.ObjectStorage{
-		Name:             s.objectStorageConfig.Name,
-		Region:           s.objectStorageConfig.Region,
-		Endpoint:         s.objectStorageConfig.Endpoint,
-		AccessKey:        s.objectStorageConfig.AccessKey,
-		SecretKey:        s.objectStorageConfig.SecretKey,
-		S3ForcePathStyle: s.objectStorageConfig.S3ForcePathStyle,
+		Name:             s.config.ObjectStorage.Name,
+		Region:           s.config.ObjectStorage.Region,
+		Endpoint:         s.config.ObjectStorage.Endpoint,
+		AccessKey:        s.config.ObjectStorage.AccessKey,
+		SecretKey:        s.config.ObjectStorage.SecretKey,
+		S3ForcePathStyle: s.config.ObjectStorage.S3ForcePathStyle,
 	}, nil
 }
 
@@ -629,13 +624,13 @@ func (s *managerServerV1) GetObjectStorage(ctx context.Context, req *managerv1.G
 func (s *managerServerV1) ListBuckets(ctx context.Context, req *managerv1.ListBucketsRequest) (*managerv1.ListBucketsResponse, error) {
 	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
 
-	if !s.objectStorageConfig.Enable {
+	if !s.config.ObjectStorage.Enable {
 		log.Warn("object storage is disabled")
 		return nil, status.Error(codes.Internal, "object storage is disabled")
 	}
 
 	var pbListBucketsResponse managerv1.ListBucketsResponse
-	cacheKey := pkgredis.MakeBucketKeyInManager(s.objectStorageConfig.Name)
+	cacheKey := pkgredis.MakeBucketKeyInManager(s.config.ObjectStorage.Name)
 
 	// Cache hit.
 	if err := s.cache.Get(ctx, cacheKey, &pbListBucketsResponse); err != nil {
@@ -749,7 +744,7 @@ func (s *managerServerV1) ListApplications(ctx context.Context, req *managerv1.L
 func (s *managerServerV1) CreateModel(ctx context.Context, req *managerv1.CreateModelRequest) (*emptypb.Empty, error) {
 	log := logger.WithHostnameAndIP(req.GetHostname(), req.GetIp())
 
-	if !s.objectStorageConfig.Enable {
+	if !s.config.ObjectStorage.Enable {
 		log.Warn("object storage is disabled")
 		return nil, status.Error(codes.Internal, "object storage is disabled")
 	}

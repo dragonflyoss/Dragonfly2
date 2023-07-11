@@ -81,9 +81,6 @@ type Server struct {
 	// Object storage interface.
 	objectStorage objectstorage.ObjectStorage
 
-	// Object storage configuration.
-	objectStorageConfig *config.ObjectStorageConfig
-
 	// serverOptions is server options of grpc.
 	serverOptions []grpc.ServerOption
 
@@ -123,17 +120,15 @@ func WithGRPCServerOptions(opts []grpc.ServerOption) Option {
 // New returns a new manager server from the given options.
 func New(
 	cfg *config.Config, database *database.Database, cache *cache.Cache, searcher searcher.Searcher,
-	objectStorage objectstorage.ObjectStorage, objectStorageConfig *config.ObjectStorageConfig, opts ...Option,
-) (*Server, *grpc.Server, error) {
+	objectStorage objectstorage.ObjectStorage, opts ...Option) (*Server, *grpc.Server, error) {
 	s := &Server{
-		config:              cfg,
-		db:                  database.DB,
-		rdb:                 database.RDB,
-		cache:               cache,
-		peerCache:           pkgcache.New(DefaultPeerCacheExpiration, DefaultPeerCacheCleanupInterval),
-		searcher:            searcher,
-		objectStorage:       objectStorage,
-		objectStorageConfig: objectStorageConfig,
+		config:        cfg,
+		db:            database.DB,
+		rdb:           database.RDB,
+		cache:         cache,
+		peerCache:     pkgcache.New(DefaultPeerCacheExpiration, DefaultPeerCacheCleanupInterval),
+		searcher:      searcher,
+		objectStorage: objectStorage,
 	}
 
 	// Peer cache is evicted, and the metrics of the peer should be released.
@@ -150,8 +145,8 @@ func New(
 	}
 
 	return s, managerserver.New(
-		newManagerServerV1(s.config, database, s.cache, s.peerCache, s.searcher, s.objectStorage, s.objectStorageConfig),
-		newManagerServerV2(s.config, database, s.cache, s.peerCache, s.searcher, s.objectStorage, s.objectStorageConfig),
+		newManagerServerV1(s.config, database, s.cache, s.peerCache, s.searcher, s.objectStorage),
+		newManagerServerV2(s.config, database, s.cache, s.peerCache, s.searcher, s.objectStorage),
 		newSecurityServerV1(s.selfSignedCert),
 		s.serverOptions...), nil
 }
