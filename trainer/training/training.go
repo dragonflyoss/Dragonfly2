@@ -24,9 +24,6 @@ import (
 )
 
 type Training interface {
-	// Train begins training GNN and MLP model.
-	Train()
-
 	// GNNTrain provides the training pipeline to GNN model.
 	GNNTrain() error
 
@@ -47,11 +44,6 @@ func New(cfg *config.Config, storage storage.Storage) Training {
 		storage: storage,
 		config:  cfg,
 	}
-}
-
-// Trainbegins training GNN and MLP model.
-func (t *training) Train() {
-
 }
 
 // TODO (fyx) Add GNN training logic.

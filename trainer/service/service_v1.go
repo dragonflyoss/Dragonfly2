@@ -174,8 +174,27 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 		}
 	}
 
-	logger.Info("begin model training")
-	v.training.Train()
+	switch reqType {
+	case TrainGNNRequest:
+		logger.Infof("begin GNN model training")
+		v.training.GNNTrain()
+		if err := v.storage.ClearNetworkTopology(modelKey); err != nil {
+			logger.Errorf("clear network topologies error: %s", err.Error())
+			return err
+		}
+	case TrainMLPRequest:
+		logger.Infof("begin MLP model training")
+		v.training.MLPTrain()
+		if err := v.storage.ClearDownload(modelKey); err != nil {
+			logger.Errorf("clear downloads error: %s", err.Error())
+			return err
+		}
+	default:
+		msg := fmt.Sprintf("receive unknown request: %#v", reqType)
+		logger.Error(msg)
+		return status.Error(codes.FailedPrecondition, msg)
+	}
+
 	return stream.SendAndClose(new(emptypb.Empty))
 }
 
