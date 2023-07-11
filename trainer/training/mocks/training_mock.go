@@ -60,3 +60,15 @@ func (mr *MockTrainingMockRecorder) MLPTrain() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MLPTrain", reflect.TypeOf((*MockTraining)(nil).MLPTrain))
 }
+
+// Train mocks base method.
+func (m *MockTraining) Train(modelKey string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Train", modelKey)
+}
+
+// Train indicates an expected call of Train.
+func (mr *MockTrainingMockRecorder) Train(modelKey interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Train", reflect.TypeOf((*MockTraining)(nil).Train), modelKey)
+}

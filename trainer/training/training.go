@@ -19,11 +19,15 @@
 package training
 
 import (
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/trainer/config"
 	"d7y.io/dragonfly/v2/trainer/storage"
 )
 
 type Training interface {
+	// Train begins training GNN and MLP model.
+	Train(modelKey string)
+
 	// GNNTrain provides the training pipeline to GNN model.
 	GNNTrain() error
 
@@ -44,6 +48,32 @@ func New(cfg *config.Config, storage storage.Storage) Training {
 		storage: storage,
 		config:  cfg,
 	}
+}
+
+func (t *training) Train(modelKey string) {
+	go func() {
+		logger.Infof("begin GNN model training")
+		if err := t.GNNTrain(); err != nil {
+			logger.Errorf("train GNN model: %s", err.Error())
+		}
+
+		logger.Infof("clear network topologies after training GNN model success")
+		if err := t.storage.ClearNetworkTopology(modelKey); err != nil {
+			logger.Errorf("clear network topologies error: %s", err.Error())
+		}
+	}()
+
+	go func() {
+		logger.Infof("begin MLP model training")
+		if err := t.MLPTrain(); err != nil {
+			logger.Errorf("train MLP model: %s", err.Error())
+		}
+
+		logger.Infof("clear downloads after training MLP model success")
+		if err := t.storage.ClearDownload(modelKey); err != nil {
+			logger.Errorf("clear downloads error: %s", err.Error())
+		}
+	}()
 }
 
 // TODO (fyx) Add GNN training logic.

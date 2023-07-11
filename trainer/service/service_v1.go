@@ -94,9 +94,9 @@ func NewV1(
 
 func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 	var (
-		modelKey    string
-		reqType     RequestType
-		initialized bool
+		modelKey       string
+		GNNInitialized bool
+		MLPInitialized bool
 	)
 
 	for {
@@ -106,38 +106,27 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 		}
 
 		if err != nil {
-			if initialized {
-				// Clear downloads or network topologies after training according to train request type and model key.
-				switch reqType {
-				case TrainMLPRequest:
-					if err := v.storage.ClearDownload(modelKey); err != nil {
-						logger.Errorf("clear downloads error: %s", err.Error())
-						return err
-					}
-				case TrainGNNRequest:
-					if err := v.storage.ClearNetworkTopology(modelKey); err != nil {
-						logger.Errorf("clear network topologies error: %s", err.Error())
-						return err
-					}
-				default:
-					msg := fmt.Sprintf("receive unknown request: %#v", reqType)
-					logger.Error(msg)
-					return status.Error(codes.FailedPrecondition, msg)
+			if GNNInitialized {
+				if err := v.storage.ClearDownload(modelKey); err != nil {
+					logger.Errorf("clear downloads error: %s", err.Error())
+					return err
+				}
+			}
+
+			if MLPInitialized {
+				if err := v.storage.ClearNetworkTopology(modelKey); err != nil {
+					logger.Errorf("clear network topologies error: %s", err.Error())
+					return err
 				}
 			}
 
 			return err
 		}
 
-		if !initialized {
-			initialized = true
-
-			// Initialize modelKey.
-			modelKey, err = v.createModelKey(req.Hostname, req.Ip, uint(req.ClusterId), DefaultHashAlgorithm)
-			if err != nil {
-				logger.Errorf("create model key error: %s", err.Error())
-				return err
-			}
+		modelKey, err := v.createModelKey(req.Hostname, req.Ip, uint(req.ClusterId), DefaultHashAlgorithm)
+		if err != nil {
+			logger.Errorf("create model key error: %s", err.Error())
+			return err
 		}
 
 		switch trainRequest := req.GetRequest().(type) {
@@ -145,28 +134,32 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 			logger.Infof("receive TrainRequest_TrainGnnRequest: %#v", trainRequest.TrainGnnRequest)
 			if err := v.handleTrainGNNRequest(modelKey, trainRequest.TrainGnnRequest.Dataset); err != nil {
 				logger.Errorf("handle network topologies error: %s", err.Error())
-				if err := v.storage.ClearNetworkTopology(modelKey); err != nil {
-					logger.Errorf("clear network topologies error: %s", err.Error())
-					return err
+				if GNNInitialized {
+					if err := v.storage.ClearDownload(modelKey); err != nil {
+						logger.Errorf("clear downloads error: %s", err.Error())
+						return err
+					}
 				}
 
 				return err
 			}
 
-			reqType = TrainGNNRequest
+			GNNInitialized = true
 		case *trainerv1.TrainRequest_TrainMlpRequest:
 			logger.Infof("receive TrainRequest_TrainMlpRequest: %#v", trainRequest.TrainMlpRequest)
 			if err := v.handleTrainMLPRequest(modelKey, trainRequest.TrainMlpRequest.Dataset); err != nil {
 				logger.Errorf("handle downloads error: %s", err.Error())
-				if err := v.storage.ClearDownload(modelKey); err != nil {
-					logger.Errorf("clear downloads error: %s", err.Error())
-					return err
+				if MLPInitialized {
+					if err := v.storage.ClearNetworkTopology(modelKey); err != nil {
+						logger.Errorf("clear network topologies error: %s", err.Error())
+						return err
+					}
 				}
 
 				return err
 			}
 
-			reqType = TrainMLPRequest
+			MLPInitialized = true
 		default:
 			msg := fmt.Sprintf("receive unknown request: %#v", trainRequest)
 			logger.Error(msg)
@@ -174,28 +167,13 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 		}
 	}
 
-	switch reqType {
-	case TrainGNNRequest:
-		logger.Infof("begin GNN model training")
-		v.training.GNNTrain()
-		if err := v.storage.ClearNetworkTopology(modelKey); err != nil {
-			logger.Errorf("clear network topologies error: %s", err.Error())
-			return err
-		}
-	case TrainMLPRequest:
-		logger.Infof("begin MLP model training")
-		v.training.MLPTrain()
-		if err := v.storage.ClearDownload(modelKey); err != nil {
-			logger.Errorf("clear downloads error: %s", err.Error())
-			return err
-		}
-	default:
-		msg := fmt.Sprintf("receive unknown request: %#v", reqType)
-		logger.Error(msg)
-		return status.Error(codes.FailedPrecondition, msg)
+	v.training.Train(modelKey)
+	if err := stream.SendAndClose(new(emptypb.Empty)); err != nil {
+		logger.Errorf("send and close error %s", err.Error())
+		return err
 	}
 
-	return stream.SendAndClose(new(emptypb.Empty))
+	return nil
 }
 
 func (v *V1) handleTrainMLPRequest(modelKey string, dataset []byte) error {
