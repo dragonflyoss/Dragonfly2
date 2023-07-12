@@ -116,6 +116,14 @@ var (
 		UpdatedAt: time.Now().UnixNano(),
 	}
 
+	mockPiece = Piece{
+		Length:    20,
+		Cost:      10,
+		CreatedAt: time.Now().UnixNano(),
+	}
+
+	mockPieces = append(make([]Piece, 9), mockPiece)
+
 	mockParent = Parent{
 		ID:               "4",
 		Tag:              "m",
@@ -124,6 +132,7 @@ var (
 		Cost:             1000,
 		UploadPieceCount: 10,
 		Host:             mockHost,
+		Pieces:           mockPieces,
 		CreatedAt:        time.Now().UnixNano(),
 		UpdatedAt:        time.Now().UnixNano(),
 	}
@@ -482,7 +491,16 @@ func TestStorage_ListDownload(t *testing.T) {
 				downloads, err := s.ListDownload()
 				assert.NoError(err)
 				assert.Equal(len(downloads), 1)
-				assert.EqualValues(downloads[0], download)
+				assert.EqualValues(downloads[0].ID, download.ID)
+				assert.EqualValues(downloads[0].Tag, download.Tag)
+				assert.EqualValues(downloads[0].Application, download.Application)
+				assert.EqualValues(downloads[0].State, download.State)
+				assert.EqualValues(downloads[0].Error, download.Error)
+				assert.EqualValues(downloads[0].Cost, download.Cost)
+				assert.EqualValues(downloads[0].Task, download.Task)
+				assert.EqualValues(downloads[0].Host, download.Host)
+				assert.EqualValues(downloads[0].CreatedAt, download.CreatedAt)
+				assert.EqualValues(downloads[0].UpdatedAt, download.UpdatedAt)
 			},
 		},
 		{
@@ -787,7 +805,16 @@ func TestStorage_OpenDownload(t *testing.T) {
 				err = gocsv.UnmarshalWithoutHeaders(readCloser, &downloads)
 				assert.NoError(err)
 				assert.Equal(len(downloads), 1)
-				assert.EqualValues(downloads[0], download)
+				assert.EqualValues(downloads[0].ID, download.ID)
+				assert.EqualValues(downloads[0].Tag, download.Tag)
+				assert.EqualValues(downloads[0].Application, download.Application)
+				assert.EqualValues(downloads[0].State, download.State)
+				assert.EqualValues(downloads[0].Error, download.Error)
+				assert.EqualValues(downloads[0].Cost, download.Cost)
+				assert.EqualValues(downloads[0].Task, download.Task)
+				assert.EqualValues(downloads[0].Host, download.Host)
+				assert.EqualValues(downloads[0].CreatedAt, download.CreatedAt)
+				assert.EqualValues(downloads[0].UpdatedAt, download.UpdatedAt)
 			},
 		},
 		{
