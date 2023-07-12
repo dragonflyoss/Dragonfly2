@@ -194,13 +194,13 @@ func TestAnnouncer_Serve(t *testing.T) {
 				},
 				Trainer: config.TrainerConfig{
 					Interval:      80 * time.Millisecond,
-					UploadTimeout: 10 * time.Second,
+					UploadTimeout: 1 * time.Second,
 				},
 			},
 			data:   []byte("bar"),
 			option: []Option{WithTrainerClient(mockTrainerClient)},
 			sleep: func() {
-				time.Sleep(100 * time.Millisecond)
+				time.Sleep(140 * time.Millisecond)
 			},
 			mock: func(stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
 				var wg sync.WaitGroup
@@ -422,7 +422,7 @@ func TestAnnouncer_announceToTrainer(t *testing.T) {
 			},
 			data: []byte("bar"),
 			sleep: func() {
-				time.Sleep(100 * time.Millisecond)
+				time.Sleep(140 * time.Millisecond)
 			},
 			mock: func(stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
 				gomock.InOrder(
@@ -465,7 +465,7 @@ func TestAnnouncer_announceToTrainer(t *testing.T) {
 			},
 			data: []byte("bar"),
 			sleep: func() {
-				time.Sleep(100 * time.Millisecond)
+				time.Sleep(140 * time.Millisecond)
 			},
 			mock: func(stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
 				var wg sync.WaitGroup
