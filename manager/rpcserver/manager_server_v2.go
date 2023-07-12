@@ -761,7 +761,7 @@ func (s *managerServerV2) CreateModel(ctx context.Context, req *managerv2.Create
 	)
 	switch createModelRequest := req.GetRequest().(type) {
 	case *managerv2.CreateModelRequest_CreateGnnRequest:
-		name = idgen.GNNModelIDV1(req.GetIp(), req.GetHostname(), req.GetClusterId())
+		name = idgen.GNNModelIDV1(req.GetIp(), req.GetHostname())
 		typ = models.ModelTypeGNN
 		evaluation = types.ModelEvaluation{
 			Precision: createModelRequest.CreateGnnRequest.GetPrecision(),
@@ -784,7 +784,7 @@ func (s *managerServerV2) CreateModel(ctx context.Context, req *managerv2.Create
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	case *managerv2.CreateModelRequest_CreateMlpRequest:
-		name = idgen.MLPModelIDV1(req.GetHostname(), req.GetIp(), req.GetClusterId())
+		name = idgen.MLPModelIDV1(req.GetHostname(), req.GetIp())
 		typ = models.ModelTypeMLP
 		evaluation = types.ModelEvaluation{
 			MSE: createModelRequest.CreateMlpRequest.GetMse(),

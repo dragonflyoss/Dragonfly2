@@ -502,23 +502,23 @@ func TestStorage_ListDownload(t *testing.T) {
 				if err := s.CreateDownload(Download{ID: "2"}); err != nil {
 					t.Fatal(err)
 				}
+        
+		    if err := s.CreateDownload(Download{ID: "1"}); err != nil {
+		      t.Fatal(err)
+		    }
 
-				if err := s.CreateDownload(Download{ID: "1"}); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := s.CreateDownload(Download{ID: "3"}); err != nil {
-					t.Fatal(err)
-				}
-			},
-			expect: func(t *testing.T, s Storage, baseDir string, download Download) {
-				assert := assert.New(t)
-				downloads, err := s.ListDownload()
-				assert.NoError(err)
-				assert.Equal(len(downloads), 2)
-				assert.Equal(downloads[0].ID, "2")
-				assert.Equal(downloads[1].ID, "1")
-			},
+		    if err := s.CreateDownload(Download{ID: "3"}); err != nil {
+		      t.Fatal(err)
+		    }
+		  },
+		  expect: func(t *testing.T, s Storage, baseDir string, download Download) {
+		    assert := assert.New(t)
+		    downloads, err := s.ListDownload()
+		    assert.NoError(err)
+		    assert.Equal(len(downloads), 2)
+		    assert.Equal(downloads[0].ID, "2")
+		    assert.Equal(downloads[1].ID, "1")
+		  },
 		},
 	}
 
