@@ -1428,7 +1428,6 @@ func (v *V1) createDownloadRecord(peer *resource.Peer, parents []*resource.Peer,
 			Platform:   parent.Host.Build.Platform,
 		}
 
-		var pieceRecords []storage.Piece
 		peer.Pieces.Range(func(key, value any) bool {
 			piece, ok := value.(*resource.Piece)
 			if !ok {
@@ -1437,7 +1436,7 @@ func (v *V1) createDownloadRecord(peer *resource.Peer, parents []*resource.Peer,
 
 			if piece.ParentID == parent.ID {
 				parentRecord.UploadPieceCount++
-				pieceRecords = append(pieceRecords, storage.Piece{
+				parentRecord.Pieces = append(parentRecord.Pieces, storage.Piece{
 					Length:    int64(piece.Length),
 					Cost:      piece.Cost.Nanoseconds(),
 					CreatedAt: piece.CreatedAt.UnixNano(),
@@ -1447,7 +1446,6 @@ func (v *V1) createDownloadRecord(peer *resource.Peer, parents []*resource.Peer,
 			return true
 		})
 
-		parentRecord.Pieces = pieceRecords
 		parentRecords = append(parentRecords, parentRecord)
 	}
 
