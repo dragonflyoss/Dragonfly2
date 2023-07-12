@@ -188,9 +188,8 @@ func (a *announcer) uploadDownloadToTrainer(stream trainerv1.Trainer_TrainClient
 		}
 
 		if err := stream.Send(&trainerv1.TrainRequest{
-			Hostname:  a.config.Server.Host,
-			Ip:        a.config.Server.AdvertiseIP.String(),
-			ClusterId: uint64(a.config.Manager.SchedulerClusterID),
+			Hostname: a.config.Server.Host,
+			Ip:       a.config.Server.AdvertiseIP.String(),
 			Request: &trainerv1.TrainRequest_TrainMlpRequest{
 				TrainMlpRequest: &trainerv1.TrainMLPRequest{
 					Dataset: buf[:n],
@@ -222,9 +221,8 @@ func (a *announcer) uploadNetworkTopologyToTrainer(stream trainerv1.Trainer_Trai
 		}
 
 		if err := stream.Send(&trainerv1.TrainRequest{
-			Hostname:  a.config.Server.Host,
-			Ip:        a.config.Server.AdvertiseIP.String(),
-			ClusterId: uint64(a.config.Manager.SchedulerClusterID),
+			Hostname: a.config.Server.Host,
+			Ip:       a.config.Server.AdvertiseIP.String(),
 			Request: &trainerv1.TrainRequest_TrainGnnRequest{
 				TrainGnnRequest: &trainerv1.TrainGNNRequest{
 					Dataset: buf[:n],

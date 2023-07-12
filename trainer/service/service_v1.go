@@ -17,6 +17,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -30,6 +31,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/trainer/config"
 	"d7y.io/dragonfly/v2/trainer/storage"
+	"d7y.io/dragonfly/v2/trainer/training"
 )
 
 // V1 is the interface for v1 version of the service.
@@ -39,23 +41,25 @@ type V1 struct {
 
 	// Storage Interface.
 	storage storage.Storage
+
+	// Training Interface.
+	training training.Training
 }
 
 // New v1 version of service instance.
 func NewV1(
 	cfg *config.Config,
 	storage storage.Storage,
-
+	training training.Training,
 ) *V1 {
-	return &V1{
-		config:  cfg,
-		storage: storage,
-	}
+	return &V1{cfg, storage, training}
 }
 
 // Train implements the Trainer.Train method.
 func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 	var (
+		ip                  string
+		hostname            string
 		hostID              string
 		networkTopologyFile io.WriteCloser
 		downloadFile        io.WriteCloser
@@ -68,16 +72,18 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 		req, err = stream.Recv()
 		if err != nil {
 			if err == io.EOF {
-				return stream.SendAndClose(&emptypb.Empty{})
+				break
 			}
 
 			logger.Errorf("receive failed: %s", err.Error())
 			return err
 		}
 
-		logger := logger.WithTrain(req.Hostname, req.Ip, req.ClusterId)
+		logger := logger.WithHostnameAndIP(req.Hostname, req.Ip)
 		if !initialized {
 			initialized = true
+			ip = req.Ip
+			hostname = req.Hostname
 			hostID = idgen.HostIDV2(req.Ip, req.Hostname)
 
 			// Open network topology file and store received data.
@@ -138,4 +144,19 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 			return status.Error(codes.FailedPrecondition, msg)
 		}
 	}
+
+	// Send empty response and close stream.
+	if err := stream.SendAndClose(&emptypb.Empty{}); err != nil {
+		logger.Errorf("send and close failed: %s", err.Error())
+		return err
+	}
+
+	// If all dataset received, start training.
+	go func() {
+		if err := v.training.Train(context.Background(), ip, hostname); err != nil {
+			logger.Errorf("train failed: %s", err.Error())
+		}
+	}()
+
+	return nil
 }
