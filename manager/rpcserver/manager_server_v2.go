@@ -813,9 +813,8 @@ func (s *managerServerV2) CreateModel(ctx context.Context, req *managerv2.Create
 
 	scheduler := models.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, &models.Scheduler{
-		Hostname:           req.Hostname,
-		IP:                 req.Ip,
-		SchedulerClusterID: uint(req.ClusterId),
+		Hostname: req.Hostname,
+		IP:       req.Ip,
 	}).Error; err != nil {
 		log.Error(err)
 		return nil, status.Error(codes.Internal, err.Error())

@@ -25,6 +25,7 @@ import (
 
 	"d7y.io/dragonfly/v2/trainer/config"
 	storagemocks "d7y.io/dragonfly/v2/trainer/storage/mocks"
+	trainingmocks "d7y.io/dragonfly/v2/trainer/training/mocks"
 )
 
 func TestRPCServer_New(t *testing.T) {
@@ -46,8 +47,9 @@ func TestRPCServer_New(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 			storage := storagemocks.NewMockStorage(ctl)
+			training := trainingmocks.NewMockTraining(ctl)
 
-			svr := New(&config.Config{}, storage)
+			svr := New(&config.Config{}, storage, training)
 			tc.expect(t, svr)
 		})
 	}
