@@ -63,22 +63,12 @@ type ModelEvaluation struct {
 	MAE       float64 `json:"mae" binding:"omitempty,gte=0"`
 }
 
-// MakeGNNModelName returns model name of GNN.
-func MakeGNNModelName(hostname, ip string, clusterID uint64) string {
-	return fmt.Sprintf("%s_%s_%s_%s", ip, hostname, fmt.Sprint(clusterID), GNNModelNameSuffix)
-}
-
-// MakeMLPModelName returns model name of MLP.
-func MakeMLPModelName(hostname, ip string, clusterID uint64) string {
-	return fmt.Sprintf("%s_%s_%s_%s", ip, hostname, fmt.Sprint(clusterID), MLPModelNameSuffix)
-}
-
 // MakeObjectKeyOfModelFile returns object key of model file.
-func MakeObjectKeyOfModelFile(name string, version int) string {
-	return fmt.Sprintf("%s/%s/%s", name, fmt.Sprint(version), ModelFileName)
+func MakeObjectKeyOfModelFile(id string, version int) string {
+	return fmt.Sprintf("%s/%s/%s", id, fmt.Sprint(version), ModelFileName)
 }
 
 // MakeObjectKeyOfModelConfigFile returns object key of model config file.
-func MakeObjectKeyOfModelConfigFile(name string) string {
-	return fmt.Sprintf("%s/%s", name, ModelConfigFileName)
+func MakeObjectKeyOfModelConfigFile(id string) string {
+	return fmt.Sprintf("%s/%s", id, ModelConfigFileName)
 }

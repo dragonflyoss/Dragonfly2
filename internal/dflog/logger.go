@@ -159,6 +159,12 @@ func WithKeepAlive(hostname, ip, sourceType string, clusterID uint64) *SugaredLo
 	}
 }
 
+func WithTrain(hostname, ip string, clusterID uint64) *SugaredLoggerOnWith {
+	return &SugaredLoggerOnWith{
+		withArgs: []any{"hostname", hostname, "ip", ip, "clusterID", clusterID},
+	}
+}
+
 func WithTaskAndPeerID(taskID, peerID string) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
 		withArgs: []any{"taskID", taskID, "peerID", peerID},

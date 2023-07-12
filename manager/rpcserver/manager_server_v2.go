@@ -47,6 +47,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 	pkgcache "d7y.io/dragonfly/v2/pkg/cache"
 	"d7y.io/dragonfly/v2/pkg/digest"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
 	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
 	"d7y.io/dragonfly/v2/pkg/slices"
@@ -760,7 +761,7 @@ func (s *managerServerV2) CreateModel(ctx context.Context, req *managerv2.Create
 	)
 	switch createModelRequest := req.GetRequest().(type) {
 	case *managerv2.CreateModelRequest_CreateGnnRequest:
-		name = types.MakeGNNModelName(req.GetIp(), req.GetHostname(), req.GetClusterId())
+		name = idgen.GNNModelIDV1(req.GetIp(), req.GetHostname(), req.GetClusterId())
 		typ = models.ModelTypeGNN
 		evaluation = types.ModelEvaluation{
 			Precision: createModelRequest.CreateGnnRequest.GetPrecision(),
@@ -783,7 +784,7 @@ func (s *managerServerV2) CreateModel(ctx context.Context, req *managerv2.Create
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	case *managerv2.CreateModelRequest_CreateMlpRequest:
-		name = types.MakeMLPModelName(req.GetHostname(), req.GetIp(), req.GetClusterId())
+		name = idgen.MLPModelIDV1(req.GetHostname(), req.GetIp(), req.GetClusterId())
 		typ = models.ModelTypeMLP
 		evaluation = types.ModelEvaluation{
 			MSE: createModelRequest.CreateMlpRequest.GetMse(),

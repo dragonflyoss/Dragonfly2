@@ -20,6 +20,7 @@ import (
 	trainerv1 "d7y.io/api/pkg/apis/trainer/v1"
 
 	"d7y.io/dragonfly/v2/trainer/config"
+	"d7y.io/dragonfly/v2/trainer/metrics"
 	"d7y.io/dragonfly/v2/trainer/service"
 	storage "d7y.io/dragonfly/v2/trainer/storage"
 )
@@ -35,8 +36,15 @@ func newTrainerServerV1(cfg *config.Config, st storage.Storage) trainerv1.Traine
 	return &trainerServerV1{service.NewV1(cfg, st)}
 }
 
-// TODO (fyx): implement Train method.
 // Train handles the training request from scheduler.
 func (t *trainerServerV1) Train(stream trainerv1.Trainer_TrainServer) error {
+	// Collect TrainCount metrics.
+	metrics.TrainCount.Inc()
+	if err := t.service.Train(stream); err != nil {
+		// Collect TrainFailureCount metrics.
+		metrics.TrainFailureCount.Inc()
+		return err
+	}
+
 	return nil
 }

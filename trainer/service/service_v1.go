@@ -17,6 +17,16 @@
 package service
 
 import (
+	"fmt"
+	"io"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
+
+	trainerv1 "d7y.io/api/pkg/apis/trainer/v1"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/trainer/config"
 	"d7y.io/dragonfly/v2/trainer/storage"
 )
@@ -39,5 +49,30 @@ func NewV1(
 	return &V1{
 		config:  cfg,
 		storage: storage,
+	}
+}
+
+// TODO Implement Train methods of v1 version.
+// Train implements the Trainer.Train method.
+func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
+	for {
+		req, err := stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				return stream.SendAndClose(&emptypb.Empty{})
+			}
+
+			logger.Errorf("receive failed: %s", err.Error())
+			return err
+		}
+
+		logger := logger.WithTrain(req.Hostname, req.Ip, req.ClusterId)
+		switch trainRequest := req.GetRequest().(type) {
+		case *trainerv1.TrainRequest_TrainMlpRequest:
+		default:
+			msg := fmt.Sprintf("receive unknown request: %#v", trainRequest)
+			logger.Error(msg)
+			return status.Error(codes.FailedPrecondition, msg)
+		}
 	}
 }

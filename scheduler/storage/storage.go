@@ -478,13 +478,13 @@ func (s *storage) openNetworkTopologyFile() (*os.File, error) {
 // downloadBackupFilename generates download file name of backup files.
 func (s *storage) downloadBackupFilename() string {
 	timestamp := time.Now().Format(backupTimeFormat)
-	return filepath.Join(s.baseDir, fmt.Sprintf("%s-%s.%s", DownloadFilePrefix, timestamp, CSVFileExt))
+	return filepath.Join(s.baseDir, fmt.Sprintf("%s_%s.%s", DownloadFilePrefix, timestamp, CSVFileExt))
 }
 
 // networkTopologyBackupFilename generates network topology file name of backup files.
 func (s *storage) networkTopologyBackupFilename() string {
 	timestamp := time.Now().Format(backupTimeFormat)
-	return filepath.Join(s.baseDir, fmt.Sprintf("%s-%s.%s", NetworkTopologyFilePrefix, timestamp, CSVFileExt))
+	return filepath.Join(s.baseDir, fmt.Sprintf("%s_%s.%s", NetworkTopologyFilePrefix, timestamp, CSVFileExt))
 }
 
 // downloadBackups returns download backup file information.
