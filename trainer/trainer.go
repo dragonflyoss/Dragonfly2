@@ -25,14 +25,18 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
+	"d7y.io/dragonfly/v2/pkg/rpc"
+	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/trainer/config"
 	"d7y.io/dragonfly/v2/trainer/metrics"
 	"d7y.io/dragonfly/v2/trainer/rpcserver"
 	"d7y.io/dragonfly/v2/trainer/storage"
+	"d7y.io/dragonfly/v2/trainer/training"
 )
 
 const (
@@ -52,6 +56,9 @@ type Server struct {
 	// Metrics server.
 	metricsServer *http.Server
 
+	// Manager client.
+	managerClient managerclient.V2
+
 	// Storage interface.
 	storage storage.Storage
 }
@@ -60,11 +67,34 @@ type Server struct {
 func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	s := &Server{config: cfg}
 
+	// Initialize dial options of manager grpc client.
+	managerDialOptions := []grpc.DialOption{}
+	if cfg.Security.AutoIssueCert {
+		clientTransportCredentials, err := rpc.NewClientCredentials(cfg.Security.TLSPolicy, nil, []byte(cfg.Security.CACert))
+		if err != nil {
+			return nil, err
+		}
+
+		managerDialOptions = append(managerDialOptions, grpc.WithTransportCredentials(clientTransportCredentials))
+	} else {
+		managerDialOptions = append(managerDialOptions, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	}
+
+	// Initialize manager client.
+	managerClient, err := managerclient.GetV2ByAddr(ctx, cfg.Manager.Addr, managerDialOptions...)
+	if err != nil {
+		return nil, err
+	}
+	s.managerClient = managerClient
+
 	// Initialize Storage.
 	s.storage = storage.New(d.DataDir())
 
+	// Initialize Training.
+	training := training.New(cfg, s.managerClient, s.storage)
+
 	// Initialize trainer grpc server.
-	s.grpcServer = rpcserver.New(cfg, s.storage)
+	s.grpcServer = rpcserver.New(cfg, s.storage, training)
 
 	// Initialize metrics.
 	if cfg.Metrics.Enable {
@@ -114,6 +144,15 @@ func (s *Server) Serve() error {
 
 // Stop stops the trainer server.
 func (s *Server) Stop() {
+	// Stop manager client.
+	if s.managerClient != nil {
+		if err := s.managerClient.Close(); err != nil {
+			logger.Errorf("manager client failed to stop: %s", err.Error())
+		} else {
+			logger.Info("manager client closed")
+		}
+	}
+
 	// Clean storage file.
 	if err := s.storage.Clear(); err != nil {
 		logger.Errorf("clean storage file failed %s", err.Error())
