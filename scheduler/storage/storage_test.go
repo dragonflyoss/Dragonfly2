@@ -266,8 +266,7 @@ func TestStorage_CreateDownload(t *testing.T) {
 			mock:       func(s Storage) {},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
-				err := s.CreateDownload(Download{})
-				assert.NoError(err)
+				assert.NoError(s.CreateDownload(Download{}))
 				assert.Equal(s.(*storage).downloadCount, int64(0))
 			},
 		},
@@ -279,8 +278,7 @@ func TestStorage_CreateDownload(t *testing.T) {
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
-				err := s.CreateDownload(Download{})
-				assert.NoError(err)
+				assert.NoError(s.CreateDownload(Download{}))
 				assert.Equal(s.(*storage).downloadCount, int64(1))
 
 				downloads, err := s.ListDownload()
@@ -296,10 +294,8 @@ func TestStorage_CreateDownload(t *testing.T) {
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
-				err := s.CreateDownload(Download{})
-				assert.NoError(err)
-				err = s.CreateDownload(Download{})
-				assert.NoError(err)
+				assert.NoError(s.CreateDownload(Download{}))
+				assert.NoError(s.CreateDownload(Download{}))
 				assert.Equal(s.(*storage).downloadCount, int64(1))
 			},
 		},
@@ -312,8 +308,7 @@ func TestStorage_CreateDownload(t *testing.T) {
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
-				err := s.CreateDownload(Download{})
-				assert.Error(err)
+				assert.Error(s.CreateDownload(Download{}))
 				s.(*storage).baseDir = baseDir
 			},
 		},
@@ -350,8 +345,7 @@ func TestStorage_CreateNetworkTopology(t *testing.T) {
 			mock:       func(s Storage) {},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
-				err := s.CreateNetworkTopology(NetworkTopology{})
-				assert.NoError(err)
+				assert.NoError(s.CreateNetworkTopology(NetworkTopology{}))
 				assert.Equal(s.(*storage).networkTopologyCount, int64(0))
 			},
 		},
@@ -363,8 +357,7 @@ func TestStorage_CreateNetworkTopology(t *testing.T) {
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
-				err := s.CreateNetworkTopology(NetworkTopology{})
-				assert.NoError(err)
+				assert.NoError(s.CreateNetworkTopology(NetworkTopology{}))
 				assert.Equal(s.(*storage).networkTopologyCount, int64(1))
 
 				networkTopologies, err := s.ListNetworkTopology()
@@ -380,10 +373,8 @@ func TestStorage_CreateNetworkTopology(t *testing.T) {
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
-				err := s.CreateNetworkTopology(NetworkTopology{})
-				assert.NoError(err)
-				err = s.CreateNetworkTopology(NetworkTopology{})
-				assert.NoError(err)
+				assert.NoError(s.CreateNetworkTopology(NetworkTopology{}))
+				assert.NoError(s.CreateNetworkTopology(NetworkTopology{}))
 				assert.Equal(s.(*storage).networkTopologyCount, int64(1))
 			},
 		},
@@ -396,8 +387,7 @@ func TestStorage_CreateNetworkTopology(t *testing.T) {
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
-				err := s.CreateNetworkTopology(NetworkTopology{})
-				assert.Error(err)
+				assert.Error(s.CreateNetworkTopology(NetworkTopology{}))
 				s.(*storage).baseDir = baseDir
 			},
 		},
@@ -503,39 +493,33 @@ func TestStorage_ListDownload(t *testing.T) {
 				assert.EqualValues(downloads[0].UpdatedAt, download.UpdatedAt)
 			},
 		},
-		// {
-		// name:       "list downloads of multi files",
-		// baseDir:    os.TempDir(),
-		// bufferSize: 1,
-		// download:   Download{},
-		// mock: func(t *testing.T, s Storage, baseDir string, download Download) {
-		// file, err := os.OpenFile(filepath.Join(baseDir, "download_test.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-		// if err != nil {
-		// t.Fatal(err)
-		// }
-		// defer file.Close()
+		{
+			name:       "list downloads of multi files",
+			baseDir:    os.TempDir(),
+			bufferSize: 1,
+			download:   Download{},
+			mock: func(t *testing.T, s Storage, baseDir string, download Download) {
+				if err := s.CreateDownload(Download{ID: "2"}); err != nil {
+					t.Fatal(err)
+				}
 
-		// if err := gocsv.MarshalWithoutHeaders([]Download{{ID: "2"}}, file); err != nil {
-		// t.Fatal(err)
-		// }
+				if err := s.CreateDownload(Download{ID: "1"}); err != nil {
+					t.Fatal(err)
+				}
 
-		// if err := s.CreateDownload(Download{ID: "1"}); err != nil {
-		// t.Fatal(err)
-		// }
-
-		// if err := s.CreateDownload(Download{ID: "3"}); err != nil {
-		// t.Fatal(err)
-		// }
-		// },
-		// expect: func(t *testing.T, s Storage, baseDir string, download Download) {
-		// assert := assert.New(t)
-		// downloads, err := s.ListDownload()
-		// assert.NoError(err)
-		// assert.Equal(len(downloads), 2)
-		// assert.Equal(downloads[0].ID, "2")
-		// assert.Equal(downloads[1].ID, "1")
-		// },
-		// },
+				if err := s.CreateDownload(Download{ID: "3"}); err != nil {
+					t.Fatal(err)
+				}
+			},
+			expect: func(t *testing.T, s Storage, baseDir string, download Download) {
+				assert := assert.New(t)
+				downloads, err := s.ListDownload()
+				assert.NoError(err)
+				assert.Equal(len(downloads), 2)
+				assert.Equal(downloads[0].ID, "2")
+				assert.Equal(downloads[1].ID, "1")
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -629,39 +613,33 @@ func TestStorage_ListNetworkTopology(t *testing.T) {
 				assert.EqualValues(networkTopologies[0], networkTopology)
 			},
 		},
-		// {
-		// name:            "list network topologies of multi files",
-		// baseDir:         os.TempDir(),
-		// bufferSize:      1,
-		// networkTopology: NetworkTopology{},
-		// mock: func(t *testing.T, s Storage, baseDir string, networkTopology NetworkTopology) {
-		// file, err := os.OpenFile(filepath.Join(baseDir, "networktopology_test.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-		// if err != nil {
-		// t.Fatal(err)
-		// }
-		// defer file.Close()
+		{
+			name:            "list network topologies of multi files",
+			baseDir:         os.TempDir(),
+			bufferSize:      1,
+			networkTopology: NetworkTopology{},
+			mock: func(t *testing.T, s Storage, baseDir string, networkTopology NetworkTopology) {
+				if err := s.CreateNetworkTopology(NetworkTopology{ID: "2"}); err != nil {
+					t.Fatal(err)
+				}
 
-		// if err := gocsv.MarshalWithoutHeaders([]NetworkTopology{{ID: "2"}}, file); err != nil {
-		// t.Fatal(err)
-		// }
+				if err := s.CreateNetworkTopology(NetworkTopology{ID: "1"}); err != nil {
+					t.Fatal(err)
+				}
 
-		// if err := s.CreateNetworkTopology(NetworkTopology{ID: "1"}); err != nil {
-		// t.Fatal(err)
-		// }
-
-		// if err := s.CreateNetworkTopology(NetworkTopology{ID: "3"}); err != nil {
-		// t.Fatal(err)
-		// }
-		// },
-		// expect: func(t *testing.T, s Storage, baseDir string, networkTopology NetworkTopology) {
-		// assert := assert.New(t)
-		// networkTopologies, err := s.ListNetworkTopology()
-		// assert.NoError(err)
-		// assert.Equal(len(networkTopologies), 2)
-		// assert.Equal(networkTopologies[0].ID, "2")
-		// assert.Equal(networkTopologies[1].ID, "1")
-		// },
-		// },
+				if err := s.CreateNetworkTopology(NetworkTopology{ID: "3"}); err != nil {
+					t.Fatal(err)
+				}
+			},
+			expect: func(t *testing.T, s Storage, baseDir string, networkTopology NetworkTopology) {
+				assert := assert.New(t)
+				networkTopologies, err := s.ListNetworkTopology()
+				assert.NoError(err)
+				assert.Equal(len(networkTopologies), 2)
+				assert.Equal(networkTopologies[0].ID, "2")
+				assert.Equal(networkTopologies[1].ID, "1")
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -817,43 +795,37 @@ func TestStorage_OpenDownload(t *testing.T) {
 				assert.EqualValues(downloads[0].UpdatedAt, download.UpdatedAt)
 			},
 		},
-		// {
-		// name:       "open storage with downloads of multi files",
-		// baseDir:    os.TempDir(),
-		// bufferSize: 1,
-		// download:   Download{},
-		// mock: func(t *testing.T, s Storage, baseDir string, download Download) {
-		// file, err := os.OpenFile(filepath.Join(baseDir, "download_test.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-		// if err != nil {
-		// t.Fatal(err)
-		// }
-		// defer file.Close()
+		{
+			name:       "open storage with downloads of multi files",
+			baseDir:    os.TempDir(),
+			bufferSize: 1,
+			download:   Download{},
+			mock: func(t *testing.T, s Storage, baseDir string, download Download) {
+				if err := s.CreateDownload(Download{ID: "2"}); err != nil {
+					t.Fatal(err)
+				}
 
-		// if err := gocsv.MarshalWithoutHeaders([]Download{{ID: "2"}}, file); err != nil {
-		// t.Fatal(err)
-		// }
+				if err := s.CreateDownload(Download{ID: "1"}); err != nil {
+					t.Fatal(err)
+				}
 
-		// if err := s.CreateDownload(Download{ID: "1"}); err != nil {
-		// t.Fatal(err)
-		// }
+				if err := s.CreateDownload(Download{ID: "3"}); err != nil {
+					t.Fatal(err)
+				}
+			},
+			expect: func(t *testing.T, s Storage, baseDir string, download Download) {
+				assert := assert.New(t)
+				readCloser, err := s.OpenDownload()
+				assert.NoError(err)
 
-		// if err := s.CreateDownload(Download{ID: "3"}); err != nil {
-		// t.Fatal(err)
-		// }
-		// },
-		// expect: func(t *testing.T, s Storage, baseDir string, download Download) {
-		// assert := assert.New(t)
-		// readCloser, err := s.OpenDownload()
-		// assert.NoError(err)
-
-		// var downloads []Download
-		// err = gocsv.UnmarshalWithoutHeaders(readCloser, &downloads)
-		// assert.NoError(err)
-		// assert.Equal(len(downloads), 2)
-		// assert.Equal(downloads[0].ID, "2")
-		// assert.Equal(downloads[1].ID, "1")
-		// },
-		// },
+				var downloads []Download
+				err = gocsv.UnmarshalWithoutHeaders(readCloser, &downloads)
+				assert.NoError(err)
+				assert.Equal(len(downloads), 2)
+				assert.Equal(downloads[0].ID, "2")
+				assert.Equal(downloads[1].ID, "1")
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -935,43 +907,37 @@ func TestStorage_OpenNetworkTopology(t *testing.T) {
 				assert.EqualValues(networkTopologies[0], networkTopology)
 			},
 		},
-		// {
-		// name:            "open storage with network topologies of multi files",
-		// baseDir:         os.TempDir(),
-		// bufferSize:      1,
-		// networkTopology: NetworkTopology{},
-		// mock: func(t *testing.T, s Storage, baseDir string, networkTopology NetworkTopology) {
-		// file, err := os.OpenFile(filepath.Join(baseDir, "networktopology_test.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-		// if err != nil {
-		// t.Fatal(err)
-		// }
-		// defer file.Close()
+		{
+			name:            "open storage with network topologies of multi files",
+			baseDir:         os.TempDir(),
+			bufferSize:      1,
+			networkTopology: NetworkTopology{},
+			mock: func(t *testing.T, s Storage, baseDir string, networkTopology NetworkTopology) {
+				if err := s.CreateNetworkTopology(NetworkTopology{ID: "2"}); err != nil {
+					t.Fatal(err)
+				}
 
-		// if err := gocsv.MarshalWithoutHeaders([]NetworkTopology{{ID: "2"}}, file); err != nil {
-		// t.Fatal(err)
-		// }
+				if err := s.CreateNetworkTopology(NetworkTopology{ID: "1"}); err != nil {
+					t.Fatal(err)
+				}
 
-		// if err := s.CreateNetworkTopology(NetworkTopology{ID: "1"}); err != nil {
-		// t.Fatal(err)
-		// }
+				if err := s.CreateNetworkTopology(NetworkTopology{ID: "3"}); err != nil {
+					t.Fatal(err)
+				}
+			},
+			expect: func(t *testing.T, s Storage, baseDir string, networkTopology NetworkTopology) {
+				assert := assert.New(t)
+				readCloser, err := s.OpenNetworkTopology()
+				assert.NoError(err)
 
-		// if err := s.CreateNetworkTopology(NetworkTopology{ID: "3"}); err != nil {
-		// t.Fatal(err)
-		// }
-		// },
-		// expect: func(t *testing.T, s Storage, baseDir string, networkTopology NetworkTopology) {
-		// assert := assert.New(t)
-		// readCloser, err := s.OpenNetworkTopology()
-		// assert.NoError(err)
-
-		// var networkTopologies []NetworkTopology
-		// err = gocsv.UnmarshalWithoutHeaders(readCloser, &networkTopologies)
-		// assert.NoError(err)
-		// assert.Equal(len(networkTopologies), 2)
-		// assert.Equal(networkTopologies[0].ID, "2")
-		// assert.Equal(networkTopologies[1].ID, "1")
-		// },
-		// },
+				var networkTopologies []NetworkTopology
+				err = gocsv.UnmarshalWithoutHeaders(readCloser, &networkTopologies)
+				assert.NoError(err)
+				assert.Equal(len(networkTopologies), 2)
+				assert.Equal(networkTopologies[0].ID, "2")
+				assert.Equal(networkTopologies[1].ID, "1")
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -1115,8 +1081,7 @@ func TestStorage_createDownload(t *testing.T) {
 			mock:    func(s Storage) {},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
-				err := s.(*storage).createDownload(Download{})
-				assert.NoError(err)
+				assert.NoError(s.(*storage).createDownload(Download{}))
 			},
 		},
 		{
@@ -1127,8 +1092,7 @@ func TestStorage_createDownload(t *testing.T) {
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
-				err := s.(*storage).createDownload(Download{})
-				assert.Error(err)
+				assert.Error(s.(*storage).createDownload(Download{}))
 				s.(*storage).baseDir = baseDir
 			},
 		},
@@ -1163,8 +1127,7 @@ func TestStorage_createNetworkTopology(t *testing.T) {
 			mock:    func(s Storage) {},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
-				err := s.(*storage).createNetworkTopology(NetworkTopology{})
-				assert.NoError(err)
+				assert.NoError(s.(*storage).createNetworkTopology(NetworkTopology{}))
 			},
 		},
 		{
@@ -1175,8 +1138,7 @@ func TestStorage_createNetworkTopology(t *testing.T) {
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
-				err := s.(*storage).createNetworkTopology(NetworkTopology{})
-				assert.Error(err)
+				assert.Error(s.(*storage).createNetworkTopology(NetworkTopology{}))
 				s.(*storage).baseDir = baseDir
 			},
 		},
