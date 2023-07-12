@@ -20,7 +20,6 @@ package announcer
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"time"
 
@@ -37,8 +36,8 @@ import (
 )
 
 const (
-	// UploadBufferSize is the buffer size for upload.
-	UploadBufferSize = 1024 * 1024
+	// defaultUploadBufferSize is the buffer size for upload.
+	defaultUploadBufferSize = 128 * 1024 * 1024
 )
 
 // Announcer is the interface used for announce service.
@@ -151,19 +150,11 @@ func (a *announcer) train() error {
 
 	eg := errgroup.Group{}
 	eg.Go(func() error {
-		if err := a.uploadDownloadToTrainer(stream); err != nil {
-			return fmt.Errorf("upload download: %w", err)
-		}
-
-		return nil
+		return a.uploadDownloadToTrainer(stream)
 	})
 
 	eg.Go(func() error {
-		if err := a.uploadNetworkTopologyToTrainer(stream); err != nil {
-			return fmt.Errorf("upload network topology: %w", err)
-		}
-
-		return nil
+		return a.uploadNetworkTopologyToTrainer(stream)
 	})
 
 	if err := eg.Wait(); err != nil {
@@ -185,10 +176,14 @@ func (a *announcer) uploadDownloadToTrainer(stream trainerv1.Trainer_TrainClient
 	}
 	defer readCloser.Close()
 
-	buf := make([]byte, UploadBufferSize)
+	buf := make([]byte, defaultUploadBufferSize)
 	for {
 		n, err := readCloser.Read(buf)
-		if err != nil && err != io.EOF {
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+
 			return err
 		}
 
@@ -204,13 +199,7 @@ func (a *announcer) uploadDownloadToTrainer(stream trainerv1.Trainer_TrainClient
 		}); err != nil {
 			return err
 		}
-
-		if err == io.EOF {
-			break
-		}
 	}
-
-	return nil
 }
 
 // uploadNetworkTopologyToTrainer uploads network topology to trainer.
@@ -221,10 +210,14 @@ func (a *announcer) uploadNetworkTopologyToTrainer(stream trainerv1.Trainer_Trai
 	}
 	defer readCloser.Close()
 
-	buf := make([]byte, UploadBufferSize)
+	buf := make([]byte, defaultUploadBufferSize)
 	for {
 		n, err := readCloser.Read(buf)
-		if err != nil && err != io.EOF {
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+
 			return err
 		}
 
@@ -240,11 +233,5 @@ func (a *announcer) uploadNetworkTopologyToTrainer(stream trainerv1.Trainer_Trai
 		}); err != nil {
 			return err
 		}
-
-		if err == io.EOF {
-			break
-		}
 	}
-
-	return nil
 }

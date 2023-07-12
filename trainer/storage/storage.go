@@ -74,8 +74,8 @@ func New(baseDir string) Storage {
 }
 
 // ListDownload returns downloads in csv files based on the given model key.
-func (s *storage) ListDownload(modelKey string) ([]schedulerstorage.Download, error) {
-	file, err := s.OpenDownload(modelKey)
+func (s *storage) ListDownload(key string) ([]schedulerstorage.Download, error) {
+	file, err := s.OpenDownload(key)
 	if err != nil {
 		return nil, err
 	}
@@ -90,8 +90,8 @@ func (s *storage) ListDownload(modelKey string) ([]schedulerstorage.Download, er
 }
 
 // ListNetworkTopology returns network topologies in csv files based on the given model key.
-func (s *storage) ListNetworkTopology(modelKey string) ([]schedulerstorage.NetworkTopology, error) {
-	file, err := s.OpenNetworkTopology(modelKey)
+func (s *storage) ListNetworkTopology(key string) ([]schedulerstorage.NetworkTopology, error) {
+	file, err := s.OpenNetworkTopology(key)
 	if err != nil {
 		return nil, err
 	}
@@ -106,23 +106,23 @@ func (s *storage) ListNetworkTopology(modelKey string) ([]schedulerstorage.Netwo
 }
 
 // OpenDownload opens download files for read based on the given model key, it returns io.ReadCloser of download files.
-func (s *storage) OpenDownload(modelKey string) (*os.File, error) {
-	return os.OpenFile(s.downloadFilename(modelKey), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+func (s *storage) OpenDownload(key string) (*os.File, error) {
+	return os.OpenFile(s.downloadFilename(key), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 }
 
 // OpenNetworkTopology opens network topology files for read based on the given model key, it returns io.ReadCloser of network topology files.
-func (s *storage) OpenNetworkTopology(modelKey string) (*os.File, error) {
-	return os.OpenFile(s.networkTopologyFilename(modelKey), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+func (s *storage) OpenNetworkTopology(key string) (*os.File, error) {
+	return os.OpenFile(s.networkTopologyFilename(key), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 }
 
 // ClearDownload removes downloads based on the given model key.
-func (s *storage) ClearDownload(modelKey string) error {
-	return os.Remove(s.downloadFilename(modelKey))
+func (s *storage) ClearDownload(key string) error {
+	return os.Remove(s.downloadFilename(key))
 }
 
 // ClearNetworkTopology removes network topologies based on the given model key.
-func (s *storage) ClearNetworkTopology(modelKey string) error {
-	return os.Remove(s.networkTopologyFilename(modelKey))
+func (s *storage) ClearNetworkTopology(key string) error {
+	return os.Remove(s.networkTopologyFilename(key))
 }
 
 // Clear removes all files.
@@ -131,11 +131,11 @@ func (s *storage) Clear() error {
 }
 
 // downloadFilename generates download file name based on the given model key.
-func (s *storage) downloadFilename(modelKey string) string {
-	return filepath.Join(s.baseDir, fmt.Sprintf("%s-%s.%s", DownloadFilePrefix, modelKey, CSVFileExt))
+func (s *storage) downloadFilename(key string) string {
+	return filepath.Join(s.baseDir, fmt.Sprintf("%s_%s.%s", DownloadFilePrefix, key, CSVFileExt))
 }
 
 // networkTopologyFilename generates network topology file name based on the given model key.
-func (s *storage) networkTopologyFilename(modelKey string) string {
-	return filepath.Join(s.baseDir, fmt.Sprintf("%s-%s.%s", NetworkTopologyFilePrefix, modelKey, CSVFileExt))
+func (s *storage) networkTopologyFilename(key string) string {
+	return filepath.Join(s.baseDir, fmt.Sprintf("%s_%s.%s", NetworkTopologyFilePrefix, key, CSVFileExt))
 }
