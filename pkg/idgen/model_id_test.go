@@ -24,114 +24,104 @@ import (
 
 func TestGNNModelIDV1(t *testing.T) {
 	tests := []struct {
-		name      string
-		ip        string
-		hostname  string
-		clusterID uint64
-		expect    func(t *testing.T, d string)
+		name     string
+		ip       string
+		hostname string
+		expect   func(t *testing.T, d string)
 	}{
 		{
-			name:      "generate GNNModelID",
-			ip:        "127.0.0.1",
-			hostname:  "foo",
-			clusterID: 1,
+			name:     "generate GNNModelID",
+			ip:       "127.0.0.1",
+			hostname: "foo",
 			expect: func(t *testing.T, d string) {
 				assert := assert.New(t)
-				assert.Equal(d, "1f87cb3e4d63a6dec56a169a61b17c62c342b6d1bfea7bc36110fcee79a881aa")
+				assert.Equal(d, "0c1cfa1cf4b2f58b0e632dca66537cae6596453ec793c38bb14b0de4fa232474")
 			},
 		},
 		{
-			name:      "generate GNNModelID with empty ip",
-			ip:        "",
-			hostname:  "foo",
-			clusterID: 1,
+			name:     "generate GNNModelID with empty ip",
+			ip:       "",
+			hostname: "foo",
 			expect: func(t *testing.T, d string) {
 				assert := assert.New(t)
-				assert.Equal(d, "41a2ad9148f8a0355c0f61573d17312a0fd3fc542ee4d71a82a7e2b29ada645c")
+				assert.Equal(d, "10ad70f3d95e523e4d9f6d830ea92b96bb9a8c91da76c135bc66208fb744454c")
 			},
 		},
 		{
-			name:      "generate GNNModelID with empty host",
-			ip:        "127.0.0.1",
-			hostname:  "",
-			clusterID: 1,
+			name:     "generate GNNModelID with empty host",
+			ip:       "127.0.0.1",
+			hostname: "",
 			expect: func(t *testing.T, d string) {
 				assert := assert.New(t)
-				assert.Equal(d, "1ee3838a1a87aae3dd8e718c6dc146b234e3fb1312e75324cb374ea3f340b476")
+				assert.Equal(d, "562a69955f8592589d5ed747888c8c3e9d81420657b7bd33847b5bb2d1d3db4c")
 			},
 		},
 		{
-			name:      "generate GNNModelID with zero clusterID",
-			ip:        "127.0.0.1",
-			hostname:  "127.0.0.1",
-			clusterID: 0,
+			name:     "generate GNNModelID with zero clusterID",
+			ip:       "127.0.0.1",
+			hostname: "127.0.0.1",
 			expect: func(t *testing.T, d string) {
 				assert := assert.New(t)
-				assert.Equal(d, "a8db74e81e065ffb255fb9f4c2e26f09851ea795a264098b77ea21715ab3ecd6")
+				assert.Equal(d, "b057d986d82d071f356e13e6f3042b14fe182d57b801a211fa9f21c76ba5290b")
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, GNNModelIDV1(tc.ip, tc.hostname, tc.clusterID))
+			tc.expect(t, GNNModelIDV1(tc.ip, tc.hostname))
 		})
 	}
 }
 
 func TestMLPModelIDV1(t *testing.T) {
 	tests := []struct {
-		name      string
-		ip        string
-		hostname  string
-		clusterID uint64
-		expect    func(t *testing.T, d string)
+		name     string
+		ip       string
+		hostname string
+		expect   func(t *testing.T, d string)
 	}{
 		{
-			name:      "generate MLPModelID",
-			ip:        "127.0.0.1",
-			hostname:  "foo",
-			clusterID: 1,
+			name:     "generate MLPModelID",
+			ip:       "127.0.0.1",
+			hostname: "foo",
 			expect: func(t *testing.T, d string) {
 				assert := assert.New(t)
-				assert.Equal(d, "b198e604525d8117922f12dde4d7275190948738d60a1d6b03357ae30d2e2ecf")
+				assert.Equal(d, "2ba6ab2e9d9eec939b98890c095891aef9864d88558b7b3727fb05ae87d6e037")
 			},
 		},
 		{
-			name:      "generate MLPModelID with empty ip",
-			ip:        "",
-			hostname:  "foo",
-			clusterID: 1,
+			name:     "generate MLPModelID with empty ip",
+			ip:       "",
+			hostname: "foo",
 			expect: func(t *testing.T, d string) {
 				assert := assert.New(t)
-				assert.Equal(d, "5b7ba8256ee4fe626cddbadfaa3f655c1581bf05404d60a0c9879e5389bf3c7f")
+				assert.Equal(d, "6639d7f1cfa7842016ba5b0a19bf03930ff85d406e6f7763bd4ff88774400298")
 			},
 		},
 		{
-			name:      "generate MLPModelID with empty host",
-			ip:        "127.0.0.1",
-			hostname:  "",
-			clusterID: 1,
+			name:     "generate MLPModelID with empty host",
+			ip:       "127.0.0.1",
+			hostname: "",
 			expect: func(t *testing.T, d string) {
 				assert := assert.New(t)
-				assert.Equal(d, "a42115f661da4711c7d94a1af9fce24a06a335b6526b4caa1d1d33ffe00625f3")
+				assert.Equal(d, "3b40fd716824d6fc0d5a0f2eff2eb051c526b75a29d4c82a1b2d1174f6db4e7f")
 			},
 		},
 		{
-			name:      "generate MLPModelID with zero clusterID",
-			ip:        "127.0.0.1",
-			hostname:  "127.0.0.1",
-			clusterID: 0,
+			name:     "generate MLPModelID with zero clusterID",
+			ip:       "127.0.0.1",
+			hostname: "127.0.0.1",
 			expect: func(t *testing.T, d string) {
 				assert := assert.New(t)
-				assert.Equal(d, "afe4620a10bde10471e8627a5d965d68fc4a15193f8cf23b3be61bce4d91d4c4")
+				assert.Equal(d, "16e2fe757406d847974f711ebe8285df132e5f4f99c297b1bd16b952fe7eee2a")
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, MLPModelIDV1(tc.ip, tc.hostname, tc.clusterID))
+			tc.expect(t, MLPModelIDV1(tc.ip, tc.hostname))
 		})
 	}
 }

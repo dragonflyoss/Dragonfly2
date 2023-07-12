@@ -27,6 +27,7 @@ import (
 	trainerv1 "d7y.io/api/pkg/apis/trainer/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/trainer/config"
 	"d7y.io/dragonfly/v2/trainer/storage"
 )
@@ -52,11 +53,19 @@ func NewV1(
 	}
 }
 
-// TODO Implement Train methods of v1 version.
 // Train implements the Trainer.Train method.
 func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
+	var (
+		hostID              string
+		networkTopologyFile io.WriteCloser
+		downloadFile        io.WriteCloser
+		req                 *trainerv1.TrainRequest
+		initialized         bool
+		err                 error
+	)
+
 	for {
-		req, err := stream.Recv()
+		req, err = stream.Recv()
 		if err != nil {
 			if err == io.EOF {
 				return stream.SendAndClose(&emptypb.Empty{})
@@ -67,8 +76,62 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 		}
 
 		logger := logger.WithTrain(req.Hostname, req.Ip, req.ClusterId)
+		if !initialized {
+			initialized = true
+			hostID = idgen.HostIDV2(req.Ip, req.Hostname)
+
+			// Open network topology file and store received data.
+			networkTopologyFile, err = v.storage.OpenNetworkTopology(hostID)
+			if err != nil {
+				msg := fmt.Sprintf("open network topology failed: %s", err.Error())
+				logger.Error(msg)
+				return status.Error(codes.Internal, msg)
+			}
+			defer func() {
+				networkTopologyFile.Close()
+
+				// If error occurred, clear network topology.
+				if err != nil {
+					if err := v.storage.ClearNetworkTopology(hostID); err != nil {
+						logger.Errorf("clear network topology failed: %s", err.Error())
+					}
+				}
+			}()
+
+			// Open download file and store received data.
+			downloadFile, err = v.storage.OpenDownload(hostID)
+			if err != nil {
+				msg := fmt.Sprintf("open download failed: %s", err.Error())
+				logger.Error(msg)
+				return status.Error(codes.Internal, msg)
+			}
+			defer func() {
+				downloadFile.Close()
+
+				// If error occurred, clear download.
+				if err != nil {
+					if err := v.storage.ClearDownload(hostID); err != nil {
+						logger.Errorf("clear download failed: %s", err.Error())
+					}
+				}
+			}()
+		}
+
 		switch trainRequest := req.GetRequest().(type) {
+		case *trainerv1.TrainRequest_TrainGnnRequest:
+			// Store network topology.
+			if _, err := networkTopologyFile.Write(trainRequest.TrainGnnRequest.Dataset); err != nil {
+				msg := fmt.Sprintf("write network topology failed: %s", err.Error())
+				logger.Error(msg)
+				return status.Error(codes.Internal, msg)
+			}
 		case *trainerv1.TrainRequest_TrainMlpRequest:
+			// Store download.
+			if _, err := downloadFile.Write(trainRequest.TrainMlpRequest.Dataset); err != nil {
+				msg := fmt.Sprintf("write download failed: %s", err.Error())
+				logger.Error(msg)
+				return status.Error(codes.Internal, msg)
+			}
 		default:
 			msg := fmt.Sprintf("receive unknown request: %#v", trainRequest)
 			logger.Error(msg)

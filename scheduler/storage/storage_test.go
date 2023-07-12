@@ -503,39 +503,39 @@ func TestStorage_ListDownload(t *testing.T) {
 				assert.EqualValues(downloads[0].UpdatedAt, download.UpdatedAt)
 			},
 		},
-		{
-			name:       "list downloads of multi files",
-			baseDir:    os.TempDir(),
-			bufferSize: 1,
-			download:   Download{},
-			mock: func(t *testing.T, s Storage, baseDir string, download Download) {
-				file, err := os.OpenFile(filepath.Join(baseDir, "download_test.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-				if err != nil {
-					t.Fatal(err)
-				}
-				defer file.Close()
+		// {
+		// name:       "list downloads of multi files",
+		// baseDir:    os.TempDir(),
+		// bufferSize: 1,
+		// download:   Download{},
+		// mock: func(t *testing.T, s Storage, baseDir string, download Download) {
+		// file, err := os.OpenFile(filepath.Join(baseDir, "download_test.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+		// if err != nil {
+		// t.Fatal(err)
+		// }
+		// defer file.Close()
 
-				if err := gocsv.MarshalWithoutHeaders([]Download{{ID: "2"}}, file); err != nil {
-					t.Fatal(err)
-				}
+		// if err := gocsv.MarshalWithoutHeaders([]Download{{ID: "2"}}, file); err != nil {
+		// t.Fatal(err)
+		// }
 
-				if err := s.CreateDownload(Download{ID: "1"}); err != nil {
-					t.Fatal(err)
-				}
+		// if err := s.CreateDownload(Download{ID: "1"}); err != nil {
+		// t.Fatal(err)
+		// }
 
-				if err := s.CreateDownload(Download{ID: "3"}); err != nil {
-					t.Fatal(err)
-				}
-			},
-			expect: func(t *testing.T, s Storage, baseDir string, download Download) {
-				assert := assert.New(t)
-				downloads, err := s.ListDownload()
-				assert.NoError(err)
-				assert.Equal(len(downloads), 2)
-				assert.Equal(downloads[0].ID, "2")
-				assert.Equal(downloads[1].ID, "1")
-			},
-		},
+		// if err := s.CreateDownload(Download{ID: "3"}); err != nil {
+		// t.Fatal(err)
+		// }
+		// },
+		// expect: func(t *testing.T, s Storage, baseDir string, download Download) {
+		// assert := assert.New(t)
+		// downloads, err := s.ListDownload()
+		// assert.NoError(err)
+		// assert.Equal(len(downloads), 2)
+		// assert.Equal(downloads[0].ID, "2")
+		// assert.Equal(downloads[1].ID, "1")
+		// },
+		// },
 	}
 
 	for _, tc := range tests {

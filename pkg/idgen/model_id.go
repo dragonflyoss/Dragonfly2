@@ -17,8 +17,6 @@
 package idgen
 
 import (
-	"fmt"
-
 	"d7y.io/dragonfly/v2/pkg/digest"
 )
 
@@ -31,11 +29,11 @@ const (
 )
 
 // GNNModelIDV1 generates v1 version of gnn model id.
-func GNNModelIDV1(ip, hostname string, clusterID uint64) string {
-	return digest.SHA256FromStrings(ip, hostname, fmt.Sprint(clusterID), GNNModelNameSuffix)
+func GNNModelIDV1(ip, hostname string) string {
+	return digest.SHA256FromStrings(ip, hostname, GNNModelNameSuffix)
 }
 
 // MLPModelIDV1 generates v1 version of mlp model id.
-func MLPModelIDV1(ip, hostname string, clusterID uint64) string {
-	return digest.SHA256FromStrings(ip, hostname, fmt.Sprint(clusterID), MLPModelNameSuffix)
+func MLPModelIDV1(ip, hostname string) string {
+	return digest.SHA256FromStrings(ip, hostname, MLPModelNameSuffix)
 }
