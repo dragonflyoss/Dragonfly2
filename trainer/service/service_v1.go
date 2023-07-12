@@ -97,7 +97,7 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 				networkTopologyFile.Close()
 
 				// If error occurred, clear network topology.
-				if err != nil {
+				if err != nil && err != io.EOF {
 					if err := v.storage.ClearNetworkTopology(hostID); err != nil {
 						logger.Errorf("clear network topology failed: %s", err.Error())
 					}
@@ -115,7 +115,7 @@ func (v *V1) Train(stream trainerv1.Trainer_TrainServer) error {
 				downloadFile.Close()
 
 				// If error occurred, clear download.
-				if err != nil {
+				if err != nil && err != io.EOF {
 					if err := v.storage.ClearDownload(hostID); err != nil {
 						logger.Errorf("clear download failed: %s", err.Error())
 					}
