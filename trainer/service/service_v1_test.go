@@ -17,13 +17,16 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"reflect"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -71,66 +74,71 @@ func TestService_NewV1(t *testing.T) {
 
 func TestV1_Train(t *testing.T) {
 	tests := []struct {
-		name string
-		mock func(
+		name  string
+		sleep func()
+		mock  func(
 			mtts *trainerv1mocks.MockTrainer_TrainServerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
 			mt *trainingmocks.MockTrainingMockRecorder)
 		expect func(t *testing.T, err error)
 	}{
-		// {
-		// 	name: "receive GNN and MLP train requests success",
-		// 	mock: func(
-		// 		mtts *trainerv1mocks.MockTrainer_TrainServerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
-		// 		mt *trainingmocks.MockTrainingMockRecorder) {
-		// 		networktopologyFile, err := os.OpenFile(filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s.%s", "networktopology", mockHostID, "csv")), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
-		// 		if err != nil {
-		// 			t.Fatal(err)
-		// 		}
-
-		// 		downloadFile, err := os.OpenFile(filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s.%s", "download", mockHostID, "csv")), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
-		// 		if err != nil {
-		// 			t.Fatal(err)
-		// 		}
-
-		// 		var wg sync.WaitGroup
-		// 		wg.Add(1)
-		// 		gomock.InOrder(
-		// 			mtts.Recv().Return(&trainerv1.TrainRequest{
-		// 				Hostname: mockHostName,
-		// 				Ip:       mockIP,
-		// 				Request: &trainerv1.TrainRequest_TrainGnnRequest{
-		// 					TrainGnnRequest: &trainerv1.TrainGNNRequest{
-		// 						Dataset: mockDataset,
-		// 					},
-		// 				},
-		// 			}, nil).Times(1),
-
-		// 			ms.OpenNetworkTopology(mockHostID).Return(networktopologyFile, nil).Times(1),
-		// 			ms.OpenDownload(mockHostID).Return(downloadFile, nil).Times(1),
-		// 			mtts.Recv().Return(&trainerv1.TrainRequest{
-		// 				Hostname: mockHostName,
-		// 				Ip:       mockIP,
-		// 				Request: &trainerv1.TrainRequest_TrainMlpRequest{
-		// 					TrainMlpRequest: &trainerv1.TrainMLPRequest{
-		// 						Dataset: mockDataset,
-		// 					},
-		// 				},
-		// 			}, nil).Times(1),
-		// 			mtts.Recv().Return(nil, io.EOF).Times(1),
-		// 			mtts.SendAndClose(new(emptypb.Empty)).Return(nil).Times(1),
-		// 			mt.Train(context.Background(), mockIP, mockHostName).DoAndReturn(func(ctx context.Context, ip, hostName string) error {
-		// 				wg.Done()
-		// 				return nil
-		// 			}).Times(1),
-		// 		)
-		// 	},
-		// 	expect: func(t *testing.T, err error) {
-		// 		assert := assert.New(t)
-		// 		assert.NoError(err)
-		// 	},
-		// },
 		{
-			name: "receive error",
+			name: "receive GNN and MLP train requests success",
+			sleep: func() {
+				time.Sleep(100 * time.Millisecond)
+			},
+			mock: func(
+				mtts *trainerv1mocks.MockTrainer_TrainServerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
+				mt *trainingmocks.MockTrainingMockRecorder) {
+				networktopologyFile, err := os.OpenFile(filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s.%s", "networktopology", mockHostID, "csv")), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				downloadFile, err := os.OpenFile(filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s.%s", "download", mockHostID, "csv")), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				var wg sync.WaitGroup
+				wg.Add(1)
+				gomock.InOrder(
+					mtts.Recv().Return(&trainerv1.TrainRequest{
+						Hostname: mockHostName,
+						Ip:       mockIP,
+						Request: &trainerv1.TrainRequest_TrainGnnRequest{
+							TrainGnnRequest: &trainerv1.TrainGNNRequest{
+								Dataset: mockDataset,
+							},
+						},
+					}, nil).Times(1),
+
+					ms.OpenNetworkTopology(mockHostID).Return(networktopologyFile, nil).Times(1),
+					ms.OpenDownload(mockHostID).Return(downloadFile, nil).Times(1),
+					mtts.Recv().Return(&trainerv1.TrainRequest{
+						Hostname: mockHostName,
+						Ip:       mockIP,
+						Request: &trainerv1.TrainRequest_TrainMlpRequest{
+							TrainMlpRequest: &trainerv1.TrainMLPRequest{
+								Dataset: mockDataset,
+							},
+						},
+					}, nil).Times(1),
+					mtts.Recv().Return(nil, io.EOF).Times(1),
+					mtts.SendAndClose(new(emptypb.Empty)).Return(nil).Times(1),
+					mt.Train(context.Background(), mockIP, mockHostName).DoAndReturn(func(ctx context.Context, ip, hostName string) error {
+						wg.Done()
+						return nil
+					}).Times(1),
+				)
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+			},
+		},
+		{
+			name:  "receive error",
+			sleep: func() {},
 			mock: func(
 				mtts *trainerv1mocks.MockTrainer_TrainServerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
 				mt *trainingmocks.MockTrainingMockRecorder) {
@@ -144,7 +152,8 @@ func TestV1_Train(t *testing.T) {
 			},
 		},
 		{
-			name: "open network topology file error",
+			name:  "open network topology file error",
+			sleep: func() {},
 			mock: func(
 				mtts *trainerv1mocks.MockTrainer_TrainServerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
 				mt *trainingmocks.MockTrainingMockRecorder) {
@@ -168,7 +177,8 @@ func TestV1_Train(t *testing.T) {
 			},
 		},
 		{
-			name: "open download file error",
+			name:  "open download file error",
+			sleep: func() {},
 			mock: func(
 				mtts *trainerv1mocks.MockTrainer_TrainServerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
 				mt *trainingmocks.MockTrainingMockRecorder) {
@@ -204,7 +214,8 @@ func TestV1_Train(t *testing.T) {
 			},
 		},
 		{
-			name: "clear network topology file error",
+			name:  "clear network topology file error",
+			sleep: func() {},
 			mock: func(
 				mtts *trainerv1mocks.MockTrainer_TrainServerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
 				mt *trainingmocks.MockTrainingMockRecorder) {
@@ -253,7 +264,8 @@ func TestV1_Train(t *testing.T) {
 			},
 		},
 		{
-			name: "clear download file error",
+			name:  "clear download file error",
+			sleep: func() {},
 			mock: func(
 				mtts *trainerv1mocks.MockTrainer_TrainServerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
 				mt *trainingmocks.MockTrainingMockRecorder) {
@@ -302,7 +314,8 @@ func TestV1_Train(t *testing.T) {
 			},
 		},
 		{
-			name: "store network topology error",
+			name:  "store network topology error",
+			sleep: func() {},
 			mock: func(
 				mtts *trainerv1mocks.MockTrainer_TrainServerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
 				mt *trainingmocks.MockTrainingMockRecorder) {
@@ -339,7 +352,8 @@ func TestV1_Train(t *testing.T) {
 			},
 		},
 		{
-			name: "store download error",
+			name:  "store download error",
+			sleep: func() {},
 			mock: func(
 				mtts *trainerv1mocks.MockTrainer_TrainServerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
 				mt *trainingmocks.MockTrainingMockRecorder) {
@@ -376,7 +390,8 @@ func TestV1_Train(t *testing.T) {
 			},
 		},
 		{
-			name: "receive unknown request",
+			name:  "receive unknown request",
+			sleep: func() {},
 			mock: func(
 				mtts *trainerv1mocks.MockTrainer_TrainServerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
 				mt *trainingmocks.MockTrainingMockRecorder) {
@@ -407,7 +422,8 @@ func TestV1_Train(t *testing.T) {
 			},
 		},
 		{
-			name: "send and close error",
+			name:  "send and close error",
+			sleep: func() {},
 			mock: func(
 				mtts *trainerv1mocks.MockTrainer_TrainServerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
 				mt *trainingmocks.MockTrainingMockRecorder) {
@@ -452,58 +468,61 @@ func TestV1_Train(t *testing.T) {
 				assert.EqualError(err, "send and close error")
 			},
 		},
-		// {
-		// 	name: "training error",
-		// 	mock: func(
-		// 		mtts *trainerv1mocks.MockTrainer_TrainServerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
-		// 		mt *trainingmocks.MockTrainingMockRecorder) {
-		// 		networktopologyFile, err := os.OpenFile(filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s.%s", "networktopology", mockHostID, "csv")), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
-		// 		if err != nil {
-		// 			t.Fatal(err)
-		// 		}
+		{
+			name: "training error",
+			sleep: func() {
+				time.Sleep(100 * time.Millisecond)
+			},
+			mock: func(
+				mtts *trainerv1mocks.MockTrainer_TrainServerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
+				mt *trainingmocks.MockTrainingMockRecorder) {
+				networktopologyFile, err := os.OpenFile(filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s.%s", "networktopology", mockHostID, "csv")), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+				if err != nil {
+					t.Fatal(err)
+				}
 
-		// 		downloadFile, err := os.OpenFile(filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s.%s", "download", mockHostID, "csv")), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
-		// 		if err != nil {
-		// 			t.Fatal(err)
-		// 		}
+				downloadFile, err := os.OpenFile(filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s.%s", "download", mockHostID, "csv")), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+				if err != nil {
+					t.Fatal(err)
+				}
 
-		// 		var wg sync.WaitGroup
-		// 		wg.Add(1)
-		// 		gomock.InOrder(
-		// 			mtts.Recv().Return(&trainerv1.TrainRequest{
-		// 				Hostname: mockHostName,
-		// 				Ip:       mockIP,
-		// 				Request: &trainerv1.TrainRequest_TrainGnnRequest{
-		// 					TrainGnnRequest: &trainerv1.TrainGNNRequest{
-		// 						Dataset: mockDataset,
-		// 					},
-		// 				},
-		// 			}, nil).Times(1),
+				var wg sync.WaitGroup
+				wg.Add(1)
+				gomock.InOrder(
+					mtts.Recv().Return(&trainerv1.TrainRequest{
+						Hostname: mockHostName,
+						Ip:       mockIP,
+						Request: &trainerv1.TrainRequest_TrainGnnRequest{
+							TrainGnnRequest: &trainerv1.TrainGNNRequest{
+								Dataset: mockDataset,
+							},
+						},
+					}, nil).Times(1),
 
-		// 			ms.OpenNetworkTopology(mockHostID).Return(networktopologyFile, nil).Times(1),
-		// 			ms.OpenDownload(mockHostID).Return(downloadFile, nil).Times(1),
-		// 			mtts.Recv().Return(&trainerv1.TrainRequest{
-		// 				Hostname: mockHostName,
-		// 				Ip:       mockIP,
-		// 				Request: &trainerv1.TrainRequest_TrainMlpRequest{
-		// 					TrainMlpRequest: &trainerv1.TrainMLPRequest{
-		// 						Dataset: mockDataset,
-		// 					},
-		// 				},
-		// 			}, nil).Times(1),
-		// 			mtts.Recv().Return(nil, io.EOF).Times(1),
-		// 			mtts.SendAndClose(new(emptypb.Empty)).Return(nil).Times(1),
-		// 			mt.Train(context.Background(), mockIP, mockHostName).DoAndReturn(func(ctx context.Context, ip, hostName string) error {
-		// 				wg.Done()
-		// 				return nil
-		// 			}).Times(1),
-		// 		)
-		// 	},
-		// 	expect: func(t *testing.T, err error) {
-		// 		assert := assert.New(t)
-		// 		assert.NoError(err)
-		// 	},
-		// },
+					ms.OpenNetworkTopology(mockHostID).Return(networktopologyFile, nil).Times(1),
+					ms.OpenDownload(mockHostID).Return(downloadFile, nil).Times(1),
+					mtts.Recv().Return(&trainerv1.TrainRequest{
+						Hostname: mockHostName,
+						Ip:       mockIP,
+						Request: &trainerv1.TrainRequest_TrainMlpRequest{
+							TrainMlpRequest: &trainerv1.TrainMLPRequest{
+								Dataset: mockDataset,
+							},
+						},
+					}, nil).Times(1),
+					mtts.Recv().Return(nil, io.EOF).Times(1),
+					mtts.SendAndClose(new(emptypb.Empty)).Return(nil).Times(1),
+					mt.Train(context.Background(), mockIP, mockHostName).DoAndReturn(func(ctx context.Context, ip, hostName string) error {
+						wg.Done()
+						return errors.New("training error")
+					}).Times(1),
+				)
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -517,6 +536,7 @@ func TestV1_Train(t *testing.T) {
 			tc.mock(stream.EXPECT(), storage.EXPECT(), training.EXPECT())
 			svc := NewV1(config.New(), storage, training)
 			tc.expect(t, svc.Train(stream))
+			tc.sleep()
 		})
 	}
 }
