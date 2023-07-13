@@ -18,8 +18,10 @@ package training
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/gocarina/gocsv"
@@ -33,7 +35,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/math"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/types"
-	"d7y.io/dragonfly/v2/scheduler/resource"
 	schedulerstorage "d7y.io/dragonfly/v2/scheduler/storage"
 	"d7y.io/dragonfly/v2/trainer/config"
 	"d7y.io/dragonfly/v2/trainer/storage"
@@ -113,12 +114,45 @@ func (t *training) Train(ctx context.Context, ip, hostname string) error {
 // TODO Add training GNN logic.
 // trainGNN trains GNN model.
 func (t *training) trainGNN(ctx context.Context, ip, hostname string) error {
-	// 2. Preprocess training data.
-	// 2. Train GNN model.
-	// 3. Upload GNN model to manager service.
 	var hostID = idgen.HostIDV2(ip, hostname)
-
 	// Get training data from storage.
+	downloadFile, err := t.storage.OpenDownload(hostID)
+	if err != nil {
+		msg := fmt.Sprintf("open download failed: %s", err.Error())
+		logger.Error(msg)
+		return status.Error(codes.Internal, msg)
+	}
+	defer downloadFile.Close()
+
+	// Preprocess training data.
+	dc := make(chan schedulerstorage.Download)
+	go func() {
+		// start parsing download file.
+		if err := gocsv.UnmarshalToChanWithoutHeaders(downloadFile, dc); err != nil {
+			logger.Error("parse download file error: %s", err.Error())
+		}
+	}()
+
+	var bandwidths map[string]float64
+	for downloadRecord := range dc {
+		for _, parent := range downloadRecord.Parents {
+			var maxBandwidth float64
+			key := fmt.Sprint(downloadRecord.Host.ID + ":" + parent.ID)
+			value, ok := bandwidths[key]
+			if ok {
+				maxBandwidth = value
+			}
+
+			for _, piece := range parent.Pieces {
+				if float64(piece.Length/piece.Cost) > maxBandwidth {
+					maxBandwidth = float64(piece.Length / piece.Cost)
+				}
+			}
+
+			bandwidths[key] = maxBandwidth
+		}
+	}
+
 	networkTopologyFile, err := t.storage.OpenNetworkTopology(hostID)
 	if err != nil {
 		msg := fmt.Sprintf("open network topology failed: %s", err.Error())
@@ -127,19 +161,37 @@ func (t *training) trainGNN(ctx context.Context, ip, hostname string) error {
 	}
 	defer networkTopologyFile.Close()
 
-	// Preprocess training data.
-	// make channel.
-	c := make(chan schedulerstorage.NetworkTopology)
+	ntc := make(chan schedulerstorage.NetworkTopology)
 	go func() {
 		// start parsing download file.
-		if err := gocsv.UnmarshalToChanWithoutHeaders(networkTopologyFile, c); err != nil {
+		if err := gocsv.UnmarshalToChanWithoutHeaders(networkTopologyFile, ntc); err != nil {
 			logger.Error("parse network topology file error: %s", err.Error())
 		}
 	}()
 
-	// for networkTopologyRecord := range c {
+	for networkTopologyRecord := range ntc {
+		t.createGNNVertexObservation(GNNVertexObservation{
+			HostID:   networkTopologyRecord.Host.ID,
+			IP:       0,
+			Location: 0,
+			IDC:      0,
+		})
 
-	// }
+		for _, destHost := range networkTopologyRecord.DestHosts {
+			key := fmt.Sprint(networkTopologyRecord.Host.ID + ":" + destHost.ID)
+			value, ok := bandwidths[key]
+			if !ok {
+				value = 0
+			}
+
+			t.createGNNEdgeObservation(GNNEdgeObservation{
+				SrcHostID:    networkTopologyRecord.Host.ID,
+				DestHostID:   destHost.ID,
+				AverageRTT:   destHost.Probes.AverageRTT,
+				MaxBandwidth: value,
+			})
+		}
+	}
 
 	// TODO: Train GNN model.
 	// Upload MLP model to manager service.
@@ -177,24 +229,30 @@ func (t *training) trainMLP(ctx context.Context, ip, hostname string) error {
 	defer downloadFile.Close()
 
 	// Preprocess training data.
-	// make channel.
-	c := make(chan schedulerstorage.Download)
+	dc := make(chan schedulerstorage.Download)
 	go func() {
 		// start parsing download file.
-		if err := gocsv.UnmarshalToChanWithoutHeaders(downloadFile, c); err != nil {
+		if err := gocsv.UnmarshalToChanWithoutHeaders(downloadFile, dc); err != nil {
 			logger.Error("parse download file error: %s", err.Error())
 		}
 	}()
 
-	for downloadRecord := range c {
+	for downloadRecord := range dc {
 		for _, parent := range downloadRecord.Parents {
+			var maxBandwidth float64
+			for _, piece := range parent.Pieces {
+				if float64(piece.Length/piece.Cost) > maxBandwidth {
+					maxBandwidth = float64(piece.Length / piece.Cost)
+				}
+			}
+
 			t.createMLPObservation(MLPObservation{
-				FinishedPieceScore:    0,
+				FinishedPieceScore:    calculatePieceScore(parent.UploadPieceCount, downloadRecord.Task.TotalPieceCount),
 				FreeUploadScore:       calculateFreeUploadScore(parent.Host.ConcurrentUploadCount, parent.Host.ConcurrentUploadLimit),
-				UploadSuccessScore:    0,
+				UploadSuccessScore:    calculateParentHostUploadSuccessScore(parent.Host.UploadCount, parent.Host.UploadFailedCount),
 				IDCAffinityScore:      calculateIDCAffinityScore(parent.Host.Network.IDC, downloadRecord.Host.Network.IDC),
 				LocationAffinityScore: calculateMultiElementAffinityScore(parent.Host.Network.Location, downloadRecord.Host.Network.Location),
-				Bandwidth:             0,
+				MaxBandwidth:          maxBandwidth,
 			})
 		}
 	}
@@ -264,37 +322,30 @@ func (t *training) createGNNEdgeObservation(observations ...GNNEdgeObservation) 
 	return nil
 }
 
-// // calculatePieceScore 0.0~unlimited larger and better.
-// func calculatePieceScore(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
-// 	// If the total piece is determined, normalize the number of
-// 	// pieces downloaded by the parent node.
-// 	if totalPieceCount > 0 {
-// 		finishedPieceCount := parent.FinishedPieces.Count()
-// 		return float64(finishedPieceCount) / float64(totalPieceCount)
-// 	}
+// calculatePieceScore 0.0~unlimited larger and better.
+func calculatePieceScore(uploadPieceCount, totalPieceCount int32) float64 {
+	// If the total piece is determined, normalize the number of
+	// pieces downloaded by the parent node.
+	if totalPieceCount > 0 {
+		return float64(uploadPieceCount) / float64(totalPieceCount)
+	}
 
-// 	// Use the difference between the parent node and the child node to
-// 	// download the piece to roughly represent the piece score.
-// 	parentFinishedPieceCount := parent.FinishedPieces.Count()
-// 	childFinishedPieceCount := child.FinishedPieces.Count()
-// 	return float64(parentFinishedPieceCount) - float64(childFinishedPieceCount)
-// }
+	return minScore
+}
 
-// // calculateParentHostUploadSuccessScore 0.0~unlimited larger and better.
-// func calculateParentHostUploadSuccessScore(peer *resource.Peer) float64 {
-// 	uploadCount := peer.Host.UploadCount.Load()
-// 	uploadFailedCount := peer.Host.UploadFailedCount.Load()
-// 	if uploadCount < uploadFailedCount {
-// 		return minScore
-// 	}
+// calculateParentHostUploadSuccessScore 0.0~unlimited larger and better.
+func calculateParentHostUploadSuccessScore(uploadCount, uploadFailedCount int64) float64 {
+	if uploadCount < uploadFailedCount {
+		return minScore
+	}
 
-// 	// Host has not been scheduled, then it is scheduled first.
-// 	if uploadCount == 0 && uploadFailedCount == 0 {
-// 		return maxScore
-// 	}
+	// Host has not been scheduled, then it is scheduled first.
+	if uploadCount == 0 && uploadFailedCount == 0 {
+		return maxScore
+	}
 
-// 	return float64(uploadCount-uploadFailedCount) / float64(uploadCount)
-// }
+	return float64(uploadCount-uploadFailedCount) / float64(uploadCount)
+}
 
 // calculateFreeUploadScore 0.0~1.0 larger and better.
 func calculateFreeUploadScore(concurrentUploadLimit, concurrentUploadCount int32) float64 {
@@ -304,23 +355,6 @@ func calculateFreeUploadScore(concurrentUploadLimit, concurrentUploadCount int32
 	}
 
 	return minScore
-}
-
-// calculateHostTypeScore 0.0~1.0 larger and better.
-func calculateHostTypeScore(peer *resource.Peer) float64 {
-	// When the task is downloaded for the first time,
-	// peer will be scheduled to seed peer first,
-	// otherwise it will be scheduled to dfdaemon first.
-	if peer.Host.Type != types.HostTypeNormal {
-		if peer.FSM.Is(resource.PeerStateReceivedNormal) ||
-			peer.FSM.Is(resource.PeerStateRunning) {
-			return maxScore
-		}
-
-		return minScore
-	}
-
-	return maxScore * 0.5
 }
 
 // calculateIDCAffinityScore 0.0~1.0 larger and better.
@@ -361,4 +395,36 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 	}
 
 	return float64(score) / float64(maxElementLen)
+}
+
+// convertIP Converts an IP address to a feature vector of length 32.
+func convertIP(ip string) ([32]int, error) {
+	var features [32]int
+	parts := strings.Split(ip, ".")
+	if len(parts) != 4 {
+		msg := fmt.Sprintf("invalid IP address: %s", ip)
+		logger.Error(msg)
+		return features, errors.New(msg)
+	}
+
+	for i, part := range parts {
+		num, err := strconv.Atoi(part)
+		if err != nil || num < 0 || num > 255 {
+			msg := fmt.Sprintf("invalid IP address: %s", ip)
+			logger.Error(msg)
+			return features, errors.New(msg)
+		}
+
+		bin := strconv.FormatInt(int64(num), 2)
+		for j, b := range bin {
+			if j >= 8 {
+				break
+			}
+			if b == '1' {
+				features[i*8+j] = 1
+			}
+		}
+	}
+
+	return features, nil
 }

@@ -33,8 +33,8 @@ type MLPObservation struct {
 	// LocationAffinityScore is feature, 0.0~unlimited larger and better.
 	LocationAffinityScore float64 `csv:"locationAffinityScore"`
 
-	// Bandwidth is label, calculated by length and cost.
-	Bandwidth float64 `csv:"cost"`
+	// MaxBandwidth is label, calculated by length and cost.
+	MaxBandwidth float64 `csv:"maxBandwidth"`
 }
 
 // GNNVertexObservation contains content for the observed vertex data for network topology file.
