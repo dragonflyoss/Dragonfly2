@@ -18,10 +18,8 @@ package training
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/gocarina/gocsv"
@@ -30,6 +28,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"d7y.io/api/pkg/apis/manager/v2"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/math"
@@ -170,12 +169,14 @@ func (t *training) trainGNN(ctx context.Context, ip, hostname string) error {
 	}()
 
 	for networkTopologyRecord := range ntc {
-		t.createGNNVertexObservation(GNNVertexObservation{
+		if err := t.createGNNVertexObservation(GNNVertexObservation{
 			HostID:   networkTopologyRecord.Host.ID,
 			IP:       0,
 			Location: 0,
 			IDC:      0,
-		})
+		}); err != nil {
+			logger.Error("create GNN vertex observation error: %s", err.Error())
+		}
 
 		for _, destHost := range networkTopologyRecord.DestHosts {
 			key := fmt.Sprint(networkTopologyRecord.Host.ID + ":" + destHost.ID)
@@ -184,12 +185,14 @@ func (t *training) trainGNN(ctx context.Context, ip, hostname string) error {
 				value = 0
 			}
 
-			t.createGNNEdgeObservation(GNNEdgeObservation{
+			if err := t.createGNNEdgeObservation(GNNEdgeObservation{
 				SrcHostID:    networkTopologyRecord.Host.ID,
 				DestHostID:   destHost.ID,
 				AverageRTT:   destHost.Probes.AverageRTT,
 				MaxBandwidth: value,
-			})
+			}); err != nil {
+				logger.Error("create GNN Edge observation error: %s", err.Error())
+			}
 		}
 	}
 
@@ -246,14 +249,16 @@ func (t *training) trainMLP(ctx context.Context, ip, hostname string) error {
 				}
 			}
 
-			t.createMLPObservation(MLPObservation{
+			if err := t.createMLPObservation(MLPObservation{
 				FinishedPieceScore:    calculatePieceScore(parent.UploadPieceCount, downloadRecord.Task.TotalPieceCount),
 				FreeUploadScore:       calculateFreeUploadScore(parent.Host.ConcurrentUploadCount, parent.Host.ConcurrentUploadLimit),
 				UploadSuccessScore:    calculateParentHostUploadSuccessScore(parent.Host.UploadCount, parent.Host.UploadFailedCount),
 				IDCAffinityScore:      calculateIDCAffinityScore(parent.Host.Network.IDC, downloadRecord.Host.Network.IDC),
 				LocationAffinityScore: calculateMultiElementAffinityScore(parent.Host.Network.Location, downloadRecord.Host.Network.Location),
 				MaxBandwidth:          maxBandwidth,
-			})
+			}); err != nil {
+				logger.Error("create MLP Edge observation error: %s", err.Error())
+			}
 		}
 	}
 
@@ -397,34 +402,34 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 	return float64(score) / float64(maxElementLen)
 }
 
-// convertIP Converts an IP address to a feature vector of length 32.
-func convertIP(ip string) ([32]int, error) {
-	var features [32]int
-	parts := strings.Split(ip, ".")
-	if len(parts) != 4 {
-		msg := fmt.Sprintf("invalid IP address: %s", ip)
-		logger.Error(msg)
-		return features, errors.New(msg)
-	}
+// // convertIP Converts an IP address to a feature vector of length 32.
+// func convertIP(ip string) ([32]int, error) {
+// 	var features [32]int
+// 	parts := strings.Split(ip, ".")
+// 	if len(parts) != 4 {
+// 		msg := fmt.Sprintf("invalid IP address: %s", ip)
+// 		logger.Error(msg)
+// 		return features, errors.New(msg)
+// 	}
 
-	for i, part := range parts {
-		num, err := strconv.Atoi(part)
-		if err != nil || num < 0 || num > 255 {
-			msg := fmt.Sprintf("invalid IP address: %s", ip)
-			logger.Error(msg)
-			return features, errors.New(msg)
-		}
+// 	for i, part := range parts {
+// 		num, err := strconv.Atoi(part)
+// 		if err != nil || num < 0 || num > 255 {
+// 			msg := fmt.Sprintf("invalid IP address: %s", ip)
+// 			logger.Error(msg)
+// 			return features, errors.New(msg)
+// 		}
 
-		bin := strconv.FormatInt(int64(num), 2)
-		for j, b := range bin {
-			if j >= 8 {
-				break
-			}
-			if b == '1' {
-				features[i*8+j] = 1
-			}
-		}
-	}
+// 		bin := strconv.FormatInt(int64(num), 2)
+// 		for j, b := range bin {
+// 			if j >= 8 {
+// 				break
+// 			}
+// 			if b == '1' {
+// 				features[i*8+j] = 1
+// 			}
+// 		}
+// 	}
 
-	return features, nil
-}
+// 	return features, nil
+// }
