@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package storage
+package training
 
-// MLPObservation contains content for the observed data for download file
+// MLPObservation contains content for the observed data for download file.
 type MLPObservation struct {
 	// FinishedPieceScore is feature, 0.0~unlimited larger and better.
 	FinishedPieceScore float64 `csv:"finishedPieceScore"`
@@ -37,7 +37,32 @@ type MLPObservation struct {
 	Bandwidth float64 `csv:"cost"`
 }
 
-// TODO
-// GNNObservation contains content for the observed data for network topology file.
-type GNNObservation struct {
+// GNNVertexObservation contains content for the observed vertex data for network topology file.
+type GNNVertexObservation struct {
+	// hostID is host id.
+	HostID string `csv:"hostID"`
+
+	// IP is feature, 0.0~unlimited larger and better.
+	IP float64 `csv:"ip"`
+
+	// Location is feature, 0.0~unlimited larger and better.
+	Location float64 `csv:"location"`
+
+	// IDC is feature, 0.0~unlimited larger and better.
+	IDC float64 `csv:"idc"`
+}
+
+// GNNEdgeObservation contains content for the observed edge data for network topology file.
+type GNNEdgeObservation struct {
+	// SrcHostID is source host id.
+	SrcHostID string `csv:"srcHostID"`
+
+	// DestHostID is destination host id.
+	DestHostID string `csv:"destHostID"`
+
+	// AverageRTT is feature that indicates the average round-trip time.
+	AverageRTT int64 `csv:"averageRTT"`
+
+	// MaxBandwidth is feature that indicates the maximum bandwidth.
+	MaxBandwidth float64 `csv:"maxBandwidth"`
 }

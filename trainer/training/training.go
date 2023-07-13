@@ -19,6 +19,7 @@ package training
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/gocarina/gocsv"
@@ -26,6 +27,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"d7y.io/api/pkg/apis/manager/v2"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/math"
@@ -38,6 +40,14 @@ import (
 )
 
 //go:generate mockgen -destination mocks/training_mock.go -source training.go -package mocks
+
+const (
+	MLPObservationFilename = "mlp-data.csv"
+
+	GNNVertexObservationFilename = "gnn-vertex-data.csv"
+
+	GNNEdgeObservationFilename = "gnn-edge-data.csv"
+)
 
 const (
 	// Maximum score.
@@ -133,6 +143,22 @@ func (t *training) trainGNN(ctx context.Context, ip, hostname string) error {
 
 	// TODO: Train GNN model.
 	// Upload MLP model to manager service.
+	if err := t.managerClient.CreateModel(ctx, &manager.CreateModelRequest{
+		Hostname: hostname,
+		Ip:       ip,
+		Request: &manager.CreateModelRequest_CreateGnnRequest{
+			CreateGnnRequest: &manager.CreateGNNRequest{
+				Data:      []byte{},
+				Recall:    0,
+				Precision: 0,
+				F1Score:   0,
+			},
+		},
+	}); err != nil {
+		logger.Error("upload GNN model to manager error: %s", err.Error())
+		return err
+	}
+
 	return nil
 }
 
@@ -160,53 +186,121 @@ func (t *training) trainMLP(ctx context.Context, ip, hostname string) error {
 		}
 	}()
 
-	// for downloadRecord := range c {
-
-	// }
+	for downloadRecord := range c {
+		for _, parent := range downloadRecord.Parents {
+			t.createMLPObservation(MLPObservation{
+				FinishedPieceScore:    0,
+				FreeUploadScore:       calculateFreeUploadScore(parent.Host.ConcurrentUploadCount, parent.Host.ConcurrentUploadLimit),
+				UploadSuccessScore:    0,
+				IDCAffinityScore:      calculateIDCAffinityScore(parent.Host.Network.IDC, downloadRecord.Host.Network.IDC),
+				LocationAffinityScore: calculateMultiElementAffinityScore(parent.Host.Network.Location, downloadRecord.Host.Network.Location),
+				Bandwidth:             0,
+			})
+		}
+	}
 
 	// TODO: Train MLP model.
 	// Upload MLP model to manager service.
+	if err := t.managerClient.CreateModel(ctx, &manager.CreateModelRequest{
+		Hostname: hostname,
+		Ip:       ip,
+		Request: &manager.CreateModelRequest_CreateMlpRequest{
+			CreateMlpRequest: &manager.CreateMLPRequest{
+				Data: []byte{},
+				Mse:  0,
+				Mae:  0,
+			},
+		},
+	}); err != nil {
+		logger.Error("upload MLP model to manager error: %s", err.Error())
+		return err
+	}
+
 	return nil
 }
 
-// calculatePieceScore 0.0~unlimited larger and better.
-func calculatePieceScore(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
-	// If the total piece is determined, normalize the number of
-	// pieces downloaded by the parent node.
-	if totalPieceCount > 0 {
-		finishedPieceCount := parent.FinishedPieces.Count()
-		return float64(finishedPieceCount) / float64(totalPieceCount)
+// createMLPObservation inserts the MLP observations into csv file.
+func (t *training) createMLPObservation(observations ...MLPObservation) error {
+	file, err := os.OpenFile(MLPObservationFilename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	if err := gocsv.MarshalWithoutHeaders(observations, file); err != nil {
+		return err
 	}
 
-	// Use the difference between the parent node and the child node to
-	// download the piece to roughly represent the piece score.
-	parentFinishedPieceCount := parent.FinishedPieces.Count()
-	childFinishedPieceCount := child.FinishedPieces.Count()
-	return float64(parentFinishedPieceCount) - float64(childFinishedPieceCount)
+	return nil
 }
 
-// calculateParentHostUploadSuccessScore 0.0~unlimited larger and better.
-func calculateParentHostUploadSuccessScore(peer *resource.Peer) float64 {
-	uploadCount := peer.Host.UploadCount.Load()
-	uploadFailedCount := peer.Host.UploadFailedCount.Load()
-	if uploadCount < uploadFailedCount {
-		return minScore
+// createGNNVertexObservation inserts the GNN vertex observations into csv file.
+func (t *training) createGNNVertexObservation(observations ...GNNVertexObservation) error {
+	file, err := os.OpenFile(GNNVertexObservationFilename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	if err := gocsv.MarshalWithoutHeaders(observations, file); err != nil {
+		return err
 	}
 
-	// Host has not been scheduled, then it is scheduled first.
-	if uploadCount == 0 && uploadFailedCount == 0 {
-		return maxScore
-	}
-
-	return float64(uploadCount-uploadFailedCount) / float64(uploadCount)
+	return nil
 }
+
+// createGNNEdgeObservation inserts the GNN edge observations into csv file.
+func (t *training) createGNNEdgeObservation(observations ...GNNEdgeObservation) error {
+	file, err := os.OpenFile(GNNEdgeObservationFilename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	if err := gocsv.MarshalWithoutHeaders(observations, file); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// // calculatePieceScore 0.0~unlimited larger and better.
+// func calculatePieceScore(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
+// 	// If the total piece is determined, normalize the number of
+// 	// pieces downloaded by the parent node.
+// 	if totalPieceCount > 0 {
+// 		finishedPieceCount := parent.FinishedPieces.Count()
+// 		return float64(finishedPieceCount) / float64(totalPieceCount)
+// 	}
+
+// 	// Use the difference between the parent node and the child node to
+// 	// download the piece to roughly represent the piece score.
+// 	parentFinishedPieceCount := parent.FinishedPieces.Count()
+// 	childFinishedPieceCount := child.FinishedPieces.Count()
+// 	return float64(parentFinishedPieceCount) - float64(childFinishedPieceCount)
+// }
+
+// // calculateParentHostUploadSuccessScore 0.0~unlimited larger and better.
+// func calculateParentHostUploadSuccessScore(peer *resource.Peer) float64 {
+// 	uploadCount := peer.Host.UploadCount.Load()
+// 	uploadFailedCount := peer.Host.UploadFailedCount.Load()
+// 	if uploadCount < uploadFailedCount {
+// 		return minScore
+// 	}
+
+// 	// Host has not been scheduled, then it is scheduled first.
+// 	if uploadCount == 0 && uploadFailedCount == 0 {
+// 		return maxScore
+// 	}
+
+// 	return float64(uploadCount-uploadFailedCount) / float64(uploadCount)
+// }
 
 // calculateFreeUploadScore 0.0~1.0 larger and better.
-func calculateFreeUploadScore(host *resource.Host) float64 {
-	ConcurrentUploadLimit := host.ConcurrentUploadLimit.Load()
-	freeUploadCount := host.FreeUploadCount()
-	if ConcurrentUploadLimit > 0 && freeUploadCount > 0 {
-		return float64(freeUploadCount) / float64(ConcurrentUploadLimit)
+func calculateFreeUploadScore(concurrentUploadLimit, concurrentUploadCount int32) float64 {
+	freeUploadCount := concurrentUploadLimit - concurrentUploadCount
+	if concurrentUploadLimit > 0 && freeUploadCount > 0 {
+		return float64(freeUploadCount) / float64(concurrentUploadLimit)
 	}
 
 	return minScore
