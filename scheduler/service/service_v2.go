@@ -1393,7 +1393,7 @@ func (v *V2) schedule(ctx context.Context, peer *resource.Peer) error {
 		if err := stream.Send(&schedulerv2.AnnouncePeerResponse{
 			Response: &schedulerv2.AnnouncePeerResponse_TinyTaskResponse{
 				TinyTaskResponse: &schedulerv2.TinyTaskResponse{
-					Data: peer.Task.DirectPiece,
+					Content: peer.Task.DirectPiece,
 				},
 			},
 		}); err != nil {
