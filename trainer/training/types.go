@@ -1,5 +1,5 @@
 /*
- *     Copyright 2022 The Dragonfly Authors
+ *     Copyright 2023 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,13 +42,13 @@ type GNNVertexObservation struct {
 	// hostID is host id.
 	HostID string `csv:"hostID"`
 
-	// IP is feature, 0.0~unlimited larger and better.
+	// IP is feature.
 	IP float64 `csv:"ip"`
 
-	// Location is feature, 0.0~unlimited larger and better.
+	// Location is feature.
 	Location float64 `csv:"location"`
 
-	// IDC is feature, 0.0~unlimited larger and better.
+	// IDC is feature.
 	IDC float64 `csv:"idc"`
 }
 

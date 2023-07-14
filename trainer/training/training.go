@@ -60,6 +60,9 @@ const (
 const (
 	// Maximum number of elements.
 	maxElementLen = 5
+
+	// defaultIpFeatureLength is ip feature vector length.
+	defaultIpFeatureLength = 32
 )
 
 // Training defines the interface to train GNN and MLP model.
@@ -110,7 +113,6 @@ func (t *training) Train(ctx context.Context, ip, hostname string) error {
 	return nil
 }
 
-// TODO Add training GNN logic.
 // trainGNN trains GNN model.
 func (t *training) trainGNN(ctx context.Context, ip, hostname string) error {
 	var hostID = idgen.HostIDV2(ip, hostname)
@@ -132,7 +134,9 @@ func (t *training) trainGNN(ctx context.Context, ip, hostname string) error {
 		}
 	}()
 
-	var bandwidths map[string]float64
+	// Traverse download file to get the maximum bandwidth of the edge.
+	// Store the maximum bandwidth of each edge in the map as a feature of the GNN training edge.
+	var bandwidths = make(map[string]float64)
 	for downloadRecord := range dc {
 		for _, parent := range downloadRecord.Parents {
 			var maxBandwidth float64
@@ -143,8 +147,9 @@ func (t *training) trainGNN(ctx context.Context, ip, hostname string) error {
 			}
 
 			for _, piece := range parent.Pieces {
-				if float64(piece.Length/piece.Cost) > maxBandwidth {
-					maxBandwidth = float64(piece.Length / piece.Cost)
+				bandwidth := float64(piece.Length / piece.Cost)
+				if bandwidth > maxBandwidth {
+					maxBandwidth = bandwidth
 				}
 			}
 
@@ -217,7 +222,6 @@ func (t *training) trainGNN(ctx context.Context, ip, hostname string) error {
 	return nil
 }
 
-// TODO Add training MLP logic.
 // trainMLP trains MLP model.
 func (t *training) trainMLP(ctx context.Context, ip, hostname string) error {
 	var hostID = idgen.HostIDV2(ip, hostname)
@@ -244,8 +248,9 @@ func (t *training) trainMLP(ctx context.Context, ip, hostname string) error {
 		for _, parent := range downloadRecord.Parents {
 			var maxBandwidth float64
 			for _, piece := range parent.Pieces {
-				if float64(piece.Length/piece.Cost) > maxBandwidth {
-					maxBandwidth = float64(piece.Length / piece.Cost)
+				bandwidth := float64(piece.Length / piece.Cost)
+				if bandwidth > maxBandwidth {
+					maxBandwidth = bandwidth
 				}
 			}
 
@@ -403,13 +408,12 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 }
 
 // // convertIP Converts an IP address to a feature vector of length 32.
-// func convertIP(ip string) ([32]int, error) {
-// 	var features [32]int
+// func convertIP(ip string) []int {
+// 	var feature = make([]int, defaultIpFeatureLength)
 // 	parts := strings.Split(ip, ".")
 // 	if len(parts) != 4 {
-// 		msg := fmt.Sprintf("invalid IP address: %s", ip)
-// 		logger.Error(msg)
-// 		return features, errors.New(msg)
+// 		logger.Errorf("invalid IP address: %s", ip)
+// 		return feature
 // 	}
 
 // 	for i, part := range parts {
@@ -417,7 +421,7 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 // 		if err != nil || num < 0 || num > 255 {
 // 			msg := fmt.Sprintf("invalid IP address: %s", ip)
 // 			logger.Error(msg)
-// 			return features, errors.New(msg)
+// 			return feature
 // 		}
 
 // 		bin := strconv.FormatInt(int64(num), 2)
@@ -426,10 +430,10 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 // 				break
 // 			}
 // 			if b == '1' {
-// 				features[i*8+j] = 1
+// 				feature[i*8+j] = 1
 // 			}
 // 		}
 // 	}
 
-// 	return features, nil
+// 	return feature
 // }
