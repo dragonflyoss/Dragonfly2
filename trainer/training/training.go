@@ -197,7 +197,7 @@ func (t *training) trainGNN(ctx context.Context, ip, hostname string) error {
 			HostID:   networkTopologyRecord.Host.ID,
 			IP:       ipFeature,
 			Location: convertLocationToFeature(networkTopologyRecord.Host.Network.Location),
-			IDC:      convertIDCToFeatures(networkTopologyRecord.Host.Network.IDC),
+			IDC:      convertIDCToFeature(networkTopologyRecord.Host.Network.IDC),
 		}); err != nil {
 			logger.Error("create GNN vertex observation error: %s", err.Error())
 		}
@@ -463,24 +463,23 @@ func convertLocationToFeature(location string) []int {
 	loc := strings.Split(location, locationSeparator)
 	var locs []int
 	for _, part := range loc {
-		locs = append(locs, stringToInts(part)...)
+		locs = append(locs, stringToInt(part)...)
 	}
 
 	return locs
 }
 
-// convertIDCToFeatures Converts idc to a feature vector.
-func convertIDCToFeatures(idc string) []int {
-	return stringToInts(idc)
+// convertIDCToFeature Converts idc to a feature vector.
+func convertIDCToFeature(idc string) []int {
+	return stringToInt(idc)
 }
 
-func stringToInts(s string) []int {
-	// 计算SHA1哈希值 (可替换算法)
+// stringToInts convert string to int by using hash algorithm.
+func stringToInt(s string) []int {
 	h := sha1.New()
 	h.Write([]byte(s))
 	hash := h.Sum(nil)
 
-	// 将哈希值拆分为一组整数并返回
 	var ints []int
 	for i := 0; i < len(hash); i += 4 {
 		ints = append(ints, int(binary.BigEndian.Uint32(hash[i:i+4])))
