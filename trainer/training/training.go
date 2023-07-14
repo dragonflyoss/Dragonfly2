@@ -18,8 +18,13 @@ package training
 
 import (
 	"context"
+	"crypto/sha1"
+	"encoding/binary"
+	"errors"
 	"fmt"
+	"net"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/gocarina/gocsv"
@@ -61,8 +66,16 @@ const (
 	// Maximum number of elements.
 	maxElementLen = 5
 
-	// defaultIpFeatureLength is ip feature vector length.
-	defaultIpFeatureLength = 32
+	// bitLength is ip feature vector length.
+	bitLength = 8
+)
+
+const (
+	// ipSeparator is ip separator.
+	ipSeparator = "."
+
+	// locationSeparator is location separator.
+	locationSeparator = "|"
 )
 
 // Training defines the interface to train GNN and MLP model.
@@ -174,11 +187,17 @@ func (t *training) trainGNN(ctx context.Context, ip, hostname string) error {
 	}()
 
 	for networkTopologyRecord := range ntc {
+		ipFeature, err := convertIPToFeature(networkTopologyRecord.Host.IP)
+		if err != nil {
+			logger.Error("convert IP to feature error: %s", err.Error())
+			continue
+		}
+
 		if err := t.createGNNVertexObservation(GNNVertexObservation{
 			HostID:   networkTopologyRecord.Host.ID,
-			IP:       0,
-			Location: 0,
-			IDC:      0,
+			IP:       ipFeature,
+			Location: convertLocationToFeature(networkTopologyRecord.Host.Network.Location),
+			IDC:      convertIDCToFeatures(networkTopologyRecord.Host.Network.IDC),
 		}); err != nil {
 			logger.Error("create GNN vertex observation error: %s", err.Error())
 		}
@@ -407,33 +426,65 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 	return float64(score) / float64(maxElementLen)
 }
 
-// // convertIP Converts an IP address to a feature vector of length 32.
-// func convertIP(ip string) []int {
-// 	var feature = make([]int, defaultIpFeatureLength)
-// 	parts := strings.Split(ip, ".")
-// 	if len(parts) != 4 {
-// 		logger.Errorf("invalid IP address: %s", ip)
-// 		return feature
-// 	}
+// convertIPToFeature Converts an IP address to a feature vector of length 32.
+func convertIPToFeature(ip string) ([]int, error) {
+	var feature = make([]int, net.IPv4len*bitLength)
+	parts := strings.Split(ip, ipSeparator)
+	if len(parts) != net.IPv4len {
+		msg := fmt.Sprintf("invalid IP address: %s", ip)
+		logger.Error(msg)
+		return feature, errors.New(msg)
+	}
 
-// 	for i, part := range parts {
-// 		num, err := strconv.Atoi(part)
-// 		if err != nil || num < 0 || num > 255 {
-// 			msg := fmt.Sprintf("invalid IP address: %s", ip)
-// 			logger.Error(msg)
-// 			return feature
-// 		}
+	for i, part := range parts {
+		num, err := strconv.Atoi(part)
+		if err != nil || num < 0 || num > 255 {
+			msg := fmt.Sprintf("convert string to int error: %s", err.Error())
+			logger.Error(msg)
+			return feature, errors.New(msg)
+		}
 
-// 		bin := strconv.FormatInt(int64(num), 2)
-// 		for j, b := range bin {
-// 			if j >= 8 {
-// 				break
-// 			}
-// 			if b == '1' {
-// 				feature[i*8+j] = 1
-// 			}
-// 		}
-// 	}
+		var offset = 0
+		for {
+			feature[i*bitLength+offset] = 1 & (num >> offset)
+			offset++
+			if offset == bitLength {
+				offset = 0
+				break
+			}
+		}
+	}
 
-// 	return feature
-// }
+	return feature, nil
+}
+
+// convertIPToFeature Converts location to a feature vector.
+func convertLocationToFeature(location string) []int {
+	loc := strings.Split(location, locationSeparator)
+	var locs []int
+	for _, part := range loc {
+		locs = append(locs, stringToInts(part)...)
+	}
+
+	return locs
+}
+
+// convertIDCToFeatures Converts idc to a feature vector.
+func convertIDCToFeatures(idc string) []int {
+	return stringToInts(idc)
+}
+
+func stringToInts(s string) []int {
+	// 计算SHA1哈希值 (可替换算法)
+	h := sha1.New()
+	h.Write([]byte(s))
+	hash := h.Sum(nil)
+
+	// 将哈希值拆分为一组整数并返回
+	var ints []int
+	for i := 0; i < len(hash); i += 4 {
+		ints = append(ints, int(binary.BigEndian.Uint32(hash[i:i+4])))
+	}
+
+	return ints
+}

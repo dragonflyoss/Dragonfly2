@@ -43,13 +43,13 @@ type GNNVertexObservation struct {
 	HostID string `csv:"hostID"`
 
 	// IP is feature.
-	IP float64 `csv:"ip"`
+	IP []int `csv:"ip" csv[]:"32"`
 
 	// Location is feature.
-	Location float64 `csv:"location"`
+	Location []int `csv:"location" csv[]:"32"`
 
 	// IDC is feature.
-	IDC float64 `csv:"idc"`
+	IDC []int `csv:"idc" csv[]:"32"`
 }
 
 // GNNEdgeObservation contains content for the observed edge data for network topology file.
