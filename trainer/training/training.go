@@ -129,6 +129,12 @@ func (t *training) Train(ctx context.Context, ip, hostname string) error {
 		return err
 	}
 
+	// Clean up raw training data.
+	if err := t.storage.Clear(); err != nil {
+		logger.Errorf("remove network topology and download file failed: %v", err)
+		return err
+	}
+
 	return nil
 }
 
