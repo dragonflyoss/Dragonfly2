@@ -448,9 +448,9 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 }
 
 // ipFeature convert an ip address to a feature vector.
-func ipFeature(data string) ([]uint64, error) {
+func ipFeature(data string) ([]uint32, error) {
 	ip := net.IP(data)
-	var features = make([]uint64, net.IPv6len)
+	var features = make([]uint32, net.IPv6len)
 	if l := len(ip); l != net.IPv4len && l != net.IPv6len {
 		msg := fmt.Sprintf("invalid IP address: %s", ip)
 		logger.Error(msg)
@@ -459,13 +459,13 @@ func ipFeature(data string) ([]uint64, error) {
 
 	if ip.To4() != nil {
 		for i := 0; i < net.IPv4len; i++ {
-			features[i] = uint64(ip[i])
+			features[i] = uint32(ip[i])
 		}
 	}
 
 	if ip.To16() != nil {
 		for i := 0; i < net.IPv6len; i++ {
-			features[i] = uint64(ip[i])
+			features[i] = uint32(ip[i])
 		}
 	}
 
@@ -473,9 +473,9 @@ func ipFeature(data string) ([]uint64, error) {
 }
 
 // locationFeature converts location to a feature vector.
-func locationFeature(location string) []uint64 {
+func locationFeature(location string) []uint32 {
 	loc := strings.Split(location, locationSeparator)
-	features := make([]uint64, maxElementLen)
+	features := make([]uint32, maxElementLen)
 	for i, part := range loc {
 		features[i] = hash(part)
 	}
@@ -484,14 +484,14 @@ func locationFeature(location string) []uint64 {
 }
 
 // idcFeature converts idc to a feature vector.
-func idcFeature(idc string) []uint64 {
-	return []uint64{hash(idc)}
+func idcFeature(idc string) []uint32 {
+	return []uint32{hash(idc)}
 }
 
 // hash convert string to uint64.
-func hash(s string) uint64 {
+func hash(s string) uint32 {
 	h := sha1.New()
 	h.Write([]byte(s))
 
-	return binary.LittleEndian.Uint64(h.Sum(nil))
+	return binary.LittleEndian.Uint32(h.Sum(nil))
 }
