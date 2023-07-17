@@ -66,7 +66,7 @@ const (
 
 const (
 	// Maximum number of elements.
-	maxElementLen = 5
+	maxElementLen = 3
 )
 
 // Training defines the interface to train GNN and MLP model.
@@ -113,7 +113,22 @@ func (t *training) Train(ctx context.Context, ip, hostname string) error {
 		return err
 	}
 
-	// TODO Clean up training data.
+	// Clean up training data.
+	if err := t.cleanMLPObservation(); err != nil {
+		logger.Errorf("remove mlp observation file failed: %v", err)
+		return err
+	}
+
+	if err := t.cleanGNNVertexObservation(); err != nil {
+		logger.Errorf("remove gnn vertex observation file failed: %v", err)
+		return err
+	}
+
+	if err := t.cleanGNNEdgeObservation(); err != nil {
+		logger.Errorf("remove gnn edge observation file failed: %v", err)
+		return err
+	}
+
 	return nil
 }
 
@@ -171,7 +186,7 @@ func (t *training) trainGNN(ctx context.Context, ip, hostname string) error {
 
 	ntc := make(chan schedulerstorage.NetworkTopology)
 	go func() {
-		// start parsing download file.
+		// Start parsing download file.
 		if err := gocsv.UnmarshalToChanWithoutHeaders(networkTopologyFile, ntc); err != nil {
 			logger.Error("parse network topology file error: %s", err.Error())
 		}
@@ -342,6 +357,21 @@ func (t *training) createGNNEdgeObservation(observations ...GNNEdgeObservation) 
 	return nil
 }
 
+// cleanMLPObservation removes mlp observation file.
+func (t *training) cleanMLPObservation() error {
+	return os.Remove(MLPObservationFilename)
+}
+
+// cleanGNNVertexObservation removes gnn vertex observation file.
+func (t *training) cleanGNNVertexObservation() error {
+	return os.Remove(GNNVertexObservationFilename)
+}
+
+// cleanGNNEdgeObservation removes gnn edge observation file.
+func (t *training) cleanGNNEdgeObservation() error {
+	return os.Remove(GNNEdgeObservationFilename)
+}
+
 // calculatePieceScore 0.0~unlimited larger and better.
 func calculatePieceScore(uploadPieceCount, totalPieceCount int32) float64 {
 	// If the total piece is determined, normalize the number of
@@ -418,56 +448,50 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 }
 
 // ipFeature convert an ip address to a feature vector.
-func ipFeature(data string) ([]int, error) {
+func ipFeature(data string) ([]uint64, error) {
 	ip := net.IP(data)
-	var feature = make([]int, net.IPv6len)
+	var features = make([]uint64, net.IPv6len)
 	if l := len(ip); l != net.IPv4len && l != net.IPv6len {
 		msg := fmt.Sprintf("invalid IP address: %s", ip)
 		logger.Error(msg)
-		return feature, errors.New(msg)
+		return features, errors.New(msg)
 	}
 
 	if ip.To4() != nil {
 		for i := 0; i < net.IPv4len; i++ {
-			feature[i] = int(ip[i])
+			features[i] = uint64(ip[i])
 		}
 	}
 
 	if ip.To16() != nil {
 		for i := 0; i < net.IPv6len; i++ {
-			feature[i] = int(ip[i])
+			features[i] = uint64(ip[i])
 		}
 	}
 
-	return feature, nil
+	return features, nil
 }
 
 // locationFeature converts location to a feature vector.
-func locationFeature(location string) []int {
+func locationFeature(location string) []uint64 {
 	loc := strings.Split(location, locationSeparator)
-	var locs []int
-	for _, part := range loc {
-		locs = append(locs, hash(part)...)
+	features := make([]uint64, maxElementLen)
+	for i, part := range loc {
+		features[i] = hash(part)
 	}
 
-	return locs
+	return features
 }
 
 // idcFeature converts idc to a feature vector.
-func idcFeature(idc string) []int {
-	return hash(idc)
+func idcFeature(idc string) []uint64 {
+	return []uint64{hash(idc)}
 }
 
-// hash convert string to int by using hash algorithm.
-func hash(s string) []int {
+// hash convert string to uint64.
+func hash(s string) uint64 {
 	h := sha1.New()
 	h.Write([]byte(s))
-	hash := h.Sum(nil)
 
-	var values []int
-	for i := 0; i < len(hash); i += 4 {
-		values = append(values, int(binary.BigEndian.Uint32(hash[i:i+4])))
-	}
-
-	return values
+	return binary.LittleEndian.Uint64(h.Sum(nil))
 }

@@ -43,13 +43,13 @@ type GNNVertexObservation struct {
 	HostID string `csv:"hostID"`
 
 	// IP is feature.
-	IP []int `csv:"ip" csv[]:"32"`
+	IP []uint64 `csv:"ip" csv[]:"32"`
 
 	// Location is feature.
-	Location []int `csv:"location" csv[]:"32"`
+	Location []uint64 `csv:"location" csv[]:"32"`
 
 	// IDC is feature.
-	IDC []int `csv:"idc" csv[]:"32"`
+	IDC []uint64 `csv:"idc" csv[]:"32"`
 }
 
 // GNNEdgeObservation contains content for the observed edge data for network topology file.
@@ -61,7 +61,7 @@ type GNNEdgeObservation struct {
 	DestHostID string `csv:"destHostID"`
 
 	// AverageRTT is feature that indicates the average round-trip time.
-	AverageRTT int64 `csv:"averageRTT"`
+	AverageRTT uint64 `csv:"averageRTT"`
 
 	// MaxBandwidth is feature that indicates the maximum bandwidth.
 	MaxBandwidth float64 `csv:"maxBandwidth"`
