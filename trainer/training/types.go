@@ -61,7 +61,7 @@ type GNNEdgeObservation struct {
 	DestHostID string `csv:"destHostID"`
 
 	// AverageRTT is feature that indicates the average round-trip time.
-	AverageRTT uint64 `csv:"averageRTT"`
+	AverageRTT int64 `csv:"averageRTT"`
 
 	// MaxBandwidth is feature that indicates the maximum bandwidth.
 	MaxBandwidth float64 `csv:"maxBandwidth"`
