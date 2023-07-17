@@ -17,6 +17,7 @@
 package training
 
 import (
+	"os"
 	"reflect"
 	"testing"
 
@@ -47,7 +48,7 @@ func TestService_NewV1(t *testing.T) {
 			defer ctl.Finish()
 			managerClient := managerclientmocks.NewMockV2(ctl)
 			storage := storagemocks.NewMockStorage(ctl)
-			tc.run(t, New(config.New(), managerClient, storage))
+			tc.run(t, New(config.New(), os.TempDir(), managerClient, storage))
 		})
 	}
 }

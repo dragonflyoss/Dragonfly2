@@ -91,7 +91,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	s.storage = storage.New(d.DataDir())
 
 	// Initialize Training.
-	training := training.New(cfg, s.managerClient, s.storage)
+	training := training.New(cfg, d.DataDir(), s.managerClient, s.storage)
 
 	// Initialize trainer grpc server.
 	s.grpcServer = rpcserver.New(cfg, s.storage, training)

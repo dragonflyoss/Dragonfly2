@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/gocarina/gocsv"
@@ -80,6 +81,9 @@ type training struct {
 	// Trainer service config.
 	config *config.Config
 
+	// Base directory.
+	baseDir string
+
 	// Storage interface.
 	storage storage.Storage
 
@@ -88,9 +92,10 @@ type training struct {
 }
 
 // New returns a new Training.
-func New(cfg *config.Config, managerClient managerclient.V2, storage storage.Storage) Training {
+func New(cfg *config.Config, baseDir string, managerClient managerclient.V2, storage storage.Storage) Training {
 	return &training{
 		config:        cfg,
+		baseDir:       baseDir,
 		storage:       storage,
 		managerClient: managerClient,
 	}
@@ -114,22 +119,6 @@ func (t *training) Train(ctx context.Context, ip, hostname string) error {
 	}
 
 	// Clean up training data.
-	if err := t.cleanMLPObservation(); err != nil {
-		logger.Errorf("remove mlp observation file failed: %v", err)
-		return err
-	}
-
-	if err := t.cleanGNNVertexObservation(); err != nil {
-		logger.Errorf("remove gnn vertex observation file failed: %v", err)
-		return err
-	}
-
-	if err := t.cleanGNNEdgeObservation(); err != nil {
-		logger.Errorf("remove gnn edge observation file failed: %v", err)
-		return err
-	}
-
-	// Clean up raw training data.
 	if err := t.storage.Clear(); err != nil {
 		logger.Errorf("remove network topology and download file failed: %v", err)
 		return err
@@ -320,7 +309,7 @@ func (t *training) trainMLP(ctx context.Context, ip, hostname string) error {
 
 // createMLPObservation inserts the MLP observations into csv file.
 func (t *training) createMLPObservation(observations ...MLPObservation) error {
-	file, err := os.OpenFile(MLPObservationFilename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	file, err := os.OpenFile(filepath.Join(t.baseDir, MLPObservationFilename), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
 		return err
 	}
@@ -335,7 +324,7 @@ func (t *training) createMLPObservation(observations ...MLPObservation) error {
 
 // createGNNVertexObservation inserts the GNN vertex observations into csv file.
 func (t *training) createGNNVertexObservation(observations ...GNNVertexObservation) error {
-	file, err := os.OpenFile(GNNVertexObservationFilename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	file, err := os.OpenFile(filepath.Join(t.baseDir, GNNVertexObservationFilename), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
 		return err
 	}
@@ -350,7 +339,7 @@ func (t *training) createGNNVertexObservation(observations ...GNNVertexObservati
 
 // createGNNEdgeObservation inserts the GNN edge observations into csv file.
 func (t *training) createGNNEdgeObservation(observations ...GNNEdgeObservation) error {
-	file, err := os.OpenFile(GNNEdgeObservationFilename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	file, err := os.OpenFile(filepath.Join(t.baseDir, GNNEdgeObservationFilename), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
 		return err
 	}
