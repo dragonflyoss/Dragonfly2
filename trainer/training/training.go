@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/gocarina/gocsv"
@@ -52,6 +51,9 @@ const (
 	GNNVertexObservationFilename = "gnn-vertex-data.csv"
 
 	GNNEdgeObservationFilename = "gnn-edge-data.csv"
+
+	// locationSeparator is location separator.
+	locationSeparator = "|"
 )
 
 const (
@@ -65,17 +67,6 @@ const (
 const (
 	// Maximum number of elements.
 	maxElementLen = 5
-
-	// bitLength is ip feature vector length.
-	bitLength = 8
-)
-
-const (
-	// ipSeparator is ip separator.
-	ipSeparator = "."
-
-	// locationSeparator is location separator.
-	locationSeparator = "|"
 )
 
 // Training defines the interface to train GNN and MLP model.
@@ -187,7 +178,7 @@ func (t *training) trainGNN(ctx context.Context, ip, hostname string) error {
 	}()
 
 	for networkTopologyRecord := range ntc {
-		ipFeature, err := convertIPToFeature(networkTopologyRecord.Host.IP)
+		ipFeature, err := ipFeature(networkTopologyRecord.Host.IP)
 		if err != nil {
 			logger.Error("convert IP to feature error: %s", err.Error())
 			continue
@@ -196,8 +187,8 @@ func (t *training) trainGNN(ctx context.Context, ip, hostname string) error {
 		if err := t.createGNNVertexObservation(GNNVertexObservation{
 			HostID:   networkTopologyRecord.Host.ID,
 			IP:       ipFeature,
-			Location: convertLocationToFeature(networkTopologyRecord.Host.Network.Location),
-			IDC:      convertIDCToFeature(networkTopologyRecord.Host.Network.IDC),
+			Location: locationFeature(networkTopologyRecord.Host.Network.Location),
+			IDC:      idcFeature(networkTopologyRecord.Host.Network.IDC),
 		}); err != nil {
 			logger.Error("create GNN vertex observation error: %s", err.Error())
 		}
@@ -426,64 +417,57 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 	return float64(score) / float64(maxElementLen)
 }
 
-// convertIPToFeature Converts an IP address to a feature vector of length 32.
-func convertIPToFeature(ip string) ([]int, error) {
-	var feature = make([]int, net.IPv4len*bitLength)
-	parts := strings.Split(ip, ipSeparator)
-	if len(parts) != net.IPv4len {
+// ipFeature convert an ip address to a feature vector.
+func ipFeature(data string) ([]int, error) {
+	ip := net.IP(data)
+	var feature = make([]int, net.IPv6len)
+	if l := len(ip); l != net.IPv4len && l != net.IPv6len {
 		msg := fmt.Sprintf("invalid IP address: %s", ip)
 		logger.Error(msg)
 		return feature, errors.New(msg)
 	}
 
-	for i, part := range parts {
-		num, err := strconv.Atoi(part)
-		if err != nil || num < 0 || num > 255 {
-			msg := fmt.Sprintf("convert string to int error: %s", err.Error())
-			logger.Error(msg)
-			return feature, errors.New(msg)
+	if ip.To4() != nil {
+		for i := 0; i < net.IPv4len; i++ {
+			feature[i] = int(ip[i])
 		}
+	}
 
-		var offset = 0
-		for {
-			feature[i*bitLength+offset] = 1 & (num >> offset)
-			offset++
-			if offset == bitLength {
-				offset = 0
-				break
-			}
+	if ip.To16() != nil {
+		for i := 0; i < net.IPv6len; i++ {
+			feature[i] = int(ip[i])
 		}
 	}
 
 	return feature, nil
 }
 
-// convertIPToFeature Converts location to a feature vector.
-func convertLocationToFeature(location string) []int {
+// locationFeature converts location to a feature vector.
+func locationFeature(location string) []int {
 	loc := strings.Split(location, locationSeparator)
 	var locs []int
 	for _, part := range loc {
-		locs = append(locs, stringToInt(part)...)
+		locs = append(locs, hash(part)...)
 	}
 
 	return locs
 }
 
-// convertIDCToFeature Converts idc to a feature vector.
-func convertIDCToFeature(idc string) []int {
-	return stringToInt(idc)
+// idcFeature converts idc to a feature vector.
+func idcFeature(idc string) []int {
+	return hash(idc)
 }
 
-// stringToInts convert string to int by using hash algorithm.
-func stringToInt(s string) []int {
+// hash convert string to int by using hash algorithm.
+func hash(s string) []int {
 	h := sha1.New()
 	h.Write([]byte(s))
 	hash := h.Sum(nil)
 
-	var ints []int
+	var values []int
 	for i := 0; i < len(hash); i += 4 {
-		ints = append(ints, int(binary.BigEndian.Uint32(hash[i:i+4])))
+		values = append(values, int(binary.BigEndian.Uint32(hash[i:i+4])))
 	}
 
-	return ints
+	return values
 }
