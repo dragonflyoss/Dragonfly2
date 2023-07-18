@@ -37,6 +37,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/math"
+	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/types"
 	schedulerstorage "d7y.io/dragonfly/v2/scheduler/storage"
@@ -152,7 +153,7 @@ func (t *training) preprocess(ip, hostname string) error {
 		// Store the maximum bandwidth of each edge in the map as a feature of the GNN training edge.
 		for _, parent := range download.Parents {
 			var maxBandwidth float64
-			key := fmt.Sprint(download.Host.ID + ":" + parent.ID)
+			key := pkgredis.MakeBandwidthKeyInTrainer(download.Host.ID, parent.ID)
 			value, ok := bandwidths[key]
 			if ok {
 				maxBandwidth = value
@@ -182,7 +183,7 @@ func (t *training) preprocess(ip, hostname string) error {
 				UploadSuccessScore:    calculateParentHostUploadSuccessScore(parent.Host.UploadCount, parent.Host.UploadFailedCount),
 				IDCAffinityScore:      calculateIDCAffinityScore(parent.Host.Network.IDC, download.Host.Network.IDC),
 				LocationAffinityScore: calculateMultiElementAffinityScore(parent.Host.Network.Location, download.Host.Network.Location),
-				MaxBandwidth:          bandwidths[fmt.Sprint(download.Host.ID+":"+parent.ID)],
+				MaxBandwidth:          bandwidths[pkgredis.MakeBandwidthKeyInTrainer(download.Host.ID, parent.ID)],
 			}); err != nil {
 				logger.Error("create MLP Edge observation error: %s", err.Error())
 			}
@@ -193,6 +194,7 @@ func (t *training) preprocess(ip, hostname string) error {
 		return status.Error(codes.Internal, msg)
 	}
 
+	// Preprocess network topology training data.
 	networkTopologyFile, err := t.storage.OpenNetworkTopology(hostID)
 	if err != nil {
 		msg := fmt.Sprintf("open network topology failed: %s", err.Error())
@@ -219,7 +221,7 @@ func (t *training) preprocess(ip, hostname string) error {
 		}
 
 		for _, destHost := range networkTopology.DestHosts {
-			key := fmt.Sprint(networkTopology.Host.ID + ":" + destHost.ID)
+			key := pkgredis.MakeBandwidthKeyInTrainer(networkTopology.Host.ID, destHost.ID)
 			value, ok := bandwidths[key]
 			if !ok {
 				value = 0
@@ -451,9 +453,9 @@ func ipFeature(data string) ([]uint32, error) {
 
 // locationFeature converts location to a feature vector.
 func locationFeature(location string) []uint32 {
-	loc := strings.Split(location, locationSeparator)
+	locs := strings.Split(location, locationSeparator)
 	features := make([]uint32, maxElementLen)
-	for i, part := range loc {
+	for i, part := range locs {
 		features[i] = hash(part)
 	}
 

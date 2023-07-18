@@ -669,3 +669,135 @@ func Test_ParseProbedCountKeyInScheduler(t *testing.T) {
 		})
 	}
 }
+
+func Test_MakeNamespaceKeyInTrainer(t *testing.T) {
+	tests := []struct {
+		name      string
+		namespace string
+		expect    func(t *testing.T, s string)
+	}{
+		{
+			name:      "make namespace key in trainer",
+			namespace: "baz",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "trainer:baz")
+			},
+		},
+		{
+			name:      "namespace is empty",
+			namespace: "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "trainer:")
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.expect(t, MakeNamespaceKeyInTrainer(tc.namespace))
+		})
+	}
+}
+
+func Test_MakeKeyInTrainer(t *testing.T) {
+	tests := []struct {
+		name      string
+		namespace string
+		id        string
+		expect    func(t *testing.T, s string)
+	}{
+		{
+			name:      "make key in trainer",
+			namespace: "bas",
+			id:        "id",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "trainer:bas:id")
+			},
+		},
+		{
+			name:      "namespace is empty",
+			namespace: "",
+			id:        "id",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "trainer::id")
+			},
+		},
+		{
+			name:      "id is empty",
+			namespace: "bas",
+			id:        "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "trainer:bas:")
+			},
+		},
+		{
+			name:      "namespace and id are empty",
+			namespace: "",
+			id:        "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "trainer::")
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.expect(t, MakeKeyInTrainer(tc.namespace, tc.id))
+		})
+	}
+}
+
+func Test_MakeBandwidthKeyInTrainer(t *testing.T) {
+	tests := []struct {
+		name       string
+		srcHostID  string
+		destHostID string
+		expect     func(t *testing.T, s string)
+	}{
+		{
+			name:       "make bandwidth key in trainer",
+			srcHostID:  "foo",
+			destHostID: "bar",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "trainer:bandwidth:foo:bar")
+			},
+		},
+		{
+			name:       "source host id is empty",
+			srcHostID:  "",
+			destHostID: "bar",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "trainer:bandwidth::bar")
+			},
+		},
+		{
+			name:       "destination host id is empty",
+			srcHostID:  "foo",
+			destHostID: "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "trainer:bandwidth:foo:")
+			},
+		},
+		{
+			name:       "source host id and destination host id are empty",
+			srcHostID:  "",
+			destHostID: "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "trainer:bandwidth::")
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.expect(t, MakeBandwidthKeyInTrainer(tc.srcHostID, tc.destHostID))
+		})
+	}
+}

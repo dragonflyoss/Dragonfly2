@@ -55,6 +55,9 @@ const (
 
 	// ProbedCountNamespace prefix of probed count namespace cache key.
 	ProbedCountNamespace = "probed-count"
+
+	// BandwidthNamespace prefix of bandwidth namespace cache key.
+	BandwidthNamespace = "bandwidth"
 )
 
 // NewRedis returns a new redis client.
@@ -163,4 +166,19 @@ func ParseProbedCountKeyInScheduler(key string) (string, string, string, error) 
 // MakeProbedCountKeyInScheduler make probed count key in scheduler.
 func MakeProbedCountKeyInScheduler(hostID string) string {
 	return MakeKeyInScheduler(ProbedCountNamespace, hostID)
+}
+
+// MakeNamespaceKeyInTrainer make namespace key in trainer.
+func MakeNamespaceKeyInTrainer(namespace string) string {
+	return fmt.Sprintf("%s:%s", types.TrainerName, namespace)
+}
+
+// MakeKeyInTrainer make key in trainer.
+func MakeKeyInTrainer(namespace, id string) string {
+	return fmt.Sprintf("%s:%s", MakeNamespaceKeyInTrainer(namespace), id)
+}
+
+// MakeBandwidthKeyInTrainer make bandwidth key in trainer.
+func MakeBandwidthKeyInTrainer(srcHostID, destHostID string) string {
+	return MakeKeyInTrainer(BandwidthNamespace, fmt.Sprintf("%s:%s", srcHostID, destHostID))
 }
