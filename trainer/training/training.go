@@ -164,7 +164,14 @@ func (t *training) Train(ctx context.Context, ip, hostname string) error {
 
 // preprocess constructs mlp observation, gnn vertex observation and edge observation before training.
 func (t *training) preprocess(ip, hostname string) (int, int, int, error) {
-	var hostID = idgen.HostIDV2(ip, hostname)
+	var (
+		mlpObservationRecordCount       int
+		gnnVertexObservationRecordCount int
+		gnnEdgeObservationRecordCount   int
+		bandwidths                      = make(map[string]float64)
+		hostID                          = idgen.HostIDV2(ip, hostname)
+	)
+
 	// Preprocess download training data.
 	downloadFile, err := t.storage.OpenDownload(hostID)
 	if err != nil {
@@ -173,13 +180,6 @@ func (t *training) preprocess(ip, hostname string) (int, int, int, error) {
 		return 0, 0, 0, status.Error(codes.Internal, msg)
 	}
 	defer downloadFile.Close()
-
-	var (
-		mlpObservationRecordCount       int
-		gnnVertexObservationRecordCount int
-		gnnEdgeObservationRecordCount   int
-		bandwidths                      map[string]float64
-	)
 
 	if err := gocsv.UnmarshalToCallback(downloadFile, func(download schedulerstorage.Download) {
 		// Traverse download file to get the maximum bandwidth of the edge.
