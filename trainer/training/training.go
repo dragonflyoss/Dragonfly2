@@ -514,7 +514,7 @@ func ipFeature(data string) ([]uint32, error) {
 // locationFeature converts location to a feature vector.
 func locationFeature(location string) []uint32 {
 	locs := strings.Split(location, locationSeparator)
-	features := make([]uint32, maxElementLen)
+	var features = make([]uint32, maxElementLen)
 	for i, part := range locs {
 		features[i] = hash(part)
 	}
