@@ -141,6 +141,7 @@ func (t *training) trainGNN(ctx context.Context, ip, hostname string) error {
 
 	// Preprocess training data.
 	dc := make(chan schedulerstorage.Download)
+	defer close(dc)
 	go func() {
 		// start parsing download file.
 		if err := gocsv.UnmarshalToChanWithoutHeaders(downloadFile, dc); err != nil {
@@ -180,6 +181,7 @@ func (t *training) trainGNN(ctx context.Context, ip, hostname string) error {
 	defer networkTopologyFile.Close()
 
 	ntc := make(chan schedulerstorage.NetworkTopology)
+	defer close(ntc)
 	go func() {
 		// Start parsing download file.
 		if err := gocsv.UnmarshalToChanWithoutHeaders(networkTopologyFile, ntc); err != nil {
@@ -257,6 +259,7 @@ func (t *training) trainMLP(ctx context.Context, ip, hostname string) error {
 
 	// Preprocess training data.
 	dc := make(chan schedulerstorage.Download)
+	defer close(dc)
 	go func() {
 		// start parsing download file.
 		if err := gocsv.UnmarshalToChanWithoutHeaders(downloadFile, dc); err != nil {
