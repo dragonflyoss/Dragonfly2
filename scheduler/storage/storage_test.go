@@ -125,16 +125,17 @@ var (
 	mockPieces = append(make([]Piece, 9), mockPiece)
 
 	mockParent = Parent{
-		ID:               "4",
-		Tag:              "m",
-		Application:      "db",
-		State:            "Succeeded",
-		Cost:             1000,
-		UploadPieceCount: 10,
-		Host:             mockHost,
-		Pieces:           mockPieces,
-		CreatedAt:        time.Now().UnixNano(),
-		UpdatedAt:        time.Now().UnixNano(),
+		ID:                 "4",
+		Tag:                "m",
+		Application:        "db",
+		State:              "Succeeded",
+		Cost:               1000,
+		UploadPieceCount:   10,
+		FinishedPieceCount: 10,
+		Host:               mockHost,
+		Pieces:             mockPieces,
+		CreatedAt:          time.Now().UnixNano(),
+		UpdatedAt:          time.Now().UnixNano(),
 	}
 
 	mockParents = append(make([]Parent, 19), mockParent)
@@ -148,12 +149,13 @@ var (
 			Code:    "unknow",
 			Message: "unknow",
 		},
-		Cost:      1000,
-		Task:      mockTask,
-		Host:      mockHost,
-		Parents:   mockParents,
-		CreatedAt: time.Now().UnixNano(),
-		UpdatedAt: time.Now().UnixNano(),
+		Cost:               1000,
+		FinishedPieceCount: 10,
+		Task:               mockTask,
+		Host:               mockHost,
+		Parents:            mockParents,
+		CreatedAt:          time.Now().UnixNano(),
+		UpdatedAt:          time.Now().UnixNano(),
 	}
 
 	mockSrcHost = SrcHost{
