@@ -421,19 +421,19 @@ func Test_MakeKeyInScheduler(t *testing.T) {
 		{
 			name:      "make key in scheduler",
 			namespace: "bas",
-			id:        "id",
+			id:        "baz",
 			expect: func(t *testing.T, s string) {
 				assert := assert.New(t)
-				assert.Equal(s, "scheduler:bas:id")
+				assert.Equal(s, "scheduler:bas:baz")
 			},
 		},
 		{
 			name:      "namespace is empty",
 			namespace: "",
-			id:        "id",
+			id:        "baz",
 			expect: func(t *testing.T, s string) {
 				assert := assert.New(t)
-				assert.Equal(s, "scheduler::id")
+				assert.Equal(s, "scheduler::baz")
 			},
 		},
 		{
@@ -710,19 +710,19 @@ func Test_MakeKeyInTrainer(t *testing.T) {
 		{
 			name:      "make key in trainer",
 			namespace: "bas",
-			id:        "id",
+			id:        "baz",
 			expect: func(t *testing.T, s string) {
 				assert := assert.New(t)
-				assert.Equal(s, "trainer:bas:id")
+				assert.Equal(s, "trainer:bas:baz")
 			},
 		},
 		{
 			name:      "namespace is empty",
 			namespace: "",
-			id:        "id",
+			id:        "bas",
 			expect: func(t *testing.T, s string) {
 				assert := assert.New(t)
-				assert.Equal(s, "trainer::id")
+				assert.Equal(s, "trainer::bas")
 			},
 		},
 		{
