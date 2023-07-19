@@ -26,6 +26,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/gocarina/gocsv"
 	"golang.org/x/sync/errgroup"
@@ -47,13 +48,13 @@ import (
 
 const (
 	// MLPObservationFilePrefix is prefix of mlp observation file name.
-	MLPObservationFilePrefix = "mlp-data"
+	MLPObservationFilePrefix = "mlp_data"
 
 	// GNNVertexObservationFilePrefix is gnn vertex observation of file name.
-	GNNVertexObservationFilePrefix = "gnn-vertex-data"
+	GNNVertexObservationFilePrefix = "gnn_vertex_data"
 
 	// GNNEdgeObservationFilePrefix is prefix of gnn edge observation file name.
-	GNNEdgeObservationFilePrefix = "gnn-edge-data"
+	GNNEdgeObservationFilePrefix = "gnn_edge_data"
 
 	// CSVFileExt is extension of file name.
 	CSVFileExt = "csv"
@@ -170,7 +171,10 @@ func (t *training) preprocess(ip, hostname string) (int, int, int, error) {
 		hostID                          = idgen.HostIDV2(ip, hostname)
 	)
 
-	// Preprocess download training data.
+	logger.Info(t.mlpObservationFilename(hostID))
+	logger.Info(t.gnnVertexObservationFilename(hostID))
+	logger.Info(t.gnnEdgeObservationFilename(hostID))
+
 	downloadFile, err := t.storage.OpenDownload(hostID)
 	if err != nil {
 		msg := fmt.Sprintf("open download failed: %s", err.Error())
@@ -179,61 +183,6 @@ func (t *training) preprocess(ip, hostname string) (int, int, int, error) {
 	}
 	defer downloadFile.Close()
 
-	if err := gocsv.UnmarshalToCallback(downloadFile, func(download schedulerstorage.Download) {
-		// Traverse download file to get the maximum bandwidth of the edge.
-		// Store the maximum bandwidth of each edge in the map as a feature of the MLP observation and GNN edge observation.
-		for _, parent := range download.Parents {
-			var maxBandwidth float64
-			key := pkgredis.MakeBandwidthKeyInTrainer(download.Host.ID, parent.ID)
-			value, ok := bandwidths[key]
-			if ok {
-				maxBandwidth = value
-			}
-
-			for _, piece := range parent.Pieces {
-				bandwidth := float64(piece.Length / piece.Cost)
-				if bandwidth > maxBandwidth {
-					maxBandwidth = bandwidth
-				}
-			}
-
-			bandwidths[key] = maxBandwidth
-		}
-	}); err != nil {
-		msg := fmt.Sprintf("preprocess download training data failed: %s", err.Error())
-		logger.Error(msg)
-		return 0, 0, 0, status.Error(codes.Internal, msg)
-	}
-
-	// Constructe MLP observation by combining the maximum bandwidth between peers.
-	if err := gocsv.UnmarshalToCallback(downloadFile, func(download schedulerstorage.Download) {
-		for _, parent := range download.Parents {
-			key := pkgredis.MakeBandwidthKeyInTrainer(download.Host.ID, parent.ID)
-			value, ok := bandwidths[key]
-			if !ok {
-				value = 0
-			}
-
-			if err := t.createMLPObservation(hostID, MLPObservation{
-				FinishedPieceScore:    calculatePieceScore(parent.FinishedPieceCount, download.FinishedPieceCount, download.Task.TotalPieceCount),
-				FreeUploadScore:       calculateFreeUploadScore(parent.Host.ConcurrentUploadCount, parent.Host.ConcurrentUploadLimit),
-				UploadSuccessScore:    calculateParentHostUploadSuccessScore(parent.Host.UploadCount, parent.Host.UploadFailedCount),
-				IDCAffinityScore:      calculateIDCAffinityScore(parent.Host.Network.IDC, download.Host.Network.IDC),
-				LocationAffinityScore: calculateMultiElementAffinityScore(parent.Host.Network.Location, download.Host.Network.Location),
-				MaxBandwidth:          value,
-			}); err != nil {
-				logger.Error("create MLP Edge observation failed: %s", err.Error())
-			}
-
-			mlpObservationRecordCount++
-		}
-	}); err != nil {
-		msg := fmt.Sprintf("preprocess download training data failed: %s", err.Error())
-		logger.Error(msg)
-		return 0, 0, 0, status.Error(codes.Internal, msg)
-	}
-
-	// Preprocess network topology training data.
 	networkTopologyFile, err := t.storage.OpenNetworkTopology(hostID)
 	if err != nil {
 		msg := fmt.Sprintf("open network topology failed: %s", err.Error())
@@ -242,51 +191,124 @@ func (t *training) preprocess(ip, hostname string) (int, int, int, error) {
 	}
 	defer networkTopologyFile.Close()
 
-	if err := gocsv.UnmarshalToCallback(networkTopologyFile, func(networkTopology schedulerstorage.NetworkTopology) {
-		for _, destHost := range networkTopology.DestHosts {
-			key := pkgredis.MakeBandwidthKeyInTrainer(networkTopology.Host.ID, destHost.ID)
+	// Get the maximum bandwidth of each edge.
+	dc := make(chan schedulerstorage.Download)
+	go func() {
+		if gocsv.UnmarshalToChanWithoutHeaders(downloadFile, dc) != nil {
+			logger.Errorf("prase download file filed: %s", err.Error())
+		}
+	}()
+
+	for download := range dc {
+		for _, parent := range download.Parents {
+			logger.Info(parent)
+			var maxBandwidth float64
+			key := pkgredis.MakeBandwidthKeyInTrainer(download.Host.ID, parent.ID)
 			value, ok := bandwidths[key]
-			if !ok {
-				value = 0
+			if ok {
+				maxBandwidth = value
 			}
 
-			if err := t.createGNNEdgeObservation(hostID, GNNEdgeObservation{
-				SrcHostID:    networkTopology.Host.ID,
-				DestHostID:   destHost.ID,
-				AverageRTT:   destHost.Probes.AverageRTT,
-				MaxBandwidth: value,
-			}); err != nil {
-				logger.Error("create GNN Edge observation failed: %s", err.Error())
+			for _, piece := range parent.Pieces {
+				var bandwidth float64
+				if piece.Cost > 0 {
+					bandwidth = float64(piece.Length / piece.Cost)
+				}
+
+				if bandwidth > maxBandwidth {
+					maxBandwidth = bandwidth
+				}
+			}
+
+			bandwidths[key] = maxBandwidth
+		}
+	}
+
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
+	go func() {
+		// Preprocess download training data.
+		dc := make(chan schedulerstorage.Download)
+		go func() {
+			if gocsv.UnmarshalToChanWithoutHeaders(downloadFile, dc) != nil {
+				logger.Errorf("prase download file filed: %s", err.Error())
+			}
+		}()
+
+		for download := range dc {
+			for _, parent := range download.Parents {
+				key := pkgredis.MakeBandwidthKeyInTrainer(download.Host.ID, parent.ID)
+				value, ok := bandwidths[key]
+				if !ok {
+					value = 0
+				}
+
+				logger.Info(parent)
+				if err := t.createMLPObservation(hostID, MLPObservation{
+					FinishedPieceScore:    calculatePieceScore(parent.FinishedPieceCount, download.FinishedPieceCount, download.Task.TotalPieceCount),
+					FreeUploadScore:       calculateFreeUploadScore(parent.Host.ConcurrentUploadCount, parent.Host.ConcurrentUploadLimit),
+					UploadSuccessScore:    calculateParentHostUploadSuccessScore(parent.Host.UploadCount, parent.Host.UploadFailedCount),
+					IDCAffinityScore:      calculateIDCAffinityScore(parent.Host.Network.IDC, download.Host.Network.IDC),
+					LocationAffinityScore: calculateMultiElementAffinityScore(parent.Host.Network.Location, download.Host.Network.Location),
+					MaxBandwidth:          value,
+				}); err != nil {
+					logger.Errorf("create MLP Edge observation failed: %s", err.Error())
+				}
+
+				mlpObservationRecordCount++
+			}
+		}
+
+		wg.Done()
+	}()
+
+	go func() {
+		// Preprocess network topology training data.
+		ntc := make(chan schedulerstorage.NetworkTopology)
+		for networkTopology := range ntc {
+			for _, destHost := range networkTopology.DestHosts {
+				key := pkgredis.MakeBandwidthKeyInTrainer(networkTopology.Host.ID, destHost.ID)
+				value, ok := bandwidths[key]
+				if !ok {
+					value = 0
+				}
+
+				if err := t.createGNNEdgeObservation(hostID, GNNEdgeObservation{
+					SrcHostID:    networkTopology.Host.ID,
+					DestHostID:   destHost.ID,
+					AverageRTT:   destHost.Probes.AverageRTT,
+					MaxBandwidth: value,
+				}); err != nil {
+					logger.Errorf("create GNN Edge observation failed: %s", err.Error())
+					continue
+				}
+
+				gnnEdgeObservationRecordCount++
+			}
+
+			ipFeature, err := ipFeature(networkTopology.Host.IP)
+			if err != nil {
+				logger.Errorf("convert IP to feature failed: %s", err.Error())
 				continue
 			}
 
-			gnnEdgeObservationRecordCount++
+			if err := t.createGNNVertexObservation(hostID, GNNVertexObservation{
+				HostID:   networkTopology.Host.ID,
+				IP:       ipFeature,
+				Location: locationFeature(networkTopology.Host.Network.Location),
+				IDC:      idcFeature(networkTopology.Host.Network.IDC),
+			}); err != nil {
+				logger.Errorf("create GNN vertex observation failed: %s", err.Error())
+				continue
+			}
+
+			gnnVertexObservationRecordCount++
 		}
 
-		fmt.Println(networkTopology.Host.IP)
-		ipFeature, err := ipFeature(networkTopology.Host.IP)
-		if err != nil {
-			logger.Error("convert IP to feature failed: %s", err.Error())
-			return
-		}
+		wg.Done()
+	}()
 
-		if err := t.createGNNVertexObservation(hostID, GNNVertexObservation{
-			HostID:   networkTopology.Host.ID,
-			IP:       ipFeature,
-			Location: locationFeature(networkTopology.Host.Network.Location),
-			IDC:      idcFeature(networkTopology.Host.Network.IDC),
-		}); err != nil {
-			logger.Error("create GNN vertex observation failed: %s", err.Error())
-			return
-		}
-
-		gnnVertexObservationRecordCount++
-	}); err != nil {
-		msg := fmt.Sprintf("preprocess network topology training data failed: %s", err.Error())
-		logger.Error(msg)
-		return 0, 0, 0, status.Error(codes.Internal, msg)
-	}
-
+	wg.Wait()
 	return mlpObservationRecordCount, gnnVertexObservationRecordCount, gnnEdgeObservationRecordCount, nil
 }
 
