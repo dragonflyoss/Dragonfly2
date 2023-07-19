@@ -64,6 +64,25 @@ func TestNewRequest(t *testing.T) {
 	assert.Equal(expectedDeadline, gotDeadline)
 }
 
+func TestRequest_Context(t *testing.T) {
+	assert := assert.New(t)
+
+	got, err := NewRequest("http://www.dragonfly.io")
+	assert.Nil(err)
+	assert.Equal(got.Context(), context.Background())
+
+	testHeaderMap := map[string]string{"testKey1": "testValue1", "testKey2": "testValue2"}
+	got, err = NewRequestWithHeader("http://www.dragonfly.io", testHeaderMap)
+	assert.Nil(err)
+	assert.Equal(got.Context(), context.Background())
+
+	testContext, cancelFunc := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancelFunc()
+	got, err = NewRequestWithContext(testContext, "http://www.dragonfly.io", testHeaderMap)
+	assert.Nil(err)
+	assert.Equal(got.Context(), testContext)
+}
+
 func TestRequest_Clone(t *testing.T) {
 	var testURL, err = url.Parse("http://www.dragonfly.io")
 	testCloneURL, err := url.Parse("http://www.dragonfly.io")
