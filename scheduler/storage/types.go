@@ -156,9 +156,6 @@ type Parent struct {
 	// UploadPieceCount is upload piece count.
 	UploadPieceCount int32 `csv:"uploadPieceCount"`
 
-	// FinishedPieceCount is upload piece count.
-	FinishedPieceCount int32 `csv:"finishedPieceCount"`
-
 	// Host is peer host.
 	Host Host `csv:"host"`
 
@@ -201,9 +198,6 @@ type Download struct {
 
 	// Cost is the task download duration of nanosecond.
 	Cost int64 `csv:"cost"`
-
-	// FinishedPieceCount is upload piece count.
-	FinishedPieceCount int32 `csv:"finishedPieceCount"`
 
 	// Task is peer task.
 	Task Task `csv:"task"`
