@@ -33,7 +33,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"google.golang.org/grpc/status"
 
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
 
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	logger "d7y.io/dragonfly/v2/internal/dflog"

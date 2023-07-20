@@ -22,7 +22,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
 )
 
 var (

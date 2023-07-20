@@ -27,7 +27,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/resolver"
 
-	managerv2 "d7y.io/api/pkg/apis/manager/v2"
+	managerv2 "d7y.io/api/v2/pkg/apis/manager/v2"
 
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	pkgtypes "d7y.io/dragonfly/v2/pkg/types"

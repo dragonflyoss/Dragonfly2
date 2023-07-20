@@ -35,7 +35,7 @@ import (
 	"google.golang.org/grpc/peer"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	securityv1 "d7y.io/api/pkg/apis/security/v1"
+	securityv1 "d7y.io/api/v2/pkg/apis/security/v1"
 )
 
 func TestIssueCertificate(t *testing.T) {

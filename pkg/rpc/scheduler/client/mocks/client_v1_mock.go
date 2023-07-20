@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	scheduler "d7y.io/api/pkg/apis/scheduler/v1"
+	scheduler "d7y.io/api/v2/pkg/apis/scheduler/v1"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 )

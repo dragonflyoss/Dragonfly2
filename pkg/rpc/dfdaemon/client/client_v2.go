@@ -28,8 +28,8 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 
-	commonv2 "d7y.io/api/pkg/apis/common/v2"
-	dfdaemonv2 "d7y.io/api/pkg/apis/dfdaemon/v2"
+	commonv2 "d7y.io/api/v2/pkg/apis/common/v2"
+	dfdaemonv2 "d7y.io/api/v2/pkg/apis/dfdaemon/v2"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )

@@ -10,7 +10,7 @@ import (
 	reflect "reflect"
 	time "time"
 
-	common "d7y.io/api/pkg/apis/common/v1"
+	common "d7y.io/api/v2/pkg/apis/common/v1"
 	storage "d7y.io/dragonfly/v2/client/daemon/storage"
 	http "d7y.io/dragonfly/v2/pkg/net/http"
 	gomock "github.com/golang/mock/gomock"

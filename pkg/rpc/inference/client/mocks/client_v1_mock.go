@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	inference "d7y.io/api/pkg/apis/inference/v1"
+	inference "d7y.io/api/v2/pkg/apis/inference/v1"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 )

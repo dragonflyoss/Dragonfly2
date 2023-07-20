@@ -24,8 +24,8 @@ import (
 	"os"
 	"time"
 
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
+	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
+	dfdaemonv1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/internal/dferrors"

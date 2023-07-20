@@ -28,9 +28,9 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
-	managerv2 "d7y.io/api/pkg/apis/manager/v2"
-	trainerv1 "d7y.io/api/pkg/apis/trainer/v1"
-	trainerv1mocks "d7y.io/api/pkg/apis/trainer/v1/mocks"
+	managerv2 "d7y.io/api/v2/pkg/apis/manager/v2"
+	trainerv1 "d7y.io/api/v2/pkg/apis/trainer/v1"
+	trainerv1mocks "d7y.io/api/v2/pkg/apis/trainer/v1/mocks"
 
 	managerclientmocks "d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
 	trainerclientmocks "d7y.io/dragonfly/v2/pkg/rpc/trainer/client/mocks"

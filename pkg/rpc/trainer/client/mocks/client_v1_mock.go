@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	trainer "d7y.io/api/pkg/apis/trainer/v1"
+	trainer "d7y.io/api/v2/pkg/apis/trainer/v1"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 )

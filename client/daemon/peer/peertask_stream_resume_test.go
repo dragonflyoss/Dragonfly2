@@ -32,9 +32,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
-	schedulerv1mocks "d7y.io/api/pkg/apis/scheduler/v1/mocks"
+	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
+	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
+	schedulerv1mocks "d7y.io/api/v2/pkg/apis/scheduler/v1/mocks"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"

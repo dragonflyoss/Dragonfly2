@@ -8,8 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	common "d7y.io/api/pkg/apis/common/v2"
-	scheduler "d7y.io/api/pkg/apis/scheduler/v2"
+	common "d7y.io/api/v2/pkg/apis/common/v2"
+	scheduler "d7y.io/api/v2/pkg/apis/scheduler/v2"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 )

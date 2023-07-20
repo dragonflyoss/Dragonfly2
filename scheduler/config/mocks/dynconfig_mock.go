@@ -7,7 +7,7 @@ package mocks
 import (
 	reflect "reflect"
 
-	manager "d7y.io/api/pkg/apis/manager/v2"
+	manager "d7y.io/api/v2/pkg/apis/manager/v2"
 	types "d7y.io/dragonfly/v2/manager/types"
 	config "d7y.io/dragonfly/v2/scheduler/config"
 	gomock "github.com/golang/mock/gomock"

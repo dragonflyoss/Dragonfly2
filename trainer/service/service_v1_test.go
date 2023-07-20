@@ -31,8 +31,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	trainerv1 "d7y.io/api/pkg/apis/trainer/v1"
-	trainerv1mocks "d7y.io/api/pkg/apis/trainer/v1/mocks"
+	trainerv1 "d7y.io/api/v2/pkg/apis/trainer/v1"
+	trainerv1mocks "d7y.io/api/v2/pkg/apis/trainer/v1/mocks"
 
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/trainer/config"

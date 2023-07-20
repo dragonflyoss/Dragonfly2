@@ -25,8 +25,8 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 	"go.uber.org/atomic"
 
-	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
-	"d7y.io/api/pkg/apis/scheduler/v1/mocks"
+	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
+	"d7y.io/api/v2/pkg/apis/scheduler/v1/mocks"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )

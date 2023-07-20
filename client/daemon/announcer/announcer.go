@@ -30,8 +30,8 @@ import (
 	gopsutilnet "github.com/shirou/gopsutil/v3/net"
 	"github.com/shirou/gopsutil/v3/process"
 
-	managerv1 "d7y.io/api/pkg/apis/manager/v1"
-	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+	managerv1 "d7y.io/api/v2/pkg/apis/manager/v1"
+	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 
 	"d7y.io/dragonfly/v2/client/config"
 	logger "d7y.io/dragonfly/v2/internal/dflog"

@@ -37,10 +37,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
-	errordetailsv1 "d7y.io/api/pkg/apis/errordetails/v1"
-	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
+	dfdaemonv1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
+	errordetailsv1 "d7y.io/api/v2/pkg/apis/errordetails/v1"
+	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"

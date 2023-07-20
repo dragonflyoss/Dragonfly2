@@ -33,9 +33,9 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"gorm.io/gorm"
 
-	commonv2 "d7y.io/api/pkg/apis/common/v2"
-	inferencev1 "d7y.io/api/pkg/apis/inference/v1"
-	managerv2 "d7y.io/api/pkg/apis/manager/v2"
+	commonv2 "d7y.io/api/v2/pkg/apis/common/v2"
+	inferencev1 "d7y.io/api/v2/pkg/apis/inference/v1"
+	managerv2 "d7y.io/api/v2/pkg/apis/manager/v2"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/cache"

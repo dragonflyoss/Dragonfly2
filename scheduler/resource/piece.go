@@ -19,7 +19,7 @@ package resource
 import (
 	"time"
 
-	commonv2 "d7y.io/api/pkg/apis/common/v2"
+	commonv2 "d7y.io/api/v2/pkg/apis/common/v2"
 
 	"d7y.io/dragonfly/v2/pkg/digest"
 )
