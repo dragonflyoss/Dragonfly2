@@ -9,8 +9,8 @@ import (
 	io "io"
 	reflect "reflect"
 
-	v1 "d7y.io/api/pkg/apis/common/v1"
-	v10 "d7y.io/api/pkg/apis/scheduler/v1"
+	v1 "d7y.io/api/v2/pkg/apis/common/v1"
+	v10 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 	storage "d7y.io/dragonfly/v2/client/daemon/storage"
 	dflog "d7y.io/dragonfly/v2/internal/dflog"
 	gomock "github.com/golang/mock/gomock"

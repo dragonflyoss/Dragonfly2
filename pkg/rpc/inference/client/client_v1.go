@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 
-	inferencev1 "d7y.io/api/pkg/apis/inference/v1"
+	inferencev1 "d7y.io/api/v2/pkg/apis/inference/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )

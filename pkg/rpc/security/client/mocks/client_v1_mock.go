@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	security "d7y.io/api/pkg/apis/security/v1"
+	security "d7y.io/api/v2/pkg/apis/security/v1"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 )

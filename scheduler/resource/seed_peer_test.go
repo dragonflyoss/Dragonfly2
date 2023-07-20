@@ -25,8 +25,8 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
-	commonv2 "d7y.io/api/pkg/apis/common/v2"
-	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+	commonv2 "d7y.io/api/v2/pkg/apis/common/v2"
+	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 )
 
 func TestSeedPeer_newSeedPeer(t *testing.T) {

@@ -32,7 +32,7 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 	"go.uber.org/atomic"
 
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/test"

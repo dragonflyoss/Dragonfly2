@@ -30,8 +30,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
 
-	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	cdnsystemv1 "d7y.io/api/v2/pkg/apis/cdnsystem/v1"
+	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	pkgbalancer "d7y.io/dragonfly/v2/pkg/balancer"

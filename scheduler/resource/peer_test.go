@@ -31,12 +31,12 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
-	commonv2 "d7y.io/api/pkg/apis/common/v2"
-	managerv2 "d7y.io/api/pkg/apis/manager/v2"
-	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
-	v1mocks "d7y.io/api/pkg/apis/scheduler/v1/mocks"
-	schedulerv2 "d7y.io/api/pkg/apis/scheduler/v2"
-	v2mocks "d7y.io/api/pkg/apis/scheduler/v2/mocks"
+	commonv2 "d7y.io/api/v2/pkg/apis/common/v2"
+	managerv2 "d7y.io/api/v2/pkg/apis/manager/v2"
+	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
+	v1mocks "d7y.io/api/v2/pkg/apis/scheduler/v1/mocks"
+	schedulerv2 "d7y.io/api/v2/pkg/apis/scheduler/v2"
+	v2mocks "d7y.io/api/v2/pkg/apis/scheduler/v2/mocks"
 
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	nethttp "d7y.io/dragonfly/v2/pkg/net/http"

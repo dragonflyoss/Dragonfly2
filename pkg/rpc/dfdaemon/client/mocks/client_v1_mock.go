@@ -8,8 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	common "d7y.io/api/pkg/apis/common/v1"
-	dfdaemon "d7y.io/api/pkg/apis/dfdaemon/v1"
+	common "d7y.io/api/v2/pkg/apis/common/v1"
+	dfdaemon "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 )
