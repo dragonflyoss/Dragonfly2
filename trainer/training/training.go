@@ -22,11 +22,11 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"math/rand"
 	"net"
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/gocarina/gocsv"
 	"golang.org/x/sync/errgroup"
@@ -47,8 +47,11 @@ import (
 //go:generate mockgen -destination mocks/training_mock.go -source training.go -package mocks
 
 const (
-	// MLPObservationFilePrefix is prefix of mlp observation file name.
-	MLPObservationFilePrefix = "mlp_data"
+	// MLPObservationTrainFilePrefix is prefix of mlp observation file name for mlp training.
+	MLPObservationTrainFilePrefix = "mlp_train_data"
+
+	// MLPObservationTestFilePrefix is prefix of mlp test observation file name for mlp testing.
+	MLPObservationTestFilePrefix = "mlp_test_data"
 
 	// GNNVertexObservationFilePrefix is gnn vertex observation of file name.
 	GNNVertexObservationFilePrefix = "gnn_vertex_data"
@@ -69,11 +72,12 @@ const (
 
 	// Minimum score.
 	minScore = 0
-)
 
-const (
 	// Maximum number of elements.
 	maxElementLen = 3
+
+	// PartitionRatio is the partition ratio between the training set and the test set.
+	PartitionRatio = 0.8
 )
 
 // Training defines the interface to train GNN and MLP model.
@@ -110,8 +114,7 @@ func New(cfg *config.Config, baseDir string, managerClient managerclient.V2, sto
 // Train begins training GNN and MLP model.
 func (t *training) Train(ctx context.Context, ip, hostname string) error {
 	// Preprocess training data.
-	_, _, _, err := t.preprocess(ip, hostname)
-	if err != nil {
+	if err := t.preprocess(ip, hostname); err != nil {
 		logger.Errorf("preprocess failed: %s", err.Error())
 		return err
 	}
@@ -162,24 +165,17 @@ func (t *training) Train(ctx context.Context, ip, hostname string) error {
 }
 
 // preprocess constructs mlp observation, gnn vertex observation and edge observation before training.
-func (t *training) preprocess(ip, hostname string) (int, int, int, error) {
+func (t *training) preprocess(ip, hostname string) error {
 	var (
-		mlpObservationRecordCount       int
-		gnnVertexObservationRecordCount int
-		gnnEdgeObservationRecordCount   int
-		bandwidths                      = make(map[string]float64)
-		hostID                          = idgen.HostIDV2(ip, hostname)
+		bandwidths = make(map[string]float64)
+		hostID     = idgen.HostIDV2(ip, hostname)
 	)
-
-	logger.Info(t.mlpObservationFilename(hostID))
-	logger.Info(t.gnnVertexObservationFilename(hostID))
-	logger.Info(t.gnnEdgeObservationFilename(hostID))
 
 	downloadFile, err := t.storage.OpenDownload(hostID)
 	if err != nil {
 		msg := fmt.Sprintf("open download failed: %s", err.Error())
 		logger.Error(msg)
-		return 0, 0, 0, status.Error(codes.Internal, msg)
+		return status.Error(codes.Internal, msg)
 	}
 	defer downloadFile.Close()
 
@@ -187,11 +183,11 @@ func (t *training) preprocess(ip, hostname string) (int, int, int, error) {
 	if err != nil {
 		msg := fmt.Sprintf("open network topology failed: %s", err.Error())
 		logger.Error(msg)
-		return 0, 0, 0, status.Error(codes.Internal, msg)
+		return status.Error(codes.Internal, msg)
 	}
 	defer networkTopologyFile.Close()
 
-	// Get the maximum bandwidth of each edge.
+	// Preprocess download training data.
 	dc := make(chan schedulerstorage.Download)
 	go func() {
 		if gocsv.UnmarshalToChanWithoutHeaders(downloadFile, dc) != nil {
@@ -201,115 +197,95 @@ func (t *training) preprocess(ip, hostname string) (int, int, int, error) {
 
 	for download := range dc {
 		for _, parent := range download.Parents {
-			logger.Info(parent)
-			var maxBandwidth float64
-			key := pkgredis.MakeBandwidthKeyInTrainer(download.Host.ID, parent.ID)
-			value, ok := bandwidths[key]
-			if ok {
-				maxBandwidth = value
-			}
-
-			for _, piece := range parent.Pieces {
-				var bandwidth float64
-				if piece.Cost > 0 {
-					bandwidth = float64(piece.Length / piece.Cost)
+			if parent.ID != "" {
+				// get maxBandwidth locally from pieces.
+				var localMaxBandwidth float64
+				for _, piece := range parent.Pieces {
+					if piece.Cost > 0 && float64(piece.Length/piece.Cost) > localMaxBandwidth {
+						localMaxBandwidth = float64(piece.Length / piece.Cost)
+					}
 				}
 
-				if bandwidth > maxBandwidth {
-					maxBandwidth = bandwidth
-				}
-			}
-
-			bandwidths[key] = maxBandwidth
-		}
-	}
-
-	wg := &sync.WaitGroup{}
-	wg.Add(2)
-	go func() {
-		// Preprocess download training data.
-		dc := make(chan schedulerstorage.Download)
-		go func() {
-			if gocsv.UnmarshalToChanWithoutHeaders(downloadFile, dc) != nil {
-				logger.Errorf("prase download file filed: %s", err.Error())
-			}
-		}()
-
-		for download := range dc {
-			for _, parent := range download.Parents {
-				key := pkgredis.MakeBandwidthKeyInTrainer(download.Host.ID, parent.ID)
-				value, ok := bandwidths[key]
-				if !ok {
-					value = 0
+				// updata maxBandwidth globally.
+				key := pkgredis.MakeBandwidthKeyInTrainer(download.Host.ID, parent.Host.ID)
+				if value, ok := bandwidths[key]; ok {
+					if localMaxBandwidth > value {
+						bandwidths[key] = localMaxBandwidth
+					}
+				} else {
+					bandwidths[key] = localMaxBandwidth
 				}
 
-				logger.Info(parent)
-				if err := t.createMLPObservation(hostID, MLPObservation{
+				mlpObservation := MLPObservation{
 					FinishedPieceScore:    calculatePieceScore(parent.FinishedPieceCount, download.FinishedPieceCount, download.Task.TotalPieceCount),
 					FreeUploadScore:       calculateFreeUploadScore(parent.Host.ConcurrentUploadCount, parent.Host.ConcurrentUploadLimit),
 					UploadSuccessScore:    calculateParentHostUploadSuccessScore(parent.Host.UploadCount, parent.Host.UploadFailedCount),
 					IDCAffinityScore:      calculateIDCAffinityScore(parent.Host.Network.IDC, download.Host.Network.IDC),
 					LocationAffinityScore: calculateMultiElementAffinityScore(parent.Host.Network.Location, download.Host.Network.Location),
-					MaxBandwidth:          value,
-				}); err != nil {
-					logger.Errorf("create MLP Edge observation failed: %s", err.Error())
+					MaxBandwidth:          bandwidths[key],
 				}
 
-				mlpObservationRecordCount++
+				if rand.Float32() < PartitionRatio {
+					if err := t.createMLPObservationTrain(hostID, mlpObservation); err != nil {
+						logger.Errorf("create MLP observation for training failed: %s", err.Error())
+					}
+				} else {
+					if err := t.createMLPObservationTest(hostID, mlpObservation); err != nil {
+						logger.Errorf("create MLP observation for testing failed: %s", err.Error())
+					}
+				}
+
 			}
 		}
+	}
 
-		wg.Done()
+	// Preprocess network topology training data.
+	ntc := make(chan schedulerstorage.NetworkTopology)
+	go func() {
+		if gocsv.UnmarshalToChanWithoutHeaders(networkTopologyFile, ntc) != nil {
+			logger.Errorf("prase network topology file filed: %s", err.Error())
+		}
 	}()
 
-	go func() {
-		// Preprocess network topology training data.
-		ntc := make(chan schedulerstorage.NetworkTopology)
-		for networkTopology := range ntc {
-			for _, destHost := range networkTopology.DestHosts {
+	for networkTopology := range ntc {
+		for _, destHost := range networkTopology.DestHosts {
+			if destHost.ID != "" {
 				key := pkgredis.MakeBandwidthKeyInTrainer(networkTopology.Host.ID, destHost.ID)
-				value, ok := bandwidths[key]
+				maxBandwidth, ok := bandwidths[key]
 				if !ok {
-					value = 0
+					maxBandwidth = 0
 				}
 
 				if err := t.createGNNEdgeObservation(hostID, GNNEdgeObservation{
 					SrcHostID:    networkTopology.Host.ID,
 					DestHostID:   destHost.ID,
 					AverageRTT:   destHost.Probes.AverageRTT,
-					MaxBandwidth: value,
+					MaxBandwidth: maxBandwidth,
 				}); err != nil {
 					logger.Errorf("create GNN Edge observation failed: %s", err.Error())
 					continue
 				}
-
-				gnnEdgeObservationRecordCount++
 			}
-
-			ipFeature, err := ipFeature(networkTopology.Host.IP)
-			if err != nil {
-				logger.Errorf("convert IP to feature failed: %s", err.Error())
-				continue
-			}
-
-			if err := t.createGNNVertexObservation(hostID, GNNVertexObservation{
-				HostID:   networkTopology.Host.ID,
-				IP:       ipFeature,
-				Location: locationFeature(networkTopology.Host.Network.Location),
-				IDC:      idcFeature(networkTopology.Host.Network.IDC),
-			}); err != nil {
-				logger.Errorf("create GNN vertex observation failed: %s", err.Error())
-				continue
-			}
-
-			gnnVertexObservationRecordCount++
 		}
 
-		wg.Done()
-	}()
+		ipFeature, err := ipFeature(networkTopology.Host.IP)
+		if err != nil {
+			logger.Errorf("convert IP to feature failed: %s", err.Error())
+			continue
+		}
 
-	wg.Wait()
-	return mlpObservationRecordCount, gnnVertexObservationRecordCount, gnnEdgeObservationRecordCount, nil
+		if err := t.createGNNVertexObservation(hostID, GNNVertexObservation{
+			HostID:   networkTopology.Host.ID,
+			IP:       ipFeature,
+			Location: locationFeature(networkTopology.Host.Network.Location),
+			IDC:      idcFeature(networkTopology.Host.Network.IDC),
+		}); err != nil {
+			logger.Errorf("create GNN vertex observation failed: %s", err.Error())
+			continue
+		}
+	}
+
+	return nil
 }
 
 // trainGNN trains GNN model.
@@ -359,9 +335,24 @@ func (t *training) trainMLP(ctx context.Context, ip, hostname string) error {
 	return nil
 }
 
-// createMLPObservation inserts the MLP observations into csv file.
-func (t *training) createMLPObservation(key string, observations ...MLPObservation) error {
-	file, err := os.OpenFile(t.mlpObservationFilename(key), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+// createMLPObservationTrain inserts the MLP observations into csv file for training.
+func (t *training) createMLPObservationTrain(key string, observations ...MLPObservation) error {
+	file, err := os.OpenFile(t.mlpObservationTrainFilename(key), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	if err := gocsv.MarshalWithoutHeaders(observations, file); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// createMLPObservationTest inserts the MLP observations into csv file for testing.
+func (t *training) createMLPObservationTest(key string, observations ...MLPObservation) error {
+	file, err := os.OpenFile(t.mlpObservationTestFilename(key), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
 		return err
 	}
@@ -404,24 +395,34 @@ func (t *training) createGNNEdgeObservation(key string, observations ...GNNEdgeO
 	return nil
 }
 
-// clearMLPObservation removes mlp observation file.
-func (t *training) clearMLPObservation(key string) error {
-	return os.Remove(t.mlpObservationFilename(key))
+// clearMLPObservationTrainFile removes mlp train observation file.
+func (t *training) clearMLPObservationTrainFile(key string) error {
+	return os.Remove(t.mlpObservationTrainFilename(key))
 }
 
-// clearGNNVertexObservation removes gnn vertex observation file.
-func (t *training) clearGNNVertexObservation(key string) error {
+// clearMLPObservationTestFile removes mlp test observation file.
+func (t *training) clearMLPObservationTestFile(key string) error {
+	return os.Remove(t.mlpObservationTestFilename(key))
+}
+
+// clearGNNVertexObservationFile removes gnn vertex observation file.
+func (t *training) clearGNNVertexObservationFile(key string) error {
 	return os.Remove(t.gnnVertexObservationFilename(key))
 }
 
-// clearGNNEdgeObservation removes gnn edge observation file.
-func (t *training) clearGNNEdgeObservation(key string) error {
+// clearGNNEdgeObservationFile removes gnn edge observation file.
+func (t *training) clearGNNEdgeObservationFile(key string) error {
 	return os.Remove(t.gnnEdgeObservationFilename(key))
 }
 
-// mlpObservationFilename generates mlp observation file name based on the given key.
-func (t *training) mlpObservationFilename(key string) string {
-	return filepath.Join(t.baseDir, fmt.Sprintf("%s_%s.%s", MLPObservationFilePrefix, key, CSVFileExt))
+// mlpObservationTrainFilename generates mlp observation train file name based on the given key.
+func (t *training) mlpObservationTrainFilename(key string) string {
+	return filepath.Join(t.baseDir, fmt.Sprintf("%s_%s.%s", MLPObservationTrainFilePrefix, key, CSVFileExt))
+}
+
+// mlpObservationTestFilename generates mlp observation test file name based on the given key.
+func (t *training) mlpObservationTestFilename(key string) string {
+	return filepath.Join(t.baseDir, fmt.Sprintf("%s_%s.%s", MLPObservationTestFilePrefix, key, CSVFileExt))
 }
 
 // gnnVertexObservationFilename generates gnn vertex observation file name based on the given key.
@@ -513,7 +514,7 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 
 // ipFeature convert an ip address to a feature vector.
 func ipFeature(data string) ([]uint32, error) {
-	ip := net.IP(data)
+	ip := net.ParseIP(data)
 	var features = make([]uint32, net.IPv6len)
 	if l := len(ip); l != net.IPv4len && l != net.IPv6len {
 		msg := fmt.Sprintf("invalid IP address: %s", ip)
@@ -548,8 +549,8 @@ func locationFeature(location string) []uint32 {
 }
 
 // idcFeature converts idc to a feature vector.
-func idcFeature(idc string) []uint32 {
-	return []uint32{hash(idc)}
+func idcFeature(idc string) uint32 {
+	return hash(idc)
 }
 
 // hash convert string to uint64.
