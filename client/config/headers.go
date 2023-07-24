@@ -31,4 +31,10 @@ const (
 	HeaderDragonflyRegistry = "X-Dragonfly-Registry"
 	// HeaderDragonflyObjectMetaDigest is used for digest of object storage.
 	HeaderDragonflyObjectMetaDigest = "X-Dragonfly-Object-Meta-Digest"
+	// HeaderDragonflyObjectMetaLastModifiedTime is used for last modified time of object storage.
+	HeaderDragonflyObjectMetaLastModifiedTime = "X-Dragonfly-Object-Meta-Last-Modified-Time"
+	// HeaderDragonflyObjectMetaStorageClass is used for storage class of object storage.
+	HeaderDragonflyObjectMetaStorageClass = "X-Dragonfly-Object-Meta-Storage-Class"
+	// HeaderDragonflyObjectOperation is used for object storage operation.
+	HeaderDragonflyObjectOperation = "X-Dragonfly-Object-Operation"
 )
