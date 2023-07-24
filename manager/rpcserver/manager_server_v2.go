@@ -137,8 +137,8 @@ func (s *managerServerV2) GetSeedPeer(ctx context.Context, req *managerv2.GetSee
 			pbSchedulers = append(pbSchedulers, &managerv2.Scheduler{
 				Id:       uint64(scheduler.ID),
 				Hostname: scheduler.Hostname,
-				Idc:      scheduler.IDC,
-				Location: scheduler.Location,
+				Idc:      &scheduler.IDC,
+				Location: &scheduler.Location,
 				Ip:       scheduler.IP,
 				Port:     scheduler.Port,
 				State:    scheduler.State,
@@ -152,8 +152,8 @@ func (s *managerServerV2) GetSeedPeer(ctx context.Context, req *managerv2.GetSee
 		Id:                uint64(seedPeer.ID),
 		Type:              seedPeer.Type,
 		Hostname:          seedPeer.Hostname,
-		Idc:               seedPeer.IDC,
-		Location:          seedPeer.Location,
+		Idc:               &seedPeer.IDC,
+		Location:          &seedPeer.Location,
 		Ip:                seedPeer.IP,
 		Port:              seedPeer.Port,
 		DownloadPort:      seedPeer.DownloadPort,
@@ -198,14 +198,14 @@ func (s *managerServerV2) UpdateSeedPeer(ctx context.Context, req *managerv2.Upd
 	}
 
 	if err := s.db.WithContext(ctx).Model(&seedPeer).Updates(models.SeedPeer{
-		Type:              req.Type,
-		IDC:               req.Idc,
-		Location:          req.Location,
-		IP:                req.Ip,
-		Port:              req.Port,
-		DownloadPort:      req.DownloadPort,
-		ObjectStoragePort: req.ObjectStoragePort,
-		SeedPeerClusterID: uint(req.SeedPeerClusterId),
+		Type:              req.GetType(),
+		IDC:               req.GetIdc(),
+		Location:          req.GetLocation(),
+		IP:                req.GetIp(),
+		Port:              req.GetPort(),
+		DownloadPort:      req.GetDownloadPort(),
+		ObjectStoragePort: req.GetObjectStoragePort(),
+		SeedPeerClusterID: uint(req.GetSeedPeerClusterId()),
 	}).Error; err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -221,8 +221,8 @@ func (s *managerServerV2) UpdateSeedPeer(ctx context.Context, req *managerv2.Upd
 		Id:                uint64(seedPeer.ID),
 		Hostname:          seedPeer.Hostname,
 		Type:              seedPeer.Type,
-		Idc:               seedPeer.IDC,
-		Location:          seedPeer.Location,
+		Idc:               &seedPeer.IDC,
+		Location:          &seedPeer.Location,
 		Ip:                seedPeer.IP,
 		Port:              seedPeer.Port,
 		DownloadPort:      seedPeer.DownloadPort,
@@ -235,15 +235,15 @@ func (s *managerServerV2) UpdateSeedPeer(ctx context.Context, req *managerv2.Upd
 // Create SeedPeer and associate cluster.
 func (s *managerServerV2) createSeedPeer(ctx context.Context, req *managerv2.UpdateSeedPeerRequest) (*managerv2.SeedPeer, error) {
 	seedPeer := models.SeedPeer{
-		Hostname:          req.Hostname,
-		Type:              req.Type,
-		IDC:               req.Idc,
-		Location:          req.Location,
-		IP:                req.Ip,
-		Port:              req.Port,
-		DownloadPort:      req.DownloadPort,
-		ObjectStoragePort: req.ObjectStoragePort,
-		SeedPeerClusterID: uint(req.SeedPeerClusterId),
+		Hostname:          req.GetHostname(),
+		Type:              req.GetType(),
+		IDC:               req.GetIdc(),
+		Location:          req.GetLocation(),
+		IP:                req.GetIp(),
+		Port:              req.GetPort(),
+		DownloadPort:      req.GetDownloadPort(),
+		ObjectStoragePort: req.GetObjectStoragePort(),
+		SeedPeerClusterID: uint(req.GetSeedPeerClusterId()),
 	}
 
 	if err := s.db.WithContext(ctx).Create(&seedPeer).Error; err != nil {
@@ -254,8 +254,8 @@ func (s *managerServerV2) createSeedPeer(ctx context.Context, req *managerv2.Upd
 		Id:                uint64(seedPeer.ID),
 		Hostname:          seedPeer.Hostname,
 		Type:              seedPeer.Type,
-		Idc:               seedPeer.IDC,
-		Location:          seedPeer.Location,
+		Idc:               &seedPeer.IDC,
+		Location:          &seedPeer.Location,
 		Ip:                seedPeer.IP,
 		Port:              seedPeer.Port,
 		DownloadPort:      seedPeer.DownloadPort,
@@ -321,8 +321,8 @@ func (s *managerServerV2) GetScheduler(ctx context.Context, req *managerv2.GetSc
 				Id:                uint64(seedPeer.ID),
 				Hostname:          seedPeer.Hostname,
 				Type:              seedPeer.Type,
-				Idc:               seedPeer.IDC,
-				Location:          seedPeer.Location,
+				Idc:               &seedPeer.IDC,
+				Location:          &seedPeer.Location,
 				Ip:                seedPeer.IP,
 				Port:              seedPeer.Port,
 				DownloadPort:      seedPeer.DownloadPort,
@@ -349,8 +349,8 @@ func (s *managerServerV2) GetScheduler(ctx context.Context, req *managerv2.GetSc
 	pbScheduler = managerv2.Scheduler{
 		Id:                 uint64(scheduler.ID),
 		Hostname:           scheduler.Hostname,
-		Idc:                scheduler.IDC,
-		Location:           scheduler.Location,
+		Idc:                &scheduler.IDC,
+		Location:           &scheduler.Location,
 		Ip:                 scheduler.IP,
 		Port:               scheduler.Port,
 		State:              scheduler.State,
@@ -396,11 +396,11 @@ func (s *managerServerV2) UpdateScheduler(ctx context.Context, req *managerv2.Up
 	}
 
 	if err := s.db.WithContext(ctx).Model(&scheduler).Updates(models.Scheduler{
-		IDC:                req.Idc,
-		Location:           req.Location,
-		IP:                 req.Ip,
-		Port:               req.Port,
-		SchedulerClusterID: uint(req.SchedulerClusterId),
+		IDC:                req.GetIdc(),
+		Location:           req.GetLocation(),
+		IP:                 req.GetIp(),
+		Port:               req.GetPort(),
+		SchedulerClusterID: uint(req.GetSchedulerClusterId()),
 	}).Error; err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -421,8 +421,8 @@ func (s *managerServerV2) UpdateScheduler(ctx context.Context, req *managerv2.Up
 	return &managerv2.Scheduler{
 		Id:                 uint64(scheduler.ID),
 		Hostname:           scheduler.Hostname,
-		Idc:                scheduler.IDC,
-		Location:           scheduler.Location,
+		Idc:                &scheduler.IDC,
+		Location:           &scheduler.Location,
 		Ip:                 scheduler.IP,
 		Port:               scheduler.Port,
 		Features:           features,
@@ -434,13 +434,13 @@ func (s *managerServerV2) UpdateScheduler(ctx context.Context, req *managerv2.Up
 // Create scheduler and associate cluster.
 func (s *managerServerV2) createScheduler(ctx context.Context, req *managerv2.UpdateSchedulerRequest) (*managerv2.Scheduler, error) {
 	scheduler := models.Scheduler{
-		Hostname:           req.Hostname,
-		IDC:                req.Idc,
-		Location:           req.Location,
-		IP:                 req.Ip,
-		Port:               req.Port,
+		Hostname:           req.GetHostname(),
+		IDC:                req.GetIdc(),
+		Location:           req.GetLocation(),
+		IP:                 req.GetIp(),
+		Port:               req.GetPort(),
 		Features:           types.DefaultSchedulerFeatures,
-		SchedulerClusterID: uint(req.SchedulerClusterId),
+		SchedulerClusterID: uint(req.GetSchedulerClusterId()),
 	}
 
 	if err := s.db.WithContext(ctx).Create(&scheduler).Error; err != nil {
@@ -456,8 +456,8 @@ func (s *managerServerV2) createScheduler(ctx context.Context, req *managerv2.Up
 	return &managerv2.Scheduler{
 		Id:                 uint64(scheduler.ID),
 		Hostname:           scheduler.Hostname,
-		Idc:                scheduler.IDC,
-		Location:           scheduler.Location,
+		Idc:                &scheduler.IDC,
+		Location:           &scheduler.Location,
 		Ip:                 scheduler.IP,
 		Port:               scheduler.Port,
 		State:              scheduler.State,
@@ -552,8 +552,8 @@ func (s *managerServerV2) ListSchedulers(ctx context.Context, req *managerv2.Lis
 					Id:                uint64(seedPeer.ID),
 					Hostname:          seedPeer.Hostname,
 					Type:              seedPeer.Type,
-					Idc:               seedPeer.IDC,
-					Location:          seedPeer.Location,
+					Idc:               &seedPeer.IDC,
+					Location:          &seedPeer.Location,
 					Ip:                seedPeer.IP,
 					Port:              seedPeer.Port,
 					DownloadPort:      seedPeer.DownloadPort,
@@ -573,8 +573,8 @@ func (s *managerServerV2) ListSchedulers(ctx context.Context, req *managerv2.Lis
 		pbListSchedulersResponse.Schedulers = append(pbListSchedulersResponse.Schedulers, &managerv2.Scheduler{
 			Id:                 uint64(scheduler.ID),
 			Hostname:           scheduler.Hostname,
-			Idc:                scheduler.IDC,
-			Location:           scheduler.Location,
+			Idc:                &scheduler.IDC,
+			Location:           &scheduler.Location,
 			Ip:                 scheduler.IP,
 			Port:               scheduler.Port,
 			State:              scheduler.State,
