@@ -31,8 +31,8 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/credentials/insecure"
 
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
+	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/storage/mocks"

@@ -33,12 +33,12 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	commonv2 "d7y.io/api/pkg/apis/common/v2"
-	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
-	schedulerv1mocks "d7y.io/api/pkg/apis/scheduler/v1/mocks"
-	schedulerv2 "d7y.io/api/pkg/apis/scheduler/v2"
-	schedulerv2mocks "d7y.io/api/pkg/apis/scheduler/v2/mocks"
+	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
+	commonv2 "d7y.io/api/v2/pkg/apis/common/v2"
+	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
+	schedulerv1mocks "d7y.io/api/v2/pkg/apis/scheduler/v1/mocks"
+	schedulerv2 "d7y.io/api/v2/pkg/apis/scheduler/v2"
+	schedulerv2mocks "d7y.io/api/v2/pkg/apis/scheduler/v2/mocks"
 
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/container/set"

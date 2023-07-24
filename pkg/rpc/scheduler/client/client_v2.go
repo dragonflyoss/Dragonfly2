@@ -30,8 +30,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
 
-	commonv2 "d7y.io/api/pkg/apis/common/v2"
-	schedulerv2 "d7y.io/api/pkg/apis/scheduler/v2"
+	commonv2 "d7y.io/api/v2/pkg/apis/common/v2"
+	schedulerv2 "d7y.io/api/v2/pkg/apis/scheduler/v2"
 
 	"d7y.io/dragonfly/v2/client/config"
 	logger "d7y.io/dragonfly/v2/internal/dflog"

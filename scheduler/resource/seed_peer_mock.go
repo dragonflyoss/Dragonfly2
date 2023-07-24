@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	v1 "d7y.io/api/pkg/apis/scheduler/v1"
+	v1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 	http "d7y.io/dragonfly/v2/pkg/net/http"
 	types "d7y.io/dragonfly/v2/pkg/types"
 	gomock "github.com/golang/mock/gomock"

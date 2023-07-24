@@ -29,7 +29,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/resolver"
 
-	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+	managerv1 "d7y.io/api/v2/pkg/apis/manager/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	healthclient "d7y.io/dragonfly/v2/pkg/rpc/health/client"

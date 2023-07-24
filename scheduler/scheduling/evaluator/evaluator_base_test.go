@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/atomic"
 
-	commonv2 "d7y.io/api/pkg/apis/common/v2"
+	commonv2 "d7y.io/api/v2/pkg/apis/common/v2"
 
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"

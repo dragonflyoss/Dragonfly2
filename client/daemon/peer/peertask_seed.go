@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/time/rate"
 
-	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/pkg/idgen"

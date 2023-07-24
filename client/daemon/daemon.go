@@ -41,7 +41,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	zapadapter "logur.dev/adapter/zap"
 
-	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/announcer"

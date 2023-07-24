@@ -28,7 +28,7 @@ import (
 	"github.com/johanbrandhorst/certify"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	securityv1 "d7y.io/api/pkg/apis/security/v1"
+	securityv1 "d7y.io/api/v2/pkg/apis/security/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	securityclient "d7y.io/dragonfly/v2/pkg/rpc/security/client"

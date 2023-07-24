@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 
-	trainerv1 "d7y.io/api/pkg/apis/trainer/v1"
+	trainerv1 "d7y.io/api/v2/pkg/apis/trainer/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )

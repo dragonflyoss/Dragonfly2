@@ -32,8 +32,8 @@ import (
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/reflection"
 
-	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
-	schedulerv2 "d7y.io/api/pkg/apis/scheduler/v2"
+	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
+	schedulerv2 "d7y.io/api/v2/pkg/apis/scheduler/v2"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"

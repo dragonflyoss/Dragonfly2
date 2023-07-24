@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 
-	securityv1 "d7y.io/api/pkg/apis/security/v1"
+	securityv1 "d7y.io/api/v2/pkg/apis/security/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"

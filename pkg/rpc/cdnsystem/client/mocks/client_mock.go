@@ -8,8 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	cdnsystem "d7y.io/api/pkg/apis/cdnsystem/v1"
-	common "d7y.io/api/pkg/apis/common/v1"
+	cdnsystem "d7y.io/api/v2/pkg/apis/cdnsystem/v1"
+	common "d7y.io/api/v2/pkg/apis/common/v1"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 )

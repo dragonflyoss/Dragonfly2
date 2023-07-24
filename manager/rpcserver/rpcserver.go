@@ -25,7 +25,7 @@ import (
 	"google.golang.org/grpc"
 	"gorm.io/gorm"
 
-	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+	managerv1 "d7y.io/api/v2/pkg/apis/manager/v1"
 
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/config"

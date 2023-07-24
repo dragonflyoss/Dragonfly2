@@ -32,8 +32,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	managerv1 "d7y.io/api/pkg/apis/manager/v1"
-	securityv1 "d7y.io/api/pkg/apis/security/v1"
+	managerv1 "d7y.io/api/v2/pkg/apis/manager/v1"
+	securityv1 "d7y.io/api/v2/pkg/apis/security/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"

@@ -21,8 +21,8 @@ import (
 
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
+	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/types"

@@ -28,7 +28,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+	managerv1 "d7y.io/api/v2/pkg/apis/manager/v1"
 
 	"d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
 )

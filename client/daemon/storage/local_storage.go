@@ -32,7 +32,7 @@ import (
 	"github.com/go-http-utils/headers"
 	"go.uber.org/atomic"
 
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"

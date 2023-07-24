@@ -25,7 +25,7 @@ import (
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
