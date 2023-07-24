@@ -33,6 +33,11 @@ import (
 	"d7y.io/dragonfly/v2/pkg/types"
 )
 
+var (
+	mockIDC      = "foo"
+	mockLocation = "bar"
+)
+
 func TestDynconfig_Get(t *testing.T) {
 	mockCacheDir := t.TempDir()
 	mockConfig := &Config{
@@ -67,8 +72,8 @@ func TestDynconfig_Get(t *testing.T) {
 				m.GetScheduler(gomock.Any(), gomock.Any()).Return(&managerv2.Scheduler{
 					Id:       1,
 					Hostname: "foo",
-					Idc:      "idc",
-					Location: "location",
+					Idc:      &mockIDC,
+					Location: &mockLocation,
 					Ip:       "127.0.0.1",
 					Port:     8002,
 					State:    "active",
@@ -77,8 +82,8 @@ func TestDynconfig_Get(t *testing.T) {
 							Id:           1,
 							Hostname:     "bar",
 							Type:         types.HostTypeStrongSeedName,
-							Idc:          "idc",
-							Location:     "location",
+							Idc:          &mockIDC,
+							Location:     &mockLocation,
 							Ip:           "127.0.0.1",
 							Port:         8001,
 							DownloadPort: 8003,
@@ -122,8 +127,8 @@ func TestDynconfig_Get(t *testing.T) {
 					Scheduler: &managerv2.Scheduler{
 						Id:       1,
 						Hostname: "foo",
-						Idc:      "idc",
-						Location: "location",
+						Idc:      &mockIDC,
+						Location: &mockLocation,
 						Ip:       "127.0.0.1",
 						Port:     8002,
 						State:    "active",
@@ -132,8 +137,8 @@ func TestDynconfig_Get(t *testing.T) {
 								Id:           1,
 								Hostname:     "bar",
 								Type:         types.HostTypeStrongSeedName,
-								Idc:          "idc",
-								Location:     "location",
+								Idc:          &mockIDC,
+								Location:     &mockLocation,
 								Ip:           "127.0.0.1",
 								Port:         8001,
 								DownloadPort: 8003,
@@ -187,8 +192,8 @@ func TestDynconfig_Get(t *testing.T) {
 					m.GetScheduler(gomock.Any(), gomock.Any()).Return(&managerv2.Scheduler{
 						Id:       1,
 						Hostname: "foo",
-						Idc:      "idc",
-						Location: "location",
+						Idc:      &mockIDC,
+						Location: &mockLocation,
 						Ip:       "127.0.0.1",
 						Port:     8002,
 						State:    "active",
@@ -197,8 +202,8 @@ func TestDynconfig_Get(t *testing.T) {
 								Id:           1,
 								Hostname:     "bar",
 								Type:         types.HostTypeSuperSeedName,
-								Idc:          "idc",
-								Location:     "location",
+								Idc:          &mockIDC,
+								Location:     &mockLocation,
 								Ip:           "127.0.0.1",
 								Port:         8001,
 								DownloadPort: 8003,
@@ -244,8 +249,8 @@ func TestDynconfig_Get(t *testing.T) {
 					Scheduler: &managerv2.Scheduler{
 						Id:       1,
 						Hostname: "foo",
-						Idc:      "idc",
-						Location: "location",
+						Idc:      &mockIDC,
+						Location: &mockLocation,
 						Ip:       "127.0.0.1",
 						Port:     8002,
 						State:    "active",
@@ -254,8 +259,8 @@ func TestDynconfig_Get(t *testing.T) {
 								Id:           1,
 								Hostname:     "bar",
 								Type:         types.HostTypeSuperSeedName,
-								Idc:          "idc",
-								Location:     "location",
+								Idc:          &mockIDC,
+								Location:     &mockLocation,
 								Ip:           "127.0.0.1",
 								Port:         8001,
 								DownloadPort: 8003,
@@ -309,8 +314,8 @@ func TestDynconfig_Get(t *testing.T) {
 					m.GetScheduler(gomock.Any(), gomock.Any()).Return(&managerv2.Scheduler{
 						Id:       1,
 						Hostname: "foo",
-						Idc:      "idc",
-						Location: "location",
+						Idc:      &mockIDC,
+						Location: &mockLocation,
 						Ip:       "127.0.0.1",
 						Port:     8002,
 						State:    "active",
@@ -319,8 +324,8 @@ func TestDynconfig_Get(t *testing.T) {
 								Id:           1,
 								Hostname:     "bar",
 								Type:         types.HostTypeSuperSeedName,
-								Idc:          "idc",
-								Location:     "location",
+								Idc:          &mockIDC,
+								Location:     &mockLocation,
 								Ip:           "127.0.0.1",
 								Port:         8001,
 								DownloadPort: 8003,
@@ -360,8 +365,8 @@ func TestDynconfig_Get(t *testing.T) {
 					m.GetScheduler(gomock.Any(), gomock.Any()).Return(&managerv2.Scheduler{
 						Id:       1,
 						Hostname: "foo",
-						Idc:      "idc",
-						Location: "location",
+						Idc:      &mockIDC,
+						Location: &mockLocation,
 						Ip:       "127.0.0.1",
 						Port:     8002,
 						State:    "active",
@@ -370,8 +375,8 @@ func TestDynconfig_Get(t *testing.T) {
 								Id:           1,
 								Hostname:     "bar",
 								Type:         types.HostTypeSuperSeedName,
-								Idc:          "idc",
-								Location:     "location",
+								Idc:          &mockIDC,
+								Location:     &mockLocation,
 								Ip:           "127.0.0.1",
 								Port:         8001,
 								DownloadPort: 8003,
@@ -398,8 +403,8 @@ func TestDynconfig_Get(t *testing.T) {
 					Scheduler: &managerv2.Scheduler{
 						Id:       1,
 						Hostname: "foo",
-						Idc:      "idc",
-						Location: "location",
+						Idc:      &mockIDC,
+						Location: &mockLocation,
 						Ip:       "127.0.0.1",
 						Port:     8002,
 						State:    "active",
@@ -408,8 +413,8 @@ func TestDynconfig_Get(t *testing.T) {
 								Id:           1,
 								Hostname:     "bar",
 								Type:         types.HostTypeSuperSeedName,
-								Idc:          "idc",
-								Location:     "location",
+								Idc:          &mockIDC,
+								Location:     &mockLocation,
 								Ip:           "127.0.0.1",
 								Port:         8001,
 								DownloadPort: 8003,
