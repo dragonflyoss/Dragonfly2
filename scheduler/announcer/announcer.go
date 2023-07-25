@@ -87,8 +87,8 @@ func New(cfg *config.Config, managerClient managerclient.V2, storage storage.Sto
 		Hostname:           a.config.Server.Host,
 		Ip:                 a.config.Server.AdvertiseIP.String(),
 		Port:               int32(a.config.Server.AdvertisePort),
-		Idc:                a.config.Host.IDC,
-		Location:           a.config.Host.Location,
+		Idc:                &a.config.Host.IDC,
+		Location:           &a.config.Host.Location,
 		SchedulerClusterId: uint64(a.config.Manager.SchedulerClusterID),
 	}); err != nil {
 		return nil, err

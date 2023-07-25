@@ -290,8 +290,8 @@ func TestSeedPeerClient_seedPeersToNetAddrs(t *testing.T) {
 					Ip:           mockRawSeedHost.IP,
 					Port:         mockRawSeedHost.Port,
 					DownloadPort: mockRawSeedHost.DownloadPort,
-					Idc:          mockRawSeedHost.Network.IDC,
-					Location:     mockRawSeedHost.Network.Location,
+					Idc:          &mockRawSeedHost.Network.IDC,
+					Location:     &mockRawSeedHost.Network.Location,
 				},
 			},
 			expect: func(t *testing.T, netAddrs []dfnet.NetAddr) {
