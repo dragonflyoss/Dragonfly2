@@ -8,6 +8,8 @@ definitions:
         type: string
       id:
         type: integer
+      is_del:
+        type: integer
       name:
         type: string
       priority:
@@ -29,10 +31,14 @@ definitions:
         type: string
       id:
         type: integer
+      is_del:
+        type: integer
       name:
         type: string
       updated_at:
         type: string
+      user:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.User'
       user_id:
         type: integer
       value:
@@ -50,6 +56,8 @@ definitions:
       created_at:
         type: string
       id:
+        type: integer
+      is_del:
         type: integer
       result:
         $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.JSONMap'
@@ -69,6 +77,8 @@ definitions:
         type: string
       updated_at:
         type: string
+      user:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.User'
       user_id:
         type: integer
     type: object
@@ -82,8 +92,12 @@ definitions:
         $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.JSONMap'
       id:
         type: integer
+      is_del:
+        type: integer
       name:
         type: string
+      scheduler:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.Scheduler'
       scheduler_id:
         type: integer
       state:
@@ -106,6 +120,8 @@ definitions:
       created_at:
         type: string
       id:
+        type: integer
+      is_del:
         type: integer
       name:
         type: string
@@ -130,11 +146,19 @@ definitions:
         type: string
       ip:
         type: string
+      is_del:
+        type: integer
       location:
         type: string
+      models:
+        items:
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.Model'
+        type: array
       port:
         type: integer
-      schedulerClusterID:
+      scheduler_cluster:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.SchedulerCluster'
+      scheduler_cluster_id:
         type: integer
       state:
         type: string
@@ -155,12 +179,18 @@ definitions:
         type: integer
       is_default:
         type: boolean
+      is_del:
+        type: integer
       jobs:
         items:
           $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.Job'
         type: array
       name:
         type: string
+      schedulers:
+        items:
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.Scheduler'
+        type: array
       scopes:
         $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.JSONMap'
       seed_peer_clusters:
@@ -184,13 +214,17 @@ definitions:
         type: string
       ip:
         type: string
+      is_del:
+        type: integer
       location:
         type: string
       object_storage_port:
         type: integer
       port:
         type: integer
-      seedPeerClusterID:
+      seed_peer_cluster:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.SeedPeerCluster'
+      seed_peer_cluster_id:
         type: integer
       state:
         type: string
@@ -209,6 +243,8 @@ definitions:
         type: string
       id:
         type: integer
+      is_del:
+        type: integer
       jobs:
         items:
           $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.Job'
@@ -219,6 +255,10 @@ definitions:
         items:
           $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.SchedulerCluster'
         type: array
+      seed_peer:
+        items:
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.SeedPeer'
+        type: array
       updated_at:
         type: string
     type: object
@@ -228,11 +268,17 @@ definitions:
         type: string
       bio:
         type: string
+      configs:
+        items:
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.Config'
+        type: array
       created_at:
         type: string
       email:
         type: string
       id:
+        type: integer
+      is_del:
         type: integer
       location:
         type: string
@@ -322,27 +368,27 @@ definitions:
     properties:
       bio:
         type: string
-      createdAt:
+      created_at:
         type: string
       id:
         type: integer
-      isDefault:
+      is_default:
         type: boolean
       name:
         type: string
-      peerClusterConfig:
+      peer_cluster_config:
         $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterClientConfig'
-      schedulerClusterConfig:
+      scheduler_cluster_config:
         $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterConfig'
-      schedulerClusterID:
+      scheduler_cluster_id:
         type: integer
       scopes:
         $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes'
-      seedPeerClusterConfig:
+      seed_peer_cluster_config:
         $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig'
-      seedPeerClusterID:
+      seed_peer_cluster_id:
         type: integer
-      updatedAt:
+      updated_at:
         type: string
     type: object
   d7y_io_dragonfly_v2_manager_types.CreateConfigRequest:
@@ -547,27 +593,27 @@ definitions:
     properties:
       bio:
         type: string
-      createdAt:
+      created_at:
         type: string
       id:
         type: integer
-      isDefault:
+      is_default:
         type: boolean
       name:
         type: string
-      peerClusterConfig:
+      peer_cluster_config:
         $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterClientConfig'
-      schedulerClusterConfig:
+      scheduler_cluster_config:
         $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterConfig'
-      schedulerClusterID:
+      scheduler_cluster_id:
         type: integer
       scopes:
         $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes'
-      seedPeerClusterConfig:
+      seed_peer_cluster_config:
         $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig'
-      seedPeerClusterID:
+      seed_peer_cluster_id:
         type: integer
-      updatedAt:
+      updated_at:
         type: string
     type: object
   d7y_io_dragonfly_v2_manager_types.GetV1PreheatResponse:
@@ -721,27 +767,27 @@ definitions:
     properties:
       bio:
         type: string
-      createdAt:
+      created_at:
         type: string
       id:
         type: integer
-      isDefault:
+      is_default:
         type: boolean
       name:
         type: string
-      peerClusterConfig:
+      peer_cluster_config:
         $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterClientConfig'
-      schedulerClusterConfig:
+      scheduler_cluster_config:
         $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterConfig'
-      schedulerClusterID:
+      scheduler_cluster_id:
         type: integer
       scopes:
         $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes'
-      seedPeerClusterConfig:
+      seed_peer_cluster_config:
         $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig'
-      seedPeerClusterID:
+      seed_peer_cluster_id:
         type: integer
-      updatedAt:
+      updated_at:
         type: string
     type: object
   d7y_io_dragonfly_v2_manager_types.UpdateConfigRequest:

@@ -22,6 +22,6 @@ type SeedPeerCluster struct {
 	BIO               string             `gorm:"column:bio;type:varchar(1024);comment:biography" json:"bio"`
 	Config            JSONMap            `gorm:"column:config;not null;comment:configuration" json:"config"`
 	SchedulerClusters []SchedulerCluster `gorm:"many2many:seed_peer_cluster_scheduler_cluster;" json:"scheduler_clusters"`
-	SeedPeers         []SeedPeer         `json:"-"`
+	SeedPeers         []SeedPeer         `json:"seed_peer"`
 	Jobs              []Job              `gorm:"many2many:job_seed_peer_cluster;" json:"jobs"`
 }

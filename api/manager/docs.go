@@ -3285,6 +3285,9 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "is_del": {
+                    "type": "integer"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -3317,11 +3320,17 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "is_del": {
+                    "type": "integer"
+                },
                 "name": {
                     "type": "string"
                 },
                 "updated_at": {
                     "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.User"
                 },
                 "user_id": {
                     "type": "integer"
@@ -3348,6 +3357,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
+                    "type": "integer"
+                },
+                "is_del": {
                     "type": "integer"
                 },
                 "result": {
@@ -3377,6 +3389,9 @@ const docTemplate = `{
                 "updated_at": {
                     "type": "string"
                 },
+                "user": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.User"
+                },
                 "user_id": {
                     "type": "integer"
                 }
@@ -3397,8 +3412,14 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "is_del": {
+                    "type": "integer"
+                },
                 "name": {
                     "type": "string"
+                },
+                "scheduler": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Scheduler"
                 },
                 "scheduler_id": {
                     "type": "integer"
@@ -3433,6 +3454,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
+                    "type": "integer"
+                },
+                "is_del": {
                     "type": "integer"
                 },
                 "name": {
@@ -3470,13 +3494,25 @@ const docTemplate = `{
                 "ip": {
                     "type": "string"
                 },
+                "is_del": {
+                    "type": "integer"
+                },
                 "location": {
                     "type": "string"
+                },
+                "models": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Model"
+                    }
                 },
                 "port": {
                     "type": "integer"
                 },
-                "schedulerClusterID": {
+                "scheduler_cluster": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SchedulerCluster"
+                },
+                "scheduler_cluster_id": {
                     "type": "integer"
                 },
                 "state": {
@@ -3508,6 +3544,9 @@ const docTemplate = `{
                 "is_default": {
                     "type": "boolean"
                 },
+                "is_del": {
+                    "type": "integer"
+                },
                 "jobs": {
                     "type": "array",
                     "items": {
@@ -3516,6 +3555,12 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "schedulers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Scheduler"
+                    }
                 },
                 "scopes": {
                     "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.JSONMap"
@@ -3552,6 +3597,9 @@ const docTemplate = `{
                 "ip": {
                     "type": "string"
                 },
+                "is_del": {
+                    "type": "integer"
+                },
                 "location": {
                     "type": "string"
                 },
@@ -3561,7 +3609,10 @@ const docTemplate = `{
                 "port": {
                     "type": "integer"
                 },
-                "seedPeerClusterID": {
+                "seed_peer_cluster": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SeedPeerCluster"
+                },
+                "seed_peer_cluster_id": {
                     "type": "integer"
                 },
                 "state": {
@@ -3590,6 +3641,9 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "is_del": {
+                    "type": "integer"
+                },
                 "jobs": {
                     "type": "array",
                     "items": {
@@ -3603,6 +3657,12 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SchedulerCluster"
+                    }
+                },
+                "seed_peer": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SeedPeer"
                     }
                 },
                 "updated_at": {
@@ -3619,6 +3679,12 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
+                "configs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Config"
+                    }
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -3626,6 +3692,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
+                    "type": "integer"
+                },
+                "is_del": {
                     "type": "integer"
                 },
                 "location": {
@@ -3758,37 +3827,37 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
-                "createdAt": {
+                "created_at": {
                     "type": "string"
                 },
                 "id": {
                     "type": "integer"
                 },
-                "isDefault": {
+                "is_default": {
                     "type": "boolean"
                 },
                 "name": {
                     "type": "string"
                 },
-                "peerClusterConfig": {
+                "peer_cluster_config": {
                     "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterClientConfig"
                 },
-                "schedulerClusterConfig": {
+                "scheduler_cluster_config": {
                     "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterConfig"
                 },
-                "schedulerClusterID": {
+                "scheduler_cluster_id": {
                     "type": "integer"
                 },
                 "scopes": {
                     "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes"
                 },
-                "seedPeerClusterConfig": {
+                "seed_peer_cluster_config": {
                     "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig"
                 },
-                "seedPeerClusterID": {
+                "seed_peer_cluster_id": {
                     "type": "integer"
                 },
-                "updatedAt": {
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -4089,37 +4158,37 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
-                "createdAt": {
+                "created_at": {
                     "type": "string"
                 },
                 "id": {
                     "type": "integer"
                 },
-                "isDefault": {
+                "is_default": {
                     "type": "boolean"
                 },
                 "name": {
                     "type": "string"
                 },
-                "peerClusterConfig": {
+                "peer_cluster_config": {
                     "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterClientConfig"
                 },
-                "schedulerClusterConfig": {
+                "scheduler_cluster_config": {
                     "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterConfig"
                 },
-                "schedulerClusterID": {
+                "scheduler_cluster_id": {
                     "type": "integer"
                 },
                 "scopes": {
                     "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes"
                 },
-                "seedPeerClusterConfig": {
+                "seed_peer_cluster_config": {
                     "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig"
                 },
-                "seedPeerClusterID": {
+                "seed_peer_cluster_id": {
                     "type": "integer"
                 },
-                "updatedAt": {
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -4343,37 +4412,37 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
-                "createdAt": {
+                "created_at": {
                     "type": "string"
                 },
                 "id": {
                     "type": "integer"
                 },
-                "isDefault": {
+                "is_default": {
                     "type": "boolean"
                 },
                 "name": {
                     "type": "string"
                 },
-                "peerClusterConfig": {
+                "peer_cluster_config": {
                     "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterClientConfig"
                 },
-                "schedulerClusterConfig": {
+                "scheduler_cluster_config": {
                     "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterConfig"
                 },
-                "schedulerClusterID": {
+                "scheduler_cluster_id": {
                     "type": "integer"
                 },
                 "scopes": {
                     "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes"
                 },
-                "seedPeerClusterConfig": {
+                "seed_peer_cluster_config": {
                     "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.SeedPeerClusterConfig"
                 },
-                "seedPeerClusterID": {
+                "seed_peer_cluster_id": {
                     "type": "integer"
                 },
-                "updatedAt": {
+                "updated_at": {
                     "type": "string"
                 }
             }

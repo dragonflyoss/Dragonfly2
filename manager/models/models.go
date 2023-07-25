@@ -32,7 +32,7 @@ type BaseModel struct {
 	ID        uint                  `gorm:"primarykey;comment:id" json:"id"`
 	CreatedAt time.Time             `gorm:"column:created_at;type:timestamp;default:current_timestamp" json:"created_at"`
 	UpdatedAt time.Time             `gorm:"column:updated_at;type:timestamp;default:current_timestamp" json:"updated_at"`
-	IsDel     soft_delete.DeletedAt `gorm:"softDelete:flag;comment:soft delete flag" json:"-"`
+	IsDel     soft_delete.DeletedAt `gorm:"softDelete:flag;comment:soft delete flag" json:"is_del"`
 }
 
 func Paginate(page, perPage int) func(db *gorm.DB) *gorm.DB {
