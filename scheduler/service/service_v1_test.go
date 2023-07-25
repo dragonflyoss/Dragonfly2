@@ -291,9 +291,9 @@ var (
 			},
 			Build: &commonv2.Build{
 				GitVersion: mockBuild.GitVersion,
-				GitCommit:  mockBuild.GitCommit,
+				GitCommit:  &mockBuild.GitCommit,
 				GoVersion:  &mockBuild.GoVersion,
-				Platform:   mockBuild.Platform,
+				Platform:   &mockBuild.Platform,
 			},
 		},
 		Rtt:       durationpb.New(30 * time.Millisecond),

@@ -127,12 +127,12 @@ func (s *schedulerServerV2) StatTask(ctx context.Context, req *schedulerv2.StatT
 // AnnounceHost announces host to scheduler.
 func (s *schedulerServerV2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequest) (*emptypb.Empty, error) {
 	// Collect AnnounceHostCount metrics.
-	metrics.AnnounceHostCount.WithLabelValues(req.Host.Os, req.Host.Platform, req.Host.PlatformFamily, req.Host.PlatformVersion,
-		req.Host.KernelVersion, req.Host.Build.GitVersion, req.Host.Build.GitCommit, req.Host.Build.GetGoVersion(), req.Host.Build.Platform).Inc()
+	metrics.AnnounceHostCount.WithLabelValues(req.Host.GetOs(), req.Host.GetPlatform(), req.Host.GetPlatformFamily(), req.Host.GetPlatformFamily(),
+		req.Host.GetKernelVersion(), req.Host.Build.GetGitVersion(), req.Host.Build.GetGitCommit(), req.Host.Build.GetGoVersion(), req.Host.Build.GetPlatform()).Inc()
 	if err := s.service.AnnounceHost(ctx, req); err != nil {
 		// Collect AnnounceHostFailureCount metrics.
-		metrics.AnnounceHostFailureCount.WithLabelValues(req.Host.Os, req.Host.Platform, req.Host.PlatformFamily, req.Host.PlatformVersion,
-			req.Host.KernelVersion, req.Host.Build.GitVersion, req.Host.Build.GitCommit, req.Host.Build.GetGoVersion(), req.Host.Build.Platform).Inc()
+		metrics.AnnounceHostFailureCount.WithLabelValues(req.Host.GetOs(), req.Host.GetPlatform(), req.Host.GetPlatformFamily(), req.Host.GetPlatformFamily(),
+			req.Host.GetKernelVersion(), req.Host.Build.GetGitVersion(), req.Host.Build.GetGitCommit(), req.Host.Build.GetGoVersion(), req.Host.Build.GetPlatform()).Inc()
 		return nil, err
 	}
 
