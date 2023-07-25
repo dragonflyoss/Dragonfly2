@@ -23,6 +23,48 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestHeader_get(t *testing.T) {
+	assert := assert.New(t)
+	tests := []struct {
+		name string
+		h    Header
+		key  string
+		want string
+	}{
+		{
+			name: "",
+			h: Header{
+				"aaa": []string{"ddd"}, "fff": []string{"cccc"},
+			},
+			key:  "aaa",
+			want: "ddd",
+		},
+		{
+			name: "",
+			h: Header{
+				"aaa": []string{"ddd"}, "fff": []string{""},
+			},
+			key:  "fff",
+			want: "",
+		},
+		{
+			name: "",
+			h: Header{
+				"aaa": []string{"ddd"}, "fff": []string{"cccc"},
+			},
+			key:  "bbb",
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			xx := tt.h.get(tt.key)
+			assert.Equal(tt.want, xx)
+		})
+	}
+}
+
 func TestHeader_has(t *testing.T) {
 	assert := assert.New(t)
 	tests := []struct {
