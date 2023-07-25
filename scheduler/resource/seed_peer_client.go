@@ -125,8 +125,8 @@ func (sc *seedPeerClient) updateSeedPeersForHostManager(seedPeers []*managerv2.S
 		seedPeerHost, loaded := sc.hostManager.Load(id)
 		if !loaded {
 			options := []HostOption{WithNetwork(Network{
-				Location: seedPeer.Location,
-				IDC:      seedPeer.Idc,
+				Location: seedPeer.GetLocation(),
+				IDC:      seedPeer.GetIdc(),
 			})}
 			if concurrentUploadLimit > 0 {
 				options = append(options, WithConcurrentUploadLimit(concurrentUploadLimit))
@@ -145,8 +145,8 @@ func (sc *seedPeerClient) updateSeedPeersForHostManager(seedPeers []*managerv2.S
 		seedPeerHost.Type = types.HostTypeSuperSeed
 		seedPeerHost.Port = seedPeer.Port
 		seedPeerHost.DownloadPort = seedPeer.DownloadPort
-		seedPeerHost.Network.Location = seedPeer.Location
-		seedPeerHost.Network.IDC = seedPeer.Idc
+		seedPeerHost.Network.Location = seedPeer.GetLocation()
+		seedPeerHost.Network.IDC = seedPeer.GetIdc()
 
 		if concurrentUploadLimit > 0 {
 			seedPeerHost.ConcurrentUploadLimit.Store(concurrentUploadLimit)

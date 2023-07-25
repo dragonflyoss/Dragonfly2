@@ -1351,8 +1351,8 @@ func TestScheduling_ConstructSuccessSmallTaskResponse(t *testing.T) {
 								Network: &commonv2.Network{
 									TcpConnectionCount:       candidateParent.Host.Network.TCPConnectionCount,
 									UploadTcpConnectionCount: candidateParent.Host.Network.UploadTCPConnectionCount,
-									Location:                 candidateParent.Host.Network.Location,
-									Idc:                      candidateParent.Host.Network.IDC,
+									Location:                 &candidateParent.Host.Network.Location,
+									Idc:                      &candidateParent.Host.Network.IDC,
 								},
 								Disk: &commonv2.Disk{
 									Total:             candidateParent.Host.Disk.Total,
@@ -1366,9 +1366,9 @@ func TestScheduling_ConstructSuccessSmallTaskResponse(t *testing.T) {
 								},
 								Build: &commonv2.Build{
 									GitVersion: candidateParent.Host.Build.GitVersion,
-									GitCommit:  candidateParent.Host.Build.GitCommit,
-									GoVersion:  candidateParent.Host.Build.GoVersion,
-									Platform:   candidateParent.Host.Build.Platform,
+									GitCommit:  &candidateParent.Host.Build.GitCommit,
+									GoVersion:  &candidateParent.Host.Build.GoVersion,
+									Platform:   &candidateParent.Host.Build.Platform,
 								},
 							},
 							NeedBackToSource: candidateParent.NeedBackToSource.Load(),
@@ -1509,8 +1509,8 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 									Network: &commonv2.Network{
 										TcpConnectionCount:       candidateParents[0].Host.Network.TCPConnectionCount,
 										UploadTcpConnectionCount: candidateParents[0].Host.Network.UploadTCPConnectionCount,
-										Location:                 candidateParents[0].Host.Network.Location,
-										Idc:                      candidateParents[0].Host.Network.IDC,
+										Location:                 &candidateParents[0].Host.Network.Location,
+										Idc:                      &candidateParents[0].Host.Network.IDC,
 									},
 									Disk: &commonv2.Disk{
 										Total:             candidateParents[0].Host.Disk.Total,
@@ -1524,9 +1524,9 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 									},
 									Build: &commonv2.Build{
 										GitVersion: candidateParents[0].Host.Build.GitVersion,
-										GitCommit:  candidateParents[0].Host.Build.GitCommit,
-										GoVersion:  candidateParents[0].Host.Build.GoVersion,
-										Platform:   candidateParents[0].Host.Build.Platform,
+										GitCommit:  &candidateParents[0].Host.Build.GitCommit,
+										GoVersion:  &candidateParents[0].Host.Build.GoVersion,
+										Platform:   &candidateParents[0].Host.Build.Platform,
 									},
 								},
 								NeedBackToSource: candidateParents[0].NeedBackToSource.Load(),
@@ -1641,8 +1641,8 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 									Network: &commonv2.Network{
 										TcpConnectionCount:       candidateParents[0].Host.Network.TCPConnectionCount,
 										UploadTcpConnectionCount: candidateParents[0].Host.Network.UploadTCPConnectionCount,
-										Location:                 candidateParents[0].Host.Network.Location,
-										Idc:                      candidateParents[0].Host.Network.IDC,
+										Location:                 &candidateParents[0].Host.Network.Location,
+										Idc:                      &candidateParents[0].Host.Network.IDC,
 									},
 									Disk: &commonv2.Disk{
 										Total:             candidateParents[0].Host.Disk.Total,
@@ -1656,9 +1656,9 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 									},
 									Build: &commonv2.Build{
 										GitVersion: candidateParents[0].Host.Build.GitVersion,
-										GitCommit:  candidateParents[0].Host.Build.GitCommit,
-										GoVersion:  candidateParents[0].Host.Build.GoVersion,
-										Platform:   candidateParents[0].Host.Build.Platform,
+										GitCommit:  &candidateParents[0].Host.Build.GitCommit,
+										GoVersion:  &candidateParents[0].Host.Build.GoVersion,
+										Platform:   &candidateParents[0].Host.Build.Platform,
 									},
 								},
 								NeedBackToSource: candidateParents[0].NeedBackToSource.Load(),

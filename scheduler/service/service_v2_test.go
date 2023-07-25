@@ -207,8 +207,8 @@ func TestServiceV2_StatPeer(t *testing.T) {
 						Network: &commonv2.Network{
 							TcpConnectionCount:       peer.Host.Network.TCPConnectionCount,
 							UploadTcpConnectionCount: peer.Host.Network.UploadTCPConnectionCount,
-							Location:                 peer.Host.Network.Location,
-							Idc:                      peer.Host.Network.IDC,
+							Location:                 &peer.Host.Network.Location,
+							Idc:                      &peer.Host.Network.IDC,
 						},
 						Disk: &commonv2.Disk{
 							Total:             peer.Host.Disk.Total,
@@ -222,9 +222,9 @@ func TestServiceV2_StatPeer(t *testing.T) {
 						},
 						Build: &commonv2.Build{
 							GitVersion: peer.Host.Build.GitVersion,
-							GitCommit:  peer.Host.Build.GitCommit,
-							GoVersion:  peer.Host.Build.GoVersion,
-							Platform:   peer.Host.Build.Platform,
+							GitCommit:  &peer.Host.Build.GitCommit,
+							GoVersion:  &peer.Host.Build.GoVersion,
+							Platform:   &peer.Host.Build.Platform,
 						},
 					},
 					NeedBackToSource: peer.NeedBackToSource.Load(),
@@ -464,8 +464,8 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 					Network: &commonv2.Network{
 						TcpConnectionCount:       mockNetwork.TCPConnectionCount,
 						UploadTcpConnectionCount: mockNetwork.UploadTCPConnectionCount,
-						Location:                 mockNetwork.Location,
-						Idc:                      mockNetwork.IDC,
+						Location:                 &mockNetwork.Location,
+						Idc:                      &mockNetwork.IDC,
 					},
 					Disk: &commonv2.Disk{
 						Total:             mockDisk.Total,
@@ -479,9 +479,9 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 					},
 					Build: &commonv2.Build{
 						GitVersion: mockBuild.GitVersion,
-						GitCommit:  mockBuild.GitCommit,
-						GoVersion:  mockBuild.GoVersion,
-						Platform:   mockBuild.Platform,
+						GitCommit:  &mockBuild.GitCommit,
+						GoVersion:  &mockBuild.GoVersion,
+						Platform:   &mockBuild.Platform,
 					},
 				},
 			},
@@ -568,8 +568,8 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 					Network: &commonv2.Network{
 						TcpConnectionCount:       mockNetwork.TCPConnectionCount,
 						UploadTcpConnectionCount: mockNetwork.UploadTCPConnectionCount,
-						Location:                 mockNetwork.Location,
-						Idc:                      mockNetwork.IDC,
+						Location:                 &mockNetwork.Location,
+						Idc:                      &mockNetwork.IDC,
 					},
 					Disk: &commonv2.Disk{
 						Total:             mockDisk.Total,
@@ -583,9 +583,9 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 					},
 					Build: &commonv2.Build{
 						GitVersion: mockBuild.GitVersion,
-						GitCommit:  mockBuild.GitCommit,
-						GoVersion:  mockBuild.GoVersion,
-						Platform:   mockBuild.Platform,
+						GitCommit:  &mockBuild.GitCommit,
+						GoVersion:  &mockBuild.GoVersion,
+						Platform:   &mockBuild.Platform,
 					},
 				},
 			},
@@ -672,8 +672,8 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 					Network: &commonv2.Network{
 						TcpConnectionCount:       mockNetwork.TCPConnectionCount,
 						UploadTcpConnectionCount: mockNetwork.UploadTCPConnectionCount,
-						Location:                 mockNetwork.Location,
-						Idc:                      mockNetwork.IDC,
+						Location:                 &mockNetwork.Location,
+						Idc:                      &mockNetwork.IDC,
 					},
 					Disk: &commonv2.Disk{
 						Total:             mockDisk.Total,
@@ -687,9 +687,9 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 					},
 					Build: &commonv2.Build{
 						GitVersion: mockBuild.GitVersion,
-						GitCommit:  mockBuild.GitCommit,
-						GoVersion:  mockBuild.GoVersion,
-						Platform:   mockBuild.Platform,
+						GitCommit:  &mockBuild.GitCommit,
+						GoVersion:  &mockBuild.GoVersion,
+						Platform:   &mockBuild.Platform,
 					},
 				},
 			},
@@ -772,8 +772,8 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 					Network: &commonv2.Network{
 						TcpConnectionCount:       mockNetwork.TCPConnectionCount,
 						UploadTcpConnectionCount: mockNetwork.UploadTCPConnectionCount,
-						Location:                 mockNetwork.Location,
-						Idc:                      mockNetwork.IDC,
+						Location:                 &mockNetwork.Location,
+						Idc:                      &mockNetwork.IDC,
 					},
 					Disk: &commonv2.Disk{
 						Total:             mockDisk.Total,
@@ -787,9 +787,9 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 					},
 					Build: &commonv2.Build{
 						GitVersion: mockBuild.GitVersion,
-						GitCommit:  mockBuild.GitCommit,
-						GoVersion:  mockBuild.GoVersion,
-						Platform:   mockBuild.Platform,
+						GitCommit:  &mockBuild.GitCommit,
+						GoVersion:  &mockBuild.GoVersion,
+						Platform:   &mockBuild.Platform,
 					},
 				},
 			},

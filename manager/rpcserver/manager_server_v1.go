@@ -198,14 +198,14 @@ func (s *managerServerV1) UpdateSeedPeer(ctx context.Context, req *managerv1.Upd
 	}
 
 	if err := s.db.WithContext(ctx).Model(&seedPeer).Updates(models.SeedPeer{
-		Type:              req.Type,
-		IDC:               req.Idc,
-		Location:          req.Location,
-		IP:                req.Ip,
-		Port:              req.Port,
-		DownloadPort:      req.DownloadPort,
-		ObjectStoragePort: req.ObjectStoragePort,
-		SeedPeerClusterID: uint(req.SeedPeerClusterId),
+		Type:              req.GetType(),
+		IDC:               req.GetIdc(),
+		Location:          req.GetLocation(),
+		IP:                req.GetIp(),
+		Port:              req.GetPort(),
+		DownloadPort:      req.GetDownloadPort(),
+		ObjectStoragePort: req.GetObjectStoragePort(),
+		SeedPeerClusterID: uint(req.GetSeedPeerClusterId()),
 	}).Error; err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -235,15 +235,15 @@ func (s *managerServerV1) UpdateSeedPeer(ctx context.Context, req *managerv1.Upd
 // Create SeedPeer and associate cluster.
 func (s *managerServerV1) createSeedPeer(ctx context.Context, req *managerv1.UpdateSeedPeerRequest) (*managerv1.SeedPeer, error) {
 	seedPeer := models.SeedPeer{
-		Hostname:          req.Hostname,
-		Type:              req.Type,
-		IDC:               req.Idc,
-		Location:          req.Location,
-		IP:                req.Ip,
-		Port:              req.Port,
-		DownloadPort:      req.DownloadPort,
-		ObjectStoragePort: req.ObjectStoragePort,
-		SeedPeerClusterID: uint(req.SeedPeerClusterId),
+		Hostname:          req.GetHostname(),
+		Type:              req.GetType(),
+		IDC:               req.GetIdc(),
+		Location:          req.GetLocation(),
+		IP:                req.GetIp(),
+		Port:              req.GetPort(),
+		DownloadPort:      req.GetDownloadPort(),
+		ObjectStoragePort: req.GetObjectStoragePort(),
+		SeedPeerClusterID: uint(req.GetSeedPeerClusterId()),
 	}
 
 	if err := s.db.WithContext(ctx).Create(&seedPeer).Error; err != nil {
@@ -396,11 +396,11 @@ func (s *managerServerV1) UpdateScheduler(ctx context.Context, req *managerv1.Up
 	}
 
 	if err := s.db.WithContext(ctx).Model(&scheduler).Updates(models.Scheduler{
-		IDC:                req.Idc,
-		Location:           req.Location,
-		IP:                 req.Ip,
-		Port:               req.Port,
-		SchedulerClusterID: uint(req.SchedulerClusterId),
+		IDC:                req.GetIdc(),
+		Location:           req.GetLocation(),
+		IP:                 req.GetIp(),
+		Port:               req.GetPort(),
+		SchedulerClusterID: uint(req.GetSchedulerClusterId()),
 	}).Error; err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -434,13 +434,13 @@ func (s *managerServerV1) UpdateScheduler(ctx context.Context, req *managerv1.Up
 // Create scheduler and associate cluster.
 func (s *managerServerV1) createScheduler(ctx context.Context, req *managerv1.UpdateSchedulerRequest) (*managerv1.Scheduler, error) {
 	scheduler := models.Scheduler{
-		Hostname:           req.Hostname,
-		IDC:                req.Idc,
-		Location:           req.Location,
-		IP:                 req.Ip,
-		Port:               req.Port,
+		Hostname:           req.GetHostname(),
+		IDC:                req.GetIdc(),
+		Location:           req.GetLocation(),
+		IP:                 req.GetIp(),
+		Port:               req.GetPort(),
 		Features:           types.DefaultSchedulerFeatures,
-		SchedulerClusterID: uint(req.SchedulerClusterId),
+		SchedulerClusterID: uint(req.GetSchedulerClusterId()),
 	}
 
 	if err := s.db.WithContext(ctx).Create(&scheduler).Error; err != nil {

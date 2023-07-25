@@ -29,6 +29,6 @@ RUN echo "hosts: files dns" > /etc/nsswitch.conf
 COPY --from=builder /opt/dragonfly/bin/trainer /opt/dragonfly/bin/trainer
 COPY --from=health /bin/grpc_health_probe /bin/grpc_health_probe
 
-EXPOSE 8002
+EXPOSE 9090
 
 ENTRYPOINT ["/opt/dragonfly/bin/trainer"]

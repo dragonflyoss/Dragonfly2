@@ -38,6 +38,11 @@ import (
 	storagemocks "d7y.io/dragonfly/v2/scheduler/storage/mocks"
 )
 
+var (
+	mockIDC      = "foo"
+	mockLocation = "bar"
+)
+
 type mockReadCloserWithReadError struct{}
 
 func (m *mockReadCloserWithReadError) Read(p []byte) (int, error) {
@@ -70,8 +75,8 @@ func TestAnnouncer_New(t *testing.T) {
 					Port:          8080,
 				},
 				Host: config.HostConfig{
-					IDC:      "foo",
-					Location: "bar",
+					IDC:      mockIDC,
+					Location: mockLocation,
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -99,8 +104,8 @@ func TestAnnouncer_New(t *testing.T) {
 					Port:          8080,
 				},
 				Host: config.HostConfig{
-					IDC:      "foo",
-					Location: "bar",
+					IDC:      mockIDC,
+					Location: mockLocation,
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -129,8 +134,8 @@ func TestAnnouncer_New(t *testing.T) {
 					Port:          8080,
 				},
 				Host: config.HostConfig{
-					IDC:      "foo",
-					Location: "bar",
+					IDC:      mockIDC,
+					Location: mockLocation,
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -183,8 +188,8 @@ func TestAnnouncer_Serve(t *testing.T) {
 					Port:          8080,
 				},
 				Host: config.HostConfig{
-					IDC:      "foo",
-					Location: "bar",
+					IDC:      mockIDC,
+					Location: mockLocation,
 				},
 				Manager: config.ManagerConfig{
 					KeepAlive: config.KeepAliveConfig{
@@ -205,14 +210,15 @@ func TestAnnouncer_Serve(t *testing.T) {
 			mock: func(stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
 				var wg sync.WaitGroup
 				wg.Add(2)
+
 				gomock.InOrder(
 					m.UpdateScheduler(gomock.Any(), gomock.Eq(&managerv2.UpdateSchedulerRequest{
 						SourceType:         managerv2.SourceType_SCHEDULER_SOURCE,
 						Hostname:           "localhost",
 						Ip:                 "127.0.0.1",
 						Port:               int32(8004),
-						Idc:                "foo",
-						Location:           "bar",
+						Idc:                &mockIDC,
+						Location:           &mockLocation,
 						SchedulerClusterId: uint64(1),
 					})).Times(1),
 					m.KeepAlive(gomock.Eq(50*time.Millisecond), gomock.Eq(&managerv2.KeepAliveRequest{
@@ -257,8 +263,8 @@ func TestAnnouncer_Serve(t *testing.T) {
 					Port:          8080,
 				},
 				Host: config.HostConfig{
-					IDC:      "foo",
-					Location: "bar",
+					IDC:      mockIDC,
+					Location: mockLocation,
 				},
 				Manager: config.ManagerConfig{
 					KeepAlive: config.KeepAliveConfig{
@@ -279,8 +285,8 @@ func TestAnnouncer_Serve(t *testing.T) {
 						Hostname:           "localhost",
 						Ip:                 "127.0.0.1",
 						Port:               int32(8004),
-						Idc:                "foo",
-						Location:           "bar",
+						Idc:                &mockIDC,
+						Location:           &mockLocation,
 						SchedulerClusterId: uint64(1),
 					})).Times(1),
 					m.KeepAlive(gomock.Eq(50*time.Millisecond), gomock.Eq(&managerv2.KeepAliveRequest{
@@ -333,8 +339,8 @@ func TestAnnouncer_announceToManager(t *testing.T) {
 					Port:          8080,
 				},
 				Host: config.HostConfig{
-					IDC:      "foo",
-					Location: "bar",
+					IDC:      mockIDC,
+					Location: mockLocation,
 				},
 				Manager: config.ManagerConfig{
 					KeepAlive: config.KeepAliveConfig{
@@ -353,8 +359,8 @@ func TestAnnouncer_announceToManager(t *testing.T) {
 						Hostname:           "localhost",
 						Ip:                 "127.0.0.1",
 						Port:               int32(8004),
-						Idc:                "foo",
-						Location:           "bar",
+						Idc:                &mockIDC,
+						Location:           &mockLocation,
 						SchedulerClusterId: uint64(1),
 					})).Times(1),
 					m.KeepAlive(gomock.Eq(50*time.Millisecond), gomock.Eq(&managerv2.KeepAliveRequest{
@@ -409,8 +415,8 @@ func TestAnnouncer_announceToTrainer(t *testing.T) {
 					Port:          8080,
 				},
 				Host: config.HostConfig{
-					IDC:      "foo",
-					Location: "bar",
+					IDC:      mockIDC,
+					Location: mockLocation,
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -431,8 +437,8 @@ func TestAnnouncer_announceToTrainer(t *testing.T) {
 						Hostname:           "localhost",
 						Ip:                 "127.0.0.1",
 						Port:               int32(8004),
-						Idc:                "foo",
-						Location:           "bar",
+						Idc:                &mockIDC,
+						Location:           &mockLocation,
 						SchedulerClusterId: uint64(1),
 					})).Times(1),
 					mtc.Train(gomock.Any()).Return(nil, errors.New("foo")).Times(1),
@@ -452,8 +458,8 @@ func TestAnnouncer_announceToTrainer(t *testing.T) {
 					Port:          8080,
 				},
 				Host: config.HostConfig{
-					IDC:      "foo",
-					Location: "bar",
+					IDC:      mockIDC,
+					Location: mockLocation,
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -470,14 +476,15 @@ func TestAnnouncer_announceToTrainer(t *testing.T) {
 			mock: func(stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
 				var wg sync.WaitGroup
 				wg.Add(2)
+
 				gomock.InOrder(
 					m.UpdateScheduler(gomock.Any(), gomock.Eq(&managerv2.UpdateSchedulerRequest{
 						SourceType:         managerv2.SourceType_SCHEDULER_SOURCE,
 						Hostname:           "localhost",
 						Ip:                 "127.0.0.1",
 						Port:               int32(8004),
-						Idc:                "foo",
-						Location:           "bar",
+						Idc:                &mockIDC,
+						Location:           &mockLocation,
 						SchedulerClusterId: uint64(1),
 					})).Times(1),
 					mtc.Train(gomock.Any()).Return(stream, nil).Times(1),
@@ -547,8 +554,8 @@ func TestAnnouncer_train(t *testing.T) {
 					Port:          8080,
 				},
 				Host: config.HostConfig{
-					IDC:      "foo",
-					Location: "bar",
+					IDC:      mockIDC,
+					Location: mockLocation,
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -562,8 +569,8 @@ func TestAnnouncer_train(t *testing.T) {
 						Hostname:           "localhost",
 						Ip:                 "127.0.0.1",
 						Port:               int32(8004),
-						Idc:                "foo",
-						Location:           "bar",
+						Idc:                &mockIDC,
+						Location:           &mockLocation,
 						SchedulerClusterId: uint64(1),
 					})).Times(1),
 					mtc.Train(gomock.Any()).Return(nil, errors.New("foo")).Times(1),
@@ -584,8 +591,8 @@ func TestAnnouncer_train(t *testing.T) {
 					Port:          8080,
 				},
 				Host: config.HostConfig{
-					IDC:      "foo",
-					Location: "bar",
+					IDC:      mockIDC,
+					Location: mockLocation,
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -595,14 +602,15 @@ func TestAnnouncer_train(t *testing.T) {
 			mock: func(stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
 				var wg sync.WaitGroup
 				wg.Add(2)
+
 				gomock.InOrder(
 					m.UpdateScheduler(gomock.Any(), gomock.Eq(&managerv2.UpdateSchedulerRequest{
 						SourceType:         managerv2.SourceType_SCHEDULER_SOURCE,
 						Hostname:           "localhost",
 						Ip:                 "127.0.0.1",
 						Port:               int32(8004),
-						Idc:                "foo",
-						Location:           "bar",
+						Idc:                &mockIDC,
+						Location:           &mockLocation,
 						SchedulerClusterId: uint64(1),
 					})).Times(1),
 					mtc.Train(gomock.Any()).Return(stream, nil).Times(1),
@@ -641,8 +649,8 @@ func TestAnnouncer_train(t *testing.T) {
 					Port:          8080,
 				},
 				Host: config.HostConfig{
-					IDC:      "foo",
-					Location: "bar",
+					IDC:      mockIDC,
+					Location: mockLocation,
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -652,14 +660,15 @@ func TestAnnouncer_train(t *testing.T) {
 			mock: func(stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
 				var wg sync.WaitGroup
 				wg.Add(2)
+
 				gomock.InOrder(
 					m.UpdateScheduler(gomock.Any(), gomock.Eq(&managerv2.UpdateSchedulerRequest{
 						SourceType:         managerv2.SourceType_SCHEDULER_SOURCE,
 						Hostname:           "localhost",
 						Ip:                 "127.0.0.1",
 						Port:               int32(8004),
-						Idc:                "foo",
-						Location:           "bar",
+						Idc:                &mockIDC,
+						Location:           &mockLocation,
 						SchedulerClusterId: uint64(1),
 					})).Times(1),
 					mtc.Train(gomock.Any()).Return(stream, nil).Times(1),
@@ -698,8 +707,8 @@ func TestAnnouncer_train(t *testing.T) {
 					Port:          8080,
 				},
 				Host: config.HostConfig{
-					IDC:      "foo",
-					Location: "bar",
+					IDC:      mockIDC,
+					Location: mockLocation,
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -709,14 +718,15 @@ func TestAnnouncer_train(t *testing.T) {
 			mock: func(stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
 				var wg sync.WaitGroup
 				wg.Add(2)
+
 				gomock.InOrder(
 					m.UpdateScheduler(gomock.Any(), gomock.Eq(&managerv2.UpdateSchedulerRequest{
 						SourceType:         managerv2.SourceType_SCHEDULER_SOURCE,
 						Hostname:           "localhost",
 						Ip:                 "127.0.0.1",
 						Port:               int32(8004),
-						Idc:                "foo",
-						Location:           "bar",
+						Idc:                &mockIDC,
+						Location:           &mockLocation,
 						SchedulerClusterId: uint64(1),
 					})).Times(1),
 					mtc.Train(gomock.Any()).Return(stream, nil).Times(1),
@@ -756,8 +766,8 @@ func TestAnnouncer_train(t *testing.T) {
 					Port:          8080,
 				},
 				Host: config.HostConfig{
-					IDC:      "foo",
-					Location: "bar",
+					IDC:      mockIDC,
+					Location: mockLocation,
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -767,14 +777,15 @@ func TestAnnouncer_train(t *testing.T) {
 			mock: func(stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder) {
 				var wg sync.WaitGroup
 				wg.Add(2)
+
 				gomock.InOrder(
 					m.UpdateScheduler(gomock.Any(), gomock.Eq(&managerv2.UpdateSchedulerRequest{
 						SourceType:         managerv2.SourceType_SCHEDULER_SOURCE,
 						Hostname:           "localhost",
 						Ip:                 "127.0.0.1",
 						Port:               int32(8004),
-						Idc:                "foo",
-						Location:           "bar",
+						Idc:                &mockIDC,
+						Location:           &mockLocation,
 						SchedulerClusterId: uint64(1),
 					})).Times(1),
 					mtc.Train(gomock.Any()).Return(stream, nil).Times(1),
@@ -844,8 +855,8 @@ func TestAnnouncer_uploadDownloadToTrainer(t *testing.T) {
 					Port:          8080,
 				},
 				Host: config.HostConfig{
-					IDC:      "foo",
-					Location: "bar",
+					IDC:      mockIDC,
+					Location: mockLocation,
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -858,8 +869,8 @@ func TestAnnouncer_uploadDownloadToTrainer(t *testing.T) {
 						Hostname:           "localhost",
 						Ip:                 "127.0.0.1",
 						Port:               int32(8004),
-						Idc:                "foo",
-						Location:           "bar",
+						Idc:                &mockIDC,
+						Location:           &mockLocation,
 						SchedulerClusterId: uint64(1),
 					})).Times(1),
 					ms.OpenDownload().Return(nil, errors.New("foo")).Times(1),
@@ -881,8 +892,8 @@ func TestAnnouncer_uploadDownloadToTrainer(t *testing.T) {
 					Port:          8080,
 				},
 				Host: config.HostConfig{
-					IDC:      "foo",
-					Location: "bar",
+					IDC:      mockIDC,
+					Location: mockLocation,
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -895,8 +906,8 @@ func TestAnnouncer_uploadDownloadToTrainer(t *testing.T) {
 						Hostname:           "localhost",
 						Ip:                 "127.0.0.1",
 						Port:               int32(8004),
-						Idc:                "foo",
-						Location:           "bar",
+						Idc:                &mockIDC,
+						Location:           &mockLocation,
 						SchedulerClusterId: uint64(1),
 					})).Times(1),
 					ms.OpenDownload().Return(&mockReadCloserWithReadError{}, nil).Times(1),
@@ -918,8 +929,8 @@ func TestAnnouncer_uploadDownloadToTrainer(t *testing.T) {
 					Port:          8080,
 				},
 				Host: config.HostConfig{
-					IDC:      "foo",
-					Location: "bar",
+					IDC:      mockIDC,
+					Location: mockLocation,
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -932,8 +943,8 @@ func TestAnnouncer_uploadDownloadToTrainer(t *testing.T) {
 						Hostname:           "localhost",
 						Ip:                 "127.0.0.1",
 						Port:               int32(8004),
-						Idc:                "foo",
-						Location:           "bar",
+						Idc:                &mockIDC,
+						Location:           &mockLocation,
 						SchedulerClusterId: uint64(1),
 					})).Times(1),
 					ms.OpenDownload().Return(io.NopCloser(bytes.NewBuffer(data)), nil).Times(1),
@@ -958,8 +969,8 @@ func TestAnnouncer_uploadDownloadToTrainer(t *testing.T) {
 					Port:          8080,
 				},
 				Host: config.HostConfig{
-					IDC:      "foo",
-					Location: "bar",
+					IDC:      mockIDC,
+					Location: mockLocation,
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -973,8 +984,8 @@ func TestAnnouncer_uploadDownloadToTrainer(t *testing.T) {
 						Hostname:           "localhost",
 						Ip:                 "127.0.0.1",
 						Port:               int32(8004),
-						Idc:                "foo",
-						Location:           "bar",
+						Idc:                &mockIDC,
+						Location:           &mockLocation,
 						SchedulerClusterId: uint64(1),
 					})).Times(1),
 					ms.OpenDownload().Return(io.NopCloser(bytes.NewBuffer(data)), nil).Times(1),
@@ -1029,8 +1040,8 @@ func TestAnnouncer_uploadNetworkTopologyToTrainer(t *testing.T) {
 					Port:          8080,
 				},
 				Host: config.HostConfig{
-					IDC:      "foo",
-					Location: "bar",
+					IDC:      mockIDC,
+					Location: mockLocation,
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -1043,8 +1054,8 @@ func TestAnnouncer_uploadNetworkTopologyToTrainer(t *testing.T) {
 						Hostname:           "localhost",
 						Ip:                 "127.0.0.1",
 						Port:               int32(8004),
-						Idc:                "foo",
-						Location:           "bar",
+						Idc:                &mockIDC,
+						Location:           &mockLocation,
 						SchedulerClusterId: uint64(1),
 					})).Times(1),
 					ms.OpenNetworkTopology().Return(nil, errors.New("foo")).Times(1),
@@ -1066,8 +1077,8 @@ func TestAnnouncer_uploadNetworkTopologyToTrainer(t *testing.T) {
 					Port:          8080,
 				},
 				Host: config.HostConfig{
-					IDC:      "foo",
-					Location: "bar",
+					IDC:      mockIDC,
+					Location: mockLocation,
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -1080,8 +1091,8 @@ func TestAnnouncer_uploadNetworkTopologyToTrainer(t *testing.T) {
 						Hostname:           "localhost",
 						Ip:                 "127.0.0.1",
 						Port:               int32(8004),
-						Idc:                "foo",
-						Location:           "bar",
+						Idc:                &mockIDC,
+						Location:           &mockLocation,
 						SchedulerClusterId: uint64(1),
 					})).Times(1),
 					ms.OpenNetworkTopology().Return(&mockReadCloserWithReadError{}, nil).Times(1),
@@ -1103,8 +1114,8 @@ func TestAnnouncer_uploadNetworkTopologyToTrainer(t *testing.T) {
 					Port:          8080,
 				},
 				Host: config.HostConfig{
-					IDC:      "foo",
-					Location: "bar",
+					IDC:      mockIDC,
+					Location: mockLocation,
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -1117,8 +1128,8 @@ func TestAnnouncer_uploadNetworkTopologyToTrainer(t *testing.T) {
 						Hostname:           "localhost",
 						Ip:                 "127.0.0.1",
 						Port:               int32(8004),
-						Idc:                "foo",
-						Location:           "bar",
+						Idc:                &mockIDC,
+						Location:           &mockLocation,
 						SchedulerClusterId: uint64(1),
 					})).Times(1),
 					ms.OpenNetworkTopology().Return(io.NopCloser(bytes.NewBuffer(data)), nil).Times(1),
@@ -1143,8 +1154,8 @@ func TestAnnouncer_uploadNetworkTopologyToTrainer(t *testing.T) {
 					Port:          8080,
 				},
 				Host: config.HostConfig{
-					IDC:      "foo",
-					Location: "bar",
+					IDC:      mockIDC,
+					Location: mockLocation,
 				},
 				Manager: config.ManagerConfig{
 					SchedulerClusterID: 1,
@@ -1158,8 +1169,8 @@ func TestAnnouncer_uploadNetworkTopologyToTrainer(t *testing.T) {
 						Hostname:           "localhost",
 						Ip:                 "127.0.0.1",
 						Port:               int32(8004),
-						Idc:                "foo",
-						Location:           "bar",
+						Idc:                &mockIDC,
+						Location:           &mockLocation,
 						SchedulerClusterId: uint64(1),
 					})).Times(1),
 					ms.OpenNetworkTopology().Return(io.NopCloser(bytes.NewBuffer(data)), nil).Times(1),

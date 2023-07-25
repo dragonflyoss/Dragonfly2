@@ -3,16 +3,16 @@ module d7y.io/dragonfly/v2
 go 1.20
 
 require (
-	d7y.io/api/v2 v2.0.3
+	d7y.io/api/v2 v2.0.9
 	github.com/MysteriousPotato/go-lockable v1.0.0
 	github.com/RichardKnop/machinery v1.10.6
 	github.com/Showmax/go-fqdn v1.0.0
 	github.com/VividCortex/mysqlerr v1.0.0
 	github.com/aliyun/aliyun-oss-go-sdk v2.2.7+incompatible
 	github.com/appleboy/gin-jwt/v2 v2.9.1
-	github.com/aws/aws-sdk-go v1.44.258
+	github.com/aws/aws-sdk-go v1.44.306
 	github.com/bits-and-blooms/bitset v1.8.0
-	github.com/casbin/casbin/v2 v2.71.1
+	github.com/casbin/casbin/v2 v2.72.1
 	github.com/casbin/gorm-adapter/v3 v3.5.0
 	github.com/colinmarc/hdfs/v2 v2.3.0
 	github.com/distribution/distribution/v3 v3.0.0-20220620080156-3e4f8a0ab147
@@ -78,7 +78,7 @@ require (
 	golang.org/x/sync v0.3.0
 	golang.org/x/sys v0.10.0
 	golang.org/x/time v0.3.0
-	google.golang.org/api v0.131.0
+	google.golang.org/api v0.132.0
 	google.golang.org/grpc v1.58.0-dev
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
@@ -87,18 +87,18 @@ require (
 	gorm.io/driver/postgres v1.5.2
 	gorm.io/gorm v1.25.2
 	gorm.io/plugin/soft_delete v1.2.1
-	k8s.io/component-base v0.27.2
+	k8s.io/component-base v0.27.4
 	logur.dev/adapter/zap v0.5.0
 	moul.io/zapgorm2 v1.3.0
 	stathat.com/c/consistent v1.0.0
 )
 
 require (
-	cloud.google.com/go v0.110.2 // indirect
+	cloud.google.com/go v0.110.4 // indirect
 	cloud.google.com/go/compute v1.20.1 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
-	cloud.google.com/go/iam v0.13.0 // indirect
-	cloud.google.com/go/pubsub v1.30.0 // indirect
+	cloud.google.com/go/iam v1.1.0 // indirect
+	cloud.google.com/go/pubsub v1.32.0 // indirect
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/RichardKnop/logging v0.0.0-20190827224416-1a693bdd4fae // indirect
@@ -196,6 +196,9 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/streadway/amqp v1.0.0 // indirect
 	github.com/subosito/gotenv v1.4.2 // indirect
+	github.com/tidwall/gjson v1.14.4 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
@@ -218,14 +221,14 @@ require (
 	golang.org/x/text v0.11.0 // indirect
 	golang.org/x/tools v0.10.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20230629202037-9506855d4529 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20230629202037-9506855d4529 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230706204954-ccb25ca9f130 // indirect
+	google.golang.org/genproto v0.0.0-20230706204954-ccb25ca9f130 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20230706204954-ccb25ca9f130 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230711160842-782d3b101e98 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gorm.io/driver/sqlserver v1.4.1 // indirect
 	gorm.io/plugin/dbresolver v1.3.0 // indirect
-	k8s.io/apimachinery v0.27.2 // indirect
+	k8s.io/apimachinery v0.27.4 // indirect
 	k8s.io/klog/v2 v2.90.1 // indirect
 	logur.dev/logur v0.16.1 // indirect
 )
