@@ -35,6 +35,6 @@ type SeedPeer struct {
 	DownloadPort      int32           `gorm:"column:download_port;not null;comment:download service listening port" json:"download_port"`
 	ObjectStoragePort int32           `gorm:"column:object_storage_port;comment:object storage service listening port" json:"object_storage_port"`
 	State             string          `gorm:"column:state;type:varchar(256);default:'inactive';comment:service state" json:"state"`
-	SeedPeerClusterID uint            `gorm:"index:uk_seed_peer,unique;not null;comment:seed peer cluster id"`
-	SeedPeerCluster   SeedPeerCluster `json:"-"`
+	SeedPeerClusterID uint            `gorm:"index:uk_seed_peer,unique;not null;comment:seed peer cluster id" json:"seed_peer_cluster_id"`
+	SeedPeerCluster   SeedPeerCluster `json:"seed_peer_cluster"`
 }

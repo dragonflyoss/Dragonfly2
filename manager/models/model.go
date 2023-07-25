@@ -42,5 +42,5 @@ type Model struct {
 	State       string    `gorm:"column:state;type:varchar(256);default:'inactive';comment:model state" json:"state"`
 	Evaluation  JSONMap   `gorm:"column:evaluation;comment:evaluation metrics" json:"evaluation"`
 	SchedulerID uint      `gorm:"index:uk_model,unique;not null;comment:scheduler id" json:"scheduler_id"`
-	Scheduler   Scheduler `json:"-"`
+	Scheduler   Scheduler `json:"scheduler"`
 }

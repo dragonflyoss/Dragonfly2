@@ -22,5 +22,5 @@ type Config struct {
 	Value  string `gorm:"column:value;type:varchar(1024);not null;comment:config value" json:"value"`
 	BIO    string `gorm:"column:bio;type:varchar(1024);comment:biography" json:"bio"`
 	UserID uint   `gorm:"comment:user id" json:"user_id"`
-	User   User   `json:"-"`
+	User   User   `json:"user"`
 }
