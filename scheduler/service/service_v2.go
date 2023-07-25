@@ -106,77 +106,77 @@ func (v *V2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePeerServer) error
 			return err
 		}
 
-		logger := logger.WithPeer(req.HostId, req.TaskId, req.PeerId)
+		logger := logger.WithPeer(req.GetHostId(), req.GetTaskId(), req.GetPeerId())
 		switch announcePeerRequest := req.GetRequest().(type) {
 		case *schedulerv2.AnnouncePeerRequest_RegisterPeerRequest:
 			logger.Infof("receive AnnouncePeerRequest_RegisterPeerRequest: %s", announcePeerRequest.RegisterPeerRequest.Download.Url)
-			if err := v.handleRegisterPeerRequest(ctx, stream, req.HostId, req.TaskId, req.PeerId, announcePeerRequest.RegisterPeerRequest); err != nil {
+			if err := v.handleRegisterPeerRequest(ctx, stream, req.GetHostId(), req.GetTaskId(), req.GetPeerId(), announcePeerRequest.RegisterPeerRequest); err != nil {
 				logger.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_RegisterSeedPeerRequest:
 			logger.Infof("receive AnnouncePeerRequest_RegisterSeedPeerRequest: %s", announcePeerRequest.RegisterSeedPeerRequest.Download.Url)
-			if err := v.handleRegisterSeedPeerRequest(ctx, stream, req.HostId, req.TaskId, req.PeerId, announcePeerRequest.RegisterSeedPeerRequest); err != nil {
+			if err := v.handleRegisterSeedPeerRequest(ctx, stream, req.GetHostId(), req.GetTaskId(), req.GetPeerId(), announcePeerRequest.RegisterSeedPeerRequest); err != nil {
 				logger.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerStartedRequest:
 			logger.Infof("receive AnnouncePeerRequest_DownloadPeerStartedRequest: %#v", announcePeerRequest.DownloadPeerStartedRequest)
-			if err := v.handleDownloadPeerStartedRequest(ctx, req.PeerId); err != nil {
+			if err := v.handleDownloadPeerStartedRequest(ctx, req.GetPeerId()); err != nil {
 				logger.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerBackToSourceStartedRequest:
 			logger.Infof("receive AnnouncePeerRequest_DownloadPeerBackToSourceStartedRequest: %#v", announcePeerRequest.DownloadPeerBackToSourceStartedRequest)
-			if err := v.handleDownloadPeerBackToSourceStartedRequest(ctx, req.PeerId); err != nil {
+			if err := v.handleDownloadPeerBackToSourceStartedRequest(ctx, req.GetPeerId()); err != nil {
 				logger.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerFinishedRequest:
 			logger.Infof("receive AnnouncePeerRequest_DownloadPeerFinishedRequest: %#v", announcePeerRequest.DownloadPeerFinishedRequest)
-			if err := v.handleDownloadPeerFinishedRequest(ctx, req.PeerId); err != nil {
+			if err := v.handleDownloadPeerFinishedRequest(ctx, req.GetPeerId()); err != nil {
 				logger.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerBackToSourceFinishedRequest:
 			logger.Infof("receive AnnouncePeerRequest_DownloadPeerBackToSourceFinishedRequest: %#v", announcePeerRequest.DownloadPeerBackToSourceFinishedRequest)
-			if err := v.handleDownloadPeerBackToSourceFinishedRequest(ctx, req.PeerId, announcePeerRequest.DownloadPeerBackToSourceFinishedRequest); err != nil {
+			if err := v.handleDownloadPeerBackToSourceFinishedRequest(ctx, req.GetPeerId(), announcePeerRequest.DownloadPeerBackToSourceFinishedRequest); err != nil {
 				logger.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerFailedRequest:
 			logger.Infof("receive AnnouncePeerRequest_DownloadPeerFailedRequest: %#v", announcePeerRequest.DownloadPeerFailedRequest)
-			if err := v.handleDownloadPeerFailedRequest(ctx, req.PeerId); err != nil {
+			if err := v.handleDownloadPeerFailedRequest(ctx, req.GetPeerId()); err != nil {
 				logger.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerBackToSourceFailedRequest:
 			logger.Infof("receive AnnouncePeerRequest_DownloadPeerBackToSourceFailedRequest: %#v", announcePeerRequest.DownloadPeerBackToSourceFailedRequest)
-			if err := v.handleDownloadPeerBackToSourceFailedRequest(ctx, req.PeerId); err != nil {
+			if err := v.handleDownloadPeerBackToSourceFailedRequest(ctx, req.GetPeerId()); err != nil {
 				logger.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPieceFinishedRequest:
 			logger.Infof("receive AnnouncePeerRequest_DownloadPieceFinishedRequest: %#v", announcePeerRequest.DownloadPieceFinishedRequest)
-			if err := v.handleDownloadPieceFinishedRequest(ctx, req.PeerId, announcePeerRequest.DownloadPieceFinishedRequest); err != nil {
+			if err := v.handleDownloadPieceFinishedRequest(ctx, req.GetPeerId(), announcePeerRequest.DownloadPieceFinishedRequest); err != nil {
 				logger.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPieceBackToSourceFinishedRequest:
 			logger.Infof("receive AnnouncePeerRequest_DownloadPieceBackToSourceFinishedRequest: %#v", announcePeerRequest.DownloadPieceBackToSourceFinishedRequest)
-			if err := v.handleDownloadPieceBackToSourceFinishedRequest(ctx, req.PeerId, announcePeerRequest.DownloadPieceBackToSourceFinishedRequest); err != nil {
+			if err := v.handleDownloadPieceBackToSourceFinishedRequest(ctx, req.GetPeerId(), announcePeerRequest.DownloadPieceBackToSourceFinishedRequest); err != nil {
 				logger.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPieceFailedRequest:
 			logger.Infof("receive AnnouncePeerRequest_DownloadPieceFailedRequest: %#v", announcePeerRequest.DownloadPieceFailedRequest)
-			if err := v.handleDownloadPieceFailedRequest(ctx, req.PeerId, announcePeerRequest.DownloadPieceFailedRequest); err != nil {
+			if err := v.handleDownloadPieceFailedRequest(ctx, req.GetPeerId(), announcePeerRequest.DownloadPieceFailedRequest); err != nil {
 				logger.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPieceBackToSourceFailedRequest:
 			logger.Infof("receive AnnouncePeerRequest_DownloadPieceBackToSourceFailedRequest: %#v", announcePeerRequest.DownloadPieceBackToSourceFailedRequest)
-			if err := v.handleDownloadPieceBackToSourceFailedRequest(ctx, req.PeerId, announcePeerRequest.DownloadPieceBackToSourceFailedRequest); err != nil {
+			if err := v.handleDownloadPieceBackToSourceFailedRequest(ctx, req.GetPeerId(), announcePeerRequest.DownloadPieceBackToSourceFailedRequest); err != nil {
 				logger.Error(err)
 				return err
 			}
@@ -193,11 +193,11 @@ func (v *V2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePeerServer) error
 
 // StatPeer checks information of peer.
 func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*commonv2.Peer, error) {
-	logger.WithTaskID(req.TaskId).Infof("stat peer request: %#v", req)
+	logger.WithTaskID(req.GetTaskId()).Infof("stat peer request: %#v", req)
 
-	peer, loaded := v.resource.PeerManager().Load(req.PeerId)
+	peer, loaded := v.resource.PeerManager().Load(req.GetPeerId())
 	if !loaded {
-		return nil, status.Errorf(codes.NotFound, "peer %s not found", req.PeerId)
+		return nil, status.Errorf(codes.NotFound, "peer %s not found", req.GetPeerId())
 	}
 
 	resp := &commonv2.Peer{
@@ -336,8 +336,8 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 		Network: &commonv2.Network{
 			TcpConnectionCount:       peer.Host.Network.TCPConnectionCount,
 			UploadTcpConnectionCount: peer.Host.Network.UploadTCPConnectionCount,
-			Location:                 peer.Host.Network.Location,
-			Idc:                      peer.Host.Network.IDC,
+			Location:                 &peer.Host.Network.Location,
+			Idc:                      &peer.Host.Network.IDC,
 		},
 		Disk: &commonv2.Disk{
 			Total:             peer.Host.Disk.Total,
@@ -352,7 +352,7 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 		Build: &commonv2.Build{
 			GitVersion: peer.Host.Build.GitVersion,
 			GitCommit:  peer.Host.Build.GitCommit,
-			GoVersion:  peer.Host.Build.GoVersion,
+			GoVersion:  &peer.Host.Build.GoVersion,
 			Platform:   peer.Host.Build.Platform,
 		},
 	}
@@ -362,11 +362,11 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 
 // LeavePeer releases peer in scheduler.
 func (v *V2) LeavePeer(ctx context.Context, req *schedulerv2.LeavePeerRequest) error {
-	logger.WithTaskAndPeerID(req.TaskId, req.PeerId).Infof("leave peer request: %#v", req)
+	logger.WithTaskAndPeerID(req.GetTaskId(), req.GetPeerId()).Infof("leave peer request: %#v", req)
 
-	peer, loaded := v.resource.PeerManager().Load(req.PeerId)
+	peer, loaded := v.resource.PeerManager().Load(req.GetPeerId())
 	if !loaded {
-		msg := fmt.Sprintf("peer %s not found", req.PeerId)
+		msg := fmt.Sprintf("peer %s not found", req.GetPeerId())
 		logger.Error(msg)
 		return status.Error(codes.NotFound, msg)
 	}
@@ -388,11 +388,11 @@ func (v *V2) ExchangePeer(ctx context.Context, req *schedulerv2.ExchangePeerRequ
 
 // StatTask checks information of task.
 func (v *V2) StatTask(ctx context.Context, req *schedulerv2.StatTaskRequest) (*commonv2.Task, error) {
-	logger.WithTaskID(req.Id).Infof("stat task request: %#v", req)
+	logger.WithTaskID(req.GetId()).Infof("stat task request: %#v", req)
 
-	task, loaded := v.resource.TaskManager().Load(req.Id)
+	task, loaded := v.resource.TaskManager().Load(req.GetId())
 	if !loaded {
-		msg := fmt.Sprintf("task %s not found", req.Id)
+		msg := fmt.Sprintf("task %s not found", req.GetId())
 		logger.Error(msg)
 		return nil, status.Error(codes.NotFound, msg)
 	}
@@ -451,7 +451,7 @@ func (v *V2) StatTask(ctx context.Context, req *schedulerv2.StatTaskRequest) (*c
 
 // AnnounceHost announces host to scheduler.
 func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequest) error {
-	logger.WithHostID(req.Host.Id).Infof("announce host request: %#v", req.Host)
+	logger.WithHostID(req.Host.GetId()).Infof("announce host request: %#v", req.GetHost())
 
 	// Get scheduler cluster client config by manager.
 	var concurrentUploadLimit int32
@@ -459,86 +459,86 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 		concurrentUploadLimit = int32(clientConfig.LoadLimit)
 	}
 
-	host, loaded := v.resource.HostManager().Load(req.Host.Id)
+	host, loaded := v.resource.HostManager().Load(req.Host.GetId())
 	if !loaded {
 		options := []resource.HostOption{
-			resource.WithOS(req.Host.Os),
-			resource.WithPlatform(req.Host.Platform),
-			resource.WithPlatformFamily(req.Host.PlatformFamily),
-			resource.WithPlatformVersion(req.Host.PlatformVersion),
-			resource.WithKernelVersion(req.Host.KernelVersion),
+			resource.WithOS(req.Host.GetOs()),
+			resource.WithPlatform(req.Host.GetPlatform()),
+			resource.WithPlatformFamily(req.Host.GetPlatformFamily()),
+			resource.WithPlatformVersion(req.Host.GetPlatformVersion()),
+			resource.WithKernelVersion(req.Host.GetKernelVersion()),
 		}
 
 		if concurrentUploadLimit > 0 {
 			options = append(options, resource.WithConcurrentUploadLimit(concurrentUploadLimit))
 		}
 
-		if req.Host.Cpu != nil {
+		if req.Host.GetCpu() != nil {
 			options = append(options, resource.WithCPU(resource.CPU{
-				LogicalCount:   req.Host.Cpu.LogicalCount,
-				PhysicalCount:  req.Host.Cpu.PhysicalCount,
-				Percent:        req.Host.Cpu.Percent,
-				ProcessPercent: req.Host.Cpu.ProcessPercent,
+				LogicalCount:   req.Host.Cpu.GetLogicalCount(),
+				PhysicalCount:  req.Host.Cpu.GetPhysicalCount(),
+				Percent:        req.Host.Cpu.GetPercent(),
+				ProcessPercent: req.Host.Cpu.GetProcessPercent(),
 				Times: resource.CPUTimes{
-					User:      req.Host.Cpu.Times.User,
-					System:    req.Host.Cpu.Times.System,
-					Idle:      req.Host.Cpu.Times.Idle,
-					Nice:      req.Host.Cpu.Times.Nice,
-					Iowait:    req.Host.Cpu.Times.Iowait,
-					Irq:       req.Host.Cpu.Times.Irq,
-					Softirq:   req.Host.Cpu.Times.Softirq,
-					Steal:     req.Host.Cpu.Times.Steal,
-					Guest:     req.Host.Cpu.Times.Guest,
-					GuestNice: req.Host.Cpu.Times.GuestNice,
+					User:      req.Host.Cpu.Times.GetUser(),
+					System:    req.Host.Cpu.Times.GetSystem(),
+					Idle:      req.Host.Cpu.Times.GetIdle(),
+					Nice:      req.Host.Cpu.Times.GetNice(),
+					Iowait:    req.Host.Cpu.Times.GetIowait(),
+					Irq:       req.Host.Cpu.Times.GetIrq(),
+					Softirq:   req.Host.Cpu.Times.GetSoftirq(),
+					Steal:     req.Host.Cpu.Times.GetSteal(),
+					Guest:     req.Host.Cpu.Times.GetGuest(),
+					GuestNice: req.Host.Cpu.Times.GetGuest(),
 				},
 			}))
 		}
 
-		if req.Host.Memory != nil {
+		if req.Host.GetMemory() != nil {
 			options = append(options, resource.WithMemory(resource.Memory{
-				Total:              req.Host.Memory.Total,
-				Available:          req.Host.Memory.Available,
-				Used:               req.Host.Memory.Used,
-				UsedPercent:        req.Host.Memory.UsedPercent,
-				ProcessUsedPercent: req.Host.Memory.ProcessUsedPercent,
-				Free:               req.Host.Memory.Free,
+				Total:              req.Host.Memory.GetTotal(),
+				Available:          req.Host.Memory.GetAvailable(),
+				Used:               req.Host.Memory.GetUsed(),
+				UsedPercent:        req.Host.Memory.GetUsedPercent(),
+				ProcessUsedPercent: req.Host.Memory.GetProcessUsedPercent(),
+				Free:               req.Host.Memory.GetFree(),
 			}))
 		}
 
-		if req.Host.Network != nil {
+		if req.Host.GetNetwork() != nil {
 			options = append(options, resource.WithNetwork(resource.Network{
-				TCPConnectionCount:       req.Host.Network.TcpConnectionCount,
-				UploadTCPConnectionCount: req.Host.Network.UploadTcpConnectionCount,
-				Location:                 req.Host.Network.Location,
-				IDC:                      req.Host.Network.Idc,
+				TCPConnectionCount:       req.Host.Network.GetTcpConnectionCount(),
+				UploadTCPConnectionCount: req.Host.Network.GetUploadTcpConnectionCount(),
+				Location:                 req.Host.Network.GetLocation(),
+				IDC:                      req.Host.Network.GetIdc(),
 			}))
 		}
 
-		if req.Host.Disk != nil {
+		if req.Host.GetDisk() != nil {
 			options = append(options, resource.WithDisk(resource.Disk{
-				Total:             req.Host.Disk.Total,
-				Free:              req.Host.Disk.Free,
-				Used:              req.Host.Disk.Used,
-				UsedPercent:       req.Host.Disk.UsedPercent,
-				InodesTotal:       req.Host.Disk.InodesTotal,
-				InodesUsed:        req.Host.Disk.InodesUsed,
-				InodesFree:        req.Host.Disk.InodesFree,
-				InodesUsedPercent: req.Host.Disk.InodesUsedPercent,
+				Total:             req.Host.Disk.GetTotal(),
+				Free:              req.Host.Disk.GetFree(),
+				Used:              req.Host.Disk.GetUsed(),
+				UsedPercent:       req.Host.Disk.GetUsedPercent(),
+				InodesTotal:       req.Host.Disk.GetInodesTotal(),
+				InodesUsed:        req.Host.Disk.GetInodesUsed(),
+				InodesFree:        req.Host.Disk.GetInodesFree(),
+				InodesUsedPercent: req.Host.Disk.GetInodesUsedPercent(),
 			}))
 		}
 
-		if req.Host.Build != nil {
+		if req.Host.GetBuild() != nil {
 			options = append(options, resource.WithBuild(resource.Build{
-				GitVersion: req.Host.Build.GitVersion,
-				GitCommit:  req.Host.Build.GitCommit,
-				GoVersion:  req.Host.Build.GoVersion,
-				Platform:   req.Host.Build.Platform,
+				GitVersion: req.Host.Build.GetGitVersion(),
+				GitCommit:  req.Host.Build.GetGitCommit(),
+				GoVersion:  req.Host.Build.GetGoVersion(),
+				Platform:   req.Host.Build.GetPlatform(),
 			}))
 		}
 
 		host = resource.NewHost(
-			req.Host.Id, req.Host.Ip, req.Host.Hostname,
-			req.Host.Port, req.Host.DownloadPort, types.HostType(req.Host.Type),
+			req.Host.GetId(), req.Host.GetIp(), req.Host.GetHostname(),
+			req.Host.GetPort(), req.Host.GetDownloadPort(), types.HostType(req.Host.GetType()),
 			options...,
 		)
 
@@ -548,80 +548,80 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 	}
 
 	// Host already exists and updates properties.
-	host.Port = req.Host.Port
-	host.DownloadPort = req.Host.DownloadPort
-	host.Type = types.HostType(req.Host.Type)
-	host.OS = req.Host.Os
-	host.Platform = req.Host.Platform
-	host.PlatformFamily = req.Host.PlatformFamily
-	host.PlatformVersion = req.Host.PlatformVersion
-	host.KernelVersion = req.Host.KernelVersion
+	host.Port = req.Host.GetPort()
+	host.DownloadPort = req.Host.GetDownloadPort()
+	host.Type = types.HostType(req.Host.GetType())
+	host.OS = req.Host.GetOs()
+	host.Platform = req.Host.GetPlatform()
+	host.PlatformFamily = req.Host.GetPlatformFamily()
+	host.PlatformVersion = req.Host.GetPlatformVersion()
+	host.KernelVersion = req.Host.GetKernelVersion()
 	host.UpdatedAt.Store(time.Now())
 
 	if concurrentUploadLimit > 0 {
 		host.ConcurrentUploadLimit.Store(concurrentUploadLimit)
 	}
 
-	if req.Host.Cpu != nil {
+	if req.Host.GetCpu() != nil {
 		host.CPU = resource.CPU{
-			LogicalCount:   req.Host.Cpu.LogicalCount,
-			PhysicalCount:  req.Host.Cpu.PhysicalCount,
-			Percent:        req.Host.Cpu.Percent,
-			ProcessPercent: req.Host.Cpu.ProcessPercent,
+			LogicalCount:   req.Host.Cpu.GetLogicalCount(),
+			PhysicalCount:  req.Host.Cpu.GetPhysicalCount(),
+			Percent:        req.Host.Cpu.GetPercent(),
+			ProcessPercent: req.Host.Cpu.GetProcessPercent(),
 			Times: resource.CPUTimes{
-				User:      req.Host.Cpu.Times.User,
-				System:    req.Host.Cpu.Times.System,
-				Idle:      req.Host.Cpu.Times.Idle,
-				Nice:      req.Host.Cpu.Times.Nice,
-				Iowait:    req.Host.Cpu.Times.Iowait,
-				Irq:       req.Host.Cpu.Times.Irq,
-				Softirq:   req.Host.Cpu.Times.Softirq,
-				Steal:     req.Host.Cpu.Times.Steal,
-				Guest:     req.Host.Cpu.Times.Guest,
-				GuestNice: req.Host.Cpu.Times.GuestNice,
+				User:      req.Host.Cpu.Times.GetUser(),
+				System:    req.Host.Cpu.Times.GetSystem(),
+				Idle:      req.Host.Cpu.Times.GetIdle(),
+				Nice:      req.Host.Cpu.Times.GetNice(),
+				Iowait:    req.Host.Cpu.Times.GetIowait(),
+				Irq:       req.Host.Cpu.Times.GetIrq(),
+				Softirq:   req.Host.Cpu.Times.GetSoftirq(),
+				Steal:     req.Host.Cpu.Times.GetSteal(),
+				Guest:     req.Host.Cpu.Times.GetGuest(),
+				GuestNice: req.Host.Cpu.Times.GetGuestNice(),
 			},
 		}
 	}
 
-	if req.Host.Memory != nil {
+	if req.Host.GetMemory() != nil {
 		host.Memory = resource.Memory{
-			Total:              req.Host.Memory.Total,
-			Available:          req.Host.Memory.Available,
-			Used:               req.Host.Memory.Used,
-			UsedPercent:        req.Host.Memory.UsedPercent,
-			ProcessUsedPercent: req.Host.Memory.ProcessUsedPercent,
-			Free:               req.Host.Memory.Free,
+			Total:              req.Host.Memory.GetTotal(),
+			Available:          req.Host.Memory.GetAvailable(),
+			Used:               req.Host.Memory.GetUsed(),
+			UsedPercent:        req.Host.Memory.GetUsedPercent(),
+			ProcessUsedPercent: req.Host.Memory.GetProcessUsedPercent(),
+			Free:               req.Host.Memory.GetFree(),
 		}
 	}
 
-	if req.Host.Network != nil {
+	if req.Host.GetNetwork() != nil {
 		host.Network = resource.Network{
-			TCPConnectionCount:       req.Host.Network.TcpConnectionCount,
-			UploadTCPConnectionCount: req.Host.Network.UploadTcpConnectionCount,
-			Location:                 req.Host.Network.Location,
-			IDC:                      req.Host.Network.Idc,
+			TCPConnectionCount:       req.Host.Network.GetTcpConnectionCount(),
+			UploadTCPConnectionCount: req.Host.Network.GetUploadTcpConnectionCount(),
+			Location:                 req.Host.Network.GetLocation(),
+			IDC:                      req.Host.Network.GetIdc(),
 		}
 	}
 
-	if req.Host.Disk != nil {
+	if req.Host.GetDisk() != nil {
 		host.Disk = resource.Disk{
-			Total:             req.Host.Disk.Total,
-			Free:              req.Host.Disk.Free,
-			Used:              req.Host.Disk.Used,
-			UsedPercent:       req.Host.Disk.UsedPercent,
-			InodesTotal:       req.Host.Disk.InodesTotal,
-			InodesUsed:        req.Host.Disk.InodesUsed,
-			InodesFree:        req.Host.Disk.InodesFree,
-			InodesUsedPercent: req.Host.Disk.InodesUsedPercent,
+			Total:             req.Host.Disk.GetTotal(),
+			Free:              req.Host.Disk.GetFree(),
+			Used:              req.Host.Disk.GetUsed(),
+			UsedPercent:       req.Host.Disk.GetUsedPercent(),
+			InodesTotal:       req.Host.Disk.GetInodesTotal(),
+			InodesUsed:        req.Host.Disk.GetInodesUsed(),
+			InodesFree:        req.Host.Disk.GetInodesFree(),
+			InodesUsedPercent: req.Host.Disk.GetInodesUsedPercent(),
 		}
 	}
 
-	if req.Host.Build != nil {
+	if req.Host.GetBuild() != nil {
 		host.Build = resource.Build{
-			GitVersion: req.Host.Build.GitVersion,
-			GitCommit:  req.Host.Build.GitCommit,
-			GoVersion:  req.Host.Build.GoVersion,
-			Platform:   req.Host.Build.Platform,
+			GitVersion: req.Host.Build.GetGitVersion(),
+			GitCommit:  req.Host.Build.GetGitCommit(),
+			GoVersion:  req.Host.Build.GetGoVersion(),
+			Platform:   req.Host.Build.GetPlatform(),
 		}
 	}
 
@@ -630,11 +630,11 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 
 // LeaveHost releases host in scheduler.
 func (v *V2) LeaveHost(ctx context.Context, req *schedulerv2.LeaveHostRequest) error {
-	logger.WithHostID(req.Id).Infof("leave host request: %#v", req)
+	logger.WithHostID(req.GetId()).Infof("leave host request: %#v", req)
 
-	host, loaded := v.resource.HostManager().Load(req.Id)
+	host, loaded := v.resource.HostManager().Load(req.GetId())
 	if !loaded {
-		msg := fmt.Sprintf("host %s not found", req.Id)
+		msg := fmt.Sprintf("host %s not found", req.GetId())
 		logger.Error(msg)
 		return status.Error(codes.NotFound, msg)
 	}
@@ -660,13 +660,13 @@ func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
 			return err
 		}
 
-		logger := logger.WithHost(req.Host.Id, req.Host.Hostname, req.Host.Ip)
+		logger := logger.WithHost(req.Host.GetId(), req.Host.GetHostname(), req.Host.GetIp())
 		switch syncProbesRequest := req.GetRequest().(type) {
 		case *schedulerv2.SyncProbesRequest_ProbeStartedRequest:
 			// Find probed hosts in network topology. Based on the source host information,
 			// the most candidate hosts will be evaluated.
 			logger.Info("receive SyncProbesRequest_ProbeStartedRequest")
-			hosts, err := v.networkTopology.FindProbedHosts(req.Host.Id)
+			hosts, err := v.networkTopology.FindProbedHosts(req.Host.GetId())
 			if err != nil {
 				logger.Error(err)
 				return status.Error(codes.FailedPrecondition, err.Error())
@@ -715,8 +715,8 @@ func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
 					Network: &commonv2.Network{
 						TcpConnectionCount:       host.Network.TCPConnectionCount,
 						UploadTcpConnectionCount: host.Network.UploadTCPConnectionCount,
-						Location:                 host.Network.Location,
-						Idc:                      host.Network.IDC,
+						Location:                 &host.Network.Location,
+						Idc:                      &host.Network.IDC,
 					},
 					Disk: &commonv2.Disk{
 						Total:             host.Disk.Total,
@@ -731,7 +731,7 @@ func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
 					Build: &commonv2.Build{
 						GitVersion: host.Build.GitVersion,
 						GitCommit:  host.Build.GitCommit,
-						GoVersion:  host.Build.GoVersion,
+						GoVersion:  &host.Build.GoVersion,
 						Platform:   host.Build.Platform,
 					},
 				})
@@ -755,12 +755,12 @@ func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
 					continue
 				}
 
-				if err := v.networkTopology.Store(req.Host.Id, probedHost.ID); err != nil {
+				if err := v.networkTopology.Store(req.Host.GetId(), probedHost.ID); err != nil {
 					logger.Errorf("store failed: %s", err.Error())
 					continue
 				}
 
-				if err := v.networkTopology.Probes(req.Host.Id, probe.Host.Id).Enqueue(&networktopology.Probe{
+				if err := v.networkTopology.Probes(req.Host.GetId(), probe.Host.Id).Enqueue(&networktopology.Probe{
 					Host:      probedHost,
 					RTT:       probe.Rtt.AsDuration(),
 					CreatedAt: probe.CreatedAt.AsTime(),
@@ -791,7 +791,7 @@ func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
 // handleRegisterPeerRequest handles RegisterPeerRequest of AnnouncePeerRequest.
 func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.Scheduler_AnnouncePeerServer, hostID, taskID, peerID string, req *schedulerv2.RegisterPeerRequest) error {
 	// Handle resource included host, task, and peer.
-	_, task, peer, err := v.handleResource(ctx, stream, hostID, taskID, peerID, req.Download)
+	_, task, peer, err := v.handleResource(ctx, stream, hostID, taskID, peerID, req.GetDownload())
 	if err != nil {
 		return err
 	}
@@ -828,7 +828,7 @@ func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.S
 // handleRegisterSeedPeerRequest handles RegisterSeedPeerRequest of AnnouncePeerRequest.
 func (v *V2) handleRegisterSeedPeerRequest(ctx context.Context, stream schedulerv2.Scheduler_AnnouncePeerServer, hostID, taskID, peerID string, req *schedulerv2.RegisterSeedPeerRequest) error {
 	// Handle resource included host, task, and peer.
-	_, task, peer, err := v.handleResource(ctx, stream, hostID, taskID, peerID, req.Download)
+	_, task, peer, err := v.handleResource(ctx, stream, hostID, taskID, peerID, req.GetDownload())
 	if err != nil {
 		return err
 	}
@@ -969,8 +969,8 @@ func (v *V2) handleDownloadPeerBackToSourceFinishedRequest(ctx context.Context, 
 	// Handle task with peer back-to-source finished request, peer can only represent
 	// a successful task after downloading the complete task.
 	if peer.Range == nil && !peer.Task.FSM.Is(resource.TaskStateSucceeded) {
-		peer.Task.ContentLength.Store(req.ContentLength)
-		peer.Task.TotalPieceCount.Store(req.PieceCount)
+		peer.Task.ContentLength.Store(req.GetContentLength())
+		peer.Task.TotalPieceCount.Store(req.GetPieceCount())
 		if err := peer.Task.FSM.Event(ctx, resource.TaskEventDownloadSucceeded); err != nil {
 			return status.Error(codes.Internal, err.Error())
 		}
@@ -1063,17 +1063,17 @@ func (v *V2) handleDownloadPeerBackToSourceFailedRequest(ctx context.Context, pe
 func (v *V2) handleDownloadPieceFinishedRequest(ctx context.Context, peerID string, req *schedulerv2.DownloadPieceFinishedRequest) error {
 	// Construct piece.
 	piece := &resource.Piece{
-		Number:      req.Piece.Number,
-		ParentID:    req.Piece.ParentId,
-		Offset:      req.Piece.Offset,
-		Length:      req.Piece.Length,
-		TrafficType: req.Piece.TrafficType,
-		Cost:        req.Piece.Cost.AsDuration(),
-		CreatedAt:   req.Piece.CreatedAt.AsTime(),
+		Number:      req.Piece.GetNumber(),
+		ParentID:    req.Piece.GetParentId(),
+		Offset:      req.Piece.GetOffset(),
+		Length:      req.Piece.GetLength(),
+		TrafficType: req.Piece.GetTrafficType(),
+		Cost:        req.Piece.GetCost().AsDuration(),
+		CreatedAt:   req.Piece.GetCreatedAt().AsTime(),
 	}
 
-	if len(req.Piece.Digest) > 0 {
-		d, err := digest.Parse(req.Piece.Digest)
+	if len(req.Piece.GetDigest()) > 0 {
+		d, err := digest.Parse(req.Piece.GetDigest())
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument, err.Error())
 		}
@@ -1126,17 +1126,17 @@ func (v *V2) handleDownloadPieceFinishedRequest(ctx context.Context, peerID stri
 func (v *V2) handleDownloadPieceBackToSourceFinishedRequest(ctx context.Context, peerID string, req *schedulerv2.DownloadPieceBackToSourceFinishedRequest) error {
 	// Construct piece.
 	piece := &resource.Piece{
-		Number:      req.Piece.Number,
-		ParentID:    req.Piece.ParentId,
-		Offset:      req.Piece.Offset,
-		Length:      req.Piece.Length,
-		TrafficType: req.Piece.TrafficType,
-		Cost:        req.Piece.Cost.AsDuration(),
-		CreatedAt:   req.Piece.CreatedAt.AsTime(),
+		Number:      req.Piece.GetNumber(),
+		ParentID:    req.Piece.GetParentId(),
+		Offset:      req.Piece.GetOffset(),
+		Length:      req.Piece.GetLength(),
+		TrafficType: req.Piece.GetTrafficType(),
+		Cost:        req.Piece.GetCost().AsDuration(),
+		CreatedAt:   req.Piece.GetCreatedAt().AsTime(),
 	}
 
-	if len(req.Piece.Digest) > 0 {
-		d, err := digest.Parse(req.Piece.Digest)
+	if len(req.Piece.GetDigest()) > 0 {
+		d, err := digest.Parse(req.Piece.GetDigest())
 		if err != nil {
 			return status.Errorf(codes.InvalidArgument, err.Error())
 		}
@@ -1182,20 +1182,20 @@ func (v *V2) handleDownloadPieceFailedRequest(ctx context.Context, peerID string
 	}
 
 	// Collect DownloadPieceCount and DownloadPieceFailureCount metrics.
-	metrics.DownloadPieceCount.WithLabelValues(req.Piece.TrafficType.String(), peer.Task.Type.String(),
+	metrics.DownloadPieceCount.WithLabelValues(req.Piece.GetTrafficType().String(), peer.Task.Type.String(),
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
-	metrics.DownloadPieceFailureCount.WithLabelValues(req.Piece.TrafficType.String(), peer.Task.Type.String(),
+	metrics.DownloadPieceFailureCount.WithLabelValues(req.Piece.GetTrafficType().String(), peer.Task.Type.String(),
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
 	if req.Temporary {
 		// Handle peer with piece temporary failed request.
 		peer.UpdatedAt.Store(time.Now())
-		peer.BlockParents.Add(req.Piece.ParentId)
+		peer.BlockParents.Add(req.Piece.GetParentId())
 		if err := v.scheduling.ScheduleCandidateParents(ctx, peer, peer.BlockParents); err != nil {
 			return status.Error(codes.FailedPrecondition, err.Error())
 		}
 
-		if parent, loaded := v.resource.PeerManager().Load(req.Piece.ParentId); loaded {
+		if parent, loaded := v.resource.PeerManager().Load(req.Piece.GetParentId()); loaded {
 			parent.Host.UploadFailedCount.Inc()
 		}
 
@@ -1221,9 +1221,9 @@ func (v *V2) handleDownloadPieceBackToSourceFailedRequest(ctx context.Context, p
 	peer.Task.UpdatedAt.Store(time.Now())
 
 	// Collect DownloadPieceCount and DownloadPieceFailureCount metrics.
-	metrics.DownloadPieceCount.WithLabelValues(req.Piece.TrafficType.String(), peer.Task.Type.String(),
+	metrics.DownloadPieceCount.WithLabelValues(req.Piece.GetTrafficType().String(), peer.Task.Type.String(),
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
-	metrics.DownloadPieceFailureCount.WithLabelValues(req.Piece.TrafficType.String(), peer.Task.Type.String(),
+	metrics.DownloadPieceFailureCount.WithLabelValues(req.Piece.GetTrafficType().String(), peer.Task.Type.String(),
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
 	return status.Error(codes.Internal, "download piece from source failed")
