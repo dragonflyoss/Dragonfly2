@@ -686,9 +686,9 @@ func ConstructSuccessSmallTaskResponse(candidateParent *resource.Peer) *schedule
 		},
 		Build: &commonv2.Build{
 			GitVersion: candidateParent.Host.Build.GitVersion,
-			GitCommit:  candidateParent.Host.Build.GitCommit,
+			GitCommit:  &candidateParent.Host.Build.GitCommit,
 			GoVersion:  &candidateParent.Host.Build.GoVersion,
-			Platform:   candidateParent.Host.Build.Platform,
+			Platform:   &candidateParent.Host.Build.Platform,
 		},
 	}
 
@@ -860,9 +860,9 @@ func ConstructSuccessNormalTaskResponse(dynconfig config.DynconfigInterface, can
 			},
 			Build: &commonv2.Build{
 				GitVersion: candidateParent.Host.Build.GitVersion,
-				GitCommit:  candidateParent.Host.Build.GitCommit,
+				GitCommit:  &candidateParent.Host.Build.GitCommit,
 				GoVersion:  &candidateParent.Host.Build.GoVersion,
-				Platform:   candidateParent.Host.Build.Platform,
+				Platform:   &candidateParent.Host.Build.Platform,
 			},
 		}
 

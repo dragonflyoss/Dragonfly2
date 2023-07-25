@@ -351,9 +351,9 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 		},
 		Build: &commonv2.Build{
 			GitVersion: peer.Host.Build.GitVersion,
-			GitCommit:  peer.Host.Build.GitCommit,
+			GitCommit:  &peer.Host.Build.GitCommit,
 			GoVersion:  &peer.Host.Build.GoVersion,
-			Platform:   peer.Host.Build.Platform,
+			Platform:   &peer.Host.Build.Platform,
 		},
 	}
 
@@ -730,9 +730,9 @@ func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
 					},
 					Build: &commonv2.Build{
 						GitVersion: host.Build.GitVersion,
-						GitCommit:  host.Build.GitCommit,
+						GitCommit:  &host.Build.GitCommit,
 						GoVersion:  &host.Build.GoVersion,
-						Platform:   host.Build.Platform,
+						Platform:   &host.Build.Platform,
 					},
 				})
 			}
