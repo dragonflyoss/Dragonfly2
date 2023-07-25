@@ -671,8 +671,8 @@ func ConstructSuccessSmallTaskResponse(candidateParent *resource.Peer) *schedule
 		Network: &commonv2.Network{
 			TcpConnectionCount:       candidateParent.Host.Network.TCPConnectionCount,
 			UploadTcpConnectionCount: candidateParent.Host.Network.UploadTCPConnectionCount,
-			Location:                 candidateParent.Host.Network.Location,
-			Idc:                      candidateParent.Host.Network.IDC,
+			Location:                 &candidateParent.Host.Network.Location,
+			Idc:                      &candidateParent.Host.Network.IDC,
 		},
 		Disk: &commonv2.Disk{
 			Total:             candidateParent.Host.Disk.Total,
@@ -687,7 +687,7 @@ func ConstructSuccessSmallTaskResponse(candidateParent *resource.Peer) *schedule
 		Build: &commonv2.Build{
 			GitVersion: candidateParent.Host.Build.GitVersion,
 			GitCommit:  candidateParent.Host.Build.GitCommit,
-			GoVersion:  candidateParent.Host.Build.GoVersion,
+			GoVersion:  &candidateParent.Host.Build.GoVersion,
 			Platform:   candidateParent.Host.Build.Platform,
 		},
 	}
@@ -845,8 +845,8 @@ func ConstructSuccessNormalTaskResponse(dynconfig config.DynconfigInterface, can
 			Network: &commonv2.Network{
 				TcpConnectionCount:       candidateParent.Host.Network.TCPConnectionCount,
 				UploadTcpConnectionCount: candidateParent.Host.Network.UploadTCPConnectionCount,
-				Location:                 candidateParent.Host.Network.Location,
-				Idc:                      candidateParent.Host.Network.IDC,
+				Location:                 &candidateParent.Host.Network.Location,
+				Idc:                      &candidateParent.Host.Network.IDC,
 			},
 			Disk: &commonv2.Disk{
 				Total:             candidateParent.Host.Disk.Total,
@@ -861,7 +861,7 @@ func ConstructSuccessNormalTaskResponse(dynconfig config.DynconfigInterface, can
 			Build: &commonv2.Build{
 				GitVersion: candidateParent.Host.Build.GitVersion,
 				GitCommit:  candidateParent.Host.Build.GitCommit,
-				GoVersion:  candidateParent.Host.Build.GoVersion,
+				GoVersion:  &candidateParent.Host.Build.GoVersion,
 				Platform:   candidateParent.Host.Build.Platform,
 			},
 		}

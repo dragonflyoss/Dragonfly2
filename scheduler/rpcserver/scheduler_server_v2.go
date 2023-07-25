@@ -128,11 +128,11 @@ func (s *schedulerServerV2) StatTask(ctx context.Context, req *schedulerv2.StatT
 func (s *schedulerServerV2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequest) (*emptypb.Empty, error) {
 	// Collect AnnounceHostCount metrics.
 	metrics.AnnounceHostCount.WithLabelValues(req.Host.Os, req.Host.Platform, req.Host.PlatformFamily, req.Host.PlatformVersion,
-		req.Host.KernelVersion, req.Host.Build.GitVersion, req.Host.Build.GitCommit, req.Host.Build.GoVersion, req.Host.Build.Platform).Inc()
+		req.Host.KernelVersion, req.Host.Build.GitVersion, req.Host.Build.GitCommit, req.Host.Build.GetGoVersion(), req.Host.Build.Platform).Inc()
 	if err := s.service.AnnounceHost(ctx, req); err != nil {
 		// Collect AnnounceHostFailureCount metrics.
 		metrics.AnnounceHostFailureCount.WithLabelValues(req.Host.Os, req.Host.Platform, req.Host.PlatformFamily, req.Host.PlatformVersion,
-			req.Host.KernelVersion, req.Host.Build.GitVersion, req.Host.Build.GitCommit, req.Host.Build.GoVersion, req.Host.Build.Platform).Inc()
+			req.Host.KernelVersion, req.Host.Build.GitVersion, req.Host.Build.GitCommit, req.Host.Build.GetGoVersion(), req.Host.Build.Platform).Inc()
 		return nil, err
 	}
 

@@ -276,8 +276,8 @@ var (
 			Network: &commonv2.Network{
 				TcpConnectionCount:       mockNetwork.TCPConnectionCount,
 				UploadTcpConnectionCount: mockNetwork.UploadTCPConnectionCount,
-				Location:                 mockNetwork.Location,
-				Idc:                      mockNetwork.IDC,
+				Location:                 &mockNetwork.Location,
+				Idc:                      &mockNetwork.IDC,
 			},
 			Disk: &commonv2.Disk{
 				Total:             mockDisk.Total,
@@ -292,7 +292,7 @@ var (
 			Build: &commonv2.Build{
 				GitVersion: mockBuild.GitVersion,
 				GitCommit:  mockBuild.GitCommit,
-				GoVersion:  mockBuild.GoVersion,
+				GoVersion:  &mockBuild.GoVersion,
 				Platform:   mockBuild.Platform,
 			},
 		},
