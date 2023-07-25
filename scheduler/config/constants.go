@@ -175,7 +175,7 @@ const (
 
 const (
 	// DefaultTrainerAddr is the default address of trainer.
-	DefaultTrainerAddr = "127.0.0.1:9000"
+	DefaultTrainerAddr = "127.0.0.1:9090"
 
 	// DefaultTrainerInterval is the default interval of training.
 	DefaultTrainerInterval = 7 * 24 * time.Hour

@@ -170,7 +170,7 @@ func TestConfig_Load(t *testing.T) {
 		},
 		Trainer: TrainerConfig{
 			Enable:        false,
-			Addr:          "127.0.0.1:9000",
+			Addr:          "127.0.0.1:9090",
 			Interval:      10 * time.Minute,
 			UploadTimeout: 2 * time.Hour,
 		},
