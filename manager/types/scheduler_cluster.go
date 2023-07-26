@@ -48,7 +48,7 @@ type UpdateSchedulerClusterRequest struct {
 type GetSchedulerClustersQuery struct {
 	Name    string `form:"name" binding:"omitempty"`
 	Page    int    `form:"page" binding:"omitempty,gte=1"`
-	PerPage int    `form:"per_page" binding:"omitempty,gte=1,lte=50"`
+	PerPage int    `form:"per_page" binding:"omitempty,gte=1,lte=1000"`
 }
 
 type SchedulerClusterConfig struct {
