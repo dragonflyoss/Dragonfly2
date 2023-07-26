@@ -34,6 +34,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/math"
 	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
@@ -79,11 +80,9 @@ const (
 	// PartitionRatio is the partition ratio between the training set and the test set.
 	PartitionRatio = 0.8
 
-	oneOrderSampleSize = 10
-	twoOrderSampleSize = 20
-
-	defaultTrainingStep = 1000
-	defaultBatchSize    = 500
+	defaultTrainingStep       = 1000
+	defaultBatchSize          = 500
+	defaultNegativeSampleSize = 25
 )
 
 // Training defines the interface to train GNN and MLP model.
@@ -609,6 +608,7 @@ func (t *training) minibatch(ip, hostname string, sample_sizes int) error {
 		Index2HostID      = make(map[int]string)
 		index             int
 		gnnVertexFeatures = make([][]uint32, 0)
+		universalHosts    = set.NewSafeSet[int]()
 	)
 
 	GNNVertexObservationFile, err := t.openGNNVertexObservationFile(hostID)
@@ -631,6 +631,8 @@ func (t *training) minibatch(ip, hostname string, sample_sizes int) error {
 		if !ok {
 			hostID2Index[gnnVertexObservation.HostID] = index
 			Index2HostID[index] = gnnVertexObservation.HostID
+
+			universalHosts.Add(index)
 			var gnnVertexFeature = make([]uint32, 0)
 			gnnVertexFeature = append(gnnVertexFeature, gnnVertexObservation.IP...)
 			gnnVertexFeature = append(gnnVertexFeature, gnnVertexObservation.Location...)
@@ -699,34 +701,117 @@ func (t *training) minibatch(ip, hostname string, sample_sizes int) error {
 	}
 
 	// sampling.
-	// random select edges, default batch size = 500 .
-	var (
-		flag        = make([][]bool, N)
-		sampleCount int
-	)
-
-	for i := 0; i < N; i++ {
-		flag[i] = make([]bool, N)
-	}
-
-	for {
+	// loop training step.
+	for j := 0; j < defaultTrainingStep; j++ {
+		// random select edges, default batch size = 500 .
 		var (
-			src  = rand.Intn(N)
-			dest = rand.Intn(N)
+			flag        = make([][]bool, N)
+			sampleCount int
 		)
 
-		if !flag[src][dest] {
-			flag[src][dest] = true
-			flag[dest][src] = true
-			sampleCount++
+		for i := 0; i < N; i++ {
+			flag[i] = make([]bool, N)
 		}
 
-		if sampleCount >= defaultBatchSize {
-			break
+		for {
+			var (
+				src  = rand.Intn(N)
+				dest = rand.Intn(N)
+			)
+
+			if !flag[src][dest] {
+				flag[src][dest] = true
+				sampleCount++
+			}
+
+			if sampleCount >= defaultBatchSize {
+				break
+			}
 		}
+
+		var (
+			A        = set.NewSafeSet[int]()
+			AN       = set.NewSafeSet[int]()
+			B        = set.NewSafeSet[int]()
+			BN       = set.NewSafeSet[int]()
+			C        = set.NewSafeSet[int]()
+			CR       = set.NewSafeSet[int]()
+			D        = set.NewSafeSet[int]()
+			subgraph = make([][]int, 0)
+		)
+
+		for i := 0; i < N; i++ {
+			for j := 0; j < N; j++ {
+				if flag[i][j] {
+					// add source host to set A.
+					A.Add(i)
+					// add destination host to set A.
+					B.Add(j)
+
+					// add source neighbor host to set AN.
+					for _, srcNeighbor := range neighbors[i] {
+						AN.Add(srcNeighbor)
+					}
+
+					// add destination neighbor host to set BN.
+					for _, destNeighbor := range neighbors[j] {
+						BN.Add(destNeighbor)
+					}
+
+					break
+				}
+			}
+		}
+
+		// set C = universal set - set A - set AN - set B - set BN.
+		for i := 0; i < N; i++ {
+			if !A.Contains(i) && !AN.Contains(i) && !B.Contains(i) && !BN.Contains(i) {
+				C.Add(i)
+			}
+		}
+
+		// set CR is randomly get elements from set C.
+		for _, negativeSample := range C.Values()[:defaultNegativeSampleSize] {
+			CR.Add(negativeSample)
+		}
+
+		// set D is set A + set B + set CR
+		for _, host := range A.Values() {
+			D.Add(host)
+		}
+
+		for _, host := range B.Values() {
+			D.Add(host)
+		}
+
+		for _, host := range CR.Values() {
+			D.Add(host)
+		}
+
+		var (
+			firstOrder  = set.NewSafeSet[int]()
+			secondOrder = set.NewSafeSet[int]()
+		)
+
+		// get first order hosts of each host in set D.aa
+		for _, host := range D.Values() {
+			for _, neighbor := range neighbors[host] {
+				firstOrder.Add(neighbor)
+			}
+
+		}
+		subgraph = append(subgraph, firstOrder.Values())
+
+		// get second order hosts of each host in set D.aa
+		for _, neighbor := range firstOrder.Values() {
+			for _, nneighbor := range neighbors[neighbor] {
+				secondOrder.Add(nneighbor)
+			}
+		}
+		subgraph = append(subgraph, secondOrder.Values())
+
+		// TODO: training loop by chan.
 	}
-
-	// construct set A
 
 	return nil
 }
