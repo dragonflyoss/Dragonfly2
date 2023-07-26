@@ -280,7 +280,7 @@ func (s *service) GetCluster(ctx context.Context, id uint) (*types.GetClusterRes
 	}
 
 	schedulerClusterConfig := &types.SchedulerClusterConfig{}
-	if err := structure.MapToStruct(schedulerCluster.ClientConfig, &schedulerClusterConfig); err != nil {
+	if err := structure.MapToStruct(schedulerCluster.Config, &schedulerClusterConfig); err != nil {
 		return nil, err
 	}
 
@@ -331,7 +331,7 @@ func (s *service) GetClusters(ctx context.Context, q types.GetClustersQuery) ([]
 		}
 
 		schedulerClusterConfig := &types.SchedulerClusterConfig{}
-		if err := structure.MapToStruct(schedulerCluster.ClientConfig, &schedulerClusterConfig); err != nil {
+		if err := structure.MapToStruct(schedulerCluster.Config, &schedulerClusterConfig); err != nil {
 			return nil, 0, err
 		}
 

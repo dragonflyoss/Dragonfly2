@@ -33,18 +33,18 @@ type CreateClusterRequest struct {
 }
 
 type CreateClusterResponse struct {
-	ID                     uint
-	Name                   string
-	BIO                    string
-	Scopes                 *SchedulerClusterScopes
-	SchedulerClusterID     uint
-	SeedPeerClusterID      uint
-	SchedulerClusterConfig *SchedulerClusterConfig
-	SeedPeerClusterConfig  *SeedPeerClusterConfig
-	PeerClusterConfig      *SchedulerClusterClientConfig
-	CreatedAt              time.Time
-	UpdatedAt              time.Time
-	IsDefault              bool
+	ID                     uint                          `json:"id"`
+	Name                   string                        `json:"name"`
+	BIO                    string                        `json:"bio"`
+	Scopes                 *SchedulerClusterScopes       `json:"scopes"`
+	SchedulerClusterID     uint                          `json:"scheduler_cluster_id"`
+	SeedPeerClusterID      uint                          `json:"seed_peer_cluster_id"`
+	SchedulerClusterConfig *SchedulerClusterConfig       `json:"scheduler_cluster_config"`
+	SeedPeerClusterConfig  *SeedPeerClusterConfig        `json:"seed_peer_cluster_config"`
+	PeerClusterConfig      *SchedulerClusterClientConfig `json:"peer_cluster_config"`
+	CreatedAt              time.Time                     `json:"created_at"`
+	UpdatedAt              time.Time                     `json:"updated_at"`
+	IsDefault              bool                          `json:"is_default"`
 }
 
 type UpdateClusterRequest struct {
@@ -58,33 +58,33 @@ type UpdateClusterRequest struct {
 }
 
 type UpdateClusterResponse struct {
-	ID                     uint
-	Name                   string
-	BIO                    string
-	Scopes                 *SchedulerClusterScopes
-	SchedulerClusterID     uint
-	SeedPeerClusterID      uint
-	SchedulerClusterConfig *SchedulerClusterConfig
-	SeedPeerClusterConfig  *SeedPeerClusterConfig
-	PeerClusterConfig      *SchedulerClusterClientConfig
-	CreatedAt              time.Time
-	UpdatedAt              time.Time
-	IsDefault              bool
+	ID                     uint                          `json:"id"`
+	Name                   string                        `json:"name"`
+	BIO                    string                        `json:"bio"`
+	Scopes                 *SchedulerClusterScopes       `json:"scopes"`
+	SchedulerClusterID     uint                          `json:"scheduler_cluster_id"`
+	SeedPeerClusterID      uint                          `json:"seed_peer_cluster_id"`
+	SchedulerClusterConfig *SchedulerClusterConfig       `json:"scheduler_cluster_config"`
+	SeedPeerClusterConfig  *SeedPeerClusterConfig        `json:"seed_peer_cluster_config"`
+	PeerClusterConfig      *SchedulerClusterClientConfig `json:"peer_cluster_config"`
+	CreatedAt              time.Time                     `json:"created_at"`
+	UpdatedAt              time.Time                     `json:"updated_at"`
+	IsDefault              bool                          `json:"is_default"`
 }
 
 type GetClusterResponse struct {
-	ID                     uint
-	Name                   string
-	BIO                    string
-	Scopes                 *SchedulerClusterScopes
-	SchedulerClusterID     uint
-	SeedPeerClusterID      uint
-	SchedulerClusterConfig *SchedulerClusterConfig
-	SeedPeerClusterConfig  *SeedPeerClusterConfig
-	PeerClusterConfig      *SchedulerClusterClientConfig
-	CreatedAt              time.Time
-	UpdatedAt              time.Time
-	IsDefault              bool
+	ID                     uint                          `json:"id"`
+	Name                   string                        `json:"name"`
+	BIO                    string                        `json:"bio"`
+	Scopes                 *SchedulerClusterScopes       `json:"scopes"`
+	SchedulerClusterID     uint                          `json:"scheduler_cluster_id"`
+	SeedPeerClusterID      uint                          `json:"seed_peer_cluster_id"`
+	SchedulerClusterConfig *SchedulerClusterConfig       `json:"scheduler_cluster_config"`
+	SeedPeerClusterConfig  *SeedPeerClusterConfig        `json:"seed_peer_cluster_config"`
+	PeerClusterConfig      *SchedulerClusterClientConfig `json:"peer_cluster_config"`
+	CreatedAt              time.Time                     `json:"created_at"`
+	UpdatedAt              time.Time                     `json:"updated_at"`
+	IsDefault              bool                          `json:"is_default"`
 }
 
 type GetClustersQuery struct {
