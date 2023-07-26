@@ -78,6 +78,12 @@ const (
 
 	// PartitionRatio is the partition ratio between the training set and the test set.
 	PartitionRatio = 0.8
+
+	oneOrderSampleSize = 10
+	twoOrderSampleSize = 20
+
+	defaultTrainingStep = 1000
+	defaultBatchSize    = 500
 )
 
 // Training defines the interface to train GNN and MLP model.
@@ -166,11 +172,7 @@ func (t *training) Train(ctx context.Context, ip, hostname string) error {
 
 // preprocess constructs mlp observation, gnn vertex observation and edge observation before training.
 func (t *training) preprocess(ip, hostname string) error {
-	var (
-		bandwidths = make(map[string]float64)
-		hostID     = idgen.HostIDV2(ip, hostname)
-	)
-
+	var hostID = idgen.HostIDV2(ip, hostname)
 	downloadFile, err := t.storage.OpenDownload(hostID)
 	if err != nil {
 		msg := fmt.Sprintf("open download failed: %s", err.Error())
@@ -187,6 +189,7 @@ func (t *training) preprocess(ip, hostname string) error {
 	}
 	defer networkTopologyFile.Close()
 
+	var bandwidths = make(map[string]float64)
 	// Preprocess download training data.
 	dc := make(chan schedulerstorage.Download)
 	go func() {
@@ -415,6 +418,16 @@ func (t *training) clearGNNEdgeObservationFile(key string) error {
 	return os.Remove(t.gnnEdgeObservationFilename(key))
 }
 
+// openGNNVertexObservationFile opens gnn vertex observation file for read based on the given model key, it returns io.ReadCloser of gnn vertex observation file.
+func (t *training) openGNNVertexObservationFile(key string) (*os.File, error) {
+	return os.OpenFile(t.gnnVertexObservationFilename(key), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+}
+
+// openGNNEdgeObservationFile opens gnn edge observation file for read based on the given model key, it returns io.ReadCloser of gnn edge observation file.
+func (t *training) openGNNEdgeObservationFile(key string) (*os.File, error) {
+	return os.OpenFile(t.gnnEdgeObservationFilename(key), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+}
+
 // mlpObservationTrainFilename generates mlp observation train file name based on the given key.
 func (t *training) mlpObservationTrainFilename(key string) string {
 	return filepath.Join(t.baseDir, fmt.Sprintf("%s_%s.%s", MLPObservationTrainFilePrefix, key, CSVFileExt))
@@ -559,4 +572,161 @@ func hash(s string) uint32 {
 	h.Write([]byte(s))
 
 	return binary.LittleEndian.Uint32(h.Sum(nil))
+}
+
+// minibatch is GNN
+func (t *training) minibatch(ip, hostname string, sample_sizes int) error {
+	// 1.
+	// 先遍历vertex.csv 提取feature 向量 (ip,idc,location), 定位每个节点。
+	// map [hostID]int hostID 对应一个int，不重复，用来存索引
+	// 然后需要将特征存成matrix[[feature1],[feature1],[feature1]]
+
+	// 2.
+	// 遍历edge.csv 提取feature 向量 (rtt,bandwidth),
+	// 存所有邻居 [][]int , 存index 下对应的host 的邻居。[[1,2,3][2,3]] 0:1,2,3 1:2,3
+
+	// 3. 采样
+	// for 循环 trainingStep = 1000
+	// {
+	// 所有点的列表 边的列表。
+	// 随机1个batch_size的边 暂定超参数500边。
+	// 随机选一个500条边的一条的两个节点作为 初始节点 和末节点，根据这些节点生成子图：500 （1,2）
+	// 500条边的节点，把他们的一阶邻居包括本身放到集合A里。集合点全集-集合A=集合B，在 集合B random 元素作为集合C。然后集合A ∪ 集合C = 集合D
+	// 负样本取值超参数25> 二阶参数。
+
+	// 根据集合D 的点进行采样。
+	//  集合D 记录其一阶 ，二阶的点，存起来。
+	// for 循环集合D 的每个点
+	// 	{记录 [[一阶][二阶]]
+	//   }
+	// 扔给 trainloop [][]int
+	// }
+
+	// construct GNN vertex feature matrix.
+	var (
+		hostID            = idgen.HostIDV2(ip, hostname)
+		hostID2Index      = make(map[string]int)
+		Index2HostID      = make(map[int]string)
+		index             int
+		gnnVertexFeatures = make([][]uint32, 0)
+	)
+
+	GNNVertexObservationFile, err := t.openGNNVertexObservationFile(hostID)
+	if err != nil {
+		msg := fmt.Sprintf("open gnn vertex observation failed: %s", err.Error())
+		logger.Error(msg)
+		return status.Error(codes.Internal, msg)
+	}
+	defer GNNVertexObservationFile.Close()
+
+	gvc := make(chan GNNVertexObservation)
+	go func() {
+		if gocsv.UnmarshalToChanWithoutHeaders(GNNVertexObservationFile, gvc) != nil {
+			logger.Errorf("prase gnn vertex observation file filed: %s", err.Error())
+		}
+	}()
+
+	for gnnVertexObservation := range gvc {
+		_, ok := hostID2Index[gnnVertexObservation.HostID]
+		if !ok {
+			hostID2Index[gnnVertexObservation.HostID] = index
+			Index2HostID[index] = gnnVertexObservation.HostID
+			var gnnVertexFeature = make([]uint32, 0)
+			gnnVertexFeature = append(gnnVertexFeature, gnnVertexObservation.IP...)
+			gnnVertexFeature = append(gnnVertexFeature, gnnVertexObservation.Location...)
+			gnnVertexFeature = append(gnnVertexFeature, gnnVertexObservation.IDC)
+			gnnVertexFeatures = append(gnnVertexFeatures, gnnVertexFeature)
+			index++
+		}
+	}
+
+	// construct GNN edge neighbor matrix.
+	var (
+		rawNeighbors             = make(map[int][]int, 0)
+		neighbors                = make([][]int, 0)
+		N                        = len(hostID2Index)
+		gnnEdgeBandwidthFeatures = make([][]float64, N)
+		gnnEdgeRTTFeatures       = make([][]int64, N)
+	)
+
+	for i := 0; i < N; i++ {
+		gnnEdgeBandwidthFeatures[i] = make([]float64, N)
+		gnnEdgeRTTFeatures[i] = make([]int64, N)
+	}
+
+	GNNEdgeObservationFile, err := t.openGNNEdgeObservationFile(hostID)
+	if err != nil {
+		msg := fmt.Sprintf("open gnn edge observation failed: %s", err.Error())
+		logger.Error(msg)
+		return status.Error(codes.Internal, msg)
+	}
+	defer GNNEdgeObservationFile.Close()
+
+	gec := make(chan GNNEdgeObservation)
+	go func() {
+		if gocsv.UnmarshalToChanWithoutHeaders(GNNEdgeObservationFile, gec) != nil {
+			logger.Errorf("prase gnn edge observation file filed: %s", err.Error())
+		}
+	}()
+
+	for gnnEdgeObservation := range gec {
+		srcIndex, ok := hostID2Index[gnnEdgeObservation.SrcHostID]
+		if !ok {
+			continue
+		}
+
+		destIndex, ok := hostID2Index[gnnEdgeObservation.DestHostID]
+		if !ok {
+			continue
+		}
+
+		// update gnnEdgeBandwidthFeatures and gnnEdgeRTTFeatures
+		gnnEdgeBandwidthFeatures[srcIndex][destIndex] = gnnEdgeObservation.MaxBandwidth
+		gnnEdgeRTTFeatures[srcIndex][destIndex] = gnnEdgeObservation.AverageRTT
+
+		// update neighbor.
+		n, ok := rawNeighbors[srcIndex]
+		if ok {
+			n = append(n, destIndex)
+			continue
+		}
+
+		rawNeighbors[srcIndex] = []int{destIndex}
+	}
+
+	for i := 0; i < len(rawNeighbors); i++ {
+		neighbors = append(neighbors, rawNeighbors[i])
+	}
+
+	// sampling.
+	// random select edges, default batch size = 500 .
+	var (
+		flag        = make([][]bool, N)
+		sampleCount int
+	)
+
+	for i := 0; i < N; i++ {
+		flag[i] = make([]bool, N)
+	}
+
+	for {
+		var (
+			src  = rand.Intn(N)
+			dest = rand.Intn(N)
+		)
+
+		if !flag[src][dest] {
+			flag[src][dest] = true
+			flag[dest][src] = true
+			sampleCount++
+		}
+
+		if sampleCount >= defaultBatchSize {
+			break
+		}
+	}
+
+	// construct set A
+
+	return nil
 }
