@@ -574,7 +574,7 @@ func hash(s string) uint32 {
 }
 
 // minibatch is GNN
-func (t *training) minibatch(ip, hostname string, sample_sizes int) error {
+func (t *training) minibatch(ip, hostname string, sampleSizes int) error {
 	// 1.
 	// 先遍历vertex.csv 提取feature 向量 (ip,idc,location), 定位每个节点。
 	// map [hostID]int hostID 对应一个int，不重复，用来存索引
@@ -687,9 +687,9 @@ func (t *training) minibatch(ip, hostname string, sample_sizes int) error {
 		gnnEdgeRTTFeatures[srcIndex][destIndex] = gnnEdgeObservation.AverageRTT
 
 		// update neighbor.
-		n, ok := rawNeighbors[srcIndex]
+		_, ok = rawNeighbors[srcIndex]
 		if ok {
-			n = append(n, destIndex)
+			rawNeighbors[srcIndex] = append(rawNeighbors[srcIndex], destIndex)
 			continue
 		}
 
