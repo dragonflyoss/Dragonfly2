@@ -34,7 +34,7 @@ type GetUsersQuery struct {
 	Location string `form:"location" binding:"omitempty"`
 	State    string `form:"state" binding:"omitempty"`
 	Page     int    `form:"page" binding:"omitempty,gte=1"`
-	PerPage  int    `form:"per_page" binding:"omitempty,gte=1,lte=50"`
+	PerPage  int    `form:"per_page" binding:"omitempty,gte=1,lte=1000"`
 }
 
 type SignInRequest struct {

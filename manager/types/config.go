@@ -44,5 +44,5 @@ type GetConfigsQuery struct {
 	Value   string `form:"value" binding:"omitempty"`
 	UserID  uint   `form:"user_id" binding:"omitempty"`
 	Page    int    `form:"page" binding:"omitempty,gte=1"`
-	PerPage int    `form:"per_page" binding:"omitempty,gte=1,lte=50"`
+	PerPage int    `form:"per_page" binding:"omitempty,gte=1,lte=1000"`
 }
