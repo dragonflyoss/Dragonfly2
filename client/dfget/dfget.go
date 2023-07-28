@@ -143,20 +143,30 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 	var (
 		wLog     = logger.With("url", cfg.URL)
 		start    = time.Now()
-		target   *os.File
+		tempFile *os.File
 		response *source.Response
 		err      error
 		written  int64
+		renameOK bool
 	)
 
 	wLog.Info("try to download from source and ignore rate limit")
 	fmt.Println("try to download from source and ignore rate limit")
 
-	if target, err = os.CreateTemp(filepath.Dir(cfg.Output), ".df_"); err != nil {
+	if tempFile, err = os.CreateTemp(filepath.Dir(cfg.Output), ".df_"); err != nil {
 		return err
 	}
-	defer os.Remove(target.Name())
-	defer target.Close()
+	defer func() {
+		if !renameOK {
+			tempPath := path.Join(filepath.Dir(cfg.Output), tempFile.Name())
+			removeErr := os.Remove(tempPath)
+			if removeErr != nil {
+				wLog.Infof("remove temporary file %s error: %s", tempPath, removeErr)
+				fmt.Printf("remove temporary file %s error: %s\n", tempPath, removeErr)
+			}
+		}
+		tempFile.Close()
+	}()
 
 	downloadRequest, err := source.NewRequestWithContext(ctx, cfg.URL, hdr)
 	if err != nil {
@@ -170,7 +180,7 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 		return err
 	}
 
-	if written, err = io.Copy(target, response.Body); err != nil {
+	if written, err = io.Copy(tempFile, response.Body); err != nil {
 		return err
 	}
 
@@ -180,7 +190,7 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 			return err
 		}
 
-		encoded, err := digest.HashFile(target.Name(), d.Algorithm)
+		encoded, err := digest.HashFile(tempFile.Name(), d.Algorithm)
 		if err != nil {
 			return err
 		}
@@ -191,13 +201,14 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 	}
 
 	// change file owner
-	if err = os.Chown(target.Name(), os.Getuid(), os.Getgid()); err != nil {
+	if err = os.Chown(tempFile.Name(), os.Getuid(), os.Getgid()); err != nil {
 		return fmt.Errorf("change file owner to uid[%d] gid[%d]: %w", os.Getuid(), os.Getgid(), err)
 	}
 
-	if err = os.Rename(target.Name(), cfg.Output); err != nil {
+	if err = os.Rename(tempFile.Name(), cfg.Output); err != nil {
 		return err
 	}
+	renameOK = true
 
 	wLog.Infof("download from source success, length: %d bytes cost: %d ms", written, time.Since(start).Milliseconds())
 	fmt.Printf("finish total length %d bytes\n", written)
