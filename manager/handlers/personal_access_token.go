@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2023 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,54 +20,42 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
 
-	"d7y.io/dragonfly/v2/internal/job"
-	_ "d7y.io/dragonfly/v2/manager/models" // nolint
+	// nolint
+	_ "d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-// @Summary Create Job
+// @Summary Create PersonalAccessToken
 // @Description Create by json config
-// @Tags Job
+// @Tags PersonalAccessToken
 // @Accept json
 // @Produce json
-// @Param Job body types.CreateJobRequest true "Job"
-// @Success 200 {object} models.Job
+// @Param PersonalAccessToken body types.CreatePersonalAccessTokenRequest true "PersonalAccessToken"
+// @Success 200 {object} models.PersonalAccessToken
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /jobs [post]
-func (h *Handlers) CreateJob(ctx *gin.Context) {
-	var json types.CreateJobRequest
-	if err := ctx.ShouldBindBodyWith(&json, binding.JSON); err != nil {
+// @Router /personal-access-tokens [post]
+func (h *Handlers) CreatePersonalAccessToken(ctx *gin.Context) {
+	var json types.CreatePersonalAccessTokenRequest
+	if err := ctx.ShouldBindJSON(&json); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	switch json.Type {
-	case job.PreheatJob:
-		var json types.CreatePreheatJobRequest
-		if err := ctx.ShouldBindBodyWith(&json, binding.JSON); err != nil {
-			ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
-			return
-		}
-
-		job, err := h.service.CreatePreheatJob(ctx.Request.Context(), json)
-		if err != nil {
-			ctx.Error(err) // nolint: errcheck
-			return
-		}
-
-		ctx.JSON(http.StatusOK, job)
-	default:
-		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": "Unknow type"})
+	personalAccessToken, err := h.service.CreatePersonalAccessToken(ctx.Request.Context(), json)
+	if err != nil {
+		ctx.Error(err) // nolint: errcheck
+		return
 	}
+
+	ctx.JSON(http.StatusOK, personalAccessToken)
 }
 
-// @Summary Destroy Job
+// @Summary Destroy PersonalAccessToken
 // @Description Destroy by id
-// @Tags Job
+// @Tags PersonalAccessToken
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
@@ -75,15 +63,15 @@ func (h *Handlers) CreateJob(ctx *gin.Context) {
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /jobs/{id} [delete]
-func (h *Handlers) DestroyJob(ctx *gin.Context) {
-	var params types.JobParams
+// @Router /personal-access-tokens/{id} [delete]
+func (h *Handlers) DestroyPersonalAccessToken(ctx *gin.Context) {
+	var params types.PersonalAccessTokenParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	if err := h.service.DestroyJob(ctx.Request.Context(), params.ID); err != nil {
+	if err := h.service.DestroyPersonalAccessToken(ctx.Request.Context(), params.ID); err != nil {
 		ctx.Error(err) // nolint: errcheck
 		return
 	}
@@ -91,93 +79,93 @@ func (h *Handlers) DestroyJob(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-// @Summary Update Job
+// @Summary Update PersonalAccessToken
 // @Description Update by json config
-// @Tags Job
+// @Tags PersonalAccessToken
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
-// @Param Job body types.UpdateJobRequest true "Job"
-// @Success 200 {object} models.Job
+// @Param PersonalAccessToken body types.UpdatePersonalAccessTokenRequest true "PersonalAccessToken"
+// @Success 200 {object} models.PersonalAccessToken
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /jobs/{id} [patch]
-func (h *Handlers) UpdateJob(ctx *gin.Context) {
-	var params types.JobParams
+// @Router /personal-access-tokens/{id} [patch]
+func (h *Handlers) UpdatePersonalAccessToken(ctx *gin.Context) {
+	var params types.PersonalAccessTokenParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	var json types.UpdateJobRequest
+	var json types.UpdatePersonalAccessTokenRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	job, err := h.service.UpdateJob(ctx.Request.Context(), params.ID, json)
+	personalAccessToken, err := h.service.UpdatePersonalAccessToken(ctx.Request.Context(), params.ID, json)
 	if err != nil {
 		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
-	ctx.JSON(http.StatusOK, job)
+	ctx.JSON(http.StatusOK, personalAccessToken)
 }
 
-// @Summary Get Job
-// @Description Get Job by id
-// @Tags Job
+// @Summary Get PersonalAccessToken
+// @Description Get PersonalAccessToken by id
+// @Tags PersonalAccessToken
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
-// @Success 200 {object} models.Job
+// @Success 200 {object} models.PersonalAccessToken
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /jobs/{id} [get]
-func (h *Handlers) GetJob(ctx *gin.Context) {
-	var params types.JobParams
+// @Router /personal-access-tokens/{id} [get]
+func (h *Handlers) GetPersonalAccessToken(ctx *gin.Context) {
+	var params types.PersonalAccessTokenParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	job, err := h.service.GetJob(ctx.Request.Context(), params.ID)
+	personalAccessToken, err := h.service.GetPersonalAccessToken(ctx.Request.Context(), params.ID)
 	if err != nil {
 		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
-	ctx.JSON(http.StatusOK, job)
+	ctx.JSON(http.StatusOK, personalAccessToken)
 }
 
-// @Summary Get Jobs
-// @Description Get Jobs
-// @Tags Job
+// @Summary Get PersonalAccessTokens
+// @Description Get PersonalAccessTokens
+// @Tags PersonalAccessToken
 // @Accept json
 // @Produce json
 // @Param page query int true "current page" default(0)
 // @Param per_page query int true "return max item count, default 10, max 50" default(10) minimum(2) maximum(50)
-// @Success 200 {object} []models.Job
+// @Success 200 {object} []models.PersonalAccessToken
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /jobs [get]
-func (h *Handlers) GetJobs(ctx *gin.Context) {
-	var query types.GetJobsQuery
+// @Router /personal-access-tokens [get]
+func (h *Handlers) GetPersonalAccessTokens(ctx *gin.Context) {
+	var query types.GetPersonalAccessTokensQuery
 	if err := ctx.ShouldBindQuery(&query); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
 	h.setPaginationDefault(&query.Page, &query.PerPage)
-	jobs, count, err := h.service.GetJobs(ctx.Request.Context(), query)
+	personalAccessTokens, count, err := h.service.GetPersonalAccessTokens(ctx.Request.Context(), query)
 	if err != nil {
 		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
 	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(count))
-	ctx.JSON(http.StatusOK, jobs)
+	ctx.JSON(http.StatusOK, personalAccessTokens)
 }

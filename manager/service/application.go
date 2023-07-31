@@ -38,7 +38,7 @@ func (s *service) CreateApplication(ctx context.Context, json types.CreateApplic
 		UserID:   json.UserID,
 	}
 
-	if err := s.db.WithContext(ctx).Preload("User").Create(&application).Error; err != nil {
+	if err := s.db.WithContext(ctx).Create(&application).Error; err != nil {
 		return nil, err
 	}
 

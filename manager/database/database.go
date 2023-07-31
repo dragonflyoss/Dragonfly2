@@ -96,6 +96,7 @@ func migrate(db *gorm.DB) error {
 		&models.Config{},
 		&models.Application{},
 		&models.Model{},
+		&models.PersonalAccessToken{},
 	)
 }
 
