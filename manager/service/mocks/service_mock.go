@@ -185,6 +185,21 @@ func (mr *MockServiceMockRecorder) CreateOauth(arg0, arg1 interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOauth", reflect.TypeOf((*MockService)(nil).CreateOauth), arg0, arg1)
 }
 
+// CreatePersonalAccessToken mocks base method.
+func (m *MockService) CreatePersonalAccessToken(arg0 context.Context, arg1 types.CreatePersonalAccessTokenRequest) (*models.PersonalAccessToken, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreatePersonalAccessToken", arg0, arg1)
+	ret0, _ := ret[0].(*models.PersonalAccessToken)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreatePersonalAccessToken indicates an expected call of CreatePersonalAccessToken.
+func (mr *MockServiceMockRecorder) CreatePersonalAccessToken(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePersonalAccessToken", reflect.TypeOf((*MockService)(nil).CreatePersonalAccessToken), arg0, arg1)
+}
+
 // CreatePreheatJob mocks base method.
 func (m *MockService) CreatePreheatJob(arg0 context.Context, arg1 types.CreatePreheatJobRequest) (*models.Job, error) {
 	m.ctrl.T.Helper()
@@ -415,6 +430,20 @@ func (m *MockService) DestroyOauth(arg0 context.Context, arg1 uint) error {
 func (mr *MockServiceMockRecorder) DestroyOauth(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroyOauth", reflect.TypeOf((*MockService)(nil).DestroyOauth), arg0, arg1)
+}
+
+// DestroyPersonalAccessToken mocks base method.
+func (m *MockService) DestroyPersonalAccessToken(arg0 context.Context, arg1 uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DestroyPersonalAccessToken", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DestroyPersonalAccessToken indicates an expected call of DestroyPersonalAccessToken.
+func (mr *MockServiceMockRecorder) DestroyPersonalAccessToken(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroyPersonalAccessToken", reflect.TypeOf((*MockService)(nil).DestroyPersonalAccessToken), arg0, arg1)
 }
 
 // DestroyRole mocks base method.
@@ -731,6 +760,37 @@ func (m *MockService) GetPermissions(arg0 context.Context, arg1 *gin.Engine) []r
 func (mr *MockServiceMockRecorder) GetPermissions(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPermissions", reflect.TypeOf((*MockService)(nil).GetPermissions), arg0, arg1)
+}
+
+// GetPersonalAccessToken mocks base method.
+func (m *MockService) GetPersonalAccessToken(arg0 context.Context, arg1 uint) (*models.PersonalAccessToken, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPersonalAccessToken", arg0, arg1)
+	ret0, _ := ret[0].(*models.PersonalAccessToken)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPersonalAccessToken indicates an expected call of GetPersonalAccessToken.
+func (mr *MockServiceMockRecorder) GetPersonalAccessToken(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPersonalAccessToken", reflect.TypeOf((*MockService)(nil).GetPersonalAccessToken), arg0, arg1)
+}
+
+// GetPersonalAccessTokens mocks base method.
+func (m *MockService) GetPersonalAccessTokens(arg0 context.Context, arg1 types.GetPersonalAccessTokensQuery) ([]models.PersonalAccessToken, int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPersonalAccessTokens", arg0, arg1)
+	ret0, _ := ret[0].([]models.PersonalAccessToken)
+	ret1, _ := ret[1].(int64)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetPersonalAccessTokens indicates an expected call of GetPersonalAccessTokens.
+func (mr *MockServiceMockRecorder) GetPersonalAccessTokens(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPersonalAccessTokens", reflect.TypeOf((*MockService)(nil).GetPersonalAccessTokens), arg0, arg1)
 }
 
 // GetRole mocks base method.
@@ -1108,6 +1168,21 @@ func (m *MockService) UpdateOauth(arg0 context.Context, arg1 uint, arg2 types.Up
 func (mr *MockServiceMockRecorder) UpdateOauth(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOauth", reflect.TypeOf((*MockService)(nil).UpdateOauth), arg0, arg1, arg2)
+}
+
+// UpdatePersonalAccessToken mocks base method.
+func (m *MockService) UpdatePersonalAccessToken(arg0 context.Context, arg1 uint, arg2 types.UpdatePersonalAccessTokenRequest) (*models.PersonalAccessToken, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdatePersonalAccessToken", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*models.PersonalAccessToken)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdatePersonalAccessToken indicates an expected call of UpdatePersonalAccessToken.
+func (mr *MockServiceMockRecorder) UpdatePersonalAccessToken(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePersonalAccessToken", reflect.TypeOf((*MockService)(nil).UpdatePersonalAccessToken), arg0, arg1, arg2)
 }
 
 // UpdateScheduler mocks base method.

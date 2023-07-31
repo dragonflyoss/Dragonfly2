@@ -129,6 +129,12 @@ type Service interface {
 	UpdateModel(context.Context, uint, types.UpdateModelRequest) (*models.Model, error)
 	GetModel(context.Context, uint) (*models.Model, error)
 	GetModels(context.Context, types.GetModelsQuery) ([]models.Model, int64, error)
+
+	CreatePersonalAccessToken(context.Context, types.CreatePersonalAccessTokenRequest) (*models.PersonalAccessToken, error)
+	DestroyPersonalAccessToken(context.Context, uint) error
+	UpdatePersonalAccessToken(context.Context, uint, types.UpdatePersonalAccessTokenRequest) (*models.PersonalAccessToken, error)
+	GetPersonalAccessToken(context.Context, uint) (*models.PersonalAccessToken, error)
+	GetPersonalAccessTokens(context.Context, types.GetPersonalAccessTokensQuery) ([]models.PersonalAccessToken, int64, error)
 }
 
 type service struct {

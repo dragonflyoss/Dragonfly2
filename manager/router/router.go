@@ -60,12 +60,12 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	}
 	p.Use(r)
 
-	// Opentelemetry
+	// Opentelemetry.
 	if cfg.Options.Telemetry.Jaeger != "" {
 		r.Use(otelgin.Middleware(OtelServiceName))
 	}
 
-	// Middleware
+	// Middleware.
 	r.Use(gin.Recovery())
 	r.Use(ginzap.Ginzap(logger.GinLogger.Desugar(), time.RFC3339, true))
 	r.Use(ginzap.RecoveryWithZap(logger.GinLogger.Desugar(), true))
@@ -81,10 +81,10 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	// Manager view.
 	r.Use(static.Serve("/", assets))
 
-	// Router
+	// Router.
 	apiv1 := r.Group("/api/v1")
 
-	// User
+	// User.
 	u := apiv1.Group("/users")
 	u.PATCH(":id", jwt.MiddlewareFunc(), rbac, h.UpdateUser)
 	u.GET(":id", jwt.MiddlewareFunc(), rbac, h.GetUser)
@@ -100,7 +100,7 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	u.PUT(":id/roles/:role", jwt.MiddlewareFunc(), rbac, h.AddRoleToUser)
 	u.DELETE(":id/roles/:role", jwt.MiddlewareFunc(), rbac, h.DeleteRoleForUser)
 
-	// Role
+	// Role.
 	re := apiv1.Group("/roles", jwt.MiddlewareFunc(), rbac)
 	re.POST("", h.CreateRole)
 	re.DELETE(":role", h.DestroyRole)
@@ -109,11 +109,11 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	re.POST(":role/permissions", h.AddPermissionForRole)
 	re.DELETE(":role/permissions", h.DeletePermissionForRole)
 
-	// Permission
+	// Permission.
 	pm := apiv1.Group("/permissions", jwt.MiddlewareFunc(), rbac)
 	pm.GET("", h.GetPermissions(r))
 
-	// Oauth
+	// Oauth.
 	oa := apiv1.Group("/oauth")
 	oa.POST("", jwt.MiddlewareFunc(), rbac, h.CreateOauth)
 	oa.DELETE(":id", jwt.MiddlewareFunc(), rbac, h.DestroyOauth)
@@ -121,7 +121,7 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	oa.GET(":id", h.GetOauth)
 	oa.GET("", h.GetOauths)
 
-	// Cluster
+	// Cluster.
 	c := apiv1.Group("/clusters", jwt.MiddlewareFunc(), rbac)
 	c.POST("", h.CreateCluster)
 	c.DELETE(":id", h.DestroyCluster)
@@ -129,7 +129,7 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	c.GET(":id", h.GetCluster)
 	c.GET("", h.GetClusters)
 
-	// Scheduler Cluster
+	// Scheduler Cluster.
 	sc := apiv1.Group("/scheduler-clusters", jwt.MiddlewareFunc(), rbac)
 	sc.POST("", h.CreateSchedulerCluster)
 	sc.DELETE(":id", h.DestroySchedulerCluster)
@@ -138,7 +138,7 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	sc.GET("", h.GetSchedulerClusters)
 	sc.PUT(":id/schedulers/:scheduler_id", h.AddSchedulerToSchedulerCluster)
 
-	// Scheduler
+	// Scheduler.
 	s := apiv1.Group("/schedulers", jwt.MiddlewareFunc(), rbac)
 	s.POST("", h.CreateScheduler)
 	s.DELETE(":id", h.DestroyScheduler)
@@ -146,15 +146,7 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	s.GET(":id", h.GetScheduler)
 	s.GET("", h.GetSchedulers)
 
-	// Application
-	cs := apiv1.Group("/applications", jwt.MiddlewareFunc(), rbac)
-	cs.POST("", h.CreateApplication)
-	cs.DELETE(":id", h.DestroyApplication)
-	cs.PATCH(":id", h.UpdateApplication)
-	cs.GET(":id", h.GetApplication)
-	cs.GET("", h.GetApplications)
-
-	// Seed Peer Cluster
+	// Seed Peer Cluster.
 	spc := apiv1.Group("/seed-peer-clusters", jwt.MiddlewareFunc(), rbac)
 	spc.POST("", h.CreateSeedPeerCluster)
 	spc.DELETE(":id", h.DestroySeedPeerCluster)
@@ -164,7 +156,7 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	spc.PUT(":id/seed-peers/:seed_peer_id", h.AddSeedPeerToSeedPeerCluster)
 	spc.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToSeedPeerCluster)
 
-	// Seed Peer
+	// Seed Peer.
 	sp := apiv1.Group("/seed-peers", jwt.MiddlewareFunc(), rbac)
 	sp.POST("", h.CreateSeedPeer)
 	sp.DELETE(":id", h.DestroySeedPeer)
@@ -172,14 +164,14 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	sp.GET(":id", h.GetSeedPeer)
 	sp.GET("", h.GetSeedPeers)
 
-	// Bucket
+	// Bucket.
 	bucket := apiv1.Group("/buckets", jwt.MiddlewareFunc(), rbac)
 	bucket.POST("", h.CreateBucket)
 	bucket.DELETE(":id", h.DestroyBucket)
 	bucket.GET(":id", h.GetBucket)
 	bucket.GET("", h.GetBuckets)
 
-	// Config
+	// Config.
 	config := apiv1.Group("/configs")
 	config.POST("", jwt.MiddlewareFunc(), rbac, h.CreateConfig)
 	config.DELETE(":id", jwt.MiddlewareFunc(), rbac, h.DestroyConfig)
@@ -187,7 +179,7 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	config.GET(":id", jwt.MiddlewareFunc(), rbac, h.GetConfig)
 	config.GET("", h.GetConfigs)
 
-	// Job
+	// Job.
 	job := apiv1.Group("/jobs")
 	job.POST("", h.CreateJob)
 	job.DELETE(":id", h.DestroyJob)
@@ -195,23 +187,39 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	job.GET(":id", h.GetJob)
 	job.GET("", h.GetJobs)
 
-	// Model
-	model := apiv1.Group("/models", jwt.MiddlewareFunc(), rbac)
-	model.DELETE(":id", h.DestroyModel)
-	model.PATCH(":id", h.UpdateModel)
-	model.GET(":id", h.GetModel)
-	model.GET("", h.GetModels)
-
 	// Compatible with the V1 preheat.
 	pv1 := r.Group("/preheats")
 	r.GET("_ping", h.GetHealth)
 	pv1.POST("", h.CreateV1Preheat)
 	pv1.GET(":id", h.GetV1Preheat)
 
-	// Health Check
+	// Application.
+	cs := apiv1.Group("/applications", jwt.MiddlewareFunc(), rbac)
+	cs.POST("", h.CreateApplication)
+	cs.DELETE(":id", h.DestroyApplication)
+	cs.PATCH(":id", h.UpdateApplication)
+	cs.GET(":id", h.GetApplication)
+	cs.GET("", h.GetApplications)
+
+	// Model.
+	model := apiv1.Group("/models", jwt.MiddlewareFunc(), rbac)
+	model.DELETE(":id", h.DestroyModel)
+	model.PATCH(":id", h.UpdateModel)
+	model.GET(":id", h.GetModel)
+	model.GET("", h.GetModels)
+
+	// Personal Access Token.
+	pat := apiv1.Group("/personal-access-tokens", jwt.MiddlewareFunc(), rbac)
+	pat.POST("", h.CreatePersonalAccessToken)
+	pat.DELETE(":id", h.DestroyPersonalAccessToken)
+	pat.PATCH(":id", h.UpdatePersonalAccessToken)
+	pat.GET(":id", h.GetPersonalAccessToken)
+	pat.GET("", h.GetPersonalAccessTokens)
+
+	// Health Check.
 	r.GET("/healthy", h.GetHealth)
 
-	// Swagger
+	// Swagger.
 	apiSeagger := ginSwagger.URL("/swagger/doc.json")
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, apiSeagger))
 
