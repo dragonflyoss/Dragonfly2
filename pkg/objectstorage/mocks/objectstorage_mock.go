@@ -37,6 +37,20 @@ func (m *MockObjectStorage) EXPECT() *MockObjectStorageMockRecorder {
 	return m.recorder
 }
 
+// CopyObject mocks base method.
+func (m *MockObjectStorage) CopyObject(ctx context.Context, bucketName, sourceObjectKey, destinationObjectKey string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CopyObject", ctx, bucketName, sourceObjectKey, destinationObjectKey)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CopyObject indicates an expected call of CopyObject.
+func (mr *MockObjectStorageMockRecorder) CopyObject(ctx, bucketName, sourceObjectKey, destinationObjectKey interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CopyObject", reflect.TypeOf((*MockObjectStorage)(nil).CopyObject), ctx, bucketName, sourceObjectKey, destinationObjectKey)
+}
+
 // CreateBucket mocks base method.
 func (m *MockObjectStorage) CreateBucket(ctx context.Context, bucketName string) error {
 	m.ctrl.T.Helper()
@@ -108,6 +122,21 @@ func (m *MockObjectStorage) GetObjectMetadata(ctx context.Context, bucketName, o
 func (mr *MockObjectStorageMockRecorder) GetObjectMetadata(ctx, bucketName, objectKey interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectMetadata", reflect.TypeOf((*MockObjectStorage)(nil).GetObjectMetadata), ctx, bucketName, objectKey)
+}
+
+// GetObjectMetadatas mocks base method.
+func (m *MockObjectStorage) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) ([]*objectstorage.ObjectMetadata, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetObjectMetadatas", ctx, bucketName, prefix, marker, delimiter, limit)
+	ret0, _ := ret[0].([]*objectstorage.ObjectMetadata)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetObjectMetadatas indicates an expected call of GetObjectMetadatas.
+func (mr *MockObjectStorageMockRecorder) GetObjectMetadatas(ctx, bucketName, prefix, marker, delimiter, limit interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectMetadatas", reflect.TypeOf((*MockObjectStorage)(nil).GetObjectMetadatas), ctx, bucketName, prefix, marker, delimiter, limit)
 }
 
 // GetOject mocks base method.
@@ -183,21 +212,6 @@ func (m *MockObjectStorage) ListBucketMetadatas(ctx context.Context) ([]*objects
 func (mr *MockObjectStorageMockRecorder) ListBucketMetadatas(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBucketMetadatas", reflect.TypeOf((*MockObjectStorage)(nil).ListBucketMetadatas), ctx)
-}
-
-// ListObjectMetadatas mocks base method.
-func (m *MockObjectStorage) ListObjectMetadatas(ctx context.Context, bucketName, prefix, marker string, limit int64) ([]*objectstorage.ObjectMetadata, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListObjectMetadatas", ctx, bucketName, prefix, marker, limit)
-	ret0, _ := ret[0].([]*objectstorage.ObjectMetadata)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListObjectMetadatas indicates an expected call of ListObjectMetadatas.
-func (mr *MockObjectStorageMockRecorder) ListObjectMetadatas(ctx, bucketName, prefix, marker, limit interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListObjectMetadatas", reflect.TypeOf((*MockObjectStorage)(nil).ListObjectMetadatas), ctx, bucketName, prefix, marker, limit)
 }
 
 // PutObject mocks base method.

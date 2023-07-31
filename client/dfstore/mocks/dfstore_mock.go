@@ -38,6 +38,64 @@ func (m *MockDfstore) EXPECT() *MockDfstoreMockRecorder {
 	return m.recorder
 }
 
+// CopyObjectRequestWithContext mocks base method.
+func (m *MockDfstore) CopyObjectRequestWithContext(ctx context.Context, input *dfstore.CopyObjectInput) (*http.Request, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CopyObjectRequestWithContext", ctx, input)
+	ret0, _ := ret[0].(*http.Request)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CopyObjectRequestWithContext indicates an expected call of CopyObjectRequestWithContext.
+func (mr *MockDfstoreMockRecorder) CopyObjectRequestWithContext(ctx, input interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CopyObjectRequestWithContext", reflect.TypeOf((*MockDfstore)(nil).CopyObjectRequestWithContext), ctx, input)
+}
+
+// CopyObjectWithContext mocks base method.
+func (m *MockDfstore) CopyObjectWithContext(ctx context.Context, input *dfstore.CopyObjectInput) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CopyObjectWithContext", ctx, input)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CopyObjectWithContext indicates an expected call of CopyObjectWithContext.
+func (mr *MockDfstoreMockRecorder) CopyObjectWithContext(ctx, input interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CopyObjectWithContext", reflect.TypeOf((*MockDfstore)(nil).CopyObjectWithContext), ctx, input)
+}
+
+// CreateBucketRequestWithContext mocks base method.
+func (m *MockDfstore) CreateBucketRequestWithContext(ctx context.Context, input *dfstore.CreateBucketInput) (*http.Request, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateBucketRequestWithContext", ctx, input)
+	ret0, _ := ret[0].(*http.Request)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateBucketRequestWithContext indicates an expected call of CreateBucketRequestWithContext.
+func (mr *MockDfstoreMockRecorder) CreateBucketRequestWithContext(ctx, input interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBucketRequestWithContext", reflect.TypeOf((*MockDfstore)(nil).CreateBucketRequestWithContext), ctx, input)
+}
+
+// CreateBucketWithContext mocks base method.
+func (m *MockDfstore) CreateBucketWithContext(ctx context.Context, input *dfstore.CreateBucketInput) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateBucketWithContext", ctx, input)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateBucketWithContext indicates an expected call of CreateBucketWithContext.
+func (mr *MockDfstoreMockRecorder) CreateBucketWithContext(ctx, input interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBucketWithContext", reflect.TypeOf((*MockDfstore)(nil).CreateBucketWithContext), ctx, input)
+}
+
 // DeleteObjectRequestWithContext mocks base method.
 func (m *MockDfstore) DeleteObjectRequestWithContext(ctx context.Context, input *dfstore.DeleteObjectInput) (*http.Request, error) {
 	m.ctrl.T.Helper()
@@ -95,6 +153,36 @@ func (m *MockDfstore) GetObjectMetadataWithContext(ctx context.Context, input *d
 func (mr *MockDfstoreMockRecorder) GetObjectMetadataWithContext(ctx, input interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectMetadataWithContext", reflect.TypeOf((*MockDfstore)(nil).GetObjectMetadataWithContext), ctx, input)
+}
+
+// GetObjectMetadatasRequestWithContext mocks base method.
+func (m *MockDfstore) GetObjectMetadatasRequestWithContext(ctx context.Context, input *dfstore.GetObjectMetadatasInput) (*http.Request, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetObjectMetadatasRequestWithContext", ctx, input)
+	ret0, _ := ret[0].(*http.Request)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetObjectMetadatasRequestWithContext indicates an expected call of GetObjectMetadatasRequestWithContext.
+func (mr *MockDfstoreMockRecorder) GetObjectMetadatasRequestWithContext(ctx, input interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectMetadatasRequestWithContext", reflect.TypeOf((*MockDfstore)(nil).GetObjectMetadatasRequestWithContext), ctx, input)
+}
+
+// GetObjectMetadatasWithContext mocks base method.
+func (m *MockDfstore) GetObjectMetadatasWithContext(ctx context.Context, input *dfstore.GetObjectMetadatasInput) ([]*objectstorage.ObjectMetadata, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetObjectMetadatasWithContext", ctx, input)
+	ret0, _ := ret[0].([]*objectstorage.ObjectMetadata)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetObjectMetadatasWithContext indicates an expected call of GetObjectMetadatasWithContext.
+func (mr *MockDfstoreMockRecorder) GetObjectMetadatasWithContext(ctx, input interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectMetadatasWithContext", reflect.TypeOf((*MockDfstore)(nil).GetObjectMetadatasWithContext), ctx, input)
 }
 
 // GetObjectRequestWithContext mocks base method.

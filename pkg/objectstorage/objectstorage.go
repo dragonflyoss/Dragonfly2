@@ -87,6 +87,9 @@ type ObjectStorage interface {
 	// GetObjectMetadata returns metadata of object.
 	GetObjectMetadata(ctx context.Context, bucketName, objectKey string) (*ObjectMetadata, bool, error)
 
+	// GetObjectMetadatas returns the metadata of the objects.
+	GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) ([]*ObjectMetadata, error)
+
 	// GetOject returns data of object.
 	GetOject(ctx context.Context, bucketName, objectKey string) (io.ReadCloser, error)
 
@@ -96,14 +99,11 @@ type ObjectStorage interface {
 	// DeleteObject deletes data of object.
 	DeleteObject(ctx context.Context, bucketName, objectKey string) error
 
-	// ListObjectMetadatas returns metadata of objects.
-	ListObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) ([]*ObjectMetadata, error)
-
 	// IsObjectExist returns whether the object exists.
 	IsObjectExist(ctx context.Context, bucketName, objectKey string) (bool, error)
 
-	// CopyObject copy object from source to destination
-	CopyObject(ctx context.Context, bucketName, srcObjectKey, destObjectKey string) error
+	// CopyObject copy object from source to destination.
+	CopyObject(ctx context.Context, bucketName, sourceObjectKey, destinationObjectKey string) error
 
 	// GetSignURL returns sign url of object.
 	GetSignURL(ctx context.Context, bucketName, objectKey string, method Method, expire time.Duration) (string, error)
