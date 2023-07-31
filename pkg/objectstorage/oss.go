@@ -29,6 +29,9 @@ import (
 	"github.com/go-http-utils/headers"
 )
 
+// oss limit maxKeys to 1000.
+const MaxLimit = 1000
+
 type oss struct {
 	// OSS client.
 	client *aliyunoss.Client
@@ -109,6 +112,9 @@ func (o *oss) GetObjectMetadata(ctx context.Context, bucketName, objectKey strin
 		return nil, false, err
 	}
 
+	// RFC 1123 format
+	lastModifiedTime, _ := time.Parse(http.TimeFormat, header.Get(aliyunoss.HTTPHeaderLastModified))
+
 	return &ObjectMetadata{
 		Key:                objectKey,
 		ContentDisposition: header.Get(headers.ContentDisposition),
@@ -118,6 +124,8 @@ func (o *oss) GetObjectMetadata(ctx context.Context, bucketName, objectKey strin
 		ContentType:        header.Get(headers.ContentType),
 		ETag:               header.Get(headers.ETag),
 		Digest:             header.Get(aliyunoss.HTTPHeaderOssMetaPrefix + MetaDigest),
+		LastModifiedTime:   lastModifiedTime,
+		StorageClass:       o.getDefaultStorageClassIfEmpty(header.Get(aliyunoss.HTTPHeaderOssStorageClass)),
 	}, true, nil
 }
 
@@ -153,13 +161,17 @@ func (o *oss) DeleteObject(ctx context.Context, bucketName, objectKey string) er
 }
 
 // ListObjectMetadatas returns metadata of objects.
-func (o *oss) ListObjectMetadatas(ctx context.Context, bucketName, prefix, marker string, limit int64) ([]*ObjectMetadata, error) {
+func (o *oss) ListObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) ([]*ObjectMetadata, error) {
 	bucket, err := o.client.Bucket(bucketName)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := bucket.ListObjects(aliyunoss.Prefix(prefix), aliyunoss.Marker(marker), aliyunoss.MaxKeys(int(limit)))
+	if limit > MaxLimit {
+		limit = MaxLimit
+	}
+
+	resp, err := bucket.ListObjects(aliyunoss.Prefix(prefix), aliyunoss.Marker(marker), aliyunoss.Delimiter(delimiter), aliyunoss.MaxKeys(int(limit)))
 	if err != nil {
 		return nil, err
 	}
@@ -167,8 +179,11 @@ func (o *oss) ListObjectMetadatas(ctx context.Context, bucketName, prefix, marke
 	var metadatas []*ObjectMetadata
 	for _, object := range resp.Objects {
 		metadatas = append(metadatas, &ObjectMetadata{
-			Key:  object.Key,
-			ETag: object.ETag,
+			Key:              object.Key,
+			ETag:             object.ETag,
+			ContentLength:    object.Size,
+			LastModifiedTime: object.LastModified,
+			StorageClass:     o.getDefaultStorageClassIfEmpty(object.StorageClass),
 		})
 	}
 
@@ -188,6 +203,16 @@ func (o *oss) IsObjectExist(ctx context.Context, bucketName, objectKey string) (
 // IsBucketExist returns whether the bucket exists.
 func (o *oss) IsBucketExist(ctx context.Context, bucketName string) (bool, error) {
 	return o.client.IsBucketExist(bucketName)
+}
+
+// CopyObject copy object from source to destination.
+func (o *oss) CopyObject(ctx context.Context, bucketName, srcObjectKey, destObjectKey string) error {
+	bucket, err := o.client.Bucket(bucketName)
+	if err != nil {
+		return err
+	}
+	_, err = bucket.CopyObject(srcObjectKey, destObjectKey)
+	return err
 }
 
 // GetSignURL returns sign url of object.
@@ -216,4 +241,12 @@ func (o *oss) GetSignURL(ctx context.Context, bucketName, objectKey string, meth
 	}
 
 	return bucket.SignURL(objectKey, ossHTTPMethod, int64(expire.Seconds()))
+}
+
+// getDefaultStorageClassIfEmpty returns the default storage class if the input is empty.
+func (o *oss) getDefaultStorageClassIfEmpty(storageClass string) string {
+	if storageClass == "" {
+		storageClass = string(aliyunoss.StorageStandard)
+	}
+	return storageClass
 }
