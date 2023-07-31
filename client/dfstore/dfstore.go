@@ -44,7 +44,7 @@ type Dfstore interface {
 	// CreateBucketRequestWithContext returns *http.Request of create bucket.
 	CreateBucketRequestWithContext(ctx context.Context, input *CreateBucketInput) (*http.Request, error)
 
-	// CreateBucket create bucket.
+	// CreateBucket creates bucket.
 	CreateBucketWithContext(ctx context.Context, input *CreateBucketInput) error
 
 	// GetObjectMetadataRequestWithContext returns *http.Request of getting object metadata.
@@ -59,11 +59,11 @@ type Dfstore interface {
 	// GetObjectWithContext returns data of object.
 	GetObjectWithContext(ctx context.Context, input *GetObjectInput) (io.ReadCloser, error)
 
-	// ListObjectMetadatasRequestWithContext returns *http.Request of getting object metadata list.
-	ListObjectMetadatasRequestWithContext(ctx context.Context, input *ListObjectMetadatasInput) (*http.Request, error)
+	// GetObjectMetadatasRequestWithContext returns *http.Request of getting object metadatas.
+	GetObjectMetadatasRequestWithContext(ctx context.Context, input *GetObjectMetadatasInput) (*http.Request, error)
 
-	// ListObjectMetadatasWithContext returns list of object metadata.
-	ListObjectMetadatasWithContext(ctx context.Context, input *ListObjectMetadatasInput) ([]*pkgobjectstorage.ObjectMetadata, error)
+	// GetObjectMetadatasWithContext returns list of object metadatas.
+	GetObjectMetadatasWithContext(ctx context.Context, input *GetObjectMetadatasInput) ([]*pkgobjectstorage.ObjectMetadata, error)
 
 	// PutObjectRequestWithContext returns *http.Request of putting object.
 	PutObjectRequestWithContext(ctx context.Context, input *PutObjectInput) (*http.Request, error)
@@ -185,7 +185,10 @@ func (dfs *dfstore) GetObjectMetadataWithContext(ctx context.Context, input *Get
 		return nil, err
 	}
 
-	lastModifiedTime, _ := time.Parse(http.TimeFormat, resp.Header.Get(config.HeaderDragonflyObjectMetaLastModifiedTime))
+	lastModifiedTime, err := time.Parse(http.TimeFormat, resp.Header.Get(config.HeaderDragonflyObjectMetaLastModifiedTime))
+	if err != nil {
+		return nil, err
+	}
 
 	return &pkgobjectstorage.ObjectMetadata{
 		ContentDisposition: resp.Header.Get(headers.ContentDisposition),
@@ -198,6 +201,98 @@ func (dfs *dfstore) GetObjectMetadataWithContext(ctx context.Context, input *Get
 		LastModifiedTime:   lastModifiedTime,
 		StorageClass:       resp.Header.Get(config.HeaderDragonflyObjectMetaStorageClass),
 	}, nil
+}
+
+// GetObjectMetadatasInput is used to construct request of getting object metadatas.
+type GetObjectMetadatasInput struct {
+	// BucketName is the bucket name.
+	BucketName string
+
+	// Prefix filters the objects by their key's prefix.
+	Prefix string
+
+	// Marker is used for pagination, indicating the object key to start listing from.
+	Marker string
+
+	// Delimiter is used to create a hierarchical structure, simulating directories in the listing results.
+	Delimiter string
+
+	// Limit specifies the maximum number of objects to be returned in a single listing request.
+	Limit int64
+}
+
+// Validate validates GetObjectMetadatasInput fields.
+func (i *GetObjectMetadatasInput) Validate() error {
+	if i.BucketName == "" {
+		return errors.New("invalid BucketName")
+	}
+
+	return nil
+}
+
+// GetObjectMetadatasRequestWithContext returns *http.Request of getting object metadatas.
+func (dfs *dfstore) GetObjectMetadatasRequestWithContext(ctx context.Context, input *GetObjectMetadatasInput) (*http.Request, error) {
+	if err := input.Validate(); err != nil {
+		return nil, err
+	}
+
+	u, err := url.Parse(dfs.endpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	u.Path = filepath.Join("buckets", input.BucketName, "objects")
+
+	query := u.Query()
+	if input.Prefix != "" {
+		query.Set("prefix", input.Prefix)
+	}
+
+	if input.Marker != "" {
+		query.Set("marker", input.Marker)
+	}
+
+	if input.Delimiter != "" {
+		query.Set("delimiter", input.Delimiter)
+	}
+
+	if input.Limit != 0 {
+		query.Set("limit", fmt.Sprint(input.Limit))
+	}
+
+	u.RawQuery = query.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// GetObjectMetadatasWithContext returns *http.Request of getting object metadatas.
+func (dfs *dfstore) GetObjectMetadatasWithContext(ctx context.Context, input *GetObjectMetadatasInput) ([]*pkgobjectstorage.ObjectMetadata, error) {
+	req, err := dfs.GetObjectMetadatasRequestWithContext(ctx, input)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := dfs.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode/100 != 2 {
+		return nil, fmt.Errorf("bad response status %s", resp.Status)
+	}
+
+	var metadatas []*pkgobjectstorage.ObjectMetadata
+	if err := json.NewDecoder(resp.Body).Decode(&metadatas); err != nil {
+		return nil, err
+	}
+
+	return metadatas, nil
 }
 
 // GetObjectInput is used to construct request of getting object.
@@ -279,100 +374,6 @@ func (dfs *dfstore) GetObjectWithContext(ctx context.Context, input *GetObjectIn
 	}
 
 	return resp.Body, nil
-}
-
-// ListObjectMetadatasInput is used to construct request of getting object metadata list.
-type ListObjectMetadatasInput struct {
-	// BucketName is the bucket name.
-	BucketName string
-
-	// Prefix filters the objects by their key's prefix.
-	Prefix string
-
-	// Marker is used for pagination, indicating the object key to start listing from.
-	Marker string
-
-	// Delimiter is used to create a hierarchical structure, simulating directories in the listing results.
-	Delimiter string
-
-	// Limit specifies the maximum number of objects to be returned in a single listing request.
-	Limit int64
-}
-
-// Validate validates ListObjectMetadatasInput fields.
-func (i *ListObjectMetadatasInput) Validate() error {
-	if i.BucketName == "" {
-		return errors.New("invalid BucketName")
-	}
-
-	if i.Limit == 0 {
-		return errors.New("invalid Limit")
-	}
-
-	return nil
-}
-
-// ListObjectMetadatasRequestWithContext returns *http.Request of getting object metadata list.
-func (dfs *dfstore) ListObjectMetadatasRequestWithContext(ctx context.Context, input *ListObjectMetadatasInput) (*http.Request, error) {
-	if err := input.Validate(); err != nil {
-		return nil, err
-	}
-
-	u, err := url.Parse(dfs.endpoint)
-	if err != nil {
-		return nil, err
-	}
-
-	u.Path = filepath.Join("buckets", input.BucketName, "objects")
-
-	query := u.Query()
-	if input.Prefix != "" {
-		query.Set("prefix", input.Prefix)
-	}
-
-	if input.Marker != "" {
-		query.Set("marker", input.Marker)
-	}
-
-	if input.Delimiter != "" {
-		query.Set("delimiter", input.Delimiter)
-	}
-
-	query.Set("limit", fmt.Sprint(input.Limit))
-
-	u.RawQuery = query.Encode()
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// ListObjectMetadatasWithContext returns *http.Request of getting object.
-func (dfs *dfstore) ListObjectMetadatasWithContext(ctx context.Context, input *ListObjectMetadatasInput) ([]*pkgobjectstorage.ObjectMetadata, error) {
-	req, err := dfs.ListObjectMetadatasRequestWithContext(ctx, input)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := dfs.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode/100 != 2 {
-		return nil, fmt.Errorf("bad response status %s", resp.Status)
-	}
-
-	var metadataList []*pkgobjectstorage.ObjectMetadata
-	if err := json.NewDecoder(resp.Body).Decode(&metadataList); err != nil {
-		return nil, err
-	}
-
-	return metadataList, nil
 }
 
 // PutObjectInput is used to construct request of putting object.
@@ -502,11 +503,11 @@ type CopyObjectInput struct {
 	// BucketName is bucket name.
 	BucketName string
 
-	// SrcObjectKey is the key of object to be copied.
-	SrcObjectKey string `form:"file" binding:"required"`
+	// SourceObjectKey is the key of object to be copied.
+	SourceObjectKey string
 
-	// DestObjectKey is the object key of the destination.
-	DestObjectKey string `form:"file" binding:"required"`
+	// DestinationObjectKey is the object key of the destination.
+	DestinationObjectKey string
 }
 
 // Validate validates CopyObjectInput fields.
@@ -515,12 +516,12 @@ func (i *CopyObjectInput) Validate() error {
 		return errors.New("invalid BucketName")
 	}
 
-	if i.SrcObjectKey == "" {
-		return errors.New("invalid Source")
+	if i.SourceObjectKey == "" {
+		return errors.New("invalid SourceObjectKey")
 	}
 
-	if i.DestObjectKey == "" {
-		return errors.New("invalid Destination")
+	if i.DestinationObjectKey == "" {
+		return errors.New("invalid DestinationObjectKey")
 	}
 
 	return nil
@@ -555,7 +556,7 @@ func (dfs *dfstore) CopyObjectRequestWithContext(ctx context.Context, input *Cop
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
-	if err := writer.WriteField("source", input.SrcObjectKey); err != nil {
+	if err := writer.WriteField("source_object_key", input.SourceObjectKey); err != nil {
 		return nil, err
 	}
 
@@ -568,7 +569,7 @@ func (dfs *dfstore) CopyObjectRequestWithContext(ctx context.Context, input *Cop
 		return nil, err
 	}
 
-	u.Path = filepath.Join("buckets", input.BucketName, "objects", input.DestObjectKey)
+	u.Path = filepath.Join("buckets", input.BucketName, "objects", input.DestinationObjectKey)
 
 	query := u.Query()
 
@@ -578,8 +579,9 @@ func (dfs *dfstore) CopyObjectRequestWithContext(ctx context.Context, input *Cop
 	if err != nil {
 		return nil, err
 	}
+
 	req.Header.Add(headers.ContentType, writer.FormDataContentType())
-	req.Header.Add(config.HeaderDragonflyObjectOperation, fmt.Sprint(objectstorage.CopyObject))
+	req.Header.Add(config.HeaderDragonflyObjectOperation, fmt.Sprint(objectstorage.CopyOperation))
 	return req, nil
 }
 
@@ -614,7 +616,8 @@ func (dfs *dfstore) CreateBucketWithContext(ctx context.Context, input *CreateBu
 	if resp.StatusCode/100 != 2 {
 		return fmt.Errorf("bad response status %s", resp.Status)
 	}
-	return err
+
+	return nil
 }
 
 // CreateBucketRequestWithContext returns *http.Request of creating bucket.

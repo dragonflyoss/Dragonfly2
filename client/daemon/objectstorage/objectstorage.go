@@ -172,10 +172,10 @@ func (o *objectStorage) initRouter(cfg *config.DaemonOption, logDir string) *gin
 
 	// Buckets
 	b := r.Group(RouterGroupBuckets)
-	b.PUT("/:id", o.createBucket)
+	b.POST("/:id", o.createBucket)
+	b.GET(":id/metadatas", o.getObjectMetadatas)
 	b.HEAD(":id/objects/*object_key", o.headObject)
 	b.GET(":id/objects/*object_key", o.getObject)
-	b.GET(":id/objects", o.listObjectMetadatas)
 	b.DELETE(":id/objects/*object_key", o.destroyObject)
 	b.PUT(":id/objects/*object_key", o.putObject)
 
@@ -217,8 +217,6 @@ func (o *objectStorage) headObject(ctx *gin.Context) {
 		return
 	}
 
-	lastModifiedTime := meta.LastModifiedTime.Format(http.TimeFormat)
-
 	ctx.Header(headers.ContentDisposition, meta.ContentDisposition)
 	ctx.Header(headers.ContentEncoding, meta.ContentEncoding)
 	ctx.Header(headers.ContentLanguage, meta.ContentLanguage)
@@ -226,7 +224,7 @@ func (o *objectStorage) headObject(ctx *gin.Context) {
 	ctx.Header(headers.ContentType, meta.ContentType)
 	ctx.Header(headers.ETag, meta.ETag)
 	ctx.Header(config.HeaderDragonflyObjectMetaDigest, meta.Digest)
-	ctx.Header(config.HeaderDragonflyObjectMetaLastModifiedTime, lastModifiedTime)
+	ctx.Header(config.HeaderDragonflyObjectMetaLastModifiedTime, meta.LastModifiedTime.Format(http.TimeFormat))
 	ctx.Header(config.HeaderDragonflyObjectMetaStorageClass, meta.StorageClass)
 
 	ctx.Status(http.StatusOK)
@@ -362,9 +360,8 @@ func (o *objectStorage) destroyObject(ctx *gin.Context) {
 
 // putObject uses to upload object data.
 func (o *objectStorage) putObject(ctx *gin.Context) {
-
 	operation := ctx.Request.Header.Get(config.HeaderDragonflyObjectOperation)
-	if operation == CopyObject {
+	if operation == CopyOperation {
 		o.copyObject(ctx)
 		return
 	}
@@ -505,7 +502,7 @@ func (o *objectStorage) createBucket(ctx *gin.Context) {
 
 	bucketName := params.ID
 
-	logger.Infof("create bucketName %s ", bucketName)
+	logger.Infof("create bucket %s ", bucketName)
 	if err := client.CreateBucket(ctx, bucketName); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
 		return
@@ -514,15 +511,15 @@ func (o *objectStorage) createBucket(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-// listObjectMetadatas uses to list objects meta data.
-func (o *objectStorage) listObjectMetadatas(ctx *gin.Context) {
+// getObjectMetadatas uses to list the metadata of the objects.
+func (o *objectStorage) getObjectMetadatas(ctx *gin.Context) {
 	var params BucketParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	var query ListObjectMetadatasQuery
+	var query GetObjectMetadatasQuery
 	if err := ctx.ShouldBindQuery(&query); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
@@ -542,14 +539,14 @@ func (o *objectStorage) listObjectMetadatas(ctx *gin.Context) {
 		return
 	}
 
-	metadataList, err := client.ListObjectMetadatas(ctx, bucketName, prefix, marker, delimiter, limit)
+	logger.Infof("get object metadatas in bucket %s", bucketName)
+	metadatas, err := client.GetObjectMetadatas(ctx, bucketName, prefix, marker, delimiter, limit)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, metadataList)
-	ctx.Status(http.StatusOK)
+	ctx.JSON(http.StatusOK, metadatas)
 }
 
 // copyObject uses to copy object.
@@ -569,7 +566,7 @@ func (o *objectStorage) copyObject(ctx *gin.Context) {
 	var (
 		bucketName  = params.ID
 		destination = params.ObjectKey
-		source      = form.Source
+		source      = form.SourceObjectKey
 	)
 
 	client, err := o.client()
@@ -577,8 +574,9 @@ func (o *objectStorage) copyObject(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
 		return
 	}
-	err = client.CopyObject(ctx, bucketName, source, destination)
-	if err != nil {
+
+	logger.Infof("copy object from %s to %s", source, destination)
+	if err := client.CopyObject(ctx, bucketName, source, destination); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
 		return
 	}

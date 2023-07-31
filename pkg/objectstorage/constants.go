@@ -54,3 +54,13 @@ const (
 	// MethodList is the list operation.
 	MethodList Method = "List"
 )
+
+const (
+	// OBSStorageClassStandardIA is the standard ia storage class of obs.
+	OBSStorageClassStandardIA = "STANDARD_IA"
+)
+
+const (
+	// DefaultGetObjectMetadatasLimit is the default limit of get object metadatas.
+	DefaultGetObjectMetadatasLimit = 1000
+)
