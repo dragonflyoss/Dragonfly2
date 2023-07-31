@@ -48,7 +48,7 @@ var (
 		Migrate:   true,
 	}
 
-	mockMysqlTLSConfig = &TLSConfig{
+	mockMysqlTLSConfig = &MysqlTLSConfig{
 		Cert:               "ca.crt",
 		Key:                "ca.key",
 		CA:                 "ca",
@@ -127,8 +127,12 @@ func TestConfig_Load(t *testing.T) {
 					End:   65003,
 				},
 			},
-			REST: RestConfig{
+			REST: RESTConfig{
 				Addr: ":8080",
+				TLS: &RESTTLSConfig{
+					Cert: "foo",
+					Key:  "foo",
+				},
 			},
 		},
 		Auth: AuthConfig{
@@ -148,7 +152,7 @@ func TestConfig_Load(t *testing.T) {
 				Port:      3306,
 				DBName:    "foo",
 				TLSConfig: "preferred",
-				TLS: &TLSConfig{
+				TLS: &MysqlTLSConfig{
 					Cert:               "foo",
 					Key:                "foo",
 					CA:                 "foo",
@@ -290,6 +294,34 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "grpc requires parameter listenIP")
+			},
+		},
+		{
+			name:   "rest tls requires parameter cert",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Server.REST.TLS = &RESTTLSConfig{
+					Cert: "",
+					Key:  "foo",
+				}
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "tls requires parameter cert")
+			},
+		},
+		{
+			name:   "rest tls requires parameter key",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Server.REST.TLS = &RESTTLSConfig{
+					Cert: "foo",
+					Key:  "",
+				}
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "tls requires parameter key")
 			},
 		},
 		{

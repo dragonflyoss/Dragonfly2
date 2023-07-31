@@ -82,7 +82,7 @@ type ServerConfig struct {
 	GRPC GRPCConfig `yaml:"grpc" mapstructure:"grpc"`
 
 	// REST server configuration.
-	REST RestConfig `yaml:"rest" mapstructure:"rest"`
+	REST RESTConfig `yaml:"rest" mapstructure:"rest"`
 }
 
 type AuthConfig struct {
@@ -138,13 +138,13 @@ type MysqlConfig struct {
 	TLSConfig string `yaml:"tlsConfig" mapstructure:"tlsConfig"`
 
 	// Custom TLS configuration (overrides "TLSConfig" setting above).
-	TLS *TLSConfig `yaml:"tls" mapstructure:"tls"`
+	TLS *MysqlTLSConfig `yaml:"tls" mapstructure:"tls"`
 
 	// Enable migration.
 	Migrate bool `yaml:"migrate" mapstructure:"migrate"`
 }
 
-type TLSConfig struct {
+type MysqlTLSConfig struct {
 	// Client certificate file path.
 	Cert string `yaml:"cert" mapstructure:"cert"`
 
@@ -235,9 +235,20 @@ type LocalCacheConfig struct {
 	TTL time.Duration `yaml:"ttl" mapstructure:"ttl"`
 }
 
-type RestConfig struct {
+type RESTConfig struct {
 	// REST server address.
 	Addr string `yaml:"addr" mapstructure:"addr"`
+
+	// TLS configuration.
+	TLS *RESTTLSConfig `yaml:"tls" mapstructure:"tls"`
+}
+
+type RESTTLSConfig struct {
+	// Certificate file path.
+	Cert string `yaml:"cert" mapstructure:"cert"`
+
+	// Key file path.
+	Key string `yaml:"key" mapstructure:"key"`
 }
 
 type MetricsConfig struct {
@@ -354,7 +365,7 @@ func New() *Config {
 					End:   DefaultGRPCPort,
 				},
 			},
-			REST: RestConfig{
+			REST: RESTConfig{
 				Addr: DefaultRESTAddr,
 			},
 		},
@@ -438,6 +449,16 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Server.GRPC.ListenIP == nil {
 		return errors.New("grpc requires parameter listenIP")
+	}
+
+	if cfg.Server.REST.TLS != nil {
+		if cfg.Server.REST.TLS.Cert == "" {
+			return errors.New("tls requires parameter cert")
+		}
+
+		if cfg.Server.REST.TLS.Key == "" {
+			return errors.New("tls requires parameter key")
+		}
 	}
 
 	if cfg.Auth.JWT.Realm == "" {

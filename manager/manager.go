@@ -234,11 +234,20 @@ func (s *Server) Serve() error {
 	// Started REST server
 	go func() {
 		logger.Infof("started rest server at %s", s.restServer.Addr)
-		if err := s.restServer.ListenAndServe(); err != nil {
-			if err == http.ErrServerClosed {
-				return
+		if s.config.Server.REST.TLS != nil {
+			if err := s.restServer.ListenAndServeTLS(s.config.Server.REST.TLS.Cert, s.config.Server.REST.TLS.Key); err != nil {
+				if err == http.ErrServerClosed {
+					return
+				}
+				logger.Fatalf("rest server closed unexpect: %v", err)
 			}
-			logger.Fatalf("rest server closed unexpect: %v", err)
+		} else {
+			if err := s.restServer.ListenAndServe(); err != nil {
+				if err == http.ErrServerClosed {
+					return
+				}
+				logger.Fatalf("rest server closed unexpect: %v", err)
+			}
 		}
 	}()
 
