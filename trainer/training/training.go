@@ -18,28 +18,25 @@ package training
 
 import (
 	"context"
-	"crypto/sha1"
-	"encoding/binary"
-	"errors"
+	"encoding/csv"
 	"fmt"
+	"io"
 	"math/rand"
-	"net"
 	"os"
-	"path/filepath"
-	"strings"
+	"strconv"
 
+	tf "github.com/galeone/tensorflow/tensorflow/go"
 	"github.com/gocarina/gocsv"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"d7y.io/api/v2/pkg/apis/manager/v2"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/math"
 	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
-	"d7y.io/dragonfly/v2/pkg/types"
 	schedulerstorage "d7y.io/dragonfly/v2/scheduler/storage"
 	"d7y.io/dragonfly/v2/trainer/config"
 	"d7y.io/dragonfly/v2/trainer/storage"
@@ -48,41 +45,23 @@ import (
 //go:generate mockgen -destination mocks/training_mock.go -source training.go -package mocks
 
 const (
-	// MLPObservationTrainFilePrefix is prefix of mlp observation file name for mlp training.
-	MLPObservationTrainFilePrefix = "mlp_train_data"
-
-	// MLPObservationTestFilePrefix is prefix of mlp test observation file name for mlp testing.
-	MLPObservationTestFilePrefix = "mlp_test_data"
-
-	// GNNVertexObservationFilePrefix is gnn vertex observation of file name.
-	GNNVertexObservationFilePrefix = "gnn_vertex_data"
-
-	// GNNEdgeObservationFilePrefix is prefix of gnn edge observation file name.
-	GNNEdgeObservationFilePrefix = "gnn_edge_data"
-
-	// CSVFileExt is extension of file name.
-	CSVFileExt = "csv"
-
-	// locationSeparator is location separator.
-	locationSeparator = "|"
-)
-
-const (
-	// Maximum score.
-	maxScore float64 = 1
-
-	// Minimum score.
-	minScore = 0
-
-	// Maximum number of elements.
-	maxElementLen = 3
-
 	// PartitionRatio is the partition ratio between the training set and the test set.
 	PartitionRatio = 0.8
 
 	defaultTrainingStep       = 1000
 	defaultBatchSize          = 500
 	defaultNegativeSampleSize = 25
+)
+
+const (
+	// Batch size for each optimization step for MLP model.
+	MLPBatchSize int = 32
+
+	// The number of epochs for training MLP model.
+	MLPEpochCount int = 10
+
+	// The dimension of score Tensor for MLP model's inputs.
+	MLPScoreDims int = 5
 )
 
 // Training defines the interface to train GNN and MLP model.
@@ -99,10 +78,16 @@ type training struct {
 	// Base directory.
 	baseDir string
 
+	// observation interface.
+	obs observation
+
+	// files interface.
+	files files
+
 	// Storage interface.
 	storage storage.Storage
 
-	// Manager service clent.
+	// Manager service client.
 	managerClient managerclient.V2
 }
 
@@ -111,6 +96,8 @@ func New(cfg *config.Config, baseDir string, managerClient managerclient.V2, sto
 	return &training{
 		config:        cfg,
 		baseDir:       baseDir,
+		obs:           *NewObservation(baseDir),
+		files:         *NewFiles(baseDir),
 		storage:       storage,
 		managerClient: managerClient,
 	}
@@ -228,11 +215,11 @@ func (t *training) preprocess(ip, hostname string) error {
 				}
 
 				if rand.Float32() < PartitionRatio {
-					if err := t.createMLPObservationTrain(hostID, mlpObservation); err != nil {
+					if err := t.obs.createMLPObservationTrain(hostID, mlpObservation); err != nil {
 						logger.Errorf("create MLP observation for training failed: %s", err.Error())
 					}
 				} else {
-					if err := t.createMLPObservationTest(hostID, mlpObservation); err != nil {
+					if err := t.obs.createMLPObservationTest(hostID, mlpObservation); err != nil {
 						logger.Errorf("create MLP observation for testing failed: %s", err.Error())
 					}
 				}
@@ -258,7 +245,7 @@ func (t *training) preprocess(ip, hostname string) error {
 					maxBandwidth = 0
 				}
 
-				if err := t.createGNNEdgeObservation(hostID, GNNEdgeObservation{
+				if err := t.obs.createGNNEdgeObservation(hostID, GNNEdgeObservation{
 					SrcHostID:    networkTopology.Host.ID,
 					DestHostID:   destHost.ID,
 					AverageRTT:   destHost.Probes.AverageRTT,
@@ -276,7 +263,7 @@ func (t *training) preprocess(ip, hostname string) error {
 			continue
 		}
 
-		if err := t.createGNNVertexObservation(hostID, GNNVertexObservation{
+		if err := t.obs.createGNNVertexObservation(hostID, GNNVertexObservation{
 			HostID:   networkTopology.Host.ID,
 			IP:       ipFeature,
 			Location: locationFeature(networkTopology.Host.Network.Location),
@@ -316,264 +303,208 @@ func (t *training) trainGNN(ctx context.Context, ip, hostname string) error {
 
 // trainMLP trains MLP model.
 func (t *training) trainMLP(ctx context.Context, ip, hostname string) error {
-	// TODO: Train MLP model.
+	var (
+		hostID = idgen.HostIDV2(ip, hostname)
+		// Initialize score batch and target batch for training.
+		scoresBatch = make([][]float64, 0, MLPBatchSize)
+		targetBatch = make([]float64, 0, MLPBatchSize)
+	)
 
-	// TODO: Upload MLP model to manager.
-	// if err := t.managerClient.CreateModel(ctx, &manager.CreateModelRequest{
-	// 	Hostname: hostname,
-	// 	Ip:       ip,
-	// 	Request: &manager.CreateModelRequest_CreateMlpRequest{
-	// 		CreateMlpRequest: &manager.CreateMLPRequest{
-	// 			Data: []byte{},
-	// 			Mse:  0,
-	// 			Mae:  0,
-	// 		},
-	// 	},
-	// }); err != nil {
-	// 	logger.Error("upload MLP model to manager error: %v", err.Error())
-	// 	return err
-	// }
-
-	return nil
-}
-
-// createMLPObservationTrain inserts the MLP observations into csv file for training.
-func (t *training) createMLPObservationTrain(key string, observations ...MLPObservation) error {
-	file, err := os.OpenFile(t.mlpObservationTrainFilename(key), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	model, err := tf.LoadSavedModel(MLPInitialModelPath, []string{"serve"}, nil)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
 
-	if err := gocsv.MarshalWithoutHeaders(observations, file); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// createMLPObservationTest inserts the MLP observations into csv file for testing.
-func (t *training) createMLPObservationTest(key string, observations ...MLPObservation) error {
-	file, err := os.OpenFile(t.mlpObservationTestFilename(key), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	// Training phase.
+	// Open MLP observation training file.
+	mlpObservationTrainFile, err := t.obs.openMLPObservationTrainFile(hostID)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer mlpObservationTrainFile.Close()
 
-	if err := gocsv.MarshalWithoutHeaders(observations, file); err != nil {
-		return err
+	trainReader := csv.NewReader(mlpObservationTrainFile)
+	for i := 0; i < MLPEpochCount; i++ {
+		for {
+			// Read MLP observation training file in line.
+			line, err := trainReader.Read()
+			if err == io.EOF {
+				// Reset MLP observation training file in line.
+				mlpObservationTrainFile.Seek(0, 0)
+				break
+			}
+
+			if err != nil {
+				return err
+			}
+
+			var scores = make([]float64, len(line)-1)
+			// Add scores and target of each MLP observation to score batch and target batch.
+			for j, v := range line[:len(line)-1] {
+				var val float64
+				if val, err = strconv.ParseFloat(v, 64); err != nil {
+					return err
+				}
+				scores[j] = val
+			}
+			scoresBatch = append(scoresBatch, scores)
+
+			target, err := strconv.ParseFloat(line[len(line)-1], 64)
+			if err != nil {
+				return err
+			}
+			targetBatch = append(targetBatch, target)
+
+			if len(scoresBatch) == MLPBatchSize && len(targetBatch) == MLPBatchSize {
+				// Convert MLP observations to Tensorflow tensor.
+				scoreTensor, targetTensor, err := MLPObservationToTensor(scoresBatch, targetBatch, MLPBatchSize)
+				if err != nil {
+					return err
+
+				}
+
+				// Run an optimization step on the model using batch of values from observation file.
+				if err := learnMLP(model, scoreTensor, targetTensor); err != nil {
+					return err
+				}
+
+				// Reset score batch and target batch for further training phase.
+				scoresBatch = make([][]float64, 0, MLPBatchSize)
+				targetBatch = make([]float64, 0, MLPEpochCount)
+			}
+		}
 	}
 
-	return nil
-}
-
-// createGNNVertexObservation inserts the GNN vertex observations into csv file.
-func (t *training) createGNNVertexObservation(key string, observations ...GNNVertexObservation) error {
-	file, err := os.OpenFile(t.gnnVertexObservationFilename(key), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	// Testing phase.
+	// Open MLP observation testing file.
+	mlpObservationTestFile, err := t.obs.openMLPObservationTestFile(hostID)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer mlpObservationTestFile.Close()
 
-	if err := gocsv.MarshalWithoutHeaders(observations, file); err != nil {
-		return err
-	}
+	testReader := csv.NewReader(mlpObservationTestFile)
+	// Initialize accumulated MSE, MAE and test observation count.
+	var (
+		accMSE    float64
+		accMAE    float64
+		testCount int
+	)
 
-	return nil
-}
-
-// createGNNEdgeObservation inserts the GNN edge observations into csv file.
-func (t *training) createGNNEdgeObservation(key string, observations ...GNNEdgeObservation) error {
-	file, err := os.OpenFile(t.gnnEdgeObservationFilename(key), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	if err := gocsv.MarshalWithoutHeaders(observations, file); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// clearMLPObservationTrainFile removes mlp train observation file.
-func (t *training) clearMLPObservationTrainFile(key string) error {
-	return os.Remove(t.mlpObservationTrainFilename(key))
-}
-
-// clearMLPObservationTestFile removes mlp test observation file.
-func (t *training) clearMLPObservationTestFile(key string) error {
-	return os.Remove(t.mlpObservationTestFilename(key))
-}
-
-// clearGNNVertexObservationFile removes gnn vertex observation file.
-func (t *training) clearGNNVertexObservationFile(key string) error {
-	return os.Remove(t.gnnVertexObservationFilename(key))
-}
-
-// clearGNNEdgeObservationFile removes gnn edge observation file.
-func (t *training) clearGNNEdgeObservationFile(key string) error {
-	return os.Remove(t.gnnEdgeObservationFilename(key))
-}
-
-// openGNNVertexObservationFile opens gnn vertex observation file for read based on the given model key, it returns io.ReadCloser of gnn vertex observation file.
-func (t *training) openGNNVertexObservationFile(key string) (*os.File, error) {
-	return os.OpenFile(t.gnnVertexObservationFilename(key), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
-}
-
-// openGNNEdgeObservationFile opens gnn edge observation file for read based on the given model key, it returns io.ReadCloser of gnn edge observation file.
-func (t *training) openGNNEdgeObservationFile(key string) (*os.File, error) {
-	return os.OpenFile(t.gnnEdgeObservationFilename(key), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
-}
-
-// mlpObservationTrainFilename generates mlp observation train file name based on the given key.
-func (t *training) mlpObservationTrainFilename(key string) string {
-	return filepath.Join(t.baseDir, fmt.Sprintf("%s_%s.%s", MLPObservationTrainFilePrefix, key, CSVFileExt))
-}
-
-// mlpObservationTestFilename generates mlp observation test file name based on the given key.
-func (t *training) mlpObservationTestFilename(key string) string {
-	return filepath.Join(t.baseDir, fmt.Sprintf("%s_%s.%s", MLPObservationTestFilePrefix, key, CSVFileExt))
-}
-
-// gnnVertexObservationFilename generates gnn vertex observation file name based on the given key.
-func (t *training) gnnVertexObservationFilename(key string) string {
-	return filepath.Join(t.baseDir, fmt.Sprintf("%s_%s.%s", GNNVertexObservationFilePrefix, key, CSVFileExt))
-}
-
-// gnnEdgeObservationFilename generates gnn edge observation file name based on the given key.
-func (t *training) gnnEdgeObservationFilename(key string) string {
-	return filepath.Join(t.baseDir, fmt.Sprintf("%s_%s.%s", GNNEdgeObservationFilePrefix, key, CSVFileExt))
-}
-
-// networkTopologyFilename generates network topology file name based on the given model key.
-func calculatePieceScore(parentFinishedPieceCount, childFinishedPieceCount, totalPieceCount int32) float64 {
-	// If the total piece is determined, normalize the number of
-	// pieces downloaded by the parent node.
-	if totalPieceCount > 0 {
-		return float64(parentFinishedPieceCount) / float64(totalPieceCount)
-	}
-
-	// Use the difference between the parent node and the child node to
-	// download the piece to roughly represent the piece score.
-	return float64(parentFinishedPieceCount) - float64(childFinishedPieceCount)
-}
-
-// calculateParentHostUploadSuccessScore 0.0~unlimited larger and better.
-func calculateParentHostUploadSuccessScore(uploadCount, uploadFailedCount int64) float64 {
-	if uploadCount < uploadFailedCount {
-		return minScore
-	}
-
-	// Host has not been scheduled, then it is scheduled first.
-	if uploadCount == 0 && uploadFailedCount == 0 {
-		return maxScore
-	}
-
-	return float64(uploadCount-uploadFailedCount) / float64(uploadCount)
-}
-
-// calculateFreeUploadScore 0.0~1.0 larger and better.
-func calculateFreeUploadScore(concurrentUploadLimit, concurrentUploadCount int32) float64 {
-	freeUploadCount := concurrentUploadLimit - concurrentUploadCount
-	if concurrentUploadLimit > 0 && freeUploadCount > 0 {
-		return float64(freeUploadCount) / float64(concurrentUploadLimit)
-	}
-
-	return minScore
-}
-
-// calculateIDCAffinityScore 0.0~1.0 larger and better.
-func calculateIDCAffinityScore(dst, src string) float64 {
-	if dst != "" && src != "" && dst == src {
-		return maxScore
-	}
-
-	return minScore
-}
-
-// calculateMultiElementAffinityScore 0.0~1.0 larger and better.
-func calculateMultiElementAffinityScore(dst, src string) float64 {
-	if dst == "" || src == "" {
-		return minScore
-	}
-
-	if dst == src {
-		return maxScore
-	}
-
-	// Calculate the number of multi-element matches divided by "|".
-	var score, elementLen int
-	dstElements := strings.Split(dst, types.AffinitySeparator)
-	srcElements := strings.Split(src, types.AffinitySeparator)
-	elementLen = math.Min(len(dstElements), len(srcElements))
-
-	// Maximum element length is 3.
-	if elementLen > maxElementLen {
-		elementLen = maxElementLen
-	}
-
-	for i := 0; i < elementLen; i++ {
-		if dstElements[i] != srcElements[i] {
+	for {
+		// Read preprocessed file in line.
+		line, err := testReader.Read()
+		if err == io.EOF {
 			break
 		}
-		score++
-	}
 
-	return float64(score) / float64(maxElementLen)
-}
-
-// ipFeature convert an ip address to a feature vector.
-func ipFeature(data string) ([]uint32, error) {
-	ip := net.ParseIP(data)
-	var features = make([]uint32, net.IPv6len)
-	if l := len(ip); l != net.IPv4len && l != net.IPv6len {
-		msg := fmt.Sprintf("invalid IP address: %s", ip)
-		logger.Error(msg)
-		return features, errors.New(msg)
-	}
-
-	if ip.To4() != nil {
-		for i := 0; i < net.IPv4len; i++ {
-			features[i] = uint32(ip[i])
+		if err != nil {
+			return err
 		}
-	}
 
-	if ip.To16() != nil {
-		for i := 0; i < net.IPv6len; i++ {
-			features[i] = uint32(ip[i])
+		// Initialize score and target for testing.
+		var (
+			scores = make([][]float64, 1)
+			target = make([]float64, 1)
+		)
+		scores[0] = make([]float64, len(line)-1)
+
+		for j, v := range line[:len(line)-1] {
+			val, err := strconv.ParseFloat(v, 64)
+			if err != nil {
+				return err
+			}
+			scores[0][j] = val
 		}
+
+		target[0], err = strconv.ParseFloat(line[len(line)-1], 64)
+		if err != nil {
+			return err
+		}
+
+		// Convert MLP observation to Tensorflow tensor.
+		scoreTensor, targetTensor, err := MLPObservationToTensor(scores, target, 1)
+		if err != nil {
+			return err
+		}
+
+		// Run test and receive avarage model metrics.
+		MSE, MAE, err := testMLP(model, scoreTensor, targetTensor)
+		if err != nil {
+			return err
+		}
+		accMSE += MSE[0]
+		accMAE += MAE[0]
+		testCount++
 	}
 
-	return features, nil
-}
+	MAE := accMAE / float64(testCount)
+	MSE := accMSE / float64(testCount)
+	fmt.Println("Metric-MAE:", MAE)
+	fmt.Println("Metric-MSE:", MSE)
 
-// locationFeature converts location to a feature vector.
-func locationFeature(location string) []uint32 {
-	locs := strings.Split(location, locationSeparator)
-	var features = make([]uint32, maxElementLen)
-	for i, part := range locs {
-		features[i] = hash(part)
+	// Create MLP trained model directory file for updating and uploading.
+	if err := os.MkdirAll(t.files.mlpModelDirFile(hostID), os.ModePerm); err != nil {
+		return err
 	}
 
-	return features
+	// Create trained MLP model variables directory file.
+	if err := os.MkdirAll(t.files.mlpModelVariablesFile(hostID), os.ModePerm); err != nil {
+		return err
+	}
+
+	mlpInitialSavedModelFile, err := t.files.openMLPInitialSavedModelFile()
+	if err != nil {
+		return err
+	}
+	defer mlpInitialSavedModelFile.Close()
+
+	mlpSavedModelFile, err := t.files.openMLPSavedModelFile(hostID)
+	if err != nil {
+		return err
+	}
+	defer mlpSavedModelFile.Close()
+
+	// Copy MLP initial saved model file to MLP saved model file.
+	if _, err := io.Copy(mlpSavedModelFile, mlpInitialSavedModelFile); err != nil {
+		return err
+	}
+
+	// Update variables file.
+	variableTensor, err := tf.NewTensor(t.files.mlpModelVariablesFile(hostID))
+	if err != nil {
+		return err
+	}
+
+	if err := saveMLP(model, variableTensor); err != nil {
+		return err
+	}
+
+	// Compress MLP trained model directory and convert to bytes.
+	d, err := compressMLPDir(t.files.mlpModelDirFile(hostID))
+	if err != nil {
+		return err
+	}
+
+	// Upload MLP model to manager.
+	if err := t.managerClient.CreateModel(ctx, &manager.CreateModelRequest{
+		Hostname: hostname,
+		Ip:       ip,
+		Request: &manager.CreateModelRequest_CreateMlpRequest{
+			CreateMlpRequest: &manager.CreateMLPRequest{
+				Data: d,
+				Mse:  MSE,
+				Mae:  MAE,
+			},
+		},
+	}); err != nil {
+		logger.Error("upload MLP model to manager error: %v", err.Error())
+		return err
+	}
+
+	return nil
 }
 
-// idcFeature converts idc to a feature vector.
-func idcFeature(idc string) uint32 {
-	return hash(idc)
-}
-
-// hash convert string to uint64.
-func hash(s string) uint32 {
-	h := sha1.New()
-	h.Write([]byte(s))
-
-	return binary.LittleEndian.Uint32(h.Sum(nil))
-}
-
-// minibatch is GNN
 func (t *training) minibatch(ip, hostname string, sampleSizes int) error {
 	// 1.
 	// 先遍历vertex.csv 提取feature 向量 (ip,idc,location), 定位每个节点。
@@ -611,7 +542,7 @@ func (t *training) minibatch(ip, hostname string, sampleSizes int) error {
 		universalHosts    = set.NewSafeSet[int]()
 	)
 
-	GNNVertexObservationFile, err := t.openGNNVertexObservationFile(hostID)
+	GNNVertexObservationFile, err := t.obs.openGNNVertexObservationFile(hostID)
 	if err != nil {
 		msg := fmt.Sprintf("open gnn vertex observation failed: %s", err.Error())
 		logger.Error(msg)
@@ -656,7 +587,7 @@ func (t *training) minibatch(ip, hostname string, sampleSizes int) error {
 		gnnEdgeRTTFeatures[i] = make([]int64, N)
 	}
 
-	GNNEdgeObservationFile, err := t.openGNNEdgeObservationFile(hostID)
+	GNNEdgeObservationFile, err := t.obs.openGNNEdgeObservationFile(hostID)
 	if err != nil {
 		msg := fmt.Sprintf("open gnn edge observation failed: %s", err.Error())
 		logger.Error(msg)
@@ -745,7 +676,7 @@ func (t *training) minibatch(ip, hostname string, sampleSizes int) error {
 				if flag[i][j] {
 					// add source host to set A.
 					A.Add(i)
-					// add destination host to set A.
+					// add destination host to set B.
 					B.Add(j)
 
 					// add source neighbor host to set AN.
@@ -814,4 +745,106 @@ func (t *training) minibatch(ip, hostname string, sampleSizes int) error {
 	}
 
 	return nil
+}
+
+// testMLP runs test and receives avarage model metrics.
+func testMLP(model *tf.SavedModel, scoreTensor, targetTensor *tf.Tensor) ([]float64, []float64, error) {
+
+	res, err := model.Session.Run(
+		map[tf.Output]*tf.Tensor{
+			model.Graph.Operation("MAE_inputs").Output(0):  scoreTensor,
+			model.Graph.Operation("MAE_targets").Output(0): targetTensor,
+		},
+		[]tf.Output{
+			model.Graph.Operation("StatefulPartitionedCall").Output(0),
+		},
+		nil,
+	)
+
+	if err != nil {
+		return nil, nil, err
+	}
+	mae := res[0].Value().([]float64)
+
+	res, err = model.Session.Run(
+		map[tf.Output]*tf.Tensor{
+			model.Graph.Operation("MSE_inputs").Output(0):  scoreTensor,
+			model.Graph.Operation("MSE_targets").Output(0): targetTensor,
+		},
+		[]tf.Output{
+			model.Graph.Operation("StatefulPartitionedCall_1").Output(0),
+		},
+		nil,
+	)
+
+	if err != nil {
+		return nil, nil, err
+	}
+	mse := res[0].Value().([]float64)
+
+	return mse, mae, nil
+}
+
+// learnMLP runs an optimization step on the model using batch of values from observation file.
+func learnMLP(model *tf.SavedModel, scoreTensor, targetTensor *tf.Tensor) error {
+	_, err := model.Session.Run(
+		map[tf.Output]*tf.Tensor{
+			model.Graph.Operation("train_inputs").Output(0):  scoreTensor,
+			model.Graph.Operation("train_targets").Output(0): targetTensor,
+		},
+		[]tf.Output{
+			model.Graph.Operation("StatefulPartitionedCall_3").Output(0),
+			model.Graph.Operation("StatefulPartitionedCall_3").Output(1),
+		},
+		nil,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// saveMLP saves trained MLP model weight into files.
+func saveMLP(model *tf.SavedModel, variables *tf.Tensor) error {
+	_, err := model.Session.Run(
+		map[tf.Output]*tf.Tensor{
+			model.Graph.Operation("saver_filename").Output(0): variables,
+		},
+		[]tf.Output{
+			model.Graph.Operation("StatefulPartitionedCall_4").Output(0),
+		},
+		nil,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// MLPObservationToTensor converts MLP train observations to Tensorflow tensors.
+func MLPObservationToTensor(scoresBatch [][]float64, targetBatch []float64, batchSize int) (*tf.Tensor, *tf.Tensor, error) {
+	scores := make([][]float64, batchSize)
+	target := make([]float64, batchSize)
+
+	for i := 0; i < batchSize; i++ {
+		scores[i] = make([]float64, MLPScoreDims)
+		copy(scores[i], scoresBatch[i])
+		target[i] = targetBatch[i]
+	}
+
+	scoreTensor, err := tf.NewTensor(scores)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	targetTensor, err := tf.NewTensor(target)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return scoreTensor, targetTensor, nil
 }

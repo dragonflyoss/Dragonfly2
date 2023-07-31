@@ -19,6 +19,7 @@ require (
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.4.0
 	github.com/gaius-qi/ping v1.0.0
+	github.com/galeone/tensorflow/tensorflow/go v0.0.0-20221023090153-6b7fa0680c3e
 	github.com/gammazero/deque v0.2.1
 	github.com/gin-contrib/static v0.0.1
 	github.com/gin-contrib/zap v0.1.0
