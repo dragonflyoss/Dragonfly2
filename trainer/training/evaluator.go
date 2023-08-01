@@ -33,14 +33,16 @@ const (
 	// locationSeparator is location separator.
 	locationSeparator = "|"
 
+	// Maximum number of elements.
+	maxElementLen = 3
+)
+
+const (
 	// Maximum score.
 	maxScore float64 = 1
 
 	// Minimum score.
 	minScore = 0
-
-	// Maximum number of elements.
-	maxElementLen = 3
 )
 
 // calculatePieceScore 0.0~unlimited larger and better.

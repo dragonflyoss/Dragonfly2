@@ -48,20 +48,25 @@ const (
 	// PartitionRatio is the partition ratio between the training set and the test set.
 	PartitionRatio = 0.8
 
-	defaultTrainingStep       = 1000
-	defaultBatchSize          = 500
-	defaultNegativeSampleSize = 25
+	// Batch size for each optimization step for MLP model.
+	defaultMLPBatchSize int = 32
+
+	// The number of epochs for training MLP model.
+	defaultMLPEpochCount int = 10
+
+	// The dimension of score Tensor for MLP model's inputs.
+	defaultMLPScoreDims int = 5
 )
 
 const (
-	// Batch size for each optimization step for MLP model.
-	MLPBatchSize int = 32
+	// Batch size for each optimization step for GNN model.
+	defaultGNNBatchSize int = 500
 
-	// The number of epochs for training MLP model.
-	MLPEpochCount int = 10
+	// The number of training step of training GNN model.
+	defaultGNNTrainingStep = 1000
 
-	// The dimension of score Tensor for MLP model's inputs.
-	MLPScoreDims int = 5
+	// The number of negative sample size of GNN model.
+	defaultNegativeSampleSize = 25
 )
 
 // Training defines the interface to train GNN and MLP model.
@@ -81,9 +86,6 @@ type training struct {
 	// observation interface.
 	obs observation
 
-	// files interface.
-	files files
-
 	// Storage interface.
 	storage storage.Storage
 
@@ -97,7 +99,6 @@ func New(cfg *config.Config, baseDir string, managerClient managerclient.V2, sto
 		config:        cfg,
 		baseDir:       baseDir,
 		obs:           *NewObservation(baseDir),
-		files:         *NewFiles(baseDir),
 		storage:       storage,
 		managerClient: managerClient,
 	}
@@ -214,6 +215,7 @@ func (t *training) preprocess(ip, hostname string) error {
 					MaxBandwidth:          bandwidths[key],
 				}
 
+				// Divide the data into train set or test set.
 				if rand.Float32() < PartitionRatio {
 					if err := t.obs.createMLPObservationTrain(hostID, mlpObservation); err != nil {
 						logger.Errorf("create MLP observation for training failed: %s", err.Error())
@@ -303,13 +305,7 @@ func (t *training) trainGNN(ctx context.Context, ip, hostname string) error {
 
 // trainMLP trains MLP model.
 func (t *training) trainMLP(ctx context.Context, ip, hostname string) error {
-	var (
-		hostID = idgen.HostIDV2(ip, hostname)
-		// Initialize score batch and target batch for training.
-		scoresBatch = make([][]float64, 0, MLPBatchSize)
-		targetBatch = make([]float64, 0, MLPBatchSize)
-	)
-
+	hostID := idgen.HostIDV2(ip, hostname)
 	model, err := tf.LoadSavedModel(MLPInitialModelPath, []string{"serve"}, nil)
 	if err != nil {
 		return err
@@ -324,10 +320,10 @@ func (t *training) trainMLP(ctx context.Context, ip, hostname string) error {
 	defer mlpObservationTrainFile.Close()
 
 	trainReader := csv.NewReader(mlpObservationTrainFile)
-	for i := 0; i < MLPEpochCount; i++ {
+	for i := 0; i < defaultMLPEpochCount; i++ {
 		for {
-			// Read MLP observation training file in line.
-			line, err := trainReader.Read()
+			// Read MLP observation training file by line.
+			record, err := trainReader.Read()
 			if err == io.EOF {
 				// Reset MLP observation training file in line.
 				mlpObservationTrainFile.Seek(0, 0)
@@ -338,44 +334,64 @@ func (t *training) trainMLP(ctx context.Context, ip, hostname string) error {
 				return err
 			}
 
-			var scores = make([]float64, len(line)-1)
+			var MLPBatchSize = defaultMLPBatchSize
+			if len(record) < defaultMLPBatchSize {
+				MLPBatchSize = len(record)
+			}
+
+			var (
+				// Initialize score batch and target batch for training.
+				scoresBatch = make([][]float64, 0, MLPBatchSize)
+				targetBatch = make([]float64, 0, MLPBatchSize)
+				scores      = make([]float64, MLPBatchSize-1)
+			)
+
 			// Add scores and target of each MLP observation to score batch and target batch.
-			for j, v := range line[:len(line)-1] {
-				var val float64
-				if val, err = strconv.ParseFloat(v, 64); err != nil {
+			for j, v := range record[:MLPBatchSize-1] {
+				if scores[j], err = strconv.ParseFloat(v, 64); err != nil {
 					return err
 				}
-				scores[j] = val
 			}
 			scoresBatch = append(scoresBatch, scores)
 
-			target, err := strconv.ParseFloat(line[len(line)-1], 64)
+			target, err := strconv.ParseFloat(record[MLPBatchSize-1], 64)
 			if err != nil {
 				return err
 			}
 			targetBatch = append(targetBatch, target)
 
-			if len(scoresBatch) == MLPBatchSize && len(targetBatch) == MLPBatchSize {
+			if len(scoresBatch) == MLPBatchSize {
 				// Convert MLP observations to Tensorflow tensor.
-				scoreTensor, targetTensor, err := MLPObservationToTensor(scoresBatch, targetBatch, MLPBatchSize)
+				scoreTensor, err := tf.NewTensor(scoresBatch)
 				if err != nil {
 					return err
+				}
 
+				targetTensor, err := tf.NewTensor(targetBatch)
+				if err != nil {
+					return err
 				}
 
 				// Run an optimization step on the model using batch of values from observation file.
-				if err := learnMLP(model, scoreTensor, targetTensor); err != nil {
+				if err := mlpLearning(model, scoreTensor, targetTensor); err != nil {
 					return err
 				}
 
 				// Reset score batch and target batch for further training phase.
 				scoresBatch = make([][]float64, 0, MLPBatchSize)
-				targetBatch = make([]float64, 0, MLPEpochCount)
+				targetBatch = make([]float64, 0, MLPBatchSize)
 			}
 		}
 	}
 
 	// Testing phase.
+	// Initialize accumulated MSE, MAE and test observation count.
+	var (
+		accMSE    float64
+		accMAE    float64
+		testCount int
+	)
+
 	// Open MLP observation testing file.
 	mlpObservationTestFile, err := t.obs.openMLPObservationTestFile(hostID)
 	if err != nil {
@@ -384,16 +400,9 @@ func (t *training) trainMLP(ctx context.Context, ip, hostname string) error {
 	defer mlpObservationTestFile.Close()
 
 	testReader := csv.NewReader(mlpObservationTestFile)
-	// Initialize accumulated MSE, MAE and test observation count.
-	var (
-		accMSE    float64
-		accMAE    float64
-		testCount int
-	)
-
 	for {
 		// Read preprocessed file in line.
-		line, err := testReader.Read()
+		record, err := testReader.Read()
 		if err == io.EOF {
 			break
 		}
@@ -404,12 +413,13 @@ func (t *training) trainMLP(ctx context.Context, ip, hostname string) error {
 
 		// Initialize score and target for testing.
 		var (
-			scores = make([][]float64, 1)
-			target = make([]float64, 1)
+			scores       = make([][]float64, 1)
+			target       = make([]float64, 1)
+			recordLength = len(record)
 		)
-		scores[0] = make([]float64, len(line)-1)
+		scores[0] = make([]float64, recordLength-1)
 
-		for j, v := range line[:len(line)-1] {
+		for j, v := range record[:recordLength-1] {
 			val, err := strconv.ParseFloat(v, 64)
 			if err != nil {
 				return err
@@ -417,19 +427,24 @@ func (t *training) trainMLP(ctx context.Context, ip, hostname string) error {
 			scores[0][j] = val
 		}
 
-		target[0], err = strconv.ParseFloat(line[len(line)-1], 64)
+		target[0], err = strconv.ParseFloat(record[recordLength-1], 64)
 		if err != nil {
 			return err
 		}
 
 		// Convert MLP observation to Tensorflow tensor.
-		scoreTensor, targetTensor, err := MLPObservationToTensor(scores, target, 1)
+		scoreTensor, err := tf.NewTensor(scores)
+		if err != nil {
+			return err
+		}
+
+		targetTensor, err := tf.NewTensor(target)
 		if err != nil {
 			return err
 		}
 
 		// Run test and receive avarage model metrics.
-		MSE, MAE, err := testMLP(model, scoreTensor, targetTensor)
+		MSE, MAE, err := mlpValidation(model, scoreTensor, targetTensor)
 		if err != nil {
 			return err
 		}
@@ -440,26 +455,26 @@ func (t *training) trainMLP(ctx context.Context, ip, hostname string) error {
 
 	MAE := accMAE / float64(testCount)
 	MSE := accMSE / float64(testCount)
-	fmt.Println("Metric-MAE:", MAE)
-	fmt.Println("Metric-MSE:", MSE)
+	logger.Infof("Metric-MAE: %f", MAE)
+	logger.Infof("Metric-MSE: %f", MSE)
 
 	// Create MLP trained model directory file for updating and uploading.
-	if err := os.MkdirAll(t.files.mlpModelDirFile(hostID), os.ModePerm); err != nil {
+	if err := os.MkdirAll(t.obs.mlpModelDirFile(hostID), os.ModePerm); err != nil {
 		return err
 	}
 
 	// Create trained MLP model variables directory file.
-	if err := os.MkdirAll(t.files.mlpModelVariablesFile(hostID), os.ModePerm); err != nil {
+	if err := os.MkdirAll(t.obs.mlpModelVariablesFile(hostID), os.ModePerm); err != nil {
 		return err
 	}
 
-	mlpInitialSavedModelFile, err := t.files.openMLPInitialSavedModelFile()
+	mlpInitialSavedModelFile, err := t.obs.openMLPInitialSavedModelFile()
 	if err != nil {
 		return err
 	}
 	defer mlpInitialSavedModelFile.Close()
 
-	mlpSavedModelFile, err := t.files.openMLPSavedModelFile(hostID)
+	mlpSavedModelFile, err := t.obs.openMLPSavedModelFile(hostID)
 	if err != nil {
 		return err
 	}
@@ -471,17 +486,17 @@ func (t *training) trainMLP(ctx context.Context, ip, hostname string) error {
 	}
 
 	// Update variables file.
-	variableTensor, err := tf.NewTensor(t.files.mlpModelVariablesFile(hostID))
+	variableTensor, err := tf.NewTensor(t.obs.mlpModelVariablesFile(hostID))
 	if err != nil {
 		return err
 	}
 
-	if err := saveMLP(model, variableTensor); err != nil {
+	if err := mlpSaving(model, variableTensor); err != nil {
 		return err
 	}
 
-	// Compress MLP trained model directory and convert to bytes.
-	d, err := compressMLPDir(t.files.mlpModelDirFile(hostID))
+	// Compress MLP trained model file and convert to bytes.
+	d, err := compressMLPFile(t.obs.mlpModelDirFile(hostID))
 	if err != nil {
 		return err
 	}
@@ -633,7 +648,7 @@ func (t *training) minibatch(ip, hostname string, sampleSizes int) error {
 
 	// sampling.
 	// loop training step.
-	for j := 0; j < defaultTrainingStep; j++ {
+	for j := 0; j < defaultGNNTrainingStep; j++ {
 		// random select edges, default batch size = 500 .
 		var (
 			flag        = make([][]bool, N)
@@ -655,7 +670,7 @@ func (t *training) minibatch(ip, hostname string, sampleSizes int) error {
 				sampleCount++
 			}
 
-			if sampleCount >= defaultBatchSize {
+			if sampleCount >= defaultGNNBatchSize {
 				break
 			}
 		}
@@ -745,106 +760,4 @@ func (t *training) minibatch(ip, hostname string, sampleSizes int) error {
 	}
 
 	return nil
-}
-
-// testMLP runs test and receives avarage model metrics.
-func testMLP(model *tf.SavedModel, scoreTensor, targetTensor *tf.Tensor) ([]float64, []float64, error) {
-
-	res, err := model.Session.Run(
-		map[tf.Output]*tf.Tensor{
-			model.Graph.Operation("MAE_inputs").Output(0):  scoreTensor,
-			model.Graph.Operation("MAE_targets").Output(0): targetTensor,
-		},
-		[]tf.Output{
-			model.Graph.Operation("StatefulPartitionedCall").Output(0),
-		},
-		nil,
-	)
-
-	if err != nil {
-		return nil, nil, err
-	}
-	mae := res[0].Value().([]float64)
-
-	res, err = model.Session.Run(
-		map[tf.Output]*tf.Tensor{
-			model.Graph.Operation("MSE_inputs").Output(0):  scoreTensor,
-			model.Graph.Operation("MSE_targets").Output(0): targetTensor,
-		},
-		[]tf.Output{
-			model.Graph.Operation("StatefulPartitionedCall_1").Output(0),
-		},
-		nil,
-	)
-
-	if err != nil {
-		return nil, nil, err
-	}
-	mse := res[0].Value().([]float64)
-
-	return mse, mae, nil
-}
-
-// learnMLP runs an optimization step on the model using batch of values from observation file.
-func learnMLP(model *tf.SavedModel, scoreTensor, targetTensor *tf.Tensor) error {
-	_, err := model.Session.Run(
-		map[tf.Output]*tf.Tensor{
-			model.Graph.Operation("train_inputs").Output(0):  scoreTensor,
-			model.Graph.Operation("train_targets").Output(0): targetTensor,
-		},
-		[]tf.Output{
-			model.Graph.Operation("StatefulPartitionedCall_3").Output(0),
-			model.Graph.Operation("StatefulPartitionedCall_3").Output(1),
-		},
-		nil,
-	)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// saveMLP saves trained MLP model weight into files.
-func saveMLP(model *tf.SavedModel, variables *tf.Tensor) error {
-	_, err := model.Session.Run(
-		map[tf.Output]*tf.Tensor{
-			model.Graph.Operation("saver_filename").Output(0): variables,
-		},
-		[]tf.Output{
-			model.Graph.Operation("StatefulPartitionedCall_4").Output(0),
-		},
-		nil,
-	)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// MLPObservationToTensor converts MLP train observations to Tensorflow tensors.
-func MLPObservationToTensor(scoresBatch [][]float64, targetBatch []float64, batchSize int) (*tf.Tensor, *tf.Tensor, error) {
-	scores := make([][]float64, batchSize)
-	target := make([]float64, batchSize)
-
-	for i := 0; i < batchSize; i++ {
-		scores[i] = make([]float64, MLPScoreDims)
-		copy(scores[i], scoresBatch[i])
-		target[i] = targetBatch[i]
-	}
-
-	scoreTensor, err := tf.NewTensor(scores)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	targetTensor, err := tf.NewTensor(target)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return scoreTensor, targetTensor, nil
 }
