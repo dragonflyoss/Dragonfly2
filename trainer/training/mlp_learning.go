@@ -16,7 +16,9 @@
 
 package training
 
-import tf "github.com/galeone/tensorflow/tensorflow/go"
+import (
+	tf "github.com/galeone/tensorflow/tensorflow/go"
+)
 
 // mlpValidation runs test set and receives avarage model metrics.
 func mlpValidation(model *tf.SavedModel, scoreTensor, targetTensor *tf.Tensor) ([]float64, []float64, error) {

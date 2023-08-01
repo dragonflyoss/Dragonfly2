@@ -47,10 +47,10 @@ const (
 
 const (
 	// Initial model path for training MLP model.
-	MLPInitialModelPath = "../models/MLP"
+	MLPInitialModelPath = "../models/mlp"
 
 	// MLPModelFilePrefix is the prefix of trained MLP model.
-	MLPModelFilePrefix = "MLP_trained"
+	MLPModelFilePrefix = "mlp_train"
 
 	// Variables is variable directory name.
 	VariablesDir = "variables"
