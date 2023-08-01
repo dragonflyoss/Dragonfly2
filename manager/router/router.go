@@ -31,6 +31,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/config"
+	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/handlers"
 	"d7y.io/dragonfly/v2/manager/middlewares"
 	"d7y.io/dragonfly/v2/manager/service"
@@ -41,7 +42,7 @@ const (
 	OtelServiceName         = "dragonfly-manager"
 )
 
-func Init(cfg *config.Config, logDir string, service service.Service, enforcer *casbin.Enforcer, assets static.ServeFileSystem) (*gin.Engine, error) {
+func Init(cfg *config.Config, logDir string, service service.Service, database *database.Database, enforcer *casbin.Enforcer, assets static.ServeFileSystem) (*gin.Engine, error) {
 	// Set mode.
 	if !cfg.Verbose {
 		gin.SetMode(gin.ReleaseMode)
@@ -65,23 +66,31 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 		r.Use(otelgin.Middleware(OtelServiceName))
 	}
 
-	// Middleware.
+	// Gin middleware.
 	r.Use(gin.Recovery())
 	r.Use(ginzap.Ginzap(logger.GinLogger.Desugar(), time.RFC3339, true))
 	r.Use(ginzap.RecoveryWithZap(logger.GinLogger.Desugar(), true))
+
+	// Error middleware.
 	r.Use(middlewares.Error())
+
+	// CORS middleware.
 	r.Use(middlewares.CORS())
 
+	// RBAC middleware.
 	rbac := middlewares.RBAC(enforcer)
 	jwt, err := middlewares.Jwt(cfg.Auth.JWT, service)
 	if err != nil {
 		return nil, err
 	}
 
+	// Personal access token middleware.
+	personalAccessToken := middlewares.PersonalAccessToken(database.DB)
+
 	// Manager view.
 	r.Use(static.Serve("/", assets))
 
-	// Router.
+	// API router.
 	apiv1 := r.Group("/api/v1")
 
 	// User.
@@ -179,6 +188,7 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	config.GET(":id", jwt.MiddlewareFunc(), rbac, h.GetConfig)
 	config.GET("", h.GetConfigs)
 
+	// TODO Add auth to the following routes and fix the tests.
 	// Job.
 	job := apiv1.Group("/jobs")
 	job.POST("", h.CreateJob)
@@ -186,12 +196,6 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	job.PATCH(":id", h.UpdateJob)
 	job.GET(":id", h.GetJob)
 	job.GET("", h.GetJobs)
-
-	// Compatible with the V1 preheat.
-	pv1 := r.Group("/preheats")
-	r.GET("_ping", h.GetHealth)
-	pv1.POST("", h.CreateV1Preheat)
-	pv1.GET(":id", h.GetV1Preheat)
 
 	// Application.
 	cs := apiv1.Group("/applications", jwt.MiddlewareFunc(), rbac)
@@ -215,6 +219,24 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	pat.PATCH(":id", h.UpdatePersonalAccessToken)
 	pat.GET(":id", h.GetPersonalAccessToken)
 	pat.GET("", h.GetPersonalAccessTokens)
+
+	// Open API router.
+	oapiv1 := r.Group("/oapi/v1")
+
+	// Job.
+	ojob := oapiv1.Group("/jobs", personalAccessToken)
+	ojob.POST("", h.CreateJob)
+	ojob.DELETE(":id", h.DestroyJob)
+	ojob.PATCH(":id", h.UpdateJob)
+	ojob.GET(":id", h.GetJob)
+	ojob.GET("", h.GetJobs)
+
+	// TODO Remove this api.
+	// Compatible with the V1 preheat.
+	pv1 := r.Group("/preheats")
+	r.GET("_ping", h.GetHealth)
+	pv1.POST("", h.CreateV1Preheat)
+	pv1.GET(":id", h.GetV1Preheat)
 
 	// Health Check.
 	r.GET("/healthy", h.GetHealth)
