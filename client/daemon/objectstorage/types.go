@@ -18,18 +18,58 @@ package objectstorage
 
 import "mime/multipart"
 
+const (
+	// CopyOperation is the operation of copying object.
+	CopyOperation = "copy"
+)
+
+type BucketParams struct {
+	// ID is the id of the bucket.
+	ID string `uri:"id" binding:"required"`
+}
+
 type ObjectParams struct {
-	ID        string `uri:"id" binding:"required"`
+	// ID is the id of the bucket.
+	ID string `uri:"id" binding:"required"`
+
+	// ObjectKey is the object key.
 	ObjectKey string `uri:"object_key" binding:"required"`
 }
 
-type PutObjectRequset struct {
-	Mode        uint                  `form:"mode,default=0" binding:"omitempty,gte=0,lte=2"`
-	Filter      string                `form:"filter" binding:"omitempty"`
-	MaxReplicas int                   `form:"maxReplicas" binding:"omitempty,gt=0,lte=100"`
-	File        *multipart.FileHeader `form:"file" binding:"required"`
+type PutObjectRequest struct {
+	// Mode is the mode of putting object.
+	Mode uint `form:"mode,default=0" binding:"omitempty,gte=0,lte=2"`
+
+	// Filter is the filter of the object.
+	Filter string `form:"filter" binding:"omitempty"`
+
+	// MaxReplicas is the max replicas of the object.
+	MaxReplicas int `form:"maxReplicas" binding:"omitempty,gt=0,lte=100"`
+
+	// File is the file of the object.
+	File *multipart.FileHeader `form:"file" binding:"required"`
 }
 
 type GetObjectQuery struct {
+	// Filter is the filter of the object.
 	Filter string `form:"filter" binding:"omitempty"`
+}
+
+type GetObjectMetadatasQuery struct {
+	// A delimiter is a character used to group keys.
+	Delimiter string `form:"delimiter" binding:"omitempty"`
+
+	// Marker indicates the starting object key for listing.
+	Marker string `form:"marker" binding:"omitempty"`
+
+	// Sets the maximum number of keys returned in the response.
+	Limit int64 `form:"limit" binding:"omitempty"`
+
+	// Limits the response to keys that begin with the specified prefix.
+	Prefix string `form:"prefix" binding:"omitempty"`
+}
+
+type CopyObjectRequest struct {
+	// SourceBucket is the source object key.
+	SourceObjectKey string `form:"source_object_key" binding:"required"`
 }

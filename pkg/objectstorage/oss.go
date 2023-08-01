@@ -109,6 +109,11 @@ func (o *oss) GetObjectMetadata(ctx context.Context, bucketName, objectKey strin
 		return nil, false, err
 	}
 
+	lastModifiedTime, err := time.Parse(http.TimeFormat, header.Get(aliyunoss.HTTPHeaderLastModified))
+	if err != nil {
+		return nil, false, err
+	}
+
 	return &ObjectMetadata{
 		Key:                objectKey,
 		ContentDisposition: header.Get(headers.ContentDisposition),
@@ -118,7 +123,39 @@ func (o *oss) GetObjectMetadata(ctx context.Context, bucketName, objectKey strin
 		ContentType:        header.Get(headers.ContentType),
 		ETag:               header.Get(headers.ETag),
 		Digest:             header.Get(aliyunoss.HTTPHeaderOssMetaPrefix + MetaDigest),
+		LastModifiedTime:   lastModifiedTime,
+		StorageClass:       o.getStorageClass(header.Get(aliyunoss.HTTPHeaderOssStorageClass)),
 	}, true, nil
+}
+
+// GetObjectMetadatas returns the metadatas of the objects.
+func (o *oss) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) ([]*ObjectMetadata, error) {
+	bucket, err := o.client.Bucket(bucketName)
+	if err != nil {
+		return nil, err
+	}
+
+	if limit == 0 {
+		limit = DefaultGetObjectMetadatasLimit
+	}
+
+	resp, err := bucket.ListObjects(aliyunoss.Prefix(prefix), aliyunoss.Marker(marker), aliyunoss.Delimiter(delimiter), aliyunoss.MaxKeys(int(limit)))
+	if err != nil {
+		return nil, err
+	}
+
+	metadatas := make([]*ObjectMetadata, 0, len(resp.Objects))
+	for _, object := range resp.Objects {
+		metadatas = append(metadatas, &ObjectMetadata{
+			Key:              object.Key,
+			ETag:             object.ETag,
+			ContentLength:    object.Size,
+			LastModifiedTime: object.LastModified,
+			StorageClass:     o.getStorageClass(object.StorageClass),
+		})
+	}
+
+	return metadatas, nil
 }
 
 // GetOject returns data of object.
@@ -152,29 +189,6 @@ func (o *oss) DeleteObject(ctx context.Context, bucketName, objectKey string) er
 	return bucket.DeleteObject(objectKey)
 }
 
-// ListObjectMetadatas returns metadata of objects.
-func (o *oss) ListObjectMetadatas(ctx context.Context, bucketName, prefix, marker string, limit int64) ([]*ObjectMetadata, error) {
-	bucket, err := o.client.Bucket(bucketName)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := bucket.ListObjects(aliyunoss.Prefix(prefix), aliyunoss.Marker(marker), aliyunoss.MaxKeys(int(limit)))
-	if err != nil {
-		return nil, err
-	}
-
-	var metadatas []*ObjectMetadata
-	for _, object := range resp.Objects {
-		metadatas = append(metadatas, &ObjectMetadata{
-			Key:  object.Key,
-			ETag: object.ETag,
-		})
-	}
-
-	return metadatas, nil
-}
-
 // IsObjectExist returns whether the object exists.
 func (o *oss) IsObjectExist(ctx context.Context, bucketName, objectKey string) (bool, error) {
 	bucket, err := o.client.Bucket(bucketName)
@@ -188,6 +202,17 @@ func (o *oss) IsObjectExist(ctx context.Context, bucketName, objectKey string) (
 // IsBucketExist returns whether the bucket exists.
 func (o *oss) IsBucketExist(ctx context.Context, bucketName string) (bool, error) {
 	return o.client.IsBucketExist(bucketName)
+}
+
+// CopyObject copy object from source to destination.
+func (o *oss) CopyObject(ctx context.Context, bucketName, sourceObjectKey, destinationObjectKey string) error {
+	bucket, err := o.client.Bucket(bucketName)
+	if err != nil {
+		return err
+	}
+
+	_, err = bucket.CopyObject(sourceObjectKey, destinationObjectKey)
+	return err
 }
 
 // GetSignURL returns sign url of object.
@@ -216,4 +241,13 @@ func (o *oss) GetSignURL(ctx context.Context, bucketName, objectKey string, meth
 	}
 
 	return bucket.SignURL(objectKey, ossHTTPMethod, int64(expire.Seconds()))
+}
+
+// getStorageClass returns the default storage class if the input is empty.
+func (o *oss) getStorageClass(storageClass string) string {
+	if storageClass == "" {
+		storageClass = string(aliyunoss.StorageStandard)
+	}
+
+	return storageClass
 }

@@ -107,6 +107,46 @@ func TestSeedPeerClient_newSeedPeerClient(t *testing.T) {
 	}
 }
 
+func TestSeedPeerClinet_Addrs(t *testing.T) {
+	tests := []struct {
+		name   string
+		sc     *seedPeerClient
+		expect func(t *testing.T, addrs []string)
+	}{
+		{
+			name: "return the addresses of seed peers",
+			sc: &seedPeerClient{
+				data: &config.DynconfigData{
+					Scheduler: &managerv2.Scheduler{
+						SeedPeers: []*managerv2.SeedPeer{
+							{
+								Ip:   "0.0.0.0",
+								Port: 8080,
+							},
+							{
+								Ip:   "127.0.0.1",
+								Port: 5000,
+							},
+						},
+					},
+				},
+			},
+			expect: func(t *testing.T, addrs []string) {
+				assert := assert.New(t)
+				assert.Equal("0.0.0.0:8080", addrs[0])
+				assert.Equal("127.0.0.1:5000", addrs[1])
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			addrs := tc.sc.Addrs()
+			tc.expect(t, addrs)
+		})
+	}
+}
+
 func TestSeedPeerClient_OnNotify(t *testing.T) {
 	tests := []struct {
 		name string

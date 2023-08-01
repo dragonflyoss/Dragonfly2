@@ -40,7 +40,7 @@ type GetJobsQuery struct {
 	State   string `form:"state" binding:"omitempty,oneof=PENDING RECEIVED STARTED RETRY SUCCESS FAILURE"`
 	UserID  uint   `form:"user_id" binding:"omitempty"`
 	Page    int    `form:"page" binding:"omitempty,gte=1"`
-	PerPage int    `form:"per_page" binding:"omitempty,gte=1,lte=50"`
+	PerPage int    `form:"per_page" binding:"omitempty,gte=1,lte=1000"`
 }
 
 type CreatePreheatJobRequest struct {

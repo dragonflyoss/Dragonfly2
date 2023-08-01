@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"path"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -114,7 +115,40 @@ func (s *s3) GetObjectMetadata(ctx context.Context, bucketName, objectKey string
 		ContentType:        aws.StringValue(resp.ContentType),
 		ETag:               aws.StringValue(resp.ETag),
 		Digest:             aws.StringValue(resp.Metadata[MetaDigest]),
+		LastModifiedTime:   aws.TimeValue(resp.LastModified),
+		StorageClass:       aws.StringValue(s.getStorageClass(resp.StorageClass)),
 	}, true, nil
+}
+
+// GetObjectMetadatas returns the metadatas of the objects.
+func (s *s3) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) ([]*ObjectMetadata, error) {
+	if limit == 0 {
+		limit = DefaultGetObjectMetadatasLimit
+	}
+
+	resp, err := s.client.ListObjectsWithContext(ctx, &awss3.ListObjectsInput{
+		Bucket:    aws.String(bucketName),
+		Prefix:    aws.String(prefix),
+		Marker:    aws.String(marker),
+		MaxKeys:   aws.Int64(limit),
+		Delimiter: aws.String(delimiter),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	metadatas := make([]*ObjectMetadata, 0, len(resp.Contents))
+	for _, content := range resp.Contents {
+		metadatas = append(metadatas, &ObjectMetadata{
+			Key:              aws.StringValue(content.Key),
+			ContentLength:    aws.Int64Value(content.Size),
+			ETag:             aws.StringValue(content.ETag),
+			LastModifiedTime: aws.TimeValue(content.LastModified),
+			StorageClass:     aws.StringValue(s.getStorageClass(content.StorageClass)),
+		})
+	}
+
+	return metadatas, nil
 }
 
 // GetOject returns data of object.
@@ -155,29 +189,6 @@ func (s *s3) DeleteObject(ctx context.Context, bucketName, objectKey string) err
 	return err
 }
 
-// DeleteObject deletes data of object.
-func (s *s3) ListObjectMetadatas(ctx context.Context, bucketName, prefix, marker string, limit int64) ([]*ObjectMetadata, error) {
-	resp, err := s.client.ListObjectsWithContext(ctx, &awss3.ListObjectsInput{
-		Bucket:  aws.String(bucketName),
-		Prefix:  aws.String(prefix),
-		Marker:  aws.String(marker),
-		MaxKeys: aws.Int64(limit),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	var metadatas []*ObjectMetadata
-	for _, object := range resp.Contents {
-		metadatas = append(metadatas, &ObjectMetadata{
-			Key:  aws.StringValue(object.Key),
-			ETag: aws.StringValue(object.ETag),
-		})
-	}
-
-	return metadatas, nil
-}
-
 // IsObjectExist returns whether the object exists.
 func (s *s3) IsObjectExist(ctx context.Context, bucketName, objectKey string) (bool, error) {
 	_, isExist, err := s.GetObjectMetadata(ctx, bucketName, objectKey)
@@ -206,6 +217,18 @@ func (s *s3) IsBucketExist(ctx context.Context, bucketName string) (bool, error)
 	}
 
 	return true, nil
+}
+
+// CopyObject copy object from source to destination.
+func (s *s3) CopyObject(ctx context.Context, bucketName, sourceObjectKey, destinationObjectKey string) error {
+	sourceObjectKey = path.Join(bucketName, sourceObjectKey)
+	_, err := s.client.CopyObject(&awss3.CopyObjectInput{
+		Bucket:     &bucketName,
+		Key:        &destinationObjectKey,
+		CopySource: &sourceObjectKey,
+	})
+
+	return err
 }
 
 // GetSignURL returns sign url of object.
@@ -241,4 +264,14 @@ func (s *s3) GetSignURL(ctx context.Context, bucketName, objectKey string, metho
 	}
 
 	return req.Presign(expire)
+}
+
+// getStorageClass returns the default storage class if the input is empty.
+func (s *s3) getStorageClass(storageClass *string) *string {
+	if storageClass == nil || *storageClass == "" {
+		storageClass := awss3.StorageClassStandard
+		return &storageClass
+	}
+
+	return storageClass
 }

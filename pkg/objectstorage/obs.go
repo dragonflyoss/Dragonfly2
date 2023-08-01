@@ -114,7 +114,41 @@ func (o *obs) GetObjectMetadata(ctx context.Context, bucketName, objectKey strin
 		ContentType:        metadata.ContentType,
 		ETag:               metadata.ETag,
 		Digest:             metadata.Metadata[MetaDigest],
+		LastModifiedTime:   metadata.LastModified,
+		StorageClass:       o.getStorageClass(metadata.StorageClass),
 	}, true, nil
+}
+
+// GetObjectMetadatas returns the metadatas of the objects.
+func (o *obs) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) ([]*ObjectMetadata, error) {
+	if limit == 0 {
+		limit = DefaultGetObjectMetadatasLimit
+	}
+
+	resp, err := o.client.ListObjects(&huaweiobs.ListObjectsInput{
+		ListObjsInput: huaweiobs.ListObjsInput{
+			Prefix:    prefix,
+			MaxKeys:   int(limit),
+			Delimiter: delimiter,
+		},
+		Bucket: bucketName,
+		Marker: marker,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	metadatas := make([]*ObjectMetadata, 0, len(resp.Contents))
+	for _, content := range resp.Contents {
+		metadatas = append(metadatas, &ObjectMetadata{
+			Key:              content.Key,
+			ETag:             content.ETag,
+			LastModifiedTime: content.LastModified,
+			StorageClass:     o.getStorageClass(content.StorageClass),
+		})
+	}
+
+	return metadatas, nil
 }
 
 // GetOject returns data of object.
@@ -156,29 +190,18 @@ func (o *obs) DeleteObject(ctx context.Context, bucketName, objectKey string) er
 	return err
 }
 
-// ListObjectMetadatas returns metadata of objects.
-func (o *obs) ListObjectMetadatas(ctx context.Context, bucketName, prefix, marker string, limit int64) ([]*ObjectMetadata, error) {
-	resp, err := o.client.ListObjects(&huaweiobs.ListObjectsInput{
-		ListObjsInput: huaweiobs.ListObjsInput{
-			Prefix:  prefix,
-			MaxKeys: int(limit),
+// CopyObject copy object from source to destination.
+func (o *obs) CopyObject(ctx context.Context, bucketName, sourceObjectKey, destinationObjectKey string) error {
+	_, err := o.client.CopyObject(&huaweiobs.CopyObjectInput{
+		ObjectOperationInput: huaweiobs.ObjectOperationInput{
+			Bucket: bucketName,
+			Key:    destinationObjectKey,
 		},
-		Bucket: bucketName,
-		Marker: marker,
+		CopySourceBucket: bucketName,
+		CopySourceKey:    sourceObjectKey,
 	})
-	if err != nil {
-		return nil, err
-	}
 
-	var metadatas []*ObjectMetadata
-	for _, object := range resp.Contents {
-		metadatas = append(metadatas, &ObjectMetadata{
-			Key:  object.Key,
-			ETag: object.ETag,
-		})
-	}
-
-	return metadatas, nil
+	return err
 }
 
 // IsObjectExist returns whether the object exists.
@@ -224,4 +247,19 @@ func (o *obs) GetSignURL(ctx context.Context, bucketName, objectKey string, meth
 	}
 
 	return resp.SignedUrl, nil
+}
+
+// getStorageClass returns the default storage class if the input is empty.
+func (o *obs) getStorageClass(storageClass huaweiobs.StorageClassType) string {
+	var sc string
+	switch storageClass {
+	case "":
+		sc = string(huaweiobs.StorageClassStandard)
+	case huaweiobs.StorageClassWarm:
+		sc = OBSStorageClassStandardIA
+	default:
+		sc = string(storageClass)
+	}
+
+	return sc
 }

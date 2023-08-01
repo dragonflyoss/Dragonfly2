@@ -43,6 +43,105 @@ import (
 	"d7y.io/dragonfly/v2/pkg/source/clients/httpprotocol"
 )
 
+func TestPieceDownloader_isConnectionError(t *testing.T) {
+	tests := []struct {
+		name   string
+		err    error
+		expect bool
+	}{
+		{
+			name: "connection error",
+			err: &pieceDownloadError{
+				connectionError: true,
+			},
+			expect: true,
+		},
+		{
+			name: "connection ok",
+			err: &pieceDownloadError{
+				connectionError: false,
+			},
+			expect: false,
+		},
+		{
+			name:   "no error",
+			err:    nil,
+			expect: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert := testifyassert.New(t)
+			assert.Equal(tc.expect, isConnectionError(tc.err))
+		})
+	}
+}
+
+func TestPieceDownloader_isPieceNotFound(t *testing.T) {
+	tests := []struct {
+		name   string
+		err    error
+		expect bool
+	}{
+		{
+			name: "piece not found",
+			err: &pieceDownloadError{
+				statusCode: http.StatusNotFound,
+			},
+			expect: true,
+		},
+		{
+			name:   "piece found",
+			err:    &pieceDownloadError{},
+			expect: false,
+		},
+		{
+			name:   "no error",
+			err:    nil,
+			expect: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert := testifyassert.New(t)
+			assert.Equal(tc.expect, isPieceNotFound(tc.err))
+		})
+	}
+}
+
+func TestPieceDownloader_isBackSourceError(t *testing.T) {
+	tests := []struct {
+		name   string
+		err    error
+		expect bool
+	}{
+		{
+			name:   "back source error",
+			err:    &backSourceError{},
+			expect: true,
+		},
+		{
+			name:   "unexpected status code error",
+			err:    &source.UnexpectedStatusCodeError{},
+			expect: true,
+		},
+		{
+			name:   "no error",
+			err:    nil,
+			expect: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert := testifyassert.New(t)
+			assert.Equal(tc.expect, isBackSourceError(tc.err))
+		})
+	}
+}
+
 func TestPieceDownloader_DownloadPiece(t *testing.T) {
 	assert := testifyassert.New(t)
 	source.UnRegister("http")

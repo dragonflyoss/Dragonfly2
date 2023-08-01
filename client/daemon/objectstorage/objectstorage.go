@@ -172,6 +172,8 @@ func (o *objectStorage) initRouter(cfg *config.DaemonOption, logDir string) *gin
 
 	// Buckets
 	b := r.Group(RouterGroupBuckets)
+	b.POST("/:id", o.createBucket)
+	b.GET(":id/metadatas", o.getObjectMetadatas)
 	b.HEAD(":id/objects/*object_key", o.headObject)
 	b.GET(":id/objects/*object_key", o.getObject)
 	b.DELETE(":id/objects/*object_key", o.destroyObject)
@@ -222,6 +224,8 @@ func (o *objectStorage) headObject(ctx *gin.Context) {
 	ctx.Header(headers.ContentType, meta.ContentType)
 	ctx.Header(headers.ETag, meta.ETag)
 	ctx.Header(config.HeaderDragonflyObjectMetaDigest, meta.Digest)
+	ctx.Header(config.HeaderDragonflyObjectMetaLastModifiedTime, meta.LastModifiedTime.Format(http.TimeFormat))
+	ctx.Header(config.HeaderDragonflyObjectMetaStorageClass, meta.StorageClass)
 
 	ctx.Status(http.StatusOK)
 	return
@@ -356,13 +360,19 @@ func (o *objectStorage) destroyObject(ctx *gin.Context) {
 
 // putObject uses to upload object data.
 func (o *objectStorage) putObject(ctx *gin.Context) {
+	operation := ctx.Request.Header.Get(config.HeaderDragonflyObjectOperation)
+	if operation == CopyOperation {
+		o.copyObject(ctx)
+		return
+	}
+
 	var params ObjectParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	var form PutObjectRequset
+	var form PutObjectRequest
 	if err := ctx.ShouldBind(&form); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
@@ -474,6 +484,104 @@ func (o *objectStorage) putObject(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": fmt.Sprintf("unknow mode %d", mode)})
 	return
+}
+
+// createBucket uses to create bucket.
+func (o *objectStorage) createBucket(ctx *gin.Context) {
+	var params BucketParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	client, err := o.client()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+
+	bucketName := params.ID
+
+	logger.Infof("create bucket %s ", bucketName)
+	if err := client.CreateBucket(ctx, bucketName); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+
+	ctx.Status(http.StatusOK)
+}
+
+// getObjectMetadatas uses to list the metadata of the objects.
+func (o *objectStorage) getObjectMetadatas(ctx *gin.Context) {
+	var params BucketParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	var query GetObjectMetadatasQuery
+	if err := ctx.ShouldBindQuery(&query); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	var (
+		bucketName = params.ID
+		prefix     = query.Prefix
+		marker     = query.Marker
+		delimiter  = query.Delimiter
+		limit      = query.Limit
+	)
+
+	client, err := o.client()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+
+	logger.Infof("get object metadatas in bucket %s", bucketName)
+	metadatas, err := client.GetObjectMetadatas(ctx, bucketName, prefix, marker, delimiter, limit)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, metadatas)
+}
+
+// copyObject uses to copy object.
+func (o *objectStorage) copyObject(ctx *gin.Context) {
+	var params ObjectParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	var form CopyObjectRequest
+	if err := ctx.ShouldBind(&form); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	var (
+		bucketName  = params.ID
+		destination = params.ObjectKey
+		source      = form.SourceObjectKey
+	)
+
+	client, err := o.client()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+
+	logger.Infof("copy object from %s to %s", source, destination)
+	if err := client.CopyObject(ctx, bucketName, source, destination); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+
+	ctx.Status(http.StatusOK)
 }
 
 // getAvailableSeedPeer uses to calculate md5 with file header.

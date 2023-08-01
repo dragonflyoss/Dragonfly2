@@ -130,6 +130,35 @@ definitions:
       updated_at:
         type: string
     type: object
+  d7y_io_dragonfly_v2_manager_models.PersonalAccessToken:
+    properties:
+      bio:
+        type: string
+      created_at:
+        type: string
+      expired_at:
+        type: string
+      id:
+        type: integer
+      is_del:
+        type: integer
+      name:
+        type: string
+      scopes:
+        items:
+          type: string
+        type: array
+      state:
+        type: string
+      token:
+        type: string
+      updated_at:
+        type: string
+      user:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.User'
+      user_id:
+        type: integer
+    type: object
   d7y_io_dragonfly_v2_manager_models.Scheduler:
     properties:
       created_at:
@@ -450,6 +479,25 @@ definitions:
     - client_id
     - client_secret
     - name
+    type: object
+  d7y_io_dragonfly_v2_manager_types.CreatePersonalAccessTokenRequest:
+    properties:
+      bio:
+        type: string
+      expired_at:
+        type: string
+      name:
+        type: string
+      scopes:
+        items:
+          type: string
+        type: array
+      user_id:
+        type: integer
+    required:
+    - expired_at
+    - name
+    - user_id
     type: object
   d7y_io_dragonfly_v2_manager_types.CreateRoleRequest:
     properties:
@@ -832,6 +880,24 @@ definitions:
         type: string
       redirect_url:
         type: string
+    type: object
+  d7y_io_dragonfly_v2_manager_types.UpdatePersonalAccessTokenRequest:
+    properties:
+      bio:
+        type: string
+      expired_at:
+        type: string
+      scopes:
+        items:
+          type: string
+        type: array
+      state:
+        enum:
+        - active
+        - inactive
+        type: string
+      user_id:
+        type: integer
     type: object
   d7y_io_dragonfly_v2_manager_types.UpdateSchedulerClusterRequest:
     properties:
@@ -1939,6 +2005,154 @@ paths:
       summary: Get Permissions
       tags:
       - Permission
+  /personal-access-tokens:
+    get:
+      consumes:
+      - application/json
+      description: Get PersonalAccessTokens
+      parameters:
+      - default: 0
+        description: current page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - default: 10
+        description: return max item count, default 10, max 50
+        in: query
+        maximum: 50
+        minimum: 2
+        name: per_page
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.PersonalAccessToken'
+            type: array
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Get PersonalAccessTokens
+      tags:
+      - PersonalAccessToken
+    post:
+      consumes:
+      - application/json
+      description: Create by json config
+      parameters:
+      - description: PersonalAccessToken
+        in: body
+        name: PersonalAccessToken
+        required: true
+        schema:
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.CreatePersonalAccessTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.PersonalAccessToken'
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Create PersonalAccessToken
+      tags:
+      - PersonalAccessToken
+  /personal-access-tokens/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Destroy by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Destroy PersonalAccessToken
+      tags:
+      - PersonalAccessToken
+    get:
+      consumes:
+      - application/json
+      description: Get PersonalAccessToken by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.PersonalAccessToken'
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Get PersonalAccessToken
+      tags:
+      - PersonalAccessToken
+    patch:
+      consumes:
+      - application/json
+      description: Update by json config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: PersonalAccessToken
+        in: body
+        name: PersonalAccessToken
+        required: true
+        schema:
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.UpdatePersonalAccessTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.PersonalAccessToken'
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Update PersonalAccessToken
+      tags:
+      - PersonalAccessToken
   /preheats:
     post:
       consumes:
