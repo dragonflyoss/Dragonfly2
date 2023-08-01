@@ -30,7 +30,7 @@ type PersonalAccessToken struct {
 	BaseModel
 	Name      string    `gorm:"column:name;type:varchar(256);index:uk_personal_access_token_name,unique;not null;comment:name" json:"name"`
 	BIO       string    `gorm:"column:bio;type:varchar(1024);comment:biography" json:"bio"`
-	Token     string    `gorm:"column:token;type:varchar(256);not null;comment:access token" json:"token"`
+	Token     string    `gorm:"column:token;type:varchar(256);index:uk_personal_access_token,unique;not null;comment:access token" json:"token"`
 	Scopes    Array     `gorm:"column:scopes;not null;comment:scopes flags" json:"scopes"`
 	State     string    `gorm:"column:state;type:varchar(256);default:'inactive';comment:service state" json:"state"`
 	ExpiredAt time.Time `gorm:"column:expired_at;type:timestamp;default:current_timestamp;not null;comment:expired at" json:"expired_at"`
