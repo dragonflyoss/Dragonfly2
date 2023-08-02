@@ -205,6 +205,7 @@ func (s *managerServerV1) UpdateSeedPeer(ctx context.Context, req *managerv1.Upd
 		Port:              req.GetPort(),
 		DownloadPort:      req.GetDownloadPort(),
 		ObjectStoragePort: req.GetObjectStoragePort(),
+		State:             models.SeedPeerStateActive,
 		SeedPeerClusterID: uint(req.GetSeedPeerClusterId()),
 	}).Error; err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
