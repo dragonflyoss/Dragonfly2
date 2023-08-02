@@ -265,6 +265,23 @@ func (s *managerServerV2) createSeedPeer(ctx context.Context, req *managerv2.Upd
 	}, nil
 }
 
+// Delete SeedPeer configuration.
+func (s *managerServerV2) DeleteSeedPeer(ctx context.Context, req *managerv2.DeleteSeedPeerRequest) (*emptypb.Empty, error) {
+	if err := s.db.WithContext(ctx).Unscoped().Delete(&models.SeedPeer{}, models.SeedPeer{
+		Hostname:          req.Hostname,
+		IP:                req.Ip,
+		SeedPeerClusterID: uint(req.SeedPeerClusterId),
+	}).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return new(emptypb.Empty), nil
+}
+
 // Get Scheduler and Scheduler cluster configuration.
 func (s *managerServerV2) GetScheduler(ctx context.Context, req *managerv2.GetSchedulerRequest) (*managerv2.Scheduler, error) {
 	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
