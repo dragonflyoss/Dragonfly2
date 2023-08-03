@@ -49,7 +49,7 @@ func (s *service) DestroySeedPeer(ctx context.Context, id uint) error {
 		return err
 	}
 
-	if err := s.db.WithContext(ctx).Unscoped().Delete(&models.SeedPeer{}, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Unscoped().Unscoped().Delete(&models.SeedPeer{}, id).Error; err != nil {
 		return err
 	}
 
