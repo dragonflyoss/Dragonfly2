@@ -43,7 +43,7 @@ jobs:
             chart-name: dfdaemon
           - module: seed-peer
             image: dfdaemon
-            image-tag: v2.0.3
+            image-tag: v2.0.9
             chart-name: seedPeer
     steps:
       - name: Checkout code
