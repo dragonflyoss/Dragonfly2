@@ -244,6 +244,7 @@ func (s *managerServerV2) createSeedPeer(ctx context.Context, req *managerv2.Upd
 		Port:              req.GetPort(),
 		DownloadPort:      req.GetDownloadPort(),
 		ObjectStoragePort: req.GetObjectStoragePort(),
+		State:             models.SeedPeerStateActive,
 		SeedPeerClusterID: uint(req.GetSeedPeerClusterId()),
 	}
 
