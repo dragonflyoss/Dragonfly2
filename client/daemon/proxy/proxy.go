@@ -17,6 +17,7 @@
 package proxy
 
 import (
+	"crypto/subtle"
 	"crypto/tls"
 	"encoding/base64"
 	"errors"
@@ -284,6 +285,12 @@ func NewProxyWithOptions(options ...Option) (*Proxy, error) {
 	return proxy, nil
 }
 
+func isBasicAuthMatch(basicAuth *config.BasicAuth, user, pass string) bool {
+	usernameOK := subtle.ConstantTimeCompare([]byte(basicAuth.Username), []byte(user)) == 1
+	passwordOK := subtle.ConstantTimeCompare([]byte(basicAuth.Password), []byte(pass)) == 1
+	return usernameOK && passwordOK
+}
+
 // ServeHTTP implements http.Handler.ServeHTTP
 func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	metrics.ProxyRequestCount.WithLabelValues(r.Method).Add(1)
@@ -313,7 +320,7 @@ func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// TODO dynamic auth config via manager
-		if user != proxy.basicAuth.Username || pass != proxy.basicAuth.Password {
+		if !isBasicAuthMatch(proxy.basicAuth, user, pass) {
 			status := http.StatusUnauthorized
 			span.SetAttributes(semconv.HTTPStatusCodeKey.Int(status))
 			http.Error(w, http.StatusText(status), status)
