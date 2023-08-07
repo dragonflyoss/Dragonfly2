@@ -289,7 +289,7 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 		rg = &rangeValue
 
 		// Range header in dragonfly is without "bytes=".
-		urlMeta.Range = strings.TrimLeft(rangeHeader, "bytes=")
+		urlMeta.Range = strings.TrimPrefix(rangeHeader, "bytes=")
 
 		// When the request has a range header,
 		// there is no need to calculate md5, set this value to empty.

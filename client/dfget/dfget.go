@@ -234,7 +234,7 @@ func parseHeader(s []string) map[string]string {
 func newDownRequest(cfg *config.DfgetConfig, hdr map[string]string) *dfdaemonv1.DownRequest {
 	var rg string
 	if r, ok := hdr[headers.Range]; ok {
-		rg = strings.TrimLeft(r, "bytes=")
+		rg = strings.TrimPrefix(r, "bytes=")
 	} else {
 		rg = cfg.Range
 	}
