@@ -261,7 +261,7 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 		}
 		rg = &rgs[0]
 		// range in dragonfly is without "bytes="
-		meta.Range = strings.TrimLeft(rangeHeader, "bytes=")
+		meta.Range = strings.TrimPrefix(rangeHeader, "bytes=")
 	}
 
 	// Pick header's parameters

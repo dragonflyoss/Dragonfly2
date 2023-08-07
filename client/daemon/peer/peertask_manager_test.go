@@ -630,7 +630,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 					}
 
 					if tc.httpRange != nil {
-						urlMeta.Range = strings.TrimLeft(tc.httpRange.String(), "bytes=")
+						urlMeta.Range = strings.TrimPrefix(tc.httpRange.String(), "bytes=")
 					}
 
 					if tc.urlGenerator != nil {
