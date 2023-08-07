@@ -380,33 +380,35 @@ func (s *storage) ClearNetworkTopology() error {
 }
 
 // createDownload inserts the downloads into csv file.
-func (s *storage) createDownload(downloads ...Download) error {
+func (s *storage) createDownload(downloads ...Download) (err error) {
 	file, err := s.openDownloadFile()
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		errClose := file.Close()
+		if errClose != nil {
+			err = errors.Join(err, errClose)
+		}
+	}()
 
-	if err := gocsv.MarshalWithoutHeaders(downloads, file); err != nil {
-		return err
-	}
-
-	return nil
+	return gocsv.MarshalWithoutHeaders(downloads, file)
 }
 
 // createNetworkTopology inserts the network topologies into csv file.
-func (s *storage) createNetworkTopology(networkTopologies ...NetworkTopology) error {
+func (s *storage) createNetworkTopology(networkTopologies ...NetworkTopology) (err error) {
 	file, err := s.openNetworkTopologyFile()
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		errClose := file.Close()
+		if errClose != nil {
+			err = errors.Join(err, errClose)
+		}
+	}()
 
-	if err := gocsv.MarshalWithoutHeaders(networkTopologies, file); err != nil {
-		return err
-	}
-
-	return nil
+	return gocsv.MarshalWithoutHeaders(networkTopologies, file)
 }
 
 // openDownloadFile opens the download file and removes download files that exceed the total size.

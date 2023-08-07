@@ -19,6 +19,7 @@ package storage
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -98,7 +99,7 @@ func (t *localTaskStore) SubTask(req *RegisterSubTaskRequest) *localSubTaskStore
 	return subtask
 }
 
-func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest) (int64, error) {
+func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest) (n int64, err error) {
 	t.touch()
 
 	// piece already exists
@@ -107,7 +108,7 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 		t.RUnlock()
 		t.Debugf("piece %d already exist,ignore writing piece", req.Num)
 		// discard already downloaded data for back source
-		n, err := io.CopyN(io.Discard, req.Reader, piece.Range.Length)
+		n, err = io.CopyN(io.Discard, req.Reader, piece.Range.Length)
 		if err != nil && err != io.EOF {
 			return n, err
 		}
@@ -128,12 +129,18 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 	if err != nil {
 		return 0, err
 	}
-	defer file.Close()
+	defer func() {
+		errClose := file.Close()
+		if errClose != nil {
+			err = errors.Join(err, errClose)
+		}
+	}()
+
 	if _, err = file.Seek(req.Range.Start, io.SeekStart); err != nil {
 		return 0, err
 	}
 
-	n, err := io.Copy(file, io.LimitReader(req.Reader, req.Range.Length))
+	n, err = io.Copy(file, io.LimitReader(req.Reader, req.Range.Length))
 	if err != nil {
 		return n, err
 	}
@@ -344,7 +351,7 @@ func (t *localTaskStore) ReadAllPieces(ctx context.Context, req *ReadAllPiecesRe
 	}, nil
 }
 
-func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) error {
+func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) (err error) {
 	// Store is called in callback.Done, mark local task store done, for fast search
 	t.Done = true
 	t.touch()
@@ -355,7 +362,7 @@ func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) error {
 	}
 
 	if !req.StoreDataOnly {
-		err := t.saveMetadata()
+		err = t.saveMetadata()
 		if err != nil {
 			t.Warnf("save task metadata error: %s", err)
 			return err
@@ -373,11 +380,16 @@ func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) error {
 		return hardlink(t.SugaredLoggerOnWith, req.Destination, t.DataFilePath)
 	}
 
-	_, err := os.Stat(req.Destination)
+	_, err = os.Stat(req.Destination)
 	if err == nil {
 		// remove exist file
 		t.Infof("destination file %q exists, purge it first", req.Destination)
-		os.Remove(req.Destination)
+		err = os.Remove(req.Destination)
+		if err != nil {
+			err = fmt.Errorf("purge destination file %q exists error: %s", req.Destination, err)
+			t.Errorf(err.Error())
+			return err
+		}
 	}
 	// 1. try to link
 	err = os.Link(t.DataFilePath, req.Destination)
@@ -392,7 +404,12 @@ func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) error {
 		t.Debugf("open tasks data error: %s", err)
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		errClose := file.Close()
+		if errClose != nil {
+			err = errors.Join(err, errClose)
+		}
+	}()
 
 	_, err = file.Seek(0, io.SeekStart)
 	if err != nil {
@@ -404,7 +421,12 @@ func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) error {
 		t.Errorf("open tasks destination file error: %s", err)
 		return err
 	}
-	defer dstFile.Close()
+	defer func() {
+		errClose := dstFile.Close()
+		if errClose != nil {
+			err = errors.Join(err, errClose)
+		}
+	}()
 	// copy_file_range is valid in linux
 	// https://go-review.googlesource.com/c/go/+/229101/
 	n, err := io.Copy(dstFile, file)
@@ -567,18 +589,19 @@ func (t *localTaskStore) Reclaim() error {
 	t.Infof("purged task work directory: %s", t.dataDir)
 
 	taskDir := path.Dir(t.dataDir)
-	if dirs, err := os.ReadDir(taskDir); err != nil {
+	dirs, err := os.ReadDir(taskDir)
+	if err != nil {
 		t.Warnf("stat task directory %q error: %s", taskDir, err)
 	} else {
 		if len(dirs) == 0 {
-			if err := os.Remove(taskDir); err != nil {
+			if err = os.Remove(taskDir); err != nil {
 				t.Warnf("remove unused task directory %q error: %s", taskDir, err)
 			}
 		} else {
 			t.Warnf("task directory %q is not empty", taskDir)
 		}
 	}
-	return nil
+	return err
 }
 
 func (t *localTaskStore) reclaimData() error {
@@ -623,7 +646,7 @@ func (t *localTaskStore) reclaimMeta() error {
 	return nil
 }
 
-func (t *localTaskStore) saveMetadata() error {
+func (t *localTaskStore) saveMetadata() (err error) {
 	t.Lock()
 	defer t.Unlock()
 	data, err := json.Marshal(t.persistentMetadata)
@@ -634,7 +657,12 @@ func (t *localTaskStore) saveMetadata() error {
 	if err != nil {
 		return err
 	}
-	defer metadata.Close()
+	defer func() {
+		errClose := metadata.Close()
+		if errClose != nil {
+			err = errors.Join(err, errClose)
+		}
+	}()
 	_, err = metadata.Write(data)
 	if err != nil {
 		t.Errorf("save metadata error: %s", err)
