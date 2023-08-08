@@ -67,6 +67,7 @@ func (s *service) GetV1Preheat(ctx context.Context, rawID string) (*types.GetV1P
 	id, err := strconv.ParseUint(rawID, 10, 32)
 	if err != nil {
 		logger.Errorf("preheat convert error", err)
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	job := models.Job{}
