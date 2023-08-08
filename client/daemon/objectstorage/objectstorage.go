@@ -21,6 +21,7 @@ package objectstorage
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -585,37 +586,49 @@ func (o *objectStorage) copyObject(ctx *gin.Context) {
 }
 
 // getAvailableSeedPeer uses to calculate md5 with file header.
-func (o *objectStorage) md5FromFileHeader(fileHeader *multipart.FileHeader) *digest.Digest {
+func (o *objectStorage) md5FromFileHeader(fileHeader *multipart.FileHeader) (dig *digest.Digest) {
 	f, err := fileHeader.Open()
 	if err != nil {
 		return nil
 	}
-	defer f.Close()
+	defer func() {
+		errClose := f.Close()
+		if errClose != nil {
+			dig = nil
+		}
+	}()
 
 	return digest.New(digest.AlgorithmMD5, digest.MD5FromReader(f))
 }
 
 // importObjectToBackend uses to import object to backend.
-func (o *objectStorage) importObjectToBackend(ctx context.Context, bucketName, objectKey string, dgst *digest.Digest, fileHeader *multipart.FileHeader, client objectstorage.ObjectStorage) error {
+func (o *objectStorage) importObjectToBackend(ctx context.Context, bucketName, objectKey string, dgst *digest.Digest, fileHeader *multipart.FileHeader, client objectstorage.ObjectStorage) (err error) {
 	f, err := fileHeader.Open()
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		errClose := f.Close()
+		if errClose != nil {
+			err = errors.Join(err, errClose)
+		}
+	}()
 
-	if err := client.PutObject(ctx, bucketName, objectKey, dgst.String(), f); err != nil {
-		return err
-	}
-	return nil
+	return client.PutObject(ctx, bucketName, objectKey, dgst.String(), f)
 }
 
 // importObjectToSeedPeers uses to import object to local storage.
-func (o *objectStorage) importObjectToLocalStorage(ctx context.Context, taskID, peerID string, fileHeader *multipart.FileHeader) error {
+func (o *objectStorage) importObjectToLocalStorage(ctx context.Context, taskID, peerID string, fileHeader *multipart.FileHeader) (err error) {
 	f, err := fileHeader.Open()
 	if err != nil {
 		return nil
 	}
-	defer f.Close()
+	defer func() {
+		errClose := f.Close()
+		if errClose != nil {
+			err = errors.Join(err, errClose)
+		}
+	}()
 
 	meta := storage.PeerTaskMetadata{
 		TaskID: taskID,
@@ -631,11 +644,7 @@ func (o *objectStorage) importObjectToLocalStorage(ctx context.Context, taskID, 
 	}
 
 	// Import task data to dfdaemon.
-	if err := o.peerTaskManager.GetPieceManager().Import(ctx, meta, tsd, fileHeader.Size, f); err != nil {
-		return err
-	}
-
-	return nil
+	return o.peerTaskManager.GetPieceManager().Import(ctx, meta, tsd, fileHeader.Size, f)
 }
 
 // importObjectToSeedPeers uses to import object to available seed peers.
@@ -674,22 +683,27 @@ func (o *objectStorage) importObjectToSeedPeers(ctx context.Context, bucketName,
 }
 
 // importObjectToSeedPeer uses to import object to seed peer.
-func (o *objectStorage) importObjectToSeedPeer(ctx context.Context, seedPeerHost, bucketName, objectKey, filter string, mode int, fileHeader *multipart.FileHeader) error {
+func (o *objectStorage) importObjectToSeedPeer(ctx context.Context, seedPeerHost, bucketName, objectKey, filter string, mode int, fileHeader *multipart.FileHeader) (err error) {
 	f, err := fileHeader.Open()
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		errClose := f.Close()
+		if errClose != nil {
+			err = errors.Join(err, errClose)
+		}
+	}()
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
-	if err := writer.WriteField("mode", fmt.Sprint(mode)); err != nil {
+	if err = writer.WriteField("mode", fmt.Sprint(mode)); err != nil {
 		return err
 	}
 
 	if filter != "" {
-		if err := writer.WriteField("filter", filter); err != nil {
+		if err = writer.WriteField("filter", filter); err != nil {
 			return err
 		}
 	}
@@ -699,11 +713,11 @@ func (o *objectStorage) importObjectToSeedPeer(ctx context.Context, seedPeerHost
 		return err
 	}
 
-	if _, err := io.Copy(part, f); err != nil {
+	if _, err = io.Copy(part, f); err != nil {
 		return err
 	}
 
-	if err := writer.Close(); err != nil {
+	if err = writer.Close(); err != nil {
 		return err
 	}
 

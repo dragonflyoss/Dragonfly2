@@ -135,7 +135,7 @@ func singleDownload(ctx context.Context, client dfdaemonclient.V1, cfg *config.D
 	return downError
 }
 
-func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[string]string) error {
+func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[string]string) (err error) {
 	if cfg.DisableBackSource {
 		return errors.New("try to download from source but back source is disabled")
 	}
@@ -145,7 +145,6 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 		start    = time.Now()
 		tempFile *os.File
 		response *source.Response
-		err      error
 		written  int64
 		renameOK bool
 	)
@@ -165,7 +164,10 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 				fmt.Printf("remove temporary file %s error: %s\n", tempPath, removeErr)
 			}
 		}
-		tempFile.Close()
+		errClose := tempFile.Close()
+		if errClose != nil {
+			err = errors.Join(err, errClose)
+		}
 	}()
 
 	downloadRequest, err := source.NewRequestWithContext(ctx, cfg.URL, hdr)
@@ -175,7 +177,12 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 	if response, err = source.Download(downloadRequest); err != nil {
 		return err
 	}
-	defer response.Body.Close()
+	defer func() {
+		errClose := response.Body.Close()
+		if errClose != nil {
+			err = errors.Join(err, errClose)
+		}
+	}()
 	if err = response.Validate(); err != nil {
 		return err
 	}
