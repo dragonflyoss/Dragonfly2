@@ -67,6 +67,12 @@ const (
 
 	// The number of negative sample size of GNN model.
 	defaultNegativeSampleSize = 25
+
+	// The number of sample number of first order in subgraph.
+	defaultFirstOrderSampleSize = 25
+
+	// The number of sample number of second order in subgraph.
+	defaultSecondOrderSampleSize = 10
 )
 
 // Training defines the interface to train GNN and MLP model.
@@ -665,25 +671,25 @@ func (t *training) minibatch(ip, hostname string, sampleSizes int) error {
 				dest = rand.Intn(N)
 			)
 
-			if !flag[src][dest] {
-				flag[src][dest] = true
-				sampleCount++
+			if flag[src][dest] || src != dest {
+				continue
 			}
 
+			flag[src][dest] = true
+			sampleCount++
 			if sampleCount >= defaultGNNBatchSize {
 				break
 			}
 		}
 
 		var (
-			A        = set.NewSafeSet[int]()
-			AN       = set.NewSafeSet[int]()
-			B        = set.NewSafeSet[int]()
-			BN       = set.NewSafeSet[int]()
-			C        = set.NewSafeSet[int]()
-			CR       = set.NewSafeSet[int]()
-			D        = set.NewSafeSet[int]()
-			subgraph = make([][]int, 0)
+			A  = set.NewSafeSet[int]()
+			AN = set.NewSafeSet[int]()
+			B  = set.NewSafeSet[int]()
+			BN = set.NewSafeSet[int]()
+			C  = set.NewSafeSet[int]()
+			CR = set.NewSafeSet[int]()
+			D  = set.NewSafeSet[int]()
 		)
 
 		for i := 0; i < N; i++ {
@@ -735,26 +741,47 @@ func (t *training) minibatch(ip, hostname string, sampleSizes int) error {
 		}
 
 		var (
-			firstOrder  = set.NewSafeSet[int]()
-			secondOrder = set.NewSafeSet[int]()
+			firstOrders  = make(map[int][]int)
+			secondOrders = make(map[int][]int)
 		)
 
-		// get first order hosts of each host in set D.aa
+		// get first order hosts of each host in set D.
 		for _, host := range D.Values() {
+			var firstOrder = make([]int, 0)
+			// if the number of neighbors is equal or greater than default first order sample size, randomly choose neighbor samples.
+			// Else complete the sampling number.
 			for _, neighbor := range neighbors[host] {
-				firstOrder.Add(neighbor)
+				firstOrder = append(firstOrder, neighbor)
 			}
 
+			if len(firstOrder) < defaultFirstOrderSampleSize {
+				for len(firstOrder) < defaultFirstOrderSampleSize {
+					firstOrder = append(firstOrder, firstOrder[rand.Intn(len(firstOrder))])
+				}
+			}
+
+			firstOrders[host] = firstOrder[:defaultFirstOrderSampleSize]
 		}
-		subgraph = append(subgraph, firstOrder.Values())
 
 		// get second order hosts of each host in set D.aa
-		for _, neighbor := range firstOrder.Values() {
-			for _, nneighbor := range neighbors[neighbor] {
-				secondOrder.Add(nneighbor)
+		for _, host := range D.Values() {
+			var secondOrder = make([]int, 0)
+			// if the number of neighbors is equal or greater than default second order sample size, randomly choose neighbor samples.
+			// Else complete the sampling number.
+			for _, neighbor := range firstOrders[host] {
+				for _, nneighbor := range neighbors[neighbor] {
+					secondOrder = append(secondOrder, nneighbor)
+				}
 			}
+
+			if len(secondOrder) < defaultSecondOrderSampleSize {
+				for len(secondOrder) < defaultFirstOrderSampleSize {
+					secondOrder = append(secondOrder, secondOrder[rand.Intn(len(secondOrder))])
+				}
+			}
+
+			secondOrders[host] = secondOrder[:defaultSecondOrderSampleSize]
 		}
-		subgraph = append(subgraph, secondOrder.Values())
 
 		// TODO: training loop by chan.
 	}
