@@ -17,7 +17,16 @@
 package http
 
 import (
+	"fmt"
+	"net"
 	"net/http"
+	"syscall"
+	"time"
+)
+
+const (
+	// DefaultDialTimeout is the default timeout for dialing a http connection.
+	DefaultDialTimeout = 30 * time.Second
 )
 
 // HeaderToMap coverts request headers to map[string]string.
@@ -47,4 +56,36 @@ func PickHeader(header http.Header, key, defaultValue string) string {
 	}
 
 	return defaultValue
+}
+
+// NewSafeDialer returns a new net.Dialer with safe socket control.
+func NewSafeDialer() *net.Dialer {
+	return &net.Dialer{
+		Timeout:   DefaultDialTimeout,
+		DualStack: true,
+		Control:   safeSocketControl,
+	}
+}
+
+// safeSocketControl restricts the socket to only connect to valid addresses.
+func safeSocketControl(network string, address string, conn syscall.RawConn) error {
+	if !(network == "tcp4" || network == "tcp6") {
+		return fmt.Errorf("network type %s is invalid", network)
+	}
+
+	host, _, err := net.SplitHostPort(address)
+	if err != nil {
+		return err
+	}
+
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return fmt.Errorf("host %s is invalid", host)
+	}
+
+	if !ip.IsGlobalUnicast() || ip.IsPrivate() {
+		return fmt.Errorf("ip %s is invalid", ip.String())
+	}
+
+	return nil
 }
