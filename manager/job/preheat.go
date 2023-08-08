@@ -21,6 +21,7 @@ package job
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -70,7 +71,8 @@ type Preheat interface {
 }
 
 type preheat struct {
-	job *internaljob.Job
+	job     *internaljob.Job
+	rootCAs *x509.CertPool
 }
 
 type preheatImage struct {
@@ -80,10 +82,8 @@ type preheatImage struct {
 	tag      string
 }
 
-func newPreheat(job *internaljob.Job) (Preheat, error) {
-	return &preheat{
-		job: job,
-	}, nil
+func newPreheat(job *internaljob.Job, rootCAs *x509.CertPool) (Preheat, error) {
+	return &preheat{job, rootCAs}, nil
 }
 
 func (p *preheat) CreatePreheat(ctx context.Context, schedulers []models.Scheduler, json types.PreheatArgs) (*internaljob.GroupJobState, error) {
@@ -185,7 +185,7 @@ func (p *preheat) getLayers(ctx context.Context, url, tag, filter string, header
 
 	if resp.StatusCode/100 != 2 {
 		if resp.StatusCode == http.StatusUnauthorized {
-			token, err := getAuthToken(ctx, resp.Header)
+			token, err := getAuthToken(ctx, resp.Header, p.rootCAs)
 			if err != nil {
 				return nil, err
 			}
@@ -221,7 +221,7 @@ func (p *preheat) getManifests(ctx context.Context, url string, header http.Head
 		Timeout: defaultHTTPRequesttimeout,
 		Transport: &http.Transport{
 			DialContext:     nethttp.NewSafeDialer().DialContext,
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			TLSClientConfig: &tls.Config{RootCAs: p.rootCAs},
 		},
 	}
 
@@ -259,7 +259,7 @@ func (p *preheat) parseLayers(resp *http.Response, url, tag, filter string, head
 	return layers, nil
 }
 
-func getAuthToken(ctx context.Context, header http.Header) (string, error) {
+func getAuthToken(ctx context.Context, header http.Header, rootCAs *x509.CertPool) (string, error) {
 	ctx, span := tracer.Start(ctx, config.SpanAuthWithRegistry, trace.WithSpanKind(trace.SpanKindProducer))
 	defer span.End()
 
@@ -277,7 +277,7 @@ func getAuthToken(ctx context.Context, header http.Header) (string, error) {
 		Timeout: defaultHTTPRequesttimeout,
 		Transport: &http.Transport{
 			DialContext:     nethttp.NewSafeDialer().DialContext,
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			TLSClientConfig: &tls.Config{RootCAs: rootCAs},
 		},
 	}
 

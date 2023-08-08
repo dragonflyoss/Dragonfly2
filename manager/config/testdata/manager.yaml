@@ -63,6 +63,10 @@ cache:
     size: 10000
     ttl: 1s
 
+job:
+  preheat:
+    tls:
+      caCert: testdata/ca.crt
 objectStorage:
   enable: true
   name: s3
