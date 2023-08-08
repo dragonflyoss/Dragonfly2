@@ -32,11 +32,8 @@ import (
 )
 
 const (
-	// Default name for scheduler cluster.
-	DefaultSchedulerClusterName = "scheduler-cluster-1"
-
-	// Default name for seed peer cluster.
-	DefaultSeedPeerClusterName = "seed-peer-cluster-1"
+	// Default name for the cluster.
+	DefaultClusterName = "cluster-1"
 )
 
 type Database struct {
@@ -112,7 +109,7 @@ func seed(cfg *config.Config, db *gorm.DB) error {
 			BaseModel: models.BaseModel{
 				ID: uint(1),
 			},
-			Name: DefaultSchedulerClusterName,
+			Name: DefaultClusterName,
 			Config: map[string]any{
 				"candidate_parent_limit": schedulerconfig.DefaultSchedulerCandidateParentLimit,
 				"filter_parent_limit":    schedulerconfig.DefaultSchedulerFilterParentLimit,
@@ -139,7 +136,7 @@ func seed(cfg *config.Config, db *gorm.DB) error {
 			BaseModel: models.BaseModel{
 				ID: uint(1),
 			},
-			Name: DefaultSeedPeerClusterName,
+			Name: DefaultClusterName,
 			Config: map[string]any{
 				"load_limit": schedulerconfig.DefaultSeedPeerConcurrentUploadLimit,
 			},

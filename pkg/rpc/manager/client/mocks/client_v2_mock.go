@@ -70,6 +70,25 @@ func (mr *MockV2MockRecorder) CreateModel(arg0, arg1 interface{}, arg2 ...interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateModel", reflect.TypeOf((*MockV2)(nil).CreateModel), varargs...)
 }
 
+// DeleteSeedPeer mocks base method.
+func (m *MockV2) DeleteSeedPeer(arg0 context.Context, arg1 *manager.DeleteSeedPeerRequest, arg2 ...grpc.CallOption) error {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteSeedPeer", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteSeedPeer indicates an expected call of DeleteSeedPeer.
+func (mr *MockV2MockRecorder) DeleteSeedPeer(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSeedPeer", reflect.TypeOf((*MockV2)(nil).DeleteSeedPeer), varargs...)
+}
+
 // GetObjectStorage mocks base method.
 func (m *MockV2) GetObjectStorage(arg0 context.Context, arg1 *manager.GetObjectStorageRequest, arg2 ...grpc.CallOption) (*manager.ObjectStorage, error) {
 	m.ctrl.T.Helper()

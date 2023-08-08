@@ -91,6 +91,9 @@ type V2 interface {
 	// Update Seed peer configuration.
 	UpdateSeedPeer(context.Context, *managerv2.UpdateSeedPeerRequest, ...grpc.CallOption) (*managerv2.SeedPeer, error)
 
+	// Delete Seed peer configuration.
+	DeleteSeedPeer(context.Context, *managerv2.DeleteSeedPeerRequest, ...grpc.CallOption) error
+
 	// Get Scheduler and Scheduler cluster configuration.
 	GetScheduler(context.Context, *managerv2.GetSchedulerRequest, ...grpc.CallOption) (*managerv2.Scheduler, error)
 
@@ -132,6 +135,15 @@ func (v *v2) UpdateSeedPeer(ctx context.Context, req *managerv2.UpdateSeedPeerRe
 	defer cancel()
 
 	return v.ManagerClient.UpdateSeedPeer(ctx, req, opts...)
+}
+
+// Delete SeedPeer configuration.
+func (v *v2) DeleteSeedPeer(ctx context.Context, req *managerv2.DeleteSeedPeerRequest, opts ...grpc.CallOption) error {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
+	_, err := v.ManagerClient.DeleteSeedPeer(ctx, req, opts...)
+	return err
 }
 
 // Get Scheduler and Scheduler cluster configuration.

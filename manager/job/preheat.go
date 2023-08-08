@@ -220,6 +220,7 @@ func (p *preheat) getManifests(ctx context.Context, url string, header http.Head
 	client := &http.Client{
 		Timeout: defaultHTTPRequesttimeout,
 		Transport: &http.Transport{
+			DialContext:     nethttp.NewSafeDialer().DialContext,
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
 	}
@@ -275,6 +276,7 @@ func getAuthToken(ctx context.Context, header http.Header) (string, error) {
 	client := &http.Client{
 		Timeout: defaultHTTPRequesttimeout,
 		Transport: &http.Transport{
+			DialContext:     nethttp.NewSafeDialer().DialContext,
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
 	}

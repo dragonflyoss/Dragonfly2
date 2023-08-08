@@ -53,6 +53,7 @@ func UpdateTransportOption(transport *http.Transport, optionYaml []byte) error {
 		proxy, err := url.Parse(opt.Proxy)
 		if err != nil {
 			fmt.Printf("proxy parse error: %s\n", err)
+			return err
 		}
 		transport.Proxy = http.ProxyURL(proxy)
 	}

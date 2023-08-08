@@ -172,7 +172,7 @@ func (j *job) preheat(ctx context.Context, req string) error {
 	if preheat.Headers != nil {
 		if r, ok := preheat.Headers[headers.Range]; ok {
 			// Range in dragonfly is without "bytes=".
-			urlMeta.Range = strings.TrimLeft(r, http.RangePrefix)
+			urlMeta.Range = strings.TrimPrefix(r, http.RangePrefix)
 		}
 	}
 
