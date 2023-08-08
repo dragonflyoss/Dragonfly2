@@ -81,9 +81,8 @@ func (s *storage) ListDownload(key string) (downloads []schedulerstorage.Downloa
 		return nil, err
 	}
 	defer func() {
-		errClose := file.Close()
-		if errClose != nil {
-			err = errors.Join(err, errClose)
+		if cerr := file.Close(); cerr != nil {
+			err = errors.Join(err, cerr)
 		}
 	}()
 
@@ -101,9 +100,8 @@ func (s *storage) ListNetworkTopology(key string) (networkTopologies []scheduler
 		return nil, err
 	}
 	defer func() {
-		errClose := file.Close()
-		if errClose != nil {
-			err = errors.Join(err, errClose)
+		if cerr := file.Close(); cerr != nil {
+			err = errors.Join(err, cerr)
 		}
 	}()
 

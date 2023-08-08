@@ -130,9 +130,8 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 		return 0, err
 	}
 	defer func() {
-		errClose := file.Close()
-		if errClose != nil {
-			err = errors.Join(err, errClose)
+		if cerr := file.Close(); cerr != nil {
+			err = errors.Join(err, cerr)
 		}
 	}()
 
@@ -405,9 +404,8 @@ func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) (err erro
 		return err
 	}
 	defer func() {
-		errClose := file.Close()
-		if errClose != nil {
-			err = errors.Join(err, errClose)
+		if cerr := file.Close(); cerr != nil {
+			err = errors.Join(err, cerr)
 		}
 	}()
 
@@ -422,9 +420,8 @@ func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) (err erro
 		return err
 	}
 	defer func() {
-		errClose := dstFile.Close()
-		if errClose != nil {
-			err = errors.Join(err, errClose)
+		if cerr := dstFile.Close(); cerr != nil {
+			err = errors.Join(err, cerr)
 		}
 	}()
 	// copy_file_range is valid in linux
@@ -658,9 +655,8 @@ func (t *localTaskStore) saveMetadata() (err error) {
 		return err
 	}
 	defer func() {
-		errClose := metadata.Close()
-		if errClose != nil {
-			err = errors.Join(err, errClose)
+		if cerr := metadata.Close(); cerr != nil {
+			err = errors.Join(err, cerr)
 		}
 	}()
 	_, err = metadata.Write(data)

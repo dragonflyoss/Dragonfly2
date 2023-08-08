@@ -386,9 +386,8 @@ func (s *storage) createDownload(downloads ...Download) (err error) {
 		return err
 	}
 	defer func() {
-		errClose := file.Close()
-		if errClose != nil {
-			err = errors.Join(err, errClose)
+		if cerr := file.Close(); cerr != nil {
+			err = errors.Join(err, cerr)
 		}
 	}()
 
@@ -402,9 +401,8 @@ func (s *storage) createNetworkTopology(networkTopologies ...NetworkTopology) (e
 		return err
 	}
 	defer func() {
-		errClose := file.Close()
-		if errClose != nil {
-			err = errors.Join(err, errClose)
+		if cerr := file.Close(); cerr != nil {
+			err = errors.Join(err, cerr)
 		}
 	}()
 

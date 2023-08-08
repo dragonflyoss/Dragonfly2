@@ -74,9 +74,8 @@ func (t *localSubTaskStore) WritePiece(ctx context.Context, req *WritePieceReque
 		return 0, err
 	}
 	defer func() {
-		errClose := file.Close()
-		if errClose != nil {
-			err = errors.Join(err, errClose)
+		if cerr := file.Close(); cerr != nil {
+			err = errors.Join(err, cerr)
 		}
 	}()
 	// TODO different with localTaskStore
@@ -315,9 +314,8 @@ func (t *localSubTaskStore) Store(ctx context.Context, req *StoreRequest) (err e
 		return err
 	}
 	defer func() {
-		errClose := file.Close()
-		if errClose != nil {
-			err = errors.Join(err, errClose)
+		if cerr := file.Close(); cerr != nil {
+			err = errors.Join(err, cerr)
 		}
 	}()
 
@@ -332,9 +330,8 @@ func (t *localSubTaskStore) Store(ctx context.Context, req *StoreRequest) (err e
 		return err
 	}
 	defer func() {
-		errClose := dstFile.Close()
-		if errClose != nil {
-			err = errors.Join(err, errClose)
+		if cerr := dstFile.Close(); cerr != nil {
+			err = errors.Join(err, cerr)
 		}
 	}()
 	// copy_file_range is valid in linux

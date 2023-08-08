@@ -592,8 +592,7 @@ func (o *objectStorage) md5FromFileHeader(fileHeader *multipart.FileHeader) (dig
 		return nil
 	}
 	defer func() {
-		errClose := f.Close()
-		if errClose != nil {
+		if err := f.Close(); err != nil {
 			dig = nil
 		}
 	}()
@@ -608,9 +607,8 @@ func (o *objectStorage) importObjectToBackend(ctx context.Context, bucketName, o
 		return err
 	}
 	defer func() {
-		errClose := f.Close()
-		if errClose != nil {
-			err = errors.Join(err, errClose)
+		if cerr := f.Close(); cerr != nil {
+			err = errors.Join(err, cerr)
 		}
 	}()
 
@@ -689,9 +687,8 @@ func (o *objectStorage) importObjectToSeedPeer(ctx context.Context, seedPeerHost
 		return err
 	}
 	defer func() {
-		errClose := f.Close()
-		if errClose != nil {
-			err = errors.Join(err, errClose)
+		if cerr := f.Close(); cerr != nil {
+			err = errors.Join(err, cerr)
 		}
 	}()
 

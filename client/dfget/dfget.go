@@ -164,9 +164,8 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 				fmt.Printf("remove temporary file %s error: %s\n", tempPath, removeErr)
 			}
 		}
-		errClose := tempFile.Close()
-		if errClose != nil {
-			err = errors.Join(err, errClose)
+		if cerr := tempFile.Close(); cerr != nil {
+			err = errors.Join(err, cerr)
 		}
 	}()
 
@@ -178,9 +177,8 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 		return err
 	}
 	defer func() {
-		errClose := response.Body.Close()
-		if errClose != nil {
-			err = errors.Join(err, errClose)
+		if cerr := response.Body.Close(); cerr != nil {
+			err = errors.Join(err, cerr)
 		}
 	}()
 	if err = response.Validate(); err != nil {

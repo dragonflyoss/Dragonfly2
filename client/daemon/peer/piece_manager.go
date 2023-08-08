@@ -674,9 +674,8 @@ func (pm *pieceManager) ImportFile(ctx context.Context, ptm storage.PeerTaskMeta
 		return errors.New(msg)
 	}
 	defer func() {
-		errClose := file.Close()
-		if errClose != nil {
-			err = errors.Join(err, errClose)
+		if cerr := file.Close(); cerr != nil {
+			err = errors.Join(err, cerr)
 		}
 	}()
 
