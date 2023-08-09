@@ -16,7 +16,11 @@
 
 package dag
 
-import "d7y.io/dragonfly/v2/pkg/container/set"
+import (
+	"sync"
+
+	"d7y.io/dragonfly/v2/pkg/container/set"
+)
 
 // Vertex is a vertex of the directed acyclic graph.
 type Vertex[T comparable] struct {
@@ -24,6 +28,7 @@ type Vertex[T comparable] struct {
 	Value    T
 	Parents  set.SafeSet[*Vertex[T]]
 	Children set.SafeSet[*Vertex[T]]
+	mu       sync.RWMutex
 }
 
 // New returns a new Vertex instance.
@@ -53,6 +58,9 @@ func (v *Vertex[T]) OutDegree() int {
 
 // DeleteInEdges deletes inedges of vertex.
 func (v *Vertex[T]) DeleteInEdges() {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+
 	for _, parent := range v.Parents.Values() {
 		parent.Children.Delete(v)
 	}
@@ -62,6 +70,9 @@ func (v *Vertex[T]) DeleteInEdges() {
 
 // DeleteOutEdges deletes outedges of vertex.
 func (v *Vertex[T]) DeleteOutEdges() {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+
 	for _, child := range v.Children.Values() {
 		child.Parents.Delete(v)
 	}
