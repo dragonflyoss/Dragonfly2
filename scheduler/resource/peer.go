@@ -437,9 +437,9 @@ func (p *Peer) DownloadTinyFile() ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), downloadTinyFileContextTimeout)
 	defer cancel()
 
-	// Download url: http://${host}:${port}/download/${taskIndex}/${taskID}?peerId=${peerID}
+	// Download url: https://${host}:${port}/download/${taskIndex}/${taskID}?peerId=${peerID}
 	targetURL := url.URL{
-		Scheme:   "http",
+		Scheme:   "https",
 		Host:     fmt.Sprintf("%s:%d", p.Host.IP, p.Host.DownloadPort),
 		Path:     fmt.Sprintf("download/%s/%s", p.Task.ID[:3], p.Task.ID),
 		RawQuery: fmt.Sprintf("peerId=%s", p.ID),
