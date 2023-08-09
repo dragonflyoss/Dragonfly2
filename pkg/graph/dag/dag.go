@@ -156,8 +156,8 @@ func (d *dag[T]) GetRandomVertices(n uint) []*Vertex[T] {
 		n = uint(len(keys))
 	}
 
-	rand.Seed(time.Now().Unix())
-	permutation := rand.Perm(len(keys))[:n]
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	permutation := r.Perm(len(keys))[:n]
 	randomVertices := make([]*Vertex[T], 0, n)
 	for _, v := range permutation {
 		key := keys[v]
