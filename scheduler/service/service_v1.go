@@ -1226,7 +1226,7 @@ func (v *V1) handlePeerSuccess(ctx context.Context, peer *resource.Peer) {
 			return
 		}
 
-		if len(data) != int(peer.Task.ContentLength.Load()) {
+		if int64(len(data)) != peer.Task.ContentLength.Load() {
 			peer.Log.Errorf("download tiny task length of data is %d, task content length is %d", len(data), peer.Task.ContentLength.Load())
 			return
 		}
