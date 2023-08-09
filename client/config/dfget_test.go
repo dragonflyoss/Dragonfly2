@@ -27,7 +27,7 @@ import (
 
 func TestMkdirAllRoot(t *testing.T) {
 	assert := testifyassert.New(t)
-	err := MkdirAll("/", 0777, os.Getuid(), os.Getgid())
+	err := MkdirAll("/", 0700, os.Getuid(), os.Getgid())
 	assert.Nil(err, "mkdir should not return error")
 }
 
@@ -114,13 +114,13 @@ func TestMkdirAll(t *testing.T) {
 			if !ok {
 				return
 			}
-			assert.Nil(os.MkdirAll(tc.parent, 0777))
+			assert.Nil(os.MkdirAll(tc.parent, 0700))
 			defer func() {
 				// remove parent directory
 				assert.Nil(os.RemoveAll(tc.parent))
 			}()
 
-			err := MkdirAll(tc.dir, 0777, tc.uid, tc.gid)
+			err := MkdirAll(tc.dir, 0700, tc.uid, tc.gid)
 			assert.Nil(err, "mkdir should not return error")
 
 			// check new directories' permission

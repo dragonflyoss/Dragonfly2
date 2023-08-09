@@ -7,7 +7,7 @@ metrics: ":8000"
 aliveTime: 0s
 gcInterval: 1m0s
 workHome: /tmp/dragonfly/dfdaemon/
-workHomeMode: 0755
+workHomeMode: 0700
 cacheDir: /var/cache/dragonfly/
 cacheDirMode: 0700
 logDir: /var/log/dragonfly/
