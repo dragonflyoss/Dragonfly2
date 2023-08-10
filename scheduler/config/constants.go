@@ -101,6 +101,14 @@ const (
 )
 
 const (
+	// DefaultResourceTaskDownloadTinyScheme is default scheme of downloading tiny task.
+	DefaultResourceTaskDownloadTinyScheme = "http"
+
+	// DefaultResourceTaskDownloadTinyTimeout is default timeout of downloading tiny task.
+	DefaultResourceTaskDownloadTinyTimeout = 1 * time.Minute
+)
+
+const (
 	// DefaultDynConfigRefreshInterval is default refresh interval for dynamic configuration.
 	DefaultDynConfigRefreshInterval = 1 * time.Minute
 )

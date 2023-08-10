@@ -51,7 +51,7 @@ func TestSeedPeer_newSeedPeer(t *testing.T) {
 			peerManager := NewMockPeerManager(ctl)
 			client := NewMockSeedPeerClient(ctl)
 
-			tc.expect(t, newSeedPeer(client, peerManager, hostManager))
+			tc.expect(t, newSeedPeer(mockResourceConfig, client, peerManager, hostManager))
 		})
 	}
 }
@@ -83,7 +83,7 @@ func TestSeedPeer_TriggerTask(t *testing.T) {
 			client := NewMockSeedPeerClient(ctl)
 			tc.mock(client.EXPECT())
 
-			seedPeer := newSeedPeer(client, peerManager, hostManager)
+			seedPeer := newSeedPeer(mockResourceConfig, client, peerManager, hostManager)
 			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			peer, result, err := seedPeer.TriggerTask(context.Background(), nil, mockTask)
 			tc.expect(t, peer, result, err)

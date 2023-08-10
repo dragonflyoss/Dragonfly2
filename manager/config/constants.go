@@ -90,6 +90,11 @@ const (
 )
 
 const (
+	// DefaultJobPreheatRegistryTimeout is the default timeout for requesting registry to get token and manifest.
+	DefaultJobPreheatRegistryTimeout = 1 * time.Minute
+)
+
+const (
 	// DefaultPostgresPort is default port for postgres.
 	DefaultPostgresPort = 5432
 

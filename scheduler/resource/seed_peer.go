@@ -34,6 +34,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
 	"d7y.io/dragonfly/v2/pkg/types"
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
 )
 
@@ -61,17 +62,23 @@ type SeedPeer interface {
 
 // seedPeer contains content for seed peer.
 type seedPeer struct {
+	// config is the config of resource.
+	config *config.ResourceConfig
+
 	// client is the dynamic client of seed peer.
 	client SeedPeerClient
+
 	// peerManager is PeerManager interface.
 	peerManager PeerManager
+
 	// hostManager is HostManager interface.
 	hostManager HostManager
 }
 
 // New SeedPeer interface.
-func newSeedPeer(client SeedPeerClient, peerManager PeerManager, hostManager HostManager) SeedPeer {
+func newSeedPeer(cfg *config.ResourceConfig, client SeedPeerClient, peerManager PeerManager, hostManager HostManager) SeedPeer {
 	return &seedPeer{
+		config:      cfg,
 		client:      client,
 		peerManager: peerManager,
 		hostManager: hostManager,
@@ -226,7 +233,7 @@ func (s *seedPeer) initSeedPeer(ctx context.Context, rg *http.Range, task *Task,
 	}
 
 	// New and store seed peer without range.
-	peer = NewPeer(ps.PeerId, task, host, options...)
+	peer = NewPeer(ps.PeerId, s.config, task, host, options...)
 	s.peerManager.Store(peer)
 	peer.Log.Info("seed peer has been stored")
 

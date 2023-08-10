@@ -918,7 +918,7 @@ func (v *V1) storePeer(ctx context.Context, id string, priority commonv1.Priorit
 			}
 		}
 
-		peer := resource.NewPeer(id, task, host, options...)
+		peer := resource.NewPeer(id, &v.config.Resource, task, host, options...)
 		v.resource.PeerManager().Store(peer)
 		peer.Log.Info("create new peer")
 		return peer
