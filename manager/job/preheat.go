@@ -59,11 +59,6 @@ const (
 	PreheatFileType PreheatType = "file"
 )
 
-const (
-	// defaultHTTPRequesttimeout is the default timeout of http client.
-	defaultHTTPRequesttimeout = 1 * time.Minute
-)
-
 var accessURLPattern, _ = regexp.Compile("^(.*)://(.*)/v2/(.*)/manifests/(.*)")
 
 type Preheat interface {
@@ -71,8 +66,9 @@ type Preheat interface {
 }
 
 type preheat struct {
-	job     *internaljob.Job
-	rootCAs *x509.CertPool
+	job                *internaljob.Job
+	httpRequestTimeout time.Duration
+	rootCAs            *x509.CertPool
 }
 
 type preheatImage struct {
@@ -82,8 +78,8 @@ type preheatImage struct {
 	tag      string
 }
 
-func newPreheat(job *internaljob.Job, rootCAs *x509.CertPool) (Preheat, error) {
-	return &preheat{job, rootCAs}, nil
+func newPreheat(job *internaljob.Job, httpRequestTimeout time.Duration, rootCAs *x509.CertPool) (Preheat, error) {
+	return &preheat{job, httpRequestTimeout, rootCAs}, nil
 }
 
 func (p *preheat) CreatePreheat(ctx context.Context, schedulers []models.Scheduler, json types.PreheatArgs) (*internaljob.GroupJobState, error) {
@@ -177,7 +173,7 @@ func (p *preheat) getLayers(ctx context.Context, url, tag, filter string, header
 	ctx, span := tracer.Start(ctx, config.SpanGetLayers, trace.WithSpanKind(trace.SpanKindProducer))
 	defer span.End()
 
-	resp, err := p.getManifests(ctx, url, header)
+	resp, err := p.getManifests(ctx, url, header, p.httpRequestTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -185,13 +181,13 @@ func (p *preheat) getLayers(ctx context.Context, url, tag, filter string, header
 
 	if resp.StatusCode/100 != 2 {
 		if resp.StatusCode == http.StatusUnauthorized {
-			token, err := getAuthToken(ctx, resp.Header, p.rootCAs)
+			token, err := getAuthToken(ctx, resp.Header, p.httpRequestTimeout, p.rootCAs)
 			if err != nil {
 				return nil, err
 			}
 
 			header.Add(headers.Authorization, fmt.Sprintf("Bearer %s", token))
-			resp, err = p.getManifests(ctx, url, header)
+			resp, err = p.getManifests(ctx, url, header, p.httpRequestTimeout)
 			if err != nil {
 				return nil, err
 			}
@@ -208,7 +204,7 @@ func (p *preheat) getLayers(ctx context.Context, url, tag, filter string, header
 	return layers, nil
 }
 
-func (p *preheat) getManifests(ctx context.Context, url string, header http.Header) (*http.Response, error) {
+func (p *preheat) getManifests(ctx context.Context, url string, header http.Header, timeout time.Duration) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -218,7 +214,7 @@ func (p *preheat) getManifests(ctx context.Context, url string, header http.Head
 	req.Header.Add(headers.Accept, schema2.MediaTypeManifest)
 
 	client := &http.Client{
-		Timeout: defaultHTTPRequesttimeout,
+		Timeout: timeout,
 		Transport: &http.Transport{
 			DialContext:     nethttp.NewSafeDialer().DialContext,
 			TLSClientConfig: &tls.Config{RootCAs: p.rootCAs},
@@ -259,7 +255,7 @@ func (p *preheat) parseLayers(resp *http.Response, url, tag, filter string, head
 	return layers, nil
 }
 
-func getAuthToken(ctx context.Context, header http.Header, rootCAs *x509.CertPool) (string, error) {
+func getAuthToken(ctx context.Context, header http.Header, timeout time.Duration, rootCAs *x509.CertPool) (string, error) {
 	ctx, span := tracer.Start(ctx, config.SpanAuthWithRegistry, trace.WithSpanKind(trace.SpanKindProducer))
 	defer span.End()
 
@@ -274,7 +270,7 @@ func getAuthToken(ctx context.Context, header http.Header, rootCAs *x509.CertPoo
 	}
 
 	client := &http.Client{
-		Timeout: defaultHTTPRequesttimeout,
+		Timeout: timeout,
 		Transport: &http.Transport{
 			DialContext:     nethttp.NewSafeDialer().DialContext,
 			TLSClientConfig: &tls.Config{RootCAs: rootCAs},

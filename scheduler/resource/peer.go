@@ -18,6 +18,7 @@ package resource
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"
@@ -137,6 +138,9 @@ type Peer struct {
 	// ID is peer id.
 	ID string
 
+	// Config is resource config.
+	Config *config.ResourceConfig
+
 	// Range is url range of request.
 	Range *nethttp.Range
 
@@ -196,9 +200,10 @@ type Peer struct {
 }
 
 // New Peer instance.
-func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
+func NewPeer(id string, cfg *config.ResourceConfig, task *Task, host *Host, options ...PeerOption) *Peer {
 	p := &Peer{
 		ID:                      id,
+		Config:                  cfg,
 		Priority:                commonv2.Priority_LEVEL0,
 		Pieces:                  &sync.Map{},
 		FinishedPieces:          &bitset.BitSet{},
@@ -437,9 +442,9 @@ func (p *Peer) DownloadTinyFile() ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), downloadTinyFileContextTimeout)
 	defer cancel()
 
-	// Download url: https://${host}:${port}/download/${taskIndex}/${taskID}?peerId=${peerID}
+	// Download path: ${host}:${port}/download/${taskIndex}/${taskID}?peerId=${peerID}
 	targetURL := url.URL{
-		Scheme:   "https",
+		Scheme:   p.Config.Task.DownloadTiny.Scheme,
 		Host:     fmt.Sprintf("%s:%d", p.Host.IP, p.Host.DownloadPort),
 		Path:     fmt.Sprintf("download/%s/%s", p.Task.ID[:3], p.Task.ID),
 		RawQuery: fmt.Sprintf("peerId=%s", p.ID),
@@ -453,7 +458,14 @@ func (p *Peer) DownloadTinyFile() ([]byte, error) {
 	req.Header.Set(headers.Range, fmt.Sprintf("bytes=%d-%d", 0, p.Task.ContentLength.Load()-1))
 	p.Log.Infof("download tiny file %s, header is : %#v", targetURL.String(), req.Header)
 
-	resp, err := http.DefaultClient.Do(req)
+	client := &http.Client{
+		Timeout: p.Config.Task.DownloadTiny.Timeout,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: p.Config.Task.DownloadTiny.TLS.InsecureSkipVerify},
+		},
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}

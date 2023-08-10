@@ -29,6 +29,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/types"
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
@@ -137,11 +138,22 @@ var (
 	mockTaskFilters                 = []string{"bar"}
 	mockTaskHeader                  = map[string]string{"content-length": "100"}
 	mockTaskPieceLength       int32 = 2048
-	mockHostID                      = idgen.HostIDV2("127.0.0.1", "foo")
-	mockSeedHostID                  = idgen.HostIDV2("127.0.0.1", "bar")
-	mockHostLocation                = "bas"
-	mockHostIDC                     = "baz"
-	mockPeerID                      = idgen.PeerIDV2()
+	mockResourceConfig              = &config.ResourceConfig{
+		Task: config.TaskConfig{
+			DownloadTiny: config.DownloadTinyConfig{
+				Scheme:  config.DefaultResourceTaskDownloadTinyScheme,
+				Timeout: config.DefaultResourceTaskDownloadTinyTimeout,
+				TLS: config.DownloadTinyTLSClientConfig{
+					InsecureSkipVerify: true,
+				},
+			},
+		},
+	}
+	mockHostID       = idgen.HostIDV2("127.0.0.1", "foo")
+	mockSeedHostID   = idgen.HostIDV2("127.0.0.1", "bar")
+	mockHostLocation = "bas"
+	mockHostIDC      = "baz"
+	mockPeerID       = idgen.PeerIDV2()
 )
 
 func TestEvaluatorBase_NewEvaluatorBase(t *testing.T) {
@@ -176,12 +188,12 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 	}{
 		{
 			name: "evaluate parent",
-			parent: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"),
+			parent: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig,
 				resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength)),
 				resource.NewHost(
 					mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
 					mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)),
-			child: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"),
+			child: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig,
 				resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength)),
 				resource.NewHost(
 					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
@@ -196,12 +208,12 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 		},
 		{
 			name: "evaluate parent with pieces",
-			parent: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"),
+			parent: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig,
 				resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength)),
 				resource.NewHost(
 					mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
 					mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)),
-			child: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"),
+			child: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig,
 				resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength)),
 				resource.NewHost(
 					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
@@ -242,8 +254,8 @@ func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
 	}{
 		{
 			name:            "total piece count is zero and child pieces are empty",
-			parent:          resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
-			child:           resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
+			parent:          resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, mockTask, mockHost),
+			child:           resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, mockTask, mockHost),
 			totalPieceCount: 0,
 			mock: func(parent *resource.Peer, child *resource.Peer) {
 				parent.FinishedPieces.Set(0)
@@ -255,8 +267,8 @@ func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
 		},
 		{
 			name:            "total piece count is zero and parent pieces are empty",
-			parent:          resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
-			child:           resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
+			parent:          resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, mockTask, mockHost),
+			child:           resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, mockTask, mockHost),
 			totalPieceCount: 0,
 			mock: func(parent *resource.Peer, child *resource.Peer) {
 				child.FinishedPieces.Set(0)
@@ -268,8 +280,8 @@ func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
 		},
 		{
 			name:            "total piece count is zero and child pieces of length greater than parent pieces",
-			parent:          resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
-			child:           resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
+			parent:          resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, mockTask, mockHost),
+			child:           resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, mockTask, mockHost),
 			totalPieceCount: 0,
 			mock: func(parent *resource.Peer, child *resource.Peer) {
 				parent.FinishedPieces.Set(0)
@@ -283,8 +295,8 @@ func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
 		},
 		{
 			name:            "total piece count is zero and child pieces of length equal than parent pieces",
-			parent:          resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
-			child:           resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
+			parent:          resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, mockTask, mockHost),
+			child:           resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, mockTask, mockHost),
 			totalPieceCount: 0,
 			mock: func(parent *resource.Peer, child *resource.Peer) {
 				parent.FinishedPieces.Set(0)
@@ -297,8 +309,8 @@ func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
 		},
 		{
 			name:            "total piece count is zero and parent pieces of length greater than child pieces",
-			parent:          resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
-			child:           resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
+			parent:          resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, mockTask, mockHost),
+			child:           resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, mockTask, mockHost),
 			totalPieceCount: 0,
 			mock: func(parent *resource.Peer, child *resource.Peer) {
 				parent.FinishedPieces.Set(0)
@@ -312,8 +324,8 @@ func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
 		},
 		{
 			name:            "parent pieces are empty",
-			parent:          resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
-			child:           resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
+			parent:          resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, mockTask, mockHost),
+			child:           resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, mockTask, mockHost),
 			totalPieceCount: 10,
 			mock:            func(parent *resource.Peer, child *resource.Peer) {},
 			expect: func(t *testing.T, score float64) {
@@ -323,8 +335,8 @@ func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
 		},
 		{
 			name:            "parent pieces of length greater than zero",
-			parent:          resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
-			child:           resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
+			parent:          resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, mockTask, mockHost),
+			child:           resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, mockTask, mockHost),
 			totalPieceCount: 10,
 			mock: func(parent *resource.Peer, child *resource.Peer) {
 				parent.FinishedPieces.Set(0)
@@ -392,7 +404,7 @@ func TestEvaluatorBase_calculatehostUploadSuccessScore(t *testing.T) {
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
-			mockPeer := resource.NewPeer(mockPeerID, mockTask, host)
+			mockPeer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, host)
 			tc.mock(host)
 			tc.expect(t, calculateParentHostUploadSuccessScore(mockPeer))
 		})
@@ -431,7 +443,7 @@ func TestEvaluatorBase_calculateFreeUploadScore(t *testing.T) {
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
-			mockPeer := resource.NewPeer(mockPeerID, mockTask, host)
+			mockPeer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, host)
 			tc.mock(host, mockPeer)
 			tc.expect(t, calculateFreeUploadScore(host))
 		})
@@ -482,7 +494,7 @@ func TestEvaluatorBase_calculateHostTypeScore(t *testing.T) {
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
-			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
+			peer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 			tc.mock(peer)
 			tc.expect(t, calculateHostTypeScore(peer))
 		})
@@ -703,7 +715,7 @@ func TestEvaluatorBase_IsBadNode(t *testing.T) {
 	}{
 		{
 			name:            "peer state is PeerStateFailed",
-			peer:            resource.NewPeer(mockPeerID, mockTask, mockHost),
+			peer:            resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost),
 			totalPieceCount: 1,
 			mock: func(peer *resource.Peer) {
 				peer.FSM.SetState(resource.PeerStateFailed)
@@ -715,7 +727,7 @@ func TestEvaluatorBase_IsBadNode(t *testing.T) {
 		},
 		{
 			name:            "peer state is PeerStateLeave",
-			peer:            resource.NewPeer(mockPeerID, mockTask, mockHost),
+			peer:            resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost),
 			totalPieceCount: 1,
 			mock: func(peer *resource.Peer) {
 				peer.FSM.SetState(resource.PeerStateLeave)
@@ -727,7 +739,7 @@ func TestEvaluatorBase_IsBadNode(t *testing.T) {
 		},
 		{
 			name:            "peer state is PeerStatePending",
-			peer:            resource.NewPeer(mockPeerID, mockTask, mockHost),
+			peer:            resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost),
 			totalPieceCount: 1,
 			mock: func(peer *resource.Peer) {
 				peer.FSM.SetState(resource.PeerStatePending)
@@ -739,7 +751,7 @@ func TestEvaluatorBase_IsBadNode(t *testing.T) {
 		},
 		{
 			name:            "peer state is PeerStateReceivedTiny",
-			peer:            resource.NewPeer(mockPeerID, mockTask, mockHost),
+			peer:            resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost),
 			totalPieceCount: 1,
 			mock: func(peer *resource.Peer) {
 				peer.FSM.SetState(resource.PeerStateReceivedTiny)
@@ -751,7 +763,7 @@ func TestEvaluatorBase_IsBadNode(t *testing.T) {
 		},
 		{
 			name:            "peer state is PeerStateReceivedSmall",
-			peer:            resource.NewPeer(mockPeerID, mockTask, mockHost),
+			peer:            resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost),
 			totalPieceCount: 1,
 			mock: func(peer *resource.Peer) {
 				peer.FSM.SetState(resource.PeerStateReceivedSmall)
@@ -763,7 +775,7 @@ func TestEvaluatorBase_IsBadNode(t *testing.T) {
 		},
 		{
 			name:            "peer state is PeerStateReceivedNormal",
-			peer:            resource.NewPeer(mockPeerID, mockTask, mockHost),
+			peer:            resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost),
 			totalPieceCount: 1,
 			mock: func(peer *resource.Peer) {
 				peer.FSM.SetState(resource.PeerStateReceivedNormal)
@@ -775,7 +787,7 @@ func TestEvaluatorBase_IsBadNode(t *testing.T) {
 		},
 		{
 			name:            "download costs does not meet the normal distribution and last cost is twenty times more than mean",
-			peer:            resource.NewPeer(mockPeerID, mockTask, mockHost),
+			peer:            resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost),
 			totalPieceCount: 1,
 			mock: func(peer *resource.Peer) {
 				peer.FSM.SetState(resource.PeerStateRunning)
@@ -789,7 +801,7 @@ func TestEvaluatorBase_IsBadNode(t *testing.T) {
 		},
 		{
 			name:            "download costs does not meet the normal distribution and last cost is twenty times lower than mean",
-			peer:            resource.NewPeer(mockPeerID, mockTask, mockHost),
+			peer:            resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost),
 			totalPieceCount: 1,
 			mock: func(peer *resource.Peer) {
 				peer.FSM.SetState(resource.PeerStateRunning)
@@ -803,7 +815,7 @@ func TestEvaluatorBase_IsBadNode(t *testing.T) {
 		},
 		{
 			name:            "download costs meet the normal distribution and last cost is too long",
-			peer:            resource.NewPeer(mockPeerID, mockTask, mockHost),
+			peer:            resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost),
 			totalPieceCount: 1,
 			mock: func(peer *resource.Peer) {
 				peer.FSM.SetState(resource.PeerStateRunning)
@@ -819,7 +831,7 @@ func TestEvaluatorBase_IsBadNode(t *testing.T) {
 		},
 		{
 			name:            "download costs meet the normal distribution and last cost is normal",
-			peer:            resource.NewPeer(mockPeerID, mockTask, mockHost),
+			peer:            resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost),
 			totalPieceCount: 1,
 			mock: func(peer *resource.Peer) {
 				peer.FSM.SetState(resource.PeerStateRunning)
@@ -835,7 +847,7 @@ func TestEvaluatorBase_IsBadNode(t *testing.T) {
 		},
 		{
 			name:            "download costs meet the normal distribution and last cost is too short",
-			peer:            resource.NewPeer(mockPeerID, mockTask, mockHost),
+			peer:            resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost),
 			totalPieceCount: 1,
 			mock: func(peer *resource.Peer) {
 				peer.FSM.SetState(resource.PeerStateRunning)

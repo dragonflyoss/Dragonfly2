@@ -290,11 +290,14 @@ type JobConfig struct {
 }
 
 type PreheatConfig struct {
+	// RegistryTimeout is the timeout for requesting registry to get token and manifest.
+	RegistryTimeout time.Duration `yaml:"registryTimeout" mapstructure:"registryTimeout"`
+
 	// TLS client configuration.
-	TLS *TLSClientConfig `yaml:"tls" mapstructure:"tls"`
+	TLS *PreheatTLSClientConfig `yaml:"tls" mapstructure:"tls"`
 }
 
-type TLSClientConfig struct {
+type PreheatTLSClientConfig struct {
 	// CACert is the CA certificate for preheat tls handshake, it can be path or PEM format string.
 	CACert types.PEMContent `yaml:"caCert" mapstructure:"caCert"`
 }
@@ -424,7 +427,9 @@ func New() *Config {
 			},
 		},
 		Job: JobConfig{
-			Preheat: PreheatConfig{},
+			Preheat: PreheatConfig{
+				RegistryTimeout: DefaultJobPreheatRegistryTimeout,
+			},
 		},
 		ObjectStorage: ObjectStorageConfig{
 			Enable:           false,
@@ -600,6 +605,10 @@ func (cfg *Config) Validate() error {
 		if cfg.Job.Preheat.TLS.CACert == "" {
 			return errors.New("preheat requires parameter caCert")
 		}
+	}
+
+	if cfg.Job.Preheat.RegistryTimeout == 0 {
+		return errors.New("preheat requires parameter registryTimeout")
 	}
 
 	if cfg.ObjectStorage.Enable {

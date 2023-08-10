@@ -50,7 +50,7 @@ func New(cfg *config.Config) (*Job, error) {
 		}
 	}
 
-	p, err := newPreheat(j, certPool)
+	p, err := newPreheat(j, cfg.Job.Preheat.RegistryTimeout, certPool)
 	if err != nil {
 		return nil, err
 	}

@@ -65,6 +65,7 @@ cache:
 
 job:
   preheat:
+    registryTimeout: 1m
     tls:
       caCert: testdata/ca.crt
 objectStorage:

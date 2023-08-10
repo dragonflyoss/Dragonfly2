@@ -10,17 +10,6 @@ server:
   pluginDir: foo
   dataDir: foo
 
-database:
-  redis:
-    addrs: [ "foo", "bar" ]
-    masterName: "baz"
-    host: 127.0.0.1
-    port: 6379
-    password: foo
-    brokerDB: 1
-    backendDB: 2
-    networkTopologyDB: 3
-
 scheduler:
   algorithm: default
   backToSourceCount: 3
@@ -34,6 +23,25 @@ scheduler:
     taskGCInterval: 30s
     hostGCInterval: 1m
     hostTTL: 1m
+
+database:
+  redis:
+    addrs: [ "foo", "bar" ]
+    masterName: "baz"
+    host: 127.0.0.1
+    port: 6379
+    password: foo
+    brokerDB: 1
+    backendDB: 2
+    networkTopologyDB: 3
+
+resource:
+  task:
+    downloadTiny:
+      scheme: http
+      timeout: 1m
+      tls:
+        insecureSkipVerify: true
 
 dynConfig:
   refreshInterval: 10s
