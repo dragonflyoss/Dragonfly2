@@ -52,7 +52,6 @@ type PersonalAccessTokenParams struct {
 }
 
 type GetPersonalAccessTokensQuery struct {
-	Type    string `form:"type" binding:"omitempty"`
 	State   string `form:"state" binding:"omitempty,oneof=active inactive"`
 	UserID  uint   `form:"user_id" binding:"omitempty"`
 	Page    int    `form:"page" binding:"omitempty,gte=1"`
