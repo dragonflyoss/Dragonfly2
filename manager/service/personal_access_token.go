@@ -89,7 +89,10 @@ func (s *service) GetPersonalAccessToken(ctx context.Context, id uint) (*models.
 func (s *service) GetPersonalAccessTokens(ctx context.Context, q types.GetPersonalAccessTokensQuery) ([]models.PersonalAccessToken, int64, error) {
 	var count int64
 	personalAccessToken := []models.PersonalAccessToken{}
-	if err := s.db.WithContext(ctx).Scopes(models.Paginate(q.Page, q.PerPage)).Preload("User").Find(&personalAccessToken).Limit(-1).Offset(-1).Count(&count).Error; err != nil {
+	if err := s.db.WithContext(ctx).Scopes(models.Paginate(q.Page, q.PerPage)).Where(&models.PersonalAccessToken{
+		State:  q.State,
+		UserID: q.UserID,
+	}).Preload("User").Find(&personalAccessToken).Limit(-1).Offset(-1).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 
