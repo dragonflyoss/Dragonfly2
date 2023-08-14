@@ -96,7 +96,7 @@ func (o *oss) GetObjectMetadata(ctx context.Context, bucketName, objectKey strin
 
 	header, err := bucket.GetObjectDetailedMeta(objectKey)
 	if err != nil {
-		var serr *aliyunoss.ServiceError
+		var serr aliyunoss.ServiceError
 		if errors.As(err, &serr) && serr.StatusCode == http.StatusNotFound {
 			return nil, false, nil
 		}
