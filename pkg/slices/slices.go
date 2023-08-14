@@ -27,6 +27,17 @@ func Contains[T comparable](s []T, e T) bool {
 	return false
 }
 
+// Find returns index if an element is present in a slice.
+func Find[T comparable](s []T, e T) int {
+	for i, v := range s {
+		if v == e {
+			return i
+		}
+	}
+
+	return -1
+}
+
 // FindDuplicate returns duplicate element in a collection.
 func FindDuplicate[T comparable](s []T) (T, bool) {
 	visited := make(map[T]struct{})

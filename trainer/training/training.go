@@ -17,13 +17,15 @@
 package training
 
 import (
+	"archive/zip"
+	"bytes"
+	"compress/gzip"
 	"context"
-	"encoding/csv"
 	"fmt"
 	"io"
 	"math/rand"
 	"os"
-	"strconv"
+	"path/filepath"
 
 	tf "github.com/galeone/tensorflow/tensorflow/go"
 	"github.com/gocarina/gocsv"
@@ -33,7 +35,6 @@ import (
 
 	"d7y.io/api/v2/pkg/apis/manager/v2"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
@@ -43,37 +44,6 @@ import (
 )
 
 //go:generate mockgen -destination mocks/training_mock.go -source training.go -package mocks
-
-const (
-	// PartitionRatio is the partition ratio between the training set and the test set.
-	PartitionRatio = 0.8
-
-	// Batch size for each optimization step for MLP model.
-	defaultMLPBatchSize int = 32
-
-	// The number of epochs for training MLP model.
-	defaultMLPEpochCount int = 10
-
-	// The dimension of score Tensor for MLP model's inputs.
-	defaultMLPScoreDims int = 5
-)
-
-const (
-	// Batch size for each optimization step for GNN model.
-	defaultGNNBatchSize int = 500
-
-	// The number of training step of training GNN model.
-	defaultGNNTrainingStep = 1000
-
-	// The number of negative sample size of GNN model.
-	defaultNegativeSampleSize = 25
-
-	// The number of sample number of first order in subgraph.
-	defaultFirstOrderSampleSize = 25
-
-	// The number of sample number of second order in subgraph.
-	defaultSecondOrderSampleSize = 10
-)
 
 // Training defines the interface to train GNN and MLP model.
 type Training interface {
@@ -89,9 +59,6 @@ type training struct {
 	// Base directory.
 	baseDir string
 
-	// observation interface.
-	obs observation
-
 	// Storage interface.
 	storage storage.Storage
 
@@ -104,7 +71,6 @@ func New(cfg *config.Config, baseDir string, managerClient managerclient.V2, sto
 	return &training{
 		config:        cfg,
 		baseDir:       baseDir,
-		obs:           *NewObservation(baseDir),
 		storage:       storage,
 		managerClient: managerClient,
 	}
@@ -221,13 +187,13 @@ func (t *training) preprocess(ip, hostname string) error {
 					MaxBandwidth:          bandwidths[key],
 				}
 
-				// Divide the data into train set or test set.
+				// Divide the data into training set or test set.
 				if rand.Float32() < PartitionRatio {
-					if err := t.obs.createMLPObservationTrain(hostID, mlpObservation); err != nil {
+					if err := createMLPObservationTrain(t.baseDir, hostID, mlpObservation); err != nil {
 						logger.Errorf("create MLP observation for training failed: %s", err.Error())
 					}
 				} else {
-					if err := t.obs.createMLPObservationTest(hostID, mlpObservation); err != nil {
+					if err := createMLPObservationTest(t.baseDir, hostID, mlpObservation); err != nil {
 						logger.Errorf("create MLP observation for testing failed: %s", err.Error())
 					}
 				}
@@ -253,7 +219,7 @@ func (t *training) preprocess(ip, hostname string) error {
 					maxBandwidth = 0
 				}
 
-				if err := t.obs.createGNNEdgeObservation(hostID, GNNEdgeObservation{
+				if err := createGNNEdgeObservation(t.baseDir, hostID, GNNEdgeObservation{
 					SrcHostID:    networkTopology.Host.ID,
 					DestHostID:   destHost.ID,
 					AverageRTT:   destHost.Probes.AverageRTT,
@@ -271,7 +237,7 @@ func (t *training) preprocess(ip, hostname string) error {
 			continue
 		}
 
-		if err := t.obs.createGNNVertexObservation(hostID, GNNVertexObservation{
+		if err := createGNNVertexObservation(t.baseDir, hostID, GNNVertexObservation{
 			HostID:   networkTopology.Host.ID,
 			IP:       ipFeature,
 			Location: locationFeature(networkTopology.Host.Network.Location),
@@ -318,191 +284,23 @@ func (t *training) trainMLP(ctx context.Context, ip, hostname string) error {
 	}
 
 	// Training phase.
-	// Open MLP observation training file.
-	mlpObservationTrainFile, err := t.obs.openMLPObservationTrainFile(hostID)
-	if err != nil {
+	if err = mlpTrainingPhase(t.baseDir, hostID, model); err != nil {
 		return err
-	}
-	defer mlpObservationTrainFile.Close()
-
-	trainReader := csv.NewReader(mlpObservationTrainFile)
-	for i := 0; i < defaultMLPEpochCount; i++ {
-		for {
-			// Read MLP observation training file by line.
-			record, err := trainReader.Read()
-			if err == io.EOF {
-				// Reset MLP observation training file in line.
-				mlpObservationTrainFile.Seek(0, 0)
-				break
-			}
-
-			if err != nil {
-				return err
-			}
-
-			var MLPBatchSize = defaultMLPBatchSize
-			if len(record) < defaultMLPBatchSize {
-				MLPBatchSize = len(record)
-			}
-
-			var (
-				// Initialize score batch and target batch for training.
-				scoresBatch = make([][]float64, 0, MLPBatchSize)
-				targetBatch = make([]float64, 0, MLPBatchSize)
-				scores      = make([]float64, MLPBatchSize-1)
-			)
-
-			// Add scores and target of each MLP observation to score batch and target batch.
-			for j, v := range record[:MLPBatchSize-1] {
-				if scores[j], err = strconv.ParseFloat(v, 64); err != nil {
-					return err
-				}
-			}
-			scoresBatch = append(scoresBatch, scores)
-
-			target, err := strconv.ParseFloat(record[MLPBatchSize-1], 64)
-			if err != nil {
-				return err
-			}
-			targetBatch = append(targetBatch, target)
-
-			if len(scoresBatch) == MLPBatchSize {
-				// Convert MLP observations to Tensorflow tensor.
-				scoreTensor, err := tf.NewTensor(scoresBatch)
-				if err != nil {
-					return err
-				}
-
-				targetTensor, err := tf.NewTensor(targetBatch)
-				if err != nil {
-					return err
-				}
-
-				// Run an optimization step on the model using batch of values from observation file.
-				if err := mlpLearning(model, scoreTensor, targetTensor); err != nil {
-					return err
-				}
-
-				// Reset score batch and target batch for further training phase.
-				scoresBatch = make([][]float64, 0, MLPBatchSize)
-				targetBatch = make([]float64, 0, MLPBatchSize)
-			}
-		}
 	}
 
 	// Testing phase.
-	// Initialize accumulated MSE, MAE and test observation count.
-	var (
-		accMSE    float64
-		accMAE    float64
-		testCount int
-	)
-
-	// Open MLP observation testing file.
-	mlpObservationTestFile, err := t.obs.openMLPObservationTestFile(hostID)
-	if err != nil {
-		return err
-	}
-	defer mlpObservationTestFile.Close()
-
-	testReader := csv.NewReader(mlpObservationTestFile)
-	for {
-		// Read preprocessed file in line.
-		record, err := testReader.Read()
-		if err == io.EOF {
-			break
-		}
-
-		if err != nil {
-			return err
-		}
-
-		// Initialize score and target for testing.
-		var (
-			scores       = make([][]float64, 1)
-			target       = make([]float64, 1)
-			recordLength = len(record)
-		)
-		scores[0] = make([]float64, recordLength-1)
-
-		for j, v := range record[:recordLength-1] {
-			val, err := strconv.ParseFloat(v, 64)
-			if err != nil {
-				return err
-			}
-			scores[0][j] = val
-		}
-
-		target[0], err = strconv.ParseFloat(record[recordLength-1], 64)
-		if err != nil {
-			return err
-		}
-
-		// Convert MLP observation to Tensorflow tensor.
-		scoreTensor, err := tf.NewTensor(scores)
-		if err != nil {
-			return err
-		}
-
-		targetTensor, err := tf.NewTensor(target)
-		if err != nil {
-			return err
-		}
-
-		// Run test and receive avarage model metrics.
-		MSE, MAE, err := mlpValidation(model, scoreTensor, targetTensor)
-		if err != nil {
-			return err
-		}
-		accMSE += MSE[0]
-		accMAE += MAE[0]
-		testCount++
-	}
-
-	MAE := accMAE / float64(testCount)
-	MSE := accMSE / float64(testCount)
-	logger.Infof("Metric-MAE: %f", MAE)
-	logger.Infof("Metric-MSE: %f", MSE)
-
-	// Create MLP trained model directory file for updating and uploading.
-	if err := os.MkdirAll(t.obs.mlpModelDirFile(hostID), os.ModePerm); err != nil {
-		return err
-	}
-
-	// Create trained MLP model variables directory file.
-	if err := os.MkdirAll(t.obs.mlpModelVariablesFile(hostID), os.ModePerm); err != nil {
-		return err
-	}
-
-	mlpInitialSavedModelFile, err := t.obs.openMLPInitialSavedModelFile()
-	if err != nil {
-		return err
-	}
-	defer mlpInitialSavedModelFile.Close()
-
-	mlpSavedModelFile, err := t.obs.openMLPSavedModelFile(hostID)
-	if err != nil {
-		return err
-	}
-	defer mlpSavedModelFile.Close()
-
-	// Copy MLP initial saved model file to MLP saved model file.
-	if _, err := io.Copy(mlpSavedModelFile, mlpInitialSavedModelFile); err != nil {
-		return err
-	}
-
-	// Update variables file.
-	variableTensor, err := tf.NewTensor(t.obs.mlpModelVariablesFile(hostID))
+	MAE, MSE, err := mlpTestingPhase(t.baseDir, hostID, model)
 	if err != nil {
 		return err
 	}
 
-	if err := mlpSaving(model, variableTensor); err != nil {
+	// Save and compress MLP model.
+	if err = saveMLPModel(t.baseDir, hostID, model); err != nil {
 		return err
 	}
 
 	// Compress MLP trained model file and convert to bytes.
-	d, err := compressMLPFile(t.obs.mlpModelDirFile(hostID))
+	data, err := compressFile(mlpModelDirFile(t.baseDir, hostID))
 	if err != nil {
 		return err
 	}
@@ -513,7 +311,7 @@ func (t *training) trainMLP(ctx context.Context, ip, hostname string) error {
 		Ip:       ip,
 		Request: &manager.CreateModelRequest_CreateMlpRequest{
 			CreateMlpRequest: &manager.CreateMLPRequest{
-				Data: d,
+				Data: data,
 				Mse:  MSE,
 				Mae:  MAE,
 			},
@@ -526,265 +324,56 @@ func (t *training) trainMLP(ctx context.Context, ip, hostname string) error {
 	return nil
 }
 
-func (t *training) minibatch(ip, hostname string, sampleSizes int) error {
-	// 1.
-	// 先遍历vertex.csv 提取feature 向量 (ip,idc,location), 定位每个节点。
-	// map [hostID]int hostID 对应一个int，不重复，用来存索引
-	// 然后需要将特征存成matrix[[feature1],[feature1],[feature1]]
+// TODO: optimize.
+// compressFile compresses trained model directory and convert to bytes.
+func compressFile(dir string) ([]byte, error) {
+	// create a gzip compressor.
+	buf := new(bytes.Buffer)
+	gzWriter := gzip.NewWriter(buf)
+	defer gzWriter.Close()
 
-	// 2.
-	// 遍历edge.csv 提取feature 向量 (rtt,bandwidth),
-	// 存所有邻居 [][]int , 存index 下对应的host 的邻居。[[1,2,3][2,3]] 0:1,2,3 1:2,3
+	// create a zip compressor.
+	zipWriter := zip.NewWriter(gzWriter)
+	defer zipWriter.Close()
 
-	// 3. 采样
-	// for 循环 trainingStep = 1000
-	// {
-	// 所有点的列表 边的列表。
-	// 随机1个batch_size的边 暂定超参数500边。
-	// 随机选一个500条边的一条的两个节点作为 初始节点 和末节点，根据这些节点生成子图：500 （1,2）
-	// 500条边的节点，把他们的一阶邻居包括本身放到集合A里。集合点全集-集合A=集合B，在 集合B random 元素作为集合C。然后集合A ∪ 集合C = 集合D
-	// 负样本取值超参数25> 二阶参数。
-
-	// 根据集合D 的点进行采样。
-	//  集合D 记录其一阶 ，二阶的点，存起来。
-	// for 循环集合D 的每个点
-	// 	{记录 [[一阶][二阶]]
-	//   }
-	// 扔给 trainloop [][]int
-	// }
-
-	// construct GNN vertex feature matrix.
-	var (
-		hostID            = idgen.HostIDV2(ip, hostname)
-		hostID2Index      = make(map[string]int)
-		Index2HostID      = make(map[int]string)
-		index             int
-		gnnVertexFeatures = make([][]uint32, 0)
-		universalHosts    = set.NewSafeSet[int]()
-	)
-
-	GNNVertexObservationFile, err := t.obs.openGNNVertexObservationFile(hostID)
-	if err != nil {
-		msg := fmt.Sprintf("open gnn vertex observation failed: %s", err.Error())
-		logger.Error(msg)
-		return status.Error(codes.Internal, msg)
-	}
-	defer GNNVertexObservationFile.Close()
-
-	gvc := make(chan GNNVertexObservation)
-	go func() {
-		if gocsv.UnmarshalToChanWithoutHeaders(GNNVertexObservationFile, gvc) != nil {
-			logger.Errorf("prase gnn vertex observation file filed: %s", err.Error())
+	// iterate through all the files and subdirectories in the directory and add them to the zip compressor.
+	if err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
 		}
-	}()
 
-	for gnnVertexObservation := range gvc {
-		_, ok := hostID2Index[gnnVertexObservation.HostID]
-		if !ok {
-			hostID2Index[gnnVertexObservation.HostID] = index
-			Index2HostID[index] = gnnVertexObservation.HostID
-
-			universalHosts.Add(index)
-			var gnnVertexFeature = make([]uint32, 0)
-			gnnVertexFeature = append(gnnVertexFeature, gnnVertexObservation.IP...)
-			gnnVertexFeature = append(gnnVertexFeature, gnnVertexObservation.Location...)
-			gnnVertexFeature = append(gnnVertexFeature, gnnVertexObservation.IDC)
-			gnnVertexFeatures = append(gnnVertexFeatures, gnnVertexFeature)
-			index++
+		// create a zip file header.
+		header, err := zip.FileInfoHeader(info)
+		if err != nil {
+			return err
 		}
+
+		// set the zip file header name.
+		header.Name = path
+
+		// If the current file is a directory, add the zip file header directly.
+		if info.IsDir() {
+			_, err = zipWriter.CreateHeader(header)
+			return err
+		}
+
+		// If the current file is a normal file, open it and add its contents to the zip compressor.
+		file, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		entry, err := zipWriter.CreateHeader(header)
+		if err != nil {
+			return err
+		}
+
+		_, err = io.Copy(entry, file)
+		return err
+	}); err != nil {
+		return nil, err
 	}
 
-	// construct GNN edge neighbor matrix.
-	var (
-		rawNeighbors             = make(map[int][]int, 0)
-		neighbors                = make([][]int, 0)
-		N                        = len(hostID2Index)
-		gnnEdgeBandwidthFeatures = make([][]float64, N)
-		gnnEdgeRTTFeatures       = make([][]int64, N)
-	)
-
-	for i := 0; i < N; i++ {
-		gnnEdgeBandwidthFeatures[i] = make([]float64, N)
-		gnnEdgeRTTFeatures[i] = make([]int64, N)
-	}
-
-	GNNEdgeObservationFile, err := t.obs.openGNNEdgeObservationFile(hostID)
-	if err != nil {
-		msg := fmt.Sprintf("open gnn edge observation failed: %s", err.Error())
-		logger.Error(msg)
-		return status.Error(codes.Internal, msg)
-	}
-	defer GNNEdgeObservationFile.Close()
-
-	gec := make(chan GNNEdgeObservation)
-	go func() {
-		if gocsv.UnmarshalToChanWithoutHeaders(GNNEdgeObservationFile, gec) != nil {
-			logger.Errorf("prase gnn edge observation file filed: %s", err.Error())
-		}
-	}()
-
-	for gnnEdgeObservation := range gec {
-		srcIndex, ok := hostID2Index[gnnEdgeObservation.SrcHostID]
-		if !ok {
-			continue
-		}
-
-		destIndex, ok := hostID2Index[gnnEdgeObservation.DestHostID]
-		if !ok {
-			continue
-		}
-
-		// update gnnEdgeBandwidthFeatures and gnnEdgeRTTFeatures
-		gnnEdgeBandwidthFeatures[srcIndex][destIndex] = gnnEdgeObservation.MaxBandwidth
-		gnnEdgeRTTFeatures[srcIndex][destIndex] = gnnEdgeObservation.AverageRTT
-
-		// update neighbor.
-		_, ok = rawNeighbors[srcIndex]
-		if ok {
-			rawNeighbors[srcIndex] = append(rawNeighbors[srcIndex], destIndex)
-			continue
-		}
-
-		rawNeighbors[srcIndex] = []int{destIndex}
-	}
-
-	for i := 0; i < len(rawNeighbors); i++ {
-		neighbors = append(neighbors, rawNeighbors[i])
-	}
-
-	// sampling.
-	// loop training step.
-	for j := 0; j < defaultGNNTrainingStep; j++ {
-		// random select edges, default batch size = 500 .
-		var (
-			flag        = make([][]bool, N)
-			sampleCount int
-		)
-
-		for i := 0; i < N; i++ {
-			flag[i] = make([]bool, N)
-		}
-
-		for {
-			var (
-				src  = rand.Intn(N)
-				dest = rand.Intn(N)
-			)
-
-			if flag[src][dest] || src != dest {
-				continue
-			}
-
-			flag[src][dest] = true
-			sampleCount++
-			if sampleCount >= defaultGNNBatchSize {
-				break
-			}
-		}
-
-		var (
-			A  = set.NewSafeSet[int]()
-			AN = set.NewSafeSet[int]()
-			B  = set.NewSafeSet[int]()
-			BN = set.NewSafeSet[int]()
-			C  = set.NewSafeSet[int]()
-			CR = set.NewSafeSet[int]()
-			D  = set.NewSafeSet[int]()
-		)
-
-		for i := 0; i < N; i++ {
-			for j := 0; j < N; j++ {
-				if flag[i][j] {
-					// add source host to set A.
-					A.Add(i)
-					// add destination host to set B.
-					B.Add(j)
-
-					// add source neighbor host to set AN.
-					for _, srcNeighbor := range neighbors[i] {
-						AN.Add(srcNeighbor)
-					}
-
-					// add destination neighbor host to set BN.
-					for _, destNeighbor := range neighbors[j] {
-						BN.Add(destNeighbor)
-					}
-
-					break
-				}
-			}
-		}
-
-		// set C = universal set - set A - set AN - set B - set BN.
-		for i := 0; i < N; i++ {
-			if !A.Contains(i) && !AN.Contains(i) && !B.Contains(i) && !BN.Contains(i) {
-				C.Add(i)
-			}
-		}
-
-		// set CR is randomly get elements from set C.
-		for _, negativeSample := range C.Values()[:defaultNegativeSampleSize] {
-			CR.Add(negativeSample)
-		}
-
-		// set D is set A + set B + set CR
-		for _, host := range A.Values() {
-			D.Add(host)
-		}
-
-		for _, host := range B.Values() {
-			D.Add(host)
-		}
-
-		for _, host := range CR.Values() {
-			D.Add(host)
-		}
-
-		var (
-			firstOrders  = make(map[int][]int)
-			secondOrders = make(map[int][]int)
-		)
-
-		// get first order hosts of each host in set D.
-		for _, host := range D.Values() {
-			var firstOrder = make([]int, 0)
-			// if the number of neighbors is equal or greater than default first order sample size, randomly choose neighbor samples.
-			// Else complete the sampling number.
-			for _, neighbor := range neighbors[host] {
-				firstOrder = append(firstOrder, neighbor)
-			}
-
-			if len(firstOrder) < defaultFirstOrderSampleSize {
-				for len(firstOrder) < defaultFirstOrderSampleSize {
-					firstOrder = append(firstOrder, firstOrder[rand.Intn(len(firstOrder))])
-				}
-			}
-
-			firstOrders[host] = firstOrder[:defaultFirstOrderSampleSize]
-		}
-
-		// get second order hosts of each host in set D.aa
-		for _, host := range D.Values() {
-			var secondOrder = make([]int, 0)
-			// if the number of neighbors is equal or greater than default second order sample size, randomly choose neighbor samples.
-			// Else complete the sampling number.
-			for _, neighbor := range firstOrders[host] {
-				for _, nneighbor := range neighbors[neighbor] {
-					secondOrder = append(secondOrder, nneighbor)
-				}
-			}
-
-			if len(secondOrder) < defaultSecondOrderSampleSize {
-				for len(secondOrder) < defaultFirstOrderSampleSize {
-					secondOrder = append(secondOrder, secondOrder[rand.Intn(len(secondOrder))])
-				}
-			}
-
-			secondOrders[host] = secondOrder[:defaultSecondOrderSampleSize]
-		}
-
-		// TODO: training loop by chan.
-	}
-
-	return nil
+	return buf.Bytes(), nil
 }

@@ -26,6 +26,11 @@ FROM ${BASE_IMAGE}
 ENV PATH=/opt/dragonfly/bin:$PATH
 RUN echo "hosts: files dns" > /etc/nsswitch.conf
 
+ENV TENSORFLOW_LIB_URL https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-gpu-linux-x86_64-2.6.0.tar.gz
+RUN curl -fsSL "$TENSORFLOW_LIB_URL" -o tensorflow_lib.tar.gz \
+    && tar -C /usr/local -xzf tensorflow_lib.tar.gz \
+	&& rm tensorflow_lib.tar.gz 
+
 COPY --from=builder /opt/dragonfly/bin/trainer /opt/dragonfly/bin/trainer
 COPY --from=health /bin/grpc_health_probe /bin/grpc_health_probe
 
