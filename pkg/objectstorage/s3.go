@@ -20,7 +20,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/url"
 	"path"
+	"sort"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -138,6 +140,7 @@ func (s *s3) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker,
 	}
 
 	metadatas := make([]*ObjectMetadata, 0, len(resp.Contents))
+
 	for _, content := range resp.Contents {
 		metadatas = append(metadatas, &ObjectMetadata{
 			Key:              aws.StringValue(content.Key),
@@ -145,6 +148,25 @@ func (s *s3) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker,
 			ETag:             aws.StringValue(content.ETag),
 			LastModifiedTime: aws.TimeValue(content.LastModified),
 			StorageClass:     aws.StringValue(s.getStorageClass(content.StorageClass)),
+		})
+	}
+
+	if delimiter != "" {
+		for _, p := range resp.CommonPrefixes {
+			prefix, err := url.QueryUnescape(*p.Prefix)
+			if err != nil {
+				return nil, fmt.Errorf("failed to decode commonPrefixes %s, error: %s", *p.Prefix, err)
+			}
+			metadatas = append(metadatas, &ObjectMetadata{
+				Key:              prefix,
+				ContentLength:    0,
+				ETag:             "",
+				LastModifiedTime: time.Unix(0, 0),
+				StorageClass:     aws.StringValue(s.getStorageClass(nil)),
+			})
+		}
+		sort.Slice(metadatas, func(i, j int) bool {
+			return metadatas[i].Key < metadatas[j].Key
 		})
 	}
 
@@ -193,7 +215,6 @@ func (s *s3) DeleteObject(ctx context.Context, bucketName, objectKey string) err
 func (s *s3) IsObjectExist(ctx context.Context, bucketName, objectKey string) (bool, error) {
 	_, isExist, err := s.GetObjectMetadata(ctx, bucketName, objectKey)
 	if err != nil {
-
 		return false, err
 	}
 

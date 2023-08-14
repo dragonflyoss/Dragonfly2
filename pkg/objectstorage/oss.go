@@ -166,7 +166,9 @@ func (o *oss) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker
 				StorageClass:     o.getStorageClass(""),
 			})
 		}
-		sort.Slice(metadatas, func(i, j int) bool { return metadatas[i].Key < metadatas[j].Key })
+		sort.Slice(metadatas, func(i, j int) bool {
+			return metadatas[i].Key < metadatas[j].Key
+		})
 	}
 	return metadatas, nil
 }
