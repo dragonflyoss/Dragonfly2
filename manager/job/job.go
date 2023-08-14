@@ -17,6 +17,9 @@
 package job
 
 import (
+	"crypto/x509"
+	"errors"
+
 	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/config"
 )
@@ -39,7 +42,15 @@ func New(cfg *config.Config) (*Job, error) {
 		return nil, err
 	}
 
-	p, err := newPreheat(j)
+	var certPool *x509.CertPool
+	if cfg.Job.Preheat.TLS != nil {
+		certPool = x509.NewCertPool()
+		if !certPool.AppendCertsFromPEM([]byte(cfg.Job.Preheat.TLS.CACert)) {
+			return nil, errors.New("invalid CA Cert")
+		}
+	}
+
+	p, err := newPreheat(j, cfg.Job.Preheat.RegistryTimeout, certPool)
 	if err != nil {
 		return nil, err
 	}

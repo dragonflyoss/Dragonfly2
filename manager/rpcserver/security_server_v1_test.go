@@ -32,7 +32,6 @@ import (
 
 	testifyassert "github.com/stretchr/testify/assert"
 	testifyrequire "github.com/stretchr/testify/require"
-	"google.golang.org/grpc/peer"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	securityv1 "d7y.io/api/v2/pkg/apis/security/v1"
@@ -60,6 +59,7 @@ func TestIssueCertificate(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			template := &x509.CertificateRequest{
+				IPAddresses: []net.IP{net.ParseIP(tc.peerIP)},
 				Subject: pkix.Name{
 					Country:            []string{"China"},
 					Organization:       []string{"Dragonfly"},
@@ -88,17 +88,8 @@ func TestIssueCertificate(t *testing.T) {
 			})
 			require.Nilf(err, "newServer should be ok")
 
-			ctx := peer.NewContext(
-				context.Background(),
-				&peer.Peer{
-					Addr: &net.TCPAddr{
-						IP:   net.ParseIP(tc.peerIP),
-						Port: 65008,
-					},
-				})
-
 			resp, err := securityServerV1.IssueCertificate(
-				ctx,
+				context.Background(),
 				&securityv1.CertificateRequest{
 					Csr:            csr,
 					ValidityPeriod: durationpb.New(time.Hour),

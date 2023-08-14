@@ -498,7 +498,7 @@ func TestStorage_Clear(t *testing.T) {
 			baseDir: os.TempDir(),
 			mock: func(t *testing.T, s Storage, baseDir string) {
 				s.(*storage).baseDir = filepath.Join(baseDir, "bae")
-				if err := os.MkdirAll(s.(*storage).baseDir, os.ModePerm); err != nil {
+				if err := os.MkdirAll(s.(*storage).baseDir, fs.FileMode(0700)); err != nil {
 					t.Fatal(err)
 				}
 

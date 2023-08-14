@@ -139,14 +139,14 @@ func (v *V1) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequ
 	case commonv1.SizeScope_TINY:
 		// Validate data of direct piece.
 		if !peer.Task.CanReuseDirectPiece() {
-			peer.Log.Warnf("register as normal task, because of length of direct piece is %d, content length is %d",
+			peer.Log.Warnf("can not reuse direct piece, because of length of direct piece is %d, content length is %d",
 				len(task.DirectPiece), task.ContentLength.Load())
 			break
 		}
 
 		result, err := v.registerTinyTask(ctx, peer)
 		if err != nil {
-			peer.Log.Warnf("register as normal task, because of %s", err.Error())
+			peer.Log.Warn(err)
 			break
 		}
 
@@ -154,7 +154,7 @@ func (v *V1) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequ
 	case commonv1.SizeScope_SMALL:
 		result, err := v.registerSmallTask(ctx, peer)
 		if err != nil {
-			peer.Log.Warnf("register as normal task, because of %s", err.Error())
+			peer.Log.Warn(err)
 			break
 		}
 
@@ -168,7 +168,7 @@ func (v *V1) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequ
 		return nil, dferrors.New(commonv1.Code_SchedError, err.Error())
 	}
 
-	peer.Log.Info("register as normal task, because of invalid size scope")
+	peer.Log.Info("register as normal task")
 	return result, nil
 }
 
@@ -918,7 +918,7 @@ func (v *V1) storePeer(ctx context.Context, id string, priority commonv1.Priorit
 			}
 		}
 
-		peer := resource.NewPeer(id, task, host, options...)
+		peer := resource.NewPeer(id, &v.config.Resource, task, host, options...)
 		v.resource.PeerManager().Store(peer)
 		peer.Log.Info("create new peer")
 		return peer
@@ -1226,7 +1226,7 @@ func (v *V1) handlePeerSuccess(ctx context.Context, peer *resource.Peer) {
 			return
 		}
 
-		if len(data) != int(peer.Task.ContentLength.Load()) {
+		if int64(len(data)) != peer.Task.ContentLength.Load() {
 			peer.Log.Errorf("download tiny task length of data is %d, task content length is %d", len(data), peer.Task.ContentLength.Load())
 			return
 		}

@@ -26,7 +26,7 @@ const (
 	taskMetadata = "metadata"
 
 	defaultFileMode      = os.FileMode(0644)
-	defaultDirectoryMode = os.FileMode(0755) // used unless overridden in config
+	defaultDirectoryMode = os.FileMode(0700) // used unless overridden in config
 )
 
 var (

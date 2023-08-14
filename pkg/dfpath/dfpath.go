@@ -160,17 +160,17 @@ func New(options ...Option) (Dfpath, error) {
 		}
 
 		// Create log directory.
-		if err := os.MkdirAll(d.logDir, fs.FileMode(0755)); err != nil {
+		if err := os.MkdirAll(d.logDir, fs.FileMode(0700)); err != nil {
 			cache.err = multierror.Append(cache.err, err)
 		}
 
 		// Create plugin directory.
-		if err := os.MkdirAll(d.pluginDir, fs.FileMode(0755)); err != nil {
+		if err := os.MkdirAll(d.pluginDir, fs.FileMode(0700)); err != nil {
 			cache.err = multierror.Append(cache.err, err)
 		}
 
 		// Create unix socket directory.
-		if err := os.MkdirAll(path.Dir(d.daemonSockPath), fs.FileMode(0755)); err != nil {
+		if err := os.MkdirAll(path.Dir(d.daemonSockPath), fs.FileMode(0700)); err != nil {
 			cache.err = multierror.Append(cache.err, err)
 		}
 

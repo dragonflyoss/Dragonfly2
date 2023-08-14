@@ -19,6 +19,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"net"
 	"net/url"
 )
 
@@ -44,7 +45,7 @@ type DfstoreConfig struct {
 func NewDfstore() *DfstoreConfig {
 	url := url.URL{
 		Scheme: "http",
-		Host:   fmt.Sprintf("%s:%d", "127.0.0.1", DefaultObjectStorageStartPort),
+		Host:   net.JoinHostPort("127.0.0.1", fmt.Sprint(DefaultObjectStorageStartPort)),
 	}
 
 	return &DfstoreConfig{

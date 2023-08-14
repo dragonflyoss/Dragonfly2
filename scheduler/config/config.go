@@ -34,14 +34,17 @@ type Config struct {
 	// Base options.
 	base.Options `yaml:",inline" mapstructure:",squash"`
 
-	// Scheduler configuration.
-	Scheduler SchedulerConfig `yaml:"scheduler" mapstructure:"scheduler"`
-
 	// Server configuration.
 	Server ServerConfig `yaml:"server" mapstructure:"server"`
 
+	// Scheduler configuration.
+	Scheduler SchedulerConfig `yaml:"scheduler" mapstructure:"scheduler"`
+
 	// Database configuration.
 	Database DatabaseConfig `yaml:"database" mapstructure:"database"`
+
+	// Resource configuration.
+	Resource ResourceConfig `yaml:"resource" mapstructure:"resource"`
 
 	// Dynconfig configuration.
 	DynConfig DynConfig `yaml:"dynConfig" mapstructure:"dynConfig"`
@@ -109,11 +112,6 @@ type ServerConfig struct {
 	DataDir string `yaml:"dataDir" mapstructure:"dataDir"`
 }
 
-type DatabaseConfig struct {
-	// Redis configuration.
-	Redis RedisConfig `yaml:"redis" mapstructure:"redis"`
-}
-
 type SchedulerConfig struct {
 	// Algorithm is scheduling algorithm used by the scheduler.
 	Algorithm string `yaml:"algorithm" mapstructure:"algorithm"`
@@ -132,6 +130,38 @@ type SchedulerConfig struct {
 
 	// GC configuration.
 	GC GCConfig `yaml:"gc" mapstructure:"gc"`
+}
+
+type DatabaseConfig struct {
+	// Redis configuration.
+	Redis RedisConfig `yaml:"redis" mapstructure:"redis"`
+}
+
+type ResourceConfig struct {
+	// Task resource configuration.
+	Task TaskConfig `yaml:"task" mapstructure:"task"`
+}
+
+type TaskConfig struct {
+	// Download tiny task configuration.
+	DownloadTiny DownloadTinyConfig `yaml:"downloadTiny" mapstructure:"downloadTiny"`
+}
+
+type DownloadTinyConfig struct {
+	// Scheme is download tiny task scheme.
+	Scheme string `yaml:"scheme" mapstructure:"scheme"`
+
+	// Timeout is http request timeout.
+	Timeout time.Duration `yaml:"timeout" mapstructure:"timeout"`
+
+	// TLS is download tiny task TLS configuration.
+	TLS DownloadTinyTLSClientConfig `yaml:"tls" mapstructure:"tls"`
+}
+
+type DownloadTinyTLSClientConfig struct {
+	// InsecureSkipVerify controls whether a client verifies the
+	// server's certificate chain and host name.
+	InsecureSkipVerify bool `yaml:"insecureSkipVerify" mapstructure:"insecureSkipVerify"`
 }
 
 type GCConfig struct {
@@ -338,13 +368,6 @@ func New() *Config {
 			AdvertisePort: DefaultServerAdvertisePort,
 			Host:          fqdn.FQDNHostname,
 		},
-		Database: DatabaseConfig{
-			Redis: RedisConfig{
-				BrokerDB:          DefaultRedisBrokerDB,
-				BackendDB:         DefaultRedisBackendDB,
-				NetworkTopologyDB: DefaultNetworkTopologyDB,
-			},
-		},
 		Scheduler: SchedulerConfig{
 			Algorithm:              DefaultSchedulerAlgorithm,
 			BackToSourceCount:      DefaultSchedulerBackToSourceCount,
@@ -358,6 +381,24 @@ func New() *Config {
 				TaskGCInterval:       DefaultSchedulerTaskGCInterval,
 				HostGCInterval:       DefaultSchedulerHostGCInterval,
 				HostTTL:              DefaultSchedulerHostTTL,
+			},
+		},
+		Database: DatabaseConfig{
+			Redis: RedisConfig{
+				BrokerDB:          DefaultRedisBrokerDB,
+				BackendDB:         DefaultRedisBackendDB,
+				NetworkTopologyDB: DefaultNetworkTopologyDB,
+			},
+		},
+		Resource: ResourceConfig{
+			Task: TaskConfig{
+				DownloadTiny: DownloadTinyConfig{
+					Scheme:  DefaultResourceTaskDownloadTinyScheme,
+					Timeout: DefaultResourceTaskDownloadTinyTimeout,
+					TLS: DownloadTinyTLSClientConfig{
+						InsecureSkipVerify: true,
+					},
+				},
 			},
 		},
 		DynConfig: DynConfig{
@@ -441,18 +482,6 @@ func (cfg *Config) Validate() error {
 		return errors.New("server requires parameter host")
 	}
 
-	if cfg.Database.Redis.BrokerDB < 0 {
-		return errors.New("redis requires parameter brokerDB")
-	}
-
-	if cfg.Database.Redis.BackendDB < 0 {
-		return errors.New("redis requires parameter backendDB")
-	}
-
-	if cfg.Database.Redis.NetworkTopologyDB < 0 {
-		return errors.New("redis requires parameter networkTopologyDB")
-	}
-
 	if cfg.Scheduler.Algorithm == "" {
 		return errors.New("scheduler requires parameter algorithm")
 	}
@@ -495,6 +524,26 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Scheduler.GC.HostTTL <= 0 {
 		return errors.New("scheduler requires parameter hostTTL")
+	}
+
+	if cfg.Database.Redis.BrokerDB < 0 {
+		return errors.New("redis requires parameter brokerDB")
+	}
+
+	if cfg.Database.Redis.BackendDB < 0 {
+		return errors.New("redis requires parameter backendDB")
+	}
+
+	if cfg.Database.Redis.NetworkTopologyDB < 0 {
+		return errors.New("redis requires parameter networkTopologyDB")
+	}
+
+	if !slices.Contains([]string{"http", "https"}, cfg.Resource.Task.DownloadTiny.Scheme) {
+		return errors.New("downloadTiny requires parameter scheme")
+	}
+
+	if cfg.Resource.Task.DownloadTiny.Timeout == 0 {
+		return errors.New("downloadTiny requires parameter timeout")
 	}
 
 	if cfg.DynConfig.RefreshInterval <= 0 {

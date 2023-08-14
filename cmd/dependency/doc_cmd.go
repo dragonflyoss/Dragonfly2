@@ -59,7 +59,7 @@ func (g *genDocCommand) bindFlags() {
 }
 
 func (g *genDocCommand) runDoc() error {
-	_ = os.MkdirAll(g.path, fs.FileMode(0755))
+	_ = os.MkdirAll(g.path, fs.FileMode(0700))
 	file, err := os.Stat(g.path)
 	if err != nil {
 		return err

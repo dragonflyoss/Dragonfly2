@@ -166,13 +166,24 @@ var (
 	mockTaskFilters                 = []string{"bar"}
 	mockTaskHeader                  = map[string]string{"content-length": "100"}
 	mockTaskPieceLength       int32 = 2048
-	mockHostID                      = idgen.HostIDV2("127.0.0.1", "foo")
-	mockSeedHostID                  = idgen.HostIDV2("127.0.0.1", "bar")
-	mockHostLocation                = "baz"
-	mockHostIDC                     = "bas"
-	mockPeerID                      = idgen.PeerIDV2()
-	mockSeedPeerID                  = idgen.PeerIDV2()
-	mockPiece                       = resource.Piece{
+	mockResourceConfig              = &config.ResourceConfig{
+		Task: config.TaskConfig{
+			DownloadTiny: config.DownloadTinyConfig{
+				Scheme:  config.DefaultResourceTaskDownloadTinyScheme,
+				Timeout: config.DefaultResourceTaskDownloadTinyTimeout,
+				TLS: config.DownloadTinyTLSClientConfig{
+					InsecureSkipVerify: true,
+				},
+			},
+		},
+	}
+	mockHostID       = idgen.HostIDV2("127.0.0.1", "foo")
+	mockSeedHostID   = idgen.HostIDV2("127.0.0.1", "bar")
+	mockHostLocation = "baz"
+	mockHostIDC      = "bas"
+	mockPeerID       = idgen.PeerIDV2()
+	mockSeedPeerID   = idgen.PeerIDV2()
+	mockPiece        = resource.Piece{
 		Number:      1,
 		ParentID:    "foo",
 		Offset:      2,
@@ -433,11 +444,11 @@ func TestScheduling_ScheduleCandidateParents(t *testing.T) {
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
-			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
+			peer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 			mockSeedHost := resource.NewHost(
 				mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
 				mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)
-			seedPeer := resource.NewPeer(mockSeedPeerID, mockTask, mockSeedHost)
+			seedPeer := resource.NewPeer(mockSeedPeerID, mockResourceConfig, mockTask, mockSeedHost)
 			blocklist := set.NewSafeSet[string]()
 
 			tc.mock(cancel, peer, seedPeer, blocklist, stream, stream.EXPECT(), dynconfig.EXPECT())
@@ -706,11 +717,11 @@ func TestScheduling_ScheduleParentAndCandidateParents(t *testing.T) {
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
-			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
+			peer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 			mockSeedHost := resource.NewHost(
 				mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
 				mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)
-			seedPeer := resource.NewPeer(mockSeedPeerID, mockTask, mockSeedHost)
+			seedPeer := resource.NewPeer(mockSeedPeerID, mockResourceConfig, mockTask, mockSeedHost)
 			blocklist := set.NewSafeSet[string]()
 
 			tc.mock(cancel, peer, seedPeer, blocklist, stream, stream.EXPECT(), dynconfig.EXPECT())
@@ -978,14 +989,14 @@ func TestScheduling_FindCandidateParents(t *testing.T) {
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
-			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
+			peer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 
 			var mockPeers []*resource.Peer
 			for i := 0; i < 11; i++ {
 				mockHost := resource.NewHost(
 					idgen.HostIDV2("127.0.0.1", uuid.New().String()), mockRawHost.IP, mockRawHost.Hostname,
 					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-				peer := resource.NewPeer(idgen.PeerIDV1(fmt.Sprintf("127.0.0.%d", i)), mockTask, mockHost)
+				peer := resource.NewPeer(idgen.PeerIDV1(fmt.Sprintf("127.0.0.%d", i)), mockResourceConfig, mockTask, mockHost)
 				mockPeers = append(mockPeers, peer)
 			}
 
@@ -1228,14 +1239,14 @@ func TestScheduling_FindSuccessParent(t *testing.T) {
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
-			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
+			peer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 
 			var mockPeers []*resource.Peer
 			for i := 0; i < 11; i++ {
 				mockHost := resource.NewHost(
 					idgen.HostIDV2("127.0.0.1", uuid.New().String()), mockRawHost.IP, mockRawHost.Hostname,
 					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-				peer := resource.NewPeer(idgen.PeerIDV1(fmt.Sprintf("127.0.0.%d", i)), mockTask, mockHost)
+				peer := resource.NewPeer(idgen.PeerIDV1(fmt.Sprintf("127.0.0.%d", i)), mockResourceConfig, mockTask, mockHost)
 				mockPeers = append(mockPeers, peer)
 			}
 
@@ -1387,7 +1398,7 @@ func TestScheduling_ConstructSuccessSmallTaskResponse(t *testing.T) {
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
-			candidateParent := resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost, resource.WithRange(nethttp.Range{
+			candidateParent := resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, mockTask, mockHost, resource.WithRange(nethttp.Range{
 				Start:  1,
 				Length: 10,
 			}))
@@ -1682,7 +1693,7 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
-			candidateParents := []*resource.Peer{resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost, resource.WithRange(nethttp.Range{
+			candidateParents := []*resource.Peer{resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, mockTask, mockHost, resource.WithRange(nethttp.Range{
 				Start:  1,
 				Length: 10,
 			}))}
@@ -1769,9 +1780,9 @@ func TestScheduling_ConstructSuccessPeerPacket(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
 
-			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
-			parent := resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost)
-			candidateParents := []*resource.Peer{resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost)}
+			peer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
+			parent := resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, mockTask, mockHost)
+			candidateParents := []*resource.Peer{resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, mockTask, mockHost)}
 
 			tc.mock(dynconfig.EXPECT())
 			tc.expect(t, ConstructSuccessPeerPacket(dynconfig, peer, parent, candidateParents), parent, candidateParents)

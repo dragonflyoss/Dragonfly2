@@ -48,7 +48,7 @@ var (
 		Migrate:   true,
 	}
 
-	mockMysqlTLSConfig = &MysqlTLSConfig{
+	mockMysqlTLSConfig = &MysqlTLSClientConfig{
 		Cert:               "ca.crt",
 		Key:                "ca.key",
 		CA:                 "ca",
@@ -129,7 +129,7 @@ func TestConfig_Load(t *testing.T) {
 			},
 			REST: RESTConfig{
 				Addr: ":8080",
-				TLS: &RESTTLSConfig{
+				TLS: &TLSServerConfig{
 					Cert: "foo",
 					Key:  "foo",
 				},
@@ -152,7 +152,7 @@ func TestConfig_Load(t *testing.T) {
 				Port:      3306,
 				DBName:    "foo",
 				TLSConfig: "preferred",
-				TLS: &MysqlTLSConfig{
+				TLS: &MysqlTLSClientConfig{
 					Cert:               "foo",
 					Key:                "foo",
 					CA:                 "foo",
@@ -186,6 +186,14 @@ func TestConfig_Load(t *testing.T) {
 			Local: LocalCacheConfig{
 				Size: 10000,
 				TTL:  1 * time.Second,
+			},
+		},
+		Job: JobConfig{
+			Preheat: PreheatConfig{
+				RegistryTimeout: DefaultJobPreheatRegistryTimeout,
+				TLS: &PreheatTLSClientConfig{
+					CACert: "foo",
+				},
 			},
 		},
 		ObjectStorage: ObjectStorageConfig{
@@ -300,7 +308,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "rest tls requires parameter cert",
 			config: New(),
 			mock: func(cfg *Config) {
-				cfg.Server.REST.TLS = &RESTTLSConfig{
+				cfg.Server.REST.TLS = &TLSServerConfig{
 					Cert: "",
 					Key:  "foo",
 				}
@@ -314,7 +322,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "rest tls requires parameter key",
 			config: New(),
 			mock: func(cfg *Config) {
-				cfg.Server.REST.TLS = &RESTTLSConfig{
+				cfg.Server.REST.TLS = &TLSServerConfig{
 					Cert: "foo",
 					Key:  "",
 				}
@@ -701,6 +709,38 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "local requires parameter ttl")
+			},
+		},
+		{
+			name:   "preheat requires parameter caCert",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Job.Preheat.TLS = &PreheatTLSClientConfig{
+					CACert: "",
+				}
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "preheat requires parameter caCert")
+			},
+		},
+		{
+			name:   "preheat requires parameter registryTimeout",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Job.Preheat.RegistryTimeout = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "preheat requires parameter registryTimeout")
 			},
 		},
 		{
