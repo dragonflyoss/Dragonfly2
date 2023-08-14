@@ -545,7 +545,7 @@ func (o *objectStorage) copyObject(ctx *gin.Context) {
 
 	var (
 		bucketName  = params.ID
-		destination = params.ObjectKey
+		destination = strings.TrimPrefix(params.ObjectKey, string(os.PathSeparator))
 		source      = form.SourceObjectKey
 	)
 
