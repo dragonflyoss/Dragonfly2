@@ -212,7 +212,7 @@ func (cfg *CacheOption) checkOutput() error {
 	}
 
 	outputDir, _ := path.Split(cfg.Output)
-	if err := MkdirAll(outputDir, 0777, os.Getuid(), os.Getgid()); err != nil {
+	if err := MkdirAll(outputDir, 0700, os.Getuid(), os.Getgid()); err != nil {
 		return err
 	}
 

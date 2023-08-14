@@ -50,7 +50,7 @@ const (
 	FailedPeerCountLimit = 200
 
 	// Peer count limit for task.
-	PeerCountLimitForTask = 1000
+	PeerCountLimitForTask = 700
 )
 
 const (

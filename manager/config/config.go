@@ -46,6 +46,9 @@ type Config struct {
 	// Cache configuration.
 	Cache CacheConfig `yaml:"cache" mapstructure:"cache"`
 
+	// Job configuration.
+	Job JobConfig `yaml:"job" mapstructure:"job"`
+
 	// ObjectStorage configuration.
 	ObjectStorage ObjectStorageConfig `yaml:"objectStorage" mapstructure:"objectStorage"`
 
@@ -137,14 +140,14 @@ type MysqlConfig struct {
 	// TLS mode (can be one of "true", "false", "skip-verify",  or "preferred").
 	TLSConfig string `yaml:"tlsConfig" mapstructure:"tlsConfig"`
 
-	// Custom TLS configuration (overrides "TLSConfig" setting above).
-	TLS *MysqlTLSConfig `yaml:"tls" mapstructure:"tls"`
+	// Custom TLS client configuration (overrides "TLSConfig" setting above).
+	TLS *MysqlTLSClientConfig `yaml:"tls" mapstructure:"tls"`
 
 	// Enable migration.
 	Migrate bool `yaml:"migrate" mapstructure:"migrate"`
 }
 
-type MysqlTLSConfig struct {
+type MysqlTLSClientConfig struct {
 	// Client certificate file path.
 	Cert string `yaml:"cert" mapstructure:"cert"`
 
@@ -239,11 +242,11 @@ type RESTConfig struct {
 	// REST server address.
 	Addr string `yaml:"addr" mapstructure:"addr"`
 
-	// TLS configuration.
-	TLS *RESTTLSConfig `yaml:"tls" mapstructure:"tls"`
+	// TLS server configuration.
+	TLS *TLSServerConfig `yaml:"tls" mapstructure:"tls"`
 }
 
-type RESTTLSConfig struct {
+type TLSServerConfig struct {
 	// Certificate file path.
 	Cert string `yaml:"cert" mapstructure:"cert"`
 
@@ -279,6 +282,24 @@ type GRPCConfig struct {
 type TCPListenPortRange struct {
 	Start int
 	End   int
+}
+
+type JobConfig struct {
+	// Preheat configuration.
+	Preheat PreheatConfig `yaml:"preheat" mapstructure:"preheat"`
+}
+
+type PreheatConfig struct {
+	// RegistryTimeout is the timeout for requesting registry to get token and manifest.
+	RegistryTimeout time.Duration `yaml:"registryTimeout" mapstructure:"registryTimeout"`
+
+	// TLS client configuration.
+	TLS *PreheatTLSClientConfig `yaml:"tls" mapstructure:"tls"`
+}
+
+type PreheatTLSClientConfig struct {
+	// CACert is the CA certificate for preheat tls handshake, it can be path or PEM format string.
+	CACert types.PEMContent `yaml:"caCert" mapstructure:"caCert"`
 }
 
 type ObjectStorageConfig struct {
@@ -403,6 +424,11 @@ func New() *Config {
 			Local: LocalCacheConfig{
 				Size: DefaultLFUCacheSize,
 				TTL:  DefaultLFUCacheTTL,
+			},
+		},
+		Job: JobConfig{
+			Preheat: PreheatConfig{
+				RegistryTimeout: DefaultJobPreheatRegistryTimeout,
 			},
 		},
 		ObjectStorage: ObjectStorageConfig{
@@ -573,6 +599,16 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Cache.Local.TTL == 0 {
 		return errors.New("local requires parameter ttl")
+	}
+
+	if cfg.Job.Preheat.TLS != nil {
+		if cfg.Job.Preheat.TLS.CACert == "" {
+			return errors.New("preheat requires parameter caCert")
+		}
+	}
+
+	if cfg.Job.Preheat.RegistryTimeout == 0 {
+		return errors.New("preheat requires parameter registryTimeout")
 	}
 
 	if cfg.ObjectStorage.Enable {

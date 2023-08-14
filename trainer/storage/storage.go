@@ -19,6 +19,7 @@
 package storage
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -74,15 +75,18 @@ func New(baseDir string) Storage {
 }
 
 // ListDownload returns downloads in csv files based on the given model key.
-func (s *storage) ListDownload(key string) ([]schedulerstorage.Download, error) {
+func (s *storage) ListDownload(key string) (downloads []schedulerstorage.Download, err error) {
 	file, err := s.OpenDownload(key)
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() {
+		if cerr := file.Close(); cerr != nil {
+			err = errors.Join(err, cerr)
+		}
+	}()
 
-	var downloads []schedulerstorage.Download
-	if err := gocsv.UnmarshalWithoutHeaders(file, &downloads); err != nil {
+	if err = gocsv.UnmarshalWithoutHeaders(file, &downloads); err != nil {
 		return nil, err
 	}
 
@@ -90,15 +94,18 @@ func (s *storage) ListDownload(key string) ([]schedulerstorage.Download, error) 
 }
 
 // ListNetworkTopology returns network topologies in csv files based on the given model key.
-func (s *storage) ListNetworkTopology(key string) ([]schedulerstorage.NetworkTopology, error) {
+func (s *storage) ListNetworkTopology(key string) (networkTopologies []schedulerstorage.NetworkTopology, err error) {
 	file, err := s.OpenNetworkTopology(key)
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() {
+		if cerr := file.Close(); cerr != nil {
+			err = errors.Join(err, cerr)
+		}
+	}()
 
-	var networkTopologies []schedulerstorage.NetworkTopology
-	if err := gocsv.UnmarshalWithoutHeaders(file, &networkTopologies); err != nil {
+	if err = gocsv.UnmarshalWithoutHeaders(file, &networkTopologies); err != nil {
 		return nil, err
 	}
 

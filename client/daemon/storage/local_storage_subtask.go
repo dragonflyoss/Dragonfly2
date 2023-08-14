@@ -18,6 +18,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"io"
 	"os"
 	"sync"
@@ -44,14 +45,14 @@ type localSubTaskStore struct {
 	Range *http.Range
 }
 
-func (t *localSubTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest) (int64, error) {
+func (t *localSubTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest) (n int64, err error) {
 	// piece already exists
 	t.RLock()
 	if piece, ok := t.Pieces[req.Num]; ok {
 		t.RUnlock()
 		t.Debugf("piece %d already exist,ignore writing piece", req.Num)
 		// discard already downloaded data for back source
-		n, err := io.CopyN(io.Discard, req.Reader, piece.Range.Length)
+		n, err = io.CopyN(io.Discard, req.Reader, piece.Range.Length)
 		if err != nil && err != io.EOF {
 			return n, err
 		}
@@ -72,13 +73,17 @@ func (t *localSubTaskStore) WritePiece(ctx context.Context, req *WritePieceReque
 	if err != nil {
 		return 0, err
 	}
-	defer file.Close()
+	defer func() {
+		if cerr := file.Close(); cerr != nil {
+			err = errors.Join(err, cerr)
+		}
+	}()
 	// TODO different with localTaskStore
 	if _, err = file.Seek(t.Range.Start+req.Range.Start, io.SeekStart); err != nil {
 		return 0, err
 	}
 
-	n, err := io.Copy(file, io.LimitReader(req.Reader, req.Range.Length))
+	n, err = io.Copy(file, io.LimitReader(req.Reader, req.Range.Length))
 	if err != nil {
 		return 0, err
 	}
@@ -275,7 +280,7 @@ func (t *localSubTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskReque
 	return nil
 }
 
-func (t *localSubTaskStore) Store(ctx context.Context, req *StoreRequest) error {
+func (t *localSubTaskStore) Store(ctx context.Context, req *StoreRequest) (err error) {
 	// Store is called in callback.Done, mark local task store done, for fast search
 	t.Done = true
 	t.parent.touch()
@@ -296,7 +301,7 @@ func (t *localSubTaskStore) Store(ctx context.Context, req *StoreRequest) error 
 		return hardlink(t.SugaredLoggerOnWith, req.Destination, t.parent.DataFilePath)
 	}
 
-	_, err := os.Stat(req.Destination)
+	_, err = os.Stat(req.Destination)
 	if err == nil {
 		// remove exist file
 		t.Infof("destination file %q exists, purge it first", req.Destination)
@@ -308,7 +313,11 @@ func (t *localSubTaskStore) Store(ctx context.Context, req *StoreRequest) error 
 		t.Debugf("open tasks data error: %s", err)
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		if cerr := file.Close(); cerr != nil {
+			err = errors.Join(err, cerr)
+		}
+	}()
 
 	_, err = file.Seek(t.Range.Start, io.SeekStart)
 	if err != nil {
@@ -320,7 +329,11 @@ func (t *localSubTaskStore) Store(ctx context.Context, req *StoreRequest) error 
 		t.Errorf("open tasks destination file error: %s", err)
 		return err
 	}
-	defer dstFile.Close()
+	defer func() {
+		if cerr := dstFile.Close(); cerr != nil {
+			err = errors.Join(err, cerr)
+		}
+	}()
 	// copy_file_range is valid in linux
 	// https://go-review.googlesource.com/c/go/+/229101/
 	n, err := io.Copy(dstFile, io.LimitReader(file, t.ContentLength))

@@ -141,7 +141,7 @@ func (s *service) DestroyCluster(ctx context.Context, id uint) error {
 			return errors.New("seed peer cluster exists seed peer")
 		}
 
-		if err := tx.WithContext(ctx).Delete(&models.SeedPeerCluster{}, seedPeerCluster.ID).Error; err != nil {
+		if err := tx.WithContext(ctx).Unscoped().Delete(&models.SeedPeerCluster{}, seedPeerCluster.ID).Error; err != nil {
 			tx.Rollback()
 			return err
 		}
@@ -152,7 +152,7 @@ func (s *service) DestroyCluster(ctx context.Context, id uint) error {
 		return err
 	}
 
-	if err := tx.WithContext(ctx).Delete(&models.SchedulerCluster{}, id).Error; err != nil {
+	if err := tx.WithContext(ctx).Unscoped().Delete(&models.SchedulerCluster{}, id).Error; err != nil {
 		tx.Rollback()
 		return err
 	}

@@ -20,6 +20,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -290,7 +291,7 @@ func (c *cache) Save(w io.Writer) (err error) {
 // documentation for NewFrom().)
 func (c *cache) SaveFile(fname string) error {
 	dir := filepath.Dir(fname)
-	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+	if err := os.MkdirAll(dir, fs.FileMode(0700)); err != nil {
 		return err
 	}
 

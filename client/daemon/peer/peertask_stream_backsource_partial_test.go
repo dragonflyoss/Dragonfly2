@@ -225,7 +225,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 			TaskExpireTime: util.Duration{
 				Duration: -1 * time.Second,
 			},
-		}, func(request storage.CommonTaskRequest) {}, os.FileMode(0755))
+		}, func(request storage.CommonTaskRequest) {}, os.FileMode(0700))
 	return sched, storageManager
 }
 

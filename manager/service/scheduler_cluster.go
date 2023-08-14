@@ -73,7 +73,7 @@ func (s *service) DestroySchedulerCluster(ctx context.Context, id uint) error {
 		return errors.New("scheduler cluster exists scheduler")
 	}
 
-	if err := s.db.WithContext(ctx).Delete(&models.SchedulerCluster{}, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Unscoped().Delete(&models.SchedulerCluster{}, id).Error; err != nil {
 		return err
 	}
 

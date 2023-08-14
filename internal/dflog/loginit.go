@@ -205,7 +205,7 @@ func createConsoleLogger(verbose bool) error {
 func createFileLogger(verbose bool, meta []logInitMeta, logDir string) error {
 	levels = nil
 	// create parent dir first
-	_ = os.MkdirAll(logDir, fs.FileMode(0755))
+	_ = os.MkdirAll(logDir, fs.FileMode(0700))
 
 	for _, m := range meta {
 		log, level, err := CreateLogger(path.Join(logDir, m.fileName), false, false, verbose)

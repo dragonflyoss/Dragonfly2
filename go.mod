@@ -3,14 +3,14 @@ module d7y.io/dragonfly/v2
 go 1.20
 
 require (
-	d7y.io/api/v2 v2.0.13
+	d7y.io/api/v2 v2.0.19
 	github.com/MysteriousPotato/go-lockable v1.0.0
 	github.com/RichardKnop/machinery v1.10.6
 	github.com/Showmax/go-fqdn v1.0.0
 	github.com/VividCortex/mysqlerr v1.0.0
 	github.com/aliyun/aliyun-oss-go-sdk v2.2.8+incompatible
 	github.com/appleboy/gin-jwt/v2 v2.9.1
-	github.com/aws/aws-sdk-go v1.44.312
+	github.com/aws/aws-sdk-go v1.44.317
 	github.com/bits-and-blooms/bitset v1.8.0
 	github.com/casbin/casbin/v2 v2.73.0
 	github.com/casbin/gorm-adapter/v3 v3.5.0
@@ -25,7 +25,7 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-echarts/statsview v0.3.4
 	github.com/go-http-utils/headers v0.0.0-20181008091004-fed159eddc2a
-	github.com/go-playground/validator/v10 v10.14.1
+	github.com/go-playground/validator/v10 v10.15.0
 	github.com/go-redis/cache/v8 v8.4.3
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-redis/redismock/v8 v8.11.5
@@ -72,11 +72,11 @@ require (
 	go.opentelemetry.io/otel/trace v1.16.0
 	go.uber.org/atomic v1.11.0
 	go.uber.org/zap v1.24.0
-	golang.org/x/crypto v0.11.0
+	golang.org/x/crypto v0.12.0
 	golang.org/x/exp v0.0.0-20220613132600-b0d781184e0d
-	golang.org/x/oauth2 v0.10.0
+	golang.org/x/oauth2 v0.11.0
 	golang.org/x/sync v0.3.0
-	golang.org/x/sys v0.10.0
+	golang.org/x/sys v0.11.0
 	golang.org/x/time v0.3.0
 	google.golang.org/api v0.134.0
 	google.golang.org/grpc v1.58.0-dev
@@ -216,9 +216,9 @@ require (
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/arch v0.3.0 // indirect
-	golang.org/x/net v0.12.0 // indirect
-	golang.org/x/term v0.10.0 // indirect
-	golang.org/x/text v0.11.0 // indirect
+	golang.org/x/net v0.14.0 // indirect
+	golang.org/x/term v0.11.0 // indirect
+	golang.org/x/text v0.12.0 // indirect
 	golang.org/x/tools v0.10.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230706204954-ccb25ca9f130 // indirect

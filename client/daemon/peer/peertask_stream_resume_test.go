@@ -91,7 +91,7 @@ func setupResumeStreamTaskComponents(ctrl *gomock.Controller, opt componentsOpti
 				Duration: -1 * time.Second,
 			},
 		}, func(request storage.CommonTaskRequest) {},
-		os.FileMode(0755))
+		os.FileMode(0700))
 	return sched, storageManager
 }
 

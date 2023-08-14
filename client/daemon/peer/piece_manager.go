@@ -654,7 +654,7 @@ func (pm *pieceManager) processPieceFromFile(ctx context.Context, ptm storage.Pe
 	return n, nil
 }
 
-func (pm *pieceManager) ImportFile(ctx context.Context, ptm storage.PeerTaskMetadata, tsd storage.TaskStorageDriver, req *dfdaemonv1.ImportTaskRequest) error {
+func (pm *pieceManager) ImportFile(ctx context.Context, ptm storage.PeerTaskMetadata, tsd storage.TaskStorageDriver, req *dfdaemonv1.ImportTaskRequest) (err error) {
 	log := logger.With("function", "ImportFile", "URL", req.Url, "taskID", ptm.TaskID)
 	// get file size and compute piece size and piece count
 	stat, err := os.Stat(req.Path)
@@ -673,7 +673,11 @@ func (pm *pieceManager) ImportFile(ctx context.Context, ptm storage.PeerTaskMeta
 		log.Error(msg)
 		return errors.New(msg)
 	}
-	defer file.Close()
+	defer func() {
+		if cerr := file.Close(); cerr != nil {
+			err = errors.Join(err, cerr)
+		}
+	}()
 
 	reader := file
 	for pieceNum := int32(0); pieceNum < maxPieceNum; pieceNum++ {

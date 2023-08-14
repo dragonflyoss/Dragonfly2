@@ -269,7 +269,7 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 			TaskExpireTime: util.Duration{
 				Duration: -1 * time.Second,
 			},
-		}, func(request storage.CommonTaskRequest) {}, os.FileMode(0755))
+		}, func(request storage.CommonTaskRequest) {}, os.FileMode(0700))
 	return sched, storageManager
 }
 
@@ -630,7 +630,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 					}
 
 					if tc.httpRange != nil {
-						urlMeta.Range = strings.TrimLeft(tc.httpRange.String(), "bytes=")
+						urlMeta.Range = strings.TrimPrefix(tc.httpRange.String(), "bytes=")
 					}
 
 					if tc.urlGenerator != nil {

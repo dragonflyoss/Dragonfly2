@@ -205,6 +205,7 @@ func (s *managerServerV2) UpdateSeedPeer(ctx context.Context, req *managerv2.Upd
 		Port:              req.GetPort(),
 		DownloadPort:      req.GetDownloadPort(),
 		ObjectStoragePort: req.GetObjectStoragePort(),
+		State:             models.SeedPeerStateActive,
 		SeedPeerClusterID: uint(req.GetSeedPeerClusterId()),
 	}).Error; err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -243,6 +244,7 @@ func (s *managerServerV2) createSeedPeer(ctx context.Context, req *managerv2.Upd
 		Port:              req.GetPort(),
 		DownloadPort:      req.GetDownloadPort(),
 		ObjectStoragePort: req.GetObjectStoragePort(),
+		State:             models.SeedPeerStateActive,
 		SeedPeerClusterID: uint(req.GetSeedPeerClusterId()),
 	}
 
@@ -263,6 +265,23 @@ func (s *managerServerV2) createSeedPeer(ctx context.Context, req *managerv2.Upd
 		SeedPeerClusterId: uint64(seedPeer.SeedPeerClusterID),
 		State:             seedPeer.State,
 	}, nil
+}
+
+// Delete SeedPeer configuration.
+func (s *managerServerV2) DeleteSeedPeer(ctx context.Context, req *managerv2.DeleteSeedPeerRequest) (*emptypb.Empty, error) {
+	if err := s.db.WithContext(ctx).Unscoped().Delete(&models.SeedPeer{}, models.SeedPeer{
+		Hostname:          req.Hostname,
+		IP:                req.Ip,
+		SeedPeerClusterID: uint(req.SeedPeerClusterId),
+	}).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return new(emptypb.Empty), nil
 }
 
 // Get Scheduler and Scheduler cluster configuration.

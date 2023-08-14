@@ -293,7 +293,7 @@ func (ptm *peerTaskManager) prefetchParentTask(request *schedulerv1.PeerTaskRequ
 	logger.Infof("prefetch peer task %s/%s", taskID, req.PeerId)
 	prefetch, err := ptm.getPeerTaskConductor(context.Background(), taskID, req, limit, nil, nil, desiredLocation, false)
 	if err != nil {
-		logger.Errorf("prefetch peer task %s/%s error: %s", prefetch.taskID, prefetch.peerID, err)
+		logger.Errorf("prefetch peer task %s error: %s", taskID, err)
 		return nil
 	}
 

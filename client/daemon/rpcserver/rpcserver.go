@@ -620,7 +620,7 @@ func (s *server) recursiveDownloadWithDirectMetadata(
 		parentReq := queue.PopFront()
 		request, err := source.NewRequestWithContext(ctx, parentReq.Url, parentReq.UrlMeta.Header)
 		if err != nil {
-			log.Errorf("generate url [%v] request error: %v", request.URL, err)
+			log.Errorf("generate url [%v] request error: %v", parentReq.Url, err)
 			span.RecordError(err)
 			return err
 		}
@@ -1082,7 +1082,7 @@ func checkOutput(output string) error {
 		return fmt.Errorf("path[%s] is not absolute path", output)
 	}
 	outputDir, _ := path.Split(output)
-	if err := config.MkdirAll(outputDir, 0777, os.Getuid(), os.Getgid()); err != nil {
+	if err := config.MkdirAll(outputDir, 0700, os.Getuid(), os.Getgid()); err != nil {
 		return err
 	}
 
