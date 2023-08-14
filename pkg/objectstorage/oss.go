@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
@@ -135,7 +136,7 @@ func (o *oss) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker
 		return nil, err
 	}
 
-	if limit == 0 {
+	if limit == 0 || limit > DefaultGetObjectMetadatasLimit {
 		limit = DefaultGetObjectMetadatasLimit
 	}
 
@@ -155,6 +156,18 @@ func (o *oss) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker
 		})
 	}
 
+	if delimiter != "" {
+		for _, prefix := range resp.CommonPrefixes {
+			metadatas = append(metadatas, &ObjectMetadata{
+				Key:              prefix,
+				ContentLength:    0,
+				ETag:             "",
+				LastModifiedTime: time.Unix(0, 0),
+				StorageClass:     o.getStorageClass(""),
+			})
+		}
+		sort.Slice(metadatas, func(i, j int) bool { return metadatas[i].Key < metadatas[j].Key })
+	}
 	return metadatas, nil
 }
 

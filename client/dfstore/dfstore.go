@@ -637,7 +637,7 @@ func (dfs *dfstore) CreateBucketRequestWithContext(ctx context.Context, input *C
 
 	u.RawQuery = query.Encode()
 
-	return http.NewRequestWithContext(ctx, http.MethodPut, u.String(), nil)
+	return http.NewRequestWithContext(ctx, http.MethodPost, u.String(), nil)
 }
 
 // DeleteObjectInput is used to construct request of deleting object.
