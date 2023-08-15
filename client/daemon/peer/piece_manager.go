@@ -261,7 +261,7 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 		pt.Log().Debugf("piece %d calculate digest", pieceNum)
 		reader, _ = digest.NewReader(digest.AlgorithmMD5, reader, digest.WithLogger(pt.Log()))
 	}
-	var n int64
+
 	result.Size, err = pt.GetStorage().WritePiece(
 		pt.Context(),
 		&storage.WritePieceRequest{
@@ -285,8 +285,8 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 		})
 
 	result.FinishTime = time.Now().UnixNano()
-	if n > 0 {
-		pt.AddTraffic(uint64(n))
+	if result.Size > 0 {
+		pt.AddTraffic(uint64(result.Size))
 	}
 	if err != nil {
 		pt.Log().Errorf("put piece to storage failed, piece num: %d, wrote: %d, error: %s", pieceNum, n, err)
