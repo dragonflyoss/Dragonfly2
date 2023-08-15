@@ -289,7 +289,7 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 		pt.AddTraffic(uint64(result.Size))
 	}
 	if err != nil {
-		pt.Log().Errorf("put piece to storage failed, piece num: %d, wrote: %d, error: %s", pieceNum, n, err)
+		pt.Log().Errorf("put piece to storage failed, piece num: %d, wrote: %d, error: %s", pieceNum, result.Size, err)
 		return
 	}
 	if pm.calculateDigest {
