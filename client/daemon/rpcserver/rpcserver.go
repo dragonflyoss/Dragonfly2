@@ -930,6 +930,16 @@ func (s *server) ImportTask(ctx context.Context, req *dfdaemonv1.ImportTaskReque
 }
 
 func (s *server) ExportTask(ctx context.Context, req *dfdaemonv1.ExportTaskRequest) (*emptypb.Empty, error) {
+	_, err := os.Stat(req.Output)
+	if err == nil {
+		// we did not export file to exist file
+		// TODO add white list folders to write files
+		return nil, dferrors.New(commonv1.Code_BadRequest, "output file is already exist")
+	}
+	// check other stat errors, only os.ErrNotExist is okay
+	if !os.IsNotExist(err) {
+		return nil, dferrors.New(commonv1.Code_ClientError, err.Error())
+	}
 	s.Keep()
 	taskID := idgen.TaskIDV1(req.Url, req.UrlMeta)
 	log := logger.With("function", "ExportTask", "URL", req.Url, "Tag", req.UrlMeta.Tag, "taskID", taskID, "destination", req.Output)
@@ -947,7 +957,7 @@ func (s *server) ExportTask(ctx context.Context, req *dfdaemonv1.ExportTaskReque
 		return new(emptypb.Empty), s.exportFromPeers(ctx, log, req)
 	}
 
-	err := s.exportFromLocal(ctx, req, task.PeerID)
+	err = s.exportFromLocal(ctx, req, task.PeerID)
 	if err != nil {
 		log.Errorf("export from local failed: %s", err)
 		return nil, err
