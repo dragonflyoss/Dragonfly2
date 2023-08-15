@@ -371,11 +371,11 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 			},
 			expect: func(t *testing.T, data []models.SchedulerCluster, err error) {
 				assert := assert.New(t)
-				assert.Equal(data[0].Name, "bax")
-				assert.Equal(data[1].Name, "bae")
-				assert.Equal(data[2].Name, "foo")
-				assert.Equal(data[3].Name, "bar")
-				assert.Equal(data[4].Name, "baz")
+				assert.Equal(data[0].Name, "baz")
+				assert.Equal(data[1].Name, "bar")
+				assert.Equal(data[2].Name, "bax")
+				assert.Equal(data[3].Name, "bae")
+				assert.Equal(data[4].Name, "foo")
 				assert.Equal(data[5].Name, "bac")
 				assert.Equal(data[6].Name, "bat")
 				assert.Equal(len(data), 7)

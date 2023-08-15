@@ -192,7 +192,7 @@ func calculateIDCAffinityScore(dst, src string) float64 {
 		return minScore
 	}
 
-	if dst == src {
+	if strings.EqualFold(dst, src) {
 		return maxScore
 	}
 
@@ -201,7 +201,7 @@ func calculateIDCAffinityScore(dst, src string) float64 {
 	// it gets the max score of idc.
 	srcElements := strings.Split(src, types.AffinitySeparator)
 	for _, srcElement := range srcElements {
-		if dst == srcElement {
+		if strings.EqualFold(dst, srcElement) {
 			return maxScore
 		}
 	}
@@ -215,7 +215,7 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 		return minScore
 	}
 
-	if dst == src {
+	if strings.EqualFold(dst, src) {
 		return maxScore
 	}
 
@@ -231,7 +231,7 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 	}
 
 	for i := 0; i < elementLen; i++ {
-		if dstElements[i] != srcElements[i] {
+		if !strings.EqualFold(dstElements[i], srcElements[i]) {
 			break
 		}
 

@@ -152,7 +152,11 @@ func calculateHostTypeScore(peer *resource.Peer) float64 {
 
 // calculateIDCAffinityScore 0.0~1.0 larger and better.
 func calculateIDCAffinityScore(dst, src string) float64 {
-	if dst != "" && src != "" && dst == src {
+	if dst == "" || src == "" {
+		return minScore
+	}
+
+	if strings.EqualFold(dst, src) {
 		return maxScore
 	}
 
@@ -165,7 +169,7 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 		return minScore
 	}
 
-	if dst == src {
+	if strings.EqualFold(dst, src) {
 		return maxScore
 	}
 
@@ -181,9 +185,10 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 	}
 
 	for i := 0; i < elementLen; i++ {
-		if dstElements[i] != srcElements[i] {
+		if !strings.EqualFold(dstElements[i], srcElements[i]) {
 			break
 		}
+
 		score++
 	}
 
