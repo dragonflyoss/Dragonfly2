@@ -937,7 +937,7 @@ func (s *server) ExportTask(ctx context.Context, req *dfdaemonv1.ExportTaskReque
 		return nil, dferrors.New(commonv1.Code_BadRequest, "output file is already exist")
 	}
 	// check other stat errors, only os.ErrNotExist is okay
-	if err != os.ErrNotExist {
+	if !os.IsNotExist(err) {
 		return nil, dferrors.New(commonv1.Code_ClientError, err.Error())
 	}
 	s.Keep()
