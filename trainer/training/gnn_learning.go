@@ -19,6 +19,7 @@ package training
 import (
 	"fmt"
 	"math/rand"
+	"time"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
@@ -54,6 +55,16 @@ const (
 	// GNNEdgeObservationFilePrefix is prefix of gnn edge observation file name.
 	GNNEdgeObservationFilePrefix = "gnn_edge_data"
 )
+
+type Minibatch struct {
+	srcNodes    [][]int
+	dstsrc2srcs [][]int
+	dstsrc2dsts [][]int
+	difMatrix   [][][]float32
+	dst2batchA  []int
+	dst2batchB  []int
+	dst2batchN  []bool
+}
 
 // gnnVertexFeature maps from host id to index and constructs GNN vertex feature matrix.
 func gnnVertexFeature(baseBar, hostID string) (map[string]int, [][]uint32, error) {
@@ -183,7 +194,7 @@ func minibatch(baseDir, ip, hostname string, sampleSizes int) error {
 	var (
 		universalHosts = set.NewSafeSet[int]()
 		N              = len(hostID2Index)
-		minibatchChan  = make(chan int)
+		minibatchChan  = make(chan *Minibatch)
 	)
 
 	for i := 0; i < N; i++ {
@@ -228,108 +239,46 @@ func minibatch(baseDir, ip, hostname string, sampleSizes int) error {
 				}
 			}
 
-			var (
-				A  = set.NewSafeSet[int]()
-				AN = set.NewSafeSet[int]()
-				B  = set.NewSafeSet[int]()
-				BN = set.NewSafeSet[int]()
-				C  = set.NewSafeSet[int]()
-				CR = set.NewSafeSet[int]()
-				D  = set.NewSafeSet[int]()
-			)
+			minibatch := buildBatchFromEdges(flag, N, neighbors)
+			minibatchChan <- minibatch
 
-			for i := 0; i < N; i++ {
-				for j := 0; j < N; j++ {
-					if flag[i][j] {
-						// add source host to set A.
-						A.Add(i)
-						// add destination host to set B.
-						B.Add(j)
+			// // get first order hosts of each host in set D.
+			// for _, host := range D.Values() {
+			// 	var firstOrder = make([]int, 0)
+			// 	// if the number of neighbors is equal or greater than default first order sample size, randomly choose neighbor samples.
+			// 	// Else complete the sampling number.
+			// 	for _, neighbor := range neighbors[host] {
+			// 		firstOrder = append(firstOrder, neighbor)
+			// 	}
 
-						// add source neighbor host to set AN.
-						for _, srcNeighbor := range neighbors[i] {
-							AN.Add(srcNeighbor)
-						}
+			// 	if len(firstOrder) < defaultFirstOrderSampleSize {
+			// 		for len(firstOrder) < defaultFirstOrderSampleSize {
+			// 			firstOrder = append(firstOrder, firstOrder[rand.Intn(len(firstOrder))])
+			// 		}
+			// 	}
 
-						// add destination neighbor host to set BN.
-						for _, destNeighbor := range neighbors[j] {
-							BN.Add(destNeighbor)
-						}
+			// 	firstOrders[host] = firstOrder[:defaultFirstOrderSampleSize]
+			// }
 
-						break
-					}
-				}
-			}
+			// // get second order hosts of each host in set D.
+			// for _, host := range D.Values() {
+			// 	var secondOrder = make([]int, 0)
+			// 	// if the number of neighbors is equal or greater than default second order sample size, randomly choose neighbor samples.
+			// 	// Else complete the sampling number.
+			// 	for _, neighbor := range firstOrders[host] {
+			// 		for _, nneighbor := range neighbors[neighbor] {
+			// 			secondOrder = append(secondOrder, nneighbor)
+			// 		}
+			// 	}
 
-			// set C = universal set - set A - set AN - set B - set BN.
-			for i := 0; i < N; i++ {
-				if !A.Contains(i) && !AN.Contains(i) && !B.Contains(i) && !BN.Contains(i) {
-					C.Add(i)
-				}
-			}
+			// 	if len(secondOrder) < defaultSecondOrderSampleSize {
+			// 		for len(secondOrder) < defaultFirstOrderSampleSize {
+			// 			secondOrder = append(secondOrder, secondOrder[rand.Intn(len(secondOrder))])
+			// 		}
+			// 	}
 
-			// set CR is randomly get elements from set C.
-			for _, negativeSample := range C.Values()[:defaultNegativeSampleSize] {
-				CR.Add(negativeSample)
-			}
-
-			// set D is set A + set B + set CR
-			for _, host := range A.Values() {
-				D.Add(host)
-			}
-
-			for _, host := range B.Values() {
-				D.Add(host)
-			}
-
-			for _, host := range CR.Values() {
-				D.Add(host)
-			}
-
-			var (
-				firstOrders  = make(map[int][]int)
-				secondOrders = make(map[int][]int)
-			)
-
-			// get first order hosts of each host in set D.
-			for _, host := range D.Values() {
-				var firstOrder = make([]int, 0)
-				// if the number of neighbors is equal or greater than default first order sample size, randomly choose neighbor samples.
-				// Else complete the sampling number.
-				for _, neighbor := range neighbors[host] {
-					firstOrder = append(firstOrder, neighbor)
-				}
-
-				if len(firstOrder) < defaultFirstOrderSampleSize {
-					for len(firstOrder) < defaultFirstOrderSampleSize {
-						firstOrder = append(firstOrder, firstOrder[rand.Intn(len(firstOrder))])
-					}
-				}
-
-				firstOrders[host] = firstOrder[:defaultFirstOrderSampleSize]
-			}
-
-			// get second order hosts of each host in set D.aa
-			for _, host := range D.Values() {
-				var secondOrder = make([]int, 0)
-				// if the number of neighbors is equal or greater than default second order sample size, randomly choose neighbor samples.
-				// Else complete the sampling number.
-				for _, neighbor := range firstOrders[host] {
-					for _, nneighbor := range neighbors[neighbor] {
-						secondOrder = append(secondOrder, nneighbor)
-					}
-				}
-
-				if len(secondOrder) < defaultSecondOrderSampleSize {
-					for len(secondOrder) < defaultFirstOrderSampleSize {
-						secondOrder = append(secondOrder, secondOrder[rand.Intn(len(secondOrder))])
-					}
-				}
-
-				secondOrders[host] = secondOrder[:defaultSecondOrderSampleSize]
-			}
-
-			minibatchChan <- 1
+			// 	secondOrders[host] = secondOrder[:defaultSecondOrderSampleSize]
+			// }
 		}
 	}()
 
@@ -340,7 +289,7 @@ func minibatch(baseDir, ip, hostname string, sampleSizes int) error {
 	return nil
 }
 
-func buildBatchFromEdges(edges [][]bool, N int, neighbors [][]int) {
+func buildBatchFromEdges(edges [][]bool, N int, neighbors [][]int) *Minibatch {
 	var (
 		batchA          = make([]int, 0)
 		batchB          = make([]int, 0)
@@ -390,12 +339,12 @@ func buildBatchFromEdges(edges [][]bool, N int, neighbors [][]int) {
 		}
 	}
 
-	// batchN is the random non-repeating elements from possibleNegs.
+	// batchN is the random non-duplicate elements from possibleNegs.
 	for _, negativeSample := range possibleNegs.Values()[:math.Min(defaultNegativeSampleSize, len(possibleNegs.Values()))] {
 		batchN.Add(negativeSample)
 	}
 
-	// batchAll consists of the non-repeating elements of batchA, batchB and batchN.
+	// batchAll consists of the non-duplicate elements of batchA, batchB and batchN.
 	for _, index := range batchA {
 		batchAll.Add(index)
 	}
@@ -430,15 +379,156 @@ func buildBatchFromEdges(edges [][]bool, N int, neighbors [][]int) {
 		dst2batchN[i] = false
 	}
 
-	buildBatchFromVetexes(batchAllS, neighbors)
+	srcNodes, dstsrc2srcs, dstsrc2dsts, difMatrix := buildBatchFromVetexes(batchAllS, neighbors)
+	return &Minibatch{
+		srcNodes:    srcNodes,
+		dstsrc2srcs: dstsrc2srcs,
+		dstsrc2dsts: dstsrc2dsts,
+		difMatrix:   difMatrix,
+		dst2batchA:  dst2batchA,
+		dst2batchB:  dst2batchB,
+		dst2batchN:  dst2batchN,
+	}
 }
 
-// TODO
-func buildBatchFromVetexes(batchAllS []int, neighbors [][]int) {
-	// var (
-	// 	dstsrc2dsts = make([]int, 0)
-	// 	dstsrc2srcs = make([]int, 0)
-	// 	difMatrix   = make([][]int, 0)
-	// )
+func buildBatchFromVetexes(nodes []int, neighbors [][]int) ([][]int, [][]int, [][]int, [][][]float32) {
+	var (
+		srcNodes    = make([][]int, 0)
+		dstNodes    = make([][]int, 0)
+		dstsrc2srcs = make([][]int, 0)
+		dstsrc2dsts = make([][]int, 0)
+		difMatrix   = make([][][]float32, 0)
+		maxNodeID   = len(neighbors)
+	)
 
+	dstNodes = append(dstNodes, nodes)
+
+	ds, d2s, d2d, dm := computeDuffusionMatrix(dstNodes[len(dstNodes)-1], neighbors, defaultSecondOrderSampleSize, maxNodeID)
+	dstNodes = append(dstNodes, ds)
+	dstsrc2srcs = append(dstsrc2srcs, d2s)
+	dstsrc2dsts = append(dstsrc2dsts, d2d)
+	difMatrix = append(difMatrix, dm)
+
+	ds, d2s, d2d, dm = computeDuffusionMatrix(dstNodes[len(dstNodes)-1], neighbors, defaultFirstOrderSampleSize, maxNodeID)
+	dstNodes = append(dstNodes, ds)
+	dstsrc2srcs = append(dstsrc2srcs, d2s)
+	dstsrc2dsts = append(dstsrc2dsts, d2d)
+	difMatrix = append(difMatrix, dm)
+
+	srcNodes = append(srcNodes, dstNodes[0])
+	dstNodes = dstNodes[1:]
+
+	return srcNodes, dstsrc2srcs, dstsrc2dsts, difMatrix
+}
+
+// sample returns non-duplicate random elements from slice.
+func sample(ns []int, sampleSize int) []int {
+	var (
+		length      = len(ns)
+		randomCount = math.Min(length, sampleSize)
+		re          = make([]int, 0)
+	)
+
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	for len(re) < randomCount {
+		num := r.Intn(length)
+		// Check exist or not.
+		var exist bool
+		for _, v := range re {
+			if v == num {
+				exist = true
+				break
+			}
+		}
+
+		if !exist {
+			re = append(re, num)
+		}
+	}
+
+	return re
+}
+
+// vectorize constructs zero vector which length is max node id.
+func vectorize(ns []int, maxNodeID int) []float32 {
+	var re = make([]float32, maxNodeID+1)
+	for _, i := range ns {
+		re[i] = 1
+	}
+
+	return re
+}
+
+// computeDuffusionMatrix computes duffusion matrix.
+func computeDuffusionMatrix(dstNodes []int, neighbors [][]int, sampleSize int, maxNodeID int) ([]int, []int, []int, [][]float32) {
+	// Sample neighbors.
+	var adjMatrixFull = make([][]float32, 0)
+	for _, n := range dstNodes {
+		adjMatrixFull = append(adjMatrixFull, vectorize(sample(neighbors[n], sampleSize), maxNodeID))
+	}
+
+	var (
+		nonzeroColsMask = make([]bool, len(adjMatrixFull))
+		adjMatrix       = make([][]float32, 0)
+	)
+
+	for i, col := range adjMatrixFull {
+		for _, j := range col {
+			if j != 0 {
+				nonzeroColsMask[i] = true
+				adjMatrix = append(adjMatrix, col)
+				break
+			}
+		}
+	}
+
+	// Compute diffusion matrix.
+	var adjMatrixSum = make([]float32, 0)
+	for _, col := range adjMatrix {
+		var sum float32
+		for _, j := range col {
+			sum = sum + j
+		}
+
+		adjMatrixSum = append(adjMatrixSum, sum)
+	}
+
+	var difMatrix = make([][]float32, len(adjMatrix))
+	for i, _ := range adjMatrix {
+		difMatrix[i] = make([]float32, len(adjMatrix[i]))
+		for j, _ := range adjMatrix[i] {
+			difMatrix[i][j] = adjMatrix[i][j] / adjMatrixSum[i]
+		}
+	}
+
+	// Compute dstsrc mappings.
+	var srcNodes = make([]int, 0)
+	for i, ok := range nonzeroColsMask {
+		if ok {
+			srcNodes = append(srcNodes, i)
+		}
+	}
+
+	// Get union from srcNodes and dstNodes.
+	var (
+		dstsrc     = make([]int, 0)
+		dstsrc2src = make([]int, 0)
+		dstsrc2dst = make([]int, 0)
+	)
+
+	for _, e := range srcNodes {
+		if slices.Find(dstNodes, e) >= 0 {
+			dstsrc = append(dstsrc, e)
+		}
+	}
+
+	for _, e := range srcNodes {
+		dstsrc2src = append(dstsrc2src, slices.Find(dstsrc, e))
+	}
+
+	for _, e := range dstNodes {
+		dstsrc2dst = append(dstsrc2dst, slices.Find(dstsrc, e))
+	}
+
+	return dstsrc, dstsrc2src, dstsrc2dst, difMatrix
 }
