@@ -163,7 +163,10 @@ func NewPieceDownloader(timeout time.Duration, caCertPool *x509.CertPool) PieceD
 }
 
 func (p *pieceDownloader) DownloadPiece(ctx context.Context, req *DownloadPieceRequest) (io.Reader, io.Closer, error) {
-	httpRequest := p.buildDownloadPieceHTTPRequest(ctx, req)
+	httpRequest, err := p.buildDownloadPieceHTTPRequest(ctx, req)
+	if err != nil {
+		return nil, nil, err
+	}
 	resp, err := p.httpClient.Do(httpRequest)
 	if err != nil {
 		logger.Errorf("task id: %s, piece num: %d, dst: %s, download piece failed: %s",
@@ -198,7 +201,10 @@ func (p *pieceDownloader) DownloadPiece(ctx context.Context, req *DownloadPieceR
 	return reader, closer, nil
 }
 
-func (p *pieceDownloader) buildDownloadPieceHTTPRequest(ctx context.Context, d *DownloadPieceRequest) *http.Request {
+func (p *pieceDownloader) buildDownloadPieceHTTPRequest(ctx context.Context, d *DownloadPieceRequest) (*http.Request, error) {
+	if len(d.TaskID) <= 3 {
+		return nil, fmt.Errorf("invalid task id")
+	}
 	// FIXME switch to https when tls enabled
 	targetURL := url.URL{
 		Scheme:   p.scheme,
@@ -216,5 +222,5 @@ func (p *pieceDownloader) buildDownloadPieceHTTPRequest(ctx context.Context, d *
 
 	// inject trace id into request header
 	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
-	return req
+	return req, nil
 }

@@ -441,7 +441,9 @@ func (p *Peer) Children() []*Peer {
 func (p *Peer) DownloadTinyFile() ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), downloadTinyFileContextTimeout)
 	defer cancel()
-
+	if len(p.Task.ID) <= 3 {
+		return nil, fmt.Errorf("invalid task id")
+	}
 	// Download path: ${host}:${port}/download/${taskIndex}/${taskID}?peerId=${peerID}
 	targetURL := url.URL{
 		Scheme:   p.Config.Task.DownloadTiny.Scheme,
