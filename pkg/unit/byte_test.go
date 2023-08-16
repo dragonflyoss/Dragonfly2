@@ -83,6 +83,12 @@ func Test_Set(t *testing.T) {
 	}
 }
 
+func Test_Type(t *testing.T) {
+	assert := testifyassert.New(t)
+	var f Bytes
+	assert.Equal("bytes", f.Type())
+}
+
 func Test_parseByte(t *testing.T) {
 	assert := testifyassert.New(t)
 	testCases := []struct {
@@ -177,6 +183,28 @@ func Test_parseByte(t *testing.T) {
 			}
 			assert.Equal(tc.size, b.ToNumber())
 		}
+	}
+}
+
+func TestByteMarshalYAML(t *testing.T) {
+	tests := []struct {
+		name   string
+		f      Bytes
+		expect any
+	}{
+		{
+			name:   "3MB",
+			f:      3 * 1024 * 1024,
+			expect: "3.0MB",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert := testifyassert.New(t)
+			result, _ := tc.f.MarshalYAML()
+			assert.Equal(tc.expect, result)
+		})
 	}
 }
 
