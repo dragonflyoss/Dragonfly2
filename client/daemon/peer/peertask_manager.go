@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"sync"
 
 	"github.com/go-http-utils/headers"
@@ -486,7 +487,7 @@ func (ptm *peerTaskManager) AnnouncePeerTask(ctx context.Context, meta storage.P
 	if err != nil {
 		return err
 	}
-	piecePacket.DstAddr = fmt.Sprintf("%s:%d", ptm.PeerHost.Ip, ptm.PeerHost.DownPort)
+	piecePacket.DstAddr = net.JoinHostPort(ptm.PeerHost.Ip, fmt.Sprint(ptm.PeerHost.DownPort))
 
 	// Announce peer task to scheduler
 	if err := ptm.SchedulerClient.AnnounceTask(ctx, &schedulerv1.AnnounceTaskRequest{

@@ -131,7 +131,7 @@ func (s *server) ServeDownload(listener net.Listener) error {
 }
 
 func (s *server) ServePeer(listener net.Listener) error {
-	s.uploadAddr = fmt.Sprintf("%s:%d", s.peerHost.Ip, s.peerHost.DownPort)
+	s.uploadAddr = net.JoinHostPort(s.peerHost.Ip, fmt.Sprint(s.peerHost.DownPort))
 	return s.peerServer.Serve(listener)
 }
 

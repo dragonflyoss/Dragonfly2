@@ -181,7 +181,7 @@ func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 		var addr string
 		if ip, ok := ip.FormatIP(seedPeer.GetIp()); ok {
 			// Check health with ip address.
-			target := fmt.Sprintf("%s:%d", ip, seedPeer.GetPort())
+			target := net.JoinHostPort(ip, fmt.Sprint(seedPeer.GetPort()))
 			if err := healthclient.Check(context.Background(), target, dialOptions...); err != nil {
 				logger.Warnf("seed peer ip address %s is unreachable: %s", addr, err.Error())
 

@@ -19,12 +19,13 @@ package config
 import (
 	"errors"
 	"fmt"
+	"net"
 	"strings"
 )
 
 var DefaultSupernodesValue = &SupernodesValue{
 	Nodes: []string{
-		fmt.Sprintf("%s:%d", DefaultSchedulerIP, DefaultSchedulerPort),
+		net.JoinHostPort(DefaultSchedulerIP, fmt.Sprint(DefaultSchedulerPort)),
 	},
 }
 
@@ -54,7 +55,7 @@ func (sv *SupernodesValue) Set(value string) error {
 			return errors.New("invalid nodes")
 		}
 		if len(vv) == 1 {
-			node = fmt.Sprintf("%s:%d", node, DefaultSchedulerPort)
+			node = net.JoinHostPort(node, fmt.Sprint(DefaultSchedulerPort))
 		}
 		sv.Nodes = append(sv.Nodes, node)
 	}

@@ -18,6 +18,7 @@ package database
 
 import (
 	"fmt"
+	"net"
 	"time"
 
 	"github.com/docker/go-connections/tlsconfig"
@@ -90,7 +91,7 @@ func formatMysqlDSN(cfg *config.MysqlConfig) (string, error) {
 	mysqlCfg := mysql.Config{
 		User:                 cfg.User,
 		Passwd:               cfg.Password,
-		Addr:                 fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
+		Addr:                 net.JoinHostPort(cfg.Host, fmt.Sprint(cfg.Port)),
 		Net:                  "tcp",
 		DBName:               cfg.DBName,
 		Loc:                  time.Local,

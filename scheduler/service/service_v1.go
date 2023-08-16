@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net"
 	"strings"
 	"time"
 
@@ -1015,7 +1016,7 @@ func (v *V1) registerSmallTask(ctx context.Context, peer *resource.Peer) (*sched
 		DirectPiece: &schedulerv1.RegisterResult_SinglePiece{
 			SinglePiece: &schedulerv1.SinglePiece{
 				DstPid:    candidateParent.ID,
-				DstAddr:   fmt.Sprintf("%s:%d", candidateParent.Host.IP, candidateParent.Host.DownloadPort),
+				DstAddr:   net.JoinHostPort(candidateParent.Host.IP, fmt.Sprint(candidateParent.Host.DownloadPort)),
 				PieceInfo: pieceInfo,
 			},
 		},
