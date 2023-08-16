@@ -83,6 +83,31 @@ func TestRequest_Context(t *testing.T) {
 	assert.Equal(got.Context(), testContext)
 }
 
+func TestRequest_WithContext(t *testing.T) {
+	var testURL, err = url.Parse("http://www.dragonfly.io")
+	testCloneURL, err := url.Parse("http://www.dragonfly.io")
+
+	testHeader := Header{"testKey1": []string{"testValue1"}, "testKey2": []string{"testValue2"}}
+	testCloneHeader := Header{"testKey1": []string{"testValue1"}, "testKey2": []string{"testValue2"}}
+
+	testContext := context.Background()
+
+	require := require.New(t)
+	require.Nil(err)
+
+	r := &Request{
+		URL:    testURL,
+		Header: testHeader,
+		ctx:    testContext,
+	}
+	got := r.WithContext(testContext)
+	require.EqualValues(&Request{
+		URL:    testCloneURL,
+		Header: testCloneHeader,
+		ctx:    testContext,
+	}, got)
+}
+
 func TestRequest_Clone(t *testing.T) {
 	var testURL, err = url.Parse("http://www.dragonfly.io")
 	testCloneURL, err := url.Parse("http://www.dragonfly.io")
