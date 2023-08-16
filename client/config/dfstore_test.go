@@ -45,7 +45,7 @@ func Test_NewDfstore(t *testing.T) {
 	}
 }
 
-func Test_Validate(t *testing.T) {
+func TestDfstoreConfig_Validate(t *testing.T) {
 	tests := []struct {
 		name   string
 		cfg    *DfstoreConfig
