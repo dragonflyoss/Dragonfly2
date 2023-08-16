@@ -21,6 +21,7 @@ package resource
 import (
 	"context"
 	"fmt"
+	"net"
 	reflect "reflect"
 
 	"google.golang.org/grpc"
@@ -91,7 +92,7 @@ func newSeedPeerClient(dynconfig config.DynconfigInterface, hostManager HostMana
 func (sc *seedPeerClient) Addrs() []string {
 	var addrs []string
 	for _, seedPeer := range sc.data.Scheduler.SeedPeers {
-		addrs = append(addrs, fmt.Sprintf("%s:%d", seedPeer.Ip, seedPeer.Port))
+		addrs = append(addrs, net.JoinHostPort(seedPeer.Ip, fmt.Sprint(seedPeer.Port)))
 	}
 
 	return addrs
@@ -162,7 +163,7 @@ func seedPeersToNetAddrs(seedPeers []*managerv2.SeedPeer) []dfnet.NetAddr {
 	for _, seedPeer := range seedPeers {
 		netAddrs = append(netAddrs, dfnet.NetAddr{
 			Type: dfnet.TCP,
-			Addr: fmt.Sprintf("%s:%d", seedPeer.Ip, seedPeer.Port),
+			Addr: net.JoinHostPort(seedPeer.Ip, fmt.Sprint(seedPeer.Port)),
 		})
 	}
 

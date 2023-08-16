@@ -53,7 +53,7 @@ func ListenWithPortRange(listen string, startPort, endPort int) (net.Listener, i
 
 	for port := startPort; port <= endPort; port++ {
 		logger.Debugf("start to listen port: %s:%d", ip, port)
-		listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", ip, port))
+		listener, err := net.Listen("tcp", net.JoinHostPort(ip, fmt.Sprint(port)))
 		if err == nil && listener != nil {
 			return listener, listener.Addr().(*net.TCPAddr).Port, nil
 		}

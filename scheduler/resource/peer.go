@@ -21,6 +21,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -447,7 +448,7 @@ func (p *Peer) DownloadTinyFile() ([]byte, error) {
 	// Download path: ${host}:${port}/download/${taskIndex}/${taskID}?peerId=${peerID}
 	targetURL := url.URL{
 		Scheme:   p.Config.Task.DownloadTiny.Scheme,
-		Host:     fmt.Sprintf("%s:%d", p.Host.IP, p.Host.DownloadPort),
+		Host:     net.JoinHostPort(p.Host.IP, fmt.Sprint(p.Host.DownloadPort)),
 		Path:     fmt.Sprintf("download/%s/%s", p.Task.ID[:3], p.Task.ID),
 		RawQuery: fmt.Sprintf("peerId=%s", p.ID),
 	}

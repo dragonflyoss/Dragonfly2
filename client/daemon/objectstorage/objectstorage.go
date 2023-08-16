@@ -656,7 +656,7 @@ func (o *objectStorage) importObjectToSeedPeers(ctx context.Context, bucketName,
 	for _, scheduler := range schedulers {
 		for _, seedPeer := range scheduler.SeedPeers {
 			if o.config.Host.AdvertiseIP.String() != seedPeer.Ip && seedPeer.ObjectStoragePort > 0 {
-				seedPeerHosts = append(seedPeerHosts, fmt.Sprintf("%s:%d", seedPeer.Ip, seedPeer.ObjectStoragePort))
+				seedPeerHosts = append(seedPeerHosts, net.JoinHostPort(seedPeer.Ip, fmt.Sprint(seedPeer.ObjectStoragePort)))
 			}
 		}
 	}
