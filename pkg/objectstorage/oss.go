@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"sort"
 	"strconv"
 	"time"
 
@@ -130,13 +129,13 @@ func (o *oss) GetObjectMetadata(ctx context.Context, bucketName, objectKey strin
 }
 
 // GetObjectMetadatas returns the metadatas of the objects.
-func (o *oss) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) ([]*ObjectMetadata, error) {
+func (o *oss) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) (*ObjectMetadatas, error) {
 	bucket, err := o.client.Bucket(bucketName)
 	if err != nil {
 		return nil, err
 	}
 
-	if limit == 0 || limit > DefaultGetObjectMetadatasLimit {
+	if limit == 0 {
 		limit = DefaultGetObjectMetadatasLimit
 	}
 
@@ -156,21 +155,10 @@ func (o *oss) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker
 		})
 	}
 
-	if delimiter != "" {
-		for _, prefix := range resp.CommonPrefixes {
-			metadatas = append(metadatas, &ObjectMetadata{
-				Key:              prefix,
-				ContentLength:    0,
-				ETag:             "",
-				LastModifiedTime: time.Unix(0, 0),
-				StorageClass:     o.getStorageClass(""),
-			})
-		}
-		sort.Slice(metadatas, func(i, j int) bool {
-			return metadatas[i].Key < metadatas[j].Key
-		})
-	}
-	return metadatas, nil
+	return &ObjectMetadatas{
+		Metadatas:      metadatas,
+		CommonPrefixes: resp.CommonPrefixes,
+	}, nil
 }
 
 // GetOject returns data of object.

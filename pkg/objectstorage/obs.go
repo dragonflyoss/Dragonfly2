@@ -120,7 +120,7 @@ func (o *obs) GetObjectMetadata(ctx context.Context, bucketName, objectKey strin
 }
 
 // GetObjectMetadatas returns the metadatas of the objects.
-func (o *obs) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) ([]*ObjectMetadata, error) {
+func (o *obs) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) (*ObjectMetadatas, error) {
 	if limit == 0 {
 		limit = DefaultGetObjectMetadatasLimit
 	}
@@ -148,7 +148,10 @@ func (o *obs) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker
 		})
 	}
 
-	return metadatas, nil
+	return &ObjectMetadatas{
+		Metadatas:      metadatas,
+		CommonPrefixes: resp.CommonPrefixes,
+	}, nil
 }
 
 // GetOject returns data of object.

@@ -58,6 +58,13 @@ type ObjectMetadata struct {
 	StorageClass string
 }
 
+type ObjectMetadatas struct {
+	// CommonPrefixes are similar prefixes in object storage.
+	CommonPrefixes []string `json:"CommonPrefixes"`
+
+	Metadatas []*ObjectMetadata `json:"Metadatas"`
+}
+
 // BucketMetadata provides metadata of bucket.
 type BucketMetadata struct {
 	// Name is bucket name.
@@ -88,7 +95,7 @@ type ObjectStorage interface {
 	GetObjectMetadata(ctx context.Context, bucketName, objectKey string) (*ObjectMetadata, bool, error)
 
 	// GetObjectMetadatas returns the metadata of the objects.
-	GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) ([]*ObjectMetadata, error)
+	GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) (*ObjectMetadatas, error)
 
 	// GetOject returns data of object.
 	GetOject(ctx context.Context, bucketName, objectKey string) (io.ReadCloser, error)

@@ -64,7 +64,7 @@ type Dfstore interface {
 	GetObjectMetadatasRequestWithContext(ctx context.Context, input *GetObjectMetadatasInput) (*http.Request, error)
 
 	// GetObjectMetadatasWithContext returns list of object metadatas.
-	GetObjectMetadatasWithContext(ctx context.Context, input *GetObjectMetadatasInput) ([]*pkgobjectstorage.ObjectMetadata, error)
+	GetObjectMetadatasWithContext(ctx context.Context, input *GetObjectMetadatasInput) (*pkgobjectstorage.ObjectMetadatas, error)
 
 	// PutObjectRequestWithContext returns *http.Request of putting object.
 	PutObjectRequestWithContext(ctx context.Context, input *PutObjectInput) (*http.Request, error)
@@ -232,6 +232,10 @@ func (i *GetObjectMetadatasInput) Validate() error {
 		return errors.New("invalid BucketName")
 	}
 
+	if i.Limit < 0 || i.Limit > pkgobjectstorage.DefaultGetObjectMetadatasLimit {
+		return errors.New("invalid limit")
+	}
+
 	return nil
 }
 
@@ -276,7 +280,7 @@ func (dfs *dfstore) GetObjectMetadatasRequestWithContext(ctx context.Context, in
 }
 
 // GetObjectMetadatasWithContext returns *http.Request of getting object metadatas.
-func (dfs *dfstore) GetObjectMetadatasWithContext(ctx context.Context, input *GetObjectMetadatasInput) ([]*pkgobjectstorage.ObjectMetadata, error) {
+func (dfs *dfstore) GetObjectMetadatasWithContext(ctx context.Context, input *GetObjectMetadatasInput) (*pkgobjectstorage.ObjectMetadatas, error) {
 	req, err := dfs.GetObjectMetadatasRequestWithContext(ctx, input)
 	if err != nil {
 		return nil, err
@@ -292,12 +296,12 @@ func (dfs *dfstore) GetObjectMetadatasWithContext(ctx context.Context, input *Ge
 		return nil, fmt.Errorf("bad response status %s", resp.Status)
 	}
 
-	var metadatas []*pkgobjectstorage.ObjectMetadata
+	var metadatas pkgobjectstorage.ObjectMetadatas
 	if err := json.NewDecoder(resp.Body).Decode(&metadatas); err != nil {
 		return nil, err
 	}
 
-	return metadatas, nil
+	return &metadatas, nil
 }
 
 // GetObjectInput is used to construct request of getting object.

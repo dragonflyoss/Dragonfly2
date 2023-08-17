@@ -22,7 +22,6 @@ import (
 	"io"
 	"net/url"
 	"path"
-	"sort"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -123,7 +122,7 @@ func (s *s3) GetObjectMetadata(ctx context.Context, bucketName, objectKey string
 }
 
 // GetObjectMetadatas returns the metadatas of the objects.
-func (s *s3) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) ([]*ObjectMetadata, error) {
+func (s *s3) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) (*ObjectMetadatas, error) {
 	if limit == 0 {
 		limit = DefaultGetObjectMetadatasLimit
 	}
@@ -151,26 +150,19 @@ func (s *s3) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker,
 		})
 	}
 
-	if delimiter != "" {
-		for _, p := range resp.CommonPrefixes {
-			prefix, err := url.QueryUnescape(*p.Prefix)
-			if err != nil {
-				return nil, fmt.Errorf("failed to decode commonPrefixes %s, error: %s", *p.Prefix, err)
-			}
-			metadatas = append(metadatas, &ObjectMetadata{
-				Key:              prefix,
-				ContentLength:    0,
-				ETag:             "",
-				LastModifiedTime: time.Unix(0, 0),
-				StorageClass:     aws.StringValue(s.getStorageClass(nil)),
-			})
+	commonPrefixes := make([]string, len(resp.CommonPrefixes))
+	for i, p := range resp.CommonPrefixes {
+		prefix, err := url.QueryUnescape(*p.Prefix)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode commonPrefixes %s, error: %s", *p.Prefix, err.Error())
 		}
-		sort.Slice(metadatas, func(i, j int) bool {
-			return metadatas[i].Key < metadatas[j].Key
-		})
+		commonPrefixes[i] = prefix
 	}
 
-	return metadatas, nil
+	return &ObjectMetadatas{
+		Metadatas:      metadatas,
+		CommonPrefixes: commonPrefixes,
+	}, nil
 }
 
 // GetOject returns data of object.
