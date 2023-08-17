@@ -104,12 +104,12 @@ func (d *dynconfigManager) GetResolveSchedulerAddrs() ([]resolver.Address, error
 		var addr string
 		if ip, ok := ip.FormatIP(scheduler.GetIp()); ok {
 			// Check health with ip address.
-			target := net.JoinHostPort(ip, fmt.Sprint(scheduler.GetPort()))
+			target := fmt.Sprintf("%s:%d", ip, scheduler.GetPort())
 			if err := healthclient.Check(context.Background(), target, dialOptions...); err != nil {
 				logger.Warnf("scheduler ip address %s is unreachable: %s", addr, err.Error())
 
 				// Check health with host address.
-				target = net.JoinHostPort(scheduler.GetHostname(), fmt.Sprint(scheduler.GetPort()))
+				target = fmt.Sprintf("%s:%d", scheduler.GetHostname(), scheduler.GetPort())
 				if err := healthclient.Check(context.Background(), target, dialOptions...); err != nil {
 					logger.Warnf("scheduler host address %s is unreachable: %s", addr, err.Error())
 				} else {

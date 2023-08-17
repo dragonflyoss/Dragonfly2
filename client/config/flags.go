@@ -19,7 +19,6 @@ package config
 import (
 	"errors"
 	"fmt"
-	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -60,7 +59,7 @@ func (nv *NetAddrsValue) Set(value string) error {
 		return errors.New("invalid net address")
 	}
 	if len(vv) == 1 {
-		value = net.JoinHostPort(value, fmt.Sprint(DefaultSchedulerPort))
+		value = fmt.Sprintf("%s:%d", value, DefaultSchedulerPort)
 	}
 
 	if !nv.isSet && len(*nv.n) > 0 {

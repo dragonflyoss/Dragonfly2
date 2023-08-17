@@ -112,7 +112,7 @@ func (proxy *Proxy) handleTLSConn(clientConn net.Conn, port int) {
 			req.URL.Scheme = schemaHTTPS
 			req.URL.Host = serverName
 			if port != portHTTPS {
-				req.URL.Host = net.JoinHostPort(serverName, fmt.Sprint(port))
+				req.URL.Host = fmt.Sprintf("%s:%d", serverName, port)
 			}
 			if proxy.dumpHTTPContent {
 				if out, e := httputil.DumpRequest(req, false); e == nil {

@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"sync"
 	"time"
 
@@ -259,7 +258,7 @@ func (s *pieceTaskSynchronizer) start(request *commonv1.PieceTaskRequest, dstPee
 
 	netAddr := &dfnet.NetAddr{
 		Type: dfnet.TCP,
-		Addr: net.JoinHostPort(formatIP, fmt.Sprint(dstPeer.RpcPort)),
+		Addr: fmt.Sprintf("%s:%d", formatIP, dstPeer.RpcPort),
 	}
 
 	credentialOpt := grpc.WithTransportCredentials(s.peerTaskConductor.GRPCCredentials)

@@ -347,7 +347,7 @@ func (s *Server) Serve() error {
 		return errors.New("format ip failed")
 	}
 
-	listener, err := net.Listen("tcp", net.JoinHostPort(ip, fmt.Sprint(s.config.Server.Port)))
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", ip, s.config.Server.Port))
 	if err != nil {
 		logger.Fatalf("net listener failed to start: %s", err.Error())
 	}
