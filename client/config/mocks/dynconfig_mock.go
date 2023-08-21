@@ -93,6 +93,20 @@ func (mr *MockDynconfigMockRecorder) GetResolveSchedulerAddrs() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResolveSchedulerAddrs", reflect.TypeOf((*MockDynconfig)(nil).GetResolveSchedulerAddrs))
 }
 
+// GetSchedulerClusterID mocks base method.
+func (m *MockDynconfig) GetSchedulerClusterID() uint64 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSchedulerClusterID")
+	ret0, _ := ret[0].(uint64)
+	return ret0
+}
+
+// GetSchedulerClusterID indicates an expected call of GetSchedulerClusterID.
+func (mr *MockDynconfigMockRecorder) GetSchedulerClusterID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchedulerClusterID", reflect.TypeOf((*MockDynconfig)(nil).GetSchedulerClusterID))
+}
+
 // GetSchedulers mocks base method.
 func (m *MockDynconfig) GetSchedulers() ([]*manager.Scheduler, error) {
 	m.ctrl.T.Helper()

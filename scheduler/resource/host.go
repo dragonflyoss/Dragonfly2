@@ -31,6 +31,13 @@ import (
 // HostOption is a functional option for configuring the host.
 type HostOption func(h *Host)
 
+// WithSchedulerClusterID sets host's SchedulerClusterID.
+func WithSchedulerClusterID(id uint64) HostOption {
+	return func(h *Host) {
+		h.SchedulerClusterID = id
+	}
+}
+
 // WithConcurrentUploadLimit sets host's ConcurrentUploadLimit.
 func WithConcurrentUploadLimit(limit int32) HostOption {
 	return func(h *Host) {
@@ -157,6 +164,9 @@ type Host struct {
 
 	// Build information.
 	Build Build
+
+	// SchedulerClusterID is the scheduler cluster id matched by scopes.
+	SchedulerClusterID uint64
 
 	// ConcurrentUploadLimit is concurrent upload limit count.
 	ConcurrentUploadLimit *atomic.Int32
@@ -317,9 +327,8 @@ type Disk struct {
 
 // New host instance.
 func NewHost(
-	id, ip, hostname string,
-	port, downloadPort int32, typ types.HostType,
-	options ...HostOption,
+	id, ip, hostname string, port, downloadPort int32,
+	typ types.HostType, options ...HostOption,
 ) *Host {
 	// Calculate default of the concurrent upload limit by host type.
 	concurrentUploadLimit := config.DefaultSeedPeerConcurrentUploadLimit

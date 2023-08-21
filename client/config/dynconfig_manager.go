@@ -52,6 +52,7 @@ type dynconfigManager struct {
 	done                 chan struct{}
 	cachePath            string
 	transportCredentials credentials.TransportCredentials
+	schedulerClusterID   uint64
 }
 
 // newDynconfigManager returns a new manager dynconfig instence.
@@ -147,6 +148,7 @@ func (d *dynconfigManager) GetResolveSchedulerAddrs() ([]resolver.Address, error
 		return nil, errors.New("can not found available scheduler addresses")
 	}
 
+	d.schedulerClusterID = schedulerClusterID
 	return resolveAddrs, nil
 }
 
@@ -166,6 +168,11 @@ func (d *dynconfigManager) GetSchedulers() ([]*managerv1.Scheduler, error) {
 	}
 
 	return data.Schedulers, nil
+}
+
+// Get the dynamic schedulers cluster id.
+func (d *dynconfigManager) GetSchedulerClusterID() uint64 {
+	return d.schedulerClusterID
 }
 
 // Get the dynamic object storage config from manager.

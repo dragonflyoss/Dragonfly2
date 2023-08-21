@@ -55,6 +55,9 @@ type Dynconfig interface {
 	// Get the dynamic schedulers config.
 	GetSchedulers() ([]*managerv1.Scheduler, error)
 
+	// Get the dynamic schedulers cluster id.
+	GetSchedulerClusterID() uint64
+
 	// Get the dynamic object storage config.
 	GetObjectStorage() (*managerv1.ObjectStorage, error)
 
