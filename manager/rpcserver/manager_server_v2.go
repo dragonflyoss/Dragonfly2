@@ -45,7 +45,6 @@ import (
 	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/manager/types"
-	pkgcache "d7y.io/dragonfly/v2/pkg/cache"
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
@@ -68,9 +67,6 @@ type managerServerV2 struct {
 	// Cache instance.
 	cache *cache.Cache
 
-	// Peer memory cache.
-	peerCache pkgcache.Cache
-
 	// Searcher interface.
 	searcher searcher.Searcher
 
@@ -80,14 +76,13 @@ type managerServerV2 struct {
 
 // newManagerServerV2 returns v2 version of the manager server.
 func newManagerServerV2(
-	cfg *config.Config, database *database.Database, cache *cache.Cache, peerCache pkgcache.Cache, searcher searcher.Searcher,
+	cfg *config.Config, database *database.Database, cache *cache.Cache, searcher searcher.Searcher,
 	objectStorage objectstorage.ObjectStorage) managerv2.ManagerServer {
 	return &managerServerV2{
 		config:        cfg,
 		db:            database.DB,
 		rdb:           database.RDB,
 		cache:         cache,
-		peerCache:     peerCache,
 		searcher:      searcher,
 		objectStorage: objectStorage,
 	}
@@ -490,19 +485,6 @@ func (s *managerServerV2) ListSchedulers(ctx context.Context, req *managerv2.Lis
 	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
 	log.Debugf("list schedulers, version %s, commit %s", req.Version, req.Commit)
 	metrics.SearchSchedulerClusterCount.WithLabelValues(req.Version, req.Commit).Inc()
-
-	// Count the number of the active peer.
-	if s.config.Metrics.EnablePeerGauge && req.SourceType == managerv2.SourceType_PEER_SOURCE {
-		peerCacheKey := fmt.Sprintf("%s-%s", req.Hostname, req.Ip)
-		if data, _, found := s.peerCache.GetWithExpiration(peerCacheKey); !found {
-			metrics.PeerGauge.WithLabelValues(req.Version, req.Commit).Inc()
-		} else if cache, ok := data.(*managerv2.ListSchedulersRequest); ok && (cache.Version != req.Version || cache.Commit != req.Commit) {
-			metrics.PeerGauge.WithLabelValues(cache.Version, cache.Commit).Dec()
-			metrics.PeerGauge.WithLabelValues(req.Version, req.Commit).Inc()
-		}
-
-		s.peerCache.SetDefault(peerCacheKey, req)
-	}
 
 	// Cache hit.
 	var pbListSchedulersResponse managerv2.ListSchedulersResponse

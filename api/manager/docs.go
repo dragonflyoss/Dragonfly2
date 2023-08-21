@@ -1477,15 +1477,112 @@ const docTemplate = `{
                     "Peer"
                 ],
                 "summary": "Get Peers",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "current page",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "maximum": 50,
+                        "minimum": 2,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "return max item count, default 10, max 50",
+                        "name": "per_page",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "type": "string"
+                                "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Peer"
                             }
                         }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/peers/{id}": {
+            "get": {
+                "description": "Get Peer by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Peer"
+                ],
+                "summary": "Get Peer",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Peer"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            },
+            "delete": {
+                "description": "Destroy by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Peer"
+                ],
+                "summary": "Destroy Peer",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
                     },
                     "400": {
                         "description": "Bad Request"
@@ -3691,6 +3788,80 @@ const docTemplate = `{
                 }
             }
         },
+        "d7y_io_dragonfly_v2_manager_models.Peer": {
+            "type": "object",
+            "properties": {
+                "build_platform": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "download_port": {
+                    "type": "integer"
+                },
+                "git_commit": {
+                    "type": "string"
+                },
+                "git_version": {
+                    "type": "string"
+                },
+                "host_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "idc": {
+                    "type": "string"
+                },
+                "ip": {
+                    "type": "string"
+                },
+                "is_del": {
+                    "type": "integer"
+                },
+                "kernel_version": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "object_storage_port": {
+                    "type": "integer"
+                },
+                "os": {
+                    "type": "string"
+                },
+                "platform": {
+                    "type": "string"
+                },
+                "platform_family": {
+                    "type": "string"
+                },
+                "platform_version": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "integer"
+                },
+                "scheduler_cluster": {
+                    "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.SchedulerCluster"
+                },
+                "scheduler_cluster_id": {
+                    "type": "integer"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "d7y_io_dragonfly_v2_manager_models.PersonalAccessToken": {
             "type": "object",
             "properties": {
@@ -3820,6 +3991,12 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "peers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Peer"
+                    }
                 },
                 "schedulers": {
                     "type": "array",

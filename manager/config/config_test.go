@@ -87,9 +87,8 @@ var (
 	}
 
 	mockMetricsConfig = MetricsConfig{
-		Enable:          true,
-		Addr:            DefaultMetricsAddr,
-		EnablePeerGauge: true,
+		Enable: true,
+		Addr:   DefaultMetricsAddr,
 	}
 
 	mockSecurityConfig = SecurityConfig{
@@ -217,9 +216,8 @@ func TestConfig_Load(t *testing.T) {
 			},
 		},
 		Metrics: MetricsConfig{
-			Enable:          true,
-			Addr:            ":8000",
-			EnablePeerGauge: false,
+			Enable: true,
+			Addr:   ":8000",
 		},
 		Network: NetworkConfig{
 			EnableIPv6: true,

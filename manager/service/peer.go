@@ -18,26 +18,58 @@ package service
 
 import (
 	"context"
-	"strings"
 
-	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
+	"d7y.io/dragonfly/v2/manager/models"
+	"d7y.io/dragonfly/v2/manager/types"
 )
 
-func (s *service) GetPeers(ctx context.Context) ([]string, error) {
-	rawKeys, err := s.rdb.Keys(ctx, pkgredis.MakeKeyInManager(pkgredis.PeersNamespace, "*")).Result()
-	if err != nil {
+func (s *service) DestroyPeer(ctx context.Context, id uint) error {
+	peer := models.Peer{}
+	if err := s.db.WithContext(ctx).First(&peer, id).Error; err != nil {
+		return err
+	}
+
+	if err := s.db.WithContext(ctx).Unscoped().Unscoped().Delete(&models.Peer{}, id).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *service) GetPeer(ctx context.Context, id uint) (*models.Peer, error) {
+	peer := models.Peer{}
+	if err := s.db.WithContext(ctx).First(&peer, id).Error; err != nil {
 		return nil, err
 	}
 
-	var peers []string
-	for _, rawKey := range rawKeys {
-		keys := strings.Split(rawKey, ":")
-		if len(keys) != 3 {
-			continue
-		}
+	return &peer, nil
+}
 
-		peers = append(peers, keys[2])
+func (s *service) GetPeers(ctx context.Context, q types.GetPeersQuery) ([]models.Peer, int64, error) {
+	var count int64
+	var peers []models.Peer
+	if err := s.db.WithContext(ctx).Preload("SchedulerCluster").Scopes(models.Paginate(q.Page, q.PerPage)).Where(&models.Peer{
+		Type:               q.Type,
+		Hostname:           q.Hostname,
+		IDC:                q.IDC,
+		Location:           q.Location,
+		IP:                 q.IP,
+		Port:               q.Port,
+		DownloadPort:       q.DownloadPort,
+		ObjectStoragePort:  q.ObjectStoragePort,
+		State:              q.State,
+		OS:                 q.OS,
+		Platform:           q.Platform,
+		PlatformFamily:     q.PlatformFamily,
+		PlatformVersion:    q.PlatformVersion,
+		KernelVersion:      q.KernelVersion,
+		GitVersion:         q.GitVersion,
+		GitCommit:          q.GitCommit,
+		BuildPlatform:      q.BuildPlatform,
+		SchedulerClusterID: q.SchedulerClusterID,
+	}).Find(&peers).Limit(-1).Offset(-1).Count(&count).Error; err != nil {
+		return nil, 0, err
 	}
 
-	return peers, nil
+	return peers, count, nil
 }
