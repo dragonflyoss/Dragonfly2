@@ -45,7 +45,7 @@ type UpdateSeedPeerClusterRequest struct {
 type GetSeedPeerClustersQuery struct {
 	Name    string `form:"name" binding:"omitempty"`
 	Page    int    `form:"page" binding:"omitempty,gte=1"`
-	PerPage int    `form:"per_page" binding:"omitempty,gte=1,lte=1000"`
+	PerPage int    `form:"per_page" binding:"omitempty,gte=1,lte=10000000"`
 }
 
 type SeedPeerClusterConfig struct {
