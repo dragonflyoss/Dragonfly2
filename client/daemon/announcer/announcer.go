@@ -53,6 +53,7 @@ type Announcer interface {
 // announcer provides announce function.
 type announcer struct {
 	config             *config.DaemonOption
+	dynconfig          config.Dynconfig
 	hostID             string
 	daemonPort         int32
 	daemonDownloadPort int32
@@ -72,9 +73,10 @@ func WithManagerClient(client managerclient.V1) Option {
 }
 
 // New returns a new Announcer interface.
-func New(cfg *config.DaemonOption, hostID string, daemonPort int32, daemonDownloadPort int32, schedulerClient schedulerclient.V1, options ...Option) Announcer {
+func New(cfg *config.DaemonOption, dynconfig config.Dynconfig, hostID string, daemonPort int32, daemonDownloadPort int32, schedulerClient schedulerclient.V1, options ...Option) Announcer {
 	a := &announcer{
 		config:             cfg,
+		dynconfig:          dynconfig,
 		hostID:             hostID,
 		daemonPort:         daemonPort,
 		daemonDownloadPort: daemonDownloadPort,
@@ -280,6 +282,7 @@ func (a *announcer) newAnnounceHostRequest() (*schedulerv1.AnnounceHostRequest, 
 			GoVersion:  version.GoVersion,
 			Platform:   version.Platform,
 		},
+		SchedulerClusterId: a.dynconfig.GetSchedulerClusterID(),
 	}, nil
 }
 

@@ -112,8 +112,9 @@ var (
 			GoVersion:  "1.19",
 			Platform:   "linux",
 		},
-		CreatedAt: time.Now().UnixNano(),
-		UpdatedAt: time.Now().UnixNano(),
+		SchedulerClusterID: 1,
+		CreatedAt:          time.Now().UnixNano(),
+		UpdatedAt:          time.Now().UnixNano(),
 	}
 
 	mockPiece = Piece{

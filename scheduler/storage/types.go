@@ -117,6 +117,9 @@ type Host struct {
 	// Build information.
 	Build resource.Build `csv:"build"`
 
+	// SchedulerClusterID is scheduler cluster id.
+	SchedulerClusterID int64 `csv:"schedulerClusterId"`
+
 	// CreatedAt is peer create nanosecond time.
 	CreatedAt int64 `csv:"createdAt"`
 

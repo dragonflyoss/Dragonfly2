@@ -104,6 +104,12 @@ func (d *dynconfigLocal) GetSchedulers() ([]*managerv1.Scheduler, error) {
 	return nil, ErrUnimplemented
 }
 
+// Get the dynamic schedulers cluster id. The local dynamic configuration does not support
+// get the scheduler cluster id.
+func (d *dynconfigLocal) GetSchedulerClusterID() uint64 {
+	return 0
+}
+
 // Get the dynamic object storage config from local.
 func (d *dynconfigLocal) GetObjectStorage() (*managerv1.ObjectStorage, error) {
 	return nil, ErrUnimplemented

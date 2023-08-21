@@ -92,12 +92,12 @@ func NewV1(
 
 // RegisterPeerTask registers peer and triggers seed peer download task.
 func (v *V1) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest) (*schedulerv1.RegisterResult, error) {
-	logger.WithPeer(req.PeerHost.Id, req.TaskId, req.PeerId).Infof("register peer task request: %#v", req)
+	logger.WithPeer(req.PeerHost.GetId(), req.GetTaskId(), req.GetPeerId()).Infof("register peer task request: %#v", req)
 
 	// Store resource.
 	task := v.storeTask(ctx, req, commonv2.TaskType_DFDAEMON)
-	host := v.storeHost(ctx, req.PeerHost)
-	peer := v.storePeer(ctx, req.PeerId, req.UrlMeta.Priority, req.UrlMeta.Range, task, host)
+	host := v.storeHost(ctx, req.GetPeerHost())
+	peer := v.storePeer(ctx, req.GetPeerId(), req.UrlMeta.GetPriority(), req.UrlMeta.GetRange(), task, host)
 
 	// Trigger the first download of the task.
 	if err := v.triggerTask(ctx, req, task, host, peer, v.dynconfig); err != nil {
@@ -281,11 +281,11 @@ func (v *V1) ReportPieceResult(stream schedulerv1.Scheduler_ReportPieceResultSer
 
 // ReportPeerResult handles peer result reported by dfdaemon.
 func (v *V1) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult) error {
-	logger.WithTaskAndPeerID(req.TaskId, req.PeerId).Infof("report peer result request: %#v", req)
+	logger.WithTaskAndPeerID(req.GetTaskId(), req.GetPeerId()).Infof("report peer result request: %#v", req)
 
-	peer, loaded := v.resource.PeerManager().Load(req.PeerId)
+	peer, loaded := v.resource.PeerManager().Load(req.GetPeerId())
 	if !loaded {
-		msg := fmt.Sprintf("peer %s not found", req.PeerId)
+		msg := fmt.Sprintf("peer %s not found", req.GetPeerId())
 		logger.Error(msg)
 		return dferrors.New(commonv1.Code_SchedPeerNotFound, msg)
 	}
@@ -296,7 +296,7 @@ func (v *V1) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult) 
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
 	parents := peer.Parents()
-	if !req.Success {
+	if !req.GetSuccess() {
 		peer.Log.Error("report failed peer")
 		if peer.FSM.Is(resource.PeerStateBackToSource) {
 			// Collect DownloadPeerBackToSourceFailureCount metrics.
@@ -324,12 +324,12 @@ func (v *V1) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult) 
 		v.handleTaskSuccess(ctx, peer.Task, req)
 		v.handlePeerSuccess(ctx, peer)
 		metrics.DownloadPeerDuration.WithLabelValues(priority.String(), peer.Task.Type.String(),
-			peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Observe(float64(req.Cost))
+			peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Observe(float64(req.GetCost()))
 		return nil
 	}
 
 	metrics.DownloadPeerDuration.WithLabelValues(priority.String(), peer.Task.Type.String(),
-		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Observe(float64(req.Cost))
+		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Observe(float64(req.GetCost()))
 
 	go v.createDownloadRecord(peer, parents, req)
 	v.handlePeerSuccess(ctx, peer)
@@ -338,22 +338,22 @@ func (v *V1) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult) 
 
 // AnnounceTask informs scheduler a peer has completed task.
 func (v *V1) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequest) error {
-	logger.WithPeer(req.PeerHost.Id, req.TaskId, req.PiecePacket.DstPid).Infof("announce task request: %#v %#v %#v %#v",
-		req, req.UrlMeta, req.PeerHost, req.PiecePacket,
+	logger.WithPeer(req.PeerHost.GetId(), req.GetTaskId(), req.PiecePacket.GetDstPid()).Infof("announce task request: %#v %#v %#v %#v",
+		req, req.GetUrlMeta(), req.GetPeerHost(), req.GetPiecePacket(),
 	)
 
-	taskID := req.TaskId
-	peerID := req.PiecePacket.DstPid
+	taskID := req.GetTaskId()
+	peerID := req.PiecePacket.GetDstPid()
 	options := []resource.TaskOption{}
-	if d, err := digest.Parse(req.UrlMeta.Digest); err == nil {
+	if d, err := digest.Parse(req.UrlMeta.GetDigest()); err == nil {
 		options = append(options, resource.WithDigest(d))
 	}
 
-	task := resource.NewTask(taskID, req.Url, req.UrlMeta.Tag, req.UrlMeta.Application, types.TaskTypeV1ToV2(req.TaskType),
-		strings.Split(req.UrlMeta.Filter, idgen.URLFilterSeparator), req.UrlMeta.Header, int32(v.config.Scheduler.BackToSourceCount), options...)
+	task := resource.NewTask(taskID, req.GetUrl(), req.UrlMeta.GetTag(), req.UrlMeta.GetApplication(), types.TaskTypeV1ToV2(req.GetTaskType()),
+		strings.Split(req.UrlMeta.GetFilter(), idgen.URLFilterSeparator), req.UrlMeta.GetHeader(), int32(v.config.Scheduler.BackToSourceCount), options...)
 	task, _ = v.resource.TaskManager().LoadOrStore(task)
-	host := v.storeHost(ctx, req.PeerHost)
-	peer := v.storePeer(ctx, peerID, req.UrlMeta.Priority, req.UrlMeta.Range, task, host)
+	host := v.storeHost(ctx, req.GetPeerHost())
+	peer := v.storePeer(ctx, peerID, req.UrlMeta.GetPriority(), req.UrlMeta.GetRange(), task, host)
 
 	// If the task state is not TaskStateSucceeded,
 	// advance the task state to TaskStateSucceeded.
@@ -367,10 +367,10 @@ func (v *V1) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequ
 		}
 
 		// Construct piece.
-		for _, pieceInfo := range req.PiecePacket.PieceInfos {
+		for _, pieceInfo := range req.PiecePacket.GetPieceInfos() {
 			piece := &resource.Piece{
 				Number:      pieceInfo.PieceNum,
-				ParentID:    req.PiecePacket.DstPid,
+				ParentID:    req.PiecePacket.GetDstPid(),
 				Offset:      pieceInfo.RangeStart,
 				Length:      uint64(pieceInfo.RangeSize),
 				TrafficType: commonv2.TrafficType_LOCAL_PEER,
@@ -389,8 +389,8 @@ func (v *V1) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequ
 		}
 
 		v.handleTaskSuccess(ctx, task, &schedulerv1.PeerResult{
-			TotalPieceCount: req.PiecePacket.TotalPiece,
-			ContentLength:   req.PiecePacket.ContentLength,
+			TotalPieceCount: req.PiecePacket.GetTotalPiece(),
+			ContentLength:   req.PiecePacket.GetContentLength(),
 		})
 	}
 
@@ -423,11 +423,11 @@ func (v *V1) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequ
 
 // StatTask checks the current state of the task.
 func (v *V1) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest) (*schedulerv1.Task, error) {
-	logger.WithTaskID(req.TaskId).Infof("stat task request: %#v", req)
+	logger.WithTaskID(req.GetTaskId()).Infof("stat task request: %#v", req)
 
-	task, loaded := v.resource.TaskManager().Load(req.TaskId)
+	task, loaded := v.resource.TaskManager().Load(req.GetTaskId())
 	if !loaded {
-		msg := fmt.Sprintf("task %s not found", req.TaskId)
+		msg := fmt.Sprintf("task %s not found", req.GetTaskId())
 		logger.Info(msg)
 		return nil, dferrors.New(commonv1.Code_PeerTaskNotFound, msg)
 	}
@@ -445,11 +445,11 @@ func (v *V1) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest) (*s
 
 // LeaveTask releases peer in scheduler.
 func (v *V1) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget) error {
-	logger.WithTaskAndPeerID(req.TaskId, req.PeerId).Infof("leave task request: %#v", req)
+	logger.WithTaskAndPeerID(req.GetTaskId(), req.GetPeerId()).Infof("leave task request: %#v", req)
 
-	peer, loaded := v.resource.PeerManager().Load(req.PeerId)
+	peer, loaded := v.resource.PeerManager().Load(req.GetPeerId())
 	if !loaded {
-		msg := fmt.Sprintf("peer %s not found", req.PeerId)
+		msg := fmt.Sprintf("peer %s not found", req.GetPeerId())
 		logger.Error(msg)
 		return dferrors.New(commonv1.Code_SchedPeerNotFound, msg)
 	}
@@ -471,87 +471,90 @@ func (v *V1) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequ
 		concurrentUploadLimit = int32(clientConfig.LoadLimit)
 	}
 
-	host, loaded := v.resource.HostManager().Load(req.Id)
+	host, loaded := v.resource.HostManager().Load(req.GetId())
 	if !loaded {
 		options := []resource.HostOption{
-			resource.WithOS(req.Os),
-			resource.WithPlatform(req.Platform),
-			resource.WithPlatformFamily(req.PlatformFamily),
-			resource.WithPlatformVersion(req.PlatformVersion),
-			resource.WithKernelVersion(req.KernelVersion),
+			resource.WithOS(req.GetOs()),
+			resource.WithPlatform(req.GetPlatform()),
+			resource.WithPlatformFamily(req.GetPlatformFamily()),
+			resource.WithPlatformVersion(req.GetPlatformVersion()),
+			resource.WithKernelVersion(req.GetKernelVersion()),
 		}
 
 		if concurrentUploadLimit > 0 {
 			options = append(options, resource.WithConcurrentUploadLimit(concurrentUploadLimit))
 		}
 
-		if req.Cpu != nil {
+		if req.GetCpu() != nil {
 			options = append(options, resource.WithCPU(resource.CPU{
-				LogicalCount:   req.Cpu.LogicalCount,
-				PhysicalCount:  req.Cpu.PhysicalCount,
-				Percent:        req.Cpu.Percent,
-				ProcessPercent: req.Cpu.ProcessPercent,
+				LogicalCount:   req.Cpu.GetLogicalCount(),
+				PhysicalCount:  req.Cpu.GetPhysicalCount(),
+				Percent:        req.Cpu.GetPercent(),
+				ProcessPercent: req.Cpu.GetProcessPercent(),
 				Times: resource.CPUTimes{
-					User:      req.Cpu.Times.User,
-					System:    req.Cpu.Times.System,
-					Idle:      req.Cpu.Times.Idle,
-					Nice:      req.Cpu.Times.Nice,
-					Iowait:    req.Cpu.Times.Iowait,
-					Irq:       req.Cpu.Times.Irq,
-					Softirq:   req.Cpu.Times.Softirq,
-					Steal:     req.Cpu.Times.Steal,
-					Guest:     req.Cpu.Times.Guest,
-					GuestNice: req.Cpu.Times.GuestNice,
+					User:      req.Cpu.Times.GetUser(),
+					System:    req.Cpu.Times.GetSystem(),
+					Idle:      req.Cpu.Times.GetIdle(),
+					Nice:      req.Cpu.Times.GetNice(),
+					Iowait:    req.Cpu.Times.GetIowait(),
+					Irq:       req.Cpu.Times.GetIrq(),
+					Softirq:   req.Cpu.Times.GetSoftirq(),
+					Steal:     req.Cpu.Times.GetSteal(),
+					Guest:     req.Cpu.Times.GetGuest(),
+					GuestNice: req.Cpu.Times.GetGuestNice(),
 				},
 			}))
 		}
 
-		if req.Memory != nil {
+		if req.GetMemory() != nil {
 			options = append(options, resource.WithMemory(resource.Memory{
-				Total:              req.Memory.Total,
-				Available:          req.Memory.Available,
-				Used:               req.Memory.Used,
-				UsedPercent:        req.Memory.UsedPercent,
-				ProcessUsedPercent: req.Memory.ProcessUsedPercent,
-				Free:               req.Memory.Free,
+				Total:              req.Memory.GetTotal(),
+				Available:          req.Memory.GetAvailable(),
+				Used:               req.Memory.GetUsed(),
+				UsedPercent:        req.Memory.GetUsedPercent(),
+				ProcessUsedPercent: req.Memory.GetProcessUsedPercent(),
+				Free:               req.Memory.GetFree(),
 			}))
 		}
 
-		if req.Network != nil {
+		if req.GetNetwork() != nil {
 			options = append(options, resource.WithNetwork(resource.Network{
-				TCPConnectionCount:       req.Network.TcpConnectionCount,
-				UploadTCPConnectionCount: req.Network.UploadTcpConnectionCount,
-				Location:                 req.Network.Location,
-				IDC:                      req.Network.Idc,
+				TCPConnectionCount:       req.Network.GetTcpConnectionCount(),
+				UploadTCPConnectionCount: req.Network.GetUploadTcpConnectionCount(),
+				Location:                 req.Network.GetLocation(),
+				IDC:                      req.Network.GetIdc(),
 			}))
 		}
 
-		if req.Disk != nil {
+		if req.GetDisk() != nil {
 			options = append(options, resource.WithDisk(resource.Disk{
-				Total:             req.Disk.Total,
-				Free:              req.Disk.Free,
-				Used:              req.Disk.Used,
-				UsedPercent:       req.Disk.UsedPercent,
-				InodesTotal:       req.Disk.InodesTotal,
-				InodesUsed:        req.Disk.InodesUsed,
-				InodesFree:        req.Disk.InodesFree,
-				InodesUsedPercent: req.Disk.InodesUsedPercent,
+				Total:             req.Disk.GetTotal(),
+				Free:              req.Disk.GetFree(),
+				Used:              req.Disk.GetUsed(),
+				UsedPercent:       req.Disk.GetUsedPercent(),
+				InodesTotal:       req.Disk.GetInodesTotal(),
+				InodesUsed:        req.Disk.GetInodesUsed(),
+				InodesFree:        req.Disk.GetInodesFree(),
+				InodesUsedPercent: req.Disk.GetInodesUsedPercent(),
 			}))
 		}
 
-		if req.Build != nil {
+		if req.GetBuild() != nil {
 			options = append(options, resource.WithBuild(resource.Build{
-				GitVersion: req.Build.GitVersion,
-				GitCommit:  req.Build.GitCommit,
-				GoVersion:  req.Build.GoVersion,
-				Platform:   req.Build.Platform,
+				GitVersion: req.Build.GetGitVersion(),
+				GitCommit:  req.Build.GetGitCommit(),
+				GoVersion:  req.Build.GetGoVersion(),
+				Platform:   req.Build.GetPlatform(),
 			}))
+		}
+
+		if req.GetSchedulerClusterId() != 0 {
+			options = append(options, resource.WithSchedulerClusterID(req.GetSchedulerClusterId()))
 		}
 
 		host = resource.NewHost(
-			req.Id, req.Ip, req.Hostname,
-			req.Port, req.DownloadPort, types.ParseHostType(req.Type),
-			options...,
+			req.GetId(), req.GetIp(), req.GetHostname(), req.GetPort(), req.GetDownloadPort(),
+			types.ParseHostType(req.GetType()), options...,
 		)
 		v.resource.HostManager().Store(host)
 		host.Log.Infof("announce new host: %#v", req)
@@ -559,80 +562,80 @@ func (v *V1) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequ
 	}
 
 	// Host already exists and updates properties.
-	host.Port = req.Port
-	host.DownloadPort = req.DownloadPort
-	host.Type = types.ParseHostType(req.Type)
-	host.OS = req.Os
-	host.Platform = req.Platform
-	host.PlatformFamily = req.PlatformFamily
-	host.PlatformVersion = req.PlatformVersion
-	host.KernelVersion = req.KernelVersion
+	host.Port = req.GetPort()
+	host.DownloadPort = req.GetDownloadPort()
+	host.Type = types.ParseHostType(req.GetType())
+	host.OS = req.GetOs()
+	host.Platform = req.GetPlatform()
+	host.PlatformFamily = req.GetPlatformFamily()
+	host.PlatformVersion = req.GetPlatformVersion()
+	host.KernelVersion = req.GetKernelVersion()
 	host.UpdatedAt.Store(time.Now())
 
 	if concurrentUploadLimit > 0 {
 		host.ConcurrentUploadLimit.Store(concurrentUploadLimit)
 	}
 
-	if req.Cpu != nil {
+	if req.GetCpu() != nil {
 		host.CPU = resource.CPU{
-			LogicalCount:   req.Cpu.LogicalCount,
-			PhysicalCount:  req.Cpu.PhysicalCount,
-			Percent:        req.Cpu.Percent,
-			ProcessPercent: req.Cpu.ProcessPercent,
+			LogicalCount:   req.Cpu.GetLogicalCount(),
+			PhysicalCount:  req.Cpu.GetPhysicalCount(),
+			Percent:        req.Cpu.GetPercent(),
+			ProcessPercent: req.Cpu.GetProcessPercent(),
 			Times: resource.CPUTimes{
-				User:      req.Cpu.Times.User,
-				System:    req.Cpu.Times.System,
-				Idle:      req.Cpu.Times.Idle,
-				Nice:      req.Cpu.Times.Nice,
-				Iowait:    req.Cpu.Times.Iowait,
-				Irq:       req.Cpu.Times.Irq,
-				Softirq:   req.Cpu.Times.Softirq,
-				Steal:     req.Cpu.Times.Steal,
-				Guest:     req.Cpu.Times.Guest,
-				GuestNice: req.Cpu.Times.GuestNice,
+				User:      req.Cpu.Times.GetUser(),
+				System:    req.Cpu.Times.GetSystem(),
+				Idle:      req.Cpu.Times.GetIdle(),
+				Nice:      req.Cpu.Times.GetNice(),
+				Iowait:    req.Cpu.Times.GetIowait(),
+				Irq:       req.Cpu.Times.GetIrq(),
+				Softirq:   req.Cpu.Times.GetSoftirq(),
+				Steal:     req.Cpu.Times.GetSteal(),
+				Guest:     req.Cpu.Times.GetGuest(),
+				GuestNice: req.Cpu.Times.GetGuestNice(),
 			},
 		}
 	}
 
-	if req.Memory != nil {
+	if req.GetMemory() != nil {
 		host.Memory = resource.Memory{
-			Total:              req.Memory.Total,
-			Available:          req.Memory.Available,
-			Used:               req.Memory.Used,
-			UsedPercent:        req.Memory.UsedPercent,
-			ProcessUsedPercent: req.Memory.ProcessUsedPercent,
-			Free:               req.Memory.Free,
+			Total:              req.Memory.GetTotal(),
+			Available:          req.Memory.GetAvailable(),
+			Used:               req.Memory.GetUsed(),
+			UsedPercent:        req.Memory.GetUsedPercent(),
+			ProcessUsedPercent: req.Memory.GetProcessUsedPercent(),
+			Free:               req.Memory.GetFree(),
 		}
 	}
 
-	if req.Network != nil {
+	if req.GetNetwork() != nil {
 		host.Network = resource.Network{
-			TCPConnectionCount:       req.Network.TcpConnectionCount,
-			UploadTCPConnectionCount: req.Network.UploadTcpConnectionCount,
-			Location:                 req.Network.Location,
-			IDC:                      req.Network.Idc,
+			TCPConnectionCount:       req.Network.GetTcpConnectionCount(),
+			UploadTCPConnectionCount: req.Network.GetUploadTcpConnectionCount(),
+			Location:                 req.Network.GetLocation(),
+			IDC:                      req.Network.GetIdc(),
 		}
 	}
 
-	if req.Disk != nil {
+	if req.GetDisk() != nil {
 		host.Disk = resource.Disk{
-			Total:             req.Disk.Total,
-			Free:              req.Disk.Free,
-			Used:              req.Disk.Used,
-			UsedPercent:       req.Disk.UsedPercent,
-			InodesTotal:       req.Disk.InodesTotal,
-			InodesUsed:        req.Disk.InodesUsed,
-			InodesFree:        req.Disk.InodesFree,
-			InodesUsedPercent: req.Disk.InodesUsedPercent,
+			Total:             req.Disk.GetTotal(),
+			Free:              req.Disk.GetFree(),
+			Used:              req.Disk.GetUsed(),
+			UsedPercent:       req.Disk.GetUsedPercent(),
+			InodesTotal:       req.Disk.GetInodesTotal(),
+			InodesUsed:        req.Disk.GetInodesUsed(),
+			InodesFree:        req.Disk.GetInodesFree(),
+			InodesUsedPercent: req.Disk.GetInodesUsedPercent(),
 		}
 	}
 
-	if req.Build != nil {
+	if req.GetBuild() != nil {
 		host.Build = resource.Build{
-			GitVersion: req.Build.GitVersion,
-			GitCommit:  req.Build.GitCommit,
-			GoVersion:  req.Build.GoVersion,
-			Platform:   req.Build.Platform,
+			GitVersion: req.Build.GetGitVersion(),
+			GitCommit:  req.Build.GetGitCommit(),
+			GoVersion:  req.Build.GetGoVersion(),
+			Platform:   req.Build.GetPlatform(),
 		}
 	}
 
@@ -641,11 +644,11 @@ func (v *V1) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequ
 
 // LeaveHost releases host in scheduler.
 func (v *V1) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostRequest) error {
-	logger.WithHostID(req.Id).Infof("leave host request: %#v", req)
+	logger.WithHostID(req.GetId()).Infof("leave host request: %#v", req)
 
-	host, loaded := v.resource.HostManager().Load(req.Id)
+	host, loaded := v.resource.HostManager().Load(req.GetId())
 	if !loaded {
-		msg := fmt.Sprintf("host %s not found", req.Id)
+		msg := fmt.Sprintf("host %s not found", req.GetId())
 		logger.Error(msg)
 		return dferrors.New(commonv1.Code_BadRequest, msg)
 	}
@@ -671,13 +674,13 @@ func (v *V1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
 			return err
 		}
 
-		logger := logger.WithHost(req.Host.Id, req.Host.Hostname, req.Host.Ip)
+		logger := logger.WithHost(req.Host.GetId(), req.Host.GetHostname(), req.Host.GetIp())
 		switch syncProbesRequest := req.GetRequest().(type) {
 		case *schedulerv1.SyncProbesRequest_ProbeStartedRequest:
 			// Find probed hosts in network topology. Based on the source host information,
 			// the most candidate hosts will be evaluated.
 			logger.Info("receive SyncProbesRequest_ProbeStartedRequest")
-			hosts, err := v.networkTopology.FindProbedHosts(req.Host.Id)
+			hosts, err := v.networkTopology.FindProbedHosts(req.Host.GetId())
 			if err != nil {
 				logger.Error(err)
 				return status.Error(codes.FailedPrecondition, err.Error())
@@ -714,12 +717,12 @@ func (v *V1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
 					continue
 				}
 
-				if err := v.networkTopology.Store(req.Host.Id, probedHost.ID); err != nil {
+				if err := v.networkTopology.Store(req.Host.GetId(), probedHost.ID); err != nil {
 					logger.Errorf("store failed: %s", err.Error())
 					continue
 				}
 
-				if err := v.networkTopology.Probes(req.Host.Id, probe.Host.Id).Enqueue(&networktopology.Probe{
+				if err := v.networkTopology.Probes(req.Host.GetId(), probe.Host.Id).Enqueue(&networktopology.Probe{
 					Host:      probedHost,
 					RTT:       probe.Rtt.AsDuration(),
 					CreatedAt: probe.CreatedAt.AsTime(),
@@ -780,8 +783,8 @@ func (v *V1) triggerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, 
 	// priority of the RegisterPeerTask parameter is
 	// higher than parameter of the application.
 	var priority commonv1.Priority
-	if req.UrlMeta.Priority != commonv1.Priority_LEVEL0 {
-		priority = req.UrlMeta.Priority
+	if req.UrlMeta.GetPriority() != commonv1.Priority_LEVEL0 {
+		priority = req.UrlMeta.GetPriority()
 	} else {
 		// Compatible with v1 version of priority enum.
 		priority = types.PriorityV2ToV1(peer.CalculatePriority(dynconfig))
@@ -791,13 +794,13 @@ func (v *V1) triggerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, 
 	switch priority {
 	case commonv1.Priority_LEVEL6, commonv1.Priority_LEVEL0:
 		if v.config.SeedPeer.Enable && !task.IsSeedPeerFailed() {
-			if len(req.UrlMeta.Range) > 0 {
-				if rg, err := http.ParseURLMetaRange(req.UrlMeta.Range, math.MaxInt64); err == nil {
+			if len(req.UrlMeta.GetRange()) > 0 {
+				if rg, err := http.ParseURLMetaRange(req.UrlMeta.GetRange(), math.MaxInt64); err == nil {
 					go v.triggerSeedPeerTask(ctx, &rg, task)
 					return nil
 				}
 
-				peer.Log.Errorf("range %s is invalid", req.UrlMeta.Range)
+				peer.Log.Errorf("range %s is invalid", req.UrlMeta.GetRange())
 			} else {
 				go v.triggerSeedPeerTask(ctx, nil, task)
 				return nil
@@ -844,17 +847,17 @@ func (v *V1) triggerSeedPeerTask(ctx context.Context, rg *http.Range, task *reso
 
 // storeTask stores a new task or reuses a previous task.
 func (v *V1) storeTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, typ commonv2.TaskType) *resource.Task {
-	filters := strings.Split(req.UrlMeta.Filter, idgen.URLFilterSeparator)
+	filters := strings.Split(req.UrlMeta.GetFilter(), idgen.URLFilterSeparator)
 
-	task, loaded := v.resource.TaskManager().Load(req.TaskId)
+	task, loaded := v.resource.TaskManager().Load(req.GetTaskId())
 	if !loaded {
 		options := []resource.TaskOption{}
-		if d, err := digest.Parse(req.UrlMeta.Digest); err == nil {
+		if d, err := digest.Parse(req.UrlMeta.GetDigest()); err == nil {
 			options = append(options, resource.WithDigest(d))
 		}
 
-		task := resource.NewTask(req.TaskId, req.Url, req.UrlMeta.Tag, req.UrlMeta.Application,
-			typ, filters, req.UrlMeta.Header, int32(v.config.Scheduler.BackToSourceCount), options...)
+		task := resource.NewTask(req.GetTaskId(), req.GetUrl(), req.UrlMeta.GetTag(), req.UrlMeta.GetApplication(),
+			typ, filters, req.UrlMeta.GetHeader(), int32(v.config.Scheduler.BackToSourceCount), options...)
 		v.resource.TaskManager().Store(task)
 		task.Log.Info("create new task")
 		return task
@@ -862,9 +865,9 @@ func (v *V1) storeTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, ty
 
 	// Task is the pointer, if the task already exists, the next request will
 	// update the task's Url and UrlMeta in task manager.
-	task.URL = req.Url
+	task.URL = req.GetUrl()
 	task.Filters = filters
-	task.Header = req.UrlMeta.Header
+	task.Header = req.UrlMeta.GetHeader()
 	task.Log.Info("task already exists")
 	return task
 }
@@ -1275,8 +1278,8 @@ func (v *V1) handleTaskSuccess(ctx context.Context, task *resource.Task, req *sc
 	}
 
 	// Update task total piece count and content length.
-	task.TotalPieceCount.Store(req.TotalPieceCount)
-	task.ContentLength.Store(req.ContentLength)
+	task.TotalPieceCount.Store(req.GetTotalPieceCount())
+	task.ContentLength.Store(req.GetContentLength())
 
 	if err := task.FSM.Event(ctx, resource.TaskEventDownloadSucceeded); err != nil {
 		task.Log.Errorf("task fsm event failed: %s", err.Error())
@@ -1488,6 +1491,7 @@ func (v *V1) createDownloadRecord(peer *resource.Peer, parents []*resource.Peer,
 			ConcurrentUploadCount: peer.Host.ConcurrentUploadCount.Load(),
 			UploadCount:           peer.Host.UploadCount.Load(),
 			UploadFailedCount:     peer.Host.UploadFailedCount.Load(),
+			SchedulerClusterID:    int64(peer.Host.SchedulerClusterID),
 			CreatedAt:             peer.Host.CreatedAt.Load().UnixNano(),
 			UpdatedAt:             peer.Host.UpdatedAt.Load().UnixNano(),
 		},
@@ -1546,9 +1550,9 @@ func (v *V1) createDownloadRecord(peer *resource.Peer, parents []*resource.Peer,
 		Platform:   peer.Host.Build.Platform,
 	}
 
-	if req.Code != commonv1.Code_Success {
+	if req.GetCode() != commonv1.Code_Success {
 		download.Error = storage.Error{
-			Code: req.Code.String(),
+			Code: req.GetCode().String(),
 		}
 	}
 

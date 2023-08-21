@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/client/config"
+	configmocks "d7y.io/dragonfly/v2/client/config/mocks"
 	managerclientmocks "d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
 	schedulerclientmocks "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client/mocks"
 )
@@ -78,7 +79,8 @@ func TestAnnouncer_New(t *testing.T) {
 			defer ctl.Finish()
 			mockManagerClient := managerclientmocks.NewMockV1(ctl)
 			mockSchedulerClient := schedulerclientmocks.NewMockV1(ctl)
-			tc.expect(t, New(tc.config, tc.hostID, tc.deamonPort, tc.deamonDownloadPort, mockSchedulerClient, WithManagerClient(mockManagerClient)))
+			mockDynconfig := configmocks.NewMockDynconfig(ctl)
+			tc.expect(t, New(tc.config, mockDynconfig, tc.hostID, tc.deamonPort, tc.deamonDownloadPort, mockSchedulerClient, WithManagerClient(mockManagerClient)))
 		})
 	}
 }

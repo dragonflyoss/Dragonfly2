@@ -678,7 +678,7 @@ func (cd *clientDaemon) Serve() error {
 	if cd.managerClient != nil {
 		announcerOptions = append(announcerOptions, announcer.WithManagerClient(cd.managerClient))
 	}
-	cd.announcer = announcer.New(&cd.Option, cd.schedPeerHost.Id, cd.schedPeerHost.RpcPort,
+	cd.announcer = announcer.New(&cd.Option, cd.dynconfig, cd.schedPeerHost.Id, cd.schedPeerHost.RpcPort,
 		cd.schedPeerHost.DownPort, cd.schedulerClient, announcerOptions...)
 	go func() {
 		logger.Info("serve announcer")
