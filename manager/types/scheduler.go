@@ -55,7 +55,7 @@ type UpdateSchedulerRequest struct {
 
 type GetSchedulersQuery struct {
 	Page               int    `form:"page" binding:"omitempty,gte=1"`
-	PerPage            int    `form:"per_page" binding:"omitempty,gte=1,lte=1000"`
+	PerPage            int    `form:"per_page" binding:"omitempty,gte=1,lte=10000000"`
 	Hostname           string `form:"host_name" binding:"omitempty"`
 	IDC                string `form:"idc" binding:"omitempty"`
 	Location           string `form:"location" binding:"omitempty"`

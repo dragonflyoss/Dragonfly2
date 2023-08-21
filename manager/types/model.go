@@ -52,7 +52,7 @@ type GetModelsQuery struct {
 	Version     string `json:"version"  binding:"omitempty"`
 	SchedulerID uint   `json:"scheduler_id" binding:"omitempty"`
 	Page        int    `form:"page" binding:"omitempty,gte=1"`
-	PerPage     int    `form:"per_page" binding:"omitempty,gte=1,lte=1000"`
+	PerPage     int    `form:"per_page" binding:"omitempty,gte=1,lte=10000000"`
 }
 
 type ModelEvaluation struct {

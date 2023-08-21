@@ -54,6 +54,6 @@ type GetSeedPeersQuery struct {
 	ObjectStoragePort int32  `form:"object_storage_port" binding:"omitempty"`
 	SeedPeerClusterID uint   `form:"seed_peer_cluster_id" binding:"omitempty"`
 	Page              int    `form:"page" binding:"omitempty,gte=1"`
-	PerPage           int    `form:"per_page" binding:"omitempty,gte=1,lte=1000"`
+	PerPage           int    `form:"per_page" binding:"omitempty,gte=1,lte=10000000"`
 	State             string `form:"state" binding:"omitempty,oneof=active inactive"`
 }
