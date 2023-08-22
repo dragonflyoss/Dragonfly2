@@ -260,9 +260,6 @@ type MetricsConfig struct {
 
 	// Metrics service address.
 	Addr string `yaml:"addr" mapstructure:"addr"`
-
-	// Enable peer gauge metrics.
-	EnablePeerGauge bool `yaml:"enablePeerGauge" mapstructure:"enablePeerGauge"`
 }
 
 type GRPCConfig struct {
@@ -445,9 +442,8 @@ func New() *Config {
 			},
 		},
 		Metrics: MetricsConfig{
-			Enable:          false,
-			Addr:            DefaultMetricsAddr,
-			EnablePeerGauge: true,
+			Enable: false,
+			Addr:   DefaultMetricsAddr,
 		},
 		Network: NetworkConfig{
 			EnableIPv6: DefaultNetworkEnableIPv6,

@@ -92,7 +92,6 @@ security:
 metrics:
   enable: true
   addr: :8000
-  enablePeerGauge: false
 
 network:
   enableIPv6: true

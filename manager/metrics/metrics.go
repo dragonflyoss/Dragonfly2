@@ -32,13 +32,6 @@ import (
 
 // Variables declared for metrics.
 var (
-	PeerGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: types.MetricsNamespace,
-		Subsystem: types.ManagerMetricsName,
-		Name:      "peer_total",
-		Help:      "Gauge of the number of peer.",
-	}, []string{"version", "commit"})
-
 	SearchSchedulerClusterCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.ManagerMetricsName,

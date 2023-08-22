@@ -130,6 +130,55 @@ definitions:
       updated_at:
         type: string
     type: object
+  d7y_io_dragonfly_v2_manager_models.Peer:
+    properties:
+      build_platform:
+        type: string
+      created_at:
+        type: string
+      download_port:
+        type: integer
+      git_commit:
+        type: string
+      git_version:
+        type: string
+      host_name:
+        type: string
+      id:
+        type: integer
+      idc:
+        type: string
+      ip:
+        type: string
+      is_del:
+        type: integer
+      kernel_version:
+        type: string
+      location:
+        type: string
+      object_storage_port:
+        type: integer
+      os:
+        type: string
+      platform:
+        type: string
+      platform_family:
+        type: string
+      platform_version:
+        type: string
+      port:
+        type: integer
+      scheduler_cluster:
+        $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.SchedulerCluster'
+      scheduler_cluster_id:
+        type: integer
+      state:
+        type: string
+      type:
+        type: string
+      updated_at:
+        type: string
+    type: object
   d7y_io_dragonfly_v2_manager_models.PersonalAccessToken:
     properties:
       bio:
@@ -216,6 +265,10 @@ definitions:
         type: array
       name:
         type: string
+      peers:
+        items:
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.Peer'
+        type: array
       schedulers:
         items:
           $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.Scheduler'
@@ -1968,6 +2021,21 @@ paths:
       consumes:
       - application/json
       description: Get Peers
+      parameters:
+      - default: 0
+        description: current page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - default: 10
+        description: return max item count, default 10, max 50
+        in: query
+        maximum: 50
+        minimum: 2
+        name: per_page
+        required: true
+        type: integer
       produces:
       - application/json
       responses:
@@ -1975,7 +2043,7 @@ paths:
           description: OK
           schema:
             items:
-              type: string
+              $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.Peer'
             type: array
         "400":
           description: Bad Request
@@ -1984,6 +2052,57 @@ paths:
         "500":
           description: Internal Server Error
       summary: Get Peers
+      tags:
+      - Peer
+  /peers/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Destroy by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Destroy Peer
+      tags:
+      - Peer
+    get:
+      consumes:
+      - application/json
+      description: Get Peer by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.Peer'
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Get Peer
       tags:
       - Peer
   /permissions:

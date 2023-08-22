@@ -19,31 +19,18 @@ package rpcserver
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"time"
 
 	"github.com/go-redis/redis/v8"
 	"google.golang.org/grpc"
 	"gorm.io/gorm"
 
-	managerv1 "d7y.io/api/v2/pkg/apis/manager/v1"
-
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/database"
-	"d7y.io/dragonfly/v2/manager/metrics"
 	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/searcher"
-	pkgcache "d7y.io/dragonfly/v2/pkg/cache"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
 	managerserver "d7y.io/dragonfly/v2/pkg/rpc/manager/server"
-)
-
-const (
-	// DefaultPeerCacheExpiration is default expiration of peer cache.
-	DefaultPeerCacheExpiration = 10 * time.Minute
-
-	// DefaultPeerCacheCleanupInterval is default cleanup interval of peer cache.
-	DefaultPeerCacheCleanupInterval = 1 * time.Minute
 )
 
 // SelfSignedCert is self signed certificate.
@@ -71,9 +58,6 @@ type Server struct {
 
 	// Cache instance.
 	cache *cache.Cache
-
-	// Peer memory cache.
-	peerCache pkgcache.Cache
 
 	// Searcher interface.
 	searcher searcher.Searcher
@@ -126,17 +110,9 @@ func New(
 		db:            database.DB,
 		rdb:           database.RDB,
 		cache:         cache,
-		peerCache:     pkgcache.New(DefaultPeerCacheExpiration, DefaultPeerCacheCleanupInterval),
 		searcher:      searcher,
 		objectStorage: objectStorage,
 	}
-
-	// Peer cache is evicted, and the metrics of the peer should be released.
-	s.peerCache.OnEvicted(func(k string, v any) {
-		if req, ok := v.(*managerv1.ListSchedulersRequest); ok {
-			metrics.PeerGauge.WithLabelValues(req.Version, req.Commit).Dec()
-		}
-	})
 
 	for _, opt := range opts {
 		if err := opt(s); err != nil {
@@ -145,8 +121,8 @@ func New(
 	}
 
 	return s, managerserver.New(
-		newManagerServerV1(s.config, database, s.cache, s.peerCache, s.searcher, s.objectStorage),
-		newManagerServerV2(s.config, database, s.cache, s.peerCache, s.searcher, s.objectStorage),
+		newManagerServerV1(s.config, database, s.cache, s.searcher, s.objectStorage),
+		newManagerServerV2(s.config, database, s.cache, s.searcher, s.objectStorage),
 		newSecurityServerV1(s.selfSignedCert),
 		s.serverOptions...), nil
 }
