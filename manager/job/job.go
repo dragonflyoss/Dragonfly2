@@ -20,15 +20,24 @@ import (
 	"crypto/x509"
 	"errors"
 
+	"go.opentelemetry.io/otel"
+
 	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/config"
+	"d7y.io/dragonfly/v2/manager/models"
 )
 
+// tracer is a global tracer for job.
+var tracer = otel.Tracer("manager")
+
+// Job is an implementation of job.
 type Job struct {
 	*internaljob.Job
 	Preheat
+	SyncPeers
 }
 
+// New returns a new Job.
 func New(cfg *config.Config) (*Job, error) {
 	j, err := internaljob.New(&internaljob.Config{
 		Addrs:      cfg.Database.Redis.Addrs,
@@ -50,13 +59,34 @@ func New(cfg *config.Config) (*Job, error) {
 		}
 	}
 
-	p, err := newPreheat(j, cfg.Job.Preheat.RegistryTimeout, certPool)
+	preheat, err := newPreheat(j, cfg.Job.Preheat.RegistryTimeout, certPool)
+	if err != nil {
+		return nil, err
+	}
+
+	syncPeers, err := newSyncPeers(j)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Job{
-		Job:     j,
-		Preheat: p,
+		Job:       j,
+		Preheat:   preheat,
+		SyncPeers: syncPeers,
 	}, nil
+}
+
+// getSchedulerQueues gets scheduler queues.
+func getSchedulerQueues(schedulers []models.Scheduler) []internaljob.Queue {
+	var queues []internaljob.Queue
+	for _, scheduler := range schedulers {
+		queue, err := internaljob.GetSchedulerQueue(scheduler.SchedulerClusterID, scheduler.Hostname)
+		if err != nil {
+			continue
+		}
+
+		queues = append(queues, queue)
+	}
+
+	return queues
 }

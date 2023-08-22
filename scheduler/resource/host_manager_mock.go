@@ -90,6 +90,18 @@ func (mr *MockHostManagerMockRecorder) LoadRandomHosts(arg0, arg1 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadRandomHosts", reflect.TypeOf((*MockHostManager)(nil).LoadRandomHosts), arg0, arg1)
 }
 
+// Range mocks base method.
+func (m *MockHostManager) Range(f func(any, any) bool) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Range", f)
+}
+
+// Range indicates an expected call of Range.
+func (mr *MockHostManagerMockRecorder) Range(f interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Range", reflect.TypeOf((*MockHostManager)(nil).Range), f)
+}
+
 // RunGC mocks base method.
 func (m *MockHostManager) RunGC() error {
 	m.ctrl.T.Helper()

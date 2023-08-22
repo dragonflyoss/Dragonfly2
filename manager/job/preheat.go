@@ -36,7 +36,6 @@ import (
 	"github.com/distribution/distribution/v3/manifest/schema2"
 	"github.com/go-http-utils/headers"
 	"github.com/google/uuid"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -46,8 +45,6 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 )
-
-var tracer = otel.Tracer("manager")
 
 type PreheatType string
 
@@ -59,18 +56,23 @@ const (
 	PreheatFileType PreheatType = "file"
 )
 
+// accessURLPattern is the pattern of access url.
 var accessURLPattern, _ = regexp.Compile("^(.*)://(.*)/v2/(.*)/manifests/(.*)")
 
+// Preheat is an interface for preheat job.
 type Preheat interface {
+	// CreatePreheat creates a preheat job.
 	CreatePreheat(context.Context, []models.Scheduler, types.PreheatArgs) (*internaljob.GroupJobState, error)
 }
 
+// preheat is an implementation of Preheat.
 type preheat struct {
 	job                *internaljob.Job
 	httpRequestTimeout time.Duration
 	rootCAs            *x509.CertPool
 }
 
+// preheatImage is image information for preheat.
 type preheatImage struct {
 	protocol string
 	domain   string
@@ -78,10 +80,12 @@ type preheatImage struct {
 	tag      string
 }
 
+// newPreheat creates a new Preheat.
 func newPreheat(job *internaljob.Job, httpRequestTimeout time.Duration, rootCAs *x509.CertPool) (Preheat, error) {
 	return &preheat{job, httpRequestTimeout, rootCAs}, nil
 }
 
+// CreatePreheat creates a preheat job.
 func (p *preheat) CreatePreheat(ctx context.Context, schedulers []models.Scheduler, json types.PreheatArgs) (*internaljob.GroupJobState, error) {
 	var span trace.Span
 	ctx, span = tracer.Start(ctx, config.SpanPreheat, trace.WithSpanKind(trace.SpanKindProducer))
@@ -127,6 +131,7 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []models.Schedul
 	return p.createGroupJob(ctx, files, queues)
 }
 
+// createGroupJob creates a group job.
 func (p *preheat) createGroupJob(ctx context.Context, files []internaljob.PreheatRequest, queues []internaljob.Queue) (*internaljob.GroupJobState, error) {
 	var signatures []*machineryv1tasks.Signature
 	for _, queue := range queues {
@@ -169,6 +174,7 @@ func (p *preheat) createGroupJob(ctx context.Context, files []internaljob.Prehea
 	}, nil
 }
 
+// getLayers gets layers of image.
 func (p *preheat) getLayers(ctx context.Context, url, tag, filter string, header http.Header, image *preheatImage) ([]internaljob.PreheatRequest, error) {
 	ctx, span := tracer.Start(ctx, config.SpanGetLayers, trace.WithSpanKind(trace.SpanKindProducer))
 	defer span.End()
@@ -204,6 +210,7 @@ func (p *preheat) getLayers(ctx context.Context, url, tag, filter string, header
 	return layers, nil
 }
 
+// getManifests gets manifests of image.
 func (p *preheat) getManifests(ctx context.Context, url string, header http.Header, timeout time.Duration) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -229,6 +236,7 @@ func (p *preheat) getManifests(ctx context.Context, url string, header http.Head
 	return resp, nil
 }
 
+// parseLayers parses layers of image.
 func (p *preheat) parseLayers(resp *http.Response, url, tag, filter string, header http.Header, image *preheatImage) ([]internaljob.PreheatRequest, error) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -255,6 +263,7 @@ func (p *preheat) parseLayers(resp *http.Response, url, tag, filter string, head
 	return layers, nil
 }
 
+// getAuthToken gets auth token from registry.
 func getAuthToken(ctx context.Context, header http.Header, timeout time.Duration, rootCAs *x509.CertPool) (string, error) {
 	ctx, span := tracer.Start(ctx, config.SpanAuthWithRegistry, trace.WithSpanKind(trace.SpanKindProducer))
 	defer span.End()
@@ -298,6 +307,7 @@ func getAuthToken(ctx context.Context, header http.Header, timeout time.Duration
 	return token, nil
 }
 
+// authURL gets auth url from www-authenticate header.
 func authURL(wwwAuth []string) string {
 	// Bearer realm="<auth-service-url>",service="<service>",scope="repository:<name>:pull"
 	if len(wwwAuth) == 0 {
@@ -315,10 +325,12 @@ func authURL(wwwAuth []string) string {
 	return fmt.Sprintf("%s?%s", host, query)
 }
 
+// layerURL gets layer url.
 func layerURL(protocol string, domain string, name string, digest string) string {
 	return fmt.Sprintf("%s://%s/v2/%s/blobs/%s", protocol, domain, name, digest)
 }
 
+// parseAccessURL parses access url.
 func parseAccessURL(url string) (*preheatImage, error) {
 	r := accessURLPattern.FindStringSubmatch(url)
 	if len(r) != 5 {
@@ -331,18 +343,4 @@ func parseAccessURL(url string) (*preheatImage, error) {
 		name:     r[3],
 		tag:      r[4],
 	}, nil
-}
-
-func getSchedulerQueues(schedulers []models.Scheduler) []internaljob.Queue {
-	var queues []internaljob.Queue
-	for _, scheduler := range schedulers {
-		queue, err := internaljob.GetSchedulerQueue(scheduler.SchedulerClusterID, scheduler.Hostname)
-		if err != nil {
-			continue
-		}
-
-		queues = append(queues, queue)
-	}
-
-	return queues
 }

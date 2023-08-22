@@ -46,6 +46,10 @@ type TaskManager interface {
 	// Delete deletes task for a key.
 	Delete(string)
 
+	// Range calls f sequentially for each key and value present in the map.
+	// If f returns false, range stops the iteration.
+	Range(f func(any, any) bool)
+
 	// Try to reclaim task.
 	RunGC() error
 }
@@ -100,6 +104,12 @@ func (t *taskManager) LoadOrStore(task *Task) (*Task, bool) {
 // Delete deletes task for a key.
 func (t *taskManager) Delete(key string) {
 	t.Map.Delete(key)
+}
+
+// Range calls f sequentially for each key and value present in the map.
+// If f returns false, range stops the iteration.
+func (t *taskManager) Range(f func(key, value any) bool) {
+	t.Map.Range(f)
 }
 
 // Try to reclaim task.

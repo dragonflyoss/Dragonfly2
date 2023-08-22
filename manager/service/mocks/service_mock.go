@@ -432,6 +432,20 @@ func (mr *MockServiceMockRecorder) DestroyOauth(arg0, arg1 interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroyOauth", reflect.TypeOf((*MockService)(nil).DestroyOauth), arg0, arg1)
 }
 
+// DestroyPeer mocks base method.
+func (m *MockService) DestroyPeer(arg0 context.Context, arg1 uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DestroyPeer", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DestroyPeer indicates an expected call of DestroyPeer.
+func (mr *MockServiceMockRecorder) DestroyPeer(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroyPeer", reflect.TypeOf((*MockService)(nil).DestroyPeer), arg0, arg1)
+}
+
 // DestroyPersonalAccessToken mocks base method.
 func (m *MockService) DestroyPersonalAccessToken(arg0 context.Context, arg1 uint) error {
 	m.ctrl.T.Helper()
@@ -733,19 +747,35 @@ func (mr *MockServiceMockRecorder) GetOauths(arg0, arg1 interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOauths", reflect.TypeOf((*MockService)(nil).GetOauths), arg0, arg1)
 }
 
-// GetPeers mocks base method.
-func (m *MockService) GetPeers(arg0 context.Context) ([]string, error) {
+// GetPeer mocks base method.
+func (m *MockService) GetPeer(arg0 context.Context, arg1 uint) (*models.Peer, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPeers", arg0)
-	ret0, _ := ret[0].([]string)
+	ret := m.ctrl.Call(m, "GetPeer", arg0, arg1)
+	ret0, _ := ret[0].(*models.Peer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetPeers indicates an expected call of GetPeers.
-func (mr *MockServiceMockRecorder) GetPeers(arg0 interface{}) *gomock.Call {
+// GetPeer indicates an expected call of GetPeer.
+func (mr *MockServiceMockRecorder) GetPeer(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPeers", reflect.TypeOf((*MockService)(nil).GetPeers), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPeer", reflect.TypeOf((*MockService)(nil).GetPeer), arg0, arg1)
+}
+
+// GetPeers mocks base method.
+func (m *MockService) GetPeers(arg0 context.Context, arg1 types.GetPeersQuery) ([]models.Peer, int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPeers", arg0, arg1)
+	ret0, _ := ret[0].([]models.Peer)
+	ret1, _ := ret[1].(int64)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetPeers indicates an expected call of GetPeers.
+func (mr *MockServiceMockRecorder) GetPeers(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPeers", reflect.TypeOf((*MockService)(nil).GetPeers), arg0, arg1)
 }
 
 // GetPermissions mocks base method.

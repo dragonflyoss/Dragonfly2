@@ -44,10 +44,12 @@ const (
 	preheatTimeout = 20 * time.Minute
 )
 
+// Job is an interface for job.
 type Job interface {
 	Serve()
 }
 
+// job is an implementation of Job.
 type job struct {
 	globalJob    *internaljob.Job
 	schedulerJob *internaljob.Job
@@ -56,6 +58,7 @@ type job struct {
 	config       *config.Config
 }
 
+// New creates a new Job.
 func New(cfg *config.Config, resource resource.Resource) (Job, error) {
 	redisConfig := &internaljob.Config{
 		Addrs:      cfg.Database.Redis.Addrs,
@@ -102,7 +105,8 @@ func New(cfg *config.Config, resource resource.Resource) (Job, error) {
 	}
 
 	namedJobFuncs := map[string]any{
-		internaljob.PreheatJob: t.preheat,
+		internaljob.PreheatJob:   t.preheat,
+		internaljob.SyncPeersJob: t.syncPeers,
 	}
 
 	if err := localJob.RegisterJob(namedJobFuncs); err != nil {
@@ -113,6 +117,7 @@ func New(cfg *config.Config, resource resource.Resource) (Job, error) {
 	return t, nil
 }
 
+// Serve starts the job.
 func (j *job) Serve() {
 	go func() {
 		logger.Infof("ready to launch %d worker(s) on global queue", j.config.Job.GlobalWorkerNum)
@@ -142,6 +147,7 @@ func (j *job) Serve() {
 	}()
 }
 
+// preheat is a job to preheat.
 func (j *job) preheat(ctx context.Context, req string) error {
 	ctx, cancel := context.WithTimeout(ctx, preheatTimeout)
 	defer cancel()
@@ -203,4 +209,21 @@ func (j *job) preheat(ctx context.Context, req string) error {
 			return nil
 		}
 	}
+}
+
+// syncPeers is a job to sync peers.
+func (j *job) syncPeers() ([]*resource.Host, error) {
+	var hosts []*resource.Host
+	j.resource.HostManager().Range(func(key, value any) bool {
+		host, ok := value.(*resource.Host)
+		if !ok {
+			logger.Errorf("invalid host %v %v", key, value)
+			return true
+		}
+
+		hosts = append(hosts, host)
+		return true
+	})
+
+	return hosts, nil
 }

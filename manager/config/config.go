@@ -284,6 +284,9 @@ type TCPListenPortRange struct {
 type JobConfig struct {
 	// Preheat configuration.
 	Preheat PreheatConfig `yaml:"preheat" mapstructure:"preheat"`
+
+	// Sync peers configuration.
+	SyncPeers SyncPeersConfig `yaml:"syncPeers" mapstructure:"syncPeers"`
 }
 
 type PreheatConfig struct {
@@ -292,6 +295,12 @@ type PreheatConfig struct {
 
 	// TLS client configuration.
 	TLS *PreheatTLSClientConfig `yaml:"tls" mapstructure:"tls"`
+}
+
+type SyncPeersConfig struct {
+	// Interval is the interval for syncing all peers information from the scheduler and
+	// display peers information in the manager console.
+	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
 }
 
 type PreheatTLSClientConfig struct {
@@ -426,6 +435,9 @@ func New() *Config {
 		Job: JobConfig{
 			Preheat: PreheatConfig{
 				RegistryTimeout: DefaultJobPreheatRegistryTimeout,
+			},
+			SyncPeers: SyncPeersConfig{
+				Interval: DefaultJobSyncPeersInterval,
 			},
 		},
 		ObjectStorage: ObjectStorageConfig{
@@ -605,6 +617,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Job.Preheat.RegistryTimeout == 0 {
 		return errors.New("preheat requires parameter registryTimeout")
+	}
+
+	if cfg.Job.SyncPeers.Interval <= MinJobSyncPeersInterval {
+		return errors.New("syncPeers requires parameter interval and it must be greater than 12 hours")
 	}
 
 	if cfg.ObjectStorage.Enable {
