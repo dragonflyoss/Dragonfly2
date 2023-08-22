@@ -98,14 +98,14 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []models.Schedul
 	filter := json.Filter
 	rawheader := json.Headers
 
-	// Initialize queues
+	// Initialize queues.
 	queues := getSchedulerQueues(schedulers)
 
-	// Generate download files
+	// Generate download files.
 	var files []internaljob.PreheatRequest
 	switch PreheatType(json.Type) {
 	case PreheatImageType:
-		// Parse image manifest url
+		// Parse image manifest url.
 		image, err := parseAccessURL(url)
 		if err != nil {
 			return nil, err

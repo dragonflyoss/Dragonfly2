@@ -19,13 +19,18 @@ package job
 import (
 	"crypto/x509"
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/otel"
+	"gorm.io/gorm"
 
 	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/models"
 )
+
+// DefaultTaskPollingInterval is the default interval for polling task.
+const DefaultTaskPollingInterval = 5 * time.Second
 
 // tracer is a global tracer for job.
 var tracer = otel.Tracer("manager")
@@ -38,7 +43,7 @@ type Job struct {
 }
 
 // New returns a new Job.
-func New(cfg *config.Config) (*Job, error) {
+func New(cfg *config.Config, gdb *gorm.DB) (*Job, error) {
 	j, err := internaljob.New(&internaljob.Config{
 		Addrs:      cfg.Database.Redis.Addrs,
 		MasterName: cfg.Database.Redis.MasterName,
@@ -64,7 +69,7 @@ func New(cfg *config.Config) (*Job, error) {
 		return nil, err
 	}
 
-	syncPeers, err := newSyncPeers(j)
+	syncPeers, err := newSyncPeers(cfg, j, gdb)
 	if err != nil {
 		return nil, err
 	}
@@ -74,6 +79,16 @@ func New(cfg *config.Config) (*Job, error) {
 		Preheat:   preheat,
 		SyncPeers: syncPeers,
 	}, nil
+}
+
+// Serve starts the job server.
+func (j *Job) Serve() {
+	j.SyncPeers.Serve()
+}
+
+// Stop stops the job server.
+func (j *Job) Stop() {
+	j.SyncPeers.Stop()
 }
 
 // getSchedulerQueues gets scheduler queues.
@@ -89,4 +104,9 @@ func getSchedulerQueues(schedulers []models.Scheduler) []internaljob.Queue {
 	}
 
 	return queues
+}
+
+// getSchedulerQueue gets scheduler queue.
+func getSchedulerQueue(scheduler models.Scheduler) (internaljob.Queue, error) {
+	return internaljob.GetSchedulerQueue(scheduler.SchedulerClusterID, scheduler.Hostname)
 }
