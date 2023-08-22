@@ -68,6 +68,9 @@ job:
     registryTimeout: 1m
     tls:
       caCert: testdata/ca.crt
+  syncPeers:
+    interval: 13h
+
 objectStorage:
   enable: true
   name: s3

@@ -48,6 +48,10 @@ type PeerManager interface {
 	// Delete deletes peer for a key.
 	Delete(string)
 
+	// Range calls f sequentially for each key and value present in the map.
+	// If f returns false, range stops the iteration.
+	Range(f func(any, any) bool)
+
 	// Try to reclaim peer.
 	RunGC() error
 }
@@ -138,6 +142,12 @@ func (p *peerManager) Delete(key string) {
 		peer.Task.DeletePeer(key)
 		peer.Host.DeletePeer(key)
 	}
+}
+
+// Range calls f sequentially for each key and value present in the map.
+// If f returns false, range stops the iteration.
+func (p *peerManager) Range(f func(key, value any) bool) {
+	p.Map.Range(f)
 }
 
 // Try to reclaim peer.

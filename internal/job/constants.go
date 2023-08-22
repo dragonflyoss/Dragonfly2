@@ -24,7 +24,11 @@ const (
 
 // Job Name.
 const (
+	// PreheatJob is the name of preheat job.
 	PreheatJob = "preheat"
+
+	// SyncPeersJob is the name of syncing peers job.
+	SyncPeersJob = "sync_peers"
 )
 
 // Machinery server configuration.

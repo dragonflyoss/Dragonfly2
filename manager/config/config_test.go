@@ -194,6 +194,9 @@ func TestConfig_Load(t *testing.T) {
 					CACert: "foo",
 				},
 			},
+			SyncPeers: SyncPeersConfig{
+				Interval: 13 * time.Hour,
+			},
 		},
 		ObjectStorage: ObjectStorageConfig{
 			Enable:           true,
@@ -739,6 +742,21 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "preheat requires parameter registryTimeout")
+			},
+		},
+		{
+			name:   "syncPeers requires parameter interval",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Job.SyncPeers.Interval = 11 * time.Hour
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "syncPeers requires parameter interval and it must be greater than 12 hours")
 			},
 		},
 		{

@@ -48,6 +48,10 @@ type HostManager interface {
 	// Delete deletes host for a key.
 	Delete(string)
 
+	// Range calls f sequentially for each key and value present in the map.
+	// If f returns false, range stops the iteration.
+	Range(f func(any, any) bool)
+
 	// LoadRandomHosts loads host randomly through the Range of sync.Map.
 	LoadRandomHosts(int, set.SafeSet[string]) []*Host
 
@@ -105,6 +109,12 @@ func (h *hostManager) LoadOrStore(host *Host) (*Host, bool) {
 // Delete deletes host for a key.
 func (h *hostManager) Delete(key string) {
 	h.Map.Delete(key)
+}
+
+// Range calls f sequentially for each key and value present in the map.
+// If f returns false, range stops the iteration.
+func (h *hostManager) Range(f func(key, value any) bool) {
+	h.Map.Range(f)
 }
 
 // LoadRandomHosts loads host randomly through the Range of sync.Map.

@@ -75,6 +75,18 @@ func (mr *MockPeerManagerMockRecorder) LoadOrStore(arg0 interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadOrStore", reflect.TypeOf((*MockPeerManager)(nil).LoadOrStore), arg0)
 }
 
+// Range mocks base method.
+func (m *MockPeerManager) Range(f func(any, any) bool) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Range", f)
+}
+
+// Range indicates an expected call of Range.
+func (mr *MockPeerManagerMockRecorder) Range(f interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Range", reflect.TypeOf((*MockPeerManager)(nil).Range), f)
+}
+
 // RunGC mocks base method.
 func (m *MockPeerManager) RunGC() error {
 	m.ctrl.T.Helper()

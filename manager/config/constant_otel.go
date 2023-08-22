@@ -26,6 +26,7 @@ const (
 
 const (
 	SpanPreheat          = "preheat"
+	SpanSyncPeers        = "sync-peers"
 	SpanGetLayers        = "get-layers"
 	SpanAuthWithRegistry = "auth-with-registry"
 )
