@@ -301,6 +301,9 @@ type SyncPeersConfig struct {
 	// Interval is the interval for syncing all peers information from the scheduler and
 	// display peers information in the manager console.
 	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
+
+	// Timeout is the timeout for syncing peers information from the single scheduler.
+	Timeout time.Duration `yaml:"timeout" mapstructure:"timeout"`
 }
 
 type PreheatTLSClientConfig struct {

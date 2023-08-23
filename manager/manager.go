@@ -125,7 +125,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	searcher := searcher.New(d.PluginDir())
 
 	// Initialize job
-	job, err := job.New(cfg)
+	job, err := job.New(cfg, db.DB)
 	if err != nil {
 		return nil, err
 	}
