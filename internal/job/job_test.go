@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestJobMarshal(t *testing.T) {
+func TestJob_MarshalRequest(t *testing.T) {
 	tests := []struct {
 		name   string
 		value  any
@@ -110,7 +110,7 @@ func TestJobMarshal(t *testing.T) {
 	}
 }
 
-func TestJobUnmarshal(t *testing.T) {
+func TestJob_UnmarshalResponse(t *testing.T) {
 	tests := []struct {
 		name   string
 		data   []reflect.Value
@@ -206,7 +206,7 @@ func TestJobUnmarshal(t *testing.T) {
 	}
 }
 
-func TestUnmarshalRequest(t *testing.T) {
+func TestJob_UnmarshalRequest(t *testing.T) {
 	tests := []struct {
 		name   string
 		data   string

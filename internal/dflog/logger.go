@@ -123,6 +123,12 @@ func With(args ...any) *SugaredLoggerOnWith {
 	}
 }
 
+func WithScheduler(hostname, ip string, clusterID uint64) *SugaredLoggerOnWith {
+	return &SugaredLoggerOnWith{
+		withArgs: []any{"hostname", hostname, "ip", ip, "clusterID", clusterID},
+	}
+}
+
 func WithPeer(hostID, taskID, peerID string) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
 		withArgs: []any{"hostID", hostID, "taskID", taskID, "peerID", peerID},

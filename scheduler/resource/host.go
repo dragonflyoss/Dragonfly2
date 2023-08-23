@@ -38,6 +38,13 @@ func WithSchedulerClusterID(id uint64) HostOption {
 	}
 }
 
+// WithObjectStoragePort sets host's ObjectStoragePort.
+func WithObjectStoragePort(port int32) HostOption {
+	return func(h *Host) {
+		h.ObjectStoragePort = port
+	}
+}
+
 // WithConcurrentUploadLimit sets host's ConcurrentUploadLimit.
 func WithConcurrentUploadLimit(limit int32) HostOption {
 	return func(h *Host) {
@@ -134,6 +141,9 @@ type Host struct {
 
 	// DownloadPort is piece downloading port.
 	DownloadPort int32
+
+	// ObjectStoragePort is object storage port.
+	ObjectStoragePort int32
 
 	// Host OS.
 	OS string

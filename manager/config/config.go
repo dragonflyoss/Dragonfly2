@@ -441,6 +441,7 @@ func New() *Config {
 			},
 			SyncPeers: SyncPeersConfig{
 				Interval: DefaultJobSyncPeersInterval,
+				Timeout:  DefaultJobSyncPeersTimeout,
 			},
 		},
 		ObjectStorage: ObjectStorageConfig{
@@ -624,6 +625,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Job.SyncPeers.Interval <= MinJobSyncPeersInterval {
 		return errors.New("syncPeers requires parameter interval and it must be greater than 12 hours")
+	}
+
+	if cfg.Job.SyncPeers.Timeout == 0 {
+		return errors.New("syncPeers requires parameter timeout")
 	}
 
 	if cfg.ObjectStorage.Enable {

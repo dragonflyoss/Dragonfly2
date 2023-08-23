@@ -562,12 +562,15 @@ func (cd *clientDaemon) Serve() error {
 	cd.schedPeerHost.DownPort = int32(uploadPort)
 
 	// prepare object storage service listen
-	var objectStorageListener net.Listener
+	var (
+		objectStorageListener net.Listener
+		objectStoragePort     int
+	)
 	if cd.Option.ObjectStorage.Enable {
 		if cd.Option.ObjectStorage.TCPListen == nil {
 			return errors.New("object storage tcp listen option is empty")
 		}
-		objectStorageListener, _, err = cd.prepareTCPListener(cd.Option.ObjectStorage.ListenOption, true)
+		objectStorageListener, objectStoragePort, err = cd.prepareTCPListener(cd.Option.ObjectStorage.ListenOption, true)
 		if err != nil {
 			logger.Errorf("failed to listen for object storage service: %v", err)
 			return err
@@ -678,6 +681,11 @@ func (cd *clientDaemon) Serve() error {
 	if cd.managerClient != nil {
 		announcerOptions = append(announcerOptions, announcer.WithManagerClient(cd.managerClient))
 	}
+
+	if cd.Option.ObjectStorage.Enable {
+		announcerOptions = append(announcerOptions, announcer.WithObjectStoragePort(int32(objectStoragePort)))
+	}
+
 	cd.announcer = announcer.New(&cd.Option, cd.dynconfig, cd.schedPeerHost.Id, cd.schedPeerHost.RpcPort,
 		cd.schedPeerHost.DownPort, cd.schedulerClient, announcerOptions...)
 	go func() {

@@ -212,7 +212,7 @@ func (j *job) preheat(ctx context.Context, req string) error {
 }
 
 // syncPeers is a job to sync peers.
-func (j *job) syncPeers() ([]*resource.Host, error) {
+func (j *job) syncPeers() (string, error) {
 	var hosts []*resource.Host
 	j.resource.HostManager().Range(func(key, value any) bool {
 		host, ok := value.(*resource.Host)
@@ -225,5 +225,5 @@ func (j *job) syncPeers() ([]*resource.Host, error) {
 		return true
 	})
 
-	return hosts, nil
+	return internaljob.MarshalResponse(hosts)
 }

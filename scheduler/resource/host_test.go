@@ -150,6 +150,7 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.IP, mockRawHost.IP)
 				assert.Equal(host.Port, mockRawHost.Port)
 				assert.Equal(host.DownloadPort, mockRawHost.DownloadPort)
+				assert.Equal(host.ObjectStoragePort, int32(0))
 				assert.Equal(host.SchedulerClusterID, uint64(0))
 				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(config.DefaultPeerConcurrentUploadLimit))
 				assert.Equal(host.ConcurrentUploadCount.Load(), int32(0))
@@ -173,6 +174,7 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.IP, mockRawSeedHost.IP)
 				assert.Equal(host.Port, mockRawSeedHost.Port)
 				assert.Equal(host.DownloadPort, mockRawSeedHost.DownloadPort)
+				assert.Equal(host.ObjectStoragePort, int32(0))
 				assert.Equal(host.SchedulerClusterID, uint64(0))
 				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(config.DefaultSeedPeerConcurrentUploadLimit))
 				assert.Equal(host.ConcurrentUploadCount.Load(), int32(0))
@@ -210,6 +212,31 @@ func TestHost_NewHost(t *testing.T) {
 			},
 		},
 		{
+			name:    "new host and set object storage port",
+			rawHost: mockRawHost,
+			options: []HostOption{WithObjectStoragePort(1)},
+			expect: func(t *testing.T, host *Host) {
+				assert := assert.New(t)
+				assert.Equal(host.ID, mockRawHost.ID)
+				assert.Equal(host.Type, types.HostTypeNormal)
+				assert.Equal(host.Hostname, mockRawHost.Hostname)
+				assert.Equal(host.IP, mockRawHost.IP)
+				assert.Equal(host.Port, mockRawHost.Port)
+				assert.Equal(host.DownloadPort, mockRawHost.DownloadPort)
+				assert.Equal(host.ObjectStoragePort, int32(1))
+				assert.Equal(host.SchedulerClusterID, uint64(0))
+				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(config.DefaultPeerConcurrentUploadLimit))
+				assert.Equal(host.ConcurrentUploadCount.Load(), int32(0))
+				assert.Equal(host.UploadCount.Load(), int64(0))
+				assert.Equal(host.UploadFailedCount.Load(), int64(0))
+				assert.NotNil(host.Peers)
+				assert.Equal(host.PeerCount.Load(), int32(0))
+				assert.NotEmpty(host.CreatedAt.Load())
+				assert.NotEmpty(host.UpdatedAt.Load())
+				assert.NotNil(host.Log)
+			},
+		},
+		{
 			name:    "new host and set upload loadlimit",
 			rawHost: mockRawHost,
 			options: []HostOption{WithConcurrentUploadLimit(200)},
@@ -221,6 +248,7 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.IP, mockRawHost.IP)
 				assert.Equal(host.Port, mockRawHost.Port)
 				assert.Equal(host.DownloadPort, mockRawHost.DownloadPort)
+				assert.Equal(host.ObjectStoragePort, int32(0))
 				assert.Equal(host.SchedulerClusterID, uint64(0))
 				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(200))
 				assert.Equal(host.ConcurrentUploadCount.Load(), int32(0))
@@ -245,6 +273,7 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.IP, mockRawHost.IP)
 				assert.Equal(host.Port, mockRawHost.Port)
 				assert.Equal(host.DownloadPort, mockRawHost.DownloadPort)
+				assert.Equal(host.ObjectStoragePort, int32(0))
 				assert.Equal(host.OS, "linux")
 				assert.Equal(host.SchedulerClusterID, uint64(0))
 				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(config.DefaultPeerConcurrentUploadLimit))
@@ -270,6 +299,7 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.IP, mockRawHost.IP)
 				assert.Equal(host.Port, mockRawHost.Port)
 				assert.Equal(host.DownloadPort, mockRawHost.DownloadPort)
+				assert.Equal(host.ObjectStoragePort, int32(0))
 				assert.Equal(host.Platform, "ubuntu")
 				assert.Equal(host.SchedulerClusterID, uint64(0))
 				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(config.DefaultPeerConcurrentUploadLimit))
@@ -295,6 +325,7 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.IP, mockRawHost.IP)
 				assert.Equal(host.Port, mockRawHost.Port)
 				assert.Equal(host.DownloadPort, mockRawHost.DownloadPort)
+				assert.Equal(host.ObjectStoragePort, int32(0))
 				assert.Equal(host.PlatformFamily, "debian")
 				assert.Equal(host.SchedulerClusterID, uint64(0))
 				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(config.DefaultPeerConcurrentUploadLimit))
@@ -320,6 +351,7 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.IP, mockRawHost.IP)
 				assert.Equal(host.Port, mockRawHost.Port)
 				assert.Equal(host.DownloadPort, mockRawHost.DownloadPort)
+				assert.Equal(host.ObjectStoragePort, int32(0))
 				assert.Equal(host.PlatformVersion, "22.04")
 				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(config.DefaultPeerConcurrentUploadLimit))
 				assert.Equal(host.ConcurrentUploadCount.Load(), int32(0))
@@ -344,6 +376,7 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.IP, mockRawHost.IP)
 				assert.Equal(host.Port, mockRawHost.Port)
 				assert.Equal(host.DownloadPort, mockRawHost.DownloadPort)
+				assert.Equal(host.ObjectStoragePort, int32(0))
 				assert.Equal(host.KernelVersion, "5.15.0-27-generic")
 				assert.Equal(host.SchedulerClusterID, uint64(0))
 				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(config.DefaultPeerConcurrentUploadLimit))
@@ -369,6 +402,7 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.IP, mockRawHost.IP)
 				assert.Equal(host.Port, mockRawHost.Port)
 				assert.Equal(host.DownloadPort, mockRawHost.DownloadPort)
+				assert.Equal(host.ObjectStoragePort, int32(0))
 				assert.EqualValues(host.CPU, mockCPU)
 				assert.Equal(host.SchedulerClusterID, uint64(0))
 				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(config.DefaultPeerConcurrentUploadLimit))
@@ -394,6 +428,7 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.IP, mockRawHost.IP)
 				assert.Equal(host.Port, mockRawHost.Port)
 				assert.Equal(host.DownloadPort, mockRawHost.DownloadPort)
+				assert.Equal(host.ObjectStoragePort, int32(0))
 				assert.EqualValues(host.Memory, mockMemory)
 				assert.Equal(host.SchedulerClusterID, uint64(0))
 				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(config.DefaultPeerConcurrentUploadLimit))
@@ -419,6 +454,7 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.IP, mockRawHost.IP)
 				assert.Equal(host.Port, mockRawHost.Port)
 				assert.Equal(host.DownloadPort, mockRawHost.DownloadPort)
+				assert.Equal(host.ObjectStoragePort, int32(0))
 				assert.EqualValues(host.Network, mockNetwork)
 				assert.Equal(host.SchedulerClusterID, uint64(0))
 				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(config.DefaultPeerConcurrentUploadLimit))
@@ -444,6 +480,7 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.IP, mockRawHost.IP)
 				assert.Equal(host.Port, mockRawHost.Port)
 				assert.Equal(host.DownloadPort, mockRawHost.DownloadPort)
+				assert.Equal(host.ObjectStoragePort, int32(0))
 				assert.EqualValues(host.Disk, mockDisk)
 				assert.Equal(host.SchedulerClusterID, uint64(0))
 				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(config.DefaultPeerConcurrentUploadLimit))
@@ -469,6 +506,7 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.IP, mockRawHost.IP)
 				assert.Equal(host.Port, mockRawHost.Port)
 				assert.Equal(host.DownloadPort, mockRawHost.DownloadPort)
+				assert.Equal(host.ObjectStoragePort, int32(0))
 				assert.EqualValues(host.Build, mockBuild)
 				assert.Equal(host.SchedulerClusterID, uint64(0))
 				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(config.DefaultPeerConcurrentUploadLimit))
