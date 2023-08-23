@@ -23,7 +23,121 @@ import (
 	"testing"
 
 	testifyassert "github.com/stretchr/testify/assert"
+
+	"d7y.io/dragonfly/v2/client/util"
 )
+
+func TestDfgetConfig_Validate(t *testing.T) {
+	tests := []struct {
+		name   string
+		cfg    *ClientOption
+		expect func(t *testing.T, err error)
+	}{
+		{
+			name: "no error",
+			cfg: &ClientOption{
+				URL:                  "http://path",
+				RecursiveAcceptRegex: "(a|b)",
+				RecursiveRejectRegex: "(a|b)",
+				Output:               "/tmp/df/test",
+				Header: []string{
+					"Accept: *",
+					"Host: abc",
+				},
+				RateLimit: util.RateLimit{Limit: 20971520},
+			},
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				assert.Equal(nil, err)
+			},
+		},
+		{
+			name: "runtime config is nil",
+			cfg:  nil,
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				assert.EqualError(err, "runtime config: invalid argument")
+			},
+		},
+		{
+			name: "url is invaild",
+			cfg: &ClientOption{
+				URL: "http:///path",
+			},
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				assert.EqualError(err, "url http:///path: invalid argument")
+			},
+		},
+		{
+			name: "recursive accept regex is invaild",
+			cfg: &ClientOption{
+				URL:                  "http://path",
+				RecursiveAcceptRegex: "(a|b))",
+			},
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				assert.EqualError(err, "error parsing regexp: unexpected ): `(a|b))`")
+			},
+		},
+		{
+			name: "recursive reject regex is invaild",
+			cfg: &ClientOption{
+				URL:                  "http://path",
+				RecursiveRejectRegex: "(a|b))",
+			},
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				assert.EqualError(err, "error parsing regexp: unexpected ): `(a|b))`")
+			},
+		},
+		{
+			name: "output path is not absolute path",
+			cfg: &ClientOption{
+				URL:    "http://path",
+				Output: "tmp/df/test",
+			},
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				assert.EqualError(err, "output path[tmp/df/test] is not absolute path: invalid argument")
+			},
+		},
+		{
+			name: "header is invalid",
+			cfg: &ClientOption{
+				URL:    "http://path",
+				Output: "/tmp/df/test",
+				Header: []string{
+					"Accept: *",
+					"Host: ",
+				},
+			},
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				assert.EqualError(err, "output header format error: Host: : invalid Header")
+			},
+		},
+		{
+			name: "rate limit is invalid",
+			cfg: &ClientOption{
+				URL:       "http://path",
+				Output:    "/tmp/df/test",
+				RateLimit: util.RateLimit{Limit: 20971519},
+			},
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				assert.EqualError(err, "rate limit must be greater than 20.0MB: invalid argument")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.cfg.Validate()
+			tc.expect(t, err)
+		})
+	}
+}
 
 func TestMkdirAllRoot(t *testing.T) {
 	assert := testifyassert.New(t)
