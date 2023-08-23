@@ -60,3 +60,31 @@ func Test_downloadFromSource(t *testing.T) {
 	err = downloadFromSource(context.Background(), cfg, nil)
 	assert.Nil(t, err)
 }
+
+func Test_parseHeader(t *testing.T) {
+	tests := []struct {
+		name   string
+		s      []string
+		expect map[string]string
+	}{
+		{
+			name: "parse header",
+			s: []string{
+				"Accept: *",
+				"Host: abc",
+			},
+			expect: map[string]string{
+				"Accept": "*",
+				"Host":   "abc",
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert := assert.New(t)
+			hdr := parseHeader(tc.s)
+			assert.Equal(tc.expect, hdr)
+		})
+	}
+}
