@@ -32,8 +32,6 @@ refer to [Setup Dragonfly in Kubernetes](https://d7y.io/docs/getting-started/qui
 
 **_[Ant Group](https://www.antgroup.com/)_** - Large-scale image and file distribution.
 
-**_[Intel](https://www.intel.com/)_** - Large-scale image distribution.
-
 **_[DiDi](https://www.didiglobal.com/)_** - Large-scale image and file distribution.
 
 **_[Kuaishou](https://kuaishou.com/)_** - Large-scale image distribution.
