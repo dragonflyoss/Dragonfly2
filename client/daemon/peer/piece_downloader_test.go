@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -33,6 +34,7 @@ import (
 	"github.com/go-http-utils/headers"
 	testifyassert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/status"
 
 	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
 
@@ -138,6 +140,56 @@ func TestPieceDownloader_isBackSourceError(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			assert := testifyassert.New(t)
 			assert.Equal(tc.expect, isBackSourceError(tc.err))
+		})
+	}
+}
+
+func TestPieceDownloader_Error(t *testing.T) {
+	tests := []struct {
+		name   string
+		err    error
+		expect func(t *testing.T, errMsg string)
+	}{
+		{
+			name: "no request URL",
+			err: &pieceDownloadError{
+				connectionError: true,
+				target:          "",
+				err:             errors.New("http: nil Request.URL"),
+			},
+			expect: func(t *testing.T, errMsg string) {
+				assert := testifyassert.New(t)
+				assert.Equal("connect with  with error: http: nil Request.URL", errMsg)
+			},
+		},
+		{
+			name: "request URL not found",
+			err: &pieceDownloadError{
+				connectionError: false,
+				target:          "http://www.x.yy",
+				status:          "404 Not Found",
+			},
+			expect: func(t *testing.T, errMsg string) {
+				assert := testifyassert.New(t)
+				assert.Equal("download http://www.x.yy with error status: 404 Not Found", errMsg)
+			},
+		},
+		{
+			name: "resource not found",
+			err: &backSourceError{
+				st: status.New(5, "Resource not found."),
+			},
+			expect: func(t *testing.T, errMsg string) {
+				assert := testifyassert.New(t)
+				assert.Equal("rpc error: code = NotFound desc = Resource not found.", errMsg)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			errMsg := tc.err.Error()
+			tc.expect(t, errMsg)
 		})
 	}
 }
