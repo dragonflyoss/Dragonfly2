@@ -149,6 +149,15 @@ func (t *Job) GetGroupJobState(groupID string) (*GroupJobState, error) {
 	}, nil
 }
 
+func MarshalResponse(v any) (string, error) {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return "", err
+	}
+
+	return string(b), nil
+}
+
 func MarshalRequest(v any) ([]machineryv1tasks.Arg, error) {
 	b, err := json.Marshal(v)
 	if err != nil {
@@ -169,6 +178,7 @@ func UnmarshalResponse(data []reflect.Value, v any) error {
 	if err := json.Unmarshal([]byte(data[0].String()), v); err != nil {
 		return err
 	}
+
 	return nil
 }
 

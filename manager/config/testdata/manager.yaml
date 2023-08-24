@@ -70,6 +70,7 @@ job:
       caCert: testdata/ca.crt
   syncPeers:
     interval: 13h
+    timeout: 2m
 
 objectStorage:
   enable: true

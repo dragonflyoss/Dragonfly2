@@ -86,16 +86,19 @@ func EmbedFolder(fsEmbed embed.FS, targetPath string) static.ServeFileSystem {
 
 // Server is the manager server.
 type Server struct {
-	// Server configuration
+	// Server configuration.
 	config *config.Config
 
-	// GRPC server
+	// Job server.
+	job *job.Job
+
+	// GRPC server.
 	grpcServer *grpc.Server
 
-	// REST server
+	// REST server.
 	restServer *http.Server
 
-	// Metrics server
+	// Metrics server.
 	metricsServer *http.Server
 }
 
@@ -103,34 +106,35 @@ type Server struct {
 func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	s := &Server{config: cfg}
 
-	// Initialize database
+	// Initialize database.
 	db, err := database.New(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	// Initialize enforcer
+	// Initialize enforcer.
 	enforcer, err := rbac.NewEnforcer(db.DB)
 	if err != nil {
 		return nil, err
 	}
 
-	// Initialize cache
+	// Initialize cache.
 	cache, err := cache.New(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	// Initialize searcher
+	// Initialize searcher.
 	searcher := searcher.New(d.PluginDir())
 
-	// Initialize job
+	// Initialize job.
 	job, err := job.New(cfg, db.DB)
 	if err != nil {
 		return nil, err
 	}
+	s.job = job
 
-	// Initialize object storage
+	// Initialize object storage.
 	var objectStorage objectstorage.ObjectStorage
 	if cfg.ObjectStorage.Enable {
 		objectStorage, err = objectstorage.New(
@@ -146,7 +150,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 		}
 	}
 
-	// Initialize REST server
+	// Initialize REST server.
 	restService := service.New(cfg, db, cache, job, enforcer, objectStorage)
 	router, err := router.Init(cfg, d.LogDir(), restService, db, enforcer, EmbedFolder(assets, assetsTargetPath))
 	if err != nil {
@@ -157,7 +161,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 		Handler: router,
 	}
 
-	// Initialize roles and check roles
+	// Initialize roles and check roles.
 	err = rbac.InitRBAC(enforcer, router, db.DB)
 	if err != nil {
 		return nil, err
@@ -213,7 +217,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 		)
 	}
 
-	// Initialize GRPC server
+	// Initialize GRPC server.
 	_, grpcServer, err := rpcserver.New(cfg, db, cache, searcher, objectStorage, options...)
 	if err != nil {
 		return nil, err
@@ -221,7 +225,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 
 	s.grpcServer = grpcServer
 
-	// Initialize prometheus
+	// Initialize prometheus.
 	if cfg.Metrics.Enable {
 		s.metricsServer = metrics.New(&cfg.Metrics, grpcServer)
 	}
@@ -231,7 +235,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 
 // Serve starts the manager server.
 func (s *Server) Serve() error {
-	// Started REST server
+	// Started REST server.
 	go func() {
 		logger.Infof("started rest server at %s", s.restServer.Addr)
 		if s.config.Server.REST.TLS != nil {
@@ -251,7 +255,7 @@ func (s *Server) Serve() error {
 		}
 	}()
 
-	// Started metrics server
+	// Started metrics server.
 	if s.metricsServer != nil {
 		go func() {
 			logger.Infof("started metrics server at %s", s.metricsServer.Addr)
@@ -264,14 +268,20 @@ func (s *Server) Serve() error {
 		}()
 	}
 
-	// Generate GRPC listener
+	// Started job server.
+	go func() {
+		logger.Info("started job server")
+		s.job.Serve()
+	}()
+
+	// Generate GRPC listener.
 	lis, _, err := rpc.ListenWithPortRange(s.config.Server.GRPC.ListenIP.String(), s.config.Server.GRPC.PortRange.Start, s.config.Server.GRPC.PortRange.End)
 	if err != nil {
 		logger.Fatalf("net listener failed to start: %v", err)
 	}
 	defer lis.Close()
 
-	// Started GRPC server
+	// Started GRPC server.
 	logger.Infof("started grpc server at %s://%s", lis.Addr().Network(), lis.Addr().String())
 	if err := s.grpcServer.Serve(lis); err != nil {
 		logger.Errorf("stoped grpc server: %+v", err)
@@ -283,14 +293,14 @@ func (s *Server) Serve() error {
 
 // Stop stops the manager server.
 func (s *Server) Stop() {
-	// Stop REST server
+	// Stop REST server.
 	if err := s.restServer.Shutdown(context.Background()); err != nil {
 		logger.Errorf("rest server failed to stop: %+v", err)
 	} else {
 		logger.Info("rest server closed under request")
 	}
 
-	// Stop metrics server
+	// Stop metrics server.
 	if s.metricsServer != nil {
 		if err := s.metricsServer.Shutdown(context.Background()); err != nil {
 			logger.Errorf("metrics server failed to stop: %+v", err)
@@ -299,7 +309,10 @@ func (s *Server) Stop() {
 		}
 	}
 
-	// Stop GRPC server
+	// Stop job server.
+	s.job.Stop()
+
+	// Stop GRPC server.
 	stopped := make(chan struct{})
 	go func() {
 		s.grpcServer.GracefulStop()

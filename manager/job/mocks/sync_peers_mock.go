@@ -5,6 +5,7 @@
 package mocks
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -31,6 +32,20 @@ func NewMockSyncPeers(ctrl *gomock.Controller) *MockSyncPeers {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockSyncPeers) EXPECT() *MockSyncPeersMockRecorder {
 	return m.recorder
+}
+
+// Run mocks base method.
+func (m *MockSyncPeers) Run(arg0 context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Run", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Run indicates an expected call of Run.
+func (mr *MockSyncPeersMockRecorder) Run(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockSyncPeers)(nil).Run), arg0)
 }
 
 // Serve mocks base method.

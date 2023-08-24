@@ -27,7 +27,7 @@ import (
 )
 
 func TestDigest_Reader(t *testing.T) {
-	logger := logger.With("test", "digest")
+	log := logger.With("test", "digest")
 
 	tests := []struct {
 		name      string
@@ -40,7 +40,7 @@ func TestDigest_Reader(t *testing.T) {
 			name:      "sha1 reader",
 			algorithm: AlgorithmSHA1,
 			data:      []byte("foo"),
-			options:   []Option{WithLogger(logger)},
+			options:   []Option{WithLogger(log)},
 			run: func(t *testing.T, data []byte, reader Reader, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
@@ -55,7 +55,7 @@ func TestDigest_Reader(t *testing.T) {
 			name:      "sha256 reader",
 			algorithm: AlgorithmSHA256,
 			data:      []byte("foo"),
-			options:   []Option{WithLogger(logger)},
+			options:   []Option{WithLogger(log)},
 			run: func(t *testing.T, data []byte, reader Reader, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
@@ -70,7 +70,7 @@ func TestDigest_Reader(t *testing.T) {
 			name:      "sha512 reader",
 			algorithm: AlgorithmSHA512,
 			data:      []byte("foo"),
-			options:   []Option{WithLogger(logger)},
+			options:   []Option{WithLogger(log)},
 			run: func(t *testing.T, data []byte, reader Reader, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
@@ -85,7 +85,7 @@ func TestDigest_Reader(t *testing.T) {
 			name:      "md5 reader",
 			algorithm: AlgorithmMD5,
 			data:      []byte("foo"),
-			options:   []Option{WithLogger(logger)},
+			options:   []Option{WithLogger(log)},
 			run: func(t *testing.T, data []byte, reader Reader, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
@@ -100,7 +100,7 @@ func TestDigest_Reader(t *testing.T) {
 			name:      "sha1 reader with encoded",
 			algorithm: AlgorithmSHA1,
 			data:      []byte("foo"),
-			options:   []Option{WithLogger(logger), WithEncoded("0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33")},
+			options:   []Option{WithLogger(log), WithEncoded("0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33")},
 			run: func(t *testing.T, data []byte, reader Reader, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
@@ -115,7 +115,7 @@ func TestDigest_Reader(t *testing.T) {
 			name:      "sha256 reader with encoded",
 			algorithm: AlgorithmSHA256,
 			data:      []byte("foo"),
-			options:   []Option{WithLogger(logger), WithEncoded("2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae")},
+			options:   []Option{WithLogger(log), WithEncoded("2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae")},
 			run: func(t *testing.T, data []byte, reader Reader, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
@@ -130,7 +130,7 @@ func TestDigest_Reader(t *testing.T) {
 			name:      "sha512 reader with encoded",
 			algorithm: AlgorithmSHA512,
 			data:      []byte("foo"),
-			options:   []Option{WithLogger(logger), WithEncoded("f7fbba6e0636f890e56fbbf3283e524c6fa3204ae298382d624741d0dc6638326e282c41be5e4254d8820772c5518a2c5a8c0c7f7eda19594a7eb539453e1ed7")},
+			options:   []Option{WithLogger(log), WithEncoded("f7fbba6e0636f890e56fbbf3283e524c6fa3204ae298382d624741d0dc6638326e282c41be5e4254d8820772c5518a2c5a8c0c7f7eda19594a7eb539453e1ed7")},
 			run: func(t *testing.T, data []byte, reader Reader, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
@@ -145,7 +145,7 @@ func TestDigest_Reader(t *testing.T) {
 			name:      "md5 reader with encoded",
 			algorithm: AlgorithmMD5,
 			data:      []byte("foo"),
-			options:   []Option{WithLogger(logger), WithEncoded("acbd18db4cc2f85cedef654fccc4a4d8")},
+			options:   []Option{WithLogger(log), WithEncoded("acbd18db4cc2f85cedef654fccc4a4d8")},
 			run: func(t *testing.T, data []byte, reader Reader, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
@@ -160,7 +160,7 @@ func TestDigest_Reader(t *testing.T) {
 			name:      "sha1 reader with invalid encoded",
 			algorithm: AlgorithmSHA1,
 			data:      []byte("foo"),
-			options:   []Option{WithLogger(logger), WithEncoded("bar")},
+			options:   []Option{WithLogger(log), WithEncoded("bar")},
 			run: func(t *testing.T, data []byte, reader Reader, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
@@ -173,7 +173,7 @@ func TestDigest_Reader(t *testing.T) {
 			name:      "sha256 reader with invalid encoded",
 			algorithm: AlgorithmSHA256,
 			data:      []byte("foo"),
-			options:   []Option{WithLogger(logger), WithEncoded("bar")},
+			options:   []Option{WithLogger(log), WithEncoded("bar")},
 			run: func(t *testing.T, data []byte, reader Reader, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
@@ -186,7 +186,7 @@ func TestDigest_Reader(t *testing.T) {
 			name:      "sha512 reader with invalid encoded",
 			algorithm: AlgorithmSHA512,
 			data:      []byte("foo"),
-			options:   []Option{WithLogger(logger), WithEncoded("bar")},
+			options:   []Option{WithLogger(log), WithEncoded("bar")},
 			run: func(t *testing.T, data []byte, reader Reader, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
@@ -199,7 +199,7 @@ func TestDigest_Reader(t *testing.T) {
 			name:      "md5 reader with invalid encoded",
 			algorithm: AlgorithmMD5,
 			data:      []byte("foo"),
-			options:   []Option{WithLogger(logger), WithEncoded("bar")},
+			options:   []Option{WithLogger(log), WithEncoded("bar")},
 			run: func(t *testing.T, data []byte, reader Reader, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
@@ -212,7 +212,7 @@ func TestDigest_Reader(t *testing.T) {
 			name:      "new reader with invalid algorithm",
 			algorithm: "",
 			data:      []byte("foo"),
-			options:   []Option{WithLogger(logger)},
+			options:   []Option{WithLogger(log)},
 			run: func(t *testing.T, data []byte, reader Reader, err error) {
 				assert := assert.New(t)
 				assert.Error(err)

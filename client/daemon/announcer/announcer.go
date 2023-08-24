@@ -52,14 +52,15 @@ type Announcer interface {
 
 // announcer provides announce function.
 type announcer struct {
-	config             *config.DaemonOption
-	dynconfig          config.Dynconfig
-	hostID             string
-	daemonPort         int32
-	daemonDownloadPort int32
-	schedulerClient    schedulerclient.V1
-	managerClient      managerclient.V1
-	done               chan struct{}
+	config                  *config.DaemonOption
+	dynconfig               config.Dynconfig
+	hostID                  string
+	daemonPort              int32
+	daemonDownloadPort      int32
+	daemonObjectStoragePort int32
+	schedulerClient         schedulerclient.V1
+	managerClient           managerclient.V1
+	done                    chan struct{}
 }
 
 // Option is a functional option for configuring the announcer.
@@ -69,6 +70,13 @@ type Option func(s *announcer)
 func WithManagerClient(client managerclient.V1) Option {
 	return func(a *announcer) {
 		a.managerClient = client
+	}
+}
+
+// WithObjectStoragePort sets the daemonObjectStoragePort.
+func WithObjectStoragePort(port int32) Option {
+	return func(a *announcer) {
+		a.daemonObjectStoragePort = port
 	}
 }
 
@@ -153,6 +161,11 @@ func (a *announcer) newAnnounceHostRequest() (*schedulerv1.AnnounceHostRequest, 
 		hostType = types.HostTypeSuperSeedName
 	}
 
+	var objectStoragePort int32
+	if a.config.ObjectStorage.Enable {
+		objectStoragePort = a.daemonObjectStoragePort
+	}
+
 	pid := os.Getpid()
 
 	h, err := host.Info()
@@ -223,17 +236,18 @@ func (a *announcer) newAnnounceHostRequest() (*schedulerv1.AnnounceHostRequest, 
 	}
 
 	return &schedulerv1.AnnounceHostRequest{
-		Id:              a.hostID,
-		Type:            hostType,
-		Hostname:        a.config.Host.Hostname,
-		Ip:              a.config.Host.AdvertiseIP.String(),
-		Port:            a.daemonPort,
-		DownloadPort:    a.daemonDownloadPort,
-		Os:              h.OS,
-		Platform:        h.Platform,
-		PlatformFamily:  h.PlatformFamily,
-		PlatformVersion: h.PlatformVersion,
-		KernelVersion:   h.KernelVersion,
+		Id:                a.hostID,
+		Type:              hostType,
+		Hostname:          a.config.Host.Hostname,
+		Ip:                a.config.Host.AdvertiseIP.String(),
+		Port:              a.daemonPort,
+		DownloadPort:      a.daemonDownloadPort,
+		ObjectStoragePort: objectStoragePort,
+		Os:                h.OS,
+		Platform:          h.Platform,
+		PlatformFamily:    h.PlatformFamily,
+		PlatformVersion:   h.PlatformVersion,
+		KernelVersion:     h.KernelVersion,
 		Cpu: &schedulerv1.CPU{
 			LogicalCount:   uint32(cpuLogicalCount),
 			PhysicalCount:  uint32(cpuPhysicalCount),

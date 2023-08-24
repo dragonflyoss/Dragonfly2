@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestJobGetSchedulerQueue(t *testing.T) {
+func TestJob_GetSchedulerQueue(t *testing.T) {
 	tests := []struct {
 		name      string
 		clusterID uint

@@ -98,6 +98,9 @@ const (
 
 	// MinJobSyncPeersInterval is the min interval for syncing all peers information from the scheduler.
 	MinJobSyncPeersInterval = 12 * time.Hour
+
+	// DefaultJobSyncPeersTimeout is the default timeout for syncing all peers information from the scheduler.
+	DefaultJobSyncPeersTimeout = 10 * time.Minute
 )
 
 const (

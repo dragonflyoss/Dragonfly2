@@ -552,6 +552,10 @@ func (v *V1) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequ
 			options = append(options, resource.WithSchedulerClusterID(req.GetSchedulerClusterId()))
 		}
 
+		if req.GetObjectStoragePort() != 0 {
+			options = append(options, resource.WithObjectStoragePort(req.GetObjectStoragePort()))
+		}
+
 		host = resource.NewHost(
 			req.GetId(), req.GetIp(), req.GetHostname(), req.GetPort(), req.GetDownloadPort(),
 			types.ParseHostType(req.GetType()), options...,
