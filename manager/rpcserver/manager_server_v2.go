@@ -519,7 +519,7 @@ func (s *managerServerV2) ListSchedulers(ctx context.Context, req *managerv2.Lis
 			tmpSchedulerClusters = append(tmpSchedulerClusters, schedulerCluster)
 		}
 	}
-	log.Debugf("list scheduler clusters %v with hostInfo %#v", getSchedulerClusterNames(tmpSchedulerClusters), req.HostInfo)
+	log.Debugf("list scheduler clusters %v, idc is %s, location is %s", getSchedulerClusterNames(tmpSchedulerClusters), req.GetIdc(), req.GetLocation())
 
 	// Search optimal scheduler clusters.
 	// If searcher can not found candidate scheduler cluster,
@@ -528,7 +528,8 @@ func (s *managerServerV2) ListSchedulers(ctx context.Context, req *managerv2.Lis
 		candidateSchedulerClusters []models.SchedulerCluster
 		err                        error
 	)
-	candidateSchedulerClusters, err = s.searcher.FindSchedulerClusters(ctx, tmpSchedulerClusters, req.Ip, req.Hostname, req.HostInfo, logger.CoreLogger)
+	candidateSchedulerClusters, err = s.searcher.FindSchedulerClusters(ctx, tmpSchedulerClusters, req.Ip, req.Hostname,
+		map[string]string{searcher.ConditionIDC: req.GetIdc(), searcher.ConditionLocation: req.GetLocation()}, logger.CoreLogger)
 	if err != nil {
 		log.Error(err)
 		metrics.SearchSchedulerClusterFailureCount.WithLabelValues(req.Version, req.Commit).Inc()
