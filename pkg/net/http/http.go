@@ -83,7 +83,7 @@ func safeSocketControl(network string, address string, conn syscall.RawConn) err
 		return fmt.Errorf("host %s is invalid", host)
 	}
 
-	if !ip.IsGlobalUnicast() || ip.IsPrivate() {
+	if !ip.IsGlobalUnicast() {
 		return fmt.Errorf("ip %s is invalid", ip.String())
 	}
 
