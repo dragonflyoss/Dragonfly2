@@ -11,6 +11,7 @@
 |        [jim3ma](https://github.com/jim3ma)        |     Jim Ma      |     majinjing3@gmail.com     |            Ant Group            |
 |      [gaius-qi](https://github.com/gaius-qi)      |    Gaius Qi     |      gaius.qi@gmail.com      |            Ant Group            |
 | [mfarooq-intel](https://github.com/mfarooq-intel) | Mohammed Farooq |     mfarooq.ta@gmail.com     |              Intel              |
+|       [akashhr](https://github.com/akashhr)       |    Akash HR     |    akashhr2021@gmail.com     |              Intel              |
 |       [hyy0322](https://github.com/hyy0322)       |  Yiyang Huang   |       691795636@qq.com       |            ByteDance            |
 |     [garen wen](https://github.com/garenwen)      |    Garen Wen    |     wenmxiang@gmail.com      |           Baidu Group           |
 |       [yxxhero](https://github.com/yxxhero)       |     yxxhero     |      aiopsclub@163.com       |            gitlab.cn            |
