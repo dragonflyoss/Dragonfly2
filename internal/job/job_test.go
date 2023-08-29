@@ -24,6 +24,92 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestJob_MarshalResponse(t *testing.T) {
+	tests := []struct {
+		name   string
+		v      any
+		expect func(t *testing.T, arg string, err error)
+	}{
+		{
+			name: "marshal common struct",
+			v: struct {
+				I int64   `json:"i" binding:"required"`
+				F float64 `json:"f" binding:"required"`
+				S string  `json:"s" binding:"required"`
+			}{
+				I: 1,
+				F: 1.1,
+				S: "foo",
+			},
+			expect: func(t *testing.T, arg string, err error) {
+				assert := assert.New(t)
+				assert.Equal("{\"i\":1,\"f\":1.1,\"s\":\"foo\"}", arg)
+			},
+		},
+		{
+			name: "marshal empty struct",
+			v: struct {
+				I int64   `json:"i" binding:"omitempty"`
+				F float64 `json:"f" binding:"omitempty"`
+				S string  `json:"s" binding:"omitempty"`
+			}{},
+			expect: func(t *testing.T, arg string, err error) {
+				assert := assert.New(t)
+				assert.Equal("{\"i\":0,\"f\":0,\"s\":\"\"}", arg)
+			},
+		},
+		{
+			name: "marshal struct with slice",
+			v: struct {
+				S []string `json:"s" binding:"required"`
+			}{
+				S: []string{},
+			},
+			expect: func(t *testing.T, arg string, err error) {
+				assert := assert.New(t)
+				assert.Equal("{\"s\":[]}", arg)
+			},
+		},
+		{
+			name: "marshal struct with nil slice",
+			v: struct {
+				S []string `json:"s" binding:"omitempty"`
+			}{},
+			expect: func(t *testing.T, arg string, err error) {
+				assert := assert.New(t)
+				assert.Equal("{\"s\":null}", arg)
+			},
+		},
+		{
+			name: "marshal nil",
+			v:    nil,
+			expect: func(t *testing.T, arg string, err error) {
+				assert := assert.New(t)
+				assert.Equal("null", arg)
+			},
+		},
+		{
+			name: "marshal unsupported type",
+			v: struct {
+				C chan struct{} `json:"c" binding:"required"`
+			}{
+				C: make(chan struct{}),
+			},
+			expect: func(t *testing.T, arg string, err error) {
+				assert := assert.New(t)
+				assert.Equal("json: unsupported type: chan struct {}", err.Error())
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			arg, err := MarshalResponse(tc.v)
+			tc.expect(t, arg, err)
+		})
+	}
+}
+
 func TestJob_MarshalRequest(t *testing.T) {
 	tests := []struct {
 		name   string
