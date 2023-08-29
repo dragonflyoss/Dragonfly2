@@ -18,6 +18,7 @@ package http
 
 import (
 	"net/http"
+	"syscall"
 	"testing"
 
 	testifyassert "github.com/stretchr/testify/assert"
@@ -152,6 +153,68 @@ func TestPickHeader(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			data := PickHeader(tc.header, tc.key, tc.defaultValue)
 			tc.expect(t, data, tc.header)
+		})
+	}
+}
+
+func Test_safeSocketControl(t *testing.T) {
+	tests := []struct {
+		name    string
+		network string
+		address string
+		conn    syscall.RawConn
+		expect  func(t *testing.T, err error)
+	}{
+		{
+			name:    "no error",
+			network: "tcp4",
+			address: "111.111.111.111:5682",
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				assert.Equal(nil, err)
+			},
+		},
+		{
+			name:    "network type is invaild",
+			network: "tcp",
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				assert.EqualError(err, "network type tcp is invalid")
+			},
+		},
+		{
+			name:    "missing port in address",
+			network: "tcp4",
+			address: "127.0.0.1",
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				assert.EqualError(err, "address 127.0.0.1: missing port in address")
+			},
+		},
+		{
+			name:    "host is invalid",
+			network: "tcp4",
+			address: "127.0.0.256:5682",
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				assert.EqualError(err, "host 127.0.0.256 is invalid")
+			},
+		},
+		{
+			name:    "ip is invalid",
+			network: "tcp4",
+			address: "127.0.0.1:5682",
+			expect: func(t *testing.T, err error) {
+				assert := testifyassert.New(t)
+				assert.EqualError(err, "ip 127.0.0.1 is invalid")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := safeSocketControl(tc.network, tc.address, tc.conn)
+			tc.expect(t, err)
 		})
 	}
 }
