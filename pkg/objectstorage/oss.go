@@ -35,8 +35,8 @@ type oss struct {
 }
 
 // New oss instance.
-func newOSS(region, endpoint, accessKey, secretKey string) (ObjectStorage, error) {
-	client, err := aliyunoss.New(endpoint, accessKey, secretKey, aliyunoss.Region(region))
+func newOSS(region, endpoint, accessKey, secretKey string, httpClient *http.Client) (ObjectStorage, error) {
+	client, err := aliyunoss.New(endpoint, accessKey, secretKey, aliyunoss.Region(region), aliyunoss.HTTPClient(httpClient))
 	if err != nil {
 		return nil, fmt.Errorf("new oss client failed: %s", err)
 	}

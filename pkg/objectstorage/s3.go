@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"path"
 	"time"
@@ -38,8 +39,8 @@ type s3 struct {
 }
 
 // New s3 instance.
-func newS3(region, endpoint, accessKey, secretKey string, s3ForcePathStyle bool) (ObjectStorage, error) {
-	cfg := aws.NewConfig().WithCredentials(credentials.NewStaticCredentials(accessKey, secretKey, ""))
+func newS3(region, endpoint, accessKey, secretKey string, s3ForcePathStyle bool, httpClient *http.Client) (ObjectStorage, error) {
+	cfg := aws.NewConfig().WithCredentials(credentials.NewStaticCredentials(accessKey, secretKey, "")).WithHTTPClient(httpClient)
 	s, err := session.NewSession(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("new aws session failed: %s", err)
@@ -139,7 +140,6 @@ func (s *s3) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker,
 	}
 
 	metadatas := make([]*ObjectMetadata, 0, len(resp.Contents))
-
 	for _, content := range resp.Contents {
 		metadatas = append(metadatas, &ObjectMetadata{
 			Key:              aws.StringValue(content.Key),
@@ -151,12 +151,12 @@ func (s *s3) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker,
 	}
 
 	commonPrefixes := make([]string, len(resp.CommonPrefixes))
-	for i, p := range resp.CommonPrefixes {
-		prefix, err := url.QueryUnescape(*p.Prefix)
+	for _, commonPrefix := range resp.CommonPrefixes {
+		prefix, err := url.QueryUnescape(*commonPrefix.Prefix)
 		if err != nil {
-			return nil, fmt.Errorf("failed to decode commonPrefixes %s, error: %s", *p.Prefix, err.Error())
+			return nil, fmt.Errorf("failed to decode commonPrefixes %s, error: %s", *commonPrefix.Prefix, err.Error())
 		}
-		commonPrefixes[i] = prefix
+		commonPrefixes = append(commonPrefixes, prefix)
 	}
 
 	return &ObjectMetadatas{

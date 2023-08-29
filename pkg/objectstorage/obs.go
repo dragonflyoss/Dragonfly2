@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"strings"
 	"time"
 
@@ -32,8 +33,8 @@ type obs struct {
 }
 
 // New oss instance.
-func newOBS(region, endpoint, accessKey, secretKey string) (ObjectStorage, error) {
-	client, err := huaweiobs.New(accessKey, secretKey, endpoint)
+func newOBS(region, endpoint, accessKey, secretKey string, httpClient *http.Client) (ObjectStorage, error) {
+	client, err := huaweiobs.New(accessKey, secretKey, endpoint, huaweiobs.WithHttpClient(httpClient))
 	if err != nil {
 		return nil, fmt.Errorf("new obs client failed: %s", err)
 	}
