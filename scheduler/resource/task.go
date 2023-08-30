@@ -298,7 +298,10 @@ func (t *Task) DeletePeerInEdges(key string) error {
 		parent.Value.Host.ConcurrentUploadCount.Dec()
 	}
 
-	vertex.DeleteInEdges()
+	if err := t.DAG.DeleteVertexInEdges(key); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -313,9 +316,12 @@ func (t *Task) DeletePeerOutEdges(key string) error {
 	if peer == nil {
 		return errors.New("vertex value is nil")
 	}
-
 	peer.Host.ConcurrentUploadCount.Sub(int32(vertex.Children.Len()))
-	vertex.DeleteOutEdges()
+
+	if err := t.DAG.DeleteVertexOutEdges(key); err != nil {
+		return err
+	}
+
 	return nil
 }
 

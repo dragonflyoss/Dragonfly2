@@ -27,7 +27,7 @@ const (
 	mockVertexValue = "bar"
 )
 
-func TestNewVertex(t *testing.T) {
+func TestVertex_New(t *testing.T) {
 	v := NewVertex(mockVertexID, mockVertexValue)
 	assert := assert.New(t)
 	assert.Equal(v.ID, mockVertexID)
@@ -36,7 +36,7 @@ func TestNewVertex(t *testing.T) {
 	assert.Equal(v.Children.Len(), uint(0))
 }
 
-func TestVertexDegree(t *testing.T) {
+func TestVertex_Degree(t *testing.T) {
 	v := NewVertex(mockVertexID, mockVertexValue)
 	assert := assert.New(t)
 	assert.Equal(v.ID, mockVertexID)
@@ -56,7 +56,7 @@ func TestVertexDegree(t *testing.T) {
 	assert.Equal(v.Degree(), 0)
 }
 
-func TestVertexInDegree(t *testing.T) {
+func TestVertex_InDegree(t *testing.T) {
 	v := NewVertex(mockVertexID, mockVertexValue)
 	assert := assert.New(t)
 	assert.Equal(v.ID, mockVertexID)
@@ -76,7 +76,7 @@ func TestVertexInDegree(t *testing.T) {
 	assert.Equal(v.InDegree(), 0)
 }
 
-func TestVertexOutDegree(t *testing.T) {
+func TestVertex_OutDegree(t *testing.T) {
 	v := NewVertex(mockVertexID, mockVertexValue)
 	assert := assert.New(t)
 	assert.Equal(v.ID, mockVertexID)
@@ -94,34 +94,4 @@ func TestVertexOutDegree(t *testing.T) {
 
 	v.Children.Delete(v)
 	assert.Equal(v.OutDegree(), 0)
-}
-
-func TestVertexDeleteInEdges(t *testing.T) {
-	va := NewVertex(mockVertexID, mockVertexValue)
-	vb := NewVertex(mockVertexID, mockVertexValue)
-	assert := assert.New(t)
-
-	va.Parents.Add(vb)
-	vb.Children.Add(va)
-	assert.Equal(va.Parents.Len(), uint(1))
-	assert.Equal(vb.Children.Len(), uint(1))
-
-	va.DeleteInEdges()
-	assert.Equal(va.Parents.Len(), uint(0))
-	assert.Equal(vb.Children.Len(), uint(0))
-}
-
-func TestVertexDeleteOutEdges(t *testing.T) {
-	va := NewVertex(mockVertexID, mockVertexValue)
-	vb := NewVertex(mockVertexID, mockVertexValue)
-	assert := assert.New(t)
-
-	va.Parents.Add(vb)
-	vb.Children.Add(va)
-	assert.Equal(va.Parents.Len(), uint(1))
-	assert.Equal(vb.Children.Len(), uint(1))
-
-	vb.DeleteOutEdges()
-	assert.Equal(va.Parents.Len(), uint(0))
-	assert.Equal(vb.Children.Len(), uint(0))
 }

@@ -25,6 +25,8 @@ import (
 	"time"
 
 	cmap "github.com/orcaman/concurrent-map/v2"
+
+	"d7y.io/dragonfly/v2/pkg/container/set"
 )
 
 var (
@@ -81,6 +83,12 @@ type DAG[T comparable] interface {
 
 	// CanAddEdge finds whether there are circles through depth-first search.
 	CanAddEdge(fromVertexID, toVertexID string) bool
+
+	// DeleteVertexInEdges deletes inedges of vertex.
+	DeleteVertexInEdges(id string) error
+
+	// DeleteVertexOutEdges deletes outedges of vertex.
+	DeleteVertexOutEdges(id string) error
 }
 
 // dag provides directed acyclic graph function.
@@ -179,37 +187,6 @@ func (d *dag[T]) VertexCount() int {
 	return d.vertices.Count()
 }
 
-// CanAddEdge finds whether there are circles through depth-first search.
-func (d *dag[T]) CanAddEdge(fromVertexID, toVertexID string) bool {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-
-	if fromVertexID == toVertexID {
-		return false
-	}
-
-	fromVertex, ok := d.vertices.Get(fromVertexID)
-	if !ok {
-		return false
-	}
-
-	if _, ok := d.vertices.Get(toVertexID); !ok {
-		return false
-	}
-
-	for _, child := range fromVertex.Children.Values() {
-		if child.ID == toVertexID {
-			return false
-		}
-	}
-
-	if d.depthFirstSearch(toVertexID, fromVertexID) {
-		return false
-	}
-
-	return true
-}
-
 // AddEdge adds edge between two vertices.
 func (d *dag[T]) AddEdge(fromVertexID, toVertexID string) error {
 	d.mu.Lock()
@@ -267,6 +244,73 @@ func (d *dag[T]) DeleteEdge(fromVertexID, toVertexID string) error {
 
 	fromVertex.Children.Delete(toVertex)
 	toVertex.Parents.Delete(fromVertex)
+	return nil
+}
+
+// CanAddEdge finds whether there are circles through depth-first search.
+func (d *dag[T]) CanAddEdge(fromVertexID, toVertexID string) bool {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
+	if fromVertexID == toVertexID {
+		return false
+	}
+
+	fromVertex, ok := d.vertices.Get(fromVertexID)
+	if !ok {
+		return false
+	}
+
+	if _, ok := d.vertices.Get(toVertexID); !ok {
+		return false
+	}
+
+	for _, child := range fromVertex.Children.Values() {
+		if child.ID == toVertexID {
+			return false
+		}
+	}
+
+	if d.depthFirstSearch(toVertexID, fromVertexID) {
+		return false
+	}
+
+	return true
+}
+
+// DeleteVertexInEdges deletes inedges of vertex.
+func (d *dag[T]) DeleteVertexInEdges(id string) error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	vertex, ok := d.vertices.Get(id)
+	if !ok {
+		return ErrVertexNotFound
+	}
+
+	for _, parent := range vertex.Parents.Values() {
+		parent.Children.Delete(vertex)
+	}
+
+	vertex.Parents = set.NewSafeSet[*Vertex[T]]()
+	return nil
+}
+
+// DeleteVertexOutEdges deletes outedges of vertex.
+func (d *dag[T]) DeleteVertexOutEdges(id string) error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	vertex, ok := d.vertices.Get(id)
+	if !ok {
+		return ErrVertexNotFound
+	}
+
+	for _, child := range vertex.Children.Values() {
+		child.Parents.Delete(vertex)
+	}
+
+	vertex.Children = set.NewSafeSet[*Vertex[T]]()
 	return nil
 }
 

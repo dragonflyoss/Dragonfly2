@@ -125,10 +125,10 @@ func (mr *MockObjectStorageMockRecorder) GetObjectMetadata(ctx, bucketName, obje
 }
 
 // GetObjectMetadatas mocks base method.
-func (m *MockObjectStorage) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) ([]*objectstorage.ObjectMetadata, error) {
+func (m *MockObjectStorage) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) (*objectstorage.ObjectMetadatas, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetObjectMetadatas", ctx, bucketName, prefix, marker, delimiter, limit)
-	ret0, _ := ret[0].([]*objectstorage.ObjectMetadata)
+	ret0, _ := ret[0].(*objectstorage.ObjectMetadatas)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

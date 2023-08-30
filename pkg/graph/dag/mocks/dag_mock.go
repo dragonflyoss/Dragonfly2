@@ -102,6 +102,34 @@ func (mr *MockDAGMockRecorder[T]) DeleteVertex(id interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteVertex", reflect.TypeOf((*MockDAG[T])(nil).DeleteVertex), id)
 }
 
+// DeleteVertexInEdges mocks base method.
+func (m *MockDAG[T]) DeleteVertexInEdges(id string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteVertexInEdges", id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteVertexInEdges indicates an expected call of DeleteVertexInEdges.
+func (mr *MockDAGMockRecorder[T]) DeleteVertexInEdges(id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteVertexInEdges", reflect.TypeOf((*MockDAG[T])(nil).DeleteVertexInEdges), id)
+}
+
+// DeleteVertexOutEdges mocks base method.
+func (m *MockDAG[T]) DeleteVertexOutEdges(id string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteVertexOutEdges", id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteVertexOutEdges indicates an expected call of DeleteVertexOutEdges.
+func (mr *MockDAGMockRecorder[T]) DeleteVertexOutEdges(id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteVertexOutEdges", reflect.TypeOf((*MockDAG[T])(nil).DeleteVertexOutEdges), id)
+}
+
 // GetRandomVertices mocks base method.
 func (m *MockDAG[T]) GetRandomVertices(n uint) []*dag.Vertex[T] {
 	m.ctrl.T.Helper()
