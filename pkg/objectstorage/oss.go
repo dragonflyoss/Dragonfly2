@@ -135,10 +135,6 @@ func (o *oss) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker
 		return nil, err
 	}
 
-	if limit == 0 {
-		limit = DefaultGetObjectMetadatasLimit
-	}
-
 	resp, err := bucket.ListObjects(aliyunoss.Prefix(prefix), aliyunoss.Marker(marker), aliyunoss.Delimiter(delimiter), aliyunoss.MaxKeys(int(limit)))
 	if err != nil {
 		return nil, err

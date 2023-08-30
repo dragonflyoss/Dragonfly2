@@ -171,10 +171,10 @@ func (mr *MockDfstoreMockRecorder) GetObjectMetadatasRequestWithContext(ctx, inp
 }
 
 // GetObjectMetadatasWithContext mocks base method.
-func (m *MockDfstore) GetObjectMetadatasWithContext(ctx context.Context, input *dfstore.GetObjectMetadatasInput) ([]*objectstorage.ObjectMetadata, error) {
+func (m *MockDfstore) GetObjectMetadatasWithContext(ctx context.Context, input *dfstore.GetObjectMetadatasInput) (*objectstorage.ObjectMetadatas, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetObjectMetadatasWithContext", ctx, input)
-	ret0, _ := ret[0].([]*objectstorage.ObjectMetadata)
+	ret0, _ := ret[0].(*objectstorage.ObjectMetadatas)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

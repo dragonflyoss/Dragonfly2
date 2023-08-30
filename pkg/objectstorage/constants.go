@@ -16,6 +16,8 @@
 
 package objectstorage
 
+import "time"
+
 const (
 	// ServiceNameS3 is name of s3 storage.
 	ServiceNameS3 = "s3"
@@ -56,11 +58,37 @@ const (
 )
 
 const (
+	// DefaultS3ForcePathStyle is the default force path style of s3.
+	DefaultS3ForcePathStyle = true
+)
+
+const (
 	// OBSStorageClassStandardIA is the standard ia storage class of obs.
 	OBSStorageClassStandardIA = "STANDARD_IA"
 )
 
 const (
-	// DefaultGetObjectMetadatasLimit is the default limit of get object metadatas.
-	DefaultGetObjectMetadatasLimit = 1000
+	// DefaultTLSHandshakeTimeout is the default timeout of tls handshake of http client.
+	DefaultTLSHandshakeTimeout = 30 * time.Second
+
+	// DefaultResponseHeaderTimeout is the default timeout of response header of http client.
+	DefaultResponseHeaderTimeout = 30 * time.Second
+
+	// DefaultIdleConnTimeout is the default timeout of idle connection of http client.
+	DefaultIdleConnTimeout = 5 * time.Minute
+
+	// DefaultMaxIdleConnsPerHost is the default max idle connections per host of http client.
+	DefaultMaxIdleConnsPerHost = 500
+
+	// DefaultReadBufferSize is the default read buffer size of http client.
+	DefaultReadBufferSize = 32 << 10
+
+	// DefaultWriteBufferSize is the default write buffer size of http client.
+	DefaultWriteBufferSize = 32 << 10
+
+	// DefaultDisableCompression is the default disable compression of http client.
+	DefaultDisableCompression = true
+
+	// DefaultTimeout is the default timeout of http client.
+	DefaultTimeout = time.Hour
 )

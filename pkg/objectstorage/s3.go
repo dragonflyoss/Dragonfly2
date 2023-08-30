@@ -124,10 +124,6 @@ func (s *s3) GetObjectMetadata(ctx context.Context, bucketName, objectKey string
 
 // GetObjectMetadatas returns the metadatas of the objects.
 func (s *s3) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) (*ObjectMetadatas, error) {
-	if limit == 0 {
-		limit = DefaultGetObjectMetadatasLimit
-	}
-
 	resp, err := s.client.ListObjectsWithContext(ctx, &awss3.ListObjectsInput{
 		Bucket:    aws.String(bucketName),
 		Prefix:    aws.String(prefix),
@@ -156,6 +152,7 @@ func (s *s3) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker,
 		if err != nil {
 			return nil, fmt.Errorf("failed to decode commonPrefixes %s, error: %s", *commonPrefix.Prefix, err.Error())
 		}
+
 		commonPrefixes = append(commonPrefixes, prefix)
 	}
 
