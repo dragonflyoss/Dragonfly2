@@ -35,8 +35,8 @@ type oss struct {
 }
 
 // New oss instance.
-func newOSS(region, endpoint, accessKey, secretKey string) (ObjectStorage, error) {
-	client, err := aliyunoss.New(endpoint, accessKey, secretKey, aliyunoss.Region(region))
+func newOSS(region, endpoint, accessKey, secretKey string, httpClient *http.Client) (ObjectStorage, error) {
+	client, err := aliyunoss.New(endpoint, accessKey, secretKey, aliyunoss.Region(region), aliyunoss.HTTPClient(httpClient))
 	if err != nil {
 		return nil, fmt.Errorf("new oss client failed: %s", err)
 	}
@@ -96,7 +96,7 @@ func (o *oss) GetObjectMetadata(ctx context.Context, bucketName, objectKey strin
 
 	header, err := bucket.GetObjectDetailedMeta(objectKey)
 	if err != nil {
-		var serr *aliyunoss.ServiceError
+		var serr aliyunoss.ServiceError
 		if errors.As(err, &serr) && serr.StatusCode == http.StatusNotFound {
 			return nil, false, nil
 		}
@@ -129,7 +129,7 @@ func (o *oss) GetObjectMetadata(ctx context.Context, bucketName, objectKey strin
 }
 
 // GetObjectMetadatas returns the metadatas of the objects.
-func (o *oss) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) ([]*ObjectMetadata, error) {
+func (o *oss) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) (*ObjectMetadatas, error) {
 	bucket, err := o.client.Bucket(bucketName)
 	if err != nil {
 		return nil, err
@@ -155,7 +155,10 @@ func (o *oss) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker
 		})
 	}
 
-	return metadatas, nil
+	return &ObjectMetadatas{
+		Metadatas:      metadatas,
+		CommonPrefixes: resp.CommonPrefixes,
+	}, nil
 }
 
 // GetOject returns data of object.

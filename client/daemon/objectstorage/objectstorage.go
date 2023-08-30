@@ -188,7 +188,7 @@ func (o *objectStorage) initRouter(cfg *config.DaemonOption, logDir string) *gin
 
 	// Buckets
 	b := r.Group(RouterGroupBuckets)
-	b.POST("/:id", o.createBucket)
+	b.POST(":id", o.createBucket)
 	b.GET(":id/metadatas", o.getObjectMetadatas)
 	b.HEAD(":id/objects/*object_key", o.headObject)
 	b.GET(":id/objects/*object_key", o.getObject)
@@ -545,7 +545,7 @@ func (o *objectStorage) copyObject(ctx *gin.Context) {
 
 	var (
 		bucketName  = params.ID
-		destination = params.ObjectKey
+		destination = strings.TrimPrefix(params.ObjectKey, string(os.PathSeparator))
 		source      = form.SourceObjectKey
 	)
 

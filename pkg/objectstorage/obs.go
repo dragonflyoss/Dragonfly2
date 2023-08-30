@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"strings"
 	"time"
 
@@ -32,8 +33,8 @@ type obs struct {
 }
 
 // New oss instance.
-func newOBS(region, endpoint, accessKey, secretKey string) (ObjectStorage, error) {
-	client, err := huaweiobs.New(accessKey, secretKey, endpoint)
+func newOBS(region, endpoint, accessKey, secretKey string, httpClient *http.Client) (ObjectStorage, error) {
+	client, err := huaweiobs.New(accessKey, secretKey, endpoint, huaweiobs.WithHttpClient(httpClient))
 	if err != nil {
 		return nil, fmt.Errorf("new obs client failed: %s", err)
 	}
@@ -120,7 +121,7 @@ func (o *obs) GetObjectMetadata(ctx context.Context, bucketName, objectKey strin
 }
 
 // GetObjectMetadatas returns the metadatas of the objects.
-func (o *obs) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) ([]*ObjectMetadata, error) {
+func (o *obs) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) (*ObjectMetadatas, error) {
 	if limit == 0 {
 		limit = DefaultGetObjectMetadatasLimit
 	}
@@ -148,7 +149,10 @@ func (o *obs) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker
 		})
 	}
 
-	return metadatas, nil
+	return &ObjectMetadatas{
+		Metadatas:      metadatas,
+		CommonPrefixes: resp.CommonPrefixes,
+	}, nil
 }
 
 // GetOject returns data of object.

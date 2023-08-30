@@ -30,6 +30,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-http-utils/headers"
@@ -63,7 +64,7 @@ type Dfstore interface {
 	GetObjectMetadatasRequestWithContext(ctx context.Context, input *GetObjectMetadatasInput) (*http.Request, error)
 
 	// GetObjectMetadatasWithContext returns list of object metadatas.
-	GetObjectMetadatasWithContext(ctx context.Context, input *GetObjectMetadatasInput) ([]*pkgobjectstorage.ObjectMetadata, error)
+	GetObjectMetadatasWithContext(ctx context.Context, input *GetObjectMetadatasInput) (*pkgobjectstorage.ObjectMetadatas, error)
 
 	// PutObjectRequestWithContext returns *http.Request of putting object.
 	PutObjectRequestWithContext(ctx context.Context, input *PutObjectInput) (*http.Request, error)
@@ -133,7 +134,6 @@ type GetObjectMetadataInput struct {
 func (i *GetObjectMetadataInput) Validate() error {
 	if i.BucketName == "" {
 		return errors.New("invalid BucketName")
-
 	}
 
 	if i.ObjectKey == "" {
@@ -155,6 +155,11 @@ func (dfs *dfstore) GetObjectMetadataRequestWithContext(ctx context.Context, inp
 	}
 
 	u.Path = filepath.Join("buckets", input.BucketName, "objects", input.ObjectKey)
+
+	if strings.HasSuffix(input.ObjectKey, "/") {
+		u.Path += "/"
+	}
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodHead, u.String(), nil)
 	if err != nil {
 		return nil, err
@@ -227,6 +232,10 @@ func (i *GetObjectMetadatasInput) Validate() error {
 		return errors.New("invalid BucketName")
 	}
 
+	if i.Limit < 0 || i.Limit > pkgobjectstorage.DefaultGetObjectMetadatasLimit {
+		return errors.New("invalid limit")
+	}
+
 	return nil
 }
 
@@ -241,7 +250,7 @@ func (dfs *dfstore) GetObjectMetadatasRequestWithContext(ctx context.Context, in
 		return nil, err
 	}
 
-	u.Path = filepath.Join("buckets", input.BucketName, "objects")
+	u.Path = filepath.Join("buckets", input.BucketName, "metadatas")
 
 	query := u.Query()
 	if input.Prefix != "" {
@@ -271,7 +280,7 @@ func (dfs *dfstore) GetObjectMetadatasRequestWithContext(ctx context.Context, in
 }
 
 // GetObjectMetadatasWithContext returns *http.Request of getting object metadatas.
-func (dfs *dfstore) GetObjectMetadatasWithContext(ctx context.Context, input *GetObjectMetadatasInput) ([]*pkgobjectstorage.ObjectMetadata, error) {
+func (dfs *dfstore) GetObjectMetadatasWithContext(ctx context.Context, input *GetObjectMetadatasInput) (*pkgobjectstorage.ObjectMetadatas, error) {
 	req, err := dfs.GetObjectMetadatasRequestWithContext(ctx, input)
 	if err != nil {
 		return nil, err
@@ -287,12 +296,12 @@ func (dfs *dfstore) GetObjectMetadatasWithContext(ctx context.Context, input *Ge
 		return nil, fmt.Errorf("bad response status %s", resp.Status)
 	}
 
-	var metadatas []*pkgobjectstorage.ObjectMetadata
+	var metadatas pkgobjectstorage.ObjectMetadatas
 	if err := json.NewDecoder(resp.Body).Decode(&metadatas); err != nil {
 		return nil, err
 	}
 
-	return metadatas, nil
+	return &metadatas, nil
 }
 
 // GetObjectInput is used to construct request of getting object.
@@ -316,7 +325,6 @@ type GetObjectInput struct {
 func (i *GetObjectInput) Validate() error {
 	if i.BucketName == "" {
 		return errors.New("invalid BucketName")
-
 	}
 
 	if i.ObjectKey == "" {
@@ -338,6 +346,10 @@ func (dfs *dfstore) GetObjectRequestWithContext(ctx context.Context, input *GetO
 	}
 
 	u.Path = filepath.Join("buckets", input.BucketName, "objects", input.ObjectKey)
+
+	if strings.HasSuffix(input.ObjectKey, "/") {
+		u.Path += "/"
+	}
 
 	query := u.Query()
 	if input.Filter != "" {
@@ -405,7 +417,6 @@ type PutObjectInput struct {
 func (i *PutObjectInput) Validate() error {
 	if i.BucketName == "" {
 		return errors.New("invalid BucketName")
-
 	}
 
 	if i.ObjectKey == "" {
@@ -468,6 +479,10 @@ func (dfs *dfstore) PutObjectRequestWithContext(ctx context.Context, input *PutO
 	}
 
 	u.Path = filepath.Join("buckets", input.BucketName, "objects", input.ObjectKey)
+
+	if strings.HasSuffix(input.ObjectKey, "/") {
+		u.Path += "/"
+	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, u.String(), body)
 	if err != nil {
@@ -637,7 +652,7 @@ func (dfs *dfstore) CreateBucketRequestWithContext(ctx context.Context, input *C
 
 	u.RawQuery = query.Encode()
 
-	return http.NewRequestWithContext(ctx, http.MethodPut, u.String(), nil)
+	return http.NewRequestWithContext(ctx, http.MethodPost, u.String(), nil)
 }
 
 // DeleteObjectInput is used to construct request of deleting object.
@@ -653,7 +668,6 @@ type DeleteObjectInput struct {
 func (i *DeleteObjectInput) Validate() error {
 	if i.BucketName == "" {
 		return errors.New("invalid BucketName")
-
 	}
 
 	if i.ObjectKey == "" {
@@ -675,6 +689,11 @@ func (dfs *dfstore) DeleteObjectRequestWithContext(ctx context.Context, input *D
 	}
 
 	u.Path = filepath.Join("buckets", input.BucketName, "objects", input.ObjectKey)
+
+	if strings.HasSuffix(input.ObjectKey, "/") {
+		u.Path += "/"
+	}
+
 	return http.NewRequestWithContext(ctx, http.MethodDelete, u.String(), nil)
 }
 
@@ -711,7 +730,6 @@ type IsObjectExistInput struct {
 func (i *IsObjectExistInput) Validate() error {
 	if i.BucketName == "" {
 		return errors.New("invalid BucketName")
-
 	}
 
 	if i.ObjectKey == "" {
@@ -733,6 +751,11 @@ func (dfs *dfstore) IsObjectExistRequestWithContext(ctx context.Context, input *
 	}
 
 	u.Path = filepath.Join("buckets", input.BucketName, "objects", input.ObjectKey)
+
+	if strings.HasSuffix(input.ObjectKey, "/") {
+		u.Path += "/"
+	}
+
 	return http.NewRequestWithContext(ctx, http.MethodHead, u.String(), nil)
 }
 

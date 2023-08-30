@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
+	"net/url"
 	"path"
 	"time"
 
@@ -37,8 +39,8 @@ type s3 struct {
 }
 
 // New s3 instance.
-func newS3(region, endpoint, accessKey, secretKey string, s3ForcePathStyle bool) (ObjectStorage, error) {
-	cfg := aws.NewConfig().WithCredentials(credentials.NewStaticCredentials(accessKey, secretKey, ""))
+func newS3(region, endpoint, accessKey, secretKey string, s3ForcePathStyle bool, httpClient *http.Client) (ObjectStorage, error) {
+	cfg := aws.NewConfig().WithCredentials(credentials.NewStaticCredentials(accessKey, secretKey, "")).WithHTTPClient(httpClient)
 	s, err := session.NewSession(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("new aws session failed: %s", err)
@@ -121,7 +123,7 @@ func (s *s3) GetObjectMetadata(ctx context.Context, bucketName, objectKey string
 }
 
 // GetObjectMetadatas returns the metadatas of the objects.
-func (s *s3) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) ([]*ObjectMetadata, error) {
+func (s *s3) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) (*ObjectMetadatas, error) {
 	if limit == 0 {
 		limit = DefaultGetObjectMetadatasLimit
 	}
@@ -148,7 +150,19 @@ func (s *s3) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker,
 		})
 	}
 
-	return metadatas, nil
+	commonPrefixes := make([]string, len(resp.CommonPrefixes))
+	for _, commonPrefix := range resp.CommonPrefixes {
+		prefix, err := url.QueryUnescape(*commonPrefix.Prefix)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode commonPrefixes %s, error: %s", *commonPrefix.Prefix, err.Error())
+		}
+		commonPrefixes = append(commonPrefixes, prefix)
+	}
+
+	return &ObjectMetadatas{
+		Metadatas:      metadatas,
+		CommonPrefixes: commonPrefixes,
+	}, nil
 }
 
 // GetOject returns data of object.
@@ -193,7 +207,6 @@ func (s *s3) DeleteObject(ctx context.Context, bucketName, objectKey string) err
 func (s *s3) IsObjectExist(ctx context.Context, bucketName, objectKey string) (bool, error) {
 	_, isExist, err := s.GetObjectMetadata(ctx, bucketName, objectKey)
 	if err != nil {
-
 		return false, err
 	}
 

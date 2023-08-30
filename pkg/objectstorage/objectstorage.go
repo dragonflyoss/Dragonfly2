@@ -20,8 +20,10 @@ package objectstorage
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
+	"net/http"
 	"time"
 )
 
@@ -58,6 +60,15 @@ type ObjectMetadata struct {
 	StorageClass string
 }
 
+// ObjectMetadatas provides metadatas of object.
+type ObjectMetadatas struct {
+	// CommonPrefixes are similar prefixes in object storage.
+	CommonPrefixes []string `json:"CommonPrefixes"`
+
+	// Metadatas are metadata of objects.
+	Metadatas []*ObjectMetadata `json:"Metadatas"`
+}
+
 // BucketMetadata provides metadata of bucket.
 type BucketMetadata struct {
 	// Name is bucket name.
@@ -88,7 +99,7 @@ type ObjectStorage interface {
 	GetObjectMetadata(ctx context.Context, bucketName, objectKey string) (*ObjectMetadata, bool, error)
 
 	// GetObjectMetadatas returns the metadata of the objects.
-	GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) ([]*ObjectMetadata, error)
+	GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) (*ObjectMetadatas, error)
 
 	// GetOject returns data of object.
 	GetOject(ctx context.Context, bucketName, objectKey string) (io.ReadCloser, error)
@@ -128,6 +139,9 @@ type objectStorage struct {
 
 	// secretKey is access key secret.
 	s3ForcePathStyle bool
+
+	// httpClient is http client.
+	httpClient *http.Client
 }
 
 // Option is a functional option for configuring the objectStorage.
@@ -140,6 +154,13 @@ func WithS3ForcePathStyle(s3ForcePathStyle bool) Option {
 	}
 }
 
+// WithHTTPClient set the http client for objectStorage.
+func WithHTTPClient(client *http.Client) Option {
+	return func(o *objectStorage) {
+		o.httpClient = client
+	}
+}
+
 // New object storage interface.
 func New(name, region, endpoint, accessKey, secretKey string, options ...Option) (ObjectStorage, error) {
 	o := &objectStorage{
@@ -149,6 +170,20 @@ func New(name, region, endpoint, accessKey, secretKey string, options ...Option)
 		accessKey:        accessKey,
 		secretKey:        secretKey,
 		s3ForcePathStyle: true,
+		httpClient: &http.Client{
+			Transport: &http.Transport{
+				Proxy:                 http.ProxyFromEnvironment,
+				TLSHandshakeTimeout:   time.Second * 20,
+				ResponseHeaderTimeout: time.Second * 30,
+				IdleConnTimeout:       time.Second * 300,
+				MaxIdleConnsPerHost:   500,
+				ReadBufferSize:        32 << 10,
+				WriteBufferSize:       32 << 10,
+				DisableCompression:    true,
+				TLSClientConfig:       &tls.Config{},
+			},
+			Timeout: time.Hour,
+		},
 	}
 
 	for _, opt := range options {
@@ -157,11 +192,11 @@ func New(name, region, endpoint, accessKey, secretKey string, options ...Option)
 
 	switch o.name {
 	case ServiceNameS3:
-		return newS3(o.region, o.endpoint, o.accessKey, o.secretKey, o.s3ForcePathStyle)
+		return newS3(o.region, o.endpoint, o.accessKey, o.secretKey, o.s3ForcePathStyle, o.httpClient)
 	case ServiceNameOSS:
-		return newOSS(o.region, o.endpoint, o.accessKey, o.secretKey)
+		return newOSS(o.region, o.endpoint, o.accessKey, o.secretKey, o.httpClient)
 	case ServiceNameOBS:
-		return newOBS(o.region, o.endpoint, o.accessKey, o.secretKey)
+		return newOBS(o.region, o.endpoint, o.accessKey, o.secretKey, o.httpClient)
 	}
 
 	return nil, fmt.Errorf("unknow service name %s", name)
