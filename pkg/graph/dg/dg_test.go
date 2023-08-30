@@ -25,13 +25,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewDG(t *testing.T) {
+func TestDG_New(t *testing.T) {
 	d := NewDG[string]()
 	assert := assert.New(t)
 	assert.Equal(reflect.TypeOf(d).Elem().Name(), "dg[string]")
 }
 
-func TestDGAddVertex(t *testing.T) {
+func TestDG_AddVertex(t *testing.T) {
 	tests := []struct {
 		name   string
 		id     string
@@ -68,7 +68,7 @@ func TestDGAddVertex(t *testing.T) {
 	}
 }
 
-func TestDGDeleteVertex(t *testing.T) {
+func TestDG_DeleteVertex(t *testing.T) {
 	tests := []struct {
 		name   string
 		expect func(t *testing.T, d DG[string])
@@ -126,7 +126,7 @@ func TestDGDeleteVertex(t *testing.T) {
 	}
 }
 
-func TestDGGetVertex(t *testing.T) {
+func TestDG_GetVertex(t *testing.T) {
 	tests := []struct {
 		name   string
 		expect func(t *testing.T, d DG[string])
@@ -165,7 +165,7 @@ func TestDGGetVertex(t *testing.T) {
 	}
 }
 
-func TestDGVertexVertexCount(t *testing.T) {
+func TestDG_VertexCount(t *testing.T) {
 	tests := []struct {
 		name   string
 		expect func(t *testing.T, d DG[string])
@@ -202,7 +202,7 @@ func TestDGVertexVertexCount(t *testing.T) {
 	}
 }
 
-func TestDGGetVertices(t *testing.T) {
+func TestDG_GetVertices(t *testing.T) {
 	tests := []struct {
 		name   string
 		expect func(t *testing.T, d DG[string])
@@ -243,7 +243,7 @@ func TestDGGetVertices(t *testing.T) {
 	}
 }
 
-func TestDGGetRandomVertices(t *testing.T) {
+func TestDG_GetRandomVertices(t *testing.T) {
 	tests := []struct {
 		name   string
 		expect func(t *testing.T, d DG[string])
@@ -299,7 +299,7 @@ func TestDGGetRandomVertices(t *testing.T) {
 	}
 }
 
-func TestDGGetVertexKeys(t *testing.T) {
+func TestDG_GetVertexKeys(t *testing.T) {
 	tests := []struct {
 		name   string
 		expect func(t *testing.T, d DG[string])
@@ -331,7 +331,7 @@ func TestDGGetVertexKeys(t *testing.T) {
 	}
 }
 
-func TestDGAddEdge(t *testing.T) {
+func TestDG_AddEdge(t *testing.T) {
 	tests := []struct {
 		name   string
 		expect func(t *testing.T, d DG[string])
@@ -421,7 +421,88 @@ func TestDGAddEdge(t *testing.T) {
 	}
 }
 
-func TestDGCanAddEdge(t *testing.T) {
+func TestDG_DeleteEdge(t *testing.T) {
+	tests := []struct {
+		name   string
+		expect func(t *testing.T, d DG[string])
+	}{
+		{
+			name: "delete edge",
+			expect: func(t *testing.T, d DG[string]) {
+				assert := assert.New(t)
+				var (
+					mockVertexEID = "bae"
+					mockVertexFID = "baf"
+				)
+
+				if err := d.AddVertex(mockVertexEID, mockVertexValue); err != nil {
+					assert.NoError(err)
+				}
+
+				if err := d.AddVertex(mockVertexFID, mockVertexValue); err != nil {
+					assert.NoError(err)
+				}
+
+				if err := d.AddEdge(mockVertexEID, mockVertexFID); err != nil {
+					assert.NoError(err)
+				}
+
+				if err := d.DeleteEdge(mockVertexFID, mockVertexEID); err != nil {
+					assert.NoError(err)
+				}
+
+				vf, err := d.GetVertex(mockVertexFID)
+				assert.NoError(err)
+				assert.Equal(vf.Parents.Len(), uint(1))
+				ve, err := d.GetVertex(mockVertexEID)
+				assert.NoError(err)
+				assert.Equal(ve.Children.Len(), uint(1))
+
+				if err := d.DeleteEdge(mockVertexEID, mockVertexFID); err != nil {
+					assert.NoError(err)
+				}
+
+				vf, err = d.GetVertex(mockVertexFID)
+				assert.NoError(err)
+				assert.Equal(vf.Parents.Len(), uint(0))
+				ve, err = d.GetVertex(mockVertexEID)
+				assert.NoError(err)
+				assert.Equal(ve.Children.Len(), uint(0))
+			},
+		},
+		{
+			name: "vertex not found",
+			expect: func(t *testing.T, d DG[string]) {
+				assert := assert.New(t)
+				var (
+					mockVertexEID = "bae"
+					mockVertexFID = "baf"
+				)
+
+				if err := d.AddVertex(mockVertexEID, mockVertexValue); err != nil {
+					assert.NoError(err)
+				}
+
+				if err := d.AddEdge(mockVertexEID, mockVertexFID); err != nil {
+					assert.EqualError(err, ErrVertexNotFound.Error())
+				}
+
+				if err := d.AddEdge(mockVertexFID, mockVertexEID); err != nil {
+					assert.EqualError(err, ErrVertexNotFound.Error())
+				}
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			d := NewDG[string]()
+			tc.expect(t, d)
+		})
+	}
+}
+
+func TestDG_CanAddEdge(t *testing.T) {
 	tests := []struct {
 		name   string
 		expect func(t *testing.T, d DG[string])
@@ -571,13 +652,13 @@ func TestDGCanAddEdge(t *testing.T) {
 	}
 }
 
-func TestDGDeleteEdge(t *testing.T) {
+func TestDG_DeleteVertexInEdges(t *testing.T) {
 	tests := []struct {
 		name   string
 		expect func(t *testing.T, d DG[string])
 	}{
 		{
-			name: "delete edge",
+			name: "delete inedges",
 			expect: func(t *testing.T, d DG[string]) {
 				assert := assert.New(t)
 				var (
@@ -597,47 +678,25 @@ func TestDGDeleteEdge(t *testing.T) {
 					assert.NoError(err)
 				}
 
-				if err := d.DeleteEdge(mockVertexFID, mockVertexEID); err != nil {
+				if err := d.DeleteVertexInEdges(mockVertexFID); err != nil {
 					assert.NoError(err)
 				}
 
 				vf, err := d.GetVertex(mockVertexFID)
 				assert.NoError(err)
-				assert.Equal(vf.Parents.Len(), uint(1))
+				assert.Equal(vf.Children.Len(), uint(0))
 				ve, err := d.GetVertex(mockVertexEID)
 				assert.NoError(err)
-				assert.Equal(ve.Children.Len(), uint(1))
-
-				if err := d.DeleteEdge(mockVertexEID, mockVertexFID); err != nil {
-					assert.NoError(err)
-				}
-
-				vf, err = d.GetVertex(mockVertexFID)
-				assert.NoError(err)
-				assert.Equal(vf.Parents.Len(), uint(0))
-				ve, err = d.GetVertex(mockVertexEID)
-				assert.NoError(err)
-				assert.Equal(ve.Children.Len(), uint(0))
+				assert.Equal(ve.Parents.Len(), uint(0))
 			},
 		},
 		{
 			name: "vertex not found",
 			expect: func(t *testing.T, d DG[string]) {
 				assert := assert.New(t)
-				var (
-					mockVertexEID = "bae"
-					mockVertexFID = "baf"
-				)
+				mockVertexEID := "bae"
 
-				if err := d.AddVertex(mockVertexEID, mockVertexValue); err != nil {
-					assert.NoError(err)
-				}
-
-				if err := d.AddEdge(mockVertexEID, mockVertexFID); err != nil {
-					assert.EqualError(err, ErrVertexNotFound.Error())
-				}
-
-				if err := d.AddEdge(mockVertexFID, mockVertexEID); err != nil {
+				if err := d.DeleteVertexInEdges(mockVertexEID); err != nil {
 					assert.EqualError(err, ErrVertexNotFound.Error())
 				}
 			},
@@ -652,7 +711,66 @@ func TestDGDeleteEdge(t *testing.T) {
 	}
 }
 
-func TestDGSourceVertices(t *testing.T) {
+func TestDG_DeleteVertexOutEdges(t *testing.T) {
+	tests := []struct {
+		name   string
+		expect func(t *testing.T, d DG[string])
+	}{
+		{
+			name: "delete outedges",
+			expect: func(t *testing.T, d DG[string]) {
+				assert := assert.New(t)
+				var (
+					mockVertexEID = "bae"
+					mockVertexFID = "baf"
+				)
+
+				if err := d.AddVertex(mockVertexEID, mockVertexValue); err != nil {
+					assert.NoError(err)
+				}
+
+				if err := d.AddVertex(mockVertexFID, mockVertexValue); err != nil {
+					assert.NoError(err)
+				}
+
+				if err := d.AddEdge(mockVertexEID, mockVertexFID); err != nil {
+					assert.NoError(err)
+				}
+
+				if err := d.DeleteVertexOutEdges(mockVertexEID); err != nil {
+					assert.NoError(err)
+				}
+
+				vf, err := d.GetVertex(mockVertexFID)
+				assert.NoError(err)
+				assert.Equal(vf.Children.Len(), uint(0))
+				ve, err := d.GetVertex(mockVertexEID)
+				assert.NoError(err)
+				assert.Equal(ve.Parents.Len(), uint(0))
+			},
+		},
+		{
+			name: "vertex not found",
+			expect: func(t *testing.T, d DG[string]) {
+				assert := assert.New(t)
+				mockVertexEID := "bae"
+
+				if err := d.DeleteVertexOutEdges(mockVertexEID); err != nil {
+					assert.EqualError(err, ErrVertexNotFound.Error())
+				}
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			d := NewDG[string]()
+			tc.expect(t, d)
+		})
+	}
+}
+
+func TestDG_SourceVertices(t *testing.T) {
 	tests := []struct {
 		name   string
 		expect func(t *testing.T, d DG[string])
@@ -699,7 +817,7 @@ func TestDGSourceVertices(t *testing.T) {
 	}
 }
 
-func TestDGSinkVertices(t *testing.T) {
+func TestDG_SinkVertices(t *testing.T) {
 	tests := []struct {
 		name   string
 		expect func(t *testing.T, d DG[string])
@@ -746,7 +864,7 @@ func TestDGSinkVertices(t *testing.T) {
 	}
 }
 
-func BenchmarkDGAddVertex(b *testing.B) {
+func BenchmarkDG_AddVertex(b *testing.B) {
 	var ids []string
 	d := NewDG[string]()
 	for n := 0; n < b.N; n++ {
@@ -761,7 +879,7 @@ func BenchmarkDGAddVertex(b *testing.B) {
 	}
 }
 
-func BenchmarkDGDeleteVertex(b *testing.B) {
+func BenchmarkDG_DeleteVertex(b *testing.B) {
 	var ids []string
 	d := NewDG[string]()
 	for n := 0; n < b.N; n++ {
@@ -779,7 +897,7 @@ func BenchmarkDGDeleteVertex(b *testing.B) {
 	}
 }
 
-func BenchmarkDGGetRandomKeys(b *testing.B) {
+func BenchmarkDG_GetRandomKeys(b *testing.B) {
 	d := NewDG[string]()
 	for n := 0; n < b.N; n++ {
 		id := fmt.Sprint(n)
@@ -797,7 +915,7 @@ func BenchmarkDGGetRandomKeys(b *testing.B) {
 	}
 }
 
-func BenchmarkDGDeleteVertexWithMultiEdges(b *testing.B) {
+func BenchmarkDG_DeleteVertexWithMultiEdges(b *testing.B) {
 	var ids []string
 	d := NewDG[string]()
 	for n := 0; n < b.N; n++ {
@@ -828,7 +946,7 @@ func BenchmarkDGDeleteVertexWithMultiEdges(b *testing.B) {
 	}
 }
 
-func BenchmarkDGAddEdge(b *testing.B) {
+func BenchmarkDG_AddEdge(b *testing.B) {
 	var ids []string
 	d := NewDG[string]()
 	for n := 0; n < b.N; n++ {
@@ -852,7 +970,7 @@ func BenchmarkDGAddEdge(b *testing.B) {
 	}
 }
 
-func BenchmarkDGAddEdgeWithMultiEdges(b *testing.B) {
+func BenchmarkDG_AddEdgeWithMultiEdges(b *testing.B) {
 	var ids []string
 	d := NewDG[string]()
 	for n := 0; n < b.N; n++ {
@@ -889,7 +1007,7 @@ func BenchmarkDGAddEdgeWithMultiEdges(b *testing.B) {
 	}
 }
 
-func BenchmarkDGDeleteEdge(b *testing.B) {
+func BenchmarkDG_DeleteEdge(b *testing.B) {
 	var ids []string
 	d := NewDG[string]()
 	for n := 0; n < b.N; n++ {

@@ -17,8 +17,6 @@
 package dag
 
 import (
-	"sync"
-
 	"d7y.io/dragonfly/v2/pkg/container/set"
 )
 
@@ -28,7 +26,6 @@ type Vertex[T comparable] struct {
 	Value    T
 	Parents  set.SafeSet[*Vertex[T]]
 	Children set.SafeSet[*Vertex[T]]
-	mu       sync.RWMutex
 }
 
 // New returns a new Vertex instance.
@@ -54,28 +51,4 @@ func (v *Vertex[T]) InDegree() int {
 // OutDegree returns the outdegree of vertex.
 func (v *Vertex[T]) OutDegree() int {
 	return int(v.Children.Len())
-}
-
-// DeleteInEdges deletes inedges of vertex.
-func (v *Vertex[T]) DeleteInEdges() {
-	v.mu.Lock()
-	defer v.mu.Unlock()
-
-	for _, parent := range v.Parents.Values() {
-		parent.Children.Delete(v)
-	}
-
-	v.Parents = set.NewSafeSet[*Vertex[T]]()
-}
-
-// DeleteOutEdges deletes outedges of vertex.
-func (v *Vertex[T]) DeleteOutEdges() {
-	v.mu.Lock()
-	defer v.mu.Unlock()
-
-	for _, child := range v.Children.Values() {
-		child.Parents.Delete(v)
-	}
-
-	v.Children = set.NewSafeSet[*Vertex[T]]()
 }
