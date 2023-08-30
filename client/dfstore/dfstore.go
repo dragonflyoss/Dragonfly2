@@ -40,6 +40,14 @@ import (
 	pkgobjectstorage "d7y.io/dragonfly/v2/pkg/objectstorage"
 )
 
+const (
+	// DefaultGetObjectMetadatasLimit is the default limit of get object metadatas.
+	DefaultGetObjectMetadatasLimit = 1000
+
+	// MaxGetObjectMetadatasLimit is the max limit of get object metadatas.
+	MaxGetObjectMetadatasLimit = 1000
+)
+
 // Dfstore is the interface used for object storage.
 type Dfstore interface {
 	// CreateBucketRequestWithContext returns *http.Request of create bucket.
@@ -226,13 +234,20 @@ type GetObjectMetadatasInput struct {
 	Limit int64
 }
 
+// Convert converts GetObjectMetadatasInput fields.
+func (i *GetObjectMetadatasInput) Convert() {
+	if i.Limit == 0 {
+		i.Limit = DefaultGetObjectMetadatasLimit
+	}
+}
+
 // Validate validates GetObjectMetadatasInput fields.
 func (i *GetObjectMetadatasInput) Validate() error {
 	if i.BucketName == "" {
 		return errors.New("invalid BucketName")
 	}
 
-	if i.Limit < 0 || i.Limit > pkgobjectstorage.DefaultGetObjectMetadatasLimit {
+	if i.Limit <= 0 || i.Limit > MaxGetObjectMetadatasLimit {
 		return errors.New("invalid limit")
 	}
 
@@ -241,6 +256,9 @@ func (i *GetObjectMetadatasInput) Validate() error {
 
 // GetObjectMetadatasRequestWithContext returns *http.Request of getting object metadatas.
 func (dfs *dfstore) GetObjectMetadatasRequestWithContext(ctx context.Context, input *GetObjectMetadatasInput) (*http.Request, error) {
+	// Convert input fields.
+	input.Convert()
+
 	if err := input.Validate(); err != nil {
 		return nil, err
 	}

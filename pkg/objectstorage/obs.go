@@ -122,10 +122,6 @@ func (o *obs) GetObjectMetadata(ctx context.Context, bucketName, objectKey strin
 
 // GetObjectMetadatas returns the metadatas of the objects.
 func (o *obs) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) (*ObjectMetadatas, error) {
-	if limit == 0 {
-		limit = DefaultGetObjectMetadatasLimit
-	}
-
 	resp, err := o.client.ListObjects(&huaweiobs.ListObjectsInput{
 		ListObjsInput: huaweiobs.ListObjsInput{
 			Prefix:    prefix,

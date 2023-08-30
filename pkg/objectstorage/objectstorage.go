@@ -20,7 +20,6 @@ package objectstorage
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"
@@ -169,20 +168,18 @@ func New(name, region, endpoint, accessKey, secretKey string, options ...Option)
 		endpoint:         endpoint,
 		accessKey:        accessKey,
 		secretKey:        secretKey,
-		s3ForcePathStyle: true,
+		s3ForcePathStyle: DefaultS3ForcePathStyle,
 		httpClient: &http.Client{
 			Transport: &http.Transport{
-				Proxy:                 http.ProxyFromEnvironment,
-				TLSHandshakeTimeout:   time.Second * 20,
-				ResponseHeaderTimeout: time.Second * 30,
-				IdleConnTimeout:       time.Second * 300,
-				MaxIdleConnsPerHost:   500,
-				ReadBufferSize:        32 << 10,
-				WriteBufferSize:       32 << 10,
-				DisableCompression:    true,
-				TLSClientConfig:       &tls.Config{},
+				TLSHandshakeTimeout:   DefaultTLSHandshakeTimeout,
+				ResponseHeaderTimeout: DefaultResponseHeaderTimeout,
+				IdleConnTimeout:       DefaultIdleConnTimeout,
+				MaxIdleConnsPerHost:   DefaultMaxIdleConnsPerHost,
+				ReadBufferSize:        DefaultReadBufferSize,
+				WriteBufferSize:       DefaultWriteBufferSize,
+				DisableCompression:    DefaultDisableCompression,
 			},
-			Timeout: time.Hour,
+			Timeout: DefaultTimeout,
 		},
 	}
 
