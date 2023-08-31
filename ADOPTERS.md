@@ -72,8 +72,6 @@ refer to [Setup Dragonfly in Kubernetes](https://d7y.io/docs/getting-started/qui
 
 **_[Huya](https://www.huya.com/)_** - Large-scale image distribution.
 
-**_[China Mobile](https://www.chinamobileltd.com/)_** - Large-scale image and file distribution.
-
 **_[China Unicom](http://www.chinaunicom.com/)_** - Large-scale image and file distribution.
 
 **_[Cainiao](https://global.cainiao.com/)_** - Large-scale image and file distribution.
