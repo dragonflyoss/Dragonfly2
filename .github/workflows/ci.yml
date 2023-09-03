@@ -10,9 +10,6 @@ on:
   schedule:
     - cron: '0 4 * * *'
 
-env:
-  GO_VERSION: '1.20'
-
 jobs:
   test:
     name: Test
@@ -27,7 +24,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v4
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: go.mod
 
       - name: Build manager console assets
         run: |-
@@ -68,7 +65,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: go.mod
 
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v2
