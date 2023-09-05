@@ -11,7 +11,6 @@ on:
     - cron: '0 4 * * *'
 
 env:
-  GO_VERSION: '1.20'
   KIND_VERSION: v0.12.0
   CONTAINERD_VERSION: v1.5.2
   KIND_CONFIG_PATH: test/testdata/kind/config.yaml
@@ -69,7 +68,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v4
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: go.mod
 
       - name: Get dependencies
         run: |
