@@ -936,6 +936,7 @@ func (s *server) ExportTask(ctx context.Context, req *dfdaemonv1.ExportTaskReque
 		// TODO add white list folders to write files
 		return nil, dferrors.New(commonv1.Code_BadRequest, "output file is already exist")
 	}
+
 	// check other stat errors, only os.ErrNotExist is okay
 	if !os.IsNotExist(err) {
 		return nil, dferrors.New(commonv1.Code_ClientError, err.Error())
@@ -957,8 +958,7 @@ func (s *server) ExportTask(ctx context.Context, req *dfdaemonv1.ExportTaskReque
 		return new(emptypb.Empty), s.exportFromPeers(ctx, log, req)
 	}
 
-	err = s.exportFromLocal(ctx, req, task.PeerID)
-	if err != nil {
+	if err := s.exportFromLocal(ctx, req, task.PeerID, log); err != nil {
 		log.Errorf("export from local failed: %s", err)
 		return nil, err
 	}
@@ -966,15 +966,28 @@ func (s *server) ExportTask(ctx context.Context, req *dfdaemonv1.ExportTaskReque
 	return new(emptypb.Empty), nil
 }
 
-func (s *server) exportFromLocal(ctx context.Context, req *dfdaemonv1.ExportTaskRequest, peerID string) error {
-	return s.storageManager.Store(ctx, &storage.StoreRequest{
+func (s *server) exportFromLocal(ctx context.Context, req *dfdaemonv1.ExportTaskRequest, peerID string, log *logger.SugaredLoggerOnWith) error {
+	if err := s.storageManager.Store(ctx, &storage.StoreRequest{
 		CommonTaskRequest: storage.CommonTaskRequest{
 			PeerID:      peerID,
 			TaskID:      idgen.TaskIDV1(req.Url, req.UrlMeta),
 			Destination: req.Output,
 		},
 		StoreDataOnly: true,
-	})
+	}); err != nil {
+		return err
+	}
+
+	// Change file own if uid and gid are set.
+	if req.Uid != 0 && req.Gid != 0 {
+		log.Infof("change own to uid %d gid %d", req.Uid, req.Gid)
+		if err := os.Chown(req.Output, int(req.Uid), int(req.Gid)); err != nil {
+			log.Errorf("change own failed: %s", err)
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (s *server) exportFromPeers(ctx context.Context, log *logger.SugaredLoggerOnWith, req *dfdaemonv1.ExportTaskRequest) error {
