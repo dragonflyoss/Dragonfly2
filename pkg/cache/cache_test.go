@@ -24,6 +24,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	testifyassert "github.com/stretchr/testify/assert"
 )
 
 var (
@@ -183,6 +185,16 @@ func TestCacheKeys(t *testing.T) {
 	if len(keys) != 3 {
 		t.Error("invalid number of cache keys received")
 	}
+}
+
+func TestItems(t *testing.T) {
+	tc := New(DefaultExpiration, 0)
+	tc.Set(v1, "1", 1)
+	tc.Set(v2, "2", DefaultExpiration)
+	tc.Set(v3, "3", DefaultExpiration)
+	m := tc.Items()
+	assert := testifyassert.New(t)
+	assert.Equal(map[string]Item{"bar": {Object: "2", Expiration: 0}, "baz": {Object: "3", Expiration: 0}}, m)
 }
 
 func TestItemCount(t *testing.T) {
