@@ -237,6 +237,14 @@ func Init(cfg *config.Config, logDir string, service service.Service, database *
 	ojob.GET(":id", h.GetJob)
 	ojob.GET("", h.GetJobs)
 
+	// Cluster.
+	oc := oapiv1.Group("/clusters", personalAccessToken)
+	oc.POST("", h.CreateCluster)
+	oc.DELETE(":id", h.DestroyCluster)
+	oc.PATCH(":id", h.UpdateCluster)
+	oc.GET(":id", h.GetCluster)
+	oc.GET("", h.GetClusters)
+
 	// TODO Remove this api.
 	// Compatible with the V1 preheat.
 	pv1 := r.Group("/preheats")
