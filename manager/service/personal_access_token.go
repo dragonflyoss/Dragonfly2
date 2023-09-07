@@ -27,16 +27,11 @@ import (
 )
 
 func (s *service) CreatePersonalAccessToken(ctx context.Context, json types.CreatePersonalAccessTokenRequest) (*models.PersonalAccessToken, error) {
-	scopes := types.DefaultPersonalAccessTokenScopes
-	if json.Scopes != nil {
-		scopes = json.Scopes
-	}
-
 	personalAccessToken := models.PersonalAccessToken{
 		Name:      json.Name,
 		BIO:       json.BIO,
 		Token:     s.generatePersonalAccessToken(),
-		Scopes:    scopes,
+		Scopes:    json.Scopes,
 		State:     models.PersonalAccessTokenStateActive,
 		ExpiredAt: json.ExpiredAt,
 		UserID:    json.UserID,
