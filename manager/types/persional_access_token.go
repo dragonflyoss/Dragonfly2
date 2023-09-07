@@ -24,11 +24,9 @@ const (
 
 	// PersonalAccessTokenScopeJob represents the personal access token whose scope is job.
 	PersonalAccessTokenScopeJob = "job"
-)
 
-var (
-	// DefaultPersonalAccessTokenScopes is the default scopes of personal access token.
-	DefaultPersonalAccessTokenScopes = []string{PersonalAccessTokenScopePreheat, PersonalAccessTokenScopeJob}
+	// PersonalAccessTokenScopeCluster represents the personal access token whose scope is cluster.
+	PersonalAccessTokenScopeCluster = "cluster"
 )
 
 type CreatePersonalAccessTokenRequest struct {
