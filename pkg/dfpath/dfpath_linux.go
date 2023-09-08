@@ -18,6 +18,8 @@
 
 package dfpath
 
+import "os"
+
 const (
 	DefaultWorkHome               = "/usr/local/dragonfly"
 	DefaultWorkHomeMode           = os.FileMode(0700)
