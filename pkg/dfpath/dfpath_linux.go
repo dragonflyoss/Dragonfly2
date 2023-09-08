@@ -20,13 +20,15 @@ package dfpath
 
 import "os"
 
-var DefaultWorkHome = "/usr/local/dragonfly"
-var DefaultWorkHomeMode = os.FileMode(0700)
-var DefaultCacheDir = "/var/cache/dragonfly"
-var DefaultCacheDirMode = os.FileMode(0700)
-var DefaultConfigDir = "/etc/dragonfly"
-var DefaultLogDir = "/var/log/dragonfly"
-var DefaultDataDir = "/var/lib/dragonfly"
-var DefaultDataDirMode = os.FileMode(0700)
-var DefaultPluginDir = "/usr/local/dragonfly/plugins"
-var DefaultDownloadUnixSocketPath = "/var/run/dfdaemon.sock"
+const (
+	DefaultWorkHome               = "/usr/local/dragonfly"
+	DefaultWorkHomeMode           = os.FileMode(0700)
+	DefaultCacheDir               = "/var/cache/dragonfly"
+	DefaultCacheDirMode           = os.FileMode(0700)
+	DefaultConfigDir              = "/etc/dragonfly"
+	DefaultLogDir                 = "/var/log/dragonfly"
+	DefaultDataDir                = "/var/lib/dragonfly"
+	DefaultDataDirMode            = os.FileMode(0700)
+	DefaultPluginDir              = "/usr/local/dragonfly/plugins"
+	DefaultDownloadUnixSocketPath = "/var/run/dfdaemon.sock"
+)
