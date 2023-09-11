@@ -20,7 +20,7 @@ package dfpath
 
 import "os"
 
-const (
+var (
 	DefaultWorkHome               = "/usr/local/dragonfly"
 	DefaultWorkHomeMode           = os.FileMode(0700)
 	DefaultCacheDir               = "/var/cache/dragonfly"
