@@ -25,7 +25,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/os/user"
 )
 
-const (
+var (
 	DefaultWorkHome               = filepath.Join(user.HomeDir(), ".dragonfly")
 	DefaultWorkHomeMode           = os.FileMode(0700)
 	DefaultCacheDir               = filepath.Join(DefaultWorkHome, "cache")
