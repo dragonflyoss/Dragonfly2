@@ -2459,12 +2459,12 @@ func TestServiceV1_AnnounceHost(t *testing.T) {
 func TestServiceV1_LeaveHost(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder)
+		mock   func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder)
 		expect func(t *testing.T, peer *resource.Peer, err error)
 	}{
 		{
 			name: "host not found",
-			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder) {
+			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(nil, false).Times(1),
@@ -2477,10 +2477,11 @@ func TestServiceV1_LeaveHost(t *testing.T) {
 		},
 		{
 			name: "host has not peers",
-			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder) {
+			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(host, true).Times(1),
+					mnt.DeleteHost(host.ID).Return(nil).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
@@ -2490,12 +2491,13 @@ func TestServiceV1_LeaveHost(t *testing.T) {
 		},
 		{
 			name: "peer state is PeerStateLeave",
-			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder) {
+			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
 				host.Peers.Store(mockPeer.ID, mockPeer)
 				mockPeer.FSM.SetState(resource.PeerStateLeave)
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(host, true).Times(1),
+					mnt.DeleteHost(host.ID).Return(nil).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
@@ -2505,12 +2507,13 @@ func TestServiceV1_LeaveHost(t *testing.T) {
 		},
 		{
 			name: "peer state is PeerStatePending",
-			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder) {
+			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
 				host.Peers.Store(mockPeer.ID, mockPeer)
 				mockPeer.FSM.SetState(resource.PeerStatePending)
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(host, true).Times(1),
+					mnt.DeleteHost(host.ID).Return(nil).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
@@ -2521,12 +2524,13 @@ func TestServiceV1_LeaveHost(t *testing.T) {
 		},
 		{
 			name: "peer state is PeerStateReceivedEmpty",
-			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder) {
+			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
 				host.Peers.Store(mockPeer.ID, mockPeer)
 				mockPeer.FSM.SetState(resource.PeerStateReceivedEmpty)
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(host, true).Times(1),
+					mnt.DeleteHost(host.ID).Return(nil).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
@@ -2537,12 +2541,13 @@ func TestServiceV1_LeaveHost(t *testing.T) {
 		},
 		{
 			name: "peer state is PeerStateReceivedTiny",
-			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder) {
+			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
 				host.Peers.Store(mockPeer.ID, mockPeer)
 				mockPeer.FSM.SetState(resource.PeerStateReceivedTiny)
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(host, true).Times(1),
+					mnt.DeleteHost(host.ID).Return(nil).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
@@ -2553,12 +2558,13 @@ func TestServiceV1_LeaveHost(t *testing.T) {
 		},
 		{
 			name: "peer state is PeerStateReceivedSmall",
-			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder) {
+			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
 				host.Peers.Store(mockPeer.ID, mockPeer)
 				mockPeer.FSM.SetState(resource.PeerStateReceivedSmall)
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(host, true).Times(1),
+					mnt.DeleteHost(host.ID).Return(nil).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
@@ -2569,12 +2575,13 @@ func TestServiceV1_LeaveHost(t *testing.T) {
 		},
 		{
 			name: "peer state is PeerStateReceivedNormal",
-			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder) {
+			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
 				host.Peers.Store(mockPeer.ID, mockPeer)
 				mockPeer.FSM.SetState(resource.PeerStateReceivedNormal)
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(host, true).Times(1),
+					mnt.DeleteHost(host.ID).Return(nil).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
@@ -2585,12 +2592,13 @@ func TestServiceV1_LeaveHost(t *testing.T) {
 		},
 		{
 			name: "peer state is PeerStateRunning",
-			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder) {
+			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
 				host.Peers.Store(mockPeer.ID, mockPeer)
 				mockPeer.FSM.SetState(resource.PeerStateRunning)
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(host, true).Times(1),
+					mnt.DeleteHost(host.ID).Return(nil).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
@@ -2601,12 +2609,13 @@ func TestServiceV1_LeaveHost(t *testing.T) {
 		},
 		{
 			name: "peer state is PeerStateBackToSource",
-			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder) {
+			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
 				host.Peers.Store(mockPeer.ID, mockPeer)
 				mockPeer.FSM.SetState(resource.PeerStateBackToSource)
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(host, true).Times(1),
+					mnt.DeleteHost(host.ID).Return(nil).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
@@ -2617,12 +2626,13 @@ func TestServiceV1_LeaveHost(t *testing.T) {
 		},
 		{
 			name: "peer state is PeerStateSucceeded",
-			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder) {
+			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
 				host.Peers.Store(mockPeer.ID, mockPeer)
 				mockPeer.FSM.SetState(resource.PeerStateSucceeded)
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(host, true).Times(1),
+					mnt.DeleteHost(host.ID).Return(nil).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
@@ -2633,12 +2643,13 @@ func TestServiceV1_LeaveHost(t *testing.T) {
 		},
 		{
 			name: "peer state is PeerStateFailed",
-			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder) {
+			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, ms *mocks.MockSchedulingMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
 				host.Peers.Store(mockPeer.ID, mockPeer)
 				mockPeer.FSM.SetState(resource.PeerStateFailed)
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(host, true).Times(1),
+					mnt.DeleteHost(host.ID).Return(nil).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
@@ -2666,7 +2677,7 @@ func TestServiceV1_LeaveHost(t *testing.T) {
 			mockPeer := resource.NewPeer(mockSeedPeerID, mockResourceConfig, mockTask, host)
 			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, res, scheduling, dynconfig, storage, networkTopology)
 
-			tc.mock(host, mockPeer, hostManager, scheduling.EXPECT(), res.EXPECT(), hostManager.EXPECT())
+			tc.mock(host, mockPeer, hostManager, scheduling.EXPECT(), res.EXPECT(), hostManager.EXPECT(), networkTopology.EXPECT())
 			tc.expect(t, mockPeer, svc.LeaveHost(context.Background(), &schedulerv1.LeaveHostRequest{
 				Id: idgen.HostIDV2(host.IP, host.Hostname),
 			}))

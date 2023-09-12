@@ -659,6 +659,10 @@ func (v *V2) LeaveHost(ctx context.Context, req *schedulerv2.LeaveHostRequest) e
 	}
 
 	host.LeavePeers()
+	if err := v.networkTopology.DeleteHost(host.ID); err != nil {
+		return err
+	}
+
 	return nil
 }
 
