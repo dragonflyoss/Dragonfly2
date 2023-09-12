@@ -242,7 +242,6 @@ func TestNetworkTopology_Store(t *testing.T) {
 				mockRDBClient.MatchExpectationsInOrder(true)
 				mockRDBClient.ExpectExists(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(0)
 				mockRDBClient.Regexp().ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "createdAt", `.*`).SetVal(1)
-				mockRDBClient.ExpectSet(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID), 0, 0).SetVal("ok")
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
@@ -261,20 +260,6 @@ func TestNetworkTopology_Store(t *testing.T) {
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.EqualError(networkTopology.Store(mockSeedHost.ID, mockHost.ID), "set createdAt error")
-			},
-		},
-		{
-			name: "set probed count error when network topology between src host and destination host does not exist",
-			mock: func(mockRDBClient redismock.ClientMock) {
-				mockRDBClient.MatchExpectationsInOrder(true)
-				mockRDBClient.ExpectExists(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(0)
-				mockRDBClient.Regexp().ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "createdAt", `.*`).SetVal(1)
-				mockRDBClient.ExpectSet(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID), 0, 0).SetErr(errors.New("set probed count error"))
-			},
-			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
-				assert := assert.New(t)
-				assert.NoError(err)
-				assert.EqualError(networkTopology.Store(mockSeedHost.ID, mockHost.ID), "set probed count error")
 			},
 		},
 	}
@@ -324,7 +309,7 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 					probedCountKeys = append(probedCountKeys, pkgredis.MakeProbedCountKeyInScheduler(host.ID))
 				}
 
-				mockRDBClient.ExpectMGet(probedCountKeys...).SetVal([]interface{}{uint64(6), uint64(5), uint64(4), uint64(3), uint64(2), uint64(1)})
+				mockRDBClient.ExpectMGet(probedCountKeys...).SetVal([]interface{}{"6", "5", "4", "3", "2", "1"})
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error, hosts []*resource.Host) {
 				assert := assert.New(t)
@@ -357,7 +342,7 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 					probedCountKeys = append(probedCountKeys, pkgredis.MakeProbedCountKeyInScheduler(host.ID))
 				}
 
-				mockRDBClient.ExpectMGet(probedCountKeys...).SetVal([]interface{}{uint64(1)})
+				mockRDBClient.ExpectMGet(probedCountKeys...).SetVal([]interface{}{"1"})
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error, hosts []*resource.Host) {
 				assert := assert.New(t)
@@ -441,7 +426,7 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 					probedCountKeys = append(probedCountKeys, pkgredis.MakeProbedCountKeyInScheduler(host.ID))
 				}
 
-				mockRDBClient.ExpectMGet(probedCountKeys...).SetVal([]interface{}{"foo", uint64(5), uint64(4), uint64(3), uint64(2), uint64(1)})
+				mockRDBClient.ExpectMGet(probedCountKeys...).SetVal([]interface{}{"foo", "5", "4", "3", "2", "1"})
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error, hosts []*resource.Host) {
 				assert := assert.New(t)
@@ -628,6 +613,53 @@ func TestNetworkTopology_Probes(t *testing.T) {
 
 			networkTopology, err := NewNetworkTopology(mockNetworkTopologyConfig, rdb, res, storage)
 			tc.expect(t, networkTopology, err)
+		})
+	}
+}
+
+func TestNetworkTopology_InitProbedCount(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(mockRDBClient redismock.ClientMock)
+		expect func(t *testing.T, networkTopology NetworkTopology, err error)
+	}{
+		{
+			name: "initialize probed count",
+			mock: func(mockRDBClient redismock.ClientMock) {
+				mockRDBClient.ExpectSet(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID), 0, 0).SetVal("ok")
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.NoError(networkTopology.InitProbedCount(mockHost.ID))
+			},
+		},
+		{
+			name: "initialize probed count error",
+			mock: func(mockRDBClient redismock.ClientMock) {
+				mockRDBClient.ExpectSet(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID), 0, 0).SetErr(errors.New("initialize probed count error"))
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.EqualError(networkTopology.InitProbedCount(mockHost.ID), "initialize probed count error")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+
+			rdb, mockRDBClient := redismock.NewClientMock()
+			res := resource.NewMockResource(ctl)
+			storage := storagemocks.NewMockStorage(ctl)
+			tc.mock(mockRDBClient)
+
+			networkTopology, err := NewNetworkTopology(mockNetworkTopologyConfig, rdb, res, storage)
+			tc.expect(t, networkTopology, err)
+			mockRDBClient.ClearExpect()
 		})
 	}
 }

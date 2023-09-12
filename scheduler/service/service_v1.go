@@ -562,6 +562,12 @@ func (v *V1) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequ
 		)
 		v.resource.HostManager().Store(host)
 		host.Log.Infof("announce new host: %#v", req)
+
+		// Initializes the number of times the host has been probed in redis.
+		if err := v.networkTopology.InitProbedCount(req.GetId()); err != nil {
+			host.Log.Error(err)
+		}
+
 		return nil
 	}
 
@@ -641,6 +647,11 @@ func (v *V1) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequ
 			GoVersion:  req.Build.GetGoVersion(),
 			Platform:   req.Build.GetPlatform(),
 		}
+	}
+
+	// Initializes the number of times the host has been probed in redis.
+	if err := v.networkTopology.InitProbedCount(req.GetId()); err != nil {
+		host.Log.Error(err)
 	}
 
 	return nil
