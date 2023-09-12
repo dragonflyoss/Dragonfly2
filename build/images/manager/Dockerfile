@@ -1,16 +1,16 @@
 ARG BASE_IMAGE=alpine:3.16
 
-FROM node:12-alpine as console-builder
+FROM node:18-alpine as console-builder
 
 WORKDIR /build
 
 COPY ./manager/console/package.json /build
 
-RUN npm install --loglevel warn --progress false
+RUN yarn install --frozen-lockfile
 
 COPY ./manager/console /build
 
-RUN npm run build
+RUN yarn build
 
 FROM golang:1.20.1-alpine3.16 as server-builder
 

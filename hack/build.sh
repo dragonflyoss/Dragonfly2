@@ -124,8 +124,8 @@ build-manager-console() {
     CONSOLE_ASSETS=$CONSOLE_DIR/dist/*
     MANAGER_ASSETS_DIR=$MANAGER_DIR/dist
     docker run --workdir=/build \
-        --rm -v ${CONSOLE_DIR}:/build node:12-alpine \
-        sh -c "npm install --loglevel warn --progress false && npm run build"
+        --rm -v ${CONSOLE_DIR}:/build node:18-alpine \
+        sh -c "yarn install --frozen-lockfile && yarn build"
     cp -r $CONSOLE_ASSETS $MANAGER_ASSETS_DIR
 }
 
