@@ -6,7 +6,7 @@ WORKDIR /build
 
 COPY ./manager/console/package.json /build
 
-RUN yarn install --frozen-lockfile
+RUN yarn install --frozen-lockfile --network-timeout 1000000
 
 COPY ./manager/console /build
 
