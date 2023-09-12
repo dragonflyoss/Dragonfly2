@@ -23,7 +23,7 @@ jobs:
             platforms: linux/amd64,linux/arm64
           - module: trainer
             platforms: linux/amd64,linux/arm64
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
       - name: Check out code
         uses: actions/checkout@v4
