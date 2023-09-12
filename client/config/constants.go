@@ -24,22 +24,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
-// Reason of backing to source.
-const (
-	BackSourceReasonNone          = 0
-	BackSourceReasonRegisterFail  = 1
-	BackSourceReasonMd5NotMatch   = 2
-	BackSourceReasonDownloadError = 3
-	BackSourceReasonNoSpace       = 4
-	BackSourceReasonInitError     = 5
-	BackSourceReasonWriteError    = 6
-	BackSourceReasonHostSysError  = 7
-	BackSourceReasonNodeEmpty     = 8
-	BackSourceReasonSourceError   = 10
-	BackSourceReasonUserSpecified = 100
-	ForceNotBackSourceAddition    = 1000
-)
-
 // Download limit.
 const (
 	DefaultPerPeerDownloadLimit = 512 * unit.MB
@@ -50,21 +34,14 @@ const (
 
 // Others.
 const (
-	DefaultTimestampFormat = "2006-01-02 15:04:05"
-	SchemaHTTP             = "http"
-
 	DefaultTaskExpireTime  = 6 * time.Hour
 	DefaultGCInterval      = 1 * time.Minute
 	DefaultDaemonAliveTime = 5 * time.Minute
 	DefaultScheduleTimeout = 5 * time.Minute
-	DefaultDownloadTimeout = 5 * time.Minute
 
-	DefaultSchedulerSchema = "http"
-	DefaultSchedulerIP     = "127.0.0.1"
-	DefaultSchedulerPort   = 8002
+	DefaultSchedulerIP   = "127.0.0.1"
+	DefaultSchedulerPort = 8002
 
-	DefaultPieceChanSize              = 16
-	DefaultPieceQueueExponent         = 10
 	DefaultPieceDispatcherRandomRatio = 0.1
 	DefaultObjectMaxReplicas          = 3
 )
