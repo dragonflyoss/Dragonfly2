@@ -700,7 +700,6 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 					md.GetSchedulerClusterClientConfig().Return(managertypes.SchedulerClusterClientConfig{LoadLimit: 10}, nil).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(host, true).Times(1),
-					mnt.InitProbedCount(host.ID).Return(nil).Times(1),
 				)
 
 				assert := assert.New(t)
@@ -801,7 +800,6 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 					md.GetSchedulerClusterClientConfig().Return(managertypes.SchedulerClusterClientConfig{}, errors.New("foo")).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(host, true).Times(1),
-					mnt.InitProbedCount(host.ID).Return(nil).Times(1),
 				)
 
 				assert := assert.New(t)

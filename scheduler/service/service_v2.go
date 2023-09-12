@@ -639,11 +639,6 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 		}
 	}
 
-	// Initializes the number of times the host has been probed in redis.
-	if err := v.networkTopology.InitProbedCount(req.Host.GetId()); err != nil {
-		host.Log.Error(err)
-	}
-
 	return nil
 }
 
