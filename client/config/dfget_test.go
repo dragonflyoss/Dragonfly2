@@ -25,6 +25,7 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/client/util"
+	"d7y.io/dragonfly/v2/cmd/dependency/base"
 )
 
 func TestDfgetConfig_Validate(t *testing.T) {
@@ -135,6 +136,65 @@ func TestDfgetConfig_Validate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			err := tc.cfg.Validate()
 			tc.expect(t, err)
+		})
+	}
+}
+
+func TestDfgetConfig_Convert(t *testing.T) {
+	tests := []struct {
+		name   string
+		cfg    *ClientOption
+		args   []string
+		expect func(t *testing.T, cfg *ClientOption, err error)
+	}{
+		{
+			name: "Output is nil",
+			cfg: &ClientOption{
+				URL:    "http://path/to/file/",
+				Output: "",
+			},
+			expect: func(t *testing.T, cfg *ClientOption, err error) {
+				assert := testifyassert.New(t)
+				assert.NoError(err)
+			},
+		},
+		{
+			name: "URL is nil",
+			cfg: &ClientOption{
+				URL:    "",
+				Output: "/path/to/file",
+				Digest: "11111111111111111111111111111111",
+				Tag:    "v1.0.0",
+				Options: base.Options{
+					Console: true,
+				},
+				ShowProgress: true,
+			},
+			args: []string{"http://path/to/file"},
+			expect: func(t *testing.T, cfg *ClientOption, err error) {
+				assert := testifyassert.New(t)
+				assert.NoError(err)
+				assert.Equal("", cfg.Tag)
+				assert.Equal(false, cfg.ShowProgress)
+			},
+		},
+		{
+			name: "URL is invaild",
+			cfg: &ClientOption{
+				URL:    "file/",
+				Output: "",
+			},
+			expect: func(t *testing.T, cfg *ClientOption, err error) {
+				assert := testifyassert.New(t)
+				assert.EqualError(err, "get output from url[file/] error")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.cfg.Convert(tc.args)
+			tc.expect(t, tc.cfg, err)
 		})
 	}
 }
