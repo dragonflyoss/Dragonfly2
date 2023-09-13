@@ -178,6 +178,7 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 	}
 
 	if len(candidateHosts) <= nt.config.Probe.Count {
+		logger.Infof("candidateHosts:", candidateHosts)
 		return candidateHosts, nil
 	}
 
@@ -207,6 +208,7 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 		return probedCounts[i] < probedCounts[j]
 	})
 
+	logger.Infof("candidateHosts:", candidateHosts)
 	return candidateHosts[:nt.config.Probe.Count], nil
 }
 
