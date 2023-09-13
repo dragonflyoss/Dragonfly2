@@ -106,6 +106,7 @@ func (nt *networkTopology) syncProbes() error {
 		},
 	})
 	if err != nil {
+		logger.Errorf("stream error: %s", err)
 		return err
 	}
 
@@ -115,6 +116,7 @@ func (nt *networkTopology) syncProbes() error {
 			return nil
 		}
 
+		logger.Errorf("resp error: %s", err)
 		return err
 	}
 
@@ -133,6 +135,7 @@ func (nt *networkTopology) syncProbes() error {
 				},
 			},
 		}); err != nil {
+			logger.Errorf("probes error: %s", err)
 			return err
 		}
 	}
@@ -146,6 +149,7 @@ func (nt *networkTopology) syncProbes() error {
 				},
 			},
 		}); err != nil {
+			logger.Errorf("failedProbes error: %s", err)
 			return err
 		}
 	}
@@ -183,6 +187,8 @@ func (nt *networkTopology) pingHosts(destHosts []*v1.Host) ([]*schedulerv1.Probe
 					Description: err.Error(),
 				})
 
+				logger.Errorf("failedProbes error: %s", err)
+				logger.Errorf("ip error: %s", destHost.Ip)
 				return
 			}
 
