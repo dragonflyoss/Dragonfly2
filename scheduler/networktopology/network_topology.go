@@ -173,12 +173,16 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 	blocklist := set.NewSafeSet[string]()
 	blocklist.Add(hostID)
 	candidateHosts := nt.resource.HostManager().LoadRandomHosts(findProbedCandidateHostsLimit, blocklist)
+	logger.Info("host id %s 's candidateHost:", hostID)
+	for _, i := range candidateHosts {
+		logger.Info(i.ID)
+	}
+
 	if len(candidateHosts) == 0 {
 		return nil, errors.New("probed hosts not found")
 	}
 
 	if len(candidateHosts) <= nt.config.Probe.Count {
-		logger.Infof("candidateHosts:", candidateHosts)
 		return candidateHosts, nil
 	}
 
@@ -208,7 +212,6 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 		return probedCounts[i] < probedCounts[j]
 	})
 
-	logger.Infof("candidateHosts:", candidateHosts)
 	return candidateHosts[:nt.config.Probe.Count], nil
 }
 
