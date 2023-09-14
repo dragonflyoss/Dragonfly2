@@ -173,34 +173,23 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 	blocklist := set.NewSafeSet[string]()
 	blocklist.Add(hostID)
 	candidateHosts := nt.resource.HostManager().LoadRandomHosts(findProbedCandidateHostsLimit, blocklist)
-	logger.Infof("host id %s 's candidateHost:", hostID)
-	for _, i := range candidateHosts {
-		logger.Info(i.IP)
-	}
-
-	logger.Infof("candidateHost len:%d", len(candidateHosts))
 	if len(candidateHosts) == 0 {
 		return nil, errors.New("probed hosts not found")
 	}
 
-	logger.Infof("probe count:%d", nt.config.Probe.Count)
 	if len(candidateHosts) <= nt.config.Probe.Count {
 		return candidateHosts, nil
 	}
 
 	var probedCountKeys []string
-	logger.Infof("probe count key:")
 	for _, candidateHost := range candidateHosts {
 		probedCountKeys = append(probedCountKeys, pkgredis.MakeProbedCountKeyInScheduler(candidateHost.ID))
-		logger.Infof("probedCountKey:%s", pkgredis.MakeProbedCountKeyInScheduler(candidateHost.ID))
 	}
 
 	rawProbedCounts, err := nt.rdb.MGet(ctx, probedCountKeys...).Result()
 	if err != nil {
 		return nil, err
 	}
-
-	logger.Infof("rawProbedCounts:%#v", rawProbedCounts)
 
 	// Filter invalid probed count. If probed key not exist, the probed count is nil.
 	var probedCounts []uint64
@@ -213,14 +202,11 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 		probedCounts = append(probedCounts, probeCount)
 	}
 
-	logger.Infof("probedCounts:%#v", probedCounts)
-
 	// Sort candidate hosts by probed count.
 	sort.Slice(candidateHosts, func(i, j int) bool {
 		return probedCounts[i] < probedCounts[j]
 	})
 
-	logger.Infof("candidateHosts:%#v", candidateHosts)
 	return candidateHosts[:nt.config.Probe.Count], nil
 }
 

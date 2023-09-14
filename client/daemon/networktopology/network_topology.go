@@ -116,16 +116,11 @@ func (nt *networkTopology) syncProbes() error {
 			return nil
 		}
 
-		logger.Errorf("resp error: %s", err)
 		return err
 	}
 
-	logger.Infof("resp.Hosts:%#v", resp.Hosts)
 	// Ping the destination host with the ICMP protocol.
 	probes, failedProbes := nt.pingHosts(resp.Hosts)
-	logger.Infof("probes:%#v", probes)
-	logger.Infof("failedProbes:%#v", failedProbes)
-
 	if len(probes) > 0 {
 		if err := stream.Send(&schedulerv1.SyncProbesRequest{
 			Host: host,
@@ -187,8 +182,6 @@ func (nt *networkTopology) pingHosts(destHosts []*v1.Host) ([]*schedulerv1.Probe
 					Description: err.Error(),
 				})
 
-				logger.Errorf("failedProbes error: %s", err)
-				logger.Errorf("ip error: %s", destHost.Ip)
 				return
 			}
 
