@@ -617,53 +617,6 @@ func TestNetworkTopology_Probes(t *testing.T) {
 	}
 }
 
-func TestNetworkTopology_InitProbedCount(t *testing.T) {
-	tests := []struct {
-		name   string
-		mock   func(mockRDBClient redismock.ClientMock)
-		expect func(t *testing.T, networkTopology NetworkTopology, err error)
-	}{
-		{
-			name: "initialize probed count",
-			mock: func(mockRDBClient redismock.ClientMock) {
-				mockRDBClient.ExpectSet(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID), 0, 0).SetVal("ok")
-			},
-			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
-				assert := assert.New(t)
-				assert.NoError(err)
-				assert.NoError(networkTopology.InitProbedCount(mockHost.ID))
-			},
-		},
-		{
-			name: "initialize probed count error",
-			mock: func(mockRDBClient redismock.ClientMock) {
-				mockRDBClient.ExpectSet(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID), 0, 0).SetErr(errors.New("initialize probed count error"))
-			},
-			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
-				assert := assert.New(t)
-				assert.NoError(err)
-				assert.EqualError(networkTopology.InitProbedCount(mockHost.ID), "initialize probed count error")
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			ctl := gomock.NewController(t)
-			defer ctl.Finish()
-
-			rdb, mockRDBClient := redismock.NewClientMock()
-			res := resource.NewMockResource(ctl)
-			storage := storagemocks.NewMockStorage(ctl)
-			tc.mock(mockRDBClient)
-
-			networkTopology, err := NewNetworkTopology(mockNetworkTopologyConfig, rdb, res, storage)
-			tc.expect(t, networkTopology, err)
-			mockRDBClient.ClearExpect()
-		})
-	}
-}
-
 func TestNetworkTopology_ProbedCount(t *testing.T) {
 	tests := []struct {
 		name   string

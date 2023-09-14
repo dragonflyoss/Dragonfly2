@@ -2028,7 +2028,7 @@ func TestServiceV1_AnnounceHost(t *testing.T) {
 	tests := []struct {
 		name string
 		req  *schedulerv1.AnnounceHostRequest
-		run  func(t *testing.T, svc *V1, req *schedulerv1.AnnounceHostRequest, host *resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder)
+		run  func(t *testing.T, svc *V1, req *schedulerv1.AnnounceHostRequest, host *resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder)
 	}{
 		{
 			name: "host not found",
@@ -2126,7 +2126,6 @@ func TestServiceV1_AnnounceHost(t *testing.T) {
 						assert.NotEqual(host.UpdatedAt.Load().Nanosecond(), 0)
 						assert.NotNil(host.Log)
 					}).Return().Times(1),
-					mnt.InitProbedCount(host.ID).Return(nil).Times(1),
 				)
 
 				assert := assert.New(t)
@@ -2196,7 +2195,7 @@ func TestServiceV1_AnnounceHost(t *testing.T) {
 					Platform:   mockBuild.Platform,
 				},
 			},
-			run: func(t *testing.T, svc *V1, req *schedulerv1.AnnounceHostRequest, host *resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
+			run: func(t *testing.T, svc *V1, req *schedulerv1.AnnounceHostRequest, host *resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
 					md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{}, errors.New("foo")).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
@@ -2229,7 +2228,6 @@ func TestServiceV1_AnnounceHost(t *testing.T) {
 						assert.NotEqual(host.UpdatedAt.Load().Nanosecond(), 0)
 						assert.NotNil(host.Log)
 					}).Return().Times(1),
-					mnt.InitProbedCount(host.ID).Return(nil).Times(1),
 				)
 
 				assert := assert.New(t)
@@ -2299,7 +2297,7 @@ func TestServiceV1_AnnounceHost(t *testing.T) {
 					Platform:   mockBuild.Platform,
 				},
 			},
-			run: func(t *testing.T, svc *V1, req *schedulerv1.AnnounceHostRequest, host *resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
+			run: func(t *testing.T, svc *V1, req *schedulerv1.AnnounceHostRequest, host *resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
 					md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{LoadLimit: 10}, nil).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
@@ -2397,7 +2395,7 @@ func TestServiceV1_AnnounceHost(t *testing.T) {
 					Platform:   mockBuild.Platform,
 				},
 			},
-			run: func(t *testing.T, svc *V1, req *schedulerv1.AnnounceHostRequest, host *resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
+			run: func(t *testing.T, svc *V1, req *schedulerv1.AnnounceHostRequest, host *resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
 					md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{}, errors.New("foo")).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),

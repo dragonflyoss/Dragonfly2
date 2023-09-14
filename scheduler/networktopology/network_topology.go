@@ -194,6 +194,8 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 	// Filter invalid probed count. If probed key not exist, the probed count is nil.
 	var probedCounts []uint64
 	for _, rawProbedCount := range rawProbedCounts {
+		value, ok := rawProbedCount.(string)
+
 		probeCount, err := strconv.ParseUint(rawProbedCount.(string), 10, 64)
 		if err != nil {
 			return nil, errors.New("invalid probed count")
@@ -250,18 +252,6 @@ func (nt *networkTopology) DeleteHost(hostID string) error {
 // Probes loads probes interface by source host id and destination host id.
 func (nt *networkTopology) Probes(srcHostID, destHostID string) Probes {
 	return NewProbes(nt.config.Probe, nt.rdb, srcHostID, destHostID)
-}
-
-// InitProbedCount initializes the number of times the host has been probed in redis when announces host to scheduler.
-func (nt *networkTopology) InitProbedCount(hostID string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
-	defer cancel()
-
-	if err := nt.rdb.Set(ctx, pkgredis.MakeProbedCountKeyInScheduler(hostID), 0, 0).Err(); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // ProbedCount is the number of times the host has been probed.
