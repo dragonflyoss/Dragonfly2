@@ -190,7 +190,17 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 
 	// Filter invalid probed count. If probed key not exist, the probed count is nil.
 	var probedCounts []uint64
-	for _, rawProbedCount := range rawProbedCounts {
+	for i, rawProbedCount := range rawProbedCounts {
+		// Initialize the probedCount value of host in redis when the host is first selected as the candidate probe target.
+		if rawProbedCount == nil {
+			if err := nt.rdb.Set(ctx, pkgredis.MakeProbedCountKeyInScheduler(candidateHosts[i].ID), 0, 0).Err(); err != nil {
+				return nil, err
+			}
+
+			probedCounts = append(probedCounts, 0)
+			continue
+		}
+
 		value, ok := rawProbedCount.(string)
 		if !ok {
 			return nil, errors.New("invalid value type")
