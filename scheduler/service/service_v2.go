@@ -647,10 +647,15 @@ func (v *V2) LeaveHost(ctx context.Context, req *schedulerv2.LeaveHostRequest) e
 		return status.Error(codes.NotFound, msg)
 	}
 
+	// Leave peers in host.
 	host.LeavePeers()
-	if err := v.networkTopology.DeleteHost(host.ID); err != nil {
-		logger.Errorf("delete network topology host error: %s", err.Error())
-		return err
+
+	// Delete host from network topology.
+	if v.networkTopology != nil {
+		if err := v.networkTopology.DeleteHost(host.ID); err != nil {
+			logger.Errorf("delete network topology host error: %s", err.Error())
+			return err
+		}
 	}
 
 	return nil

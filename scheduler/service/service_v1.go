@@ -658,10 +658,15 @@ func (v *V1) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostRequest) e
 		return dferrors.New(commonv1.Code_BadRequest, msg)
 	}
 
+	// Leave peers in host.
 	host.LeavePeers()
-	if err := v.networkTopology.DeleteHost(host.ID); err != nil {
-		logger.Errorf("delete network topology host error: %s", err.Error())
-		return err
+
+	// Delete host from network topology.
+	if v.networkTopology != nil {
+		if err := v.networkTopology.DeleteHost(host.ID); err != nil {
+			logger.Errorf("delete network topology host error: %s", err.Error())
+			return err
+		}
 	}
 
 	return nil
