@@ -78,20 +78,6 @@ func (mr *MockNetworkTopologyMockRecorder) Has(arg0, arg1 interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Has", reflect.TypeOf((*MockNetworkTopology)(nil).Has), arg0, arg1)
 }
 
-// InitProbedCount mocks base method.
-func (m *MockNetworkTopology) InitProbedCount(arg0 string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InitProbedCount", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// InitProbedCount indicates an expected call of InitProbedCount.
-func (mr *MockNetworkTopologyMockRecorder) InitProbedCount(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InitProbedCount", reflect.TypeOf((*MockNetworkTopology)(nil).InitProbedCount), arg0)
-}
-
 // ProbedCount mocks base method.
 func (m *MockNetworkTopology) ProbedCount(arg0 string) (uint64, error) {
 	m.ctrl.T.Helper()

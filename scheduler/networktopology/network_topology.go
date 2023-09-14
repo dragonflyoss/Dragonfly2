@@ -72,9 +72,6 @@ type NetworkTopology interface {
 	// Probes loads probes interface by source host id and destination host id.
 	Probes(string, string) Probes
 
-	// InitProbedCount initializes the number of times the host has been probed in redis when announces host to scheduler.
-	InitProbedCount(string) error
-
 	// ProbedCount is the number of times the host has been probed.
 	ProbedCount(string) (uint64, error)
 
@@ -195,8 +192,11 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 	var probedCounts []uint64
 	for _, rawProbedCount := range rawProbedCounts {
 		value, ok := rawProbedCount.(string)
+		if !ok {
+			return nil, errors.New("invalid value type")
+		}
 
-		probeCount, err := strconv.ParseUint(rawProbedCount.(string), 10, 64)
+		probeCount, err := strconv.ParseUint(value, 10, 64)
 		if err != nil {
 			return nil, errors.New("invalid probed count")
 		}

@@ -518,7 +518,6 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 						assert.NotEqual(host.UpdatedAt.Load().Nanosecond(), 0)
 						assert.NotNil(host.Log)
 					}).Return().Times(1),
-					mnt.InitProbedCount(host.ID).Return(nil).Times(1),
 				)
 
 				assert := assert.New(t)
@@ -623,7 +622,6 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 						assert.NotEqual(host.UpdatedAt.Load().Nanosecond(), 0)
 						assert.NotNil(host.Log)
 					}).Return().Times(1),
-					mnt.InitProbedCount(host.ID).Return(nil).Times(1),
 				)
 
 				assert := assert.New(t)
@@ -847,7 +845,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, res, scheduling, dynconfig, storage, networkTopology)
 
-			tc.run(t, svc, tc.req, host, hostManager, res.EXPECT(), hostManager.EXPECT(), dynconfig.EXPECT(), networkTopology.EXPECT())
+			tc.run(t, svc, tc.req, host, hostManager, res.EXPECT(), hostManager.EXPECT(), dynconfig.EXPECT())
 		})
 	}
 }

@@ -2093,7 +2093,7 @@ func TestServiceV1_AnnounceHost(t *testing.T) {
 					Platform:   mockBuild.Platform,
 				},
 			},
-			run: func(t *testing.T, svc *V1, req *schedulerv1.AnnounceHostRequest, host *resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
+			run: func(t *testing.T, svc *V1, req *schedulerv1.AnnounceHostRequest, host *resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
 					md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{LoadLimit: 10}, nil).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
@@ -2447,7 +2447,7 @@ func TestServiceV1_AnnounceHost(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, res, scheduling, dynconfig, storage, networkTopology)
 
-			tc.run(t, svc, tc.req, host, hostManager, res.EXPECT(), hostManager.EXPECT(), dynconfig.EXPECT(), networkTopology.EXPECT())
+			tc.run(t, svc, tc.req, host, hostManager, res.EXPECT(), hostManager.EXPECT(), dynconfig.EXPECT())
 		})
 	}
 }
