@@ -106,7 +106,6 @@ func (nt *networkTopology) syncProbes() error {
 		},
 	})
 	if err != nil {
-		logger.Errorf("stream error: %s", err)
 		return err
 	}
 
@@ -130,7 +129,6 @@ func (nt *networkTopology) syncProbes() error {
 				},
 			},
 		}); err != nil {
-			logger.Errorf("probes error: %s", err)
 			return err
 		}
 	}
@@ -144,7 +142,6 @@ func (nt *networkTopology) syncProbes() error {
 				},
 			},
 		}); err != nil {
-			logger.Errorf("failedProbes error: %s", err)
 			return err
 		}
 	}
