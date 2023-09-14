@@ -560,6 +560,7 @@ func (v *V1) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequ
 			req.GetId(), req.GetIp(), req.GetHostname(), req.GetPort(), req.GetDownloadPort(),
 			types.ParseHostType(req.GetType()), options...,
 		)
+
 		v.resource.HostManager().Store(host)
 		host.Log.Infof("announce new host: %#v", req)
 		return nil
@@ -658,6 +659,11 @@ func (v *V1) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostRequest) e
 	}
 
 	host.LeavePeers()
+	if err := v.networkTopology.DeleteHost(host.ID); err != nil {
+		logger.Errorf("delete network topology host error: %s", err.Error())
+		return err
+	}
+
 	return nil
 }
 

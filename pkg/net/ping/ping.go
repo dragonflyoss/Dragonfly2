@@ -44,8 +44,8 @@ func Ping(addr string) (*ping.Statistics, error) {
 	pinger.Timeout = defaultPingTimeout
 
 	// SetPrivileged sets the type of ping pinger will send.
-	// false means pinger will send an "unprivileged" UDP ping.
-	pinger.SetPrivileged(false)
+	// true means pinger will send a "privileged" raw ICMP ping.
+	pinger.SetPrivileged(true)
 	if err := pinger.Run(); err != nil {
 		return nil, err
 	}

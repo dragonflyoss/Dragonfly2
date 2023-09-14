@@ -23,6 +23,7 @@ import (
 	"errors"
 	"math"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -157,10 +158,6 @@ func (nt *networkTopology) Store(srcHostID string, destHostID string) error {
 		return err
 	}
 
-	if err := nt.rdb.Set(ctx, pkgredis.MakeProbedCountKeyInScheduler(destHostID), 0, 0).Err(); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -193,13 +190,28 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 
 	// Filter invalid probed count. If probed key not exist, the probed count is nil.
 	var probedCounts []uint64
-	for _, rawProbedCount := range rawProbedCounts {
-		probeCount, ok := rawProbedCount.(uint64)
+	for i, rawProbedCount := range rawProbedCounts {
+		// Initialize the probedCount value of host in redis when the host is first selected as the candidate probe target.
+		if rawProbedCount == nil {
+			if err := nt.rdb.Set(ctx, pkgredis.MakeProbedCountKeyInScheduler(candidateHosts[i].ID), 0, 0).Err(); err != nil {
+				return nil, err
+			}
+
+			probedCounts = append(probedCounts, 0)
+			continue
+		}
+
+		value, ok := rawProbedCount.(string)
 		if !ok {
+			return nil, errors.New("invalid value type")
+		}
+
+		probedCount, err := strconv.ParseUint(value, 10, 64)
+		if err != nil {
 			return nil, errors.New("invalid probed count")
 		}
 
-		probedCounts = append(probedCounts, probeCount)
+		probedCounts = append(probedCounts, probedCount)
 	}
 
 	// Sort candidate hosts by probed count.
