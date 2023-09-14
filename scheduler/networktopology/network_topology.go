@@ -206,12 +206,12 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 			return nil, errors.New("invalid value type")
 		}
 
-		probeCount, err := strconv.ParseUint(value, 10, 64)
+		probedCount, err := strconv.ParseUint(value, 10, 64)
 		if err != nil {
 			return nil, errors.New("invalid probed count")
 		}
 
-		probedCounts = append(probedCounts, probeCount)
+		probedCounts = append(probedCounts, probedCount)
 	}
 
 	// Sort candidate hosts by probed count.
