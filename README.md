@@ -53,6 +53,13 @@ and the `dfget daemon` running daemon to provide task download capabilities.
 
 You can find the full documentation on the [d7y.io][d7y.io].
 
+## Security
+
+### Security Audit
+
+A third party security audit was performed by Trail of Bits,
+you can see the full report [here](docs/security/dragonfly-comprehensive-report-2023.pdf).
+
 ## Community
 
 Join the conversation and help the community.
