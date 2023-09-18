@@ -203,7 +203,7 @@ func (s *s3SourceClient) List(request *source.Request) (urls []source.URLEntry, 
 	}
 
 	// list all files
-	path := addTrailingSlash(request.URL.Path)
+	path := buildListPrefix(request.URL.Path)
 	var continuationToken *string
 	delimiter := "/"
 
@@ -244,7 +244,7 @@ func (s *s3SourceClient) List(request *source.Request) (urls []source.URLEntry, 
 }
 
 func (s *s3SourceClient) isDirectory(client *s3.S3, request *source.Request) (bool, error) {
-	uPath := addTrailingSlash(request.URL.Path)
+	uPath := buildListPrefix(request.URL.Path)
 	delimiter := "/"
 	output, err := client.ListObjectsV2WithContext(
 		request.Context(),
@@ -285,4 +285,11 @@ func addTrailingSlash(s string) string {
 		return s
 	}
 	return s + "/"
+}
+
+func buildListPrefix(s string) string {
+	s = addTrailingSlash(s)
+
+	// s3 objects id should not start with '/'
+	return strings.TrimLeft(s, "/")
 }
