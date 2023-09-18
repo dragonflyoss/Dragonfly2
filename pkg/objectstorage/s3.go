@@ -146,7 +146,7 @@ func (s *s3) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker,
 		})
 	}
 
-	commonPrefixes := make([]string, len(resp.CommonPrefixes))
+	commonPrefixes := make([]string, 0, len(resp.CommonPrefixes))
 	for _, commonPrefix := range resp.CommonPrefixes {
 		prefix, err := url.QueryUnescape(*commonPrefix.Prefix)
 		if err != nil {
