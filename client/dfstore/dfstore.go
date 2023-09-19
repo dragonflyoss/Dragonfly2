@@ -239,6 +239,10 @@ func (i *GetObjectMetadatasInput) Convert() {
 	if i.Limit == 0 {
 		i.Limit = DefaultGetObjectMetadatasLimit
 	}
+
+	if i.Limit > MaxGetObjectMetadatasLimit {
+		i.Limit = DefaultGetObjectMetadatasLimit
+	}
 }
 
 // Validate validates GetObjectMetadatasInput fields.
@@ -247,7 +251,7 @@ func (i *GetObjectMetadatasInput) Validate() error {
 		return errors.New("invalid BucketName")
 	}
 
-	if i.Limit <= 0 || i.Limit > MaxGetObjectMetadatasLimit {
+	if i.Limit <= 0 {
 		return errors.New("invalid limit")
 	}
 
