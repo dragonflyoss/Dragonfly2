@@ -45,7 +45,7 @@ const (
 // searchCircleLimit is the limit of searching circle.
 const searchCircleLimit = 10
 
-var logger = grpclog.Component("consistenthashing")
+var logger = grpclog.Component("consistent-hashing")
 
 // NewConsistentHashingBuilder creates a new consistent-hashing balancer builder.
 func NewConsistentHashingBuilder() (balancer.Builder, *ConsistentHashingPickerBuilder) {
@@ -58,7 +58,7 @@ func NewConsistentHashingBuilder() (balancer.Builder, *ConsistentHashingPickerBu
 }
 
 type ConsistentHashingPickerBuilder struct {
-	hashring *consistent.Consistent
+	hashRing *consistent.Consistent
 	members  []string
 	circle   map[string]string
 }
@@ -69,27 +69,27 @@ func (b *ConsistentHashingPickerBuilder) Build(info base.PickerBuildInfo) balanc
 		return base.NewErrPicker(balancer.ErrNoSubConnAvailable)
 	}
 
-	// Build hashring and init sub connections map.
-	b.hashring = consistent.New()
+	// Build hashRing and init sub connections map.
+	b.hashRing = consistent.New()
 	scs := make(map[string]balancer.SubConn, len(info.ReadySCs))
 	for sc, scInfo := range info.ReadySCs {
 		element := fmt.Sprintf("%s:%s", scInfo.Address.Addr, scInfo.Address.ServerName)
-		b.hashring.Add(element)
+		b.hashRing.Add(element)
 		scs[element] = sc
 	}
 
 	return &consistentHashingPicker{
 		subConns: scs,
-		hashring: b.hashring,
+		hashRing: b.hashRing,
 	}
 }
 
 func (b *ConsistentHashingPickerBuilder) GetCircle() (map[string]string, error) {
-	if b.hashring == nil {
-		return nil, errors.New("invalid hashring")
+	if b.hashRing == nil {
+		return nil, errors.New("invalid hashRing")
 	}
 
-	members := b.hashring.Members()
+	members := b.hashRing.Members()
 	if reflect.DeepEqual(b.members, members) {
 		return b.circle, nil
 	}
@@ -97,9 +97,9 @@ func (b *ConsistentHashingPickerBuilder) GetCircle() (map[string]string, error) 
 	circle := make(map[string]string, len(members))
 	for i := 0; i <= len(members)*searchCircleLimit; i++ {
 		key := fmt.Sprint(i)
-		member, err := b.hashring.Get(key)
+		member, err := b.hashRing.Get(key)
 		if err != nil {
-			logger.Errorf("hashring get member failed: %s", err.Error())
+			logger.Errorf("hashRing get member failed: %s", err.Error())
 			continue
 		}
 
@@ -118,7 +118,7 @@ func (b *ConsistentHashingPickerBuilder) GetCircle() (map[string]string, error) 
 
 type consistentHashingPicker struct {
 	subConns map[string]balancer.SubConn
-	hashring *consistent.Consistent
+	hashRing *consistent.Consistent
 }
 
 func (p *consistentHashingPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
@@ -127,7 +127,7 @@ func (p *consistentHashingPicker) Pick(info balancer.PickInfo) (balancer.PickRes
 		return balancer.PickResult{}, errors.New("picker can not found task id")
 	}
 
-	element, err := p.hashring.Get(taskID)
+	element, err := p.hashRing.Get(taskID)
 	if err != nil {
 		return balancer.PickResult{}, err
 	}
