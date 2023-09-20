@@ -533,6 +533,60 @@ definitions:
     - client_secret
     - name
     type: object
+  d7y_io_dragonfly_v2_manager_types.CreatePeerRequest:
+    properties:
+      build_platform:
+        type: string
+      download_port:
+        type: integer
+      git_commit:
+        type: string
+      git_version:
+        type: string
+      host_name:
+        type: string
+      idc:
+        type: string
+      ip:
+        type: string
+      kernel_version:
+        type: string
+      location:
+        type: string
+      object_storage_port:
+        type: integer
+      os:
+        type: string
+      platform:
+        type: string
+      platform_family:
+        type: string
+      platform_version:
+        type: string
+      port:
+        type: integer
+      scheduler_cluster_id:
+        type: integer
+      state:
+        enum:
+        - active
+        - inactive
+        type: string
+      type:
+        enum:
+        - super
+        - strong
+        - weak
+        - normal
+        type: string
+    required:
+    - download_port
+    - host_name
+    - ip
+    - port
+    - scheduler_cluster_id
+    - type
+    type: object
   d7y_io_dragonfly_v2_manager_types.CreatePersonalAccessTokenRequest:
     properties:
       bio:
@@ -916,6 +970,7 @@ definitions:
       state:
         enum:
         - active
+        - inactive
         type: string
     type: object
   d7y_io_dragonfly_v2_manager_types.UpdateOauthRequest:
@@ -2052,6 +2107,33 @@ paths:
         "500":
           description: Internal Server Error
       summary: Get Peers
+      tags:
+      - Peer
+    post:
+      consumes:
+      - application/json
+      description: Create by json config
+      parameters:
+      - description: Peer
+        in: body
+        name: Peer
+        required: true
+        schema:
+          $ref: '#/definitions/d7y_io_dragonfly_v2_manager_types.CreatePeerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/d7y_io_dragonfly_v2_manager_models.Peer'
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Create Peer
       tags:
       - Peer
   /peers/{id}:

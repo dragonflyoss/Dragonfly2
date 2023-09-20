@@ -84,6 +84,7 @@ type Service interface {
 	GetSeedPeer(context.Context, uint) (*models.SeedPeer, error)
 	GetSeedPeers(context.Context, types.GetSeedPeersQuery) ([]models.SeedPeer, int64, error)
 
+	CreatePeer(context.Context, types.CreatePeerRequest) (*models.Peer, error)
 	DestroyPeer(context.Context, uint) error
 	GetPeer(context.Context, uint) (*models.Peer, error)
 	GetPeers(context.Context, types.GetPeersQuery) ([]models.Peer, int64, error)

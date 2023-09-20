@@ -175,9 +175,10 @@ func Init(cfg *config.Config, logDir string, service service.Service, database *
 
 	// Peer.
 	peer := apiv1.Group("/peers", jwt.MiddlewareFunc(), rbac)
-	peer.DELETE(":id", h.DestroySeedPeer)
-	peer.GET(":id", h.GetSeedPeer)
-	peer.GET("", h.GetSeedPeers)
+	peer.POST("", h.CreatePeer)
+	peer.DELETE(":id", h.DestroyPeer)
+	peer.GET(":id", h.GetPeer)
+	peer.GET("", h.GetPeers)
 
 	// Bucket.
 	bucket := apiv1.Group("/buckets", jwt.MiddlewareFunc(), rbac)

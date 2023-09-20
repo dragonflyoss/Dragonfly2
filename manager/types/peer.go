@@ -20,6 +20,27 @@ type PeerParams struct {
 	ID uint `uri:"id" binding:"required"`
 }
 
+type CreatePeerRequest struct {
+	Hostname           string `json:"host_name" binding:"required"`
+	Type               string `json:"type" binding:"required,oneof=super strong weak normal"`
+	IDC                string `json:"idc" binding:"omitempty"`
+	Location           string `json:"location" binding:"omitempty"`
+	IP                 string `json:"ip" binding:"required"`
+	Port               int32  `json:"port" binding:"required"`
+	DownloadPort       int32  `json:"download_port" binding:"required"`
+	ObjectStoragePort  int32  `json:"object_storage_port" binding:"omitempty"`
+	State              string `json:"state" binding:"omitempty,oneof=active inactive"`
+	OS                 string `json:"os" binding:"omitempty"`
+	Platform           string `json:"platform" binding:"omitempty"`
+	PlatformFamily     string `json:"platform_family" binding:"omitempty"`
+	PlatformVersion    string `json:"platform_version" binding:"omitempty"`
+	KernelVersion      string `json:"kernel_version" binding:"omitempty"`
+	GitVersion         string `json:"git_version" binding:"omitempty"`
+	GitCommit          string `json:"git_commit" binding:"omitempty"`
+	BuildPlatform      string `json:"build_platform" binding:"omitempty"`
+	SchedulerClusterID uint   `json:"scheduler_cluster_id" binding:"required"`
+}
+
 type GetPeersQuery struct {
 	Hostname           string `form:"host_name" binding:"omitempty"`
 	Type               string `form:"type" binding:"omitempty,oneof=super strong weak"`
