@@ -321,6 +321,85 @@ func (suite *HTTPSourceClientTestSuite) TestHttpSourceClientIsSupportRange() {
 	}
 }
 
+func (suite *HTTPSourceClientTestSuite) TestHttpSourceClientGetLastModified() {
+	tests := []struct {
+		name   string
+		mock   func(testURL string)
+		expect func(timeStamp int64)
+	}{
+		{
+			name: "request with last modified",
+			mock: func(testURL string) {
+				httpmock.RegisterResponder(http.MethodGet, testURL, func(request *http.Request) (*http.Response, error) {
+					return &http.Response{
+						StatusCode: http.StatusOK,
+						Header: http.Header{
+							"Last-Modified": []string{"Mon, 23 Jan 2017 13:28:11 GMT"},
+						},
+					}, nil
+				})
+			},
+			expect: func(timeStamp int64) {
+				suite.EqualValues(1485178091000, timeStamp)
+			},
+		},
+		{
+			name: "error request",
+			mock: func(testURL string) {
+				httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewErrorResponder(fmt.Errorf("foo")))
+			},
+			expect: func(timeStamp int64) {
+				suite.EqualValues(-1, timeStamp)
+			},
+		},
+		{
+			name: "request not found",
+			mock: func(testURL string) {
+				httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewStringResponder(http.StatusNotFound, "not found"))
+			},
+			expect: func(timeStamp int64) {
+				suite.EqualValues(-1, timeStamp)
+			},
+		},
+		{
+			name: "request without last modified",
+			mock: func(testURL string) {
+				httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewStringResponder(http.StatusOK, "ok"))
+			},
+			expect: func(timeStamp int64) {
+				suite.EqualValues(-1, timeStamp)
+			},
+		},
+		{
+			name: "request with error last modified",
+			mock: func(testURL string) {
+				httpmock.RegisterResponder(http.MethodGet, testURL, func(request *http.Request) (*http.Response, error) {
+					return &http.Response{
+						StatusCode: http.StatusOK,
+						Header: http.Header{
+							"Last-Modified": []string{"Thu Feb  4 21:00:57.01 PST 2010"},
+						},
+					}, nil
+				})
+			},
+			expect: func(timeStamp int64) {
+				suite.EqualValues(-1, timeStamp)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			var testURL = "https://www.example.com"
+			tt.mock(testURL)
+
+			request, _ := source.NewRequest(testURL)
+			timeStamp, _ := suite.httpClient.GetLastModified(request)
+			tt.expect(timeStamp)
+		})
+	}
+}
+
 func (suite *HTTPSourceClientTestSuite) TestHttpSourceClientDoRequest() {
 	var testURL = "https://www.hackhttp.com"
 	httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewStringResponder(http.StatusOK, "ok"))
