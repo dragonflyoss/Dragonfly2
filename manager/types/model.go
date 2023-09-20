@@ -43,7 +43,7 @@ type ModelParams struct {
 
 type UpdateModelRequest struct {
 	BIO   string `json:"BIO" binding:"omitempty"`
-	State string `json:"state" binding:"omitempty,oneof=active"`
+	State string `json:"state" binding:"omitempty,oneof=active inactive"`
 }
 
 type GetModelsQuery struct {

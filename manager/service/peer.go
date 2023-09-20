@@ -23,6 +23,35 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
+func (s *service) CreatePeer(ctx context.Context, json types.CreatePeerRequest) (*models.Peer, error) {
+	peer := models.Peer{
+		Hostname:           json.Hostname,
+		Type:               json.Type,
+		IDC:                json.IDC,
+		Location:           json.Location,
+		IP:                 json.IP,
+		Port:               json.Port,
+		DownloadPort:       json.DownloadPort,
+		ObjectStoragePort:  json.ObjectStoragePort,
+		State:              json.State,
+		OS:                 json.OS,
+		Platform:           json.Platform,
+		PlatformFamily:     json.PlatformFamily,
+		PlatformVersion:    json.PlatformVersion,
+		KernelVersion:      json.KernelVersion,
+		GitVersion:         json.GitVersion,
+		GitCommit:          json.GitCommit,
+		BuildPlatform:      json.BuildPlatform,
+		SchedulerClusterID: json.SchedulerClusterID,
+	}
+
+	if err := s.db.WithContext(ctx).Create(&peer).Error; err != nil {
+		return nil, err
+	}
+
+	return &peer, nil
+}
+
 func (s *service) DestroyPeer(ctx context.Context, id uint) error {
 	peer := models.Peer{}
 	if err := s.db.WithContext(ctx).First(&peer, id).Error; err != nil {

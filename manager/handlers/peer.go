@@ -26,6 +26,33 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
+// @Summary Create Peer
+// @Description Create by json config
+// @Tags Peer
+// @Accept json
+// @Produce json
+// @Param Peer body types.CreatePeerRequest true "Peer"
+// @Success 200 {object} models.Peer
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /peers [post]
+func (h *Handlers) CreatePeer(ctx *gin.Context) {
+	var json types.CreatePeerRequest
+	if err := ctx.ShouldBindJSON(&json); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	peer, err := h.service.CreatePeer(ctx.Request.Context(), json)
+	if err != nil {
+		ctx.Error(err) // nolint: errcheck
+		return
+	}
+
+	ctx.JSON(http.StatusOK, peer)
+}
+
 // @Summary Destroy Peer
 // @Description Destroy by id
 // @Tags Peer

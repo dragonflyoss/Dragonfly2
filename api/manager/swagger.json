@@ -1511,6 +1511,47 @@
                         "description": "Internal Server Error"
                     }
                 }
+            },
+            "post": {
+                "description": "Create by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Peer"
+                ],
+                "summary": "Create Peer",
+                "parameters": [
+                    {
+                        "description": "Peer",
+                        "name": "Peer",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_types.CreatePeerRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/d7y_io_dragonfly_v2_manager_models.Peer"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
             }
         },
         "/peers/{id}": {
@@ -4386,6 +4427,83 @@
                 }
             }
         },
+        "d7y_io_dragonfly_v2_manager_types.CreatePeerRequest": {
+            "type": "object",
+            "required": [
+                "download_port",
+                "host_name",
+                "ip",
+                "port",
+                "scheduler_cluster_id",
+                "type"
+            ],
+            "properties": {
+                "build_platform": {
+                    "type": "string"
+                },
+                "download_port": {
+                    "type": "integer"
+                },
+                "git_commit": {
+                    "type": "string"
+                },
+                "git_version": {
+                    "type": "string"
+                },
+                "host_name": {
+                    "type": "string"
+                },
+                "idc": {
+                    "type": "string"
+                },
+                "ip": {
+                    "type": "string"
+                },
+                "kernel_version": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "object_storage_port": {
+                    "type": "integer"
+                },
+                "os": {
+                    "type": "string"
+                },
+                "platform": {
+                    "type": "string"
+                },
+                "platform_family": {
+                    "type": "string"
+                },
+                "platform_version": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "integer"
+                },
+                "scheduler_cluster_id": {
+                    "type": "integer"
+                },
+                "state": {
+                    "type": "string",
+                    "enum": [
+                        "active",
+                        "inactive"
+                    ]
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "super",
+                        "strong",
+                        "weak",
+                        "normal"
+                    ]
+                }
+            }
+        },
         "d7y_io_dragonfly_v2_manager_types.CreatePersonalAccessTokenRequest": {
             "type": "object",
             "required": [
@@ -4948,7 +5066,8 @@
                 "state": {
                     "type": "string",
                     "enum": [
-                        "active"
+                        "active",
+                        "inactive"
                     ]
                 }
             }
