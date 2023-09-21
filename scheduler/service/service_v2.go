@@ -228,7 +228,7 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 
 		respPiece := &commonv2.Piece{
 			Number:      piece.Number,
-			ParentId:    piece.ParentID,
+			ParentId:    &piece.ParentID,
 			Offset:      piece.Offset,
 			Length:      piece.Length,
 			TrafficType: piece.TrafficType,
@@ -249,8 +249,8 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 		Id:            peer.Task.ID,
 		Type:          peer.Task.Type,
 		Url:           peer.Task.URL,
-		Tag:           peer.Task.Tag,
-		Application:   peer.Task.Application,
+		Tag:           &peer.Task.Tag,
+		Application:   &peer.Task.Application,
 		Filters:       peer.Task.Filters,
 		Header:        peer.Task.Header,
 		PieceLength:   peer.Task.PieceLength,
@@ -265,7 +265,8 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 
 	// Set digest to task response.
 	if peer.Task.Digest != nil {
-		resp.Task.Digest = peer.Task.Digest.String()
+		dgst := peer.Task.Digest.String()
+		resp.Task.Digest = &dgst
 	}
 
 	// Set pieces to task response.
@@ -278,7 +279,7 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 
 		respPiece := &commonv2.Piece{
 			Number:      piece.Number,
-			ParentId:    piece.ParentID,
+			ParentId:    &piece.ParentID,
 			Offset:      piece.Offset,
 			Length:      piece.Length,
 			TrafficType: piece.TrafficType,
@@ -401,8 +402,8 @@ func (v *V2) StatTask(ctx context.Context, req *schedulerv2.StatTaskRequest) (*c
 		Id:            task.ID,
 		Type:          task.Type,
 		Url:           task.URL,
-		Tag:           task.Tag,
-		Application:   task.Application,
+		Tag:           &task.Tag,
+		Application:   &task.Application,
 		Filters:       task.Filters,
 		Header:        task.Header,
 		PieceLength:   task.PieceLength,
@@ -417,7 +418,8 @@ func (v *V2) StatTask(ctx context.Context, req *schedulerv2.StatTaskRequest) (*c
 
 	// Set digest to response.
 	if task.Digest != nil {
-		resp.Digest = task.Digest.String()
+		dgst := task.Digest.String()
+		resp.Digest = &dgst
 	}
 
 	// Set pieces to response.
@@ -430,7 +432,7 @@ func (v *V2) StatTask(ctx context.Context, req *schedulerv2.StatTaskRequest) (*c
 
 		respPiece := &commonv2.Piece{
 			Number:      piece.Number,
-			ParentId:    piece.ParentID,
+			ParentId:    &piece.ParentID,
 			Offset:      piece.Offset,
 			Length:      piece.Length,
 			TrafficType: piece.TrafficType,
@@ -1264,9 +1266,9 @@ func (v *V2) handleResource(ctx context.Context, stream schedulerv2.Scheduler_An
 	// Store new task or update task.
 	task, loaded := v.resource.TaskManager().Load(taskID)
 	if !loaded {
-		options := []resource.TaskOption{resource.WithPieceLength(download.PieceLength)}
-		if download.Digest != "" {
-			d, err := digest.Parse(download.Digest)
+		options := []resource.TaskOption{resource.WithPieceLength(download.GetPieceLength())}
+		if download.Digest != nil {
+			d, err := digest.Parse(download.GetDigest())
 			if err != nil {
 				return nil, nil, nil, status.Error(codes.InvalidArgument, err.Error())
 			}
@@ -1275,21 +1277,21 @@ func (v *V2) handleResource(ctx context.Context, stream schedulerv2.Scheduler_An
 			options = append(options, resource.WithDigest(d))
 		}
 
-		task = resource.NewTask(taskID, download.Url, download.Tag, download.Application, download.Type,
-			download.Filters, download.Header, int32(v.config.Scheduler.BackToSourceCount), options...)
+		task = resource.NewTask(taskID, download.GetUrl(), download.GetTag(), download.GetApplication(), download.GetType(),
+			download.GetFilters(), download.GetHeader(), int32(v.config.Scheduler.BackToSourceCount), options...)
 		v.resource.TaskManager().Store(task)
 	} else {
-		task.URL = download.Url
-		task.Filters = download.Filters
-		task.Header = download.Header
+		task.URL = download.GetUrl()
+		task.Filters = download.GetFilters()
+		task.Header = download.GetHeader()
 	}
 
 	// Store new peer or load peer.
 	peer, loaded := v.resource.PeerManager().Load(peerID)
 	if !loaded {
-		options := []resource.PeerOption{resource.WithPriority(download.Priority), resource.WithAnnouncePeerStream(stream)}
+		options := []resource.PeerOption{resource.WithPriority(download.GetPriority()), resource.WithAnnouncePeerStream(stream)}
 		if download.Range != nil {
-			options = append(options, resource.WithRange(http.Range{Start: download.Range.Start, Length: download.Range.Length}))
+			options = append(options, resource.WithRange(http.Range{Start: download.Range.GetStart(), Length: download.Range.GetLength()}))
 		}
 
 		peer = resource.NewPeer(peerID, &v.config.Resource, task, host, options...)

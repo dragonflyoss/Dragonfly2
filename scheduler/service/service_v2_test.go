@@ -114,6 +114,8 @@ func TestServiceV2_StatPeer(t *testing.T) {
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, resp *commonv2.Peer, err error) {
+				dgst := peer.Task.Digest.String()
+
 				assert := assert.New(t)
 				assert.EqualValues(resp, &commonv2.Peer{
 					Id: peer.ID,
@@ -125,7 +127,7 @@ func TestServiceV2_StatPeer(t *testing.T) {
 					Pieces: []*commonv2.Piece{
 						{
 							Number:      mockPiece.Number,
-							ParentId:    mockPiece.ParentID,
+							ParentId:    &mockPiece.ParentID,
 							Offset:      mockPiece.Offset,
 							Length:      mockPiece.Length,
 							Digest:      mockPiece.Digest.String(),
@@ -140,9 +142,9 @@ func TestServiceV2_StatPeer(t *testing.T) {
 						Id:            peer.Task.ID,
 						Type:          peer.Task.Type,
 						Url:           peer.Task.URL,
-						Digest:        peer.Task.Digest.String(),
-						Tag:           peer.Task.Tag,
-						Application:   peer.Task.Application,
+						Digest:        &dgst,
+						Tag:           &peer.Task.Tag,
+						Application:   &peer.Task.Application,
 						Filters:       peer.Task.Filters,
 						Header:        peer.Task.Header,
 						PieceLength:   peer.Task.PieceLength,
@@ -152,7 +154,7 @@ func TestServiceV2_StatPeer(t *testing.T) {
 						Pieces: []*commonv2.Piece{
 							{
 								Number:      mockPiece.Number,
-								ParentId:    mockPiece.ParentID,
+								ParentId:    &mockPiece.ParentID,
 								Offset:      mockPiece.Offset,
 								Length:      mockPiece.Length,
 								Digest:      mockPiece.Digest.String(),
@@ -359,14 +361,16 @@ func TestServiceV2_StatTask(t *testing.T) {
 				)
 			},
 			expect: func(t *testing.T, task *resource.Task, resp *commonv2.Task, err error) {
+				dgst := task.Digest.String()
+
 				assert := assert.New(t)
 				assert.EqualValues(resp, &commonv2.Task{
 					Id:            task.ID,
 					Type:          task.Type,
 					Url:           task.URL,
-					Digest:        task.Digest.String(),
-					Tag:           task.Tag,
-					Application:   task.Application,
+					Digest:        &dgst,
+					Tag:           &task.Tag,
+					Application:   &task.Application,
 					Filters:       task.Filters,
 					Header:        task.Header,
 					PieceLength:   task.PieceLength,
@@ -376,7 +380,7 @@ func TestServiceV2_StatTask(t *testing.T) {
 					Pieces: []*commonv2.Piece{
 						{
 							Number:      mockPiece.Number,
-							ParentId:    mockPiece.ParentID,
+							ParentId:    &mockPiece.ParentID,
 							Offset:      mockPiece.Offset,
 							Length:      mockPiece.Length,
 							Digest:      mockPiece.Digest.String(),
@@ -1417,6 +1421,8 @@ func TestServiceV2_SyncProbes(t *testing.T) {
 }
 
 func TestServiceV2_handleRegisterPeerRequest(t *testing.T) {
+	dgst := mockTaskDigest.String()
+
 	tests := []struct {
 		name string
 		req  *schedulerv2.RegisterPeerRequest
@@ -1444,7 +1450,7 @@ func TestServiceV2_handleRegisterPeerRequest(t *testing.T) {
 			name: "can not found available peer and download task failed",
 			req: &schedulerv2.RegisterPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -1470,7 +1476,7 @@ func TestServiceV2_handleRegisterPeerRequest(t *testing.T) {
 			name: "task state is TaskStateFailed and download task failed",
 			req: &schedulerv2.RegisterPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -1500,7 +1506,7 @@ func TestServiceV2_handleRegisterPeerRequest(t *testing.T) {
 			name: "size scope is SizeScope_EMPTY and load AnnouncePeerStream failed",
 			req: &schedulerv2.RegisterPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -1528,7 +1534,7 @@ func TestServiceV2_handleRegisterPeerRequest(t *testing.T) {
 			name: "size scope is SizeScope_EMPTY and event PeerEventRegisterEmpty failed",
 			req: &schedulerv2.RegisterPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -1557,7 +1563,7 @@ func TestServiceV2_handleRegisterPeerRequest(t *testing.T) {
 			name: "size scope is SizeScope_EMPTY and send EmptyTaskResponse failed",
 			req: &schedulerv2.RegisterPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -1591,7 +1597,7 @@ func TestServiceV2_handleRegisterPeerRequest(t *testing.T) {
 			name: "size scope is SizeScope_TINY, task can not reuse DirectPiece and event PeerEventRegisterNormal failed",
 			req: &schedulerv2.RegisterPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -1620,7 +1626,7 @@ func TestServiceV2_handleRegisterPeerRequest(t *testing.T) {
 			name: "size scope is SizeScope_TINY, task can not reuse DirectPiece and scheduling failed",
 			req: &schedulerv2.RegisterPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -1649,7 +1655,7 @@ func TestServiceV2_handleRegisterPeerRequest(t *testing.T) {
 			name: "size scope is SizeScope_TINY and task can not reuse DirectPiece",
 			req: &schedulerv2.RegisterPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -1677,7 +1683,7 @@ func TestServiceV2_handleRegisterPeerRequest(t *testing.T) {
 			name: "size scope is SizeScope_SMALL and task can not found success parent",
 			req: &schedulerv2.RegisterPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -1707,7 +1713,7 @@ func TestServiceV2_handleRegisterPeerRequest(t *testing.T) {
 			name: "size scope is SizeScope_SMALL and load AnnouncePeerStream failed",
 			req: &schedulerv2.RegisterPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -1739,7 +1745,7 @@ func TestServiceV2_handleRegisterPeerRequest(t *testing.T) {
 			name: "size scope is SizeScope_SMALL and event PeerEventRegisterSmall failed",
 			req: &schedulerv2.RegisterPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -1773,7 +1779,7 @@ func TestServiceV2_handleRegisterPeerRequest(t *testing.T) {
 			name: "size scope is SizeScope_SMALL and send SmallTaskResponse failed",
 			req: &schedulerv2.RegisterPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -1807,7 +1813,7 @@ func TestServiceV2_handleRegisterPeerRequest(t *testing.T) {
 			name: "size scope is SizeScope_SMALL",
 			req: &schedulerv2.RegisterPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -1840,7 +1846,7 @@ func TestServiceV2_handleRegisterPeerRequest(t *testing.T) {
 			name: "size scope is SizeScope_NORMAL",
 			req: &schedulerv2.RegisterPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -1872,7 +1878,7 @@ func TestServiceV2_handleRegisterPeerRequest(t *testing.T) {
 			name: "size scope is SizeScope_UNKNOW",
 			req: &schedulerv2.RegisterPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -1925,6 +1931,8 @@ func TestServiceV2_handleRegisterPeerRequest(t *testing.T) {
 }
 
 func TestServiceV2_handleRegisterSeedPeerRequest(t *testing.T) {
+	dgst := mockTaskDigest.String()
+
 	tests := []struct {
 		name string
 		req  *schedulerv2.RegisterSeedPeerRequest
@@ -1952,7 +1960,7 @@ func TestServiceV2_handleRegisterSeedPeerRequest(t *testing.T) {
 			name: "can not found available peer",
 			req: &schedulerv2.RegisterSeedPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterSeedPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -1979,7 +1987,7 @@ func TestServiceV2_handleRegisterSeedPeerRequest(t *testing.T) {
 			name: "task state is TaskStateFailed",
 			req: &schedulerv2.RegisterSeedPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterSeedPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -2010,7 +2018,7 @@ func TestServiceV2_handleRegisterSeedPeerRequest(t *testing.T) {
 			name: "size scope is SizeScope_EMPTY and load AnnouncePeerStream failed",
 			req: &schedulerv2.RegisterSeedPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterSeedPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -2038,7 +2046,7 @@ func TestServiceV2_handleRegisterSeedPeerRequest(t *testing.T) {
 			name: "size scope is SizeScope_EMPTY and event PeerEventRegisterEmpty failed",
 			req: &schedulerv2.RegisterSeedPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterSeedPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -2067,7 +2075,7 @@ func TestServiceV2_handleRegisterSeedPeerRequest(t *testing.T) {
 			name: "size scope is SizeScope_EMPTY and send EmptyTaskResponse failed",
 			req: &schedulerv2.RegisterSeedPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterSeedPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -2101,7 +2109,7 @@ func TestServiceV2_handleRegisterSeedPeerRequest(t *testing.T) {
 			name: "size scope is SizeScope_TINY, task can not reuse DirectPiece and event PeerEventRegisterNormal failed",
 			req: &schedulerv2.RegisterSeedPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterSeedPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -2130,7 +2138,7 @@ func TestServiceV2_handleRegisterSeedPeerRequest(t *testing.T) {
 			name: "size scope is SizeScope_TINY, task can not reuse DirectPiece and scheduling failed",
 			req: &schedulerv2.RegisterSeedPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterSeedPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -2159,7 +2167,7 @@ func TestServiceV2_handleRegisterSeedPeerRequest(t *testing.T) {
 			name: "size scope is SizeScope_TINY and task can not reuse DirectPiece",
 			req: &schedulerv2.RegisterSeedPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterSeedPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -2187,7 +2195,7 @@ func TestServiceV2_handleRegisterSeedPeerRequest(t *testing.T) {
 			name: "size scope is SizeScope_SMALL and task can not found success parent",
 			req: &schedulerv2.RegisterSeedPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterSeedPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -2217,7 +2225,7 @@ func TestServiceV2_handleRegisterSeedPeerRequest(t *testing.T) {
 			name: "size scope is SizeScope_SMALL and load AnnouncePeerStream failed",
 			req: &schedulerv2.RegisterSeedPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterSeedPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -2249,7 +2257,7 @@ func TestServiceV2_handleRegisterSeedPeerRequest(t *testing.T) {
 			name: "size scope is SizeScope_SMALL and event PeerEventRegisterSmall failed",
 			req: &schedulerv2.RegisterSeedPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterSeedPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -2283,7 +2291,7 @@ func TestServiceV2_handleRegisterSeedPeerRequest(t *testing.T) {
 			name: "size scope is SizeScope_SMALL and send SmallTaskResponse failed",
 			req: &schedulerv2.RegisterSeedPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterSeedPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -2317,7 +2325,7 @@ func TestServiceV2_handleRegisterSeedPeerRequest(t *testing.T) {
 			name: "size scope is SizeScope_SMALL",
 			req: &schedulerv2.RegisterSeedPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterSeedPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -2350,7 +2358,7 @@ func TestServiceV2_handleRegisterSeedPeerRequest(t *testing.T) {
 			name: "size scope is SizeScope_NORMAL",
 			req: &schedulerv2.RegisterSeedPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterSeedPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -2382,7 +2390,7 @@ func TestServiceV2_handleRegisterSeedPeerRequest(t *testing.T) {
 			name: "size scope is SizeScope_UNKNOW",
 			req: &schedulerv2.RegisterSeedPeerRequest{
 				Download: &commonv2.Download{
-					Digest: mockTaskDigest.String(),
+					Digest: &dgst,
 				},
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.RegisterSeedPeerRequest, peer *resource.Peer, seedPeer *resource.Peer, hostManager resource.HostManager, taskManager resource.TaskManager,
@@ -3178,7 +3186,7 @@ func TestServiceV2_handleDownloadPieceFinishedRequest(t *testing.T) {
 			req: &schedulerv2.DownloadPieceFinishedRequest{
 				Piece: &commonv2.Piece{
 					Number:      mockPiece.Number,
-					ParentId:    mockPiece.ParentID,
+					ParentId:    &mockPiece.ParentID,
 					Offset:      mockPiece.Offset,
 					Length:      mockPiece.Length,
 					Digest:      "foo",
@@ -3197,7 +3205,7 @@ func TestServiceV2_handleDownloadPieceFinishedRequest(t *testing.T) {
 			req: &schedulerv2.DownloadPieceFinishedRequest{
 				Piece: &commonv2.Piece{
 					Number:      mockPiece.Number,
-					ParentId:    mockPiece.ParentID,
+					ParentId:    &mockPiece.ParentID,
 					Offset:      mockPiece.Offset,
 					Length:      mockPiece.Length,
 					Digest:      mockPiece.Digest.String(),
@@ -3221,7 +3229,7 @@ func TestServiceV2_handleDownloadPieceFinishedRequest(t *testing.T) {
 			req: &schedulerv2.DownloadPieceFinishedRequest{
 				Piece: &commonv2.Piece{
 					Number:      mockPiece.Number,
-					ParentId:    mockPiece.ParentID,
+					ParentId:    &mockPiece.ParentID,
 					Offset:      mockPiece.Offset,
 					Length:      mockPiece.Length,
 					Digest:      mockPiece.Digest.String(),
@@ -3235,7 +3243,7 @@ func TestServiceV2_handleDownloadPieceFinishedRequest(t *testing.T) {
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(peer.ID)).Return(peer, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.Load(gomock.Eq(req.Piece.ParentId)).Return(nil, false).Times(1),
+					mp.Load(gomock.Eq(req.Piece.GetParentId())).Return(nil, false).Times(1),
 				)
 
 				assert := assert.New(t)
@@ -3263,7 +3271,7 @@ func TestServiceV2_handleDownloadPieceFinishedRequest(t *testing.T) {
 			req: &schedulerv2.DownloadPieceFinishedRequest{
 				Piece: &commonv2.Piece{
 					Number:      mockPiece.Number,
-					ParentId:    mockPiece.ParentID,
+					ParentId:    &mockPiece.ParentID,
 					Offset:      mockPiece.Offset,
 					Length:      mockPiece.Length,
 					Digest:      mockPiece.Digest.String(),
@@ -3277,7 +3285,7 @@ func TestServiceV2_handleDownloadPieceFinishedRequest(t *testing.T) {
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(peer.ID)).Return(peer, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.Load(gomock.Eq(req.Piece.ParentId)).Return(peer, true).Times(1),
+					mp.Load(gomock.Eq(req.Piece.GetParentId())).Return(peer, true).Times(1),
 				)
 
 				assert := assert.New(t)
@@ -3337,7 +3345,7 @@ func TestServiceV2_handleDownloadPieceBackToSourceFinishedRequest(t *testing.T) 
 			req: &schedulerv2.DownloadPieceBackToSourceFinishedRequest{
 				Piece: &commonv2.Piece{
 					Number:      mockPiece.Number,
-					ParentId:    mockPiece.ParentID,
+					ParentId:    &mockPiece.ParentID,
 					Offset:      mockPiece.Offset,
 					Length:      mockPiece.Length,
 					Digest:      "foo",
@@ -3356,7 +3364,7 @@ func TestServiceV2_handleDownloadPieceBackToSourceFinishedRequest(t *testing.T) 
 			req: &schedulerv2.DownloadPieceBackToSourceFinishedRequest{
 				Piece: &commonv2.Piece{
 					Number:      mockPiece.Number,
-					ParentId:    mockPiece.ParentID,
+					ParentId:    &mockPiece.ParentID,
 					Offset:      mockPiece.Offset,
 					Length:      mockPiece.Length,
 					Digest:      mockPiece.Digest.String(),
@@ -3380,7 +3388,7 @@ func TestServiceV2_handleDownloadPieceBackToSourceFinishedRequest(t *testing.T) 
 			req: &schedulerv2.DownloadPieceBackToSourceFinishedRequest{
 				Piece: &commonv2.Piece{
 					Number:      mockPiece.Number,
-					ParentId:    mockPiece.ParentID,
+					ParentId:    &mockPiece.ParentID,
 					Offset:      mockPiece.Offset,
 					Length:      mockPiece.Length,
 					Digest:      mockPiece.Digest.String(),
@@ -3463,7 +3471,7 @@ func TestServiceV2_handleDownloadPieceFailedRequest(t *testing.T) {
 			name: "peer can not be loaded",
 			req: &schedulerv2.DownloadPieceFailedRequest{
 				Piece: &commonv2.Piece{
-					ParentId: mockSeedPeerID,
+					ParentId: &mockSeedPeerID,
 				},
 				Temporary: true,
 			},
@@ -3482,7 +3490,7 @@ func TestServiceV2_handleDownloadPieceFailedRequest(t *testing.T) {
 			name: "temporary is false",
 			req: &schedulerv2.DownloadPieceFailedRequest{
 				Piece: &commonv2.Piece{
-					ParentId: mockSeedPeerID,
+					ParentId: &mockSeedPeerID,
 				},
 				Temporary: false,
 			},
@@ -3501,7 +3509,7 @@ func TestServiceV2_handleDownloadPieceFailedRequest(t *testing.T) {
 			name: "schedule failed",
 			req: &schedulerv2.DownloadPieceFailedRequest{
 				Piece: &commonv2.Piece{
-					ParentId: mockSeedPeerID,
+					ParentId: &mockSeedPeerID,
 				},
 				Temporary: true,
 			},
@@ -3516,14 +3524,14 @@ func TestServiceV2_handleDownloadPieceFailedRequest(t *testing.T) {
 				assert := assert.New(t)
 				assert.ErrorIs(svc.handleDownloadPieceFailedRequest(context.Background(), peer.ID, req), status.Error(codes.FailedPrecondition, "foo"))
 				assert.NotEqual(peer.UpdatedAt.Load(), 0)
-				assert.True(peer.BlockParents.Contains(req.Piece.ParentId))
+				assert.True(peer.BlockParents.Contains(req.Piece.GetParentId()))
 			},
 		},
 		{
 			name: "parent can not be loaded",
 			req: &schedulerv2.DownloadPieceFailedRequest{
 				Piece: &commonv2.Piece{
-					ParentId: mockSeedPeerID,
+					ParentId: &mockSeedPeerID,
 				},
 				Temporary: true,
 			},
@@ -3534,13 +3542,13 @@ func TestServiceV2_handleDownloadPieceFailedRequest(t *testing.T) {
 					mp.Load(gomock.Eq(peer.ID)).Return(peer, true).Times(1),
 					ms.ScheduleCandidateParents(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.Load(gomock.Eq(req.Piece.ParentId)).Return(nil, false).Times(1),
+					mp.Load(gomock.Eq(req.Piece.GetParentId())).Return(nil, false).Times(1),
 				)
 
 				assert := assert.New(t)
 				assert.NoError(svc.handleDownloadPieceFailedRequest(context.Background(), peer.ID, req))
 				assert.NotEqual(peer.UpdatedAt.Load(), 0)
-				assert.True(peer.BlockParents.Contains(req.Piece.ParentId))
+				assert.True(peer.BlockParents.Contains(req.Piece.GetParentId()))
 				assert.NotEqual(peer.Task.UpdatedAt.Load(), 0)
 			},
 		},
@@ -3548,7 +3556,7 @@ func TestServiceV2_handleDownloadPieceFailedRequest(t *testing.T) {
 			name: "parent can be loaded",
 			req: &schedulerv2.DownloadPieceFailedRequest{
 				Piece: &commonv2.Piece{
-					ParentId: mockSeedPeerID,
+					ParentId: &mockSeedPeerID,
 				},
 				Temporary: true,
 			},
@@ -3559,13 +3567,13 @@ func TestServiceV2_handleDownloadPieceFailedRequest(t *testing.T) {
 					mp.Load(gomock.Eq(peer.ID)).Return(peer, true).Times(1),
 					ms.ScheduleCandidateParents(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.Load(gomock.Eq(req.Piece.ParentId)).Return(peer, true).Times(1),
+					mp.Load(gomock.Eq(req.Piece.GetParentId())).Return(peer, true).Times(1),
 				)
 
 				assert := assert.New(t)
 				assert.NoError(svc.handleDownloadPieceFailedRequest(context.Background(), peer.ID, req))
 				assert.NotEqual(peer.UpdatedAt.Load(), 0)
-				assert.True(peer.BlockParents.Contains(req.Piece.ParentId))
+				assert.True(peer.BlockParents.Contains(req.Piece.GetParentId()))
 				assert.NotEqual(peer.Task.UpdatedAt.Load(), 0)
 				assert.Equal(peer.Host.UploadFailedCount.Load(), int64(1))
 			},
@@ -3660,6 +3668,9 @@ func TestServiceV2_handleDownloadPieceBackToSourceFailedRequest(t *testing.T) {
 }
 
 func TestServiceV2_handleResource(t *testing.T) {
+	dgst := mockTaskDigest.String()
+	mismatchDgst := "foo"
+
 	tests := []struct {
 		name     string
 		download *commonv2.Download
@@ -3718,7 +3729,7 @@ func TestServiceV2_handleResource(t *testing.T) {
 				Url:     "foo",
 				Filters: []string{"bar"},
 				Header:  map[string]string{"baz": "bas"},
-				Digest:  mockTaskDigest.String(),
+				Digest:  &dgst,
 			},
 			run: func(t *testing.T, svc *V2, download *commonv2.Download, stream schedulerv2.Scheduler_AnnouncePeerServer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer,
 				hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder,
@@ -3739,16 +3750,16 @@ func TestServiceV2_handleResource(t *testing.T) {
 				assert.NoError(err)
 				assert.EqualValues(host, mockHost)
 				assert.Equal(task.ID, mockTask.ID)
-				assert.Equal(task.Digest.String(), download.Digest)
-				assert.Equal(task.URL, download.Url)
-				assert.EqualValues(task.Filters, download.Filters)
+				assert.Equal(task.Digest.String(), download.GetDigest())
+				assert.Equal(task.URL, download.GetUrl())
+				assert.EqualValues(task.Filters, download.GetFilters())
 				assert.EqualValues(task.Header, download.Header)
 			},
 		},
 		{
 			name: "invalid digest",
 			download: &commonv2.Download{
-				Digest: "foo",
+				Digest: &mismatchDgst,
 			},
 			run: func(t *testing.T, svc *V2, download *commonv2.Download, stream schedulerv2.Scheduler_AnnouncePeerServer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer,
 				hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder,
@@ -3771,7 +3782,7 @@ func TestServiceV2_handleResource(t *testing.T) {
 				Url:     "foo",
 				Filters: []string{"bar"},
 				Header:  map[string]string{"baz": "bas"},
-				Digest:  mockTaskDigest.String(),
+				Digest:  &dgst,
 			},
 			run: func(t *testing.T, svc *V2, download *commonv2.Download, stream schedulerv2.Scheduler_AnnouncePeerServer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer,
 				hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder,
@@ -3790,9 +3801,9 @@ func TestServiceV2_handleResource(t *testing.T) {
 				assert.NoError(err)
 				assert.EqualValues(host, mockHost)
 				assert.Equal(task.ID, mockTask.ID)
-				assert.Equal(task.Digest.String(), download.Digest)
-				assert.Equal(task.URL, download.Url)
-				assert.EqualValues(task.Filters, download.Filters)
+				assert.Equal(task.Digest.String(), download.GetDigest())
+				assert.Equal(task.URL, download.GetUrl())
+				assert.EqualValues(task.Filters, download.GetFilters())
 				assert.EqualValues(task.Header, download.Header)
 				assert.EqualValues(peer, mockPeer)
 			},
@@ -3803,7 +3814,7 @@ func TestServiceV2_handleResource(t *testing.T) {
 				Url:      "foo",
 				Filters:  []string{"bar"},
 				Header:   map[string]string{"baz": "bas"},
-				Digest:   mockTaskDigest.String(),
+				Digest:   &dgst,
 				Priority: commonv2.Priority_LEVEL1,
 				Range: &commonv2.Range{
 					Start:  mockPeerRange.Start,
@@ -3829,9 +3840,9 @@ func TestServiceV2_handleResource(t *testing.T) {
 				assert.NoError(err)
 				assert.EqualValues(host, mockHost)
 				assert.Equal(task.ID, mockTask.ID)
-				assert.Equal(task.Digest.String(), download.Digest)
-				assert.Equal(task.URL, download.Url)
-				assert.EqualValues(task.Filters, download.Filters)
+				assert.Equal(task.Digest.String(), download.GetDigest())
+				assert.Equal(task.URL, download.GetUrl())
+				assert.EqualValues(task.Filters, download.GetFilters())
 				assert.EqualValues(task.Header, download.Header)
 				assert.Equal(peer.ID, mockPeer.ID)
 				assert.Equal(peer.Priority, download.Priority)
