@@ -813,7 +813,8 @@ func (s *storageManager) TryGC() (bool, error) {
 
 	if quotaExceed || usageExceed {
 		var bytesExceed int64
-		if quotaBytesExceed > usageBytesExceed {
+		// only use quotaBytesExceed when s.storeOption.DiskGCThreshold > 0
+		if s.storeOption.DiskGCThreshold > 0 && quotaBytesExceed > usageBytesExceed {
 			bytesExceed = quotaBytesExceed
 		} else {
 			bytesExceed = usageBytesExceed
