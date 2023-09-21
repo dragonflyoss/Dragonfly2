@@ -149,3 +149,68 @@ func TestDynconfigLocal_GetResolveSchedulerAddrs(t *testing.T) {
 		})
 	}
 }
+
+func TestDynconfigLocal_Notify(t *testing.T) {
+	grpcServer := grpc.NewServer()
+	healthpb.RegisterHealthServer(grpcServer, health.NewServer())
+	l, err := net.Listen("tcp", ":3000")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer l.Close()
+
+	tests := []struct {
+		name   string
+		config *DaemonOption
+	}{
+		{
+			name: "normal",
+			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					NetAddrs: []dfnet.NetAddr{
+						{
+							Addr: "127.0.0.1:3000",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "missing port in address",
+			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					NetAddrs: []dfnet.NetAddr{
+						{
+							Addr: "127.0.0.1",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "port value is illegal",
+			config: &DaemonOption{
+				Scheduler: SchedulerOption{
+					NetAddrs: []dfnet.NetAddr{
+						{
+							Addr: "127.0.0.1:",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			dynconfig, err := NewDynconfig(LocalSourceType, tc.config)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			errNotify := dynconfig.Notify()
+			assert := assert.New(t)
+			assert.NoError(errNotify)
+		})
+	}
+}
