@@ -1267,6 +1267,8 @@ func TestScheduling_ConstructSuccessSmallTaskResponse(t *testing.T) {
 		{
 			name: "construct success",
 			expect: func(t *testing.T, resp *schedulerv2.AnnouncePeerResponse_SmallTaskResponse, candidateParent *resource.Peer) {
+				dgst := candidateParent.Task.Digest.String()
+
 				assert := assert.New(t)
 				assert.EqualValues(resp, &schedulerv2.AnnouncePeerResponse_SmallTaskResponse{
 					SmallTaskResponse: &schedulerv2.SmallTaskResponse{
@@ -1280,7 +1282,7 @@ func TestScheduling_ConstructSuccessSmallTaskResponse(t *testing.T) {
 							Pieces: []*commonv2.Piece{
 								{
 									Number:      mockPiece.Number,
-									ParentId:    mockPiece.ParentID,
+									ParentId:    &mockPiece.ParentID,
 									Offset:      mockPiece.Offset,
 									Length:      mockPiece.Length,
 									Digest:      mockPiece.Digest.String(),
@@ -1295,9 +1297,9 @@ func TestScheduling_ConstructSuccessSmallTaskResponse(t *testing.T) {
 								Id:            candidateParent.Task.ID,
 								Type:          candidateParent.Task.Type,
 								Url:           candidateParent.Task.URL,
-								Digest:        candidateParent.Task.Digest.String(),
-								Tag:           candidateParent.Task.Tag,
-								Application:   candidateParent.Task.Application,
+								Digest:        &dgst,
+								Tag:           &candidateParent.Task.Tag,
+								Application:   &candidateParent.Task.Application,
 								Filters:       candidateParent.Task.Filters,
 								Header:        candidateParent.Task.Header,
 								PieceLength:   candidateParent.Task.PieceLength,
@@ -1307,7 +1309,7 @@ func TestScheduling_ConstructSuccessSmallTaskResponse(t *testing.T) {
 								Pieces: []*commonv2.Piece{
 									{
 										Number:      mockPiece.Number,
-										ParentId:    mockPiece.ParentID,
+										ParentId:    &mockPiece.ParentID,
 										Offset:      mockPiece.Offset,
 										Length:      mockPiece.Length,
 										Digest:      mockPiece.Digest.String(),
@@ -1424,6 +1426,8 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 				}, nil).Times(1)
 			},
 			expect: func(t *testing.T, resp *schedulerv2.AnnouncePeerResponse_NormalTaskResponse, candidateParents []*resource.Peer) {
+				dgst := candidateParents[0].Task.Digest.String()
+
 				assert := assert.New(t)
 				assert.EqualValues(resp, &schedulerv2.AnnouncePeerResponse_NormalTaskResponse{
 					NormalTaskResponse: &schedulerv2.NormalTaskResponse{
@@ -1438,7 +1442,7 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 								Pieces: []*commonv2.Piece{
 									{
 										Number:      mockPiece.Number,
-										ParentId:    mockPiece.ParentID,
+										ParentId:    &mockPiece.ParentID,
 										Offset:      mockPiece.Offset,
 										Length:      mockPiece.Length,
 										Digest:      mockPiece.Digest.String(),
@@ -1453,9 +1457,9 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 									Id:            candidateParents[0].Task.ID,
 									Type:          candidateParents[0].Task.Type,
 									Url:           candidateParents[0].Task.URL,
-									Digest:        candidateParents[0].Task.Digest.String(),
-									Tag:           candidateParents[0].Task.Tag,
-									Application:   candidateParents[0].Task.Application,
+									Digest:        &dgst,
+									Tag:           &candidateParents[0].Task.Tag,
+									Application:   &candidateParents[0].Task.Application,
 									Filters:       candidateParents[0].Task.Filters,
 									Header:        candidateParents[0].Task.Header,
 									PieceLength:   candidateParents[0].Task.PieceLength,
@@ -1465,7 +1469,7 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 									Pieces: []*commonv2.Piece{
 										{
 											Number:      mockPiece.Number,
-											ParentId:    mockPiece.ParentID,
+											ParentId:    &mockPiece.ParentID,
 											Offset:      mockPiece.Offset,
 											Length:      mockPiece.Length,
 											Digest:      mockPiece.Digest.String(),
@@ -1556,6 +1560,8 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 				md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{}, errors.New("foo")).Times(1)
 			},
 			expect: func(t *testing.T, resp *schedulerv2.AnnouncePeerResponse_NormalTaskResponse, candidateParents []*resource.Peer) {
+				dgst := candidateParents[0].Task.Digest.String()
+
 				assert := assert.New(t)
 				assert.EqualValues(resp, &schedulerv2.AnnouncePeerResponse_NormalTaskResponse{
 					NormalTaskResponse: &schedulerv2.NormalTaskResponse{
@@ -1570,7 +1576,7 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 								Pieces: []*commonv2.Piece{
 									{
 										Number:      mockPiece.Number,
-										ParentId:    mockPiece.ParentID,
+										ParentId:    &mockPiece.ParentID,
 										Offset:      mockPiece.Offset,
 										Length:      mockPiece.Length,
 										Digest:      mockPiece.Digest.String(),
@@ -1585,9 +1591,9 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 									Id:            candidateParents[0].Task.ID,
 									Type:          candidateParents[0].Task.Type,
 									Url:           candidateParents[0].Task.URL,
-									Digest:        candidateParents[0].Task.Digest.String(),
-									Tag:           candidateParents[0].Task.Tag,
-									Application:   candidateParents[0].Task.Application,
+									Digest:        &dgst,
+									Tag:           &candidateParents[0].Task.Tag,
+									Application:   &candidateParents[0].Task.Application,
 									Filters:       candidateParents[0].Task.Filters,
 									Header:        candidateParents[0].Task.Header,
 									PieceLength:   candidateParents[0].Task.PieceLength,
@@ -1597,7 +1603,7 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 									Pieces: []*commonv2.Piece{
 										{
 											Number:      mockPiece.Number,
-											ParentId:    mockPiece.ParentID,
+											ParentId:    &mockPiece.ParentID,
 											Offset:      mockPiece.Offset,
 											Length:      mockPiece.Length,
 											Digest:      mockPiece.Digest.String(),

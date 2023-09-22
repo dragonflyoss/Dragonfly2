@@ -563,7 +563,7 @@ func ConstructSuccessSmallTaskResponse(candidateParent *resource.Peer) *schedule
 
 		piece := &commonv2.Piece{
 			Number:      candidateParentPiece.Number,
-			ParentId:    candidateParentPiece.ParentID,
+			ParentId:    &candidateParentPiece.ParentID,
 			Offset:      candidateParentPiece.Offset,
 			Length:      candidateParentPiece.Length,
 			TrafficType: candidateParentPiece.TrafficType,
@@ -584,8 +584,8 @@ func ConstructSuccessSmallTaskResponse(candidateParent *resource.Peer) *schedule
 		Id:            candidateParent.Task.ID,
 		Type:          candidateParent.Task.Type,
 		Url:           candidateParent.Task.URL,
-		Tag:           candidateParent.Task.Tag,
-		Application:   candidateParent.Task.Application,
+		Tag:           &candidateParent.Task.Tag,
+		Application:   &candidateParent.Task.Application,
 		Filters:       candidateParent.Task.Filters,
 		Header:        candidateParent.Task.Header,
 		PieceLength:   candidateParent.Task.PieceLength,
@@ -600,7 +600,8 @@ func ConstructSuccessSmallTaskResponse(candidateParent *resource.Peer) *schedule
 
 	// Set digest to parent task.
 	if candidateParent.Task.Digest != nil {
-		parent.Task.Digest = candidateParent.Task.Digest.String()
+		dgst := candidateParent.Task.Digest.String()
+		parent.Task.Digest = &dgst
 	}
 
 	// Set pieces to parent task.
@@ -613,7 +614,7 @@ func ConstructSuccessSmallTaskResponse(candidateParent *resource.Peer) *schedule
 
 		piece := &commonv2.Piece{
 			Number:      taskPiece.Number,
-			ParentId:    taskPiece.ParentID,
+			ParentId:    &taskPiece.ParentID,
 			Offset:      taskPiece.Offset,
 			Length:      taskPiece.Length,
 			TrafficType: taskPiece.TrafficType,
@@ -737,7 +738,7 @@ func ConstructSuccessNormalTaskResponse(dynconfig config.DynconfigInterface, can
 
 			piece := &commonv2.Piece{
 				Number:      candidateParentPiece.Number,
-				ParentId:    candidateParentPiece.ParentID,
+				ParentId:    &candidateParentPiece.ParentID,
 				Offset:      candidateParentPiece.Offset,
 				Length:      candidateParentPiece.Length,
 				TrafficType: candidateParentPiece.TrafficType,
@@ -758,8 +759,8 @@ func ConstructSuccessNormalTaskResponse(dynconfig config.DynconfigInterface, can
 			Id:            candidateParent.Task.ID,
 			Type:          candidateParent.Task.Type,
 			Url:           candidateParent.Task.URL,
-			Tag:           candidateParent.Task.Tag,
-			Application:   candidateParent.Task.Application,
+			Tag:           &candidateParent.Task.Tag,
+			Application:   &candidateParent.Task.Application,
 			Filters:       candidateParent.Task.Filters,
 			Header:        candidateParent.Task.Header,
 			PieceLength:   candidateParent.Task.PieceLength,
@@ -774,7 +775,8 @@ func ConstructSuccessNormalTaskResponse(dynconfig config.DynconfigInterface, can
 
 		// Set digest to parent task.
 		if candidateParent.Task.Digest != nil {
-			parent.Task.Digest = candidateParent.Task.Digest.String()
+			dgst := candidateParent.Task.Digest.String()
+			parent.Task.Digest = &dgst
 		}
 
 		// Set pieces to parent task.
@@ -787,7 +789,7 @@ func ConstructSuccessNormalTaskResponse(dynconfig config.DynconfigInterface, can
 
 			piece := &commonv2.Piece{
 				Number:      taskPiece.Number,
-				ParentId:    taskPiece.ParentID,
+				ParentId:    &taskPiece.ParentID,
 				Offset:      taskPiece.Offset,
 				Length:      taskPiece.Length,
 				TrafficType: taskPiece.TrafficType,
