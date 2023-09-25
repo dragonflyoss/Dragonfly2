@@ -12,7 +12,7 @@ MANAGER_BINARY_NAME=manager
 TRAINER_BINARY_NAME=trainer
 
 PKG=d7y.io/dragonfly/v2
-BUILD_IMAGE=golang:1.20.1-alpine3.16
+BUILD_IMAGE=golang:1.21.1-alpine3.17
 
 VERSION=$(git rev-parse --short HEAD)
 BUILD_TIME=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
