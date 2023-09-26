@@ -19,7 +19,6 @@ package dependency
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/signal"
@@ -200,7 +199,7 @@ func WatchConfig(interval time.Duration, newConfig func() (cfg any), watcher fun
 	var oldData string
 	file := viper.ConfigFileUsed()
 
-	data, err := ioutil.ReadFile(file)
+	data, err := os.ReadFile(file)
 	if err != nil {
 		logger.Errorf("read file %s error: %v", file, err)
 	}
@@ -211,7 +210,7 @@ loop:
 		case <-time.After(interval):
 			// for k8s configmap case, the config file is symbol link
 			// reload file instead use fsnotify
-			data, err = ioutil.ReadFile(file)
+			data, err = os.ReadFile(file)
 			if err != nil {
 				logger.Errorf("read file %s error: %v", file, err)
 				continue loop

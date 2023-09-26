@@ -19,7 +19,6 @@ package rpcserver
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"net"
 	"os"
 	"path"
@@ -681,7 +680,7 @@ func TestServer_ServeDownload(t *testing.T) {
 		peerTaskManager: mockPeerTaskManager,
 	}
 
-	socketDir, err := ioutil.TempDir(os.TempDir(), "d7y-test-***")
+	socketDir, err := os.MkdirTemp(os.TempDir(), "d7y-test-***")
 	assert.Nil(err, "make temp dir should be ok")
 	socketPath := path.Join(socketDir, "rpc.sock")
 	defer os.RemoveAll(socketDir)
@@ -753,7 +752,7 @@ func TestServer_ServePeer(t *testing.T) {
 		storageManager: mockStorageManger,
 	}
 
-	socketDir, err := ioutil.TempDir(os.TempDir(), "d7y-test-***")
+	socketDir, err := os.MkdirTemp(os.TempDir(), "d7y-test-***")
 	assert.Nil(err, "make temp dir should be ok")
 	socketPath := path.Join(socketDir, "rpc.sock")
 	defer os.RemoveAll(socketDir)
@@ -1090,7 +1089,7 @@ func TestServer_SyncPieceTasks(t *testing.T) {
 					peerTaskManager: mockTaskManager,
 				}
 
-				socketDir, err := ioutil.TempDir(os.TempDir(), "d7y-test-***")
+				socketDir, err := os.MkdirTemp(os.TempDir(), "d7y-test-***")
 				assert.Nil(err, "make temp dir should be ok")
 				socketPath := path.Join(socketDir, "rpc.sock")
 				defer os.RemoveAll(socketDir)

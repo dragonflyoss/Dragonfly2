@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -489,7 +488,7 @@ func (s *storage) networkTopologyBackupFilename() string {
 
 // downloadBackups returns download backup file information.
 func (s *storage) downloadBackups() ([]fs.FileInfo, error) {
-	fileInfos, err := ioutil.ReadDir(s.baseDir)
+	fileInfos, err := os.ReadDir(s.baseDir)
 	if err != nil {
 		return nil, err
 	}
@@ -498,7 +497,8 @@ func (s *storage) downloadBackups() ([]fs.FileInfo, error) {
 	regexp := regexp.MustCompile(DownloadFilePrefix)
 	for _, fileInfo := range fileInfos {
 		if !fileInfo.IsDir() && regexp.MatchString(fileInfo.Name()) {
-			backups = append(backups, fileInfo)
+			info, _ := fileInfo.Info()
+			backups = append(backups, info)
 		}
 	}
 
@@ -515,7 +515,7 @@ func (s *storage) downloadBackups() ([]fs.FileInfo, error) {
 
 // networkTopologyBackups returns network topology backup file information.
 func (s *storage) networkTopologyBackups() ([]fs.FileInfo, error) {
-	fileInfos, err := ioutil.ReadDir(s.baseDir)
+	fileInfos, err := os.ReadDir(s.baseDir)
 	if err != nil {
 		return nil, err
 	}
@@ -524,7 +524,8 @@ func (s *storage) networkTopologyBackups() ([]fs.FileInfo, error) {
 	regexp := regexp.MustCompile(NetworkTopologyFilePrefix)
 	for _, fileInfo := range fileInfos {
 		if !fileInfo.IsDir() && regexp.MatchString(fileInfo.Name()) {
-			backups = append(backups, fileInfo)
+			info, _ := fileInfo.Info()
+			backups = append(backups, info)
 		}
 	}
 

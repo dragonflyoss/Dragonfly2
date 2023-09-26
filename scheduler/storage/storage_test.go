@@ -19,7 +19,6 @@ package storage
 import (
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -973,10 +972,10 @@ func TestStorage_ClearDownload(t *testing.T) {
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
 				assert.NoError(s.ClearDownload())
-				fileInfos, err := ioutil.ReadDir(filepath.Join(baseDir))
+				fileInfos, err := os.ReadDir(filepath.Join(baseDir))
 				assert.NoError(err)
 
-				var backups []fs.FileInfo
+				var backups []os.DirEntry
 				regexp := regexp.MustCompile(DownloadFilePrefix)
 				for _, fileInfo := range fileInfos {
 					if !fileInfo.IsDir() && regexp.MatchString(fileInfo.Name()) {
@@ -1029,14 +1028,15 @@ func TestStorage_ClearNetworkTopology(t *testing.T) {
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
 				assert.NoError(s.ClearNetworkTopology())
-				fileInfos, err := ioutil.ReadDir(filepath.Join(baseDir))
+				fileInfos, err := os.ReadDir(filepath.Join(baseDir))
 				assert.NoError(err)
 
 				var backups []fs.FileInfo
 				regexp := regexp.MustCompile(NetworkTopologyFilePrefix)
 				for _, fileInfo := range fileInfos {
 					if !fileInfo.IsDir() && regexp.MatchString(fileInfo.Name()) {
-						backups = append(backups, fileInfo)
+						info, _ := fileInfo.Info()
+						backups = append(backups, info)
 					}
 				}
 				assert.Equal(len(backups), 0)

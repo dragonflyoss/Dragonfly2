@@ -18,7 +18,7 @@ package rpc
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"net"
 	"testing"
 
@@ -61,7 +61,7 @@ func Test_muxConn(t *testing.T) {
 				Conn: &testConn{Conn: nil, buf: bytes.NewBuffer(tc.data[tc.bufSize:])},
 			}
 
-			data, err := ioutil.ReadAll(mc)
+			data, err := io.ReadAll(mc)
 			assert.Nil(err, "read all should ok")
 			assert.Equal(tc.data, data, "data shloud be same")
 		})
