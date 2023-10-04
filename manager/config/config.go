@@ -181,6 +181,9 @@ type PostgresConfig struct {
 	// SSL mode.
 	SSLMode string `yaml:"sslMode" mapstructure:"sslMode"`
 
+	// Disable prepared statement.
+	DisablePreparedStatement bool `yaml:"disablePreparedStatement" mapstructure:"disablePreparedStatement"`
+
 	// Server timezone.
 	Timezone string `yaml:"timezone" mapstructure:"timezone"`
 
@@ -414,11 +417,12 @@ func New() *Config {
 				Migrate: true,
 			},
 			Postgres: PostgresConfig{
-				Port:     DefaultPostgresPort,
-				DBName:   DefaultPostgresDBName,
-				SSLMode:  DefaultPostgresSSLMode,
-				Timezone: DefaultPostgresTimezone,
-				Migrate:  true,
+				Port:                     DefaultPostgresPort,
+				DBName:                   DefaultPostgresDBName,
+				SSLMode:                  DefaultPostgresSSLMode,
+				DisablePreparedStatement: DefaultPostgresDisablePreparedStatement,
+				Timezone:                 DefaultPostgresTimezone,
+				Migrate:                  true,
 			},
 			Redis: RedisConfig{
 				DB:        DefaultRedisDB,

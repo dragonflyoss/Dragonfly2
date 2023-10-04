@@ -56,14 +56,15 @@ var (
 	}
 
 	mockPostgresConfig = PostgresConfig{
-		User:     "foo",
-		Password: "bar",
-		Host:     "localhost",
-		Port:     DefaultPostgresPort,
-		DBName:   DefaultPostgresDBName,
-		SSLMode:  DefaultPostgresSSLMode,
-		Timezone: DefaultPostgresTimezone,
-		Migrate:  true,
+		User:                     "foo",
+		Password:                 "bar",
+		Host:                     "localhost",
+		Port:                     DefaultPostgresPort,
+		DBName:                   DefaultPostgresDBName,
+		SSLMode:                  DefaultPostgresSSLMode,
+		DisablePreparedStatement: DefaultPostgresDisablePreparedStatement,
+		Timezone:                 DefaultPostgresTimezone,
+		Migrate:                  true,
 	}
 
 	mockRedisConfig = RedisConfig{
@@ -160,14 +161,15 @@ func TestConfig_Load(t *testing.T) {
 				Migrate: true,
 			},
 			Postgres: PostgresConfig{
-				User:     "foo",
-				Password: "foo",
-				Host:     "foo",
-				Port:     5432,
-				DBName:   "foo",
-				SSLMode:  "disable",
-				Timezone: "UTC",
-				Migrate:  true,
+				User:                     "foo",
+				Password:                 "foo",
+				Host:                     "foo",
+				Port:                     5432,
+				DBName:                   "foo",
+				SSLMode:                  "disable",
+				DisablePreparedStatement: false,
+				Timezone:                 "UTC",
+				Migrate:                  true,
 			},
 			Redis: RedisConfig{
 				Password:   "bar",
