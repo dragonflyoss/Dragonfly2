@@ -345,7 +345,7 @@ test-coverage:
 
 # Run github actions E2E tests with coverage.
 actions-e2e-test-coverage:
-	@ginkgo -v -r --race --fail-fast --cover --trace --progress test/e2e
+	@ginkgo -v -r --race --fail-fast --cover --trace --show-node-events test/e2e
 	@cat coverprofile.out >> coverage.txt
 .PHONY: actions-e2e-test-coverage
 
@@ -356,12 +356,12 @@ install-e2e-test:
 
 # Run E2E tests.
 e2e-test: install-e2e-test build-e2e-sha256sum build-e2e-download-grpc-test
-	@ginkgo -v -r --race --fail-fast --cover --trace --progress test/e2e
+	@ginkgo -v -r --race --fail-fast --cover --trace --show-node-events test/e2e
 .PHONY: e2e-test
 
 # Run E2E tests with coverage.
 e2e-test-coverage: install-e2e-test build-e2e-sha256sum build-e2e-download-grpc-test
-	@ginkgo -v -r --race --fail-fast --cover --trace --progress test/e2e
+	@ginkgo -v -r --race --fail-fast --cover --trace --show-node-events test/e2e
 	@cat coverprofile.out >> coverage.txt
 .PHONY: e2e-test-coverage
 

@@ -72,7 +72,7 @@ install-ginkgo() {
   if which ginkgo >/dev/null ; then
       print_step_info "ginkgo has been installed"
   else
-      go install github.com/onsi/ginkgo/v2/ginkgo@v2.8.3
+      go install github.com/onsi/ginkgo/v2/ginkgo@v2.12.0
   fi
 }
 
