@@ -113,6 +113,9 @@ const (
 	// DefaultPostgresSSLMode is default ssl mode for postgres.
 	DefaultPostgresSSLMode = "disable"
 
+	// DefaultPostgresPreferSimpleProtocol is default disable prepared statement option for postgres.
+	DefaultPostgresPreferSimpleProtocol = false
+
 	// DefaultPostgresTimezone is default timezone for postgres.
 	DefaultPostgresTimezone = "UTC"
 )

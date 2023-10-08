@@ -34,8 +34,11 @@ func newPostgres(cfg *config.Config) (*gorm.DB, error) {
 	// Format dsn string.
 	dsn := formatPostgresDSN(postgresCfg)
 
-	// Connect to mysql.
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+	// Connect to postgres.
+	db, err := gorm.Open(postgres.New(postgres.Config{
+		DSN:                  dsn,
+		PreferSimpleProtocol: cfg.Database.Postgres.PreferSimpleProtocol,
+	}), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
 			SingularTable: true,
 		},
