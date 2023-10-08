@@ -114,7 +114,7 @@ jobs:
           make build-e2e-download-grpc-test
           # generate an empty file
           docker exec kind-control-plane touch /tmp/empty-file
-          ginkgo -v -r --race --fail-fast --cover --trace --progress --skip=${{ matrix.skip }} test/e2e -- \
+          ginkgo -v -r --race --fail-fast --cover --trace --show-node-events --skip=${{ matrix.skip }} test/e2e -- \
               --feature-gates=dfget-range=true,dfget-open-range=true,dfget-empty-file=true,dfget-recursive=true
           cat coverprofile.out >> coverage.txt
 
