@@ -240,7 +240,8 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 	}
 	log := logger.With(logKV...)
 
-	log.Infof("start download with url: %s, header: %#v", url, req.Header)
+	log.Infof("start download with url: %s", url)
+	log.Debugf("request url: %s, with header: %#v", url, req.Header)
 
 	// Init meta value
 	meta := &commonv1.UrlMeta{Header: map[string]string{}}
