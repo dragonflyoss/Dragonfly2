@@ -107,12 +107,12 @@ func (d *dynconfigManager) GetResolveSchedulerAddrs() ([]resolver.Address, error
 			// Check health with ip address.
 			target := fmt.Sprintf("%s:%d", ip, scheduler.GetPort())
 			if err := healthclient.Check(context.Background(), target, dialOptions...); err != nil {
-				logger.Warnf("scheduler ip address %s is unreachable: %s", addr, err.Error())
+				logger.Warnf("scheduler ip address %s is unreachable: %s", target, err.Error())
 
 				// Check health with host address.
 				target = fmt.Sprintf("%s:%d", scheduler.GetHostname(), scheduler.GetPort())
 				if err := healthclient.Check(context.Background(), target, dialOptions...); err != nil {
-					logger.Warnf("scheduler host address %s is unreachable: %s", addr, err.Error())
+					logger.Warnf("scheduler host address %s is unreachable: %s", target, err.Error())
 				} else {
 					addr = target
 				}
