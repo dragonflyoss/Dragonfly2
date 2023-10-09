@@ -61,5 +61,5 @@ type GetPeersQuery struct {
 	BuildPlatform      string `form:"build_platform" binding:"omitempty"`
 	SchedulerClusterID uint   `form:"scheduler_cluster_id" binding:"omitempty"`
 	Page               int    `form:"page" binding:"omitempty,gte=1"`
-	PerPage            int    `form:"per_page" binding:"omitempty,gte=1,lte=1000000"`
+	PerPage            int    `form:"per_page" binding:"omitempty,gte=1,lte=10000000"`
 }
