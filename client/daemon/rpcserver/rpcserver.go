@@ -429,6 +429,7 @@ func (s *server) recursiveDownload(ctx context.Context, req *dfdaemonv1.DownRequ
 	if s.cacheRecursiveMetadata > 0 {
 		log.Infof("start to download with p2p metadata")
 		if err = s.recursiveDownloadWithP2PMetadata(ctx, log, span, traceID, req, stream); err == nil {
+			log.Infof("download with p2p metadata success")
 			return nil
 		}
 		log.Warnf("download with p2p metadata failed, fallback to direct metadata")
@@ -495,7 +496,6 @@ loop:
 		childReq := copyDownRequest(req)
 		// update correct output
 		childReq.Output = path.Join(req.Output, strings.TrimPrefix(urlEntry.URL.Path, purl.Path))
-		log.Infof("target output: %s", strings.TrimPrefix(childReq.Output, req.Output))
 
 		u := urlEntry.URL
 		childReq.Url = u.String()
@@ -521,6 +521,7 @@ loop:
 		wg.Add(1)
 		select {
 		case requestCh <- childReq:
+			log.Debugf("sent download request %s", childReq.Url)
 		case <-ctx.Done():
 			// request did not send, call Done to rollback
 			wg.Done()
@@ -537,6 +538,7 @@ loop:
 		return downloadErrors()[0]
 	}
 
+	log.Info("all tasks processed")
 	return nil
 }
 
