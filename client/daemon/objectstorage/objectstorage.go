@@ -580,6 +580,9 @@ func (o *objectStorage) importObjectToBackend(ctx context.Context, bucketName, o
 	if err != nil {
 		return err
 	}
+	// OSS SDK will convert io.Reader into io.ReadCloser and
+	// then use close func to cause repeated closing,
+	// so there is no error checking for file close.
 	defer f.Close()
 
 	return o.objectStorageClient.PutObject(ctx, bucketName, objectKey, dgst.String(), f)
