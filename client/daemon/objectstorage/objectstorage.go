@@ -259,9 +259,13 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 		bucketName = params.ID
 		objectKey  = strings.TrimPrefix(params.ObjectKey, string(os.PathSeparator))
 		filter     = query.Filter
-		rg         *nethttp.Range
 		err        error
 	)
+
+	// Initialize request of the stream task.
+	req := &peer.StreamTaskRequest{
+		PeerID: o.peerIDGenerator.PeerID(),
+	}
 
 	// Initialize filter field.
 	urlMeta := &commonv1.UrlMeta{Filter: o.config.ObjectStorage.Filter}
@@ -290,7 +294,7 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 			ctx.JSON(http.StatusRequestedRangeNotSatisfiable, gin.H{"errors": err.Error()})
 			return
 		}
-		rg = &rangeValue
+		req.Range = &rangeValue
 
 		// Range header in dragonfly is without "bytes=".
 		urlMeta.Range = strings.TrimPrefix(rangeHeader, "bytes=")
@@ -299,23 +303,20 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 		// there is no need to calculate md5, set this value to empty.
 		urlMeta.Digest = ""
 	}
+	req.URLMeta = urlMeta
 
 	signURL, err := o.objectStorageClient.GetSignURL(ctx, bucketName, objectKey, objectstorage.MethodGet, defaultSignExpireTime)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
 		return
 	}
+	req.URL = signURL
 
 	taskID := idgen.TaskIDV1(signURL, urlMeta)
 	log := logger.WithTaskID(taskID)
 	log.Infof("get object %s meta: %s %#v", objectKey, signURL, urlMeta)
 
-	reader, attr, err := o.peerTaskManager.StartStreamTask(ctx, &peer.StreamTaskRequest{
-		URL:     signURL,
-		URLMeta: urlMeta,
-		Range:   rg,
-		PeerID:  o.peerIDGenerator.PeerID(),
-	})
+	reader, attr, err := o.peerTaskManager.StartStreamTask(ctx, req)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
 		return
