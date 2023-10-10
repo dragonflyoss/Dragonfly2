@@ -18,6 +18,7 @@ package dependency
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -173,7 +174,7 @@ func initConfig(useConfigFile bool, name string, config any) {
 		// If a config file is found, read it in.
 		if err := viper.ReadInConfig(); err != nil {
 			ignoreErr := false
-			if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			if errors.As(err, &viper.ConfigFileNotFoundError{}) {
 				if cfgFile == "" {
 					ignoreErr = true
 				}
