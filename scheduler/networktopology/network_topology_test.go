@@ -309,7 +309,7 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 					probedCountKeys = append(probedCountKeys, pkgredis.MakeProbedCountKeyInScheduler(host.ID))
 				}
 
-				mockRDBClient.ExpectMGet(probedCountKeys...).SetVal([]interface{}{"6", "5", "4", "3", "2", "1"})
+				mockRDBClient.ExpectMGet(probedCountKeys...).SetVal([]any{"6", "5", "4", "3", "2", "1"})
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error, hosts []*resource.Host) {
 				assert := assert.New(t)
@@ -342,7 +342,7 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 					probedCountKeys = append(probedCountKeys, pkgredis.MakeProbedCountKeyInScheduler(host.ID))
 				}
 
-				mockRDBClient.ExpectMGet(probedCountKeys...).SetVal([]interface{}{"1"})
+				mockRDBClient.ExpectMGet(probedCountKeys...).SetVal([]any{"1"})
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error, hosts []*resource.Host) {
 				assert := assert.New(t)
@@ -426,7 +426,7 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 					probedCountKeys = append(probedCountKeys, pkgredis.MakeProbedCountKeyInScheduler(host.ID))
 				}
 
-				mockRDBClient.ExpectMGet(probedCountKeys...).SetVal([]interface{}{"foo", "5", "4", "3", "2", "1"})
+				mockRDBClient.ExpectMGet(probedCountKeys...).SetVal([]any{"foo", "5", "4", "3", "2", "1"})
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error, hosts []*resource.Host) {
 				assert := assert.New(t)
@@ -456,7 +456,7 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 					probedCountKeys = append(probedCountKeys, pkgredis.MakeProbedCountKeyInScheduler(host.ID))
 				}
 
-				mockRDBClient.ExpectMGet(probedCountKeys...).SetVal([]interface{}{6, "5", "4", "3", "2", "1"})
+				mockRDBClient.ExpectMGet(probedCountKeys...).SetVal([]any{6, "5", "4", "3", "2", "1"})
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error, hosts []*resource.Host) {
 				assert := assert.New(t)
@@ -486,7 +486,7 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 					probedCountKeys = append(probedCountKeys, pkgredis.MakeProbedCountKeyInScheduler(host.ID))
 				}
 
-				mockRDBClient.ExpectMGet(probedCountKeys...).SetVal([]interface{}{nil, "5", "4", "3", "2", "1"})
+				mockRDBClient.ExpectMGet(probedCountKeys...).SetVal([]any{nil, "5", "4", "3", "2", "1"})
 				mockRDBClient.ExpectSet(probedCountKeys[0], 0, 0).SetVal("ok")
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error, hosts []*resource.Host) {
@@ -523,7 +523,7 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 					probedCountKeys = append(probedCountKeys, pkgredis.MakeProbedCountKeyInScheduler(host.ID))
 				}
 
-				mockRDBClient.ExpectMGet(probedCountKeys...).SetVal([]interface{}{nil, "5", "4", "3", "2", "1"})
+				mockRDBClient.ExpectMGet(probedCountKeys...).SetVal([]any{nil, "5", "4", "3", "2", "1"})
 				mockRDBClient.ExpectSet(probedCountKeys[0], 0, 0).SetErr(errors.New("Initialize the probedCount value of host in redis error"))
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error, hosts []*resource.Host) {

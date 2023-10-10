@@ -27,7 +27,7 @@ import (
 
 var (
 	resourceClientBuilder = map[string]ResourceClientBuilder{}
-	resourceClientOptions = map[string]interface{}{}
+	resourceClientOptions = map[string]any{}
 	resourceDirector      = map[string]Director{}
 )
 
@@ -78,7 +78,7 @@ func UnRegisterBuilder(scheme string) {
 }
 
 // InitSourceClients will initialize all resource clients which registered by RegisterBuilder.
-func InitSourceClients(opts map[string]interface{}) error {
+func InitSourceClients(opts map[string]any) error {
 	// save options for resource plugin
 	resourceClientOptions = opts
 

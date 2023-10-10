@@ -210,14 +210,14 @@ func fetchAuthInfo(host string, skipCheckExist bool) (string, error) {
 		return "", err
 	}
 
-	var jsonData map[string]interface{}
+	var jsonData map[string]any
 	if err = json.Unmarshal(databytes, &jsonData); err != nil {
 		return "", err
 	}
 
 	for _, v := range jsonData {
-		for registry, v1 := range (v).(map[string]interface{}) {
-			for _, credentials := range (v1).(map[string]interface{}) {
+		for registry, v1 := range (v).(map[string]any) {
+			for _, credentials := range (v1).(map[string]any) {
 				if registry == host {
 					auth = credentials.(string)
 				}
@@ -268,7 +268,7 @@ func (client *orasSourceClient) fetchTokenWithHeader(ctx context.Context, authHe
 	}
 	defer response.Body.Close()
 
-	var tokenData map[string]interface{}
+	var tokenData map[string]any
 	if err = json.Unmarshal(token, &tokenData); err != nil {
 		return "", err
 	}
