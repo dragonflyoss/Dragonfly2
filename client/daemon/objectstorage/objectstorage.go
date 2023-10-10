@@ -559,14 +559,14 @@ func (o *objectStorage) copyObject(ctx *gin.Context) {
 }
 
 // getAvailableSeedPeer uses to calculate md5 with file header.
-func (o *objectStorage) md5FromFileHeader(fileHeader *multipart.FileHeader) (dig *digest.Digest) {
+func (o *objectStorage) md5FromFileHeader(fileHeader *multipart.FileHeader) (dgst *digest.Digest) {
 	f, err := fileHeader.Open()
 	if err != nil {
 		return nil
 	}
 	defer func() {
 		if err := f.Close(); err != nil {
-			dig = nil
+			dgst = nil
 		}
 	}()
 
@@ -595,9 +595,8 @@ func (o *objectStorage) importObjectToLocalStorage(ctx context.Context, taskID, 
 		return nil
 	}
 	defer func() {
-		errClose := f.Close()
-		if errClose != nil {
-			err = errors.Join(err, errClose)
+		if cerr := f.Close(); cerr != nil {
+			err = errors.Join(err, cerr)
 		}
 	}()
 
