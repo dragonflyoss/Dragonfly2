@@ -120,7 +120,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	tmpOpt := config.NewDaemonConfig()
 	err := tmpOpt.Load(viper.ConfigFileUsed())
 	if err != nil {
-		return nil, fmt.Errorf("read config error: %s", err)
+		return nil, fmt.Errorf("read config error: %w", err)
 	}
 
 	err = source.InitSourceClients(tmpOpt.Download.ResourceClients)
@@ -400,15 +400,17 @@ func loadLegacyGPRCTLSCredentials(opt config.SecurityOption, certifyClient *cert
 	return loadGPRCTLSCredentialsWithOptions(opt.TLSConfig, security, options...)
 }
 
+var noTLSConfig *tls.Config = nil
+
 func loadGlobalGPRCTLSCredentials(certifyClient *certify.Certify, security config.GlobalSecurityOption) (credentials.TransportCredentials, error) {
-	return loadGPRCTLSCredentialsWithOptions(nil, security, func(c *tls.Config) {
+	return loadGPRCTLSCredentialsWithOptions(noTLSConfig, security, func(c *tls.Config) {
 		c.GetCertificate = config.GetCertificate(certifyClient)
 		c.GetClientCertificate = certifyClient.GetClientCertificate
 	})
 }
 
 func loadManagerGPRCTLSCredentials(security config.GlobalSecurityOption) (credentials.TransportCredentials, error) {
-	return loadGPRCTLSCredentialsWithOptions(nil, security, func(c *tls.Config) {
+	return loadGPRCTLSCredentialsWithOptions(noTLSConfig, security, func(c *tls.Config) {
 		c.ClientAuth = tls.NoClientCert
 	})
 }
@@ -418,11 +420,11 @@ func loadGPRCTLSCredentialsWithOptions(baseConfig *tls.Config, security config.G
 	certPool := x509.NewCertPool()
 
 	if security.CACert == "" {
-		return nil, fmt.Errorf("empty glocal CA's certificate")
+		return nil, errors.New("empty global CA's certificate")
 	}
 
 	if !certPool.AppendCertsFromPEM([]byte(security.CACert)) {
-		return nil, fmt.Errorf("failed to add global CA's certificate")
+		return nil, errors.New("failed to add global CA's certificate")
 	}
 
 	var tlsConfig *tls.Config
