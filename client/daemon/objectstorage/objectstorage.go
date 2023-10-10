@@ -579,11 +579,7 @@ func (o *objectStorage) importObjectToBackend(ctx context.Context, bucketName, o
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if cerr := f.Close(); cerr != nil {
-			err = errors.Join(err, cerr)
-		}
-	}()
+	defer f.Close()
 
 	return o.objectStorageClient.PutObject(ctx, bucketName, objectKey, dgst.String(), f)
 }
