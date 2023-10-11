@@ -67,9 +67,9 @@ type Refresher interface {
 	Refresh() error
 }
 
-// UnaryClientInterceptor returns a new unary client interceptor that refresh dynconfig addresses when calling error.
+// RefresherUnaryClientInterceptor returns a new unary client interceptor that refresh dynconfig addresses when calling error.
 func RefresherUnaryClientInterceptor(r Refresher) grpc.UnaryClientInterceptor {
-	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+	return func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 		err := invoker(ctx, method, req, reply, cc, opts...)
 		if s, ok := status.FromError(err); ok {
 			if s.Code() == codes.ResourceExhausted || s.Code() == codes.Unavailable {
@@ -82,7 +82,7 @@ func RefresherUnaryClientInterceptor(r Refresher) grpc.UnaryClientInterceptor {
 	}
 }
 
-// StreamClientInterceptor returns a new stream client interceptor that refresh dynconfig addresses when calling error.
+// RefresherStreamClientInterceptor returns a new stream client interceptor that refresh dynconfig addresses when calling error.
 func RefresherStreamClientInterceptor(r Refresher) grpc.StreamClientInterceptor {
 	return func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
 		clientStream, err := streamer(ctx, desc, cc, method, opts...)

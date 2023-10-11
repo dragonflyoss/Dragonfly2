@@ -249,7 +249,7 @@ func loadSourceClients(cmd *cobra.Command) error {
 		if !os.IsNotExist(err) {
 			logger.Warnf("load daemon config err: %s, use default config", err)
 		}
-		if err = source.InitSourceClients(map[string]interface{}{}); err != nil {
+		if err = source.InitSourceClients(map[string]any{}); err != nil {
 			logger.Errorf("init source clients with default config err: %s", err)
 			return err
 		}
