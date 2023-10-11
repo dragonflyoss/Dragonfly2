@@ -323,15 +323,13 @@ func (v *V1) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult) 
 		go v.createDownloadRecord(peer, parents, req)
 		v.handleTaskSuccess(ctx, peer.Task, req)
 		v.handlePeerSuccess(ctx, peer)
-		metrics.DownloadPeerDuration.WithLabelValues(priority.String(), peer.Task.Type.String(),
-			peer.Task.Tag, peer.Task.Application, peer.Task.ContentLength.String(), peer.Host.Type.Name()).Observe(float64(req.GetCost()))
+		metrics.DownloadPeerDuration.WithLabelValues(metrics.CalculateSizeLevel(peer.Task.ContentLength.Load()).String()).Observe(float64(req.GetCost()))
 		return nil
 	}
 
 	go v.createDownloadRecord(peer, parents, req)
 	v.handlePeerSuccess(ctx, peer)
-	metrics.DownloadPeerDuration.WithLabelValues(priority.String(), peer.Task.Type.String(),
-		peer.Task.Tag, peer.Task.Application, peer.Task.ContentLength.String(), peer.Host.Type.Name()).Observe(float64(req.GetCost()))
+	metrics.DownloadPeerDuration.WithLabelValues(metrics.CalculateSizeLevel(peer.Task.ContentLength.Load()).String()).Observe(float64(req.GetCost()))
 	return nil
 }
 
