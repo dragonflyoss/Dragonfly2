@@ -36,7 +36,7 @@ type oauthGoogle struct {
 	*oauth2.Config
 }
 
-func newGoogle(name, clientID, clientSecret, redirectURL string) *oauthGoogle {
+func newGoogle(clientID, clientSecret, redirectURL string) *oauthGoogle {
 	return &oauthGoogle{
 		Config: &oauth2.Config{
 			ClientID:     clientID,
