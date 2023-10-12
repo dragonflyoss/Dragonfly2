@@ -57,7 +57,7 @@ func newPostgres(cfg *config.Config) (*gorm.DB, error) {
 	}
 
 	// Run seed.
-	if err := seed(cfg, db); err != nil {
+	if err := seed(db); err != nil {
 		return nil, err
 	}
 
