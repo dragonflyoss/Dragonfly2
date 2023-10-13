@@ -46,32 +46,16 @@ type Oauth interface {
 	GetUser(*oauth2.Token) (*User, error)
 }
 
-type oauth struct {
-	Oauth Oauth
-}
-
 func New(name, clientID, clientSecret, redirectURL string) (Oauth, error) {
 	var o Oauth
 	switch name {
 	case Google:
-		o = newGoogle(name, clientID, clientSecret, redirectURL)
+		o = newGoogle(clientID, clientSecret, redirectURL)
 	case Github:
-		o = newGithub(name, clientID, clientSecret, redirectURL)
+		o = newGithub(clientID, clientSecret, redirectURL)
 	default:
 		return nil, errors.New("invalid oauth name")
 	}
 
 	return o, nil
-}
-
-func (g *oauth) AuthCodeURL() (string, error) {
-	return g.Oauth.AuthCodeURL()
-}
-
-func (g *oauth) Exchange(code string) (*oauth2.Token, error) {
-	return g.Oauth.Exchange(code)
-}
-
-func (g *oauth) GetUser(token *oauth2.Token) (*User, error) {
-	return g.Oauth.GetUser(token)
 }
