@@ -41,7 +41,7 @@ type SyncPeers interface {
 	// Run sync peers.
 	Run(context.Context) error
 
-	// Started sync peers server.
+	// Serve started sync peers server.
 	Serve()
 
 	// Stop sync peers server.
@@ -108,7 +108,7 @@ func (s *syncPeers) Run(ctx context.Context) error {
 	return nil
 }
 
-// Started sync peers server.
+// Serve started sync peers server.
 func (s *syncPeers) Serve() {
 	tick := time.NewTicker(s.config.Job.SyncPeers.Interval)
 	for {

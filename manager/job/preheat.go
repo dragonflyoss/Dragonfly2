@@ -125,7 +125,7 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []models.Schedul
 			},
 		}
 	default:
-		return nil, errors.New("unknow preheat type")
+		return nil, errors.New("unknown preheat type")
 	}
 
 	return p.createGroupJob(ctx, files, queues)
@@ -202,7 +202,7 @@ func (p *preheat) getLayers(ctx context.Context, url, tag, filter string, header
 		}
 	}
 
-	layers, err := p.parseLayers(resp, url, tag, filter, header, image)
+	layers, err := p.parseLayers(resp, tag, filter, header, image)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +237,7 @@ func (p *preheat) getManifests(ctx context.Context, url string, header http.Head
 }
 
 // parseLayers parses layers of image.
-func (p *preheat) parseLayers(resp *http.Response, url, tag, filter string, header http.Header, image *preheatImage) ([]internaljob.PreheatRequest, error) {
+func (p *preheat) parseLayers(resp *http.Response, tag, filter string, header http.Header, image *preheatImage) ([]internaljob.PreheatRequest, error) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -319,9 +319,9 @@ func authURL(wwwAuth []string) string {
 		polished = append(polished, strings.ReplaceAll(it, "\"", ""))
 	}
 
-	fileds := strings.Split(polished[0], ",")
-	host := strings.Split(fileds[0], "=")[1]
-	query := strings.Join(fileds[1:], "&")
+	fields := strings.Split(polished[0], ",")
+	host := strings.Split(fields[0], "=")[1]
+	query := strings.Join(fields[1:], "&")
 	return fmt.Sprintf("%s?%s", host, query)
 }
 
