@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	// Default name for the cluster.
+	// DefaultClusterName name for the cluster.
 	DefaultClusterName = "cluster-1"
 )
 
@@ -98,7 +98,7 @@ func migrate(db *gorm.DB) error {
 	)
 }
 
-func seed(cfg *config.Config, db *gorm.DB) error {
+func seed(db *gorm.DB) error {
 	// Create default scheduler cluster.
 	var schedulerClusterCount int64
 	if err := db.Model(models.SchedulerCluster{}).Count(&schedulerClusterCount).Error; err != nil {
