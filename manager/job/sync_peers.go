@@ -167,10 +167,6 @@ func (s *syncPeers) createSyncPeers(ctx context.Context, scheduler models.Schedu
 		return nil, err
 	}
 
-	if len(hosts) == 0 {
-		return nil, fmt.Errorf("can not found peers")
-	}
-
 	return hosts, nil
 }
 
@@ -182,7 +178,7 @@ func (s *syncPeers) mergePeers(ctx context.Context, scheduler models.Scheduler, 
 		syncPeers[result.ID] = result
 	}
 
-	rows, err := s.db.Model(&models.Peer{}).Find(&models.Peer{SchedulerClusterID: scheduler.ID}).Rows()
+	rows, err := s.db.Model(&models.Peer{}).Find(&models.Peer{SchedulerClusterID: scheduler.SchedulerClusterID}).Rows()
 	if err != nil {
 		log.Error(err)
 		return
@@ -200,7 +196,7 @@ func (s *syncPeers) mergePeers(ctx context.Context, scheduler models.Scheduler, 
 		// the sync peer results and delete the sync peer from the sync peers map.
 		id := idgen.HostIDV2(peer.IP, peer.Hostname)
 		if syncPeer, ok := syncPeers[id]; ok {
-			if err := s.db.WithContext(ctx).Preload("User").First(&models.Peer{}, peer.ID).Updates(models.Peer{
+			if err := s.db.WithContext(ctx).First(&models.Peer{}, peer.ID).Updates(models.Peer{
 				Type:              syncPeer.Type.Name(),
 				IDC:               syncPeer.Network.IDC,
 				Location:          syncPeer.Network.Location,
