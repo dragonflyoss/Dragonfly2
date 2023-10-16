@@ -66,6 +66,9 @@ func handshakeTLSConn(clientConn net.Conn, config *tls.Config) (net.Conn, error)
 }
 
 func (proxy *Proxy) handleTLSConn(clientConn net.Conn, port int) {
+	proxy.wg.Add(1)
+	defer proxy.wg.Done()
+
 	var serverName string
 	sConfig := new(tls.Config)
 	if !proxy.cert.Leaf.IsCA {
