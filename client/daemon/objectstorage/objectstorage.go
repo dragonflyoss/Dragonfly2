@@ -259,9 +259,13 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 		bucketName = params.ID
 		objectKey  = strings.TrimPrefix(params.ObjectKey, string(os.PathSeparator))
 		filter     = query.Filter
-		rg         *nethttp.Range
 		err        error
 	)
+
+	// Initialize request of the stream task.
+	req := &peer.StreamTaskRequest{
+		PeerID: o.peerIDGenerator.PeerID(),
+	}
 
 	// Initialize filter field.
 	urlMeta := &commonv1.UrlMeta{Filter: o.config.ObjectStorage.Filter}
@@ -290,7 +294,7 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 			ctx.JSON(http.StatusRequestedRangeNotSatisfiable, gin.H{"errors": err.Error()})
 			return
 		}
-		rg = &rangeValue
+		req.Range = &rangeValue
 
 		// Range header in dragonfly is without "bytes=".
 		urlMeta.Range = strings.TrimPrefix(rangeHeader, "bytes=")
@@ -299,23 +303,20 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 		// there is no need to calculate md5, set this value to empty.
 		urlMeta.Digest = ""
 	}
+	req.URLMeta = urlMeta
 
 	signURL, err := o.objectStorageClient.GetSignURL(ctx, bucketName, objectKey, objectstorage.MethodGet, defaultSignExpireTime)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
 		return
 	}
+	req.URL = signURL
 
 	taskID := idgen.TaskIDV1(signURL, urlMeta)
 	log := logger.WithTaskID(taskID)
 	log.Infof("get object %s meta: %s %#v", objectKey, signURL, urlMeta)
 
-	reader, attr, err := o.peerTaskManager.StartStreamTask(ctx, &peer.StreamTaskRequest{
-		URL:     signURL,
-		URLMeta: urlMeta,
-		Range:   rg,
-		PeerID:  o.peerIDGenerator.PeerID(),
-	})
+	reader, attr, err := o.peerTaskManager.StartStreamTask(ctx, req)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
 		return
@@ -559,14 +560,14 @@ func (o *objectStorage) copyObject(ctx *gin.Context) {
 }
 
 // getAvailableSeedPeer uses to calculate md5 with file header.
-func (o *objectStorage) md5FromFileHeader(fileHeader *multipart.FileHeader) (dig *digest.Digest) {
+func (o *objectStorage) md5FromFileHeader(fileHeader *multipart.FileHeader) (dgst *digest.Digest) {
 	f, err := fileHeader.Open()
 	if err != nil {
 		return nil
 	}
 	defer func() {
 		if err := f.Close(); err != nil {
-			dig = nil
+			dgst = nil
 		}
 	}()
 
@@ -579,6 +580,9 @@ func (o *objectStorage) importObjectToBackend(ctx context.Context, bucketName, o
 	if err != nil {
 		return err
 	}
+	// OSS SDK will convert io.Reader into io.ReadCloser and
+	// then use close func to cause repeated closing,
+	// so there is no error checking for file close.
 	defer f.Close()
 
 	return o.objectStorageClient.PutObject(ctx, bucketName, objectKey, dgst.String(), f)
@@ -591,9 +595,8 @@ func (o *objectStorage) importObjectToLocalStorage(ctx context.Context, taskID, 
 		return nil
 	}
 	defer func() {
-		errClose := f.Close()
-		if errClose != nil {
-			err = errors.Join(err, errClose)
+		if cerr := f.Close(); cerr != nil {
+			err = errors.Join(err, cerr)
 		}
 	}()
 

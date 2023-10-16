@@ -324,7 +324,7 @@ type DownloadOption struct {
 	CacheRecursiveMetadata time.Duration       `mapstructure:"cacheRecursiveMetadata" yaml:"cacheRecursiveMetadata"`
 }
 
-type ResourceClientsOption map[string]interface{}
+type ResourceClientsOption map[string]any
 
 type TransportOption struct {
 	DialTimeout           time.Duration `mapstructure:"dialTimeout" yaml:"dialTimeout"`

@@ -35,7 +35,7 @@ type oauthGithub struct {
 	*oauth2.Config
 }
 
-func newGithub(name, clientID, clientSecret, redirectURL string) *oauthGithub {
+func newGithub(clientID, clientSecret, redirectURL string) *oauthGithub {
 	return &oauthGithub{
 		Config: &oauth2.Config{
 			ClientID:     clientID,
