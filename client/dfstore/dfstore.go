@@ -487,7 +487,8 @@ func (dfs *dfstore) PutObjectRequestWithContext(ctx context.Context, input *PutO
 		return nil, err
 	}
 
-	if _, err := io.Copy(part, input.Reader); err != nil {
+	buf := make([]byte, 256*1024*1024)
+	if _, err := io.CopyBuffer(part, input.Reader, buf); err != nil {
 		return nil, err
 	}
 
