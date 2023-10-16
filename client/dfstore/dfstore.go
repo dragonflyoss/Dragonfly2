@@ -46,6 +46,7 @@ const (
 
 	// MaxGetObjectMetadatasLimit is the max limit of get object metadatas.
 	MaxGetObjectMetadatasLimit = 1000
+	// DefaultPutObjectBufferSize is the buffer size of io.CopyBuffer 
 	DefaultPutObjectBufferSize = 64*1024*1024
 )
 
