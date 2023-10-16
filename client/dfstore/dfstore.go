@@ -46,6 +46,7 @@ const (
 
 	// MaxGetObjectMetadatasLimit is the max limit of get object metadatas.
 	MaxGetObjectMetadatasLimit = 1000
+	DefaultPutObjectBufferSize = 64*1024*1024
 )
 
 // Dfstore is the interface used for object storage.
@@ -487,7 +488,7 @@ func (dfs *dfstore) PutObjectRequestWithContext(ctx context.Context, input *PutO
 		return nil, err
 	}
 
-	buf := make([]byte, 256*1024*1024)
+	buf := make([]byte, DefaultPutObjectBufferSize) 
 	if _, err := io.CopyBuffer(part, input.Reader, buf); err != nil {
 		return nil, err
 	}
