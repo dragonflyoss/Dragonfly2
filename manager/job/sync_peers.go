@@ -85,8 +85,10 @@ func (s *syncPeers) Run(ctx context.Context) error {
 			continue
 		}
 
+		logger.Infof("sync peers find candidate scheduler cluster %s", candidateSchedulerCluster.Name)
 		candidateSchedulers = append(candidateSchedulers, scheduler)
 	}
+	logger.Infof("sync peers find candidate schedulers count is %d", len(candidateSchedulers))
 
 	// Send sync peer requests to all available schedulers,
 	// and merge the sync peer results with the data in
