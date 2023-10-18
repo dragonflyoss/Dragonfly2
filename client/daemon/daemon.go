@@ -815,6 +815,13 @@ func (cd *clientDaemon) Serve() error {
 func (cd *clientDaemon) Stop() {
 	cd.once.Do(func() {
 		close(cd.done)
+
+		if cd.ProxyManager.IsEnabled() {
+			if err := cd.ProxyManager.Stop(); err != nil {
+				logger.Errorf("proxy manager stop failed %s", err)
+			}
+		}
+
 		if cd.schedulerClient != nil {
 			if !cd.Option.KeepStorage {
 				logger.Info("leave host with scheduler client")
@@ -843,12 +850,6 @@ func (cd *clientDaemon) Stop() {
 		if cd.Option.ObjectStorage.Enable {
 			if err := cd.ObjectStorage.Stop(); err != nil {
 				logger.Errorf("object storage stop failed %s", err)
-			}
-		}
-
-		if cd.ProxyManager.IsEnabled() {
-			if err := cd.ProxyManager.Stop(); err != nil {
-				logger.Errorf("proxy manager stop failed %s", err)
 			}
 		}
 
