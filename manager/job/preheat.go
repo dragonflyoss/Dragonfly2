@@ -32,7 +32,10 @@ import (
 	"time"
 
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
-	"github.com/distribution/distribution/v3"
+	distribution "github.com/distribution/distribution/v3"
+	"github.com/distribution/distribution/v3/manifest/manifestlist"
+	"github.com/distribution/distribution/v3/manifest/ocischema"
+	"github.com/distribution/distribution/v3/manifest/schema1"
 	"github.com/distribution/distribution/v3/manifest/schema2"
 	"github.com/go-http-utils/headers"
 	"github.com/google/uuid"
@@ -218,7 +221,12 @@ func (p *preheat) getManifests(ctx context.Context, url string, header http.Head
 	}
 
 	req.Header = header
-	req.Header.Add(headers.Accept, schema2.MediaTypeManifest)
+	// 参考 docker pull 源码 moby https://github.com/moby/moby/blob/6040283f23efbd085eed90fa72d12ae73119837e/vendor/github.com/docker/distribution/registry/client/repository.go#L313
+	for _, d := range distribution.ManifestMediaTypes() {
+		req.Header.Add(headers.Accept, d)
+	}
+
+	// TOOD: 根据不同类型解析 manifest
 
 	client := &http.Client{
 		Timeout: timeout,
@@ -243,10 +251,13 @@ func (p *preheat) parseLayers(resp *http.Response, tag, filter string, header ht
 		return nil, err
 	}
 
-	manifest, _, err := distribution.UnmarshalManifest(schema2.MediaTypeManifest, body)
+	mt := resp.Header.Get("Content-Type")
+	manifest, _, err := distribution.UnmarshalManifest(mt, body)
 	if err != nil {
 		return nil, err
 	}
+
+	// TODO: manifest type
 
 	var layers []internaljob.PreheatRequest
 	for _, v := range manifest.References() {
@@ -261,6 +272,61 @@ func (p *preheat) parseLayers(resp *http.Response, tag, filter string, header ht
 	}
 
 	return layers, nil
+}
+
+func (p *preheat) parseManifestReference(manifest manifestReference, tag, filter string, header http.Header, image *preheatImage) ([]internaljob.PreheatRequest, error) {
+	var layers []internaljob.PreheatRequest
+	for _, v := range manifest.References() {
+		layer := internaljob.PreheatRequest{
+			URL:     layerURL(image.protocol, image.domain, image.name, v.Digest.String()),
+			Tag:     tag,
+			Filter:  filter,
+			Headers: nethttp.HeaderToMap(header),
+		}
+
+		layers = append(layers, layer)
+	}
+
+	return layers, nil
+}
+
+func (p *preheat) parseManifest(resp *http.Response, tag, filter string, header http.Header, image *preheatImage) ([]internaljob.PreheatRequest, error) {
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	mt := resp.Header.Get("Content-Type")
+	manifest, _, err := distribution.UnmarshalManifest(mt, body)
+	if err != nil {
+		return nil, err
+	}
+
+	if manifest == nil {
+		return nil, fmt.Errorf("image manifest does not exist for tag or digest %q", image.tag)
+	}
+
+	//
+	switch v := manifest.(type) {
+	case *schema1.SignedManifest:
+		return p.parseManifestReference(v, tag, filter, header, image)
+	case *schema2.DeserializedManifest:
+		return p.parseManifestReference(v, tag, filter, header, image)
+	case *ocischema.DeserializedManifest:
+		return p.parseManifestReference(v, tag, filter, header, image)
+	case *manifestlist.DeserializedManifestList:
+		fmt.Println(v)
+	default:
+		return nil, invalidManifestFormatError{}
+	}
+	// raise no match error
+	return nil, nil
+}
+
+func (p *preheat) parseManifestList(mfstList *manifestlist.DeserializedManifestList, image *preheatImage) error {
+	// 解析 manifest list
+
+	return nil
 }
 
 // getAuthToken gets auth token from registry.
