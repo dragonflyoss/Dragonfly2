@@ -186,7 +186,7 @@ func (j *job) preheat(ctx context.Context, req string) error {
 	taskID := idgen.TaskIDV1(preheat.URL, urlMeta)
 	log := logger.WithTask(taskID, preheat.URL)
 	log.Infof("preheat %s headers: %#v, tag: %s, range: %s, filter: %s, digest: %s",
-		preheat.URL, urlMeta.Header, urlMeta.Tag, urlMeta.Range, urlMeta.Filter, urlMeta.Digest)
+		preheat.URL, filterHeaders(urlMeta.Header, log.IsDebug()), urlMeta.Tag, urlMeta.Range, urlMeta.Filter, urlMeta.Digest)
 	stream, err := j.resource.SeedPeer().Client().ObtainSeeds(ctx, &cdnsystemv1.SeedRequest{
 		TaskId:  taskID,
 		Url:     preheat.URL,
@@ -226,4 +226,15 @@ func (j *job) syncPeers() (string, error) {
 	})
 
 	return internaljob.MarshalResponse(hosts)
+}
+
+// filterHeaders filters Authorization header if debugging is not enabled
+func filterHeaders(urlHeader map[string]string, isDebug bool) map[string]string {
+	filteredHeaders := make(map[string]string)
+	for k, v := range urlHeader {
+		if isDebug || k != headers.Authorization {
+			filteredHeaders[k] = v
+		}
+	}
+	return filteredHeaders
 }
