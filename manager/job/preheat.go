@@ -22,23 +22,23 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"regexp"
-	"strings"
 	"time"
 
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
-	distribution "github.com/distribution/distribution/v3"
-	"github.com/distribution/distribution/v3/manifest/manifestlist"
-	"github.com/distribution/distribution/v3/manifest/ocischema"
-	"github.com/distribution/distribution/v3/manifest/schema1"
-	"github.com/distribution/distribution/v3/manifest/schema2"
-	"github.com/go-http-utils/headers"
+	"github.com/containerd/containerd/platforms"
+	"github.com/docker/distribution"
+	"github.com/docker/distribution/manifest/manifestlist"
+	"github.com/docker/distribution/manifest/ocischema"
+	"github.com/docker/distribution/manifest/schema1"
+	"github.com/docker/distribution/manifest/schema2"
+	registryClient "github.com/docker/distribution/registry/client"
 	"github.com/google/uuid"
+	specs "github.com/opencontainers/image-spec/specs-go/v1"
 	"go.opentelemetry.io/otel/trace"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -75,14 +75,6 @@ type preheat struct {
 	rootCAs            *x509.CertPool
 }
 
-// preheatImage is image information for preheat.
-type preheatImage struct {
-	protocol string
-	domain   string
-	name     string
-	tag      string
-}
-
 // newPreheat creates a new Preheat.
 func newPreheat(job *internaljob.Job, httpRequestTimeout time.Duration, rootCAs *x509.CertPool) (Preheat, error) {
 	return &preheat{job, httpRequestTimeout, rootCAs}, nil
@@ -96,35 +88,26 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []models.Schedul
 	span.SetAttributes(config.AttributePreheatURL.String(json.URL))
 	defer span.End()
 
-	url := json.URL
-	tag := json.Tag
-	filter := json.Filter
-	rawheader := json.Headers
-
 	// Initialize queues.
 	queues := getSchedulerQueues(schedulers)
 
 	// Generate download files.
 	var files []internaljob.PreheatRequest
+	var err error
 	switch PreheatType(json.Type) {
 	case PreheatImageType:
-		// Parse image manifest url.
-		image, err := parseAccessURL(url)
-		if err != nil {
-			return nil, err
-		}
 
-		files, err = p.getLayers(ctx, url, tag, filter, nethttp.MapToHeader(rawheader), image)
+		files, err = p.getImageLayers(ctx, json)
 		if err != nil {
 			return nil, err
 		}
 	case PreheatFileType:
 		files = []internaljob.PreheatRequest{
 			{
-				URL:     url,
-				Tag:     tag,
-				Filter:  filter,
-				Headers: rawheader,
+				URL:     json.URL,
+				Tag:     json.Tag,
+				Filter:  json.Filter,
+				Headers: json.Headers,
 			},
 		}
 	default:
@@ -177,35 +160,54 @@ func (p *preheat) createGroupJob(ctx context.Context, files []internaljob.Prehea
 	}, nil
 }
 
-// getLayers gets layers of image.
-func (p *preheat) getLayers(ctx context.Context, url, tag, filter string, header http.Header, image *preheatImage) ([]internaljob.PreheatRequest, error) {
+// getImageLayers gets layers of image.
+func (p *preheat) getImageLayers(ctx context.Context, args types.PreheatArgs) ([]internaljob.PreheatRequest, error) {
 	ctx, span := tracer.Start(ctx, config.SpanGetLayers, trace.WithSpanKind(trace.SpanKindProducer))
 	defer span.End()
 
-	resp, err := p.getManifests(ctx, url, header, p.httpRequestTimeout)
+	// Parse image manifest url.
+	image, err := parseAccessURL(args.URL)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode/100 != 2 {
-		if resp.StatusCode == http.StatusUnauthorized {
-			token, err := getAuthToken(ctx, resp.Header, p.httpRequestTimeout, p.rootCAs)
-			if err != nil {
-				return nil, err
-			}
+	// init docker auth client
+	client, err := NewImageAuthClient(
+		image,
+		WithClient(&http.Client{Timeout: p.httpRequestTimeout}),
+		WithTransport(&http.Transport{TLSClientConfig: &tls.Config{RootCAs: p.rootCAs}}),
+		WithBasicAuth(&BasicAuth{Username: args.Username, Password: args.Password}),
+	)
+	if err != nil {
+		return nil, err
+	}
 
-			header.Add(headers.Authorization, fmt.Sprintf("Bearer %s", token))
-			resp, err = p.getManifests(ctx, url, header, p.httpRequestTimeout)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			return nil, fmt.Errorf("request registry %d", resp.StatusCode)
+	// Parse platform
+	platform := platforms.DefaultSpec()
+	if args.Platform != "" {
+		platform, err = platforms.Parse(args.Platform)
+		if err != nil {
+			return nil, err
 		}
 	}
 
-	layers, err := p.parseLayers(resp, tag, filter, header, image)
+	// Get manifests
+	header := nethttp.MapToHeader(args.Headers).Clone()
+	manifests, err := p.getManifests(ctx, client, image, header, platform)
+	if err != nil {
+		return nil, err
+	}
+
+	// no matching manifest for platform in the manifest list entries
+	if len(manifests) == 0 {
+		return nil, noMatchesErr{}
+	}
+
+	// set authorization header
+	header.Set("Authorization", client.GetBearerToken())
+
+	// prase image layers to preheat
+	layers, err := p.parseLayers(manifests, args, header, image)
 	if err != nil {
 		return nil, err
 	}
@@ -214,186 +216,100 @@ func (p *preheat) getLayers(ctx context.Context, url, tag, filter string, header
 }
 
 // getManifests gets manifests of image.
-func (p *preheat) getManifests(ctx context.Context, url string, header http.Header, timeout time.Duration) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+func (p *preheat) getManifests(ctx context.Context, client *imageAuthClient, image *preheatImage, header http.Header, pp specs.Platform) ([]distribution.Manifest, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, image.buildManifestUrl(image.tag), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header = header
-	// 参考 docker pull 源码 moby https://github.com/moby/moby/blob/6040283f23efbd085eed90fa72d12ae73119837e/vendor/github.com/docker/distribution/registry/client/repository.go#L313
-	for _, d := range distribution.ManifestMediaTypes() {
-		req.Header.Add(headers.Accept, d)
-	}
-
-	// TOOD: 根据不同类型解析 manifest
-
-	client := &http.Client{
-		Timeout: timeout,
-		Transport: &http.Transport{
-			DialContext:     nethttp.NewSafeDialer().DialContext,
-			TLSClientConfig: &tls.Config{RootCAs: p.rootCAs},
-		},
-	}
-
+	req.Header = GetManifestMediaTypeAcceptHeader(header)
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 
-	return resp, nil
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotModified {
+		return nil, distribution.ErrManifestNotModified
+	} else if !registryClient.SuccessStatus(resp.StatusCode) {
+		return nil, registryClient.HandleErrorResponse(resp)
+	}
+
+	ctHeader := resp.Header.Get("Content-Type")
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	manifest, _, err := distribution.UnmarshalManifest(ctHeader, body)
+	if err != nil {
+		return nil, err
+	}
+
+	switch v := manifest.(type) {
+	case *schema1.SignedManifest, *schema2.DeserializedManifest, *ocischema.DeserializedManifest:
+		return []distribution.Manifest{v}, nil
+	case *manifestlist.DeserializedManifestList:
+		callback := func(m manifestlist.ManifestDescriptor) ([]distribution.Manifest, error) {
+			image.tag = m.Digest.String()
+			return p.getManifests(ctx, client, image, header, pp)
+		}
+
+		return p.getManifestsFromManifestList(ctx, v, pp, callback)
+	}
+
+	return nil, invalidManifestFormatError{}
+}
+
+func (p *preheat) getManifestsFromManifestList(
+	ctx context.Context,
+	manifestList *manifestlist.DeserializedManifestList,
+	pp specs.Platform,
+	callback func(manifestlist.ManifestDescriptor) ([]distribution.Manifest, error),
+) ([]distribution.Manifest, error) {
+	var ms []distribution.Manifest
+	for _, v := range p.filterManifests(manifestList.Manifests, pp) {
+		manifestList, err := callback(v)
+		if err != nil {
+			return nil, err
+		}
+
+		ms = append(ms, manifestList...)
+	}
+
+	return ms, nil
+}
+
+// filterManifests
+func (p *preheat) filterManifests(manifests []manifestlist.ManifestDescriptor, pp specs.Platform) []manifestlist.ManifestDescriptor {
+	var matches []manifestlist.ManifestDescriptor
+	for _, desc := range manifests {
+		if desc.Platform.Architecture == pp.Architecture && desc.Platform.OS == pp.OS {
+			matches = append(matches, desc)
+		}
+	}
+
+	return matches
 }
 
 // parseLayers parses layers of image.
-func (p *preheat) parseLayers(resp *http.Response, tag, filter string, header http.Header, image *preheatImage) ([]internaljob.PreheatRequest, error) {
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	mt := resp.Header.Get("Content-Type")
-	manifest, _, err := distribution.UnmarshalManifest(mt, body)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO: manifest type
-
+func (p *preheat) parseLayers(manifests []distribution.Manifest, args types.PreheatArgs, header http.Header, image *preheatImage) ([]internaljob.PreheatRequest, error) {
 	var layers []internaljob.PreheatRequest
-	for _, v := range manifest.References() {
-		layer := internaljob.PreheatRequest{
-			URL:     layerURL(image.protocol, image.domain, image.name, v.Digest.String()),
-			Tag:     tag,
-			Filter:  filter,
-			Headers: nethttp.HeaderToMap(header),
+	for _, m := range manifests {
+		for _, v := range m.References() {
+			h := header.Clone()
+			h.Set("Accept", v.MediaType)
+			layer := internaljob.PreheatRequest{
+				URL:     image.buildBlobsUrl(v.Digest.String()),
+				Tag:     args.Tag,
+				Filter:  args.Filter,
+				Headers: nethttp.HeaderToMap(h),
+			}
+
+			layers = append(layers, layer)
 		}
-
-		layers = append(layers, layer)
 	}
-
 	return layers, nil
-}
-
-func (p *preheat) parseManifestReference(manifest manifestReference, tag, filter string, header http.Header, image *preheatImage) ([]internaljob.PreheatRequest, error) {
-	var layers []internaljob.PreheatRequest
-	for _, v := range manifest.References() {
-		layer := internaljob.PreheatRequest{
-			URL:     layerURL(image.protocol, image.domain, image.name, v.Digest.String()),
-			Tag:     tag,
-			Filter:  filter,
-			Headers: nethttp.HeaderToMap(header),
-		}
-
-		layers = append(layers, layer)
-	}
-
-	return layers, nil
-}
-
-func (p *preheat) parseManifest(resp *http.Response, tag, filter string, header http.Header, image *preheatImage) ([]internaljob.PreheatRequest, error) {
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	mt := resp.Header.Get("Content-Type")
-	manifest, _, err := distribution.UnmarshalManifest(mt, body)
-	if err != nil {
-		return nil, err
-	}
-
-	if manifest == nil {
-		return nil, fmt.Errorf("image manifest does not exist for tag or digest %q", image.tag)
-	}
-
-	//
-	switch v := manifest.(type) {
-	case *schema1.SignedManifest:
-		return p.parseManifestReference(v, tag, filter, header, image)
-	case *schema2.DeserializedManifest:
-		return p.parseManifestReference(v, tag, filter, header, image)
-	case *ocischema.DeserializedManifest:
-		return p.parseManifestReference(v, tag, filter, header, image)
-	case *manifestlist.DeserializedManifestList:
-		fmt.Println(v)
-	default:
-		return nil, invalidManifestFormatError{}
-	}
-	// raise no match error
-	return nil, nil
-}
-
-func (p *preheat) parseManifestList(mfstList *manifestlist.DeserializedManifestList, image *preheatImage) error {
-	// 解析 manifest list
-
-	return nil
-}
-
-// getAuthToken gets auth token from registry.
-func getAuthToken(ctx context.Context, header http.Header, timeout time.Duration, rootCAs *x509.CertPool) (string, error) {
-	ctx, span := tracer.Start(ctx, config.SpanAuthWithRegistry, trace.WithSpanKind(trace.SpanKindProducer))
-	defer span.End()
-
-	authURL := authURL(header.Values(headers.WWWAuthenticate))
-	if len(authURL) == 0 {
-		return "", errors.New("authURL is empty")
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, authURL, nil)
-	if err != nil {
-		return "", err
-	}
-
-	client := &http.Client{
-		Timeout: timeout,
-		Transport: &http.Transport{
-			DialContext:     nethttp.NewSafeDialer().DialContext,
-			TLSClientConfig: &tls.Config{RootCAs: rootCAs},
-		},
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	body, _ := io.ReadAll(resp.Body)
-
-	var result map[string]any
-	if err := json.Unmarshal(body, &result); err != nil {
-		return "", err
-	}
-
-	if result["token"] == nil {
-		return "", errors.New("token is empty")
-	}
-
-	token := fmt.Sprintf("%v", result["token"])
-	return token, nil
-}
-
-// authURL gets auth url from www-authenticate header.
-func authURL(wwwAuth []string) string {
-	// Bearer realm="<auth-service-url>",service="<service>",scope="repository:<name>:pull"
-	if len(wwwAuth) == 0 {
-		return ""
-	}
-
-	polished := make([]string, 0)
-	for _, it := range wwwAuth {
-		polished = append(polished, strings.ReplaceAll(it, "\"", ""))
-	}
-
-	fields := strings.Split(polished[0], ",")
-	host := strings.Split(fields[0], "=")[1]
-	query := strings.Join(fields[1:], "&")
-	return fmt.Sprintf("%s?%s", host, query)
-}
-
-// layerURL gets layer url.
-func layerURL(protocol string, domain string, name string, digest string) string {
-	return fmt.Sprintf("%s://%s/v2/%s/blobs/%s", protocol, domain, name, digest)
 }
 
 // parseAccessURL parses access url.
