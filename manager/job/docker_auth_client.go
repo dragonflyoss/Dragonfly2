@@ -35,39 +35,39 @@ type imageAuthClient struct {
 	tokenInterceptor *InterceptorTokenHandler
 }
 
-type dockerAuthClientOption func(*imageAuthClient)
+type imageAuthClientOption func(*imageAuthClient)
 
-func WithBasicAuth(b *BasicAuth) dockerAuthClientOption {
+func WithBasicAuth(b *BasicAuth) imageAuthClientOption {
 	return func(o *imageAuthClient) {
 		o.basic = b
 	}
 }
 
-func WithImageRepo(repo string) dockerAuthClientOption {
+func WithImageRepo(repo string) imageAuthClientOption {
 	return func(o *imageAuthClient) {
 		o.basic.Auth = repo
 	}
 }
 
-func WithHeaderModifier(h http.Header) dockerAuthClientOption {
+func WithHeaderModifier(h http.Header) imageAuthClientOption {
 	return func(o *imageAuthClient) {
 		o.headerModifier = h
 	}
 }
 
-func WithTransport(tr *http.Transport) dockerAuthClientOption {
+func WithTransport(tr *http.Transport) imageAuthClientOption {
 	return func(o *imageAuthClient) {
 		o.baseTr = tr
 	}
 }
 
-func WithClient(c *http.Client) dockerAuthClientOption {
+func WithClient(c *http.Client) imageAuthClientOption {
 	return func(o *imageAuthClient) {
 		o.client = c
 	}
 }
 
-func NewImageAuthClient(image *preheatImage, opts ...dockerAuthClientOption) (*imageAuthClient, error) {
+func NewImageAuthClient(image *preheatImage, opts ...imageAuthClientOption) (*imageAuthClient, error) {
 	d := &imageAuthClient{}
 	for _, opt := range opts {
 		opt(d)
