@@ -174,8 +174,13 @@ func (p *preheat) getImageLayers(ctx context.Context, args types.PreheatArgs) ([
 	// init docker auth client
 	client, err := NewImageAuthClient(
 		image,
-		WithClient(&http.Client{Timeout: p.httpRequestTimeout}),
-		WithTransport(&http.Transport{TLSClientConfig: &tls.Config{RootCAs: p.rootCAs}}),
+		WithClient(&http.Client{
+			Timeout: p.httpRequestTimeout,
+			Transport: &http.Transport{
+				DialContext:     nethttp.NewSafeDialer().DialContext,
+				TLSClientConfig: &tls.Config{RootCAs: p.rootCAs},
+			},
+		}),
 		WithBasicAuth(&BasicAuth{Username: args.Username, Password: args.Password}),
 	)
 	if err != nil {

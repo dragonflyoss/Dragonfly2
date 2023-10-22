@@ -29,7 +29,6 @@ func (b *BasicAuth) token() string {
 
 type ImageAuthClient struct {
 	client           *http.Client
-	baseTr           *http.Transport
 	basic            *BasicAuth
 	headerModifier   http.Header
 	tokenInterceptor *InterceptorTokenHandler
@@ -55,12 +54,6 @@ func WithHeaderModifier(h http.Header) ImageAuthClientOption {
 	}
 }
 
-func WithTransport(tr *http.Transport) ImageAuthClientOption {
-	return func(o *ImageAuthClient) {
-		o.baseTr = tr
-	}
-}
-
 func WithClient(c *http.Client) ImageAuthClientOption {
 	return func(o *ImageAuthClient) {
 		o.client = c
@@ -77,13 +70,13 @@ func NewImageAuthClient(image *preheatImage, opts ...ImageAuthClientOption) (*Im
 		d.client = &http.Client{}
 	}
 
-	if d.baseTr == nil {
+	if d.client.Transport == nil {
 		direct := &net.Dialer{
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,
 		}
 
-		d.baseTr = &http.Transport{
+		d.client.Transport = &http.Transport{
 			Proxy:               http.ProxyFromEnvironment,
 			DialContext:         direct.DialContext,
 			TLSHandshakeTimeout: 10 * time.Second,
@@ -92,7 +85,8 @@ func NewImageAuthClient(image *preheatImage, opts ...ImageAuthClientOption) (*Im
 		}
 	}
 
-	authTransport := transport.NewTransport(d.baseTr, transport.NewHeaderRequestModifier(d.headerModifier))
+	baseTransport := d.client.Transport
+	authTransport := transport.NewTransport(baseTransport, transport.NewHeaderRequestModifier(d.headerModifier))
 	challengeManager, _, err := registry.PingV2Registry(&url.URL{Scheme: image.protocol, Host: image.domain}, authTransport)
 	if err != nil {
 		return nil, err
@@ -113,7 +107,7 @@ func NewImageAuthClient(image *preheatImage, opts ...ImageAuthClientOption) (*Im
 	basicHandler := auth.NewBasicHandler(creds)
 	interceptor := NewInterceptorTokenHandler()
 	d.tokenInterceptor = interceptor
-	d.client.Transport = transport.NewTransport(d.baseTr, auth.NewAuthorizer(challengeManager, tokenHandler, interceptor, basicHandler))
+	d.client.Transport = transport.NewTransport(baseTransport, auth.NewAuthorizer(challengeManager, tokenHandler, interceptor, basicHandler))
 	return d, nil
 }
 
