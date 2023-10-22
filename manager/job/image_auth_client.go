@@ -122,7 +122,7 @@ func (d *imageAuthClient) Do(req *http.Request) (*http.Response, error) {
 }
 
 func (d *imageAuthClient) GetBearerToken() string {
-	return fmt.Sprintf("Bearer %s", d.tokenInterceptor.GetAuthToken())
+	return d.tokenInterceptor.GetAuthToken()
 }
 
 // GetManifestMediaTypeAcceptHeader
