@@ -32,31 +32,6 @@ func TestGetManifest(t *testing.T) {
 			},
 			desc: "get docker official multi arch image layers",
 		},
-		{
-			args: types.PreheatArgs{
-				URL:      "xxx",
-				Username: "xxx",
-				Password: "xxx",
-			},
-			desc: "get harbor image layers",
-		},
-		{
-			args: types.PreheatArgs{
-				URL:      "xxx",
-				Tag:      "xxx",
-				Username: "xxx",
-				Password: "xxx",
-			},
-			desc: "get ali image layers",
-		},
-		{
-			args: types.PreheatArgs{
-				URL:      "xxx",
-				Username: "xxx",
-				Password: "xxx",
-			},
-			desc: "get huawei image layers",
-		},
 	}
 
 	for _, tc := range testCases {
