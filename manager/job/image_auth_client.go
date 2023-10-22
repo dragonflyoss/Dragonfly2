@@ -2,6 +2,7 @@ package job
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/base64"
 	"fmt"
 	"net"
@@ -80,7 +81,7 @@ func NewImageAuthClient(image *preheatImage, opts ...ImageAuthClientOption) (*Im
 			Proxy:               http.ProxyFromEnvironment,
 			DialContext:         direct.DialContext,
 			TLSHandshakeTimeout: 10 * time.Second,
-			TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
+			TLSClientConfig:     &tls.Config{RootCAs: x509.NewCertPool()},
 			DisableKeepAlives:   true,
 		}
 	}
