@@ -27,7 +27,7 @@ func (b *BasicAuth) token() string {
 	return base64.StdEncoding.EncodeToString([]byte(auth))
 }
 
-type imageAuthClient struct {
+type ImageAuthClient struct {
 	client           *http.Client
 	baseTr           *http.Transport
 	basic            *BasicAuth
@@ -35,40 +35,40 @@ type imageAuthClient struct {
 	tokenInterceptor *InterceptorTokenHandler
 }
 
-type imageAuthClientOption func(*imageAuthClient)
+type ImageAuthClientOption func(*ImageAuthClient)
 
-func WithBasicAuth(b *BasicAuth) imageAuthClientOption {
-	return func(o *imageAuthClient) {
+func WithBasicAuth(b *BasicAuth) ImageAuthClientOption {
+	return func(o *ImageAuthClient) {
 		o.basic = b
 	}
 }
 
-func WithImageRepo(repo string) imageAuthClientOption {
-	return func(o *imageAuthClient) {
+func WithImageRepo(repo string) ImageAuthClientOption {
+	return func(o *ImageAuthClient) {
 		o.basic.Auth = repo
 	}
 }
 
-func WithHeaderModifier(h http.Header) imageAuthClientOption {
-	return func(o *imageAuthClient) {
+func WithHeaderModifier(h http.Header) ImageAuthClientOption {
+	return func(o *ImageAuthClient) {
 		o.headerModifier = h
 	}
 }
 
-func WithTransport(tr *http.Transport) imageAuthClientOption {
-	return func(o *imageAuthClient) {
+func WithTransport(tr *http.Transport) ImageAuthClientOption {
+	return func(o *ImageAuthClient) {
 		o.baseTr = tr
 	}
 }
 
-func WithClient(c *http.Client) imageAuthClientOption {
-	return func(o *imageAuthClient) {
+func WithClient(c *http.Client) ImageAuthClientOption {
+	return func(o *ImageAuthClient) {
 		o.client = c
 	}
 }
 
-func NewImageAuthClient(image *preheatImage, opts ...imageAuthClientOption) (*imageAuthClient, error) {
-	d := &imageAuthClient{}
+func NewImageAuthClient(image *preheatImage, opts ...ImageAuthClientOption) (*ImageAuthClient, error) {
+	d := &ImageAuthClient{}
 	for _, opt := range opts {
 		opt(d)
 	}
@@ -117,11 +117,11 @@ func NewImageAuthClient(image *preheatImage, opts ...imageAuthClientOption) (*im
 	return d, nil
 }
 
-func (d *imageAuthClient) Do(req *http.Request) (*http.Response, error) {
+func (d *ImageAuthClient) Do(req *http.Request) (*http.Response, error) {
 	return d.client.Do(req)
 }
 
-func (d *imageAuthClient) GetBearerToken() string {
+func (d *ImageAuthClient) GetBearerToken() string {
 	return d.tokenInterceptor.GetAuthToken()
 }
 

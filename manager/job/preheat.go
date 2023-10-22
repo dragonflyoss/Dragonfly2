@@ -216,8 +216,8 @@ func (p *preheat) getImageLayers(ctx context.Context, args types.PreheatArgs) ([
 }
 
 // getManifests gets manifests of image.
-func (p *preheat) getManifests(ctx context.Context, client *imageAuthClient, image *preheatImage, header http.Header, pp specs.Platform) ([]distribution.Manifest, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, image.buildManifestUrl(image.tag), nil)
+func (p *preheat) getManifests(ctx context.Context, client *ImageAuthClient, image *preheatImage, header http.Header, pp specs.Platform) ([]distribution.Manifest, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, image.buildManifestURL(image.tag), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -300,7 +300,7 @@ func (p *preheat) parseLayers(manifests []distribution.Manifest, args types.Preh
 			h := header.Clone()
 			h.Set("Accept", v.MediaType)
 			layer := internaljob.PreheatRequest{
-				URL:     image.buildBlobsUrl(v.Digest.String()),
+				URL:     image.buildBlobsURL(v.Digest.String()),
 				Tag:     args.Tag,
 				Filter:  args.Filter,
 				Headers: nethttp.HeaderToMap(h),

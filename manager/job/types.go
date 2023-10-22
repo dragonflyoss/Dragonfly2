@@ -15,11 +15,11 @@ type preheatImage struct {
 	tag      string
 }
 
-func (p *preheatImage) buildManifestUrl(digest string) string {
+func (p *preheatImage) buildManifestURL(digest string) string {
 	return fmt.Sprintf("%s://%s/v2/%s/manifests/%s", p.protocol, p.domain, p.name, digest)
 }
 
-func (p *preheatImage) buildBlobsUrl(digest string) string {
+func (p *preheatImage) buildBlobsURL(digest string) string {
 	return fmt.Sprintf("%s://%s/v2/%s/blobs/%s", p.protocol, p.domain, p.name, digest)
 }
 
