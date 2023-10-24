@@ -792,9 +792,7 @@ func (pm *pieceManager) concurrentDownloadSource(ctx context.Context, pt Task, p
 	// parsedRange is always exist
 	pieceSize := pm.computePieceSize(parsedRange.Length)
 	pieceCount := util.ComputePieceCount(parsedRange.Length, pieceSize)
-	var downloadError atomic.Value
 
-	log := pt.Log()
 	pt.SetContentLength(parsedRange.Length)
 	pt.SetTotalPieces(pieceCount)
 
@@ -806,6 +804,22 @@ func (pm *pieceManager) concurrentDownloadSource(ctx context.Context, pt Task, p
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	err := pm.concurrentDownloadSourceByPiece(ctx, pt, peerTaskRequest, parsedRange, startPieceNum, pieceCount, con, pieceSize, cancel)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (pm *pieceManager) concurrentDownloadSourceByPiece(
+	ctx context.Context, pt Task, peerTaskRequest *schedulerv1.PeerTaskRequest,
+	parsedRange *nethttp.Range, startPieceNum int32, pieceCount int32,
+	con int, pieceSize uint32, cancel context.CancelFunc) error {
+
+	log := pt.Log()
+	var downloadError atomic.Value
 	var pieceCh = make(chan int32, con)
 
 	wg := sync.WaitGroup{}
