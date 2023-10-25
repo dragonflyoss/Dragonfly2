@@ -280,8 +280,8 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 					Length: int64(pieceSize),
 				},
 			},
-			Reader:      reader,
-			GenMetadata: isLastPiece,
+			Reader:          reader,
+			NeedGenMetadata: isLastPiece,
 		})
 
 	result.FinishTime = time.Now().UnixNano()
@@ -644,8 +644,8 @@ func (pm *pieceManager) processPieceFromFile(ctx context.Context, ptm storage.Pe
 					Length: int64(pieceSize),
 				},
 			},
-			Reader:      reader,
-			GenMetadata: isLastPiece,
+			Reader:          reader,
+			NeedGenMetadata: isLastPiece,
 		})
 	if err != nil {
 		msg := fmt.Sprintf("put piece of task %s to storage failed, piece num: %d, wrote: %d, error: %s", ptm.TaskID, pieceNum, n, err)

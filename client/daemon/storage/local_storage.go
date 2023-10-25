@@ -115,9 +115,9 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 		if n != piece.Range.Length {
 			return n, ErrShortRead
 		}
-		// GenMetadata need to be called when using concurrent download, a Counter will increase in GenMetadata
-		if req.GenMetadata != nil {
-			req.GenMetadata(n)
+		// NeedGenMetadata need to be called when using concurrent download, a Counter will increase in NeedGenMetadata
+		if req.NeedGenMetadata != nil {
+			req.NeedGenMetadata(n)
 		}
 
 		return piece.Range.Length, nil
@@ -194,11 +194,11 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 }
 
 func (t *localTaskStore) genMetadata(n int64, req *WritePieceRequest) {
-	if req.GenMetadata == nil {
+	if req.NeedGenMetadata == nil {
 		return
 	}
 
-	total, contentLength, gen := req.GenMetadata(n)
+	total, contentLength, gen := req.NeedGenMetadata(n)
 	if !gen {
 		return
 	}
