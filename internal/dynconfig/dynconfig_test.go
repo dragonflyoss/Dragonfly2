@@ -23,9 +23,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
 	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 
 	"d7y.io/dragonfly/v2/internal/dynconfig/mocks"
 )

@@ -25,8 +25,8 @@ import (
 	"time"
 
 	"github.com/go-redis/redismock/v8"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	pkgredis "d7y.io/dragonfly/v2/pkg/redis"

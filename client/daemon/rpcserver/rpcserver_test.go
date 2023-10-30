@@ -26,8 +26,8 @@ import (
 	"testing"
 
 	"github.com/distribution/distribution/v3/uuid"
-	"github.com/golang/mock/gomock"
 	testifyassert "github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 

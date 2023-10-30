@@ -30,10 +30,10 @@ import (
 	"time"
 
 	"github.com/go-http-utils/headers"
-	"github.com/golang/mock/gomock"
 	testifyassert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/atomic"
+	"go.uber.org/mock/gomock"
 	"golang.org/x/time/rate"
 
 	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
