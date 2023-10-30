@@ -21,6 +21,7 @@ package job
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -152,8 +153,14 @@ func (j *job) preheat(ctx context.Context, req string) error {
 	ctx, cancel := context.WithTimeout(ctx, preheatTimeout)
 	defer cancel()
 
+	// If seed peer is disabled, return error.
 	if !j.config.SeedPeer.Enable {
-		return errors.New("scheduler has disabled seed peer")
+		return fmt.Errorf("cluster %d scheduler %s has disabled seed peer", j.config.Manager.SchedulerClusterID, j.config.Server.AdvertiseIP)
+	}
+
+	// If scheduler has no available seed peer, return error.
+	if len(j.resource.SeedPeer().Client().Addrs()) == 0 {
+		return fmt.Errorf("cluster %d scheduler %s has no available seed peer", j.config.Manager.SchedulerClusterID, j.config.Server.AdvertiseIP)
 	}
 
 	preheat := &internaljob.PreheatRequest{}

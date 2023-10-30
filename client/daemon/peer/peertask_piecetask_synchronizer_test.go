@@ -21,9 +21,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
 	testifyassert "github.com/stretchr/testify/assert"
 	"go.uber.org/atomic"
+	"go.uber.org/mock/gomock"
 
 	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 	"d7y.io/api/v2/pkg/apis/scheduler/v1/mocks"

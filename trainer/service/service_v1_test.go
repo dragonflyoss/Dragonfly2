@@ -27,8 +27,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	trainerv1 "d7y.io/api/v2/pkg/apis/trainer/v1"
