@@ -164,7 +164,7 @@ func (o *oss) GetOject(ctx context.Context, bucketName, objectKey string) (io.Re
 		return nil, err
 	}
 
-	return bucket.GetObject(bucketName)
+	return bucket.GetObject(objectKey)
 }
 
 // PutObject puts data of object.
