@@ -481,7 +481,9 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 
 			outputBytes, err := os.ReadFile(output)
 			assert.Nil(err, "load output file")
-			assert.Equal(testBytes, outputBytes, "output and desired output must match")
+			if string(testBytes) != string(outputBytes) {
+				assert.Equal(string(testBytes), string(outputBytes), "output and desired output must match")
+			}
 		})
 	}
 }

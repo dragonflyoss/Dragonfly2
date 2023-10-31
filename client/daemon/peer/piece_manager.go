@@ -31,6 +31,7 @@ import (
 	"sync"
 	"time"
 
+	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/go-http-utils/headers"
 	"go.uber.org/atomic"
 	"golang.org/x/time/rate"
@@ -805,9 +806,97 @@ func (pm *pieceManager) concurrentDownloadSource(ctx context.Context, pt Task, p
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	err := pm.concurrentDownloadSourceByPiece(ctx, pt, peerTaskRequest, parsedRange, continuePieceNum, pieceCount, con, pieceSize, cancel)
-	if err != nil {
-		return err
+	if continuePieceNum > 0 {
+		return pm.concurrentDownloadSourceByPiece(ctx, pt, peerTaskRequest, parsedRange, continuePieceNum, pieceCount, con, pieceSize, cancel)
+	}
+	return pm.concurrentDownloadSourceByPieceGroup(ctx, pt, peerTaskRequest, parsedRange, continuePieceNum, pieceCount, con, pieceSize, cancel)
+}
+
+type pieceGroup struct {
+	start, end         int32
+	startByte, endByte int
+}
+
+func (pm *pieceManager) concurrentDownloadSourceByPieceGroup(
+	ctx context.Context, pt Task, peerTaskRequest *schedulerv1.PeerTaskRequest,
+	parsedRange *nethttp.Range, startPieceNum int32, pieceCount int32,
+	con int, pieceSize uint32, cancel context.CancelFunc) error {
+	// TODO
+	if startPieceNum > 0 {
+		return fmt.Errorf("concurrentDownloadSourceByPieceGroup not suport startPieceNum yet")
+	}
+	log := pt.Log()
+	var downloadError atomic.Value
+	downloadedPieces := mapset.NewSet[int32]()
+
+	wg := sync.WaitGroup{}
+	wg.Add(con)
+
+	minPieceCountPerGroup := pieceCount / int32(con)
+	reminderPieces := pieceCount % int32(con)
+
+	// piece group eg:
+	// con = 4, piece = 5:
+	// 	 worker 0: 2
+	//   worker 1: 1
+	//   worker 2: 1
+	//   worker 3: 1
+	//   worker 4: 1
+	for i := int32(0); i < int32(con); i++ {
+		go func(i int32) {
+			var (
+				start int32
+				end   int32
+			)
+			// calculate piece group first and last piece num
+			if i < reminderPieces {
+				start = i*minPieceCountPerGroup + i
+				end = i*minPieceCountPerGroup + minPieceCountPerGroup
+			} else {
+				start = i*minPieceCountPerGroup + reminderPieces
+				end = start + minPieceCountPerGroup - 1
+			}
+
+			// calculate piece group first and last range byte with parsedRange.Start
+			startByte := int(start)*int(pieceSize) + int(parsedRange.Start)
+			endByte := int(end+1)*int(pieceSize) - 1 + int(parsedRange.Start)
+			if endByte > int(parsedRange.Length)-1 {
+				endByte = int(parsedRange.Length) - 1
+			}
+
+			pg := &pieceGroup{
+				start:     start,
+				end:       end,
+				startByte: startByte,
+				endByte:   endByte,
+			}
+
+			log.Infof("concurrent worker %d start to download piece %d-%d, byte %d-%d", i, start, end, startByte, endByte)
+			_, _, retryErr := retry.Run(ctx,
+				pm.concurrentOption.InitBackoff,
+				pm.concurrentOption.MaxBackoff,
+				pm.concurrentOption.MaxAttempts,
+				func() (data any, cancel bool, err error) {
+					err = pm.downloadPieceGroupFromSource(ctx, pt, log,
+						peerTaskRequest, pieceSize, pg, parsedRange.Length, pieceCount, downloadedPieces)
+					return nil, errors.Is(err, context.Canceled), err
+				})
+			if retryErr != nil {
+				// download piece error after many retry, cancel task
+				cancel()
+				downloadError.Store(&backSourceError{err: retryErr})
+				log.Infof("concurrent worker %d failed to download piece group after %d retries, last error: %s",
+					i, pm.concurrentOption.MaxAttempts, retryErr.Error())
+			}
+			wg.Done()
+		}(i)
+	}
+
+	wg.Wait()
+
+	// check error
+	if downloadError.Load() != nil {
+		return downloadError.Load().(*backSourceError).err
 	}
 
 	return nil
@@ -963,5 +1052,89 @@ func (pm *pieceManager) downloadPieceFromSource(ctx context.Context,
 
 	pt.ReportPieceResult(request, result, nil)
 	pt.PublishPieceInfo(pieceNum, uint32(result.Size))
+	return nil
+}
+
+func (pm *pieceManager) downloadPieceGroupFromSource(ctx context.Context,
+	pt Task, log *logger.SugaredLoggerOnWith,
+	peerTaskRequest *schedulerv1.PeerTaskRequest,
+	pieceSize uint32, pg *pieceGroup,
+	totalContentLength int64,
+	totalPieceCount int32,
+	downloadedPieces mapset.Set[int32]) error {
+
+	backSourceRequest, err := source.NewRequestWithContext(ctx, peerTaskRequest.Url, peerTaskRequest.UrlMeta.Header)
+	if err != nil {
+		log.Errorf("build piece %d-%d back source request error: %s", pg.start, pg.end, err)
+		return err
+	}
+
+	pieceGroupRange := fmt.Sprintf("%d-%d", pg.startByte, pg.endByte)
+	// FIXME refactor source package, normal Range header is enough
+	backSourceRequest.Header.Set(source.Range, pieceGroupRange)
+	backSourceRequest.Header.Set(headers.Range, "bytes="+pieceGroupRange)
+
+	log.Debugf("piece %d-%d back source header: %#v", pg.start, pg.end, backSourceRequest.Header)
+
+	response, err := source.Download(backSourceRequest)
+	if err != nil {
+		log.Errorf("piece %d-%d back source response error: %s", pg.start, pg.end, err)
+		return err
+	}
+	defer response.Body.Close()
+
+	err = response.Validate()
+	if err != nil {
+		log.Errorf("piece %d-%d back source response validate error: %s", pg.start, pg.end, err)
+		return err
+	}
+
+	log.Debugf("piece %d-%d back source response ok", pg.start, pg.end)
+
+	for i := pg.start; i <= pg.end; i++ {
+		pieceNum := i
+		offset := uint64(pg.startByte) + uint64(i-pg.start)*uint64(pieceSize)
+		size := pieceSize
+		// update last piece size
+		if offset+uint64(size)-1 > uint64(pg.endByte) {
+			size = uint32(uint64(pg.endByte) + 1 - offset)
+		}
+
+		result, md5, err := pm.processPieceFromSource(
+			pt, response.Body, totalContentLength, pieceNum, offset, size,
+			func(int64) (int32, int64, bool) {
+				downloadedPieces.Add(pieceNum)
+				return totalPieceCount, totalContentLength, downloadedPieces.Cardinality() == int(totalPieceCount)
+			})
+		request := &DownloadPieceRequest{
+			TaskID: pt.GetTaskID(),
+			PeerID: pt.GetPeerID(),
+			piece: &commonv1.PieceInfo{
+				PieceNum:    pieceNum,
+				RangeStart:  offset,
+				RangeSize:   uint32(result.Size),
+				PieceMd5:    md5,
+				PieceOffset: offset,
+				PieceStyle:  0,
+			},
+		}
+
+		if err != nil {
+			log.Errorf("download piece %d error: %s", pieceNum, err)
+			pt.ReportPieceResult(request, result, detectBackSourceError(err))
+			return err
+		}
+
+		if result.Size != int64(size) {
+			log.Errorf("download piece %d size not match, desired: %d, actual: %d", pieceNum, size, result.Size)
+			pt.ReportPieceResult(request, result, detectBackSourceError(err))
+			return storage.ErrShortRead
+		}
+
+		pt.ReportPieceResult(request, result, nil)
+		pt.PublishPieceInfo(pieceNum, uint32(result.Size))
+
+		log.Debugf("piece %d done", pieceNum)
+	}
 	return nil
 }
