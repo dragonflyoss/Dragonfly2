@@ -41,7 +41,7 @@ const (
 	// DefaultGRPCPort is default port for grpc server.
 	DefaultGRPCPort = 65003
 
-	// DefaultGRPCPort is default port for grpc server.
+	// DefaultGRPCAdvertisePort is default port for grpc server.
 	DefaultGRPCAdvertisePort = 65003
 
 	// DefaultRESTAddr is default address for rest server.
@@ -49,7 +49,7 @@ const (
 )
 
 const (
-	// DefaultJWTTimeout is default of name in jwt.
+	// DefaultJWTRealm is default of name in jwt.
 	DefaultJWTRealm = "Dragonfly"
 
 	// DefaultJWTTimeout is default of timeout in jwt.

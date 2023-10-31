@@ -194,14 +194,14 @@ func (s *service) OauthSigninCallback(ctx context.Context, name, code string) (*
 	return &user, nil
 }
 
-func (s *service) GetRolesForUser(ctx context.Context, id uint) ([]string, error) {
+func (s *service) GetRolesForUser(_ context.Context, id uint) ([]string, error) {
 	return s.enforcer.GetRolesForUser(fmt.Sprint(id))
 }
 
-func (s *service) AddRoleForUser(ctx context.Context, json types.AddRoleForUserParams) (bool, error) {
+func (s *service) AddRoleForUser(_ context.Context, json types.AddRoleForUserParams) (bool, error) {
 	return s.enforcer.AddRoleForUser(fmt.Sprint(json.ID), json.Role)
 }
 
-func (s *service) DeleteRoleForUser(ctx context.Context, json types.DeleteRoleForUserParams) (bool, error) {
+func (s *service) DeleteRoleForUser(_ context.Context, json types.DeleteRoleForUserParams) (bool, error) {
 	return s.enforcer.DeleteRoleForUser(fmt.Sprint(json.ID), json.Role)
 }

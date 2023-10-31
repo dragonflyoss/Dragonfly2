@@ -42,7 +42,7 @@ const (
 	OtelServiceName         = "dragonfly-manager"
 )
 
-func Init(cfg *config.Config, logDir string, service service.Service, database *database.Database, enforcer *casbin.Enforcer, assets static.ServeFileSystem) (*gin.Engine, error) {
+func Init(cfg *config.Config, _ string, service service.Service, database *database.Database, enforcer *casbin.Enforcer, assets static.ServeFileSystem) (*gin.Engine, error) {
 	// Set mode.
 	if !cfg.Verbose {
 		gin.SetMode(gin.ReleaseMode)

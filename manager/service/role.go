@@ -22,7 +22,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-func (s *service) CreateRole(ctx context.Context, json types.CreateRoleRequest) error {
+func (s *service) CreateRole(_ context.Context, json types.CreateRoleRequest) error {
 	for _, permission := range json.Permissions {
 		_, err := s.enforcer.AddPermissionForUser(json.Role, permission.Object, permission.Action)
 		if err != nil {
@@ -33,22 +33,22 @@ func (s *service) CreateRole(ctx context.Context, json types.CreateRoleRequest) 
 	return nil
 }
 
-func (s *service) DestroyRole(ctx context.Context, role string) (bool, error) {
+func (s *service) DestroyRole(_ context.Context, role string) (bool, error) {
 	return s.enforcer.DeleteRole(role)
 }
 
-func (s *service) GetRole(ctx context.Context, role string) [][]string {
+func (s *service) GetRole(_ context.Context, role string) [][]string {
 	return s.enforcer.GetPermissionsForUser(role)
 }
 
-func (s *service) GetRoles(ctx context.Context) []string {
+func (s *service) GetRoles(_ context.Context) []string {
 	return s.enforcer.GetAllSubjects()
 }
 
-func (s *service) AddPermissionForRole(ctx context.Context, role string, json types.AddPermissionForRoleRequest) (bool, error) {
+func (s *service) AddPermissionForRole(_ context.Context, role string, json types.AddPermissionForRoleRequest) (bool, error) {
 	return s.enforcer.AddPermissionForUser(role, json.Object, json.Action)
 }
 
-func (s *service) DeletePermissionForRole(ctx context.Context, role string, json types.DeletePermissionForRoleRequest) (bool, error) {
+func (s *service) DeletePermissionForRole(_ context.Context, role string, json types.DeletePermissionForRoleRequest) (bool, error) {
 	return s.enforcer.DeletePermissionForUser(role, json.Object, json.Action)
 }

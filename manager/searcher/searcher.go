@@ -98,7 +98,7 @@ func New(pluginDir string) Searcher {
 }
 
 // FindSchedulerClusters finds scheduler clusters that best matches the evaluation.
-func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters []models.SchedulerCluster, ip, hostname string,
+func (s *searcher) FindSchedulerClusters(_ context.Context, schedulerClusters []models.SchedulerCluster, ip, hostname string,
 	conditions map[string]string, log *zap.SugaredLogger) ([]models.SchedulerCluster, error) {
 	log = log.With("ip", ip, "hostname", hostname, "conditions", conditions)
 
@@ -133,7 +133,7 @@ func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters 
 }
 
 // Filter the scheduler clusters that dfdaemon can be used.
-func FilterSchedulerClusters(conditions map[string]string, schedulerClusters []models.SchedulerCluster) []models.SchedulerCluster {
+func FilterSchedulerClusters(_ map[string]string, schedulerClusters []models.SchedulerCluster) []models.SchedulerCluster {
 	var clusters []models.SchedulerCluster
 	for _, schedulerCluster := range schedulerClusters {
 		// There are no active schedulers in the scheduler cluster
@@ -148,7 +148,7 @@ func FilterSchedulerClusters(conditions map[string]string, schedulerClusters []m
 }
 
 // Evaluate the degree of matching between scheduler cluster and dfdaemon.
-func Evaluate(ip, hostname string, conditions map[string]string, scopes Scopes, cluster models.SchedulerCluster, log *zap.SugaredLogger) float64 {
+func Evaluate(ip, _ string, conditions map[string]string, scopes Scopes, cluster models.SchedulerCluster, log *zap.SugaredLogger) float64 {
 	return cidrAffinityWeight*calculateCIDRAffinityScore(ip, scopes.CIDRs, log) +
 		idcAffinityWeight*calculateIDCAffinityScore(conditions[ConditionIDC], scopes.IDC) +
 		locationAffinityWeight*calculateMultiElementAffinityScore(conditions[ConditionLocation], scopes.Location) +

@@ -46,7 +46,7 @@ func newSecurityServerV1(selfSignedCert *SelfSignedCert) securityv1.CertificateS
 }
 
 // IssueCertificate issues certificate for client.
-func (s *securityServerV1) IssueCertificate(ctx context.Context, req *securityv1.CertificateRequest) (*securityv1.CertificateResponse, error) {
+func (s *securityServerV1) IssueCertificate(_ context.Context, req *securityv1.CertificateRequest) (*securityv1.CertificateResponse, error) {
 	if s.selfSignedCert == nil {
 		return nil, status.Errorf(codes.Unavailable, "ca is missing for this manager instance")
 	}
