@@ -630,7 +630,7 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 			},
 			UnknownLength: false,
 			Reader:        bytes.NewBuffer(pt.tinyData.Content),
-			GenMetadata: func(n int64) (int32, int64, bool) {
+			NeedGenMetadata: func(n int64) (int32, int64, bool) {
 				return 1, contentLength, true
 			},
 		})
