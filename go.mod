@@ -35,7 +35,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/google/go-github v17.0.0+incompatible
-	github.com/google/uuid v1.3.1
+	github.com/google/uuid v1.4.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/hashicorp/go-multierror v1.1.1
