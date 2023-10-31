@@ -814,7 +814,7 @@ func (pm *pieceManager) concurrentDownloadSource(ctx context.Context, pt Task, p
 
 type pieceGroup struct {
 	start, end         int32
-	startByte, endByte int
+	startByte, endByte int64
 }
 
 func (pm *pieceManager) concurrentDownloadSourceByPieceGroup(
@@ -823,7 +823,7 @@ func (pm *pieceManager) concurrentDownloadSourceByPieceGroup(
 	con int, pieceSize uint32, cancel context.CancelFunc) error {
 	// TODO
 	if startPieceNum > 0 {
-		return fmt.Errorf("concurrentDownloadSourceByPieceGroup not suport startPieceNum yet")
+		return fmt.Errorf("concurrentDownloadSourceByPieceGroup not support startPieceNum yet")
 	}
 	log := pt.Log()
 	var downloadError atomic.Value
@@ -858,10 +858,10 @@ func (pm *pieceManager) concurrentDownloadSourceByPieceGroup(
 			}
 
 			// calculate piece group first and last range byte with parsedRange.Start
-			startByte := int(start)*int(pieceSize) + int(parsedRange.Start)
-			endByte := int(end+1)*int(pieceSize) - 1 + int(parsedRange.Start)
-			if endByte > int(parsedRange.Length)-1 {
-				endByte = int(parsedRange.Length) - 1
+			startByte := int64(start)*int64(pieceSize) + parsedRange.Start
+			endByte := int64(end+1)*int64(pieceSize) - 1 + parsedRange.Start
+			if endByte > parsedRange.Length-1 {
+				endByte = parsedRange.Length - 1
 			}
 
 			pg := &pieceGroup{
