@@ -293,7 +293,7 @@ we still call for any other ways.
 - Help solve other users' problems.
 - Help review others' PR design.
 - Help review others' codes in PR.
-- Discuss about Dragonfly to make things clearer.
+- Discuss Dragonfly to make things clearer.
 - Advocate Dragonfly technology beyond GitHub.
 - Write blogs on Dragonfly and so on.
 

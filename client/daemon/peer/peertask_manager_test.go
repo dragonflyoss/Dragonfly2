@@ -32,10 +32,10 @@ import (
 	"time"
 
 	"github.com/go-http-utils/headers"
-	"github.com/golang/mock/gomock"
 	"github.com/phayes/freeport"
 	testifyassert "github.com/stretchr/testify/assert"
 	testifyrequire "github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"

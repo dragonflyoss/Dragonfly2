@@ -26,8 +26,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	testifyassert "github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/client/config"

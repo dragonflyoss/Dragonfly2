@@ -20,8 +20,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 
 	"d7y.io/dragonfly/v2/trainer/config"
 	storagemocks "d7y.io/dragonfly/v2/trainer/storage/mocks"

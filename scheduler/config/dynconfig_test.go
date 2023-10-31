@@ -23,8 +23,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 
 	commonv2 "d7y.io/api/v2/pkg/apis/common/v2"
 	managerv2 "d7y.io/api/v2/pkg/apis/manager/v2"

@@ -26,9 +26,9 @@ import (
 	"time"
 
 	"github.com/go-http-utils/headers"
-	"github.com/golang/mock/gomock"
 	testifyassert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 

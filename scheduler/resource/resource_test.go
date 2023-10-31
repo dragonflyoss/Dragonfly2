@@ -21,8 +21,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc/resolver"
 
 	managerv2 "d7y.io/api/v2/pkg/apis/manager/v2"
