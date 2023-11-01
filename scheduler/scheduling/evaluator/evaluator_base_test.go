@@ -17,12 +17,14 @@
 package evaluator
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/atomic"
+	"go.uber.org/mock/gomock"
 
 	commonv2 "d7y.io/api/v2/pkg/apis/common/v2"
 
@@ -30,6 +32,8 @@ import (
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/networktopology"
+	networktopologymocks "d7y.io/dragonfly/v2/scheduler/networktopology/mocks"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
@@ -157,12 +161,25 @@ var (
 )
 
 func TestEvaluatorBase_NewEvaluatorBase(t *testing.T) {
+	ctl := gomock.NewController(t)
+	defer ctl.Finish()
+	mockNetworkTopology := networktopologymocks.NewMockNetworkTopology(ctl)
 	tests := []struct {
 		name   string
+		option []Option
 		expect func(t *testing.T, e any)
 	}{
 		{
-			name: "new evaluator commonv1",
+			name:   "new evaluator commonv1",
+			option: []Option{},
+			expect: func(t *testing.T, e any) {
+				assert := assert.New(t)
+				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
+			},
+		},
+		{
+			name:   "new evaluator commonv1 with networkTopology",
+			option: []Option{WithNetworkTopology(mockNetworkTopology)},
 			expect: func(t *testing.T, e any) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
@@ -172,7 +189,7 @@ func TestEvaluatorBase_NewEvaluatorBase(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, NewEvaluatorBase())
+			tc.expect(t, NewEvaluatorBase(tc.option...))
 		})
 	}
 }
@@ -696,6 +713,73 @@ func TestEvaluatorBase_calculateMultiElementAffinityScore(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.expect(t, calculateMultiElementAffinityScore(tc.dst, tc.src))
+		})
+	}
+}
+
+func TestEvaluatorBase_calculateNetworkTopologyScore(t *testing.T) {
+	ctl := gomock.NewController(t)
+	defer ctl.Finish()
+	mockNetworkTopology := networktopologymocks.NewMockNetworkTopology(ctl)
+	tests := []struct {
+		name   string
+		dst    string
+		src    string
+		option []Option
+		mock   func(dst string, src string, mn *networktopologymocks.MockNetworkTopologyMockRecorder, p networktopology.Probes, mp *networktopologymocks.MockProbesMockRecorder)
+		expect func(t *testing.T, score float64)
+	}{
+		{
+			name:   "networkTopology is empty",
+			option: []Option{},
+			dst:    "foo",
+			src:    "bar",
+			mock: func(dst string, src string, mn *networktopologymocks.MockNetworkTopologyMockRecorder, p networktopology.Probes, mp *networktopologymocks.MockProbesMockRecorder) {
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.Equal(score, float64(0))
+			},
+		},
+		{
+			name:   "networkTopology is not empty",
+			option: []Option{WithNetworkTopology(mockNetworkTopology)},
+			dst:    "foo",
+			src:    "bar",
+			mock: func(dst string, src string, mn *networktopologymocks.MockNetworkTopologyMockRecorder, p networktopology.Probes, mp *networktopologymocks.MockProbesMockRecorder) {
+				gomock.InOrder(
+					mn.Probes(dst, src).Return(p),
+					mp.AverageRTT().Return(2*time.Millisecond, nil),
+				)
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.Equal(score, float64(0.5))
+			},
+		},
+		{
+			name:   "networkTopology is not empty and get averageRTT error",
+			option: []Option{WithNetworkTopology(mockNetworkTopology)},
+			dst:    "foo",
+			src:    "bar",
+			mock: func(dst string, src string, mn *networktopologymocks.MockNetworkTopologyMockRecorder, p networktopology.Probes, mp *networktopologymocks.MockProbesMockRecorder) {
+				gomock.InOrder(
+					mn.Probes(dst, src).Return(p),
+					mp.AverageRTT().Return(time.Duration(0), errors.New("foo")),
+				)
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.Equal(score, float64(0))
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			eb := NewEvaluatorBase(tc.option...)
+			probe := networktopologymocks.NewMockProbes(ctl)
+			tc.mock(tc.dst, tc.src, mockNetworkTopology.EXPECT(), probe, probe.EXPECT())
+			tc.expect(t, eb.(*evaluatorBase).calculateNetworkTopologyScore(tc.dst, tc.src))
 		})
 	}
 }

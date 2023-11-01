@@ -25,6 +25,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/math"
 	"d7y.io/dragonfly/v2/pkg/types"
+	"d7y.io/dragonfly/v2/scheduler/networktopology"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
@@ -46,6 +47,9 @@ const (
 
 	// Location affinity weight.
 	locationAffinityWeight = 0.15
+
+	// Network topology weight.
+	networkTopologyWeight = 0.05
 )
 
 const (
@@ -69,10 +73,28 @@ const (
 	maxElementLen = 5
 )
 
-type evaluatorBase struct{}
+type evaluatorBase struct {
+	networkTopology networktopology.NetworkTopology
+}
 
-func NewEvaluatorBase() Evaluator {
-	return &evaluatorBase{}
+// WithNetworkTopology sets the networkTopology.
+func WithNetworkTopology(networktopology networktopology.NetworkTopology) Option {
+	return func(eb *evaluatorBase) {
+		eb.networkTopology = networktopology
+	}
+}
+
+// Option is a functional option for configuring the evaluatorBase.
+type Option func(eb *evaluatorBase)
+
+func NewEvaluatorBase(options ...Option) Evaluator {
+	eb := &evaluatorBase{}
+
+	for _, opt := range options {
+		opt(eb)
+	}
+
+	return eb
 }
 
 // The larger the value after evaluation, the higher the priority.
@@ -87,7 +109,8 @@ func (eb *evaluatorBase) Evaluate(parent *resource.Peer, child *resource.Peer, t
 		freeUploadWeight*calculateFreeUploadScore(parent.Host) +
 		hostTypeWeight*calculateHostTypeScore(parent) +
 		idcAffinityWeight*calculateIDCAffinityScore(parentIDC, childIDC) +
-		locationAffinityWeight*calculateMultiElementAffinityScore(parentLocation, childLocation)
+		locationAffinityWeight*calculateMultiElementAffinityScore(parentLocation, childLocation) +
+		networkTopologyWeight*eb.calculateNetworkTopologyScore(parent.ID, child.ID)
 }
 
 // calculatePieceScore 0.0~unlimited larger and better.
@@ -193,6 +216,20 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 	}
 
 	return float64(score) / float64(maxElementLen)
+}
+
+// calculateNetworkTopologyScore 0.0~1.0 larger and better.
+func (eb *evaluatorBase) calculateNetworkTopologyScore(dst, src string) float64 {
+	if eb.networkTopology == nil {
+		return minScore
+	}
+
+	time, err := eb.networkTopology.Probes(dst, src).AverageRTT()
+	if err != nil {
+		return minScore
+	}
+
+	return maxScore / float64(time.Milliseconds())
 }
 
 func (eb *evaluatorBase) IsBadNode(peer *resource.Peer) bool {

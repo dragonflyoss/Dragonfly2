@@ -21,18 +21,26 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
+
+	networktopologymocks "d7y.io/dragonfly/v2/scheduler/networktopology/mocks"
 )
 
 func TestEvaluator_New(t *testing.T) {
 	pluginDir := "."
+	ctl := gomock.NewController(t)
+	defer ctl.Finish()
+	mockNetworkTopology := networktopologymocks.NewMockNetworkTopology(ctl)
 	tests := []struct {
 		name      string
 		algorithm string
+		option    []Option
 		expect    func(t *testing.T, e any)
 	}{
 		{
 			name:      "new evaluator with default algorithm",
 			algorithm: "default",
+			option:    []Option{},
 			expect: func(t *testing.T, e any) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
@@ -41,6 +49,7 @@ func TestEvaluator_New(t *testing.T) {
 		{
 			name:      "new evaluator with machine learning algorithm",
 			algorithm: "ml",
+			option:    []Option{},
 			expect: func(t *testing.T, e any) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
@@ -49,6 +58,7 @@ func TestEvaluator_New(t *testing.T) {
 		{
 			name:      "new evaluator with plugin",
 			algorithm: "plugin",
+			option:    []Option{},
 			expect: func(t *testing.T, e any) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
@@ -57,6 +67,16 @@ func TestEvaluator_New(t *testing.T) {
 		{
 			name:      "new evaluator with empty string",
 			algorithm: "",
+			option:    []Option{},
+			expect: func(t *testing.T, e any) {
+				assert := assert.New(t)
+				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
+			},
+		},
+		{
+			name:      "new evaluator with default algorithm and networkTopology",
+			algorithm: "default",
+			option:    []Option{WithNetworkTopology(mockNetworkTopology)},
 			expect: func(t *testing.T, e any) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
@@ -66,7 +86,7 @@ func TestEvaluator_New(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, New(tc.algorithm, pluginDir))
+			tc.expect(t, New(tc.algorithm, pluginDir, tc.option...))
 		})
 	}
 }

@@ -68,9 +68,9 @@ type scheduling struct {
 	dynconfig config.DynconfigInterface
 }
 
-func New(cfg *config.SchedulerConfig, dynconfig config.DynconfigInterface, pluginDir string) Scheduling {
+func New(cfg *config.SchedulerConfig, dynconfig config.DynconfigInterface, pluginDir string, options ...evaluator.Option) Scheduling {
 	return &scheduling{
-		evaluator: evaluator.New(cfg.Algorithm, pluginDir),
+		evaluator: evaluator.New(cfg.Algorithm, pluginDir, options...),
 		config:    cfg,
 		dynconfig: dynconfig,
 	}
