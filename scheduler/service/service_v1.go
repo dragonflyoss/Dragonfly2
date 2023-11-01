@@ -1120,11 +1120,6 @@ func (v *V1) handlePieceSuccess(ctx context.Context, peer *resource.Peer, pieceR
 		CreatedAt:   time.Now().Add(-cost),
 	}
 
-	// Update bandwidth between source host and destination host.
-	if err := v.networkTopology.UpdateBandwidth(pieceResult.SrcPid, pieceResult.DstPid, float64(piece.Length)/float64(cost.Microseconds())); err != nil {
-		logger.Errorf("update bandwidth between %s and %s error: %s", pieceResult.SrcPid, pieceResult.DstPid, err.Error())
-	}
-
 	if len(pieceResult.PieceInfo.PieceMd5) > 0 {
 		piece.Digest = digest.New(digest.AlgorithmMD5, pieceResult.PieceInfo.PieceMd5)
 	}
@@ -1143,9 +1138,16 @@ func (v *V1) handlePieceSuccess(ctx context.Context, peer *resource.Peer, pieceR
 	// dst peer's UpdatedAt needs to be updated
 	// to prevent the dst peer from being GC during the download process.
 	if !resource.IsPieceBackToSource(pieceResult.DstPid) {
-		if destPeer, loaded := v.resource.PeerManager().Load(pieceResult.DstPid); loaded {
+		if destPeer, destPeerLoaded := v.resource.PeerManager().Load(pieceResult.DstPid); destPeerLoaded {
 			destPeer.UpdatedAt.Store(time.Now())
 			destPeer.Host.UpdatedAt.Store(time.Now())
+
+			if srcPeer, srcPeerLoaded := v.resource.PeerManager().Load(pieceResult.SrcPid); srcPeerLoaded {
+				// Update bandwidth between source host and destination host.
+				if err := v.networkTopology.UpdateBandwidth(srcPeer.Host.ID, destPeer.Host.ID, float64(piece.Length)/float64(cost.Microseconds())); err != nil {
+					logger.Errorf("update bandwidth between %s and %s error: %s", pieceResult.SrcPid, pieceResult.DstPid, err.Error())
+				}
+			}
 		}
 	}
 
