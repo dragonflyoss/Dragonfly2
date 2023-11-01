@@ -75,6 +75,12 @@ type NetworkTopology interface {
 	// ProbedCount is the number of times the host has been probed.
 	ProbedCount(string) (uint64, error)
 
+	// UpdateBandwidth updates bandwidth between source host and destination host.
+	UpdateBandwidth(srcHostID, destHostID string, bandwidth float64) error
+
+	// Bandwidth returns bandwidth between source host and destination host.
+	Bandwidth(srcHostID, destHostID string) (float64, error)
+
 	// Snapshot writes the current network topology to the storage.
 	Snapshot() error
 }
@@ -270,6 +276,31 @@ func (nt *networkTopology) ProbedCount(hostID string) (uint64, error) {
 	defer cancel()
 
 	return nt.rdb.Get(ctx, pkgredis.MakeProbedCountKeyInScheduler(hostID)).Uint64()
+}
+
+// UpdateBandwidth updates bandwidth between source host and destination host.
+func (nt *networkTopology) UpdateBandwidth(srcHostID, destHostID string, bandwidth float64) error {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	if err := nt.rdb.Set(ctx, pkgredis.MakeBandwidthKeyInScheduler(srcHostID, destHostID), bandwidth, 0).Err(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Bandwidth returns bandwidth between source host and destination host.
+func (nt *networkTopology) Bandwidth(srcHostID, destHostID string) (float64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	bandwidth, err := nt.rdb.Get(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID)).Float64()
+	if err != nil {
+		return 0, err
+	}
+
+	return bandwidth, nil
 }
 
 // Snapshot writes the current network topology to the storage.

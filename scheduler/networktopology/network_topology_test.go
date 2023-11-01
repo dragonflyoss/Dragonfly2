@@ -767,6 +767,14 @@ func TestNetworkTopology_ProbedCount(t *testing.T) {
 	}
 }
 
+func TestNetworkTopology_UpdateBandwidth(t *testing.T) {
+
+}
+
+func TestNetworkTopology_Bandwidth(t *testing.T) {
+
+}
+
 func TestNetworkTopology_Snapshot(t *testing.T) {
 	tests := []struct {
 		name string
