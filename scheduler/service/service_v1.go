@@ -1057,7 +1057,6 @@ func (v *V1) handleRegisterFailure(ctx context.Context, peer *resource.Peer) {
 	}
 
 	v.resource.PeerManager().Delete(peer.ID)
-	return
 }
 
 // handleBeginOfPiece handles begin of piece.
