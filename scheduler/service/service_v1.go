@@ -1106,6 +1106,10 @@ func (v *V1) handlePieceSuccess(ctx context.Context, peer *resource.Peer, pieceR
 	}
 
 	// Construct piece.
+	logger.Info(pieceResult.PieceInfo.DownloadCost)
+	logger.Info(time.Millisecond)
+	logger.Info(int64(pieceResult.PieceInfo.DownloadCost))
+	logger.Info(int64(time.Millisecond))
 	cost := time.Duration(int64(pieceResult.PieceInfo.DownloadCost) * int64(time.Millisecond))
 	piece := &resource.Piece{
 		Number:      pieceResult.PieceInfo.PieceNum,
@@ -1115,6 +1119,11 @@ func (v *V1) handlePieceSuccess(ctx context.Context, peer *resource.Peer, pieceR
 		TrafficType: trafficType,
 		Cost:        cost,
 		CreatedAt:   time.Now().Add(-cost),
+	}
+
+	// Update bandwidth between source host and destination host.
+	if err := v.networkTopology.UpdateBandwidth(pieceResult.SrcPid, pieceResult.DstPid, float64(piece.Length)/float64(cost.Microseconds())); err != nil {
+		logger.Errorf("update bandwidth between %s and %s error: %s", pieceResult.SrcPid, pieceResult.DstPid, err.Error())
 	}
 
 	if len(pieceResult.PieceInfo.PieceMd5) > 0 {

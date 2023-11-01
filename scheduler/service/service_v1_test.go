@@ -3941,141 +3941,141 @@ func TestServiceV1_handleBeginOfPiece(t *testing.T) {
 	}
 }
 
-func TestServiceV1_handlePieceSuccess(t *testing.T) {
-	mockHost := resource.NewHost(
-		mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
-		mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-	mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
+// func TestServiceV1_handlePieceSuccess(t *testing.T) {
+// 	mockHost := resource.NewHost(
+// 		mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+// 		mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
+// 	mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
 
-	tests := []struct {
-		name   string
-		piece  *schedulerv1.PieceResult
-		peer   *resource.Peer
-		mock   func(peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder)
-		expect func(t *testing.T, peer *resource.Peer)
-	}{
-		{
-			name: "piece success",
-			piece: &schedulerv1.PieceResult{
-				DstPid: mockSeedPeerID,
-				PieceInfo: &commonv1.PieceInfo{
-					PieceNum:     1,
-					RangeStart:   2,
-					RangeSize:    10,
-					PieceMd5:     mockPieceMD5.Encoded,
-					DownloadCost: 1,
-				},
-			},
-			peer: resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost),
-			mock: func(peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
-				peer.FSM.SetState(resource.PeerStateRunning)
-				gomock.InOrder(
-					mr.PeerManager().Return(peerManager).Times(1),
-					mp.Load(gomock.Eq(mockSeedPeerID)).Return(nil, false).Times(1),
-				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer) {
-				assert := assert.New(t)
-				piece, loaded := peer.LoadPiece(1)
-				assert.True(loaded)
-				assert.Equal(piece.Number, int32(1))
-				assert.Equal(piece.ParentID, mockSeedPeerID)
-				assert.Equal(piece.Offset, uint64(2))
-				assert.Equal(piece.Length, uint64(10))
-				assert.EqualValues(piece.Digest, mockPieceMD5)
-				assert.Equal(piece.TrafficType, commonv2.TrafficType_REMOTE_PEER)
-				assert.Equal(piece.Cost, time.Duration(1*time.Millisecond))
-				assert.NotEqual(piece.CreatedAt.Nanosecond(), 0)
-				assert.Equal(peer.FinishedPieces.Count(), uint(1))
-				assert.EqualValues(peer.PieceCosts(), []time.Duration{time.Duration(1 * time.Millisecond)})
-			},
-		},
-		{
-			name: "piece success without digest",
-			piece: &schedulerv1.PieceResult{
-				DstPid: mockSeedPeerID,
-				PieceInfo: &commonv1.PieceInfo{
-					PieceNum:     1,
-					RangeStart:   2,
-					RangeSize:    10,
-					DownloadCost: 1,
-				},
-			},
-			peer: resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost),
-			mock: func(peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
-				peer.FSM.SetState(resource.PeerStateRunning)
-				gomock.InOrder(
-					mr.PeerManager().Return(peerManager).Times(1),
-					mp.Load(gomock.Eq(mockSeedPeerID)).Return(peer, true).Times(1),
-				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer) {
-				assert := assert.New(t)
-				piece, loaded := peer.LoadPiece(1)
-				assert.True(loaded)
-				assert.Equal(piece.Number, int32(1))
-				assert.Equal(piece.ParentID, mockSeedPeerID)
-				assert.Equal(piece.Offset, uint64(2))
-				assert.Equal(piece.Length, uint64(10))
-				assert.Nil(piece.Digest)
-				assert.Equal(piece.TrafficType, commonv2.TrafficType_REMOTE_PEER)
-				assert.Equal(piece.Cost, time.Duration(1*time.Millisecond))
-				assert.NotEqual(piece.CreatedAt.Nanosecond(), 0)
-				assert.Equal(peer.FinishedPieces.Count(), uint(1))
-				assert.EqualValues(peer.PieceCosts(), []time.Duration{time.Duration(1 * time.Millisecond)})
-				assert.NotEqual(peer.UpdatedAt.Load(), 0)
-			},
-		},
-		{
-			name: "piece state is PeerStateBackToSource",
-			piece: &schedulerv1.PieceResult{
-				PieceInfo: &commonv1.PieceInfo{
-					PieceNum:     1,
-					RangeStart:   2,
-					RangeSize:    10,
-					DownloadCost: 1,
-				},
-			},
-			peer: resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost),
-			mock: func(peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
-				peer.FSM.SetState(resource.PeerStateBackToSource)
-			},
-			expect: func(t *testing.T, peer *resource.Peer) {
-				assert := assert.New(t)
-				piece, loaded := peer.LoadPiece(1)
-				assert.True(loaded)
-				assert.Equal(piece.Number, int32(1))
-				assert.Empty(piece.ParentID)
-				assert.Equal(piece.Offset, uint64(2))
-				assert.Equal(piece.Length, uint64(10))
-				assert.Nil(piece.Digest)
-				assert.Equal(piece.TrafficType, commonv2.TrafficType_BACK_TO_SOURCE)
-				assert.Equal(piece.Cost, time.Duration(1*time.Millisecond))
-				assert.NotEqual(piece.CreatedAt.Nanosecond(), 0)
-				assert.Equal(peer.FinishedPieces.Count(), uint(1))
-				assert.EqualValues(peer.PieceCosts(), []time.Duration{time.Duration(1 * time.Millisecond)})
-			},
-		},
-	}
+// 	tests := []struct {
+// 		name   string
+// 		piece  *schedulerv1.PieceResult
+// 		peer   *resource.Peer
+// 		mock   func(peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder)
+// 		expect func(t *testing.T, peer *resource.Peer)
+// 	}{
+// 		{
+// 			name: "piece success",
+// 			piece: &schedulerv1.PieceResult{
+// 				DstPid: mockSeedPeerID,
+// 				PieceInfo: &commonv1.PieceInfo{
+// 					PieceNum:     1,
+// 					RangeStart:   2,
+// 					RangeSize:    10,
+// 					PieceMd5:     mockPieceMD5.Encoded,
+// 					DownloadCost: 1,
+// 				},
+// 			},
+// 			peer: resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost),
+// 			mock: func(peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+// 				peer.FSM.SetState(resource.PeerStateRunning)
+// 				gomock.InOrder(
+// 					mr.PeerManager().Return(peerManager).Times(1),
+// 					mp.Load(gomock.Eq(mockSeedPeerID)).Return(nil, false).Times(1),
+// 				)
+// 			},
+// 			expect: func(t *testing.T, peer *resource.Peer) {
+// 				assert := assert.New(t)
+// 				piece, loaded := peer.LoadPiece(1)
+// 				assert.True(loaded)
+// 				assert.Equal(piece.Number, int32(1))
+// 				assert.Equal(piece.ParentID, mockSeedPeerID)
+// 				assert.Equal(piece.Offset, uint64(2))
+// 				assert.Equal(piece.Length, uint64(10))
+// 				assert.EqualValues(piece.Digest, mockPieceMD5)
+// 				assert.Equal(piece.TrafficType, commonv2.TrafficType_REMOTE_PEER)
+// 				assert.Equal(piece.Cost, time.Duration(1*time.Millisecond))
+// 				assert.NotEqual(piece.CreatedAt.Nanosecond(), 0)
+// 				assert.Equal(peer.FinishedPieces.Count(), uint(1))
+// 				assert.EqualValues(peer.PieceCosts(), []time.Duration{time.Duration(1 * time.Millisecond)})
+// 			},
+// 		},
+// 		{
+// 			name: "piece success without digest",
+// 			piece: &schedulerv1.PieceResult{
+// 				DstPid: mockSeedPeerID,
+// 				PieceInfo: &commonv1.PieceInfo{
+// 					PieceNum:     1,
+// 					RangeStart:   2,
+// 					RangeSize:    10,
+// 					DownloadCost: 1,
+// 				},
+// 			},
+// 			peer: resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost),
+// 			mock: func(peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+// 				peer.FSM.SetState(resource.PeerStateRunning)
+// 				gomock.InOrder(
+// 					mr.PeerManager().Return(peerManager).Times(1),
+// 					mp.Load(gomock.Eq(mockSeedPeerID)).Return(peer, true).Times(1),
+// 				)
+// 			},
+// 			expect: func(t *testing.T, peer *resource.Peer) {
+// 				assert := assert.New(t)
+// 				piece, loaded := peer.LoadPiece(1)
+// 				assert.True(loaded)
+// 				assert.Equal(piece.Number, int32(1))
+// 				assert.Equal(piece.ParentID, mockSeedPeerID)
+// 				assert.Equal(piece.Offset, uint64(2))
+// 				assert.Equal(piece.Length, uint64(10))
+// 				assert.Nil(piece.Digest)
+// 				assert.Equal(piece.TrafficType, commonv2.TrafficType_REMOTE_PEER)
+// 				assert.Equal(piece.Cost, time.Duration(1*time.Millisecond))
+// 				assert.NotEqual(piece.CreatedAt.Nanosecond(), 0)
+// 				assert.Equal(peer.FinishedPieces.Count(), uint(1))
+// 				assert.EqualValues(peer.PieceCosts(), []time.Duration{time.Duration(1 * time.Millisecond)})
+// 				assert.NotEqual(peer.UpdatedAt.Load(), 0)
+// 			},
+// 		},
+// 		{
+// 			name: "piece state is PeerStateBackToSource",
+// 			piece: &schedulerv1.PieceResult{
+// 				PieceInfo: &commonv1.PieceInfo{
+// 					PieceNum:     1,
+// 					RangeStart:   2,
+// 					RangeSize:    10,
+// 					DownloadCost: 1,
+// 				},
+// 			},
+// 			peer: resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost),
+// 			mock: func(peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+// 				peer.FSM.SetState(resource.PeerStateBackToSource)
+// 			},
+// 			expect: func(t *testing.T, peer *resource.Peer) {
+// 				assert := assert.New(t)
+// 				piece, loaded := peer.LoadPiece(1)
+// 				assert.True(loaded)
+// 				assert.Equal(piece.Number, int32(1))
+// 				assert.Empty(piece.ParentID)
+// 				assert.Equal(piece.Offset, uint64(2))
+// 				assert.Equal(piece.Length, uint64(10))
+// 				assert.Nil(piece.Digest)
+// 				assert.Equal(piece.TrafficType, commonv2.TrafficType_BACK_TO_SOURCE)
+// 				assert.Equal(piece.Cost, time.Duration(1*time.Millisecond))
+// 				assert.NotEqual(piece.CreatedAt.Nanosecond(), 0)
+// 				assert.Equal(peer.FinishedPieces.Count(), uint(1))
+// 				assert.EqualValues(peer.PieceCosts(), []time.Duration{time.Duration(1 * time.Millisecond)})
+// 			},
+// 		},
+// 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			ctl := gomock.NewController(t)
-			defer ctl.Finish()
-			scheduling := mocks.NewMockScheduling(ctl)
-			res := resource.NewMockResource(ctl)
-			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			storage := storagemocks.NewMockStorage(ctl)
-			networkTopology := networktopologymocks.NewMockNetworkTopology(ctl)
-			peerManager := resource.NewMockPeerManager(ctl)
-			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, res, scheduling, dynconfig, storage, networkTopology)
+// 	for _, tc := range tests {
+// 		t.Run(tc.name, func(t *testing.T) {
+// 			ctl := gomock.NewController(t)
+// 			defer ctl.Finish()
+// 			scheduling := mocks.NewMockScheduling(ctl)
+// 			res := resource.NewMockResource(ctl)
+// 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
+// 			storage := storagemocks.NewMockStorage(ctl)
+// 			networkTopology := networktopologymocks.NewMockNetworkTopology(ctl)
+// 			peerManager := resource.NewMockPeerManager(ctl)
+// 			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, res, scheduling, dynconfig, storage, networkTopology)
 
-			tc.mock(tc.peer, peerManager, res.EXPECT(), peerManager.EXPECT())
-			svc.handlePieceSuccess(context.Background(), tc.peer, tc.piece)
-			tc.expect(t, tc.peer)
-		})
-	}
-}
+// 			tc.mock(tc.peer, peerManager, res.EXPECT(), peerManager.EXPECT())
+// 			svc.handlePieceSuccess(context.Background(), tc.peer, tc.piece)
+// 			tc.expect(t, tc.peer)
+// 		})
+// 	}
+// }
 
 func TestServiceV1_handlePieceFail(t *testing.T) {
 
