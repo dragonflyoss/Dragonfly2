@@ -1105,11 +1105,11 @@ func (v *V1) handlePieceSuccess(ctx context.Context, peer *resource.Peer, pieceR
 	}
 
 	// Construct piece.
+	logger.Info(pieceResult.PieceInfo.RangeSize)
 	logger.Info(pieceResult.PieceInfo.DownloadCost)
 	logger.Info(time.Millisecond)
-	logger.Info(int64(pieceResult.PieceInfo.DownloadCost))
-	logger.Info(int64(time.Millisecond))
 	cost := time.Duration(int64(pieceResult.PieceInfo.DownloadCost) * int64(time.Millisecond))
+	logger.Info(cost)
 	piece := &resource.Piece{
 		Number:      pieceResult.PieceInfo.PieceNum,
 		ParentID:    pieceResult.DstPid,
