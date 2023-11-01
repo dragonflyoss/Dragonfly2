@@ -309,7 +309,6 @@ func (nt *networkTopology) Snapshot() error {
 	defer cancel()
 
 	now := time.Now()
-	id := uuid.NewString()
 	probedCountKeys, _, err := nt.rdb.Scan(ctx, 0, pkgredis.MakeProbedCountKeyInScheduler("*"), math.MaxInt64).Result()
 	if err != nil {
 		return err
@@ -392,7 +391,7 @@ func (nt *networkTopology) Snapshot() error {
 		}
 
 		if err = nt.storage.CreateNetworkTopology(storage.NetworkTopology{
-			ID: id,
+			ID: uuid.NewString(),
 			Host: storage.SrcHost{
 				ID:       host.ID,
 				Type:     host.Type.Name(),

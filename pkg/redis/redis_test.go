@@ -669,3 +669,54 @@ func Test_ParseProbedCountKeyInScheduler(t *testing.T) {
 		})
 	}
 }
+
+func Test_MakeBandwidthKeyInScheduler(t *testing.T) {
+	tests := []struct {
+		name       string
+		srcHostID  string
+		destHostID string
+		expect     func(t *testing.T, s string)
+	}{
+		{
+			name:       "make bandwidth key in scheduler",
+			srcHostID:  "foo",
+			destHostID: "bar",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "scheduler:bandwidth:foo:bar")
+			},
+		},
+		{
+			name:       "source host id is empty",
+			srcHostID:  "",
+			destHostID: "bar",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "scheduler:bandwidth::bar")
+			},
+		},
+		{
+			name:       "destination host id is empty",
+			srcHostID:  "foo",
+			destHostID: "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "scheduler:bandwidth:foo:")
+			},
+		},
+		{
+			name:       "source host id and destination host id are empty",
+			srcHostID:  "",
+			destHostID: "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "scheduler:bandwidth::")
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.expect(t, MakeBandwidthKeyInScheduler(tc.srcHostID, tc.destHostID))
+		})
+	}
+}
