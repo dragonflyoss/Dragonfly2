@@ -797,19 +797,18 @@ func (pm *pieceManager) concurrentDownloadSource(ctx context.Context, pt Task, p
 	pt.SetContentLength(parsedRange.Length)
 	pt.SetTotalPieces(pieceCount)
 
+	pieceCountToDownload := pieceCount - continuePieceNum
+
 	con := pm.concurrentOption.GoroutineCount
 	// Fix int overflow
-	if int(pieceCount) > 0 && int(pieceCount) < con {
-		con = int(pieceCount)
+	if int(pieceCountToDownload) > 0 && int(pieceCountToDownload) < con {
+		con = int(pieceCountToDownload)
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	if continuePieceNum > 0 {
-		return pm.concurrentDownloadSourceByPiece(ctx, pt, peerTaskRequest, parsedRange, continuePieceNum, pieceCount, con, pieceSize, cancel)
-	}
-	return pm.concurrentDownloadSourceByPieceGroup(ctx, pt, peerTaskRequest, parsedRange, continuePieceNum, pieceCount, con, pieceSize, cancel)
+	return pm.concurrentDownloadSourceByPieceGroup(ctx, pt, peerTaskRequest, parsedRange, continuePieceNum, pieceCount, pieceCountToDownload, con, pieceSize, cancel)
 }
 
 type pieceGroup struct {
@@ -819,12 +818,8 @@ type pieceGroup struct {
 
 func (pm *pieceManager) concurrentDownloadSourceByPieceGroup(
 	ctx context.Context, pt Task, peerTaskRequest *schedulerv1.PeerTaskRequest,
-	parsedRange *nethttp.Range, startPieceNum int32, pieceCount int32,
+	parsedRange *nethttp.Range, startPieceNum int32, pieceCount int32, pieceCountToDownload int32,
 	con int, pieceSize uint32, cancel context.CancelFunc) error {
-	// TODO
-	if startPieceNum > 0 {
-		return fmt.Errorf("concurrentDownloadSourceByPieceGroup not support startPieceNum yet")
-	}
 	log := pt.Log()
 	var downloadError atomic.Value
 	downloadedPieces := mapset.NewSet[int32]()
@@ -832,46 +827,20 @@ func (pm *pieceManager) concurrentDownloadSourceByPieceGroup(
 	wg := sync.WaitGroup{}
 	wg.Add(con)
 
-	minPieceCountPerGroup := pieceCount / int32(con)
-	reminderPieces := pieceCount % int32(con)
+	minPieceCountPerGroup := pieceCountToDownload / int32(con)
+	reminderPieces := pieceCountToDownload % int32(con)
 
 	// piece group eg:
 	// con = 4, piece = 5:
-	// 	 worker 0: 2
+	//   worker 0: 2
 	//   worker 1: 1
 	//   worker 2: 1
 	//   worker 3: 1
 	//   worker 4: 1
 	for i := int32(0); i < int32(con); i++ {
 		go func(i int32) {
-			var (
-				start int32
-				end   int32
-			)
-			// calculate piece group first and last piece num
-			if i < reminderPieces {
-				start = i*minPieceCountPerGroup + i
-				end = i*minPieceCountPerGroup + minPieceCountPerGroup
-			} else {
-				start = i*minPieceCountPerGroup + reminderPieces
-				end = start + minPieceCountPerGroup - 1
-			}
-
-			// calculate piece group first and last range byte with parsedRange.Start
-			startByte := int64(start)*int64(pieceSize) + parsedRange.Start
-			endByte := int64(end+1)*int64(pieceSize) - 1 + parsedRange.Start
-			if endByte > parsedRange.Length-1 {
-				endByte = parsedRange.Length - 1
-			}
-
-			pg := &pieceGroup{
-				start:     start,
-				end:       end,
-				startByte: startByte,
-				endByte:   endByte,
-			}
-
-			log.Infof("concurrent worker %d start to download piece %d-%d, byte %d-%d", i, start, end, startByte, endByte)
+			pg := pm.createPieceGroup(i, reminderPieces, startPieceNum, minPieceCountPerGroup, pieceSize, parsedRange)
+			log.Infof("concurrent worker %d start to download piece %d-%d, byte %d-%d", i, pg.start, pg.end, pg.startByte, pg.endByte)
 			_, _, retryErr := retry.Run(ctx,
 				pm.concurrentOption.InitBackoff,
 				pm.concurrentOption.MaxBackoff,
@@ -902,9 +871,42 @@ func (pm *pieceManager) concurrentDownloadSourceByPieceGroup(
 	return nil
 }
 
+func (pm *pieceManager) createPieceGroup(i int32, reminderPieces int32, startPieceNum int32, minPieceCountPerGroup int32, pieceSize uint32, parsedRange *nethttp.Range) *pieceGroup {
+	var (
+		start int32
+		end   int32
+	)
+
+	if i < reminderPieces {
+		start = i*minPieceCountPerGroup + i
+		end = start + minPieceCountPerGroup
+	} else {
+		start = i*minPieceCountPerGroup + reminderPieces
+		end = start + minPieceCountPerGroup - 1
+	}
+
+	start += startPieceNum
+	end += startPieceNum
+
+	// calculate piece group first and last range byte with parsedRange.Start
+	startByte := int64(start)*int64(pieceSize) + parsedRange.Start
+	endByte := int64(end+1)*int64(pieceSize) - 1 + parsedRange.Start
+	if endByte > parsedRange.Length-1 {
+		endByte = parsedRange.Length - 1
+	}
+
+	pg := &pieceGroup{
+		start:     start,
+		end:       end,
+		startByte: startByte,
+		endByte:   endByte,
+	}
+	return pg
+}
+
 func (pm *pieceManager) concurrentDownloadSourceByPiece(
 	ctx context.Context, pt Task, peerTaskRequest *schedulerv1.PeerTaskRequest,
-	parsedRange *nethttp.Range, startPieceNum int32, pieceCount int32,
+	parsedRange *nethttp.Range, startPieceNum int32, pieceCount int32, pieceCountToDownload int32,
 	con int, pieceSize uint32, cancel context.CancelFunc) error {
 
 	log := pt.Log()
@@ -912,7 +914,7 @@ func (pm *pieceManager) concurrentDownloadSourceByPiece(
 	var pieceCh = make(chan int32, con)
 
 	wg := sync.WaitGroup{}
-	wg.Add(int(pieceCount - startPieceNum))
+	wg.Add(int(pieceCountToDownload))
 
 	downloadedPieceCount := atomic.NewInt32(startPieceNum)
 
