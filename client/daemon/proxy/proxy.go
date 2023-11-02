@@ -117,6 +117,8 @@ type Proxy struct {
 	dumpHTTPContent bool
 
 	peerIDGenerator peer.IDGenerator
+
+	wg *sync.WaitGroup
 }
 
 // Option is a functional option for configuring the proxy
@@ -273,6 +275,7 @@ func NewProxyWithOptions(options ...Option) (*Proxy, error) {
 		directHandler: http.NewServeMux(),
 		tracer:        otel.Tracer("dfget-daemon-proxy"),
 		certCache:     lru.New(100),
+		wg:            &sync.WaitGroup{},
 	}
 
 	for _, opt := range options {
@@ -293,6 +296,9 @@ func isBasicAuthMatch(basicAuth *config.BasicAuth, user, pass string) bool {
 
 // ServeHTTP implements http.Handler.ServeHTTP
 func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	proxy.wg.Add(1)
+	defer proxy.wg.Done()
+
 	metrics.ProxyRequestCount.WithLabelValues(r.Method).Add(1)
 	metrics.ProxyRequestRunningCount.WithLabelValues(r.Method).Add(1)
 	defer metrics.ProxyRequestRunningCount.WithLabelValues(r.Method).Sub(1)
@@ -304,6 +310,7 @@ func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	span.SetAttributes(semconv.HTTPHostKey.String(r.Host))
 	span.SetAttributes(semconv.HTTPURLKey.String(r.URL.String()))
 	span.SetAttributes(semconv.HTTPMethodKey.String(r.Method))
+
 	defer span.End()
 
 	// update ctx to transfer trace id

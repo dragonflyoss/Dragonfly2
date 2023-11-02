@@ -37,6 +37,9 @@ import (
 
 // SeedPeerClient is the interface used for client of seed peer.
 type SeedPeerClient interface {
+	// Addrs returns the addresses of seed peers.
+	Addrs() []string
+
 	// client is seed peer grpc client interface.
 	client.Client
 

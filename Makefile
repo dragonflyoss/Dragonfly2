@@ -33,7 +33,7 @@ build-dirs:
 	@mkdir -p ./bin
 .PHONY: build-dirs
 
-# Build dragonlfy.
+# Build dragonfly.
 docker-build: docker-build-dfdaemon docker-build-scheduler docker-build-manager docker-build-trainer
 	@echo "Build image done."
 .PHONY: docker-build
@@ -372,7 +372,7 @@ clean-e2e-test:
 	@rm -rf test/e2e/*.log
 .PHONY: clean-e2e-test
 
-# Kind load dragonlfy.
+# Kind load dragonfly.
 kind-load: kind-load-scheduler kind-load-dfdaemon kind-load-manager kind-load-trainer kind-load-testing-tools
 	@echo "Kind load image done."
 .PHONY: kind-load

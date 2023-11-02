@@ -539,7 +539,7 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 		}
 
 		if req.Host.GetSchedulerClusterId() != 0 {
-			options = append(options, resource.WithSchedulerClusterID(req.Host.GetSchedulerClusterId()))
+			options = append(options, resource.WithSchedulerClusterID(uint64(v.config.Manager.SchedulerClusterID)))
 		}
 
 		if req.Host.GetObjectStoragePort() != 0 {

@@ -21,6 +21,7 @@ package job
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -152,8 +153,14 @@ func (j *job) preheat(ctx context.Context, req string) error {
 	ctx, cancel := context.WithTimeout(ctx, preheatTimeout)
 	defer cancel()
 
+	// If seed peer is disabled, return error.
 	if !j.config.SeedPeer.Enable {
-		return errors.New("scheduler has disabled seed peer")
+		return fmt.Errorf("cluster %d scheduler %s has disabled seed peer", j.config.Manager.SchedulerClusterID, j.config.Server.AdvertiseIP)
+	}
+
+	// If scheduler has no available seed peer, return error.
+	if len(j.resource.SeedPeer().Client().Addrs()) == 0 {
+		return fmt.Errorf("cluster %d scheduler %s has no available seed peer", j.config.Manager.SchedulerClusterID, j.config.Server.AdvertiseIP)
 	}
 
 	preheat := &internaljob.PreheatRequest{}
@@ -185,8 +192,10 @@ func (j *job) preheat(ctx context.Context, req string) error {
 	// Trigger seed peer download seeds.
 	taskID := idgen.TaskIDV1(preheat.URL, urlMeta)
 	log := logger.WithTask(taskID, preheat.URL)
-	log.Infof("preheat %s headers: %#v, tag: %s, range: %s, filter: %s, digest: %s",
-		preheat.URL, urlMeta.Header, urlMeta.Tag, urlMeta.Range, urlMeta.Filter, urlMeta.Digest)
+	log.Infof("preheat %s tag: %s, range: %s, filter: %s, digest: %s",
+		preheat.URL, urlMeta.Tag, urlMeta.Range, urlMeta.Filter, urlMeta.Digest)
+	log.Debugf("preheat %s headers: %#v", preheat.URL, urlMeta.Header)
+
 	stream, err := j.resource.SeedPeer().Client().ObtainSeeds(ctx, &cdnsystemv1.SeedRequest{
 		TaskId:  taskID,
 		Url:     preheat.URL,
