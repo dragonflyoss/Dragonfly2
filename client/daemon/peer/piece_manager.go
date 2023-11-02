@@ -847,7 +847,7 @@ func (pm *pieceManager) concurrentDownloadSourceByPieceGroup(
 				pm.concurrentOption.MaxAttempts,
 				func() (data any, cancel bool, err error) {
 					err = pm.downloadPieceGroupFromSource(ctx, pt, log,
-						peerTaskRequest, pieceSize, pg, parsedRange.Length, pieceCount, downloadedPieces)
+						peerTaskRequest, pieceSize, pg, parsedRange.Length, pieceCount, pieceCountToDownload, downloadedPieces)
 					return nil, errors.Is(err, context.Canceled), err
 				})
 			if retryErr != nil {
@@ -1063,6 +1063,7 @@ func (pm *pieceManager) downloadPieceGroupFromSource(ctx context.Context,
 	pieceSize uint32, pg *pieceGroup,
 	totalContentLength int64,
 	totalPieceCount int32,
+	totalPieceCountToDownload int32,
 	downloadedPieces mapset.Set[int32]) error {
 
 	backSourceRequest, err := source.NewRequestWithContext(ctx, peerTaskRequest.Url, peerTaskRequest.UrlMeta.Header)
@@ -1106,7 +1107,7 @@ func (pm *pieceManager) downloadPieceGroupFromSource(ctx context.Context,
 			pt, response.Body, totalContentLength, pieceNum, offset, size,
 			func(int64) (int32, int64, bool) {
 				downloadedPieces.Add(pieceNum)
-				return totalPieceCount, totalContentLength, downloadedPieces.Cardinality() == int(totalPieceCount)
+				return totalPieceCount, totalContentLength, downloadedPieces.Cardinality() == int(totalPieceCountToDownload)
 			})
 		request := &DownloadPieceRequest{
 			TaskID: pt.GetTaskID(),
