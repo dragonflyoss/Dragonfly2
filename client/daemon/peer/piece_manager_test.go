@@ -548,11 +548,12 @@ func TestDetectBackSourceError(t *testing.T) {
 func TestPieceGroup(t *testing.T) {
 	assert := testifyassert.New(t)
 	testCases := []struct {
-		name        string
-		parsedRange *nethttp.Range
-		pieceSize   uint32
-		con         int32
-		pieceGroups []pieceGroup
+		name          string
+		parsedRange   *nethttp.Range
+		startPieceNum int32
+		pieceSize     uint32
+		con           int32
+		pieceGroups   []pieceGroup
 	}{
 		{
 			name:        "100-200-2",
@@ -691,6 +692,39 @@ func TestPieceGroup(t *testing.T) {
 			},
 		},
 		{
+			name:          "1-100-700-4",
+			pieceSize:     100,
+			startPieceNum: 1,
+			parsedRange:   &nethttp.Range{Start: 90, Length: 707}, // last byte: 90 + 706 = 796
+			con:           4,
+			pieceGroups: []pieceGroup{
+				{
+					start:     1,
+					end:       2,
+					startByte: 190,
+					endByte:   389,
+				},
+				{
+					start:     3,
+					end:       4,
+					startByte: 390,
+					endByte:   589,
+				},
+				{
+					start:     5,
+					end:       6,
+					startByte: 590,
+					endByte:   789,
+				},
+				{
+					start:     7,
+					end:       7,
+					startByte: 790,
+					endByte:   796,
+				},
+			},
+		},
+		{
 			name:        "100-1100-4",
 			pieceSize:   100,
 			parsedRange: &nethttp.Range{Start: 0, Length: 1100},
@@ -722,18 +756,53 @@ func TestPieceGroup(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:          "from-real-e2e-test",
+			pieceSize:     4194304,
+			startPieceNum: 1,
+			parsedRange:   &nethttp.Range{Start: 984674, Length: 20638941},
+			con:           4,
+			pieceGroups: []pieceGroup{
+				{
+					start:     1,
+					end:       1,
+					startByte: 5178978,
+					endByte:   9373281,
+				},
+				{
+					start:     2,
+					end:       2,
+					startByte: 9373282,
+					endByte:   13567585,
+				},
+				{
+					start:     3,
+					end:       3,
+					startByte: 13567586,
+					endByte:   17761889,
+				},
+				{
+					start:     4,
+					end:       4,
+					startByte: 17761890,
+					endByte:   21623614,
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			pieceCount := int32(math.Ceil(float64(tc.parsedRange.Length) / float64(tc.pieceSize)))
-			minPieceCountPerGroup := pieceCount / tc.con
-			reminderPieces := pieceCount % tc.con
+			pieceCountToDownload := pieceCount - tc.startPieceNum
+
+			minPieceCountPerGroup := pieceCountToDownload / tc.con
+			reminderPieces := pieceCountToDownload % tc.con
 			pm := &pieceManager{}
 
 			var pieceGroups []pieceGroup
 			for i := int32(0); i < tc.con; i++ {
-				pg := pm.createPieceGroup(i, reminderPieces, 0, minPieceCountPerGroup, tc.pieceSize, tc.parsedRange)
+				pg := pm.createPieceGroup(i, reminderPieces, tc.startPieceNum, minPieceCountPerGroup, tc.pieceSize, tc.parsedRange)
 				pieceGroups = append(pieceGroups, *pg)
 			}
 

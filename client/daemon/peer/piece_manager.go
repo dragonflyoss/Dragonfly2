@@ -821,6 +821,9 @@ func (pm *pieceManager) concurrentDownloadSourceByPieceGroup(
 	parsedRange *nethttp.Range, startPieceNum int32, pieceCount int32, pieceCountToDownload int32,
 	con int, pieceSize uint32, cancel context.CancelFunc) error {
 	log := pt.Log()
+	log.Infof("start concurrentDownloadSourceByPieceGroup,  startPieceNum: %d, pieceCount: %d, pieceCountToDownload: %d, con: %d, pieceSize: %d",
+		startPieceNum, pieceCount, pieceCountToDownload, con, pieceSize)
+
 	var downloadError atomic.Value
 	downloadedPieces := mapset.NewSet[int32]()
 
@@ -885,15 +888,20 @@ func (pm *pieceManager) createPieceGroup(i int32, reminderPieces int32, startPie
 		end = start + minPieceCountPerGroup - 1
 	}
 
+	// adjust by startPieceNum
 	start += startPieceNum
 	end += startPieceNum
 
 	// calculate piece group first and last range byte with parsedRange.Start
-	startByte := int64(start)*int64(pieceSize) + parsedRange.Start
-	endByte := int64(end+1)*int64(pieceSize) - 1 + parsedRange.Start
+	startByte := int64(start) * int64(pieceSize)
+	endByte := int64(end+1)*int64(pieceSize) - 1
 	if endByte > parsedRange.Length-1 {
 		endByte = parsedRange.Length - 1
 	}
+
+	// adjust by range start
+	startByte += parsedRange.Start
+	endByte += parsedRange.Start
 
 	pg := &pieceGroup{
 		start:     start,
