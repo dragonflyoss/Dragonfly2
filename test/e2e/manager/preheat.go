@@ -24,11 +24,10 @@ import (
 	"strings"
 	"time"
 
+	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 	. "github.com/onsi/ginkgo/v2" //nolint
 	. "github.com/onsi/gomega"    //nolint
-
-	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
 
 	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/models"
@@ -116,6 +115,120 @@ var _ = Describe("Preheat with manager", func() {
 				Args: types.PreheatArgs{
 					Type: "image",
 					URL:  url,
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			out, err := fsPod.CurlCommand("POST", map[string]string{"Content-Type": "application/json"}, req,
+				fmt.Sprintf("http://%s:%s/%s", managerService, managerPort, preheatPath)).CombinedOutput()
+			fmt.Println(string(out))
+			Expect(err).NotTo(HaveOccurred())
+
+			// wait for success
+			job := &models.Job{}
+			err = json.Unmarshal(out, job)
+			Expect(err).NotTo(HaveOccurred())
+			done := waitForDone(job, fsPod)
+			Expect(done).Should(BeTrue())
+
+			for i, seedPeerTaskID := range seedPeerTaskIDs {
+				sha256sum, err := checkPreheatResult(seedPeerPods, seedPeerTaskID)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(sha256sum1[i]).To(Equal(sha256sum))
+			}
+		})
+
+		It("preheat image for linux/amd64 platform should be ok", Label("preheat", "image", "platform", "linux/amd64"), func() {
+			url := "https://index.docker.io/v2/dragonflyoss/scheduler/manifests/v2.1.0"
+			fmt.Println("download image: " + url)
+
+			var (
+				seedPeerTaskIDs = []string{
+					"c8ca6a17354d3a79397eef26803e5af84d00a3fd64b0f823922086a31ebdee18",
+					"b8de5865e2ebf537279683adfbdb5f858b0c7212e5744a1df233086496c245d7",
+					"e4bf0d4b551afda56f9627c81ee02ab4360865d37c7dd43586e37f26f4386806",
+					"7da0721fd078dd46a63298747ffde8fcbe12b53378f282c9def693615ac7993e",
+					"3639c8c5712e77acd3751142c83150c0a12284a54fa41224a1c7acc0e343020d",
+				}
+				sha256sum1 = []string{
+					"f1f1039835051ecc04909f939530e86a20f02d2ce5ad7a81c0fa3616f7303944",
+					"c1d6d1b2d5a367259e6e51a7f4d1ccd66a28cc9940d6599d8a8ea9544dd4b4a8",
+					"871ab018db94b4ae7b137764837bc4504393a60656ba187189e985cd809064f7",
+					"f1a1d290795d904815786e41d39a41dc1af5de68a9e9020baba8bd83b32d8f95",
+					"f1ffc4b5459e82dc8e7ddd1d1a2ec469e85a1f076090c22851a1f2ce6f71e1a6",
+				}
+			)
+
+			var seedPeerPods [3]*e2eutil.PodExec
+			for i := 0; i < 3; i++ {
+				seedPeerPods[i] = getSeedPeerExec(i)
+			}
+			fsPod := getFileServerExec()
+
+			// preheat file
+			req, err := structure.StructToMap(types.CreatePreheatJobRequest{
+				Type: internaljob.PreheatJob,
+				Args: types.PreheatArgs{
+					Type:     "image",
+					URL:      url,
+					Platform: "linux/amd64",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			out, err := fsPod.CurlCommand("POST", map[string]string{"Content-Type": "application/json"}, req,
+				fmt.Sprintf("http://%s:%s/%s", managerService, managerPort, preheatPath)).CombinedOutput()
+			fmt.Println(string(out))
+			Expect(err).NotTo(HaveOccurred())
+
+			// wait for success
+			job := &models.Job{}
+			err = json.Unmarshal(out, job)
+			Expect(err).NotTo(HaveOccurred())
+			done := waitForDone(job, fsPod)
+			Expect(done).Should(BeTrue())
+
+			for i, seedPeerTaskID := range seedPeerTaskIDs {
+				sha256sum, err := checkPreheatResult(seedPeerPods, seedPeerTaskID)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(sha256sum1[i]).To(Equal(sha256sum))
+			}
+		})
+
+		It("preheat image for linux/arm64 platform  should be ok", Label("preheat", "image", "platform", "linux/arm64"), func() {
+			url := "https://index.docker.io/v2/dragonflyoss/scheduler/manifests/v2.1.0"
+			fmt.Println("download image: " + url)
+
+			var (
+				seedPeerTaskIDs = []string{
+					"9869dbb01ac214e90e4ae667e42d50210c2ff1e63292d73b14f0a7a2226c0320",
+					"ab049caee13f77d91568d954a5d32f5d2354497cab098887a8a663656daa9840",
+					"e4bf0d4b551afda56f9627c81ee02ab4360865d37c7dd43586e37f26f4386806",
+					"a26e1ac8b70926f45766fcf886f23a833793c39c62237bcda9ffeb158131c0d6",
+					"7376f665077e91cd0dc410c00242ab88775e3eae19eca4b7b3a29ded14fc3754",
+				}
+				sha256sum1 = []string{
+					"a0d7a8f11f7e25ca59f0bf470187dd9aa27e7ca951cf67a53c750deea5d3b076",
+					"a880266d3b77f75696023df2da1ef66c3c565e0f70596242395c9e68de955c7c",
+					"871ab018db94b4ae7b137764837bc4504393a60656ba187189e985cd809064f7",
+					"9b5952218d7711195c6c6fbddbef2780507d20851ca68845d180397d1348f0d8",
+					"889f4c960ac4ff70774e9c4cfa64efc4823ade0702d0f96c20ff0054ffbbe504",
+				}
+			)
+
+			var seedPeerPods [3]*e2eutil.PodExec
+			for i := 0; i < 3; i++ {
+				seedPeerPods[i] = getSeedPeerExec(i)
+			}
+			fsPod := getFileServerExec()
+
+			// preheat file
+			req, err := structure.StructToMap(types.CreatePreheatJobRequest{
+				Type: internaljob.PreheatJob,
+				Args: types.PreheatArgs{
+					Type:     "image",
+					URL:      url,
+					Platform: "linux/arm64",
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
