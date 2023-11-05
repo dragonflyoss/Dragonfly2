@@ -1597,7 +1597,7 @@ func (v *V1) updateBandwidth(peer *resource.Peer, parents []*resource.Peer) {
 
 			if piece.ParentID == parent.ID {
 				totalLength = totalLength + piece.Length
-				totalCost = totalCost + piece.Cost.Nanoseconds()
+				totalCost = totalCost + piece.Cost.Milliseconds()
 			}
 
 			return true
