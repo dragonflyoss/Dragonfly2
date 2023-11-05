@@ -393,10 +393,10 @@ func (s *scheduling) FindCandidateParents(ctx context.Context, peer *resource.Pe
 
 	// Sort candidate parents by evaluation score.
 	taskTotalPieceCount := peer.Task.TotalPieceCount.Load()
-	candidateParentsScores := s.evaluator.Evaluate(candidateParents, peer, taskTotalPieceCount)
+	scores := s.evaluator.Evaluate(candidateParents, peer, taskTotalPieceCount)
 	sort.Slice(
 		candidateParents,
-		func(i, j int) bool { return candidateParentsScores[i] > candidateParentsScores[j] },
+		func(i, j int) bool { return scores[i] > scores[j] },
 	)
 
 	// Get the parents with candidateParentLimit.
@@ -446,10 +446,10 @@ func (s *scheduling) FindSuccessParent(ctx context.Context, peer *resource.Peer,
 
 	// Sort candidate parents by evaluation score.
 	taskTotalPieceCount := peer.Task.TotalPieceCount.Load()
-	candidateParentsScores := s.evaluator.Evaluate(candidateParents, peer, taskTotalPieceCount)
+	scores := s.evaluator.Evaluate(candidateParents, peer, taskTotalPieceCount)
 	sort.Slice(
 		candidateParents,
-		func(i, j int) bool { return candidateParentsScores[i] > candidateParentsScores[j] },
+		func(i, j int) bool { return scores[i] > scores[j] },
 	)
 
 	peer.Log.Infof("scheduling success parent is %s", successParents[0].ID)

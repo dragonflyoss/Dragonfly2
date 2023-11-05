@@ -31,7 +31,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	if score := e.Evaluate(&resource.Peer{}, &resource.Peer{}, int32(0)); score != float64(1) {
+	scores := e.Evaluate([]*resource.Peer{}, &resource.Peer{}, int32(0))
+	if scores[0] != float64(1) {
 		fmt.Println("Evaluate failed")
 		os.Exit(1)
 	}
