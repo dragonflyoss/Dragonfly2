@@ -76,18 +76,23 @@ func NewEvaluatorBase() Evaluator {
 }
 
 // The larger the value after evaluation, the higher the priority.
-func (eb *evaluatorBase) Evaluate(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
-	parentLocation := parent.Host.Network.Location
-	parentIDC := parent.Host.Network.IDC
-	childLocation := child.Host.Network.Location
-	childIDC := child.Host.Network.IDC
+func (eb *evaluatorBase) Evaluate(parents []*resource.Peer, child *resource.Peer, totalPieceCount int32) []float64 {
+	var scores = make([]float64, len(parents))
+	for i, parent := range parents {
+		parentLocation := parent.Host.Network.Location
+		parentIDC := parent.Host.Network.IDC
+		childLocation := child.Host.Network.Location
+		childIDC := child.Host.Network.IDC
 
-	return finishedPieceWeight*calculatePieceScore(parent, child, totalPieceCount) +
-		parentHostUploadSuccessWeight*calculateParentHostUploadSuccessScore(parent) +
-		freeUploadWeight*calculateFreeUploadScore(parent.Host) +
-		hostTypeWeight*calculateHostTypeScore(parent) +
-		idcAffinityWeight*calculateIDCAffinityScore(parentIDC, childIDC) +
-		locationAffinityWeight*calculateMultiElementAffinityScore(parentLocation, childLocation)
+		scores[i] = finishedPieceWeight*calculatePieceScore(parent, child, totalPieceCount) +
+			parentHostUploadSuccessWeight*calculateParentHostUploadSuccessScore(parent) +
+			freeUploadWeight*calculateFreeUploadScore(parent.Host) +
+			hostTypeWeight*calculateHostTypeScore(parent) +
+			idcAffinityWeight*calculateIDCAffinityScore(parentIDC, childIDC) +
+			locationAffinityWeight*calculateMultiElementAffinityScore(parentLocation, childLocation)
+	}
+
+	return scores
 }
 
 // calculatePieceScore 0.0~unlimited larger and better.

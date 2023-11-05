@@ -33,7 +33,7 @@ const (
 
 type Evaluator interface {
 	// Evaluate todo Normalization.
-	Evaluate(parent *resource.Peer, child *resource.Peer, taskPieceCount int32) float64
+	Evaluate(parents []*resource.Peer, child *resource.Peer, taskPieceCount int32) []float64
 
 	// IsBadNode determine if peer is a failed node.
 	IsBadNode(peer *resource.Peer) bool
