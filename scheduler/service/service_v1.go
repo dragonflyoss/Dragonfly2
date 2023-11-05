@@ -1107,11 +1107,7 @@ func (v *V1) handlePieceSuccess(ctx context.Context, peer *resource.Peer, pieceR
 	}
 
 	// Construct piece.
-	logger.Info("handlePieceSuccess")
-	logger.Info(pieceResult.PieceInfo.RangeSize)
-	logger.Info(pieceResult.PieceInfo.DownloadCost)
 	cost := time.Duration(int64(pieceResult.PieceInfo.DownloadCost) * int64(time.Millisecond))
-	logger.Info(cost)
 	piece := &resource.Piece{
 		Number:      pieceResult.PieceInfo.PieceNum,
 		ParentID:    pieceResult.DstPid,
@@ -1236,7 +1232,6 @@ func (v *V1) handlePeerSuccess(ctx context.Context, peer *resource.Peer) {
 
 	// Update peer cost of downloading.
 	peer.Cost.Store(time.Since(peer.CreatedAt.Load()))
-	logger.Infof("handlePeerSuccess: %s", peer.Cost.Load().Milliseconds())
 
 	// If the peer type is tiny and back-to-source,
 	// it needs to directly download the tiny file and store the data in task DirectPiece.
@@ -1303,8 +1298,6 @@ func (v *V1) handleTaskSuccess(ctx context.Context, task *resource.Task, req *sc
 		task.Log.Errorf("task fsm event failed: %s", err.Error())
 		return
 	}
-
-	logger.Infof("handleTaskSuccess: %s", task.ContentLength.Load())
 }
 
 // Conditions for the task to switch to the TaskStateSucceeded are:
