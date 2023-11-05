@@ -287,6 +287,10 @@ func (nt *networkTopology) UpdateBandwidth(srcHostID, destHostID string, bandwid
 		return err
 	}
 
+	if err := nt.rdb.Set(ctx, pkgredis.MakeBandwidthKeyInScheduler(destHostID, srcHostID), bandwidth, 0).Err(); err != nil {
+		return err
+	}
+
 	return nil
 }
 

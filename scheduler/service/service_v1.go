@@ -319,6 +319,8 @@ func (v *V1) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult) 
 	}
 
 	peer.Log.Info("report success peer")
+	// Update bandwidth between peer host and parent hosts.
+	go v.updateBandwidth(peer, parents)
 	if peer.FSM.Is(resource.PeerStateBackToSource) {
 		go v.createDownloadRecord(peer, parents, req)
 		v.handleTaskSuccess(ctx, peer.Task, req)
@@ -1105,9 +1107,9 @@ func (v *V1) handlePieceSuccess(ctx context.Context, peer *resource.Peer, pieceR
 	}
 
 	// Construct piece.
+	logger.Info("handlePieceSuccess")
 	logger.Info(pieceResult.PieceInfo.RangeSize)
 	logger.Info(pieceResult.PieceInfo.DownloadCost)
-	logger.Info(time.Millisecond)
 	cost := time.Duration(int64(pieceResult.PieceInfo.DownloadCost) * int64(time.Millisecond))
 	logger.Info(cost)
 	piece := &resource.Piece{
@@ -1138,16 +1140,9 @@ func (v *V1) handlePieceSuccess(ctx context.Context, peer *resource.Peer, pieceR
 	// dst peer's UpdatedAt needs to be updated
 	// to prevent the dst peer from being GC during the download process.
 	if !resource.IsPieceBackToSource(pieceResult.DstPid) {
-		if destPeer, destPeerLoaded := v.resource.PeerManager().Load(pieceResult.DstPid); destPeerLoaded {
+		if destPeer, loaded := v.resource.PeerManager().Load(pieceResult.DstPid); loaded {
 			destPeer.UpdatedAt.Store(time.Now())
 			destPeer.Host.UpdatedAt.Store(time.Now())
-
-			if srcPeer, srcPeerLoaded := v.resource.PeerManager().Load(pieceResult.SrcPid); srcPeerLoaded {
-				// Update bandwidth between source host and destination host.
-				if err := v.networkTopology.UpdateBandwidth(srcPeer.Host.ID, destPeer.Host.ID, float64(piece.Length)/float64(cost.Microseconds())); err != nil {
-					logger.Errorf("update bandwidth between %s and %s error: %s", pieceResult.SrcPid, pieceResult.DstPid, err.Error())
-				}
-			}
 		}
 	}
 
@@ -1241,6 +1236,7 @@ func (v *V1) handlePeerSuccess(ctx context.Context, peer *resource.Peer) {
 
 	// Update peer cost of downloading.
 	peer.Cost.Store(time.Since(peer.CreatedAt.Load()))
+	logger.Infof("handlePeerSuccess: %s", peer.Cost.Load().Milliseconds())
 
 	// If the peer type is tiny and back-to-source,
 	// it needs to directly download the tiny file and store the data in task DirectPiece.
@@ -1307,6 +1303,8 @@ func (v *V1) handleTaskSuccess(ctx context.Context, task *resource.Task, req *sc
 		task.Log.Errorf("task fsm event failed: %s", err.Error())
 		return
 	}
+
+	logger.Infof("handleTaskSuccess: %s", task.ContentLength.Load())
 }
 
 // Conditions for the task to switch to the TaskStateSucceeded are:
@@ -1580,5 +1578,34 @@ func (v *V1) createDownloadRecord(peer *resource.Peer, parents []*resource.Peer,
 
 	if err := v.storage.CreateDownload(download); err != nil {
 		peer.Log.Error(err)
+	}
+}
+
+// updateBandwidth updates bandwidth between peer host and parent hosts.
+func (v *V1) updateBandwidth(peer *resource.Peer, parents []*resource.Peer) {
+	for _, parent := range parents {
+		var (
+			totalLength uint64
+			totalCost   int64
+		)
+
+		peer.Pieces.Range(func(key, value any) bool {
+			piece, ok := value.(*resource.Piece)
+			if !ok {
+				return true
+			}
+
+			if piece.ParentID == parent.ID {
+				totalLength = totalLength + piece.Length
+				totalCost = totalCost + piece.Cost.Nanoseconds()
+			}
+
+			return true
+		})
+
+		// Update bandwidth between source host and destination host.
+		if err := v.networkTopology.UpdateBandwidth(peer.Host.ID, parent.Host.ID, float64(totalLength)/float64(totalCost)); err != nil {
+			logger.Errorf("update bandwidth between %s and %s error: %s", peer.Host.ID, parent.Host.ID, err.Error())
+		}
 	}
 }
