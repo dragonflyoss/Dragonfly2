@@ -51,7 +51,7 @@ func getFileSizes() map[string]int {
 		files   = e2eutil.GetFileList()
 	)
 
-	if featureGates.Enabled(featureGateEmptyFile) {
+	if e2eutil.FeatureGates.Enabled(e2eutil.FeatureGateEmptyFile) {
 		fmt.Printf("dfget-empty-file feature gate enabled\n")
 		files = append(files, "/tmp/empty-file")
 	}
@@ -104,7 +104,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 		Expect(strings.HasPrefix(podName, podNamePrefix)).Should(BeTrue())
 
 		// copy test tools into container
-		if featureGates.Enabled(featureGateRange) {
+		if e2eutil.FeatureGates.Enabled(e2eutil.FeatureGateRange) {
 			out, err = e2eutil.KubeCtlCommand("-n", ns, "cp", "-c", container, "/tmp/sha256sum-offset",
 				fmt.Sprintf("%s:/bin/", podName)).CombinedOutput()
 			if err != nil {
@@ -129,21 +129,21 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 			url2 := e2eutil.GetNoContentLengthFileURL(path)
 
 			// make ranged requests to invoke prefetch feature
-			if featureGates.Enabled(featureGateRange) {
+			if e2eutil.FeatureGates.Enabled(e2eutil.FeatureGateRange) {
 				rg1, rg2 := getRandomRange(size), getRandomRange(size)
 				downloadSingleFile(ns, pod, path, url1, size, rg1, rg1.String())
-				if featureGates.Enabled(featureGateNoLength) {
+				if e2eutil.FeatureGates.Enabled(e2eutil.FeatureGateNoLength) {
 					downloadSingleFile(ns, pod, path, url2, size, rg2, rg2.String())
 				}
 
-				if featureGates.Enabled(featureGateOpenRange) {
+				if e2eutil.FeatureGates.Enabled(e2eutil.FeatureGateOpenRange) {
 					rg3, rg4 := getRandomRange(size), getRandomRange(size)
 					// set target length
 					rg3.Length = int64(size) - rg3.Start
 					rg4.Length = int64(size) - rg4.Start
 
 					downloadSingleFile(ns, pod, path, url1, size, rg3, fmt.Sprintf("bytes=%d-", rg3.Start))
-					if featureGates.Enabled(featureGateNoLength) {
+					if e2eutil.FeatureGates.Enabled(e2eutil.FeatureGateNoLength) {
 						downloadSingleFile(ns, pod, path, url2, size, rg4, fmt.Sprintf("bytes=%d-", rg4.Start))
 					}
 				}
@@ -151,13 +151,13 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 
 			downloadSingleFile(ns, pod, path, url1, size, nil, "")
 
-			if featureGates.Enabled(featureGateNoLength) {
+			if e2eutil.FeatureGates.Enabled(e2eutil.FeatureGateNoLength) {
 				downloadSingleFile(ns, pod, path, url2, size, nil, "")
 			}
 		}
 	})
 	It(name+" - recursive with dfget", Label("download", "recursive", "dfget"), func() {
-		if !featureGates.Enabled(featureGateRecursive) {
+		if !e2eutil.FeatureGates.Enabled(e2eutil.FeatureGateRecursive) {
 			fmt.Println("feature gate recursive is disable, skip")
 			return
 		}
@@ -222,7 +222,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 	})
 
 	It(name+" - recursive with grpc", Label("download", "recursive", "grpc"), func() {
-		if !featureGates.Enabled(featureGateRecursive) {
+		if !e2eutil.FeatureGates.Enabled(e2eutil.FeatureGateRecursive) {
 			fmt.Println("feature gate recursive is disable, skip")
 			return
 		}

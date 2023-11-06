@@ -139,7 +139,12 @@ var _ = Describe("Preheat with manager", func() {
 			}
 		})
 
-		It("preheat image for linux/amd64 platform should be ok", Label("preheat", "image", "platform", "linux/amd64"), func() {
+		It("preheat image for linux/amd64 platform should be ok", Label("preheat", "image"), func() {
+			if !e2eutil.FeatureGates.Enabled(e2eutil.FeatureGatePreheatMultiArchImage) {
+				fmt.Println("feature gate preheat multi arch image is disable, skip")
+				return
+			}
+
 			url := "https://index.docker.io/v2/dragonflyoss/scheduler/manifests/v2.1.0"
 			fmt.Println("download image: " + url)
 
@@ -196,7 +201,12 @@ var _ = Describe("Preheat with manager", func() {
 			}
 		})
 
-		It("preheat image for linux/arm64 platform  should be ok", Label("preheat", "image", "platform", "linux/arm64"), func() {
+		It("preheat image for linux/arm64 platform  should be ok", Label("preheat", "image"), func() {
+			if !e2eutil.FeatureGates.Enabled(e2eutil.FeatureGatePreheatMultiArchImage) {
+				fmt.Println("feature gate preheat multi arch image is disable, skip")
+				return
+			}
+
 			url := "https://index.docker.io/v2/dragonflyoss/scheduler/manifests/v2.1.0"
 			fmt.Println("download image: " + url)
 
