@@ -236,6 +236,7 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, request *DownloadPiec
 	return result, nil
 }
 
+// pieceOffset is the offset in the peer task, not the original range start from source
 func (pm *pieceManager) processPieceFromSource(pt Task,
 	reader io.Reader, contentLength int64, pieceNum int32, pieceOffset uint64, pieceSize uint32,
 	isLastPiece func(n int64) (totalPieces int32, contentLength int64, ok bool)) (
@@ -850,7 +851,7 @@ func (pm *pieceManager) concurrentDownloadSourceByPieceGroup(
 				pm.concurrentOption.MaxAttempts,
 				func() (data any, cancel bool, err error) {
 					err = pm.downloadPieceGroupFromSource(ctx, pt, log,
-						peerTaskRequest, pieceSize, pg, parsedRange.Length, pieceCount, pieceCountToDownload, downloadedPieces)
+						peerTaskRequest, pieceSize, pg, parsedRange, pieceCount, pieceCountToDownload, downloadedPieces)
 					return nil, errors.Is(err, context.Canceled), err
 				})
 			if retryErr != nil {
@@ -1069,7 +1070,7 @@ func (pm *pieceManager) downloadPieceGroupFromSource(ctx context.Context,
 	pt Task, log *logger.SugaredLoggerOnWith,
 	peerTaskRequest *schedulerv1.PeerTaskRequest,
 	pieceSize uint32, pg *pieceGroup,
-	totalContentLength int64,
+	parsedRange *nethttp.Range,
 	totalPieceCount int32,
 	totalPieceCountToDownload int32,
 	downloadedPieces mapset.Set[int32]) error {
@@ -1112,10 +1113,10 @@ func (pm *pieceManager) downloadPieceGroupFromSource(ctx context.Context,
 		}
 
 		result, md5, err := pm.processPieceFromSource(
-			pt, response.Body, totalContentLength, pieceNum, offset, size,
+			pt, response.Body, parsedRange.Length, pieceNum, offset-uint64(parsedRange.Start), size,
 			func(int64) (int32, int64, bool) {
 				downloadedPieces.Add(pieceNum)
-				return totalPieceCount, totalContentLength, downloadedPieces.Cardinality() == int(totalPieceCountToDownload)
+				return totalPieceCount, parsedRange.Length, downloadedPieces.Cardinality() == int(totalPieceCountToDownload)
 			})
 		request := &DownloadPieceRequest{
 			TaskID: pt.GetTaskID(),
