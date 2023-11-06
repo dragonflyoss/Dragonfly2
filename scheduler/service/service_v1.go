@@ -296,6 +296,8 @@ func (v *V1) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult) 
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
 	parents := peer.Parents()
+	fmt.Println(peer)
+	fmt.Println(parents)
 	if !req.GetSuccess() {
 		peer.Log.Error("report failed peer")
 		if peer.FSM.Is(resource.PeerStateBackToSource) {
@@ -320,7 +322,7 @@ func (v *V1) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult) 
 
 	peer.Log.Info("report success peer")
 	// Update bandwidth between peer host and parent hosts.
-	go v.updateBandwidth(peer, parents)
+	v.updateBandwidth(peer, parents)
 	if peer.FSM.Is(resource.PeerStateBackToSource) {
 		go v.createDownloadRecord(peer, parents, req)
 		v.handleTaskSuccess(ctx, peer.Task, req)
@@ -1576,6 +1578,7 @@ func (v *V1) createDownloadRecord(peer *resource.Peer, parents []*resource.Peer,
 
 // updateBandwidth updates bandwidth between peer host and parent hosts.
 func (v *V1) updateBandwidth(peer *resource.Peer, parents []*resource.Peer) {
+	fmt.Println(len(parents))
 	for _, parent := range parents {
 		var (
 			totalLength uint64
@@ -1596,6 +1599,8 @@ func (v *V1) updateBandwidth(peer *resource.Peer, parents []*resource.Peer) {
 			return true
 		})
 
+		fmt.Println(totalLength)
+		fmt.Println(totalCost)
 		// Update bandwidth between source host and destination host.
 		if err := v.networkTopology.UpdateBandwidth(peer.Host.ID, parent.Host.ID, float64(totalLength)/float64(totalCost)); err != nil {
 			logger.Errorf("update bandwidth between %s and %s error: %s", peer.Host.ID, parent.Host.ID, err.Error())
