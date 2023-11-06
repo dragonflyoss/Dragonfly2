@@ -24,10 +24,11 @@ import (
 	"strings"
 	"time"
 
-	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 	. "github.com/onsi/ginkgo/v2" //nolint
 	. "github.com/onsi/gomega"    //nolint
+
+	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
 
 	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/models"
