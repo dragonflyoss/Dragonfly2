@@ -1373,13 +1373,13 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 				wg.Add(1)
 				defer wg.Wait()
 
-				peer.FSM.SetState(resource.PeerStateFailed)
-				peer.Task.StorePeer(seedPeer)
-				peer.Task.AddPeerEdge(seedPeer, peer)
+				mockPeer.FSM.SetState(resource.PeerStateFailed)
+				// peer.Task.StorePeer(seedPeer)
+				// peer.Task.AddPeerEdge(seedPeer, peer)
 
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.Load(gomock.Eq(peer.ID)).Return(peer, true).Times(1),
+					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
 					md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1),
 					// mnt.UpdateBandwidth(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1),
 					ms.CreateDownload(gomock.Any()).Do(func(download storage.Download) { wg.Done() }).Return(nil).Times(1),
