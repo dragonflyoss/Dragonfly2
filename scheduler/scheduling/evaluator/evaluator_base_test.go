@@ -187,7 +187,7 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 		expect          func(t *testing.T, scores []float64)
 	}{
 		{
-			name: "evaluate parent",
+			name: "evaluate parents",
 			parents: []*resource.Peer{
 				resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig,
 					resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength)),
@@ -205,11 +205,11 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 			},
 			expect: func(t *testing.T, scores []float64) {
 				assert := assert.New(t)
-				assert.Equal(scores, []float64{float64(0.35)})
+				assert.Equal(scores, []float64{0.35})
 			},
 		},
 		{
-			name: "evaluate parent with pieces",
+			name: "evaluate parents with pieces",
 			parents: []*resource.Peer{
 				resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig,
 					resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength)),
@@ -228,7 +228,35 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 			},
 			expect: func(t *testing.T, scores []float64) {
 				assert := assert.New(t)
-				assert.Equal(scores, []float64{float64(0.55)})
+				assert.Equal(scores, []float64{0.55})
+			},
+		},
+		{
+			name: "evaluate two parents",
+			parents: []*resource.Peer{
+				resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig,
+					resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength)),
+					resource.NewHost(
+						mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
+						mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)),
+				resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig,
+					resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength)),
+					resource.NewHost(
+						mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
+						mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)),
+			},
+			child: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig,
+				resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength)),
+				resource.NewHost(
+					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)),
+			totalPieceCount: 1,
+			mock: func(parents []*resource.Peer, child *resource.Peer) {
+				parents[0].FinishedPieces.Set(0)
+			},
+			expect: func(t *testing.T, scores []float64) {
+				assert := assert.New(t)
+				assert.Equal(scores, []float64{0.55, 0.35})
 			},
 		},
 	}
@@ -437,6 +465,16 @@ func TestEvaluatorBase_calculateFreeUploadScore(t *testing.T) {
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
 				assert.Equal(score, float64(1))
+			},
+		},
+		{
+			name: "freeUploadCount is empty",
+			mock: func(host *resource.Host, mockPeer *resource.Peer) {
+				mockPeer.Host.ConcurrentUploadCount.Add(host.ConcurrentUploadLimit.Load())
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.Equal(score, float64(0))
 			},
 		},
 	}
@@ -689,7 +727,7 @@ func TestEvaluatorBase_calculateMultiElementAffinityScore(t *testing.T) {
 		{
 			name: "dst and src both exceeds maximum length",
 			dst:  "foo|bar|baz|bac|bae|baf",
-			src:  "foo|bar|baz|bac|bae|baf",
+			src:  "foo|bar|baz|bac|bae|bai",
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
 				assert.Equal(score, float64(1))
