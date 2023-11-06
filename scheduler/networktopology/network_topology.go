@@ -299,7 +299,7 @@ func (nt *networkTopology) Bandwidth(srcHostID, destHostID string) (float64, err
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	bandwidth, err := nt.rdb.Get(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID)).Float64()
+	bandwidth, err := nt.rdb.Get(ctx, pkgredis.MakeBandwidthKeyInScheduler(srcHostID, destHostID)).Float64()
 	if err != nil {
 		return 0, err
 	}

@@ -160,6 +160,7 @@ var (
 
 	mockProbesCreatedAt = time.Now()
 	mockProbedCount     = 10
+	mockBandwidth       = 10.0
 )
 
 func Test_NewProbes(t *testing.T) {

@@ -768,11 +768,128 @@ func TestNetworkTopology_ProbedCount(t *testing.T) {
 }
 
 func TestNetworkTopology_UpdateBandwidth(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(mockRDBClient redismock.ClientMock)
+		expect func(t *testing.T, networkTopology NetworkTopology, err error)
+	}{
+		{
+			name: "update bandwidth",
+			mock: func(mockRDBClient redismock.ClientMock) {
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectSet(pkgredis.MakeBandwidthKeyInScheduler(mockSeedHost.ID, mockHost.ID), mockBandwidth, 0).SetVal("ok")
+				mockRDBClient.ExpectSet(pkgredis.MakeBandwidthKeyInScheduler(mockHost.ID, mockSeedHost.ID), mockBandwidth, 0).SetVal("ok")
+				mockRDBClient.ExpectGet(pkgredis.MakeBandwidthKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(strconv.FormatFloat(mockBandwidth, 'f', 10, 32))
+				mockRDBClient.ExpectGet(pkgredis.MakeBandwidthKeyInScheduler(mockHost.ID, mockSeedHost.ID)).SetVal(strconv.FormatFloat(mockBandwidth, 'f', 10, 32))
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.NoError(networkTopology.UpdateBandwidth(mockSeedHost.ID, mockHost.ID, mockBandwidth))
+
+				bandwidth, err := networkTopology.Bandwidth(mockSeedHost.ID, mockHost.ID)
+				assert.NoError(err)
+				assert.EqualValues(bandwidth, mockBandwidth)
+
+				bandwidth, err = networkTopology.Bandwidth(mockHost.ID, mockSeedHost.ID)
+				assert.NoError(err)
+				assert.EqualValues(bandwidth, mockBandwidth)
+			},
+		},
+		{
+			name: "update forward bandwidth error",
+			mock: func(mockRDBClient redismock.ClientMock) {
+				mockRDBClient.ExpectSet(pkgredis.MakeBandwidthKeyInScheduler(mockSeedHost.ID, mockHost.ID), mockBandwidth, 0).SetErr(errors.New("update forward bandwidth error"))
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.EqualError(networkTopology.UpdateBandwidth(mockSeedHost.ID, mockHost.ID, mockBandwidth), "update forward bandwidth error")
+			},
+		},
+		{
+			name: "update reverse bandwidth error",
+			mock: func(mockRDBClient redismock.ClientMock) {
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectSet(pkgredis.MakeBandwidthKeyInScheduler(mockSeedHost.ID, mockHost.ID), mockBandwidth, 0).SetVal("ok")
+				mockRDBClient.ExpectSet(pkgredis.MakeBandwidthKeyInScheduler(mockHost.ID, mockSeedHost.ID), mockBandwidth, 0).SetErr(errors.New("update reverse bandwidth error"))
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.EqualError(networkTopology.UpdateBandwidth(mockSeedHost.ID, mockHost.ID, mockBandwidth), "update reverse bandwidth error")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+
+			rdb, mockRDBClient := redismock.NewClientMock()
+			res := resource.NewMockResource(ctl)
+			storage := storagemocks.NewMockStorage(ctl)
+			tc.mock(mockRDBClient)
+
+			networkTopology, err := NewNetworkTopology(mockNetworkTopologyConfig, rdb, res, storage)
+			tc.expect(t, networkTopology, err)
+			mockRDBClient.ClearExpect()
+		})
+	}
 
 }
 
 func TestNetworkTopology_Bandwidth(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(mockRDBClient redismock.ClientMock)
+		expect func(t *testing.T, networkTopology NetworkTopology, err error)
+	}{
+		{
+			name: "get bandwidth",
+			mock: func(mockRDBClient redismock.ClientMock) {
+				mockRDBClient.ExpectGet(pkgredis.MakeBandwidthKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(strconv.FormatFloat(mockBandwidth, 'f', 10, 32))
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
 
+				bandwidth, err := networkTopology.Bandwidth(mockSeedHost.ID, mockHost.ID)
+				assert.NoError(err)
+				assert.EqualValues(bandwidth, mockBandwidth)
+			},
+		},
+		{
+			name: "get bandwidth error",
+			mock: func(mockRDBClient redismock.ClientMock) {
+				mockRDBClient.ExpectGet(pkgredis.MakeBandwidthKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetErr(errors.New("get bandwidth error"))
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+
+				_, err = networkTopology.Bandwidth(mockSeedHost.ID, mockHost.ID)
+				assert.EqualError(err, "get bandwidth error")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+
+			rdb, mockRDBClient := redismock.NewClientMock()
+			res := resource.NewMockResource(ctl)
+			storage := storagemocks.NewMockStorage(ctl)
+			tc.mock(mockRDBClient)
+
+			networkTopology, err := NewNetworkTopology(mockNetworkTopologyConfig, rdb, res, storage)
+			tc.expect(t, networkTopology, err)
+			mockRDBClient.ClearExpect()
+		})
+	}
 }
 
 func TestNetworkTopology_Snapshot(t *testing.T) {
