@@ -446,9 +446,9 @@ func (s *scheduling) FindSuccessParent(ctx context.Context, peer *resource.Peer,
 
 	// Sort candidate parents by evaluation score.
 	taskTotalPieceCount := peer.Task.TotalPieceCount.Load()
-	scores := s.evaluator.Evaluate(candidateParents, peer, taskTotalPieceCount)
+	scores := s.evaluator.Evaluate(successParents, peer, taskTotalPieceCount)
 	sort.Slice(
-		candidateParents,
+		successParents,
 		func(i, j int) bool { return scores[i] > scores[j] },
 	)
 
