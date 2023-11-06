@@ -102,7 +102,7 @@ type objectStorage struct {
 	peerIDGenerator     peer.IDGenerator
 }
 
-// New returns a new ObjectStorage instence.
+// New returns a new ObjectStorage instance.
 func New(cfg *config.DaemonOption, dynconfig config.Dynconfig, peerTaskManager peer.TaskManager, storageManager storage.Manager, logDir string) (ObjectStorage, error) {
 	// Initialize object storage client.
 	config, err := dynconfig.GetObjectStorage()
