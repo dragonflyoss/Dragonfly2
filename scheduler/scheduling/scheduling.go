@@ -407,8 +407,6 @@ func (s *scheduling) FindCandidateParents(ctx context.Context, peer *resource.Pe
 		}
 	}
 
-	fmt.Println(len(candidateParents))
-	fmt.Println(candidateParentLimit)
 	if len(candidateParents) > candidateParentLimit {
 		candidateParents = candidateParents[:candidateParentLimit]
 	}

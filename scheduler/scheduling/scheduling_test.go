@@ -990,7 +990,7 @@ func TestScheduling_FindCandidateParents(t *testing.T) {
 			},
 		},
 		{
-			name: "candidate parents is longer than candidateParentLimit",
+			name: "candidateParents is longer than candidateParentLimit",
 			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet[string], md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				mockPeers[0].FSM.SetState(resource.PeerStateRunning)
