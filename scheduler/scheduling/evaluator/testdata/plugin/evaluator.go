@@ -20,7 +20,7 @@ import "d7y.io/dragonfly/v2/scheduler/resource"
 
 type evaluator struct{}
 
-func (e *evaluator) Evaluate(parents *[]resource.Peer, child *resource.Peer, taskPieceCount int32) []float64 {
+func (e *evaluator) Evaluate(parents []*resource.Peer, child *resource.Peer, taskPieceCount int32) []float64 {
 	return []float64{1}
 }
 
