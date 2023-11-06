@@ -77,7 +77,7 @@ require (
 	golang.org/x/oauth2 v0.13.0
 	golang.org/x/sync v0.4.0
 	golang.org/x/sys v0.13.0
-	golang.org/x/time v0.3.0
+	golang.org/x/time v0.4.0
 	google.golang.org/api v0.138.0
 	google.golang.org/grpc v1.60.0-dev
 	google.golang.org/protobuf v1.31.0
