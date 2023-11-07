@@ -4803,7 +4803,3 @@ func TestServiceV1_handleTaskFail(t *testing.T) {
 		})
 	}
 }
-
-func TestServiceV1_updateBandwidth(t *testing.T) {
-
-}
