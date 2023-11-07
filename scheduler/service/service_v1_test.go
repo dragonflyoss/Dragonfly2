@@ -1288,78 +1288,78 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 			mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
 			md *configmocks.MockDynconfigInterfaceMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder)
 	}{
-		// {
-		// 	name: "peer not found",
-		// 	req: &schedulerv1.PeerResult{
-		// 		PeerId: mockPeerID,
-		// 	},
-		// 	run: func(t *testing.T, peer *resource.Peer, seedPeer *resource.Peer, req *schedulerv1.PeerResult, svc *V1, mockPeer *resource.Peer, res resource.Resource, peerManager resource.PeerManager,
-		// 		mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
-		// 		md *configmocks.MockDynconfigInterfaceMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
-		// 		gomock.InOrder(
-		// 			mr.PeerManager().Return(peerManager).Times(1),
-		// 			mp.Load(gomock.Eq(mockPeerID)).Return(nil, false).Times(1),
-		// 		)
+		{
+			name: "peer not found",
+			req: &schedulerv1.PeerResult{
+				PeerId: mockPeerID,
+			},
+			run: func(t *testing.T, peer *resource.Peer, seedPeer *resource.Peer, req *schedulerv1.PeerResult, svc *V1, mockPeer *resource.Peer, res resource.Resource, peerManager resource.PeerManager,
+				mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
+				md *configmocks.MockDynconfigInterfaceMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
+				gomock.InOrder(
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.Load(gomock.Eq(mockPeerID)).Return(nil, false).Times(1),
+				)
 
-		// 		assert := assert.New(t)
-		// 		err := svc.ReportPeerResult(context.Background(), req)
-		// 		dferr, ok := err.(*dferrors.DfError)
-		// 		assert.True(ok)
-		// 		assert.Equal(dferr.Code, commonv1.Code_SchedPeerNotFound)
-		// 	},
-		// },
-		// {
-		// 	name: "receive peer failed",
-		// 	req: &schedulerv1.PeerResult{
-		// 		Success: false,
-		// 		PeerId:  mockPeerID,
-		// 	},
-		// 	run: func(t *testing.T, peer *resource.Peer, seedPeer *resource.Peer, req *schedulerv1.PeerResult, svc *V1, mockPeer *resource.Peer, res resource.Resource, peerManager resource.PeerManager,
-		// 		mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
-		// 		md *configmocks.MockDynconfigInterfaceMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
-		// 		var wg sync.WaitGroup
-		// 		wg.Add(1)
-		// 		defer wg.Wait()
+				assert := assert.New(t)
+				err := svc.ReportPeerResult(context.Background(), req)
+				dferr, ok := err.(*dferrors.DfError)
+				assert.True(ok)
+				assert.Equal(dferr.Code, commonv1.Code_SchedPeerNotFound)
+			},
+		},
+		{
+			name: "receive peer failed",
+			req: &schedulerv1.PeerResult{
+				Success: false,
+				PeerId:  mockPeerID,
+			},
+			run: func(t *testing.T, peer *resource.Peer, seedPeer *resource.Peer, req *schedulerv1.PeerResult, svc *V1, mockPeer *resource.Peer, res resource.Resource, peerManager resource.PeerManager,
+				mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
+				md *configmocks.MockDynconfigInterfaceMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
+				var wg sync.WaitGroup
+				wg.Add(1)
+				defer wg.Wait()
 
-		// 		mockPeer.FSM.SetState(resource.PeerStateFailed)
-		// 		gomock.InOrder(
-		// 			mr.PeerManager().Return(peerManager).Times(1),
-		// 			mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
-		// 			md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1),
-		// 			ms.CreateDownload(gomock.Any()).Do(func(download storage.Download) { wg.Done() }).Return(nil).Times(1),
-		// 		)
+				mockPeer.FSM.SetState(resource.PeerStateFailed)
+				gomock.InOrder(
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
+					md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1),
+					ms.CreateDownload(gomock.Any()).Do(func(download storage.Download) { wg.Done() }).Return(nil).Times(1),
+				)
 
-		// 		assert := assert.New(t)
-		// 		err := svc.ReportPeerResult(context.Background(), req)
-		// 		assert.NoError(err)
-		// 	},
-		// },
-		// {
-		// 	name: "receive peer failed and peer state is PeerStateBackToSource",
-		// 	req: &schedulerv1.PeerResult{
-		// 		Success: false,
-		// 		PeerId:  mockPeerID,
-		// 	},
-		// 	run: func(t *testing.T, peer *resource.Peer, seedPeer *resource.Peer, req *schedulerv1.PeerResult, svc *V1, mockPeer *resource.Peer, res resource.Resource, peerManager resource.PeerManager,
-		// 		mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
-		// 		md *configmocks.MockDynconfigInterfaceMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
-		// 		var wg sync.WaitGroup
-		// 		wg.Add(1)
-		// 		defer wg.Wait()
+				assert := assert.New(t)
+				err := svc.ReportPeerResult(context.Background(), req)
+				assert.NoError(err)
+			},
+		},
+		{
+			name: "receive peer failed and peer state is PeerStateBackToSource",
+			req: &schedulerv1.PeerResult{
+				Success: false,
+				PeerId:  mockPeerID,
+			},
+			run: func(t *testing.T, peer *resource.Peer, seedPeer *resource.Peer, req *schedulerv1.PeerResult, svc *V1, mockPeer *resource.Peer, res resource.Resource, peerManager resource.PeerManager,
+				mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
+				md *configmocks.MockDynconfigInterfaceMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
+				var wg sync.WaitGroup
+				wg.Add(1)
+				defer wg.Wait()
 
-		// 		mockPeer.FSM.SetState(resource.PeerStateBackToSource)
-		// 		gomock.InOrder(
-		// 			mr.PeerManager().Return(peerManager).Times(1),
-		// 			mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
-		// 			md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1),
-		// 			ms.CreateDownload(gomock.Any()).Do(func(download storage.Download) { wg.Done() }).Return(nil).Times(1),
-		// 		)
+				mockPeer.FSM.SetState(resource.PeerStateBackToSource)
+				gomock.InOrder(
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
+					md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1),
+					ms.CreateDownload(gomock.Any()).Do(func(download storage.Download) { wg.Done() }).Return(nil).Times(1),
+				)
 
-		// 		assert := assert.New(t)
-		// 		err := svc.ReportPeerResult(context.Background(), req)
-		// 		assert.NoError(err)
-		// 	},
-		// },
+				assert := assert.New(t)
+				err := svc.ReportPeerResult(context.Background(), req)
+				assert.NoError(err)
+			},
+		},
 		{
 			name: "receive peer success",
 			req: &schedulerv1.PeerResult{
@@ -1374,14 +1374,28 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 				defer wg.Wait()
 
 				mockPeer.FSM.SetState(resource.PeerStateFailed)
-				// peer.Task.StorePeer(seedPeer)
-				// peer.Task.AddPeerEdge(seedPeer, peer)
+				peer.Task.StorePeer(peer)
+				peer.Task.StorePeer(seedPeer)
+				if err := peer.Task.AddPeerEdge(seedPeer, peer); err != nil {
+					t.Fatal(err)
+				}
+
+				peer.StorePiece(&resource.Piece{
+					Number:      1,
+					ParentID:    seedPeer.ID,
+					Offset:      2,
+					Length:      10,
+					Digest:      mockPieceMD5,
+					TrafficType: commonv2.TrafficType_REMOTE_PEER,
+					Cost:        1 * time.Millisecond,
+					CreatedAt:   time.Now(),
+				})
 
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
 					md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1),
-					// mnt.UpdateBandwidth(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1),
+					mnt.UpdateBandwidth(gomock.Eq(peer.Host.ID), gomock.Eq(seedPeer.Host.ID), gomock.Eq(float64(10))).Return(nil).Times(1),
 					ms.CreateDownload(gomock.Any()).Do(func(download storage.Download) { wg.Done() }).Return(nil).Times(1),
 				)
 
@@ -1390,58 +1404,138 @@ func TestServiceV1_ReportPeerResult(t *testing.T) {
 				assert.NoError(err)
 			},
 		},
-		// {
-		// 	name: "receive peer success, and peer state is PeerStateBackToSource",
-		// 	req: &schedulerv1.PeerResult{
-		// 		Success: true,
-		// 		PeerId:  mockPeerID,
-		// 	},
-		// 	run: func(t *testing.T, peer *resource.Peer, seedPeer *resource.Peer, req *schedulerv1.PeerResult, svc *V1, mockPeer *resource.Peer, res resource.Resource, peerManager resource.PeerManager,
-		// 		mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
-		// 		md *configmocks.MockDynconfigInterfaceMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
-		// 		var wg sync.WaitGroup
-		// 		wg.Add(1)
-		// 		defer wg.Wait()
+		{
+			name: "receive peer success, and peer state is PeerStateBackToSource",
+			req: &schedulerv1.PeerResult{
+				Success: true,
+				PeerId:  mockPeerID,
+			},
+			run: func(t *testing.T, peer *resource.Peer, seedPeer *resource.Peer, req *schedulerv1.PeerResult, svc *V1, mockPeer *resource.Peer, res resource.Resource, peerManager resource.PeerManager,
+				mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
+				md *configmocks.MockDynconfigInterfaceMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
+				var wg sync.WaitGroup
+				wg.Add(1)
+				defer wg.Wait()
 
-		// 		mockPeer.FSM.SetState(resource.PeerStateBackToSource)
-		// 		gomock.InOrder(
-		// 			mr.PeerManager().Return(peerManager).Times(1),
-		// 			mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
-		// 			md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1),
-		// 			ms.CreateDownload(gomock.Any()).Do(func(download storage.Download) { wg.Done() }).Return(nil).Times(1),
-		// 		)
+				mockPeer.FSM.SetState(resource.PeerStateBackToSource)
+				peer.Task.StorePeer(peer)
+				peer.Task.StorePeer(seedPeer)
+				if err := peer.Task.AddPeerEdge(seedPeer, peer); err != nil {
+					t.Fatal(err)
+				}
 
-		// 		assert := assert.New(t)
-		// 		err := svc.ReportPeerResult(context.Background(), req)
-		// 		assert.NoError(err)
-		// 	},
-		// },
-		// {
-		// 	name: "receive peer success and create download failed",
-		// 	req: &schedulerv1.PeerResult{
-		// 		Success: true,
-		// 		PeerId:  mockPeerID,
-		// 	},
-		// 	run: func(t *testing.T, peer *resource.Peer, seedPeer *resource.Peer, req *schedulerv1.PeerResult, svc *V1, mockPeer *resource.Peer, res resource.Resource, peerManager resource.PeerManager,
-		// 		mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
-		// 		md *configmocks.MockDynconfigInterfaceMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
-		// 		var wg sync.WaitGroup
-		// 		wg.Add(1)
-		// 		defer wg.Wait()
+				peer.StorePiece(&resource.Piece{
+					Number:      1,
+					ParentID:    seedPeer.ID,
+					Offset:      2,
+					Length:      10,
+					Digest:      mockPieceMD5,
+					TrafficType: commonv2.TrafficType_REMOTE_PEER,
+					Cost:        1 * time.Millisecond,
+					CreatedAt:   time.Now(),
+				})
 
-		// 		mockPeer.FSM.SetState(resource.PeerStateBackToSource)
-		// 		gomock.InOrder(
-		// 			mr.PeerManager().Return(peerManager).Times(1),
-		// 			mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
-		// 			md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1),
-		// 			ms.CreateDownload(gomock.Any()).Do(func(download storage.Download) { wg.Done() }).Return(nil).Times(1),
-		// 		)
+				gomock.InOrder(
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
+					md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1),
+					mnt.UpdateBandwidth(gomock.Eq(peer.Host.ID), gomock.Eq(seedPeer.Host.ID), gomock.Eq(float64(10))).Return(nil).Times(1),
+					ms.CreateDownload(gomock.Any()).Do(func(download storage.Download) { wg.Done() }).Return(nil).Times(1),
+				)
 
-		// 		assert := assert.New(t)
-		// 		err := svc.ReportPeerResult(context.Background(), req)
-		// 		assert.NoError(err)
-		// 	},
-		// },
+				assert := assert.New(t)
+				err := svc.ReportPeerResult(context.Background(), req)
+				assert.NoError(err)
+			},
+		},
+		{
+			name: "receive peer success and create download failed",
+			req: &schedulerv1.PeerResult{
+				Success: true,
+				PeerId:  mockPeerID,
+			},
+			run: func(t *testing.T, peer *resource.Peer, seedPeer *resource.Peer, req *schedulerv1.PeerResult, svc *V1, mockPeer *resource.Peer, res resource.Resource, peerManager resource.PeerManager,
+				mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
+				md *configmocks.MockDynconfigInterfaceMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
+				var wg sync.WaitGroup
+				wg.Add(1)
+				defer wg.Wait()
+
+				mockPeer.FSM.SetState(resource.PeerStateBackToSource)
+				peer.Task.StorePeer(peer)
+				peer.Task.StorePeer(seedPeer)
+				if err := peer.Task.AddPeerEdge(seedPeer, peer); err != nil {
+					t.Fatal(err)
+				}
+
+				peer.StorePiece(&resource.Piece{
+					Number:      1,
+					ParentID:    seedPeer.ID,
+					Offset:      2,
+					Length:      10,
+					Digest:      mockPieceMD5,
+					TrafficType: commonv2.TrafficType_REMOTE_PEER,
+					Cost:        1 * time.Millisecond,
+					CreatedAt:   time.Now(),
+				})
+
+				gomock.InOrder(
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
+					md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1),
+					mnt.UpdateBandwidth(gomock.Eq(peer.Host.ID), gomock.Eq(seedPeer.Host.ID), gomock.Eq(float64(10))).Return(nil).Times(1),
+					ms.CreateDownload(gomock.Any()).Do(func(download storage.Download) { wg.Done() }).Return(nil).Times(1),
+				)
+
+				assert := assert.New(t)
+				err := svc.ReportPeerResult(context.Background(), req)
+				assert.NoError(err)
+			},
+		},
+		{
+			name: "receive peer success and update bandwidth error",
+			req: &schedulerv1.PeerResult{
+				Success: true,
+				PeerId:  mockPeerID,
+			},
+			run: func(t *testing.T, peer *resource.Peer, seedPeer *resource.Peer, req *schedulerv1.PeerResult, svc *V1, mockPeer *resource.Peer, res resource.Resource, peerManager resource.PeerManager,
+				mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder,
+				md *configmocks.MockDynconfigInterfaceMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder) {
+				var wg sync.WaitGroup
+				wg.Add(1)
+				defer wg.Wait()
+
+				mockPeer.FSM.SetState(resource.PeerStateBackToSource)
+				peer.Task.StorePeer(peer)
+				peer.Task.StorePeer(seedPeer)
+				if err := peer.Task.AddPeerEdge(seedPeer, peer); err != nil {
+					t.Fatal(err)
+				}
+
+				peer.StorePiece(&resource.Piece{
+					Number:      1,
+					ParentID:    seedPeer.ID,
+					Offset:      2,
+					Length:      10,
+					Digest:      mockPieceMD5,
+					TrafficType: commonv2.TrafficType_REMOTE_PEER,
+					Cost:        1 * time.Millisecond,
+					CreatedAt:   time.Now(),
+				})
+
+				gomock.InOrder(
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
+					md.GetApplications().Return([]*managerv2.Application{}, nil).Times(1),
+					mnt.UpdateBandwidth(gomock.Eq(peer.Host.ID), gomock.Eq(seedPeer.Host.ID), gomock.Eq(float64(10))).Return(errors.New("foo")).Times(1),
+					ms.CreateDownload(gomock.Any()).Do(func(download storage.Download) { wg.Done() }).Return(nil).Times(1),
+				)
+
+				assert := assert.New(t)
+				err := svc.ReportPeerResult(context.Background(), req)
+				assert.NoError(err)
+			},
+		},
 	}
 
 	for _, tc := range tests {
