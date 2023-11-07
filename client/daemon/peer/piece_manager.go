@@ -822,7 +822,7 @@ func (pm *pieceManager) concurrentDownloadSourceByPieceGroup(
 	parsedRange *nethttp.Range, startPieceNum int32, pieceCount int32, pieceCountToDownload int32,
 	con int, pieceSize uint32, cancel context.CancelFunc) error {
 	log := pt.Log()
-	log.Infof("start concurrentDownloadSourceByPieceGroup,  startPieceNum: %d, pieceCount: %d, pieceCountToDownload: %d, con: %d, pieceSize: %d",
+	log.Infof("start concurrentDownloadSourceByPieceGroup, startPieceNum: %d, pieceCount: %d, pieceCountToDownload: %d, con: %d, pieceSize: %d",
 		startPieceNum, pieceCount, pieceCountToDownload, con, pieceSize)
 
 	var downloadError atomic.Value
