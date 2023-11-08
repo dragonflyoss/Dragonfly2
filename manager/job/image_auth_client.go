@@ -88,7 +88,7 @@ func NewImageAuthClient(image *preheatImage, opts ...ImageAuthClientOption) (*Im
 
 	baseTransport := d.client.Transport
 	authTransport := transport.NewTransport(baseTransport, transport.NewHeaderRequestModifier(d.headerModifier))
-	challengeManager, _, err := registry.PingV2Registry(&url.URL{Scheme: image.protocol, Host: image.domain}, authTransport)
+	challengeManager, err := registry.PingV2Registry(&url.URL{Scheme: image.protocol, Host: image.domain}, authTransport)
 	if err != nil {
 		return nil, err
 	}
