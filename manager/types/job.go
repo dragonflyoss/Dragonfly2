@@ -53,16 +53,27 @@ type CreatePreheatJobRequest struct {
 }
 
 type PreheatArgs struct {
-	Type    string            `json:"type" binding:"required,oneof=image file"`
-	URL     string            `json:"url" binding:"required"`
-	Tag     string            `json:"tag" binding:"omitempty"`
-	Filter  string            `json:"filter" binding:"omitempty"`
+	// Type is the preheating type, support image and file.
+	Type string `json:"type" binding:"required,oneof=image file"`
+
+	// URL is the image url for preheating.
+	URL string `json:"url" binding:"required"`
+
+	// Tag is the tag for preheating.
+	Tag string `json:"tag" binding:"omitempty"`
+
+	// Filter is filter for preheating.
+	Filter string `json:"filter" binding:"omitempty"`
+
+	// Headers is the http headers for authentication.
 	Headers map[string]string `json:"headers" binding:"omitempty"`
 
-	// private image registry need username and password to get auth token
+	// Username is the username for authentication.
 	Username string `json:"username" binding:"omitempty"`
+
+	// Password is the password for authentication.
 	Password string `json:"password" binding:"omitempty"`
 
-	// The image type preheating task can specify the image architecture type. eg: linux/amd64
+	// The image type preheating task can specify the image architecture type. eg: linux/amd64.
 	Platform string `json:"platform" binding:"omitempty"`
 }

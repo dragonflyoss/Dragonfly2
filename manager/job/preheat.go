@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"regexp"
 	"time"
 
@@ -36,7 +37,11 @@ import (
 	"github.com/docker/distribution/manifest/ocischema"
 	"github.com/docker/distribution/manifest/schema1"
 	"github.com/docker/distribution/manifest/schema2"
-	registryClient "github.com/docker/distribution/registry/client"
+	registryclient "github.com/docker/distribution/registry/client"
+	"github.com/docker/distribution/registry/client/auth"
+	"github.com/docker/distribution/registry/client/transport"
+	typesregistry "github.com/docker/docker/api/types/registry"
+	"github.com/docker/docker/registry"
 	"github.com/google/uuid"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 	"go.opentelemetry.io/otel/trace"
@@ -49,6 +54,7 @@ import (
 	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 )
 
+// preheatImage is an image for preheat.
 type PreheatType string
 
 const (
@@ -70,14 +76,14 @@ type Preheat interface {
 
 // preheat is an implementation of Preheat.
 type preheat struct {
-	job                *internaljob.Job
-	httpRequestTimeout time.Duration
-	rootCAs            *x509.CertPool
+	job             *internaljob.Job
+	registryTimeout time.Duration
+	rootCAs         *x509.CertPool
 }
 
 // newPreheat creates a new Preheat.
-func newPreheat(job *internaljob.Job, httpRequestTimeout time.Duration, rootCAs *x509.CertPool) (Preheat, error) {
-	return &preheat{job, httpRequestTimeout, rootCAs}, nil
+func newPreheat(job *internaljob.Job, registryTimeout time.Duration, rootCAs *x509.CertPool) (Preheat, error) {
+	return &preheat{job, registryTimeout, rootCAs}, nil
 }
 
 // CreatePreheat creates a preheat job.
@@ -88,15 +94,11 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []models.Schedul
 	span.SetAttributes(config.AttributePreheatURL.String(json.URL))
 	defer span.End()
 
-	// Initialize queues.
-	queues := getSchedulerQueues(schedulers)
-
 	// Generate download files.
 	var files []internaljob.PreheatRequest
 	var err error
 	switch PreheatType(json.Type) {
 	case PreheatImageType:
-
 		files, err = p.getImageLayers(ctx, json)
 		if err != nil {
 			return nil, err
@@ -114,6 +116,8 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []models.Schedul
 		return nil, errors.New("unknown preheat type")
 	}
 
+	// Initialize queues.
+	queues := getSchedulerQueues(schedulers)
 	return p.createGroupJob(ctx, files, queues)
 }
 
@@ -166,28 +170,28 @@ func (p *preheat) getImageLayers(ctx context.Context, args types.PreheatArgs) ([
 	defer span.End()
 
 	// Parse image manifest url.
-	image, err := parseAccessURL(args.URL)
+	image, err := parseManifestURL(args.URL)
 	if err != nil {
 		return nil, err
 	}
 
-	// init docker auth client
-	client, err := NewImageAuthClient(
+	// Init docker auth client.
+	client, err := newImageAuthClient(
 		image,
-		WithClient(&http.Client{
-			Timeout: p.httpRequestTimeout,
+		withHTTPClient(&http.Client{
+			Timeout: p.registryTimeout,
 			Transport: &http.Transport{
 				DialContext:     nethttp.NewSafeDialer().DialContext,
 				TLSClientConfig: &tls.Config{RootCAs: p.rootCAs},
 			},
 		}),
-		WithBasicAuth(&BasicAuth{Username: args.Username, Password: args.Password}),
+		withBasicAuth(args.Username, args.Password),
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	// Parse platform
+	// Get platform.
 	platform := platforms.DefaultSpec()
 	if args.Platform != "" {
 		platform, err = platforms.Parse(args.Platform)
@@ -196,23 +200,23 @@ func (p *preheat) getImageLayers(ctx context.Context, args types.PreheatArgs) ([
 		}
 	}
 
-	// Get manifests
-	header := nethttp.MapToHeader(args.Headers).Clone()
-	manifests, err := p.getManifests(ctx, client, image, header, platform)
+	// Get manifests.
+	header := nethttp.MapToHeader(args.Headers)
+	manifests, err := p.getManifests(ctx, client, image, header.Clone(), platform)
 	if err != nil {
 		return nil, err
 	}
 
 	// no matching manifest for platform in the manifest list entries
 	if len(manifests) == 0 {
-		return nil, noMatchesErr{}
+		return nil, fmt.Errorf("no matching manifest for platform %s", platform)
 	}
 
 	// set authorization header
-	header.Set("Authorization", client.GetBearerToken())
+	header.Set("Authorization", client.GetAuthToken())
 
 	// prase image layers to preheat
-	layers, err := p.parseLayers(manifests, args, header, image)
+	layers, err := p.parseLayers(manifests, args, header.Clone(), image)
 	if err != nil {
 		return nil, err
 	}
@@ -221,24 +225,28 @@ func (p *preheat) getImageLayers(ctx context.Context, args types.PreheatArgs) ([
 }
 
 // getManifests gets manifests of image.
-func (p *preheat) getManifests(ctx context.Context, client *ImageAuthClient, image *preheatImage, header http.Header, pp specs.Platform) ([]distribution.Manifest, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, image.buildManifestURL(image.tag), nil)
+func (p *preheat) getManifests(ctx context.Context, client *imageAuthClient, image *preheatImage, header http.Header, platform specs.Platform) ([]distribution.Manifest, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, image.manifestURL(), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header = GetManifestMediaTypeAcceptHeader(header)
+	// Set accept header with media types.
+	for _, mediaType := range distribution.ManifestMediaTypes() {
+		req.Header.Add("Accept", mediaType)
+	}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
-
 	defer resp.Body.Close()
 
+	// Handle response.
 	if resp.StatusCode == http.StatusNotModified {
 		return nil, distribution.ErrManifestNotModified
-	} else if !registryClient.SuccessStatus(resp.StatusCode) {
-		return nil, registryClient.HandleErrorResponse(resp)
+	} else if !registryclient.SuccessStatus(resp.StatusCode) {
+		return nil, registryclient.HandleErrorResponse(resp)
 	}
 
 	ctHeader := resp.Header.Get("Content-Type")
@@ -246,6 +254,8 @@ func (p *preheat) getManifests(ctx context.Context, client *ImageAuthClient, ima
 	if err != nil {
 		return nil, err
 	}
+
+	// Unmarshal manifest.
 	manifest, _, err := distribution.UnmarshalManifest(ctHeader, body)
 	if err != nil {
 		return nil, err
@@ -255,41 +265,28 @@ func (p *preheat) getManifests(ctx context.Context, client *ImageAuthClient, ima
 	case *schema1.SignedManifest, *schema2.DeserializedManifest, *ocischema.DeserializedManifest:
 		return []distribution.Manifest{v}, nil
 	case *manifestlist.DeserializedManifestList:
-		callback := func(m manifestlist.ManifestDescriptor) ([]distribution.Manifest, error) {
-			image.tag = m.Digest.String()
-			return p.getManifests(ctx, client, image, header, pp)
+		var result []distribution.Manifest
+		for _, v := range p.filterManifests(v.Manifests, platform) {
+			image.tag = v.Digest.String()
+			manifests, err := p.getManifests(ctx, client, image, header.Clone(), platform)
+			if err != nil {
+				return nil, err
+			}
+
+			result = append(result, manifests...)
 		}
 
-		return p.getManifestsFromManifestList(ctx, v, pp, callback)
+		return result, nil
 	}
 
-	return nil, invalidManifestFormatError{}
+	return nil, errors.New("unknown manifest type")
 }
 
-func (p *preheat) getManifestsFromManifestList(
-	ctx context.Context,
-	manifestList *manifestlist.DeserializedManifestList,
-	pp specs.Platform,
-	callback func(manifestlist.ManifestDescriptor) ([]distribution.Manifest, error),
-) ([]distribution.Manifest, error) {
-	var ms []distribution.Manifest
-	for _, v := range p.filterManifests(manifestList.Manifests, pp) {
-		manifestList, err := callback(v)
-		if err != nil {
-			return nil, err
-		}
-
-		ms = append(ms, manifestList...)
-	}
-
-	return ms, nil
-}
-
-// filterManifests
-func (p *preheat) filterManifests(manifests []manifestlist.ManifestDescriptor, pp specs.Platform) []manifestlist.ManifestDescriptor {
+// filterManifests filters manifests with platform.
+func (p *preheat) filterManifests(manifests []manifestlist.ManifestDescriptor, platform specs.Platform) []manifestlist.ManifestDescriptor {
 	var matches []manifestlist.ManifestDescriptor
 	for _, desc := range manifests {
-		if desc.Platform.Architecture == pp.Architecture && desc.Platform.OS == pp.OS {
+		if desc.Platform.Architecture == platform.Architecture && desc.Platform.OS == platform.OS {
 			matches = append(matches, desc)
 		}
 	}
@@ -302,32 +299,129 @@ func (p *preheat) parseLayers(manifests []distribution.Manifest, args types.Preh
 	var layers []internaljob.PreheatRequest
 	for _, m := range manifests {
 		for _, v := range m.References() {
-			h := header.Clone()
-			h.Set("Accept", v.MediaType)
+			header.Set("Accept", v.MediaType)
 			layer := internaljob.PreheatRequest{
-				URL:     image.buildBlobsURL(v.Digest.String()),
+				URL:     image.blobsURL(v.Digest.String()),
 				Tag:     args.Tag,
 				Filter:  args.Filter,
-				Headers: nethttp.HeaderToMap(h),
+				Headers: nethttp.HeaderToMap(header),
 			}
 
 			layers = append(layers, layer)
 		}
 	}
+
 	return layers, nil
 }
 
-// parseAccessURL parses access url.
-func parseAccessURL(url string) (*preheatImage, error) {
-	r := accessURLPattern.FindStringSubmatch(url)
-	if len(r) != 5 {
-		return nil, errors.New("parse access url failed")
+// imageAuthClientOption is an option for imageAuthClient.
+type imageAuthClientOption func(*imageAuthClient)
+
+// withBasicAuth sets basic auth for imageAuthClient.
+func withBasicAuth(username, password string) imageAuthClientOption {
+	return func(c *imageAuthClient) {
+		c.authConfig = &typesregistry.AuthConfig{
+			Username: username,
+			Password: password,
+		}
+	}
+}
+
+// withHTTPClient sets http client for imageAuthClient.
+func withHTTPClient(client *http.Client) imageAuthClientOption {
+	return func(c *imageAuthClient) {
+		c.httpClient = client
+	}
+}
+
+// imageAuthClient is a client for image authentication.
+type imageAuthClient struct {
+	// httpClient is the http client.
+	httpClient *http.Client
+
+	// authConfig is the auth config.
+	authConfig *typesregistry.AuthConfig
+
+	// interceptorTokenHandler is the token interceptor.
+	interceptorTokenHandler *interceptorTokenHandler
+}
+
+// newImageAuthClient creates a new imageAuthClient.
+func newImageAuthClient(image *preheatImage, opts ...imageAuthClientOption) (*imageAuthClient, error) {
+	d := &imageAuthClient{
+		httpClient:              http.DefaultClient,
+		interceptorTokenHandler: newInterceptorTokenHandler(),
 	}
 
-	return &preheatImage{
-		protocol: r[1],
-		domain:   r[2],
-		name:     r[3],
-		tag:      r[4],
-	}, nil
+	for _, opt := range opts {
+		opt(d)
+	}
+
+	// New a challenge manager for the supported authentication types.
+	challengeManager, err := registry.PingV2Registry(&url.URL{Scheme: image.protocol, Host: image.domain}, d.httpClient.Transport)
+	if err != nil {
+		return nil, err
+	}
+
+	// New a credential store which always returns the same credential values.
+	creds := registry.NewStaticCredentialStore(d.authConfig)
+
+	// Transport with authentication.
+	d.httpClient.Transport = transport.NewTransport(
+		d.httpClient.Transport,
+		auth.NewAuthorizer(
+			challengeManager,
+			auth.NewTokenHandlerWithOptions(auth.TokenHandlerOptions{
+				Transport:   d.httpClient.Transport,
+				Credentials: creds,
+				Scopes: []auth.Scope{auth.RepositoryScope{
+					Repository: image.name,
+					Actions:    []string{"pull"},
+				}},
+				ClientID: registry.AuthClientID,
+			}),
+			d.interceptorTokenHandler,
+			auth.NewBasicHandler(creds),
+		),
+	)
+
+	return d, nil
+}
+
+// Do sends an HTTP request and returns an HTTP response.
+func (d *imageAuthClient) Do(req *http.Request) (*http.Response, error) {
+	return d.httpClient.Do(req)
+}
+
+// GetAuthToken returns the bearer token.
+func (d *imageAuthClient) GetAuthToken() string {
+	return d.interceptorTokenHandler.GetAuthToken()
+}
+
+// interceptorTokenHandler is a token interceptor
+// intercept bearer token from auth handler.
+type interceptorTokenHandler struct {
+	auth.AuthenticationHandler
+	token string
+}
+
+// NewInterceptorTokenHandler returns a new InterceptorTokenHandler.
+func newInterceptorTokenHandler() *interceptorTokenHandler {
+	return &interceptorTokenHandler{}
+}
+
+// Scheme returns the authentication scheme.
+func (h *interceptorTokenHandler) Scheme() string {
+	return "bearer"
+}
+
+// AuthorizeRequest sets the Authorization header on the request.
+func (h *interceptorTokenHandler) AuthorizeRequest(req *http.Request, params map[string]string) error {
+	h.token = req.Header.Get("Authorization")
+	return nil
+}
+
+// GetAuthToken returns the bearer token.
+func (h *interceptorTokenHandler) GetAuthToken() string {
+	return h.token
 }
