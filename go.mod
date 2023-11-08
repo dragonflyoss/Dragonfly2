@@ -17,7 +17,7 @@ require (
 	github.com/colinmarc/hdfs/v2 v2.3.0
 	github.com/containerd/containerd v1.3.4
 	github.com/distribution/distribution/v3 v3.0.0-20220620080156-3e4f8a0ab147
-	github.com/docker/distribution v2.7.1+incompatible
+	github.com/docker/distribution v2.8.2+incompatible
 	github.com/docker/docker v24.0.7+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.4.0
