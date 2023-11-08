@@ -20,6 +20,7 @@ package dynconfig
 
 import (
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
@@ -55,6 +56,7 @@ type dynconfig[T any] struct {
 	cachePath string
 	data      *atomic.Pointer[T]
 	expire    time.Duration
+	mu        *sync.Mutex
 }
 
 // New returns a new dynconfig instance.
@@ -65,6 +67,7 @@ func New[T any](client ManagerClient, cachePath string, expire time.Duration) (D
 		data:      atomic.NewPointer[T](nil),
 		expire:    expire,
 		client:    client,
+		mu:        &sync.Mutex{},
 	}
 
 	if err := d.load(); err != nil {
@@ -76,7 +79,14 @@ func New[T any](client ManagerClient, cachePath string, expire time.Duration) (D
 
 // Refresh refreshes dynconfig in cache.
 func (d *dynconfig[T]) Refresh() error {
-	return d.load()
+	// Avoid hot reload.
+	if d.mu.TryLock() {
+		defer d.mu.Unlock()
+		return d.load()
+	}
+
+	// If reload is in progress, return nil.
+	return nil
 }
 
 // Get dynamic config.
