@@ -27,59 +27,14 @@ import (
 
 	. "github.com/onsi/ginkgo/v2" //nolint
 	. "github.com/onsi/gomega"    //nolint
-	"k8s.io/component-base/featuregate"
 
 	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
 	_ "d7y.io/dragonfly/v2/test/e2e/manager"
 )
 
-var (
-	featureGates     = featuregate.NewFeatureGate()
-	featureGatesFlag string
-
-	featureGateRange     featuregate.Feature = "dfget-range"
-	featureGateOpenRange featuregate.Feature = "dfget-open-range"
-	featureGateCommit    featuregate.Feature = "dfget-commit"
-	featureGateNoLength  featuregate.Feature = "dfget-no-length"
-	featureGateEmptyFile featuregate.Feature = "dfget-empty-file"
-	featureGateRecursive featuregate.Feature = "dfget-recursive"
-
-	defaultFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
-		featureGateCommit: {
-			Default:       true,
-			LockToDefault: false,
-			PreRelease:    featuregate.Alpha,
-		},
-		featureGateNoLength: {
-			Default:       true,
-			LockToDefault: false,
-			PreRelease:    featuregate.Alpha,
-		},
-		featureGateRange: {
-			Default:       false,
-			LockToDefault: false,
-			PreRelease:    featuregate.Alpha,
-		},
-		featureGateOpenRange: {
-			Default:       false,
-			LockToDefault: false,
-			PreRelease:    featuregate.Alpha,
-		},
-		featureGateEmptyFile: {
-			Default:       false,
-			LockToDefault: false,
-			PreRelease:    featuregate.Alpha,
-		},
-		featureGateRecursive: {
-			Default:       false,
-			LockToDefault: false,
-			PreRelease:    featuregate.Alpha,
-		},
-	}
-)
+var featureGatesFlag string
 
 func init() {
-	_ = featureGates.Add(defaultFeatureGates)
 	flag.StringVar(&featureGatesFlag, "feature-gates", "", "e2e test feature gates")
 }
 
@@ -152,9 +107,9 @@ var _ = AfterSuite(func() {
 })
 
 var _ = BeforeSuite(func() {
-	err := featureGates.Set(featureGatesFlag)
+	err := e2eutil.FeatureGates.Set(featureGatesFlag)
 	Expect(err).NotTo(HaveOccurred())
-	fmt.Printf("feature gates: %q, flags: %q\n", featureGates.String(), featureGatesFlag)
+	fmt.Printf("feature gates: %q, flags: %q\n", e2eutil.FeatureGates.String(), featureGatesFlag)
 
 	mode := os.Getenv("DRAGONFLY_COMPATIBILITY_E2E_TEST_MODE")
 	imageName := os.Getenv("DRAGONFLY_COMPATIBILITY_E2E_TEST_IMAGE")
@@ -187,7 +142,7 @@ var _ = BeforeSuite(func() {
 	fmt.Printf("raw dfget version:\n%s\n", rawDfgetVersion)
 	fmt.Printf("dfget merge commit: %s\n", dfgetGitCommit)
 
-	if !featureGates.Enabled(featureGateCommit) {
+	if !e2eutil.FeatureGates.Enabled(e2eutil.FeatureGateCommit) {
 		return
 	}
 	if mode == dfdaemonCompatibilityTestMode {
@@ -197,7 +152,7 @@ var _ = BeforeSuite(func() {
 
 	Expect(gitCommit).To(Equal(dfgetGitCommit))
 
-	if featureGates.Enabled(featureGateRange) {
+	if e2eutil.FeatureGates.Enabled(e2eutil.FeatureGateRange) {
 		out, err := e2eutil.DockerCopy("/bin/", "/tmp/sha256sum-offset").CombinedOutput()
 		if err != nil {
 			fmt.Println(string(out))
@@ -205,7 +160,7 @@ var _ = BeforeSuite(func() {
 		Expect(err).NotTo(HaveOccurred())
 	}
 
-	if featureGates.Enabled(featureGateRecursive) {
+	if e2eutil.FeatureGates.Enabled(e2eutil.FeatureGateRecursive) {
 		out, err := e2eutil.DockerCopy("/bin/", "/tmp/download-grpc-test").CombinedOutput()
 		if err != nil {
 			fmt.Println(string(out))

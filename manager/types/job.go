@@ -58,4 +58,11 @@ type PreheatArgs struct {
 	Tag     string            `json:"tag" binding:"omitempty"`
 	Filter  string            `json:"filter" binding:"omitempty"`
 	Headers map[string]string `json:"headers" binding:"omitempty"`
+
+	// private image registry need username and password to get auth token
+	Username string `json:"username" binding:"omitempty"`
+	Password string `json:"password" binding:"omitempty"`
+
+	// The image type preheating task can specify the image architecture type. eg: linux/amd64
+	Platform string `json:"platform" binding:"omitempty"`
 }
