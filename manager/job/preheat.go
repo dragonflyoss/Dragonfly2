@@ -209,7 +209,7 @@ func (p *preheat) getImageLayers(ctx context.Context, args types.PreheatArgs) ([
 
 	// no matching manifest for platform in the manifest list entries
 	if len(manifests) == 0 {
-		return nil, fmt.Errorf("no matching manifest for platform %s", platform)
+		return nil, fmt.Errorf("no matching manifest for platform %s", platforms.Format(platform))
 	}
 
 	// set authorization header
