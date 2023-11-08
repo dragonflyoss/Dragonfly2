@@ -1,10 +1,8 @@
 package job
 
 import (
+	"errors"
 	"fmt"
-
-	"github.com/containerd/containerd/platforms"
-	specs "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
 // preheatImage is image information for preheat.
@@ -15,33 +13,25 @@ type preheatImage struct {
 	tag      string
 }
 
-func (p *preheatImage) buildManifestURL(digest string) string {
-	return fmt.Sprintf("%s://%s/v2/%s/manifests/%s", p.protocol, p.domain, p.name, digest)
+func (p *preheatImage) manifestURL() string {
+	return fmt.Sprintf("%s://%s/v2/%s/manifests/%s", p.protocol, p.domain, p.name, p.tag)
 }
 
-func (p *preheatImage) buildBlobsURL(digest string) string {
+func (p *preheatImage) blobsURL(digest string) string {
 	return fmt.Sprintf("%s://%s/v2/%s/blobs/%s", p.protocol, p.domain, p.name, digest)
 }
 
-// invalidManifestFormatError is error for invalid manifest format.
-type invalidManifestFormatError struct{}
-
-func (invalidManifestFormatError) Error() string {
-	return "unsupported manifest format"
-}
-
-// noMatchesErr is error for no matching manifest.
-type noMatchesErr struct {
-	platform specs.Platform
-}
-
-func (e noMatchesErr) Error() string {
-	return fmt.Sprintf("no matching manifest for %s in the manifest list entries", formatPlatform(e.platform))
-}
-
-func formatPlatform(platform specs.Platform) string {
-	if platform.OS == "" {
-		platform = platforms.DefaultSpec()
+// parseManifestURL parses manifest url.
+func parseManifestURL(url string) (*preheatImage, error) {
+	r := accessURLPattern.FindStringSubmatch(url)
+	if len(r) != 5 {
+		return nil, errors.New("parse access url failed")
 	}
-	return platforms.Format(platform)
+
+	return &preheatImage{
+		protocol: r[1],
+		domain:   r[2],
+		name:     r[3],
+		tag:      r[4],
+	}, nil
 }

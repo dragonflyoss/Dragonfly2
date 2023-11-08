@@ -4,42 +4,51 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 
+	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-type testCase struct {
-	args types.PreheatArgs
-	desc string
-}
-
-func TestGetManifest(t *testing.T) {
-	p := &preheat{}
-
-	testCases := []testCase{
+func TestPreheat_getImageLayers(t *testing.T) {
+	tests := []struct {
+		name   string
+		args   types.PreheatArgs
+		expect func(t *testing.T, layers []internaljob.PreheatRequest)
+	}{
 		{
+			name: "get image layers with manifest url",
 			args: types.PreheatArgs{
 				URL:  "https://registry-1.docker.io/v2/dragonflyoss/busybox/manifests/1.35.0",
 				Type: "image",
 			},
-			desc: "get opensource image layers",
+			expect: func(t *testing.T, layers []internaljob.PreheatRequest) {
+				assert := assert.New(t)
+				assert.Equal(2, len(layers))
+			},
 		},
 		{
+			name: "get image layers with multi arch image layers",
 			args: types.PreheatArgs{
-				URL:      "https://registry-1.docker.io/v2/library/nginx/manifests/latest",
+				URL:      "https://registry-1.docker.io/v2/dragonflyoss/scheduler/manifests/v2.1.0",
 				Platform: "linux/amd64",
 			},
-			desc: "get docker official multi arch image layers",
+			expect: func(t *testing.T, layers []internaljob.PreheatRequest) {
+				assert := assert.New(t)
+				assert.Equal(5, len(layers))
+			},
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.desc, func(t *testing.T) {
-			t.Log(tc.desc)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			p := &preheat{}
 			layers, err := p.getImageLayers(context.Background(), tc.args)
-			require.NoError(t, err)
-			require.NotEmpty(t, layers)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			tc.expect(t, layers)
 		})
 	}
 }
