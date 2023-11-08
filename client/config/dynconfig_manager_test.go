@@ -420,7 +420,7 @@ func TestDynconfigManager_GetResolveSchedulerAddrs(t *testing.T) {
 			expect: func(t *testing.T, dynconfig Dynconfig, data *DynconfigData) {
 				assert := assert.New(t)
 				_, err := dynconfig.GetResolveSchedulerAddrs()
-				assert.EqualError(err, "invalid schedulers")
+				assert.EqualError(err, "schedulers not found")
 			},
 		},
 	}

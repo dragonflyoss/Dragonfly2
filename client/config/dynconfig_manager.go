@@ -77,6 +77,20 @@ func newDynconfigManager(cfg *DaemonOption, rawManagerClient managerclient.V1, c
 	}, nil
 }
 
+// Get the dynamic seed peers config.
+func (d *dynconfigManager) GetSeedPeers() ([]*managerv1.SeedPeer, error) {
+	data, err := d.Get()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(data.SeedPeers) == 0 {
+		return nil, errors.New("seed peers not found")
+	}
+
+	return data.SeedPeers, nil
+}
+
 // Get the dynamic schedulers config from manager.
 func (d *dynconfigManager) GetResolveSchedulerAddrs() ([]resolver.Address, error) {
 	schedulers, err := d.GetSchedulers()
@@ -157,10 +171,6 @@ func (d *dynconfigManager) GetSchedulers() ([]*managerv1.Scheduler, error) {
 	data, err := d.Get()
 	if err != nil {
 		return nil, err
-	}
-
-	if data.Schedulers == nil {
-		return nil, errors.New("invalid schedulers")
 	}
 
 	if len(data.Schedulers) == 0 {
@@ -279,6 +289,8 @@ func newManagerClient(client managerclient.V1, cfg *DaemonOption) internaldyncon
 }
 
 func (mc *managerClient) Get() (any, error) {
+	data := DynconfigData{}
+
 	listSchedulersResp, err := mc.managerClient.ListSchedulers(context.Background(), &managerv1.ListSchedulersRequest{
 		SourceType: managerv1.SourceType_PEER_SOURCE,
 		Hostname:   mc.config.Host.Hostname,
@@ -293,6 +305,20 @@ func (mc *managerClient) Get() (any, error) {
 	if err != nil {
 		return nil, err
 	}
+	data.Schedulers = listSchedulersResp.Schedulers
+
+	if mc.config.Scheduler.Manager.SeedPeer.Enable {
+		listSeedPeersResp, err := mc.managerClient.ListSeedPeers(context.Background(), &managerv1.ListSeedPeersRequest{
+			SourceType: managerv1.SourceType_PEER_SOURCE,
+			Hostname:   mc.config.Host.Hostname,
+			Ip:         mc.config.Host.AdvertiseIP.String(),
+		})
+		if err != nil {
+			logger.Warnf("list seed peers failed: %s", err.Error())
+		} else {
+			data.SeedPeers = listSeedPeersResp.SeedPeers
+		}
+	}
 
 	if mc.config.ObjectStorage.Enable {
 		getObjectStorageResp, err := mc.managerClient.GetObjectStorage(context.Background(), &managerv1.GetObjectStorageRequest{
@@ -304,13 +330,8 @@ func (mc *managerClient) Get() (any, error) {
 			return nil, err
 		}
 
-		return DynconfigData{
-			Schedulers:    listSchedulersResp.Schedulers,
-			ObjectStorage: getObjectStorageResp,
-		}, nil
+		data.ObjectStorage = getObjectStorageResp
 	}
 
-	return DynconfigData{
-		Schedulers: listSchedulersResp.Schedulers,
-	}, nil
+	return data, nil
 }

@@ -116,6 +116,9 @@ type SchedulerConfig struct {
 	// Algorithm is scheduling algorithm used by the scheduler.
 	Algorithm string `yaml:"algorithm" mapstructure:"algorithm"`
 
+	// MaxScheduleCount is max schedule count.
+	MaxScheduleCount int `yaml:"maxScheduleCount" mapstructure:"maxScheduleCount"`
+
 	// BackToSourceCount is single task allows the peer to back-to-source count.
 	BackToSourceCount int `yaml:"backToSourceCount" mapstructure:"backToSourceCount"`
 
@@ -370,6 +373,7 @@ func New() *Config {
 		},
 		Scheduler: SchedulerConfig{
 			Algorithm:              DefaultSchedulerAlgorithm,
+			MaxScheduleCount:       DefaultSchedulerMaxScheduleCount,
 			BackToSourceCount:      DefaultSchedulerBackToSourceCount,
 			RetryBackToSourceLimit: DefaultSchedulerRetryBackToSourceLimit,
 			RetryLimit:             DefaultSchedulerRetryLimit,
@@ -484,6 +488,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Scheduler.Algorithm == "" {
 		return errors.New("scheduler requires parameter algorithm")
+	}
+
+	if cfg.Scheduler.MaxScheduleCount <= 0 {
+		return errors.New("scheduler requires parameter maxScheduleCount")
 	}
 
 	if cfg.Scheduler.BackToSourceCount == 0 {

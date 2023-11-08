@@ -44,11 +44,15 @@ const (
 var watchInterval = 10 * time.Second
 
 type DynconfigData struct {
+	SeedPeers     []*managerv1.SeedPeer
 	Schedulers    []*managerv1.Scheduler
 	ObjectStorage *managerv1.ObjectStorage
 }
 
 type Dynconfig interface {
+	// Get the dynamic seed peers config.
+	GetSeedPeers() ([]*managerv1.SeedPeer, error)
+
 	// Get the dynamic schedulers resolve addrs.
 	GetResolveSchedulerAddrs() ([]resolver.Address, error)
 

@@ -91,11 +91,13 @@ func (s *scheduling) ScheduleCandidateParents(ctx context.Context, peer *resourc
 		// Scheduling will send NeedBackToSourceResponse to peer.
 		//
 		// Condition 1: Peer's NeedBackToSource is true.
-		// Condition 2: Scheduling exceeds the RetryBackToSourceLimit.
+		// Condition 2: Scheduling exceeds the MaxScheduleCount.
+		// Condition 3: Scheduling exceeds the RetryBackToSourceLimit.
 		if peer.Task.CanBackToSource() {
-			// Check condition 1:
+			// Check condition 1 and 2:
 			// Peer's NeedBackToSource is true.
-			if peer.NeedBackToSource.Load() {
+			// Scheduling exceeds the MaxScheduleCount.
+			if peer.NeedBackToSource.Load() || peer.ScheduleCount.Load() >= int32(s.config.MaxScheduleCount) {
 				stream, loaded := peer.LoadAnnouncePeerStream()
 				if !loaded {
 					peer.Log.Error("load stream failed")
@@ -103,7 +105,8 @@ func (s *scheduling) ScheduleCandidateParents(ctx context.Context, peer *resourc
 				}
 
 				// Send NeedBackToSourceResponse to peer.
-				peer.Log.Infof("send NeedBackToSourceResponse, because of peer's NeedBackToSource is %t", peer.NeedBackToSource.Load())
+				peer.Log.Infof("send NeedBackToSourceResponse, because of peer's NeedBackToSource is %t and peer's schedule count is %d",
+					peer.NeedBackToSource.Load(), peer.ScheduleCount.Load())
 				if err := stream.Send(&schedulerv2.AnnouncePeerResponse{
 					Response: &schedulerv2.AnnouncePeerResponse_NeedBackToSourceResponse{
 						NeedBackToSourceResponse: &schedulerv2.NeedBackToSourceResponse{
@@ -118,7 +121,7 @@ func (s *scheduling) ScheduleCandidateParents(ctx context.Context, peer *resourc
 				return nil
 			}
 
-			// Check condition 2:
+			// Check condition 3:
 			// The number of retry scheduling is greater than RetryBackToSourceLimit
 			if n >= s.config.RetryBackToSourceLimit {
 				stream, loaded := peer.LoadAnnouncePeerStream()
@@ -201,6 +204,9 @@ func (s *scheduling) ScheduleCandidateParents(ctx context.Context, peer *resourc
 			}
 		}
 
+		// Increase schedule count.
+		peer.ScheduleCount.Inc()
+
 		peer.Log.Infof("scheduling success in %d times", n+1)
 		return nil
 	}
@@ -220,12 +226,14 @@ func (s *scheduling) ScheduleParentAndCandidateParents(ctx context.Context, peer
 
 		// Scheduling will send Code_SchedNeedBackSource to peer.
 		//
-		// Condition 1: Peer needs back-to-source.
-		// Condition 2: Scheduling exceeds the RetryBackToSourceLimit.
+		// Condition 1: Peer's NeedBackToSource is true.
+		// Condition 2: Scheduling exceeds the MaxScheduleCount.
+		// Condition 3: Scheduling exceeds the RetryBackToSourceLimit.
 		if peer.Task.CanBackToSource() {
-			// Check condition 1:
+			// Check condition 1 and 2:
 			// Peer's NeedBackToSource is true.
-			if peer.NeedBackToSource.Load() {
+			// Scheduling exceeds the MaxScheduleCount.
+			if peer.NeedBackToSource.Load() || peer.ScheduleCount.Load() >= int32(s.config.MaxScheduleCount) {
 				stream, loaded := peer.LoadReportPieceResultStream()
 				if !loaded {
 					peer.Log.Error("load stream failed")
@@ -237,7 +245,8 @@ func (s *scheduling) ScheduleParentAndCandidateParents(ctx context.Context, peer
 					peer.Log.Error(err)
 					return
 				}
-				peer.Log.Infof("send Code_SchedNeedBackSource to peer, because of peer's NeedBackToSource is %t", peer.NeedBackToSource.Load())
+				peer.Log.Infof("send Code_SchedNeedBackSource to peer, because of peer's NeedBackToSource is %t and peer's schedule count is %d",
+					peer.NeedBackToSource.Load(), peer.ScheduleCount.Load())
 
 				if err := peer.FSM.Event(ctx, resource.PeerEventDownloadBackToSource); err != nil {
 					peer.Log.Errorf("peer fsm event failed: %s", err.Error())
@@ -256,7 +265,7 @@ func (s *scheduling) ScheduleParentAndCandidateParents(ctx context.Context, peer
 				return
 			}
 
-			// Check condition 2:
+			// Check condition 3:
 			// The number of retry scheduling is greater than RetryBackToSourceLimit
 			if n >= s.config.RetryBackToSourceLimit {
 				stream, loaded := peer.LoadReportPieceResultStream()
@@ -368,6 +377,9 @@ func (s *scheduling) ScheduleParentAndCandidateParents(ctx context.Context, peer
 				continue
 			}
 		}
+
+		// Increase schedule count.
+		peer.ScheduleCount.Inc()
 
 		peer.Log.Infof("scheduling success in %d times", n+1)
 		return

@@ -56,6 +56,11 @@ func newDynconfigLocal(cfg *DaemonOption, creds credentials.TransportCredentials
 	}, nil
 }
 
+// Get the dynamic seed peers config.
+func (d *dynconfigLocal) GetSeedPeers() ([]*managerv1.SeedPeer, error) {
+	return nil, ErrUnimplemented
+}
+
 // Get the dynamic schedulers resolve addrs.
 func (d *dynconfigLocal) GetResolveSchedulerAddrs() ([]resolver.Address, error) {
 	var (

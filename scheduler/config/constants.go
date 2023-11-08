@@ -63,6 +63,9 @@ const (
 	// DefaultSchedulerAlgorithm is default algorithm for scheduler.
 	DefaultSchedulerAlgorithm = "default"
 
+	// DefaultSchedulerMaxScheduleCount is default schedule limit for peer.
+	DefaultSchedulerMaxScheduleCount = 30
+
 	// DefaultSchedulerBackToSourceCount is default back-to-source count for scheduler.
 	DefaultSchedulerBackToSourceCount = 3
 
