@@ -280,6 +280,57 @@ func Test_MakePeerKeyInManager(t *testing.T) {
 	}
 }
 
+func Test_MakeSeedPeersKeyForPeerInManager(t *testing.T) {
+	tests := []struct {
+		name     string
+		hostname string
+		ip       string
+		expect   func(t *testing.T, s string)
+	}{
+		{
+			name:     "make seed peer key for peer in manager",
+			hostname: "bar",
+			ip:       "127.0.0.1",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "manager:peers:bar-127.0.0.1:seed-peers")
+			},
+		},
+		{
+			name:     "hostname is empty",
+			hostname: "",
+			ip:       "127.0.0.1",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "manager:peers:-127.0.0.1:seed-peers")
+			},
+		},
+		{
+			name:     "ip is empty",
+			hostname: "bar",
+			ip:       "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "manager:peers:bar-:seed-peers")
+			},
+		},
+		{
+			name:     "hostname and ip are empty",
+			hostname: "",
+			ip:       "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "manager:peers:-:seed-peers")
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.expect(t, MakeSeedPeersKeyForPeerInManager(tc.hostname, tc.ip))
+		})
+	}
+}
+
 func Test_MakeSchedulersKeyForPeerInManager(t *testing.T) {
 	tests := []struct {
 		name     string

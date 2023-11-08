@@ -105,6 +105,11 @@ func MakePeerKeyInManager(hostname, ip string) string {
 	return MakeKeyInManager(PeersNamespace, fmt.Sprintf("%s-%s", hostname, ip))
 }
 
+// MakeSeedPeersKeyForPeerInManager make seed peers key for peer in manager.
+func MakeSeedPeersKeyForPeerInManager(hostname, ip string) string {
+	return MakeKeyInManager(PeersNamespace, fmt.Sprintf("%s-%s:seed-peers", hostname, ip))
+}
+
 // MakeSchedulersKeyForPeerInManager make schedulers key for peer in manager.
 func MakeSchedulersKeyForPeerInManager(hostname, ip string) string {
 	return MakeKeyInManager(PeersNamespace, fmt.Sprintf("%s-%s:schedulers", hostname, ip))

@@ -566,7 +566,7 @@ func ConstructSuccessSmallTaskResponse(candidateParent *resource.Peer) *schedule
 			ParentId:    &candidateParentPiece.ParentID,
 			Offset:      candidateParentPiece.Offset,
 			Length:      candidateParentPiece.Length,
-			TrafficType: candidateParentPiece.TrafficType,
+			TrafficType: &candidateParentPiece.TrafficType,
 			Cost:        durationpb.New(candidateParentPiece.Cost),
 			CreatedAt:   timestamppb.New(candidateParentPiece.CreatedAt),
 		}
@@ -617,7 +617,7 @@ func ConstructSuccessSmallTaskResponse(candidateParent *resource.Peer) *schedule
 			ParentId:    &taskPiece.ParentID,
 			Offset:      taskPiece.Offset,
 			Length:      taskPiece.Length,
-			TrafficType: taskPiece.TrafficType,
+			TrafficType: &taskPiece.TrafficType,
 			Cost:        durationpb.New(taskPiece.Cost),
 			CreatedAt:   timestamppb.New(taskPiece.CreatedAt),
 		}
@@ -741,7 +741,7 @@ func ConstructSuccessNormalTaskResponse(dynconfig config.DynconfigInterface, can
 				ParentId:    &candidateParentPiece.ParentID,
 				Offset:      candidateParentPiece.Offset,
 				Length:      candidateParentPiece.Length,
-				TrafficType: candidateParentPiece.TrafficType,
+				TrafficType: &candidateParentPiece.TrafficType,
 				Cost:        durationpb.New(candidateParentPiece.Cost),
 				CreatedAt:   timestamppb.New(candidateParentPiece.CreatedAt),
 			}
@@ -792,7 +792,7 @@ func ConstructSuccessNormalTaskResponse(dynconfig config.DynconfigInterface, can
 				ParentId:    &taskPiece.ParentID,
 				Offset:      taskPiece.Offset,
 				Length:      taskPiece.Length,
-				TrafficType: taskPiece.TrafficType,
+				TrafficType: &taskPiece.TrafficType,
 				Cost:        durationpb.New(taskPiece.Cost),
 				CreatedAt:   timestamppb.New(taskPiece.CreatedAt),
 			}
