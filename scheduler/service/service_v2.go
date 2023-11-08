@@ -231,7 +231,7 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 			ParentId:    &piece.ParentID,
 			Offset:      piece.Offset,
 			Length:      piece.Length,
-			TrafficType: piece.TrafficType,
+			TrafficType: &piece.TrafficType,
 			Cost:        durationpb.New(piece.Cost),
 			CreatedAt:   timestamppb.New(piece.CreatedAt),
 		}
@@ -282,7 +282,7 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 			ParentId:    &piece.ParentID,
 			Offset:      piece.Offset,
 			Length:      piece.Length,
-			TrafficType: piece.TrafficType,
+			TrafficType: &piece.TrafficType,
 			Cost:        durationpb.New(piece.Cost),
 			CreatedAt:   timestamppb.New(piece.CreatedAt),
 		}
@@ -435,7 +435,7 @@ func (v *V2) StatTask(ctx context.Context, req *schedulerv2.StatTaskRequest) (*c
 			ParentId:    &piece.ParentID,
 			Offset:      piece.Offset,
 			Length:      piece.Length,
-			TrafficType: piece.TrafficType,
+			TrafficType: &piece.TrafficType,
 			Cost:        durationpb.New(piece.Cost),
 			CreatedAt:   timestamppb.New(piece.CreatedAt),
 		}

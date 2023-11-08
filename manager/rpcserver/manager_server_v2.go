@@ -177,6 +177,78 @@ func (s *managerServerV2) GetSeedPeer(ctx context.Context, req *managerv2.GetSee
 	return &pbSeedPeer, nil
 }
 
+// List acitve seed peers configuration.
+func (s *managerServerV2) ListSeedPeers(ctx context.Context, req *managerv2.ListSeedPeersRequest) (*managerv2.ListSeedPeersResponse, error) {
+	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
+	log.Debugf("list seed peers, version %s, commit %s", req.Version, req.Commit)
+
+	// Cache hit.
+	var pbListSeedPeersResponse managerv2.ListSeedPeersResponse
+	cacheKey := pkgredis.MakeSeedPeersKeyForPeerInManager(req.Hostname, req.Ip)
+
+	if err := s.cache.Get(ctx, cacheKey, &pbListSeedPeersResponse); err != nil {
+		log.Warnf("%s cache miss because of %s", cacheKey, err.Error())
+	} else {
+		log.Debugf("%s cache hit", cacheKey)
+		return &pbListSeedPeersResponse, nil
+	}
+
+	// Cache miss and search seed peer.
+	seedPeer := models.SeedPeer{}
+	if err := s.db.WithContext(ctx).Preload("SeedPeerCluster").First(&seedPeer, models.SeedPeer{
+		Hostname: req.Hostname,
+		IP:       req.Ip,
+	}).Error; err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	var seedPeers []models.SeedPeer
+	if err := s.db.WithContext(ctx).Find(&seedPeers, models.SeedPeer{
+		State:             models.SeedPeerStateActive,
+		SeedPeerClusterID: uint(seedPeer.SeedPeerClusterID),
+	}).Error; err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if len(seedPeers) == 0 {
+		return nil, status.Error(codes.NotFound, "seed peer not found")
+	}
+
+	// Construct seed peers.
+	for _, seedPeer := range seedPeers {
+		pbListSeedPeersResponse.SeedPeers = append(pbListSeedPeersResponse.SeedPeers, &managerv2.SeedPeer{
+			Id:                uint64(seedPeer.ID),
+			Hostname:          seedPeer.Hostname,
+			Type:              seedPeer.Type,
+			Idc:               &seedPeer.IDC,
+			Location:          &seedPeer.Location,
+			Ip:                seedPeer.IP,
+			Port:              seedPeer.Port,
+			DownloadPort:      seedPeer.DownloadPort,
+			ObjectStoragePort: seedPeer.ObjectStoragePort,
+			State:             seedPeer.State,
+			SeedPeerClusterId: uint64(seedPeer.SeedPeerClusterID),
+			SeedPeerCluster: &managerv2.SeedPeerCluster{
+				Id:   uint64(seedPeer.SeedPeerCluster.ID),
+				Name: seedPeer.SeedPeerCluster.Name,
+				Bio:  seedPeer.SeedPeerCluster.BIO,
+			},
+		})
+	}
+
+	// Cache data.
+	if err := s.cache.Once(&cachev8.Item{
+		Ctx:   ctx,
+		Key:   cacheKey,
+		Value: &pbListSeedPeersResponse,
+		TTL:   s.cache.TTL,
+	}); err != nil {
+		log.Error(err)
+	}
+
+	return &pbListSeedPeersResponse, nil
+}
+
 // Update SeedPeer configuration.
 func (s *managerServerV2) UpdateSeedPeer(ctx context.Context, req *managerv2.UpdateSeedPeerRequest) (*managerv2.SeedPeer, error) {
 	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
