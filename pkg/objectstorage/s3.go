@@ -62,7 +62,7 @@ func newS3(region, endpoint, accessKey, secretKey string, s3ForcePathStyle bool,
 // GetMetadata returns metadata of object storage.
 func (s *s3) GetMetadata(ctx context.Context) *Metadata {
 	return &Metadata{
-		Name:     ServiceNameOBS,
+		Name:     ServiceNameS3,
 		Region:   s.region,
 		Endpoint: s.endpoint,
 	}

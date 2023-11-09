@@ -53,7 +53,7 @@ func newOSS(region, endpoint, accessKey, secretKey string, httpClient *http.Clie
 // GetMetadata returns metadata of object storage.
 func (o *oss) GetMetadata(ctx context.Context) *Metadata {
 	return &Metadata{
-		Name:     ServiceNameOBS,
+		Name:     ServiceNameOSS,
 		Region:   o.region,
 		Endpoint: o.endpoint,
 	}
