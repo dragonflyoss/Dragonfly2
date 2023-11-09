@@ -32,6 +32,12 @@ import (
 type oss struct {
 	// OSS client.
 	client *aliyunoss.Client
+
+	// region is storage region.
+	region string
+
+	// endpoint is datacenter endpoint.
+	endpoint string
 }
 
 // New oss instance.
@@ -41,9 +47,16 @@ func newOSS(region, endpoint, accessKey, secretKey string, httpClient *http.Clie
 		return nil, fmt.Errorf("new oss client failed: %s", err)
 	}
 
-	return &oss{
-		client: client,
-	}, nil
+	return &oss{client, region, endpoint}, nil
+}
+
+// GetMetadata returns metadata of object storage.
+func (o *oss) GetMetadata(ctx context.Context) *Metadata {
+	return &Metadata{
+		Name:     ServiceNameOBS,
+		Region:   o.region,
+		Endpoint: o.endpoint,
+	}
 }
 
 // GetBucketMetadata returns metadata of bucket.

@@ -68,6 +68,18 @@ type ObjectMetadatas struct {
 	Metadatas []*ObjectMetadata `json:"Metadatas"`
 }
 
+// Metadata provides metadata of object storage.
+type Metadata struct {
+	// Name is object storage name of type, it can be s3, oss or obs.
+	Name string
+
+	// Region is storage region.
+	Region string
+
+	// Endpoint is datacenter endpoint.
+	Endpoint string
+}
+
 // BucketMetadata provides metadata of bucket.
 type BucketMetadata struct {
 	// Name is bucket name.
@@ -79,6 +91,9 @@ type BucketMetadata struct {
 
 // ObjectStorage is the interface used for object storage.
 type ObjectStorage interface {
+	// GetMetadata returns metadata of object storage.
+	GetMetadata(ctx context.Context) *Metadata
+
 	// GetBucketMetadata returns metadata of bucket.
 	GetBucketMetadata(ctx context.Context, bucketName string) (*BucketMetadata, error)
 
