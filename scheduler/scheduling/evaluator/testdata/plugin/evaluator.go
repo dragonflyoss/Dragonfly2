@@ -20,8 +20,8 @@ import "d7y.io/dragonfly/v2/scheduler/resource"
 
 type evaluator struct{}
 
-func (e *evaluator) Evaluate(parents []*resource.Peer, child *resource.Peer, taskPieceCount int32) []float64 {
-	return []float64{1}
+func (e *evaluator) SortParents(parents []*resource.Peer, child *resource.Peer, taskPieceCount int32) []*resource.Peer {
+	return []*resource.Peer{&resource.Peer{}}
 }
 
 func (e *evaluator) IsBadNode(peer *resource.Peer) bool {

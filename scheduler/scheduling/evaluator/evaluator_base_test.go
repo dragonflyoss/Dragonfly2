@@ -177,14 +177,14 @@ func TestEvaluatorBase_NewEvaluatorBase(t *testing.T) {
 	}
 }
 
-func TestEvaluatorBase_Evaluate(t *testing.T) {
+func TestEvaluatorBase_SortParents(t *testing.T) {
 	tests := []struct {
 		name            string
 		parents         []*resource.Peer
 		child           *resource.Peer
 		totalPieceCount int32
 		mock            func(parent []*resource.Peer, child *resource.Peer)
-		expect          func(t *testing.T, scores []float64)
+		expect          func(t *testing.T, parents []*resource.Peer)
 	}{
 		{
 			name: "evaluate parents",
@@ -203,9 +203,12 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 			totalPieceCount: 1,
 			mock: func(parent []*resource.Peer, child *resource.Peer) {
 			},
-			expect: func(t *testing.T, scores []float64) {
+			expect: func(t *testing.T, parents []*resource.Peer) {
 				assert := assert.New(t)
-				assert.Equal(scores, []float64{0.35})
+				assert.Equal(len(parents), 1)
+				assert.Equal(parents[0].Task.ID, mockTaskID)
+				assert.Equal(parents[0].Host.ID, mockRawSeedHost.ID)
+
 			},
 		},
 		{
@@ -226,9 +229,11 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 			mock: func(parents []*resource.Peer, child *resource.Peer) {
 				parents[0].FinishedPieces.Set(0)
 			},
-			expect: func(t *testing.T, scores []float64) {
+			expect: func(t *testing.T, parents []*resource.Peer) {
 				assert := assert.New(t)
-				assert.Equal(scores, []float64{0.55})
+				assert.Equal(len(parents), 1)
+				assert.Equal(parents[0].Task.ID, mockTaskID)
+				assert.Equal(parents[0].Host.ID, mockRawSeedHost.ID)
 			},
 		},
 		{
@@ -242,8 +247,8 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 				resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig,
 					resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength)),
 					resource.NewHost(
-						mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
-						mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)),
+						mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+						mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)),
 			},
 			child: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig,
 				resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength)),
@@ -252,11 +257,13 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)),
 			totalPieceCount: 1,
 			mock: func(parents []*resource.Peer, child *resource.Peer) {
-				parents[0].FinishedPieces.Set(0)
+				parents[1].FinishedPieces.Set(0)
 			},
-			expect: func(t *testing.T, scores []float64) {
+			expect: func(t *testing.T, parents []*resource.Peer) {
 				assert := assert.New(t)
-				assert.Equal(scores, []float64{0.55, 0.35})
+				assert.Equal(len(parents), 2)
+				assert.Equal(parents[0].Host.ID, mockRawHost.ID)
+				assert.Equal(parents[1].Host.ID, mockRawSeedHost.ID)
 			},
 		},
 	}
@@ -265,7 +272,67 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			eb := NewEvaluatorBase()
 			tc.mock(tc.parents, tc.child)
-			tc.expect(t, eb.Evaluate(tc.parents, tc.child, tc.totalPieceCount))
+			tc.expect(t, eb.SortParents(tc.parents, tc.child, tc.totalPieceCount))
+		})
+	}
+}
+
+func TestEvaluatorBase_evaluate(t *testing.T) {
+	tests := []struct {
+		name            string
+		parent          *resource.Peer
+		child           *resource.Peer
+		totalPieceCount int32
+		mock            func(parent *resource.Peer, child *resource.Peer)
+		expect          func(t *testing.T, score float64)
+	}{
+		{
+			name: "evaluate parent",
+			parent: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig,
+				resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength)),
+				resource.NewHost(
+					mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
+					mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)),
+			child: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig,
+				resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength)),
+				resource.NewHost(
+					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)),
+			totalPieceCount: 1,
+			mock: func(parent *resource.Peer, child *resource.Peer) {
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.Equal(score, float64(0.35))
+			},
+		},
+		{
+			name: "evaluate parent with pieces",
+			parent: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig,
+				resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength)),
+				resource.NewHost(
+					mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
+					mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)),
+			child: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig,
+				resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength)),
+				resource.NewHost(
+					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)),
+			totalPieceCount: 1,
+			mock: func(parent *resource.Peer, child *resource.Peer) {
+				parent.FinishedPieces.Set(0)
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.Equal(score, float64(0.55))
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.mock(tc.parent, tc.child)
+			tc.expect(t, evaluate(tc.parent, tc.child, tc.totalPieceCount))
 		})
 	}
 }

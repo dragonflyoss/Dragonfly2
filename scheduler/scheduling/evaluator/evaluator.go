@@ -32,8 +32,8 @@ const (
 )
 
 type Evaluator interface {
-	// Evaluate todo Normalization.
-	Evaluate(parents []*resource.Peer, child *resource.Peer, taskPieceCount int32) []float64
+	// SortParents sort parents by evaluating multiple feature scores.
+	SortParents(parents []*resource.Peer, child *resource.Peer, taskPieceCount int32) []*resource.Peer
 
 	// IsBadNode determine if peer is a failed node.
 	IsBadNode(peer *resource.Peer) bool

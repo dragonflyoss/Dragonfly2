@@ -18,6 +18,7 @@ package evaluator
 
 import (
 	"math/big"
+	"sort"
 	"strings"
 
 	"github.com/montanaflynn/stats"
@@ -75,24 +76,31 @@ func NewEvaluatorBase() Evaluator {
 	return &evaluatorBase{}
 }
 
-// The larger the value after evaluation, the higher the priority.
-func (eb *evaluatorBase) Evaluate(parents []*resource.Peer, child *resource.Peer, totalPieceCount int32) []float64 {
-	var scores = make([]float64, len(parents))
-	for i, parent := range parents {
-		parentLocation := parent.Host.Network.Location
-		parentIDC := parent.Host.Network.IDC
-		childLocation := child.Host.Network.Location
-		childIDC := child.Host.Network.IDC
+// SortParents sort parents by evaluating multiple feature scores.
+func (eb *evaluatorBase) SortParents(parents []*resource.Peer, child *resource.Peer, totalPieceCount int32) []*resource.Peer {
+	sort.Slice(
+		parents,
+		func(i, j int) bool {
+			return evaluate(parents[i], child, totalPieceCount) > evaluate(parents[j], child, totalPieceCount)
+		},
+	)
 
-		scores[i] = finishedPieceWeight*calculatePieceScore(parent, child, totalPieceCount) +
-			parentHostUploadSuccessWeight*calculateParentHostUploadSuccessScore(parent) +
-			freeUploadWeight*calculateFreeUploadScore(parent.Host) +
-			hostTypeWeight*calculateHostTypeScore(parent) +
-			idcAffinityWeight*calculateIDCAffinityScore(parentIDC, childIDC) +
-			locationAffinityWeight*calculateMultiElementAffinityScore(parentLocation, childLocation)
-	}
+	return parents
+}
 
-	return scores
+// The larger the value, the higher the priority.
+func evaluate(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
+	parentLocation := parent.Host.Network.Location
+	parentIDC := parent.Host.Network.IDC
+	childLocation := child.Host.Network.Location
+	childIDC := child.Host.Network.IDC
+
+	return finishedPieceWeight*calculatePieceScore(parent, child, totalPieceCount) +
+		parentHostUploadSuccessWeight*calculateParentHostUploadSuccessScore(parent) +
+		freeUploadWeight*calculateFreeUploadScore(parent.Host) +
+		hostTypeWeight*calculateHostTypeScore(parent) +
+		idcAffinityWeight*calculateIDCAffinityScore(parentIDC, childIDC) +
+		locationAffinityWeight*calculateMultiElementAffinityScore(parentLocation, childLocation)
 }
 
 // calculatePieceScore 0.0~unlimited larger and better.

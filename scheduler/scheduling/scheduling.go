@@ -21,7 +21,6 @@ package scheduling
 import (
 	"context"
 	"fmt"
-	"sort"
 	"time"
 
 	"google.golang.org/grpc/codes"
@@ -393,11 +392,7 @@ func (s *scheduling) FindCandidateParents(ctx context.Context, peer *resource.Pe
 
 	// Sort candidate parents by evaluation score.
 	taskTotalPieceCount := peer.Task.TotalPieceCount.Load()
-	scores := s.evaluator.Evaluate(candidateParents, peer, taskTotalPieceCount)
-	sort.Slice(
-		candidateParents,
-		func(i, j int) bool { return scores[i] > scores[j] },
-	)
+	candidateParents = s.evaluator.SortParents(candidateParents, peer, taskTotalPieceCount)
 
 	// Get the parents with candidateParentLimit.
 	candidateParentLimit := config.DefaultSchedulerCandidateParentLimit
@@ -446,11 +441,7 @@ func (s *scheduling) FindSuccessParent(ctx context.Context, peer *resource.Peer,
 
 	// Sort candidate parents by evaluation score.
 	taskTotalPieceCount := peer.Task.TotalPieceCount.Load()
-	scores := s.evaluator.Evaluate(successParents, peer, taskTotalPieceCount)
-	sort.Slice(
-		successParents,
-		func(i, j int) bool { return scores[i] > scores[j] },
-	)
+	successParents = s.evaluator.SortParents(successParents, peer, taskTotalPieceCount)
 
 	peer.Log.Infof("scheduling success parent is %s", successParents[0].ID)
 	return successParents[0], true
