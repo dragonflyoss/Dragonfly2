@@ -146,12 +146,12 @@ func (o *objectStorage) Stop() error {
 
 // Initialize router of gin.
 func (o *objectStorage) initRouter(cfg *config.DaemonOption, logDir string) *gin.Engine {
-	// Set mode
+	// Set mode.
 	if !cfg.Verbose {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	// Logging to a file
+	// Logging to a file.
 	if !cfg.Console {
 		gin.DisableConsoleColor()
 		logDir := filepath.Join(logDir, "daemon")
@@ -161,11 +161,11 @@ func (o *objectStorage) initRouter(cfg *config.DaemonOption, logDir string) *gin
 
 	r := gin.New()
 
-	// Middleware
+	// Middleware.
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 
-	// Prometheus metrics
+	// Prometheus metrics.
 	p := ginprometheus.NewPrometheus(PrometheusSubsystemName)
 	// Prometheus metrics need to reduce label,
 	// refer to https://prometheus.io/docs/practices/instrumentation/#do-not-overuse-labels.
@@ -178,7 +178,7 @@ func (o *objectStorage) initRouter(cfg *config.DaemonOption, logDir string) *gin
 	}
 	p.Use(r)
 
-	// Opentelemetry
+	// Opentelemetry.
 	if cfg.Options.Telemetry.Jaeger != "" {
 		r.Use(otelgin.Middleware(OtelServiceName))
 	}
@@ -186,7 +186,10 @@ func (o *objectStorage) initRouter(cfg *config.DaemonOption, logDir string) *gin
 	// Health Check.
 	r.GET("/healthy", o.getHealth)
 
-	// Buckets
+	// Object Storage.
+	r.GET("/metadata", o.getObjectStorageMetadata)
+
+	// Buckets.
 	b := r.Group(RouterGroupBuckets)
 	b.POST(":id", o.createBucket)
 	b.GET(":id/metadatas", o.getObjectMetadatas)
@@ -201,6 +204,11 @@ func (o *objectStorage) initRouter(cfg *config.DaemonOption, logDir string) *gin
 // getHealth uses to check server health.
 func (o *objectStorage) getHealth(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, http.StatusText(http.StatusOK))
+}
+
+// getObjectStorageMetadata uses to get object storage metadata.
+func (o *objectStorage) getObjectStorageMetadata(ctx *gin.Context) {
+	ctx.JSON(http.StatusOK, o.objectStorageClient.GetMetadata(ctx))
 }
 
 // headObject uses to head object.

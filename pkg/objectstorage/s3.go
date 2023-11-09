@@ -36,6 +36,12 @@ import (
 type s3 struct {
 	// S3 client.
 	client *awss3.S3
+
+	// region is storage region.
+	region string
+
+	// endpoint is datacenter endpoint.
+	endpoint string
 }
 
 // New s3 instance.
@@ -47,8 +53,19 @@ func newS3(region, endpoint, accessKey, secretKey string, s3ForcePathStyle bool,
 	}
 
 	return &s3{
-		client: awss3.New(s, cfg.WithRegion(region), cfg.WithEndpoint(endpoint), cfg.WithS3ForcePathStyle(s3ForcePathStyle)),
+		client:   awss3.New(s, cfg.WithRegion(region), cfg.WithEndpoint(endpoint), cfg.WithS3ForcePathStyle(s3ForcePathStyle)),
+		region:   region,
+		endpoint: endpoint,
 	}, nil
+}
+
+// GetMetadata returns metadata of object storage.
+func (s *s3) GetMetadata(ctx context.Context) *Metadata {
+	return &Metadata{
+		Name:     ServiceNameOBS,
+		Region:   s.region,
+		Endpoint: s.endpoint,
+	}
 }
 
 // GetBucketMetadata returns metadata of bucket.

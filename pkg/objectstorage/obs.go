@@ -30,6 +30,12 @@ import (
 type obs struct {
 	// OBS client.
 	client *huaweiobs.ObsClient
+
+	// region is storage region.
+	region string
+
+	// endpoint is datacenter endpoint.
+	endpoint string
 }
 
 // New oss instance.
@@ -39,9 +45,16 @@ func newOBS(region, endpoint, accessKey, secretKey string, httpClient *http.Clie
 		return nil, fmt.Errorf("new obs client failed: %s", err)
 	}
 
-	return &obs{
-		client: client,
-	}, nil
+	return &obs{client, region, endpoint}, nil
+}
+
+// GetMetadata returns metadata of object storage.
+func (o *obs) GetMetadata(ctx context.Context) *Metadata {
+	return &Metadata{
+		Name:     ServiceNameOBS,
+		Region:   o.region,
+		Endpoint: o.endpoint,
+	}
 }
 
 // GetBucketMetadata returns metadata of bucket.
