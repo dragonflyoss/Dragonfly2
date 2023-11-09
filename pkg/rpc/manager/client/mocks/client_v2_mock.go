@@ -210,6 +210,26 @@ func (mr *MockV2MockRecorder) ListSchedulers(arg0, arg1 any, arg2 ...any) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSchedulers", reflect.TypeOf((*MockV2)(nil).ListSchedulers), varargs...)
 }
 
+// ListSeedPeers mocks base method.
+func (m *MockV2) ListSeedPeers(arg0 context.Context, arg1 *manager.ListSeedPeersRequest, arg2 ...grpc.CallOption) (*manager.ListSeedPeersResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ListSeedPeers", varargs...)
+	ret0, _ := ret[0].(*manager.ListSeedPeersResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListSeedPeers indicates an expected call of ListSeedPeers.
+func (mr *MockV2MockRecorder) ListSeedPeers(arg0, arg1 any, arg2 ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSeedPeers", reflect.TypeOf((*MockV2)(nil).ListSeedPeers), varargs...)
+}
+
 // UpdateScheduler mocks base method.
 func (m *MockV2) UpdateScheduler(arg0 context.Context, arg1 *manager.UpdateSchedulerRequest, arg2 ...grpc.CallOption) (*manager.Scheduler, error) {
 	m.ctrl.T.Helper()

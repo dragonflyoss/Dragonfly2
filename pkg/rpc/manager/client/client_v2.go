@@ -88,6 +88,9 @@ func GetV2ByNetAddrs(ctx context.Context, netAddrs []dfnet.NetAddr, opts ...grpc
 
 // V2 is the interface for v2 version of the grpc client.
 type V2 interface {
+	// List Seed peer configuration.
+	ListSeedPeers(context.Context, *managerv2.ListSeedPeersRequest, ...grpc.CallOption) (*managerv2.ListSeedPeersResponse, error)
+
 	// Update Seed peer configuration.
 	UpdateSeedPeer(context.Context, *managerv2.UpdateSeedPeerRequest, ...grpc.CallOption) (*managerv2.SeedPeer, error)
 
@@ -127,6 +130,14 @@ type v2 struct {
 	managerv2.ManagerClient
 	securityv1.CertificateClient
 	*grpc.ClientConn
+}
+
+// List acitve seed peers configuration.
+func (v *v2) ListSeedPeers(ctx context.Context, req *managerv2.ListSeedPeersRequest, opts ...grpc.CallOption) (*managerv2.ListSeedPeersResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
+	return v.ManagerClient.ListSeedPeers(ctx, req, opts...)
 }
 
 // Update SeedPeer configuration.

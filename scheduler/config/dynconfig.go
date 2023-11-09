@@ -247,10 +247,6 @@ func (d *dynconfig) GetApplications() ([]*managerv2.Application, error) {
 		return nil, err
 	}
 
-	if data.Applications == nil {
-		return nil, errors.New("invalid applications")
-	}
-
 	if len(data.Applications) == 0 {
 		return nil, errors.New("application not found")
 	}
@@ -263,10 +259,6 @@ func (d *dynconfig) GetSeedPeers() ([]*managerv2.SeedPeer, error) {
 	scheduler, err := d.GetScheduler()
 	if err != nil {
 		return nil, err
-	}
-
-	if scheduler.SeedPeers == nil {
-		return nil, errors.New("invalid seed peers")
 	}
 
 	if len(scheduler.SeedPeers) == 0 {

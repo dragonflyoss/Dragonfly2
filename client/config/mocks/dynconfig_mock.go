@@ -126,6 +126,21 @@ func (mr *MockDynconfigMockRecorder) GetSchedulers() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchedulers", reflect.TypeOf((*MockDynconfig)(nil).GetSchedulers))
 }
 
+// GetSeedPeers mocks base method.
+func (m *MockDynconfig) GetSeedPeers() ([]*manager.SeedPeer, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSeedPeers")
+	ret0, _ := ret[0].([]*manager.SeedPeer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSeedPeers indicates an expected call of GetSeedPeers.
+func (mr *MockDynconfigMockRecorder) GetSeedPeers() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSeedPeers", reflect.TypeOf((*MockDynconfig)(nil).GetSeedPeers))
+}
+
 // Notify mocks base method.
 func (m *MockDynconfig) Notify() error {
 	m.ctrl.T.Helper()
