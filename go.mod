@@ -10,7 +10,7 @@ require (
 	github.com/VividCortex/mysqlerr v1.0.0
 	github.com/aliyun/aliyun-oss-go-sdk v3.0.1+incompatible
 	github.com/appleboy/gin-jwt/v2 v2.9.1
-	github.com/aws/aws-sdk-go v1.47.4
+	github.com/aws/aws-sdk-go v1.47.9
 	github.com/bits-and-blooms/bitset v1.10.0
 	github.com/casbin/casbin/v2 v2.77.2
 	github.com/casbin/gorm-adapter/v3 v3.5.0
@@ -137,7 +137,6 @@ require (
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
-	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.3 // indirect
 	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
