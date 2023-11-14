@@ -107,10 +107,11 @@ func (s *scheduling) ScheduleCandidateParents(ctx context.Context, peer *resourc
 				// Send NeedBackToSourceResponse to peer.
 				peer.Log.Infof("send NeedBackToSourceResponse, because of peer's NeedBackToSource is %t and peer's schedule count is %d",
 					peer.NeedBackToSource.Load(), peer.ScheduleCount.Load())
+				description := fmt.Sprintf("peer's NeedBackToSource is %t", peer.NeedBackToSource.Load())
 				if err := stream.Send(&schedulerv2.AnnouncePeerResponse{
 					Response: &schedulerv2.AnnouncePeerResponse_NeedBackToSourceResponse{
 						NeedBackToSourceResponse: &schedulerv2.NeedBackToSourceResponse{
-							Description: fmt.Sprintf("peer's NeedBackToSource is %t", peer.NeedBackToSource.Load()),
+							Description: &description,
 						},
 					},
 				}); err != nil {
@@ -132,10 +133,11 @@ func (s *scheduling) ScheduleCandidateParents(ctx context.Context, peer *resourc
 
 				// Send NeedBackToSourceResponse to peer.
 				peer.Log.Infof("send NeedBackToSourceResponse, because of scheduling exceeded RetryBackToSourceLimit %d", s.config.RetryBackToSourceLimit)
+				description := "scheduling exceeded RetryBackToSourceLimit"
 				if err := stream.Send(&schedulerv2.AnnouncePeerResponse{
 					Response: &schedulerv2.AnnouncePeerResponse_NeedBackToSourceResponse{
 						NeedBackToSourceResponse: &schedulerv2.NeedBackToSourceResponse{
-							Description: "scheduling exceeded RetryBackToSourceLimit",
+							Description: &description,
 						},
 					},
 				}); err != nil {

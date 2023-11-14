@@ -232,6 +232,9 @@ func TestScheduling_New(t *testing.T) {
 }
 
 func TestScheduling_ScheduleCandidateParents(t *testing.T) {
+	needBackToSourceDescription := "peer's NeedBackToSource is true"
+	exceededLimitDescription := "scheduling exceeded RetryBackToSourceLimit"
+
 	tests := []struct {
 		name   string
 		mock   func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv2.Scheduler_AnnouncePeerServer, ma *schedulerv2mocks.MockScheduler_AnnouncePeerServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder)
@@ -294,7 +297,7 @@ func TestScheduling_ScheduleCandidateParents(t *testing.T) {
 				ma.Send(gomock.Eq(&schedulerv2.AnnouncePeerResponse{
 					Response: &schedulerv2.AnnouncePeerResponse_NeedBackToSourceResponse{
 						NeedBackToSourceResponse: &schedulerv2.NeedBackToSourceResponse{
-							Description: "peer's NeedBackToSource is true",
+							Description: &needBackToSourceDescription,
 						},
 					},
 				})).Return(errors.New("foo")).Times(1)
@@ -319,7 +322,7 @@ func TestScheduling_ScheduleCandidateParents(t *testing.T) {
 				ma.Send(gomock.Eq(&schedulerv2.AnnouncePeerResponse{
 					Response: &schedulerv2.AnnouncePeerResponse_NeedBackToSourceResponse{
 						NeedBackToSourceResponse: &schedulerv2.NeedBackToSourceResponse{
-							Description: "peer's NeedBackToSource is true",
+							Description: &needBackToSourceDescription,
 						},
 					},
 				})).Return(nil).Times(1)
@@ -361,7 +364,7 @@ func TestScheduling_ScheduleCandidateParents(t *testing.T) {
 					ma.Send(gomock.Eq(&schedulerv2.AnnouncePeerResponse{
 						Response: &schedulerv2.AnnouncePeerResponse_NeedBackToSourceResponse{
 							NeedBackToSourceResponse: &schedulerv2.NeedBackToSourceResponse{
-								Description: "scheduling exceeded RetryBackToSourceLimit",
+								Description: &exceededLimitDescription,
 							},
 						},
 					})).Return(errors.New("foo")).Times(1),
@@ -388,7 +391,7 @@ func TestScheduling_ScheduleCandidateParents(t *testing.T) {
 					ma.Send(gomock.Eq(&schedulerv2.AnnouncePeerResponse{
 						Response: &schedulerv2.AnnouncePeerResponse_NeedBackToSourceResponse{
 							NeedBackToSourceResponse: &schedulerv2.NeedBackToSourceResponse{
-								Description: "scheduling exceeded RetryBackToSourceLimit",
+								Description: &exceededLimitDescription,
 							},
 						},
 					})).Return(nil).Times(1),

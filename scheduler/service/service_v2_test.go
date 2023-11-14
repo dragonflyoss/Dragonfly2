@@ -1104,7 +1104,6 @@ func TestServiceV2_SyncProbes(t *testing.T) {
 											Disk:            mockV2Probe.Host.Disk,
 											Build:           mockV2Probe.Host.Build,
 										},
-										Description: "foo",
 									},
 								},
 							},
@@ -2130,6 +2129,78 @@ func TestServiceV2_handleDownloadPeerBackToSourceStartedRequest(t *testing.T) {
 	}
 }
 
+func TestServiceV2_handleRescheduleRequest(t *testing.T) {
+	tests := []struct {
+		name string
+		run  func(t *testing.T, svc *V2, peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder,
+			mp *resource.MockPeerManagerMockRecorder, ms *schedulingmocks.MockSchedulingMockRecorder)
+	}{
+		{
+			name: "peer can not be loaded",
+			run: func(t *testing.T, svc *V2, peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder,
+				mp *resource.MockPeerManagerMockRecorder, ms *schedulingmocks.MockSchedulingMockRecorder) {
+				gomock.InOrder(
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.Load(gomock.Eq(peer.ID)).Return(nil, false).Times(1),
+				)
+
+				assert := assert.New(t)
+				assert.ErrorIs(svc.handleRescheduleRequest(context.Background(), peer.ID), status.Errorf(codes.NotFound, "peer %s not found", peer.ID))
+			},
+		},
+		{
+			name: "reschedule failed",
+			run: func(t *testing.T, svc *V2, peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder,
+				mp *resource.MockPeerManagerMockRecorder, ms *schedulingmocks.MockSchedulingMockRecorder) {
+				gomock.InOrder(
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.Load(gomock.Eq(peer.ID)).Return(peer, true).Times(1),
+					ms.ScheduleCandidateParents(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("foo")).Times(1),
+				)
+
+				assert := assert.New(t)
+				assert.ErrorIs(svc.handleRescheduleRequest(context.Background(), peer.ID), status.Error(codes.FailedPrecondition, "foo"))
+			},
+		},
+		{
+			name: "reschedule succeeded",
+			run: func(t *testing.T, svc *V2, peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder,
+				mp *resource.MockPeerManagerMockRecorder, ms *schedulingmocks.MockSchedulingMockRecorder) {
+				gomock.InOrder(
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.Load(gomock.Eq(peer.ID)).Return(peer, true).Times(1),
+					ms.ScheduleCandidateParents(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1),
+				)
+
+				assert := assert.New(t)
+				assert.NoError(svc.handleRescheduleRequest(context.Background(), peer.ID))
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			scheduling := schedulingmocks.NewMockScheduling(ctl)
+			res := resource.NewMockResource(ctl)
+			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
+			storage := storagemocks.NewMockStorage(ctl)
+			networkTopology := networktopologymocks.NewMockNetworkTopology(ctl)
+			peerManager := resource.NewMockPeerManager(ctl)
+
+			mockHost := resource.NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
+			peer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
+			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, res, scheduling, dynconfig, storage, networkTopology)
+
+			tc.run(t, svc, peer, peerManager, res.EXPECT(), peerManager.EXPECT(), scheduling.EXPECT())
+		})
+	}
+}
+
 func TestServiceV2_handleDownloadPeerFinishedRequest(t *testing.T) {
 	tests := []struct {
 		name string
@@ -2887,7 +2958,7 @@ func TestServiceV2_handleDownloadPieceFailedRequest(t *testing.T) {
 		name string
 		req  *schedulerv2.DownloadPieceFailedRequest
 		run  func(t *testing.T, svc *V2, req *schedulerv2.DownloadPieceFailedRequest, peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder,
-			mp *resource.MockPeerManagerMockRecorder, ms *schedulingmocks.MockSchedulingMockRecorder)
+			mp *resource.MockPeerManagerMockRecorder)
 	}{
 		{
 			name: "peer can not be loaded",
@@ -2898,7 +2969,7 @@ func TestServiceV2_handleDownloadPieceFailedRequest(t *testing.T) {
 				Temporary: true,
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.DownloadPieceFailedRequest, peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder,
-				mp *resource.MockPeerManagerMockRecorder, ms *schedulingmocks.MockSchedulingMockRecorder) {
+				mp *resource.MockPeerManagerMockRecorder) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(peer.ID)).Return(nil, false).Times(1),
@@ -2917,7 +2988,7 @@ func TestServiceV2_handleDownloadPieceFailedRequest(t *testing.T) {
 				Temporary: false,
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.DownloadPieceFailedRequest, peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder,
-				mp *resource.MockPeerManagerMockRecorder, ms *schedulingmocks.MockSchedulingMockRecorder) {
+				mp *resource.MockPeerManagerMockRecorder) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(peer.ID)).Return(peer, true).Times(1),
@@ -2925,28 +2996,6 @@ func TestServiceV2_handleDownloadPieceFailedRequest(t *testing.T) {
 
 				assert := assert.New(t)
 				assert.ErrorIs(svc.handleDownloadPieceFailedRequest(context.Background(), peer.ID, req), status.Error(codes.FailedPrecondition, "download piece failed"))
-			},
-		},
-		{
-			name: "schedule failed",
-			req: &schedulerv2.DownloadPieceFailedRequest{
-				Piece: &commonv2.Piece{
-					ParentId: &mockSeedPeerID,
-				},
-				Temporary: true,
-			},
-			run: func(t *testing.T, svc *V2, req *schedulerv2.DownloadPieceFailedRequest, peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder,
-				mp *resource.MockPeerManagerMockRecorder, ms *schedulingmocks.MockSchedulingMockRecorder) {
-				gomock.InOrder(
-					mr.PeerManager().Return(peerManager).Times(1),
-					mp.Load(gomock.Eq(peer.ID)).Return(peer, true).Times(1),
-					ms.ScheduleCandidateParents(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("foo")).Times(1),
-				)
-
-				assert := assert.New(t)
-				assert.ErrorIs(svc.handleDownloadPieceFailedRequest(context.Background(), peer.ID, req), status.Error(codes.FailedPrecondition, "foo"))
-				assert.NotEqual(peer.UpdatedAt.Load(), 0)
-				assert.True(peer.BlockParents.Contains(req.Piece.GetParentId()))
 			},
 		},
 		{
@@ -2958,11 +3007,10 @@ func TestServiceV2_handleDownloadPieceFailedRequest(t *testing.T) {
 				Temporary: true,
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.DownloadPieceFailedRequest, peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder,
-				mp *resource.MockPeerManagerMockRecorder, ms *schedulingmocks.MockSchedulingMockRecorder) {
+				mp *resource.MockPeerManagerMockRecorder) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(peer.ID)).Return(peer, true).Times(1),
-					ms.ScheduleCandidateParents(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(req.Piece.GetParentId())).Return(nil, false).Times(1),
 				)
@@ -2983,11 +3031,10 @@ func TestServiceV2_handleDownloadPieceFailedRequest(t *testing.T) {
 				Temporary: true,
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.DownloadPieceFailedRequest, peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder,
-				mp *resource.MockPeerManagerMockRecorder, ms *schedulingmocks.MockSchedulingMockRecorder) {
+				mp *resource.MockPeerManagerMockRecorder) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(peer.ID)).Return(peer, true).Times(1),
-					ms.ScheduleCandidateParents(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(req.Piece.GetParentId())).Return(peer, true).Times(1),
 				)
@@ -3020,7 +3067,7 @@ func TestServiceV2_handleDownloadPieceFailedRequest(t *testing.T) {
 			peer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, res, scheduling, dynconfig, storage, networkTopology)
 
-			tc.run(t, svc, tc.req, peer, peerManager, res.EXPECT(), peerManager.EXPECT(), scheduling.EXPECT())
+			tc.run(t, svc, tc.req, peer, peerManager, res.EXPECT(), peerManager.EXPECT())
 		})
 	}
 }
