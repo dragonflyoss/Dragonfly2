@@ -132,6 +132,12 @@ func (v *V2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePeerServer) error
 				logger.Error(err)
 				return err
 			}
+		case *schedulerv2.AnnouncePeerRequest_RescheduleRequest:
+			logger.Infof("receive AnnouncePeerRequest_RescheduleRequest: %#v", announcePeerRequest.RescheduleRequest)
+			if err := v.handleRescheduleRequest(ctx, req.GetPeerId()); err != nil {
+				logger.Error(err)
+				return err
+			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerFinishedRequest:
 			logger.Infof("receive AnnouncePeerRequest_DownloadPeerFinishedRequest: %#v", announcePeerRequest.DownloadPeerFinishedRequest)
 			if err := v.handleDownloadPeerFinishedRequest(ctx, req.GetPeerId()); err != nil {
@@ -949,6 +955,20 @@ func (v *V2) handleDownloadPeerBackToSourceStartedRequest(ctx context.Context, p
 	return nil
 }
 
+// handleRescheduleRequest handles RescheduleRequest of AnnouncePeerRequest.
+func (v *V2) handleRescheduleRequest(ctx context.Context, peerID string) error {
+	peer, loaded := v.resource.PeerManager().Load(peerID)
+	if !loaded {
+		return status.Errorf(codes.NotFound, "peer %s not found", peerID)
+	}
+
+	if err := v.scheduling.ScheduleCandidateParents(ctx, peer, peer.BlockParents); err != nil {
+		return status.Error(codes.FailedPrecondition, err.Error())
+	}
+
+	return nil
+}
+
 // handleDownloadPeerFinishedRequest handles DownloadPeerFinishedRequest of AnnouncePeerRequest.
 func (v *V2) handleDownloadPeerFinishedRequest(ctx context.Context, peerID string) error {
 	peer, loaded := v.resource.PeerManager().Load(peerID)
@@ -1192,10 +1212,6 @@ func (v *V2) handleDownloadPieceFailedRequest(ctx context.Context, peerID string
 		// Handle peer with piece temporary failed request.
 		peer.UpdatedAt.Store(time.Now())
 		peer.BlockParents.Add(req.Piece.GetParentId())
-		if err := v.scheduling.ScheduleCandidateParents(ctx, peer, peer.BlockParents); err != nil {
-			return status.Error(codes.FailedPrecondition, err.Error())
-		}
-
 		if parent, loaded := v.resource.PeerManager().Load(req.Piece.GetParentId()); loaded {
 			parent.Host.UploadFailedCount.Inc()
 		}
