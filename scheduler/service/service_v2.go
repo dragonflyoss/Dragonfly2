@@ -1203,16 +1203,16 @@ func (v *V2) handleDownloadPieceFailedRequest(ctx context.Context, peerID string
 	}
 
 	// Collect DownloadPieceCount and DownloadPieceFailureCount metrics.
-	metrics.DownloadPieceCount.WithLabelValues(req.Piece.GetTrafficType().String(), peer.Task.Type.String(),
+	metrics.DownloadPieceCount.WithLabelValues(commonv2.TrafficType_REMOTE_PEER.String(), peer.Task.Type.String(),
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
-	metrics.DownloadPieceFailureCount.WithLabelValues(req.Piece.GetTrafficType().String(), peer.Task.Type.String(),
+	metrics.DownloadPieceFailureCount.WithLabelValues(commonv2.TrafficType_REMOTE_PEER.String(), peer.Task.Type.String(),
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
 	if req.Temporary {
 		// Handle peer with piece temporary failed request.
 		peer.UpdatedAt.Store(time.Now())
-		peer.BlockParents.Add(req.Piece.GetParentId())
-		if parent, loaded := v.resource.PeerManager().Load(req.Piece.GetParentId()); loaded {
+		peer.BlockParents.Add(req.GetParentId())
+		if parent, loaded := v.resource.PeerManager().Load(req.GetParentId()); loaded {
 			parent.Host.UploadFailedCount.Inc()
 		}
 
@@ -1238,9 +1238,9 @@ func (v *V2) handleDownloadPieceBackToSourceFailedRequest(ctx context.Context, p
 	peer.Task.UpdatedAt.Store(time.Now())
 
 	// Collect DownloadPieceCount and DownloadPieceFailureCount metrics.
-	metrics.DownloadPieceCount.WithLabelValues(req.Piece.GetTrafficType().String(), peer.Task.Type.String(),
+	metrics.DownloadPieceCount.WithLabelValues(commonv2.TrafficType_BACK_TO_SOURCE.String(), peer.Task.Type.String(),
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
-	metrics.DownloadPieceFailureCount.WithLabelValues(req.Piece.GetTrafficType().String(), peer.Task.Type.String(),
+	metrics.DownloadPieceFailureCount.WithLabelValues(commonv2.TrafficType_BACK_TO_SOURCE.String(), peer.Task.Type.String(),
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
 	return status.Error(codes.Internal, "download piece from source failed")

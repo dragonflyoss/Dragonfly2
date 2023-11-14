@@ -2963,9 +2963,7 @@ func TestServiceV2_handleDownloadPieceFailedRequest(t *testing.T) {
 		{
 			name: "peer can not be loaded",
 			req: &schedulerv2.DownloadPieceFailedRequest{
-				Piece: &commonv2.Piece{
-					ParentId: &mockSeedPeerID,
-				},
+				ParentId:  mockSeedPeerID,
 				Temporary: true,
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.DownloadPieceFailedRequest, peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder,
@@ -2982,9 +2980,7 @@ func TestServiceV2_handleDownloadPieceFailedRequest(t *testing.T) {
 		{
 			name: "temporary is false",
 			req: &schedulerv2.DownloadPieceFailedRequest{
-				Piece: &commonv2.Piece{
-					ParentId: &mockSeedPeerID,
-				},
+				ParentId:  mockSeedPeerID,
 				Temporary: false,
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.DownloadPieceFailedRequest, peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder,
@@ -3001,9 +2997,7 @@ func TestServiceV2_handleDownloadPieceFailedRequest(t *testing.T) {
 		{
 			name: "parent can not be loaded",
 			req: &schedulerv2.DownloadPieceFailedRequest{
-				Piece: &commonv2.Piece{
-					ParentId: &mockSeedPeerID,
-				},
+				ParentId:  mockSeedPeerID,
 				Temporary: true,
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.DownloadPieceFailedRequest, peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder,
@@ -3012,22 +3006,20 @@ func TestServiceV2_handleDownloadPieceFailedRequest(t *testing.T) {
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(peer.ID)).Return(peer, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.Load(gomock.Eq(req.Piece.GetParentId())).Return(nil, false).Times(1),
+					mp.Load(gomock.Eq(req.GetParentId())).Return(nil, false).Times(1),
 				)
 
 				assert := assert.New(t)
 				assert.NoError(svc.handleDownloadPieceFailedRequest(context.Background(), peer.ID, req))
 				assert.NotEqual(peer.UpdatedAt.Load(), 0)
-				assert.True(peer.BlockParents.Contains(req.Piece.GetParentId()))
+				assert.True(peer.BlockParents.Contains(req.GetParentId()))
 				assert.NotEqual(peer.Task.UpdatedAt.Load(), 0)
 			},
 		},
 		{
 			name: "parent can be loaded",
 			req: &schedulerv2.DownloadPieceFailedRequest{
-				Piece: &commonv2.Piece{
-					ParentId: &mockSeedPeerID,
-				},
+				ParentId:  mockSeedPeerID,
 				Temporary: true,
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.DownloadPieceFailedRequest, peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder,
@@ -3036,13 +3028,13 @@ func TestServiceV2_handleDownloadPieceFailedRequest(t *testing.T) {
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(peer.ID)).Return(peer, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
-					mp.Load(gomock.Eq(req.Piece.GetParentId())).Return(peer, true).Times(1),
+					mp.Load(gomock.Eq(req.GetParentId())).Return(peer, true).Times(1),
 				)
 
 				assert := assert.New(t)
 				assert.NoError(svc.handleDownloadPieceFailedRequest(context.Background(), peer.ID, req))
 				assert.NotEqual(peer.UpdatedAt.Load(), 0)
-				assert.True(peer.BlockParents.Contains(req.Piece.GetParentId()))
+				assert.True(peer.BlockParents.Contains(req.GetParentId()))
 				assert.NotEqual(peer.Task.UpdatedAt.Load(), 0)
 				assert.Equal(peer.Host.UploadFailedCount.Load(), int64(1))
 			},
@@ -3096,7 +3088,7 @@ func TestServiceV2_handleDownloadPieceBackToSourceFailedRequest(t *testing.T) {
 		{
 			name: "peer can be loaded",
 			req: &schedulerv2.DownloadPieceBackToSourceFailedRequest{
-				Piece: &commonv2.Piece{},
+				PieceNumber: mockPiece.Number,
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.DownloadPieceBackToSourceFailedRequest, peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder,
 				mp *resource.MockPeerManagerMockRecorder) {
