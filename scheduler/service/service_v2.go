@@ -993,23 +993,6 @@ func (v *V2) handleDownloadPeerBackToSourceFinishedRequest(ctx context.Context, 
 		if err := peer.Task.FSM.Event(ctx, resource.TaskEventDownloadSucceeded); err != nil {
 			return status.Error(codes.Internal, err.Error())
 		}
-
-		// If the task size scope is tiny, scheduler needs to download the tiny file from peer and
-		// store the data in task DirectPiece.
-		if peer.Task.SizeScope() == commonv2.SizeScope_TINY {
-			data, err := peer.DownloadTinyFile()
-			if err != nil {
-				peer.Log.Errorf("download failed: %s", err.Error())
-				return nil
-			}
-
-			if len(data) != int(peer.Task.ContentLength.Load()) {
-				peer.Log.Errorf("data length %d is not equal content length %d", len(data), peer.Task.ContentLength.Load())
-				return nil
-			}
-
-			peer.Task.DirectPiece = data
-		}
 	}
 
 	// Collect DownloadPeerCount and DownloadPeerDuration metrics.
@@ -1388,76 +1371,7 @@ func (v *V2) schedule(ctx context.Context, peer *resource.Peer) error {
 		}
 
 		return nil
-	case commonv2.SizeScope_TINY:
-		// If the task.DirectPiece of the task can be reused, the data of
-		// the task will be included in the TinyTaskResponse.
-		// If the task.DirectPiece cannot be reused,
-		// it will be scheduled as a Normal Task.
-		peer.Log.Info("scheduling as SizeScope_TINY")
-		if !peer.Task.CanReuseDirectPiece() {
-			peer.Log.Warnf("can not reuse direct piece %d %d", len(peer.Task.DirectPiece), peer.Task.ContentLength.Load())
-			break
-		}
-
-		stream, loaded := peer.LoadAnnouncePeerStream()
-		if !loaded {
-			return status.Error(codes.NotFound, "AnnouncePeerStream not found")
-		}
-
-		if err := peer.FSM.Event(ctx, resource.PeerEventRegisterTiny); err != nil {
-			return status.Error(codes.Internal, err.Error())
-		}
-
-		if err := stream.Send(&schedulerv2.AnnouncePeerResponse{
-			Response: &schedulerv2.AnnouncePeerResponse_TinyTaskResponse{
-				TinyTaskResponse: &schedulerv2.TinyTaskResponse{
-					Content: peer.Task.DirectPiece,
-				},
-			},
-		}); err != nil {
-			return status.Error(codes.Internal, err.Error())
-		}
-
-		return nil
-	case commonv2.SizeScope_SMALL:
-		// If a parent with the state of PeerStateSucceeded can be found in the task,
-		// its information will be returned. If a parent with the state of
-		// PeerStateSucceeded cannot be found in the task,
-		// it will be scheduled as a Normal Task.
-		peer.Log.Info("scheduling as SizeScope_SMALL")
-		parent, found := v.scheduling.FindSuccessParent(ctx, peer, set.NewSafeSet[string]())
-		if !found {
-			peer.Log.Warn("candidate parents not found")
-			break
-		}
-
-		// Delete inedges of peer.
-		if err := peer.Task.DeletePeerInEdges(peer.ID); err != nil {
-			return status.Error(codes.Internal, err.Error())
-		}
-
-		// Add edges between success parent and peer.
-		if err := peer.Task.AddPeerEdge(parent, peer); err != nil {
-			return status.Error(codes.Internal, err.Error())
-		}
-
-		stream, loaded := peer.LoadAnnouncePeerStream()
-		if !loaded {
-			return status.Error(codes.NotFound, "AnnouncePeerStream not found")
-		}
-
-		if err := peer.FSM.Event(ctx, resource.PeerEventRegisterSmall); err != nil {
-			return status.Error(codes.Internal, err.Error())
-		}
-
-		if err := stream.Send(&schedulerv2.AnnouncePeerResponse{
-			Response: scheduling.ConstructSuccessSmallTaskResponse(parent),
-		}); err != nil {
-			return status.Error(codes.Internal, err.Error())
-		}
-
-		return nil
-	case commonv2.SizeScope_NORMAL, commonv2.SizeScope_UNKNOW:
+	case commonv2.SizeScope_NORMAL, commonv2.SizeScope_TINY, commonv2.SizeScope_SMALL, commonv2.SizeScope_UNKNOW:
 	default:
 		return status.Errorf(codes.FailedPrecondition, "invalid size cope %#v", sizeScope)
 	}
