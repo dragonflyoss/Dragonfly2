@@ -19,6 +19,7 @@ package resolver
 import (
 	"fmt"
 	"reflect"
+	"sync"
 
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/resolver"
@@ -43,11 +44,12 @@ type SeedPeerResolver struct {
 	addrs     []resolver.Address
 	cc        resolver.ClientConn
 	dynconfig config.DynconfigInterface
+	mu        *sync.Mutex
 }
 
 // RegisterSeedPeer register the dragonfly resovler builder to the grpc with custom schema.
 func RegisterSeedPeer(dynconfig config.DynconfigInterface) {
-	resolver.Register(&SeedPeerResolver{dynconfig: dynconfig})
+	resolver.Register(&SeedPeerResolver{dynconfig: dynconfig, mu: &sync.Mutex{}})
 }
 
 // Scheme returns the resolver scheme.
@@ -71,6 +73,12 @@ func (r *SeedPeerResolver) Build(target resolver.Target, cc resolver.ClientConn,
 // to refresh addresses from manager when all SubConn fail.
 // So here we don't trigger resolving to reduce the pressure of manager.
 func (r *SeedPeerResolver) ResolveNow(resolver.ResolveNowOptions) {
+	// Avoid concurrent GetResolveSeedPeerAddrs calls.
+	if !r.mu.TryLock() {
+		return
+	}
+	defer r.mu.Unlock()
+
 	addrs, err := r.dynconfig.GetResolveSeedPeerAddrs()
 	if err != nil {
 		slogger.Errorf("resolve addresses error %v", err)

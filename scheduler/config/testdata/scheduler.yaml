@@ -59,6 +59,7 @@ manager:
 
 seedPeer:
   enable: true
+  taskDownloadTimeout: 12h
 
 job:
   enable: true

@@ -840,7 +840,7 @@ func (v *V1) triggerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, 
 
 // triggerSeedPeerTask starts to trigger seed peer task.
 func (v *V1) triggerSeedPeerTask(ctx context.Context, rg *http.Range, task *resource.Task) {
-	ctx, cancel := context.WithCancel(trace.ContextWithSpan(context.Background(), trace.SpanFromContext(ctx)))
+	ctx, cancel := context.WithTimeout(trace.ContextWithSpan(context.Background(), trace.SpanFromContext(ctx)), v.config.SeedPeer.TaskDownloadTimeout)
 	defer cancel()
 
 	task.Log.Info("trigger seed peer")

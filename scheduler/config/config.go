@@ -217,6 +217,9 @@ type ManagerConfig struct {
 type SeedPeerConfig struct {
 	// Enable is to enable seed peer as P2P peer.
 	Enable bool `yaml:"enable" mapstructure:"enable"`
+
+	// TaskDownloadTimeout is timeout of downloading task by seed peer.
+	TaskDownloadTimeout time.Duration `yaml:"taskDownloadTimeout" mapstructure:"taskDownloadTimeout"`
 }
 
 type KeepAliveConfig struct {
@@ -416,7 +419,8 @@ func New() *Config {
 			},
 		},
 		SeedPeer: SeedPeerConfig{
-			Enable: true,
+			Enable:              true,
+			TaskDownloadTimeout: DefaultSeedPeerTaskDownloadTimeout,
 		},
 		Job: JobConfig{
 			Enable:             true,
@@ -568,6 +572,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Manager.KeepAlive.Interval <= 0 {
 		return errors.New("manager requires parameter keepAlive interval")
+	}
+
+	if cfg.SeedPeer.TaskDownloadTimeout <= 0 {
+		return errors.New("seedPeer requires parameter taskDownloadTimeout")
 	}
 
 	if cfg.Job.Enable {

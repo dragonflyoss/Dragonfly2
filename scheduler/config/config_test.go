@@ -136,7 +136,8 @@ func TestConfig_Load(t *testing.T) {
 			},
 		},
 		SeedPeer: SeedPeerConfig{
-			Enable: true,
+			Enable:              true,
+			TaskDownloadTimeout: 12 * time.Hour,
 		},
 		Host: HostConfig{
 			IDC:      "foo",
@@ -558,6 +559,20 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "manager requires parameter keepAlive interval")
+			},
+		},
+		{
+			name:   "seedPeer requires parameter taskDownloadTimeout",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Job = mockJobConfig
+				cfg.SeedPeer.TaskDownloadTimeout = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "seedPeer requires parameter taskDownloadTimeout")
 			},
 		},
 		{

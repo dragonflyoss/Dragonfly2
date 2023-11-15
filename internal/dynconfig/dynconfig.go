@@ -79,14 +79,7 @@ func New[T any](client ManagerClient, cachePath string, expire time.Duration) (D
 
 // Refresh refreshes dynconfig in cache.
 func (d *dynconfig[T]) Refresh() error {
-	// Avoid hot reload.
-	if d.mu.TryLock() {
-		defer d.mu.Unlock()
-		return d.load()
-	}
-
-	// If reload is in progress, return nil.
-	return nil
+	return d.load()
 }
 
 // Get dynamic config.
@@ -115,6 +108,12 @@ func (d *dynconfig[T]) Get() (*T, error) {
 
 // Load dynamic config from manager.
 func (d *dynconfig[T]) load() error {
+	// If another load is in progress, return directly.
+	if !d.mu.TryLock() {
+		return errors.New("another load is in progress")
+	}
+	defer d.mu.Unlock()
+
 	rawData, err := d.client.Get()
 	if err != nil {
 		return err

@@ -18,6 +18,7 @@ package resolver
 
 import (
 	"reflect"
+	"sync"
 
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/resolver"
@@ -42,11 +43,12 @@ type SchedulerResolver struct {
 	addrs     []resolver.Address
 	cc        resolver.ClientConn
 	dynconfig config.Dynconfig
+	mu        *sync.Mutex
 }
 
 // RegisterScheduler registers the dragonfly resolver builder to the grpc with custom schema.
 func RegisterScheduler(dynconfig config.Dynconfig) {
-	resolver.Register(&SchedulerResolver{dynconfig: dynconfig})
+	resolver.Register(&SchedulerResolver{dynconfig: dynconfig, mu: &sync.Mutex{}})
 }
 
 // Scheme returns the resolver scheme.
@@ -70,6 +72,12 @@ func (r *SchedulerResolver) Build(target resolver.Target, cc resolver.ClientConn
 // to refresh addresses from manager when all SubConn fail.
 // So here we don't trigger resolving to reduce the pressure of manager.
 func (r *SchedulerResolver) ResolveNow(resolver.ResolveNowOptions) {
+	// Avoid concurrent GetResolveSchedulerAddrs calls.
+	if !r.mu.TryLock() {
+		return
+	}
+	defer r.mu.Unlock()
+
 	addrs, err := r.dynconfig.GetResolveSchedulerAddrs()
 	if err != nil {
 		plogger.Errorf("resolve addresses error %v", err)

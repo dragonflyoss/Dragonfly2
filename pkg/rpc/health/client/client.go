@@ -68,6 +68,9 @@ func GetClient(ctx context.Context, target string, opts ...grpc.DialOption) (Cli
 
 // Check checks health of grpc server.
 func Check(ctx context.Context, target string, opts ...grpc.DialOption) error {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
 	healthClient, err := GetClient(ctx, target, opts...)
 	if err != nil {
 		return err
