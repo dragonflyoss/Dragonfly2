@@ -76,8 +76,8 @@ func NewEvaluatorBase() Evaluator {
 	return &evaluatorBase{}
 }
 
-// SortParents sort parents by evaluating multiple feature scores.
-func (eb *evaluatorBase) SortParents(parents []*resource.Peer, child *resource.Peer, totalPieceCount int32) []*resource.Peer {
+// EvaluateParents sort parents by evaluating multiple feature scores.
+func (eb *evaluatorBase) EvaluateParents(parents []*resource.Peer, child *resource.Peer, totalPieceCount int32) []*resource.Peer {
 	sort.Slice(
 		parents,
 		func(i, j int) bool {

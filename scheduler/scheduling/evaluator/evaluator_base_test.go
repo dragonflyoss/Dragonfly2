@@ -177,7 +177,7 @@ func TestEvaluatorBase_NewEvaluatorBase(t *testing.T) {
 	}
 }
 
-func TestEvaluatorBase_SortParents(t *testing.T) {
+func TestEvaluatorBase_EvaluateParents(t *testing.T) {
 	tests := []struct {
 		name            string
 		parents         []*resource.Peer
@@ -272,7 +272,7 @@ func TestEvaluatorBase_SortParents(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			eb := NewEvaluatorBase()
 			tc.mock(tc.parents, tc.child)
-			tc.expect(t, eb.SortParents(tc.parents, tc.child, tc.totalPieceCount))
+			tc.expect(t, eb.EvaluateParents(tc.parents, tc.child, tc.totalPieceCount))
 		})
 	}
 }
