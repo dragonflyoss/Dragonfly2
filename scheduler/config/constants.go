@@ -125,6 +125,11 @@ const (
 )
 
 const (
+	// DefaultSeedTaskDownloadTimeout is default timeout of downloading task by seed peer.
+	DefaultSeedPeerTaskDownloadTimeout = 10 * time.Hour
+)
+
+const (
 	// DefaultJobGlobalWorkerNum is default global worker number for job.
 	DefaultJobGlobalWorkerNum = 500
 

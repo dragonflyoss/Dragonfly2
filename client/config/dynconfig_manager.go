@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sync"
 	"time"
 
 	"google.golang.org/grpc"
@@ -53,6 +54,7 @@ type dynconfigManager struct {
 	cachePath            string
 	transportCredentials credentials.TransportCredentials
 	schedulerClusterID   uint64
+	mu                   sync.Mutex
 }
 
 // newDynconfigManager returns a new manager dynconfig instence.
@@ -74,6 +76,7 @@ func newDynconfigManager(cfg *DaemonOption, rawManagerClient managerclient.V1, c
 		cachePath:            cachePath,
 		Dynconfig:            d,
 		transportCredentials: creds,
+		mu:                   sync.Mutex{},
 	}, nil
 }
 
@@ -201,6 +204,12 @@ func (d *dynconfigManager) GetObjectStorage() (*managerv1.ObjectStorage, error) 
 
 // Refresh refreshes dynconfig in cache.
 func (d *dynconfigManager) Refresh() error {
+	// If another load is in progress, return directly.
+	if !d.mu.TryLock() {
+		return nil
+	}
+	defer d.mu.Unlock()
+
 	if err := d.Dynconfig.Refresh(); err != nil {
 		return err
 	}

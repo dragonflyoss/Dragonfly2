@@ -74,6 +74,11 @@ var (
 		BackToSourceCount:      int(mockTaskBackToSourceLimit),
 	}
 
+	mockSeedPeerConfig = config.SeedPeerConfig{
+		Enable:              true,
+		TaskDownloadTimeout: 1 * time.Hour,
+	}
+
 	mockNetworkTopologyConfig = config.NetworkTopologyConfig{
 		Enable:          true,
 		CollectInterval: 2 * time.Hour,
@@ -3850,7 +3855,7 @@ func TestServiceV1_triggerSeedPeerTask(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			task := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
 			peer := resource.NewPeer(mockPeerID, mockResourceConfig, task, mockHost)
-			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig}, res, scheduling, dynconfig, storage, networkTopology)
+			svc := NewV1(&config.Config{Scheduler: mockSchedulerConfig, SeedPeer: mockSeedPeerConfig}, res, scheduling, dynconfig, storage, networkTopology)
 
 			tc.mock(task, peer, seedPeer, res.EXPECT(), seedPeer.EXPECT())
 			svc.triggerSeedPeerTask(context.Background(), &mockPeerRange, task)

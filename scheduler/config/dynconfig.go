@@ -26,6 +26,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"google.golang.org/grpc"
@@ -114,6 +115,7 @@ type dynconfig struct {
 	done                 chan struct{}
 	cachePath            string
 	transportCredentials credentials.TransportCredentials
+	mu                   *sync.Mutex
 }
 
 // DynconfigOption is a functional option for configuring the dynconfig.
@@ -135,6 +137,7 @@ func NewDynconfig(rawManagerClient managerclient.V2, cacheDir string, cfg *Confi
 		observers: map[Observer]struct{}{},
 		done:      make(chan struct{}),
 		cachePath: cachePath,
+		mu:        &sync.Mutex{},
 	}
 
 	for _, opt := range options {
@@ -314,6 +317,12 @@ func (d *dynconfig) GetSchedulerClusterClientConfig() (types.SchedulerClusterCli
 
 // Refresh refreshes dynconfig in cache.
 func (d *dynconfig) Refresh() error {
+	// If another load is in progress, return directly.
+	if !d.mu.TryLock() {
+		return nil
+	}
+	defer d.mu.Unlock()
+
 	if err := d.Dynconfig.Refresh(); err != nil {
 		return err
 	}
