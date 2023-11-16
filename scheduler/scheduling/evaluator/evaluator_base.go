@@ -18,6 +18,7 @@ package evaluator
 
 import (
 	"math/big"
+	"sort"
 	"strings"
 
 	"github.com/montanaflynn/stats"
@@ -75,8 +76,20 @@ func NewEvaluatorBase() Evaluator {
 	return &evaluatorBase{}
 }
 
-// The larger the value after evaluation, the higher the priority.
-func (eb *evaluatorBase) Evaluate(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
+// EvaluateParents sort parents by evaluating multiple feature scores.
+func (eb *evaluatorBase) EvaluateParents(parents []*resource.Peer, child *resource.Peer, totalPieceCount int32) []*resource.Peer {
+	sort.Slice(
+		parents,
+		func(i, j int) bool {
+			return evaluate(parents[i], child, totalPieceCount) > evaluate(parents[j], child, totalPieceCount)
+		},
+	)
+
+	return parents
+}
+
+// The larger the value, the higher the priority.
+func evaluate(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
 	parentLocation := parent.Host.Network.Location
 	parentIDC := parent.Host.Network.IDC
 	childLocation := child.Host.Network.Location
