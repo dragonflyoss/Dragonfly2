@@ -124,7 +124,7 @@ func (t *localSubTaskStore) WritePiece(ctx context.Context, req *WritePieceReque
 	}
 
 	t.Debugf("wrote %d bytes to file %s, piece %d, start %d, length: %d",
-		n, t.DataFilePath, req.Num, req.Range.Start, req.Range.Length)
+		n, t.parent.DataFilePath, req.Num, req.Range.Start, req.Range.Length)
 	t.Lock()
 	defer t.Unlock()
 	// double check
