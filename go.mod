@@ -51,7 +51,7 @@ require (
 	github.com/mdlayher/vsock v1.2.1
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/montanaflynn/stats v0.7.1
-	github.com/onsi/ginkgo/v2 v2.13.0
+	github.com/onsi/ginkgo/v2 v2.13.1
 	github.com/onsi/gomega v1.29.0
 	github.com/opencontainers/image-spec v1.0.2
 	github.com/orcaman/concurrent-map/v2 v2.0.1
@@ -230,7 +230,7 @@ require (
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/term v0.14.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	golang.org/x/tools v0.12.0 // indirect
+	golang.org/x/tools v0.14.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230822172742-b8732ec3820d // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20230822172742-b8732ec3820d // indirect
