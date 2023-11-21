@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"reflect"
 	"strings"
 	"time"
@@ -64,9 +65,9 @@ func New(cfg *Config, queue Queue) (*Job, error) {
 	}
 
 	server, err := machinery.NewServer(&machineryv1config.Config{
-		Broker:          fmt.Sprintf("redis://%s@%s/%d", cfg.Password, strings.Join(cfg.Addrs, ","), cfg.BrokerDB),
+		Broker:          fmt.Sprintf("redis://%s@%s/%d", url.QueryEscape(cfg.Password), strings.Join(cfg.Addrs, ","), cfg.BrokerDB),
 		DefaultQueue:    queue.String(),
-		ResultBackend:   fmt.Sprintf("redis://%s@%s/%d", cfg.Password, strings.Join(cfg.Addrs, ","), cfg.BackendDB),
+		ResultBackend:   fmt.Sprintf("redis://%s@%s/%d", url.QueryEscape(cfg.Password), strings.Join(cfg.Addrs, ","), cfg.BackendDB),
 		ResultsExpireIn: DefaultResultsExpireIn,
 		Redis: &machineryv1config.RedisConfig{
 			MasterName:     cfg.MasterName,
