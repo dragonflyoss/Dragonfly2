@@ -1264,7 +1264,7 @@ func (v *V2) handleResource(ctx context.Context, stream schedulerv2.Scheduler_An
 	task, loaded := v.resource.TaskManager().Load(taskID)
 	if !loaded {
 		options := []resource.TaskOption{resource.WithPieceLength(int32(download.GetPieceLength()))}
-		if download.Digest != nil {
+		if download.GetDigest() != "" {
 			d, err := digest.Parse(download.GetDigest())
 			if err != nil {
 				return nil, nil, nil, status.Error(codes.InvalidArgument, err.Error())
@@ -1287,7 +1287,7 @@ func (v *V2) handleResource(ctx context.Context, stream schedulerv2.Scheduler_An
 	peer, loaded := v.resource.PeerManager().Load(peerID)
 	if !loaded {
 		options := []resource.PeerOption{resource.WithPriority(download.GetPriority()), resource.WithAnnouncePeerStream(stream)}
-		if download.Range != nil {
+		if download.GetRange() != nil {
 			options = append(options, resource.WithRange(http.Range{Start: int64(download.Range.GetStart()), Length: int64(download.Range.GetLength())}))
 		}
 
