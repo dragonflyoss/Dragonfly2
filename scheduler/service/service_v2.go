@@ -219,8 +219,8 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 	// Set range to response.
 	if peer.Range != nil {
 		resp.Range = &commonv2.Range{
-			Start:  peer.Range.Start,
-			Length: peer.Range.Length,
+			Start:  uint64(peer.Range.Start),
+			Length: uint64(peer.Range.Length),
 		}
 	}
 
@@ -233,7 +233,7 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 		}
 
 		respPiece := &commonv2.Piece{
-			Number:      piece.Number,
+			Number:      uint32(piece.Number),
 			ParentId:    &piece.ParentID,
 			Offset:      piece.Offset,
 			Length:      piece.Length,
@@ -259,12 +259,12 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 		Application:   &peer.Task.Application,
 		Filters:       peer.Task.Filters,
 		Header:        peer.Task.Header,
-		PieceLength:   peer.Task.PieceLength,
-		ContentLength: peer.Task.ContentLength.Load(),
-		PieceCount:    peer.Task.TotalPieceCount.Load(),
+		PieceLength:   uint32(peer.Task.PieceLength),
+		ContentLength: uint64(peer.Task.ContentLength.Load()),
+		PieceCount:    uint32(peer.Task.TotalPieceCount.Load()),
 		SizeScope:     peer.Task.SizeScope(),
 		State:         peer.Task.FSM.Current(),
-		PeerCount:     int32(peer.Task.PeerCount()),
+		PeerCount:     uint32(peer.Task.PeerCount()),
 		CreatedAt:     timestamppb.New(peer.Task.CreatedAt.Load()),
 		UpdatedAt:     timestamppb.New(peer.Task.UpdatedAt.Load()),
 	}
@@ -284,7 +284,7 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 		}
 
 		respPiece := &commonv2.Piece{
-			Number:      piece.Number,
+			Number:      uint32(piece.Number),
 			ParentId:    &piece.ParentID,
 			Offset:      piece.Offset,
 			Length:      piece.Length,
@@ -412,12 +412,12 @@ func (v *V2) StatTask(ctx context.Context, req *schedulerv2.StatTaskRequest) (*c
 		Application:   &task.Application,
 		Filters:       task.Filters,
 		Header:        task.Header,
-		PieceLength:   task.PieceLength,
-		ContentLength: task.ContentLength.Load(),
-		PieceCount:    task.TotalPieceCount.Load(),
+		PieceLength:   uint32(task.PieceLength),
+		ContentLength: uint64(task.ContentLength.Load()),
+		PieceCount:    uint32(task.TotalPieceCount.Load()),
 		SizeScope:     task.SizeScope(),
 		State:         task.FSM.Current(),
-		PeerCount:     int32(task.PeerCount()),
+		PeerCount:     uint32(task.PeerCount()),
 		CreatedAt:     timestamppb.New(task.CreatedAt.Load()),
 		UpdatedAt:     timestamppb.New(task.UpdatedAt.Load()),
 	}
@@ -437,7 +437,7 @@ func (v *V2) StatTask(ctx context.Context, req *schedulerv2.StatTaskRequest) (*c
 		}
 
 		respPiece := &commonv2.Piece{
-			Number:      piece.Number,
+			Number:      uint32(piece.Number),
 			ParentId:    &piece.ParentID,
 			Offset:      piece.Offset,
 			Length:      piece.Length,
@@ -1008,8 +1008,8 @@ func (v *V2) handleDownloadPeerBackToSourceFinishedRequest(ctx context.Context, 
 	// Handle task with peer back-to-source finished request, peer can only represent
 	// a successful task after downloading the complete task.
 	if peer.Range == nil && !peer.Task.FSM.Is(resource.TaskStateSucceeded) {
-		peer.Task.ContentLength.Store(req.GetContentLength())
-		peer.Task.TotalPieceCount.Store(req.GetPieceCount())
+		peer.Task.ContentLength.Store(int64(req.GetContentLength()))
+		peer.Task.TotalPieceCount.Store(int32(req.GetPieceCount()))
 		if err := peer.Task.FSM.Event(ctx, resource.TaskEventDownloadSucceeded); err != nil {
 			return status.Error(codes.Internal, err.Error())
 		}
@@ -1084,7 +1084,7 @@ func (v *V2) handleDownloadPeerBackToSourceFailedRequest(ctx context.Context, pe
 func (v *V2) handleDownloadPieceFinishedRequest(ctx context.Context, peerID string, req *schedulerv2.DownloadPieceFinishedRequest) error {
 	// Construct piece.
 	piece := &resource.Piece{
-		Number:      req.Piece.GetNumber(),
+		Number:      int32(req.Piece.GetNumber()),
 		ParentID:    req.Piece.GetParentId(),
 		Offset:      req.Piece.GetOffset(),
 		Length:      req.Piece.GetLength(),
@@ -1147,7 +1147,7 @@ func (v *V2) handleDownloadPieceFinishedRequest(ctx context.Context, peerID stri
 func (v *V2) handleDownloadPieceBackToSourceFinishedRequest(ctx context.Context, peerID string, req *schedulerv2.DownloadPieceBackToSourceFinishedRequest) error {
 	// Construct piece.
 	piece := &resource.Piece{
-		Number:      req.Piece.GetNumber(),
+		Number:      int32(req.Piece.GetNumber()),
 		ParentID:    req.Piece.GetParentId(),
 		Offset:      req.Piece.GetOffset(),
 		Length:      req.Piece.GetLength(),
@@ -1263,7 +1263,7 @@ func (v *V2) handleResource(ctx context.Context, stream schedulerv2.Scheduler_An
 	// Store new task or update task.
 	task, loaded := v.resource.TaskManager().Load(taskID)
 	if !loaded {
-		options := []resource.TaskOption{resource.WithPieceLength(download.GetPieceLength())}
+		options := []resource.TaskOption{resource.WithPieceLength(int32(download.GetPieceLength()))}
 		if download.Digest != nil {
 			d, err := digest.Parse(download.GetDigest())
 			if err != nil {
@@ -1288,7 +1288,7 @@ func (v *V2) handleResource(ctx context.Context, stream schedulerv2.Scheduler_An
 	if !loaded {
 		options := []resource.PeerOption{resource.WithPriority(download.GetPriority()), resource.WithAnnouncePeerStream(stream)}
 		if download.Range != nil {
-			options = append(options, resource.WithRange(http.Range{Start: download.Range.GetStart(), Length: download.Range.GetLength()}))
+			options = append(options, resource.WithRange(http.Range{Start: int64(download.Range.GetStart()), Length: int64(download.Range.GetLength())}))
 		}
 
 		peer = resource.NewPeer(peerID, &v.config.Resource, task, host, options...)

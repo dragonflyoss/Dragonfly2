@@ -1368,13 +1368,13 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 							{
 								Id: candidateParents[0].ID,
 								Range: &commonv2.Range{
-									Start:  candidateParents[0].Range.Start,
-									Length: candidateParents[0].Range.Length,
+									Start:  uint64(candidateParents[0].Range.Start),
+									Length: uint64(candidateParents[0].Range.Length),
 								},
 								Priority: candidateParents[0].Priority,
 								Pieces: []*commonv2.Piece{
 									{
-										Number:      mockPiece.Number,
+										Number:      uint32(mockPiece.Number),
 										ParentId:    &mockPiece.ParentID,
 										Offset:      mockPiece.Offset,
 										Length:      mockPiece.Length,
@@ -1395,13 +1395,13 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 									Application:   &candidateParents[0].Task.Application,
 									Filters:       candidateParents[0].Task.Filters,
 									Header:        candidateParents[0].Task.Header,
-									PieceLength:   candidateParents[0].Task.PieceLength,
-									ContentLength: candidateParents[0].Task.ContentLength.Load(),
-									PieceCount:    candidateParents[0].Task.TotalPieceCount.Load(),
+									PieceLength:   uint32(candidateParents[0].Task.PieceLength),
+									ContentLength: uint64(candidateParents[0].Task.ContentLength.Load()),
+									PieceCount:    uint32(candidateParents[0].Task.TotalPieceCount.Load()),
 									SizeScope:     candidateParents[0].Task.SizeScope(),
 									Pieces: []*commonv2.Piece{
 										{
-											Number:      mockPiece.Number,
+											Number:      uint32(mockPiece.Number),
 											ParentId:    &mockPiece.ParentID,
 											Offset:      mockPiece.Offset,
 											Length:      mockPiece.Length,
@@ -1412,7 +1412,7 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 										},
 									},
 									State:     candidateParents[0].Task.FSM.Current(),
-									PeerCount: int32(candidateParents[0].Task.PeerCount()),
+									PeerCount: uint32(candidateParents[0].Task.PeerCount()),
 									CreatedAt: timestamppb.New(candidateParents[0].Task.CreatedAt.Load()),
 									UpdatedAt: timestamppb.New(candidateParents[0].Task.UpdatedAt.Load()),
 								},
@@ -1502,13 +1502,13 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 							{
 								Id: candidateParents[0].ID,
 								Range: &commonv2.Range{
-									Start:  candidateParents[0].Range.Start,
-									Length: candidateParents[0].Range.Length,
+									Start:  uint64(candidateParents[0].Range.Start),
+									Length: uint64(candidateParents[0].Range.Length),
 								},
 								Priority: candidateParents[0].Priority,
 								Pieces: []*commonv2.Piece{
 									{
-										Number:      mockPiece.Number,
+										Number:      uint32(mockPiece.Number),
 										ParentId:    &mockPiece.ParentID,
 										Offset:      mockPiece.Offset,
 										Length:      mockPiece.Length,
@@ -1529,13 +1529,13 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 									Application:   &candidateParents[0].Task.Application,
 									Filters:       candidateParents[0].Task.Filters,
 									Header:        candidateParents[0].Task.Header,
-									PieceLength:   candidateParents[0].Task.PieceLength,
-									ContentLength: candidateParents[0].Task.ContentLength.Load(),
-									PieceCount:    candidateParents[0].Task.TotalPieceCount.Load(),
+									PieceLength:   uint32(candidateParents[0].Task.PieceLength),
+									ContentLength: uint64(candidateParents[0].Task.ContentLength.Load()),
+									PieceCount:    uint32(candidateParents[0].Task.TotalPieceCount.Load()),
 									SizeScope:     candidateParents[0].Task.SizeScope(),
 									Pieces: []*commonv2.Piece{
 										{
-											Number:      mockPiece.Number,
+											Number:      uint32(mockPiece.Number),
 											ParentId:    &mockPiece.ParentID,
 											Offset:      mockPiece.Offset,
 											Length:      mockPiece.Length,
@@ -1546,7 +1546,7 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 										},
 									},
 									State:     candidateParents[0].Task.FSM.Current(),
-									PeerCount: int32(candidateParents[0].Task.PeerCount()),
+									PeerCount: uint32(candidateParents[0].Task.PeerCount()),
 									CreatedAt: timestamppb.New(candidateParents[0].Task.CreatedAt.Load()),
 									UpdatedAt: timestamppb.New(candidateParents[0].Task.UpdatedAt.Load()),
 								},

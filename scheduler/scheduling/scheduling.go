@@ -558,8 +558,8 @@ func ConstructSuccessNormalTaskResponse(dynconfig config.DynconfigInterface, can
 		// Set range to parent.
 		if candidateParent.Range != nil {
 			parent.Range = &commonv2.Range{
-				Start:  candidateParent.Range.Start,
-				Length: candidateParent.Range.Length,
+				Start:  uint64(candidateParent.Range.Start),
+				Length: uint64(candidateParent.Range.Length),
 			}
 		}
 
@@ -572,7 +572,7 @@ func ConstructSuccessNormalTaskResponse(dynconfig config.DynconfigInterface, can
 			}
 
 			piece := &commonv2.Piece{
-				Number:      candidateParentPiece.Number,
+				Number:      uint32(candidateParentPiece.Number),
 				ParentId:    &candidateParentPiece.ParentID,
 				Offset:      candidateParentPiece.Offset,
 				Length:      candidateParentPiece.Length,
@@ -598,12 +598,12 @@ func ConstructSuccessNormalTaskResponse(dynconfig config.DynconfigInterface, can
 			Application:   &candidateParent.Task.Application,
 			Filters:       candidateParent.Task.Filters,
 			Header:        candidateParent.Task.Header,
-			PieceLength:   candidateParent.Task.PieceLength,
-			ContentLength: candidateParent.Task.ContentLength.Load(),
-			PieceCount:    candidateParent.Task.TotalPieceCount.Load(),
+			PieceLength:   uint32(candidateParent.Task.PieceLength),
+			ContentLength: uint64(candidateParent.Task.ContentLength.Load()),
+			PieceCount:    uint32(candidateParent.Task.TotalPieceCount.Load()),
 			SizeScope:     candidateParent.Task.SizeScope(),
 			State:         candidateParent.Task.FSM.Current(),
-			PeerCount:     int32(candidateParent.Task.PeerCount()),
+			PeerCount:     uint32(candidateParent.Task.PeerCount()),
 			CreatedAt:     timestamppb.New(candidateParent.Task.CreatedAt.Load()),
 			UpdatedAt:     timestamppb.New(candidateParent.Task.UpdatedAt.Load()),
 		}
@@ -623,7 +623,7 @@ func ConstructSuccessNormalTaskResponse(dynconfig config.DynconfigInterface, can
 			}
 
 			piece := &commonv2.Piece{
-				Number:      taskPiece.Number,
+				Number:      uint32(taskPiece.Number),
 				ParentId:    &taskPiece.ParentID,
 				Offset:      taskPiece.Offset,
 				Length:      taskPiece.Length,
@@ -709,7 +709,7 @@ func ConstructSuccessNormalTaskResponse(dynconfig config.DynconfigInterface, can
 	return &schedulerv2.AnnouncePeerResponse_NormalTaskResponse{
 		NormalTaskResponse: &schedulerv2.NormalTaskResponse{
 			CandidateParents:     parents,
-			ConcurrentPieceCount: int32(concurrentPieceCount),
+			ConcurrentPieceCount: uint32(concurrentPieceCount),
 		},
 	}
 }
