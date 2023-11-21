@@ -120,13 +120,13 @@ func TestServiceV2_StatPeer(t *testing.T) {
 				assert.EqualValues(resp, &commonv2.Peer{
 					Id: peer.ID,
 					Range: &commonv2.Range{
-						Start:  peer.Range.Start,
-						Length: peer.Range.Length,
+						Start:  uint64(peer.Range.Start),
+						Length: uint64(peer.Range.Length),
 					},
 					Priority: peer.Priority,
 					Pieces: []*commonv2.Piece{
 						{
-							Number:      mockPiece.Number,
+							Number:      uint32(mockPiece.Number),
 							ParentId:    &mockPiece.ParentID,
 							Offset:      mockPiece.Offset,
 							Length:      mockPiece.Length,
@@ -147,13 +147,13 @@ func TestServiceV2_StatPeer(t *testing.T) {
 						Application:   &peer.Task.Application,
 						Filters:       peer.Task.Filters,
 						Header:        peer.Task.Header,
-						PieceLength:   peer.Task.PieceLength,
-						ContentLength: peer.Task.ContentLength.Load(),
-						PieceCount:    peer.Task.TotalPieceCount.Load(),
+						PieceLength:   uint32(peer.Task.PieceLength),
+						ContentLength: uint64(peer.Task.ContentLength.Load()),
+						PieceCount:    uint32(peer.Task.TotalPieceCount.Load()),
 						SizeScope:     peer.Task.SizeScope(),
 						Pieces: []*commonv2.Piece{
 							{
-								Number:      mockPiece.Number,
+								Number:      uint32(mockPiece.Number),
 								ParentId:    &mockPiece.ParentID,
 								Offset:      mockPiece.Offset,
 								Length:      mockPiece.Length,
@@ -164,7 +164,7 @@ func TestServiceV2_StatPeer(t *testing.T) {
 							},
 						},
 						State:     peer.Task.FSM.Current(),
-						PeerCount: int32(peer.Task.PeerCount()),
+						PeerCount: uint32(peer.Task.PeerCount()),
 						CreatedAt: timestamppb.New(peer.Task.CreatedAt.Load()),
 						UpdatedAt: timestamppb.New(peer.Task.UpdatedAt.Load()),
 					},
@@ -373,13 +373,13 @@ func TestServiceV2_StatTask(t *testing.T) {
 					Application:   &task.Application,
 					Filters:       task.Filters,
 					Header:        task.Header,
-					PieceLength:   task.PieceLength,
-					ContentLength: task.ContentLength.Load(),
-					PieceCount:    task.TotalPieceCount.Load(),
+					PieceLength:   uint32(task.PieceLength),
+					ContentLength: uint64(task.ContentLength.Load()),
+					PieceCount:    uint32(task.TotalPieceCount.Load()),
 					SizeScope:     task.SizeScope(),
 					Pieces: []*commonv2.Piece{
 						{
-							Number:      mockPiece.Number,
+							Number:      uint32(mockPiece.Number),
 							ParentId:    &mockPiece.ParentID,
 							Offset:      mockPiece.Offset,
 							Length:      mockPiece.Length,
@@ -390,7 +390,7 @@ func TestServiceV2_StatTask(t *testing.T) {
 						},
 					},
 					State:     task.FSM.Current(),
-					PeerCount: int32(task.PeerCount()),
+					PeerCount: uint32(task.PeerCount()),
 					CreatedAt: timestamppb.New(task.CreatedAt.Load()),
 					UpdatedAt: timestamppb.New(task.UpdatedAt.Load()),
 				})
@@ -2678,7 +2678,7 @@ func TestServiceV2_handleDownloadPieceFinishedRequest(t *testing.T) {
 			name: "invalid digest",
 			req: &schedulerv2.DownloadPieceFinishedRequest{
 				Piece: &commonv2.Piece{
-					Number:      mockPiece.Number,
+					Number:      uint32(mockPiece.Number),
 					ParentId:    &mockPiece.ParentID,
 					Offset:      mockPiece.Offset,
 					Length:      mockPiece.Length,
@@ -2697,7 +2697,7 @@ func TestServiceV2_handleDownloadPieceFinishedRequest(t *testing.T) {
 			name: "peer can not be loaded",
 			req: &schedulerv2.DownloadPieceFinishedRequest{
 				Piece: &commonv2.Piece{
-					Number:      mockPiece.Number,
+					Number:      uint32(mockPiece.Number),
 					ParentId:    &mockPiece.ParentID,
 					Offset:      mockPiece.Offset,
 					Length:      mockPiece.Length,
@@ -2721,7 +2721,7 @@ func TestServiceV2_handleDownloadPieceFinishedRequest(t *testing.T) {
 			name: "parent can not be loaded",
 			req: &schedulerv2.DownloadPieceFinishedRequest{
 				Piece: &commonv2.Piece{
-					Number:      mockPiece.Number,
+					Number:      uint32(mockPiece.Number),
 					ParentId:    &mockPiece.ParentID,
 					Offset:      mockPiece.Offset,
 					Length:      mockPiece.Length,
@@ -2742,7 +2742,7 @@ func TestServiceV2_handleDownloadPieceFinishedRequest(t *testing.T) {
 				assert := assert.New(t)
 				assert.NoError(svc.handleDownloadPieceFinishedRequest(context.Background(), peer.ID, req))
 
-				piece, loaded := peer.LoadPiece(req.Piece.Number)
+				piece, loaded := peer.LoadPiece(int32(req.Piece.Number))
 				assert.True(loaded)
 				assert.Equal(piece.Number, mockPiece.Number)
 				assert.Equal(piece.ParentID, mockPiece.ParentID)
@@ -2763,7 +2763,7 @@ func TestServiceV2_handleDownloadPieceFinishedRequest(t *testing.T) {
 			name: "parent can be loaded",
 			req: &schedulerv2.DownloadPieceFinishedRequest{
 				Piece: &commonv2.Piece{
-					Number:      mockPiece.Number,
+					Number:      uint32(mockPiece.Number),
 					ParentId:    &mockPiece.ParentID,
 					Offset:      mockPiece.Offset,
 					Length:      mockPiece.Length,
@@ -2784,7 +2784,7 @@ func TestServiceV2_handleDownloadPieceFinishedRequest(t *testing.T) {
 				assert := assert.New(t)
 				assert.NoError(svc.handleDownloadPieceFinishedRequest(context.Background(), peer.ID, req))
 
-				piece, loaded := peer.LoadPiece(req.Piece.Number)
+				piece, loaded := peer.LoadPiece(int32(req.Piece.Number))
 				assert.True(loaded)
 				assert.Equal(piece.Number, mockPiece.Number)
 				assert.Equal(piece.ParentID, mockPiece.ParentID)
@@ -2837,7 +2837,7 @@ func TestServiceV2_handleDownloadPieceBackToSourceFinishedRequest(t *testing.T) 
 			name: "invalid digest",
 			req: &schedulerv2.DownloadPieceBackToSourceFinishedRequest{
 				Piece: &commonv2.Piece{
-					Number:      mockPiece.Number,
+					Number:      uint32(mockPiece.Number),
 					ParentId:    &mockPiece.ParentID,
 					Offset:      mockPiece.Offset,
 					Length:      mockPiece.Length,
@@ -2856,7 +2856,7 @@ func TestServiceV2_handleDownloadPieceBackToSourceFinishedRequest(t *testing.T) 
 			name: "peer can not be loaded",
 			req: &schedulerv2.DownloadPieceBackToSourceFinishedRequest{
 				Piece: &commonv2.Piece{
-					Number:      mockPiece.Number,
+					Number:      uint32(mockPiece.Number),
 					ParentId:    &mockPiece.ParentID,
 					Offset:      mockPiece.Offset,
 					Length:      mockPiece.Length,
@@ -2880,7 +2880,7 @@ func TestServiceV2_handleDownloadPieceBackToSourceFinishedRequest(t *testing.T) 
 			name: "peer can be loaded",
 			req: &schedulerv2.DownloadPieceBackToSourceFinishedRequest{
 				Piece: &commonv2.Piece{
-					Number:      mockPiece.Number,
+					Number:      uint32(mockPiece.Number),
 					ParentId:    &mockPiece.ParentID,
 					Offset:      mockPiece.Offset,
 					Length:      mockPiece.Length,
@@ -2899,7 +2899,7 @@ func TestServiceV2_handleDownloadPieceBackToSourceFinishedRequest(t *testing.T) 
 				assert := assert.New(t)
 				assert.NoError(svc.handleDownloadPieceBackToSourceFinishedRequest(context.Background(), peer.ID, req))
 
-				piece, loaded := peer.LoadPiece(req.Piece.Number)
+				piece, loaded := peer.LoadPiece(int32(req.Piece.Number))
 				assert.True(loaded)
 				assert.Equal(piece.Number, mockPiece.Number)
 				assert.Equal(piece.ParentID, mockPiece.ParentID)
@@ -2914,7 +2914,7 @@ func TestServiceV2_handleDownloadPieceBackToSourceFinishedRequest(t *testing.T) 
 				assert.NotEqual(peer.PieceUpdatedAt.Load(), 0)
 				assert.NotEqual(peer.UpdatedAt.Load(), 0)
 
-				piece, loaded = peer.Task.LoadPiece(req.Piece.Number)
+				piece, loaded = peer.Task.LoadPiece(int32(req.Piece.Number))
 				assert.True(loaded)
 				assert.Equal(piece.Number, mockPiece.Number)
 				assert.Equal(piece.ParentID, mockPiece.ParentID)
@@ -3088,7 +3088,7 @@ func TestServiceV2_handleDownloadPieceBackToSourceFailedRequest(t *testing.T) {
 		{
 			name: "peer can be loaded",
 			req: &schedulerv2.DownloadPieceBackToSourceFailedRequest{
-				PieceNumber: mockPiece.Number,
+				PieceNumber: uint32(mockPiece.Number),
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.DownloadPieceBackToSourceFailedRequest, peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder,
 				mp *resource.MockPeerManagerMockRecorder) {
@@ -3278,8 +3278,8 @@ func TestServiceV2_handleResource(t *testing.T) {
 				Digest:   &dgst,
 				Priority: commonv2.Priority_LEVEL1,
 				Range: &commonv2.Range{
-					Start:  mockPeerRange.Start,
-					Length: mockPeerRange.Length,
+					Start:  uint64(mockPeerRange.Start),
+					Length: uint64(mockPeerRange.Length),
 				},
 			},
 			run: func(t *testing.T, svc *V2, download *commonv2.Download, stream schedulerv2.Scheduler_AnnouncePeerServer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer,
@@ -3307,8 +3307,8 @@ func TestServiceV2_handleResource(t *testing.T) {
 				assert.EqualValues(task.Header, download.Header)
 				assert.Equal(peer.ID, mockPeer.ID)
 				assert.Equal(peer.Priority, download.Priority)
-				assert.Equal(peer.Range.Start, download.Range.Start)
-				assert.Equal(peer.Range.Length, download.Range.Length)
+				assert.Equal(peer.Range.Start, int64(download.Range.Start))
+				assert.Equal(peer.Range.Length, int64(download.Range.Length))
 				assert.NotNil(peer.AnnouncePeerStream)
 				assert.EqualValues(peer.Host, mockHost)
 				assert.EqualValues(peer.Task, mockTask)
