@@ -67,7 +67,7 @@ require (
 	github.com/swaggo/gin-swagger v1.6.0
 	github.com/swaggo/swag v1.16.1
 	github.com/yl2chen/cidranger v1.0.2
-	go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin v0.45.0
+	go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin v0.46.1
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.45.0
 	go.opentelemetry.io/otel v1.21.0
 	go.opentelemetry.io/otel/exporters/jaeger v1.17.0
@@ -227,7 +227,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.21.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/arch v0.5.0 // indirect
-	golang.org/x/net v0.17.0 // indirect
+	golang.org/x/net v0.18.0 // indirect
 	golang.org/x/term v0.14.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.12.0 // indirect
