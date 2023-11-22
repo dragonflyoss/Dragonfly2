@@ -54,6 +54,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/rpcserver"
 	"d7y.io/dragonfly/v2/scheduler/scheduling"
+	"d7y.io/dragonfly/v2/scheduler/scheduling/evaluator"
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
@@ -257,16 +258,24 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		}
 	}
 
+	// Initialize dial options of scheduling.
+	schedulingOptions := []scheduling.Option{}
 	// Initialize network topology service.
 	if cfg.NetworkTopology.Enable && pkgredis.IsEnabled(cfg.Database.Redis.Addrs) {
 		s.networkTopology, err = networktopology.NewNetworkTopology(cfg.NetworkTopology, rdb, resource, s.storage)
 		if err != nil {
 			return nil, err
 		}
+
+		// Initialize dial options of evaluator.
+		evaluatorOptions := []evaluator.Option{}
+		evaluatorOptions = append(evaluatorOptions, evaluator.WithNetworkTopology(s.networkTopology))
+
+		schedulingOptions = append(schedulingOptions, scheduling.WithEvaluatorOptions(evaluatorOptions))
 	}
 
 	// Initialize scheduling.
-	scheduling := scheduling.New(&cfg.Scheduler, dynconfig, d.PluginDir())
+	scheduling := scheduling.New(&cfg.Scheduler, dynconfig, d.PluginDir(), schedulingOptions...)
 
 	// Initialize server options of scheduler grpc server.
 	schedulerServerOptions := []grpc.ServerOption{}

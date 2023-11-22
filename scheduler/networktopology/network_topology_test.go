@@ -715,6 +715,74 @@ func TestNetworkTopology_Probes(t *testing.T) {
 	}
 }
 
+func TestNetworkTopology_AverageRTTs(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(mockRDBClient redismock.ClientMock)
+		expect func(t *testing.T, networkTopology NetworkTopology, err error)
+	}{
+		{
+			name: "get average RTTs",
+			mock: func(mockRDBClient redismock.ClientMock) {
+				mockRDBClient.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, mockSeedHost.ID), "averageRTT").SetVal(
+					strconv.FormatInt(mockProbe.RTT.Nanoseconds(), 10))
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+
+				averageRTTs, err := networkTopology.AverageRTTs(mockHost.ID, []string{mockSeedHost.ID})
+				assert.NoError(err)
+				assert.EqualValues(averageRTTs, mockAverageRTT)
+			},
+		},
+		{
+			name: "get average RTTs error",
+			mock: func(mockRDBClient redismock.ClientMock) {
+				mockRDBClient.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, mockSeedHost.ID), "averageRTT").SetErr(errors.New("get average RTTs error"))
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+
+				_, err = networkTopology.AverageRTTs(mockHost.ID, []string{mockSeedHost.ID})
+				assert.EqualError(err, "get average RTTs error")
+			},
+		},
+		{
+			name: "parseInt error",
+			mock: func(mockRDBClient redismock.ClientMock) {
+				mockRDBClient.ExpectHGet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, mockSeedHost.ID), "averageRTT").SetVal(
+					"foo")
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+
+				averageRTTs, err := networkTopology.AverageRTTs(mockHost.ID, []string{mockSeedHost.ID})
+				assert.NoError(err)
+				assert.EqualValues(averageRTTs, []time.Duration{0})
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+
+			rdb, mockRDBClient := redismock.NewClientMock()
+			res := resource.NewMockResource(ctl)
+			storage := storagemocks.NewMockStorage(ctl)
+			tc.mock(mockRDBClient)
+
+			networkTopology, err := NewNetworkTopology(mockNetworkTopologyConfig, rdb, res, storage)
+			tc.expect(t, networkTopology, err)
+			mockRDBClient.ClearExpect()
+		})
+	}
+}
+
 func TestNetworkTopology_ProbedCount(t *testing.T) {
 	tests := []struct {
 		name   string

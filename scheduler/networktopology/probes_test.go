@@ -158,6 +158,7 @@ var (
 		},
 	}
 
+	mockAverageRTT      = []time.Duration{30 * time.Millisecond}
 	mockProbesCreatedAt = time.Now()
 	mockProbedCount     = 10
 )

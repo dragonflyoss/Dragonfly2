@@ -39,7 +39,7 @@ type Evaluator interface {
 	IsBadNode(peer *resource.Peer) bool
 }
 
-func New(algorithm string, pluginDir string) Evaluator {
+func New(algorithm string, pluginDir string, options ...Option) Evaluator {
 	switch algorithm {
 	case PluginAlgorithm:
 		if plugin, err := LoadPlugin(pluginDir); err == nil {
@@ -47,8 +47,8 @@ func New(algorithm string, pluginDir string) Evaluator {
 		}
 	// TODO Implement MLAlgorithm.
 	case MLAlgorithm, DefaultAlgorithm:
-		return NewEvaluatorBase()
+		return NewEvaluatorBase(options...)
 	}
 
-	return NewEvaluatorBase()
+	return NewEvaluatorBase(options...)
 }

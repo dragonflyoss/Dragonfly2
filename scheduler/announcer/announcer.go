@@ -66,7 +66,7 @@ func WithTrainerClient(client trainerclient.V1) Option {
 }
 
 // Option is a functional option for configuring the announcer.
-type Option func(s *announcer)
+type Option func(a *announcer)
 
 // New returns a new Announcer interface.
 func New(cfg *config.Config, managerClient managerclient.V2, storage storage.Storage, options ...Option) (Announcer, error) {

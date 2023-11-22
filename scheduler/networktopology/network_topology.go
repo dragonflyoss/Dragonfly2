@@ -72,6 +72,9 @@ type NetworkTopology interface {
 	// Probes loads probes interface by source host id and destination host id.
 	Probes(string, string) Probes
 
+	// AverageRTTs loads RTTs of source host id and destination hosts id.
+	AverageRTTs(string, []string) ([]time.Duration, error)
+
 	// ProbedCount is the number of times the host has been probed.
 	ProbedCount(string) (uint64, error)
 
@@ -262,6 +265,32 @@ func (nt *networkTopology) DeleteHost(hostID string) error {
 // Probes loads probes interface by source host id and destination host id.
 func (nt *networkTopology) Probes(srcHostID, destHostID string) Probes {
 	return NewProbes(nt.config.Probe, nt.rdb, srcHostID, destHostID)
+}
+
+// AverageRTTs loads RTTs of source host id and destination hosts id.
+func (nt *networkTopology) AverageRTTs(srcHostID string, destHostIDs []string) ([]time.Duration, error) {
+	pipeline := nt.rdb.Pipeline()
+	var cmds []*redis.StringCmd
+	for _, id := range destHostIDs {
+		cmds = append(cmds, pipeline.HGet(context.Background(), pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, id), "averageRTT"))
+	}
+
+	_, err := pipeline.Exec(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	var averageRTTs []time.Duration
+	for i := range destHostIDs {
+		averageRTT, err := strconv.ParseInt(cmds[i].Val(), 10, 64)
+		if err != nil {
+			averageRTTs = append(averageRTTs, time.Duration(0))
+		} else {
+			averageRTTs = append(averageRTTs, time.Duration(averageRTT))
+		}
+	}
+
+	return averageRTTs, nil
 }
 
 // ProbedCount is the number of times the host has been probed.
