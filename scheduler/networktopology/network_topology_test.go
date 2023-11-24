@@ -28,11 +28,19 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
+	pkgcachemocks "d7y.io/dragonfly/v2/pkg/cache/mocks"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
+	"d7y.io/dragonfly/v2/scheduler/cache"
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	storagemocks "d7y.io/dragonfly/v2/scheduler/storage/mocks"
 )
+
+var mockConfig = &config.Config{
+	Cache:    config.CacheConfig{},
+	Database: config.DatabaseConfig{},
+}
 
 func Test_NewNetworkTopology(t *testing.T) {
 	tests := []struct {
@@ -56,9 +64,13 @@ func Test_NewNetworkTopology(t *testing.T) {
 
 			rdb, _ := redismock.NewClientMock()
 			res := resource.NewMockResource(ctl)
+			cache := &cache.Cache{
+				Cache: pkgcachemocks.NewMockCache(ctl),
+				TTL:   0,
+			}
 			storage := storagemocks.NewMockStorage(ctl)
 
-			networkTopology, err := NewNetworkTopology(mockNetworkTopologyConfig, rdb, res, storage)
+			networkTopology, err := NewNetworkTopology(mockNetworkTopologyConfig, rdb, cache, res, storage)
 			tc.expect(t, networkTopology, err)
 		})
 	}
@@ -149,10 +161,11 @@ func TestNetworkTopology_Serve(t *testing.T) {
 			res := resource.NewMockResource(ctl)
 			hostManager := resource.NewMockHostManager(ctl)
 			storage := storagemocks.NewMockStorage(ctl)
+			cache, err := cache.New(&config.Config{})
 			tc.mock(res.EXPECT(), hostManager, hostManager.EXPECT(), storage.EXPECT(), mockRDBClient)
 
 			mockNetworkTopologyConfig.CollectInterval = 2 * time.Second
-			networkTopology, err := NewNetworkTopology(mockNetworkTopologyConfig, rdb, res, storage)
+			networkTopology, err := NewNetworkTopology(mockNetworkTopologyConfig, rdb, cache, res, storage)
 			tc.expect(t, networkTopology, err)
 			tc.sleep()
 			networkTopology.Stop()

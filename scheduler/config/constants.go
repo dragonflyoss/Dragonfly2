@@ -179,6 +179,17 @@ const (
 )
 
 const (
+	// DefaultRedisCacheTTL is default ttl for redis cache.
+	DefaultRedisCacheTTL = 5 * time.Minute
+
+	// DefaultLFUCacheTTL is default ttl for lfu cache.
+	DefaultLFUCacheTTL = 3 * time.Minute
+
+	// DefaultLFUCacheSize is default size for lfu cache.
+	DefaultLFUCacheSize = 100 * 1000
+)
+
+const (
 	// DefaultNetworkTopologyCollectInterval is the default interval of collecting network topology.
 	DefaultNetworkTopologyCollectInterval = 2 * time.Hour
 

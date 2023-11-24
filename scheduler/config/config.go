@@ -73,6 +73,9 @@ type Config struct {
 	// Network configuration.
 	Network NetworkConfig `yaml:"network" mapstructure:"network"`
 
+	// Cache configuration.
+	Cache CacheConfig `yaml:"cache" mapstructure:"cache"`
+
 	// NetworkTopology configuration.
 	NetworkTopology NetworkTopologyConfig `yaml:"networkTopology" mapstructure:"networkTopology"`
 
@@ -333,6 +336,27 @@ type NetworkConfig struct {
 	EnableIPv6 bool `mapstructure:"enableIPv6" yaml:"enableIPv6"`
 }
 
+type CacheConfig struct {
+	// Redis cache configuration.
+	Redis RedisCacheConfig `yaml:"redis" mapstructure:"redis"`
+
+	// Local cache configuration.
+	Local LocalCacheConfig `yaml:"local" mapstructure:"local"`
+}
+
+type RedisCacheConfig struct {
+	// Cache TTL.
+	TTL time.Duration `yaml:"ttl" mapstructure:"ttl"`
+}
+
+type LocalCacheConfig struct {
+	// Size of LFU cache.
+	Size int `yaml:"size" mapstructure:"size"`
+
+	// Cache TTL.
+	TTL time.Duration `yaml:"ttl" mapstructure:"ttl"`
+}
+
 type NetworkTopologyConfig struct {
 	// Enable network topology service, including probe, network topology collection.
 	Enable bool `yaml:"enable" mapstructure:"enable"`
@@ -450,6 +474,15 @@ func New() *Config {
 		},
 		Network: NetworkConfig{
 			EnableIPv6: DefaultNetworkEnableIPv6,
+		},
+		Cache: CacheConfig{
+			Redis: RedisCacheConfig{
+				TTL: DefaultRedisCacheTTL,
+			},
+			Local: LocalCacheConfig{
+				Size: DefaultLFUCacheSize,
+				TTL:  DefaultLFUCacheTTL,
+			},
 		},
 		NetworkTopology: NetworkTopologyConfig{
 			Enable:          true,
@@ -630,6 +663,18 @@ func (cfg *Config) Validate() error {
 		if cfg.Security.CertSpec.ValidityPeriod <= 0 {
 			return errors.New("certSpec requires parameter validityPeriod")
 		}
+	}
+
+	if cfg.Cache.Redis.TTL == 0 {
+		return errors.New("redis requires parameter ttl")
+	}
+
+	if cfg.Cache.Local.Size == 0 {
+		return errors.New("local requires parameter size")
+	}
+
+	if cfg.Cache.Local.TTL == 0 {
+		return errors.New("local requires parameter ttl")
 	}
 
 	if cfg.NetworkTopology.CollectInterval <= 0 {

@@ -92,6 +92,13 @@ security:
 network:
   enableIPv6: true
 
+cache:
+  redis:
+    ttl: 1s
+  local:
+    size: 10000
+    ttl: 1s
+    
 networkTopology:
   enable: true
   collectInterval: 60s

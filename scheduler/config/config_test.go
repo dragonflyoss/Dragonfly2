@@ -173,6 +173,15 @@ func TestConfig_Load(t *testing.T) {
 		Network: NetworkConfig{
 			EnableIPv6: true,
 		},
+		Cache: CacheConfig{
+			Redis: RedisCacheConfig{
+				TTL: 1 * time.Second,
+			},
+			Local: LocalCacheConfig{
+				Size: 10000,
+				TTL:  1 * time.Second,
+			},
+		},
 		NetworkTopology: NetworkTopologyConfig{
 			Enable:          true,
 			CollectInterval: 60 * time.Second,
@@ -747,6 +756,48 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "certSpec requires parameter validityPeriod")
+			},
+		},
+		{
+			name:   "redis requires parameter ttl",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Job = mockJobConfig
+				cfg.Cache.Redis.TTL = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "redis requires parameter ttl")
+			},
+		},
+		{
+			name:   "local requires parameter size",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Job = mockJobConfig
+				cfg.Cache.Local.Size = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "local requires parameter size")
+			},
+		},
+		{
+			name:   "local requires parameter ttl",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Job = mockJobConfig
+				cfg.Cache.Local.TTL = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "local requires parameter ttl")
 			},
 		},
 		{

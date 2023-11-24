@@ -32,6 +32,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
+	"d7y.io/dragonfly/v2/scheduler/cache"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/storage"
@@ -87,6 +88,9 @@ type networkTopology struct {
 	// rdb is Redis universal client interface.
 	rdb redis.UniversalClient
 
+	// Cache instance.
+	cache *cache.Cache
+
 	// resource is resource interface.
 	resource resource.Resource
 
@@ -98,10 +102,11 @@ type networkTopology struct {
 }
 
 // New network topology interface.
-func NewNetworkTopology(cfg config.NetworkTopologyConfig, rdb redis.UniversalClient, resource resource.Resource, storage storage.Storage) (NetworkTopology, error) {
+func NewNetworkTopology(cfg config.NetworkTopologyConfig, rdb redis.UniversalClient, cache *cache.Cache, resource resource.Resource, storage storage.Storage) (NetworkTopology, error) {
 	return &networkTopology{
 		config:   cfg,
 		rdb:      rdb,
+		cache:    cache,
 		resource: resource,
 		storage:  storage,
 		done:     make(chan struct{}),
