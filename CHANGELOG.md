@@ -81,7 +81,7 @@
 - update api version to v2.0.7 ([#2560](https://github.com/dragonflyoss/Dragonfly2/issues/2560))
 - update dy7.io/api to v2 ([#2558](https://github.com/dragonflyoss/Dragonfly2/issues/2558))
 - add finished piece count element in types ([#2557](https://github.com/dragonflyoss/Dragonfly2/issues/2557))
-- update api verison to v1.9.7 and compatible with tiny task response ([#2547](https://github.com/dragonflyoss/Dragonfly2/issues/2547))
+- update api version to v1.9.7 and compatible with tiny task response ([#2547](https://github.com/dragonflyoss/Dragonfly2/issues/2547))
 - add training service ([#2543](https://github.com/dragonflyoss/Dragonfly2/issues/2543))
 - implement Train grpc api in trainer ([#2541](https://github.com/dragonflyoss/Dragonfly2/issues/2541))
 - add GNNModelIDV1 and MLPModelIDV1 in idgen ([#2540](https://github.com/dragonflyoss/Dragonfly2/issues/2540))
@@ -124,7 +124,7 @@
 <a name="v2.1.0-beta.1"></a>
 ## [v2.1.0-beta.1] - 2023-06-28
 ### Chore
-- update grpc api proto verison ([#1779](https://github.com/dragonflyoss/Dragonfly2/issues/1779))
+- update grpc api proto version ([#1779](https://github.com/dragonflyoss/Dragonfly2/issues/1779))
 - goreleaser remove cdn
 - add pull request and issue templates ([#154](https://github.com/dragonflyoss/Dragonfly2/issues/154))
 - create custom issue template ([#168](https://github.com/dragonflyoss/Dragonfly2/issues/168))
@@ -300,7 +300,7 @@
 - add source error metrics ([#1560](https://github.com/dragonflyoss/Dragonfly2/issues/1560))
 - fix macos build ([#1609](https://github.com/dragonflyoss/Dragonfly2/issues/1609))
 - update debug info ([#1617](https://github.com/dragonflyoss/Dragonfly2/issues/1617))
-- update api package verison ([#1893](https://github.com/dragonflyoss/Dragonfly2/issues/1893))
+- update api package version ([#1893](https://github.com/dragonflyoss/Dragonfly2/issues/1893))
 - optimize reregister ([#1888](https://github.com/dragonflyoss/Dragonfly2/issues/1888))
 - releaser action disable cgo ([#1885](https://github.com/dragonflyoss/Dragonfly2/issues/1885))
 - add Baidu to ADOPTERS.md ([#1884](https://github.com/dragonflyoss/Dragonfly2/issues/1884))
@@ -750,7 +750,7 @@
 - support source client option ([#2008](https://github.com/dragonflyoss/Dragonfly2/issues/2008))
 - change ok to loaded in loading func ([#2010](https://github.com/dragonflyoss/Dragonfly2/issues/2010))
 - remove NetTopology from scheduler and manager ([#2007](https://github.com/dragonflyoss/Dragonfly2/issues/2007))
-- add v2 verison of the grpc to scheduler ([#1999](https://github.com/dragonflyoss/Dragonfly2/issues/1999))
+- add v2 version of the grpc to scheduler ([#1999](https://github.com/dragonflyoss/Dragonfly2/issues/1999))
 - add manager v2 api ([#1990](https://github.com/dragonflyoss/Dragonfly2/issues/1990))
 - searcher can not found candidate scheduler clusters, return all scheduler clusters ([#1991](https://github.com/dragonflyoss/Dragonfly2/issues/1991))
 - oras source client ([#1983](https://github.com/dragonflyoss/Dragonfly2/issues/1983))
@@ -1185,7 +1185,7 @@
 - release fd ([#668](https://github.com/dragonflyoss/Dragonfly2/issues/668))
 - add otel trace ([#650](https://github.com/dragonflyoss/Dragonfly2/issues/650))
 - disable prepared statement ([#648](https://github.com/dragonflyoss/Dragonfly2/issues/648))
-- update verison ([#640](https://github.com/dragonflyoss/Dragonfly2/issues/640))
+- update version ([#640](https://github.com/dragonflyoss/Dragonfly2/issues/640))
 - changelog ([#638](https://github.com/dragonflyoss/Dragonfly2/issues/638))
 - update console submodule ([#637](https://github.com/dragonflyoss/Dragonfly2/issues/637))
 - update submodule ([#632](https://github.com/dragonflyoss/Dragonfly2/issues/632))
@@ -1530,7 +1530,7 @@
 - resource task with v2 version of grpc ([#2078](https://github.com/dragonflyoss/Dragonfly2/issues/2078))
 - parse http range ([#2071](https://github.com/dragonflyoss/Dragonfly2/issues/2071))
 - peer resource with v2 version of the grpc ([#2039](https://github.com/dragonflyoss/Dragonfly2/issues/2039))
-- announcer and dynconfig with v2 verison of the manager grpc ([#2037](https://github.com/dragonflyoss/Dragonfly2/issues/2037))
+- announcer and dynconfig with v2 version of the manager grpc ([#2037](https://github.com/dragonflyoss/Dragonfly2/issues/2037))
 - resource host without scheduler v1 definition ([#2036](https://github.com/dragonflyoss/Dragonfly2/issues/2036))
 - piece_dispatcher considering score of parent peer ([#1978](https://github.com/dragonflyoss/Dragonfly2/issues/1978))
 - dynconfig without Unmarshal ([#1926](https://github.com/dragonflyoss/Dragonfly2/issues/1926))
@@ -2125,7 +2125,7 @@
 - resource task with v2 version of grpc ([#2078](https://github.com/dragonflyoss/Dragonfly2/issues/2078))
 - parse http range ([#2071](https://github.com/dragonflyoss/Dragonfly2/issues/2071))
 - peer resource with v2 version of the grpc ([#2039](https://github.com/dragonflyoss/Dragonfly2/issues/2039))
-- announcer and dynconfig with v2 verison of the manager grpc ([#2037](https://github.com/dragonflyoss/Dragonfly2/issues/2037))
+- announcer and dynconfig with v2 version of the manager grpc ([#2037](https://github.com/dragonflyoss/Dragonfly2/issues/2037))
 - resource host without scheduler v1 definition ([#2036](https://github.com/dragonflyoss/Dragonfly2/issues/2036))
 
 
@@ -2161,7 +2161,7 @@
 - update helm charts submodule ([#1997](https://github.com/dragonflyoss/Dragonfly2/issues/1997))
 
 ### Feat
-- add v2 verison of the grpc to scheduler ([#1999](https://github.com/dragonflyoss/Dragonfly2/issues/1999))
+- add v2 version of the grpc to scheduler ([#1999](https://github.com/dragonflyoss/Dragonfly2/issues/1999))
 
 ### Fix
 - manager typo ([#1995](https://github.com/dragonflyoss/Dragonfly2/issues/1995))
@@ -2217,7 +2217,7 @@
 - add Baidu to ADOPTERS.md ([#1884](https://github.com/dragonflyoss/Dragonfly2/issues/1884))
 - releaser action disable cgo ([#1885](https://github.com/dragonflyoss/Dragonfly2/issues/1885))
 - optimize reregister ([#1888](https://github.com/dragonflyoss/Dragonfly2/issues/1888))
-- update api package verison ([#1893](https://github.com/dragonflyoss/Dragonfly2/issues/1893))
+- update api package version ([#1893](https://github.com/dragonflyoss/Dragonfly2/issues/1893))
 - add e2e with nydus snapshotter ([#1860](https://github.com/dragonflyoss/Dragonfly2/issues/1860))
 - goreleaser set rlcp field ([#1967](https://github.com/dragonflyoss/Dragonfly2/issues/1967))
 - change dingtalk image ([#1954](https://github.com/dragonflyoss/Dragonfly2/issues/1954))
@@ -2386,7 +2386,7 @@
 ## [v2.0.9-alpha.0] - 2022-12-09
 ### Chore
 - add Baidu to ADOPTERS.md ([#1884](https://github.com/dragonflyoss/Dragonfly2/issues/1884))
-- update api package verison ([#1893](https://github.com/dragonflyoss/Dragonfly2/issues/1893))
+- update api package version ([#1893](https://github.com/dragonflyoss/Dragonfly2/issues/1893))
 - optimize reregister ([#1888](https://github.com/dragonflyoss/Dragonfly2/issues/1888))
 - releaser action disable cgo ([#1885](https://github.com/dragonflyoss/Dragonfly2/issues/1885))
 - add e2e with nydus snapshotter ([#1860](https://github.com/dragonflyoss/Dragonfly2/issues/1860))
@@ -2570,7 +2570,7 @@
 ## [v2.0.8-alpha.0] - 2022-10-28
 ### Chore
 - add timestamp to stdout&stderr ([#1781](https://github.com/dragonflyoss/Dragonfly2/issues/1781))
-- update grpc api proto verison ([#1779](https://github.com/dragonflyoss/Dragonfly2/issues/1779))
+- update grpc api proto version ([#1779](https://github.com/dragonflyoss/Dragonfly2/issues/1779))
 - add intel to ADOPTERS.md ([#1778](https://github.com/dragonflyoss/Dragonfly2/issues/1778))
 - update helm-charts submodule
 - **deps:** bump github.com/onsi/ginkgo/v2 from 2.2.0 to 2.4.0 ([#1787](https://github.com/dragonflyoss/Dragonfly2/issues/1787))
@@ -4748,7 +4748,7 @@
 - update runtime guide in helm deploy ([#612](https://github.com/dragonflyoss/Dragonfly2/issues/612))
 
 ### Feat
-- update verison ([#640](https://github.com/dragonflyoss/Dragonfly2/issues/640))
+- update version ([#640](https://github.com/dragonflyoss/Dragonfly2/issues/640))
 - changelog ([#638](https://github.com/dragonflyoss/Dragonfly2/issues/638))
 - update console submodule ([#637](https://github.com/dragonflyoss/Dragonfly2/issues/637))
 - update submodule ([#632](https://github.com/dragonflyoss/Dragonfly2/issues/632))
