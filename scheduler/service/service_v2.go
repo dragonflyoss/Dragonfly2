@@ -186,9 +186,6 @@ func (v *V2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePeerServer) error
 				logger.Error(err)
 				return err
 			}
-		case *schedulerv2.AnnouncePeerRequest_SyncPiecesFailedRequest:
-			logger.Infof("receive AnnouncePeerRequest_SyncPiecesFailedRequest: %#v", announcePeerRequest.SyncPiecesFailedRequest)
-			v.handleSyncPiecesFailedRequest(ctx, announcePeerRequest.SyncPiecesFailedRequest)
 		default:
 			msg := fmt.Sprintf("receive unknow request: %#v", announcePeerRequest)
 			logger.Error(msg)
@@ -1244,11 +1241,6 @@ func (v *V2) handleDownloadPieceBackToSourceFailedRequest(ctx context.Context, p
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
 	return status.Error(codes.Internal, "download piece from source failed")
-}
-
-// TODO Implement function.
-// handleSyncPiecesFailedRequest handles SyncPiecesFailedRequest of AnnouncePeerRequest.
-func (v *V2) handleSyncPiecesFailedRequest(ctx context.Context, req *schedulerv2.SyncPiecesFailedRequest) {
 }
 
 // handleResource handles resource included host, task, and peer.
