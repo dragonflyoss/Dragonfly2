@@ -201,7 +201,7 @@ func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 		}
 
 		if addr == "" {
-			logger.Warnf("seed peer %s %s %s has not reachable addresses",
+			logger.Warnf("seed peer %s %s %d has not reachable addresses",
 				seedPeer.GetIp(), seedPeer.GetHostname(), seedPeer.GetPort())
 			continue
 		}
