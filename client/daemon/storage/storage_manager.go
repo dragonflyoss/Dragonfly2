@@ -20,6 +20,7 @@ package storage
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -806,10 +807,24 @@ func (s *storageManager) TryGC() (bool, error) {
 		}
 		return true
 	})
+	diskUsage := s.diskUsage()
+	if diskUsage != nil {
 
+	}
 	quotaBytesExceed := totalNotMarkedSize - int64(s.storeOption.DiskGCThreshold)
 	quotaExceed := s.storeOption.DiskGCThreshold > 0 && quotaBytesExceed > 0
-	usageExceed, usageBytesExceed := s.diskUsageExceed()
+
+	metrics.DataUnReclaimedUsage.Set(float64(totalNotMarkedSize))
+	metrics.DataDiskGCThreshold.Set(float64(s.storeOption.DiskGCThreshold))
+	metrics.DataDiskGCThresholdPercent.Set(s.storeOption.DiskGCThresholdPercent)
+
+	usage := s.diskUsage()
+	if usage != nil {
+		metrics.DataDiskUsage.Set(float64(usage.Used))
+		metrics.DataDiskCapacity.Set(float64(usage.Total))
+	}
+
+	usageExceed, usageBytesExceed := s.diskUsageExceed(usage)
 
 	if quotaExceed || usageExceed {
 		var bytesExceed int64
@@ -941,13 +956,20 @@ func (s *storageManager) forceGC() (bool, error) {
 	return true, nil
 }
 
-func (s *storageManager) diskUsageExceed() (exceed bool, bytes int64) {
-	if s.storeOption.DiskGCThresholdPercent <= 0 {
-		return false, 0
-	}
+func (s *storageManager) diskUsage() *disk.UsageStat {
 	usage, err := disk.Usage(s.storeOption.DataPath)
 	if err != nil {
 		logger.Warnf("get %s disk usage error: %s", s.storeOption.DataPath, err)
+		return nil
+	}
+	return usage
+}
+
+func (s *storageManager) diskUsageExceed(usage *disk.UsageStat) (exceed bool, bytes int64) {
+	if s.storeOption.DiskGCThresholdPercent <= 0 {
+		return false, 0
+	}
+	if usage == nil {
 		return false, 0
 	}
 	logger.Debugf("disk usage: %+v", usage)

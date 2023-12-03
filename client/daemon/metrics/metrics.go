@@ -99,7 +99,7 @@ var (
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.DfdaemonMetricsName,
 		Name:      "piece_task_total",
-		Help:      "Counter of the total failed piece tasks.",
+		Help:      "Counter of the total piece tasks.",
 	})
 
 	PieceTaskFailedCount = promauto.NewCounter(prometheus.CounterOpts{
@@ -171,6 +171,41 @@ var (
 		Name:      "version",
 		Help:      "Version info of the service.",
 	}, []string{"major", "minor", "git_version", "git_commit", "platform", "build_time", "go_version", "go_tags", "go_gcflags"})
+
+	DataDiskUsage = promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.DfdaemonMetricsName,
+		Name:      "data_disk_usage_total",
+		Help:      "Gauger of the disk usage of data directory.",
+	})
+
+	DataDiskCapacity = promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.DfdaemonMetricsName,
+		Name:      "data_disk_capacity_total",
+		Help:      "Gauger of disk capacity of data directory.",
+	})
+
+	DataUnReclaimedUsage = promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.DfdaemonMetricsName,
+		Name:      "data_unreclaimed_usage_total",
+		Help:      "Gauger of unreclaimed data usage of data directory.",
+	})
+
+	DataDiskGCThreshold = promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.DfdaemonMetricsName,
+		Name:      "data_disk_gc_threshold_total",
+		Help:      "Gauger of disk gc threshold of data directory.",
+	})
+
+	DataDiskGCThresholdPercent = promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.DfdaemonMetricsName,
+		Name:      "data_disk_gc_threshold_percent",
+		Help:      "Gauger of disk gc threshold percent of data directory.",
+	})
 )
 
 func New(addr string) *http.Server {
