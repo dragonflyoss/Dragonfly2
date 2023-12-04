@@ -60,7 +60,7 @@ const (
 	CmdDelete = "delete"
 )
 
-// Service defalut port of listening.
+// Service default port of listening.
 const (
 	DefaultEndPort                = 65535
 	DefaultPeerStartPort          = 65000
