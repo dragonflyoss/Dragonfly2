@@ -765,7 +765,7 @@
 - add IPAddresses and DNSNames to sans of the cert ([#1930](https://github.com/dragonflyoss/Dragonfly2/issues/1930))
 - change yaml field type from string to net.IP ([#1929](https://github.com/dragonflyoss/Dragonfly2/issues/1929))
 - random pieces download ([#1918](https://github.com/dragonflyoss/Dragonfly2/issues/1918))
-- update version guage metrics ([#1927](https://github.com/dragonflyoss/Dragonfly2/issues/1927))
+- update version gauge metrics ([#1927](https://github.com/dragonflyoss/Dragonfly2/issues/1927))
 - remove callsystem and pattern ([#1925](https://github.com/dragonflyoss/Dragonfly2/issues/1925))
 - client support 'priority' parameter ([#1911](https://github.com/dragonflyoss/Dragonfly2/issues/1911))
 - handle application not found ([#1913](https://github.com/dragonflyoss/Dragonfly2/issues/1913))
@@ -2261,7 +2261,7 @@
 - add IPAddresses and DNSNames to sans of the cert ([#1930](https://github.com/dragonflyoss/Dragonfly2/issues/1930))
 - change yaml field type from string to net.IP ([#1929](https://github.com/dragonflyoss/Dragonfly2/issues/1929))
 - random pieces download ([#1918](https://github.com/dragonflyoss/Dragonfly2/issues/1918))
-- update version guage metrics ([#1927](https://github.com/dragonflyoss/Dragonfly2/issues/1927))
+- update version gauge metrics ([#1927](https://github.com/dragonflyoss/Dragonfly2/issues/1927))
 - remove callsystem and pattern ([#1925](https://github.com/dragonflyoss/Dragonfly2/issues/1925))
 - client support 'priority' parameter ([#1911](https://github.com/dragonflyoss/Dragonfly2/issues/1911))
 - handle application not found ([#1913](https://github.com/dragonflyoss/Dragonfly2/issues/1913))
@@ -2342,7 +2342,7 @@
 <a name="v2.0.9-alpha.4"></a>
 ## [v2.0.9-alpha.4] - 2022-12-14
 ### Feat
-- update version guage metrics ([#1927](https://github.com/dragonflyoss/Dragonfly2/issues/1927))
+- update version gauge metrics ([#1927](https://github.com/dragonflyoss/Dragonfly2/issues/1927))
 
 
 <a name="v2.0.9-alpha.3"></a>
