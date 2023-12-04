@@ -807,10 +807,6 @@ func (s *storageManager) TryGC() (bool, error) {
 		}
 		return true
 	})
-	diskUsage := s.diskUsage()
-	if diskUsage != nil {
-
-	}
 	quotaBytesExceed := totalNotMarkedSize - int64(s.storeOption.DiskGCThreshold)
 	quotaExceed := s.storeOption.DiskGCThreshold > 0 && quotaBytesExceed > 0
 
