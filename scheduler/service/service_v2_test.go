@@ -3065,6 +3065,8 @@ func TestServiceV2_handleDownloadPieceFailedRequest(t *testing.T) {
 }
 
 func TestServiceV2_handleDownloadPieceBackToSourceFailedRequest(t *testing.T) {
+	mockPieceNumber := uint32(mockPiece.Number)
+
 	tests := []struct {
 		name string
 		req  *schedulerv2.DownloadPieceBackToSourceFailedRequest
@@ -3088,7 +3090,7 @@ func TestServiceV2_handleDownloadPieceBackToSourceFailedRequest(t *testing.T) {
 		{
 			name: "peer can be loaded",
 			req: &schedulerv2.DownloadPieceBackToSourceFailedRequest{
-				PieceNumber: uint32(mockPiece.Number),
+				PieceNumber: &mockPieceNumber,
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.DownloadPieceBackToSourceFailedRequest, peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder,
 				mp *resource.MockPeerManagerMockRecorder) {
