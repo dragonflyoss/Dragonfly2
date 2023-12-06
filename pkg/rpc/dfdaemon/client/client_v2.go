@@ -69,7 +69,7 @@ func GetV2(ctx context.Context, target string, opts ...grpc.DialOption) (V2, err
 // V2 is the interface for v2 version of the grpc client.
 type V2 interface {
 	// SyncPieces syncs pieces from the other peers.
-	SyncPieces(context.Context, *dfdaemonv2.SyncPiecesRequest, ...grpc.CallOption) (dfdaemonv2.Dfdaemon_SyncPiecesClient, error)
+	DownloadPiece(context.Context, *dfdaemonv2.DownloadPieceRequest, ...grpc.CallOption) (*dfdaemonv2.DownloadPieceResponse, error)
 
 	// DownloadTask downloads task back-to-source.
 	DownloadTask(context.Context, *dfdaemonv2.DownloadTaskRequest, ...grpc.CallOption) error
@@ -94,8 +94,11 @@ type v2 struct {
 }
 
 // Trigger client to download file.
-func (v *v2) SyncPieces(ctx context.Context, req *dfdaemonv2.SyncPiecesRequest, opts ...grpc.CallOption) (dfdaemonv2.Dfdaemon_SyncPiecesClient, error) {
-	return v.DfdaemonClient.SyncPieces(
+func (v *v2) SyncPieces(ctx context.Context, req *dfdaemonv2.DownloadPieceRequest, opts ...grpc.CallOption) (*dfdaemonv2.DownloadPieceResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
+	return v.DfdaemonClient.DownloadPiece(
 		ctx,
 		req,
 		opts...,
