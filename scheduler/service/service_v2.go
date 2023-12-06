@@ -91,7 +91,7 @@ func (v *V2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePeerServer) error
 	for {
 		select {
 		case <-ctx.Done():
-			logger.Infof("context was done")
+			logger.Info("context was done")
 			return ctx.Err()
 		default:
 		}
@@ -110,86 +110,86 @@ func (v *V2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePeerServer) error
 		switch announcePeerRequest := req.GetRequest().(type) {
 		case *schedulerv2.AnnouncePeerRequest_RegisterPeerRequest:
 			registerPeerRequest := announcePeerRequest.RegisterPeerRequest
-			logger.Infof("receive AnnouncePeerRequest_RegisterPeerRequest: %s", registerPeerRequest.Download.Url)
+			logger.Infof("receive RegisterPeerRequest, url: %s", registerPeerRequest.Download.Url)
 			if err := v.handleRegisterPeerRequest(ctx, stream, req.GetHostId(), req.GetTaskId(), req.GetPeerId(), registerPeerRequest); err != nil {
 				logger.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_RegisterSeedPeerRequest:
 			registerSeedPeerRequest := announcePeerRequest.RegisterSeedPeerRequest
-			logger.Infof("receive AnnouncePeerRequest_RegisterSeedPeerRequest: %s", registerSeedPeerRequest.Download.Url)
+			logger.Infof("receive RegisterSeedPeerRequest, url: %s", registerSeedPeerRequest.Download.Url)
 			if err := v.handleRegisterSeedPeerRequest(ctx, stream, req.GetHostId(), req.GetTaskId(), req.GetPeerId(), registerSeedPeerRequest); err != nil {
 				logger.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerStartedRequest:
-			logger.Info("receive AnnouncePeerRequest_DownloadPeerStartedRequest")
+			logger.Info("receive DownloadPeerStartedRequest")
 			if err := v.handleDownloadPeerStartedRequest(ctx, req.GetPeerId()); err != nil {
 				logger.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerBackToSourceStartedRequest:
-			logger.Info("receive AnnouncePeerRequest_DownloadPeerBackToSourceStartedRequest")
+			logger.Info("receive DownloadPeerBackToSourceStartedRequest")
 			if err := v.handleDownloadPeerBackToSourceStartedRequest(ctx, req.GetPeerId()); err != nil {
 				logger.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_RescheduleRequest:
-			logger.Infof("receive AnnouncePeerRequest_RescheduleRequest: %s", announcePeerRequest.RescheduleRequest.GetDescription())
+			logger.Infof("receive RescheduleRequest, description: %s", announcePeerRequest.RescheduleRequest.GetDescription())
 			if err := v.handleRescheduleRequest(ctx, req.GetPeerId()); err != nil {
 				logger.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerFinishedRequest:
 			downloadPeerFinishedRequest := announcePeerRequest.DownloadPeerFinishedRequest
-			logger.Infof("receive AnnouncePeerRequest_DownloadPeerFinishedRequest: %d %d", downloadPeerFinishedRequest.GetContentLength(), downloadPeerFinishedRequest.GetPieceCount())
+			logger.Infof("receive DownloadPeerFinishedRequest, content length: %d, piece count: %d", downloadPeerFinishedRequest.GetContentLength(), downloadPeerFinishedRequest.GetPieceCount())
 			if err := v.handleDownloadPeerFinishedRequest(ctx, req.GetPeerId()); err != nil {
 				logger.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerBackToSourceFinishedRequest:
 			downloadPeerBackToSourceFinishedRequest := announcePeerRequest.DownloadPeerBackToSourceFinishedRequest
-			logger.Infof("receive AnnouncePeerRequest_DownloadPeerBackToSourceFinishedRequest: %d %d", downloadPeerBackToSourceFinishedRequest.GetContentLength(), downloadPeerBackToSourceFinishedRequest.GetPieceCount())
+			logger.Infof("receive DownloadPeerBackToSourceFinishedRequest, content length: %d, piece count: %d", downloadPeerBackToSourceFinishedRequest.GetContentLength(), downloadPeerBackToSourceFinishedRequest.GetPieceCount())
 			if err := v.handleDownloadPeerBackToSourceFinishedRequest(ctx, req.GetPeerId(), downloadPeerBackToSourceFinishedRequest); err != nil {
 				logger.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerFailedRequest:
-			logger.Infof("receive AnnouncePeerRequest_DownloadPeerFailedRequest: %s", announcePeerRequest.DownloadPeerFailedRequest.GetDescription())
+			logger.Infof("receive DownloadPeerFailedRequest, description: %s", announcePeerRequest.DownloadPeerFailedRequest.GetDescription())
 			if err := v.handleDownloadPeerFailedRequest(ctx, req.GetPeerId()); err != nil {
 				logger.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerBackToSourceFailedRequest:
-			logger.Infof("receive AnnouncePeerRequest_DownloadPeerBackToSourceFailedRequest: %s", announcePeerRequest.DownloadPeerBackToSourceFailedRequest.GetDescription())
+			logger.Infof("receive DownloadPeerBackToSourceFailedRequest, description: %s", announcePeerRequest.DownloadPeerBackToSourceFailedRequest.GetDescription())
 			if err := v.handleDownloadPeerBackToSourceFailedRequest(ctx, req.GetPeerId()); err != nil {
 				logger.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPieceFinishedRequest:
 			piece := announcePeerRequest.DownloadPieceFinishedRequest.Piece
-			logger.Infof("receive AnnouncePeerRequest_DownloadPieceFinishedRequest: %d %d %s %s %s", piece.GetNumber(), piece.GetLength(), piece.GetTrafficType(), piece.GetCost().AsDuration().String(), piece.GetParentId())
+			logger.Infof("receive DownloadPieceFinishedRequest, piece number: %d, piece length: %d, traffic type: %s, cost: %s, parent id: %s", piece.GetNumber(), piece.GetLength(), piece.GetTrafficType(), piece.GetCost().AsDuration().String(), piece.GetParentId())
 			if err := v.handleDownloadPieceFinishedRequest(ctx, req.GetPeerId(), announcePeerRequest.DownloadPieceFinishedRequest); err != nil {
 				logger.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPieceBackToSourceFinishedRequest:
 			piece := announcePeerRequest.DownloadPieceBackToSourceFinishedRequest.Piece
-			logger.Infof("receive AnnouncePeerRequest_DownloadPieceBackToSourceFinishedRequest: %d %d %s %s %s", piece.GetNumber(), piece.GetLength(), piece.GetTrafficType(), piece.GetCost().AsDuration().String(), piece.GetParentId())
+			logger.Infof("receive DownloadPieceBackToSourceFinishedRequest, piece number: %d, piece length: %d, traffic type: %s, cost: %s, parent id: %s", piece.GetNumber(), piece.GetLength(), piece.GetTrafficType(), piece.GetCost().AsDuration().String(), piece.GetParentId())
 			if err := v.handleDownloadPieceBackToSourceFinishedRequest(ctx, req.GetPeerId(), announcePeerRequest.DownloadPieceBackToSourceFinishedRequest); err != nil {
 				logger.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPieceFailedRequest:
 			downloadPieceFailedRequest := announcePeerRequest.DownloadPieceFailedRequest
-			logger.Infof("receive AnnouncePeerRequest_DownloadPieceFailedRequest: %d %t %s", downloadPieceFailedRequest.GetPieceNumber(), downloadPieceFailedRequest.GetTemporary(), downloadPieceFailedRequest.GetParentId())
+			logger.Infof("receive DownloadPieceFailedRequest, piece number: %d, temporary: %t, parent id: %s", downloadPieceFailedRequest.GetPieceNumber(), downloadPieceFailedRequest.GetTemporary(), downloadPieceFailedRequest.GetParentId())
 			if err := v.handleDownloadPieceFailedRequest(ctx, req.GetPeerId(), downloadPieceFailedRequest); err != nil {
 				logger.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPieceBackToSourceFailedRequest:
 			downloadPieceBackToSourceFailedRequest := announcePeerRequest.DownloadPieceBackToSourceFailedRequest
-			logger.Infof("receive AnnouncePeerRequest_DownloadPieceBackToSourceFailedRequest: %d", downloadPieceBackToSourceFailedRequest.GetPieceNumber())
+			logger.Infof("receive DownloadPieceBackToSourceFailedRequest, piece number: %d", downloadPieceBackToSourceFailedRequest.GetPieceNumber())
 			if err := v.handleDownloadPieceBackToSourceFailedRequest(ctx, req.GetPeerId(), downloadPieceBackToSourceFailedRequest); err != nil {
 				logger.Error(err)
 				return err
