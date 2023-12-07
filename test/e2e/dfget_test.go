@@ -30,6 +30,8 @@ import (
 	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
 )
 
+const testPodPrefix = "test in pod: "
+
 var _ = Describe("Download with dfget and proxy", func() {
 	Context("dfget", func() {
 		singleDfgetTest("dfget daemon download should be ok",
@@ -100,7 +102,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 			"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
 		podName := strings.Trim(string(out), "'")
 		Expect(err).NotTo(HaveOccurred())
-		fmt.Println("test in pod: " + podName)
+		fmt.Println(testPodPrefix + podName)
 		Expect(strings.HasPrefix(podName, podNamePrefix)).Should(BeTrue())
 
 		// copy test tools into container
@@ -173,7 +175,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 			"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
 		podName := strings.Trim(string(out), "'")
 		Expect(err).NotTo(HaveOccurred())
-		fmt.Println("test in pod: " + podName)
+		fmt.Println(testPodPrefix + podName)
 		pod := e2eutil.NewPodExec(ns, podName, container)
 
 		for _, dir := range subDirs {
@@ -238,7 +240,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 			"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
 		podName := strings.Trim(string(out), "'")
 		Expect(err).NotTo(HaveOccurred())
-		fmt.Println("test in pod: " + podName)
+		fmt.Println(testPodPrefix + podName)
 		pod := e2eutil.NewPodExec(ns, podName, container)
 
 		// copy test tools into container
