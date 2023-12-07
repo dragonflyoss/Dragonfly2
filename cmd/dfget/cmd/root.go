@@ -170,6 +170,10 @@ func init() {
 
 	flagSet.String("logdir", dfgetConfig.LogDir, "Dfget log directory")
 
+	flagSet.String("datadir", dfgetConfig.DataDir, "Dfget data directory")
+
+	flagSet.String("cachedir", dfgetConfig.CacheDir, "Dfget cache directory")
+
 	flagSet.BoolP("recursive", "r", dfgetConfig.Recursive,
 		"Recursively download all resources in target url, the target source client must support list action")
 
@@ -205,6 +209,14 @@ func initDfgetDfpath(cfg *config.ClientOption) (dfpath.Dfpath, error) {
 
 	if cfg.LogDir != "" {
 		options = append(options, dfpath.WithLogDir(cfg.LogDir))
+	}
+
+	if cfg.DataDir != "" {
+		options = append(options, dfpath.WithDataDir(cfg.DataDir))
+	}
+
+	if cfg.CacheDir != "" {
+		options = append(options, dfpath.WithCacheDir(cfg.CacheDir))
 	}
 
 	if cfg.DaemonSock != "" {

@@ -100,6 +100,12 @@ type ClientOption struct {
 	// LogDir is log directory of dfget.
 	LogDir string `yaml:"logDir,omitempty" mapstructure:"logDir,omitempty"`
 
+	// DataDir is data directory of dfget.
+	DataDir string `yaml:"dataDir,omitempty" mapstructure:"dataDir,omitempty"`
+
+	// CacheDir is cache directory of dfget.
+	CacheDir string `yaml:"cacheDir,omitempty" mapstructure:"cacheDir,omitempty"`
+
 	// WorkHome is working directory of dfget.
 	WorkHome string `yaml:"workHome,omitempty" mapstructure:"workHome,omitempty"`
 
