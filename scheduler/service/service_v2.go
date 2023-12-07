@@ -106,97 +106,97 @@ func (v *V2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePeerServer) error
 			return err
 		}
 
-		logger := logger.WithPeer(req.GetHostId(), req.GetTaskId(), req.GetPeerId())
+		log := logger.WithPeer(req.GetHostId(), req.GetTaskId(), req.GetPeerId())
 		switch announcePeerRequest := req.GetRequest().(type) {
 		case *schedulerv2.AnnouncePeerRequest_RegisterPeerRequest:
 			registerPeerRequest := announcePeerRequest.RegisterPeerRequest
-			logger.Infof("receive RegisterPeerRequest, url: %s", registerPeerRequest.Download.Url)
+			log.Infof("receive RegisterPeerRequest, url: %s", registerPeerRequest.Download.Url)
 			if err := v.handleRegisterPeerRequest(ctx, stream, req.GetHostId(), req.GetTaskId(), req.GetPeerId(), registerPeerRequest); err != nil {
-				logger.Error(err)
+				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_RegisterSeedPeerRequest:
 			registerSeedPeerRequest := announcePeerRequest.RegisterSeedPeerRequest
-			logger.Infof("receive RegisterSeedPeerRequest, url: %s", registerSeedPeerRequest.Download.Url)
+			log.Infof("receive RegisterSeedPeerRequest, url: %s", registerSeedPeerRequest.Download.Url)
 			if err := v.handleRegisterSeedPeerRequest(ctx, stream, req.GetHostId(), req.GetTaskId(), req.GetPeerId(), registerSeedPeerRequest); err != nil {
-				logger.Error(err)
+				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerStartedRequest:
-			logger.Info("receive DownloadPeerStartedRequest")
+			log.Info("receive DownloadPeerStartedRequest")
 			if err := v.handleDownloadPeerStartedRequest(ctx, req.GetPeerId()); err != nil {
-				logger.Error(err)
+				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerBackToSourceStartedRequest:
-			logger.Info("receive DownloadPeerBackToSourceStartedRequest")
+			log.Info("receive DownloadPeerBackToSourceStartedRequest")
 			if err := v.handleDownloadPeerBackToSourceStartedRequest(ctx, req.GetPeerId()); err != nil {
-				logger.Error(err)
+				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_RescheduleRequest:
-			logger.Infof("receive RescheduleRequest, description: %s", announcePeerRequest.RescheduleRequest.GetDescription())
+			log.Infof("receive RescheduleRequest, description: %s", announcePeerRequest.RescheduleRequest.GetDescription())
 			if err := v.handleRescheduleRequest(ctx, req.GetPeerId()); err != nil {
-				logger.Error(err)
+				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerFinishedRequest:
 			downloadPeerFinishedRequest := announcePeerRequest.DownloadPeerFinishedRequest
-			logger.Infof("receive DownloadPeerFinishedRequest, content length: %d, piece count: %d", downloadPeerFinishedRequest.GetContentLength(), downloadPeerFinishedRequest.GetPieceCount())
+			log.Infof("receive DownloadPeerFinishedRequest, content length: %d, piece count: %d", downloadPeerFinishedRequest.GetContentLength(), downloadPeerFinishedRequest.GetPieceCount())
 			if err := v.handleDownloadPeerFinishedRequest(ctx, req.GetPeerId()); err != nil {
-				logger.Error(err)
+				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerBackToSourceFinishedRequest:
 			downloadPeerBackToSourceFinishedRequest := announcePeerRequest.DownloadPeerBackToSourceFinishedRequest
-			logger.Infof("receive DownloadPeerBackToSourceFinishedRequest, content length: %d, piece count: %d", downloadPeerBackToSourceFinishedRequest.GetContentLength(), downloadPeerBackToSourceFinishedRequest.GetPieceCount())
+			log.Infof("receive DownloadPeerBackToSourceFinishedRequest, content length: %d, piece count: %d", downloadPeerBackToSourceFinishedRequest.GetContentLength(), downloadPeerBackToSourceFinishedRequest.GetPieceCount())
 			if err := v.handleDownloadPeerBackToSourceFinishedRequest(ctx, req.GetPeerId(), downloadPeerBackToSourceFinishedRequest); err != nil {
-				logger.Error(err)
+				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerFailedRequest:
-			logger.Infof("receive DownloadPeerFailedRequest, description: %s", announcePeerRequest.DownloadPeerFailedRequest.GetDescription())
+			log.Infof("receive DownloadPeerFailedRequest, description: %s", announcePeerRequest.DownloadPeerFailedRequest.GetDescription())
 			if err := v.handleDownloadPeerFailedRequest(ctx, req.GetPeerId()); err != nil {
-				logger.Error(err)
+				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerBackToSourceFailedRequest:
-			logger.Infof("receive DownloadPeerBackToSourceFailedRequest, description: %s", announcePeerRequest.DownloadPeerBackToSourceFailedRequest.GetDescription())
+			log.Infof("receive DownloadPeerBackToSourceFailedRequest, description: %s", announcePeerRequest.DownloadPeerBackToSourceFailedRequest.GetDescription())
 			if err := v.handleDownloadPeerBackToSourceFailedRequest(ctx, req.GetPeerId()); err != nil {
-				logger.Error(err)
+				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPieceFinishedRequest:
 			piece := announcePeerRequest.DownloadPieceFinishedRequest.Piece
-			logger.Infof("receive DownloadPieceFinishedRequest, piece number: %d, piece length: %d, traffic type: %s, cost: %s, parent id: %s", piece.GetNumber(), piece.GetLength(), piece.GetTrafficType(), piece.GetCost().AsDuration().String(), piece.GetParentId())
+			log.Infof("receive DownloadPieceFinishedRequest, piece number: %d, piece length: %d, traffic type: %s, cost: %s, parent id: %s", piece.GetNumber(), piece.GetLength(), piece.GetTrafficType(), piece.GetCost().AsDuration().String(), piece.GetParentId())
 			if err := v.handleDownloadPieceFinishedRequest(ctx, req.GetPeerId(), announcePeerRequest.DownloadPieceFinishedRequest); err != nil {
-				logger.Error(err)
+				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPieceBackToSourceFinishedRequest:
 			piece := announcePeerRequest.DownloadPieceBackToSourceFinishedRequest.Piece
-			logger.Infof("receive DownloadPieceBackToSourceFinishedRequest, piece number: %d, piece length: %d, traffic type: %s, cost: %s, parent id: %s", piece.GetNumber(), piece.GetLength(), piece.GetTrafficType(), piece.GetCost().AsDuration().String(), piece.GetParentId())
+			log.Infof("receive DownloadPieceBackToSourceFinishedRequest, piece number: %d, piece length: %d, traffic type: %s, cost: %s, parent id: %s", piece.GetNumber(), piece.GetLength(), piece.GetTrafficType(), piece.GetCost().AsDuration().String(), piece.GetParentId())
 			if err := v.handleDownloadPieceBackToSourceFinishedRequest(ctx, req.GetPeerId(), announcePeerRequest.DownloadPieceBackToSourceFinishedRequest); err != nil {
-				logger.Error(err)
+				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPieceFailedRequest:
 			downloadPieceFailedRequest := announcePeerRequest.DownloadPieceFailedRequest
-			logger.Infof("receive DownloadPieceFailedRequest, piece number: %d, temporary: %t, parent id: %s", downloadPieceFailedRequest.GetPieceNumber(), downloadPieceFailedRequest.GetTemporary(), downloadPieceFailedRequest.GetParentId())
+			log.Infof("receive DownloadPieceFailedRequest, piece number: %d, temporary: %t, parent id: %s", downloadPieceFailedRequest.GetPieceNumber(), downloadPieceFailedRequest.GetTemporary(), downloadPieceFailedRequest.GetParentId())
 			if err := v.handleDownloadPieceFailedRequest(ctx, req.GetPeerId(), downloadPieceFailedRequest); err != nil {
-				logger.Error(err)
+				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPieceBackToSourceFailedRequest:
 			downloadPieceBackToSourceFailedRequest := announcePeerRequest.DownloadPieceBackToSourceFailedRequest
-			logger.Infof("receive DownloadPieceBackToSourceFailedRequest, piece number: %d", downloadPieceBackToSourceFailedRequest.GetPieceNumber())
+			log.Infof("receive DownloadPieceBackToSourceFailedRequest, piece number: %d", downloadPieceBackToSourceFailedRequest.GetPieceNumber())
 			if err := v.handleDownloadPieceBackToSourceFailedRequest(ctx, req.GetPeerId(), downloadPieceBackToSourceFailedRequest); err != nil {
-				logger.Error(err)
+				log.Error(err)
 				return err
 			}
 		default:
 			msg := fmt.Sprintf("receive unknow request: %#v", announcePeerRequest)
-			logger.Error(msg)
+			log.Error(msg)
 			return status.Error(codes.FailedPrecondition, msg)
 		}
 	}
@@ -374,12 +374,13 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 
 // LeavePeer releases peer in scheduler.
 func (v *V2) LeavePeer(ctx context.Context, req *schedulerv2.LeavePeerRequest) error {
-	logger.WithTaskAndPeerID(req.GetTaskId(), req.GetPeerId()).Infof("leave peer request: %#v", req)
+	log := logger.WithTaskAndPeerID(req.GetTaskId(), req.GetPeerId())
+	log.Infof("leave peer request: %#v", req)
 
 	peer, loaded := v.resource.PeerManager().Load(req.GetPeerId())
 	if !loaded {
 		msg := fmt.Sprintf("peer %s not found", req.GetPeerId())
-		logger.Error(msg)
+		log.Error(msg)
 		return status.Error(codes.NotFound, msg)
 	}
 
@@ -400,12 +401,13 @@ func (v *V2) ExchangePeer(ctx context.Context, req *schedulerv2.ExchangePeerRequ
 
 // StatTask checks information of task.
 func (v *V2) StatTask(ctx context.Context, req *schedulerv2.StatTaskRequest) (*commonv2.Task, error) {
-	logger.WithTaskID(req.GetId()).Infof("stat task request: %#v", req)
+	log := logger.WithTaskID(req.GetId())
+	log.Infof("stat task request: %#v", req)
 
 	task, loaded := v.resource.TaskManager().Load(req.GetId())
 	if !loaded {
 		msg := fmt.Sprintf("task %s not found", req.GetId())
-		logger.Error(msg)
+		log.Error(msg)
 		return nil, status.Error(codes.NotFound, msg)
 	}
 
@@ -651,12 +653,13 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 
 // LeaveHost releases host in scheduler.
 func (v *V2) LeaveHost(ctx context.Context, req *schedulerv2.LeaveHostRequest) error {
-	logger.WithHostID(req.GetId()).Infof("leave host request: %#v", req)
+	log := logger.WithHostID(req.GetId())
+	log.Infof("leave host request: %#v", req)
 
 	host, loaded := v.resource.HostManager().Load(req.GetId())
 	if !loaded {
 		msg := fmt.Sprintf("host %s not found", req.GetId())
-		logger.Error(msg)
+		log.Error(msg)
 		return status.Error(codes.NotFound, msg)
 	}
 
@@ -666,7 +669,7 @@ func (v *V2) LeaveHost(ctx context.Context, req *schedulerv2.LeaveHostRequest) e
 	// Delete host from network topology.
 	if v.networkTopology != nil {
 		if err := v.networkTopology.DeleteHost(host.ID); err != nil {
-			logger.Errorf("delete network topology host error: %s", err.Error())
+			log.Errorf("delete network topology host error: %s", err.Error())
 			return err
 		}
 	}
@@ -691,15 +694,15 @@ func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
 			return err
 		}
 
-		logger := logger.WithHost(req.Host.GetId(), req.Host.GetHostname(), req.Host.GetIp())
+		log := logger.WithHost(req.Host.GetId(), req.Host.GetHostname(), req.Host.GetIp())
 		switch syncProbesRequest := req.GetRequest().(type) {
 		case *schedulerv2.SyncProbesRequest_ProbeStartedRequest:
 			// Find probed hosts in network topology. Based on the source host information,
 			// the most candidate hosts will be evaluated.
-			logger.Info("receive SyncProbesRequest_ProbeStartedRequest")
+			log.Info("receive SyncProbesRequest_ProbeStartedRequest")
 			hosts, err := v.networkTopology.FindProbedHosts(req.Host.GetId())
 			if err != nil {
-				logger.Error(err)
+				log.Error(err)
 				return status.Error(codes.FailedPrecondition, err.Error())
 			}
 
@@ -768,26 +771,26 @@ func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
 				})
 			}
 
-			logger.Infof("probe started: %#v", probedHosts)
+			log.Infof("probe started: %#v", probedHosts)
 			if err := stream.Send(&schedulerv2.SyncProbesResponse{
 				Hosts: probedHosts,
 			}); err != nil {
-				logger.Error(err)
+				log.Error(err)
 				return err
 			}
 		case *schedulerv2.SyncProbesRequest_ProbeFinishedRequest:
 			// Store probes in network topology. First create the association between
 			// source host and destination host, and then store the value of probe.
-			logger.Info("receive SyncProbesRequest_ProbeFinishedRequest")
+			log.Info("receive SyncProbesRequest_ProbeFinishedRequest")
 			for _, probe := range syncProbesRequest.ProbeFinishedRequest.Probes {
 				probedHost, loaded := v.resource.HostManager().Load(probe.Host.Id)
 				if !loaded {
-					logger.Errorf("host %s not found", probe.Host.Id)
+					log.Errorf("host %s not found", probe.Host.Id)
 					continue
 				}
 
 				if err := v.networkTopology.Store(req.Host.GetId(), probedHost.ID); err != nil {
-					logger.Errorf("store failed: %s", err.Error())
+					log.Errorf("store failed: %s", err.Error())
 					continue
 				}
 
@@ -796,24 +799,24 @@ func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
 					RTT:       probe.Rtt.AsDuration(),
 					CreatedAt: probe.CreatedAt.AsTime(),
 				}); err != nil {
-					logger.Errorf("enqueue failed: %s", err.Error())
+					log.Errorf("enqueue failed: %s", err.Error())
 					continue
 				}
 
-				logger.Infof("probe finished: %#v", probe)
+				log.Infof("probe finished: %#v", probe)
 			}
 		case *schedulerv2.SyncProbesRequest_ProbeFailedRequest:
 			// Log failed probes.
-			logger.Info("receive SyncProbesRequest_ProbeFailedRequest")
+			log.Info("receive SyncProbesRequest_ProbeFailedRequest")
 			var failedProbedHostIDs []string
 			for _, failedProbe := range syncProbesRequest.ProbeFailedRequest.Probes {
 				failedProbedHostIDs = append(failedProbedHostIDs, failedProbe.Host.Id)
 			}
 
-			logger.Warnf("probe failed: %#v", failedProbedHostIDs)
+			log.Warnf("probe failed: %#v", failedProbedHostIDs)
 		default:
 			msg := fmt.Sprintf("receive unknow request: %#v", syncProbesRequest)
-			logger.Error(msg)
+			log.Error(msg)
 			return status.Error(codes.FailedPrecondition, msg)
 		}
 	}

@@ -19,6 +19,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -200,7 +201,7 @@ var (
 	mockTaskTag                     = "d7y"
 	mockTaskApplication             = "foo"
 	mockTaskFilters                 = []string{"bar"}
-	mockTaskHeader                  = map[string]string{"content-length": "100"}
+	mockTaskHeader                  = map[string]string{"Content-Length": "100", "Range": "bytes=0-99"}
 	mockTaskPieceLength       int32 = 2048
 	mockResourceConfig              = &config.ResourceConfig{
 		Task: config.TaskConfig{
@@ -3065,6 +3066,112 @@ func TestServiceV1_SyncProbes(t *testing.T) {
 
 			tc.mock(svc, res.EXPECT(), probes, probes.EXPECT(), networkTopology.EXPECT(), hostManager, hostManager.EXPECT(), stream.EXPECT())
 			tc.expect(t, svc.SyncProbes(stream))
+		})
+	}
+}
+
+func TestServiceV1_prefetchTask(t *testing.T) {
+	fmt.Println("TestServiceV1_prefetchTask")
+	tests := []struct {
+		name   string
+		config *config.Config
+		req    *schedulerv1.PeerTaskRequest
+		mock   func(task *resource.Task, peer *resource.Peer, taskManager resource.TaskManager, seedPeer resource.SeedPeer, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder, mc *resource.MockSeedPeerMockRecorder)
+		expect func(t *testing.T, task *resource.Task, err error)
+	}{
+		{
+			name: "prefetch task with seed peer",
+			config: &config.Config{
+				Scheduler: mockSchedulerConfig,
+				SeedPeer:  mockSeedPeerConfig,
+			},
+			req: &schedulerv1.PeerTaskRequest{
+				Url: mockTaskURL,
+				UrlMeta: &commonv1.UrlMeta{
+					Digest:      mockTaskDigest.String(),
+					Tag:         mockTaskTag,
+					Range:       mockURLMetaRange,
+					Filter:      strings.Join(mockTaskFilters, idgen.URLFilterSeparator),
+					Header:      mockTaskHeader,
+					Application: mockTaskApplication,
+					Priority:    commonv1.Priority_LEVEL0,
+				},
+				PeerId:      mockPeerID,
+				PeerHost:    mockPeerHost,
+				Prefetch:    true,
+				IsMigrating: false,
+				TaskId:      mockTaskID,
+			},
+			mock: func(task *resource.Task, peer *resource.Peer, taskManager resource.TaskManager, seedPeer resource.SeedPeer, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder, mc *resource.MockSeedPeerMockRecorder) {
+				task.FSM.SetState(resource.TaskStateRunning)
+				peer.FSM.SetState(resource.PeerStateRunning)
+				gomock.InOrder(
+					mr.TaskManager().Return(taskManager).Times(1),
+					mt.Load(gomock.Eq("7aecbd0437cf6b429dc623686d36208135b3d2d1831a90b644458964297943a4")).Return(task, true).Times(1),
+					mr.SeedPeer().Return(seedPeer).Times(1),
+					mc.TriggerTask(gomock.Any(), gomock.Any(), gomock.Any()).Return(peer, &schedulerv1.PeerResult{}, nil).Times(1),
+				)
+			},
+			expect: func(t *testing.T, task *resource.Task, err error) {
+				assert := assert.New(t)
+				assert.True(task.FSM.Is(resource.TaskStateSucceeded))
+				assert.Equal(task.Header, map[string]string{"Content-Length": "100"})
+			},
+		},
+		{
+			name: "prefetch task without seed peer",
+			config: &config.Config{
+				Scheduler: mockSchedulerConfig,
+			},
+			req: &schedulerv1.PeerTaskRequest{
+				Url: mockTaskURL,
+				UrlMeta: &commonv1.UrlMeta{
+					Digest:      mockTaskDigest.String(),
+					Tag:         mockTaskTag,
+					Range:       mockURLMetaRange,
+					Filter:      strings.Join(mockTaskFilters, idgen.URLFilterSeparator),
+					Header:      mockTaskHeader,
+					Application: mockTaskApplication,
+					Priority:    commonv1.Priority_LEVEL0,
+				},
+				PeerId:      mockPeerID,
+				PeerHost:    mockPeerHost,
+				Prefetch:    true,
+				IsMigrating: false,
+				TaskId:      mockTaskID,
+			},
+			mock: func(task *resource.Task, peer *resource.Peer, taskManager resource.TaskManager, seedPeer resource.SeedPeer, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder, mc *resource.MockSeedPeerMockRecorder) {
+				task.FSM.SetState(resource.TaskStateRunning)
+				peer.FSM.SetState(resource.PeerStateRunning)
+			},
+			expect: func(t *testing.T, task *resource.Task, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "seed peer is disabled")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			scheduling := mocks.NewMockScheduling(ctl)
+			res := resource.NewMockResource(ctl)
+			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
+			storage := storagemocks.NewMockStorage(ctl)
+			networkTopology := networktopologymocks.NewMockNetworkTopology(ctl)
+			seedPeer := resource.NewMockSeedPeer(ctl)
+			mockHost := resource.NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
+			task := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
+			peer := resource.NewPeer(mockPeerID, mockResourceConfig, task, mockHost)
+			svc := NewV1(tc.config, res, scheduling, dynconfig, storage, networkTopology)
+			taskManager := resource.NewMockTaskManager(ctl)
+
+			tc.mock(task, peer, taskManager, seedPeer, res.EXPECT(), taskManager.EXPECT(), seedPeer.EXPECT())
+			task, err := svc.prefetchTask(context.Background(), tc.req)
+			tc.expect(t, task, err)
 		})
 	}
 }
