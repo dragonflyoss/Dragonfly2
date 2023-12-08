@@ -37,7 +37,7 @@ const (
 	DefaultSchedulerCandidateParentLimit = 4
 
 	// DefaultSchedulerFilterParentLimit is default limit the number for filter parent.
-	DefaultSchedulerFilterParentLimit = 40
+	DefaultSchedulerFilterParentLimit = 15
 )
 
 const (
