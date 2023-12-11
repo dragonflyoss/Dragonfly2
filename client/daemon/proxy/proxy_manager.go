@@ -142,7 +142,12 @@ func (pm *proxyManager) ServeSNI(listener net.Listener) error {
 }
 
 func (pm *proxyManager) Stop() error {
-	return pm.Server.Shutdown(context.Background())
+	err := pm.Server.Shutdown(context.Background())
+	if err != nil {
+		logger.Errorf("proxy shut down error: %s", err)
+	}
+	pm.Proxy.wg.Wait()
+	return err
 }
 
 func (pm *proxyManager) IsEnabled() bool {

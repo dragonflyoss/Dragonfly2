@@ -116,6 +116,8 @@ type Proxy struct {
 	dumpHTTPContent bool
 
 	peerIDGenerator peer.IDGenerator
+
+	wg *sync.WaitGroup
 }
 
 // Option is a functional option for configuring the proxy
@@ -272,6 +274,7 @@ func NewProxyWithOptions(options ...Option) (*Proxy, error) {
 		directHandler: http.NewServeMux(),
 		tracer:        otel.Tracer("dfget-daemon-proxy"),
 		certCache:     lru.New(100),
+		wg:            &sync.WaitGroup{},
 	}
 
 	for _, opt := range options {
@@ -286,6 +289,8 @@ func NewProxyWithOptions(options ...Option) (*Proxy, error) {
 
 // ServeHTTP implements http.Handler.ServeHTTP
 func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	proxy.wg.Add(1)
+	defer proxy.wg.Done()
 	metrics.ProxyRequestCount.WithLabelValues(r.Method).Add(1)
 	metrics.ProxyRequestRunningCount.WithLabelValues(r.Method).Add(1)
 	defer metrics.ProxyRequestRunningCount.WithLabelValues(r.Method).Sub(1)
