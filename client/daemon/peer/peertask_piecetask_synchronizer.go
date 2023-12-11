@@ -433,9 +433,7 @@ func (s *pieceTaskSynchronizer) reportError(err error) {
 	errCode := commonv1.Code_ClientPieceRequestFail
 
 	// extract DfError for grpc status
-	err = dferrors.ConvertGRPCErrorToDfError(err)
-	var de *dferrors.DfError
-	ok := errors.As(err, &de)
+	de, ok := dferrors.IsGRPCDfError(err)
 	if ok {
 		errCode = de.Code
 		s.Errorf("report error with convert code from grpc error, code: %d, message: %s", de.Code, de.Message)

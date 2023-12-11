@@ -801,9 +801,7 @@ func (pt *peerTaskConductor) confirmReceivePeerPacketError(err error) (cont bool
 		failedReason string
 	)
 	// extract DfError for grpc status
-	err = dferrors.ConvertGRPCErrorToDfError(err)
-	var de *dferrors.DfError
-	ok := errors.As(err, &de)
+	de, ok := dferrors.IsGRPCDfError(err)
 	if ok {
 		switch de.Code {
 		case commonv1.Code_SchedNeedBackSource:
