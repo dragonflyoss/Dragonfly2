@@ -812,11 +812,6 @@ func (pm *pieceManager) concurrentDownloadSource(ctx context.Context, pt Task, p
 	return pm.concurrentDownloadSourceByPieceGroup(ctx, pt, peerTaskRequest, parsedRange, continuePieceNum, pieceCount, pieceCountToDownload, con, pieceSize, cancel)
 }
 
-type pieceGroup struct {
-	start, end         int32
-	startByte, endByte int64
-}
-
 func (pm *pieceManager) concurrentDownloadSourceByPieceGroup(
 	ctx context.Context, pt Task, peerTaskRequest *schedulerv1.PeerTaskRequest,
 	parsedRange *nethttp.Range, startPieceNum int32, pieceCount int32, pieceCountToDownload int32,
@@ -843,7 +838,7 @@ func (pm *pieceManager) concurrentDownloadSourceByPieceGroup(
 	//   worker 4: 1
 	for i := int32(0); i < int32(con); i++ {
 		go func(i int32) {
-			pg := pm.createPieceGroup(i, reminderPieces, startPieceNum, minPieceCountPerGroup, pieceSize, parsedRange)
+			pg := newPieceGroup(i, reminderPieces, startPieceNum, minPieceCountPerGroup, pieceSize, parsedRange)
 			log.Infof("concurrent worker %d start to download piece %d-%d, byte %d-%d", i, pg.start, pg.end, pg.startByte, pg.endByte)
 			_, _, retryErr := retry.Run(ctx,
 				pm.concurrentOption.InitBackoff,
@@ -851,7 +846,7 @@ func (pm *pieceManager) concurrentDownloadSourceByPieceGroup(
 				pm.concurrentOption.MaxAttempts,
 				func() (data any, cancel bool, err error) {
 					err = pm.downloadPieceGroupFromSource(ctx, pt, log,
-						peerTaskRequest, pieceSize, pg, parsedRange, pieceCount, pieceCountToDownload, downloadedPieces)
+						peerTaskRequest, pg, pieceCount, pieceCountToDownload, downloadedPieces)
 					return nil, errors.Is(err, context.Canceled), err
 				})
 			if retryErr != nil {
@@ -875,7 +870,15 @@ func (pm *pieceManager) concurrentDownloadSourceByPieceGroup(
 	return nil
 }
 
-func (pm *pieceManager) createPieceGroup(i int32, reminderPieces int32, startPieceNum int32, minPieceCountPerGroup int32, pieceSize uint32, parsedRange *nethttp.Range) *pieceGroup {
+type pieceGroup struct {
+	start, end         int32
+	startByte, endByte int64
+	// store original task metadata
+	pieceSize   uint32
+	parsedRange *nethttp.Range
+}
+
+func newPieceGroup(i int32, reminderPieces int32, startPieceNum int32, minPieceCountPerGroup int32, pieceSize uint32, parsedRange *nethttp.Range) *pieceGroup {
 	var (
 		start int32
 		end   int32
@@ -905,10 +908,12 @@ func (pm *pieceManager) createPieceGroup(i int32, reminderPieces int32, startPie
 	endByte += parsedRange.Start
 
 	pg := &pieceGroup{
-		start:     start,
-		end:       end,
-		startByte: startByte,
-		endByte:   endByte,
+		start:       start,
+		end:         end,
+		startByte:   startByte,
+		endByte:     endByte,
+		pieceSize:   pieceSize,
+		parsedRange: parsedRange,
 	}
 	return pg
 }
@@ -1069,8 +1074,7 @@ func (pm *pieceManager) downloadPieceFromSource(ctx context.Context,
 func (pm *pieceManager) downloadPieceGroupFromSource(ctx context.Context,
 	pt Task, log *logger.SugaredLoggerOnWith,
 	peerTaskRequest *schedulerv1.PeerTaskRequest,
-	pieceSize uint32, pg *pieceGroup,
-	parsedRange *nethttp.Range,
+	pg *pieceGroup,
 	totalPieceCount int32,
 	totalPieceCountToDownload int32,
 	downloadedPieces mapset.Set[int32]) error {
@@ -1105,18 +1109,18 @@ func (pm *pieceManager) downloadPieceGroupFromSource(ctx context.Context,
 
 	for i := pg.start; i <= pg.end; i++ {
 		pieceNum := i
-		offset := uint64(pg.startByte) + uint64(i-pg.start)*uint64(pieceSize)
-		size := pieceSize
+		offset := uint64(pg.startByte) + uint64(i-pg.start)*uint64(pg.pieceSize)
+		size := pg.pieceSize
 		// update last piece size
 		if offset+uint64(size)-1 > uint64(pg.endByte) {
 			size = uint32(uint64(pg.endByte) + 1 - offset)
 		}
 
 		result, md5, err := pm.processPieceFromSource(
-			pt, response.Body, parsedRange.Length, pieceNum, offset-uint64(parsedRange.Start), size,
+			pt, response.Body, pg.parsedRange.Length, pieceNum, offset-uint64(pg.parsedRange.Start), size,
 			func(int64) (int32, int64, bool) {
 				downloadedPieces.Add(pieceNum)
-				return totalPieceCount, parsedRange.Length, downloadedPieces.Cardinality() == int(totalPieceCountToDownload)
+				return totalPieceCount, pg.parsedRange.Length, downloadedPieces.Cardinality() == int(totalPieceCountToDownload)
 			})
 		request := &DownloadPieceRequest{
 			TaskID: pt.GetTaskID(),

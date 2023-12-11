@@ -798,11 +798,15 @@ func TestPieceGroup(t *testing.T) {
 
 			minPieceCountPerGroup := pieceCountToDownload / tc.con
 			reminderPieces := pieceCountToDownload % tc.con
-			pm := &pieceManager{}
+
+			for i := int32(0); i < tc.con; i++ {
+				tc.pieceGroups[i].pieceSize = tc.pieceSize
+				tc.pieceGroups[i].parsedRange = tc.parsedRange
+			}
 
 			var pieceGroups []pieceGroup
 			for i := int32(0); i < tc.con; i++ {
-				pg := pm.createPieceGroup(i, reminderPieces, tc.startPieceNum, minPieceCountPerGroup, tc.pieceSize, tc.parsedRange)
+				pg := newPieceGroup(i, reminderPieces, tc.startPieceNum, minPieceCountPerGroup, tc.pieceSize, tc.parsedRange)
 				pieceGroups = append(pieceGroups, *pg)
 			}
 
