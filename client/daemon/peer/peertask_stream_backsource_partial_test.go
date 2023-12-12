@@ -187,10 +187,9 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 			}
 			schedPeerPacket = true
 			return &schedulerv1.PeerPacket{
-				Code:          commonv1.Code_Success,
-				TaskId:        opt.taskID,
-				SrcPid:        "127.0.0.1",
-				ParallelCount: opt.pieceParallelCount,
+				Code:   commonv1.Code_Success,
+				TaskId: opt.taskID,
+				SrcPid: "127.0.0.1",
 				MainPeer: &schedulerv1.PeerPacket_DestPeer{
 					Ip:      "127.0.0.1",
 					RpcPort: port,
