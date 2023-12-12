@@ -811,10 +811,6 @@ definitions:
     type: object
   d7y_io_dragonfly_v2_manager_types.SchedulerClusterClientConfig:
     properties:
-      concurrent_piece_count:
-        maximum: 50
-        minimum: 1
-        type: integer
       load_limit:
         maximum: 2000
         minimum: 1

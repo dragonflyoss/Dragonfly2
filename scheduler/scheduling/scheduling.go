@@ -191,7 +191,7 @@ func (s *scheduling) ScheduleCandidateParents(ctx context.Context, peer *resourc
 		// Send NormalTaskResponse to peer.
 		peer.Log.Info("send NormalTaskResponse")
 		if err := stream.Send(&schedulerv2.AnnouncePeerResponse{
-			Response: ConstructSuccessNormalTaskResponse(s.dynconfig, candidateParents),
+			Response: ConstructSuccessNormalTaskResponse(candidateParents),
 		}); err != nil {
 			peer.Log.Error(err)
 			return status.Error(codes.FailedPrecondition, err.Error())
@@ -359,7 +359,7 @@ func (s *scheduling) ScheduleParentAndCandidateParents(ctx context.Context, peer
 
 		// Send PeerPacket to peer.
 		peer.Log.Info("send PeerPacket to peer")
-		if err := stream.Send(ConstructSuccessPeerPacket(s.dynconfig, peer, candidateParents[0], candidateParents[1:])); err != nil {
+		if err := stream.Send(ConstructSuccessPeerPacket(peer, candidateParents[0], candidateParents[1:])); err != nil {
 			n++
 			peer.Log.Errorf("scheduling failed in %d times, because of %s", n, err.Error())
 
@@ -537,12 +537,7 @@ func (s *scheduling) filterCandidateParents(peer *resource.Peer, blocklist set.S
 
 // ConstructSuccessNormalTaskResponse constructs scheduling successful response of the normal task.
 // Used only in v2 version of the grpc.
-func ConstructSuccessNormalTaskResponse(dynconfig config.DynconfigInterface, candidateParents []*resource.Peer) *schedulerv2.AnnouncePeerResponse_NormalTaskResponse {
-	concurrentPieceCount := config.DefaultPeerConcurrentPieceCount
-	if config, err := dynconfig.GetSchedulerClusterClientConfig(); err == nil && config.ConcurrentPieceCount > 0 {
-		concurrentPieceCount = int(config.ConcurrentPieceCount)
-	}
-
+func ConstructSuccessNormalTaskResponse(candidateParents []*resource.Peer) *schedulerv2.AnnouncePeerResponse_NormalTaskResponse {
 	var parents []*commonv2.Peer
 	for _, candidateParent := range candidateParents {
 		parent := &commonv2.Peer{
@@ -708,20 +703,14 @@ func ConstructSuccessNormalTaskResponse(dynconfig config.DynconfigInterface, can
 
 	return &schedulerv2.AnnouncePeerResponse_NormalTaskResponse{
 		NormalTaskResponse: &schedulerv2.NormalTaskResponse{
-			CandidateParents:     parents,
-			ConcurrentPieceCount: uint32(concurrentPieceCount),
+			CandidateParents: parents,
 		},
 	}
 }
 
 // ConstructSuccessPeerPacket constructs peer successful packet.
 // Used only in v1 version of the grpc.
-func ConstructSuccessPeerPacket(dynconfig config.DynconfigInterface, peer *resource.Peer, parent *resource.Peer, candidateParents []*resource.Peer) *schedulerv1.PeerPacket {
-	concurrentPieceCount := config.DefaultPeerConcurrentPieceCount
-	if config, err := dynconfig.GetSchedulerClusterClientConfig(); err == nil && config.ConcurrentPieceCount > 0 {
-		concurrentPieceCount = int(config.ConcurrentPieceCount)
-	}
-
+func ConstructSuccessPeerPacket(peer *resource.Peer, parent *resource.Peer, candidateParents []*resource.Peer) *schedulerv1.PeerPacket {
 	var parents []*schedulerv1.PeerPacket_DestPeer
 	for _, candidateParent := range candidateParents {
 		parents = append(parents, &schedulerv1.PeerPacket_DestPeer{
@@ -732,9 +721,8 @@ func ConstructSuccessPeerPacket(dynconfig config.DynconfigInterface, peer *resou
 	}
 
 	return &schedulerv1.PeerPacket{
-		TaskId:        peer.Task.ID,
-		SrcPid:        peer.ID,
-		ParallelCount: int32(concurrentPieceCount),
+		TaskId: peer.Task.ID,
+		SrcPid: peer.ID,
 		MainPeer: &schedulerv1.PeerPacket_DestPeer{
 			Ip:      parent.Host.IP,
 			RpcPort: parent.Host.Port,

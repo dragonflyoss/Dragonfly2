@@ -200,10 +200,9 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 				return nil, dferrors.Newf(commonv1.Code_SchedNeedBackSource, "fake back source error")
 			}
 			return &schedulerv1.PeerPacket{
-				Code:          commonv1.Code_Success,
-				TaskId:        opt.taskID,
-				SrcPid:        "127.0.0.1",
-				ParallelCount: opt.pieceParallelCount,
+				Code:   commonv1.Code_Success,
+				TaskId: opt.taskID,
+				SrcPid: "127.0.0.1",
 				MainPeer: &schedulerv1.PeerPacket_DestPeer{
 					Ip:      "127.0.0.1",
 					RpcPort: port,

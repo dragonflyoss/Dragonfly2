@@ -30,9 +30,6 @@ const (
 	// DefaultPeerConcurrentUploadLimit is default number for peer concurrent upload limit.
 	DefaultPeerConcurrentUploadLimit = 50
 
-	// DefaultPeerConcurrentPieceCount is default number for pieces to concurrent downloading.
-	DefaultPeerConcurrentPieceCount = 4
-
 	// DefaultSchedulerCandidateParentLimit is default limit the number of candidate parent.
 	DefaultSchedulerCandidateParentLimit = 4
 

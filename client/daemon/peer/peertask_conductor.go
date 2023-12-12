@@ -747,13 +747,12 @@ loop:
 			pt.Warnf("scheduler client send a peerPacket with empty peers")
 			continue
 		}
-		pt.Infof("receive new peer packet, main peer: %s, parallel count: %d",
-			peerPacket.MainPeer.PeerId, peerPacket.ParallelCount)
+		pt.Infof("receive new peer packet, main peer: %s", peerPacket.MainPeer.PeerId)
 		pt.span.AddEvent("receive new peer packet",
 			trace.WithAttributes(config.AttributeMainPeer.String(peerPacket.MainPeer.PeerId)))
 
 		if !firstPacketReceived {
-			pt.initDownloadPieceWorkers(peerPacket.ParallelCount, pieceRequestQueue)
+			pt.initDownloadPieceWorkers(pieceRequestQueue)
 			firstPeerSpan.SetAttributes(config.AttributeMainPeer.String(peerPacket.MainPeer.PeerId))
 			firstPeerSpan.End()
 		}
@@ -952,11 +951,9 @@ func (pt *peerTaskConductor) updateMetadata(piecePacket *commonv1.PiecePacket) {
 	}
 }
 
-func (pt *peerTaskConductor) initDownloadPieceWorkers(count int32, pieceRequestQueue PieceDispatcher) {
-	if count < 1 {
-		count = 4
-	}
-	for i := int32(0); i < count; i++ {
+func (pt *peerTaskConductor) initDownloadPieceWorkers(pieceRequestQueue PieceDispatcher) {
+	count := 4
+	for i := int32(0); i < int32(count); i++ {
 		go pt.downloadPieceWorker(i, pieceRequestQueue)
 	}
 }
