@@ -99,6 +99,12 @@ func IsGRPCDfError(err error) (*DfError, bool) {
 		}
 	}
 
+	var de *DfError
+	ok := errors.As(err, &de)
+	if ok {
+		return de, true
+	}
+
 	return nil, false
 }
 
