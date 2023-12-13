@@ -20,12 +20,14 @@ import (
 	"math/big"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/montanaflynn/stats"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/math"
 	"d7y.io/dragonfly/v2/pkg/types"
+	"d7y.io/dragonfly/v2/scheduler/networktopology"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
@@ -47,6 +49,9 @@ const (
 
 	// Location affinity weight.
 	locationAffinityWeight = 0.15
+
+	// Network topology weight.
+	networkTopologyWeight = 0.05
 )
 
 const (
@@ -70,20 +75,51 @@ const (
 	maxElementLen = 5
 )
 
-type evaluatorBase struct{}
+type evaluatorBase struct {
+	networktopology networktopology.NetworkTopology
+}
 
-func NewEvaluatorBase() Evaluator {
-	return &evaluatorBase{}
+type Option func(eb *evaluatorBase)
+
+// WithNetworkTopology sets the networkTopology.
+func WithNetworkTopology(networktopology networktopology.NetworkTopology) Option {
+	return func(eb *evaluatorBase) {
+		eb.networktopology = networktopology
+	}
+}
+
+func NewEvaluatorBase(options ...Option) Evaluator {
+	eb := &evaluatorBase{}
+
+	for _, opt := range options {
+		opt(eb)
+	}
+	return eb
 }
 
 // EvaluateParents sort parents by evaluating multiple feature scores.
 func (eb *evaluatorBase) EvaluateParents(parents []*resource.Peer, child *resource.Peer, totalPieceCount int32) []*resource.Peer {
-	sort.Slice(
-		parents,
-		func(i, j int) bool {
-			return evaluate(parents[i], child, totalPieceCount) > evaluate(parents[j], child, totalPieceCount)
-		},
-	)
+	if eb.networktopology == nil {
+		sort.Slice(
+			parents,
+			func(i, j int) bool {
+				return evaluate(parents[i], child, totalPieceCount) > evaluate(parents[j], child, totalPieceCount)
+			},
+		)
+	} else {
+		var parentIDs []string
+		for _, parent := range parents {
+			parentIDs = append(parentIDs, parent.ID)
+		}
+		scoces := eb.calculateNetworkTopologyScore(child.ID, parentIDs)
+
+		sort.Slice(
+			parents,
+			func(i, j int) bool {
+				return (evaluate(parents[i], child, totalPieceCount) + networkTopologyWeight*scoces[i]) > (evaluate(parents[j], child, totalPieceCount) + networkTopologyWeight*scoces[j])
+			},
+		)
+	}
 
 	return parents
 }
@@ -206,6 +242,28 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 	}
 
 	return float64(score) / float64(maxElementLen)
+}
+
+// calculateNetworkTopologyScore 0.0~1.0 larger and better.
+func (eb *evaluatorBase) calculateNetworkTopologyScore(src string, dst []string) []float64 {
+	AverageRTTs, err := eb.networktopology.AverageRTTs(src, dst)
+	if err != nil {
+		return []float64{}
+	}
+
+	var MaxRTT time.Duration
+	for _, RTT := range AverageRTTs {
+		if MaxRTT < RTT {
+			MaxRTT = RTT
+		}
+	}
+
+	var scoces []float64
+	for _, RTT := range AverageRTTs {
+		scoces = append(scoces, float64((MaxRTT-RTT))/float64(MaxRTT))
+	}
+
+	return scoces
 }
 
 func (eb *evaluatorBase) IsBadNode(peer *resource.Peer) bool {

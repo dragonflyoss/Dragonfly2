@@ -176,9 +176,12 @@ func TestConfig_Load(t *testing.T) {
 		NetworkTopology: NetworkTopologyConfig{
 			Enable:          true,
 			CollectInterval: 60 * time.Second,
+			Expire:          2 * time.Hour,
+			TTL:             5 * time.Minute,
 			Probe: ProbeConfig{
 				QueueLength: 5,
 				Count:       10,
+				TTL:         5 * time.Minute,
 			},
 		},
 		Trainer: TrainerConfig{
@@ -764,6 +767,34 @@ func TestConfig_Validate(t *testing.T) {
 			},
 		},
 		{
+			name:   "networkTopology requires parameter expire",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Job = mockJobConfig
+				cfg.NetworkTopology.Expire = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "networkTopology requires parameter expire")
+			},
+		},
+		{
+			name:   "networkTopology requires parameter ttl",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Job = mockJobConfig
+				cfg.NetworkTopology.TTL = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "networkTopology requires parameter ttl")
+			},
+		},
+		{
 			name:   "probe requires parameter queueLength",
 			config: New(),
 			mock: func(cfg *Config) {
@@ -789,6 +820,20 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "probe requires parameter count")
+			},
+		},
+		{
+			name:   "probe requires parameter ttl",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Job = mockJobConfig
+				cfg.NetworkTopology.Probe.TTL = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "probe requires parameter ttl")
 			},
 		},
 		{

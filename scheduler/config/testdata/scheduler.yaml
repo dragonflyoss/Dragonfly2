@@ -95,9 +95,12 @@ network:
 networkTopology:
   enable: true
   collectInterval: 60s
+  expire: 2h
+  ttl: 5m
   probe:
     queueLength: 5
     count: 10
+    ttl: 5m
 
 trainer:
   enable: false

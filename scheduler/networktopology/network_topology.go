@@ -30,6 +30,7 @@ import (
 	"github.com/google/uuid"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/cache"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -75,6 +76,9 @@ type NetworkTopology interface {
 	// ProbedCount is the number of times the host has been probed.
 	ProbedCount(string) (uint64, error)
 
+	// AverageRTTs loads RTTs of source host id and destination hosts id.
+	AverageRTTs(string, []string) ([]time.Duration, error)
+
 	// Snapshot writes the current network topology to the storage.
 	Snapshot() error
 }
@@ -87,6 +91,9 @@ type networkTopology struct {
 	// rdb is Redis universal client interface.
 	rdb redis.UniversalClient
 
+	// Cache instance.
+	cache cache.Cache
+
 	// resource is resource interface.
 	resource resource.Resource
 
@@ -98,10 +105,11 @@ type networkTopology struct {
 }
 
 // New network topology interface.
-func NewNetworkTopology(cfg config.NetworkTopologyConfig, rdb redis.UniversalClient, resource resource.Resource, storage storage.Storage) (NetworkTopology, error) {
+func NewNetworkTopology(cfg config.NetworkTopologyConfig, rdb redis.UniversalClient, cache cache.Cache, resource resource.Resource, storage storage.Storage) (NetworkTopology, error) {
 	return &networkTopology{
 		config:   cfg,
 		rdb:      rdb,
+		cache:    cache,
 		resource: resource,
 		storage:  storage,
 		done:     make(chan struct{}),
@@ -135,13 +143,20 @@ func (nt *networkTopology) Has(srcHostID string, destHostID string) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	networkTopologyCount, err := nt.rdb.Exists(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID)).Result()
-	if err != nil {
-		logger.Errorf("failed to check whether network topology exists: %s", err.Error())
-		return false
+	networkTopologyKey := pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID)
+	_, ok := nt.cache.Get(networkTopologyKey)
+	if !ok {
+		networkTopology, err := nt.rdb.HGetAll(ctx, networkTopologyKey).Result()
+		if err == nil && len(networkTopology) != 0 {
+			if err := nt.cache.Add(networkTopologyKey, &networkTopology, nt.config.TTL); err != nil {
+				logger.Error(err)
+			}
+		} else {
+			return false
+		}
 	}
 
-	return networkTopologyCount == 1
+	return true
 }
 
 // Store stores source host and destination host.
@@ -154,7 +169,8 @@ func (nt *networkTopology) Store(srcHostID string, destHostID string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	if err := nt.rdb.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID), "createdAt", time.Now().Format(time.RFC3339Nano)).Err(); err != nil {
+	networkTopologyKey := pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID)
+	if err := nt.rdb.HSet(ctx, networkTopologyKey, "createdAt", time.Now().Format(time.RFC3339Nano)).Err(); err != nil {
 		return err
 	}
 
@@ -178,9 +194,18 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 		return candidateHosts, nil
 	}
 
+	var probedCounts []uint64
 	var probedCountKeys []string
+	var filterHosts []*resource.Host
 	for _, candidateHost := range candidateHosts {
-		probedCountKeys = append(probedCountKeys, pkgredis.MakeProbedCountKeyInScheduler(candidateHost.ID))
+		probedCountKey := pkgredis.MakeProbedCountKeyInScheduler(candidateHost.ID)
+		any, ok := nt.cache.Get(probedCountKey)
+		if !ok {
+			probedCountKeys = append(probedCountKeys, probedCountKey)
+		} else {
+			filterHosts = append(filterHosts, candidateHost)
+			probedCounts = append(probedCounts, any.(uint64))
+		}
 	}
 
 	rawProbedCounts, err := nt.rdb.MGet(ctx, probedCountKeys...).Result()
@@ -189,37 +214,43 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 	}
 
 	// Filter invalid probed count. If probed key not exist, the probed count is nil.
-	var probedCounts []uint64
 	for i, rawProbedCount := range rawProbedCounts {
+		probedCountKey := pkgredis.MakeProbedCountKeyInScheduler(candidateHosts[i].ID)
+
 		// Initialize the probedCount value of host in redis when the host is first selected as the candidate probe target.
 		if rawProbedCount == nil {
-			if err := nt.rdb.Set(ctx, pkgredis.MakeProbedCountKeyInScheduler(candidateHosts[i].ID), 0, 0).Err(); err != nil {
+			if err := nt.rdb.Set(ctx, probedCountKey, 0, 0).Err(); err != nil {
 				return nil, err
 			}
 
 			probedCounts = append(probedCounts, 0)
-			continue
+		} else {
+			value, ok := rawProbedCount.(string)
+			if !ok {
+				return nil, errors.New("invalid value type")
+			}
+
+			probedCount, err := strconv.ParseUint(value, 10, 64)
+			if err != nil {
+				return nil, errors.New("invalid probed count")
+			}
+
+			if err := nt.cache.Add(probedCountKey, probedCount, nt.config.TTL); err != nil {
+				logger.Error(err)
+			}
+
+			probedCounts = append(probedCounts, probedCount)
 		}
 
-		value, ok := rawProbedCount.(string)
-		if !ok {
-			return nil, errors.New("invalid value type")
-		}
-
-		probedCount, err := strconv.ParseUint(value, 10, 64)
-		if err != nil {
-			return nil, errors.New("invalid probed count")
-		}
-
-		probedCounts = append(probedCounts, probedCount)
+		filterHosts = append(filterHosts, candidateHosts[i])
 	}
 
 	// Sort candidate hosts by probed count.
-	sort.Slice(candidateHosts, func(i, j int) bool {
+	sort.Slice(filterHosts, func(i, j int) bool {
 		return probedCounts[i] < probedCounts[j]
 	})
 
-	return candidateHosts[:nt.config.Probe.Count], nil
+	return filterHosts[:nt.config.Probe.Count], nil
 }
 
 // DeleteHost deletes source host and all destination host connected to source host.
@@ -256,12 +287,51 @@ func (nt *networkTopology) DeleteHost(hostID string) error {
 		return err
 	}
 
+	for _, deleteKey := range deleteKeys {
+		nt.cache.Delete(deleteKey)
+	}
+
 	return nil
+}
+
+// AverageRTTs loads RTTs of source host id and destination hosts id.
+func (nt *networkTopology) AverageRTTs(srcHostID string, destHostIDs []string) ([]time.Duration, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	var averageRTTs []time.Duration
+	for _, id := range destHostIDs {
+		var err error
+		var networkTopology map[string]string
+		networkTopologyKey := pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, id)
+		any, ok := nt.cache.Get(networkTopologyKey)
+		if !ok {
+			if networkTopology, err = nt.rdb.HGetAll(ctx, networkTopologyKey).Result(); err != nil {
+				averageRTTs = append(averageRTTs, time.Duration(0))
+				continue
+			}
+
+			if err := nt.cache.Add(networkTopologyKey, networkTopology, nt.config.TTL); err != nil {
+				logger.Error(err)
+			}
+		} else {
+			networkTopology = any.(map[string]string)
+		}
+
+		averageRTT, err := strconv.ParseInt(networkTopology["averageRTT"], 10, 64)
+		if err != nil {
+			averageRTTs = append(averageRTTs, time.Duration(0))
+		} else {
+			averageRTTs = append(averageRTTs, time.Duration(averageRTT))
+		}
+	}
+
+	return averageRTTs, nil
 }
 
 // Probes loads probes interface by source host id and destination host id.
 func (nt *networkTopology) Probes(srcHostID, destHostID string) Probes {
-	return NewProbes(nt.config.Probe, nt.rdb, srcHostID, destHostID)
+	return NewProbes(nt.config.Probe, nt.rdb, nt.cache, srcHostID, destHostID)
 }
 
 // ProbedCount is the number of times the host has been probed.
@@ -269,7 +339,23 @@ func (nt *networkTopology) ProbedCount(hostID string) (uint64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	return nt.rdb.Get(ctx, pkgredis.MakeProbedCountKeyInScheduler(hostID)).Uint64()
+	var probedCount uint64
+	probedCountKey := pkgredis.MakeProbedCountKeyInScheduler(hostID)
+	any, ok := nt.cache.Get(probedCountKey)
+	if !ok {
+		var err error
+		if probedCount, err = nt.rdb.Get(ctx, probedCountKey).Uint64(); err != nil {
+			return uint64(0), err
+		}
+
+		if err := nt.cache.Add(probedCountKey, probedCount, nt.config.TTL); err != nil {
+			logger.Error(err)
+		}
+	} else {
+		probedCount = any.(uint64)
+	}
+
+	return probedCount, nil
 }
 
 // Snapshot writes the current network topology to the storage.

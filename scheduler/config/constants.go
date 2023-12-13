@@ -176,14 +176,34 @@ const (
 )
 
 const (
+	// DefaultRedisCacheTTL is default ttl for redis cache.
+	DefaultRedisCacheTTL = 5 * time.Minute
+
+	// DefaultLFUCacheTTL is default ttl for lfu cache.
+	DefaultLFUCacheTTL = 3 * time.Minute
+
+	// DefaultLFUCacheSize is default size for lfu cache.
+	DefaultLFUCacheSize = 100 * 1000
+)
+
+const (
 	// DefaultNetworkTopologyCollectInterval is the default interval of collecting network topology.
 	DefaultNetworkTopologyCollectInterval = 2 * time.Hour
+
+	// DefaultNetworkTopologyExpire is the default expiration time.
+	DefaultNetworkTopologyExpire = 2 * time.Hour
+
+	// DefaultNetworkTopologyCacheTLL is the default ttl for networkTopology cache.
+	DefaultNetworkTopologyCacheTLL = 5 * time.Minute
 
 	// DefaultProbeQueueLength is the default length of probe queue.
 	DefaultProbeQueueLength = 5
 
 	// DefaultProbeCount is the default number of probing hosts.
 	DefaultProbeCount = 5
+
+	// DefaultProbeTLL is the default ttl for probe cache.
+	DefaultProbeCacheTLL = 5 * time.Minute
 )
 
 const (
