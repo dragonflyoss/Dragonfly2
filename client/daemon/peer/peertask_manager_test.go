@@ -915,7 +915,13 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 			URLMeta: urlMeta,
 			PeerID:  ts.peerID,
 		})
+
 	assert.True(ok, "reuse stream task")
+	assert.NotNil(rc, "reuse stream task")
+	if rc == nil {
+		return
+	}
+
 	defer func() {
 		assert.Nil(rc.Close())
 	}()
