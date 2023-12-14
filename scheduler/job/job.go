@@ -22,6 +22,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"strings"
 	"time"
 
@@ -195,12 +197,28 @@ func (j *job) preheat(ctx context.Context, req string) error {
 	log.Infof("preheat %s tag: %s, range: %s, filter: %s, digest: %s",
 		preheat.URL, urlMeta.Tag, urlMeta.Range, urlMeta.Filter, urlMeta.Digest)
 	log.Debugf("preheat %s headers: %#v", preheat.URL, urlMeta.Header)
-
-	stream, err := j.resource.SeedPeer().Client().ObtainSeeds(ctx, &cdnsystemv1.SeedRequest{
+	log.Debugf("addr:%v", j.resource.SeedPeer().Client().Addrs())
+	if len(j.resource.SeedPeer().Client().Addrs()[0]) < 1 {
+		log.Errorf("preheat %s failed: %s", preheat.URL, "seed peer address is empty")
+		return errors.New("seed peer address is empty")
+	}
+	conn, err := grpc.DialContext(ctx, j.resource.SeedPeer().Client().Addrs()[0], grpc.WithTransportCredentials(insecure.NewCredentials()))
+	defer conn.Close()
+	if err != nil {
+		log.Errorf("preheat %s failed: %s", preheat.URL, err.Error())
+		return err
+	}
+	client := cdnsystemv1.NewSeederClient(conn)
+	stream, err := client.ObtainSeeds(ctx, &cdnsystemv1.SeedRequest{
 		TaskId:  taskID,
 		Url:     preheat.URL,
 		UrlMeta: urlMeta,
 	})
+	//stream, err := j.resource.SeedPeer().Client().ObtainSeeds(ctx, &cdnsystemv1.SeedRequest{
+	//	TaskId:  taskID,
+	//	Url:     preheat.URL,
+	//	UrlMeta: urlMeta,
+	//})
 	if err != nil {
 		log.Errorf("preheat %s failed: %s", preheat.URL, err.Error())
 		return err
