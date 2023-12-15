@@ -110,7 +110,7 @@ func (d *dynconfig[T]) Get() (*T, error) {
 func (d *dynconfig[T]) load() error {
 	// If another load is in progress, return directly.
 	if !d.mu.TryLock() {
-		return errors.New("another load is in progress")
+		return errors.New("load is running")
 	}
 	defer d.mu.Unlock()
 
