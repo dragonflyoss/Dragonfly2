@@ -88,6 +88,26 @@ func ConvertGRPCErrorToDfError(err error) error {
 	return err
 }
 
+func IsGRPCDfError(err error) (*DfError, bool) {
+	for _, d := range status.Convert(err).Details() {
+		switch internal := d.(type) {
+		case *commonv1.GrpcDfError:
+			return &DfError{
+				Code:    internal.Code,
+				Message: internal.Message,
+			}, true
+		}
+	}
+
+	var de *DfError
+	ok := errors.As(err, &de)
+	if ok {
+		return de, true
+	}
+
+	return nil, false
+}
+
 // ConvertDfErrorToGRPCError converts DfError to grpc error, if it is.
 func ConvertDfErrorToGRPCError(err error) error {
 	if v, ok := err.(*DfError); ok {

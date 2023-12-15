@@ -26,7 +26,7 @@ jobs:
       - name: Golangci lint
         uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.52.2
+          version: v1.54
           args: --verbose
 
       - name: Markdown lint

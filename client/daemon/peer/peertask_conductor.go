@@ -269,7 +269,7 @@ func (pt *peerTaskConductor) register() error {
 	regSpan.End()
 
 	if err != nil {
-		if err == context.DeadlineExceeded {
+		if errors.Is(err, context.DeadlineExceeded) {
 			pt.Errorf("scheduler did not response in %s", pt.SchedulerOption.ScheduleTimeout.Duration)
 		}
 		pt.Errorf("step 1: peer %s register failed: %s", pt.request.PeerId, err)
@@ -800,8 +800,7 @@ func (pt *peerTaskConductor) confirmReceivePeerPacketError(err error) (cont bool
 		failedReason string
 	)
 	// extract DfError for grpc status
-	err = dferrors.ConvertGRPCErrorToDfError(err)
-	de, ok := err.(*dferrors.DfError)
+	de, ok := dferrors.IsGRPCDfError(err)
 	if ok {
 		switch de.Code {
 		case commonv1.Code_SchedNeedBackSource:

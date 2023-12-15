@@ -35,6 +35,7 @@ import (
 	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 
 	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
@@ -406,7 +407,6 @@ func (s *pieceTaskSynchronizer) receive() {
 		s.Errorf("synchronizer receives with error: %s", err)
 		s.error.Store(&pieceTaskSynchronizerError{err})
 		s.reportError(err)
-		s.Errorf("synchronizer receives with error: %s", err)
 	}
 }
 
@@ -430,7 +430,16 @@ func (s *pieceTaskSynchronizer) acquire(request *commonv1.PieceTaskRequest) erro
 
 func (s *pieceTaskSynchronizer) reportError(err error) {
 	s.span.RecordError(err)
-	sendError := s.peerTaskConductor.sendPieceResult(compositePieceResult(s.peerTaskConductor, s.dstPeer, commonv1.Code_ClientPieceRequestFail))
+	errCode := commonv1.Code_ClientPieceRequestFail
+
+	// extract DfError for grpc status
+	de, ok := dferrors.IsGRPCDfError(err)
+	if ok {
+		errCode = de.Code
+		s.Errorf("report error with convert code from grpc error, code: %d, message: %s", de.Code, de.Message)
+	}
+
+	sendError := s.peerTaskConductor.sendPieceResult(compositePieceResult(s.peerTaskConductor, s.dstPeer, errCode))
 	if sendError != nil {
 		s.Errorf("sync piece info failed and send piece result with error: %s", sendError)
 		go s.peerTaskConductor.cancel(commonv1.Code_SchedError, sendError.Error())
@@ -440,7 +449,7 @@ func (s *pieceTaskSynchronizer) reportError(err error) {
 }
 
 func (s *pieceTaskSynchronizer) canceled(err error) bool {
-	if err == context.Canceled {
+	if errors.Is(err, context.Canceled) {
 		s.Debugf("context canceled, dst peer: %s", s.dstPeer.PeerId)
 		return true
 	}
