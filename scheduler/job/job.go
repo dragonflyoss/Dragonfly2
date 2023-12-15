@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"math/rand"
 	"strings"
 	"time"
 
@@ -197,12 +198,14 @@ func (j *job) preheat(ctx context.Context, req string) error {
 	log.Infof("preheat %s tag: %s, range: %s, filter: %s, digest: %s",
 		preheat.URL, urlMeta.Tag, urlMeta.Range, urlMeta.Filter, urlMeta.Digest)
 	log.Debugf("preheat %s headers: %#v", preheat.URL, urlMeta.Header)
-	log.Debugf("addr:%v", j.resource.SeedPeer().Client().Addrs())
-	if len(j.resource.SeedPeer().Client().Addrs()[0]) < 1 {
+	log.Debugf("addrs:%v", j.resource.SeedPeer().Client().Addrs())
+	seedPeerAddrs := j.resource.SeedPeer().Client().Addrs()
+	if len(seedPeerAddrs) < 1 {
 		log.Errorf("preheat %s failed: %s", preheat.URL, "seed peer address is empty")
 		return errors.New("seed peer address is empty")
 	}
-	conn, err := grpc.DialContext(ctx, j.resource.SeedPeer().Client().Addrs()[0], grpc.WithTransportCredentials(insecure.NewCredentials()))
+	index := rand.Intn(len(seedPeerAddrs))
+	conn, err := grpc.DialContext(ctx, seedPeerAddrs[index], grpc.WithTransportCredentials(insecure.NewCredentials()))
 	defer conn.Close()
 	if err != nil {
 		log.Errorf("preheat %s failed: %s", preheat.URL, err.Error())
