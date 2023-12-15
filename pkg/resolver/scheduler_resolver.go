@@ -74,6 +74,7 @@ func (r *SchedulerResolver) Build(target resolver.Target, cc resolver.ClientConn
 func (r *SchedulerResolver) ResolveNow(resolver.ResolveNowOptions) {
 	// Avoid concurrent GetResolveSchedulerAddrs calls.
 	if !r.mu.TryLock() {
+		plogger.Warning("resolve addresses is running")
 		return
 	}
 	defer r.mu.Unlock()
@@ -94,6 +95,8 @@ func (r *SchedulerResolver) ResolveNow(resolver.ResolveNowOptions) {
 	}); err != nil {
 		plogger.Errorf("resolver update ClientConn error %v", err)
 	}
+
+	plogger.Infof("resolve addresses %v", addrs)
 }
 
 // Close closes the resolver.

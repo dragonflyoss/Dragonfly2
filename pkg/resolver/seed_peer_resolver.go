@@ -75,6 +75,7 @@ func (r *SeedPeerResolver) Build(target resolver.Target, cc resolver.ClientConn,
 func (r *SeedPeerResolver) ResolveNow(resolver.ResolveNowOptions) {
 	// Avoid concurrent GetResolveSeedPeerAddrs calls.
 	if !r.mu.TryLock() {
+		slogger.Warning("resolve addresses is running")
 		return
 	}
 	defer r.mu.Unlock()
@@ -95,6 +96,8 @@ func (r *SeedPeerResolver) ResolveNow(resolver.ResolveNowOptions) {
 	}); err != nil {
 		slogger.Errorf("resolver update ClientConn error %v", err)
 	}
+
+	slogger.Infof("resolve addresses %v", addrs)
 }
 
 // Close closes the resolver.

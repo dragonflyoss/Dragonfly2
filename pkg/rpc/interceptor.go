@@ -27,6 +27,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 var (
@@ -73,6 +74,8 @@ func RefresherUnaryClientInterceptor(r Refresher) grpc.UnaryClientInterceptor {
 		err := invoker(ctx, method, req, reply, cc, opts...)
 		if s, ok := status.FromError(err); ok {
 			if s.Code() == codes.ResourceExhausted || s.Code() == codes.Unavailable {
+				logger.Errorf("refresh dynconfig addresses when unary client calling error: %s %#v %v", method, req, err)
+
 				// nolint
 				r.Refresh()
 			}
@@ -88,6 +91,8 @@ func RefresherStreamClientInterceptor(r Refresher) grpc.StreamClientInterceptor 
 		clientStream, err := streamer(ctx, desc, cc, method, opts...)
 		if s, ok := status.FromError(err); ok {
 			if s.Code() == codes.ResourceExhausted || s.Code() == codes.Unavailable {
+				logger.Errorf("refresh dynconfig addresses when stream clinet calling error: %s %v", method, err)
+
 				// nolint
 				r.Refresh()
 			}
