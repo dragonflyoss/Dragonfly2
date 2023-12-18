@@ -840,7 +840,7 @@ func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.S
 	blocklist := set.NewSafeSet[string]()
 	blocklist.Add(peer.ID)
 	if task.FSM.Is(resource.TaskStateFailed) || !task.HasAvailablePeer(blocklist) {
-		if err := v.downloadTaskBySeedPeer(ctx, peer); err != nil {
+		if err := v.downloadTaskBySeedPeer(ctx, req.GetDownload(), peer); err != nil {
 			// Collect RegisterPeerFailureCount metrics.
 			metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
 				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
@@ -1302,7 +1302,7 @@ func (v *V2) handleResource(ctx context.Context, stream schedulerv2.Scheduler_An
 }
 
 // downloadTaskBySeedPeer downloads task by seed peer.
-func (v *V2) downloadTaskBySeedPeer(ctx context.Context, peer *resource.Peer) error {
+func (v *V2) downloadTaskBySeedPeer(ctx context.Context, download *commonv2.Download, peer *resource.Peer) error {
 	// Trigger the first download task based on different priority levels,
 	// refer to https://github.com/dragonflyoss/api/blob/main/pkg/apis/common/v2/common.proto#L74.
 	priority := peer.CalculatePriority(v.dynconfig)
@@ -1312,7 +1312,7 @@ func (v *V2) downloadTaskBySeedPeer(ctx context.Context, peer *resource.Peer) er
 		// Super peer is first triggered to download back-to-source.
 		if v.config.SeedPeer.Enable && !peer.Task.IsSeedPeerFailed() {
 			go func(ctx context.Context, peer *resource.Peer, hostType types.HostType) {
-				if err := v.resource.SeedPeer().DownloadTask(context.Background(), peer.Task, hostType); err != nil {
+				if err := v.resource.SeedPeer().DownloadTask(context.Background(), download); err != nil {
 					peer.Log.Errorf("%s seed peer downloads task failed %s", hostType.Name(), err.Error())
 					return
 				}
@@ -1325,7 +1325,7 @@ func (v *V2) downloadTaskBySeedPeer(ctx context.Context, peer *resource.Peer) er
 		// Strong peer is first triggered to download back-to-source.
 		if v.config.SeedPeer.Enable && !peer.Task.IsSeedPeerFailed() {
 			go func(ctx context.Context, peer *resource.Peer, hostType types.HostType) {
-				if err := v.resource.SeedPeer().DownloadTask(context.Background(), peer.Task, hostType); err != nil {
+				if err := v.resource.SeedPeer().DownloadTask(context.Background(), download); err != nil {
 					peer.Log.Errorf("%s seed peer downloads task failed %s", hostType.Name(), err.Error())
 					return
 				}
@@ -1338,7 +1338,7 @@ func (v *V2) downloadTaskBySeedPeer(ctx context.Context, peer *resource.Peer) er
 		// Weak peer is first triggered to download back-to-source.
 		if v.config.SeedPeer.Enable && !peer.Task.IsSeedPeerFailed() {
 			go func(ctx context.Context, peer *resource.Peer, hostType types.HostType) {
-				if err := v.resource.SeedPeer().DownloadTask(context.Background(), peer.Task, hostType); err != nil {
+				if err := v.resource.SeedPeer().DownloadTask(context.Background(), download); err != nil {
 					peer.Log.Errorf("%s seed peer downloads task failed %s", hostType.Name(), err.Error())
 					return
 				}
