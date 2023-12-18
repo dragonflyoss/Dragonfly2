@@ -76,9 +76,6 @@ type NetworkTopology interface {
 	// ProbedCount is the number of times the host has been probed.
 	ProbedCount(string) (uint64, error)
 
-	// AverageRTTs loads RTTs of source host id and destination hosts id.
-	AverageRTTs(string, []string) ([]time.Duration, error)
-
 	// Snapshot writes the current network topology to the storage.
 	Snapshot() error
 }
@@ -294,41 +291,6 @@ func (nt *networkTopology) DeleteHost(hostID string) error {
 	}
 
 	return nil
-}
-
-// AverageRTTs loads RTTs of source host id and destination hosts id.
-func (nt *networkTopology) AverageRTTs(srcHostID string, destHostIDs []string) ([]time.Duration, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
-	defer cancel()
-
-	var averageRTTs []time.Duration
-	for _, id := range destHostIDs {
-		var err error
-		var networkTopology map[string]string
-		networkTopologyKey := pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, id)
-		any, ok := nt.cache.Get(networkTopologyKey)
-		if !ok {
-			if networkTopology, err = nt.rdb.HGetAll(ctx, networkTopologyKey).Result(); err != nil {
-				averageRTTs = append(averageRTTs, time.Duration(0))
-				continue
-			}
-
-			if err := nt.cache.Add(networkTopologyKey, networkTopology, nt.config.TTL); err != nil {
-				logger.Error(err)
-			}
-		} else {
-			networkTopology = any.(map[string]string)
-		}
-
-		averageRTT, err := strconv.ParseInt(networkTopology["averageRTT"], 10, 64)
-		if err != nil {
-			averageRTTs = append(averageRTTs, time.Duration(0))
-		} else {
-			averageRTTs = append(averageRTTs, time.Duration(averageRTT))
-		}
-	}
-
-	return averageRTTs, nil
 }
 
 // Probes loads probes interface by source host id and destination host id.

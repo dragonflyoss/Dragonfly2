@@ -166,7 +166,6 @@ var (
 	}
 
 	mockProbedCount = 10
-	mockAverageRTT  = []time.Duration{30 * time.Millisecond}
 )
 
 func Test_NewProbes(t *testing.T) {
