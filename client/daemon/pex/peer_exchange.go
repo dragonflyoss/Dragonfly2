@@ -25,34 +25,75 @@ import (
 	dfdaemonv1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
 	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/net/ip"
 )
 
 type peerExchange struct {
-	memberlist           *memberlist.Memberlist
-	memberManager        *peerExchangeMemberManager
-	initialRetryInterval time.Duration
-	lister               InitialMemberLister
-	stopCh               chan struct{}
+	config        *peerExchangeConfig
+	localMember   *memberlist.Node
+	memberlist    *memberlist.Memberlist
+	memberManager *peerExchangeMemberManager
+	lister        InitialMemberLister
+	stopCh        chan struct{}
 }
 
-func NewPeerExchange(node *MemberMeta, lister InitialMemberLister, peerUpdateChan <-chan *dfdaemonv1.PeerMetadata) (PeerExchanger, error) {
+type peerExchangeConfig struct {
+	initialRetryInterval time.Duration
+}
+
+func WithAdvertiseAddr(advertiseAddr string) func(*memberlist.Config, *peerExchangeConfig) {
+	return func(memberConfig *memberlist.Config, pexConfig *peerExchangeConfig) {
+		memberConfig.AdvertiseAddr = advertiseAddr
+	}
+}
+
+func WithAdvertisePort(advertisePort int) func(*memberlist.Config, *peerExchangeConfig) {
+	return func(memberConfig *memberlist.Config, pexConfig *peerExchangeConfig) {
+		memberConfig.AdvertisePort = advertisePort
+	}
+}
+
+func WithInitialRetryInterval(initialRetryInterval time.Duration) func(*memberlist.Config, *peerExchangeConfig) {
+	return func(memberConfig *memberlist.Config, pexConfig *peerExchangeConfig) {
+		pexConfig.initialRetryInterval = initialRetryInterval
+	}
+}
+
+func NewPeerExchange(node *MemberMeta, lister InitialMemberLister, peerUpdateChan <-chan *dfdaemonv1.PeerMetadata, opts ...func(*memberlist.Config, *peerExchangeConfig)) (PeerExchanger, error) {
 	memberManager := newPeerExchangeMemberManager(peerUpdateChan)
 
-	config := memberlist.DefaultLANConfig()
-	config.Delegate = newPeerExchangeDelegate(node)
-	config.Events = memberManager
+	memberConfig := memberlist.DefaultLANConfig()
+	memberConfig.Delegate = newPeerExchangeDelegate(node)
+	memberConfig.Events = memberManager
 
-	member, err := memberlist.Create(config)
+	pexConfig := &peerExchangeConfig{
+		initialRetryInterval: time.Minute,
+	}
+
+	for _, opt := range opts {
+		opt(memberConfig, pexConfig)
+	}
+
+	if memberConfig.AdvertiseAddr == "" {
+		// TODO support ipv6
+		memberConfig.AdvertiseAddr = ip.IPv4.String()
+	}
+
+	memberManager.localAdvertiseAddr = memberConfig.AdvertiseAddr
+	memberManager.localAdvertisePort = memberConfig.AdvertisePort
+
+	member, err := memberlist.Create(memberConfig)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create memberlist")
 	}
 
 	pex := &peerExchange{
-		memberlist:           member,
-		memberManager:        memberManager,
-		initialRetryInterval: time.Minute,
-		lister:               lister,
-		stopCh:               make(chan struct{}),
+		config:        pexConfig,
+		localMember:   member.LocalNode(),
+		memberlist:    member,
+		memberManager: memberManager,
+		lister:        lister,
+		stopCh:        make(chan struct{}),
 	}
 	return pex, nil
 }
@@ -98,7 +139,7 @@ func (p *peerExchange) serve() error {
 			break
 		}
 		logger.Errorf("failed to list initial member: %s", err)
-		time.Sleep(p.initialRetryInterval)
+		time.Sleep(p.config.initialRetryInterval)
 	}
 
 	var ips []string

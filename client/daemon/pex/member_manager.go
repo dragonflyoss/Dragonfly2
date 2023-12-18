@@ -45,6 +45,9 @@ type peerExchangeMemberManager struct {
 	nodes      sync.Map
 	peerPool   *peerPool
 	memberPool *memberPool
+
+	localAdvertiseAddr string
+	localAdvertisePort int
 }
 
 func newPeerExchangeMemberManager(peerUpdateChan <-chan *dfdaemonv1.PeerMetadata) *peerExchangeMemberManager {
@@ -57,6 +60,10 @@ func newPeerExchangeMemberManager(peerUpdateChan <-chan *dfdaemonv1.PeerMetadata
 		peerPool:        newPeerPool(),
 		memberPool:      newMemberPool(),
 	}
+}
+
+func (p *peerExchangeMemberManager) IsLocalNode(node *memberlist.Node) bool {
+	return node.Addr.String() == p.localAdvertiseAddr
 }
 
 func (p *peerExchangeMemberManager) NotifyJoin(node *memberlist.Node) {
@@ -90,6 +97,10 @@ func ExtractNodeMeta(node *memberlist.Node) (*MemberMeta, error) {
 }
 
 func (p *peerExchangeMemberManager) syncNode(node *memberlist.Node) {
+	if p.IsLocalNode(node) {
+		p.logger.Debugf("skip local node: %s", node.Addr.String())
+		return
+	}
 	member, err := ExtractNodeMeta(node)
 	if err != nil {
 		p.logger.Errorf("failed to extract node meta %s: %s", string(node.Meta), err)
