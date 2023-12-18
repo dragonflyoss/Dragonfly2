@@ -160,8 +160,8 @@ var (
 	}
 
 	mockNetworkTopology = map[string]string{
-		"createdAt":  time.Now().Format(time.RFC3339),
-		"updatedAt":  time.Now().Format(time.RFC3339),
+		"createdAt":  time.Now().Format(time.RFC3339Nano),
+		"updatedAt":  time.Now().Format(time.RFC3339Nano),
 		"averageRTT": strconv.FormatInt(mockProbe.RTT.Nanoseconds(), 10),
 	}
 
@@ -220,9 +220,54 @@ func TestProbes_Peek(t *testing.T) {
 					rawProbes = append(rawProbes, string(data))
 				}
 
-				mockCache.Get(gomock.Any()).Return(nil, false)
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(rawProbes)
-				mockCache.Add(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				mockCache.Add(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), gomock.Any(), gomock.Any()).Return(nil)
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				probe, err := ps.Peek()
+				assert.NoError(err)
+				assert.Equal(probe.Host.ID, mockProbe.Host.ID)
+				assert.Equal(probe.Host.Type, mockProbe.Host.Type)
+				assert.Equal(probe.Host.Hostname, mockProbe.Host.Hostname)
+				assert.Equal(probe.Host.IP, mockProbe.Host.IP)
+				assert.Equal(probe.Host.Port, mockProbe.Host.Port)
+				assert.Equal(probe.Host.DownloadPort, mockProbe.Host.DownloadPort)
+				assert.Equal(probe.Host.OS, mockProbe.Host.OS)
+				assert.Equal(probe.Host.Platform, mockProbe.Host.Platform)
+				assert.Equal(probe.Host.PlatformFamily, mockProbe.Host.PlatformFamily)
+				assert.Equal(probe.Host.PlatformVersion, mockProbe.Host.PlatformVersion)
+				assert.Equal(probe.Host.KernelVersion, mockProbe.Host.KernelVersion)
+				assert.Equal(probe.Host.ConcurrentUploadCount, mockProbe.Host.ConcurrentUploadCount)
+				assert.Equal(probe.Host.UploadCount, mockProbe.Host.UploadCount)
+				assert.Equal(probe.Host.UploadFailedCount, mockProbe.Host.UploadFailedCount)
+				assert.EqualValues(probe.Host.CPU, mockProbe.Host.CPU)
+				assert.EqualValues(probe.Host.Memory, mockProbe.Host.Memory)
+				assert.EqualValues(probe.Host.Network, mockProbe.Host.Network)
+				assert.EqualValues(probe.Host.Disk, mockProbe.Host.Disk)
+				assert.EqualValues(probe.Host.Build, mockProbe.Host.Build)
+				assert.Equal(probe.RTT, mockProbe.RTT)
+				assert.True(probe.CreatedAt.Equal(mockProbe.CreatedAt))
+			},
+		},
+		{
+			name:   "add cache error",
+			probes: []*Probe{mockProbe},
+			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder, ps []*Probe) {
+				var rawProbes []string
+				for _, p := range ps {
+					data, err := json.Marshal(p)
+					if err != nil {
+						t.Fatal(err)
+					}
+
+					rawProbes = append(rawProbes, string(data))
+				}
+
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
+				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(rawProbes)
+				mockCache.Add(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), gomock.Any(), gomock.Any()).Return(errors.New("add cache error"))
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
@@ -272,22 +317,22 @@ func TestProbes_Peek(t *testing.T) {
 				}
 
 				mockRDBClient.MatchExpectationsInOrder(true)
-				mockCache.Get(gomock.Any()).Return(nil, false)
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(rawProbes)
-				mockCache.Add(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-				mockCache.Get(gomock.Any()).Return(ps, true)
+				mockCache.Add(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), gomock.Any(), gomock.Any()).Return(nil)
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(ps, true)
 				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(rawProbes[4])
-				mockCache.Delete(gomock.Any())
+				mockCache.Delete(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID))
 				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), []byte(rawProbes[4])).SetVal(1)
-				mockCache.Delete(gomock.Any())
+				mockCache.Delete(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID))
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(rawProbes)
-				mockCache.Add(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				mockCache.Add(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), gomock.Any(), gomock.Any()).Return(nil)
 				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", int64(30388900)).SetVal(1)
 				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", mockProbe.CreatedAt.Format(time.RFC3339Nano)).SetVal(1)
-				mockCache.Delete(gomock.Any())
+				mockCache.Delete(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID))
 				mockRDBClient.ExpectIncr(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(6)
-				mockCache.Delete(gomock.Any())
-				mockCache.Get(gomock.Any()).Return(ps, true)
+				mockCache.Delete(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID))
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(ps, true)
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
@@ -305,7 +350,7 @@ func TestProbes_Peek(t *testing.T) {
 			name:   "queue has no probe",
 			probes: []*Probe{},
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder, ps []*Probe) {
-				mockCache.Get(gomock.Any()).Return(nil, false)
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetErr(errors.New("no probe"))
 			},
 			expect: func(t *testing.T, ps Probes) {
@@ -318,7 +363,7 @@ func TestProbes_Peek(t *testing.T) {
 			name:   "unmarshal probe error",
 			probes: []*Probe{},
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder, ps []*Probe) {
-				mockCache.Get(gomock.Any()).Return(nil, false)
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal([]string{"foo"})
 			},
 			expect: func(t *testing.T, ps Probes) {
@@ -363,16 +408,16 @@ func TestProbes_Enqueue(t *testing.T) {
 				}
 
 				mockRDBClient.MatchExpectationsInOrder(true)
-				mockCache.Get(gomock.Any())
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID))
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(nil)
 				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), data).SetVal(1)
-				mockCache.Delete(gomock.Any())
-				mockCache.Add(gomock.Any(), gomock.Any(), gomock.All()).Return(nil)
+				mockCache.Delete(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID))
+				mockCache.Add(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), gomock.Any(), gomock.All()).Return(nil)
 				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", mockProbe.RTT.Nanoseconds()).SetVal(1)
 				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", mockProbe.CreatedAt.Format(time.RFC3339Nano)).SetVal(1)
-				mockCache.Delete(gomock.Any())
+				mockCache.Delete(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID))
 				mockRDBClient.ExpectIncr(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(1)
-				mockCache.Delete(gomock.Any())
+				mockCache.Delete(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID))
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
@@ -397,18 +442,18 @@ func TestProbes_Enqueue(t *testing.T) {
 				}
 
 				mockRDBClient.MatchExpectationsInOrder(true)
-				mockCache.Get(gomock.Any())
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID))
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal([]string{rawProbes[0]})
-				mockCache.Add(gomock.Any(), gomock.Any(), gomock.All()).Return(nil)
+				mockCache.Add(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), gomock.Any(), gomock.All()).Return(nil)
 				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), []byte(rawProbes[0])).SetVal(1)
-				mockCache.Delete(gomock.Any())
+				mockCache.Delete(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID))
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal([]string{rawProbes[1], rawProbes[0]})
-				mockCache.Add(gomock.Any(), gomock.Any(), gomock.All()).Return(nil)
+				mockCache.Add(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), gomock.Any(), gomock.All()).Return(nil)
 				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", int64(30100000)).SetVal(1)
 				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", mockProbe.CreatedAt.Format(time.RFC3339Nano)).SetVal(1)
-				mockCache.Delete(gomock.Any())
+				mockCache.Delete(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID))
 				mockRDBClient.ExpectIncr(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(2)
-				mockCache.Delete(gomock.Any())
+				mockCache.Delete(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID))
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
@@ -436,20 +481,20 @@ func TestProbes_Enqueue(t *testing.T) {
 				}
 
 				mockRDBClient.MatchExpectationsInOrder(true)
-				mockCache.Get(gomock.Any()).Return(nil, false)
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(rawProbes)
-				mockCache.Add(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				mockCache.Add(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), gomock.Any(), gomock.Any()).Return(nil)
 				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(rawProbes[0])
-				mockCache.Delete(gomock.Any())
+				mockCache.Delete(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID))
 				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), []byte(rawProbes[4])).SetVal(1)
-				mockCache.Delete(gomock.Any())
+				mockCache.Delete(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID))
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(rawProbes)
-				mockCache.Add(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				mockCache.Add(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), gomock.Any(), gomock.Any()).Return(nil)
 				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", int64(30388900)).SetVal(1)
 				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", mockProbe.CreatedAt.Format(time.RFC3339Nano)).SetVal(1)
-				mockCache.Delete(gomock.Any())
+				mockCache.Delete(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID))
 				mockRDBClient.ExpectIncr(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(6)
-				mockCache.Delete(gomock.Any())
+				mockCache.Delete(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID))
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
@@ -460,7 +505,7 @@ func TestProbes_Enqueue(t *testing.T) {
 			name:   "get the length of the queue error",
 			probes: []*Probe{},
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder, ps []*Probe) {
-				mockCache.Get(gomock.Any()).Return(nil, false)
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetErr(errors.New("get the length of the queue error"))
 			},
 			expect: func(t *testing.T, ps Probes) {
@@ -488,9 +533,9 @@ func TestProbes_Enqueue(t *testing.T) {
 					rawProbes = append(rawProbes, string(data))
 				}
 
-				mockCache.Get(gomock.Any()).Return(nil, false)
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(rawProbes)
-				mockCache.Add(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				mockCache.Add(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), gomock.Any(), gomock.Any()).Return(nil)
 				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetErr(errors.New("remove the oldest probe error when the queue is full"))
 			},
 			expect: func(t *testing.T, ps Probes) {
@@ -502,7 +547,7 @@ func TestProbes_Enqueue(t *testing.T) {
 			name:   "marshal probe error",
 			probes: []*Probe{},
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder, ps []*Probe) {
-				mockCache.Get(gomock.Any()).Return(nil, false)
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(nil)
 			},
 			expect: func(t *testing.T, ps Probes) {
@@ -527,7 +572,7 @@ func TestProbes_Enqueue(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				mockCache.Get(gomock.Any()).Return(nil, false)
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(nil)
 				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), data).SetErr(
 					errors.New("push probe in queue error"))
@@ -554,11 +599,11 @@ func TestProbes_Enqueue(t *testing.T) {
 					rawProbes = append(rawProbes, string(data))
 				}
 
-				mockCache.Get(gomock.Any()).Return(nil, false)
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(rawProbes)
-				mockCache.Add(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				mockCache.Add(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), gomock.Any(), gomock.Any()).Return(nil)
 				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), []byte(rawProbes[1])).SetVal(1)
-				mockCache.Delete(gomock.Any())
+				mockCache.Delete(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID))
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetErr(
 					errors.New("get probes error"))
 			},
@@ -584,16 +629,52 @@ func TestProbes_Enqueue(t *testing.T) {
 					rawProbes = append(rawProbes, string(data))
 				}
 
-				mockCache.Get(gomock.Any()).Return(nil, false)
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(rawProbes)
-				mockCache.Add(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				mockCache.Add(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), gomock.Any(), gomock.Any()).Return(nil)
 				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), []byte(rawProbes[1])).SetVal(1)
-				mockCache.Delete(gomock.Any())
+				mockCache.Delete(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID))
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal([]string{"foo"})
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
 				assert.EqualError(ps.Enqueue(mockProbe), "invalid character 'o' in literal false (expecting 'a')")
+			},
+		},
+		{
+			name: "add cache error",
+			probes: []*Probe{
+				mockProbe,
+				{mockHost, 31 * time.Millisecond, time.Now()},
+			},
+			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder, ps []*Probe) {
+				var rawProbes []string
+				for _, p := range ps {
+					data, err := json.Marshal(p)
+					if err != nil {
+						t.Fatal(err)
+					}
+
+					rawProbes = append(rawProbes, string(data))
+				}
+
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID))
+				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal([]string{rawProbes[0]})
+				mockCache.Add(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), gomock.Any(), gomock.All()).Return(nil)
+				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), []byte(rawProbes[0])).SetVal(1)
+				mockCache.Delete(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID))
+				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal([]string{rawProbes[1], rawProbes[0]})
+				mockCache.Add(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), gomock.Any(), gomock.All()).Return(errors.New(("add cache error")))
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", int64(30100000)).SetVal(1)
+				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", mockProbe.CreatedAt.Format(time.RFC3339Nano)).SetVal(1)
+				mockCache.Delete(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID))
+				mockRDBClient.ExpectIncr(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(2)
+				mockCache.Delete(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID))
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				assert.NoError(ps.Enqueue(mockProbe))
 			},
 		},
 		{
@@ -605,11 +686,11 @@ func TestProbes_Enqueue(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				mockCache.Get(gomock.Any()).Return(nil, false)
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(nil)
 				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), data).SetVal(1)
-				mockCache.Delete(gomock.Any())
-				mockCache.Add(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				mockCache.Delete(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID))
+				mockCache.Add(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), gomock.Any(), gomock.Any()).Return(nil)
 				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID),
 					"averageRTT", mockProbe.RTT.Nanoseconds()).SetErr(errors.New("update the moving average round-trip time error"))
 			},
@@ -627,11 +708,11 @@ func TestProbes_Enqueue(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				mockCache.Get(gomock.Any()).Return(nil, false)
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(nil)
 				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), data).SetVal(1)
-				mockCache.Delete(gomock.Any())
-				mockCache.Add(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				mockCache.Delete(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID))
+				mockCache.Add(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), gomock.Any(), gomock.Any()).Return(nil)
 				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID),
 					"averageRTT", mockProbe.RTT.Nanoseconds()).SetVal(1)
 				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID),
@@ -651,16 +732,16 @@ func TestProbes_Enqueue(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				mockCache.Get(gomock.Any()).Return(nil, false)
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(nil)
 				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), data).SetVal(1)
-				mockCache.Delete(gomock.Any())
-				mockCache.Add(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				mockCache.Delete(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID))
+				mockCache.Add(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), gomock.Any(), gomock.Any()).Return(nil)
 				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID),
 					"averageRTT", mockProbe.RTT.Nanoseconds()).SetVal(1)
 				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID),
 					"updatedAt", mockProbe.CreatedAt.Format(time.RFC3339Nano)).SetVal(1)
-				mockCache.Delete(gomock.Any())
+				mockCache.Delete(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID))
 				mockRDBClient.ExpectIncr(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetErr(errors.New("update the number of times the host has been probed error"))
 			},
 			expect: func(t *testing.T, ps Probes) {
@@ -706,9 +787,9 @@ func TestProbes_Len(t *testing.T) {
 					rawProbes = append(rawProbes, string(data))
 				}
 
-				mockCache.Get(gomock.Any()).Return(nil, false)
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(rawProbes)
-				mockCache.Add(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				mockCache.Add(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), gomock.Any(), gomock.Any()).Return(nil)
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
@@ -738,22 +819,22 @@ func TestProbes_Len(t *testing.T) {
 				}
 
 				mockRDBClient.MatchExpectationsInOrder(true)
-				mockCache.Get(gomock.Any()).Return(nil, false)
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(rawProbes)
-				mockCache.Add(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-				mockCache.Get(gomock.Any()).Return(ps, true)
+				mockCache.Add(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), gomock.Any(), gomock.Any()).Return(nil)
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(ps, true)
 				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(string(rawProbes[4]))
-				mockCache.Delete(gomock.Any())
+				mockCache.Delete(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID))
 				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), []byte(rawProbes[4])).SetVal(1)
-				mockCache.Delete(gomock.Any())
+				mockCache.Delete(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID))
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(rawProbes)
-				mockCache.Add(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				mockCache.Add(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), gomock.Any(), gomock.Any()).Return(nil)
 				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", int64(30388900)).SetVal(1)
 				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", mockProbe.CreatedAt.Format(time.RFC3339Nano)).SetVal(1)
-				mockCache.Delete(gomock.Any())
+				mockCache.Delete(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID))
 				mockRDBClient.ExpectIncr(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(6)
-				mockCache.Delete(gomock.Any())
-				mockCache.Get(gomock.Any()).Return(ps, true)
+				mockCache.Delete(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID))
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(ps, true)
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
@@ -771,7 +852,7 @@ func TestProbes_Len(t *testing.T) {
 			name:   "queue has no probe",
 			probes: []*Probe{},
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder, ps []*Probe) {
-				mockCache.Get(gomock.Any()).Return(nil, false)
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(nil)
 			},
 			expect: func(t *testing.T, ps Probes) {
@@ -785,13 +866,53 @@ func TestProbes_Len(t *testing.T) {
 			name:   "get queue length error",
 			probes: []*Probe{},
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder, ps []*Probe) {
-				mockCache.Get(gomock.Any()).Return(nil, false)
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetErr(errors.New("get queue length error"))
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
 				_, err := ps.Len()
 				assert.EqualError(err, "get queue length error")
+			},
+		},
+		{
+			name: "unmarshal probe error",
+			probes: []*Probe{
+				{mockHost, 31 * time.Millisecond, time.Now()},
+				mockProbe,
+			},
+			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder, ps []*Probe) {
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
+				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal([]string{"foo"})
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				assert.EqualError(ps.Enqueue(mockProbe), "invalid character 'o' in literal false (expecting 'a')")
+			},
+		},
+		{
+			name:   "add cache error",
+			probes: []*Probe{mockProbe},
+			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder, ps []*Probe) {
+				var rawProbes []string
+				for _, p := range ps {
+					data, err := json.Marshal(p)
+					if err != nil {
+						t.Fatal(err)
+					}
+
+					rawProbes = append(rawProbes, string(data))
+				}
+
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
+				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(rawProbes)
+				mockCache.Add(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), gomock.Any(), gomock.Any()).Return(errors.New("add cache error"))
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				length, err := ps.Len()
+				assert.NoError(err)
+				assert.Equal(length, int64(1))
 			},
 		},
 	}
@@ -820,27 +941,51 @@ func TestProbes_CreatedAt(t *testing.T) {
 		{
 			name: "get creation time of probes",
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder) {
-				mockCache.Get(gomock.Any()).Return(nil, false)
+				mockCache.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
 				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(mockNetworkTopology)
-				mockCache.Add(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				mockCache.Add(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), mockNetworkTopology, gomock.Any()).Return(nil)
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
-				_, err := ps.CreatedAt()
+				createdAt, err := ps.CreatedAt()
 				assert.NoError(err)
-				// assert.Equal(createdAt.Format(time.RFC822), mockProbesCreatedAt.Format(time.RFC822))
+				assert.Equal(createdAt.Format(time.RFC3339Nano), mockNetworkTopology["createdAt"])
 			},
 		},
 		{
 			name: "get creation time of probes error",
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder) {
-				mockCache.Get(gomock.Any()).Return(nil, false)
+				mockCache.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
 				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetErr(errors.New("get creation time of probes error"))
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
 				_, err := ps.CreatedAt()
 				assert.EqualError(err, "get creation time of probes error")
+			},
+		},
+		{
+			name: "add cache error",
+			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder) {
+				mockCache.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
+				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(mockNetworkTopology)
+				mockCache.Add(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), mockNetworkTopology, gomock.Any()).Return(errors.New("add cache error"))
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				_, err := ps.CreatedAt()
+				assert.NoError(err)
+			},
+		},
+		{
+			name: "time parse error",
+			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder) {
+				mockCache.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(map[string]string{"createdAt": "foo"}, true)
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				_, err := ps.CreatedAt()
+				assert.EqualError(err, "parsing time \"foo\" as \"2006-01-02T15:04:05.999999999Z07:00\": cannot parse \"foo\" as \"2006\"")
 			},
 		},
 	}
@@ -869,27 +1014,51 @@ func TestProbes_UpdatedAt(t *testing.T) {
 		{
 			name: "get update time of probes",
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder) {
-				mockCache.Get(gomock.Any()).Return(nil, false)
+				mockCache.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
 				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(mockNetworkTopology)
-				mockCache.Add(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				mockCache.Add(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), mockNetworkTopology, gomock.Any()).Return(nil)
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
-				_, err := ps.UpdatedAt()
+				updatedAt, err := ps.UpdatedAt()
 				assert.NoError(err)
-				// assert.Equal(updatedAt.Format(time.RFC822), time.Now().Format(time.RFC822))
+				assert.Equal(updatedAt.Format(time.RFC3339Nano), mockNetworkTopology["updatedAt"])
 			},
 		},
 		{
 			name: "get update time of probes error",
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder) {
-				mockCache.Get(gomock.Any()).Return(nil, false)
+				mockCache.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
 				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetErr(errors.New("get update time of probes error"))
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
 				_, err := ps.UpdatedAt()
 				assert.EqualError(err, "get update time of probes error")
+			},
+		},
+		{
+			name: "add cache error",
+			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder) {
+				mockCache.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
+				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(mockNetworkTopology)
+				mockCache.Add(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), mockNetworkTopology, gomock.Any()).Return(errors.New("add cache error"))
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				_, err := ps.UpdatedAt()
+				assert.NoError(err)
+			},
+		},
+		{
+			name: "time parse error",
+			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder) {
+				mockCache.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(map[string]string{"updatedAt": "foo"}, true)
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				_, err := ps.UpdatedAt()
+				assert.EqualError(err, "parsing time \"foo\" as \"2006-01-02T15:04:05.999999999Z07:00\": cannot parse \"foo\" as \"2006\"")
 			},
 		},
 	}
@@ -918,9 +1087,9 @@ func TestProbes_AverageRTT(t *testing.T) {
 		{
 			name: "get averageRTT of probes",
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder) {
-				mockCache.Get(gomock.Any()).Return(nil, false)
+				mockCache.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
 				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(mockNetworkTopology)
-				mockCache.Add(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				mockCache.Add(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), mockNetworkTopology, gomock.Any()).Return(nil)
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
@@ -932,13 +1101,50 @@ func TestProbes_AverageRTT(t *testing.T) {
 		{
 			name: "get averageRTT of probes error",
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder) {
-				mockCache.Get(gomock.Any()).Return(nil, false)
+				mockCache.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
 				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetErr(errors.New("get averageRTT of probes error"))
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
 				_, err := ps.AverageRTT()
 				assert.EqualError(err, "get averageRTT of probes error")
+			},
+		},
+		{
+			name: "get averageRTT of probes with cache",
+			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder) {
+				mockCache.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(mockNetworkTopology, true)
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				averageRTT, err := ps.AverageRTT()
+				assert.NoError(err)
+				assert.Equal(averageRTT, mockProbe.RTT)
+			},
+		},
+		{
+			name: "add cache error",
+			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder) {
+				mockCache.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
+				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(mockNetworkTopology)
+				mockCache.Add(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), mockNetworkTopology, gomock.Any()).Return(errors.New("add cache error"))
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				averageRTT, err := ps.AverageRTT()
+				assert.NoError(err)
+				assert.Equal(averageRTT, mockProbe.RTT)
+			},
+		},
+		{
+			name: "parseInt error",
+			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder) {
+				mockCache.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(map[string]string{"averageRTT": "foo"}, true)
+			},
+			expect: func(t *testing.T, ps Probes) {
+				assert := assert.New(t)
+				_, err := ps.AverageRTT()
+				assert.EqualError(err, "strconv.ParseInt: parsing \"foo\": invalid syntax")
 			},
 		},
 	}
@@ -977,7 +1183,7 @@ func TestProbes_dequeue(t *testing.T) {
 				}
 
 				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(string(data))
-				mockCache.Delete(gomock.Any())
+				mockCache.Delete(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID))
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
@@ -1028,22 +1234,22 @@ func TestProbes_dequeue(t *testing.T) {
 				}
 
 				mockRDBClient.MatchExpectationsInOrder(true)
-				mockCache.Get(gomock.Any()).Return(nil, false)
+				mockCache.Get(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(rawProbes)
-				mockCache.Add(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				mockCache.Add(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), gomock.Any(), gomock.Any()).Return(nil)
 				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(string(rawProbes[4]))
-				mockCache.Delete(gomock.Any())
+				mockCache.Delete(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID))
 				mockRDBClient.ExpectRPush(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), []byte(rawProbes[4])).SetVal(1)
-				mockCache.Delete(gomock.Any())
+				mockCache.Delete(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID))
 				mockRDBClient.ExpectLRange(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), 0, -1).SetVal(rawProbes)
-				mockCache.Add(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				mockCache.Add(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID), gomock.Any(), gomock.Any()).Return(nil)
 				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "averageRTT", int64(30388900)).SetVal(1)
 				mockRDBClient.ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "updatedAt", mockProbe.CreatedAt.Format(time.RFC3339Nano)).SetVal(1)
-				mockCache.Delete(gomock.Any())
+				mockCache.Delete(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID))
 				mockRDBClient.ExpectIncr(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(6)
-				mockCache.Delete(gomock.Any())
+				mockCache.Delete(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID))
 				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(string(rawProbes[0]))
-				mockCache.Delete(gomock.Any())
+				mockCache.Delete(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID))
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
@@ -1073,7 +1279,7 @@ func TestProbes_dequeue(t *testing.T) {
 			probes: []*Probe{},
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder, ps []*Probe) {
 				mockRDBClient.ExpectLPop(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal("foo")
-				mockCache.Delete(gomock.Any())
+				mockCache.Delete(pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID))
 			},
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)

@@ -148,7 +148,7 @@ func (nt *networkTopology) Has(srcHostID string, destHostID string) bool {
 	if !ok {
 		networkTopology, err := nt.rdb.HGetAll(ctx, networkTopologyKey).Result()
 		if err == nil && len(networkTopology) != 0 {
-			if err := nt.cache.Add(networkTopologyKey, &networkTopology, nt.config.TTL); err != nil {
+			if err := nt.cache.Add(networkTopologyKey, networkTopology, nt.config.TTL); err != nil {
 				logger.Error(err)
 			}
 		} else {
@@ -196,14 +196,16 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 
 	var probedCounts []uint64
 	var probedCountKeys []string
+	var hosts []*resource.Host
 	var filterHosts []*resource.Host
 	for _, candidateHost := range candidateHosts {
 		probedCountKey := pkgredis.MakeProbedCountKeyInScheduler(candidateHost.ID)
 		any, ok := nt.cache.Get(probedCountKey)
 		if !ok {
+			filterHosts = append(filterHosts, candidateHost)
 			probedCountKeys = append(probedCountKeys, probedCountKey)
 		} else {
-			filterHosts = append(filterHosts, candidateHost)
+			hosts = append(hosts, candidateHost)
 			probedCounts = append(probedCounts, any.(uint64))
 		}
 	}
@@ -242,15 +244,15 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 			probedCounts = append(probedCounts, probedCount)
 		}
 
-		filterHosts = append(filterHosts, candidateHosts[i])
+		hosts = append(hosts, filterHosts[i])
 	}
 
 	// Sort candidate hosts by probed count.
-	sort.Slice(filterHosts, func(i, j int) bool {
+	sort.Slice(hosts, func(i, j int) bool {
 		return probedCounts[i] < probedCounts[j]
 	})
 
-	return filterHosts[:nt.config.Probe.Count], nil
+	return hosts[:nt.config.Probe.Count], nil
 }
 
 // DeleteHost deletes source host and all destination host connected to source host.

@@ -246,21 +246,25 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 
 // calculateNetworkTopologyScore 0.0~1.0 larger and better.
 func (eb *evaluatorBase) calculateNetworkTopologyScore(src string, dst []string) []float64 {
-	AverageRTTs, err := eb.networktopology.AverageRTTs(src, dst)
+	averageRTTs, err := eb.networktopology.AverageRTTs(src, dst)
 	if err != nil {
 		return []float64{}
 	}
 
 	var MaxRTT time.Duration
-	for _, RTT := range AverageRTTs {
+	for _, RTT := range averageRTTs {
 		if MaxRTT < RTT {
 			MaxRTT = RTT
 		}
 	}
 
 	var scoces []float64
-	for _, RTT := range AverageRTTs {
-		scoces = append(scoces, float64((MaxRTT-RTT))/float64(MaxRTT))
+	for _, RTT := range averageRTTs {
+		if RTT == 0 {
+			scoces = append(scoces, minScore)
+		} else {
+			scoces = append(scoces, float64((MaxRTT-RTT))/float64(MaxRTT))
+		}
 	}
 
 	return scoces
