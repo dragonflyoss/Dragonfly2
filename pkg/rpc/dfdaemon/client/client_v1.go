@@ -108,6 +108,9 @@ type V1 interface {
 	// LeaveHost leaves the host from the scheduler.
 	LeaveHost(context.Context, ...grpc.CallOption) error
 
+	// PeerExchange exchange peer metadata between daemons
+	PeerExchange(ctx context.Context, opts ...grpc.CallOption) (dfdaemonv1.Daemon_PeerExchangeClient, error)
+
 	// Check daemon health.
 	CheckHealth(context.Context, ...grpc.CallOption) error
 
@@ -191,4 +194,14 @@ func (v *v1) CheckHealth(ctx context.Context, opts ...grpc.CallOption) error {
 
 	_, err := v.DaemonClient.CheckHealth(ctx, new(emptypb.Empty), opts...)
 	return err
+}
+
+// PeerExchange exchange peer metadata between daemons
+func (v *v1) PeerExchange(ctx context.Context, opts ...grpc.CallOption) (dfdaemonv1.Daemon_PeerExchangeClient, error) {
+	stream, err := v.DaemonClient.PeerExchange(ctx, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return stream, nil
 }
