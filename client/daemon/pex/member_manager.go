@@ -27,6 +27,7 @@ import (
 	"github.com/hashicorp/memberlist"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 
 	dfdaemonv1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -49,8 +50,8 @@ type peerExchangeMemberManager struct {
 func newPeerExchangeMemberManager(peerUpdateChan <-chan *dfdaemonv1.PeerMetadata) *peerExchangeMemberManager {
 	return &peerExchangeMemberManager{
 		logger:          logger.With("component", "peerExchangeCluster"),
-		GRPCCredentials: nil, // TODO
-		GRPCDialTimeout: 0,   // TODO
+		GRPCCredentials: insecure.NewCredentials(), // TODO
+		GRPCDialTimeout: time.Minute,               // TODO
 		peerUpdateChan:  peerUpdateChan,
 		nodes:           sync.Map{},
 		peerPool:        newPeerPool(),

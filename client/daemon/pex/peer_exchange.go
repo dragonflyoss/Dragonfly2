@@ -44,7 +44,7 @@ func NewPeerExchange(node *MemberMeta, lister InitialMemberLister, peerUpdateCha
 
 	member, err := memberlist.Create(config)
 	if err != nil {
-		return nil, errors.WithMessage(err, "Failed to create memberlist")
+		return nil, errors.WithMessage(err, "failed to create memberlist")
 	}
 
 	pex := &peerExchange{
@@ -144,7 +144,7 @@ func diffMembers(nodes []*memberlist.Node, ips []string) (add []*memberlist.Node
 				toAdd = false
 			}
 		}
-		if toAdd {
+		if toAdd && node.State == memberlist.StateAlive {
 			add = append(add, node)
 		}
 	}
@@ -152,7 +152,7 @@ func diffMembers(nodes []*memberlist.Node, ips []string) (add []*memberlist.Node
 	for _, ip := range ips {
 		toDel := true
 		for _, node := range nodes {
-			if node.Addr.String() == ip {
+			if node.Addr.String() == ip && node.State == memberlist.StateAlive {
 				toDel = false
 			}
 		}
