@@ -59,7 +59,11 @@ var (
 	mockTaskFilters                 = []string{"bar"}
 	mockTaskHeader                  = map[string]string{"content-length": "100"}
 	mockTaskPieceLength       int32 = 2048
-	mockResourceConfig              = &config.ResourceConfig{
+	mockConfig                      = &config.Config{
+		Resource: *mockResourceConfig,
+	}
+
+	mockResourceConfig = &config.ResourceConfig{
 		Task: config.TaskConfig{
 			DownloadTiny: config.DownloadTinyConfig{
 				Scheme:  config.DefaultResourceTaskDownloadTinyScheme,

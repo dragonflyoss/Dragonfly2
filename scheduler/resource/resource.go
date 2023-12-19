@@ -120,7 +120,7 @@ func New(cfg *config.Config, gc gc.GC, dynconfig config.DynconfigInterface, opti
 			return nil, err
 		}
 
-		resource.seedPeer = newSeedPeer(&cfg.Resource, client, peerManager, hostManager)
+		resource.seedPeer = newSeedPeer(cfg, client, peerManager, hostManager)
 	}
 
 	return resource, nil
