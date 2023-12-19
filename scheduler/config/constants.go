@@ -179,10 +179,10 @@ const (
 	// DefaultNetworkTopologyCollectInterval is the default interval of collecting network topology.
 	DefaultNetworkTopologyCollectInterval = 2 * time.Hour
 
-	// DefaultNetworkTopologyExpire is the default expiration time.
-	DefaultNetworkTopologyExpire = 2 * time.Hour
+	// DefaultNetworkTopologyCacheInterval is the default cache cleanup interval.
+	DefaultNetworkTopologyCacheInterval = 2 * time.Hour
 
-	// DefaultNetworkTopologyCacheTLL is the default ttl for networkTopology cache.
+	// DefaultNetworkTopologyCacheTLL is the default ttl of networkTopology cache.
 	DefaultNetworkTopologyCacheTLL = 5 * time.Minute
 
 	// DefaultProbeQueueLength is the default length of probe queue.
@@ -190,9 +190,6 @@ const (
 
 	// DefaultProbeCount is the default number of probing hosts.
 	DefaultProbeCount = 5
-
-	// DefaultProbeTLL is the default ttl for probe cache.
-	DefaultProbeCacheTLL = 5 * time.Minute
 )
 
 const (

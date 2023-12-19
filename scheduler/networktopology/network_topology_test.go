@@ -798,7 +798,7 @@ func TestNetworkTopology_Probes(t *testing.T) {
 
 				ps := networkTopology.Probes(mockSeedHost.ID, mockHost.ID)
 				probes := ps.(*probes)
-				assert.Equal(probes.config.QueueLength, 5)
+				assert.Equal(probes.config.Probe.QueueLength, 5)
 				assert.NotNil(probes.rdb)
 				assert.Equal(probes.srcHostID, mockSeedHost.ID)
 				assert.Equal(probes.destHostID, mockHost.ID)

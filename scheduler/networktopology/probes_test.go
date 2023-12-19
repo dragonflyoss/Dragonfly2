@@ -178,7 +178,7 @@ func Test_NewProbes(t *testing.T) {
 			expect: func(t *testing.T, ps Probes) {
 				assert := assert.New(t)
 				probes := ps.(*probes)
-				assert.Equal(probes.config.QueueLength, 5)
+				assert.Equal(probes.config.Probe.QueueLength, 5)
 				assert.NotNil(probes.rdb)
 				assert.Equal(probes.srcHostID, mockSeedHost.ID)
 				assert.Equal(probes.destHostID, mockHost.ID)
@@ -193,7 +193,7 @@ func Test_NewProbes(t *testing.T) {
 			rdb, _ := redismock.NewClientMock()
 			cache := cache.NewMockCache(ctl)
 
-			tc.expect(t, NewProbes(mockNetworkTopologyConfig.Probe, rdb, cache, mockSeedHost.ID, mockHost.ID))
+			tc.expect(t, NewProbes(mockNetworkTopologyConfig, rdb, cache, mockSeedHost.ID, mockHost.ID))
 		})
 	}
 }
@@ -382,7 +382,7 @@ func TestProbes_Peek(t *testing.T) {
 			cache := cache.NewMockCache(ctl)
 			tc.mock(mockRDBClient, cache.EXPECT(), tc.probes)
 
-			tc.expect(t, NewProbes(mockNetworkTopologyConfig.Probe, rdb, cache, mockSeedHost.ID, mockHost.ID))
+			tc.expect(t, NewProbes(mockNetworkTopologyConfig, rdb, cache, mockSeedHost.ID, mockHost.ID))
 			mockRDBClient.ClearExpect()
 		})
 	}
@@ -759,7 +759,7 @@ func TestProbes_Enqueue(t *testing.T) {
 			cache := cache.NewMockCache(ctl)
 			tc.mock(mockRDBClient, cache.EXPECT(), tc.probes)
 
-			tc.expect(t, NewProbes(mockNetworkTopologyConfig.Probe, rdb, cache, mockSeedHost.ID, mockHost.ID))
+			tc.expect(t, NewProbes(mockNetworkTopologyConfig, rdb, cache, mockSeedHost.ID, mockHost.ID))
 			mockRDBClient.ClearExpect()
 		})
 	}
@@ -925,7 +925,7 @@ func TestProbes_Len(t *testing.T) {
 			cache := cache.NewMockCache(ctl)
 			tc.mock(mockRDBClient, cache.EXPECT(), tc.probes)
 
-			tc.expect(t, NewProbes(mockNetworkTopologyConfig.Probe, rdb, cache, mockSeedHost.ID, mockHost.ID))
+			tc.expect(t, NewProbes(mockNetworkTopologyConfig, rdb, cache, mockSeedHost.ID, mockHost.ID))
 			mockRDBClient.ClearExpect()
 		})
 	}
@@ -998,7 +998,7 @@ func TestProbes_CreatedAt(t *testing.T) {
 			cache := cache.NewMockCache(ctl)
 			tc.mock(mockRDBClient, cache.EXPECT())
 
-			tc.expect(t, NewProbes(mockNetworkTopologyConfig.Probe, rdb, cache, mockSeedHost.ID, mockHost.ID))
+			tc.expect(t, NewProbes(mockNetworkTopologyConfig, rdb, cache, mockSeedHost.ID, mockHost.ID))
 			mockRDBClient.ClearExpect()
 		})
 	}
@@ -1071,7 +1071,7 @@ func TestProbes_UpdatedAt(t *testing.T) {
 			cache := cache.NewMockCache(ctl)
 			tc.mock(mockRDBClient, cache.EXPECT())
 
-			tc.expect(t, NewProbes(mockNetworkTopologyConfig.Probe, rdb, cache, mockSeedHost.ID, mockHost.ID))
+			tc.expect(t, NewProbes(mockNetworkTopologyConfig, rdb, cache, mockSeedHost.ID, mockHost.ID))
 			mockRDBClient.ClearExpect()
 		})
 	}
@@ -1157,7 +1157,7 @@ func TestProbes_AverageRTT(t *testing.T) {
 			cache := cache.NewMockCache(ctl)
 			tc.mock(mockRDBClient, cache.EXPECT())
 
-			tc.expect(t, NewProbes(mockNetworkTopologyConfig.Probe, rdb, cache, mockSeedHost.ID, mockHost.ID))
+			tc.expect(t, NewProbes(mockNetworkTopologyConfig, rdb, cache, mockSeedHost.ID, mockHost.ID))
 			mockRDBClient.ClearExpect()
 		})
 	}
@@ -1296,7 +1296,7 @@ func TestProbes_dequeue(t *testing.T) {
 			cache := cache.NewMockCache(ctl)
 			tc.mock(mockRDBClient, cache.EXPECT(), tc.probes)
 
-			tc.expect(t, NewProbes(mockNetworkTopologyConfig.Probe, rdb, cache, mockSeedHost.ID, mockHost.ID))
+			tc.expect(t, NewProbes(mockNetworkTopologyConfig, rdb, cache, mockSeedHost.ID, mockHost.ID))
 			mockRDBClient.ClearExpect()
 		})
 	}

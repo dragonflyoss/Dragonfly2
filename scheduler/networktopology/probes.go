@@ -74,7 +74,7 @@ type Probes interface {
 // probes is the implementation of Probes.
 type probes struct {
 	// config is the probe config.
-	config config.ProbeConfig
+	config config.NetworkTopologyConfig
 
 	// rdb is redis universal client interface.
 	rdb redis.UniversalClient
@@ -90,7 +90,7 @@ type probes struct {
 }
 
 // NewProbes creates a probes interface.
-func NewProbes(cfg config.ProbeConfig, rdb redis.UniversalClient, cache cache.Cache, srcHostID string, destHostID string) Probes {
+func NewProbes(cfg config.NetworkTopologyConfig, rdb redis.UniversalClient, cache cache.Cache, srcHostID string, destHostID string) Probes {
 	return &probes{
 		config:     cfg,
 		rdb:        rdb,
@@ -124,7 +124,7 @@ func (p *probes) Peek() (*Probe, error) {
 			probes = append(probes, probe)
 		}
 
-		if err := p.cache.Add(probesKey, probes, p.config.TTL); err != nil {
+		if err := p.cache.Add(probesKey, probes, p.config.Cache.TTL); err != nil {
 			logger.Error(err)
 		}
 	}
@@ -144,7 +144,7 @@ func (p *probes) Enqueue(probe *Probe) error {
 	}
 
 	// If the queue is full, remove the oldest probe.
-	if length >= int64(p.config.QueueLength) {
+	if length >= int64(p.config.Probe.QueueLength) {
 		if _, err := p.dequeue(); err != nil {
 			return err
 		}
@@ -196,7 +196,7 @@ func (p *probes) Enqueue(probe *Probe) error {
 		probes = append(probes, probe)
 	}
 
-	if err := p.cache.Add(probesKey, probes, p.config.TTL); err != nil {
+	if err := p.cache.Add(probesKey, probes, p.config.Cache.TTL); err != nil {
 		logger.Error(err)
 	}
 	// Update the moving average round-trip time and updated time.
@@ -241,7 +241,7 @@ func (p *probes) Len() (int64, error) {
 				probes = append(probes, probe)
 			}
 
-			if err := p.cache.Add(probesKey, probes, p.config.TTL); err != nil {
+			if err := p.cache.Add(probesKey, probes, p.config.Cache.TTL); err != nil {
 				logger.Error(err)
 			}
 		}
@@ -266,7 +266,7 @@ func (p *probes) CreatedAt() (time.Time, error) {
 			return time.Time{}, err
 		}
 
-		if err := p.cache.Add(networkTopologyKey, networkTopology, p.config.TTL); err != nil {
+		if err := p.cache.Add(networkTopologyKey, networkTopology, p.config.Cache.TTL); err != nil {
 			logger.Error(err)
 		}
 	} else {
@@ -295,7 +295,7 @@ func (p *probes) UpdatedAt() (time.Time, error) {
 			return time.Time{}, err
 		}
 
-		if err := p.cache.Add(networkTopologyKey, networkTopology, p.config.TTL); err != nil {
+		if err := p.cache.Add(networkTopologyKey, networkTopology, p.config.Cache.TTL); err != nil {
 			logger.Error(err)
 		}
 	} else {
@@ -324,7 +324,7 @@ func (p *probes) AverageRTT() (time.Duration, error) {
 			return time.Duration(0), err
 		}
 
-		if err := p.cache.Add(networkTopologyKey, networkTopology, p.config.TTL); err != nil {
+		if err := p.cache.Add(networkTopologyKey, networkTopology, p.config.Cache.TTL); err != nil {
 			logger.Error(err)
 		}
 	} else {

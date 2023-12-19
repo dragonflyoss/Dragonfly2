@@ -340,14 +340,11 @@ type NetworkTopologyConfig struct {
 	// CollectInterval is the interval of collecting network topology.
 	CollectInterval time.Duration `mapstructure:"collectInterval" yaml:"collectInterval"`
 
-	// Expire is cache expiration time.
-	Expire time.Duration `yaml:"expire" mapstructure:"expire"`
-
-	// TTL is networkTopology cache items TLL.
-	TTL time.Duration `yaml:"ttl" mapstructure:"tll"`
-
 	// Probe is the configuration of probe.
 	Probe ProbeConfig `yaml:"probe" mapstructure:"probe"`
+
+	// Cache is the configuration of cache.
+	Cache CacheConfig `yaml:"cache" mapstructure:"cache"`
 }
 
 type ProbeConfig struct {
@@ -356,8 +353,13 @@ type ProbeConfig struct {
 
 	// Count is the number of probing hosts.
 	Count int `mapstructure:"count" yaml:"count"`
+}
 
-	// TTL is probe cache items TLL.
+type CacheConfig struct {
+	// Interval is cache cleanup interval.
+	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
+
+	// TTL is networkTopology cache items TLL.
 	TTL time.Duration `yaml:"ttl" mapstructure:"tll"`
 }
 
@@ -463,12 +465,13 @@ func New() *Config {
 		NetworkTopology: NetworkTopologyConfig{
 			Enable:          true,
 			CollectInterval: DefaultNetworkTopologyCollectInterval,
-			Expire:          DefaultNetworkTopologyExpire,
-			TTL:             DefaultNetworkTopologyCacheTLL,
 			Probe: ProbeConfig{
 				QueueLength: DefaultProbeQueueLength,
 				Count:       DefaultProbeCount,
-				TTL:         DefaultProbeCacheTLL,
+			},
+			Cache: CacheConfig{
+				Interval: DefaultNetworkTopologyCacheInterval,
+				TTL:      DefaultNetworkTopologyCacheTLL,
 			},
 		},
 		Trainer: TrainerConfig{
@@ -648,14 +651,6 @@ func (cfg *Config) Validate() error {
 		return errors.New("networkTopology requires parameter collectInterval")
 	}
 
-	if cfg.NetworkTopology.Expire <= 0 {
-		return errors.New("networkTopology requires parameter expire")
-	}
-
-	if cfg.NetworkTopology.TTL <= 0 {
-		return errors.New("networkTopology requires parameter ttl")
-	}
-
 	if cfg.NetworkTopology.Probe.QueueLength <= 0 {
 		return errors.New("probe requires parameter queueLength")
 	}
@@ -664,8 +659,12 @@ func (cfg *Config) Validate() error {
 		return errors.New("probe requires parameter count")
 	}
 
-	if cfg.NetworkTopology.Probe.TTL <= 0 {
-		return errors.New("probe requires parameter ttl")
+	if cfg.NetworkTopology.Cache.Interval <= 0 {
+		return errors.New("networkTopology requires parameter interval")
+	}
+
+	if cfg.NetworkTopology.Cache.TTL <= 0 {
+		return errors.New("networkTopology requires parameter ttl")
 	}
 
 	if cfg.Trainer.Enable {

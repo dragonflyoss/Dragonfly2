@@ -35,7 +35,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dynconfig"
-	pkgcache "d7y.io/dragonfly/v2/pkg/cache"
+	"d7y.io/dragonfly/v2/pkg/cache"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/issuer"
@@ -199,9 +199,9 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 			},
 			IssueTimeout: 0,
 			Logger:       zapadapter.New(logger.CoreLogger.Desugar()),
-			Cache: pkgcache.NewCertifyMutliCache(
+			Cache: cache.NewCertifyMutliCache(
 				certify.NewMemCache(),
-				certify.DirCache(filepath.Join(d.CacheDir(), pkgcache.CertifyCacheDirName, types.SchedulerName))),
+				certify.DirCache(filepath.Join(d.CacheDir(), cache.CertifyCacheDirName, types.SchedulerName))),
 		}
 
 		clientTransportCredentials, err = rpc.NewClientCredentialsByCertify(cfg.Security.TLSPolicy, []byte(cfg.Security.CACert), certifyClient)
@@ -259,7 +259,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 
 	// Initialize network topology service.
 	if cfg.NetworkTopology.Enable && pkgredis.IsEnabled(cfg.Database.Redis.Addrs) {
-		cache := pkgcache.New(cfg.NetworkTopology.Expire, pkgcache.NoCleanup)
+		cache := cache.New(cfg.NetworkTopology.Cache.TTL, cfg.NetworkTopology.Cache.Interval)
 		s.networkTopology, err = networktopology.NewNetworkTopology(cfg.NetworkTopology, rdb, cache, resource, s.storage)
 		if err != nil {
 			return nil, err

@@ -145,7 +145,7 @@ func (nt *networkTopology) Has(srcHostID string, destHostID string) bool {
 	if !ok {
 		networkTopology, err := nt.rdb.HGetAll(ctx, networkTopologyKey).Result()
 		if err == nil && len(networkTopology) != 0 {
-			if err := nt.cache.Add(networkTopologyKey, networkTopology, nt.config.TTL); err != nil {
+			if err := nt.cache.Add(networkTopologyKey, networkTopology, nt.config.Cache.TTL); err != nil {
 				logger.Error(err)
 			}
 		} else {
@@ -234,7 +234,7 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 				return nil, errors.New("invalid probed count")
 			}
 
-			if err := nt.cache.Add(probedCountKey, probedCount, nt.config.TTL); err != nil {
+			if err := nt.cache.Add(probedCountKey, probedCount, nt.config.Cache.TTL); err != nil {
 				logger.Error(err)
 			}
 
@@ -295,7 +295,7 @@ func (nt *networkTopology) DeleteHost(hostID string) error {
 
 // Probes loads probes interface by source host id and destination host id.
 func (nt *networkTopology) Probes(srcHostID, destHostID string) Probes {
-	return NewProbes(nt.config.Probe, nt.rdb, nt.cache, srcHostID, destHostID)
+	return NewProbes(nt.config, nt.rdb, nt.cache, srcHostID, destHostID)
 }
 
 // ProbedCount is the number of times the host has been probed.
@@ -312,7 +312,7 @@ func (nt *networkTopology) ProbedCount(hostID string) (uint64, error) {
 			return uint64(0), err
 		}
 
-		if err := nt.cache.Add(probedCountKey, probedCount, nt.config.TTL); err != nil {
+		if err := nt.cache.Add(probedCountKey, probedCount, nt.config.Cache.TTL); err != nil {
 			logger.Error(err)
 		}
 	} else {
