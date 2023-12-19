@@ -1313,13 +1313,12 @@ func (v *V2) downloadTaskBySeedPeer(ctx context.Context, download *commonv2.Down
 		// Super peer is first triggered to download back-to-source.
 		if v.config.SeedPeer.Enable && !peer.Task.IsSeedPeerFailed() {
 			go func(ctx context.Context, download *commonv2.Download, hostType types.HostType) {
-				resp, err := v.resource.SeedPeer().TriggerDownloadTask(context.Background(), &dfdaemonv2.TriggerDownloadTaskRequest{Download: download})
-				if err != nil {
+				if err := v.resource.SeedPeer().TriggerDownloadTask(context.Background(), &dfdaemonv2.TriggerDownloadTaskRequest{Download: download}); err != nil {
 					peer.Log.Errorf("%s seed peer triggers download task failed %s", hostType.Name(), err.Error())
 					return
 				}
 
-				peer.Log.Infof("%s seed peer triggers download task success, hostID: %s, peerID: %s", hostType.Name(), resp.GetHostId(), resp.GetPeerId())
+				peer.Log.Infof("%s seed peer triggers download task success", hostType.Name())
 			}(ctx, download, types.HostTypeSuperSeed)
 
 			break
@@ -1330,13 +1329,12 @@ func (v *V2) downloadTaskBySeedPeer(ctx context.Context, download *commonv2.Down
 		// Strong peer is first triggered to download back-to-source.
 		if v.config.SeedPeer.Enable && !peer.Task.IsSeedPeerFailed() {
 			go func(ctx context.Context, download *commonv2.Download, hostType types.HostType) {
-				resp, err := v.resource.SeedPeer().TriggerDownloadTask(context.Background(), &dfdaemonv2.TriggerDownloadTaskRequest{Download: download})
-				if err != nil {
+				if err := v.resource.SeedPeer().TriggerDownloadTask(context.Background(), &dfdaemonv2.TriggerDownloadTaskRequest{Download: download}); err != nil {
 					peer.Log.Errorf("%s seed peer triggers download task failed %s", hostType.Name(), err.Error())
 					return
 				}
 
-				peer.Log.Infof("%s seed peer triggers download task success, hostID: %s, peerID: %s", hostType.Name(), resp.GetHostId(), resp.GetPeerId())
+				peer.Log.Infof("%s seed peer triggers download task success", hostType.Name())
 			}(ctx, download, types.HostTypeSuperSeed)
 
 			break
@@ -1347,13 +1345,12 @@ func (v *V2) downloadTaskBySeedPeer(ctx context.Context, download *commonv2.Down
 		// Weak peer is first triggered to download back-to-source.
 		if v.config.SeedPeer.Enable && !peer.Task.IsSeedPeerFailed() {
 			go func(ctx context.Context, download *commonv2.Download, hostType types.HostType) {
-				resp, err := v.resource.SeedPeer().TriggerDownloadTask(context.Background(), &dfdaemonv2.TriggerDownloadTaskRequest{Download: download})
-				if err != nil {
+				if err := v.resource.SeedPeer().TriggerDownloadTask(context.Background(), &dfdaemonv2.TriggerDownloadTaskRequest{Download: download}); err != nil {
 					peer.Log.Errorf("%s seed peer triggers download task failed %s", hostType.Name(), err.Error())
 					return
 				}
 
-				peer.Log.Infof("%s seed peer triggers download task success, hostID: %s, peerID: %s", hostType.Name(), resp.GetHostId(), resp.GetPeerId())
+				peer.Log.Infof("%s seed peer triggers download task success", hostType.Name())
 			}(ctx, download, types.HostTypeSuperSeed)
 
 			break

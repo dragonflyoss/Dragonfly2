@@ -87,7 +87,7 @@ type V2 interface {
 	DownloadPiece(context.Context, *dfdaemonv2.DownloadPieceRequest, ...grpc.CallOption) (*dfdaemonv2.DownloadPieceResponse, error)
 
 	// TriggerDownloadTask triggers download task from the other peer.
-	TriggerDownloadTask(context.Context, *dfdaemonv2.TriggerDownloadTaskRequest, ...grpc.CallOption) (*dfdaemonv2.TriggerDownloadTaskResponse, error)
+	TriggerDownloadTask(context.Context, *dfdaemonv2.TriggerDownloadTaskRequest, ...grpc.CallOption) error
 
 	// Close tears down the ClientConn and all underlying connections.
 	Close() error
@@ -125,13 +125,14 @@ func (v *v2) DownloadPiece(ctx context.Context, req *dfdaemonv2.DownloadPieceReq
 }
 
 // TriggerDownloadTask triggers download task from the other peer.
-func (v *v2) TriggerDownloadTask(ctx context.Context, req *dfdaemonv2.TriggerDownloadTaskRequest, opts ...grpc.CallOption) (*dfdaemonv2.TriggerDownloadTaskResponse, error) {
+func (v *v2) TriggerDownloadTask(ctx context.Context, req *dfdaemonv2.TriggerDownloadTaskRequest, opts ...grpc.CallOption) error {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	return v.DfdaemonUploadClient.TriggerDownloadTask(
+	_, err := v.DfdaemonUploadClient.TriggerDownloadTask(
 		ctx,
 		req,
 		opts...,
 	)
+	return err
 }
