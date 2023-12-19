@@ -26,6 +26,7 @@ import (
 	gomock "go.uber.org/mock/gomock"
 
 	commonv2 "d7y.io/api/v2/pkg/apis/common/v2"
+	dfdaemonv2 "d7y.io/api/v2/pkg/apis/dfdaemon/v2"
 	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 )
 
@@ -51,7 +52,54 @@ func TestSeedPeer_newSeedPeer(t *testing.T) {
 			peerManager := NewMockPeerManager(ctl)
 			client := NewMockSeedPeerClient(ctl)
 
-			tc.expect(t, newSeedPeer(mockResourceConfig, client, peerManager, hostManager))
+			tc.expect(t, newSeedPeer(mockConfig, client, peerManager, hostManager))
+		})
+	}
+}
+
+func TestSeedPeer_TriggerDownloadTask(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(mc *MockSeedPeerClientMockRecorder)
+		expect func(t *testing.T, resp *dfdaemonv2.TriggerDownloadTaskResponse, err error)
+	}{
+		{
+			name: "trigger download task failed",
+			mock: func(mc *MockSeedPeerClientMockRecorder) {
+				mc.TriggerDownloadTask(gomock.Any(), gomock.Any()).Return(nil, errors.New("foo")).Times(1)
+			},
+			expect: func(t *testing.T, resp *dfdaemonv2.TriggerDownloadTaskResponse, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "foo")
+			},
+		},
+		{
+			name: "trigger download task scuccess",
+			mock: func(mc *MockSeedPeerClientMockRecorder) {
+				mc.TriggerDownloadTask(gomock.Any(), gomock.Any()).Return(&dfdaemonv2.TriggerDownloadTaskResponse{HostId: mockHostID, TaskId: mockTaskID, PeerId: mockPeerID}, nil).Times(1)
+			},
+			expect: func(t *testing.T, resp *dfdaemonv2.TriggerDownloadTaskResponse, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(mockHostID, resp.HostId)
+				assert.Equal(mockTaskID, resp.TaskId)
+				assert.Equal(mockPeerID, resp.PeerId)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			hostManager := NewMockHostManager(ctl)
+			peerManager := NewMockPeerManager(ctl)
+			client := NewMockSeedPeerClient(ctl)
+			tc.mock(client.EXPECT())
+
+			seedPeer := newSeedPeer(mockConfig, client, peerManager, hostManager)
+			resp, err := seedPeer.TriggerDownloadTask(context.Background(), &dfdaemonv2.TriggerDownloadTaskRequest{})
+			tc.expect(t, resp, err)
 		})
 	}
 }
@@ -83,7 +131,7 @@ func TestSeedPeer_TriggerTask(t *testing.T) {
 			client := NewMockSeedPeerClient(ctl)
 			tc.mock(client.EXPECT())
 
-			seedPeer := newSeedPeer(mockResourceConfig, client, peerManager, hostManager)
+			seedPeer := newSeedPeer(mockConfig, client, peerManager, hostManager)
 			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			peer, result, err := seedPeer.TriggerTask(context.Background(), nil, mockTask)
 			tc.expect(t, peer, result, err)

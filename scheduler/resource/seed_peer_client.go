@@ -23,6 +23,7 @@ import (
 	"fmt"
 	reflect "reflect"
 
+	"github.com/hashicorp/go-multierror"
 	"google.golang.org/grpc"
 
 	managerv2 "d7y.io/api/v2/pkg/apis/manager/v2"
@@ -30,7 +31,8 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
+	cdnsystemclient "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
+	dfdaemonclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
@@ -40,8 +42,11 @@ type SeedPeerClient interface {
 	// Addrs returns the addresses of seed peers.
 	Addrs() []string
 
-	// client is seed peer grpc client interface.
-	client.Client
+	// Client is cdnsystem grpc client interface.
+	cdnsystemclient.Client
+
+	// V2 is dfdaemon v2 grpc client interface.
+	dfdaemonclient.V2
 
 	// Observer is dynconfig observer interface.
 	config.Observer
@@ -49,8 +54,11 @@ type SeedPeerClient interface {
 
 // seedPeerClient contains content for client of seed peer.
 type seedPeerClient struct {
-	// client is sedd peer grpc client instance.
-	client.Client
+	// Client is cdnsystem grpc client interface.
+	cdnsystemclient.Client
+
+	// V2 is dfdaemon v2 grpc client interface.
+	dfdaemonclient.V2
 
 	// hostManager is host manager.
 	hostManager HostManager
@@ -71,14 +79,25 @@ func newSeedPeerClient(dynconfig config.DynconfigInterface, hostManager HostMana
 	logger.Infof("initialize seed peer addresses: %#v", seedPeersToNetAddrs(config.Scheduler.SeedPeers))
 
 	// Initialize seed peer grpc client.
-	client, err := client.GetClient(context.Background(), dynconfig, opts...)
+	cdnsystemClient, err := cdnsystemclient.GetClient(context.Background(), dynconfig, opts...)
 	if err != nil {
 		return nil, err
 	}
 
+	fmt.Println("cdnsystemClient", cdnsystemClient)
+
+	// Initialize dfdaemon v2 grpc client.
+	dfdaemonClient, err := dfdaemonclient.GetV2(context.Background(), dynconfig, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("dfdaemonClient", dfdaemonClient)
+
 	sc := &seedPeerClient{
 		hostManager: hostManager,
-		Client:      client,
+		Client:      cdnsystemClient,
+		V2:          dfdaemonClient,
 		dynconfig:   dynconfig,
 		data:        config,
 	}
@@ -88,6 +107,20 @@ func newSeedPeerClient(dynconfig config.DynconfigInterface, hostManager HostMana
 
 	dynconfig.Register(sc)
 	return sc, nil
+}
+
+// Close closes the seed peer client.
+func (sc *seedPeerClient) Close() error {
+	var errs error
+	if err := sc.Client.Close(); err != nil {
+		errs = multierror.Append(errs, err)
+	}
+
+	if err := sc.V2.Close(); err != nil {
+		errs = multierror.Append(errs, err)
+	}
+
+	return errs
 }
 
 // Addrs returns the addresses of seed peers.

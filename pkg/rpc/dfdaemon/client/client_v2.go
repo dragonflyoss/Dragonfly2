@@ -26,19 +26,29 @@ import (
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/balancer"
 
 	dfdaemonv2 "d7y.io/api/v2/pkg/apis/dfdaemon/v2"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	pkgbalancer "d7y.io/dragonfly/v2/pkg/balancer"
+	"d7y.io/dragonfly/v2/pkg/resolver"
 	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
 // GetV2 returns v2 version of the dfdaemon client.
-func GetV2(ctx context.Context, target string, opts ...grpc.DialOption) (V2, error) {
+func GetV2(ctx context.Context, dynconfig config.DynconfigInterface, opts ...grpc.DialOption) (V2, error) {
+	// Register resolver and balancer.
+	resolver.RegisterSeedPeer(dynconfig)
+	builder, pickerBuilder := pkgbalancer.NewConsistentHashingBuilder()
+	balancer.Register(builder)
+
 	conn, err := grpc.DialContext(
 		ctx,
-		target,
+		resolver.SeedPeerVirtualTarget,
 		append([]grpc.DialOption{
+			grpc.WithDefaultServiceConfig(pkgbalancer.BalancerServiceConfig),
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
 				rpc.OTELUnaryClientInterceptor(),
 				grpc_prometheus.UnaryClientInterceptor,
@@ -47,11 +57,13 @@ func GetV2(ctx context.Context, target string, opts ...grpc.DialOption) (V2, err
 					grpc_retry.WithMax(maxRetries),
 					grpc_retry.WithBackoff(grpc_retry.BackoffLinear(backoffWaitBetween)),
 				),
+				rpc.RefresherUnaryClientInterceptor(dynconfig),
 			)),
 			grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
 				rpc.OTELStreamClientInterceptor(),
 				grpc_prometheus.StreamClientInterceptor,
 				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
+				rpc.RefresherStreamClientInterceptor(dynconfig),
 			)),
 		}, opts...)...,
 	)
@@ -60,8 +72,9 @@ func GetV2(ctx context.Context, target string, opts ...grpc.DialOption) (V2, err
 	}
 
 	return &v2{
-		DfdaemonUploadClient: dfdaemonv2.NewDfdaemonUploadClient(conn),
-		ClientConn:           conn,
+		DfdaemonUploadClient:           dfdaemonv2.NewDfdaemonUploadClient(conn),
+		ClientConn:                     conn,
+		ConsistentHashingPickerBuilder: pickerBuilder,
 	}, nil
 }
 
@@ -73,8 +86,8 @@ type V2 interface {
 	// DownloadPiece downloads piece from the other peer.
 	DownloadPiece(context.Context, *dfdaemonv2.DownloadPieceRequest, ...grpc.CallOption) (*dfdaemonv2.DownloadPieceResponse, error)
 
-	// DownloadTask downloads task from the other peer.
-	DownloadTask(context.Context, *dfdaemonv2.DownloadTaskRequest, ...grpc.CallOption) error
+	// TriggerDownloadTask triggers download task from the other peer.
+	TriggerDownloadTask(context.Context, *dfdaemonv2.TriggerDownloadTaskRequest, ...grpc.CallOption) (*dfdaemonv2.TriggerDownloadTaskResponse, error)
 
 	// Close tears down the ClientConn and all underlying connections.
 	Close() error
@@ -84,6 +97,7 @@ type V2 interface {
 type v2 struct {
 	dfdaemonv2.DfdaemonUploadClient
 	*grpc.ClientConn
+	*pkgbalancer.ConsistentHashingPickerBuilder
 }
 
 // SyncPieces syncs pieces from the other peers.
@@ -110,16 +124,14 @@ func (v *v2) DownloadPiece(ctx context.Context, req *dfdaemonv2.DownloadPieceReq
 	)
 }
 
-// DownloadTask downloads task from the other peer.
-func (v *v2) DownloadTask(ctx context.Context, req *dfdaemonv2.DownloadTaskRequest, opts ...grpc.CallOption) error {
+// TriggerDownloadTask triggers download task from the other peer.
+func (v *v2) TriggerDownloadTask(ctx context.Context, req *dfdaemonv2.TriggerDownloadTaskRequest, opts ...grpc.CallOption) (*dfdaemonv2.TriggerDownloadTaskResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	_, err := v.DfdaemonUploadClient.DownloadTask(
+	return v.DfdaemonUploadClient.TriggerDownloadTask(
 		ctx,
 		req,
 		opts...,
 	)
-
-	return err
 }

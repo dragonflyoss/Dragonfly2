@@ -12,7 +12,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	common "d7y.io/api/v2/pkg/apis/common/v2"
+	dfdaemon "d7y.io/api/v2/pkg/apis/dfdaemon/v2"
 	scheduler "d7y.io/api/v2/pkg/apis/scheduler/v1"
 	http "d7y.io/dragonfly/v2/pkg/net/http"
 	gomock "go.uber.org/mock/gomock"
@@ -55,20 +55,6 @@ func (mr *MockSeedPeerMockRecorder) Client() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Client", reflect.TypeOf((*MockSeedPeer)(nil).Client))
 }
 
-// DownloadTask mocks base method.
-func (m *MockSeedPeer) DownloadTask(arg0 context.Context, arg1 *common.Download) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DownloadTask", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DownloadTask indicates an expected call of DownloadTask.
-func (mr *MockSeedPeerMockRecorder) DownloadTask(arg0, arg1 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadTask", reflect.TypeOf((*MockSeedPeer)(nil).DownloadTask), arg0, arg1)
-}
-
 // Stop mocks base method.
 func (m *MockSeedPeer) Stop() error {
 	m.ctrl.T.Helper()
@@ -81,6 +67,21 @@ func (m *MockSeedPeer) Stop() error {
 func (mr *MockSeedPeerMockRecorder) Stop() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockSeedPeer)(nil).Stop))
+}
+
+// TriggerDownloadTask mocks base method.
+func (m *MockSeedPeer) TriggerDownloadTask(arg0 context.Context, arg1 *dfdaemon.TriggerDownloadTaskRequest) (*dfdaemon.TriggerDownloadTaskResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TriggerDownloadTask", arg0, arg1)
+	ret0, _ := ret[0].(*dfdaemon.TriggerDownloadTaskResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// TriggerDownloadTask indicates an expected call of TriggerDownloadTask.
+func (mr *MockSeedPeerMockRecorder) TriggerDownloadTask(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TriggerDownloadTask", reflect.TypeOf((*MockSeedPeer)(nil).TriggerDownloadTask), arg0, arg1)
 }
 
 // TriggerTask mocks base method.
