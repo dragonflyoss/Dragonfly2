@@ -105,28 +105,27 @@ func (p *probes) Peek() (*Probe, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	var probes []*Probe
 	probesKey := pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID)
-	any, ok := p.cache.Get(probesKey)
-	if ok {
-		probes = any.([]*Probe)
-	} else {
-		rawProbes, err := p.rdb.LRange(ctx, pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID), 0, -1).Result()
-		if err != nil {
+	if any, ok := p.cache.Get(probesKey); ok {
+		return any.([]*Probe)[0], nil
+	}
+
+	rawProbes, err := p.rdb.LRange(ctx, pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID), 0, -1).Result()
+	if err != nil || len(rawProbes) == 0 {
+		return nil, err
+	}
+
+	var probes []*Probe
+	for _, rawProbe := range rawProbes {
+		probe := &Probe{}
+		if err = json.Unmarshal([]byte(rawProbe), probe); err != nil {
 			return nil, err
 		}
+		probes = append(probes, probe)
+	}
 
-		for _, rawProbe := range rawProbes {
-			probe := &Probe{}
-			if err = json.Unmarshal([]byte(rawProbe), probe); err != nil {
-				return nil, err
-			}
-			probes = append(probes, probe)
-		}
-
-		if err := p.cache.Add(probesKey, probes, p.config.Cache.TTL); err != nil {
-			logger.Error(err)
-		}
+	if err := p.cache.Add(probesKey, probes, p.config.Cache.TTL); err != nil {
+		logger.Error(err)
 	}
 
 	return probes[0], nil
@@ -199,6 +198,7 @@ func (p *probes) Enqueue(probe *Probe) error {
 	if err := p.cache.Add(probesKey, probes, p.config.Cache.TTL); err != nil {
 		logger.Error(err)
 	}
+
 	// Update the moving average round-trip time and updated time.
 	networkTopologyKey := pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID)
 	if err := p.rdb.HSet(ctx, networkTopologyKey, "averageRTT", averageRTT.Nanoseconds()).Err(); err != nil {
@@ -223,30 +223,27 @@ func (p *probes) Len() (int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	var probes []*Probe
 	probesKey := pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID)
-	any, ok := p.cache.Get(probesKey)
-	if !ok {
-		rawProbes, err := p.rdb.LRange(ctx, pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID), 0, -1).Result()
-		if err != nil {
+	if any, ok := p.cache.Get(probesKey); ok {
+		return int64(len(any.([]*Probe))), nil
+	}
+
+	rawProbes, err := p.rdb.LRange(ctx, pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID), 0, -1).Result()
+	if err != nil || len(rawProbes) == 0 {
+		return int64(0), err
+	}
+
+	var probes []*Probe
+	for _, rawProbe := range rawProbes {
+		probe := &Probe{}
+		if err = json.Unmarshal([]byte(rawProbe), probe); err != nil {
 			return int64(0), err
 		}
+		probes = append(probes, probe)
+	}
 
-		if len(rawProbes) != 0 {
-			for _, rawProbe := range rawProbes {
-				probe := &Probe{}
-				if err = json.Unmarshal([]byte(rawProbe), probe); err != nil {
-					return int64(0), err
-				}
-				probes = append(probes, probe)
-			}
-
-			if err := p.cache.Add(probesKey, probes, p.config.Cache.TTL); err != nil {
-				logger.Error(err)
-			}
-		}
-	} else {
-		probes = any.([]*Probe)
+	if err := p.cache.Add(probesKey, probes, p.config.Cache.TTL); err != nil {
+		logger.Error(err)
 	}
 
 	return int64(len(probes)), nil
@@ -331,12 +328,12 @@ func (p *probes) AverageRTT() (time.Duration, error) {
 		networkTopology = any.(map[string]string)
 	}
 
-	RTT, err := strconv.ParseInt(networkTopology["averageRTT"], 10, 64)
+	averageRTT, err := strconv.ParseInt(networkTopology["averageRTT"], 10, 64)
 	if err != nil {
-		return 0, err
+		return time.Duration(0), err
 	}
 
-	return time.Duration(RTT), nil
+	return time.Duration(averageRTT), nil
 }
 
 // dequeue removes and returns the oldest probe.

@@ -99,7 +99,7 @@ networkTopology:
     queueLength: 5
     count: 10
   cache:
-    interval: 2h  
+    interval: 5m  
     ttl: 5m
 
 trainer:

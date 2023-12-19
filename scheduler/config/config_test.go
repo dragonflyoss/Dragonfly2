@@ -181,7 +181,7 @@ func TestConfig_Load(t *testing.T) {
 				Count:       10,
 			},
 			Cache: CacheConfig{
-				Interval: 2 * time.Hour,
+				Interval: 5 * time.Minute,
 				TTL:      5 * time.Minute,
 			},
 		},

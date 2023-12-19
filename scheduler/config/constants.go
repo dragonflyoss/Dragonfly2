@@ -180,7 +180,7 @@ const (
 	DefaultNetworkTopologyCollectInterval = 2 * time.Hour
 
 	// DefaultNetworkTopologyCacheInterval is the default cache cleanup interval.
-	DefaultNetworkTopologyCacheInterval = 2 * time.Hour
+	DefaultNetworkTopologyCacheInterval = 5 * time.Minute
 
 	// DefaultNetworkTopologyCacheTLL is the default ttl of networkTopology cache.
 	DefaultNetworkTopologyCacheTLL = 5 * time.Minute

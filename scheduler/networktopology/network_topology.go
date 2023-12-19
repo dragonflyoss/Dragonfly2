@@ -141,19 +141,19 @@ func (nt *networkTopology) Has(srcHostID string, destHostID string) bool {
 	defer cancel()
 
 	networkTopologyKey := pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID)
-	_, ok := nt.cache.Get(networkTopologyKey)
-	if !ok {
-		networkTopology, err := nt.rdb.HGetAll(ctx, networkTopologyKey).Result()
-		if err == nil && len(networkTopology) != 0 {
-			if err := nt.cache.Add(networkTopologyKey, networkTopology, nt.config.Cache.TTL); err != nil {
-				logger.Error(err)
-			}
-		} else {
-			return false
-		}
+	if _, ok := nt.cache.Get(networkTopologyKey); ok {
+		return true
 	}
 
-	return true
+	if networkTopology, err := nt.rdb.HGetAll(ctx, networkTopologyKey).Result(); err == nil && len(networkTopology) != 0 {
+		if err := nt.cache.Add(networkTopologyKey, networkTopology, nt.config.Cache.TTL); err != nil {
+			logger.Error(err)
+		}
+
+		return true
+	}
+
+	return false
 }
 
 // Store stores source host and destination host.
@@ -166,8 +166,7 @@ func (nt *networkTopology) Store(srcHostID string, destHostID string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	networkTopologyKey := pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID)
-	if err := nt.rdb.HSet(ctx, networkTopologyKey, "createdAt", time.Now().Format(time.RFC3339Nano)).Err(); err != nil {
+	if err := nt.rdb.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID), "createdAt", time.Now().Format(time.RFC3339Nano)).Err(); err != nil {
 		return err
 	}
 
@@ -303,20 +302,18 @@ func (nt *networkTopology) ProbedCount(hostID string) (uint64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	var probedCount uint64
 	probedCountKey := pkgredis.MakeProbedCountKeyInScheduler(hostID)
-	any, ok := nt.cache.Get(probedCountKey)
-	if !ok {
-		var err error
-		if probedCount, err = nt.rdb.Get(ctx, probedCountKey).Uint64(); err != nil {
-			return uint64(0), err
-		}
+	if any, ok := nt.cache.Get(probedCountKey); ok {
+		return any.(uint64), nil
+	}
 
-		if err := nt.cache.Add(probedCountKey, probedCount, nt.config.Cache.TTL); err != nil {
-			logger.Error(err)
-		}
-	} else {
-		probedCount = any.(uint64)
+	probedCount, err := nt.rdb.Get(ctx, probedCountKey).Uint64()
+	if err != nil {
+		return uint64(0), err
+	}
+
+	if err := nt.cache.Add(probedCountKey, probedCount, nt.config.Cache.TTL); err != nil {
+		logger.Error(err)
 	}
 
 	return probedCount, nil
