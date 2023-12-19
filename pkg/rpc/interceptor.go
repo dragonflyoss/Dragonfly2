@@ -18,10 +18,8 @@ package rpc
 
 import (
 	"context"
-	"sync"
 
 	"github.com/juju/ratelimit"
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -29,39 +27,6 @@ import (
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
-
-var (
-	// otelUnaryInterceptor is the unary interceptor for tracing.
-	otelUnaryInterceptor grpc.UnaryClientInterceptor
-
-	// otelStreamInterceptor is the stream interceptor for tracing.
-	otelStreamInterceptor grpc.StreamClientInterceptor
-
-	// interceptorsInitialized is used to ensure that otel interceptors are initialized only once.
-	interceptorsInitialized = sync.Once{}
-)
-
-// OTEL interceptors must be created once to avoid memory leak,
-// refer to https://github.com/open-telemetry/opentelemetry-go-contrib/issues/4226 and
-// https://github.com/argoproj/argo-cd/pull/15174.
-func ensureOTELInterceptorInitialized() {
-	interceptorsInitialized.Do(func() {
-		otelUnaryInterceptor = otelgrpc.UnaryClientInterceptor()
-		otelStreamInterceptor = otelgrpc.StreamClientInterceptor()
-	})
-}
-
-// OTELUnaryClientInterceptor returns a new unary client interceptor that traces gRPC requests.
-func OTELUnaryClientInterceptor() grpc.UnaryClientInterceptor {
-	ensureOTELInterceptorInitialized()
-	return otelUnaryInterceptor
-}
-
-// OTELStreamClientInterceptor returns a new stream client interceptor that traces gRPC requests.
-func OTELStreamClientInterceptor() grpc.StreamClientInterceptor {
-	ensureOTELInterceptorInitialized()
-	return otelStreamInterceptor
-}
 
 // Refresher is the interface for refreshing dynconfig.
 type Refresher interface {

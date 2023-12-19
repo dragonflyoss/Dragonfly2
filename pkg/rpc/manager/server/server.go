@@ -62,6 +62,7 @@ func New(managerServerV1 managerv1.ManagerServer, managerServerV2 managerv2.Mana
 	limiter := rpc.NewRateLimiterInterceptor(DefaultQPS, DefaultBurst)
 
 	grpcServer := grpc.NewServer(append([]grpc.ServerOption{
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		grpc.KeepaliveParams(keepalive.ServerParameters{
 			MaxConnectionIdle:     DefaultMaxConnectionIdle,
 			MaxConnectionAge:      DefaultMaxConnectionAge,
@@ -69,7 +70,6 @@ func New(managerServerV1 managerv1.ManagerServer, managerServerV2 managerv2.Mana
 		}),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			grpc_ratelimit.UnaryServerInterceptor(limiter),
-			otelgrpc.UnaryServerInterceptor(),
 			grpc_prometheus.UnaryServerInterceptor,
 			grpc_zap.UnaryServerInterceptor(logger.GrpcLogger.Desugar()),
 			grpc_validator.UnaryServerInterceptor(),
@@ -77,7 +77,6 @@ func New(managerServerV1 managerv1.ManagerServer, managerServerV2 managerv2.Mana
 		)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_ratelimit.StreamServerInterceptor(limiter),
-			otelgrpc.StreamServerInterceptor(),
 			grpc_prometheus.StreamServerInterceptor,
 			grpc_zap.StreamServerInterceptor(logger.GrpcLogger.Desugar()),
 			grpc_validator.StreamServerInterceptor(),
