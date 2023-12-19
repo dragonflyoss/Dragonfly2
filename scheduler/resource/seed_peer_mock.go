@@ -12,9 +12,9 @@ import (
 	context "context"
 	reflect "reflect"
 
+	common "d7y.io/api/v2/pkg/apis/common/v2"
 	scheduler "d7y.io/api/v2/pkg/apis/scheduler/v1"
 	http "d7y.io/dragonfly/v2/pkg/net/http"
-	types "d7y.io/dragonfly/v2/pkg/types"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -56,17 +56,17 @@ func (mr *MockSeedPeerMockRecorder) Client() *gomock.Call {
 }
 
 // DownloadTask mocks base method.
-func (m *MockSeedPeer) DownloadTask(arg0 context.Context, arg1 *Task, arg2 types.HostType) error {
+func (m *MockSeedPeer) DownloadTask(arg0 context.Context, arg1 *common.Download) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DownloadTask", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "DownloadTask", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DownloadTask indicates an expected call of DownloadTask.
-func (mr *MockSeedPeerMockRecorder) DownloadTask(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockSeedPeerMockRecorder) DownloadTask(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadTask", reflect.TypeOf((*MockSeedPeer)(nil).DownloadTask), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadTask", reflect.TypeOf((*MockSeedPeer)(nil).DownloadTask), arg0, arg1)
 }
 
 // Stop mocks base method.

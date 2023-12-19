@@ -33,7 +33,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
-	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
 )
@@ -47,7 +46,7 @@ const (
 type SeedPeer interface {
 	// DownloadTask downloads task back-to-source.
 	// Used only in v2 version of the grpc.
-	DownloadTask(context.Context, *Task, types.HostType) error
+	DownloadTask(context.Context, *commonv2.Download) error
 
 	// TriggerTask triggers the seed peer to download task.
 	// Used only in v1 version of the grpc.
@@ -88,7 +87,7 @@ func newSeedPeer(cfg *config.ResourceConfig, client SeedPeerClient, peerManager 
 // TODO Implement DownloadTask
 // DownloadTask downloads task back-to-source.
 // Used only in v2 version of the grpc.
-func (s *seedPeer) DownloadTask(ctx context.Context, task *Task, hostType types.HostType) error {
+func (s *seedPeer) DownloadTask(ctx context.Context, download *commonv2.Download) error {
 	// ctx, cancel := context.WithCancel(trace.ContextWithSpan(context.Background(), trace.SpanFromContext(ctx)))
 	// defer cancel()
 

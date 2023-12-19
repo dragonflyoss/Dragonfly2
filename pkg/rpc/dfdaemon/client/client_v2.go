@@ -27,7 +27,6 @@ import (
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
 
-	commonv2 "d7y.io/api/v2/pkg/apis/common/v2"
 	dfdaemonv2 "d7y.io/api/v2/pkg/apis/dfdaemon/v2"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -61,27 +60,21 @@ func GetV2(ctx context.Context, target string, opts ...grpc.DialOption) (V2, err
 	}
 
 	return &v2{
-		DfdaemonClient: dfdaemonv2.NewDfdaemonClient(conn),
-		ClientConn:     conn,
+		DfdaemonUploadClient: dfdaemonv2.NewDfdaemonUploadClient(conn),
+		ClientConn:           conn,
 	}, nil
 }
 
 // V2 is the interface for v2 version of the grpc client.
 type V2 interface {
 	// SyncPieces syncs pieces from the other peers.
+	SyncPieces(context.Context, *dfdaemonv2.SyncPiecesRequest, ...grpc.CallOption) (dfdaemonv2.DfdaemonUpload_SyncPiecesClient, error)
+
+	// DownloadPiece downloads piece from the other peer.
 	DownloadPiece(context.Context, *dfdaemonv2.DownloadPieceRequest, ...grpc.CallOption) (*dfdaemonv2.DownloadPieceResponse, error)
 
-	// DownloadTask downloads task back-to-source.
+	// DownloadTask downloads task from the other peer.
 	DownloadTask(context.Context, *dfdaemonv2.DownloadTaskRequest, ...grpc.CallOption) error
-
-	// UploadTask uploads task to p2p network.
-	UploadTask(context.Context, *dfdaemonv2.UploadTaskRequest, ...grpc.CallOption) error
-
-	// StatTask stats task information.
-	StatTask(context.Context, *dfdaemonv2.StatTaskRequest, ...grpc.CallOption) (*commonv2.Task, error)
-
-	// DeleteTask deletes task from p2p network.
-	DeleteTask(context.Context, *dfdaemonv2.DeleteTaskRequest, ...grpc.CallOption) error
 
 	// Close tears down the ClientConn and all underlying connections.
 	Close() error
@@ -89,68 +82,40 @@ type V2 interface {
 
 // v2 provides v2 version of the dfdaemon grpc function.
 type v2 struct {
-	dfdaemonv2.DfdaemonClient
+	dfdaemonv2.DfdaemonUploadClient
 	*grpc.ClientConn
 }
 
-// Trigger client to download file.
-func (v *v2) SyncPieces(ctx context.Context, req *dfdaemonv2.DownloadPieceRequest, opts ...grpc.CallOption) (*dfdaemonv2.DownloadPieceResponse, error) {
+// SyncPieces syncs pieces from the other peers.
+func (v *v2) SyncPieces(ctx context.Context, req *dfdaemonv2.SyncPiecesRequest, opts ...grpc.CallOption) (dfdaemonv2.DfdaemonUpload_SyncPiecesClient, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	return v.DfdaemonClient.DownloadPiece(
+	return v.DfdaemonUploadClient.SyncPieces(
 		ctx,
 		req,
 		opts...,
 	)
 }
 
-// DownloadTask downloads task back-to-source.
+// DownloadPiece downloads piece from the other peer.
+func (v *v2) DownloadPiece(ctx context.Context, req *dfdaemonv2.DownloadPieceRequest, opts ...grpc.CallOption) (*dfdaemonv2.DownloadPieceResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
+	return v.DfdaemonUploadClient.DownloadPiece(
+		ctx,
+		req,
+		opts...,
+	)
+}
+
+// DownloadTask downloads task from the other peer.
 func (v *v2) DownloadTask(ctx context.Context, req *dfdaemonv2.DownloadTaskRequest, opts ...grpc.CallOption) error {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	_, err := v.DfdaemonClient.DownloadTask(
-		ctx,
-		req,
-		opts...,
-	)
-
-	return err
-}
-
-// UploadTask uploads task to p2p network.
-func (v *v2) UploadTask(ctx context.Context, req *dfdaemonv2.UploadTaskRequest, opts ...grpc.CallOption) error {
-	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
-	defer cancel()
-
-	_, err := v.DfdaemonClient.UploadTask(
-		ctx,
-		req,
-		opts...,
-	)
-
-	return err
-}
-
-// StatTask stats task information.
-func (v *v2) StatTask(ctx context.Context, req *dfdaemonv2.StatTaskRequest, opts ...grpc.CallOption) (*commonv2.Task, error) {
-	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
-	defer cancel()
-
-	return v.DfdaemonClient.StatTask(
-		ctx,
-		req,
-		opts...,
-	)
-}
-
-// DeleteTask deletes task from p2p network.
-func (v *v2) DeleteTask(ctx context.Context, req *dfdaemonv2.DeleteTaskRequest, opts ...grpc.CallOption) error {
-	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
-	defer cancel()
-
-	_, err := v.DfdaemonClient.DeleteTask(
+	_, err := v.DfdaemonUploadClient.DownloadTask(
 		ctx,
 		req,
 		opts...,
