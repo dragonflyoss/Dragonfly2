@@ -184,16 +184,15 @@ func (mr *MockSeedPeerClientMockRecorder) SyncPieces(arg0, arg1 any, arg2 ...any
 }
 
 // TriggerDownloadTask mocks base method.
-func (m *MockSeedPeerClient) TriggerDownloadTask(arg0 context.Context, arg1 *dfdaemon.TriggerDownloadTaskRequest, arg2 ...grpc.CallOption) (*dfdaemon.TriggerDownloadTaskResponse, error) {
+func (m *MockSeedPeerClient) TriggerDownloadTask(arg0 context.Context, arg1 *dfdaemon.TriggerDownloadTaskRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "TriggerDownloadTask", varargs...)
-	ret0, _ := ret[0].(*dfdaemon.TriggerDownloadTaskResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // TriggerDownloadTask indicates an expected call of TriggerDownloadTask.

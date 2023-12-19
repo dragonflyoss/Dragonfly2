@@ -3364,7 +3364,7 @@ func TestServiceV2_downloadTaskBySeedPeer(t *testing.T) {
 
 				gomock.InOrder(
 					mr.SeedPeer().Return(seedPeerClient).Times(1),
-					ms.TriggerDownloadTask(gomock.All(), gomock.Any()).Do(func(context.Context, *dfdaemonv2.TriggerDownloadTaskRequest) { wg.Done() }).Return(&dfdaemonv2.TriggerDownloadTaskResponse{}, nil).Times(1),
+					ms.TriggerDownloadTask(gomock.All(), gomock.Any()).Do(func(context.Context, *dfdaemonv2.TriggerDownloadTaskRequest) { wg.Done() }).Return(nil).Times(1),
 				)
 
 				peer.Priority = commonv2.Priority_LEVEL6
@@ -3388,7 +3388,7 @@ func TestServiceV2_downloadTaskBySeedPeer(t *testing.T) {
 
 				gomock.InOrder(
 					mr.SeedPeer().Return(seedPeerClient).Times(1),
-					ms.TriggerDownloadTask(gomock.All(), gomock.Any()).Do(func(context.Context, *dfdaemonv2.TriggerDownloadTaskRequest) { wg.Done() }).Return(nil, errors.New("foo")).Times(1),
+					ms.TriggerDownloadTask(gomock.All(), gomock.Any()).Do(func(context.Context, *dfdaemonv2.TriggerDownloadTaskRequest) { wg.Done() }).Return(errors.New("foo")).Times(1),
 				)
 
 				peer.Priority = commonv2.Priority_LEVEL6
@@ -3427,7 +3427,7 @@ func TestServiceV2_downloadTaskBySeedPeer(t *testing.T) {
 
 				gomock.InOrder(
 					mr.SeedPeer().Return(seedPeerClient).Times(1),
-					ms.TriggerDownloadTask(gomock.All(), gomock.Any()).Do(func(context.Context, *dfdaemonv2.TriggerDownloadTaskRequest) { wg.Done() }).Return(&dfdaemonv2.TriggerDownloadTaskResponse{}, nil).Times(1),
+					ms.TriggerDownloadTask(gomock.All(), gomock.Any()).Do(func(context.Context, *dfdaemonv2.TriggerDownloadTaskRequest) { wg.Done() }).Return(nil).Times(1),
 				)
 
 				peer.Priority = commonv2.Priority_LEVEL5
@@ -3451,7 +3451,7 @@ func TestServiceV2_downloadTaskBySeedPeer(t *testing.T) {
 
 				gomock.InOrder(
 					mr.SeedPeer().Return(seedPeerClient).Times(1),
-					ms.TriggerDownloadTask(gomock.All(), gomock.Any()).Do(func(context.Context, *dfdaemonv2.TriggerDownloadTaskRequest) { wg.Done() }).Return(nil, errors.New("foo")).Times(1),
+					ms.TriggerDownloadTask(gomock.All(), gomock.Any()).Do(func(context.Context, *dfdaemonv2.TriggerDownloadTaskRequest) { wg.Done() }).Return(errors.New("foo")).Times(1),
 				)
 
 				peer.Priority = commonv2.Priority_LEVEL5
@@ -3490,7 +3490,7 @@ func TestServiceV2_downloadTaskBySeedPeer(t *testing.T) {
 
 				gomock.InOrder(
 					mr.SeedPeer().Return(seedPeerClient).Times(1),
-					ms.TriggerDownloadTask(gomock.All(), gomock.Any()).Do(func(context.Context, *dfdaemonv2.TriggerDownloadTaskRequest) { wg.Done() }).Return(&dfdaemonv2.TriggerDownloadTaskResponse{}, nil).Times(1),
+					ms.TriggerDownloadTask(gomock.All(), gomock.Any()).Do(func(context.Context, *dfdaemonv2.TriggerDownloadTaskRequest) { wg.Done() }).Return(nil).Times(1),
 				)
 
 				peer.Priority = commonv2.Priority_LEVEL4
@@ -3514,7 +3514,7 @@ func TestServiceV2_downloadTaskBySeedPeer(t *testing.T) {
 
 				gomock.InOrder(
 					mr.SeedPeer().Return(seedPeerClient).Times(1),
-					ms.TriggerDownloadTask(gomock.All(), gomock.Any()).Do(func(context.Context, *dfdaemonv2.TriggerDownloadTaskRequest) { wg.Done() }).Return(nil, errors.New("foo")).Times(1),
+					ms.TriggerDownloadTask(gomock.All(), gomock.Any()).Do(func(context.Context, *dfdaemonv2.TriggerDownloadTaskRequest) { wg.Done() }).Return(errors.New("foo")).Times(1),
 				)
 
 				peer.Priority = commonv2.Priority_LEVEL4
