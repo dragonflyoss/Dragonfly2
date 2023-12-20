@@ -17,6 +17,8 @@
 package pex
 
 import (
+	"net"
+
 	managerv1 "d7y.io/api/v2/pkg/apis/manager/v1"
 )
 
@@ -33,8 +35,8 @@ func (s *seedPeerMemberLister) List() ([]*InitialMember, error) {
 	for _, peer := range seedPeers {
 		member = append(member,
 			&InitialMember{
-				Ip:      peer.Ip,
-				RpcPort: peer.Port,
+				Addr: net.ParseIP(peer.Ip),
+				Port: 7946,
 			})
 	}
 	return member, nil
@@ -43,5 +45,19 @@ func (s *seedPeerMemberLister) List() ([]*InitialMember, error) {
 func NewSeedPeerMemberLister(getSeedPeers func() ([]*managerv1.SeedPeer, error)) InitialMemberLister {
 	return &seedPeerMemberLister{
 		getSeedPeers: getSeedPeers,
+	}
+}
+
+type staticPeerMemberLister struct {
+	members []*InitialMember
+}
+
+func (s *staticPeerMemberLister) List() ([]*InitialMember, error) {
+	return s.members, nil
+}
+
+func NewStaticPeerMemberLister(members []*InitialMember) InitialMemberLister {
+	return &staticPeerMemberLister{
+		members: members,
 	}
 }

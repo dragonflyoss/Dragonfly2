@@ -20,6 +20,7 @@ import (
 	"sync"
 
 	dfdaemonv1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 type peerPool struct {
@@ -45,29 +46,31 @@ func (p *peerPool) Sync(nodeMeta *MemberMeta, peerExchangeData *dfdaemonv1.PeerE
 }
 
 func (p *peerPool) sync(nodeMeta *MemberMeta, peer *dfdaemonv1.PeerMetadata) {
-	p.lock.Lock()
-	defer p.lock.Unlock()
-
 	peers, ok := p.tasks[peer.TaskId]
 	if !ok {
-		p.tasks[peer.TaskId] = map[string]*DestPeer{}
+		peers = map[string]*DestPeer{}
+		p.tasks[peer.TaskId] = peers
 	}
 
 	switch peer.State {
 	case dfdaemonv1.PeerState_Unknown:
+		logger.Warnf("receive unknown state peer %s/%s from %s", peer.TaskId, peer.PeerId, nodeMeta.HostID)
 		return
 	case dfdaemonv1.PeerState_Running, dfdaemonv1.PeerState_Success:
 		peers[nodeMeta.HostID] = &DestPeer{
 			MemberMeta: nodeMeta,
 			PeerID:     peer.PeerId,
 		}
+		logger.Infof("receive successful peer %s/%s from %s", peer.TaskId, peer.PeerId, nodeMeta.HostID)
 	case dfdaemonv1.PeerState_Failed, dfdaemonv1.PeerState_Deleted:
 		delete(peers, peer.PeerId)
 		// clean task map
 		if len(peers) == 0 {
 			delete(p.tasks, peer.TaskId)
 		}
+		logger.Infof("receive deleted peer %s/%s from %s", peer.TaskId, peer.PeerId, nodeMeta.HostID)
 	default:
+		logger.Warnf("receive unknown state peer %s/%s from %s", peer.TaskId, peer.PeerId, nodeMeta.HostID)
 		return
 	}
 }

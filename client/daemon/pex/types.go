@@ -17,11 +17,12 @@
 package pex
 
 import (
+	"github.com/hashicorp/memberlist"
+
 	dfdaemonv1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
-	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 )
 
-type InitialMember = schedulerv1.PeerPacket_DestPeer
+type InitialMember = memberlist.Node
 
 type PeerExchangeServer interface {
 	Serve() error

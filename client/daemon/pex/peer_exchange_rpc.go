@@ -81,11 +81,13 @@ func (p *peerExchange) PeerExchange(exchangeServer dfdaemonv1.Daemon_PeerExchang
 		return status.Errorf(codes.Internal, "failed to register member: %s", err)
 	}
 
+	logger.Infof("receive connection from %s, %s start receive peer metadata", member.HostID, p.localMember.HostID)
+
 	var data *dfdaemonv1.PeerExchangeData
 	for {
 		data, err = exchangeServer.Recv()
 		if err != nil {
-			log.Debugf("failed to receive peer metadata: %s", err)
+			log.Errorf("failed to receive peer metadata: %s, member: %s", err, member.HostID)
 			return err
 		}
 		p.PeerExchangeSynchronizer().Sync(member, data)

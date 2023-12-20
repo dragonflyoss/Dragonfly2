@@ -17,6 +17,7 @@
 package pex
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/hashicorp/memberlist"
@@ -38,6 +39,25 @@ type peerExchange struct {
 
 type peerExchangeConfig struct {
 	initialRetryInterval time.Duration
+	reSyncRetryInterval  time.Duration
+}
+
+func WithName(name string) func(*memberlist.Config, *peerExchangeConfig) {
+	return func(memberConfig *memberlist.Config, pexConfig *peerExchangeConfig) {
+		memberConfig.Name = name
+	}
+}
+
+func WithBindAddr(bindAddr string) func(*memberlist.Config, *peerExchangeConfig) {
+	return func(memberConfig *memberlist.Config, pexConfig *peerExchangeConfig) {
+		memberConfig.BindAddr = bindAddr
+	}
+}
+
+func WithBindPort(bindPort int) func(*memberlist.Config, *peerExchangeConfig) {
+	return func(memberConfig *memberlist.Config, pexConfig *peerExchangeConfig) {
+		memberConfig.BindPort = bindPort
+	}
 }
 
 func WithAdvertiseAddr(advertiseAddr string) func(*memberlist.Config, *peerExchangeConfig) {
@@ -52,21 +72,28 @@ func WithAdvertisePort(advertisePort int) func(*memberlist.Config, *peerExchange
 	}
 }
 
-func WithInitialRetryInterval(initialRetryInterval time.Duration) func(*memberlist.Config, *peerExchangeConfig) {
+func WithInitialRetryInterval(interval time.Duration) func(*memberlist.Config, *peerExchangeConfig) {
 	return func(memberConfig *memberlist.Config, pexConfig *peerExchangeConfig) {
-		pexConfig.initialRetryInterval = initialRetryInterval
+		pexConfig.initialRetryInterval = interval
 	}
 }
 
-func NewPeerExchange(memberMeta *MemberMeta, lister InitialMemberLister, peerUpdateChan <-chan *dfdaemonv1.PeerMetadata, opts ...func(*memberlist.Config, *peerExchangeConfig)) (PeerExchangeServer, error) {
-	memberManager := newPeerExchangeMemberManager(memberMeta, peerUpdateChan)
+func WithReSyncInterval(interval time.Duration) func(*memberlist.Config, *peerExchangeConfig) {
+	return func(memberConfig *memberlist.Config, pexConfig *peerExchangeConfig) {
+		pexConfig.reSyncRetryInterval = interval
+	}
+}
+
+func NewPeerExchange(memberMeta *MemberMeta, lister InitialMemberLister, opts ...func(*memberlist.Config, *peerExchangeConfig)) (PeerExchangeServer, error) {
+	memberManager := newPeerExchangeMemberManager(memberMeta)
 
 	memberConfig := memberlist.DefaultLANConfig()
 	memberConfig.Delegate = newPeerExchangeDelegate(memberMeta)
 	memberConfig.Events = memberManager
 
 	pexConfig := &peerExchangeConfig{
-		initialRetryInterval: time.Minute,
+		initialRetryInterval: 10 * time.Second,
+		reSyncRetryInterval:  time.Minute,
 	}
 
 	for _, opt := range opts {
@@ -83,6 +110,8 @@ func NewPeerExchange(memberMeta *MemberMeta, lister InitialMemberLister, peerUpd
 		return nil, errors.WithMessage(err, "failed to create memberlist")
 	}
 
+	// update member list
+	memberManager.memberPool.members = member
 	pex := &peerExchange{
 		config:        pexConfig,
 		localMember:   memberMeta,
@@ -115,13 +144,13 @@ func (p *peerExchange) FindPeersByTask(task string) ([]*DestPeer, bool) {
 }
 
 func (p *peerExchange) BroadcastPeer(data *dfdaemonv1.PeerMetadata) {
-	p.memberManager.memberPool.broadcast(&dfdaemonv1.PeerExchangeData{
+	p.memberManager.broadcast(&dfdaemonv1.PeerExchangeData{
 		PeerMetadatas: []*dfdaemonv1.PeerMetadata{data},
 	})
 }
 
 func (p *peerExchange) BroadcastPeers(data *dfdaemonv1.PeerExchangeData) {
-	p.memberManager.memberPool.broadcast(data)
+	p.memberManager.broadcast(data)
 }
 
 func (p *peerExchange) Serve() error {
@@ -154,7 +183,7 @@ func (p *peerExchange) serve() error {
 
 	var ips []string
 	for _, member := range members {
-		ips = append(ips, member.Ip)
+		ips = append(ips, fmt.Sprintf("%s:%d", member.Addr.String(), member.Port))
 	}
 
 	_, err = p.memberlist.Join(ips)
@@ -172,7 +201,7 @@ func (p *peerExchange) Stop() error {
 
 func (p *peerExchange) reSyncMember() {
 	for {
-		time.Sleep(10 * time.Minute)
+		time.Sleep(p.config.reSyncRetryInterval)
 		var members []*MemberMeta
 		for _, m := range p.memberlist.Members() {
 			meta, err := ExtractNodeMeta(m)
@@ -193,10 +222,12 @@ func (p *peerExchange) reSyncMember() {
 		memberAddrs := p.memberManager.memberPool.MemberKeys()
 		add, del := diffMembers(members, memberAddrs)
 		for _, member := range add {
-			go p.memberManager.syncNode(member)
+			logger.Infof("re-sync add member: %s", member.HostID)
+			p.memberManager.syncNode(member)
 		}
-		for _, ip := range del {
-			p.memberManager.memberPool.UnRegister(ip)
+		for _, id := range del {
+			logger.Infof("re-sync del member: %s", id)
+			p.memberManager.memberPool.UnRegister(id)
 		}
 	}
 }
