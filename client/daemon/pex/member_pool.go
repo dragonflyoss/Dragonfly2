@@ -22,6 +22,9 @@ import (
 
 	"github.com/hashicorp/memberlist"
 	"golang.org/x/exp/maps"
+
+	"d7y.io/api/v2/pkg/apis/dfdaemon/v1"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 var (
@@ -31,13 +34,15 @@ var (
 
 type memberPool struct {
 	members       *memberlist.Memberlist
+	peerPool      *peerPool
 	lock          *sync.RWMutex
 	sendReceivers map[string]PeerMetadataSendReceiveCloser
 }
 
-func newMemberPool() *memberPool {
+func newMemberPool(peerPool *peerPool) *memberPool {
 	return &memberPool{
 		lock:          &sync.RWMutex{},
+		peerPool:      peerPool,
 		sendReceivers: map[string]PeerMetadataSendReceiveCloser{},
 	}
 }
@@ -49,53 +54,60 @@ func (mp *memberPool) MemberKeys() []string {
 	return keys
 }
 
-func (mp *memberPool) FindMember(ip string) (*MemberMeta, error) {
-	var (
-		memberMeta *MemberMeta
-		err        error
-	)
+func (mp *memberPool) FindMember(hostID string) (*MemberMeta, error) {
 	for _, member := range mp.members.Members() {
-		if member.Addr.String() == ip {
-			memberMeta, err = ExtractNodeMeta(member)
-			if err != nil {
-				return nil, err
-			}
+		memberMeta, err := ExtractNodeMeta(member)
+		if err != nil {
+			logger.Errorf("extract node meta error: %s", err)
+			continue
+		}
+		if memberMeta.HostID == hostID {
+			return memberMeta, nil
 		}
 	}
-	if memberMeta == nil {
-		return nil, ErrNotFound
-	}
-
-	return memberMeta, nil
+	return nil, ErrNotFound
 }
 
-func (mp *memberPool) Register(ip string, sr PeerMetadataSendReceiveCloser) error {
+func (mp *memberPool) Register(hostID string, sr PeerMetadataSendReceiveCloser) error {
 	mp.lock.Lock()
 	defer mp.lock.Unlock()
 
-	if _, ok := mp.sendReceivers[ip]; ok {
+	if _, ok := mp.sendReceivers[hostID]; ok {
 		return ErrIsAlreadyExists
 	}
 
-	mp.sendReceivers[ip] = sr
+	mp.sendReceivers[hostID] = sr
 	return nil
 }
 
-func (mp *memberPool) UnRegister(ip string) {
+func (mp *memberPool) UnRegister(hostID string) {
 	mp.lock.Lock()
 	defer mp.lock.Unlock()
-	sr, ok := mp.sendReceivers[ip]
+
+	defer mp.peerPool.Clean(hostID)
+	sr, ok := mp.sendReceivers[hostID]
 	if !ok {
 		return
 	}
 
-	delete(mp.sendReceivers, ip)
+	delete(mp.sendReceivers, hostID)
 	_ = sr.Close()
 }
 
-func (mp *memberPool) IsRegistered(ip string) bool {
+func (mp *memberPool) IsRegistered(hostID string) bool {
 	mp.lock.RLock()
 	defer mp.lock.RUnlock()
-	_, ok := mp.sendReceivers[ip]
+	_, ok := mp.sendReceivers[hostID]
 	return ok
+}
+
+func (mp *memberPool) broadcast(data *dfdaemon.PeerExchangeData) {
+	mp.lock.Lock()
+	defer mp.lock.Unlock()
+	for hostID, sr := range mp.sendReceivers {
+		err := sr.Send(data)
+		if err != nil {
+			logger.Errorf("send peer metadata to %s error: %s", hostID)
+		}
+	}
 }

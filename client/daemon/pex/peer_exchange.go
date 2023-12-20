@@ -23,14 +23,13 @@ import (
 	"github.com/pkg/errors"
 
 	dfdaemonv1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
-	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
 )
 
 type peerExchange struct {
 	config        *peerExchangeConfig
-	localMember   *memberlist.Node
+	localMember   *MemberMeta
 	memberlist    *memberlist.Memberlist
 	memberManager *peerExchangeMemberManager
 	lister        InitialMemberLister
@@ -59,11 +58,11 @@ func WithInitialRetryInterval(initialRetryInterval time.Duration) func(*memberli
 	}
 }
 
-func NewPeerExchange(node *MemberMeta, lister InitialMemberLister, peerUpdateChan <-chan *dfdaemonv1.PeerMetadata, opts ...func(*memberlist.Config, *peerExchangeConfig)) (PeerExchanger, error) {
-	memberManager := newPeerExchangeMemberManager(peerUpdateChan)
+func NewPeerExchange(memberMeta *MemberMeta, lister InitialMemberLister, peerUpdateChan <-chan *dfdaemonv1.PeerMetadata, opts ...func(*memberlist.Config, *peerExchangeConfig)) (PeerExchangeServer, error) {
+	memberManager := newPeerExchangeMemberManager(memberMeta, peerUpdateChan)
 
 	memberConfig := memberlist.DefaultLANConfig()
-	memberConfig.Delegate = newPeerExchangeDelegate(node)
+	memberConfig.Delegate = newPeerExchangeDelegate(memberMeta)
 	memberConfig.Events = memberManager
 
 	pexConfig := &peerExchangeConfig{
@@ -79,9 +78,6 @@ func NewPeerExchange(node *MemberMeta, lister InitialMemberLister, peerUpdateCha
 		memberConfig.AdvertiseAddr = ip.IPv4.String()
 	}
 
-	memberManager.localAdvertiseAddr = memberConfig.AdvertiseAddr
-	memberManager.localAdvertisePort = memberConfig.AdvertisePort
-
 	member, err := memberlist.Create(memberConfig)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create memberlist")
@@ -89,7 +85,7 @@ func NewPeerExchange(node *MemberMeta, lister InitialMemberLister, peerUpdateCha
 
 	pex := &peerExchange{
 		config:        pexConfig,
-		localMember:   member.LocalNode(),
+		localMember:   memberMeta,
 		memberlist:    member,
 		memberManager: memberManager,
 		lister:        lister,
@@ -106,12 +102,26 @@ func (p *peerExchange) PeerExchangeSynchronizer() PeerExchangeSynchronizer {
 	return p.memberManager.peerPool
 }
 
-func (p *peerExchange) PeerSearcher() PeerSearcher {
+func (p *peerExchange) PeerExchangeRPC() PeerExchangeRPC {
 	return p
 }
 
-func (p *peerExchange) FindPeersByTask(task string) ([]*schedulerv1.PeerPacket_DestPeer, bool) {
+func (p *peerExchange) PeerSearchBroadcaster() PeerSearchBroadcaster {
+	return p
+}
+
+func (p *peerExchange) FindPeersByTask(task string) ([]*DestPeer, bool) {
 	return p.memberManager.peerPool.Find(task)
+}
+
+func (p *peerExchange) BroadcastPeer(data *dfdaemonv1.PeerMetadata) {
+	p.memberManager.memberPool.broadcast(&dfdaemonv1.PeerExchangeData{
+		PeerMetadatas: []*dfdaemonv1.PeerMetadata{data},
+	})
+}
+
+func (p *peerExchange) BroadcastPeers(data *dfdaemonv1.PeerExchangeData) {
+	p.memberManager.memberPool.broadcast(data)
 }
 
 func (p *peerExchange) Serve() error {
@@ -163,7 +173,23 @@ func (p *peerExchange) Stop() error {
 func (p *peerExchange) reSyncMember() {
 	for {
 		time.Sleep(10 * time.Minute)
-		members := p.memberlist.Members()
+		var members []*MemberMeta
+		for _, m := range p.memberlist.Members() {
+			meta, err := ExtractNodeMeta(m)
+			if err != nil {
+				logger.Errorf("failed to extract metadata: %s", m)
+				continue
+			}
+			// skip not alive
+			if m.State != memberlist.StateAlive {
+				continue
+			}
+			// skip local
+			if p.memberManager.isLocal(meta) {
+				continue
+			}
+			members = append(members, meta)
+		}
 		memberAddrs := p.memberManager.memberPool.MemberKeys()
 		add, del := diffMembers(members, memberAddrs)
 		for _, member := range add {
@@ -175,30 +201,30 @@ func (p *peerExchange) reSyncMember() {
 	}
 }
 
-func diffMembers(nodes []*memberlist.Node, ips []string) (add []*memberlist.Node, del []string) {
-	for _, node := range nodes {
-		nodeIP := node.Addr.String()
+func diffMembers(members []*MemberMeta, hostIDs []string) (add []*MemberMeta, del []string) {
+	for _, member := range members {
+		hostID := member.HostID
 		toAdd := true
 
-		for _, ip := range ips {
-			if nodeIP == ip {
+		for _, id := range hostIDs {
+			if hostID == id {
 				toAdd = false
 			}
 		}
-		if toAdd && node.State == memberlist.StateAlive {
-			add = append(add, node)
+		if toAdd {
+			add = append(add, member)
 		}
 	}
 
-	for _, ip := range ips {
+	for _, id := range hostIDs {
 		toDel := true
-		for _, node := range nodes {
-			if node.Addr.String() == ip && node.State == memberlist.StateAlive {
+		for _, member := range members {
+			if member.HostID == id {
 				toDel = false
 			}
 		}
 		if toDel {
-			del = append(del, ip)
+			del = append(del, id)
 		}
 	}
 	return

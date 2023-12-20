@@ -20,60 +20,79 @@ import (
 	"sync"
 
 	dfdaemonv1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
-	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 )
 
 type peerPool struct {
 	lock *sync.RWMutex
-	data map[string]map[string]*schedulerv1.PeerPacket_DestPeer
+	// map[task id] map[host id] *DestPeer
+	tasks map[string]map[string]*DestPeer
 }
 
 func newPeerPool() *peerPool {
 	return &peerPool{
-		lock: &sync.RWMutex{},
-		data: map[string]map[string]*schedulerv1.PeerPacket_DestPeer{},
+		lock:  &sync.RWMutex{},
+		tasks: map[string]map[string]*DestPeer{},
 	}
 }
 
-func (p *peerPool) Sync(nodeMeta *MemberMeta, peer *dfdaemonv1.PeerMetadata) {
+func (p *peerPool) Sync(nodeMeta *MemberMeta, peerExchangeData *dfdaemonv1.PeerExchangeData) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
-	peers, ok := p.data[peer.TaskId]
+	for _, peer := range peerExchangeData.PeerMetadatas {
+		p.sync(nodeMeta, peer)
+	}
+}
+
+func (p *peerPool) sync(nodeMeta *MemberMeta, peer *dfdaemonv1.PeerMetadata) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	peers, ok := p.tasks[peer.TaskId]
 	if !ok {
-		p.data[peer.TaskId] = map[string]*schedulerv1.PeerPacket_DestPeer{}
+		p.tasks[peer.TaskId] = map[string]*DestPeer{}
 	}
 
 	switch peer.State {
 	case dfdaemonv1.PeerState_Unknown:
 		return
 	case dfdaemonv1.PeerState_Running, dfdaemonv1.PeerState_Success:
-		peers[peer.PeerId] = &schedulerv1.PeerPacket_DestPeer{
-			Ip:      nodeMeta.IP,
-			RpcPort: nodeMeta.RpcPort,
-			PeerId:  peer.PeerId,
+		peers[nodeMeta.HostID] = &DestPeer{
+			MemberMeta: nodeMeta,
+			PeerID:     peer.PeerId,
 		}
 	case dfdaemonv1.PeerState_Failed, dfdaemonv1.PeerState_Deleted:
 		delete(peers, peer.PeerId)
 		// clean task map
 		if len(peers) == 0 {
-			delete(p.data, peer.TaskId)
+			delete(p.tasks, peer.TaskId)
 		}
 	default:
 		return
 	}
 }
 
-func (p *peerPool) Find(task string) ([]*schedulerv1.PeerPacket_DestPeer, bool) {
+func (p *peerPool) Find(task string) ([]*DestPeer, bool) {
 	p.lock.RLock()
 	defer p.lock.RUnlock()
-	peers, ok := p.data[task]
+	peers, ok := p.tasks[task]
 	if !ok {
 		return nil, false
 	}
-	var dp []*schedulerv1.PeerPacket_DestPeer
+	var dp []*DestPeer
 	for _, peer := range peers {
 		dp = append(dp, peer)
 	}
 	return dp, ok
+}
+
+func (p *peerPool) Clean(hostID string) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	for _, peers := range p.tasks {
+		if _, ok := peers[hostID]; ok {
+			delete(peers, hostID)
+		}
+	}
 }

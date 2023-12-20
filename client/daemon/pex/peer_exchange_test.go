@@ -30,11 +30,18 @@ func TestPeerExchange(t *testing.T) {
 
 	peerUpdateChan := make(chan *dfdaemonv1.PeerMetadata)
 	ex, err := NewPeerExchange(&MemberMeta{
-		IP:        "",
+		IP:        "127.0.0.1",
 		RpcPort:   0,
 		ProxyPort: 0,
 	}, NewSeedPeerMemberLister(func() ([]*managerv1.SeedPeer, error) {
-		return []*managerv1.SeedPeer{}, nil
+		return []*managerv1.SeedPeer{
+			{
+				Ip: "11.124.98.99",
+			},
+			{
+				Ip: "30.46.227.198",
+			},
+		}, nil
 	}), peerUpdateChan)
 
 	assert.Nil(err, "")

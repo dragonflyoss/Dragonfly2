@@ -87,6 +87,7 @@ type server struct {
 
 	peerExchangeMember pex.PeerExchangeMember
 	peerExchangeSync   pex.PeerExchangeSynchronizer
+	peerExchanger      pex.PeerExchangeRPC
 
 	healthServer   *health.Server
 	downloadServer *grpc.Server

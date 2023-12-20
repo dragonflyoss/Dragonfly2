@@ -28,12 +28,17 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 
 	dfdaemonv1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
 	dfdaemonclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
+)
+
+const (
+	GRPCMetadataHostID = "HostID"
 )
 
 type peerExchangeMemberManager struct {
@@ -46,41 +51,52 @@ type peerExchangeMemberManager struct {
 	peerPool   *peerPool
 	memberPool *memberPool
 
-	localAdvertiseAddr string
-	localAdvertisePort int
+	localMember *MemberMeta
 }
 
-func newPeerExchangeMemberManager(peerUpdateChan <-chan *dfdaemonv1.PeerMetadata) *peerExchangeMemberManager {
+func newPeerExchangeMemberManager(localMember *MemberMeta, peerUpdateChan <-chan *dfdaemonv1.PeerMetadata) *peerExchangeMemberManager {
+	pp := newPeerPool()
+	mp := newMemberPool(pp)
 	return &peerExchangeMemberManager{
 		logger:          logger.With("component", "peerExchangeCluster"),
 		GRPCCredentials: insecure.NewCredentials(), // TODO
 		GRPCDialTimeout: time.Minute,               // TODO
 		peerUpdateChan:  peerUpdateChan,
 		nodes:           sync.Map{},
-		peerPool:        newPeerPool(),
-		memberPool:      newMemberPool(),
+		peerPool:        pp,
+		memberPool:      mp,
+		localMember:     localMember,
 	}
 }
 
-func (p *peerExchangeMemberManager) IsLocalNode(node *memberlist.Node) bool {
-	return node.Addr.String() == p.localAdvertiseAddr
+func (p *peerExchangeMemberManager) isLocal(meta *MemberMeta) bool {
+	return p.localMember.HostID == meta.HostID
 }
 
 func (p *peerExchangeMemberManager) NotifyJoin(node *memberlist.Node) {
-	addr := node.Addr.String()
-	p.logger.Infof("peer %s joined", addr)
-	go p.syncNode(node)
+	member, err := ExtractNodeMeta(node)
+	if err != nil {
+		p.logger.Errorf("failed to extract node meta %s(%#v): %s", string(node.Meta), node, err)
+		return
+	}
+	p.logger.Infof("member %s joined, ip: %s, rpc port: %d, proxy port: %d",
+		member.HostID, member.IP, member.RpcPort, member.ProxyPort)
+	go p.syncNode(member)
 }
 
 func (p *peerExchangeMemberManager) NotifyLeave(node *memberlist.Node) {
-	addr := node.Addr.String()
-	p.logger.Infof("peer %s leaved", addr)
-	// TODO
+	member, err := ExtractNodeMeta(node)
+	if err != nil {
+		p.logger.Errorf("failed to extract node meta %s(%#v): %s", string(node.Meta), node, err)
+		return
+	}
+	p.logger.Infof("member %s leaved", member.HostID)
+	p.memberPool.UnRegister(member.HostID)
 }
 
 func (p *peerExchangeMemberManager) NotifyUpdate(node *memberlist.Node) {
 	addr := node.Addr.String()
-	p.logger.Infof("peer %s updated", addr)
+	p.logger.Infof("member %s updated", addr)
 }
 
 func ExtractNodeMeta(node *memberlist.Node) (*MemberMeta, error) {
@@ -96,25 +112,20 @@ func ExtractNodeMeta(node *memberlist.Node) (*MemberMeta, error) {
 	return nodeMeta, nil
 }
 
-func (p *peerExchangeMemberManager) syncNode(node *memberlist.Node) {
-	if p.IsLocalNode(node) {
-		p.logger.Debugf("skip local node: %s", node.Addr.String())
-		return
-	}
-	member, err := ExtractNodeMeta(node)
-	if err != nil {
-		p.logger.Errorf("failed to extract node meta %s: %s", string(node.Meta), err)
+func (p *peerExchangeMemberManager) syncNode(member *MemberMeta) {
+	if p.isLocal(member) {
+		p.logger.Debugf("skip local node: %s", member.IP)
 		return
 	}
 
-	if p.memberPool.IsRegistered(member.IP) {
-		p.logger.Debugf("node %s is already registered", member.IP)
+	if p.memberPool.IsRegistered(member.HostID) {
+		p.logger.Debugf("node %s is already registered", member.HostID)
 		return
 	}
 
-	grpcClient, peerExchangeClient, err := p.dialMember(member)
+	grpcClient, peerExchangeClient, err := p.connectMember(member)
 	if err != nil {
-		p.logger.Errorf("failed to dial %s: %s", node.Addr.String(), err)
+		p.logger.Errorf("failed to dial %s: %s", member.IP, err)
 		return
 	}
 
@@ -123,23 +134,23 @@ func (p *peerExchangeMemberManager) syncNode(node *memberlist.Node) {
 		return grpcClient.Close()
 	}
 
-	err = p.memberPool.Register(member.IP, NewPeerMetadataSendReceiveCloser(peerExchangeClient, closeFunc))
+	err = p.memberPool.Register(member.HostID, NewPeerMetadataSendReceiveCloser(peerExchangeClient, closeFunc))
 	if errors.Is(err, ErrIsAlreadyExists) {
-		p.logger.Debugf("node %s is already registered", member.IP)
+		p.logger.Debugf("node %s is already registered", member.HostID)
 		return
 	}
 
-	var peerMetadata *dfdaemonv1.PeerMetadata
+	var data *dfdaemonv1.PeerExchangeData
 	for {
-		peerMetadata, err = peerExchangeClient.Recv()
+		data, err = peerExchangeClient.Recv()
 		if err != nil {
 			return
 		}
-		p.peerPool.Sync(member, peerMetadata)
+		p.peerPool.Sync(member, data)
 	}
 }
 
-func (p *peerExchangeMemberManager) dialMember(meta *MemberMeta) (dfdaemonclient.V1, dfdaemonv1.Daemon_PeerExchangeClient, error) {
+func (p *peerExchangeMemberManager) connectMember(meta *MemberMeta) (dfdaemonclient.V1, dfdaemonv1.Daemon_PeerExchangeClient, error) {
 	formatIP, ok := ip.FormatIP(meta.IP)
 	if !ok {
 		return nil, nil, fmt.Errorf("failed to format ip: %s", meta.IP)
@@ -160,7 +171,8 @@ func (p *peerExchangeMemberManager) dialMember(meta *MemberMeta) (dfdaemonclient
 		return nil, nil, fmt.Errorf("failed to dial grpc %s: %s", netAddr.String(), err)
 	}
 
-	peerExchangeClient, err := grpcClient.PeerExchange(context.Background())
+	md := metadata.Pairs(GRPCMetadataHostID, p.localMember.HostID)
+	peerExchangeClient, err := grpcClient.PeerExchange(context.Background(), grpc.Header(&md))
 	if err != nil {
 		_ = grpcClient.Close()
 		return nil, nil, fmt.Errorf("failed to call %s PeerExchange: %s", netAddr.String(), err)

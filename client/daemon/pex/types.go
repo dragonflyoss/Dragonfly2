@@ -23,27 +23,37 @@ import (
 
 type InitialMember = schedulerv1.PeerPacket_DestPeer
 
-type PeerExchanger interface {
+type PeerExchangeServer interface {
 	Serve() error
 	Stop() error
 
-	PeerExchangeMember() PeerExchangeMember
-	PeerExchangeSynchronizer() PeerExchangeSynchronizer
-	PeerSearcher() PeerSearcher
+	PeerSearchBroadcaster() PeerSearchBroadcaster
+	PeerExchangeRPC() PeerExchangeRPC
 }
 
 type PeerExchangeMember interface {
-	FindMember(ip string) (*MemberMeta, error)
-	Register(ip string, sr PeerMetadataSendReceiveCloser) error
-	UnRegister(ip string)
+	FindMember(hostID string) (*MemberMeta, error)
+	Register(hostID string, sr PeerMetadataSendReceiveCloser) error
+	UnRegister(hostID string)
 }
 
 type PeerExchangeSynchronizer interface {
-	Sync(nodeMeta *MemberMeta, peer *dfdaemonv1.PeerMetadata)
+	Sync(nodeMeta *MemberMeta, peer *dfdaemonv1.PeerExchangeData)
 }
 
-type PeerSearcher interface {
-	FindPeersByTask(task string) ([]*schedulerv1.PeerPacket_DestPeer, bool)
+type PeerExchangeRPC interface {
+	PeerExchange(exchangeServer dfdaemonv1.Daemon_PeerExchangeServer) error
+}
+
+type DestPeer struct {
+	*MemberMeta
+	PeerID string
+}
+
+type PeerSearchBroadcaster interface {
+	FindPeersByTask(task string) ([]*DestPeer, bool)
+	BroadcastPeer(data *dfdaemonv1.PeerMetadata)
+	BroadcastPeers(data *dfdaemonv1.PeerExchangeData)
 }
 
 type InitialMemberLister interface {
@@ -51,8 +61,8 @@ type InitialMemberLister interface {
 }
 
 type PeerMetadataSendReceiver interface {
-	Send(*dfdaemonv1.PeerMetadata) error
-	Recv() (*dfdaemonv1.PeerMetadata, error)
+	Send(*dfdaemonv1.PeerExchangeData) error
+	Recv() (*dfdaemonv1.PeerExchangeData, error)
 }
 
 type PeerMetadataSendReceiveCloser interface {
@@ -65,11 +75,11 @@ type peerMetadataSendReceiveCloser struct {
 	close func() error
 }
 
-func (p *peerMetadataSendReceiveCloser) Send(metadata *dfdaemonv1.PeerMetadata) error {
+func (p *peerMetadataSendReceiveCloser) Send(metadata *dfdaemonv1.PeerExchangeData) error {
 	return p.real.Send(metadata)
 }
 
-func (p *peerMetadataSendReceiveCloser) Recv() (*dfdaemonv1.PeerMetadata, error) {
+func (p *peerMetadataSendReceiveCloser) Recv() (*dfdaemonv1.PeerExchangeData, error) {
 	return p.real.Recv()
 }
 
