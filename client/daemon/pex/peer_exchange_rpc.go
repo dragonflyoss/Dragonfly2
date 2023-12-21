@@ -83,11 +83,16 @@ func (p *peerExchange) PeerExchange(exchangeServer dfdaemonv1.Daemon_PeerExchang
 
 	logger.Infof("receive connection from %s, %s start receive peer metadata", member.HostID, p.localMember.HostID)
 
+	// TODO send exist peers
+
 	var data *dfdaemonv1.PeerExchangeData
 	for {
 		data, err = exchangeServer.Recv()
 		if err != nil {
-			log.Errorf("failed to receive peer metadata: %s, member: %s", err, member.HostID)
+			if !errors.Is(err, ErrIsAlreadyExists) {
+				log.Errorf("failed to receive peer metadata: %s, member: %s, local host id: %s",
+					err, member.HostID, p.localMember.HostID)
+			}
 			return err
 		}
 		p.PeerExchangeSynchronizer().Sync(member, data)

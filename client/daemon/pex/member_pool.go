@@ -84,7 +84,7 @@ func (mp *memberPool) UnRegister(hostID string) {
 	mp.lock.Lock()
 	defer mp.lock.Unlock()
 
-	defer mp.peerPool.Clean(hostID)
+	defer mp.peerPool.clean(hostID)
 	sr, ok := mp.sendReceivers[hostID]
 	if !ok {
 		return

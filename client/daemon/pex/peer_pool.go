@@ -52,6 +52,14 @@ func (p *peerPool) sync(nodeMeta *MemberMeta, peer *dfdaemonv1.PeerMetadata) {
 		p.tasks[peer.TaskId] = peers
 	}
 
+	clean := func() {
+		delete(peers, peer.PeerId)
+		// clean empty task map
+		if len(peers) == 0 {
+			delete(p.tasks, peer.TaskId)
+		}
+	}
+
 	switch peer.State {
 	case dfdaemonv1.PeerState_Unknown:
 		logger.Warnf("receive unknown state peer %s/%s from %s", peer.TaskId, peer.PeerId, nodeMeta.HostID)
@@ -63,11 +71,7 @@ func (p *peerPool) sync(nodeMeta *MemberMeta, peer *dfdaemonv1.PeerMetadata) {
 		}
 		logger.Infof("receive successful peer %s/%s from %s", peer.TaskId, peer.PeerId, nodeMeta.HostID)
 	case dfdaemonv1.PeerState_Failed, dfdaemonv1.PeerState_Deleted:
-		delete(peers, peer.PeerId)
-		// clean task map
-		if len(peers) == 0 {
-			delete(p.tasks, peer.TaskId)
-		}
+		clean()
 		logger.Infof("receive deleted peer %s/%s from %s", peer.TaskId, peer.PeerId, nodeMeta.HostID)
 	default:
 		logger.Warnf("receive unknown state peer %s/%s from %s", peer.TaskId, peer.PeerId, nodeMeta.HostID)
@@ -89,10 +93,7 @@ func (p *peerPool) Find(task string) ([]*DestPeer, bool) {
 	return dp, ok
 }
 
-func (p *peerPool) Clean(hostID string) {
-	p.lock.Lock()
-	defer p.lock.Unlock()
-
+func (p *peerPool) clean(hostID string) {
 	for _, peers := range p.tasks {
 		if _, ok := peers[hostID]; ok {
 			delete(peers, hostID)

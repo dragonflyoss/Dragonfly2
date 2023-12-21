@@ -35,52 +35,197 @@ import (
 )
 
 func TestPeerExchange(t *testing.T) {
-	assert := assert.New(t)
-
-	peers := []*dfdaemonv1.PeerMetadata{
+	testCases := []struct {
+		name        string
+		memberCount int
+		genPeers    func() []*dfdaemonv1.PeerMetadata
+	}{
 		{
-			TaskId: "task-1",
-			PeerId: "peer-1",
-			State:  dfdaemonv1.PeerState_Running,
+			name:        "normal peers",
+			memberCount: 3,
+			genPeers: func() []*dfdaemonv1.PeerMetadata {
+				peers := []*dfdaemonv1.PeerMetadata{
+					{
+						TaskId: "task-1",
+						PeerId: "peer-1",
+						State:  dfdaemonv1.PeerState_Running,
+					},
+					{
+						TaskId: "task-2",
+						PeerId: "peer-2",
+						State:  dfdaemonv1.PeerState_Success,
+					},
+					{
+						TaskId: "task-3",
+						PeerId: "peer-3",
+						State:  dfdaemonv1.PeerState_Running,
+					},
+				}
+				return peers
+			},
 		},
 		{
-			TaskId: "task-2",
-			PeerId: "peer-2",
-			State:  dfdaemonv1.PeerState_Running,
+			name:        "normal peers with deleted",
+			memberCount: 3,
+			genPeers: func() []*dfdaemonv1.PeerMetadata {
+				peers := []*dfdaemonv1.PeerMetadata{
+					{
+						TaskId: "task-1",
+						PeerId: "peer-1",
+						State:  dfdaemonv1.PeerState_Running,
+					},
+					{
+						TaskId: "task-2",
+						PeerId: "peer-2",
+						State:  dfdaemonv1.PeerState_Success,
+					},
+					{
+						TaskId: "task-3",
+						PeerId: "peer-3",
+						State:  dfdaemonv1.PeerState_Deleted,
+					},
+				}
+				return peers
+			},
 		},
 		{
-			TaskId: "task-3",
-			PeerId: "peer-3",
-			State:  dfdaemonv1.PeerState_Running,
+			name:        "normal peers with failed",
+			memberCount: 3,
+			genPeers: func() []*dfdaemonv1.PeerMetadata {
+				peers := []*dfdaemonv1.PeerMetadata{
+					{
+						TaskId: "task-1",
+						PeerId: "peer-1",
+						State:  dfdaemonv1.PeerState_Running,
+					},
+					{
+						TaskId: "task-2",
+						PeerId: "peer-2",
+						State:  dfdaemonv1.PeerState_Success,
+					},
+					{
+						TaskId: "task-3",
+						PeerId: "peer-3",
+						State:  dfdaemonv1.PeerState_Deleted,
+					},
+					{
+						TaskId: "task-4",
+						PeerId: "peer-4",
+						State:  dfdaemonv1.PeerState_Failed,
+					},
+				}
+				return peers
+			},
+		},
+		{
+			name:        "normal peers with failed",
+			memberCount: 30,
+			genPeers: func() []*dfdaemonv1.PeerMetadata {
+				peers := []*dfdaemonv1.PeerMetadata{
+					{
+						TaskId: "task-1",
+						PeerId: "peer-1",
+						State:  dfdaemonv1.PeerState_Running,
+					},
+					{
+						TaskId: "task-2",
+						PeerId: "peer-2",
+						State:  dfdaemonv1.PeerState_Success,
+					},
+					{
+						TaskId: "task-3",
+						PeerId: "peer-3",
+						State:  dfdaemonv1.PeerState_Deleted,
+					},
+					{
+						TaskId: "task-4",
+						PeerId: "peer-4",
+						State:  dfdaemonv1.PeerState_Failed,
+					},
+				}
+				return peers
+			},
 		},
 	}
 
-	memberCount := 2
-	peerExchangeServers := setupMembers(assert, memberCount)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert := assert.New(t)
 
-	time.Sleep(time.Second)
+			memberCount := tc.memberCount
+			peers := tc.genPeers()
 
-	// 1. ensure members' connections
+			pexServers := setupMembers(assert, memberCount)
+
+			// for large scale members, need wait more time for inter-connections ready
+			time.Sleep(time.Duration(memberCount/3) * time.Second)
+
+			// 1. ensure members' connections
+			for _, pex := range pexServers {
+				memberKeys := pex.memberManager.memberPool.MemberKeys()
+				assert.Equal(memberCount-1, len(memberKeys))
+			}
+
+			// 2. broadcast peers in all pex servers
+			for _, p := range peers {
+				for _, pex := range pexServers {
+					peer := &dfdaemonv1.PeerMetadata{
+						TaskId: p.TaskId,
+						PeerId: genPeerID(p, pex),
+						State:  p.State,
+					}
+					pex.PeerSearchBroadcaster().BroadcastPeer(peer)
+				}
+			}
+
+			time.Sleep(3 * time.Second)
+
+			// 3. verify peers
+			for _, peer := range peers {
+				for _, pex := range pexServers {
+					peersByTask, ok := pex.PeerSearchBroadcaster().FindPeersByTask(peer.TaskId)
+					switch peer.State {
+					case dfdaemonv1.PeerState_Running, dfdaemonv1.PeerState_Success:
+						assert.True(ok)
+						assert.Equal(memberCount-1, len(peersByTask))
+						for _, realPeer := range peersByTask {
+							var found bool
+							found = isPeerExistInOtherPEXServers(pexServers, pex.localMember.HostID, peer, realPeer)
+							assert.True(found)
+						}
+					case dfdaemonv1.PeerState_Failed, dfdaemonv1.PeerState_Deleted:
+						assert.False(ok)
+						assert.Equal(0, len(peersByTask))
+						for _, realPeer := range peersByTask {
+							var found bool
+							found = isPeerExistInOtherPEXServers(pexServers, pex.localMember.HostID, peer, realPeer)
+							assert.False(found)
+						}
+					default:
+
+					}
+				}
+			}
+		})
+	}
+}
+
+func isPeerExistInOtherPEXServers(peerExchangeServers []*peerExchange, hostID string, peer *dfdaemonv1.PeerMetadata, real *DestPeer) bool {
 	for _, pex := range peerExchangeServers {
-		memberKeys := pex.(*peerExchange).memberManager.memberPool.MemberKeys()
-		assert.Equal(memberCount-1, len(memberKeys))
-	}
-
-	// 2. broadcast peers
-	for _, peer := range peers {
-		peerExchangeServers[0].PeerSearchBroadcaster().BroadcastPeer(peer)
-	}
-
-	time.Sleep(500 * time.Second)
-
-	// 3. verify peers
-	for _, peer := range peers {
-		for _, pex := range peerExchangeServers {
-			dp, ok := pex.PeerSearchBroadcaster().FindPeersByTask(peer.TaskId)
-			assert.True(ok)
-			assert.Equal(peer.PeerId, dp[0].PeerID)
+		// skip for local
+		if pex.localMember.HostID == hostID {
+			continue
+		}
+		// verify peer with host id
+		if genPeerID(peer, pex) == real.PeerID {
+			return true
 		}
 	}
+	return false
+}
+
+func genPeerID(peer *dfdaemonv1.PeerMetadata, pex *peerExchange) string {
+	return peer.PeerId + "-" + pex.localMember.HostID
 }
 
 type mockServer struct {
@@ -128,12 +273,12 @@ type testMember struct {
 	rpcPort, gossipPort int
 }
 
-func setupMember(assert *assert.Assertions, member *testMember, members []*memberlist.Node) PeerExchangeServer {
+func setupMember(assert *assert.Assertions, member *testMember, members []*memberlist.Node) *peerExchange {
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", member.rpcPort))
 	assert.Nil(err)
 
 	memberMeta := &MemberMeta{
-		HostID:    fmt.Sprintf("host-id-%d", member.idx),
+		HostID:    fmt.Sprintf("host-%d", member.idx),
 		IP:        "127.0.0.1",
 		RpcPort:   int32(member.rpcPort),
 		ProxyPort: 0,
@@ -163,14 +308,14 @@ func setupMember(assert *assert.Assertions, member *testMember, members []*membe
 		}
 	}()
 	go pex.Serve()
-	return pex
+	return pex.(*peerExchange)
 }
 
-func setupMembers(assert *assert.Assertions, memberCount int) []PeerExchangeServer {
+func setupMembers(assert *assert.Assertions, memberCount int) []*peerExchange {
 	var (
 		testMembers         []*testMember
 		members             []*memberlist.Node
-		peerExchangeServers []PeerExchangeServer
+		peerExchangeServers []*peerExchange
 	)
 
 	ports, err := freeport.GetFreePorts(2 * memberCount)

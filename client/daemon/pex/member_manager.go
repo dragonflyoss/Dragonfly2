@@ -154,11 +154,16 @@ func (p *peerExchangeMemberManager) syncNode(member *MemberMeta) {
 
 	go func() {
 		defer p.memberPool.UnRegister(member.HostID)
+		// TODO send exist peers
+
 		var data *dfdaemonv1.PeerExchangeData
 		for {
 			data, err = peerExchangeClient.Recv()
 			if err != nil {
-				p.logger.Errorf("failed to receive peer metadata: %s, member: %s", err, member.HostID)
+				if !errors.Is(err, ErrIsAlreadyExists) {
+					p.logger.Errorf("failed to receive peer metadata: %s, member: %s, local host id: %s",
+						err, member.HostID, p.localMember.HostID)
+				}
 				return
 			}
 			p.peerPool.Sync(member, data)
