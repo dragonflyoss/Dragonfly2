@@ -16,7 +16,7 @@ RUN make build-dfget && make install-dfget
 
 FROM ${BASE_IMAGE} as health
 
-ENV GRPC_HEALTH_PROBE_VERSION v0.4.16
+ENV GRPC_HEALTH_PROBE_VERSION v0.4.24
 
 RUN if [ "$(uname -m)" = "ppc64le" ]; then \
     wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-ppc64le; \
