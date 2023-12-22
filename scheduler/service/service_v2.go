@@ -111,14 +111,16 @@ func (v *V2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePeerServer) error
 		switch announcePeerRequest := req.GetRequest().(type) {
 		case *schedulerv2.AnnouncePeerRequest_RegisterPeerRequest:
 			registerPeerRequest := announcePeerRequest.RegisterPeerRequest
-			log.Infof("receive RegisterPeerRequest, url: %s", registerPeerRequest.Download.Url)
+			log.Infof("receive RegisterPeerRequest, url: %s, range: %#v, header: %#v",
+				registerPeerRequest.Download.GetUrl(), registerPeerRequest.Download.GetRange(), registerPeerRequest.Download.GetHeader())
 			if err := v.handleRegisterPeerRequest(ctx, stream, req.GetHostId(), req.GetTaskId(), req.GetPeerId(), registerPeerRequest); err != nil {
 				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_RegisterSeedPeerRequest:
 			registerSeedPeerRequest := announcePeerRequest.RegisterSeedPeerRequest
-			log.Infof("receive RegisterSeedPeerRequest, url: %s", registerSeedPeerRequest.Download.Url)
+			log.Infof("receive RegisterSeedPeerRequest, url: %s, range: %#v, header: %#v",
+				registerSeedPeerRequest.Download.GetUrl(), registerSeedPeerRequest.Download.GetRange(), registerSeedPeerRequest.Download.GetHeader())
 			if err := v.handleRegisterSeedPeerRequest(ctx, stream, req.GetHostId(), req.GetTaskId(), req.GetPeerId(), registerSeedPeerRequest); err != nil {
 				log.Error(err)
 				return err
