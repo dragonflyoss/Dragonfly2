@@ -87,7 +87,7 @@ type V2 interface {
 	DownloadPiece(context.Context, *dfdaemonv2.DownloadPieceRequest, ...grpc.CallOption) (*dfdaemonv2.DownloadPieceResponse, error)
 
 	// TriggerDownloadTask triggers download task from the other peer.
-	TriggerDownloadTask(context.Context, *dfdaemonv2.TriggerDownloadTaskRequest, ...grpc.CallOption) error
+	TriggerDownloadTask(context.Context, string, *dfdaemonv2.TriggerDownloadTaskRequest, ...grpc.CallOption) error
 
 	// Close tears down the ClientConn and all underlying connections.
 	Close() error
@@ -106,7 +106,7 @@ func (v *v2) SyncPieces(ctx context.Context, req *dfdaemonv2.SyncPiecesRequest, 
 	defer cancel()
 
 	return v.DfdaemonUploadClient.SyncPieces(
-		ctx,
+		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		req,
 		opts...,
 	)
@@ -118,19 +118,19 @@ func (v *v2) DownloadPiece(ctx context.Context, req *dfdaemonv2.DownloadPieceReq
 	defer cancel()
 
 	return v.DfdaemonUploadClient.DownloadPiece(
-		ctx,
+		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		req,
 		opts...,
 	)
 }
 
 // TriggerDownloadTask triggers download task from the other peer.
-func (v *v2) TriggerDownloadTask(ctx context.Context, req *dfdaemonv2.TriggerDownloadTaskRequest, opts ...grpc.CallOption) error {
+func (v *v2) TriggerDownloadTask(ctx context.Context, taskID string, req *dfdaemonv2.TriggerDownloadTaskRequest, opts ...grpc.CallOption) error {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
 	_, err := v.DfdaemonUploadClient.TriggerDownloadTask(
-		ctx,
+		context.WithValue(ctx, pkgbalancer.ContextKey, taskID),
 		req,
 		opts...,
 	)

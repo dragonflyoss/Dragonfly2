@@ -66,7 +66,7 @@ func TestSeedPeer_TriggerDownloadTask(t *testing.T) {
 		{
 			name: "trigger download task failed",
 			mock: func(mc *MockSeedPeerClientMockRecorder) {
-				mc.TriggerDownloadTask(gomock.Any(), gomock.Any()).Return(errors.New("foo")).Times(1)
+				mc.TriggerDownloadTask(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("foo")).Times(1)
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
@@ -76,7 +76,7 @@ func TestSeedPeer_TriggerDownloadTask(t *testing.T) {
 		{
 			name: "trigger download task scuccess",
 			mock: func(mc *MockSeedPeerClientMockRecorder) {
-				mc.TriggerDownloadTask(gomock.Any(), gomock.Any()).Return(nil).Times(1)
+				mc.TriggerDownloadTask(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
@@ -95,7 +95,7 @@ func TestSeedPeer_TriggerDownloadTask(t *testing.T) {
 			tc.mock(client.EXPECT())
 
 			seedPeer := newSeedPeer(mockConfig, client, peerManager, hostManager)
-			tc.expect(t, seedPeer.TriggerDownloadTask(context.Background(), &dfdaemonv2.TriggerDownloadTaskRequest{}))
+			tc.expect(t, seedPeer.TriggerDownloadTask(context.Background(), mockTaskID, &dfdaemonv2.TriggerDownloadTaskRequest{}))
 		})
 	}
 }
