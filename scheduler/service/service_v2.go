@@ -117,14 +117,6 @@ func (v *V2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePeerServer) error
 				log.Error(err)
 				return err
 			}
-		case *schedulerv2.AnnouncePeerRequest_RegisterSeedPeerRequest:
-			registerSeedPeerRequest := announcePeerRequest.RegisterSeedPeerRequest
-			log.Infof("receive RegisterSeedPeerRequest, url: %s, range: %#v, header: %#v",
-				registerSeedPeerRequest.Download.GetUrl(), registerSeedPeerRequest.Download.GetRange(), registerSeedPeerRequest.Download.GetHeader())
-			if err := v.handleRegisterSeedPeerRequest(ctx, stream, req.GetHostId(), req.GetTaskId(), req.GetPeerId(), registerSeedPeerRequest); err != nil {
-				log.Error(err)
-				return err
-			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerStartedRequest:
 			log.Info("receive DownloadPeerStartedRequest")
 			if err := v.handleDownloadPeerStartedRequest(ctx, req.GetPeerId()); err != nil {
@@ -843,46 +835,18 @@ func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.S
 	blocklist := set.NewSafeSet[string]()
 	blocklist.Add(peer.ID)
 	if task.FSM.Is(resource.TaskStateFailed) || !task.HasAvailablePeer(blocklist) {
-		if err := v.downloadTaskBySeedPeer(ctx, taskID, req.GetDownload(), peer); err != nil {
+		// If the peer is a seed peer, the need back-to-source flag
+		// is set to true.
+		download := req.GetDownload()
+		if download.GetNeedBackToSource() {
+			peer.Log.Infof("peer need back to source")
+			peer.NeedBackToSource.Store(true)
+		} else if err := v.downloadTaskBySeedPeer(ctx, taskID, download, peer); err != nil {
 			// Collect RegisterPeerFailureCount metrics.
 			metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
 				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 			return err
 		}
-	}
-
-	// Scheduling parent for the peer.
-	if err := v.schedule(ctx, peer); err != nil {
-		// Collect RegisterPeerFailureCount metrics.
-		metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-			peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
-		return err
-	}
-
-	return nil
-}
-
-// handleRegisterSeedPeerRequest handles RegisterSeedPeerRequest of AnnouncePeerRequest.
-func (v *V2) handleRegisterSeedPeerRequest(ctx context.Context, stream schedulerv2.Scheduler_AnnouncePeerServer, hostID, taskID, peerID string, req *schedulerv2.RegisterSeedPeerRequest) error {
-	// Handle resource included host, task, and peer.
-	_, task, peer, err := v.handleResource(ctx, stream, hostID, taskID, peerID, req.GetDownload())
-	if err != nil {
-		return err
-	}
-
-	// Collect RegisterPeerCount metrics.
-	priority := peer.CalculatePriority(v.dynconfig)
-	metrics.RegisterPeerCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
-
-	// When there are no available peers for a task, the scheduler needs to trigger
-	// the first task download in the p2p cluster.
-	blocklist := set.NewSafeSet[string]()
-	blocklist.Add(peer.ID)
-	if task.FSM.Is(resource.TaskStateFailed) || !task.HasAvailablePeer(blocklist) {
-		// When the task has no available peer,
-		// the seed peer will download back-to-source directly.
-		peer.NeedBackToSource.Store(true)
 	}
 
 	// Scheduling parent for the peer.
