@@ -95,10 +95,10 @@ func (mr *MockV2MockRecorder) SyncPieces(arg0, arg1 any, arg2 ...any) *gomock.Ca
 }
 
 // TriggerDownloadTask mocks base method.
-func (m *MockV2) TriggerDownloadTask(arg0 context.Context, arg1 *dfdaemon.TriggerDownloadTaskRequest, arg2 ...grpc.CallOption) error {
+func (m *MockV2) TriggerDownloadTask(arg0 context.Context, arg1 string, arg2 *dfdaemon.TriggerDownloadTaskRequest, arg3 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
+	varargs := []any{arg0, arg1, arg2}
+	for _, a := range arg3 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "TriggerDownloadTask", varargs...)
@@ -107,8 +107,8 @@ func (m *MockV2) TriggerDownloadTask(arg0 context.Context, arg1 *dfdaemon.Trigge
 }
 
 // TriggerDownloadTask indicates an expected call of TriggerDownloadTask.
-func (mr *MockV2MockRecorder) TriggerDownloadTask(arg0, arg1 any, arg2 ...any) *gomock.Call {
+func (mr *MockV2MockRecorder) TriggerDownloadTask(arg0, arg1, arg2 any, arg3 ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
+	varargs := append([]any{arg0, arg1, arg2}, arg3...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TriggerDownloadTask", reflect.TypeOf((*MockV2)(nil).TriggerDownloadTask), varargs...)
 }
