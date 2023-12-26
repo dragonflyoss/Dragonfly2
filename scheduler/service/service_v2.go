@@ -24,6 +24,7 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -111,8 +112,8 @@ func (v *V2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePeerServer) error
 		switch announcePeerRequest := req.GetRequest().(type) {
 		case *schedulerv2.AnnouncePeerRequest_RegisterPeerRequest:
 			registerPeerRequest := announcePeerRequest.RegisterPeerRequest
-			log.Infof("receive RegisterPeerRequest, url: %s, range: %#v, header: %#v",
-				registerPeerRequest.Download.GetUrl(), registerPeerRequest.Download.GetRange(), registerPeerRequest.Download.GetHeader())
+			log.Infof("receive RegisterPeerRequest, url: %s, range: %#v, header: %#v, need back-to-source: %t",
+				registerPeerRequest.Download.GetUrl(), registerPeerRequest.Download.GetRange(), registerPeerRequest.Download.GetHeader(), registerPeerRequest.Download.GetNeedBackToSource())
 			if err := v.handleRegisterPeerRequest(ctx, stream, req.GetHostId(), req.GetTaskId(), req.GetPeerId(), registerPeerRequest); err != nil {
 				log.Error(err)
 				return err
@@ -835,17 +836,20 @@ func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.S
 	blocklist := set.NewSafeSet[string]()
 	blocklist.Add(peer.ID)
 	if task.FSM.Is(resource.TaskStateFailed) || !task.HasAvailablePeer(blocklist) {
-		// If the peer is a seed peer, the need back-to-source flag
-		// is set to true.
-		download := req.GetDownload()
+		download := proto.Clone(req.Download).(*commonv2.Download)
 		if download.GetNeedBackToSource() {
 			peer.Log.Infof("peer need back to source")
 			peer.NeedBackToSource.Store(true)
-		} else if err := v.downloadTaskBySeedPeer(ctx, taskID, download, peer); err != nil {
-			// Collect RegisterPeerFailureCount metrics.
-			metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
-			return err
+		} else {
+			// If trigger the seed peer download back-to-source,
+			// the need back-to-source flag should be true.
+			download.NeedBackToSource = true
+			if err := v.downloadTaskBySeedPeer(ctx, taskID, download, peer); err != nil {
+				// Collect RegisterPeerFailureCount metrics.
+				metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+					peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+				return err
+			}
 		}
 	}
 
