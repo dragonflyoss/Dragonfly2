@@ -22,6 +22,8 @@ import (
 	managerv1 "d7y.io/api/v2/pkg/apis/manager/v1"
 )
 
+const defaultGossipPort = 7946
+
 type seedPeerMemberLister struct {
 	getSeedPeers func() ([]*managerv1.SeedPeer, error)
 }
@@ -36,7 +38,7 @@ func (s *seedPeerMemberLister) List() ([]*InitialMember, error) {
 		member = append(member,
 			&InitialMember{
 				Addr: net.ParseIP(peer.Ip),
-				Port: 7946,
+				Port: defaultGossipPort,
 			})
 	}
 	return member, nil
