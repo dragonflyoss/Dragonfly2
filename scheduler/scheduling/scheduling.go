@@ -50,7 +50,12 @@ type Scheduling interface {
 	ScheduleParentAndCandidateParents(context.Context, *resource.Peer, set.SafeSet[string])
 
 	// FindCandidateParents finds candidate parents for the peer.
+	// Used only in v2 version of the grpc.
 	FindCandidateParents(context.Context, *resource.Peer, set.SafeSet[string]) ([]*resource.Peer, bool)
+
+	// FindParentAndCandidateParents finds a parent and candidate parents for the peer.
+	// Used only in v1 version of the grpc.
+	FindParentAndCandidateParents(context.Context, *resource.Peer, set.SafeSet[string]) ([]*resource.Peer, bool)
 
 	// FindSuccessParent finds success parent for the peer.
 	FindSuccessParent(context.Context, *resource.Peer, set.SafeSet[string]) (*resource.Peer, bool)
@@ -389,6 +394,48 @@ func (s *scheduling) ScheduleParentAndCandidateParents(ctx context.Context, peer
 
 // FindCandidateParents finds candidate parents for the peer.
 func (s *scheduling) FindCandidateParents(ctx context.Context, peer *resource.Peer, blocklist set.SafeSet[string]) ([]*resource.Peer, bool) {
+	// Only PeerStateReceivedNormal and PeerStateRunning peers need to be rescheduled,
+	// and other states including the PeerStateBackToSource indicate that
+	// they have been scheduled.
+	if !(peer.FSM.Is(resource.PeerStateReceivedNormal) || peer.FSM.Is(resource.PeerStateRunning)) {
+		peer.Log.Infof("peer state is %s, can not schedule parent", peer.FSM.Current())
+		return []*resource.Peer{}, false
+	}
+
+	// Find the candidate parent that can be scheduled.
+	candidateParents := s.filterCandidateParents(peer, blocklist)
+	if len(candidateParents) == 0 {
+		peer.Log.Info("can not find candidate parents")
+		return []*resource.Peer{}, false
+	}
+
+	// Sort candidate parents by evaluation score.
+	taskTotalPieceCount := peer.Task.TotalPieceCount.Load()
+	candidateParents = s.evaluator.EvaluateParents(candidateParents, peer, taskTotalPieceCount)
+
+	// Get the parents with candidateParentLimit.
+	candidateParentLimit := config.DefaultSchedulerCandidateParentLimit
+	if config, err := s.dynconfig.GetSchedulerClusterConfig(); err == nil {
+		if config.CandidateParentLimit > 0 {
+			candidateParentLimit = int(config.CandidateParentLimit)
+		}
+	}
+
+	if len(candidateParents) > candidateParentLimit {
+		candidateParents = candidateParents[:candidateParentLimit]
+	}
+
+	var parentIDs []string
+	for _, candidateParent := range candidateParents {
+		parentIDs = append(parentIDs, candidateParent.ID)
+	}
+
+	peer.Log.Infof("scheduling candidate parents is %#v", parentIDs)
+	return candidateParents, true
+}
+
+// FindParentAndCandidateParents finds a parent and candidate parents for the peer.
+func (s *scheduling) FindParentAndCandidateParents(ctx context.Context, peer *resource.Peer, blocklist set.SafeSet[string]) ([]*resource.Peer, bool) {
 	// Only PeerStateRunning peers need to be rescheduled,
 	// and other states including the PeerStateBackToSource indicate that
 	// they have been scheduled.

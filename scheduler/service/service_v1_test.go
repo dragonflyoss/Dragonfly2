@@ -677,7 +677,7 @@ func TestServiceV1_RegisterPeerTask(t *testing.T) {
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
-					ms.FindCandidateParents(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*resource.Peer{mockSeedPeer}, true).Times(1),
+					ms.FindParentAndCandidateParents(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*resource.Peer{mockSeedPeer}, true).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, result *schedulerv1.RegisterResult, err error) {
@@ -723,7 +723,7 @@ func TestServiceV1_RegisterPeerTask(t *testing.T) {
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
-					ms.FindCandidateParents(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*resource.Peer{mockSeedPeer}, true).Times(1),
+					ms.FindParentAndCandidateParents(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*resource.Peer{mockSeedPeer}, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Delete(gomock.Any()).Return().Times(1),
 				)
@@ -771,7 +771,7 @@ func TestServiceV1_RegisterPeerTask(t *testing.T) {
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
-					ms.FindCandidateParents(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*resource.Peer{mockSeedPeer}, true).Times(1),
+					ms.FindParentAndCandidateParents(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*resource.Peer{mockSeedPeer}, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Delete(gomock.Any()).Return().Times(1),
 				)
@@ -817,7 +817,7 @@ func TestServiceV1_RegisterPeerTask(t *testing.T) {
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
-					ms.FindCandidateParents(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*resource.Peer{mockSeedPeer}, true).Times(1),
+					ms.FindParentAndCandidateParents(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*resource.Peer{mockSeedPeer}, true).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, result *schedulerv1.RegisterResult, err error) {
@@ -862,7 +862,7 @@ func TestServiceV1_RegisterPeerTask(t *testing.T) {
 					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Any()).Return(mockPeer, true).Times(1),
-					ms.FindCandidateParents(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*resource.Peer{mockSeedPeer}, true).Times(1),
+					ms.FindParentAndCandidateParents(gomock.Any(), gomock.Any(), gomock.Any()).Return([]*resource.Peer{mockSeedPeer}, true).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, result *schedulerv1.RegisterResult, err error) {

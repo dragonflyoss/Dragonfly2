@@ -835,7 +835,7 @@ func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.S
 	// the first task download in the p2p cluster.
 	blocklist := set.NewSafeSet[string]()
 	blocklist.Add(peer.ID)
-	if task.FSM.Is(resource.TaskStateFailed) || !task.HasAvailablePeer(blocklist) {
+	if !((task.FSM.Is(resource.TaskStateRunning) || task.FSM.Is(resource.TaskStateSucceeded)) && task.HasAvailablePeer(blocklist)) {
 		download := proto.Clone(req.Download).(*commonv2.Download)
 		if download.GetNeedBackToSource() {
 			peer.Log.Infof("peer need back to source")
@@ -853,15 +853,50 @@ func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.S
 		}
 	}
 
-	// Scheduling parent for the peer.
-	if err := v.schedule(ctx, peer); err != nil {
-		// Collect RegisterPeerFailureCount metrics.
-		metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-			peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
-		return err
-	}
+	// FSM event state transition by size scope.
+	sizeScope := peer.Task.SizeScope()
+	switch sizeScope {
+	case commonv2.SizeScope_EMPTY:
+		// Return an EmptyTaskResponse directly.
+		peer.Log.Info("scheduling as SizeScope_EMPTY")
+		stream, loaded := peer.LoadAnnouncePeerStream()
+		if !loaded {
+			return status.Error(codes.NotFound, "AnnouncePeerStream not found")
+		}
 
-	return nil
+		if err := peer.FSM.Event(ctx, resource.PeerEventRegisterEmpty); err != nil {
+			return status.Errorf(codes.Internal, err.Error())
+		}
+
+		if err := stream.Send(&schedulerv2.AnnouncePeerResponse{
+			Response: &schedulerv2.AnnouncePeerResponse_EmptyTaskResponse{
+				EmptyTaskResponse: &schedulerv2.EmptyTaskResponse{},
+			},
+		}); err != nil {
+			peer.Log.Error(err)
+			return status.Error(codes.Internal, err.Error())
+		}
+
+		return nil
+	case commonv2.SizeScope_NORMAL, commonv2.SizeScope_TINY, commonv2.SizeScope_SMALL, commonv2.SizeScope_UNKNOW:
+		peer.Log.Info("scheduling as SizeScope_NORMAL")
+		if err := peer.FSM.Event(ctx, resource.PeerEventRegisterNormal); err != nil {
+			return status.Error(codes.Internal, err.Error())
+		}
+
+		// Scheduling parent for the peer.
+		peer.BlockParents.Add(peer.ID)
+		if err := v.scheduling.ScheduleCandidateParents(ctx, peer, peer.BlockParents); err != nil {
+			// Collect RegisterPeerFailureCount metrics.
+			metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+			return status.Error(codes.FailedPrecondition, err.Error())
+		}
+
+		return nil
+	default:
+		return status.Errorf(codes.FailedPrecondition, "invalid size cope %#v", sizeScope)
+	}
 }
 
 // handleDownloadPeerStartedRequest handles DownloadPeerStartedRequest of AnnouncePeerRequest.
@@ -1342,51 +1377,6 @@ func (v *V2) downloadTaskBySeedPeer(ctx context.Context, taskID string, download
 		return status.Errorf(codes.FailedPrecondition, "%s peer is forbidden", commonv2.Priority_LEVEL1.String())
 	default:
 		return status.Errorf(codes.InvalidArgument, "invalid priority %#v", priority)
-	}
-
-	return nil
-}
-
-// schedule provides different scheduling strategies for different task type.
-func (v *V2) schedule(ctx context.Context, peer *resource.Peer) error {
-	sizeScope := peer.Task.SizeScope()
-	switch sizeScope {
-	case commonv2.SizeScope_EMPTY:
-		// Return an EmptyTaskResponse directly.
-		peer.Log.Info("scheduling as SizeScope_EMPTY")
-		stream, loaded := peer.LoadAnnouncePeerStream()
-		if !loaded {
-			return status.Error(codes.NotFound, "AnnouncePeerStream not found")
-		}
-
-		if err := peer.FSM.Event(ctx, resource.PeerEventRegisterEmpty); err != nil {
-			return status.Errorf(codes.Internal, err.Error())
-		}
-
-		if err := stream.Send(&schedulerv2.AnnouncePeerResponse{
-			Response: &schedulerv2.AnnouncePeerResponse_EmptyTaskResponse{
-				EmptyTaskResponse: &schedulerv2.EmptyTaskResponse{},
-			},
-		}); err != nil {
-			peer.Log.Error(err)
-			return status.Error(codes.Internal, err.Error())
-		}
-
-		return nil
-	case commonv2.SizeScope_NORMAL, commonv2.SizeScope_TINY, commonv2.SizeScope_SMALL, commonv2.SizeScope_UNKNOW:
-	default:
-		return status.Errorf(codes.FailedPrecondition, "invalid size cope %#v", sizeScope)
-	}
-
-	// Scheduling as a normal task, it will control how peers download tasks
-	// based on RetryLimit and RetryBackToSourceLimit configurations.
-	peer.Log.Info("scheduling as SizeScope_NORMAL")
-	if err := peer.FSM.Event(ctx, resource.PeerEventRegisterNormal); err != nil {
-		return status.Error(codes.Internal, err.Error())
-	}
-
-	if err := v.scheduling.ScheduleCandidateParents(ctx, peer, set.NewSafeSet[string]()); err != nil {
-		return status.Error(codes.FailedPrecondition, err.Error())
 	}
 
 	return nil
