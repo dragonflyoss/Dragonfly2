@@ -189,5 +189,10 @@ var peerHostConfig = func() *DaemonOption {
 		LogMaxSize:    DefaultLogRotateMaxSize,
 		LogMaxAge:     DefaultLogRotateMaxAge,
 		LogMaxBackups: DefaultLogRotateMaxBackups,
+		PeerExchange: PeerExchangeOption{
+			Enable:          false,
+			InitialInterval: time.Minute,
+			ReSyncInterval:  10 * time.Minute,
+		},
 	}
 }

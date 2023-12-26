@@ -28,6 +28,7 @@ import (
 	"github.com/phayes/freeport"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
@@ -286,7 +287,11 @@ func setupMember(assert *assert.Assertions, member *testMember, members []*membe
 
 	lister := NewStaticPeerMemberLister(members)
 
-	pex, err := NewPeerExchange(memberMeta, lister,
+	pex, err := NewPeerExchange(lister,
+		time.Minute,
+		[]grpc.DialOption{
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+		},
 		WithName(fmt.Sprintf("node-%d", member.idx)),
 		WithBindPort(member.gossipPort),
 		WithAdvertisePort(member.gossipPort),
@@ -307,7 +312,7 @@ func setupMember(assert *assert.Assertions, member *testMember, members []*membe
 			log.Fatalf("Server exited with error: %v", err)
 		}
 	}()
-	go pex.Serve()
+	go pex.Serve(memberMeta)
 	return pex.(*peerExchange)
 }
 

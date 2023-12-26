@@ -22,6 +22,7 @@ import (
 
 	"github.com/hashicorp/memberlist"
 	"github.com/pkg/errors"
+	"google.golang.org/grpc"
 
 	dfdaemonv1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -30,6 +31,7 @@ import (
 
 type peerExchange struct {
 	config        *peerExchangeConfig
+	memberConfig  *memberlist.Config
 	localMember   *MemberMeta
 	memberlist    *memberlist.Memberlist
 	memberManager *peerExchangeMemberManager
@@ -84,11 +86,12 @@ func WithReSyncInterval(interval time.Duration) func(*memberlist.Config, *peerEx
 	}
 }
 
-func NewPeerExchange(memberMeta *MemberMeta, lister InitialMemberLister, opts ...func(*memberlist.Config, *peerExchangeConfig)) (PeerExchangeServer, error) {
-	memberManager := newPeerExchangeMemberManager(memberMeta)
+func NewPeerExchange(lister InitialMemberLister,
+	grpcDialTimeout time.Duration,
+	grpcDialOptions []grpc.DialOption, opts ...func(*memberlist.Config, *peerExchangeConfig)) (PeerExchangeServer, error) {
+	memberManager := newPeerExchangeMemberManager(grpcDialTimeout, grpcDialOptions)
 
 	memberConfig := memberlist.DefaultLANConfig()
-	memberConfig.Delegate = newPeerExchangeDelegate(memberMeta)
 	memberConfig.Events = memberManager
 
 	pexConfig := &peerExchangeConfig{
@@ -105,17 +108,9 @@ func NewPeerExchange(memberMeta *MemberMeta, lister InitialMemberLister, opts ..
 		memberConfig.AdvertiseAddr = ip.IPv4.String()
 	}
 
-	member, err := memberlist.Create(memberConfig)
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to create memberlist")
-	}
-
-	// update member list
-	memberManager.memberPool.members = member
 	pex := &peerExchange{
 		config:        pexConfig,
-		localMember:   memberMeta,
-		memberlist:    member,
+		memberConfig:  memberConfig,
 		memberManager: memberManager,
 		lister:        lister,
 		stopCh:        make(chan struct{}),
@@ -153,7 +148,21 @@ func (p *peerExchange) BroadcastPeers(data *dfdaemonv1.PeerExchangeData) {
 	p.memberManager.broadcast(data)
 }
 
-func (p *peerExchange) Serve() error {
+func (p *peerExchange) Serve(localMember *MemberMeta) error {
+	p.memberConfig.Delegate = newPeerExchangeDelegate(localMember)
+	p.localMember = localMember
+	p.memberManager.localMember = localMember
+
+	member, err := memberlist.Create(p.memberConfig)
+	if err != nil {
+		return errors.WithMessage(err, "failed to create memberlist")
+	}
+
+	// update member list
+	p.memberlist = member
+	p.memberManager.memberPool.members = member
+
+	go p.memberManager.broadcastInBackground()
 	go p.reSyncMember()
 
 	for {

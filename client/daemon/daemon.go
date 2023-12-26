@@ -42,6 +42,7 @@ import (
 	zapadapter "logur.dev/adapter/zap"
 
 	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
+	"d7y.io/dragonfly/v2/client/daemon/pex"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/announcer"
@@ -97,6 +98,7 @@ type clientDaemon struct {
 	ProxyManager   proxy.Manager
 	StorageManager storage.Manager
 	GCManager      gc.Manager
+	pexServer      pex.PeerExchangeServer
 
 	PeerTaskManager peer.TaskManager
 	PieceManager    peer.PieceManager
@@ -342,6 +344,18 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		}
 	}
 
+	var peerExchange pex.PeerExchangeServer
+	if opt.PeerExchange.Enable && opt.Scheduler.Manager.Enable && opt.Scheduler.Manager.SeedPeer.Enable {
+		peerExchange, err = pex.NewPeerExchange(
+			pex.NewSeedPeerMemberLister(dynconfig.GetSeedPeers),
+			opt.Download.GRPCDialTimeout, []grpc.DialOption{
+				grpc.WithTransportCredentials(grpcCredentials),
+			})
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &clientDaemon{
 		once:            &sync.Once{},
 		done:            make(chan bool),
@@ -354,6 +368,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		UploadManager:   uploadManager,
 		ObjectStorage:   objectStorage,
 		StorageManager:  storageManager,
+		pexServer:       peerExchange,
 		GCManager:       gc.NewManager(opt.GCInterval.Duration),
 		dynconfig:       dynconfig,
 		dfpath:          d,
@@ -603,12 +618,16 @@ func (cd *clientDaemon) Serve() error {
 		return nil
 	})
 
+	var proxyPort int
 	if cd.ProxyManager.IsEnabled() {
 		// prepare proxy service listen
 		if cd.Option.Proxy.TCPListen == nil {
 			return errors.New("proxy tcp listen option is empty")
 		}
-		proxyListener, proxyPort, err := cd.prepareTCPListener(cd.Option.Proxy.ListenOption, true)
+		var (
+			proxyListener net.Listener
+		)
+		proxyListener, proxyPort, err = cd.prepareTCPListener(cd.Option.Proxy.ListenOption, true)
 		if err != nil {
 			logger.Errorf("failed to listen for proxy service: %v", err)
 			return err
@@ -649,6 +668,20 @@ func (cd *clientDaemon) Serve() error {
 		watchers = append(watchers, func(daemon *config.DaemonOption) {
 			cd.ProxyManager.Watch(daemon.Proxy)
 		})
+	}
+
+	if cd.Option.PeerExchange.Enable && cd.Option.Scheduler.Manager.Enable && cd.Option.Scheduler.Manager.SeedPeer.Enable {
+		go func() {
+			err := cd.pexServer.Serve(&pex.MemberMeta{
+				HostID:    cd.schedPeerHost.Id,
+				IP:        ip.IPv4.String(), // TODO support ipv6
+				RpcPort:   cd.schedPeerHost.RpcPort,
+				ProxyPort: int32(proxyPort),
+			})
+			if err != nil {
+				logger.Errorf("health http server error: %v", err)
+			}
+		}()
 	}
 
 	// serve upload service

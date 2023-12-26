@@ -27,8 +27,6 @@ import (
 
 	"github.com/hashicorp/memberlist"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 
 	dfdaemonv1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
@@ -45,7 +43,6 @@ const (
 type peerExchangeMemberManager struct {
 	logger *logger.SugaredLoggerOnWith
 
-	GRPCCredentials credentials.TransportCredentials
 	GRPCDialTimeout time.Duration
 	GRPCDialOptions []grpc.DialOption
 
@@ -58,20 +55,20 @@ type peerExchangeMemberManager struct {
 	localMember *MemberMeta
 }
 
-func newPeerExchangeMemberManager(localMember *MemberMeta) *peerExchangeMemberManager {
+func newPeerExchangeMemberManager(
+	grpcDialTimeout time.Duration,
+	grpcDialOptions []grpc.DialOption) *peerExchangeMemberManager {
 	pp := newPeerPool()
 	mp := newMemberPool(pp)
 	manager := &peerExchangeMemberManager{
 		logger:          logger.With("component", "peerExchangeCluster"),
-		GRPCCredentials: insecure.NewCredentials(), // TODO
-		GRPCDialTimeout: time.Minute,               // TODO
+		GRPCDialTimeout: grpcDialTimeout,
+		GRPCDialOptions: grpcDialOptions,
 		peerUpdateChan:  make(chan *dfdaemonv1.PeerExchangeData, 1000),
 		nodes:           sync.Map{},
 		peerPool:        pp,
 		memberPool:      mp,
-		localMember:     localMember,
 	}
-	go manager.broadcastInBackground()
 	return manager
 }
 
@@ -182,8 +179,7 @@ func (p *peerExchangeMemberManager) connectMember(meta *MemberMeta) (dfdaemoncli
 		Addr: fmt.Sprintf("%s:%d", formatIP, meta.RpcPort),
 	}
 
-	credentialOpt := grpc.WithTransportCredentials(p.GRPCCredentials)
-	dialOptions := append(p.GRPCDialOptions, credentialOpt, grpc.WithBlock())
+	dialOptions := append(p.GRPCDialOptions, grpc.WithBlock())
 	dialCtx, cancel := context.WithTimeout(context.Background(), p.GRPCDialTimeout)
 	grpcClient, err := dfdaemonclient.GetV1(dialCtx, netAddr.String(), dialOptions...)
 	cancel()

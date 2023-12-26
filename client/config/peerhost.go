@@ -78,6 +78,7 @@ type DaemonOption struct {
 	Network         *NetworkOption        `mapstructure:"network" yaml:"network"`
 	Announcer       AnnouncerOption       `mapstructure:"announcer" yaml:"announcer"`
 	NetworkTopology NetworkTopologyOption `mapstructure:"networkTopology" yaml:"networkTopology"`
+	PeerExchange    PeerExchangeOption    `mapstructure:"peerExchange" yaml:"peerExchange"`
 }
 
 func NewDaemonConfig() *DaemonOption {
@@ -963,4 +964,13 @@ type NetworkTopologyOption struct {
 type ProbeOption struct {
 	// Interval is the interval of probing hosts.
 	Interval time.Duration `mapstructure:"interval" yaml:"interval"`
+}
+
+type PeerExchangeOption struct {
+	// Enable peer exchange service.
+	Enable bool `mapstructure:"enable" yaml:"enable"`
+	// InitialInterval is the initial interval when start and join gossip.
+	InitialInterval time.Duration `mapstructure:"initialInterval" yaml:"initialInterval"`
+	// ReSyncInterval is the re-sync interval for check running gossip members.
+	ReSyncInterval time.Duration `mapstructure:"reSyncInterval" yaml:"reSyncInterval"`
 }

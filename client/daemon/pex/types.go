@@ -25,7 +25,7 @@ import (
 type InitialMember = memberlist.Node
 
 type PeerExchangeServer interface {
-	Serve() error
+	Serve(localMember *MemberMeta) error
 	Stop() error
 
 	PeerSearchBroadcaster() PeerSearchBroadcaster
