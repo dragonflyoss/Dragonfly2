@@ -1035,7 +1035,7 @@ func (v *V1) registerTinyTask(ctx context.Context, peer *resource.Peer) (*schedu
 
 // registerSmallTask registers the small task.
 func (v *V1) registerSmallTask(ctx context.Context, peer *resource.Peer) (*schedulerv1.RegisterResult, error) {
-	candidateParents, found := v.scheduling.FindCandidateParents(ctx, peer, set.NewSafeSet[string]())
+	candidateParents, found := v.scheduling.FindParentAndCandidateParents(ctx, peer, set.NewSafeSet[string]())
 	if !found {
 		return nil, errors.New("candidate parent not found")
 	}
