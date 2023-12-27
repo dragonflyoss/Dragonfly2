@@ -41,6 +41,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
+	dfdaemonv1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
+	"d7y.io/dragonfly/v2/client/daemon/pex"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
@@ -147,6 +149,8 @@ type storageManager struct {
 
 	subIndexRWMutex       sync.RWMutex
 	subIndexTask2PeerTask map[string][]*localSubTaskStore // key: task id, value: slice of localSubTaskStore
+
+	peerSearchBroadcaster pex.PeerSearchBroadcaster
 }
 
 var _ gc.GC = (*storageManager)(nil)
@@ -232,6 +236,13 @@ func WithWriteBufferSize(size int64) func(*storageManager) error {
 				return make([]byte, size)
 			}}
 		}
+		return nil
+	}
+}
+
+func WithPeerSearchBroadcaster(peerSearchBroadcaster pex.PeerSearchBroadcaster) func(*storageManager) error {
+	return func(manager *storageManager) error {
+		manager.peerSearchBroadcaster = peerSearchBroadcaster
 		return nil
 	}
 }
@@ -703,6 +714,8 @@ func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 			}
 			continue
 		}
+
+		var peerMetadata []*dfdaemonv1.PeerMetadata
 		for _, peerDir := range peerDirs {
 			peerID := peerDir.Name()
 			dataDir := path.Join(s.storeOption.DataPath, taskID, peerID)
@@ -747,7 +760,11 @@ func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 				PeerID: peerID,
 				TaskID: taskID,
 			}, t)
-
+			peerMetadata = append(peerMetadata, &dfdaemonv1.PeerMetadata{
+				TaskId: taskID,
+				PeerId: peerID,
+				State:  dfdaemonv1.PeerState_Success,
+			})
 			// update index
 			if ts, ok := s.indexTask2PeerTask[taskID]; ok {
 				ts = append(ts, t)
@@ -755,6 +772,12 @@ func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 			} else {
 				s.indexTask2PeerTask[taskID] = []*localTaskStore{t}
 			}
+		}
+		if s.peerSearchBroadcaster != nil {
+			s.peerSearchBroadcaster.BroadcastPeers(
+				&dfdaemonv1.PeerExchangeData{
+					PeerMetadatas: peerMetadata,
+				})
 		}
 	}
 	// remove load error peer tasks
@@ -858,6 +881,14 @@ func (s *storageManager) TryGC() (bool, error) {
 		})
 		for _, task := range tasks {
 			task.MarkReclaim()
+			// broadcast delete peer event
+			if s.peerSearchBroadcaster != nil {
+				s.peerSearchBroadcaster.BroadcastPeer(&dfdaemonv1.PeerMetadata{
+					TaskId: task.TaskID,
+					PeerId: task.PeerID,
+					State:  dfdaemonv1.PeerState_Deleted,
+				})
+			}
 			markedTasks = append(markedTasks, PeerTaskMetadata{task.PeerID, task.TaskID})
 			logger.Infof("quota threshold reached, mark task %s/%s reclaimed, last access: %s, size: %s",
 				task.TaskID, task.PeerID, time.Unix(0, task.lastAccess.Load()).Format(time.RFC3339Nano),

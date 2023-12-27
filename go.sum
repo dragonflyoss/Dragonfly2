@@ -51,8 +51,6 @@ cloud.google.com/go/storage v1.8.0/go.mod h1:Wv1Oy7z6Yz3DshWRJFhqM/UCfaWIRTdp0RX
 cloud.google.com/go/storage v1.10.0/go.mod h1:FLPqc6j+Ki4BU591ie1oL6qBQGu2Bl/tZ9ullr3+Kg0=
 d7y.io/api v1.9.9 h1:A/GPCs8aAUx92qCbsRZlYcRDKj1TIf22Qk7/KM9CmIs=
 d7y.io/api v1.9.9/go.mod h1:mSUmfF1Ln6vypLIbIEOQqnDb0DdYnHe4LhaE8rftNrg=
-d7y.io/api/v2 v2.0.106 h1:ODF1xqa2Wl55zMBr2dA40mYDtBx5leesg3iNh2gihBs=
-d7y.io/api/v2 v2.0.106/go.mod h1:88TODGMZpc4M3LRzJgNGr0cS0RwZV/tgz3oLn2+lIQ8=
 d7y.io/api/v2 v2.0.107-0.20240320075141-f45ea33fa8a9 h1:oInfpd5xqkJm7mogwfOCXjW+HE8hT6Tg+WDbSe2qmkw=
 d7y.io/api/v2 v2.0.107-0.20240320075141-f45ea33fa8a9/go.mod h1:88TODGMZpc4M3LRzJgNGr0cS0RwZV/tgz3oLn2+lIQ8=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
