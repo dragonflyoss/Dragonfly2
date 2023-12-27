@@ -23,6 +23,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -481,7 +482,9 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 
 			outputBytes, err := os.ReadFile(output)
 			assert.Nil(err, "load output file")
-			assert.Equal(testBytes, outputBytes, "output and desired output must match")
+			if string(testBytes) != string(outputBytes) {
+				assert.Equal(string(testBytes), string(outputBytes), "output and desired output must match")
+			}
 		})
 	}
 }
@@ -538,6 +541,276 @@ func TestDetectBackSourceError(t *testing.T) {
 			}
 
 			assert.Equal(tc.isBackSourceError, isBackSourceError(err))
+		})
+	}
+}
+
+func TestPieceGroup(t *testing.T) {
+	assert := testifyassert.New(t)
+	testCases := []struct {
+		name          string
+		parsedRange   *nethttp.Range
+		startPieceNum int32
+		pieceSize     uint32
+		con           int32
+		pieceGroups   []pieceGroup
+	}{
+		{
+			name:        "100-200-2",
+			pieceSize:   100,
+			parsedRange: &nethttp.Range{Start: 0, Length: 200},
+			con:         2,
+			pieceGroups: []pieceGroup{
+				{
+					start:     0,
+					end:       0,
+					startByte: 0,
+					endByte:   99,
+				},
+				{
+					start:     1,
+					end:       1,
+					startByte: 100,
+					endByte:   199,
+				},
+			},
+		},
+		{
+			name:        "100-300-2",
+			pieceSize:   100,
+			parsedRange: &nethttp.Range{Start: 0, Length: 300},
+			con:         2,
+			pieceGroups: []pieceGroup{
+				{
+					start:     0,
+					end:       1,
+					startByte: 0,
+					endByte:   199,
+				},
+				{
+					start:     2,
+					end:       2,
+					startByte: 200,
+					endByte:   299,
+				},
+			},
+		},
+		{
+			name:        "100-500-4",
+			pieceSize:   100,
+			parsedRange: &nethttp.Range{Start: 0, Length: 500},
+			con:         4,
+			pieceGroups: []pieceGroup{
+				{
+					start:     0,
+					end:       1,
+					startByte: 0,
+					endByte:   199,
+				},
+				{
+					start:     2,
+					end:       2,
+					startByte: 200,
+					endByte:   299,
+				},
+				{
+					start:     3,
+					end:       3,
+					startByte: 300,
+					endByte:   399,
+				},
+				{
+					start:     4,
+					end:       4,
+					startByte: 400,
+					endByte:   499,
+				},
+			},
+		},
+		{
+			name:        "100-600-4",
+			pieceSize:   100,
+			parsedRange: &nethttp.Range{Start: 0, Length: 600},
+			con:         4,
+			pieceGroups: []pieceGroup{
+				{
+					start:     0,
+					end:       1,
+					startByte: 0,
+					endByte:   199,
+				},
+				{
+					start:     2,
+					end:       3,
+					startByte: 200,
+					endByte:   399,
+				},
+				{
+					start:     4,
+					end:       4,
+					startByte: 400,
+					endByte:   499,
+				},
+				{
+					start:     5,
+					end:       5,
+					startByte: 500,
+					endByte:   599,
+				},
+			},
+		},
+		{
+			name:        "100-700-4",
+			pieceSize:   100,
+			parsedRange: &nethttp.Range{Start: 0, Length: 700},
+			con:         4,
+			pieceGroups: []pieceGroup{
+				{
+					start:     0,
+					end:       1,
+					startByte: 0,
+					endByte:   199,
+				},
+				{
+					start:     2,
+					end:       3,
+					startByte: 200,
+					endByte:   399,
+				},
+				{
+					start:     4,
+					end:       5,
+					startByte: 400,
+					endByte:   599,
+				},
+				{
+					start:     6,
+					end:       6,
+					startByte: 600,
+					endByte:   699,
+				},
+			},
+		},
+		{
+			name:          "1-100-700-4",
+			pieceSize:     100,
+			startPieceNum: 1,
+			parsedRange:   &nethttp.Range{Start: 90, Length: 707}, // last byte: 90 + 706 = 796
+			con:           4,
+			pieceGroups: []pieceGroup{
+				{
+					start:     1,
+					end:       2,
+					startByte: 190,
+					endByte:   389,
+				},
+				{
+					start:     3,
+					end:       4,
+					startByte: 390,
+					endByte:   589,
+				},
+				{
+					start:     5,
+					end:       6,
+					startByte: 590,
+					endByte:   789,
+				},
+				{
+					start:     7,
+					end:       7,
+					startByte: 790,
+					endByte:   796,
+				},
+			},
+		},
+		{
+			name:        "100-1100-4",
+			pieceSize:   100,
+			parsedRange: &nethttp.Range{Start: 0, Length: 1100},
+			con:         4,
+			pieceGroups: []pieceGroup{
+				{
+					start:     0,
+					end:       2,
+					startByte: 0,
+					endByte:   299,
+				},
+				{
+					start:     3,
+					end:       5,
+					startByte: 300,
+					endByte:   599,
+				},
+				{
+					start:     6,
+					end:       8,
+					startByte: 600,
+					endByte:   899,
+				},
+				{
+					start:     9,
+					end:       10,
+					startByte: 900,
+					endByte:   1099,
+				},
+			},
+		},
+		{
+			name:          "from-real-e2e-test",
+			pieceSize:     4194304,
+			startPieceNum: 1,
+			parsedRange:   &nethttp.Range{Start: 984674, Length: 20638941},
+			con:           4,
+			pieceGroups: []pieceGroup{
+				{
+					start:     1,
+					end:       1,
+					startByte: 5178978,
+					endByte:   9373281,
+				},
+				{
+					start:     2,
+					end:       2,
+					startByte: 9373282,
+					endByte:   13567585,
+				},
+				{
+					start:     3,
+					end:       3,
+					startByte: 13567586,
+					endByte:   17761889,
+				},
+				{
+					start:     4,
+					end:       4,
+					startByte: 17761890,
+					endByte:   21623614,
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			pieceCount := int32(math.Ceil(float64(tc.parsedRange.Length) / float64(tc.pieceSize)))
+			pieceCountToDownload := pieceCount - tc.startPieceNum
+
+			minPieceCountPerGroup := pieceCountToDownload / tc.con
+			reminderPieces := pieceCountToDownload % tc.con
+
+			for i := int32(0); i < tc.con; i++ {
+				tc.pieceGroups[i].pieceSize = tc.pieceSize
+				tc.pieceGroups[i].parsedRange = tc.parsedRange
+			}
+
+			var pieceGroups []pieceGroup
+			for i := int32(0); i < tc.con; i++ {
+				pg := newPieceGroup(i, reminderPieces, tc.startPieceNum, minPieceCountPerGroup, tc.pieceSize, tc.parsedRange)
+				pieceGroups = append(pieceGroups, *pg)
+			}
+
+			assert.Equal(tc.pieceGroups, pieceGroups, "piece group should equal")
 		})
 	}
 }

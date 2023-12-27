@@ -50,7 +50,7 @@ func (t *localSubTaskStore) WritePiece(ctx context.Context, req *WritePieceReque
 	t.RLock()
 	if piece, ok := t.Pieces[req.Num]; ok {
 		t.RUnlock()
-		t.Debugf("piece %d already exist,ignore writing piece", req.Num)
+		t.Debugf("piece %d already exist, ignore writing piece", req.Num)
 		// discard already downloaded data for back source
 		n, err = io.CopyN(io.Discard, req.Reader, piece.Range.Length)
 		if err != nil && err != io.EOF {
@@ -124,7 +124,7 @@ func (t *localSubTaskStore) WritePiece(ctx context.Context, req *WritePieceReque
 	}
 
 	t.Debugf("wrote %d bytes to file %s, piece %d, start %d, length: %d",
-		n, t.DataFilePath, req.Num, req.Range.Start, req.Range.Length)
+		n, t.parent.DataFilePath, req.Num, req.Range.Start, req.Range.Length)
 	t.Lock()
 	defer t.Unlock()
 	// double check
