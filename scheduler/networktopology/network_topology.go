@@ -145,15 +145,23 @@ func (nt *networkTopology) Has(srcHostID string, destHostID string) bool {
 		return true
 	}
 
-	if networkTopology, err := nt.rdb.HGetAll(ctx, networkTopologyKey).Result(); err == nil && len(networkTopology) != 0 {
-		if err := nt.cache.Add(networkTopologyKey, networkTopology, nt.config.Cache.TTL); err != nil {
-			logger.Error(err)
-		}
+	networkTopology, err := nt.rdb.HGetAll(ctx, networkTopologyKey).Result()
+	if err != nil {
+		logger.Errorf("get %s error because of %s", networkTopologyKey, err.Error())
+		return false
+	}
 
+	if len(networkTopology) == 0 {
+		return false
+	}
+
+	// Add cache data.
+	if err := nt.cache.Add(networkTopologyKey, networkTopology, nt.config.Cache.TTL); err != nil {
+		logger.Errorf("add %s cache error because of %s", networkTopologyKey, err.Error())
 		return true
 	}
 
-	return false
+	return true
 }
 
 // Store stores source host and destination host.
@@ -181,74 +189,76 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 
 	blocklist := set.NewSafeSet[string]()
 	blocklist.Add(hostID)
-	candidateHosts := nt.resource.HostManager().LoadRandomHosts(findProbedCandidateHostsLimit, blocklist)
-	if len(candidateHosts) == 0 {
+	hosts := nt.resource.HostManager().LoadRandomHosts(findProbedCandidateHostsLimit, blocklist)
+	if len(hosts) == 0 {
 		return nil, errors.New("probed hosts not found")
 	}
 
-	if len(candidateHosts) <= nt.config.Probe.Count {
-		return candidateHosts, nil
+	if len(hosts) <= nt.config.Probe.Count {
+		return hosts, nil
 	}
 
-	var probedCounts []uint64
-	var probedCountKeys []string
-	var hosts []*resource.Host
-	var filterHosts []*resource.Host
-	for _, candidateHost := range candidateHosts {
-		probedCountKey := pkgredis.MakeProbedCountKeyInScheduler(candidateHost.ID)
-		any, ok := nt.cache.Get(probedCountKey)
+	var (
+		probedCounts   []uint64
+		cacheMissKeys  []string
+		cacheMissHosts []*resource.Host
+		candidateHosts []*resource.Host
+	)
+	for _, host := range hosts {
+		probedCountKey := pkgredis.MakeProbedCountKeyInScheduler(host.ID)
+		cache, ok := nt.cache.Get(probedCountKey)
 		if !ok {
-			filterHosts = append(filterHosts, candidateHost)
-			probedCountKeys = append(probedCountKeys, probedCountKey)
-		} else {
-			hosts = append(hosts, candidateHost)
-			probedCounts = append(probedCounts, any.(uint64))
+			cacheMissHosts = append(cacheMissHosts, host)
+			cacheMissKeys = append(cacheMissKeys, probedCountKey)
+			continue
 		}
+
+		candidateHosts = append(candidateHosts, host)
+		probedCounts = append(probedCounts, cache.(uint64))
 	}
 
-	rawProbedCounts, err := nt.rdb.MGet(ctx, probedCountKeys...).Result()
+	rawProbedCounts, err := nt.rdb.MGet(ctx, cacheMissKeys...).Result()
 	if err != nil {
 		return nil, err
 	}
 
 	// Filter invalid probed count. If probed key not exist, the probed count is nil.
 	for i, rawProbedCount := range rawProbedCounts {
-		probedCountKey := pkgredis.MakeProbedCountKeyInScheduler(candidateHosts[i].ID)
-
 		// Initialize the probedCount value of host in redis when the host is first selected as the candidate probe target.
 		if rawProbedCount == nil {
-			if err := nt.rdb.Set(ctx, probedCountKey, 0, 0).Err(); err != nil {
+			if err := nt.rdb.Set(ctx, cacheMissKeys[i], 0, 0).Err(); err != nil {
 				return nil, err
 			}
 
 			probedCounts = append(probedCounts, 0)
-		} else {
-			value, ok := rawProbedCount.(string)
-			if !ok {
-				return nil, errors.New("invalid value type")
-			}
-
-			probedCount, err := strconv.ParseUint(value, 10, 64)
-			if err != nil {
-				return nil, errors.New("invalid probed count")
-			}
-
-			if err := nt.cache.Add(probedCountKey, probedCount, nt.config.Cache.TTL); err != nil {
-				logger.Error(err)
-			}
-
-			probedCounts = append(probedCounts, probedCount)
+			continue
 		}
 
-		hosts = append(hosts, filterHosts[i])
+		value, ok := rawProbedCount.(string)
+		if !ok {
+			return nil, errors.New("invalid value type")
+		}
+
+		probedCount, err := strconv.ParseUint(value, 10, 64)
+		if err != nil {
+			return nil, errors.New("invalid probed count")
+		}
+
+		// Add cache data.
+		if err := nt.cache.Add(cacheMissKeys[i], probedCount, nt.config.Cache.TTL); err != nil {
+			logger.Errorf("add %s cache error because of %s", cacheMissKeys[i], err.Error())
+		}
+
+		probedCounts = append(probedCounts, probedCount)
 	}
+	candidateHosts = append(candidateHosts, cacheMissHosts...)
 
 	// Sort candidate hosts by probed count.
-	sort.Slice(hosts, func(i, j int) bool {
+	sort.Slice(candidateHosts, func(i, j int) bool {
 		return probedCounts[i] < probedCounts[j]
 	})
 
-	return hosts[:nt.config.Probe.Count], nil
+	return candidateHosts[:nt.config.Probe.Count], nil
 }
 
 // DeleteHost deletes source host and all destination host connected to source host.
@@ -303,8 +313,8 @@ func (nt *networkTopology) ProbedCount(hostID string) (uint64, error) {
 	defer cancel()
 
 	probedCountKey := pkgredis.MakeProbedCountKeyInScheduler(hostID)
-	if any, ok := nt.cache.Get(probedCountKey); ok {
-		return any.(uint64), nil
+	if cache, ok := nt.cache.Get(probedCountKey); ok {
+		return cache.(uint64), nil
 	}
 
 	probedCount, err := nt.rdb.Get(ctx, probedCountKey).Uint64()
@@ -312,8 +322,9 @@ func (nt *networkTopology) ProbedCount(hostID string) (uint64, error) {
 		return uint64(0), err
 	}
 
+	// Add cache data.
 	if err := nt.cache.Add(probedCountKey, probedCount, nt.config.Cache.TTL); err != nil {
-		logger.Error(err)
+		logger.Errorf("add %s cache error because of %s", probedCountKey, err.Error())
 	}
 
 	return probedCount, nil

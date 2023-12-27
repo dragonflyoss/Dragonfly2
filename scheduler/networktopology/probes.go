@@ -106,12 +106,13 @@ func (p *probes) Peek() (*Probe, error) {
 	defer cancel()
 
 	probesKey := pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID)
-	if any, ok := p.cache.Get(probesKey); ok {
-		return any.([]*Probe)[0], nil
+	if cache, ok := p.cache.Get(probesKey); ok {
+		return cache.([]*Probe)[0], nil
 	}
 
 	rawProbes, err := p.rdb.LRange(ctx, pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID), 0, -1).Result()
-	if err != nil || len(rawProbes) == 0 {
+	if err != nil {
+		logger.Errorf("get probes error because of %s", err.Error())
 		return nil, err
 	}
 
@@ -124,8 +125,9 @@ func (p *probes) Peek() (*Probe, error) {
 		probes = append(probes, probe)
 	}
 
+	// Add cache data.
 	if err := p.cache.Add(probesKey, probes, p.config.Cache.TTL); err != nil {
-		logger.Error(err)
+		logger.Errorf("add %s cache error because of %s", probesKey, err.Error())
 	}
 
 	return probes[0], nil
@@ -162,9 +164,7 @@ func (p *probes) Enqueue(probe *Probe) error {
 	p.cache.Delete(probesKey)
 
 	// Calculate the moving average round-trip time.
-	var probes []*Probe
 	var averageRTT time.Duration
-	// println(length)
 	if length > 0 {
 		// If the queue is not empty, calculate the
 		// moving average round-trip time.
@@ -178,7 +178,6 @@ func (p *probes) Enqueue(probe *Probe) error {
 			if err = json.Unmarshal([]byte(rawProbe), probe); err != nil {
 				return err
 			}
-			probes = append(probes, probe)
 
 			if index == 0 {
 				averageRTT = probe.RTT
@@ -192,11 +191,6 @@ func (p *probes) Enqueue(probe *Probe) error {
 		// If the queue is empty, use the probe round-trip time as
 		// the moving average round-trip time.
 		averageRTT = probe.RTT
-		probes = append(probes, probe)
-	}
-
-	if err := p.cache.Add(probesKey, probes, p.config.Cache.TTL); err != nil {
-		logger.Error(err)
 	}
 
 	// Update the moving average round-trip time and updated time.
@@ -224,12 +218,17 @@ func (p *probes) Len() (int64, error) {
 	defer cancel()
 
 	probesKey := pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID)
-	if any, ok := p.cache.Get(probesKey); ok {
-		return int64(len(any.([]*Probe))), nil
+	if cache, ok := p.cache.Get(probesKey); ok {
+		return int64(len(cache.([]*Probe))), nil
 	}
 
 	rawProbes, err := p.rdb.LRange(ctx, pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID), 0, -1).Result()
-	if err != nil || len(rawProbes) == 0 {
+	if err != nil {
+		logger.Errorf("get probes error because of %s", err.Error())
+		return int64(0), err
+	}
+
+	if len(rawProbes) == 0 {
 		return int64(0), err
 	}
 
@@ -242,8 +241,9 @@ func (p *probes) Len() (int64, error) {
 		probes = append(probes, probe)
 	}
 
+	// Add cache data.
 	if err := p.cache.Add(probesKey, probes, p.config.Cache.TTL); err != nil {
-		logger.Error(err)
+		logger.Errorf("add %s cache error because of %s", probesKey, err.Error())
 	}
 
 	return int64(len(probes)), nil
@@ -256,18 +256,19 @@ func (p *probes) CreatedAt() (time.Time, error) {
 
 	var networkTopology map[string]string
 	networkTopologyKey := pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID)
-	any, ok := p.cache.Get(networkTopologyKey)
+	cache, ok := p.cache.Get(networkTopologyKey)
 	if !ok {
 		var err error
 		if networkTopology, err = p.rdb.HGetAll(ctx, networkTopologyKey).Result(); err != nil {
 			return time.Time{}, err
 		}
 
+		// Add cache data.
 		if err := p.cache.Add(networkTopologyKey, networkTopology, p.config.Cache.TTL); err != nil {
-			logger.Error(err)
+			logger.Errorf("add %s cache error because of %s", networkTopologyKey, err.Error())
 		}
 	} else {
-		networkTopology = any.(map[string]string)
+		networkTopology = cache.(map[string]string)
 	}
 
 	createdTime, err := time.Parse(time.RFC3339Nano, networkTopology["createdAt"])
@@ -285,18 +286,19 @@ func (p *probes) UpdatedAt() (time.Time, error) {
 
 	var networkTopology map[string]string
 	networkTopologyKey := pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID)
-	any, ok := p.cache.Get(networkTopologyKey)
+	cache, ok := p.cache.Get(networkTopologyKey)
 	if !ok {
 		var err error
 		if networkTopology, err = p.rdb.HGetAll(ctx, networkTopologyKey).Result(); err != nil {
 			return time.Time{}, err
 		}
 
+		// Add cache data.
 		if err := p.cache.Add(networkTopologyKey, networkTopology, p.config.Cache.TTL); err != nil {
-			logger.Error(err)
+			logger.Errorf("add %s cache error because of %s", networkTopologyKey, err.Error())
 		}
 	} else {
-		networkTopology = any.(map[string]string)
+		networkTopology = cache.(map[string]string)
 	}
 
 	updatedTime, err := time.Parse(time.RFC3339Nano, networkTopology["updatedAt"])
@@ -314,18 +316,19 @@ func (p *probes) AverageRTT() (time.Duration, error) {
 
 	var networkTopology map[string]string
 	networkTopologyKey := pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID)
-	any, ok := p.cache.Get(networkTopologyKey)
+	cache, ok := p.cache.Get(networkTopologyKey)
 	if !ok {
 		var err error
 		if networkTopology, err = p.rdb.HGetAll(ctx, networkTopologyKey).Result(); err != nil {
 			return time.Duration(0), err
 		}
 
+		// Add cache data.
 		if err := p.cache.Add(networkTopologyKey, networkTopology, p.config.Cache.TTL); err != nil {
-			logger.Error(err)
+			logger.Errorf("add %s cache error because of %s", networkTopologyKey, err.Error())
 		}
 	} else {
-		networkTopology = any.(map[string]string)
+		networkTopology = cache.(map[string]string)
 	}
 
 	averageRTT, err := strconv.ParseInt(networkTopology["averageRTT"], 10, 64)
