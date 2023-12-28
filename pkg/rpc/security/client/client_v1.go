@@ -27,13 +27,13 @@ import (
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 
 	securityv1 "d7y.io/api/v2/pkg/apis/security/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
-	"d7y.io/dragonfly/v2/pkg/rpc"
 	healthclient "d7y.io/dragonfly/v2/pkg/rpc/health/client"
 )
 
@@ -55,8 +55,8 @@ func GetV1(ctx context.Context, target string, opts ...grpc.DialOption) (V1, err
 		ctx,
 		target,
 		append([]grpc.DialOption{
+			grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
-				rpc.OTELUnaryClientInterceptor(),
 				grpc_prometheus.UnaryClientInterceptor,
 				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
 				grpc_retry.UnaryClientInterceptor(
@@ -65,7 +65,6 @@ func GetV1(ctx context.Context, target string, opts ...grpc.DialOption) (V1, err
 				),
 			)),
 			grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
-				rpc.OTELStreamClientInterceptor(),
 				grpc_prometheus.StreamClientInterceptor,
 				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
 			)),

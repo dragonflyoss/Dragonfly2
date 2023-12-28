@@ -24,10 +24,12 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	commonv2 "d7y.io/api/v2/pkg/apis/common/v2"
+	dfdaemonv2 "d7y.io/api/v2/pkg/apis/dfdaemon/v2"
 	schedulerv2 "d7y.io/api/v2/pkg/apis/scheduler/v2"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -110,15 +112,9 @@ func (v *V2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePeerServer) error
 		switch announcePeerRequest := req.GetRequest().(type) {
 		case *schedulerv2.AnnouncePeerRequest_RegisterPeerRequest:
 			registerPeerRequest := announcePeerRequest.RegisterPeerRequest
-			log.Infof("receive RegisterPeerRequest, url: %s", registerPeerRequest.Download.Url)
+			log.Infof("receive RegisterPeerRequest, url: %s, range: %#v, header: %#v, need back-to-source: %t",
+				registerPeerRequest.Download.GetUrl(), registerPeerRequest.Download.GetRange(), registerPeerRequest.Download.GetHeader(), registerPeerRequest.Download.GetNeedBackToSource())
 			if err := v.handleRegisterPeerRequest(ctx, stream, req.GetHostId(), req.GetTaskId(), req.GetPeerId(), registerPeerRequest); err != nil {
-				log.Error(err)
-				return err
-			}
-		case *schedulerv2.AnnouncePeerRequest_RegisterSeedPeerRequest:
-			registerSeedPeerRequest := announcePeerRequest.RegisterSeedPeerRequest
-			log.Infof("receive RegisterSeedPeerRequest, url: %s", registerSeedPeerRequest.Download.Url)
-			if err := v.handleRegisterSeedPeerRequest(ctx, stream, req.GetHostId(), req.GetTaskId(), req.GetPeerId(), registerSeedPeerRequest); err != nil {
 				log.Error(err)
 				return err
 			}
@@ -825,7 +821,7 @@ func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
 // handleRegisterPeerRequest handles RegisterPeerRequest of AnnouncePeerRequest.
 func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.Scheduler_AnnouncePeerServer, hostID, taskID, peerID string, req *schedulerv2.RegisterPeerRequest) error {
 	// Handle resource included host, task, and peer.
-	_, task, peer, err := v.handleResource(ctx, stream, hostID, taskID, peerID, req.GetDownload())
+	host, task, peer, err := v.handleResource(ctx, stream, hostID, taskID, peerID, req.GetDownload())
 	if err != nil {
 		return err
 	}
@@ -839,58 +835,68 @@ func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.S
 	// the first task download in the p2p cluster.
 	blocklist := set.NewSafeSet[string]()
 	blocklist.Add(peer.ID)
-	if task.FSM.Is(resource.TaskStateFailed) || !task.HasAvailablePeer(blocklist) {
-		if err := v.downloadTaskBySeedPeer(ctx, peer); err != nil {
-			// Collect RegisterPeerFailureCount metrics.
-			metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
-			return err
+	if !((task.FSM.Is(resource.TaskStateRunning) || task.FSM.Is(resource.TaskStateSucceeded)) && task.HasAvailablePeer(blocklist)) {
+		download := proto.Clone(req.Download).(*commonv2.Download)
+		if download.GetNeedBackToSource() || host.Type != types.HostTypeNormal {
+			peer.Log.Infof("peer need back to source")
+			peer.NeedBackToSource.Store(true)
+		} else {
+			// If trigger the seed peer download back-to-source,
+			// the need back-to-source flag should be true.
+			download.NeedBackToSource = true
+			if err := v.downloadTaskBySeedPeer(ctx, taskID, download, peer); err != nil {
+				// Collect RegisterPeerFailureCount metrics.
+				metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+					peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+				return err
+			}
 		}
 	}
 
-	// Scheduling parent for the peer.
-	if err := v.schedule(ctx, peer); err != nil {
-		// Collect RegisterPeerFailureCount metrics.
-		metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-			peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
-		return err
+	// FSM event state transition by size scope.
+	sizeScope := peer.Task.SizeScope()
+	switch sizeScope {
+	case commonv2.SizeScope_EMPTY:
+		// Return an EmptyTaskResponse directly.
+		peer.Log.Info("scheduling as SizeScope_EMPTY")
+		stream, loaded := peer.LoadAnnouncePeerStream()
+		if !loaded {
+			return status.Error(codes.NotFound, "AnnouncePeerStream not found")
+		}
+
+		if err := peer.FSM.Event(ctx, resource.PeerEventRegisterEmpty); err != nil {
+			return status.Errorf(codes.Internal, err.Error())
+		}
+
+		if err := stream.Send(&schedulerv2.AnnouncePeerResponse{
+			Response: &schedulerv2.AnnouncePeerResponse_EmptyTaskResponse{
+				EmptyTaskResponse: &schedulerv2.EmptyTaskResponse{},
+			},
+		}); err != nil {
+			peer.Log.Error(err)
+			return status.Error(codes.Internal, err.Error())
+		}
+
+		return nil
+	case commonv2.SizeScope_NORMAL, commonv2.SizeScope_TINY, commonv2.SizeScope_SMALL, commonv2.SizeScope_UNKNOW:
+		peer.Log.Info("scheduling as SizeScope_NORMAL")
+		if err := peer.FSM.Event(ctx, resource.PeerEventRegisterNormal); err != nil {
+			return status.Error(codes.Internal, err.Error())
+		}
+
+		// Scheduling parent for the peer.
+		peer.BlockParents.Add(peer.ID)
+		if err := v.scheduling.ScheduleCandidateParents(ctx, peer, peer.BlockParents); err != nil {
+			// Collect RegisterPeerFailureCount metrics.
+			metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+			return status.Error(codes.FailedPrecondition, err.Error())
+		}
+
+		return nil
+	default:
+		return status.Errorf(codes.FailedPrecondition, "invalid size cope %#v", sizeScope)
 	}
-
-	return nil
-}
-
-// handleRegisterSeedPeerRequest handles RegisterSeedPeerRequest of AnnouncePeerRequest.
-func (v *V2) handleRegisterSeedPeerRequest(ctx context.Context, stream schedulerv2.Scheduler_AnnouncePeerServer, hostID, taskID, peerID string, req *schedulerv2.RegisterSeedPeerRequest) error {
-	// Handle resource included host, task, and peer.
-	_, task, peer, err := v.handleResource(ctx, stream, hostID, taskID, peerID, req.GetDownload())
-	if err != nil {
-		return err
-	}
-
-	// Collect RegisterPeerCount metrics.
-	priority := peer.CalculatePriority(v.dynconfig)
-	metrics.RegisterPeerCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
-
-	// When there are no available peers for a task, the scheduler needs to trigger
-	// the first task download in the p2p cluster.
-	blocklist := set.NewSafeSet[string]()
-	blocklist.Add(peer.ID)
-	if task.FSM.Is(resource.TaskStateFailed) || !task.HasAvailablePeer(blocklist) {
-		// When the task has no available peer,
-		// the seed peer will download back-to-source directly.
-		peer.NeedBackToSource.Store(true)
-	}
-
-	// Scheduling parent for the peer.
-	if err := v.schedule(ctx, peer); err != nil {
-		// Collect RegisterPeerFailureCount metrics.
-		metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-			peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
-		return err
-	}
-
-	return nil
 }
 
 // handleDownloadPeerStartedRequest handles DownloadPeerStartedRequest of AnnouncePeerRequest.
@@ -1302,7 +1308,7 @@ func (v *V2) handleResource(ctx context.Context, stream schedulerv2.Scheduler_An
 }
 
 // downloadTaskBySeedPeer downloads task by seed peer.
-func (v *V2) downloadTaskBySeedPeer(ctx context.Context, peer *resource.Peer) error {
+func (v *V2) downloadTaskBySeedPeer(ctx context.Context, taskID string, download *commonv2.Download, peer *resource.Peer) error {
 	// Trigger the first download task based on different priority levels,
 	// refer to https://github.com/dragonflyoss/api/blob/main/pkg/apis/common/v2/common.proto#L74.
 	priority := peer.CalculatePriority(v.dynconfig)
@@ -1311,12 +1317,16 @@ func (v *V2) downloadTaskBySeedPeer(ctx context.Context, peer *resource.Peer) er
 	case commonv2.Priority_LEVEL6, commonv2.Priority_LEVEL0:
 		// Super peer is first triggered to download back-to-source.
 		if v.config.SeedPeer.Enable && !peer.Task.IsSeedPeerFailed() {
-			go func(ctx context.Context, peer *resource.Peer, hostType types.HostType) {
-				if err := v.resource.SeedPeer().DownloadTask(context.Background(), peer.Task, hostType); err != nil {
-					peer.Log.Errorf("%s seed peer downloads task failed %s", hostType.Name(), err.Error())
+			go func(ctx context.Context, taskID string, download *commonv2.Download, hostType types.HostType) {
+				peer.Log.Infof("%s seed peer triggers download task", hostType.Name())
+				if err := v.resource.SeedPeer().TriggerDownloadTask(context.Background(), taskID, &dfdaemonv2.TriggerDownloadTaskRequest{Download: download}); err != nil {
+					peer.Log.Errorf("%s seed peer triggers download task failed %s", hostType.Name(), err.Error())
 					return
 				}
-			}(ctx, peer, types.HostTypeSuperSeed)
+
+				peer.Log.Infof("%s seed peer triggers download task success", hostType.Name())
+			}(ctx, taskID, download, types.HostTypeSuperSeed)
+
 			break
 		}
 
@@ -1324,12 +1334,16 @@ func (v *V2) downloadTaskBySeedPeer(ctx context.Context, peer *resource.Peer) er
 	case commonv2.Priority_LEVEL5:
 		// Strong peer is first triggered to download back-to-source.
 		if v.config.SeedPeer.Enable && !peer.Task.IsSeedPeerFailed() {
-			go func(ctx context.Context, peer *resource.Peer, hostType types.HostType) {
-				if err := v.resource.SeedPeer().DownloadTask(context.Background(), peer.Task, hostType); err != nil {
-					peer.Log.Errorf("%s seed peer downloads task failed %s", hostType.Name(), err.Error())
+			go func(ctx context.Context, taskID string, download *commonv2.Download, hostType types.HostType) {
+				peer.Log.Infof("%s seed peer triggers download task", hostType.Name())
+				if err := v.resource.SeedPeer().TriggerDownloadTask(context.Background(), taskID, &dfdaemonv2.TriggerDownloadTaskRequest{Download: download}); err != nil {
+					peer.Log.Errorf("%s seed peer triggers download task failed %s", hostType.Name(), err.Error())
 					return
 				}
-			}(ctx, peer, types.HostTypeStrongSeed)
+
+				peer.Log.Infof("%s seed peer triggers download task success", hostType.Name())
+			}(ctx, taskID, download, types.HostTypeSuperSeed)
+
 			break
 		}
 
@@ -1337,12 +1351,16 @@ func (v *V2) downloadTaskBySeedPeer(ctx context.Context, peer *resource.Peer) er
 	case commonv2.Priority_LEVEL4:
 		// Weak peer is first triggered to download back-to-source.
 		if v.config.SeedPeer.Enable && !peer.Task.IsSeedPeerFailed() {
-			go func(ctx context.Context, peer *resource.Peer, hostType types.HostType) {
-				if err := v.resource.SeedPeer().DownloadTask(context.Background(), peer.Task, hostType); err != nil {
-					peer.Log.Errorf("%s seed peer downloads task failed %s", hostType.Name(), err.Error())
+			go func(ctx context.Context, taskID string, download *commonv2.Download, hostType types.HostType) {
+				peer.Log.Infof("%s seed peer triggers download task", hostType.Name())
+				if err := v.resource.SeedPeer().TriggerDownloadTask(context.Background(), taskID, &dfdaemonv2.TriggerDownloadTaskRequest{Download: download}); err != nil {
+					peer.Log.Errorf("%s seed peer triggers download task failed %s", hostType.Name(), err.Error())
 					return
 				}
-			}(ctx, peer, types.HostTypeWeakSeed)
+
+				peer.Log.Infof("%s seed peer triggers download task success", hostType.Name())
+			}(ctx, taskID, download, types.HostTypeSuperSeed)
+
 			break
 		}
 
@@ -1359,51 +1377,6 @@ func (v *V2) downloadTaskBySeedPeer(ctx context.Context, peer *resource.Peer) er
 		return status.Errorf(codes.FailedPrecondition, "%s peer is forbidden", commonv2.Priority_LEVEL1.String())
 	default:
 		return status.Errorf(codes.InvalidArgument, "invalid priority %#v", priority)
-	}
-
-	return nil
-}
-
-// schedule provides different scheduling strategies for different task type.
-func (v *V2) schedule(ctx context.Context, peer *resource.Peer) error {
-	sizeScope := peer.Task.SizeScope()
-	switch sizeScope {
-	case commonv2.SizeScope_EMPTY:
-		// Return an EmptyTaskResponse directly.
-		peer.Log.Info("scheduling as SizeScope_EMPTY")
-		stream, loaded := peer.LoadAnnouncePeerStream()
-		if !loaded {
-			return status.Error(codes.NotFound, "AnnouncePeerStream not found")
-		}
-
-		if err := peer.FSM.Event(ctx, resource.PeerEventRegisterEmpty); err != nil {
-			return status.Errorf(codes.Internal, err.Error())
-		}
-
-		if err := stream.Send(&schedulerv2.AnnouncePeerResponse{
-			Response: &schedulerv2.AnnouncePeerResponse_EmptyTaskResponse{
-				EmptyTaskResponse: &schedulerv2.EmptyTaskResponse{},
-			},
-		}); err != nil {
-			peer.Log.Error(err)
-			return status.Error(codes.Internal, err.Error())
-		}
-
-		return nil
-	case commonv2.SizeScope_NORMAL, commonv2.SizeScope_TINY, commonv2.SizeScope_SMALL, commonv2.SizeScope_UNKNOW:
-	default:
-		return status.Errorf(codes.FailedPrecondition, "invalid size cope %#v", sizeScope)
-	}
-
-	// Scheduling as a normal task, it will control how peers download tasks
-	// based on RetryLimit and RetryBackToSourceLimit configurations.
-	peer.Log.Info("scheduling as SizeScope_NORMAL")
-	if err := peer.FSM.Event(ctx, resource.PeerEventRegisterNormal); err != nil {
-		return status.Error(codes.Internal, err.Error())
-	}
-
-	if err := v.scheduling.ScheduleCandidateParents(ctx, peer, set.NewSafeSet[string]()); err != nil {
-		return status.Error(codes.FailedPrecondition, err.Error())
 	}
 
 	return nil

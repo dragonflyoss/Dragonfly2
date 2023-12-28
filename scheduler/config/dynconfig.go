@@ -319,6 +319,7 @@ func (d *dynconfig) GetSchedulerClusterClientConfig() (types.SchedulerClusterCli
 func (d *dynconfig) Refresh() error {
 	// If another load is in progress, return directly.
 	if !d.mu.TryLock() {
+		logger.Warn("refresh is running")
 		return nil
 	}
 	defer d.mu.Unlock()

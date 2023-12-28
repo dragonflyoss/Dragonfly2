@@ -26,6 +26,7 @@ import (
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
 
@@ -57,9 +58,9 @@ func GetClientByAddr(ctx context.Context, netAddr dfnet.NetAddr, opts ...grpc.Di
 		ctx,
 		netAddr.Addr,
 		append([]grpc.DialOption{
+			grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
 				rpc.ConvertErrorUnaryClientInterceptor,
-				rpc.OTELUnaryClientInterceptor(),
 				grpc_prometheus.UnaryClientInterceptor,
 				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
 				grpc_retry.UnaryClientInterceptor(
@@ -69,7 +70,6 @@ func GetClientByAddr(ctx context.Context, netAddr dfnet.NetAddr, opts ...grpc.Di
 			)),
 			grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
 				rpc.ConvertErrorStreamClientInterceptor,
-				rpc.OTELStreamClientInterceptor(),
 				grpc_prometheus.StreamClientInterceptor,
 				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
 			)),
@@ -95,10 +95,10 @@ func GetClient(ctx context.Context, dynconfig config.DynconfigInterface, opts ..
 		ctx,
 		resolver.SeedPeerVirtualTarget,
 		append([]grpc.DialOption{
+			grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 			grpc.WithDefaultServiceConfig(pkgbalancer.BalancerServiceConfig),
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
 				rpc.ConvertErrorUnaryClientInterceptor,
-				rpc.OTELUnaryClientInterceptor(),
 				grpc_prometheus.UnaryClientInterceptor,
 				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
 				grpc_retry.UnaryClientInterceptor(
@@ -109,7 +109,6 @@ func GetClient(ctx context.Context, dynconfig config.DynconfigInterface, opts ..
 			)),
 			grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
 				rpc.ConvertErrorStreamClientInterceptor,
-				rpc.OTELStreamClientInterceptor(),
 				grpc_prometheus.StreamClientInterceptor,
 				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
 				rpc.RefresherStreamClientInterceptor(dynconfig),

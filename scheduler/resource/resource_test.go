@@ -57,6 +57,8 @@ func TestResource_New(t *testing.T) {
 					md.Register(gomock.Any()).Return().Times(1),
 					md.GetResolveSeedPeerAddrs().Return([]resolver.Address{}, nil).Times(1),
 					md.Register(gomock.Any()).Return().Times(1),
+					md.GetResolveSeedPeerAddrs().Return([]resolver.Address{}, nil).Times(1),
+					md.Register(gomock.Any()).Return().Times(1),
 				)
 			},
 			expect: func(t *testing.T, resource Resource, err error) {
@@ -129,6 +131,8 @@ func TestResource_New(t *testing.T) {
 							SeedPeers: []*managerv2.SeedPeer{},
 						},
 					}, nil).Times(1),
+					md.Register(gomock.Any()).Return().Times(1),
+					md.GetResolveSeedPeerAddrs().Return([]resolver.Address{}, nil).Times(1),
 					md.Register(gomock.Any()).Return().Times(1),
 					md.GetResolveSeedPeerAddrs().Return([]resolver.Address{}, nil).Times(1),
 					md.Register(gomock.Any()).Return().Times(1),

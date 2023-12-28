@@ -73,7 +73,7 @@ const (
 	DefaultSchedulerRetryLimit = 10
 
 	// DefaultSchedulerRetryInterval is default retry interval for scheduler.
-	DefaultSchedulerRetryInterval = 50 * time.Millisecond
+	DefaultSchedulerRetryInterval = 200 * time.Millisecond
 
 	// DefaultSchedulerPieceDownloadTimeout is default timeout of downloading piece.
 	DefaultSchedulerPieceDownloadTimeout = 30 * time.Minute
