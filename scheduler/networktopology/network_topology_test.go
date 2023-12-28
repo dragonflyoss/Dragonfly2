@@ -90,9 +90,9 @@ func TestNetworkTopology_Serve(t *testing.T) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockHost.ID)).Return(mockHost, true),
-					mc.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false),
-					mc.Add(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), mockNetworkTopology, gomock.Any()),
-					mc.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(mockNetworkTopology, true).Times(2),
+					mc.GetWithExpiration(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, mockCacheExpiration, false),
+					mc.Set(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), mockNetworkTopology, gomock.Any()),
+					mc.GetWithExpiration(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(mockNetworkTopology, mockCacheExpiration, true).Times(2),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockSeedHost.ID)).Return(mockSeedHost, true),
 					ms.CreateNetworkTopology(gomock.Any()).Return(nil).Times(1),
@@ -122,9 +122,9 @@ func TestNetworkTopology_Serve(t *testing.T) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockHost.ID)).Return(mockHost, true),
-					mc.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false),
-					mc.Add(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), mockNetworkTopology, gomock.Any()),
-					mc.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(mockNetworkTopology, true).Times(2),
+					mc.GetWithExpiration(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, mockCacheExpiration, false),
+					mc.Set(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), mockNetworkTopology, gomock.Any()),
+					mc.GetWithExpiration(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(mockNetworkTopology, mockCacheExpiration, true).Times(2),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockSeedHost.ID)).Return(mockSeedHost, true),
 					ms.CreateNetworkTopology(gomock.Any()).Return(nil).Times(1),
@@ -168,7 +168,7 @@ func TestNetworkTopology_Has(t *testing.T) {
 		{
 			name: "network topology cache between src host and destination host exists",
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder) {
-				mockCache.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, true)
+				mockCache.GetWithExpiration(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, mockCacheExpiration, true)
 			},
 			run: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
@@ -179,7 +179,7 @@ func TestNetworkTopology_Has(t *testing.T) {
 		{
 			name: "check network topology between src host and destination host exist error",
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder) {
-				mockCache.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
+				mockCache.GetWithExpiration(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, mockCacheExpiration, false)
 				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetErr(
 					errors.New("check network topology between src host and destination host exist error"))
 			},
@@ -190,24 +190,11 @@ func TestNetworkTopology_Has(t *testing.T) {
 			},
 		},
 		{
-			name: "add network topology cache between src host and destination host error",
-			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder) {
-				mockCache.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
-				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(mockNetworkTopology)
-				mockCache.Add(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), mockNetworkTopology, gomock.Any()).Return(errors.New("add network topology cache between src host and destination host error"))
-			},
-			run: func(t *testing.T, networkTopology NetworkTopology, err error) {
-				assert := assert.New(t)
-				assert.NoError(err)
-				assert.True(networkTopology.Has(mockSeedHost.ID, mockHost.ID))
-			},
-		},
-		{
 			name: "network topology between src host and destination host exist",
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder) {
-				mockCache.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
+				mockCache.GetWithExpiration(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, mockCacheExpiration, false)
 				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(mockNetworkTopology)
-				mockCache.Add(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), mockNetworkTopology, gomock.Any()).Return(nil)
+				mockCache.Set(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), mockNetworkTopology, gomock.Any())
 			},
 			run: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
@@ -244,7 +231,7 @@ func TestNetworkTopology_Store(t *testing.T) {
 		{
 			name: "network topology between src host and destination host exists",
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder) {
-				mockCache.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, true)
+				mockCache.GetWithExpiration(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, mockCacheExpiration, true)
 			},
 			run: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
@@ -256,7 +243,7 @@ func TestNetworkTopology_Store(t *testing.T) {
 			name: "network topology between src host and destination host does not exist",
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder) {
 				mockRDBClient.MatchExpectationsInOrder(true)
-				mockCache.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
+				mockCache.GetWithExpiration(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, mockCacheExpiration, false)
 				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(map[string]string{})
 				mockRDBClient.Regexp().ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "createdAt", `.*`).SetVal(1)
 			},
@@ -270,7 +257,7 @@ func TestNetworkTopology_Store(t *testing.T) {
 			name: "set createdAt error when network topology between src host and destination host does not exist",
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder) {
 				mockRDBClient.MatchExpectationsInOrder(true)
-				mockCache.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false)
+				mockCache.GetWithExpiration(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, mockCacheExpiration, false)
 				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(map[string]string{})
 				mockRDBClient.Regexp().ExpectHSet(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), "createdAt", `.*`).SetErr(errors.New("set createdAt error"))
 			},
@@ -321,9 +308,9 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.LoadRandomHosts(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
-					mc.Get(gomock.Any()).Return(uint64(6), true).Times(1),
-					mc.Get(gomock.Any()).Return(nil, false).Times(5),
-					mc.Add(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(5),
+					mc.GetWithExpiration(gomock.Any()).Return(uint64(6), mockCacheExpiration, true).Times(1),
+					mc.GetWithExpiration(gomock.Any()).Return(nil, mockCacheExpiration, false).Times(5),
+					mc.Set(gomock.Any(), gomock.Any(), gomock.Any()).Times(5),
 				)
 
 				var probedCountKeys []string
@@ -359,8 +346,8 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.LoadRandomHosts(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
-					mc.Get(gomock.Any()).Return(nil, false).Times(6),
-					mc.Add(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(6),
+					mc.GetWithExpiration(gomock.Any()).Return(nil, mockCacheExpiration, false).Times(6),
+					mc.Set(gomock.Any(), gomock.Any(), gomock.Any()).Times(6),
 				)
 
 				var probedCountKeys []string
@@ -425,7 +412,7 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.LoadRandomHosts(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
-					mc.Get(gomock.Any()).Return(nil, false).Times(6),
+					mc.GetWithExpiration(gomock.Any()).Return(nil, mockCacheExpiration, false).Times(6),
 				)
 
 				var probedCountKeys []string
@@ -478,7 +465,7 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.LoadRandomHosts(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
-					mc.Get(gomock.Any()).Return(nil, false).Times(6),
+					mc.GetWithExpiration(gomock.Any()).Return(nil, mockCacheExpiration, false).Times(6),
 				)
 
 				var probedCountKeys []string
@@ -509,7 +496,7 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.LoadRandomHosts(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
-					mc.Get(gomock.Any()).Return(nil, false).Times(6),
+					mc.GetWithExpiration(gomock.Any()).Return(nil, mockCacheExpiration, false).Times(6),
 				)
 
 				var probedCountKeys []string
@@ -528,44 +515,6 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 			},
 		},
 		{
-			name: "add cache error",
-			hosts: []*resource.Host{
-				mockHost, {ID: "foo"}, {ID: "bar"}, {ID: "baz"}, {ID: "bav"}, {ID: "bac"},
-			},
-			mock: func(mockRDBClient redismock.ClientMock, mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
-				mh *resource.MockHostManagerMockRecorder, mc *cache.MockCacheMockRecorder, hosts []*resource.Host) {
-				mockRDBClient.MatchExpectationsInOrder(true)
-				blocklist := set.NewSafeSet[string]()
-				blocklist.Add(mockSeedHost.ID)
-				gomock.InOrder(
-					mr.HostManager().Return(hostManager).Times(1),
-					mh.LoadRandomHosts(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
-					mc.Get(gomock.Any()).Return(nil, false).Times(6),
-					mc.Add(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("add cache error")).Times(1),
-					mc.Add(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(5),
-				)
-
-				var probedCountKeys []string
-				for _, host := range hosts {
-					probedCountKeys = append(probedCountKeys, pkgredis.MakeProbedCountKeyInScheduler(host.ID))
-				}
-
-				mockRDBClient.ExpectMGet(probedCountKeys...).SetVal([]any{"6", "5", "4", "3", "2", "1"})
-			},
-			expect: func(t *testing.T, networkTopology NetworkTopology, err error, hosts []*resource.Host) {
-				assert := assert.New(t)
-				assert.NoError(err)
-				probedHosts, err := networkTopology.FindProbedHosts(mockSeedHost.ID)
-				assert.NoError(err)
-				assert.Equal(len(probedHosts), 5)
-				assert.EqualValues(probedHosts[0].ID, "bac")
-				assert.EqualValues(probedHosts[1].ID, "bav")
-				assert.EqualValues(probedHosts[2].ID, "baz")
-				assert.EqualValues(probedHosts[3].ID, "bar")
-				assert.EqualValues(probedHosts[4].ID, "foo")
-			},
-		},
-		{
 			name: "Initialize the probedCount value of host in redis",
 			hosts: []*resource.Host{
 				mockHost, {ID: "foo"}, {ID: "bar"}, {ID: "baz"}, {ID: "bav"}, {ID: "bac"},
@@ -578,8 +527,8 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.LoadRandomHosts(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
-					mc.Get(gomock.Any()).Return(nil, false).Times(6),
-					mc.Add(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(5),
+					mc.GetWithExpiration(gomock.Any()).Return(nil, mockCacheExpiration, false).Times(6),
+					mc.Set(gomock.Any(), gomock.Any(), gomock.Any()).Times(5),
 				)
 
 				var probedCountKeys []string
@@ -616,7 +565,7 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.LoadRandomHosts(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
-					mc.Get(gomock.Any()).Return(nil, false).Times(6),
+					mc.GetWithExpiration(gomock.Any()).Return(nil, mockCacheExpiration, false).Times(6),
 				)
 
 				var probedCountKeys []string
@@ -831,7 +780,7 @@ func TestNetworkTopology_ProbedCount(t *testing.T) {
 		{
 			name: "get probed count with cache",
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder) {
-				mockCache.Get(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).Return(uint64(mockProbedCount), true)
+				mockCache.GetWithExpiration(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).Return(uint64(mockProbedCount), mockCacheExpiration, true)
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
@@ -845,9 +794,9 @@ func TestNetworkTopology_ProbedCount(t *testing.T) {
 		{
 			name: "get probed count",
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder) {
-				mockCache.Get(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).Return(nil, false)
+				mockCache.GetWithExpiration(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).Return(nil, mockCacheExpiration, false)
 				mockRDBClient.ExpectGet(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(strconv.Itoa(mockProbedCount))
-				mockCache.Add(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID), uint64(mockProbedCount), gomock.Any()).Return(nil)
+				mockCache.Set(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID), uint64(mockProbedCount), gomock.Any())
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
@@ -861,7 +810,7 @@ func TestNetworkTopology_ProbedCount(t *testing.T) {
 		{
 			name: "get probed count error",
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder) {
-				mockCache.Get(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).Return(nil, false)
+				mockCache.GetWithExpiration(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).Return(nil, mockCacheExpiration, false)
 				mockRDBClient.ExpectGet(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetErr(errors.New("get probed count error"))
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
@@ -870,22 +819,6 @@ func TestNetworkTopology_ProbedCount(t *testing.T) {
 
 				probedCount, _ := networkTopology.ProbedCount(mockHost.ID)
 				assert.Equal(probedCount, uint64(0))
-			},
-		},
-		{
-			name: "add cache error",
-			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder) {
-				mockCache.Get(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).Return(nil, false)
-				mockRDBClient.ExpectGet(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID)).SetVal(strconv.Itoa(mockProbedCount))
-				mockCache.Add(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID), uint64(mockProbedCount), gomock.Any()).Return(errors.New("add cache error"))
-			},
-			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
-				assert := assert.New(t)
-				assert.NoError(err)
-
-				probedCount, err := networkTopology.ProbedCount(mockHost.ID)
-				assert.EqualValues(probedCount, mockProbedCount)
-				assert.NoError(err)
 			},
 		},
 	}
@@ -928,9 +861,9 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockHost.ID)).Return(mockHost, true),
-					mc.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false).Times(1),
-					mc.Add(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), mockNetworkTopology, gomock.Any()).Times(1),
-					mc.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(mockNetworkTopology, true).Times(2),
+					mc.GetWithExpiration(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, mockCacheExpiration, false).Times(1),
+					mc.Set(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), mockNetworkTopology, gomock.Any()).Times(1),
+					mc.GetWithExpiration(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(mockNetworkTopology, mockCacheExpiration, true).Times(2),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockSeedHost.ID)).Return(mockSeedHost, true),
 					ms.CreateNetworkTopology(gomock.Any()).Return(nil).Times(1),
@@ -1043,7 +976,7 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockHost.ID)).Return(mockHost, true),
-					mc.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false).Times(1),
+					mc.GetWithExpiration(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, mockCacheExpiration, false).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockSeedHost.ID)).Return(mockSeedHost, true),
 					ms.CreateNetworkTopology(gomock.Any()).Return(nil).Times(1),
@@ -1070,9 +1003,9 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockHost.ID)).Return(mockHost, true),
-					mc.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false),
-					mc.Add(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), mockNetworkTopology, gomock.Any()),
-					mc.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false),
+					mc.GetWithExpiration(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, mockCacheExpiration, false),
+					mc.Set(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), mockNetworkTopology, gomock.Any()),
+					mc.GetWithExpiration(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, mockCacheExpiration, false),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockSeedHost.ID)).Return(mockSeedHost, true),
 					ms.CreateNetworkTopology(gomock.Any()).Return(nil).Times(1),
@@ -1099,10 +1032,10 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockHost.ID)).Return(mockHost, true),
-					mc.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false),
-					mc.Add(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), mockNetworkTopology, gomock.Any()),
-					mc.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(mockNetworkTopology, true),
-					mc.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false),
+					mc.GetWithExpiration(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, mockCacheExpiration, false),
+					mc.Set(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), mockNetworkTopology, gomock.Any()),
+					mc.GetWithExpiration(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(mockNetworkTopology, mockCacheExpiration, true),
+					mc.GetWithExpiration(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, mockCacheExpiration, false),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockSeedHost.ID)).Return(mockSeedHost, true),
 					ms.CreateNetworkTopology(gomock.Any()).Return(nil).Times(1),
@@ -1126,9 +1059,9 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockHost.ID)).Return(mockHost, true),
-					mc.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false),
-					mc.Add(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), mockNetworkTopology, gomock.Any()),
-					mc.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(mockNetworkTopology, true).Times(2),
+					mc.GetWithExpiration(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, mockCacheExpiration, false),
+					mc.Set(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), mockNetworkTopology, gomock.Any()),
+					mc.GetWithExpiration(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(mockNetworkTopology, mockCacheExpiration, true).Times(2),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockSeedHost.ID)).Return(nil, false),
 				)
@@ -1152,9 +1085,9 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockHost.ID)).Return(mockHost, true),
-					mc.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, false),
-					mc.Add(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), mockNetworkTopology, gomock.Any()),
-					mc.Get(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(mockNetworkTopology, true).Times(2),
+					mc.GetWithExpiration(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(nil, mockCacheExpiration, false),
+					mc.Set(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), mockNetworkTopology, gomock.Any()),
+					mc.GetWithExpiration(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).Return(mockNetworkTopology, mockCacheExpiration, true).Times(2),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockSeedHost.ID)).Return(mockSeedHost, true),
 					ms.CreateNetworkTopology(gomock.Any()).Return(errors.New("inserts the network topology into csv file error")).Times(1),
