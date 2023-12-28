@@ -1,3 +1,7 @@
+release:
+  draft: true
+  replace_existing_draft: true
+
 before:
   hooks:
     - hack/update-version-gorelease.sh
