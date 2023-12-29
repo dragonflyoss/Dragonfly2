@@ -33,6 +33,7 @@ var (
 )
 
 type memberPool struct {
+	localMember   *MemberMeta
 	members       *memberlist.Memberlist
 	peerPool      *peerPool
 	lock          *sync.RWMutex
@@ -104,6 +105,10 @@ func (mp *memberPool) IsRegistered(hostID string) bool {
 func (mp *memberPool) broadcast(data *dfdaemon.PeerExchangeData) {
 	mp.lock.Lock()
 	defer mp.lock.Unlock()
+
+	// sync local cache
+	mp.peerPool.Sync(mp.localMember, data)
+
 	for hostID, sr := range mp.sendReceivers {
 		err := sr.Send(data)
 		if err != nil {

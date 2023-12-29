@@ -88,7 +88,12 @@ func (p *peerPool) Find(task string) ([]*DestPeer, bool) {
 	}
 	var dp []*DestPeer
 	for _, peer := range peers {
-		dp = append(dp, peer)
+		// put local peer first
+		if peer.isLocal {
+			dp = append([]*DestPeer{peer}, dp...)
+		} else {
+			dp = append(dp, peer)
+		}
 	}
 	return dp, ok
 }

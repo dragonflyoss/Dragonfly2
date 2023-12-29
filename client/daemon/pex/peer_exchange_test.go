@@ -188,8 +188,12 @@ func TestPeerExchange(t *testing.T) {
 					switch peer.State {
 					case dfdaemonv1.PeerState_Running, dfdaemonv1.PeerState_Success:
 						assert.True(ok)
-						assert.Equal(memberCount-1, len(peersByTask))
+						// other members + local member
+						assert.Equal(memberCount, len(peersByTask))
 						for _, realPeer := range peersByTask {
+							if realPeer.isLocal {
+								continue
+							}
 							var found bool
 							found = isPeerExistInOtherPEXServers(pexServers, pex.localMember.HostID, peer, realPeer)
 							assert.True(found)
