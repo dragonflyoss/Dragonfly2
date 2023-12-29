@@ -282,12 +282,12 @@ func (p *probes) CreatedAt() (time.Time, error) {
 		p.cache.Set(networkTopologyKey, networkTopology, p.config.Cache.TTL)
 	}
 
-	createdTime, err := time.Parse(time.RFC3339Nano, networkTopology["createdAt"])
+	createdAt, err := time.Parse(time.RFC3339Nano, networkTopology["createdAt"])
 	if err != nil {
 		return time.Time{}, err
 	}
 
-	return createdTime, nil
+	return createdAt, nil
 }
 
 // UpdatedAt is the updated time to store probe.
@@ -312,12 +312,12 @@ func (p *probes) UpdatedAt() (time.Time, error) {
 		p.cache.Set(networkTopologyKey, networkTopology, p.config.Cache.TTL)
 	}
 
-	updatedTime, err := time.Parse(time.RFC3339Nano, networkTopology["updatedAt"])
+	updatedAt, err := time.Parse(time.RFC3339Nano, networkTopology["updatedAt"])
 	if err != nil {
 		return time.Time{}, err
 	}
 
-	return updatedTime, nil
+	return updatedAt, nil
 }
 
 // AverageRTT is the moving average round-trip time of probes.

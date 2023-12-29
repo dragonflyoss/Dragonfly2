@@ -33,6 +33,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/cache"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
+	"d7y.io/dragonfly/v2/pkg/slices"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/storage"
@@ -196,25 +197,29 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 	}
 
 	var (
-		probedCounts   []uint64
-		filterKeys     []string
-		filterHosts    []*resource.Host
-		candidateHosts []*resource.Host
+		probedCounts     []uint64
+		probedCountKeys  []string
+		probedCountHosts []*resource.Host
 	)
 	for _, host := range hosts {
 		probedCountKey := pkgredis.MakeProbedCountKeyInScheduler(host.ID)
 		cache, _, ok := nt.cache.GetWithExpiration(probedCountKey)
 		if !ok {
-			filterHosts = append(filterHosts, host)
-			filterKeys = append(filterKeys, probedCountKey)
+			probedCountHosts = append(probedCountHosts, host)
+			probedCountKeys = append(probedCountKeys, probedCountKey)
 			continue
+		} else {
+			probedCount, ok := cache.(uint64)
+			if ok {
+				probedCounts = append(probedCounts, probedCount)
+			} else {
+				probedCounts = append(probedCounts, uint64(0))
+			}
 		}
-
-		candidateHosts = append(candidateHosts, host)
-		probedCounts = append(probedCounts, cache.(uint64))
 	}
+	candidateHosts := slices.Complement(hosts, probedCountHosts)
 
-	rawProbedCounts, err := nt.rdb.MGet(ctx, filterKeys...).Result()
+	rawProbedCounts, err := nt.rdb.MGet(ctx, probedCountKeys...).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +228,7 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 	for i, rawProbedCount := range rawProbedCounts {
 		// Initialize the probedCount value of host in redis when the host is first selected as the candidate probe target.
 		if rawProbedCount == nil {
-			if err := nt.rdb.Set(ctx, filterKeys[i], 0, 0).Err(); err != nil {
+			if err := nt.rdb.Set(ctx, probedCountKeys[i], 0, 0).Err(); err != nil {
 				return nil, err
 			}
 
@@ -242,11 +247,11 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 		}
 
 		// Add cache data.
-		nt.cache.Set(filterKeys[i], probedCount, nt.config.Cache.TTL)
+		nt.cache.Set(probedCountKeys[i], probedCount, nt.config.Cache.TTL)
 
 		probedCounts = append(probedCounts, probedCount)
 	}
-	candidateHosts = append(candidateHosts, filterHosts...)
+	candidateHosts = append(candidateHosts, probedCountHosts...)
 
 	// Sort candidate hosts by probed count.
 	sort.Slice(candidateHosts, func(i, j int) bool {
@@ -309,7 +314,12 @@ func (nt *networkTopology) ProbedCount(hostID string) (uint64, error) {
 
 	probedCountKey := pkgredis.MakeProbedCountKeyInScheduler(hostID)
 	if cache, _, ok := nt.cache.GetWithExpiration(probedCountKey); ok {
-		return cache.(uint64), nil
+		probedCount, ok := cache.(uint64)
+		if ok {
+			return probedCount, nil
+		}
+
+		return uint64(0), errors.New("get probedCount failed")
 	}
 
 	probedCount, err := nt.rdb.Get(ctx, probedCountKey).Uint64()
