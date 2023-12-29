@@ -217,7 +217,7 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 			}
 		}
 	}
-	candidateHosts := slices.Complement(hosts, probedCountHosts)
+	candidateHosts, _ := slices.Difference(hosts, probedCountHosts)
 
 	rawProbedCounts, err := nt.rdb.MGet(ctx, probedCountKeys...).Result()
 	if err != nil {
