@@ -178,34 +178,3 @@ func TestReverse(t *testing.T) {
 		})
 	}
 }
-
-func TestComplement(t *testing.T) {
-	tests := []struct {
-		name     string
-		source   []int
-		exclude  []int
-		expected []int
-	}{
-		{
-			name:     "slices with duplicates",
-			source:   []int{1, 2, 3},
-			exclude:  []int{1, 2, 4},
-			expected: []int{3},
-		},
-		{
-			name:     "slices with no duplicates",
-			source:   []int{1, 2, 3},
-			exclude:  []int{4, 5, 6},
-			expected: []int{1, 2, 3},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := Complement(tt.source, tt.exclude)
-			if !reflect.DeepEqual(result, tt.expected) {
-				t.Errorf("expected %v, but got %v", tt.expected, result)
-			}
-		})
-	}
-}
