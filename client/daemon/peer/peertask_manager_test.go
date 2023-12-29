@@ -910,6 +910,7 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 
 	// test reuse stream task
 	rc, _, ok := ptm.tryReuseStreamPeerTask(context.Background(),
+		taskID,
 		&StreamTaskRequest{
 			URL:     ts.url,
 			URLMeta: urlMeta,

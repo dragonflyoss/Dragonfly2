@@ -33,7 +33,6 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
-	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/net/http"
 )
 
@@ -73,6 +72,7 @@ type resumeStreamTask struct {
 
 func (ptm *peerTaskManager) newStreamTask(
 	ctx context.Context,
+	taskID string,
 	request *schedulerv1.PeerTaskRequest,
 	rg *http.Range) (*streamTask, error) {
 	metrics.StreamTaskCount.Add(1)
@@ -87,7 +87,6 @@ func (ptm *peerTaskManager) newStreamTask(
 		parent = ptm.prefetchParentTask(request, "")
 	}
 
-	taskID := idgen.TaskIDV1(request.Url, request.UrlMeta)
 	ptc, err := ptm.getPeerTaskConductor(ctx, taskID, request, limit, parent, rg, "", false)
 	if err != nil {
 		return nil, err
