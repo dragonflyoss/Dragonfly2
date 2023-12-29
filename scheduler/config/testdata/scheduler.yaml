@@ -98,6 +98,9 @@ networkTopology:
   probe:
     queueLength: 5
     count: 10
+  cache:
+    interval: 5m  
+    ttl: 5m
 
 trainer:
   enable: false

@@ -259,7 +259,8 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 
 	// Initialize network topology service.
 	if cfg.NetworkTopology.Enable && pkgredis.IsEnabled(cfg.Database.Redis.Addrs) {
-		s.networkTopology, err = networktopology.NewNetworkTopology(cfg.NetworkTopology, rdb, resource, s.storage)
+		cache := cache.New(cfg.NetworkTopology.Cache.TTL, cfg.NetworkTopology.Cache.Interval)
+		s.networkTopology, err = networktopology.NewNetworkTopology(cfg.NetworkTopology, rdb, cache, resource, s.storage)
 		if err != nil {
 			return nil, err
 		}

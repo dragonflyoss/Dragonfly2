@@ -179,6 +179,12 @@ const (
 	// DefaultNetworkTopologyCollectInterval is the default interval of collecting network topology.
 	DefaultNetworkTopologyCollectInterval = 2 * time.Hour
 
+	// DefaultNetworkTopologyCacheInterval is the default cache cleanup interval.
+	DefaultNetworkTopologyCacheInterval = 5 * time.Minute
+
+	// DefaultNetworkTopologyCacheTLL is the default ttl of networkTopology cache.
+	DefaultNetworkTopologyCacheTLL = 5 * time.Minute
+
 	// DefaultProbeQueueLength is the default length of probe queue.
 	DefaultProbeQueueLength = 5
 

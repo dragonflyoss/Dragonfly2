@@ -342,6 +342,9 @@ type NetworkTopologyConfig struct {
 
 	// Probe is the configuration of probe.
 	Probe ProbeConfig `yaml:"probe" mapstructure:"probe"`
+
+	// Cache is the configuration of cache.
+	Cache CacheConfig `yaml:"cache" mapstructure:"cache"`
 }
 
 type ProbeConfig struct {
@@ -350,6 +353,14 @@ type ProbeConfig struct {
 
 	// Count is the number of probing hosts.
 	Count int `mapstructure:"count" yaml:"count"`
+}
+
+type CacheConfig struct {
+	// Interval is cache cleanup interval.
+	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
+
+	// TTL is networkTopology cache items TLL.
+	TTL time.Duration `yaml:"ttl" mapstructure:"tll"`
 }
 
 type TrainerConfig struct {
@@ -457,6 +468,10 @@ func New() *Config {
 			Probe: ProbeConfig{
 				QueueLength: DefaultProbeQueueLength,
 				Count:       DefaultProbeCount,
+			},
+			Cache: CacheConfig{
+				Interval: DefaultNetworkTopologyCacheInterval,
+				TTL:      DefaultNetworkTopologyCacheTLL,
 			},
 		},
 		Trainer: TrainerConfig{
@@ -642,6 +657,14 @@ func (cfg *Config) Validate() error {
 
 	if cfg.NetworkTopology.Probe.Count <= 0 {
 		return errors.New("probe requires parameter count")
+	}
+
+	if cfg.NetworkTopology.Cache.Interval <= 0 {
+		return errors.New("networkTopology requires parameter interval")
+	}
+
+	if cfg.NetworkTopology.Cache.TTL <= 0 {
+		return errors.New("networkTopology requires parameter ttl")
 	}
 
 	if cfg.Trainer.Enable {

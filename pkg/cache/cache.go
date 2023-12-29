@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination cache_mock.go -source cache.go -package cache
 package cache
 
 import (

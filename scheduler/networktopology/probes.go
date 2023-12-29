@@ -21,10 +21,14 @@ package networktopology
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"strconv"
 	"time"
 
 	"github.com/go-redis/redis/v8"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/cache"
 	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
@@ -71,10 +75,13 @@ type Probes interface {
 // probes is the implementation of Probes.
 type probes struct {
 	// config is the probe config.
-	config config.ProbeConfig
+	config config.NetworkTopologyConfig
 
 	// rdb is redis universal client interface.
 	rdb redis.UniversalClient
+
+	// Cache instance.
+	cache cache.Cache
 
 	// srcHostID is the source host id.
 	srcHostID string
@@ -84,10 +91,11 @@ type probes struct {
 }
 
 // NewProbes creates a probes interface.
-func NewProbes(cfg config.ProbeConfig, rdb redis.UniversalClient, srcHostID string, destHostID string) Probes {
+func NewProbes(cfg config.NetworkTopologyConfig, rdb redis.UniversalClient, cache cache.Cache, srcHostID string, destHostID string) Probes {
 	return &probes{
 		config:     cfg,
 		rdb:        rdb,
+		cache:      cache,
 		srcHostID:  srcHostID,
 		destHostID: destHostID,
 	}
@@ -98,17 +106,39 @@ func (p *probes) Peek() (*Probe, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	rawProbe, err := p.rdb.LIndex(ctx, pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID), 0).Bytes()
+	probesKey := pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID)
+	if cache, _, ok := p.cache.GetWithExpiration(probesKey); ok {
+		probes, ok := cache.([]*Probe)
+		if !ok {
+			return nil, errors.New("get probes failed")
+		}
+
+		if len(probes) == 0 {
+			return nil, errors.New("probes cache is empty")
+		}
+
+		return probes[0], nil
+	}
+
+	rawProbes, err := p.rdb.LRange(ctx, pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID), 0, -1).Result()
 	if err != nil {
+		logger.Errorf("get probes failed: %s", err.Error())
 		return nil, err
 	}
 
-	probe := &Probe{}
-	if err = json.Unmarshal(rawProbe, probe); err != nil {
-		return nil, err
+	var probes []*Probe
+	for _, rawProbe := range rawProbes {
+		probe := &Probe{}
+		if err = json.Unmarshal([]byte(rawProbe), probe); err != nil {
+			return nil, err
+		}
+		probes = append(probes, probe)
 	}
 
-	return probe, nil
+	// Add cache data.
+	p.cache.Set(probesKey, probes, p.config.Cache.TTL)
+
+	return probes[0], nil
 }
 
 // Enqueue enqueues probe into the queue.
@@ -123,7 +153,7 @@ func (p *probes) Enqueue(probe *Probe) error {
 	}
 
 	// If the queue is full, remove the oldest probe.
-	if length >= int64(p.config.QueueLength) {
+	if length >= int64(p.config.Probe.QueueLength) {
 		if _, err := p.dequeue(); err != nil {
 			return err
 		}
@@ -135,16 +165,18 @@ func (p *probes) Enqueue(probe *Probe) error {
 		return err
 	}
 
-	if err := p.rdb.RPush(ctx, pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID), data).Err(); err != nil {
+	probesKey := pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID)
+	if err := p.rdb.RPush(ctx, probesKey, data).Err(); err != nil {
 		return err
 	}
+	p.cache.Delete(probesKey)
 
 	// Calculate the moving average round-trip time.
 	var averageRTT time.Duration
 	if length > 0 {
 		// If the queue is not empty, calculate the
 		// moving average round-trip time.
-		rawProbes, err := p.rdb.LRange(context.Background(), pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID), 0, -1).Result()
+		rawProbes, err := p.rdb.LRange(context.Background(), probesKey, 0, -1).Result()
 		if err != nil {
 			return err
 		}
@@ -170,17 +202,20 @@ func (p *probes) Enqueue(probe *Probe) error {
 	}
 
 	// Update the moving average round-trip time and updated time.
-	if err := p.rdb.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "averageRTT", averageRTT.Nanoseconds()).Err(); err != nil {
+	networkTopologyKey := pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID)
+	if err := p.rdb.HSet(ctx, networkTopologyKey, "averageRTT", averageRTT.Nanoseconds()).Err(); err != nil {
 		return err
 	}
+	if err := p.rdb.HSet(ctx, networkTopologyKey, "updatedAt", probe.CreatedAt.Format(time.RFC3339Nano)).Err(); err != nil {
+		return err
+	}
+	p.cache.Delete(networkTopologyKey)
 
-	if err := p.rdb.HSet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "updatedAt", probe.CreatedAt.Format(time.RFC3339Nano)).Err(); err != nil {
+	probedCountKey := pkgredis.MakeProbedCountKeyInScheduler(p.destHostID)
+	if err := p.rdb.Incr(ctx, probedCountKey).Err(); err != nil {
 		return err
 	}
-
-	if err := p.rdb.Incr(ctx, pkgredis.MakeProbedCountKeyInScheduler(p.destHostID)).Err(); err != nil {
-		return err
-	}
+	p.cache.Delete(probedCountKey)
 
 	return nil
 }
@@ -190,7 +225,39 @@ func (p *probes) Len() (int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	return p.rdb.LLen(ctx, pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID)).Result()
+	probesKey := pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID)
+	if cache, _, ok := p.cache.GetWithExpiration(probesKey); ok {
+		probes, ok := cache.([]*Probe)
+		if !ok {
+			return int64(0), errors.New("get probes failed")
+		}
+
+		return int64(len(probes)), nil
+	}
+
+	rawProbes, err := p.rdb.LRange(ctx, pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID), 0, -1).Result()
+	if err != nil {
+		logger.Errorf("get probes failed: %s", err.Error())
+		return int64(0), err
+	}
+
+	if len(rawProbes) == 0 {
+		return int64(0), err
+	}
+
+	var probes []*Probe
+	for _, rawProbe := range rawProbes {
+		probe := &Probe{}
+		if err = json.Unmarshal([]byte(rawProbe), probe); err != nil {
+			return int64(0), err
+		}
+		probes = append(probes, probe)
+	}
+
+	// Add cache data.
+	p.cache.Set(probesKey, probes, p.config.Cache.TTL)
+
+	return int64(len(probes)), nil
 }
 
 // CreatedAt is the creation time of probes.
@@ -198,7 +265,29 @@ func (p *probes) CreatedAt() (time.Time, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	return p.rdb.HGet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "createdAt").Time()
+	var networkTopology map[string]string
+	networkTopologyKey := pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID)
+	cache, _, ok := p.cache.GetWithExpiration(networkTopologyKey)
+	if ok {
+		if networkTopology, ok = cache.(map[string]string); !ok {
+			return time.Time{}, errors.New("get networkTopology failed")
+		}
+	} else {
+		var err error
+		if networkTopology, err = p.rdb.HGetAll(ctx, networkTopologyKey).Result(); err != nil {
+			return time.Time{}, err
+		}
+
+		// Add cache data.
+		p.cache.Set(networkTopologyKey, networkTopology, p.config.Cache.TTL)
+	}
+
+	createdAt, err := time.Parse(time.RFC3339Nano, networkTopology["createdAt"])
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return createdAt, nil
 }
 
 // UpdatedAt is the updated time to store probe.
@@ -206,7 +295,29 @@ func (p *probes) UpdatedAt() (time.Time, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	return p.rdb.HGet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "updatedAt").Time()
+	var networkTopology map[string]string
+	networkTopologyKey := pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID)
+	cache, _, ok := p.cache.GetWithExpiration(networkTopologyKey)
+	if ok {
+		if networkTopology, ok = cache.(map[string]string); !ok {
+			return time.Time{}, errors.New("get networkTopology failed")
+		}
+	} else {
+		var err error
+		if networkTopology, err = p.rdb.HGetAll(ctx, networkTopologyKey).Result(); err != nil {
+			return time.Time{}, err
+		}
+
+		// Add cache data.
+		p.cache.Set(networkTopologyKey, networkTopology, p.config.Cache.TTL)
+	}
+
+	updatedAt, err := time.Parse(time.RFC3339Nano, networkTopology["updatedAt"])
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return updatedAt, nil
 }
 
 // AverageRTT is the moving average round-trip time of probes.
@@ -214,9 +325,26 @@ func (p *probes) AverageRTT() (time.Duration, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	averageRTT, err := p.rdb.HGet(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID), "averageRTT").Int64()
+	var networkTopology map[string]string
+	networkTopologyKey := pkgredis.MakeNetworkTopologyKeyInScheduler(p.srcHostID, p.destHostID)
+	cache, _, ok := p.cache.GetWithExpiration(networkTopologyKey)
+	if ok {
+		if networkTopology, ok = cache.(map[string]string); !ok {
+			return time.Duration(0), errors.New("get networkTopology failed")
+		}
+	} else {
+		var err error
+		if networkTopology, err = p.rdb.HGetAll(ctx, networkTopologyKey).Result(); err != nil {
+			return time.Duration(0), err
+		}
+
+		// Add cache data.
+		p.cache.Set(networkTopologyKey, networkTopology, p.config.Cache.TTL)
+	}
+
+	averageRTT, err := strconv.ParseInt(networkTopology["averageRTT"], 10, 64)
 	if err != nil {
-		return 0, err
+		return time.Duration(0), err
 	}
 
 	return time.Duration(averageRTT), nil
@@ -227,10 +355,12 @@ func (p *probes) dequeue() (*Probe, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	rawProbe, err := p.rdb.LPop(ctx, pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID)).Bytes()
+	probesKey := pkgredis.MakeProbesKeyInScheduler(p.srcHostID, p.destHostID)
+	rawProbe, err := p.rdb.LPop(ctx, probesKey).Bytes()
 	if err != nil {
 		return nil, err
 	}
+	p.cache.Delete(probesKey)
 
 	probe := &Probe{}
 	if err = json.Unmarshal(rawProbe, probe); err != nil {

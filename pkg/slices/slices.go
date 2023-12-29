@@ -67,3 +67,21 @@ func Reverse[S ~[]T, T any](s S) {
 		s[i], s[j] = s[j], s[i]
 	}
 }
+
+// Complement removes duplicate elements of collections in first collection.
+func Complement[T comparable](a, b []T) []T {
+	var result []T
+
+	visited := make(map[T]struct{})
+	for _, v := range b {
+		visited[v] = struct{}{}
+	}
+
+	for _, v := range a {
+		if _, exists := visited[v]; !exists {
+			result = append(result, v)
+		}
+	}
+
+	return result
+}

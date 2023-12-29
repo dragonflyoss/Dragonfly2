@@ -30,8 +30,10 @@ import (
 	"github.com/google/uuid"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/cache"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
+	"d7y.io/dragonfly/v2/pkg/slices"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/storage"
@@ -87,6 +89,9 @@ type networkTopology struct {
 	// rdb is Redis universal client interface.
 	rdb redis.UniversalClient
 
+	// Cache instance.
+	cache cache.Cache
+
 	// resource is resource interface.
 	resource resource.Resource
 
@@ -98,10 +103,11 @@ type networkTopology struct {
 }
 
 // New network topology interface.
-func NewNetworkTopology(cfg config.NetworkTopologyConfig, rdb redis.UniversalClient, resource resource.Resource, storage storage.Storage) (NetworkTopology, error) {
+func NewNetworkTopology(cfg config.NetworkTopologyConfig, rdb redis.UniversalClient, cache cache.Cache, resource resource.Resource, storage storage.Storage) (NetworkTopology, error) {
 	return &networkTopology{
 		config:   cfg,
 		rdb:      rdb,
+		cache:    cache,
 		resource: resource,
 		storage:  storage,
 		done:     make(chan struct{}),
@@ -135,13 +141,25 @@ func (nt *networkTopology) Has(srcHostID string, destHostID string) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	networkTopologyCount, err := nt.rdb.Exists(ctx, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID)).Result()
+	networkTopologyKey := pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID)
+	if _, _, ok := nt.cache.GetWithExpiration(networkTopologyKey); ok {
+		return true
+	}
+
+	networkTopology, err := nt.rdb.HGetAll(ctx, networkTopologyKey).Result()
 	if err != nil {
-		logger.Errorf("failed to check whether network topology exists: %s", err.Error())
+		logger.Errorf("get networkTopology failed: %s", err.Error())
 		return false
 	}
 
-	return networkTopologyCount == 1
+	if len(networkTopology) == 0 {
+		return false
+	}
+
+	// Add cache data.
+	nt.cache.Set(networkTopologyKey, networkTopology, nt.config.Cache.TTL)
+
+	return true
 }
 
 // Store stores source host and destination host.
@@ -169,19 +187,37 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 
 	blocklist := set.NewSafeSet[string]()
 	blocklist.Add(hostID)
-	candidateHosts := nt.resource.HostManager().LoadRandomHosts(findProbedCandidateHostsLimit, blocklist)
-	if len(candidateHosts) == 0 {
+	hosts := nt.resource.HostManager().LoadRandomHosts(findProbedCandidateHostsLimit, blocklist)
+	if len(hosts) == 0 {
 		return nil, errors.New("probed hosts not found")
 	}
 
-	if len(candidateHosts) <= nt.config.Probe.Count {
-		return candidateHosts, nil
+	if len(hosts) <= nt.config.Probe.Count {
+		return hosts, nil
 	}
 
-	var probedCountKeys []string
-	for _, candidateHost := range candidateHosts {
-		probedCountKeys = append(probedCountKeys, pkgredis.MakeProbedCountKeyInScheduler(candidateHost.ID))
+	var (
+		probedCounts     []uint64
+		probedCountKeys  []string
+		probedCountHosts []*resource.Host
+	)
+	for _, host := range hosts {
+		probedCountKey := pkgredis.MakeProbedCountKeyInScheduler(host.ID)
+		cache, _, ok := nt.cache.GetWithExpiration(probedCountKey)
+		if !ok {
+			probedCountHosts = append(probedCountHosts, host)
+			probedCountKeys = append(probedCountKeys, probedCountKey)
+			continue
+		} else {
+			probedCount, ok := cache.(uint64)
+			if ok {
+				probedCounts = append(probedCounts, probedCount)
+			} else {
+				probedCounts = append(probedCounts, uint64(0))
+			}
+		}
 	}
+	candidateHosts := slices.Complement(hosts, probedCountHosts)
 
 	rawProbedCounts, err := nt.rdb.MGet(ctx, probedCountKeys...).Result()
 	if err != nil {
@@ -189,11 +225,10 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 	}
 
 	// Filter invalid probed count. If probed key not exist, the probed count is nil.
-	var probedCounts []uint64
 	for i, rawProbedCount := range rawProbedCounts {
 		// Initialize the probedCount value of host in redis when the host is first selected as the candidate probe target.
 		if rawProbedCount == nil {
-			if err := nt.rdb.Set(ctx, pkgredis.MakeProbedCountKeyInScheduler(candidateHosts[i].ID), 0, 0).Err(); err != nil {
+			if err := nt.rdb.Set(ctx, probedCountKeys[i], 0, 0).Err(); err != nil {
 				return nil, err
 			}
 
@@ -211,8 +246,12 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 			return nil, errors.New("invalid probed count")
 		}
 
+		// Add cache data.
+		nt.cache.Set(probedCountKeys[i], probedCount, nt.config.Cache.TTL)
+
 		probedCounts = append(probedCounts, probedCount)
 	}
+	candidateHosts = append(candidateHosts, probedCountHosts...)
 
 	// Sort candidate hosts by probed count.
 	sort.Slice(candidateHosts, func(i, j int) bool {
@@ -256,12 +295,16 @@ func (nt *networkTopology) DeleteHost(hostID string) error {
 		return err
 	}
 
+	for _, deleteKey := range deleteKeys {
+		nt.cache.Delete(deleteKey)
+	}
+
 	return nil
 }
 
 // Probes loads probes interface by source host id and destination host id.
 func (nt *networkTopology) Probes(srcHostID, destHostID string) Probes {
-	return NewProbes(nt.config.Probe, nt.rdb, srcHostID, destHostID)
+	return NewProbes(nt.config, nt.rdb, nt.cache, srcHostID, destHostID)
 }
 
 // ProbedCount is the number of times the host has been probed.
@@ -269,7 +312,25 @@ func (nt *networkTopology) ProbedCount(hostID string) (uint64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	return nt.rdb.Get(ctx, pkgredis.MakeProbedCountKeyInScheduler(hostID)).Uint64()
+	probedCountKey := pkgredis.MakeProbedCountKeyInScheduler(hostID)
+	if cache, _, ok := nt.cache.GetWithExpiration(probedCountKey); ok {
+		probedCount, ok := cache.(uint64)
+		if ok {
+			return probedCount, nil
+		}
+
+		return uint64(0), errors.New("get probedCount failed")
+	}
+
+	probedCount, err := nt.rdb.Get(ctx, probedCountKey).Uint64()
+	if err != nil {
+		return uint64(0), err
+	}
+
+	// Add cache data.
+	nt.cache.Set(probedCountKey, probedCount, nt.config.Cache.TTL)
+
+	return probedCount, nil
 }
 
 // Snapshot writes the current network topology to the storage.

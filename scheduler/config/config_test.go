@@ -180,6 +180,10 @@ func TestConfig_Load(t *testing.T) {
 				QueueLength: 5,
 				Count:       10,
 			},
+			Cache: CacheConfig{
+				Interval: 5 * time.Minute,
+				TTL:      5 * time.Minute,
+			},
 		},
 		Trainer: TrainerConfig{
 			Enable:        false,
@@ -761,6 +765,34 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "networkTopology requires parameter collectInterval")
+			},
+		},
+		{
+			name:   "networkTopology requires parameter interval",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Job = mockJobConfig
+				cfg.NetworkTopology.Cache.Interval = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "networkTopology requires parameter interval")
+			},
+		},
+		{
+			name:   "networkTopology requires parameter ttl",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Job = mockJobConfig
+				cfg.NetworkTopology.Cache.TTL = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "networkTopology requires parameter ttl")
 			},
 		},
 		{
