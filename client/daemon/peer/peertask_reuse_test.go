@@ -33,6 +33,7 @@ import (
 
 	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
 	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/storage/mocks"
@@ -713,7 +714,9 @@ func TestReuseStreamPeerTask(t *testing.T) {
 					},
 				},
 			}
-			tc.verify(ptm.tryReuseStreamPeerTask(context.Background(), tc.request))
+
+			taskID := idgen.TaskIDV1(tc.request.URL, tc.request.URLMeta)
+			tc.verify(ptm.tryReuseStreamPeerTask(context.Background(), taskID, tc.request))
 		})
 	}
 }
