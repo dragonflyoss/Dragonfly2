@@ -341,6 +341,7 @@ func (ptm *peerTaskManager) StartStreamTask(ctx context.Context, req *StreamTask
 		IsMigrating: false,
 	}
 
+	taskID := idgen.TaskIDV1(req.URL, req.URLMeta)
 	if ptm.Multiplex {
 		// try breakpoint resume for task has range header
 		if req.Range != nil && !ptm.SplitRunningTasks {
@@ -357,14 +358,14 @@ func (ptm *peerTaskManager) StartStreamTask(ctx context.Context, req *StreamTask
 		}
 
 		// reuse by completed task
-		r, attr, ok := ptm.tryReuseStreamPeerTask(ctx, req)
+		r, attr, ok := ptm.tryReuseStreamPeerTask(ctx, taskID, req)
 		if ok {
 			metrics.PeerTaskCacheHitCount.Add(1)
 			return r, attr, nil
 		}
 	}
 
-	pt, err := ptm.newStreamTask(ctx, peerTaskRequest, req.Range)
+	pt, err := ptm.newStreamTask(ctx, taskID, peerTaskRequest, req.Range)
 	if err != nil {
 		return nil, nil, err
 	}

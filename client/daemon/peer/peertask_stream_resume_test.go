@@ -215,7 +215,8 @@ func TestStreamPeerTask_Resume(t *testing.T) {
 
 	// set up parent task
 	wg.Add(1)
-	pt, err := ptm.newStreamTask(ctx, req, nil)
+
+	pt, err := ptm.newStreamTask(ctx, taskID, req, nil)
 	assert.Nil(err, "new parent stream peer task")
 
 	rc, _, err := pt.Start(ctx)
