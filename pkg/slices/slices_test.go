@@ -178,3 +178,40 @@ func TestReverse(t *testing.T) {
 		})
 	}
 }
+
+func TestDifference(t *testing.T) {
+	tests := []struct {
+		name          string
+		left          []int
+		right         []int
+		expectedLeft  []int
+		expectedRight []int
+	}{
+		{
+			name:          "slices with no duplicates",
+			left:          []int{1, 2, 3},
+			right:         []int{4, 5, 6},
+			expectedLeft:  []int{1, 2, 3},
+			expectedRight: []int{4, 5, 6},
+		},
+		{
+			name:          "slices with duplicates",
+			left:          []int{1, 2, 3},
+			right:         []int{3, 4, 5},
+			expectedLeft:  []int{1, 2},
+			expectedRight: []int{4, 5},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			left, right := Difference(tt.left, tt.right)
+			if !reflect.DeepEqual(left, tt.expectedLeft) {
+				t.Errorf("expected %v, but got %v", tt.expectedLeft, left)
+			}
+			if !reflect.DeepEqual(right, tt.expectedRight) {
+				t.Errorf("expected %v, but got %v", tt.expectedRight, right)
+			}
+		})
+	}
+}
