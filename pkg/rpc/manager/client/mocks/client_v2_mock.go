@@ -55,25 +55,6 @@ func (mr *MockV2MockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockV2)(nil).Close))
 }
 
-// CreateModel mocks base method.
-func (m *MockV2) CreateModel(arg0 context.Context, arg1 *manager.CreateModelRequest, arg2 ...grpc.CallOption) error {
-	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "CreateModel", varargs...)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CreateModel indicates an expected call of CreateModel.
-func (mr *MockV2MockRecorder) CreateModel(arg0, arg1 any, arg2 ...any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateModel", reflect.TypeOf((*MockV2)(nil).CreateModel), varargs...)
-}
-
 // DeleteSeedPeer mocks base method.
 func (m *MockV2) DeleteSeedPeer(arg0 context.Context, arg1 *manager.DeleteSeedPeerRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
@@ -91,26 +72,6 @@ func (mr *MockV2MockRecorder) DeleteSeedPeer(arg0, arg1 any, arg2 ...any) *gomoc
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSeedPeer", reflect.TypeOf((*MockV2)(nil).DeleteSeedPeer), varargs...)
-}
-
-// GetObjectStorage mocks base method.
-func (m *MockV2) GetObjectStorage(arg0 context.Context, arg1 *manager.GetObjectStorageRequest, arg2 ...grpc.CallOption) (*manager.ObjectStorage, error) {
-	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "GetObjectStorage", varargs...)
-	ret0, _ := ret[0].(*manager.ObjectStorage)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetObjectStorage indicates an expected call of GetObjectStorage.
-func (mr *MockV2MockRecorder) GetObjectStorage(arg0, arg1 any, arg2 ...any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectStorage", reflect.TypeOf((*MockV2)(nil).GetObjectStorage), varargs...)
 }
 
 // GetScheduler mocks base method.
@@ -168,26 +129,6 @@ func (mr *MockV2MockRecorder) ListApplications(arg0, arg1 any, arg2 ...any) *gom
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListApplications", reflect.TypeOf((*MockV2)(nil).ListApplications), varargs...)
-}
-
-// ListBuckets mocks base method.
-func (m *MockV2) ListBuckets(arg0 context.Context, arg1 *manager.ListBucketsRequest, arg2 ...grpc.CallOption) (*manager.ListBucketsResponse, error) {
-	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "ListBuckets", varargs...)
-	ret0, _ := ret[0].(*manager.ListBucketsResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListBuckets indicates an expected call of ListBuckets.
-func (mr *MockV2MockRecorder) ListBuckets(arg0, arg1 any, arg2 ...any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBuckets", reflect.TypeOf((*MockV2)(nil).ListBuckets), varargs...)
 }
 
 // ListSchedulers mocks base method.

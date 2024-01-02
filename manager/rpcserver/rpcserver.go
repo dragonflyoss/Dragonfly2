@@ -122,7 +122,7 @@ func New(
 
 	return s, managerserver.New(
 		newManagerServerV1(s.config, database, s.cache, s.searcher, s.objectStorage),
-		newManagerServerV2(s.config, database, s.cache, s.searcher, s.objectStorage),
+		newManagerServerV2(s.config, database, s.cache, s.searcher),
 		newSecurityServerV1(s.selfSignedCert),
 		s.serverOptions...), nil
 }
