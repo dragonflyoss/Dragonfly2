@@ -862,7 +862,9 @@ func (cd *clientDaemon) Stop() {
 			logger.Errorf("announcer stop failed %s", err)
 		}
 
-		cd.networkTopology.Stop()
+		if cd.networkTopology != nil {
+			cd.networkTopology.Stop()
+		}
 
 		if err := cd.dynconfig.Stop(); err != nil {
 			logger.Errorf("dynconfig client closed failed %s", err)
