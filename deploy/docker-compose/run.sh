@@ -19,6 +19,15 @@ prepare(){
     sed "s,__IP__,$ip," template/manager.template.yaml > config/manager.yaml
 }
 
+delete_container(){
+    RUNTIME=${RUNTIME:-docker}
+    echo use container runtime: ${RUNTIME}
+
+    echo try to clean old containers
+    ${RUNTIME} rm -f dragonfly-redis dragonfly-mysql dragonfly-manager dragonfly-scheduler \
+        dragonfly-dfdaemon dragonfly-seed-peer
+}
+
 run_container(){
     RUNTIME=${RUNTIME:-docker}
     echo use container runtime: ${RUNTIME}
@@ -71,7 +80,9 @@ case "$1" in
   container)
     run_container
     ;;
-
+  delete_container)
+    delete_container
+    ;;
   *)
     if [ -z "$1" ]; then
         # start all of docker-compose defined service
