@@ -17,56 +17,47 @@
 package peer
 
 import (
-	"go.uber.org/atomic"
+	"github.com/bits-and-blooms/bitset"
 )
 
 type Bitmap struct {
-	bits    []byte
-	cap     int32
-	settled atomic.Int32
+	bits *bitset.BitSet
 }
 
 func NewBitmap() *Bitmap {
 	return &Bitmap{
-		bits: make([]byte, 8),
-		cap:  8 * 8,
+		bits: bitset.New(8),
 	}
 }
 
 func NewBitmapWithCap(c int32) *Bitmap {
 	return &Bitmap{
-		bits: make([]byte, c),
-		cap:  c * 8,
+		bits: bitset.New(uint(c)),
 	}
 }
 
 func (b *Bitmap) IsSet(i int32) bool {
-	if i >= b.cap {
-		return false
-	}
-	return b.bits[i/8]&(1<<uint(7-i%8)) != 0
+	return b.bits.Test(uint(i))
 }
 
 func (b *Bitmap) Set(i int32) {
-	for i >= b.cap {
-		b.bits = append(b.bits, make([]byte, b.cap/8)...)
-		b.cap *= 2
-	}
-	b.settled.Inc()
-	b.bits[i/8] |= 1 << uint(7-i%8)
+	b.bits.Set(uint(i))
 }
 
 func (b *Bitmap) Clean(i int32) {
-	b.settled.Dec()
-	b.bits[i/8] ^= 1 << uint(7-i%8)
+	b.bits.Clear(uint(i))
 }
 
 func (b *Bitmap) Settled() int32 {
-	return b.settled.Load()
+	return int32(b.bits.Count());
 }
 
 func (b *Bitmap) Sets(xs ...int32) {
 	for _, x := range xs {
 		b.Set(x)
 	}
+}
+
+func (b *Bitmap) String() string{
+	return b.bits.String()
 }
