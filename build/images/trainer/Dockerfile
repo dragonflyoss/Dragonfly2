@@ -29,11 +29,28 @@ RUN if [ "$(uname -m)" = "ppc64le" ]; then \
 
 FROM ${BASE_IMAGE}
 
+ARG USER_NAME=dragonfly
+ARG USER_UID=1000
+ARG GROUP_NAME=dragonfly
+ARG GROUP_GID=1000
+
 ENV PATH=/opt/dragonfly/bin:$PATH
 RUN echo "hosts: files dns" > /etc/nsswitch.conf
 
-COPY --from=builder /opt/dragonfly/bin/trainer /opt/dragonfly/bin/trainer
-COPY --from=health /bin/grpc_health_probe /bin/grpc_health_probe
+# NOTE: Command works for alpine linux, for other distro please update run statement or create user/group in base image
+RUN if [ getent group "$GROUP_NAME" ]; then \
+    echo "group exists"; \
+    else \
+    addgroup -S -g $GROUP_GID $GROUP_NAME; \
+    fi
+RUN if [ getent passwd "$USER_NAME" ]; then \
+    echo "user exists"; \
+    else \
+    adduser -S -u $USER_UID -G $GROUP_NAME  -D $USER_NAME; \
+    fi
+
+COPY --from=builder --chown=$GROUP_NAME:$USER_NAME /opt/dragonfly/bin/trainer /opt/dragonfly/bin/trainer
+COPY --from=health --chown=$GROUP_NAME:$USER_NAME /bin/grpc_health_probe /bin/grpc_health_probe
 
 EXPOSE 9090
 

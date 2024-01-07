@@ -6,27 +6,32 @@ aliveTime: 0s
 gcInterval: 1m0s
 
 # WorkHome is working directory.
-# In linux, default value is /usr/local/dragonfly.
+# In linux, default value is /usr/local/dragonfly,
+# And when running within none root, the path should locate to homedir, for example: /home/dragonfly/.dragonfly
 # In macos(just for testing), default value is /Users/$USER/.dragonfly.
 workHome: ''
 
 # logDir is the log directory.
-# In linux, default value is /var/log/dragonfly.
+# In linux, default value is /var/log/dragonfly,
+# And when running within none root, the path should locate to homedir, for example: /home/dragonfly/.dragonfly/logs
 # In macos(just for testing), default value is /Users/$USER/.dragonfly/logs.
 logDir: ''
 
 # cacheDir is dynconfig cache directory.
-# In linux, default value is /var/cache/dragonfly.
+# In linux, default value is /var/cache/dragonfly,
+# And when running within none root, the path should locate to homedir, for example: /home/dragonfly/.dragonfly/cache
 # In macos(just for testing), default value is /Users/$USER/.dragonfly/cache.
 cacheDir: ''
 
 # pluginDir is the plugin directory.
-# In linux, default value is /usr/local/dragonfly/plugins.
+# In linux, default value is /usr/local/dragonfly/plugins,
+# And when running within none root, the path should locate to homedir, for example: /home/dragonfly/.dragonfly/plugins
 # In macos(just for testing), default value is /Users/$USER/.dragonfly/plugins.
 pluginDir: ''
 
 # dataDir is the download data directory.
-# In linux, default value is /var/lib/dragonfly.
+# In linux, default value is /var/lib/dragonfly,
+# And when running within none root, the path should locate to homedir, for example: /home/dragonfly/.dragonfly/data
 # In macos(just for testing), default value is /Users/$USER/.dragonfly/data.
 dataDir: ''
 

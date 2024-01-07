@@ -81,6 +81,9 @@ type ServerConfig struct {
 	// Server plugin directory.
 	PluginDir string `yaml:"pluginDir" mapstructure:"pluginDir"`
 
+	// Server storage data directory.
+	DataDir string `yaml:"dataDir" mapstructure:"dataDir"`
+
 	// GRPC server configuration.
 	GRPC GRPCConfig `yaml:"grpc" mapstructure:"grpc"`
 

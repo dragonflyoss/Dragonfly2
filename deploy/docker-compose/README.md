@@ -2,6 +2,15 @@
 
 > Currently, docker compose deploying is tested just in single host, no HA support.
 
+## Build local images for Docker Compose
+
+Try the command below in the dragonfly root directory.
+
+```shell
+export D7Y_REGISTRY=dragonflyoss
+make docker-build
+```
+
 ## Deploy with Docker Compose
 
 The `run.sh` script will generate config and deploy all components with `docker-compose`.
