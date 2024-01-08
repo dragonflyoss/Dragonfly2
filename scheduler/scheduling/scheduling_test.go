@@ -56,7 +56,6 @@ var (
 	mockPluginDir       = "bas"
 	mockSchedulerConfig = &config.SchedulerConfig{
 		RetryLimit:             2,
-		MaxScheduleCount:       3,
 		RetryBackToSourceLimit: 1,
 		RetryInterval:          10 * time.Millisecond,
 		BackToSourceCount:      int(mockTaskBackToSourceLimit),
@@ -249,22 +248,6 @@ func TestScheduling_ScheduleCandidateParents(t *testing.T) {
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
 				assert := assert.New(t)
 				assert.ErrorIs(err, context.Canceled)
-				assert.True(peer.FSM.Is(resource.PeerStateRunning))
-				assert.True(peer.Task.FSM.Is(resource.TaskStatePending))
-			},
-		},
-		{
-			name: "peer exceeded MaxScheduleCount and peer stream load failed",
-			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv2.Scheduler_AnnouncePeerServer, ma *schedulerv2mocks.MockScheduler_AnnouncePeerServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
-				task := peer.Task
-				task.StorePeer(peer)
-				peer.ScheduleCount.Store(5)
-				peer.FSM.SetState(resource.PeerStateRunning)
-			},
-			expect: func(t *testing.T, peer *resource.Peer, err error) {
-				assert := assert.New(t)
-				assert.ErrorIs(err, status.Error(codes.FailedPrecondition, "load stream failed"))
-				assert.Equal(len(peer.Parents()), 0)
 				assert.True(peer.FSM.Is(resource.PeerStateRunning))
 				assert.True(peer.Task.FSM.Is(resource.TaskStatePending))
 			},
@@ -489,21 +472,6 @@ func TestScheduling_ScheduleParentAndCandidateParents(t *testing.T) {
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
-				assert.True(peer.FSM.Is(resource.PeerStateRunning))
-				assert.True(peer.Task.FSM.Is(resource.TaskStatePending))
-			},
-		},
-		{
-			name: "peer exceeded MaxScheduleCount and peer stream load failed",
-			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, mr *schedulerv1mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
-				task := peer.Task
-				task.StorePeer(peer)
-				peer.ScheduleCount.Store(5)
-				peer.FSM.SetState(resource.PeerStateRunning)
-			},
-			expect: func(t *testing.T, peer *resource.Peer) {
-				assert := assert.New(t)
-				assert.Equal(len(peer.Parents()), 0)
 				assert.True(peer.FSM.Is(resource.PeerStateRunning))
 				assert.True(peer.Task.FSM.Is(resource.TaskStatePending))
 			},

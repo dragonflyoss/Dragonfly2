@@ -1527,6 +1527,7 @@ func TestServiceV2_handleRegisterPeerRequest(t *testing.T) {
 				assert.ErrorIs(svc.handleRegisterPeerRequest(context.Background(), nil, peer.Host.ID, peer.Task.ID, peer.ID, req),
 					status.Error(codes.NotFound, "AnnouncePeerStream not found"))
 				assert.Equal(peer.FSM.Current(), resource.PeerStatePending)
+				assert.Equal(peer.Task.FSM.Current(), resource.TaskStateRunning)
 			},
 		},
 		{
@@ -1556,6 +1557,7 @@ func TestServiceV2_handleRegisterPeerRequest(t *testing.T) {
 				assert := assert.New(t)
 				assert.ErrorIs(svc.handleRegisterPeerRequest(context.Background(), nil, peer.Host.ID, peer.Task.ID, peer.ID, req),
 					status.Errorf(codes.Internal, "event RegisterEmpty inappropriate in current state ReceivedEmpty"))
+				assert.Equal(peer.Task.FSM.Current(), resource.TaskStateRunning)
 			},
 		},
 		{
@@ -1590,6 +1592,7 @@ func TestServiceV2_handleRegisterPeerRequest(t *testing.T) {
 				assert.ErrorIs(svc.handleRegisterPeerRequest(context.Background(), nil, peer.Host.ID, peer.Task.ID, peer.ID, req),
 					status.Errorf(codes.Internal, "foo"))
 				assert.Equal(peer.FSM.Current(), resource.PeerStateReceivedEmpty)
+				assert.Equal(peer.Task.FSM.Current(), resource.TaskStateRunning)
 			},
 		},
 		{
@@ -1625,6 +1628,7 @@ func TestServiceV2_handleRegisterPeerRequest(t *testing.T) {
 				assert.NoError(svc.handleRegisterPeerRequest(context.Background(), nil, peer.Host.ID, peer.Task.ID, peer.ID, req))
 				assert.Equal(peer.FSM.Current(), resource.PeerStateReceivedNormal)
 				assert.Equal(peer.NeedBackToSource.Load(), true)
+				assert.Equal(peer.Task.FSM.Current(), resource.TaskStateRunning)
 			},
 		},
 		{
@@ -1657,6 +1661,7 @@ func TestServiceV2_handleRegisterPeerRequest(t *testing.T) {
 				assert := assert.New(t)
 				assert.NoError(svc.handleRegisterPeerRequest(context.Background(), nil, peer.Host.ID, peer.Task.ID, peer.ID, req))
 				assert.Equal(peer.FSM.Current(), resource.PeerStateReceivedNormal)
+				assert.Equal(peer.Task.FSM.Current(), resource.TaskStateRunning)
 			},
 		},
 		{
@@ -1684,6 +1689,7 @@ func TestServiceV2_handleRegisterPeerRequest(t *testing.T) {
 				assert := assert.New(t)
 				assert.NoError(svc.handleRegisterPeerRequest(context.Background(), nil, peer.Host.ID, peer.Task.ID, peer.ID, req))
 				assert.Equal(peer.FSM.Current(), resource.PeerStateReceivedNormal)
+				assert.Equal(peer.Task.FSM.Current(), resource.TaskStateRunning)
 			},
 		},
 	}

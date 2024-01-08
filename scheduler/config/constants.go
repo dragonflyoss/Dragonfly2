@@ -60,20 +60,17 @@ const (
 	// DefaultSchedulerAlgorithm is default algorithm for scheduler.
 	DefaultSchedulerAlgorithm = "default"
 
-	// DefaultSchedulerMaxScheduleCount is default schedule limit for peer.
-	DefaultSchedulerMaxScheduleCount = 30
-
 	// DefaultSchedulerBackToSourceCount is default back-to-source count for scheduler.
 	DefaultSchedulerBackToSourceCount = 3
 
 	// DefaultSchedulerRetryBackToSourceLimit is default retry back-to-source limit for scheduler.
-	DefaultSchedulerRetryBackToSourceLimit = 5
+	DefaultSchedulerRetryBackToSourceLimit = 30
 
 	// DefaultSchedulerRetryLimit is default retry limit for scheduler.
-	DefaultSchedulerRetryLimit = 10
+	DefaultSchedulerRetryLimit = 40
 
 	// DefaultSchedulerRetryInterval is default retry interval for scheduler.
-	DefaultSchedulerRetryInterval = 200 * time.Millisecond
+	DefaultSchedulerRetryInterval = 100 * time.Millisecond
 
 	// DefaultSchedulerPieceDownloadTimeout is default timeout of downloading piece.
 	DefaultSchedulerPieceDownloadTimeout = 30 * time.Minute
