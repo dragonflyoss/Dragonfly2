@@ -831,7 +831,11 @@ func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.S
 	// the first task download in the p2p cluster.
 	blocklist := set.NewSafeSet[string]()
 	blocklist.Add(peer.ID)
-	if !((task.FSM.Is(resource.TaskStateRunning) || task.FSM.Is(resource.TaskStateSucceeded)) && task.HasAvailablePeer(blocklist)) {
+	if task.FSM.Is(resource.TaskStatePending) ||
+		task.FSM.Is(resource.TaskStateFailed) ||
+		task.FSM.Is(resource.TaskStateLeave) ||
+		task.FSM.Is(resource.TaskStateSucceeded) &&
+			!task.HasAvailablePeer(blocklist) {
 		download := proto.Clone(req.Download).(*commonv2.Download)
 		if download.GetNeedBackToSource() || host.Type != types.HostTypeNormal {
 			peer.Log.Infof("peer need back to source")
@@ -847,6 +851,18 @@ func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.S
 				return err
 			}
 		}
+	}
+
+	// Handle task with peer register request.
+	if !peer.Task.FSM.Is(resource.TaskStateRunning) {
+		if err := peer.Task.FSM.Event(ctx, resource.TaskEventDownload); err != nil {
+			// Collect RegisterPeerFailureCount metrics.
+			metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+			return status.Error(codes.Internal, err.Error())
+		}
+	} else {
+		peer.Task.UpdatedAt.Store(time.Now())
 	}
 
 	// FSM event state transition by size scope.
@@ -915,18 +931,6 @@ func (v *V2) handleDownloadPeerStartedRequest(ctx context.Context, peerID string
 		return status.Error(codes.Internal, err.Error())
 	}
 
-	// Handle task with peer started request.
-	if !peer.Task.FSM.Is(resource.TaskStateRunning) {
-		if err := peer.Task.FSM.Event(ctx, resource.TaskEventDownload); err != nil {
-			// Collect DownloadPeerStartedFailureCount metrics.
-			metrics.DownloadPeerStartedFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
-			return status.Error(codes.Internal, err.Error())
-		}
-	} else {
-		peer.Task.UpdatedAt.Store(time.Now())
-	}
-
 	return nil
 }
 
@@ -948,18 +952,6 @@ func (v *V2) handleDownloadPeerBackToSourceStartedRequest(ctx context.Context, p
 		metrics.DownloadPeerBackToSourceStartedFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
 			peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 		return status.Error(codes.Internal, err.Error())
-	}
-
-	// Handle task with peer back-to-source started request.
-	if !peer.Task.FSM.Is(resource.TaskStateRunning) {
-		if err := peer.Task.FSM.Event(ctx, resource.TaskEventDownload); err != nil {
-			// Collect DownloadPeerBackToSourceStartedFailureCount metrics.
-			metrics.DownloadPeerBackToSourceStartedFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
-			return status.Error(codes.Internal, err.Error())
-		}
-	} else {
-		peer.Task.UpdatedAt.Store(time.Now())
 	}
 
 	return nil
