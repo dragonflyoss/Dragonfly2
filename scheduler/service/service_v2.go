@@ -131,8 +131,9 @@ func (v *V2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePeerServer) error
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_RescheduleRequest:
-			log.Infof("receive RescheduleRequest, description: %s", announcePeerRequest.RescheduleRequest.GetDescription())
-			if err := v.handleRescheduleRequest(ctx, req.GetPeerId()); err != nil {
+			rescheduleRequest := announcePeerRequest.RescheduleRequest
+			log.Infof("receive RescheduleRequest,  candidate parent ids: %v, description: %s", rescheduleRequest.GetCandidateParentIds(), rescheduleRequest.GetDescription())
+			if err := v.handleRescheduleRequest(ctx, req.GetPeerId(), rescheduleRequest.GetCandidateParentIds()); err != nil {
 				log.Error(err)
 				return err
 			}
@@ -959,10 +960,15 @@ func (v *V2) handleDownloadPeerBackToSourceStartedRequest(ctx context.Context, p
 }
 
 // handleRescheduleRequest handles RescheduleRequest of AnnouncePeerRequest.
-func (v *V2) handleRescheduleRequest(ctx context.Context, peerID string) error {
+func (v *V2) handleRescheduleRequest(ctx context.Context, peerID string, candidateParentIDs []string) error {
 	peer, loaded := v.resource.PeerManager().Load(peerID)
 	if !loaded {
 		return status.Errorf(codes.NotFound, "peer %s not found", peerID)
+	}
+
+	// Add candidate parent ids to block parents.
+	for _, candidateParentID := range candidateParentIDs {
+		peer.BlockParents.Add(candidateParentID)
 	}
 
 	if err := v.scheduling.ScheduleCandidateParents(ctx, peer, peer.BlockParents); err != nil {
