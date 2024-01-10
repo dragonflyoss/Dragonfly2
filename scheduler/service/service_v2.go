@@ -927,11 +927,13 @@ func (v *V2) handleDownloadPeerStartedRequest(ctx context.Context, peerID string
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
 	// Handle peer with peer started request.
-	if err := peer.FSM.Event(ctx, resource.PeerEventDownload); err != nil {
-		// Collect DownloadPeerStartedFailureCount metrics.
-		metrics.DownloadPeerStartedFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-			peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
-		return status.Error(codes.Internal, err.Error())
+	if !peer.FSM.Is(resource.PeerStateRunning) {
+		if err := peer.FSM.Event(ctx, resource.PeerEventDownload); err != nil {
+			// Collect DownloadPeerStartedFailureCount metrics.
+			metrics.DownloadPeerStartedFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+			return status.Error(codes.Internal, err.Error())
+		}
 	}
 
 	return nil
@@ -950,11 +952,13 @@ func (v *V2) handleDownloadPeerBackToSourceStartedRequest(ctx context.Context, p
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
 	// Handle peer with peer back-to-source started request.
-	if err := peer.FSM.Event(ctx, resource.PeerEventDownloadBackToSource); err != nil {
-		// Collect DownloadPeerBackToSourceStartedFailureCount metrics.
-		metrics.DownloadPeerBackToSourceStartedFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-			peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
-		return status.Error(codes.Internal, err.Error())
+	if !peer.FSM.Is(resource.PeerStateRunning) {
+		if err := peer.FSM.Event(ctx, resource.PeerEventDownloadBackToSource); err != nil {
+			// Collect DownloadPeerBackToSourceStartedFailureCount metrics.
+			metrics.DownloadPeerBackToSourceStartedFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+			return status.Error(codes.Internal, err.Error())
+		}
 	}
 
 	return nil
