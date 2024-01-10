@@ -138,8 +138,6 @@ type storageManager struct {
 	gcInterval         time.Duration
 	dataDirMode        fs.FileMode
 
-	reloadConcurrentCount int
-
 	indexRWMutex       sync.RWMutex
 	indexTask2PeerTask map[string][]*localTaskStore // key: task id, value: slice of localTaskStore
 
@@ -192,7 +190,6 @@ func NewStorageManager(opt *config.StorageOption, gcCallback GCCallback, dirMode
 		dataDirMode:           dataDirMode,
 		indexTask2PeerTask:    map[string][]*localTaskStore{},
 		subIndexTask2PeerTask: map[string][]*localSubTaskStore{},
-		reloadConcurrentCount: 100,
 	}
 
 	for _, o := range moreOpts {
@@ -672,11 +669,16 @@ func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 		loadLock.Unlock()
 	}
 
-	taskChan := make(chan string, s.reloadConcurrentCount)
+	reloadConcurrentCount := s.storeOption.ReloadConcurrentCount
+	if reloadConcurrentCount == 0 {
+		reloadConcurrentCount = 10
+	}
+
+	taskChan := make(chan string, reloadConcurrentCount)
 	wg := &sync.WaitGroup{}
 	wg.Add(len(taskDirs))
 
-	for i := 0; i < s.reloadConcurrentCount; i++ {
+	for i := 0; i < reloadConcurrentCount; i++ {
 		go func() {
 			for taskID := range taskChan {
 				taskDir := path.Join(s.storeOption.DataPath, taskID)
@@ -811,6 +813,7 @@ func (s *storageManager) reloadPersistentTask(gcCallback GCCallback, appendLoadE
 			TaskID: taskID,
 		}, t)
 
+		s.Lock()
 		// update index
 		if ts, ok := s.indexTask2PeerTask[taskID]; ok {
 			ts = append(ts, t)
@@ -818,6 +821,7 @@ func (s *storageManager) reloadPersistentTask(gcCallback GCCallback, appendLoadE
 		} else {
 			s.indexTask2PeerTask[taskID] = []*localTaskStore{t}
 		}
+		s.Unlock()
 	}
 }
 
