@@ -70,9 +70,9 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 
 	pieceDownloadTimeout := 30 * time.Second
 	storageManager, _ := storage.NewStorageManager(
-		config.SimpleLocalTaskStoreStrategy,
 		&config.StorageOption{
-			DataPath: t.TempDir(),
+			StoreStrategy: config.SimpleLocalTaskStoreStrategy,
+			DataPath:      t.TempDir(),
 			TaskExpireTime: clientutil.Duration{
 				Duration: -1 * time.Second,
 			},

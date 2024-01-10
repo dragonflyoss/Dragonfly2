@@ -135,9 +135,10 @@ func TestLocalTaskStore_PutAndGetPiece(t *testing.T) {
 				peerID    = "peer-d4bb1c273a9889fea14abd4651994fe8"
 				pieceSize = 512
 			)
-			sm, err := NewStorageManager(config.SimpleLocalTaskStoreStrategy,
+			sm, err := NewStorageManager(
 				&config.StorageOption{
-					DataPath: test.DataDir,
+					StoreStrategy: config.SimpleLocalTaskStoreStrategy,
+					DataPath:      test.DataDir,
 					TaskExpireTime: clientutil.Duration{
 						Duration: time.Minute,
 					},

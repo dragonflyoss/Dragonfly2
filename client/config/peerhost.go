@@ -630,6 +630,8 @@ type StorageOption struct {
 	// Multiplex indicates reusing underlying storage for same task id
 	Multiplex     bool          `mapstructure:"multiplex" yaml:"multiplex"`
 	StoreStrategy StoreStrategy `mapstructure:"strategy" yaml:"strategy"`
+	// ReloadConcurrentCount indicates reloading metadata concurrent count, more concurrent count cost more disk io
+	ReloadConcurrentCount int `mapstructure:"reloadConcurrentCount" yaml:"reloadConcurrentCount"`
 }
 
 type StoreStrategy string

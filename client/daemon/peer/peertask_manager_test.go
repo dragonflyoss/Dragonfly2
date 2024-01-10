@@ -262,9 +262,9 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 		})
 	tempDir, _ := os.MkdirTemp("", "d7y-test-*")
 	storageManager, _ := storage.NewStorageManager(
-		config.SimpleLocalTaskStoreStrategy,
 		&config.StorageOption{
-			DataPath: tempDir,
+			StoreStrategy: config.SimpleLocalTaskStoreStrategy,
+			DataPath:      tempDir,
 			TaskExpireTime: util.Duration{
 				Duration: -1 * time.Second,
 			},
