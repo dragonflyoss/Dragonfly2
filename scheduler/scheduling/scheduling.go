@@ -504,7 +504,6 @@ func (s *scheduling) filterCandidateParents(peer *resource.Peer, blocklist set.S
 			filterParentLimit = int(config.FilterParentLimit)
 		}
 	}
-	peer.Log.Debugf("filter parent limit is %d", filterParentLimit)
 
 	var (
 		candidateParents   []*resource.Peer

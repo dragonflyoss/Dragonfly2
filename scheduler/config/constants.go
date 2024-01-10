@@ -64,13 +64,13 @@ const (
 	DefaultSchedulerBackToSourceCount = 3
 
 	// DefaultSchedulerRetryBackToSourceLimit is default retry back-to-source limit for scheduler.
-	DefaultSchedulerRetryBackToSourceLimit = 30
+	DefaultSchedulerRetryBackToSourceLimit = 10
 
 	// DefaultSchedulerRetryLimit is default retry limit for scheduler.
-	DefaultSchedulerRetryLimit = 40
+	DefaultSchedulerRetryLimit = 15
 
 	// DefaultSchedulerRetryInterval is default retry interval for scheduler.
-	DefaultSchedulerRetryInterval = 100 * time.Millisecond
+	DefaultSchedulerRetryInterval = 300 * time.Millisecond
 
 	// DefaultSchedulerPieceDownloadTimeout is default timeout of downloading piece.
 	DefaultSchedulerPieceDownloadTimeout = 30 * time.Minute
