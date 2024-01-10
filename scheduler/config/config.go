@@ -728,5 +728,9 @@ func (cfg *Config) Convert() error {
 		}
 	}
 
+	if cfg.Server.AdvertisePort == 0 {
+		cfg.Server.AdvertisePort = cfg.Server.Port
+	}
+
 	return nil
 }
