@@ -1750,7 +1750,7 @@ func TestServiceV2_handleDownloadPeerStartedRequest(t *testing.T) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 
 				assert := assert.New(t)
-				assert.ErrorIs(svc.handleDownloadPeerStartedRequest(context.Background(), peer.ID), status.Error(codes.Internal, "event Download inappropriate in current state Running"))
+				assert.NoError(svc.handleDownloadPeerStartedRequest(context.Background(), peer.ID))
 			},
 		},
 		{
