@@ -10,6 +10,7 @@ package mocks
 
 import (
 	reflect "reflect"
+	time "time"
 
 	networktopology "d7y.io/dragonfly/v2/scheduler/networktopology"
 	resource "d7y.io/dragonfly/v2/scheduler/resource"
@@ -37,6 +38,21 @@ func NewMockNetworkTopology(ctrl *gomock.Controller) *MockNetworkTopology {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockNetworkTopology) EXPECT() *MockNetworkTopologyMockRecorder {
 	return m.recorder
+}
+
+// AverageRTTs mocks base method.
+func (m *MockNetworkTopology) AverageRTTs(arg0 string, arg1 []string) ([]time.Duration, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AverageRTTs", arg0, arg1)
+	ret0, _ := ret[0].([]time.Duration)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AverageRTTs indicates an expected call of AverageRTTs.
+func (mr *MockNetworkTopologyMockRecorder) AverageRTTs(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AverageRTTs", reflect.TypeOf((*MockNetworkTopology)(nil).AverageRTTs), arg0, arg1)
 }
 
 // DeleteHost mocks base method.
