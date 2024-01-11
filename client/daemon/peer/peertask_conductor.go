@@ -788,6 +788,17 @@ func (pt *peerTaskConductor) updateSynchronizers(lastNum int32, p *schedulerv1.P
 	return desiredPiece
 }
 
+/*
+When scheduler go away before a peer task done, we will receive the following error message:
+
+	receive peer packet failed: rpc error: code = Unavailable desc = closing transport due to: connection error: desc = "error reading from server: EOF", received prior goaway: code: NO_ERROR, debug data: "graceful_stop"
+
+The underlay error is "connection error: desc = \"error reading from server: EOF\"", only can be checked by searching message.
+
+refer grpc-go link:
+https://github.com/grpc/grpc-go/blob/v1.60.1/test/goaway_test.go#L118
+https://github.com/grpc/grpc-go/blob/v1.60.1/internal/transport/http2_client.go#L987
+*/
 func isSchedulerGoAway(err error) bool {
 	return strings.Contains(err.Error(), `connection error: desc = "error reading from server: EOF"`)
 }
