@@ -131,8 +131,10 @@ func (v *V2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePeerServer) error
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_RescheduleRequest:
-			log.Infof("receive RescheduleRequest, description: %s", announcePeerRequest.RescheduleRequest.GetDescription())
-			if err := v.handleRescheduleRequest(ctx, req.GetPeerId()); err != nil {
+			rescheduleRequest := announcePeerRequest.RescheduleRequest
+
+			log.Infof("receive RescheduleRequest description: %s", rescheduleRequest.GetDescription())
+			if err := v.handleRescheduleRequest(ctx, req.GetPeerId(), rescheduleRequest.GetCandidateParents()); err != nil {
 				log.Error(err)
 				return err
 			}
@@ -817,7 +819,7 @@ func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
 // handleRegisterPeerRequest handles RegisterPeerRequest of AnnouncePeerRequest.
 func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.Scheduler_AnnouncePeerServer, hostID, taskID, peerID string, req *schedulerv2.RegisterPeerRequest) error {
 	// Handle resource included host, task, and peer.
-	host, task, peer, err := v.handleResource(ctx, stream, hostID, taskID, peerID, req.GetDownload())
+	_, task, peer, err := v.handleResource(ctx, stream, hostID, taskID, peerID, req.GetDownload())
 	if err != nil {
 		return err
 	}
@@ -827,26 +829,43 @@ func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.S
 	metrics.RegisterPeerCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
-	// When there are no available peers for a task, the scheduler needs to trigger
-	// the first task download in the p2p cluster.
 	blocklist := set.NewSafeSet[string]()
 	blocklist.Add(peer.ID)
-	if !((task.FSM.Is(resource.TaskStateRunning) || task.FSM.Is(resource.TaskStateSucceeded)) && task.HasAvailablePeer(blocklist)) {
-		download := proto.Clone(req.Download).(*commonv2.Download)
-		if download.GetNeedBackToSource() || host.Type != types.HostTypeNormal {
-			peer.Log.Infof("peer need back to source")
-			peer.NeedBackToSource.Store(true)
-		} else {
-			// If trigger the seed peer download back-to-source,
-			// the need back-to-source flag should be true.
-			download.NeedBackToSource = true
-			if err := v.downloadTaskBySeedPeer(ctx, taskID, download, peer); err != nil {
-				// Collect RegisterPeerFailureCount metrics.
-				metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-					peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
-				return err
-			}
+	download := proto.Clone(req.Download).(*commonv2.Download)
+	switch {
+	// If scheduler trigger seed peer download back-to-source,
+	// the needBackToSource flag should be true.
+	case download.GetNeedBackToSource():
+		peer.Log.Infof("peer need back to source")
+		peer.NeedBackToSource.Store(true)
+	// If task is pending, failed, leave, or succeeded and has no available peer,
+	// scheduler trigger seed peer download back-to-source.
+	case task.FSM.Is(resource.TaskStatePending) ||
+		task.FSM.Is(resource.TaskStateFailed) ||
+		task.FSM.Is(resource.TaskStateLeave) ||
+		task.FSM.Is(resource.TaskStateSucceeded) &&
+			!task.HasAvailablePeer(blocklist):
+		// If trigger the seed peer download back-to-source,
+		// the need back-to-source flag should be true.
+		download.NeedBackToSource = true
+		if err := v.downloadTaskBySeedPeer(ctx, taskID, download, peer); err != nil {
+			// Collect RegisterPeerFailureCount metrics.
+			metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+			return err
 		}
+	}
+
+	// Handle task with peer register request.
+	if !peer.Task.FSM.Is(resource.TaskStateRunning) {
+		if err := peer.Task.FSM.Event(ctx, resource.TaskEventDownload); err != nil {
+			// Collect RegisterPeerFailureCount metrics.
+			metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+			return status.Error(codes.Internal, err.Error())
+		}
+	} else {
+		peer.Task.UpdatedAt.Store(time.Now())
 	}
 
 	// FSM event state transition by size scope.
@@ -908,23 +927,13 @@ func (v *V2) handleDownloadPeerStartedRequest(ctx context.Context, peerID string
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
 	// Handle peer with peer started request.
-	if err := peer.FSM.Event(ctx, resource.PeerEventDownload); err != nil {
-		// Collect DownloadPeerStartedFailureCount metrics.
-		metrics.DownloadPeerStartedFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-			peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
-		return status.Error(codes.Internal, err.Error())
-	}
-
-	// Handle task with peer started request.
-	if !peer.Task.FSM.Is(resource.TaskStateRunning) {
-		if err := peer.Task.FSM.Event(ctx, resource.TaskEventDownload); err != nil {
+	if !peer.FSM.Is(resource.PeerStateRunning) {
+		if err := peer.FSM.Event(ctx, resource.PeerEventDownload); err != nil {
 			// Collect DownloadPeerStartedFailureCount metrics.
 			metrics.DownloadPeerStartedFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
 				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 			return status.Error(codes.Internal, err.Error())
 		}
-	} else {
-		peer.Task.UpdatedAt.Store(time.Now())
 	}
 
 	return nil
@@ -943,33 +952,28 @@ func (v *V2) handleDownloadPeerBackToSourceStartedRequest(ctx context.Context, p
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
 	// Handle peer with peer back-to-source started request.
-	if err := peer.FSM.Event(ctx, resource.PeerEventDownloadBackToSource); err != nil {
-		// Collect DownloadPeerBackToSourceStartedFailureCount metrics.
-		metrics.DownloadPeerBackToSourceStartedFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-			peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
-		return status.Error(codes.Internal, err.Error())
-	}
-
-	// Handle task with peer back-to-source started request.
-	if !peer.Task.FSM.Is(resource.TaskStateRunning) {
-		if err := peer.Task.FSM.Event(ctx, resource.TaskEventDownload); err != nil {
+	if !peer.FSM.Is(resource.PeerStateRunning) {
+		if err := peer.FSM.Event(ctx, resource.PeerEventDownloadBackToSource); err != nil {
 			// Collect DownloadPeerBackToSourceStartedFailureCount metrics.
 			metrics.DownloadPeerBackToSourceStartedFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
 				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 			return status.Error(codes.Internal, err.Error())
 		}
-	} else {
-		peer.Task.UpdatedAt.Store(time.Now())
 	}
 
 	return nil
 }
 
 // handleRescheduleRequest handles RescheduleRequest of AnnouncePeerRequest.
-func (v *V2) handleRescheduleRequest(ctx context.Context, peerID string) error {
+func (v *V2) handleRescheduleRequest(ctx context.Context, peerID string, candidateParents []*commonv2.Peer) error {
 	peer, loaded := v.resource.PeerManager().Load(peerID)
 	if !loaded {
 		return status.Errorf(codes.NotFound, "peer %s not found", peerID)
+	}
+
+	// Add candidate parent ids to block parents.
+	for _, candidateParent := range candidateParents {
+		peer.BlockParents.Add(candidateParent.GetId())
 	}
 
 	if err := v.scheduling.ScheduleCandidateParents(ctx, peer, peer.BlockParents); err != nil {

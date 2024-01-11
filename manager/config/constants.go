@@ -41,9 +41,6 @@ const (
 	// DefaultGRPCPort is default port for grpc server.
 	DefaultGRPCPort = 65003
 
-	// DefaultGRPCPort is default port for grpc server.
-	DefaultGRPCAdvertisePort = 65003
-
 	// DefaultRESTAddr is default address for rest server.
 	DefaultRESTAddr = ":8080"
 )

@@ -6,7 +6,6 @@ server:
   pluginDir: foo
   grpc:
     advertiseIP: 0.0.0.0
-    advertisePort: 65003
     listenIP: 0.0.0.0
     port:
       start: 65003

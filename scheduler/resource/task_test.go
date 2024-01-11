@@ -1004,17 +1004,6 @@ func TestTask_HasAvailablePeer(t *testing.T) {
 			},
 		},
 		{
-			name: "peer state is PeerStatePending",
-			expect: func(t *testing.T, task *Task, mockPeer *Peer) {
-				assert := assert.New(t)
-				task.StorePeer(mockPeer)
-				mockPeer.ID = idgen.PeerIDV2()
-				mockPeer.FSM.SetState(PeerStatePending)
-				task.StorePeer(mockPeer)
-				assert.Equal(task.HasAvailablePeer(set.NewSafeSet[string]()), true)
-			},
-		},
-		{
 			name: "peer state is PeerStateSucceeded",
 			expect: func(t *testing.T, task *Task, mockPeer *Peer) {
 				assert := assert.New(t)

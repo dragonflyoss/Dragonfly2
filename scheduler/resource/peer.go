@@ -186,9 +186,6 @@ type Peer struct {
 	// NeedBackToSource is set to true.
 	NeedBackToSource *atomic.Bool
 
-	// ScheduleCount is schedule count.
-	ScheduleCount *atomic.Int32
-
 	// PieceUpdatedAt is piece update time.
 	PieceUpdatedAt *atomic.Time
 
@@ -218,7 +215,6 @@ func NewPeer(id string, cfg *config.ResourceConfig, task *Task, host *Host, opti
 		Host:                    host,
 		BlockParents:            set.NewSafeSet[string](),
 		NeedBackToSource:        atomic.NewBool(false),
-		ScheduleCount:           atomic.NewInt32(0),
 		PieceUpdatedAt:          atomic.NewTime(time.Now()),
 		CreatedAt:               atomic.NewTime(time.Now()),
 		UpdatedAt:               atomic.NewTime(time.Now()),
