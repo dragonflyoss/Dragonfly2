@@ -813,7 +813,7 @@ func (s *storageManager) reloadPersistentTask(gcCallback GCCallback, appendLoadE
 			TaskID: taskID,
 		}, t)
 
-		s.Lock()
+		s.indexRWMutex.Lock()
 		// update index
 		if ts, ok := s.indexTask2PeerTask[taskID]; ok {
 			ts = append(ts, t)
@@ -821,7 +821,7 @@ func (s *storageManager) reloadPersistentTask(gcCallback GCCallback, appendLoadE
 		} else {
 			s.indexTask2PeerTask[taskID] = []*localTaskStore{t}
 		}
-		s.Unlock()
+		s.indexRWMutex.Unlock()
 	}
 }
 
