@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"runtime/debug"
+	"strings"
 	"sync"
 	"time"
 
@@ -787,6 +788,10 @@ func (pt *peerTaskConductor) updateSynchronizers(lastNum int32, p *schedulerv1.P
 	return desiredPiece
 }
 
+func isSchedulerGoAway(err error) bool {
+	return strings.Contains(err.Error(), `connection error: desc = "error reading from server: EOF"`)
+}
+
 func (pt *peerTaskConductor) confirmReceivePeerPacketError(err error) (cont bool) {
 	select {
 	case <-pt.successCh:
@@ -823,6 +828,14 @@ func (pt *peerTaskConductor) confirmReceivePeerPacketError(err error) (cont bool
 		}
 	} else {
 		pt.Errorf("receive peer packet failed: %s", err)
+		if isSchedulerGoAway(err) {
+			regErr := pt.register()
+			if regErr == nil {
+				pt.Infof("reregister ok")
+				return true
+			}
+			pt.Errorf("reregister to scheduler error: %s", regErr)
+		}
 	}
 	pt.cancel(failedCode, failedReason)
 	return false
