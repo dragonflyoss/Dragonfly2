@@ -848,6 +848,10 @@ func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.S
 		// If trigger the seed peer download back-to-source,
 		// the need back-to-source flag should be true.
 		download.NeedBackToSource = true
+
+		// Output path should be empty, prevent the seed peer
+		// copy file to output path.
+		download.OutputPath = nil
 		if err := v.downloadTaskBySeedPeer(ctx, taskID, download, peer); err != nil {
 			// Collect RegisterPeerFailureCount metrics.
 			metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
