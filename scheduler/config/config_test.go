@@ -76,7 +76,6 @@ func TestConfig_Load(t *testing.T) {
 	config := &Config{
 		Scheduler: SchedulerConfig{
 			Algorithm:              "default",
-			MaxScheduleCount:       12,
 			BackToSourceCount:      3,
 			RetryBackToSourceLimit: 2,
 			RetryLimit:             10,

@@ -238,6 +238,8 @@ func (s *managerServerV2) UpdateSeedPeer(ctx context.Context, req *managerv2.Upd
 	seedPeer := models.SeedPeer{}
 	if err := s.db.WithContext(ctx).First(&seedPeer, models.SeedPeer{
 		Hostname:          req.Hostname,
+		IP:                req.Ip,
+		Port:              req.Port,
 		SeedPeerClusterID: uint(req.SeedPeerClusterId),
 	}).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -450,6 +452,8 @@ func (s *managerServerV2) UpdateScheduler(ctx context.Context, req *managerv2.Up
 	scheduler := models.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, models.Scheduler{
 		Hostname:           req.Hostname,
+		IP:                 req.Ip,
+		Port:               req.Port,
 		SchedulerClusterID: uint(req.SchedulerClusterId),
 	}).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

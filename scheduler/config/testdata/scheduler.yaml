@@ -12,7 +12,6 @@ server:
 
 scheduler:
   algorithm: default
-  maxScheduleCount: 12
   backToSourceCount: 3
   retryBackToSourceLimit: 2
   retryLimit: 10

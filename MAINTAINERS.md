@@ -6,7 +6,7 @@
 | :-----------------------------------------------: | :-------------: | :--------------------------: | :-----------------------------: |
 |    [allencloud](https://github.com/allencloud)    |    Allen Sun    |    shlallen1990@gmail.com    |          Alibaba Group          |
 |   [garfield009](https://github.com/garfield009)   |   Zuozheng Hu   | zuozheng.hzz@alibaba-inc.com |          Alibaba Group          |
-|      [bigerous](https://github.com/bigerous)      |    Dajun Cui    | cuidajun.cdj@alibaba-inc.com |          Alibaba Group          |
+|      [yyzai384](https://github.com/yyzai384)      |    Yuan Yang    |   qiguo.yy@alibaba-inc.com   |          Alibaba Group          |
 |      [bergwolf](https://github.com/bergwolf)      |    Peng Tao     |      bergwolf@hyper.sh       |            Ant Group            |
 |        [jim3ma](https://github.com/jim3ma)        |     Jim Ma      |     majinjing3@gmail.com     |            Ant Group            |
 |      [gaius-qi](https://github.com/gaius-qi)      |    Gaius Qi     |      gaius.qi@gmail.com      |            Ant Group            |

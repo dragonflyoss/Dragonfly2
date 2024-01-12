@@ -276,6 +276,9 @@ func TestDAG_GetRandomVertices(t *testing.T) {
 
 				vertices = d.GetRandomVertices(3)
 				assert.Equal(len(vertices), 2)
+
+				vertices = d.GetRandomVertices(4)
+				assert.Equal(len(vertices), 2)
 			},
 		},
 		{
