@@ -788,7 +788,7 @@ func (pt *peerTaskConductor) updateSynchronizers(lastNum int32, p *schedulerv1.P
 }
 
 /*
-When one scheduler goes away before the peer task done, we will receive the following error message:
+When one scheduler goes away(force killed or broken tcp connection) before the peer task done, we will receive the following error message:
 
 	receive peer packet failed: rpc error: code = Unavailable desc = closing transport due to: connection error: desc = "error reading from server: EOF", received prior goaway: code: NO_ERROR, debug data: "graceful_stop"
 
