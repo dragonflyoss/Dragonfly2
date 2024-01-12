@@ -20,12 +20,14 @@ import (
 	"math/big"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/montanaflynn/stats"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/math"
 	"d7y.io/dragonfly/v2/pkg/types"
+	"d7y.io/dragonfly/v2/scheduler/networktopology"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
@@ -47,6 +49,9 @@ const (
 
 	// Location affinity weight.
 	locationAffinityWeight = 0.15
+
+	// Network topology weight.
+	networkTopologyWeight = 0.05
 )
 
 const (
@@ -68,12 +73,31 @@ const (
 
 	// Maximum number of elements.
 	maxElementLen = 5
+
+	// defaultPingTimeout specifies a default timeout before ping exits.
+	defaultPingTimeout = 1 * time.Second
 )
 
-type evaluatorBase struct{}
+type evaluatorBase struct {
+	networktopology networktopology.NetworkTopology
+}
 
-func NewEvaluatorBase() Evaluator {
-	return &evaluatorBase{}
+type Option func(eb *evaluatorBase)
+
+// WithNetworkTopology sets the networkTopology.
+func WithNetworkTopology(networktopology networktopology.NetworkTopology) Option {
+	return func(eb *evaluatorBase) {
+		eb.networktopology = networktopology
+	}
+}
+
+func NewEvaluatorBase(options ...Option) Evaluator {
+	eb := &evaluatorBase{}
+
+	for _, opt := range options {
+		opt(eb)
+	}
+	return eb
 }
 
 // EvaluateParents sort parents by evaluating multiple feature scores.
@@ -81,7 +105,7 @@ func (eb *evaluatorBase) EvaluateParents(parents []*resource.Peer, child *resour
 	sort.Slice(
 		parents,
 		func(i, j int) bool {
-			return evaluate(parents[i], child, totalPieceCount) > evaluate(parents[j], child, totalPieceCount)
+			return eb.evaluate(parents[i], child, totalPieceCount) > eb.evaluate(parents[j], child, totalPieceCount)
 		},
 	)
 
@@ -89,7 +113,7 @@ func (eb *evaluatorBase) EvaluateParents(parents []*resource.Peer, child *resour
 }
 
 // The larger the value, the higher the priority.
-func evaluate(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
+func (eb *evaluatorBase) evaluate(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
 	parentLocation := parent.Host.Network.Location
 	parentIDC := parent.Host.Network.IDC
 	childLocation := child.Host.Network.Location
@@ -100,7 +124,8 @@ func evaluate(parent *resource.Peer, child *resource.Peer, totalPieceCount int32
 		freeUploadWeight*calculateFreeUploadScore(parent.Host) +
 		hostTypeWeight*calculateHostTypeScore(parent) +
 		idcAffinityWeight*calculateIDCAffinityScore(parentIDC, childIDC) +
-		locationAffinityWeight*calculateMultiElementAffinityScore(parentLocation, childLocation)
+		locationAffinityWeight*calculateMultiElementAffinityScore(parentLocation, childLocation) +
+		networkTopologyWeight*eb.calculateNetworkTopologyScore(parent.ID, child.ID)
 }
 
 // calculatePieceScore 0.0~unlimited larger and better.
@@ -206,6 +231,20 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 	}
 
 	return float64(score) / float64(maxElementLen)
+}
+
+// calculateNetworkTopologyScore 0.0~1.0 larger and better.
+func (eb *evaluatorBase) calculateNetworkTopologyScore(dst, src string) float64 {
+	if eb.networktopology == nil {
+		return minScore
+	}
+
+	averageRTT, err := eb.networktopology.Probes(dst, src).AverageRTT()
+	if err != nil {
+		return minScore
+	}
+
+	return float64(defaultPingTimeout-averageRTT) / float64(defaultPingTimeout)
 }
 
 func (eb *evaluatorBase) IsBadNode(peer *resource.Peer) bool {

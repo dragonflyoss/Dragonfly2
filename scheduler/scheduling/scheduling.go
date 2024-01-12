@@ -70,14 +70,33 @@ type scheduling struct {
 
 	// Scheduler dynamic configuration.
 	dynconfig config.DynconfigInterface
+
+	// evaluatorOptions is options of evalutor.
+	evaluatorOptions []evaluator.Option
 }
 
-func New(cfg *config.SchedulerConfig, dynconfig config.DynconfigInterface, pluginDir string) Scheduling {
-	return &scheduling{
-		evaluator: evaluator.New(cfg.Algorithm, pluginDir),
+// Option is a functional option for configuring the scheduling.
+type Option func(s *scheduling)
+
+// WithEvaluatorOptions set the options of evaluator.
+func WithEvaluatorOption(opts []evaluator.Option) Option {
+	return func(s *scheduling) {
+		s.evaluatorOptions = opts
+	}
+}
+
+func New(cfg *config.SchedulerConfig, dynconfig config.DynconfigInterface, pluginDir string, opts ...Option) Scheduling {
+	s := &scheduling{
 		config:    cfg,
 		dynconfig: dynconfig,
 	}
+
+	for _, opt := range opts {
+		opt(s)
+	}
+	s.evaluator = evaluator.New(cfg.Algorithm, pluginDir, s.evaluatorOptions...)
+
+	return s
 }
 
 // ScheduleCandidateParents schedules candidate parents to the normal peer.
