@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"io"
 	"runtime/debug"
-	"strings"
 	"sync"
 	"time"
 
@@ -793,14 +792,14 @@ When one scheduler goes away before the peer task done, we will receive the foll
 
 	receive peer packet failed: rpc error: code = Unavailable desc = closing transport due to: connection error: desc = "error reading from server: EOF", received prior goaway: code: NO_ERROR, debug data: "graceful_stop"
 
-The underlay error is "connection error: desc = \"error reading from server: EOF\"", only can be checked by searching message.
+The underlay error is "connection error: desc = \"error reading from server: EOF\"", the grpc code is codes.Unavailable.
 
 refer grpc-go link:
 https://github.com/grpc/grpc-go/blob/v1.60.1/test/goaway_test.go#L118
 https://github.com/grpc/grpc-go/blob/v1.60.1/internal/transport/http2_client.go#L987
 */
-func isSchedulerGoAway(err error) bool {
-	return strings.Contains(err.Error(), `connection error: desc = "error reading from server: EOF"`)
+func isSchedulerUnavailable(err error) bool {
+	return status.Code(err) == codes.Unavailable
 }
 
 func (pt *peerTaskConductor) confirmReceivePeerPacketError(err error) (cont bool) {
@@ -839,7 +838,7 @@ func (pt *peerTaskConductor) confirmReceivePeerPacketError(err error) (cont bool
 		}
 	} else {
 		pt.Errorf("receive peer packet failed: %s", err)
-		if isSchedulerGoAway(err) {
+		if isSchedulerUnavailable(err) {
 			regErr := pt.register()
 			if regErr == nil {
 				pt.Infof("reregister ok")
