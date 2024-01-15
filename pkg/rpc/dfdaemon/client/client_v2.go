@@ -49,6 +49,7 @@ func GetV2(ctx context.Context, dynconfig config.DynconfigInterface, opts ...grp
 		ctx,
 		resolver.SeedPeerVirtualTarget,
 		append([]grpc.DialOption{
+			grpc.WithIdleTimeout(0),
 			grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 			grpc.WithDefaultServiceConfig(pkgbalancer.BalancerServiceConfig),
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
