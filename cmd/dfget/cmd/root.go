@@ -101,13 +101,13 @@ var rootCmd = &cobra.Command{
 		// do get file
 		err = runDfget(cmd, d.DfgetLockPath(), d.DaemonSockPath())
 		if err != nil {
-			msg := fmt.Sprintf("download success: %t cost: %d ms error: %s", false, time.Since(start).Milliseconds(), err.Error())
+			msg := fmt.Sprintf("download success: %t, cost: %d ms error: %s", false, time.Since(start).Milliseconds(), err.Error())
 			logger.With("url", dfgetConfig.URL).Info(msg)
 			fmt.Println(msg)
 			return fmt.Errorf("download url %s: %w", dfgetConfig.URL, err)
 		}
 
-		msg := fmt.Sprintf("download success: %t cost: %d ms", true, time.Since(start).Milliseconds())
+		msg := fmt.Sprintf("download success: %t, cost: %d ms", true, time.Since(start).Milliseconds())
 		logger.With("url", dfgetConfig.URL).Info(msg)
 		fmt.Println(msg)
 		return nil
