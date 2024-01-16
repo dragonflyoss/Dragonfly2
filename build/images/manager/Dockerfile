@@ -1,4 +1,5 @@
 ARG BASE_IMAGE=alpine:3.17
+ARG DISTROLESS_IMAGE=scratch
 
 FROM node:20-alpine as console-builder
 
@@ -41,15 +42,18 @@ RUN if [ "$(uname -m)" = "ppc64le" ]; then \
     fi && \
     chmod +x /bin/grpc_health_probe
 
-FROM ${BASE_IMAGE}
+FROM ${BASE_IMAGE} as dnsconfig
+
+RUN mkdir -p /opt/dragonfly/bin/manager/console \
+    && echo "hosts: files dns" > /etc/nsswitch.conf
+
+FROM ${DISTROLESS_IMAGE}
 
 WORKDIR /opt/dragonfly
 
 ENV PATH=/opt/dragonfly/bin:$PATH
 
-RUN mkdir -p /opt/dragonfly/bin/manager/console \
-    && echo "hosts: files dns" > /etc/nsswitch.conf
-
+COPY --from=dnsconfig /etc/nsswitch.conf /etc/nsswitch.conf
 COPY --from=server-builder /opt/dragonfly/bin/manager /opt/dragonfly/bin/server
 COPY --from=health /bin/grpc_health_probe /bin/grpc_health_probe
 

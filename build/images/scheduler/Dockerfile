@@ -1,4 +1,5 @@
 ARG BASE_IMAGE=alpine:3.17
+ARG DISTROLESS_IMAGE=scratch
 
 FROM golang:1.21.1-alpine3.17 as builder
 
@@ -27,11 +28,15 @@ RUN if [ "$(uname -m)" = "ppc64le" ]; then \
     fi && \
     chmod +x /bin/grpc_health_probe
 
-FROM ${BASE_IMAGE}
+FROM ${BASE_IMAGE} as dnsconfig
 
-ENV PATH=/opt/dragonfly/bin:$PATH
 RUN echo "hosts: files dns" > /etc/nsswitch.conf
 
+FROM ${DISTROLESS_IMAGE}
+
+ENV PATH=/opt/dragonfly/bin:$PATH
+
+COPY --from=dnsconfig /etc/nsswitch.conf /etc/nsswitch.conf
 COPY --from=builder /opt/dragonfly/bin/scheduler /opt/dragonfly/bin/scheduler
 COPY --from=health /bin/grpc_health_probe /bin/grpc_health_probe
 
