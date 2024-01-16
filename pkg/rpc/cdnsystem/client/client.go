@@ -58,6 +58,7 @@ func GetClientByAddr(ctx context.Context, netAddr dfnet.NetAddr, opts ...grpc.Di
 		ctx,
 		netAddr.Addr,
 		append([]grpc.DialOption{
+			grpc.WithIdleTimeout(0),
 			grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
 				rpc.ConvertErrorUnaryClientInterceptor,
@@ -95,6 +96,7 @@ func GetClient(ctx context.Context, dynconfig config.DynconfigInterface, opts ..
 		ctx,
 		resolver.SeedPeerVirtualTarget,
 		append([]grpc.DialOption{
+			grpc.WithIdleTimeout(0),
 			grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 			grpc.WithDefaultServiceConfig(pkgbalancer.BalancerServiceConfig),
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
