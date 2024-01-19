@@ -326,9 +326,10 @@ func checkAndSpawnDaemon(dfgetLockPath, daemonSockPath string) (client.V1, error
 	for {
 		select {
 		case <-timeout:
-			return nil, errors.New("the daemon is unhealthy")
+			return nil, errors.Join(errors.New("the daemon is unhealthy"), err)
 		case <-tick.C:
 			if err = dfdaemonClient.CheckHealth(context.Background()); err != nil {
+				logger.Debugf("check health failed: %s", err)
 				continue
 			}
 			return dfdaemonClient, nil
