@@ -516,12 +516,6 @@ func (s *scheduling) filterCandidateParents(peer *resource.Peer, blocklist set.S
 			continue
 		}
 
-		// Candidate parent can add edge with peer.
-		if !peer.Task.CanAddPeerEdge(candidateParent.ID, peer.ID) {
-			peer.Log.Debugf("can not add edge with parent %s", candidateParent.ID)
-			continue
-		}
-
 		// Candidate parent host is not allowed to be the same as the peer host,
 		// because dfdaemon cannot handle the situation
 		// where two tasks are downloading and downloading each other.
@@ -559,6 +553,12 @@ func (s *scheduling) filterCandidateParents(peer *resource.Peer, blocklist set.S
 		if candidateParent.Host.FreeUploadCount() <= 0 {
 			peer.Log.Debugf("parent %s is not selected because its free upload is empty, upload limit is %d, upload count is %d",
 				candidateParent.ID, candidateParent.Host.ConcurrentUploadLimit.Load(), candidateParent.Host.ConcurrentUploadCount.Load())
+			continue
+		}
+
+		// Candidate parent can add edge with peer.
+		if !peer.Task.CanAddPeerEdge(candidateParent.ID, peer.ID) {
+			peer.Log.Debugf("can not add edge with parent %s", candidateParent.ID)
 			continue
 		}
 
