@@ -17,146 +17,24 @@
 package evaluator
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/atomic"
+	"go.uber.org/mock/gomock"
 
 	commonv2 "d7y.io/api/v2/pkg/apis/common/v2"
 
-	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/types"
-	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/networktopology"
+	networktopologymocks "d7y.io/dragonfly/v2/scheduler/networktopology/mocks"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
-var (
-	mockRawHost = resource.Host{
-		ID:              mockHostID,
-		Type:            types.HostTypeNormal,
-		Hostname:        "foo",
-		IP:              "127.0.0.1",
-		Port:            8003,
-		DownloadPort:    8001,
-		OS:              "darwin",
-		Platform:        "darwin",
-		PlatformFamily:  "Standalone Workstation",
-		PlatformVersion: "11.1",
-		KernelVersion:   "20.2.0",
-		CPU:             mockCPU,
-		Memory:          mockMemory,
-		Network:         mockNetwork,
-		Disk:            mockDisk,
-		Build:           mockBuild,
-		CreatedAt:       atomic.NewTime(time.Now()),
-		UpdatedAt:       atomic.NewTime(time.Now()),
-	}
-
-	mockRawSeedHost = resource.Host{
-		ID:              mockSeedHostID,
-		Type:            types.HostTypeSuperSeed,
-		Hostname:        "bar",
-		IP:              "127.0.0.1",
-		Port:            8003,
-		DownloadPort:    8001,
-		OS:              "darwin",
-		Platform:        "darwin",
-		PlatformFamily:  "Standalone Workstation",
-		PlatformVersion: "11.1",
-		KernelVersion:   "20.2.0",
-		CPU:             mockCPU,
-		Memory:          mockMemory,
-		Network:         mockNetwork,
-		Disk:            mockDisk,
-		Build:           mockBuild,
-		CreatedAt:       atomic.NewTime(time.Now()),
-		UpdatedAt:       atomic.NewTime(time.Now()),
-	}
-
-	mockCPU = resource.CPU{
-		LogicalCount:   4,
-		PhysicalCount:  2,
-		Percent:        1,
-		ProcessPercent: 0.5,
-		Times: resource.CPUTimes{
-			User:      240662.2,
-			System:    317950.1,
-			Idle:      3393691.3,
-			Nice:      0,
-			Iowait:    0,
-			Irq:       0,
-			Softirq:   0,
-			Steal:     0,
-			Guest:     0,
-			GuestNice: 0,
-		},
-	}
-
-	mockMemory = resource.Memory{
-		Total:              17179869184,
-		Available:          5962813440,
-		Used:               11217055744,
-		UsedPercent:        65.291858,
-		ProcessUsedPercent: 41.525125,
-		Free:               2749598908,
-	}
-
-	mockNetwork = resource.Network{
-		TCPConnectionCount:       10,
-		UploadTCPConnectionCount: 1,
-		Location:                 mockHostLocation,
-		IDC:                      mockHostIDC,
-	}
-
-	mockDisk = resource.Disk{
-		Total:             499963174912,
-		Free:              37226479616,
-		Used:              423809622016,
-		UsedPercent:       91.92547406065952,
-		InodesTotal:       4882452880,
-		InodesUsed:        7835772,
-		InodesFree:        4874617108,
-		InodesUsedPercent: 0.1604884305611568,
-	}
-
-	mockBuild = resource.Build{
-		GitVersion: "v1.0.0",
-		GitCommit:  "221176b117c6d59366d68f2b34d38be50c935883",
-		GoVersion:  "1.18",
-		Platform:   "darwin",
-	}
-
-	mockTaskBackToSourceLimit int32 = 200
-	mockTaskURL                     = "http://example.com/foo"
-	mockTaskID                      = idgen.TaskIDV2(mockTaskURL, mockTaskDigest.String(), mockTaskTag, mockTaskApplication, mockTaskPieceLength, mockTaskFilters)
-	mockTaskDigest                  = digest.New(digest.AlgorithmSHA256, "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4")
-	mockTaskTag                     = "d7y"
-	mockTaskApplication             = "foo"
-	mockTaskFilters                 = []string{"bar"}
-	mockTaskHeader                  = map[string]string{"content-length": "100"}
-	mockTaskPieceLength       int32 = 2048
-	mockResourceConfig              = &config.ResourceConfig{
-		Task: config.TaskConfig{
-			DownloadTiny: config.DownloadTinyConfig{
-				Scheme:  config.DefaultResourceTaskDownloadTinyScheme,
-				Timeout: config.DefaultResourceTaskDownloadTinyTimeout,
-				TLS: config.DownloadTinyTLSClientConfig{
-					InsecureSkipVerify: true,
-				},
-			},
-		},
-	}
-	mockHostID       = idgen.HostIDV2("127.0.0.1", "foo")
-	mockSeedHostID   = idgen.HostIDV2("127.0.0.1", "bar")
-	mockHostLocation = "bas"
-	mockHostIDC      = "baz"
-	mockPeerID       = idgen.PeerIDV2()
-)
-
-func TestEvaluatorBase_NewEvaluatorBase(t *testing.T) {
+func TestEvaluatorNetworkTopology_NewEvaluatorNetworkTopology(t *testing.T) {
 	tests := []struct {
 		name   string
 		expect func(t *testing.T, e any)
@@ -165,25 +43,28 @@ func TestEvaluatorBase_NewEvaluatorBase(t *testing.T) {
 			name: "new evaluator commonv1",
 			expect: func(t *testing.T, e any) {
 				assert := assert.New(t)
-				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
+				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorNetworkTopology")
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, NewEvaluatorBase())
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			mockNetworkTopology := networktopologymocks.NewMockNetworkTopology(ctl)
+			tc.expect(t, NewEvaluatorNetworkTopology(WithNetworkTopology(mockNetworkTopology)))
 		})
 	}
 }
 
-func TestEvaluatorBase_EvaluateParents(t *testing.T) {
+func TestEvaluatorNetworkTopology_EvaluateParents(t *testing.T) {
 	tests := []struct {
 		name            string
 		parents         []*resource.Peer
 		child           *resource.Peer
 		totalPieceCount int32
-		mock            func(parent []*resource.Peer, child *resource.Peer)
+		mock            func(parents []*resource.Peer, child *resource.Peer, p networktopology.Probes, mn *networktopologymocks.MockNetworkTopologyMockRecorder, mp *networktopologymocks.MockProbesMockRecorder)
 		expect          func(t *testing.T, parents []*resource.Peer)
 	}{
 		{
@@ -195,12 +76,11 @@ func TestEvaluatorBase_EvaluateParents(t *testing.T) {
 					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)),
 			totalPieceCount: 1,
-			mock: func(parent []*resource.Peer, child *resource.Peer) {
+			mock: func(parents []*resource.Peer, child *resource.Peer, p networktopology.Probes, mn *networktopologymocks.MockNetworkTopologyMockRecorder, mp *networktopologymocks.MockProbesMockRecorder) {
 			},
 			expect: func(t *testing.T, parents []*resource.Peer) {
 				assert := assert.New(t)
 				assert.Equal(len(parents), 0)
-
 			},
 		},
 		{
@@ -218,14 +98,13 @@ func TestEvaluatorBase_EvaluateParents(t *testing.T) {
 					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)),
 			totalPieceCount: 1,
-			mock: func(parent []*resource.Peer, child *resource.Peer) {
+			mock: func(parents []*resource.Peer, child *resource.Peer, p networktopology.Probes, mn *networktopologymocks.MockNetworkTopologyMockRecorder, mp *networktopologymocks.MockProbesMockRecorder) {
 			},
 			expect: func(t *testing.T, parents []*resource.Peer) {
 				assert := assert.New(t)
 				assert.Equal(len(parents), 1)
 				assert.Equal(parents[0].Task.ID, mockTaskID)
 				assert.Equal(parents[0].Host.ID, mockRawSeedHost.ID)
-
 			},
 		},
 		{
@@ -263,11 +142,13 @@ func TestEvaluatorBase_EvaluateParents(t *testing.T) {
 					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)),
 			totalPieceCount: 1,
-			mock: func(parents []*resource.Peer, child *resource.Peer) {
+			mock: func(parents []*resource.Peer, child *resource.Peer, p networktopology.Probes, mn *networktopologymocks.MockNetworkTopologyMockRecorder, mp *networktopologymocks.MockProbesMockRecorder) {
 				parents[1].Host.ConcurrentUploadCount.Add(4)
 				parents[2].Host.ConcurrentUploadCount.Add(3)
 				parents[3].Host.ConcurrentUploadCount.Add(2)
 				parents[4].Host.ConcurrentUploadCount.Add(1)
+				mn.Probes(gomock.Any(), gomock.Any()).Return(p).Times(20)
+				mp.AverageRTT().Return(1*time.Second, nil).Times(20)
 			},
 			expect: func(t *testing.T, parents []*resource.Peer) {
 				assert := assert.New(t)
@@ -314,11 +195,13 @@ func TestEvaluatorBase_EvaluateParents(t *testing.T) {
 					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)),
 			totalPieceCount: 1,
-			mock: func(parents []*resource.Peer, child *resource.Peer) {
+			mock: func(parents []*resource.Peer, child *resource.Peer, p networktopology.Probes, mn *networktopologymocks.MockNetworkTopologyMockRecorder, mp *networktopologymocks.MockProbesMockRecorder) {
 				parents[1].FinishedPieces.Set(0)
 				parents[2].FinishedPieces.Set(0).Set(1)
 				parents[3].FinishedPieces.Set(0).Set(1).Set(2)
 				parents[4].FinishedPieces.Set(0).Set(1).Set(2).Set(3)
+				mn.Probes(gomock.Any(), gomock.Any()).Return(p).Times(20)
+				mp.AverageRTT().Return(1*time.Second, nil).Times(20)
 			},
 			expect: func(t *testing.T, parents []*resource.Peer) {
 				assert := assert.New(t)
@@ -330,24 +213,61 @@ func TestEvaluatorBase_EvaluateParents(t *testing.T) {
 				assert.Equal(parents[4].Host.ID, mockRawSeedHost.ID)
 			},
 		},
+		{
+			name: "evaluate single parent with networkTopology",
+			parents: []*resource.Peer{
+				resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig,
+					resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength)),
+					resource.NewHost(
+						mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
+						mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)),
+				resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig,
+					resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength)),
+					resource.NewHost(
+						"bar", mockRawSeedHost.IP, mockRawSeedHost.Hostname,
+						mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)),
+			},
+			child: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig,
+				resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength)),
+				resource.NewHost(
+					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)),
+			totalPieceCount: 1,
+			mock: func(parents []*resource.Peer, child *resource.Peer, p networktopology.Probes, mn *networktopologymocks.MockNetworkTopologyMockRecorder, mp *networktopologymocks.MockProbesMockRecorder) {
+				mn.Probes(parents[0].ID, child.ID).Return(p)
+				mp.AverageRTT().Return(100*time.Millisecond, nil)
+				mn.Probes(parents[1].ID, child.ID).Return(p)
+				mp.AverageRTT().Return(200*time.Millisecond, nil)
+			},
+			expect: func(t *testing.T, parents []*resource.Peer) {
+				assert := assert.New(t)
+				assert.Equal(len(parents), 2)
+				assert.Equal(parents[0].Host.ID, "bar")
+				assert.Equal(parents[1].Host.ID, mockRawSeedHost.ID)
+			},
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			eb := NewEvaluatorBase()
-			tc.mock(tc.parents, tc.child)
-			tc.expect(t, eb.EvaluateParents(tc.parents, tc.child, tc.totalPieceCount))
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			mockNetworkTopology := networktopologymocks.NewMockNetworkTopology(ctl)
+			mockProbe := networktopologymocks.NewMockProbes(ctl)
+			en := NewEvaluatorNetworkTopology(WithNetworkTopology(mockNetworkTopology))
+			tc.mock(tc.parents, tc.child, mockProbe, mockNetworkTopology.EXPECT(), mockProbe.EXPECT())
+			tc.expect(t, en.EvaluateParents(tc.parents, tc.child, tc.totalPieceCount))
 		})
 	}
 }
 
-func TestEvaluatorBase_evaluate(t *testing.T) {
+func TestEvaluatorNetworkTopology_evaluate(t *testing.T) {
 	tests := []struct {
 		name            string
 		parent          *resource.Peer
 		child           *resource.Peer
 		totalPieceCount int32
-		mock            func(parent *resource.Peer, child *resource.Peer)
+		mock            func(parent *resource.Peer, child *resource.Peer, p networktopology.Probes, mp *networktopologymocks.MockProbesMockRecorder, mn *networktopologymocks.MockNetworkTopologyMockRecorder)
 		expect          func(t *testing.T, score float64)
 	}{
 		{
@@ -363,11 +283,13 @@ func TestEvaluatorBase_evaluate(t *testing.T) {
 					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)),
 			totalPieceCount: 1,
-			mock: func(parent *resource.Peer, child *resource.Peer) {
+			mock: func(parent *resource.Peer, child *resource.Peer, p networktopology.Probes, mp *networktopologymocks.MockProbesMockRecorder, mn *networktopologymocks.MockNetworkTopologyMockRecorder) {
+				mn.Probes(parent.ID, child.ID).Return(p)
+				mp.AverageRTT().Return(500*time.Millisecond, nil)
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(0.35))
+				assert.Equal(score, float64(0.4))
 			},
 		},
 		{
@@ -383,25 +305,32 @@ func TestEvaluatorBase_evaluate(t *testing.T) {
 					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)),
 			totalPieceCount: 1,
-			mock: func(parent *resource.Peer, child *resource.Peer) {
+			mock: func(parent *resource.Peer, child *resource.Peer, p networktopology.Probes, mp *networktopologymocks.MockProbesMockRecorder, mn *networktopologymocks.MockNetworkTopologyMockRecorder) {
 				parent.FinishedPieces.Set(0)
+				mn.Probes(parent.ID, child.ID).Return(p)
+				mp.AverageRTT().Return(500*time.Millisecond, nil)
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(0.55))
+				assert.Equal(score, float64(0.6))
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.mock(tc.parent, tc.child)
-			tc.expect(t, evaluate(tc.parent, tc.child, tc.totalPieceCount))
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			mockNetworkTopology := networktopologymocks.NewMockNetworkTopology(ctl)
+			mockProbe := networktopologymocks.NewMockProbes(ctl)
+			en := NewEvaluatorNetworkTopology(WithNetworkTopology(mockNetworkTopology))
+			tc.mock(tc.parent, tc.child, mockProbe, mockProbe.EXPECT(), mockNetworkTopology.EXPECT())
+			tc.expect(t, en.(*evaluatorNetworkTopology).evaluate(tc.parent, tc.child, tc.totalPieceCount))
 		})
 	}
 }
 
-func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
+func TestEvaluatorNetworkTopology_networkTopologyPartCalculatePieceScore(t *testing.T) {
 	mockHost := resource.NewHost(
 		mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 		mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
@@ -515,12 +444,12 @@ func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.mock(tc.parent, tc.child)
-			tc.expect(t, calculatePieceScore(tc.parent, tc.child, tc.totalPieceCount))
+			tc.expect(t, networkTopologyPartCalculatePieceScore(tc.parent, tc.child, tc.totalPieceCount))
 		})
 	}
 }
 
-func TestEvaluatorBase_calculatehostUploadSuccessScore(t *testing.T) {
+func TestEvaluatorNetworkTopology_networkTopologyPartCalculatehostUploadSuccessScore(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(host *resource.Host)
@@ -569,12 +498,12 @@ func TestEvaluatorBase_calculatehostUploadSuccessScore(t *testing.T) {
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
 			mockPeer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, host)
 			tc.mock(host)
-			tc.expect(t, calculateParentHostUploadSuccessScore(mockPeer))
+			tc.expect(t, networkTopologyPartCalculateParentHostUploadSuccessScore(mockPeer))
 		})
 	}
 }
 
-func TestEvaluatorBase_calculateFreeUploadScore(t *testing.T) {
+func TestEvaluatorNetworkTopology_networkTopologyPartCalculateFreeUploadScore(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(host *resource.Host, mockPeer *resource.Peer)
@@ -618,12 +547,12 @@ func TestEvaluatorBase_calculateFreeUploadScore(t *testing.T) {
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
 			mockPeer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, host)
 			tc.mock(host, mockPeer)
-			tc.expect(t, calculateFreeUploadScore(host))
+			tc.expect(t, networkTopologyPartCalculateFreeUploadScore(host))
 		})
 	}
 }
 
-func TestEvaluatorBase_calculateHostTypeScore(t *testing.T) {
+func TestEvaluatorNetworkTopology_networkTopologyPartCalculateHostTypeScore(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(peer *resource.Peer)
@@ -669,12 +598,12 @@ func TestEvaluatorBase_calculateHostTypeScore(t *testing.T) {
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
 			peer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 			tc.mock(peer)
-			tc.expect(t, calculateHostTypeScore(peer))
+			tc.expect(t, networkTopologyPartCalculateHostTypeScore(peer))
 		})
 	}
 }
 
-func TestEvaluatorBase_calculateIDCAffinityScore(t *testing.T) {
+func TestEvaluatorNetworkTopology_networkTopologyPartCalculateIDCAffinityScore(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(dstHost *resource.Host, srcHost *resource.Host)
@@ -725,8 +654,8 @@ func TestEvaluatorBase_calculateIDCAffinityScore(t *testing.T) {
 		{
 			name: "idc is the same",
 			mock: func(dstHost *resource.Host, srcHost *resource.Host) {
-				dstHost.Network.IDC = "example"
-				srcHost.Network.IDC = "example"
+				dstHost.Network.IDC = "bal"
+				srcHost.Network.IDC = "bal"
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
@@ -744,12 +673,12 @@ func TestEvaluatorBase_calculateIDCAffinityScore(t *testing.T) {
 				mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
 				mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)
 			tc.mock(dstHost, srcHost)
-			tc.expect(t, calculateIDCAffinityScore(dstHost.Network.IDC, srcHost.Network.IDC))
+			tc.expect(t, networkTopologyPartCalculateIDCAffinityScore(dstHost.Network.IDC, srcHost.Network.IDC))
 		})
 	}
 }
 
-func TestEvaluatorBase_calculateMultiElementAffinityScore(t *testing.T) {
+func TestEvaluatorNetworkTopology_networkTopologyPartCalculateMultiElementAffinityScore(t *testing.T) {
 	tests := []struct {
 		name   string
 		dst    string
@@ -868,12 +797,73 @@ func TestEvaluatorBase_calculateMultiElementAffinityScore(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, calculateMultiElementAffinityScore(tc.dst, tc.src))
+			tc.expect(t, networkTopologyPartCalculateMultiElementAffinityScore(tc.dst, tc.src))
 		})
 	}
 }
 
-func TestEvaluatorBase_IsBadNode(t *testing.T) {
+func TestEvaluatorNetworkTopology_calculateNetworkTopologyScore(t *testing.T) {
+	tests := []struct {
+		name   string
+		parent *resource.Peer
+		child  *resource.Peer
+		mock   func(parent *resource.Peer, child *resource.Peer, p networktopology.Probes, mn *networktopologymocks.MockNetworkTopologyMockRecorder, mp *networktopologymocks.MockProbesMockRecorder)
+		expect func(t *testing.T, parent *resource.Peer, child *resource.Peer, score float64)
+	}{
+		{
+			name: "calculate parent networktopology score",
+			parent: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig,
+				resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength)),
+				resource.NewHost(mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
+					mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)),
+			child: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig,
+				resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength)),
+				resource.NewHost(mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)),
+			mock: func(parent *resource.Peer, child *resource.Peer, p networktopology.Probes, mn *networktopologymocks.MockNetworkTopologyMockRecorder, mp *networktopologymocks.MockProbesMockRecorder) {
+				mn.Probes(parent.ID, child.ID).Return(p)
+				mp.AverageRTT().Return(100*time.Millisecond, nil)
+			},
+			expect: func(t *testing.T, parent *resource.Peer, child *resource.Peer, score float64) {
+				assert := assert.New(t)
+				assert.Equal(score, float64(0.9))
+			},
+		},
+		{
+			name: "get average error",
+			parent: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig,
+				resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength)),
+				resource.NewHost(mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
+					mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)),
+			child: resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig,
+				resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength)),
+				resource.NewHost(mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)),
+			mock: func(parent *resource.Peer, child *resource.Peer, p networktopology.Probes, mn *networktopologymocks.MockNetworkTopologyMockRecorder, mp *networktopologymocks.MockProbesMockRecorder) {
+				mn.Probes(parent.ID, child.ID).Return(p)
+				mp.AverageRTT().Return(time.Duration(0), errors.New("foo"))
+			},
+			expect: func(t *testing.T, parent *resource.Peer, child *resource.Peer, score float64) {
+				assert := assert.New(t)
+				assert.Equal(score, float64(0))
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			mockNetworkTopology := networktopologymocks.NewMockNetworkTopology(ctl)
+			en := NewEvaluatorNetworkTopology(WithNetworkTopology(mockNetworkTopology))
+			mockProbe := networktopologymocks.NewMockProbes(ctl)
+			tc.mock(tc.parent, tc.child, mockProbe, mockNetworkTopology.EXPECT(), mockProbe.EXPECT())
+			tc.expect(t, tc.parent, tc.child, en.(*evaluatorNetworkTopology).networkTopologyPartCalculateNetworkTopologyScore(tc.parent.ID, tc.child.ID))
+		})
+	}
+}
+
+func TestEvaluatorNetworkTopology_IsBadNode(t *testing.T) {
 	mockHost := resource.NewHost(
 		mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 		mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
@@ -1038,9 +1028,12 @@ func TestEvaluatorBase_IsBadNode(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			eb := NewEvaluatorBase()
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			mockNetworkTopology := networktopologymocks.NewMockNetworkTopology(ctl)
+			en := NewEvaluatorNetworkTopology(WithNetworkTopology(mockNetworkTopology))
 			tc.mock(tc.peer)
-			tc.expect(t, eb.IsBadNode(tc.peer))
+			tc.expect(t, en.IsBadNode(tc.peer))
 		})
 	}
 }

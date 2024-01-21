@@ -23,6 +23,14 @@ scheduler:
     taskGCInterval: 30s
     hostGCInterval: 1m
     hostTTL: 1m
+  networkTopology:
+    collectInterval: 60s
+    probe:
+      queueLength: 5
+      count: 10
+    cache:
+      interval: 5m  
+      ttl: 5m  
 
 database:
   redis:
@@ -90,16 +98,6 @@ security:
 
 network:
   enableIPv6: true
-
-networkTopology:
-  enable: true
-  collectInterval: 60s
-  probe:
-    queueLength: 5
-    count: 10
-  cache:
-    interval: 5m  
-    ttl: 5m
 
 trainer:
   enable: false

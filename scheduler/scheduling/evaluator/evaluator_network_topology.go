@@ -20,68 +20,92 @@ import (
 	"math/big"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/montanaflynn/stats"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/math"
 	"d7y.io/dragonfly/v2/pkg/types"
+	"d7y.io/dragonfly/v2/scheduler/networktopology"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
 const (
 	// Finished piece weight.
-	finishedPieceWeight float64 = 0.2
+	networkTopologyPartFinishedPieceWeight float64 = 0.2
 
 	// Parent's host upload success weight.
-	parentHostUploadSuccessWeight = 0.2
+	networkTopologyPartParentHostUploadSuccessWeight = 0.2
+
+	// Network topology weight.
+	networkTopologyPartNetworkTopologyWeight = 0.2
 
 	// Free upload weight.
-	freeUploadWeight = 0.15
+	networkTopologyPartFreeUploadWeight = 0.1
 
 	// Host type weight.
-	hostTypeWeight = 0.15
+	networkTopologyPartHostTypeWeight = 0.1
 
 	// IDC affinity weight.
-	idcAffinityWeight = 0.15
+	networkTopologyPartIDCAffinityWeight = 0.1
 
 	// Location affinity weight.
-	locationAffinityWeight = 0.15
+	networkTopologyPartLocationAffinityWeight = 0.1
 )
 
 const (
 	// Maximum score.
-	maxScore float64 = 1
+	networkTopologyPartMaxScore float64 = 1
 
 	// Minimum score.
-	minScore = 0
+	networkTopologyPartMinScore = 0
 )
 
 const (
 	// If the number of samples is greater than or equal to 30,
 	// it is close to the normal distribution.
-	normalDistributionLen = 30
+	networkTopologyPartNormalDistributionLen = 30
 
 	// When costs len is greater than or equal to 2,
 	// the last cost can be compared and calculated.
-	minAvailableCostLen = 2
+	networkTopologyPartMinAvailableCostLen = 2
 
 	// Maximum number of elements.
-	maxElementLen = 5
+	networkTopologyPartMaxElementLen = 5
+
+	// defaultPingTimeout specifies a default timeout before ping exits.
+	defaultPingTimeout = 1 * time.Second
 )
 
-type evaluatorBase struct{}
+type evaluatorNetworkTopology struct {
+	networktopology networktopology.NetworkTopology
+}
 
-func NewEvaluatorBase() Evaluator {
-	return &evaluatorBase{}
+type Option func(en *evaluatorNetworkTopology)
+
+// WithNetworkTopology sets the networkTopology.
+func WithNetworkTopology(networktopology networktopology.NetworkTopology) Option {
+	return func(en *evaluatorNetworkTopology) {
+		en.networktopology = networktopology
+	}
+}
+
+func NewEvaluatorNetworkTopology(options ...Option) Evaluator {
+	en := &evaluatorNetworkTopology{}
+
+	for _, opt := range options {
+		opt(en)
+	}
+	return en
 }
 
 // EvaluateParents sort parents by evaluating multiple feature scores.
-func (eb *evaluatorBase) EvaluateParents(parents []*resource.Peer, child *resource.Peer, totalPieceCount int32) []*resource.Peer {
+func (en *evaluatorNetworkTopology) EvaluateParents(parents []*resource.Peer, child *resource.Peer, totalPieceCount int32) []*resource.Peer {
 	sort.Slice(
 		parents,
 		func(i, j int) bool {
-			return evaluate(parents[i], child, totalPieceCount) > evaluate(parents[j], child, totalPieceCount)
+			return en.evaluate(parents[i], child, totalPieceCount) > en.evaluate(parents[j], child, totalPieceCount)
 		},
 	)
 
@@ -89,22 +113,23 @@ func (eb *evaluatorBase) EvaluateParents(parents []*resource.Peer, child *resour
 }
 
 // The larger the value, the higher the priority.
-func evaluate(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
+func (en *evaluatorNetworkTopology) evaluate(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
 	parentLocation := parent.Host.Network.Location
 	parentIDC := parent.Host.Network.IDC
 	childLocation := child.Host.Network.Location
 	childIDC := child.Host.Network.IDC
 
-	return finishedPieceWeight*calculatePieceScore(parent, child, totalPieceCount) +
-		parentHostUploadSuccessWeight*calculateParentHostUploadSuccessScore(parent) +
-		freeUploadWeight*calculateFreeUploadScore(parent.Host) +
-		hostTypeWeight*calculateHostTypeScore(parent) +
-		idcAffinityWeight*calculateIDCAffinityScore(parentIDC, childIDC) +
-		locationAffinityWeight*calculateMultiElementAffinityScore(parentLocation, childLocation)
+	return networkTopologyPartFinishedPieceWeight*networkTopologyPartCalculatePieceScore(parent, child, totalPieceCount) +
+		networkTopologyPartParentHostUploadSuccessWeight*networkTopologyPartCalculateParentHostUploadSuccessScore(parent) +
+		networkTopologyPartFreeUploadWeight*networkTopologyPartCalculateFreeUploadScore(parent.Host) +
+		networkTopologyPartHostTypeWeight*networkTopologyPartCalculateHostTypeScore(parent) +
+		networkTopologyPartIDCAffinityWeight*networkTopologyPartCalculateIDCAffinityScore(parentIDC, childIDC) +
+		networkTopologyPartLocationAffinityWeight*networkTopologyPartCalculateMultiElementAffinityScore(parentLocation, childLocation) +
+		networkTopologyPartNetworkTopologyWeight*en.networkTopologyPartCalculateNetworkTopologyScore(parent.ID, child.ID)
 }
 
-// calculatePieceScore 0.0~unlimited larger and better.
-func calculatePieceScore(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
+// networkTopologyPartCalculatePieceScore 0.0~unlimited larger and better.
+func networkTopologyPartCalculatePieceScore(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
 	// If the total piece is determined, normalize the number of
 	// pieces downloaded by the parent node.
 	if totalPieceCount > 0 {
@@ -119,71 +144,71 @@ func calculatePieceScore(parent *resource.Peer, child *resource.Peer, totalPiece
 	return float64(parentFinishedPieceCount) - float64(childFinishedPieceCount)
 }
 
-// calculateParentHostUploadSuccessScore 0.0~unlimited larger and better.
-func calculateParentHostUploadSuccessScore(peer *resource.Peer) float64 {
+// networkTopologyPartCalculateParentHostUploadSuccessScore 0.0~unlimited larger and better.
+func networkTopologyPartCalculateParentHostUploadSuccessScore(peer *resource.Peer) float64 {
 	uploadCount := peer.Host.UploadCount.Load()
 	uploadFailedCount := peer.Host.UploadFailedCount.Load()
 	if uploadCount < uploadFailedCount {
-		return minScore
+		return networkTopologyPartMinScore
 	}
 
 	// Host has not been scheduled, then it is scheduled first.
 	if uploadCount == 0 && uploadFailedCount == 0 {
-		return maxScore
+		return networkTopologyPartMaxScore
 	}
 
 	return float64(uploadCount-uploadFailedCount) / float64(uploadCount)
 }
 
-// calculateFreeUploadScore 0.0~1.0 larger and better.
-func calculateFreeUploadScore(host *resource.Host) float64 {
+// networkTopologyPartCalculateFreeUploadScore 0.0~1.0 larger and better.
+func networkTopologyPartCalculateFreeUploadScore(host *resource.Host) float64 {
 	ConcurrentUploadLimit := host.ConcurrentUploadLimit.Load()
 	freeUploadCount := host.FreeUploadCount()
 	if ConcurrentUploadLimit > 0 && freeUploadCount > 0 {
 		return float64(freeUploadCount) / float64(ConcurrentUploadLimit)
 	}
 
-	return minScore
+	return networkTopologyPartMinScore
 }
 
-// calculateHostTypeScore 0.0~1.0 larger and better.
-func calculateHostTypeScore(peer *resource.Peer) float64 {
+// networkTopologyPartCalculateHostTypeScore 0.0~1.0 larger and better.
+func networkTopologyPartCalculateHostTypeScore(peer *resource.Peer) float64 {
 	// When the task is downloaded for the first time,
 	// peer will be scheduled to seed peer first,
 	// otherwise it will be scheduled to dfdaemon first.
 	if peer.Host.Type != types.HostTypeNormal {
 		if peer.FSM.Is(resource.PeerStateReceivedNormal) ||
 			peer.FSM.Is(resource.PeerStateRunning) {
-			return maxScore
+			return networkTopologyPartMaxScore
 		}
 
-		return minScore
+		return networkTopologyPartMinScore
 	}
 
-	return maxScore * 0.5
+	return networkTopologyPartMaxScore * 0.5
 }
 
 // calculateIDCAffinityScore 0.0~1.0 larger and better.
-func calculateIDCAffinityScore(dst, src string) float64 {
+func networkTopologyPartCalculateIDCAffinityScore(dst, src string) float64 {
 	if dst == "" || src == "" {
-		return minScore
+		return networkTopologyPartMinScore
 	}
 
 	if strings.EqualFold(dst, src) {
-		return maxScore
+		return networkTopologyPartMaxScore
 	}
 
-	return minScore
+	return networkTopologyPartMinScore
 }
 
-// calculateMultiElementAffinityScore 0.0~1.0 larger and better.
-func calculateMultiElementAffinityScore(dst, src string) float64 {
+// networkTopologyPartCalculateMultiElementAffinityScore 0.0~1.0 larger and better.
+func networkTopologyPartCalculateMultiElementAffinityScore(dst, src string) float64 {
 	if dst == "" || src == "" {
-		return minScore
+		return networkTopologyPartMinScore
 	}
 
 	if strings.EqualFold(dst, src) {
-		return maxScore
+		return networkTopologyPartMaxScore
 	}
 
 	// Calculate the number of multi-element matches divided by "|".
@@ -193,8 +218,8 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 	elementLen = math.Min(len(dstElements), len(srcElements))
 
 	// Maximum element length is 5.
-	if elementLen > maxElementLen {
-		elementLen = maxElementLen
+	if elementLen > networkTopologyPartMaxElementLen {
+		elementLen = networkTopologyPartMaxElementLen
 	}
 
 	for i := 0; i < elementLen; i++ {
@@ -205,10 +230,20 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 		score++
 	}
 
-	return float64(score) / float64(maxElementLen)
+	return float64(score) / float64(networkTopologyPartMaxElementLen)
 }
 
-func (eb *evaluatorBase) IsBadNode(peer *resource.Peer) bool {
+// networkTopologyPartCalculateNetworkTopologyScore 0.0~1.0 larger and better.
+func (en *evaluatorNetworkTopology) networkTopologyPartCalculateNetworkTopologyScore(dst, src string) float64 {
+	averageRTT, err := en.networktopology.Probes(dst, src).AverageRTT()
+	if err != nil {
+		return networkTopologyPartMinScore
+	}
+
+	return float64(defaultPingTimeout-averageRTT) / float64(defaultPingTimeout)
+}
+
+func (en *evaluatorNetworkTopology) IsBadNode(peer *resource.Peer) bool {
 	if peer.FSM.Is(resource.PeerStateFailed) || peer.FSM.Is(resource.PeerStateLeave) || peer.FSM.Is(resource.PeerStatePending) ||
 		peer.FSM.Is(resource.PeerStateReceivedTiny) || peer.FSM.Is(resource.PeerStateReceivedSmall) ||
 		peer.FSM.Is(resource.PeerStateReceivedNormal) || peer.FSM.Is(resource.PeerStateReceivedEmpty) {
@@ -220,7 +255,7 @@ func (eb *evaluatorBase) IsBadNode(peer *resource.Peer) bool {
 	costs := stats.LoadRawData(peer.PieceCosts())
 	len := len(costs)
 	// Peer has not finished downloading enough piece.
-	if len < minAvailableCostLen {
+	if len < networkTopologyPartMinAvailableCostLen {
 		logger.Debugf("peer %s has not finished downloading enough piece, it can't be bad node", peer.ID)
 		return false
 	}
@@ -230,7 +265,7 @@ func (eb *evaluatorBase) IsBadNode(peer *resource.Peer) bool {
 
 	// Download costs does not meet the normal distribution,
 	// if the last cost is twenty times more than mean, it is bad node.
-	if len < normalDistributionLen {
+	if len < networkTopologyPartNormalDistributionLen {
 		isBadNode := big.NewFloat(lastCost).Cmp(big.NewFloat(mean*20)) > 0
 		logger.Debugf("peer %s mean is %.2f and it is bad node: %t", peer.ID, mean, isBadNode)
 		return isBadNode

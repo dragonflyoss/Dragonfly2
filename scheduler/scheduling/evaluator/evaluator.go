@@ -24,6 +24,9 @@ const (
 	// DefaultAlgorithm is a rule-based scheduling algorithm.
 	DefaultAlgorithm = "default"
 
+	// NetworkTopologyBasedAlgorithm is a scheduling algorithm based on rules and network topology.
+	NetworkTopologyBasedAlgorithm = "nt"
+
 	// MLAlgorithm is a machine learning scheduling algorithm.
 	MLAlgorithm = "ml"
 
@@ -45,10 +48,12 @@ func New(algorithm string, pluginDir string, options ...Option) Evaluator {
 		if plugin, err := LoadPlugin(pluginDir); err == nil {
 			return plugin
 		}
+	case NetworkTopologyBasedAlgorithm:
+		return NewEvaluatorNetworkTopology(options...)
 	// TODO Implement MLAlgorithm.
 	case MLAlgorithm, DefaultAlgorithm:
-		return NewEvaluatorBase(options...)
+		return NewEvaluatorBase()
 	}
 
-	return NewEvaluatorBase(options...)
+	return NewEvaluatorBase()
 }

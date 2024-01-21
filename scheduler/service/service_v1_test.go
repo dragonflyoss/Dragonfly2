@@ -81,7 +81,6 @@ var (
 	}
 
 	mockNetworkTopologyConfig = config.NetworkTopologyConfig{
-		Enable:          true,
 		CollectInterval: 2 * time.Hour,
 		Probe: config.ProbeConfig{
 			QueueLength: 5,
@@ -3062,7 +3061,7 @@ func TestServiceV1_SyncProbes(t *testing.T) {
 			networkTopology := networktopologymocks.NewMockNetworkTopology(ctl)
 			hostManager := resource.NewMockHostManager(ctl)
 			stream := schedulerv1mocks.NewMockScheduler_SyncProbesServer(ctl)
-			svc := NewV1(&config.Config{NetworkTopology: mockNetworkTopologyConfig, Metrics: config.MetricsConfig{EnableHost: true}}, res, scheduling, dynconfig, storage, networkTopology)
+			svc := NewV1(&config.Config{Scheduler: config.SchedulerConfig{NetworkTopology: mockNetworkTopologyConfig}, Metrics: config.MetricsConfig{EnableHost: true}}, res, scheduling, dynconfig, storage, networkTopology)
 
 			tc.mock(svc, res.EXPECT(), probes, probes.EXPECT(), networkTopology.EXPECT(), hostManager, hostManager.EXPECT(), stream.EXPECT())
 			tc.expect(t, svc.SyncProbes(stream))
