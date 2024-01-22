@@ -146,7 +146,7 @@ func TestServiceV2_StatPeer(t *testing.T) {
 						Tag:           &peer.Task.Tag,
 						Application:   &peer.Task.Application,
 						Filters:       peer.Task.Filters,
-						Header:        peer.Task.Header,
+						RequestHeader: peer.Task.Header,
 						PieceLength:   uint32(peer.Task.PieceLength),
 						ContentLength: uint64(peer.Task.ContentLength.Load()),
 						PieceCount:    uint32(peer.Task.TotalPieceCount.Load()),
@@ -372,7 +372,7 @@ func TestServiceV2_StatTask(t *testing.T) {
 					Tag:           &task.Tag,
 					Application:   &task.Application,
 					Filters:       task.Filters,
-					Header:        task.Header,
+					RequestHeader: task.Header,
 					PieceLength:   uint32(task.PieceLength),
 					ContentLength: uint64(task.ContentLength.Load()),
 					PieceCount:    uint32(task.TotalPieceCount.Load()),
@@ -2938,9 +2938,9 @@ func TestServiceV2_handleResource(t *testing.T) {
 		{
 			name: "task can be loaded",
 			download: &commonv2.Download{
-				Url:     "foo",
-				Filters: []string{"bar"},
-				Header:  map[string]string{"baz": "bas"},
+				Url:           "foo",
+				Filters:       []string{"bar"},
+				RequestHeader: map[string]string{"baz": "bas"},
 			},
 			run: func(t *testing.T, svc *V2, download *commonv2.Download, stream schedulerv2.Scheduler_AnnouncePeerServer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer,
 				hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder,
@@ -2961,16 +2961,16 @@ func TestServiceV2_handleResource(t *testing.T) {
 				assert.Equal(task.ID, mockTask.ID)
 				assert.Equal(task.URL, download.Url)
 				assert.EqualValues(task.Filters, download.Filters)
-				assert.EqualValues(task.Header, download.Header)
+				assert.EqualValues(task.Header, download.RequestHeader)
 			},
 		},
 		{
 			name: "task can not be loaded",
 			download: &commonv2.Download{
-				Url:     "foo",
-				Filters: []string{"bar"},
-				Header:  map[string]string{"baz": "bas"},
-				Digest:  &dgst,
+				Url:           "foo",
+				Filters:       []string{"bar"},
+				RequestHeader: map[string]string{"baz": "bas"},
+				Digest:        &dgst,
 			},
 			run: func(t *testing.T, svc *V2, download *commonv2.Download, stream schedulerv2.Scheduler_AnnouncePeerServer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer,
 				hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder,
@@ -2994,7 +2994,7 @@ func TestServiceV2_handleResource(t *testing.T) {
 				assert.Equal(task.Digest.String(), download.GetDigest())
 				assert.Equal(task.URL, download.GetUrl())
 				assert.EqualValues(task.Filters, download.GetFilters())
-				assert.EqualValues(task.Header, download.Header)
+				assert.EqualValues(task.Header, download.RequestHeader)
 			},
 		},
 		{
@@ -3020,10 +3020,10 @@ func TestServiceV2_handleResource(t *testing.T) {
 		{
 			name: "peer can be loaded",
 			download: &commonv2.Download{
-				Url:     "foo",
-				Filters: []string{"bar"},
-				Header:  map[string]string{"baz": "bas"},
-				Digest:  &dgst,
+				Url:           "foo",
+				Filters:       []string{"bar"},
+				RequestHeader: map[string]string{"baz": "bas"},
+				Digest:        &dgst,
 			},
 			run: func(t *testing.T, svc *V2, download *commonv2.Download, stream schedulerv2.Scheduler_AnnouncePeerServer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer,
 				hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder,
@@ -3045,18 +3045,18 @@ func TestServiceV2_handleResource(t *testing.T) {
 				assert.Equal(task.Digest.String(), download.GetDigest())
 				assert.Equal(task.URL, download.GetUrl())
 				assert.EqualValues(task.Filters, download.GetFilters())
-				assert.EqualValues(task.Header, download.Header)
+				assert.EqualValues(task.Header, download.RequestHeader)
 				assert.EqualValues(peer, mockPeer)
 			},
 		},
 		{
 			name: "peer can not be loaded",
 			download: &commonv2.Download{
-				Url:      "foo",
-				Filters:  []string{"bar"},
-				Header:   map[string]string{"baz": "bas"},
-				Digest:   &dgst,
-				Priority: commonv2.Priority_LEVEL1,
+				Url:           "foo",
+				Filters:       []string{"bar"},
+				RequestHeader: map[string]string{"baz": "bas"},
+				Digest:        &dgst,
+				Priority:      commonv2.Priority_LEVEL1,
 				Range: &commonv2.Range{
 					Start:  uint64(mockPeerRange.Start),
 					Length: uint64(mockPeerRange.Length),
@@ -3084,7 +3084,7 @@ func TestServiceV2_handleResource(t *testing.T) {
 				assert.Equal(task.Digest.String(), download.GetDigest())
 				assert.Equal(task.URL, download.GetUrl())
 				assert.EqualValues(task.Filters, download.GetFilters())
-				assert.EqualValues(task.Header, download.Header)
+				assert.EqualValues(task.Header, download.RequestHeader)
 				assert.Equal(peer.ID, mockPeer.ID)
 				assert.Equal(peer.Priority, download.Priority)
 				assert.Equal(peer.Range.Start, int64(download.Range.Start))
