@@ -1667,7 +1667,7 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 									Tag:           &candidateParents[0].Task.Tag,
 									Application:   &candidateParents[0].Task.Application,
 									Filters:       candidateParents[0].Task.Filters,
-									RequestHeader: candidateParents[0].Task.Header,
+									Header:        candidateParents[0].Task.Header,
 									PieceLength:   uint32(candidateParents[0].Task.PieceLength),
 									ContentLength: uint64(candidateParents[0].Task.ContentLength.Load()),
 									PieceCount:    uint32(candidateParents[0].Task.TotalPieceCount.Load()),
