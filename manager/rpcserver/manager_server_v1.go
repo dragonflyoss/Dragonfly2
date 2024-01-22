@@ -34,7 +34,7 @@ import (
 	"gorm.io/gorm"
 
 	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
-	inferencev1 "d7y.io/api/v2/pkg/apis/inference/v1"
+	inference "d7y.io/api/v2/pkg/apis/inference"
 	managerv1 "d7y.io/api/v2/pkg/apis/manager/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -930,12 +930,12 @@ func (s *managerServerV1) createModelConfig(ctx context.Context, name string) er
 	}
 
 	// If the model config does not exist, create a new model config.
-	pbModelConfig := inferencev1.ModelConfig{
+	pbModelConfig := inference.ModelConfig{
 		Name:     name,
 		Platform: types.DefaultTritonPlatform,
-		VersionPolicy: &inferencev1.ModelVersionPolicy{
-			PolicyChoice: &inferencev1.ModelVersionPolicy_Specific_{
-				Specific: &inferencev1.ModelVersionPolicy_Specific{},
+		VersionPolicy: &inference.ModelVersionPolicy{
+			PolicyChoice: &inference.ModelVersionPolicy_Specific_{
+				Specific: &inference.ModelVersionPolicy_Specific{},
 			},
 		},
 	}
