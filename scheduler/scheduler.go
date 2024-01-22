@@ -258,7 +258,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		}
 	}
 
-	// Initialize dial options of scheduling.
+	// Initialize options of scheduling.
 	schedulingOptions := []scheduling.Option{}
 	// Initialize network topology service.
 	if cfg.Scheduler.Algorithm == evaluator.NetworkTopologyBasedAlgorithm {
@@ -267,7 +267,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		if err != nil {
 			return nil, err
 		}
-		// Initialize dial options of evaluator.
+		// Initialize options of evaluator.
 		evaluatorOptions := []evaluator.Option{}
 		evaluatorOptions = append(evaluatorOptions, evaluator.WithNetworkTopology(s.networkTopology))
 
