@@ -627,7 +627,7 @@ func ConstructSuccessNormalTaskResponse(candidateParents []*resource.Peer) *sche
 			Tag:           &candidateParent.Task.Tag,
 			Application:   &candidateParent.Task.Application,
 			Filters:       candidateParent.Task.Filters,
-			RequestHeader: candidateParent.Task.Header,
+			Header:        candidateParent.Task.Header,
 			PieceLength:   uint32(candidateParent.Task.PieceLength),
 			ContentLength: uint64(candidateParent.Task.ContentLength.Load()),
 			PieceCount:    uint32(candidateParent.Task.TotalPieceCount.Load()),
