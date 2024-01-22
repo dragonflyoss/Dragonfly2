@@ -18,6 +18,7 @@
 package peer
 
 import (
+	"cmp"
 	"errors"
 	"math/rand"
 	"sync"
@@ -122,7 +123,7 @@ func (p *pieceDispatcher) getDesiredReq() (*DownloadPieceRequest, error) {
 			distPeerIDs[i] = tmp
 		})
 	} else { // sort by score with the probability of (1-randomRatio)
-		slices.SortFunc(distPeerIDs, func(p1, p2 string) bool { return p.score[p1] < p.score[p2] })
+		slices.SortFunc(distPeerIDs, func(p1, p2 string) int { return cmp.Compare(p.score[p1], p.score[p2]) })
 	}
 
 	// iterate all peers, until get a valid piece requests

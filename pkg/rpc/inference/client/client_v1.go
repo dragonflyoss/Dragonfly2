@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 
-	inferencev1 "d7y.io/api/v2/pkg/apis/inference/v1"
+	inference "d7y.io/api/v2/pkg/apis/inference"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
@@ -73,7 +73,7 @@ func GetV1(ctx context.Context, target string, opts ...grpc.DialOption) (V1, err
 	}
 
 	return &v1{
-		GRPCInferenceServiceClient: inferencev1.NewGRPCInferenceServiceClient(conn),
+		GRPCInferenceServiceClient: inference.NewGRPCInferenceServiceClient(conn),
 		ClientConn:                 conn,
 	}, nil
 }
@@ -81,13 +81,13 @@ func GetV1(ctx context.Context, target string, opts ...grpc.DialOption) (V1, err
 // ClientV1 is the interface for v1 version of the grpc client.
 type V1 interface {
 	// ModelInfer performs inference using a specific model.
-	ModelInfer(context.Context, *inferencev1.ModelInferRequest, ...grpc.CallOption) (*inferencev1.ModelInferResponse, error)
+	ModelInfer(context.Context, *inference.ModelInferRequest, ...grpc.CallOption) (*inference.ModelInferResponse, error)
 
 	// ModelReady checks readiness of a model in the inference server..
-	ModelReady(context.Context, *inferencev1.ModelReadyRequest, ...grpc.CallOption) (*inferencev1.ModelReadyResponse, error)
+	ModelReady(context.Context, *inference.ModelReadyRequest, ...grpc.CallOption) (*inference.ModelReadyResponse, error)
 
 	// ServerReady checks readiness of the inference server.
-	ServerReady(context.Context, *inferencev1.ServerReadyRequest, ...grpc.CallOption) (*inferencev1.ServerReadyResponse, error)
+	ServerReady(context.Context, *inference.ServerReadyRequest, ...grpc.CallOption) (*inference.ServerReadyResponse, error)
 
 	// Close tears down the ClientConn and all underlying connections.
 	Close() error
@@ -95,12 +95,12 @@ type V1 interface {
 
 // clientV1 provides v1 version of the prediction grpc function.
 type v1 struct {
-	inferencev1.GRPCInferenceServiceClient
+	inference.GRPCInferenceServiceClient
 	*grpc.ClientConn
 }
 
 // ModelInfer performs inference using a specific model.
-func (v *v1) ModelInfer(ctx context.Context, req *inferencev1.ModelInferRequest, opts ...grpc.CallOption) (*inferencev1.ModelInferResponse, error) {
+func (v *v1) ModelInfer(ctx context.Context, req *inference.ModelInferRequest, opts ...grpc.CallOption) (*inference.ModelInferResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
@@ -108,7 +108,7 @@ func (v *v1) ModelInfer(ctx context.Context, req *inferencev1.ModelInferRequest,
 }
 
 // ModelReady checks readiness of a model in the inference server.
-func (v *v1) ModelReady(ctx context.Context, req *inferencev1.ModelReadyRequest, opts ...grpc.CallOption) (*inferencev1.ModelReadyResponse, error) {
+func (v *v1) ModelReady(ctx context.Context, req *inference.ModelReadyRequest, opts ...grpc.CallOption) (*inference.ModelReadyResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
@@ -116,7 +116,7 @@ func (v *v1) ModelReady(ctx context.Context, req *inferencev1.ModelReadyRequest,
 }
 
 // ServerReady checks readiness of the inference server.
-func (v *v1) ServerReady(ctx context.Context, req *inferencev1.ServerReadyRequest, opts ...grpc.CallOption) (*inferencev1.ServerReadyResponse, error) {
+func (v *v1) ServerReady(ctx context.Context, req *inference.ServerReadyRequest, opts ...grpc.CallOption) (*inference.ServerReadyResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 

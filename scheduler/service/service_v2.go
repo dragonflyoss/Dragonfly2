@@ -113,7 +113,7 @@ func (v *V2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePeerServer) error
 		case *schedulerv2.AnnouncePeerRequest_RegisterPeerRequest:
 			registerPeerRequest := announcePeerRequest.RegisterPeerRequest
 			log.Infof("receive RegisterPeerRequest, url: %s, range: %#v, header: %#v, need back-to-source: %t",
-				registerPeerRequest.Download.GetUrl(), registerPeerRequest.Download.GetRange(), registerPeerRequest.Download.GetHeader(), registerPeerRequest.Download.GetNeedBackToSource())
+				registerPeerRequest.Download.GetUrl(), registerPeerRequest.Download.GetRange(), registerPeerRequest.Download.GetRequestHeader(), registerPeerRequest.Download.GetNeedBackToSource())
 			if err := v.handleRegisterPeerRequest(ctx, stream, req.GetHostId(), req.GetTaskId(), req.GetPeerId(), registerPeerRequest); err != nil {
 				log.Error(err)
 				return err
@@ -261,7 +261,7 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 		Tag:           &peer.Task.Tag,
 		Application:   &peer.Task.Application,
 		Filters:       peer.Task.Filters,
-		Header:        peer.Task.Header,
+		RequestHeader: peer.Task.Header,
 		PieceLength:   uint32(peer.Task.PieceLength),
 		ContentLength: uint64(peer.Task.ContentLength.Load()),
 		PieceCount:    uint32(peer.Task.TotalPieceCount.Load()),
@@ -416,7 +416,7 @@ func (v *V2) StatTask(ctx context.Context, req *schedulerv2.StatTaskRequest) (*c
 		Tag:           &task.Tag,
 		Application:   &task.Application,
 		Filters:       task.Filters,
-		Header:        task.Header,
+		RequestHeader: task.Header,
 		PieceLength:   uint32(task.PieceLength),
 		ContentLength: uint64(task.ContentLength.Load()),
 		PieceCount:    uint32(task.TotalPieceCount.Load()),
@@ -1288,12 +1288,12 @@ func (v *V2) handleResource(ctx context.Context, stream schedulerv2.Scheduler_An
 		}
 
 		task = resource.NewTask(taskID, download.GetUrl(), download.GetTag(), download.GetApplication(), download.GetType(),
-			download.GetFilters(), download.GetHeader(), int32(v.config.Scheduler.BackToSourceCount), options...)
+			download.GetFilters(), download.GetRequestHeader(), int32(v.config.Scheduler.BackToSourceCount), options...)
 		v.resource.TaskManager().Store(task)
 	} else {
 		task.URL = download.GetUrl()
 		task.Filters = download.GetFilters()
-		task.Header = download.GetHeader()
+		task.Header = download.GetRequestHeader()
 	}
 
 	// Store new peer or load peer.
