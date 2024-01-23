@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/casbin/casbin/v2"
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-contrib/static"
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
@@ -76,6 +77,9 @@ func Init(cfg *config.Config, logDir string, service service.Service, database *
 
 	// CORS middleware.
 	r.Use(middlewares.CORS())
+
+	// gzip middleware.
+	r.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedExtensions([]string{".js", ".css"})))
 
 	// RBAC middleware.
 	rbac := middlewares.RBAC(enforcer)
