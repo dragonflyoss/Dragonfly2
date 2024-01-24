@@ -82,6 +82,21 @@ func (mr *MockNetworkTopologyMockRecorder) Has(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Has", reflect.TypeOf((*MockNetworkTopology)(nil).Has), arg0, arg1)
 }
 
+// Neighbours mocks base method.
+func (m *MockNetworkTopology) Neighbours(root *resource.Host, number int) ([]*resource.Host, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Neighbours", root, number)
+	ret0, _ := ret[0].([]*resource.Host)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Neighbours indicates an expected call of Neighbours.
+func (mr *MockNetworkTopologyMockRecorder) Neighbours(root, number interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Neighbours", reflect.TypeOf((*MockNetworkTopology)(nil).Neighbours), root, number)
+}
+
 // ProbedCount mocks base method.
 func (m *MockNetworkTopology) ProbedCount(arg0 string) (uint64, error) {
 	m.ctrl.T.Helper()

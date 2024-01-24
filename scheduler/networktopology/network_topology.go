@@ -76,6 +76,9 @@ type NetworkTopology interface {
 	// ProbedCount is the number of times the host has been probed.
 	ProbedCount(string) (uint64, error)
 
+	// Neighbours gets the specified number of neighbors for root node.
+	Neighbours(root *resource.Host, number int) ([]*resource.Host, error)
+
 	// Snapshot writes the current network topology to the storage.
 	Snapshot() error
 }
@@ -319,6 +322,39 @@ func (nt *networkTopology) ProbedCount(hostID string) (uint64, error) {
 	nt.cache.Set(probedCountKey, probedCount, nt.config.Cache.TTL)
 
 	return probedCount, nil
+}
+
+// Neighbours gets the specified number of neighbors for root node.
+func (nt *networkTopology) Neighbours(root *resource.Host, number int) ([]*resource.Host, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	var neighbours []*resource.Host
+	networkTopologyKeys, _, err := nt.rdb.Scan(ctx, 0, pkgredis.MakeNetworkTopologyKeyInScheduler(root.ID, "*"), int64(number)).Result()
+	if err != nil {
+		return neighbours, err
+	}
+
+	for _, networkTopologyKey := range networkTopologyKeys {
+		_, _, _, neighbourID, err := pkgredis.ParseNetworkTopologyKeyInScheduler(networkTopologyKey)
+		if err != nil {
+			logger.Error(err)
+			continue
+		}
+
+		neighbour, loaded := nt.resource.HostManager().Load(neighbourID)
+		if !loaded {
+			logger.Errorf("host %s not found", neighbourID)
+			continue
+		}
+		neighbours = append(neighbours, neighbour)
+
+		if len(neighbours) >= number {
+			break
+		}
+	}
+
+	return neighbours, nil
 }
 
 // Snapshot writes the current network topology to the storage.
