@@ -330,7 +330,7 @@ func (nt *networkTopology) Neighbours(root *resource.Host, number int) ([]*resou
 	defer cancel()
 
 	var neighbours []*resource.Host
-	networkTopologyKeys, _, err := nt.rdb.Scan(ctx, 0, pkgredis.MakeNetworkTopologyKeyInScheduler(root.ID, "*"), int64(number)).Result()
+	networkTopologyKeys, _, err := nt.rdb.Scan(ctx, 0, pkgredis.MakeNetworkTopologyKeyInScheduler(root.ID, "*"), math.MaxInt64).Result()
 	if err != nil {
 		return neighbours, err
 	}
