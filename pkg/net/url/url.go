@@ -20,9 +20,9 @@ import (
 	"net/url"
 )
 
-// FilterQuery excludes query string in url with filters.
-func FilterQuery(rawURL string, filters []string) (string, error) {
-	if len(filters) == 0 {
+// FilterQueryParams filters the query params in the url.
+func FilterQueryParams(rawURL string, filteredQueryParams []string) (string, error) {
+	if len(filteredQueryParams) == 0 {
 		return rawURL, nil
 	}
 
@@ -32,7 +32,7 @@ func FilterQuery(rawURL string, filters []string) (string, error) {
 	}
 
 	hidden := make(map[string]struct{})
-	for _, filter := range filters {
+	for _, filter := range filteredQueryParams {
 		hidden[filter] = struct{}{}
 	}
 

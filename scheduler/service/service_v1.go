@@ -359,7 +359,7 @@ func (v *V1) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequ
 	}
 
 	task := resource.NewTask(taskID, req.GetUrl(), req.UrlMeta.GetTag(), req.UrlMeta.GetApplication(), types.TaskTypeV1ToV2(req.GetTaskType()),
-		strings.Split(req.UrlMeta.GetFilter(), idgen.URLFilterSeparator), req.UrlMeta.GetHeader(), int32(v.config.Scheduler.BackToSourceCount), options...)
+		strings.Split(req.UrlMeta.GetFilter(), idgen.FilteredQueryParamsSeparator), req.UrlMeta.GetHeader(), int32(v.config.Scheduler.BackToSourceCount), options...)
 	task, _ = v.resource.TaskManager().LoadOrStore(task)
 	host := v.storeHost(ctx, req.GetPeerHost())
 	peer := v.storePeer(ctx, peerID, req.UrlMeta.GetPriority(), req.UrlMeta.GetRange(), task, host)
@@ -917,7 +917,7 @@ func (v *V1) triggerSeedPeerTask(ctx context.Context, rg *http.Range, task *reso
 
 // storeTask stores a new task or reuses a previous task.
 func (v *V1) storeTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, typ commonv2.TaskType) *resource.Task {
-	filters := strings.Split(req.UrlMeta.GetFilter(), idgen.URLFilterSeparator)
+	filteredQueryParams := strings.Split(req.UrlMeta.GetFilter(), idgen.FilteredQueryParamsSeparator)
 
 	task, loaded := v.resource.TaskManager().Load(req.GetTaskId())
 	if !loaded {
@@ -927,7 +927,7 @@ func (v *V1) storeTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, ty
 		}
 
 		task := resource.NewTask(req.GetTaskId(), req.GetUrl(), req.UrlMeta.GetTag(), req.UrlMeta.GetApplication(),
-			typ, filters, req.UrlMeta.GetHeader(), int32(v.config.Scheduler.BackToSourceCount), options...)
+			typ, filteredQueryParams, req.UrlMeta.GetHeader(), int32(v.config.Scheduler.BackToSourceCount), options...)
 		v.resource.TaskManager().Store(task)
 		task.Log.Info("create new task")
 		return task
@@ -936,7 +936,7 @@ func (v *V1) storeTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, ty
 	// Task is the pointer, if the task already exists, the next request will
 	// update the task's Url and UrlMeta in task manager.
 	task.URL = req.GetUrl()
-	task.Filters = filters
+	task.FilteredQueryParams = filteredQueryParams
 	task.Header = req.UrlMeta.GetHeader()
 	task.Log.Info("task already exists")
 	return task

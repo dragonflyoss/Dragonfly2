@@ -48,10 +48,10 @@ func (s *service) CreateV1Preheat(ctx context.Context, json types.CreateV1Prehea
 	job, err := s.CreatePreheatJob(ctx, types.CreatePreheatJobRequest{
 		Type: internaljob.PreheatJob,
 		Args: types.PreheatArgs{
-			Type:    json.Type,
-			URL:     json.URL,
-			Filter:  json.Filter,
-			Headers: json.Headers,
+			Type:                json.Type,
+			URL:                 json.URL,
+			FilteredQueryParams: json.FilteredQueryParams,
+			Headers:             json.Headers,
 		},
 	})
 	if err != nil {

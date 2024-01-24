@@ -255,21 +255,21 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 
 	// Set task to response.
 	resp.Task = &commonv2.Task{
-		Id:            peer.Task.ID,
-		Type:          peer.Task.Type,
-		Url:           peer.Task.URL,
-		Tag:           &peer.Task.Tag,
-		Application:   &peer.Task.Application,
-		Filters:       peer.Task.Filters,
-		RequestHeader: peer.Task.Header,
-		PieceLength:   uint32(peer.Task.PieceLength),
-		ContentLength: uint64(peer.Task.ContentLength.Load()),
-		PieceCount:    uint32(peer.Task.TotalPieceCount.Load()),
-		SizeScope:     peer.Task.SizeScope(),
-		State:         peer.Task.FSM.Current(),
-		PeerCount:     uint32(peer.Task.PeerCount()),
-		CreatedAt:     timestamppb.New(peer.Task.CreatedAt.Load()),
-		UpdatedAt:     timestamppb.New(peer.Task.UpdatedAt.Load()),
+		Id:                  peer.Task.ID,
+		Type:                peer.Task.Type,
+		Url:                 peer.Task.URL,
+		Tag:                 &peer.Task.Tag,
+		Application:         &peer.Task.Application,
+		FilteredQueryParams: peer.Task.FilteredQueryParams,
+		RequestHeader:       peer.Task.Header,
+		PieceLength:         uint32(peer.Task.PieceLength),
+		ContentLength:       uint64(peer.Task.ContentLength.Load()),
+		PieceCount:          uint32(peer.Task.TotalPieceCount.Load()),
+		SizeScope:           peer.Task.SizeScope(),
+		State:               peer.Task.FSM.Current(),
+		PeerCount:           uint32(peer.Task.PeerCount()),
+		CreatedAt:           timestamppb.New(peer.Task.CreatedAt.Load()),
+		UpdatedAt:           timestamppb.New(peer.Task.UpdatedAt.Load()),
 	}
 
 	// Set digest to task response.
@@ -410,21 +410,21 @@ func (v *V2) StatTask(ctx context.Context, req *schedulerv2.StatTaskRequest) (*c
 	}
 
 	resp := &commonv2.Task{
-		Id:            task.ID,
-		Type:          task.Type,
-		Url:           task.URL,
-		Tag:           &task.Tag,
-		Application:   &task.Application,
-		Filters:       task.Filters,
-		RequestHeader: task.Header,
-		PieceLength:   uint32(task.PieceLength),
-		ContentLength: uint64(task.ContentLength.Load()),
-		PieceCount:    uint32(task.TotalPieceCount.Load()),
-		SizeScope:     task.SizeScope(),
-		State:         task.FSM.Current(),
-		PeerCount:     uint32(task.PeerCount()),
-		CreatedAt:     timestamppb.New(task.CreatedAt.Load()),
-		UpdatedAt:     timestamppb.New(task.UpdatedAt.Load()),
+		Id:                  task.ID,
+		Type:                task.Type,
+		Url:                 task.URL,
+		Tag:                 &task.Tag,
+		Application:         &task.Application,
+		FilteredQueryParams: task.FilteredQueryParams,
+		RequestHeader:       task.Header,
+		PieceLength:         uint32(task.PieceLength),
+		ContentLength:       uint64(task.ContentLength.Load()),
+		PieceCount:          uint32(task.TotalPieceCount.Load()),
+		SizeScope:           task.SizeScope(),
+		State:               task.FSM.Current(),
+		PeerCount:           uint32(task.PeerCount()),
+		CreatedAt:           timestamppb.New(task.CreatedAt.Load()),
+		UpdatedAt:           timestamppb.New(task.UpdatedAt.Load()),
 	}
 
 	// Set digest to response.
@@ -1288,11 +1288,11 @@ func (v *V2) handleResource(ctx context.Context, stream schedulerv2.Scheduler_An
 		}
 
 		task = resource.NewTask(taskID, download.GetUrl(), download.GetTag(), download.GetApplication(), download.GetType(),
-			download.GetFilters(), download.GetRequestHeader(), int32(v.config.Scheduler.BackToSourceCount), options...)
+			download.GetFilteredQueryParams(), download.GetRequestHeader(), int32(v.config.Scheduler.BackToSourceCount), options...)
 		v.resource.TaskManager().Store(task)
 	} else {
 		task.URL = download.GetUrl()
-		task.Filters = download.GetFilters()
+		task.FilteredQueryParams = download.GetFilteredQueryParams()
 		task.Header = download.GetRequestHeader()
 	}
 
