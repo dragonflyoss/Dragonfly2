@@ -34,6 +34,7 @@ jobs:
           - "ipv6"
           - "split-running-tasks"
           - "cache-list-metadata"
+          - "enable-network-topology"
         include:
           - module: normal
             charts-config: test/testdata/charts/config.yaml
@@ -59,6 +60,9 @@ jobs:
           - module: cache-list-metadata
             charts-config: test/testdata/charts/config-cache-list-metadata.yaml
             skip: ""
+          - module: enable-network-topology
+            charts-config: test/testdata/charts/config-enable-network-topology.yaml
+            skip: ""  
     steps:
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
