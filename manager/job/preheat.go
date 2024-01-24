@@ -106,10 +106,10 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []models.Schedul
 	case PreheatFileType:
 		files = []internaljob.PreheatRequest{
 			{
-				URL:     json.URL,
-				Tag:     json.Tag,
-				Filter:  json.Filter,
-				Headers: json.Headers,
+				URL:                 json.URL,
+				Tag:                 json.Tag,
+				FilteredQueryParams: json.FilteredQueryParams,
+				Headers:             json.Headers,
 			},
 		}
 	default:
@@ -301,10 +301,10 @@ func (p *preheat) parseLayers(manifests []distribution.Manifest, args types.Preh
 		for _, v := range m.References() {
 			header.Set("Accept", v.MediaType)
 			layer := internaljob.PreheatRequest{
-				URL:     image.blobsURL(v.Digest.String()),
-				Tag:     args.Tag,
-				Filter:  args.Filter,
-				Headers: nethttp.HeaderToMap(header),
+				URL:                 image.blobsURL(v.Digest.String()),
+				Tag:                 args.Tag,
+				FilteredQueryParams: args.FilteredQueryParams,
+				Headers:             nethttp.HeaderToMap(header),
 			}
 
 			layers = append(layers, layer)

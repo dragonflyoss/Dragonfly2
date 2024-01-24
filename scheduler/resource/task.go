@@ -121,8 +121,8 @@ type Task struct {
 	// Application identifies different task for same url.
 	Application string
 
-	// Filter url used to generate task id.
-	Filters []string
+	// FilteredQueryParams is filtered query params.
+	FilteredQueryParams []string
 
 	// Task request headers.
 	Header map[string]string
@@ -169,27 +169,27 @@ type Task struct {
 }
 
 // New task instance.
-func NewTask(id, url, tag, application string, typ commonv2.TaskType, filters []string,
+func NewTask(id, url, tag, application string, typ commonv2.TaskType, filteredQueryParams []string,
 	header map[string]string, backToSourceLimit int32, options ...TaskOption) *Task {
 	t := &Task{
-		ID:                id,
-		Type:              typ,
-		URL:               url,
-		Tag:               tag,
-		Application:       application,
-		Filters:           filters,
-		Header:            header,
-		DirectPiece:       []byte{},
-		ContentLength:     atomic.NewInt64(-1),
-		TotalPieceCount:   atomic.NewInt32(0),
-		BackToSourceLimit: atomic.NewInt32(backToSourceLimit),
-		BackToSourcePeers: set.NewSafeSet[string](),
-		Pieces:            &sync.Map{},
-		DAG:               dag.NewDAG[*Peer](),
-		PeerFailedCount:   atomic.NewInt32(0),
-		CreatedAt:         atomic.NewTime(time.Now()),
-		UpdatedAt:         atomic.NewTime(time.Now()),
-		Log:               logger.WithTask(id, url),
+		ID:                  id,
+		Type:                typ,
+		URL:                 url,
+		Tag:                 tag,
+		Application:         application,
+		FilteredQueryParams: filteredQueryParams,
+		Header:              header,
+		DirectPiece:         []byte{},
+		ContentLength:       atomic.NewInt64(-1),
+		TotalPieceCount:     atomic.NewInt32(0),
+		BackToSourceLimit:   atomic.NewInt32(backToSourceLimit),
+		BackToSourcePeers:   set.NewSafeSet[string](),
+		Pieces:              &sync.Map{},
+		DAG:                 dag.NewDAG[*Peer](),
+		PeerFailedCount:     atomic.NewInt32(0),
+		CreatedAt:           atomic.NewTime(time.Now()),
+		UpdatedAt:           atomic.NewTime(time.Now()),
+		Log:                 logger.WithTask(id, url),
 	}
 
 	// Initialize state machine.

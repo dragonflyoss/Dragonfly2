@@ -101,7 +101,7 @@ func (s *seedPeer) TriggerDownloadTask(ctx context.Context, taskID string, req *
 func (s *seedPeer) TriggerTask(ctx context.Context, rg *http.Range, task *Task) (*Peer, *schedulerv1.PeerResult, error) {
 	urlMeta := &commonv1.UrlMeta{
 		Tag:         task.Tag,
-		Filter:      strings.Join(task.Filters, idgen.URLFilterSeparator),
+		Filter:      strings.Join(task.FilteredQueryParams, idgen.FilteredQueryParamsSeparator),
 		Header:      task.Header,
 		Application: task.Application,
 		Priority:    commonv1.Priority_LEVEL0,

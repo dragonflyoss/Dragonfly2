@@ -621,21 +621,21 @@ func ConstructSuccessNormalTaskResponse(candidateParents []*resource.Peer) *sche
 
 		// Set task to parent.
 		parent.Task = &commonv2.Task{
-			Id:            candidateParent.Task.ID,
-			Type:          candidateParent.Task.Type,
-			Url:           candidateParent.Task.URL,
-			Tag:           &candidateParent.Task.Tag,
-			Application:   &candidateParent.Task.Application,
-			Filters:       candidateParent.Task.Filters,
-			RequestHeader: candidateParent.Task.Header,
-			PieceLength:   uint32(candidateParent.Task.PieceLength),
-			ContentLength: uint64(candidateParent.Task.ContentLength.Load()),
-			PieceCount:    uint32(candidateParent.Task.TotalPieceCount.Load()),
-			SizeScope:     candidateParent.Task.SizeScope(),
-			State:         candidateParent.Task.FSM.Current(),
-			PeerCount:     uint32(candidateParent.Task.PeerCount()),
-			CreatedAt:     timestamppb.New(candidateParent.Task.CreatedAt.Load()),
-			UpdatedAt:     timestamppb.New(candidateParent.Task.UpdatedAt.Load()),
+			Id:                  candidateParent.Task.ID,
+			Type:                candidateParent.Task.Type,
+			Url:                 candidateParent.Task.URL,
+			Tag:                 &candidateParent.Task.Tag,
+			Application:         &candidateParent.Task.Application,
+			FilteredQueryParams: candidateParent.Task.FilteredQueryParams,
+			RequestHeader:       candidateParent.Task.Header,
+			PieceLength:         uint32(candidateParent.Task.PieceLength),
+			ContentLength:       uint64(candidateParent.Task.ContentLength.Load()),
+			PieceCount:          uint32(candidateParent.Task.TotalPieceCount.Load()),
+			SizeScope:           candidateParent.Task.SizeScope(),
+			State:               candidateParent.Task.FSM.Current(),
+			PeerCount:           uint32(candidateParent.Task.PeerCount()),
+			CreatedAt:           timestamppb.New(candidateParent.Task.CreatedAt.Load()),
+			UpdatedAt:           timestamppb.New(candidateParent.Task.UpdatedAt.Load()),
 		}
 
 		// Set digest to parent task.

@@ -177,7 +177,7 @@ func (j *job) preheat(ctx context.Context, req string) error {
 	urlMeta := &commonv1.UrlMeta{
 		Digest:      preheat.Digest,
 		Tag:         preheat.Tag,
-		Filter:      preheat.Filter,
+		Filter:      preheat.FilteredQueryParams,
 		Header:      preheat.Headers,
 		Application: preheat.Application,
 		Priority:    commonv1.Priority(preheat.Priority),
@@ -192,7 +192,7 @@ func (j *job) preheat(ctx context.Context, req string) error {
 	// Trigger seed peer download seeds.
 	taskID := idgen.TaskIDV1(preheat.URL, urlMeta)
 	log := logger.WithTask(taskID, preheat.URL)
-	log.Infof("preheat %s tag: %s, range: %s, filter: %s, digest: %s",
+	log.Infof("preheat %s tag: %s, range: %s, filtered query params: %s, digest: %s",
 		preheat.URL, urlMeta.Tag, urlMeta.Range, urlMeta.Filter, urlMeta.Digest)
 	log.Debugf("preheat %s headers: %#v", preheat.URL, urlMeta.Header)
 
