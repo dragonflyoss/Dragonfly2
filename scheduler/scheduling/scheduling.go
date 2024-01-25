@@ -276,7 +276,7 @@ func (s *scheduling) ScheduleParentAndCandidateParents(ctx context.Context, peer
 					peer.Log.Error(err)
 					return
 				}
-				peer.Log.Infof("send Code_SchedNeedBackSource to peer, because of scheduling exceeded RetryLimit %d", s.config.RetryLimit)
+				peer.Log.Infof("send Code_SchedNeedBackSource to peer, because of scheduling exceeded RetryBackToSourceLimit %d", s.config.RetryBackToSourceLimit)
 
 				if err := peer.FSM.Event(ctx, resource.PeerEventDownloadBackToSource); err != nil {
 					peer.Log.Errorf("peer fsm event failed: %s", err.Error())
