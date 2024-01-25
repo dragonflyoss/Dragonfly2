@@ -113,7 +113,7 @@ func (v *V2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePeerServer) error
 		case *schedulerv2.AnnouncePeerRequest_RegisterPeerRequest:
 			registerPeerRequest := announcePeerRequest.RegisterPeerRequest
 			log.Infof("receive RegisterPeerRequest, url: %s, range: %#v, header: %#v, need back-to-source: %t",
-				registerPeerRequest.Download.GetUrl(), registerPeerRequest.Download.GetRange(), registerPeerRequest.Download.GetHeader(), registerPeerRequest.Download.GetNeedBackToSource())
+				registerPeerRequest.Download.GetUrl(), registerPeerRequest.Download.GetRange(), registerPeerRequest.Download.GetRequestHeader(), registerPeerRequest.Download.GetNeedBackToSource())
 			if err := v.handleRegisterPeerRequest(ctx, stream, req.GetHostId(), req.GetTaskId(), req.GetPeerId(), registerPeerRequest); err != nil {
 				log.Error(err)
 				return err
@@ -255,21 +255,21 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 
 	// Set task to response.
 	resp.Task = &commonv2.Task{
-		Id:            peer.Task.ID,
-		Type:          peer.Task.Type,
-		Url:           peer.Task.URL,
-		Tag:           &peer.Task.Tag,
-		Application:   &peer.Task.Application,
-		Filters:       peer.Task.Filters,
-		Header:        peer.Task.Header,
-		PieceLength:   uint32(peer.Task.PieceLength),
-		ContentLength: uint64(peer.Task.ContentLength.Load()),
-		PieceCount:    uint32(peer.Task.TotalPieceCount.Load()),
-		SizeScope:     peer.Task.SizeScope(),
-		State:         peer.Task.FSM.Current(),
-		PeerCount:     uint32(peer.Task.PeerCount()),
-		CreatedAt:     timestamppb.New(peer.Task.CreatedAt.Load()),
-		UpdatedAt:     timestamppb.New(peer.Task.UpdatedAt.Load()),
+		Id:                  peer.Task.ID,
+		Type:                peer.Task.Type,
+		Url:                 peer.Task.URL,
+		Tag:                 &peer.Task.Tag,
+		Application:         &peer.Task.Application,
+		FilteredQueryParams: peer.Task.FilteredQueryParams,
+		RequestHeader:       peer.Task.Header,
+		PieceLength:         uint32(peer.Task.PieceLength),
+		ContentLength:       uint64(peer.Task.ContentLength.Load()),
+		PieceCount:          uint32(peer.Task.TotalPieceCount.Load()),
+		SizeScope:           peer.Task.SizeScope(),
+		State:               peer.Task.FSM.Current(),
+		PeerCount:           uint32(peer.Task.PeerCount()),
+		CreatedAt:           timestamppb.New(peer.Task.CreatedAt.Load()),
+		UpdatedAt:           timestamppb.New(peer.Task.UpdatedAt.Load()),
 	}
 
 	// Set digest to task response.
@@ -410,21 +410,21 @@ func (v *V2) StatTask(ctx context.Context, req *schedulerv2.StatTaskRequest) (*c
 	}
 
 	resp := &commonv2.Task{
-		Id:            task.ID,
-		Type:          task.Type,
-		Url:           task.URL,
-		Tag:           &task.Tag,
-		Application:   &task.Application,
-		Filters:       task.Filters,
-		Header:        task.Header,
-		PieceLength:   uint32(task.PieceLength),
-		ContentLength: uint64(task.ContentLength.Load()),
-		PieceCount:    uint32(task.TotalPieceCount.Load()),
-		SizeScope:     task.SizeScope(),
-		State:         task.FSM.Current(),
-		PeerCount:     uint32(task.PeerCount()),
-		CreatedAt:     timestamppb.New(task.CreatedAt.Load()),
-		UpdatedAt:     timestamppb.New(task.UpdatedAt.Load()),
+		Id:                  task.ID,
+		Type:                task.Type,
+		Url:                 task.URL,
+		Tag:                 &task.Tag,
+		Application:         &task.Application,
+		FilteredQueryParams: task.FilteredQueryParams,
+		RequestHeader:       task.Header,
+		PieceLength:         uint32(task.PieceLength),
+		ContentLength:       uint64(task.ContentLength.Load()),
+		PieceCount:          uint32(task.TotalPieceCount.Load()),
+		SizeScope:           task.SizeScope(),
+		State:               task.FSM.Current(),
+		PeerCount:           uint32(task.PeerCount()),
+		CreatedAt:           timestamppb.New(task.CreatedAt.Load()),
+		UpdatedAt:           timestamppb.New(task.UpdatedAt.Load()),
 	}
 
 	// Set digest to response.
@@ -848,6 +848,10 @@ func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.S
 		// If trigger the seed peer download back-to-source,
 		// the need back-to-source flag should be true.
 		download.NeedBackToSource = true
+
+		// Output path should be empty, prevent the seed peer
+		// copy file to output path.
+		download.OutputPath = nil
 		if err := v.downloadTaskBySeedPeer(ctx, taskID, download, peer); err != nil {
 			// Collect RegisterPeerFailureCount metrics.
 			metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
@@ -1284,12 +1288,12 @@ func (v *V2) handleResource(ctx context.Context, stream schedulerv2.Scheduler_An
 		}
 
 		task = resource.NewTask(taskID, download.GetUrl(), download.GetTag(), download.GetApplication(), download.GetType(),
-			download.GetFilters(), download.GetHeader(), int32(v.config.Scheduler.BackToSourceCount), options...)
+			download.GetFilteredQueryParams(), download.GetRequestHeader(), int32(v.config.Scheduler.BackToSourceCount), options...)
 		v.resource.TaskManager().Store(task)
 	} else {
 		task.URL = download.GetUrl()
-		task.Filters = download.GetFilters()
-		task.Header = download.GetHeader()
+		task.FilteredQueryParams = download.GetFilteredQueryParams()
+		task.Header = download.GetRequestHeader()
 	}
 
 	// Store new peer or load peer.

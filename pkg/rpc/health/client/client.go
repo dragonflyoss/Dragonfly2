@@ -44,6 +44,7 @@ func GetClient(ctx context.Context, target string, opts ...grpc.DialOption) (Cli
 		ctx,
 		target,
 		append([]grpc.DialOption{
+			grpc.WithIdleTimeout(0),
 			grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
 				grpc_prometheus.UnaryClientInterceptor,

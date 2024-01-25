@@ -49,6 +49,7 @@ func GetV1ByAddr(ctx context.Context, target string, opts ...grpc.DialOption) (V
 		ctx,
 		target,
 		append([]grpc.DialOption{
+			grpc.WithIdleTimeout(0),
 			grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
 				grpc_prometheus.UnaryClientInterceptor,

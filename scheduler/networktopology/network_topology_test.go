@@ -314,8 +314,8 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 				)
 
 				var probedCountKeys []string
-				for i := 1; i < len(hosts); i++ {
-					probedCountKeys = append(probedCountKeys, pkgredis.MakeProbedCountKeyInScheduler(hosts[i].ID))
+				for _, host := range hosts[1:] {
+					probedCountKeys = append(probedCountKeys, pkgredis.MakeProbedCountKeyInScheduler(host.ID))
 				}
 
 				mockRDBClient.ExpectMGet(probedCountKeys...).SetVal([]any{"5", "4", "3", "2", "1"})

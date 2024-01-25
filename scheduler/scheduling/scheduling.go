@@ -535,23 +535,11 @@ func (s *scheduling) filterCandidateParents(peer *resource.Peer, blocklist set.S
 			continue
 		}
 
-		// Candidate parent can add edge with peer.
-		if !peer.Task.CanAddPeerEdge(candidateParent.ID, peer.ID) {
-			peer.Log.Debugf("can not add edge with parent %s", candidateParent.ID)
-			continue
-		}
-
 		// Candidate parent host is not allowed to be the same as the peer host,
 		// because dfdaemon cannot handle the situation
 		// where two tasks are downloading and downloading each other.
 		if peer.Host.ID == candidateParent.Host.ID {
 			peer.Log.Debugf("parent %s host %s is the same as peer host", candidateParent.ID, candidateParent.Host.ID)
-			continue
-		}
-
-		// Candidate parent is bad node.
-		if s.evaluator.IsBadNode(candidateParent) {
-			peer.Log.Debugf("parent %s is not selected because it is bad node", candidateParent.ID)
 			continue
 		}
 
@@ -574,10 +562,22 @@ func (s *scheduling) filterCandidateParents(peer *resource.Peer, blocklist set.S
 			continue
 		}
 
+		// Candidate parent is bad node.
+		if s.evaluator.IsBadNode(candidateParent) {
+			peer.Log.Debugf("parent %s is not selected because it is bad node", candidateParent.ID)
+			continue
+		}
+
 		// Candidate parent's free upload is empty.
 		if candidateParent.Host.FreeUploadCount() <= 0 {
 			peer.Log.Debugf("parent %s is not selected because its free upload is empty, upload limit is %d, upload count is %d",
 				candidateParent.ID, candidateParent.Host.ConcurrentUploadLimit.Load(), candidateParent.Host.ConcurrentUploadCount.Load())
+			continue
+		}
+
+		// Candidate parent can add edge with peer.
+		if !peer.Task.CanAddPeerEdge(candidateParent.ID, peer.ID) {
+			peer.Log.Debugf("can not add edge with parent %s", candidateParent.ID)
 			continue
 		}
 
@@ -640,21 +640,21 @@ func ConstructSuccessNormalTaskResponse(candidateParents []*resource.Peer) *sche
 
 		// Set task to parent.
 		parent.Task = &commonv2.Task{
-			Id:            candidateParent.Task.ID,
-			Type:          candidateParent.Task.Type,
-			Url:           candidateParent.Task.URL,
-			Tag:           &candidateParent.Task.Tag,
-			Application:   &candidateParent.Task.Application,
-			Filters:       candidateParent.Task.Filters,
-			Header:        candidateParent.Task.Header,
-			PieceLength:   uint32(candidateParent.Task.PieceLength),
-			ContentLength: uint64(candidateParent.Task.ContentLength.Load()),
-			PieceCount:    uint32(candidateParent.Task.TotalPieceCount.Load()),
-			SizeScope:     candidateParent.Task.SizeScope(),
-			State:         candidateParent.Task.FSM.Current(),
-			PeerCount:     uint32(candidateParent.Task.PeerCount()),
-			CreatedAt:     timestamppb.New(candidateParent.Task.CreatedAt.Load()),
-			UpdatedAt:     timestamppb.New(candidateParent.Task.UpdatedAt.Load()),
+			Id:                  candidateParent.Task.ID,
+			Type:                candidateParent.Task.Type,
+			Url:                 candidateParent.Task.URL,
+			Tag:                 &candidateParent.Task.Tag,
+			Application:         &candidateParent.Task.Application,
+			FilteredQueryParams: candidateParent.Task.FilteredQueryParams,
+			RequestHeader:       candidateParent.Task.Header,
+			PieceLength:         uint32(candidateParent.Task.PieceLength),
+			ContentLength:       uint64(candidateParent.Task.ContentLength.Load()),
+			PieceCount:          uint32(candidateParent.Task.TotalPieceCount.Load()),
+			SizeScope:           candidateParent.Task.SizeScope(),
+			State:               candidateParent.Task.FSM.Current(),
+			PeerCount:           uint32(candidateParent.Task.PeerCount()),
+			CreatedAt:           timestamppb.New(candidateParent.Task.CreatedAt.Load()),
+			UpdatedAt:           timestamppb.New(candidateParent.Task.UpdatedAt.Load()),
 		}
 
 		// Set digest to parent task.

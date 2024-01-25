@@ -17,6 +17,7 @@
 package peer
 
 import (
+	"cmp"
 	"math/rand"
 	"sync"
 	"testing"
@@ -119,7 +120,7 @@ func (pc *pieceTestManager) Run() {
 // return a slice of peerIDs, order by count desc
 func (pc *pieceTestManager) Order() []string {
 	peerIDs := maps.Keys(pc.peers)
-	slices.SortFunc(peerIDs, func(a, b string) bool { return *pc.peers[a].count > *pc.peers[b].count })
+	slices.SortFunc(peerIDs, func(a, b string) int { return cmp.Compare(*pc.peers[a].count, *pc.peers[b].count) })
 	return peerIDs
 }
 
