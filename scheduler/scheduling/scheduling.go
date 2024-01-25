@@ -524,12 +524,6 @@ func (s *scheduling) filterCandidateParents(peer *resource.Peer, blocklist set.S
 			continue
 		}
 
-		// Candidate parent is bad node.
-		if s.evaluator.IsBadNode(candidateParent) {
-			peer.Log.Debugf("parent %s is not selected because it is bad node", candidateParent.ID)
-			continue
-		}
-
 		// Candidate parent can not find in dag.
 		inDegree, err := peer.Task.PeerInDegree(candidateParent.ID)
 		if err != nil {
@@ -546,6 +540,12 @@ func (s *scheduling) filterCandidateParents(peer *resource.Peer, blocklist set.S
 			!candidateParent.FSM.Is(resource.PeerStateSucceeded) {
 			peer.Log.Debugf("parent %s is not selected, because its download state is %d %d %s",
 				candidateParent.ID, inDegree, int(candidateParent.Host.Type), candidateParent.FSM.Current())
+			continue
+		}
+
+		// Candidate parent is bad node.
+		if s.evaluator.IsBadNode(candidateParent) {
+			peer.Log.Debugf("parent %s is not selected because it is bad node", candidateParent.ID)
 			continue
 		}
 
