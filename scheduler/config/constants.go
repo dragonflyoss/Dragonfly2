@@ -25,10 +25,10 @@ import (
 
 const (
 	// DefaultSeedPeerConcurrentUploadLimit is default number for seed peer concurrent upload limit.
-	DefaultSeedPeerConcurrentUploadLimit = 300
+	DefaultSeedPeerConcurrentUploadLimit = 500
 
 	// DefaultPeerConcurrentUploadLimit is default number for peer concurrent upload limit.
-	DefaultPeerConcurrentUploadLimit = 50
+	DefaultPeerConcurrentUploadLimit = 200
 
 	// DefaultSchedulerCandidateParentLimit is default limit the number of candidate parent.
 	DefaultSchedulerCandidateParentLimit = 4
@@ -61,16 +61,16 @@ const (
 	DefaultSchedulerAlgorithm = "default"
 
 	// DefaultSchedulerBackToSourceCount is default back-to-source count for scheduler.
-	DefaultSchedulerBackToSourceCount = 3
+	DefaultSchedulerBackToSourceCount = 200
 
 	// DefaultSchedulerRetryBackToSourceLimit is default retry back-to-source limit for scheduler.
-	DefaultSchedulerRetryBackToSourceLimit = 10
+	DefaultSchedulerRetryBackToSourceLimit = 3
 
 	// DefaultSchedulerRetryLimit is default retry limit for scheduler.
-	DefaultSchedulerRetryLimit = 15
+	DefaultSchedulerRetryLimit = 5
 
 	// DefaultSchedulerRetryInterval is default retry interval for scheduler.
-	DefaultSchedulerRetryInterval = 300 * time.Millisecond
+	DefaultSchedulerRetryInterval = 400 * time.Millisecond
 
 	// DefaultSchedulerPieceDownloadTimeout is default timeout of downloading piece.
 	DefaultSchedulerPieceDownloadTimeout = 30 * time.Minute

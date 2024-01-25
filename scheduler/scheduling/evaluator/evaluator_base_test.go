@@ -587,7 +587,7 @@ func TestEvaluatorBase_calculateFreeUploadScore(t *testing.T) {
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(0.98))
+				assert.Equal(score, float64(0.995))
 			},
 		},
 		{
