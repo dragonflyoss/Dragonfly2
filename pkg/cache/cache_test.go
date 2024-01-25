@@ -151,6 +151,26 @@ func TestStorePointerToStruct(t *testing.T) {
 	}
 }
 
+func TestScan(t *testing.T) {
+	tc := New(DefaultExpiration, 0)
+	tc.Set(v2, v1, DefaultExpiration)
+	tc.Set(v3, v1, DefaultExpiration)
+	keys := tc.Scan("b*", 1)
+	if len(keys) != 1 {
+		t.Error("invalid number of scaning cache keys")
+	}
+
+	keys = tc.Scan("b*", 2)
+	if len(keys) != 2 {
+		t.Error("invalid number of scaning cache keys")
+	}
+
+	keys = tc.Scan("b*", 4)
+	if len(keys) != 2 {
+		t.Error("invalid number of scaning cache keys")
+	}
+}
+
 func TestAdd(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
 	err := tc.Add(v1, v2, DefaultExpiration)

@@ -24,6 +24,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"sync"
 	"time"
@@ -56,6 +57,7 @@ const (
 )
 
 type Cache interface {
+	Scan(p string, n int) []string
 	Set(k string, x any, d time.Duration)
 	SetDefault(k string, x any)
 	Add(k string, x any, d time.Duration) error
@@ -80,6 +82,26 @@ type cache struct {
 	mu                sync.RWMutex
 	onEvicted         func(string, any)
 	janitor           *janitor
+}
+
+// Scan all items to get a specified number of matching regex keys.
+func (c *cache) Scan(p string, n int) []string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	var keys []string
+	reg := regexp.MustCompile(p)
+	for k := range c.items {
+		if reg.MatchString(k) {
+			keys = append(keys, k)
+		}
+
+		if len(keys) >= n {
+			break
+		}
+	}
+
+	return keys
 }
 
 // Add an item to the cache, replacing any existing item. If the duration is 0
