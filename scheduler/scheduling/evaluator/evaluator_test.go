@@ -34,13 +34,13 @@ func TestEvaluator_New(t *testing.T) {
 	tests := []struct {
 		name      string
 		algorithm string
-		option    []Option
+		options   []Option
 		expect    func(t *testing.T, e any)
 	}{
 		{
 			name:      "new evaluator with default algorithm",
 			algorithm: "default",
-			option:    []Option{},
+			options:   []Option{},
 			expect: func(t *testing.T, e any) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
@@ -49,7 +49,7 @@ func TestEvaluator_New(t *testing.T) {
 		{
 			name:      "new evaluator with machine learning algorithm",
 			algorithm: "ml",
-			option:    []Option{},
+			options:   []Option{},
 			expect: func(t *testing.T, e any) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
@@ -58,7 +58,7 @@ func TestEvaluator_New(t *testing.T) {
 		{
 			name:      "new evaluator with plugin",
 			algorithm: "plugin",
-			option:    []Option{},
+			options:   []Option{},
 			expect: func(t *testing.T, e any) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
@@ -67,7 +67,7 @@ func TestEvaluator_New(t *testing.T) {
 		{
 			name:      "new evaluator with empty string",
 			algorithm: "",
-			option:    []Option{},
+			options:   []Option{},
 			expect: func(t *testing.T, e any) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
@@ -76,7 +76,7 @@ func TestEvaluator_New(t *testing.T) {
 		{
 			name:      "new evaluator with default algorithm and networkTopology",
 			algorithm: "nt",
-			option:    []Option{WithNetworkTopology(mockNetworkTopology)},
+			options:   []Option{WithNetworkTopology(mockNetworkTopology)},
 			expect: func(t *testing.T, e any) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorNetworkTopology")
@@ -86,7 +86,7 @@ func TestEvaluator_New(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, New(tc.algorithm, pluginDir, tc.option...))
+			tc.expect(t, New(tc.algorithm, pluginDir, tc.options...))
 		})
 	}
 }

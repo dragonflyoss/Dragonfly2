@@ -56,7 +56,7 @@ const (
 )
 
 type evaluatorNetworkTopology struct {
-	Evaluator
+	evaluator
 	networktopology networktopology.NetworkTopology
 }
 
@@ -69,7 +69,7 @@ func WithNetworkTopology(networktopology networktopology.NetworkTopology) Option
 	}
 }
 
-func NewEvaluatorNetworkTopology(options ...Option) Evaluation {
+func NewEvaluatorNetworkTopology(options ...Option) Evaluator {
 	e := &evaluatorNetworkTopology{}
 
 	for _, opt := range options {

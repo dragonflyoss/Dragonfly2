@@ -46,10 +46,10 @@ const (
 )
 
 type evaluatorBase struct {
-	Evaluator
+	evaluator
 }
 
-func NewEvaluatorBase() Evaluation {
+func NewEvaluatorBase() Evaluator {
 	return &evaluatorBase{}
 }
 
@@ -58,7 +58,7 @@ func (eb *evaluatorBase) EvaluateParents(parents []*resource.Peer, child *resour
 	sort.Slice(
 		parents,
 		func(i, j int) bool {
-			return evaluate(parents[i], child, totalPieceCount) > evaluate(parents[j], child, totalPieceCount)
+			return eb.evaluate(parents[i], child, totalPieceCount) > eb.evaluate(parents[j], child, totalPieceCount)
 		},
 	)
 
@@ -66,22 +66,22 @@ func (eb *evaluatorBase) EvaluateParents(parents []*resource.Peer, child *resour
 }
 
 // The larger the value, the higher the priority.
-func evaluate(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
+func (eb *evaluatorBase) evaluate(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
 	parentLocation := parent.Host.Network.Location
 	parentIDC := parent.Host.Network.IDC
 	childLocation := child.Host.Network.Location
 	childIDC := child.Host.Network.IDC
 
-	return finishedPieceWeight*calculatePieceScore(parent, child, totalPieceCount) +
-		parentHostUploadSuccessWeight*calculateParentHostUploadSuccessScore(parent) +
-		freeUploadWeight*calculateFreeUploadScore(parent.Host) +
-		hostTypeWeight*calculateHostTypeScore(parent) +
-		idcAffinityWeight*calculateIDCAffinityScore(parentIDC, childIDC) +
-		locationAffinityWeight*calculateMultiElementAffinityScore(parentLocation, childLocation)
+	return finishedPieceWeight*eb.calculatePieceScore(parent, child, totalPieceCount) +
+		parentHostUploadSuccessWeight*eb.calculateParentHostUploadSuccessScore(parent) +
+		freeUploadWeight*eb.calculateFreeUploadScore(parent.Host) +
+		hostTypeWeight*eb.calculateHostTypeScore(parent) +
+		idcAffinityWeight*eb.calculateIDCAffinityScore(parentIDC, childIDC) +
+		locationAffinityWeight*eb.calculateMultiElementAffinityScore(parentLocation, childLocation)
 }
 
 // calculatePieceScore 0.0~unlimited larger and better.
-func calculatePieceScore(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
+func (eb *evaluatorBase) calculatePieceScore(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
 	// If the total piece is determined, normalize the number of
 	// pieces downloaded by the parent node.
 	if totalPieceCount > 0 {
@@ -97,7 +97,7 @@ func calculatePieceScore(parent *resource.Peer, child *resource.Peer, totalPiece
 }
 
 // calculateParentHostUploadSuccessScore 0.0~unlimited larger and better.
-func calculateParentHostUploadSuccessScore(peer *resource.Peer) float64 {
+func (eb *evaluatorBase) calculateParentHostUploadSuccessScore(peer *resource.Peer) float64 {
 	uploadCount := peer.Host.UploadCount.Load()
 	uploadFailedCount := peer.Host.UploadFailedCount.Load()
 	if uploadCount < uploadFailedCount {
@@ -113,7 +113,7 @@ func calculateParentHostUploadSuccessScore(peer *resource.Peer) float64 {
 }
 
 // calculateFreeUploadScore 0.0~1.0 larger and better.
-func calculateFreeUploadScore(host *resource.Host) float64 {
+func (eb *evaluatorBase) calculateFreeUploadScore(host *resource.Host) float64 {
 	ConcurrentUploadLimit := host.ConcurrentUploadLimit.Load()
 	freeUploadCount := host.FreeUploadCount()
 	if ConcurrentUploadLimit > 0 && freeUploadCount > 0 {
@@ -124,7 +124,7 @@ func calculateFreeUploadScore(host *resource.Host) float64 {
 }
 
 // calculateHostTypeScore 0.0~1.0 larger and better.
-func calculateHostTypeScore(peer *resource.Peer) float64 {
+func (eb *evaluatorBase) calculateHostTypeScore(peer *resource.Peer) float64 {
 	// When the task is downloaded for the first time,
 	// peer will be scheduled to seed peer first,
 	// otherwise it will be scheduled to dfdaemon first.
@@ -141,7 +141,7 @@ func calculateHostTypeScore(peer *resource.Peer) float64 {
 }
 
 // calculateIDCAffinityScore 0.0~1.0 larger and better.
-func calculateIDCAffinityScore(dst, src string) float64 {
+func (eb *evaluatorBase) calculateIDCAffinityScore(dst, src string) float64 {
 	if dst == "" || src == "" {
 		return minScore
 	}
@@ -154,7 +154,7 @@ func calculateIDCAffinityScore(dst, src string) float64 {
 }
 
 // calculateMultiElementAffinityScore 0.0~1.0 larger and better.
-func calculateMultiElementAffinityScore(dst, src string) float64 {
+func (eb *evaluatorBase) calculateMultiElementAffinityScore(dst, src string) float64 {
 	if dst == "" || src == "" {
 		return minScore
 	}

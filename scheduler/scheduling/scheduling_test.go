@@ -48,7 +48,6 @@ import (
 	pkgtypes "d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	configmocks "d7y.io/dragonfly/v2/scheduler/config/mocks"
-	networktopologymocks "d7y.io/dragonfly/v2/scheduler/networktopology/mocks"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/scheduling/evaluator"
 )
@@ -197,19 +196,16 @@ var (
 )
 
 func TestScheduling_New(t *testing.T) {
-	ctl := gomock.NewController(t)
-	defer ctl.Finish()
-	mockNetworkTopology := networktopologymocks.NewMockNetworkTopology(ctl)
 	tests := []struct {
 		name      string
 		pluginDir string
-		option    []evaluator.Option
+		options   []evaluator.Option
 		expect    func(t *testing.T, s any)
 	}{
 		{
 			name:      "new scheduling",
 			pluginDir: "bar",
-			option:    []evaluator.Option{},
+			options:   []evaluator.Option{},
 			expect: func(t *testing.T, s any) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(s).Elem().Name(), "scheduling")
@@ -218,16 +214,7 @@ func TestScheduling_New(t *testing.T) {
 		{
 			name:      "new scheduling with empty pluginDir",
 			pluginDir: "",
-			option:    []evaluator.Option{},
-			expect: func(t *testing.T, s any) {
-				assert := assert.New(t)
-				assert.Equal(reflect.TypeOf(s).Elem().Name(), "scheduling")
-			},
-		},
-		{
-			name:      "new scheduling with evaluatorOptions",
-			pluginDir: "",
-			option:    []evaluator.Option{evaluator.WithNetworkTopology(mockNetworkTopology)},
+			options:   []evaluator.Option{},
 			expect: func(t *testing.T, s any) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(s).Elem().Name(), "scheduling")

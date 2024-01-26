@@ -395,8 +395,9 @@ func TestEvaluatorBase_evaluate(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			eb := NewEvaluatorBase()
 			tc.mock(tc.parent, tc.child)
-			tc.expect(t, evaluate(tc.parent, tc.child, tc.totalPieceCount))
+			tc.expect(t, eb.(*evaluatorBase).evaluate(tc.parent, tc.child, tc.totalPieceCount))
 		})
 	}
 }
@@ -514,8 +515,9 @@ func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			eb := NewEvaluatorBase()
 			tc.mock(tc.parent, tc.child)
-			tc.expect(t, calculatePieceScore(tc.parent, tc.child, tc.totalPieceCount))
+			tc.expect(t, eb.(*evaluatorBase).calculatePieceScore(tc.parent, tc.child, tc.totalPieceCount))
 		})
 	}
 }
@@ -568,8 +570,9 @@ func TestEvaluatorBase_calculatehostUploadSuccessScore(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
 			mockPeer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, host)
+			eb := NewEvaluatorBase()
 			tc.mock(host)
-			tc.expect(t, calculateParentHostUploadSuccessScore(mockPeer))
+			tc.expect(t, eb.(*evaluatorBase).calculateParentHostUploadSuccessScore(mockPeer))
 		})
 	}
 }
@@ -617,8 +620,9 @@ func TestEvaluatorBase_calculateFreeUploadScore(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
 			mockPeer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, host)
+			eb := NewEvaluatorBase()
 			tc.mock(host, mockPeer)
-			tc.expect(t, calculateFreeUploadScore(host))
+			tc.expect(t, eb.(*evaluatorBase).calculateFreeUploadScore(host))
 		})
 	}
 }
@@ -668,8 +672,9 @@ func TestEvaluatorBase_calculateHostTypeScore(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
 			peer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
+			eb := NewEvaluatorBase()
 			tc.mock(peer)
-			tc.expect(t, calculateHostTypeScore(peer))
+			tc.expect(t, eb.(*evaluatorBase).calculateHostTypeScore(peer))
 		})
 	}
 }
@@ -743,8 +748,9 @@ func TestEvaluatorBase_calculateIDCAffinityScore(t *testing.T) {
 			srcHost := resource.NewHost(
 				mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
 				mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)
+			eb := NewEvaluatorBase()
 			tc.mock(dstHost, srcHost)
-			tc.expect(t, calculateIDCAffinityScore(dstHost.Network.IDC, srcHost.Network.IDC))
+			tc.expect(t, eb.(*evaluatorBase).calculateIDCAffinityScore(dstHost.Network.IDC, srcHost.Network.IDC))
 		})
 	}
 }
@@ -868,7 +874,8 @@ func TestEvaluatorBase_calculateMultiElementAffinityScore(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, calculateMultiElementAffinityScore(tc.dst, tc.src))
+			eb := NewEvaluatorBase()
+			tc.expect(t, eb.(*evaluatorBase).calculateMultiElementAffinityScore(tc.dst, tc.src))
 		})
 	}
 }

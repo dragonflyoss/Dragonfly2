@@ -60,9 +60,9 @@ const (
 	minAvailableCostLen = 2
 )
 
-type Evaluator struct{}
+type evaluator struct{}
 
-type Evaluation interface {
+type Evaluator interface {
 	// EvaluateParents sort parents by evaluating multiple feature scores.
 	EvaluateParents(parents []*resource.Peer, child *resource.Peer, taskPieceCount int32) []*resource.Peer
 
@@ -70,7 +70,7 @@ type Evaluation interface {
 	IsBadNode(peer *resource.Peer) bool
 }
 
-func New(algorithm string, pluginDir string, options ...Option) Evaluation {
+func New(algorithm string, pluginDir string, options ...Option) Evaluator {
 	switch algorithm {
 	case PluginAlgorithm:
 		if plugin, err := LoadPlugin(pluginDir); err == nil {
@@ -86,7 +86,7 @@ func New(algorithm string, pluginDir string, options ...Option) Evaluation {
 	return NewEvaluatorBase()
 }
 
-func (e *Evaluator) IsBadNode(peer *resource.Peer) bool {
+func (e *evaluator) IsBadNode(peer *resource.Peer) bool {
 	if peer.FSM.Is(resource.PeerStateFailed) || peer.FSM.Is(resource.PeerStateLeave) || peer.FSM.Is(resource.PeerStatePending) ||
 		peer.FSM.Is(resource.PeerStateReceivedTiny) || peer.FSM.Is(resource.PeerStateReceivedSmall) ||
 		peer.FSM.Is(resource.PeerStateReceivedNormal) || peer.FSM.Is(resource.PeerStateReceivedEmpty) {

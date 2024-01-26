@@ -26,13 +26,13 @@ const (
 	pluginName = "evaluator"
 )
 
-func LoadPlugin(dir string) (Evaluation, error) {
+func LoadPlugin(dir string) (Evaluator, error) {
 	client, _, err := dfplugin.Load(dir, dfplugin.PluginTypeScheduler, pluginName, map[string]string{})
 	if err != nil {
 		return nil, err
 	}
 
-	if rc, ok := client.(Evaluation); ok {
+	if rc, ok := client.(Evaluator); ok {
 		return rc, err
 	}
 	return nil, errors.New("invalid evaluator plugin")
