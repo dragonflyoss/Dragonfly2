@@ -38,7 +38,7 @@ const (
 	networkTopologyFreeUploadWeight = 0.15
 
 	// Network topology weight.
-	networkTopologyNetworkTopologyWeight = 0.12
+	networkTopologyProbeWeight = 0.12
 
 	// Host type weight.
 	networkTopologyHostTypeWeight = 0.11
@@ -51,50 +51,39 @@ const (
 )
 
 const (
-	// Maximum score.
-	networkTopologyMaxScore float64 = 1
-
-	// Minimum score.
-	networkTopologyMinScore = 0
-)
-
-const (
-	// Maximum number of elements.
-	networkTopologyMaxElementLen = 5
-
 	// defaultPingTimeout specifies a default timeout before ping exits.
 	defaultPingTimeout = 1 * time.Second
 )
 
 type evaluatorNetworkTopology struct {
-	BaseEvaluator
+	Evaluator
 	networktopology networktopology.NetworkTopology
 }
 
-type Option func(en *evaluatorNetworkTopology)
+type Option func(e *evaluatorNetworkTopology)
 
 // WithNetworkTopology sets the networkTopology.
 func WithNetworkTopology(networktopology networktopology.NetworkTopology) Option {
-	return func(en *evaluatorNetworkTopology) {
-		en.networktopology = networktopology
+	return func(e *evaluatorNetworkTopology) {
+		e.networktopology = networktopology
 	}
 }
 
-func NewEvaluatorNetworkTopology(options ...Option) Evaluator {
-	en := &evaluatorNetworkTopology{}
+func NewEvaluatorNetworkTopology(options ...Option) Evaluation {
+	e := &evaluatorNetworkTopology{}
 
 	for _, opt := range options {
-		opt(en)
+		opt(e)
 	}
-	return en
+	return e
 }
 
 // EvaluateParents sort parents by evaluating multiple feature scores.
-func (en *evaluatorNetworkTopology) EvaluateParents(parents []*resource.Peer, child *resource.Peer, totalPieceCount int32) []*resource.Peer {
+func (e *evaluatorNetworkTopology) EvaluateParents(parents []*resource.Peer, child *resource.Peer, totalPieceCount int32) []*resource.Peer {
 	sort.Slice(
 		parents,
 		func(i, j int) bool {
-			return en.evaluate(parents[i], child, totalPieceCount) > en.evaluate(parents[j], child, totalPieceCount)
+			return e.evaluate(parents[i], child, totalPieceCount) > e.evaluate(parents[j], child, totalPieceCount)
 		},
 	)
 
@@ -102,23 +91,23 @@ func (en *evaluatorNetworkTopology) EvaluateParents(parents []*resource.Peer, ch
 }
 
 // The larger the value, the higher the priority.
-func (en *evaluatorNetworkTopology) evaluate(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
+func (e *evaluatorNetworkTopology) evaluate(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
 	parentLocation := parent.Host.Network.Location
 	parentIDC := parent.Host.Network.IDC
 	childLocation := child.Host.Network.Location
 	childIDC := child.Host.Network.IDC
 
-	return networkTopologyFinishedPieceWeight*networkTopologyCalculatePieceScore(parent, child, totalPieceCount) +
-		networkTopologyParentHostUploadSuccessWeight*networkTopologyCalculateParentHostUploadSuccessScore(parent) +
-		networkTopologyFreeUploadWeight*networkTopologyCalculateFreeUploadScore(parent.Host) +
-		networkTopologyHostTypeWeight*networkTopologyCalculateHostTypeScore(parent) +
-		networkTopologyIDCAffinityWeight*networkTopologyCalculateIDCAffinityScore(parentIDC, childIDC) +
-		networkTopologyLocationAffinityWeight*networkTopologyCalculateMultiElementAffinityScore(parentLocation, childLocation) +
-		networkTopologyNetworkTopologyWeight*en.networkTopologyCalculateNetworkTopologyScore(parent.ID, child.ID)
+	return networkTopologyFinishedPieceWeight*e.calculatePieceScore(parent, child, totalPieceCount) +
+		networkTopologyParentHostUploadSuccessWeight*e.calculateParentHostUploadSuccessScore(parent) +
+		networkTopologyFreeUploadWeight*e.calculateFreeUploadScore(parent.Host) +
+		networkTopologyHostTypeWeight*e.calculateHostTypeScore(parent) +
+		networkTopologyIDCAffinityWeight*e.calculateIDCAffinityScore(parentIDC, childIDC) +
+		networkTopologyLocationAffinityWeight*e.calculateMultiElementAffinityScore(parentLocation, childLocation) +
+		networkTopologyProbeWeight*e.calculateNetworkTopologyScore(parent.ID, child.ID)
 }
 
-// networkTopologyCalculatePieceScore 0.0~unlimited larger and better.
-func networkTopologyCalculatePieceScore(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
+// calculatePieceScore 0.0~unlimited larger and better.
+func (e *evaluatorNetworkTopology) calculatePieceScore(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
 	// If the total piece is determined, normalize the number of
 	// pieces downloaded by the parent node.
 	if totalPieceCount > 0 {
@@ -133,71 +122,71 @@ func networkTopologyCalculatePieceScore(parent *resource.Peer, child *resource.P
 	return float64(parentFinishedPieceCount) - float64(childFinishedPieceCount)
 }
 
-// networkTopologyCalculateParentHostUploadSuccessScore 0.0~unlimited larger and better.
-func networkTopologyCalculateParentHostUploadSuccessScore(peer *resource.Peer) float64 {
+// calculateParentHostUploadSuccessScore 0.0~unlimited larger and better.
+func (e *evaluatorNetworkTopology) calculateParentHostUploadSuccessScore(peer *resource.Peer) float64 {
 	uploadCount := peer.Host.UploadCount.Load()
 	uploadFailedCount := peer.Host.UploadFailedCount.Load()
 	if uploadCount < uploadFailedCount {
-		return networkTopologyMinScore
+		return minScore
 	}
 
 	// Host has not been scheduled, then it is scheduled first.
 	if uploadCount == 0 && uploadFailedCount == 0 {
-		return networkTopologyMaxScore
+		return maxScore
 	}
 
 	return float64(uploadCount-uploadFailedCount) / float64(uploadCount)
 }
 
-// networkTopologyCalculateFreeUploadScore 0.0~1.0 larger and better.
-func networkTopologyCalculateFreeUploadScore(host *resource.Host) float64 {
+// calculateFreeUploadScore 0.0~1.0 larger and better.
+func (e *evaluatorNetworkTopology) calculateFreeUploadScore(host *resource.Host) float64 {
 	ConcurrentUploadLimit := host.ConcurrentUploadLimit.Load()
 	freeUploadCount := host.FreeUploadCount()
 	if ConcurrentUploadLimit > 0 && freeUploadCount > 0 {
 		return float64(freeUploadCount) / float64(ConcurrentUploadLimit)
 	}
 
-	return networkTopologyMinScore
+	return minScore
 }
 
-// networkTopologyCalculateHostTypeScore 0.0~1.0 larger and better.
-func networkTopologyCalculateHostTypeScore(peer *resource.Peer) float64 {
+// calculateHostTypeScore 0.0~1.0 larger and better.
+func (e *evaluatorNetworkTopology) calculateHostTypeScore(peer *resource.Peer) float64 {
 	// When the task is downloaded for the first time,
 	// peer will be scheduled to seed peer first,
 	// otherwise it will be scheduled to dfdaemon first.
 	if peer.Host.Type != types.HostTypeNormal {
 		if peer.FSM.Is(resource.PeerStateReceivedNormal) ||
 			peer.FSM.Is(resource.PeerStateRunning) {
-			return networkTopologyMaxScore
+			return maxScore
 		}
 
-		return networkTopologyMinScore
+		return minScore
 	}
 
-	return networkTopologyMaxScore * 0.5
+	return maxScore * 0.5
 }
 
 // calculateIDCAffinityScore 0.0~1.0 larger and better.
-func networkTopologyCalculateIDCAffinityScore(dst, src string) float64 {
+func (e *evaluatorNetworkTopology) calculateIDCAffinityScore(dst, src string) float64 {
 	if dst == "" || src == "" {
-		return networkTopologyMinScore
+		return minScore
 	}
 
 	if strings.EqualFold(dst, src) {
-		return networkTopologyMaxScore
+		return maxScore
 	}
 
-	return networkTopologyMinScore
+	return minScore
 }
 
-// networkTopologyCalculateMultiElementAffinityScore 0.0~1.0 larger and better.
-func networkTopologyCalculateMultiElementAffinityScore(dst, src string) float64 {
+// calculateMultiElementAffinityScore 0.0~1.0 larger and better.
+func (e *evaluatorNetworkTopology) calculateMultiElementAffinityScore(dst, src string) float64 {
 	if dst == "" || src == "" {
-		return networkTopologyMinScore
+		return minScore
 	}
 
 	if strings.EqualFold(dst, src) {
-		return networkTopologyMaxScore
+		return maxScore
 	}
 
 	// Calculate the number of multi-element matches divided by "|".
@@ -207,8 +196,8 @@ func networkTopologyCalculateMultiElementAffinityScore(dst, src string) float64 
 	elementLen = math.Min(len(dstElements), len(srcElements))
 
 	// Maximum element length is 5.
-	if elementLen > networkTopologyMaxElementLen {
-		elementLen = networkTopologyMaxElementLen
+	if elementLen > maxElementLen {
+		elementLen = maxElementLen
 	}
 
 	for i := 0; i < elementLen; i++ {
@@ -219,14 +208,14 @@ func networkTopologyCalculateMultiElementAffinityScore(dst, src string) float64 
 		score++
 	}
 
-	return float64(score) / float64(networkTopologyMaxElementLen)
+	return float64(score) / float64(maxElementLen)
 }
 
-// networkTopologyCalculateNetworkTopologyScore 0.0~1.0 larger and better.
-func (en *evaluatorNetworkTopology) networkTopologyCalculateNetworkTopologyScore(dst, src string) float64 {
-	averageRTT, err := en.networktopology.Probes(dst, src).AverageRTT()
+// calculateNetworkTopologyScore 0.0~1.0 larger and better.
+func (e *evaluatorNetworkTopology) calculateNetworkTopologyScore(dst, src string) float64 {
+	averageRTT, err := e.networktopology.Probes(dst, src).AverageRTT()
 	if err != nil {
-		return networkTopologyMinScore
+		return minScore
 	}
 
 	return float64(defaultPingTimeout-averageRTT) / float64(defaultPingTimeout)

@@ -45,24 +45,11 @@ const (
 	locationAffinityWeight = 0.15
 )
 
-const (
-	// Maximum score.
-	maxScore float64 = 1
-
-	// Minimum score.
-	minScore = 0
-)
-
-const (
-	// Maximum number of elements.
-	maxElementLen = 5
-)
-
 type evaluatorBase struct {
-	BaseEvaluator
+	Evaluator
 }
 
-func NewEvaluatorBase() Evaluator {
+func NewEvaluatorBase() Evaluation {
 	return &evaluatorBase{}
 }
 

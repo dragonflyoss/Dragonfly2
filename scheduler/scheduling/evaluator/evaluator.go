@@ -40,6 +40,17 @@ const (
 )
 
 const (
+	// Maximum score.
+	maxScore float64 = 1
+
+	// Minimum score.
+	minScore = 0
+)
+
+const (
+	// Maximum number of elements.
+	maxElementLen = 5
+
 	// If the number of samples is greater than or equal to 30,
 	// it is close to the normal distribution.
 	normalDistributionLen = 30
@@ -49,9 +60,9 @@ const (
 	minAvailableCostLen = 2
 )
 
-type BaseEvaluator struct{}
+type Evaluator struct{}
 
-type Evaluator interface {
+type Evaluation interface {
 	// EvaluateParents sort parents by evaluating multiple feature scores.
 	EvaluateParents(parents []*resource.Peer, child *resource.Peer, taskPieceCount int32) []*resource.Peer
 
@@ -59,7 +70,7 @@ type Evaluator interface {
 	IsBadNode(peer *resource.Peer) bool
 }
 
-func New(algorithm string, pluginDir string, options ...Option) Evaluator {
+func New(algorithm string, pluginDir string, options ...Option) Evaluation {
 	switch algorithm {
 	case PluginAlgorithm:
 		if plugin, err := LoadPlugin(pluginDir); err == nil {
@@ -75,7 +86,7 @@ func New(algorithm string, pluginDir string, options ...Option) Evaluator {
 	return NewEvaluatorBase()
 }
 
-func (be *BaseEvaluator) IsBadNode(peer *resource.Peer) bool {
+func (e *Evaluator) IsBadNode(peer *resource.Peer) bool {
 	if peer.FSM.Is(resource.PeerStateFailed) || peer.FSM.Is(resource.PeerStateLeave) || peer.FSM.Is(resource.PeerStatePending) ||
 		peer.FSM.Is(resource.PeerStateReceivedTiny) || peer.FSM.Is(resource.PeerStateReceivedSmall) ||
 		peer.FSM.Is(resource.PeerStateReceivedNormal) || peer.FSM.Is(resource.PeerStateReceivedEmpty) {

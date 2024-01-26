@@ -96,6 +96,9 @@ const (
 	// DefaultCPU is default cpu usage.
 	DefaultCPU = 1
 
+	// NetworkTopologyAlgorithm is a scheduling algorithm based on rules and network topology.
+	NetworkTopologyAlgorithm = "nt"
+
 	// DefaultNetworkTopologyCollectInterval is the default interval of collecting network topology.
 	DefaultSchedulerNetworkTopologyCollectInterval = 2 * time.Hour
 

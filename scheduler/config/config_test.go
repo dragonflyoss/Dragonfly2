@@ -472,6 +472,7 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Manager = mockManagerConfig
 				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
+				cfg.Scheduler.Algorithm = NetworkTopologyAlgorithm
 				cfg.Scheduler.NetworkTopology.CollectInterval = 0
 			},
 			expect: func(t *testing.T, err error) {
@@ -486,6 +487,7 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Manager = mockManagerConfig
 				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
+				cfg.Scheduler.Algorithm = NetworkTopologyAlgorithm
 				cfg.Scheduler.NetworkTopology.Cache.Interval = 0
 			},
 			expect: func(t *testing.T, err error) {
@@ -500,6 +502,7 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Manager = mockManagerConfig
 				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
+				cfg.Scheduler.Algorithm = NetworkTopologyAlgorithm
 				cfg.Scheduler.NetworkTopology.Cache.TTL = 0
 			},
 			expect: func(t *testing.T, err error) {
@@ -514,6 +517,7 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Manager = mockManagerConfig
 				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
+				cfg.Scheduler.Algorithm = NetworkTopologyAlgorithm
 				cfg.Scheduler.NetworkTopology.Probe.QueueLength = 0
 			},
 			expect: func(t *testing.T, err error) {
@@ -528,6 +532,7 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Manager = mockManagerConfig
 				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
+				cfg.Scheduler.Algorithm = NetworkTopologyAlgorithm
 				cfg.Scheduler.NetworkTopology.Probe.Count = 0
 			},
 			expect: func(t *testing.T, err error) {

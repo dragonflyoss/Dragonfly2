@@ -635,24 +635,26 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	if cfg.Scheduler.NetworkTopology.CollectInterval <= 0 {
-		return errors.New("networkTopology requires parameter collectInterval")
-	}
+	if cfg.Scheduler.Algorithm == NetworkTopologyAlgorithm {
+		if cfg.Scheduler.NetworkTopology.CollectInterval <= 0 {
+			return errors.New("networkTopology requires parameter collectInterval")
+		}
 
-	if cfg.Scheduler.NetworkTopology.Probe.QueueLength <= 0 {
-		return errors.New("probe requires parameter queueLength")
-	}
+		if cfg.Scheduler.NetworkTopology.Probe.QueueLength <= 0 {
+			return errors.New("probe requires parameter queueLength")
+		}
 
-	if cfg.Scheduler.NetworkTopology.Probe.Count <= 0 {
-		return errors.New("probe requires parameter count")
-	}
+		if cfg.Scheduler.NetworkTopology.Probe.Count <= 0 {
+			return errors.New("probe requires parameter count")
+		}
 
-	if cfg.Scheduler.NetworkTopology.Cache.Interval <= 0 {
-		return errors.New("networkTopology requires parameter interval")
-	}
+		if cfg.Scheduler.NetworkTopology.Cache.Interval <= 0 {
+			return errors.New("networkTopology requires parameter interval")
+		}
 
-	if cfg.Scheduler.NetworkTopology.Cache.TTL <= 0 {
-		return errors.New("networkTopology requires parameter ttl")
+		if cfg.Scheduler.NetworkTopology.Cache.TTL <= 0 {
+			return errors.New("networkTopology requires parameter ttl")
+		}
 	}
 
 	if cfg.Trainer.Enable {

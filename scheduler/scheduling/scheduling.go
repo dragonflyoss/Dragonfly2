@@ -63,7 +63,7 @@ type Scheduling interface {
 
 type scheduling struct {
 	// Evaluator interface.
-	evaluator evaluator.Evaluator
+	evaluator evaluator.Evaluation
 
 	// Scheduler configuration.
 	config *config.SchedulerConfig

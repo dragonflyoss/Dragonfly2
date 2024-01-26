@@ -75,11 +75,11 @@ func TestEvaluator_New(t *testing.T) {
 		},
 		{
 			name:      "new evaluator with default algorithm and networkTopology",
-			algorithm: "default",
+			algorithm: "nt",
 			option:    []Option{WithNetworkTopology(mockNetworkTopology)},
 			expect: func(t *testing.T, e any) {
 				assert := assert.New(t)
-				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
+				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorNetworkTopology")
 			},
 		},
 	}
