@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2024 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package scheduler
 
 import (
 	"context"
+	"math"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -30,7 +31,7 @@ import (
 var _ = Describe("Evaluator with networkTopology", func() {
 	Context("networkTopology", func() {
 		It("check networkTopology in redis", Label("networkTopology"), func() {
-			Expect(waitForStarted()).Should(BeTrue())
+			Expect(waitForProbedInNetworkTopology()).Should(BeTrue())
 		})
 	})
 })
@@ -50,7 +51,7 @@ func newRedis() (redis.UniversalClient, error) {
 	return rdb, nil
 }
 
-func waitForStarted() bool {
+func waitForProbedInNetworkTopology() bool {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
@@ -70,8 +71,28 @@ func waitForStarted() bool {
 			keys, err := rdb.Keys(context.Background(), "*").Result()
 			Expect(err).NotTo(HaveOccurred())
 			if len(keys) == 0 {
-				return true
+				continue
 			}
+
+			probesKeys, _, err := rdb.Scan(ctx, 0, pkgredis.MakeProbesKeyInScheduler("*", "*"), math.MaxInt64).Result()
+			Expect(err).NotTo(HaveOccurred())
+			if len(probesKeys) == 0 {
+				continue
+			}
+
+			probedCountKeys, _, err := rdb.Scan(ctx, 0, pkgredis.MakeProbedCountKeyInScheduler("*"), math.MaxInt64).Result()
+			Expect(err).NotTo(HaveOccurred())
+			if len(probedCountKeys) == 0 {
+				continue
+			}
+
+			networkTopologyKeys, _, err := rdb.Scan(ctx, 0, pkgredis.MakeNetworkTopologyKeyInScheduler("*", "*"), math.MaxInt64).Result()
+			Expect(err).NotTo(HaveOccurred())
+			if len(networkTopologyKeys) == 0 {
+				continue
+			}
+
+			return true
 		}
 	}
 }
