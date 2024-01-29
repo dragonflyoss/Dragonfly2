@@ -55,26 +55,28 @@ const (
 	defaultPingTimeout = 1 * time.Second
 )
 
+// evaluatorNetworkTopology is an implementation of Evaluator.
 type evaluatorNetworkTopology struct {
 	evaluator
 	networktopology networktopology.NetworkTopology
 }
 
-type Option func(e *evaluatorNetworkTopology)
+// NetworkTopologyOption is a functional option for configuring the evaluatorNetworkTopology.
+type NetworkTopologyOption func(e *evaluatorNetworkTopology)
 
 // WithNetworkTopology sets the networkTopology.
-func WithNetworkTopology(networktopology networktopology.NetworkTopology) Option {
+func WithNetworkTopology(networktopology networktopology.NetworkTopology) NetworkTopologyOption {
 	return func(e *evaluatorNetworkTopology) {
 		e.networktopology = networktopology
 	}
 }
 
-func NewEvaluatorNetworkTopology(options ...Option) Evaluator {
+func newEvaluatorNetworkTopology(options ...NetworkTopologyOption) Evaluator {
 	e := &evaluatorNetworkTopology{}
-
 	for _, opt := range options {
 		opt(e)
 	}
+
 	return e
 }
 

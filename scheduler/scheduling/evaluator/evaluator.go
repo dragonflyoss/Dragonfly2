@@ -60,8 +60,7 @@ const (
 	minAvailableCostLen = 2
 )
 
-type evaluator struct{}
-
+// Evaluator is an interface that evaluates the parents.
 type Evaluator interface {
 	// EvaluateParents sort parents by evaluating multiple feature scores.
 	EvaluateParents(parents []*resource.Peer, child *resource.Peer, taskPieceCount int32) []*resource.Peer
@@ -70,22 +69,27 @@ type Evaluator interface {
 	IsBadNode(peer *resource.Peer) bool
 }
 
-func New(algorithm string, pluginDir string, options ...Option) Evaluator {
+// evaluator is an implementation of Evaluator.
+type evaluator struct{}
+
+// New returns a new Evaluator.
+func New(algorithm string, pluginDir string, networkTopologyOptions ...NetworkTopologyOption) Evaluator {
 	switch algorithm {
 	case PluginAlgorithm:
 		if plugin, err := LoadPlugin(pluginDir); err == nil {
 			return plugin
 		}
 	case NetworkTopologyAlgorithm:
-		return NewEvaluatorNetworkTopology(options...)
+		return newEvaluatorNetworkTopology(networkTopologyOptions...)
 	// TODO Implement MLAlgorithm.
 	case MLAlgorithm, DefaultAlgorithm:
-		return NewEvaluatorBase()
+		return newEvaluatorBase()
 	}
 
-	return NewEvaluatorBase()
+	return newEvaluatorBase()
 }
 
+// IsBadNode determine if peer is a failed node.
 func (e *evaluator) IsBadNode(peer *resource.Peer) bool {
 	if peer.FSM.Is(resource.PeerStateFailed) || peer.FSM.Is(resource.PeerStateLeave) || peer.FSM.Is(resource.PeerStatePending) ||
 		peer.FSM.Is(resource.PeerStateReceivedTiny) || peer.FSM.Is(resource.PeerStateReceivedSmall) ||

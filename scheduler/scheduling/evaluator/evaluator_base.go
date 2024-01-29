@@ -45,11 +45,13 @@ const (
 	locationAffinityWeight = 0.15
 )
 
+// evaluatorBase is an implementation of Evaluator.
 type evaluatorBase struct {
 	evaluator
 }
 
-func NewEvaluatorBase() Evaluator {
+// NewEvaluatorBase returns a new EvaluatorBase.
+func newEvaluatorBase() Evaluator {
 	return &evaluatorBase{}
 }
 

@@ -34,13 +34,13 @@ func TestEvaluator_New(t *testing.T) {
 	tests := []struct {
 		name      string
 		algorithm string
-		options   []Option
+		options   []NetworkTopologyOption
 		expect    func(t *testing.T, e any)
 	}{
 		{
 			name:      "new evaluator with default algorithm",
 			algorithm: "default",
-			options:   []Option{},
+			options:   []NetworkTopologyOption{},
 			expect: func(t *testing.T, e any) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
@@ -49,7 +49,7 @@ func TestEvaluator_New(t *testing.T) {
 		{
 			name:      "new evaluator with machine learning algorithm",
 			algorithm: "ml",
-			options:   []Option{},
+			options:   []NetworkTopologyOption{},
 			expect: func(t *testing.T, e any) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
@@ -58,7 +58,7 @@ func TestEvaluator_New(t *testing.T) {
 		{
 			name:      "new evaluator with plugin",
 			algorithm: "plugin",
-			options:   []Option{},
+			options:   []NetworkTopologyOption{},
 			expect: func(t *testing.T, e any) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
@@ -67,7 +67,7 @@ func TestEvaluator_New(t *testing.T) {
 		{
 			name:      "new evaluator with empty string",
 			algorithm: "",
-			options:   []Option{},
+			options:   []NetworkTopologyOption{},
 			expect: func(t *testing.T, e any) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
@@ -76,7 +76,7 @@ func TestEvaluator_New(t *testing.T) {
 		{
 			name:      "new evaluator with default algorithm and networkTopology",
 			algorithm: "nt",
-			options:   []Option{WithNetworkTopology(mockNetworkTopology)},
+			options:   []NetworkTopologyOption{WithNetworkTopology(mockNetworkTopology)},
 			expect: func(t *testing.T, e any) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorNetworkTopology")
