@@ -28,8 +28,8 @@ import (
 )
 
 const (
-	// URLFilterSeparator is filter separator for url.
-	URLFilterSeparator = "&"
+	// FilteredQueryParamsSeparator is the separator of filtered query params.
+	FilteredQueryParamsSeparator = "&"
 )
 
 // TaskIDV1 generates v1 version of task id.
@@ -51,13 +51,13 @@ func taskIDV1(url string, meta *commonv1.UrlMeta, ignoreRange bool) string {
 		return pkgdigest.SHA256FromStrings(url)
 	}
 
-	filters := parseFilters(meta.Filter)
+	filteredQueryParams := parseFilteredQueryParams(meta.Filter)
 
 	var (
 		u   string
 		err error
 	)
-	u, err = neturl.FilterQuery(url, filters)
+	u, err = neturl.FilterQueryParams(url, filteredQueryParams)
 	if err != nil {
 		u = ""
 	}
@@ -82,18 +82,18 @@ func taskIDV1(url string, meta *commonv1.UrlMeta, ignoreRange bool) string {
 	return pkgdigest.SHA256FromStrings(data...)
 }
 
-// parseFilters parses a filter string to filter slice.
-func parseFilters(rawFilters string) []string {
-	if pkgstrings.IsBlank(rawFilters) {
+// parseFilteredQueryParams parses filtered query params.
+func parseFilteredQueryParams(rawFilteredQueryParams string) []string {
+	if pkgstrings.IsBlank(rawFilteredQueryParams) {
 		return nil
 	}
 
-	return strings.Split(rawFilters, URLFilterSeparator)
+	return strings.Split(rawFilteredQueryParams, FilteredQueryParamsSeparator)
 }
 
 // TaskIDV2 generates v2 version of task id.
-func TaskIDV2(url, digest, tag, application string, pieceLength int32, filters []string) string {
-	url, err := neturl.FilterQuery(url, filters)
+func TaskIDV2(url, digest, tag, application string, pieceLength int32, filteredQueryParams []string) string {
+	url, err := neturl.FilterQueryParams(url, filteredQueryParams)
 	if err != nil {
 		url = ""
 	}

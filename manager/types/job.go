@@ -62,8 +62,8 @@ type PreheatArgs struct {
 	// Tag is the tag for preheating.
 	Tag string `json:"tag" binding:"omitempty"`
 
-	// Filter is filter for preheating.
-	Filter string `json:"filter" binding:"omitempty"`
+	// FilteredQueryParams is the filtered query params for preheating.
+	FilteredQueryParams string `json:"filteredQueryParams" binding:"omitempty"`
 
 	// Headers is the http headers for authentication.
 	Headers map[string]string `json:"headers" binding:"omitempty"`
