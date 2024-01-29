@@ -54,11 +54,11 @@ func NewEvaluatorBase() Evaluator {
 }
 
 // EvaluateParents sort parents by evaluating multiple feature scores.
-func (eb *evaluatorBase) EvaluateParents(parents []*resource.Peer, child *resource.Peer, totalPieceCount int32) []*resource.Peer {
+func (e *evaluatorBase) EvaluateParents(parents []*resource.Peer, child *resource.Peer, totalPieceCount int32) []*resource.Peer {
 	sort.Slice(
 		parents,
 		func(i, j int) bool {
-			return eb.evaluate(parents[i], child, totalPieceCount) > eb.evaluate(parents[j], child, totalPieceCount)
+			return e.evaluate(parents[i], child, totalPieceCount) > e.evaluate(parents[j], child, totalPieceCount)
 		},
 	)
 
@@ -66,22 +66,22 @@ func (eb *evaluatorBase) EvaluateParents(parents []*resource.Peer, child *resour
 }
 
 // The larger the value, the higher the priority.
-func (eb *evaluatorBase) evaluate(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
+func (e *evaluatorBase) evaluate(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
 	parentLocation := parent.Host.Network.Location
 	parentIDC := parent.Host.Network.IDC
 	childLocation := child.Host.Network.Location
 	childIDC := child.Host.Network.IDC
 
-	return finishedPieceWeight*eb.calculatePieceScore(parent, child, totalPieceCount) +
-		parentHostUploadSuccessWeight*eb.calculateParentHostUploadSuccessScore(parent) +
-		freeUploadWeight*eb.calculateFreeUploadScore(parent.Host) +
-		hostTypeWeight*eb.calculateHostTypeScore(parent) +
-		idcAffinityWeight*eb.calculateIDCAffinityScore(parentIDC, childIDC) +
-		locationAffinityWeight*eb.calculateMultiElementAffinityScore(parentLocation, childLocation)
+	return finishedPieceWeight*e.calculatePieceScore(parent, child, totalPieceCount) +
+		parentHostUploadSuccessWeight*e.calculateParentHostUploadSuccessScore(parent) +
+		freeUploadWeight*e.calculateFreeUploadScore(parent.Host) +
+		hostTypeWeight*e.calculateHostTypeScore(parent) +
+		idcAffinityWeight*e.calculateIDCAffinityScore(parentIDC, childIDC) +
+		locationAffinityWeight*e.calculateMultiElementAffinityScore(parentLocation, childLocation)
 }
 
 // calculatePieceScore 0.0~unlimited larger and better.
-func (eb *evaluatorBase) calculatePieceScore(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
+func (e *evaluatorBase) calculatePieceScore(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
 	// If the total piece is determined, normalize the number of
 	// pieces downloaded by the parent node.
 	if totalPieceCount > 0 {
@@ -97,7 +97,7 @@ func (eb *evaluatorBase) calculatePieceScore(parent *resource.Peer, child *resou
 }
 
 // calculateParentHostUploadSuccessScore 0.0~unlimited larger and better.
-func (eb *evaluatorBase) calculateParentHostUploadSuccessScore(peer *resource.Peer) float64 {
+func (e *evaluatorBase) calculateParentHostUploadSuccessScore(peer *resource.Peer) float64 {
 	uploadCount := peer.Host.UploadCount.Load()
 	uploadFailedCount := peer.Host.UploadFailedCount.Load()
 	if uploadCount < uploadFailedCount {
@@ -113,7 +113,7 @@ func (eb *evaluatorBase) calculateParentHostUploadSuccessScore(peer *resource.Pe
 }
 
 // calculateFreeUploadScore 0.0~1.0 larger and better.
-func (eb *evaluatorBase) calculateFreeUploadScore(host *resource.Host) float64 {
+func (e *evaluatorBase) calculateFreeUploadScore(host *resource.Host) float64 {
 	ConcurrentUploadLimit := host.ConcurrentUploadLimit.Load()
 	freeUploadCount := host.FreeUploadCount()
 	if ConcurrentUploadLimit > 0 && freeUploadCount > 0 {
@@ -124,7 +124,7 @@ func (eb *evaluatorBase) calculateFreeUploadScore(host *resource.Host) float64 {
 }
 
 // calculateHostTypeScore 0.0~1.0 larger and better.
-func (eb *evaluatorBase) calculateHostTypeScore(peer *resource.Peer) float64 {
+func (e *evaluatorBase) calculateHostTypeScore(peer *resource.Peer) float64 {
 	// When the task is downloaded for the first time,
 	// peer will be scheduled to seed peer first,
 	// otherwise it will be scheduled to dfdaemon first.
@@ -141,7 +141,7 @@ func (eb *evaluatorBase) calculateHostTypeScore(peer *resource.Peer) float64 {
 }
 
 // calculateIDCAffinityScore 0.0~1.0 larger and better.
-func (eb *evaluatorBase) calculateIDCAffinityScore(dst, src string) float64 {
+func (e *evaluatorBase) calculateIDCAffinityScore(dst, src string) float64 {
 	if dst == "" || src == "" {
 		return minScore
 	}
@@ -154,7 +154,7 @@ func (eb *evaluatorBase) calculateIDCAffinityScore(dst, src string) float64 {
 }
 
 // calculateMultiElementAffinityScore 0.0~1.0 larger and better.
-func (eb *evaluatorBase) calculateMultiElementAffinityScore(dst, src string) float64 {
+func (e *evaluatorBase) calculateMultiElementAffinityScore(dst, src string) float64 {
 	if dst == "" || src == "" {
 		return minScore
 	}
