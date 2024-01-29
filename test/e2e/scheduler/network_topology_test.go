@@ -28,6 +28,12 @@ import (
 	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
 )
 
+const (
+	redisAddr         = "localhost:6379"
+	redisPassword     = "dragonfly"
+	networkTopologyDB = 3
+)
+
 var _ = Describe("Evaluator with networkTopology", func() {
 	Context("networkTopology", func() {
 		It("check networkTopology in redis", Label("networkTopology"), func() {
@@ -38,11 +44,9 @@ var _ = Describe("Evaluator with networkTopology", func() {
 
 func newRedis() (redis.UniversalClient, error) {
 	rdb, err := pkgredis.NewRedis(&redis.UniversalOptions{
-		Addrs:      []string{redisMaster},
-		MasterName: redisMaster,
-		DB:         networkTopologyDB,
-		Username:   redisUsername,
-		Password:   redisPassword,
+		Addrs:    []string{redisAddr},
+		DB:       networkTopologyDB,
+		Password: redisPassword,
 	})
 	if err != nil {
 		return nil, err
