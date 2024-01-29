@@ -73,9 +73,6 @@ type Config struct {
 	// Network configuration.
 	Network NetworkConfig `yaml:"network" mapstructure:"network"`
 
-	// NetworkTopology configuration.
-	NetworkTopology NetworkTopologyConfig `yaml:"networkTopology" mapstructure:"networkTopology"`
-
 	// Trainer configuration.
 	Trainer TrainerConfig `yaml:"trainer" mapstructure:"trainer"`
 }
@@ -130,6 +127,9 @@ type SchedulerConfig struct {
 
 	// GC configuration.
 	GC GCConfig `yaml:"gc" mapstructure:"gc"`
+
+	// NetworkTopology configuration.
+	NetworkTopology NetworkTopologyConfig `yaml:"networkTopology" mapstructure:"networkTopology"`
 }
 
 type DatabaseConfig struct {
@@ -331,9 +331,6 @@ type NetworkConfig struct {
 }
 
 type NetworkTopologyConfig struct {
-	// Enable network topology service, including probe, network topology collection.
-	Enable bool `yaml:"enable" mapstructure:"enable"`
-
 	// CollectInterval is the interval of collecting network topology.
 	CollectInterval time.Duration `mapstructure:"collectInterval" yaml:"collectInterval"`
 
@@ -396,6 +393,17 @@ func New() *Config {
 				HostGCInterval:       DefaultSchedulerHostGCInterval,
 				HostTTL:              DefaultSchedulerHostTTL,
 			},
+			NetworkTopology: NetworkTopologyConfig{
+				CollectInterval: DefaultSchedulerNetworkTopologyCollectInterval,
+				Probe: ProbeConfig{
+					QueueLength: DefaultSchedulerNetworkTopologyProbeQueueLength,
+					Count:       DefaultSchedulerNetworkTopologyProbeCount,
+				},
+				Cache: CacheConfig{
+					Interval: DefaultSchedulerNetworkTopologyCacheInterval,
+					TTL:      DefaultSchedulerNetworkTopologyCacheTLL,
+				},
+			},
 		},
 		Database: DatabaseConfig{
 			Redis: RedisConfig{
@@ -457,18 +465,6 @@ func New() *Config {
 		},
 		Network: NetworkConfig{
 			EnableIPv6: DefaultNetworkEnableIPv6,
-		},
-		NetworkTopology: NetworkTopologyConfig{
-			Enable:          true,
-			CollectInterval: DefaultNetworkTopologyCollectInterval,
-			Probe: ProbeConfig{
-				QueueLength: DefaultProbeQueueLength,
-				Count:       DefaultProbeCount,
-			},
-			Cache: CacheConfig{
-				Interval: DefaultNetworkTopologyCacheInterval,
-				TTL:      DefaultNetworkTopologyCacheTLL,
-			},
 		},
 		Trainer: TrainerConfig{
 			Enable:        false,
@@ -639,24 +635,26 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	if cfg.NetworkTopology.CollectInterval <= 0 {
-		return errors.New("networkTopology requires parameter collectInterval")
-	}
+	if cfg.Scheduler.Algorithm == NetworkTopologyAlgorithm {
+		if cfg.Scheduler.NetworkTopology.CollectInterval <= 0 {
+			return errors.New("networkTopology requires parameter collectInterval")
+		}
 
-	if cfg.NetworkTopology.Probe.QueueLength <= 0 {
-		return errors.New("probe requires parameter queueLength")
-	}
+		if cfg.Scheduler.NetworkTopology.Probe.QueueLength <= 0 {
+			return errors.New("probe requires parameter queueLength")
+		}
 
-	if cfg.NetworkTopology.Probe.Count <= 0 {
-		return errors.New("probe requires parameter count")
-	}
+		if cfg.Scheduler.NetworkTopology.Probe.Count <= 0 {
+			return errors.New("probe requires parameter count")
+		}
 
-	if cfg.NetworkTopology.Cache.Interval <= 0 {
-		return errors.New("networkTopology requires parameter interval")
-	}
+		if cfg.Scheduler.NetworkTopology.Cache.Interval <= 0 {
+			return errors.New("networkTopology requires parameter interval")
+		}
 
-	if cfg.NetworkTopology.Cache.TTL <= 0 {
-		return errors.New("networkTopology requires parameter ttl")
+		if cfg.Scheduler.NetworkTopology.Cache.TTL <= 0 {
+			return errors.New("networkTopology requires parameter ttl")
+		}
 	}
 
 	if cfg.Trainer.Enable {

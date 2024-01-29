@@ -151,7 +151,6 @@ var (
 	}
 
 	mockNetworkTopologyConfig = config.NetworkTopologyConfig{
-		Enable:          true,
 		CollectInterval: 2 * time.Hour,
 		Probe: config.ProbeConfig{
 			QueueLength: 5,

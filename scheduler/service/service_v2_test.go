@@ -1411,7 +1411,7 @@ func TestServiceV2_SyncProbes(t *testing.T) {
 			networkTopology := networktopologymocks.NewMockNetworkTopology(ctl)
 			hostManager := resource.NewMockHostManager(ctl)
 			stream := schedulerv2mocks.NewMockScheduler_SyncProbesServer(ctl)
-			svc := NewV2(&config.Config{NetworkTopology: mockNetworkTopologyConfig, Metrics: config.MetricsConfig{EnableHost: true}}, res, scheduling, dynconfig, storage, networkTopology)
+			svc := NewV2(&config.Config{Scheduler: config.SchedulerConfig{NetworkTopology: mockNetworkTopologyConfig}, Metrics: config.MetricsConfig{EnableHost: true}}, res, scheduling, dynconfig, storage, networkTopology)
 
 			tc.mock(svc, res.EXPECT(), probes, probes.EXPECT(), networkTopology.EXPECT(), hostManager, hostManager.EXPECT(), stream.EXPECT())
 			tc.expect(t, svc.SyncProbes(stream))

@@ -95,6 +95,24 @@ const (
 
 	// DefaultCPU is default cpu usage.
 	DefaultCPU = 1
+
+	// NetworkTopologyAlgorithm is a scheduling algorithm based on rules and network topology.
+	NetworkTopologyAlgorithm = "nt"
+
+	// DefaultNetworkTopologyCollectInterval is the default interval of collecting network topology.
+	DefaultSchedulerNetworkTopologyCollectInterval = 2 * time.Hour
+
+	// DefaultNetworkTopologyCacheInterval is the default cache cleanup interval.
+	DefaultSchedulerNetworkTopologyCacheInterval = 5 * time.Minute
+
+	// DefaultNetworkTopologyCacheTLL is the default ttl of networkTopology cache.
+	DefaultSchedulerNetworkTopologyCacheTLL = 5 * time.Minute
+
+	// DefaultProbeQueueLength is the default length of probe queue.
+	DefaultSchedulerNetworkTopologyProbeQueueLength = 5
+
+	// DefaultProbeCount is the default number of probing hosts.
+	DefaultSchedulerNetworkTopologyProbeCount = 5
 )
 
 const (
@@ -170,23 +188,6 @@ const (
 
 	// DefaultStorageBufferSize is the default size of buffer container.
 	DefaultStorageBufferSize = 100
-)
-
-const (
-	// DefaultNetworkTopologyCollectInterval is the default interval of collecting network topology.
-	DefaultNetworkTopologyCollectInterval = 2 * time.Hour
-
-	// DefaultNetworkTopologyCacheInterval is the default cache cleanup interval.
-	DefaultNetworkTopologyCacheInterval = 5 * time.Minute
-
-	// DefaultNetworkTopologyCacheTLL is the default ttl of networkTopology cache.
-	DefaultNetworkTopologyCacheTLL = 5 * time.Minute
-
-	// DefaultProbeQueueLength is the default length of probe queue.
-	DefaultProbeQueueLength = 5
-
-	// DefaultProbeCount is the default number of probing hosts.
-	DefaultProbeCount = 5
 )
 
 const (
