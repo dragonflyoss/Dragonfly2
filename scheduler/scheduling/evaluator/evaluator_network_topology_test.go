@@ -34,7 +34,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
-func TestEvaluatorNetworkTopology_NewEvaluatorNetworkTopology(t *testing.T) {
+func TestEvaluatorNetworkTopology_newEvaluatorNetworkTopology(t *testing.T) {
 	tests := []struct {
 		name   string
 		expect func(t *testing.T, e any)
@@ -53,7 +53,7 @@ func TestEvaluatorNetworkTopology_NewEvaluatorNetworkTopology(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 			mockNetworkTopology := networktopologymocks.NewMockNetworkTopology(ctl)
-			tc.expect(t, NewEvaluatorNetworkTopology(WithNetworkTopology(mockNetworkTopology)))
+			tc.expect(t, newEvaluatorNetworkTopology(WithNetworkTopology(mockNetworkTopology)))
 		})
 	}
 }
@@ -254,7 +254,7 @@ func TestEvaluatorNetworkTopology_EvaluateParents(t *testing.T) {
 			defer ctl.Finish()
 			mockNetworkTopology := networktopologymocks.NewMockNetworkTopology(ctl)
 			mockProbe := networktopologymocks.NewMockProbes(ctl)
-			e := NewEvaluatorNetworkTopology(WithNetworkTopology(mockNetworkTopology))
+			e := newEvaluatorNetworkTopology(WithNetworkTopology(mockNetworkTopology))
 			tc.mock(tc.parents, tc.child, mockProbe, mockNetworkTopology.EXPECT(), mockProbe.EXPECT())
 			tc.expect(t, e.EvaluateParents(tc.parents, tc.child, tc.totalPieceCount))
 		})
@@ -323,7 +323,7 @@ func TestEvaluatorNetworkTopology_evaluate(t *testing.T) {
 			defer ctl.Finish()
 			mockNetworkTopology := networktopologymocks.NewMockNetworkTopology(ctl)
 			mockProbe := networktopologymocks.NewMockProbes(ctl)
-			e := NewEvaluatorNetworkTopology(WithNetworkTopology(mockNetworkTopology))
+			e := newEvaluatorNetworkTopology(WithNetworkTopology(mockNetworkTopology))
 			tc.mock(tc.parent, tc.child, mockProbe, mockProbe.EXPECT(), mockNetworkTopology.EXPECT())
 			tc.expect(t, e.(*evaluatorNetworkTopology).evaluate(tc.parent, tc.child, tc.totalPieceCount))
 		})
@@ -446,7 +446,7 @@ func TestEvaluatorNetworkTopology_calculatePieceScore(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 			mockNetworkTopology := networktopologymocks.NewMockNetworkTopology(ctl)
-			e := NewEvaluatorNetworkTopology(WithNetworkTopology(mockNetworkTopology))
+			e := newEvaluatorNetworkTopology(WithNetworkTopology(mockNetworkTopology))
 			tc.mock(tc.parent, tc.child)
 			tc.expect(t, e.(*evaluatorNetworkTopology).calculatePieceScore(tc.parent, tc.child, tc.totalPieceCount))
 		})
@@ -504,7 +504,7 @@ func TestEvaluatorNetworkTopology_calculatehostUploadSuccessScore(t *testing.T) 
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
 			mockPeer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, host)
-			e := NewEvaluatorNetworkTopology(WithNetworkTopology(mockNetworkTopology))
+			e := newEvaluatorNetworkTopology(WithNetworkTopology(mockNetworkTopology))
 			tc.mock(host)
 			tc.expect(t, e.(*evaluatorNetworkTopology).calculateParentHostUploadSuccessScore(mockPeer))
 		})
@@ -557,7 +557,7 @@ func TestEvaluatorNetworkTopology_calculateFreeUploadScore(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
 			mockPeer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, host)
-			e := NewEvaluatorNetworkTopology(WithNetworkTopology(mockNetworkTopology))
+			e := newEvaluatorNetworkTopology(WithNetworkTopology(mockNetworkTopology))
 			tc.mock(host, mockPeer)
 			tc.expect(t, e.(*evaluatorNetworkTopology).calculateFreeUploadScore(host))
 		})
@@ -612,7 +612,7 @@ func TestEvaluatorNetworkTopology_calculateHostTypeScore(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
 			peer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
-			e := NewEvaluatorNetworkTopology(WithNetworkTopology(mockNetworkTopology))
+			e := newEvaluatorNetworkTopology(WithNetworkTopology(mockNetworkTopology))
 			tc.mock(peer)
 			tc.expect(t, e.(*evaluatorNetworkTopology).calculateHostTypeScore(peer))
 		})
@@ -692,7 +692,7 @@ func TestEvaluatorNetworkTopology_calculateIDCAffinityScore(t *testing.T) {
 				mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
 				mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)
 			tc.mock(dstHost, srcHost)
-			e := NewEvaluatorNetworkTopology(WithNetworkTopology(mockNetworkTopology))
+			e := newEvaluatorNetworkTopology(WithNetworkTopology(mockNetworkTopology))
 			tc.expect(t, e.(*evaluatorNetworkTopology).calculateIDCAffinityScore(dstHost.Network.IDC, srcHost.Network.IDC))
 		})
 	}
@@ -820,7 +820,7 @@ func TestEvaluatorNetworkTopology_calculateMultiElementAffinityScore(t *testing.
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 			mockNetworkTopology := networktopologymocks.NewMockNetworkTopology(ctl)
-			e := NewEvaluatorNetworkTopology(WithNetworkTopology(mockNetworkTopology))
+			e := newEvaluatorNetworkTopology(WithNetworkTopology(mockNetworkTopology))
 			tc.expect(t, e.(*evaluatorNetworkTopology).calculateMultiElementAffinityScore(tc.dst, tc.src))
 		})
 	}
@@ -879,7 +879,7 @@ func TestEvaluatorNetworkTopology_calculateNetworkTopologyScore(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 			mockNetworkTopology := networktopologymocks.NewMockNetworkTopology(ctl)
-			e := NewEvaluatorNetworkTopology(WithNetworkTopology(mockNetworkTopology))
+			e := newEvaluatorNetworkTopology(WithNetworkTopology(mockNetworkTopology))
 			mockProbe := networktopologymocks.NewMockProbes(ctl)
 			tc.mock(tc.parent, tc.child, mockProbe, mockNetworkTopology.EXPECT(), mockProbe.EXPECT())
 			tc.expect(t, tc.parent, tc.child, e.(*evaluatorNetworkTopology).calculateNetworkTopologyScore(tc.parent.ID, tc.child.ID))

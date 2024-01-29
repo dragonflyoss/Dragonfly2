@@ -259,7 +259,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 
 	// Initialize options of evaluator.
-	evaluatorOptions := []evaluator.Option{}
+	evaluatorNetworkTopologyOptions := []evaluator.NetworkTopologyOption{}
 	// Initialize network topology service.
 	if cfg.Scheduler.Algorithm == evaluator.NetworkTopologyAlgorithm {
 		cache := cache.New(cfg.Scheduler.NetworkTopology.Cache.TTL, cfg.Scheduler.NetworkTopology.Cache.Interval)
@@ -268,11 +268,11 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 			return nil, err
 		}
 
-		evaluatorOptions = append(evaluatorOptions, evaluator.WithNetworkTopology(s.networkTopology))
+		evaluatorNetworkTopologyOptions = append(evaluatorNetworkTopologyOptions, evaluator.WithNetworkTopology(s.networkTopology))
 	}
 
 	// Initialize scheduling.
-	scheduling := scheduling.New(&cfg.Scheduler, dynconfig, d.PluginDir(), evaluatorOptions...)
+	scheduling := scheduling.New(&cfg.Scheduler, dynconfig, d.PluginDir(), evaluatorNetworkTopologyOptions...)
 
 	// Initialize server options of scheduler grpc server.
 	schedulerServerOptions := []grpc.ServerOption{}

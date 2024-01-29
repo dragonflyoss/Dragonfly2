@@ -156,7 +156,7 @@ var (
 	mockPeerID       = idgen.PeerIDV2()
 )
 
-func TestEvaluatorBase_NewEvaluatorBase(t *testing.T) {
+func TestEvaluatorBase_newEvaluatorBase(t *testing.T) {
 	tests := []struct {
 		name   string
 		expect func(t *testing.T, e any)
@@ -172,7 +172,7 @@ func TestEvaluatorBase_NewEvaluatorBase(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, NewEvaluatorBase())
+			tc.expect(t, newEvaluatorBase())
 		})
 	}
 }
@@ -334,7 +334,7 @@ func TestEvaluatorBase_EvaluateParents(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			e := NewEvaluatorBase()
+			e := newEvaluatorBase()
 			tc.mock(tc.parents, tc.child)
 			tc.expect(t, e.EvaluateParents(tc.parents, tc.child, tc.totalPieceCount))
 		})
@@ -395,7 +395,7 @@ func TestEvaluatorBase_evaluate(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			e := NewEvaluatorBase()
+			e := newEvaluatorBase()
 			tc.mock(tc.parent, tc.child)
 			tc.expect(t, e.(*evaluatorBase).evaluate(tc.parent, tc.child, tc.totalPieceCount))
 		})
@@ -515,7 +515,7 @@ func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			e := NewEvaluatorBase()
+			e := newEvaluatorBase()
 			tc.mock(tc.parent, tc.child)
 			tc.expect(t, e.(*evaluatorBase).calculatePieceScore(tc.parent, tc.child, tc.totalPieceCount))
 		})
@@ -570,7 +570,7 @@ func TestEvaluatorBase_calculatehostUploadSuccessScore(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
 			mockPeer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, host)
-			e := NewEvaluatorBase()
+			e := newEvaluatorBase()
 			tc.mock(host)
 			tc.expect(t, e.(*evaluatorBase).calculateParentHostUploadSuccessScore(mockPeer))
 		})
@@ -620,7 +620,7 @@ func TestEvaluatorBase_calculateFreeUploadScore(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
 			mockPeer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, host)
-			e := NewEvaluatorBase()
+			e := newEvaluatorBase()
 			tc.mock(host, mockPeer)
 			tc.expect(t, e.(*evaluatorBase).calculateFreeUploadScore(host))
 		})
@@ -672,7 +672,7 @@ func TestEvaluatorBase_calculateHostTypeScore(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
 			peer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
-			e := NewEvaluatorBase()
+			e := newEvaluatorBase()
 			tc.mock(peer)
 			tc.expect(t, e.(*evaluatorBase).calculateHostTypeScore(peer))
 		})
@@ -748,7 +748,7 @@ func TestEvaluatorBase_calculateIDCAffinityScore(t *testing.T) {
 			srcHost := resource.NewHost(
 				mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
 				mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)
-			e := NewEvaluatorBase()
+			e := newEvaluatorBase()
 			tc.mock(dstHost, srcHost)
 			tc.expect(t, e.(*evaluatorBase).calculateIDCAffinityScore(dstHost.Network.IDC, srcHost.Network.IDC))
 		})
@@ -874,7 +874,7 @@ func TestEvaluatorBase_calculateMultiElementAffinityScore(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			e := NewEvaluatorBase()
+			e := newEvaluatorBase()
 			tc.expect(t, e.(*evaluatorBase).calculateMultiElementAffinityScore(tc.dst, tc.src))
 		})
 	}
@@ -1045,7 +1045,7 @@ func TestEvaluatorBase_IsBadNode(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			e := NewEvaluatorBase()
+			e := newEvaluatorBase()
 			tc.mock(tc.peer)
 			tc.expect(t, e.IsBadNode(tc.peer))
 		})
