@@ -329,12 +329,31 @@ func (nt *networkTopology) Neighbours(root *resource.Host, number int) ([]*resou
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	var neighbours []*resource.Host
-	networkTopologyKeys, _, err := nt.rdb.Scan(ctx, 0, pkgredis.MakeNetworkTopologyKeyInScheduler(root.ID, "*"), math.MaxInt64).Result()
+	networkTopologyKeys, err := nt.cache.Scan(pkgredis.MakeNetworkTopologyKeyInScheduler(root.ID, "*"), number)
 	if err != nil {
-		return neighbours, err
+		return nil, err
 	}
 
+	// If we cannot get a sufficient number of neighbors from the cache, then we access redis.
+	if len(networkTopologyKeys) < number {
+		networkTopologyKeys, _, err = nt.rdb.Scan(ctx, 0, pkgredis.MakeNetworkTopologyKeyInScheduler(root.ID, "*"), math.MaxInt64).Result()
+		if err != nil {
+			return nil, err
+		}
+
+		var networkTopology map[string]string
+		for _, networkTopologyKey := range networkTopologyKeys {
+			if networkTopology, err = nt.rdb.HGetAll(ctx, networkTopologyKey).Result(); err != nil {
+				logger.Errorf("network topology %s not found", networkTopologyKey)
+				continue
+			}
+
+			// Add cache data.
+			nt.cache.Set(networkTopologyKey, networkTopology, nt.config.Cache.TTL)
+		}
+	}
+
+	var neighbours []*resource.Host
 	for _, networkTopologyKey := range networkTopologyKeys {
 		_, _, _, neighbourID, err := pkgredis.ParseNetworkTopologyKeyInScheduler(networkTopologyKey)
 		if err != nil {
