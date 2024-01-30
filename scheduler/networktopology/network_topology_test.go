@@ -961,6 +961,7 @@ func TestNetworkTopology_Neighbours(t *testing.T) {
 				assert := assert.New(t)
 				assert.NoError(err)
 				neighbours, err := networkTopology.Neighbours(mockSeedHost, 2)
+				assert.NoError(err)
 				assert.Equal(len(neighbours), 2)
 			},
 		},
@@ -1009,6 +1010,7 @@ func TestNetworkTopology_Neighbours(t *testing.T) {
 				assert := assert.New(t)
 				assert.NoError(err)
 				neighbours, err := networkTopology.Neighbours(mockSeedHost, 2)
+				assert.NoError(err)
 				assert.Equal(len(neighbours), 2)
 			},
 		},
