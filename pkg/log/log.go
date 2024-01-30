@@ -45,5 +45,7 @@ func SetupDaemon(logDir string, verbose bool, console bool) error {
 		return err
 	}
 
-	return logger.InitDaemon(verbose, console, d.LogDir())
+	rotateConfig := logger.LogRotateConfig{}
+
+	return logger.InitDaemon(verbose, console, d.LogDir(), rotateConfig)
 }

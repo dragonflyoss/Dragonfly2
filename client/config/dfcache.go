@@ -52,6 +52,15 @@ type CacheOption struct {
 	// LogDir is log directory of dfcache.
 	LogDir string `yaml:"logDir,omitempty" mapstructure:"logDir,omitempty"`
 
+	// Maximum size in megabytes of log files before rotation (default: 1024)
+	LogMaxSize int `yaml:"logMaxSize" mapstructure:"logMaxSize"`
+
+	// Maximum number of days to retain old log files (default: 7)
+	LogMaxAge int `yaml:"logMaxAge" mapstructure:"logMaxAge"`
+
+	// Maximum number of old log files to keep (default: 20)
+	LogMaxBackups int `yaml:"logMaxBackups" mapstructure:"logMaxBackups"`
+
 	// WorkHome is working directory of dfcache.
 	WorkHome string `yaml:"workHome,omitempty" mapstructure:"workHome,omitempty"`
 

@@ -65,9 +65,13 @@ preprocessing original record data, establing datasets and training machine lear
 		if err != nil {
 			return err
 		}
+		rotateConfig := logger.LogRotateConfig{
+			MaxSize:    cfg.Server.LogMaxSize,
+			MaxAge:     cfg.Server.LogMaxAge,
+			MaxBackups: cfg.Server.LogMaxBackups}
 
 		// Initialize logger.
-		if err := logger.InitTrainer(cfg.Verbose, cfg.Console, d.LogDir()); err != nil {
+		if err := logger.InitTrainer(cfg.Verbose, cfg.Console, d.LogDir(), rotateConfig); err != nil {
 			return fmt.Errorf("init trainer logger: %w", err)
 		}
 		logger.RedirectStdoutAndStderr(cfg.Console, path.Join(d.LogDir(), types.SchedulerName))

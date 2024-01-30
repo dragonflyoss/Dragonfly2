@@ -131,8 +131,13 @@ func runDfcacheSubcmd(cmdName string, args []string) error {
 		return err
 	}
 
+	rotateConfig := logger.LogRotateConfig{
+		MaxSize:    dfcacheConfig.LogMaxSize,
+		MaxAge:     dfcacheConfig.LogMaxAge,
+		MaxBackups: dfcacheConfig.LogMaxBackups}
+
 	// Initialize logger
-	if err := logger.InitDfcache(dfcacheConfig.Console, d.LogDir()); err != nil {
+	if err := logger.InitDfcache(dfcacheConfig.Console, d.LogDir(), rotateConfig); err != nil {
 		return fmt.Errorf("init client dfcache logger: %w", err)
 	}
 	logger.Infof("version:\n%s", version.Version())
