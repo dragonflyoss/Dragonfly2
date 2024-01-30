@@ -54,10 +54,11 @@ func (mr *MockCacheMockRecorder) Add(k, x, d any) *gomock.Call {
 }
 
 // Scan mocks base method
-func (_m *MockCache) Scan(p string, n int) []string {
+func (_m *MockCache) Scan(p string, n int) ([]string, error) {
 	ret := _m.ctrl.Call(_m, "Scan", p, n)
 	ret0, _ := ret[0].([]string)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Scan indicates an expected call of Scan

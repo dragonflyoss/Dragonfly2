@@ -155,18 +155,48 @@ func TestScan(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
 	tc.Set(v2, v1, DefaultExpiration)
 	tc.Set(v3, v1, DefaultExpiration)
-	keys := tc.Scan("b*", 1)
+	keys, err := tc.Scan("^b", 1)
+	if err != nil {
+		t.Error("Couldn't parse a regular expression and returns")
+	}
+
 	if len(keys) != 1 {
 		t.Error("invalid number of scaning cache keys")
 	}
 
-	keys = tc.Scan("b*", 2)
+	keys, err = tc.Scan("b*", 2)
+	if err != nil {
+		t.Error("Couldn't parse a regular expression and returns")
+	}
+
 	if len(keys) != 2 {
 		t.Error("invalid number of scaning cache keys")
 	}
 
-	keys = tc.Scan("b*", 4)
+	keys, err = tc.Scan("^b", 4)
+	if err != nil {
+		t.Error("Couldn't parse a regular expression and returns")
+	}
+
 	if len(keys) != 2 {
+		t.Error("invalid number of scaning cache keys")
+	}
+
+	keys, err = tc.Scan("^ba", 2)
+	if err != nil {
+		t.Error("Couldn't parse a regular expression and returns")
+	}
+
+	if len(keys) != 2 {
+		t.Error("invalid number of scaning cache keys")
+	}
+
+	keys, err = tc.Scan("^a", 2)
+	if err != nil {
+		t.Error("Couldn't parse a regular expression and returns")
+	}
+
+	if len(keys) != 0 {
 		t.Error("invalid number of scaning cache keys")
 	}
 }

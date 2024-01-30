@@ -57,7 +57,7 @@ const (
 )
 
 type Cache interface {
-	Scan(p string, n int) []string
+	Scan(p string, n int) ([]string, error)
 	Set(k string, x any, d time.Duration)
 	SetDefault(k string, x any)
 	Add(k string, x any, d time.Duration) error
@@ -85,12 +85,16 @@ type cache struct {
 }
 
 // Scan all items to get a specified number of matching regex keys.
-func (c *cache) Scan(p string, n int) []string {
+func (c *cache) Scan(p string, n int) ([]string, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
 	var keys []string
-	reg := regexp.MustCompile(p)
+	reg, err := regexp.Compile(p)
+	if err != nil {
+		return nil, err
+	}
+
 	for k := range c.items {
 		if reg.MatchString(k) {
 			keys = append(keys, k)
@@ -101,7 +105,7 @@ func (c *cache) Scan(p string, n int) []string {
 		}
 	}
 
-	return keys
+	return keys, nil
 }
 
 // Add an item to the cache, replacing any existing item. If the duration is 0
