@@ -72,9 +72,9 @@ type scheduling struct {
 	dynconfig config.DynconfigInterface
 }
 
-func New(cfg *config.SchedulerConfig, dynconfig config.DynconfigInterface, pluginDir string) Scheduling {
+func New(cfg *config.SchedulerConfig, dynconfig config.DynconfigInterface, pluginDir string, networkTopologyOptions ...evaluator.NetworkTopologyOption) Scheduling {
 	return &scheduling{
-		evaluator: evaluator.New(cfg.Algorithm, pluginDir),
+		evaluator: evaluator.New(cfg.Algorithm, pluginDir, networkTopologyOptions...),
 		config:    cfg,
 		dynconfig: dynconfig,
 	}
@@ -276,7 +276,7 @@ func (s *scheduling) ScheduleParentAndCandidateParents(ctx context.Context, peer
 					peer.Log.Error(err)
 					return
 				}
-				peer.Log.Infof("send Code_SchedNeedBackSource to peer, because of scheduling exceeded RetryLimit %d", s.config.RetryLimit)
+				peer.Log.Infof("send Code_SchedNeedBackSource to peer, because of scheduling exceeded RetryBackToSourceLimit %d", s.config.RetryBackToSourceLimit)
 
 				if err := peer.FSM.Event(ctx, resource.PeerEventDownloadBackToSource); err != nil {
 					peer.Log.Errorf("peer fsm event failed: %s", err.Error())
@@ -524,12 +524,6 @@ func (s *scheduling) filterCandidateParents(peer *resource.Peer, blocklist set.S
 			continue
 		}
 
-		// Candidate parent is bad node.
-		if s.evaluator.IsBadNode(candidateParent) {
-			peer.Log.Debugf("parent %s is not selected because it is bad node", candidateParent.ID)
-			continue
-		}
-
 		// Candidate parent can not find in dag.
 		inDegree, err := peer.Task.PeerInDegree(candidateParent.ID)
 		if err != nil {
@@ -546,6 +540,12 @@ func (s *scheduling) filterCandidateParents(peer *resource.Peer, blocklist set.S
 			!candidateParent.FSM.Is(resource.PeerStateSucceeded) {
 			peer.Log.Debugf("parent %s is not selected, because its download state is %d %d %s",
 				candidateParent.ID, inDegree, int(candidateParent.Host.Type), candidateParent.FSM.Current())
+			continue
+		}
+
+		// Candidate parent is bad node.
+		if s.evaluator.IsBadNode(candidateParent) {
+			peer.Log.Debugf("parent %s is not selected because it is bad node", candidateParent.ID)
 			continue
 		}
 
@@ -621,21 +621,21 @@ func ConstructSuccessNormalTaskResponse(candidateParents []*resource.Peer) *sche
 
 		// Set task to parent.
 		parent.Task = &commonv2.Task{
-			Id:            candidateParent.Task.ID,
-			Type:          candidateParent.Task.Type,
-			Url:           candidateParent.Task.URL,
-			Tag:           &candidateParent.Task.Tag,
-			Application:   &candidateParent.Task.Application,
-			Filters:       candidateParent.Task.Filters,
-			RequestHeader: candidateParent.Task.Header,
-			PieceLength:   uint32(candidateParent.Task.PieceLength),
-			ContentLength: uint64(candidateParent.Task.ContentLength.Load()),
-			PieceCount:    uint32(candidateParent.Task.TotalPieceCount.Load()),
-			SizeScope:     candidateParent.Task.SizeScope(),
-			State:         candidateParent.Task.FSM.Current(),
-			PeerCount:     uint32(candidateParent.Task.PeerCount()),
-			CreatedAt:     timestamppb.New(candidateParent.Task.CreatedAt.Load()),
-			UpdatedAt:     timestamppb.New(candidateParent.Task.UpdatedAt.Load()),
+			Id:                  candidateParent.Task.ID,
+			Type:                candidateParent.Task.Type,
+			Url:                 candidateParent.Task.URL,
+			Tag:                 &candidateParent.Task.Tag,
+			Application:         &candidateParent.Task.Application,
+			FilteredQueryParams: candidateParent.Task.FilteredQueryParams,
+			RequestHeader:       candidateParent.Task.Header,
+			PieceLength:         uint32(candidateParent.Task.PieceLength),
+			ContentLength:       uint64(candidateParent.Task.ContentLength.Load()),
+			PieceCount:          uint32(candidateParent.Task.TotalPieceCount.Load()),
+			SizeScope:           candidateParent.Task.SizeScope(),
+			State:               candidateParent.Task.FSM.Current(),
+			PeerCount:           uint32(candidateParent.Task.PeerCount()),
+			CreatedAt:           timestamppb.New(candidateParent.Task.CreatedAt.Load()),
+			UpdatedAt:           timestamppb.New(candidateParent.Task.UpdatedAt.Load()),
 		}
 
 		// Set digest to parent task.

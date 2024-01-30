@@ -23,15 +23,15 @@ import (
 )
 
 func TestFilterQuery(t *testing.T) {
-	url, err := FilterQuery("http://www.xx.yy/path?u=f&x=y&m=z&x=s#size", []string{"x", "m"})
+	url, err := FilterQueryParams("http://www.xx.yy/path?u=f&x=y&m=z&x=s#size", []string{"x", "m"})
 	assert.Nil(t, err)
 	assert.Equal(t, "http://www.xx.yy/path?u=f#size", url)
 
-	url, err = FilterQuery("http://www.xx.yy/path?u=f&x=y&m=z&x=s#size", []string{})
+	url, err = FilterQueryParams("http://www.xx.yy/path?u=f&x=y&m=z&x=s#size", []string{})
 	assert.Nil(t, err)
 	assert.Equal(t, "http://www.xx.yy/path?u=f&x=y&m=z&x=s#size", url)
 
-	url, err = FilterQuery(":error_url", []string{"x", "m"})
+	url, err = FilterQueryParams(":error_url", []string{"x", "m"})
 	assert.NotNil(t, err)
 	assert.Equal(t, "", url)
 }

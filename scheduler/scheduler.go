@@ -54,6 +54,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/rpcserver"
 	"d7y.io/dragonfly/v2/scheduler/scheduling"
+	"d7y.io/dragonfly/v2/scheduler/scheduling/evaluator"
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
@@ -257,17 +258,21 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		}
 	}
 
+	// Initialize options of evaluator.
+	evaluatorNetworkTopologyOptions := []evaluator.NetworkTopologyOption{}
 	// Initialize network topology service.
-	if cfg.NetworkTopology.Enable && pkgredis.IsEnabled(cfg.Database.Redis.Addrs) {
-		cache := cache.New(cfg.NetworkTopology.Cache.TTL, cfg.NetworkTopology.Cache.Interval)
-		s.networkTopology, err = networktopology.NewNetworkTopology(cfg.NetworkTopology, rdb, cache, resource, s.storage)
+	if cfg.Scheduler.Algorithm == evaluator.NetworkTopologyAlgorithm {
+		cache := cache.New(cfg.Scheduler.NetworkTopology.Cache.TTL, cfg.Scheduler.NetworkTopology.Cache.Interval)
+		s.networkTopology, err = networktopology.NewNetworkTopology(cfg.Scheduler.NetworkTopology, rdb, cache, resource, s.storage)
 		if err != nil {
 			return nil, err
 		}
+
+		evaluatorNetworkTopologyOptions = append(evaluatorNetworkTopologyOptions, evaluator.WithNetworkTopology(s.networkTopology))
 	}
 
 	// Initialize scheduling.
-	scheduling := scheduling.New(&cfg.Scheduler, dynconfig, d.PluginDir())
+	scheduling := scheduling.New(&cfg.Scheduler, dynconfig, d.PluginDir(), evaluatorNetworkTopologyOptions...)
 
 	// Initialize server options of scheduler grpc server.
 	schedulerServerOptions := []grpc.ServerOption{}

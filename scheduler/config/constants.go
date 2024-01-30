@@ -25,10 +25,10 @@ import (
 
 const (
 	// DefaultSeedPeerConcurrentUploadLimit is default number for seed peer concurrent upload limit.
-	DefaultSeedPeerConcurrentUploadLimit = 300
+	DefaultSeedPeerConcurrentUploadLimit = 500
 
 	// DefaultPeerConcurrentUploadLimit is default number for peer concurrent upload limit.
-	DefaultPeerConcurrentUploadLimit = 50
+	DefaultPeerConcurrentUploadLimit = 200
 
 	// DefaultSchedulerCandidateParentLimit is default limit the number of candidate parent.
 	DefaultSchedulerCandidateParentLimit = 4
@@ -61,16 +61,16 @@ const (
 	DefaultSchedulerAlgorithm = "default"
 
 	// DefaultSchedulerBackToSourceCount is default back-to-source count for scheduler.
-	DefaultSchedulerBackToSourceCount = 3
+	DefaultSchedulerBackToSourceCount = 200
 
 	// DefaultSchedulerRetryBackToSourceLimit is default retry back-to-source limit for scheduler.
-	DefaultSchedulerRetryBackToSourceLimit = 10
+	DefaultSchedulerRetryBackToSourceLimit = 3
 
 	// DefaultSchedulerRetryLimit is default retry limit for scheduler.
-	DefaultSchedulerRetryLimit = 15
+	DefaultSchedulerRetryLimit = 5
 
 	// DefaultSchedulerRetryInterval is default retry interval for scheduler.
-	DefaultSchedulerRetryInterval = 300 * time.Millisecond
+	DefaultSchedulerRetryInterval = 400 * time.Millisecond
 
 	// DefaultSchedulerPieceDownloadTimeout is default timeout of downloading piece.
 	DefaultSchedulerPieceDownloadTimeout = 30 * time.Minute
@@ -95,6 +95,24 @@ const (
 
 	// DefaultCPU is default cpu usage.
 	DefaultCPU = 1
+
+	// NetworkTopologyAlgorithm is a scheduling algorithm based on rules and network topology.
+	NetworkTopologyAlgorithm = "nt"
+
+	// DefaultNetworkTopologyCollectInterval is the default interval of collecting network topology.
+	DefaultSchedulerNetworkTopologyCollectInterval = 2 * time.Hour
+
+	// DefaultNetworkTopologyCacheInterval is the default cache cleanup interval.
+	DefaultSchedulerNetworkTopologyCacheInterval = 5 * time.Minute
+
+	// DefaultNetworkTopologyCacheTLL is the default ttl of networkTopology cache.
+	DefaultSchedulerNetworkTopologyCacheTLL = 5 * time.Minute
+
+	// DefaultProbeQueueLength is the default length of probe queue.
+	DefaultSchedulerNetworkTopologyProbeQueueLength = 5
+
+	// DefaultProbeCount is the default number of probing hosts.
+	DefaultSchedulerNetworkTopologyProbeCount = 5
 )
 
 const (
@@ -170,23 +188,6 @@ const (
 
 	// DefaultStorageBufferSize is the default size of buffer container.
 	DefaultStorageBufferSize = 100
-)
-
-const (
-	// DefaultNetworkTopologyCollectInterval is the default interval of collecting network topology.
-	DefaultNetworkTopologyCollectInterval = 2 * time.Hour
-
-	// DefaultNetworkTopologyCacheInterval is the default cache cleanup interval.
-	DefaultNetworkTopologyCacheInterval = 5 * time.Minute
-
-	// DefaultNetworkTopologyCacheTLL is the default ttl of networkTopology cache.
-	DefaultNetworkTopologyCacheTLL = 5 * time.Minute
-
-	// DefaultProbeQueueLength is the default length of probe queue.
-	DefaultProbeQueueLength = 5
-
-	// DefaultProbeCount is the default number of probing hosts.
-	DefaultProbeCount = 5
 )
 
 const (

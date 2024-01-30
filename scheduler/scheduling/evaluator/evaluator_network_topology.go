@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2024 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,44 +19,69 @@ package evaluator
 import (
 	"sort"
 	"strings"
+	"time"
 
 	"d7y.io/dragonfly/v2/pkg/math"
 	"d7y.io/dragonfly/v2/pkg/types"
+	"d7y.io/dragonfly/v2/scheduler/networktopology"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
 const (
 	// Finished piece weight.
-	finishedPieceWeight float64 = 0.2
+	networkTopologyFinishedPieceWeight float64 = 0.2
 
 	// Parent's host upload success weight.
-	parentHostUploadSuccessWeight = 0.2
+	networkTopologyParentHostUploadSuccessWeight = 0.2
 
 	// Free upload weight.
-	freeUploadWeight = 0.15
+	networkTopologyFreeUploadWeight = 0.15
+
+	// Network topology weight.
+	networkTopologyProbeWeight = 0.12
 
 	// Host type weight.
-	hostTypeWeight = 0.15
+	networkTopologyHostTypeWeight = 0.11
 
 	// IDC affinity weight.
-	idcAffinityWeight = 0.15
+	networkTopologyIDCAffinityWeight = 0.11
 
 	// Location affinity weight.
-	locationAffinityWeight = 0.15
+	networkTopologyLocationAffinityWeight = 0.11
 )
 
-// evaluatorBase is an implementation of Evaluator.
-type evaluatorBase struct {
+const (
+	// defaultPingTimeout specifies a default timeout before ping exits.
+	defaultPingTimeout = 1 * time.Second
+)
+
+// evaluatorNetworkTopology is an implementation of Evaluator.
+type evaluatorNetworkTopology struct {
 	evaluator
+	networktopology networktopology.NetworkTopology
 }
 
-// NewEvaluatorBase returns a new EvaluatorBase.
-func newEvaluatorBase() Evaluator {
-	return &evaluatorBase{}
+// NetworkTopologyOption is a functional option for configuring the evaluatorNetworkTopology.
+type NetworkTopologyOption func(e *evaluatorNetworkTopology)
+
+// WithNetworkTopology sets the networkTopology.
+func WithNetworkTopology(networktopology networktopology.NetworkTopology) NetworkTopologyOption {
+	return func(e *evaluatorNetworkTopology) {
+		e.networktopology = networktopology
+	}
+}
+
+func newEvaluatorNetworkTopology(options ...NetworkTopologyOption) Evaluator {
+	e := &evaluatorNetworkTopology{}
+	for _, opt := range options {
+		opt(e)
+	}
+
+	return e
 }
 
 // EvaluateParents sort parents by evaluating multiple feature scores.
-func (e *evaluatorBase) EvaluateParents(parents []*resource.Peer, child *resource.Peer, totalPieceCount int32) []*resource.Peer {
+func (e *evaluatorNetworkTopology) EvaluateParents(parents []*resource.Peer, child *resource.Peer, totalPieceCount int32) []*resource.Peer {
 	sort.Slice(
 		parents,
 		func(i, j int) bool {
@@ -68,22 +93,23 @@ func (e *evaluatorBase) EvaluateParents(parents []*resource.Peer, child *resourc
 }
 
 // The larger the value, the higher the priority.
-func (e *evaluatorBase) evaluate(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
+func (e *evaluatorNetworkTopology) evaluate(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
 	parentLocation := parent.Host.Network.Location
 	parentIDC := parent.Host.Network.IDC
 	childLocation := child.Host.Network.Location
 	childIDC := child.Host.Network.IDC
 
-	return finishedPieceWeight*e.calculatePieceScore(parent, child, totalPieceCount) +
-		parentHostUploadSuccessWeight*e.calculateParentHostUploadSuccessScore(parent) +
-		freeUploadWeight*e.calculateFreeUploadScore(parent.Host) +
-		hostTypeWeight*e.calculateHostTypeScore(parent) +
-		idcAffinityWeight*e.calculateIDCAffinityScore(parentIDC, childIDC) +
-		locationAffinityWeight*e.calculateMultiElementAffinityScore(parentLocation, childLocation)
+	return networkTopologyFinishedPieceWeight*e.calculatePieceScore(parent, child, totalPieceCount) +
+		networkTopologyParentHostUploadSuccessWeight*e.calculateParentHostUploadSuccessScore(parent) +
+		networkTopologyFreeUploadWeight*e.calculateFreeUploadScore(parent.Host) +
+		networkTopologyHostTypeWeight*e.calculateHostTypeScore(parent) +
+		networkTopologyIDCAffinityWeight*e.calculateIDCAffinityScore(parentIDC, childIDC) +
+		networkTopologyLocationAffinityWeight*e.calculateMultiElementAffinityScore(parentLocation, childLocation) +
+		networkTopologyProbeWeight*e.calculateNetworkTopologyScore(parent.ID, child.ID)
 }
 
 // calculatePieceScore 0.0~unlimited larger and better.
-func (e *evaluatorBase) calculatePieceScore(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
+func (e *evaluatorNetworkTopology) calculatePieceScore(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
 	// If the total piece is determined, normalize the number of
 	// pieces downloaded by the parent node.
 	if totalPieceCount > 0 {
@@ -99,7 +125,7 @@ func (e *evaluatorBase) calculatePieceScore(parent *resource.Peer, child *resour
 }
 
 // calculateParentHostUploadSuccessScore 0.0~unlimited larger and better.
-func (e *evaluatorBase) calculateParentHostUploadSuccessScore(peer *resource.Peer) float64 {
+func (e *evaluatorNetworkTopology) calculateParentHostUploadSuccessScore(peer *resource.Peer) float64 {
 	uploadCount := peer.Host.UploadCount.Load()
 	uploadFailedCount := peer.Host.UploadFailedCount.Load()
 	if uploadCount < uploadFailedCount {
@@ -115,7 +141,7 @@ func (e *evaluatorBase) calculateParentHostUploadSuccessScore(peer *resource.Pee
 }
 
 // calculateFreeUploadScore 0.0~1.0 larger and better.
-func (e *evaluatorBase) calculateFreeUploadScore(host *resource.Host) float64 {
+func (e *evaluatorNetworkTopology) calculateFreeUploadScore(host *resource.Host) float64 {
 	ConcurrentUploadLimit := host.ConcurrentUploadLimit.Load()
 	freeUploadCount := host.FreeUploadCount()
 	if ConcurrentUploadLimit > 0 && freeUploadCount > 0 {
@@ -126,7 +152,7 @@ func (e *evaluatorBase) calculateFreeUploadScore(host *resource.Host) float64 {
 }
 
 // calculateHostTypeScore 0.0~1.0 larger and better.
-func (e *evaluatorBase) calculateHostTypeScore(peer *resource.Peer) float64 {
+func (e *evaluatorNetworkTopology) calculateHostTypeScore(peer *resource.Peer) float64 {
 	// When the task is downloaded for the first time,
 	// peer will be scheduled to seed peer first,
 	// otherwise it will be scheduled to dfdaemon first.
@@ -143,7 +169,7 @@ func (e *evaluatorBase) calculateHostTypeScore(peer *resource.Peer) float64 {
 }
 
 // calculateIDCAffinityScore 0.0~1.0 larger and better.
-func (e *evaluatorBase) calculateIDCAffinityScore(dst, src string) float64 {
+func (e *evaluatorNetworkTopology) calculateIDCAffinityScore(dst, src string) float64 {
 	if dst == "" || src == "" {
 		return minScore
 	}
@@ -156,7 +182,7 @@ func (e *evaluatorBase) calculateIDCAffinityScore(dst, src string) float64 {
 }
 
 // calculateMultiElementAffinityScore 0.0~1.0 larger and better.
-func (e *evaluatorBase) calculateMultiElementAffinityScore(dst, src string) float64 {
+func (e *evaluatorNetworkTopology) calculateMultiElementAffinityScore(dst, src string) float64 {
 	if dst == "" || src == "" {
 		return minScore
 	}
@@ -185,4 +211,14 @@ func (e *evaluatorBase) calculateMultiElementAffinityScore(dst, src string) floa
 	}
 
 	return float64(score) / float64(maxElementLen)
+}
+
+// calculateNetworkTopologyScore 0.0~1.0 larger and better.
+func (e *evaluatorNetworkTopology) calculateNetworkTopologyScore(dst, src string) float64 {
+	averageRTT, err := e.networktopology.Probes(dst, src).AverageRTT()
+	if err != nil {
+		return minScore
+	}
+
+	return float64(defaultPingTimeout-averageRTT) / float64(defaultPingTimeout)
 }
