@@ -344,7 +344,7 @@ func (nt *networkTopology) Neighbours(root *resource.Host, number int) ([]*resou
 		var networkTopology map[string]string
 		for _, networkTopologyKey := range networkTopologyKeys {
 			if networkTopology, err = nt.rdb.HGetAll(ctx, networkTopologyKey).Result(); err != nil {
-				logger.Errorf("network topology %s not found", networkTopologyKey)
+				logger.Error(err)
 				continue
 			}
 
