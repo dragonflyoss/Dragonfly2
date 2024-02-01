@@ -89,19 +89,19 @@ func (c *cache) Scan(m string, n int) ([]string, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	var keys []string
-	reg, err := regexp.Compile(m)
+	regex, err := regexp.Compile(m)
 	if err != nil {
 		return nil, err
 	}
 
-	for k := range c.items {
-		if reg.MatchString(k) {
-			keys = append(keys, k)
-		}
-
+	keys := make([]string, 0, n)
+	for item := range c.items {
 		if len(keys) >= n {
 			break
+		}
+
+		if regex.MatchString(item) {
+			keys = append(keys, item)
 		}
 	}
 

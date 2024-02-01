@@ -47,6 +47,9 @@ const (
 
 	// findProbedCandidateHostsLimit is the limit of find probed candidate hosts.
 	findProbedCandidateHostsLimit = 50
+
+	// maxScanCount is the maximum number of work that should be done at every call "Scan" in order to retrieve elements from redis.
+	maxScanCount = math.MaxInt64
 )
 
 // NetworkTopology is an interface for network topology.
@@ -77,7 +80,7 @@ type NetworkTopology interface {
 	ProbedCount(string) (uint64, error)
 
 	// Neighbours gets the specified number of neighbors for root node.
-	Neighbours(root *resource.Host, number int) ([]*resource.Host, error)
+	Neighbours(*resource.Host, int) ([]*resource.Host, error)
 
 	// Snapshot writes the current network topology to the storage.
 	Snapshot() error
@@ -258,25 +261,25 @@ func (nt *networkTopology) DeleteHost(hostID string) error {
 	defer cancel()
 
 	deleteKeys := []string{pkgredis.MakeProbedCountKeyInScheduler(hostID)}
-	srcNetworkTopologyKeys, _, err := nt.rdb.Scan(ctx, 0, pkgredis.MakeNetworkTopologyKeyInScheduler(hostID, "*"), math.MaxInt64).Result()
+	srcNetworkTopologyKeys, _, err := nt.rdb.Scan(ctx, 0, pkgredis.MakeNetworkTopologyKeyInScheduler(hostID, "*"), maxScanCount).Result()
 	if err != nil {
 		return err
 	}
 	deleteKeys = append(deleteKeys, srcNetworkTopologyKeys...)
 
-	destNetworkTopologyKeys, _, err := nt.rdb.Scan(ctx, 0, pkgredis.MakeNetworkTopologyKeyInScheduler("*", hostID), math.MaxInt64).Result()
+	destNetworkTopologyKeys, _, err := nt.rdb.Scan(ctx, 0, pkgredis.MakeNetworkTopologyKeyInScheduler("*", hostID), maxScanCount).Result()
 	if err != nil {
 		return err
 	}
 	deleteKeys = append(deleteKeys, destNetworkTopologyKeys...)
 
-	srcProbesKeys, _, err := nt.rdb.Scan(ctx, 0, pkgredis.MakeProbesKeyInScheduler(hostID, "*"), math.MaxInt64).Result()
+	srcProbesKeys, _, err := nt.rdb.Scan(ctx, 0, pkgredis.MakeProbesKeyInScheduler(hostID, "*"), maxScanCount).Result()
 	if err != nil {
 		return err
 	}
 	deleteKeys = append(deleteKeys, srcProbesKeys...)
 
-	destProbesKeys, _, err := nt.rdb.Scan(ctx, 0, pkgredis.MakeProbesKeyInScheduler("*", hostID), math.MaxInt64).Result()
+	destProbesKeys, _, err := nt.rdb.Scan(ctx, 0, pkgredis.MakeProbesKeyInScheduler("*", hostID), maxScanCount).Result()
 	if err != nil {
 		return err
 	}
@@ -324,19 +327,19 @@ func (nt *networkTopology) ProbedCount(hostID string) (uint64, error) {
 	return probedCount, nil
 }
 
-// Neighbours gets the specified number of neighbors for root node.
-func (nt *networkTopology) Neighbours(root *resource.Host, number int) ([]*resource.Host, error) {
+// Neighbours gets the specified number of neighbors for source node.
+func (nt *networkTopology) Neighbours(srcHost *resource.Host, n int) ([]*resource.Host, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	networkTopologyKeys, err := nt.cache.Scan(pkgredis.MakeNetworkTopologyKeyInScheduler(root.ID, "*"), number)
+	networkTopologyKeys, err := nt.cache.Scan(pkgredis.MakeNetworkTopologyKeyInScheduler(srcHost.ID, "*"), n)
 	if err != nil {
 		return nil, err
 	}
 
 	// If we can not get a sufficient number of neighbors from the cache, access redis to get them.
-	if len(networkTopologyKeys) < number {
-		networkTopologyKeys, _, err = nt.rdb.Scan(ctx, 0, pkgredis.MakeNetworkTopologyKeyInScheduler(root.ID, "*"), math.MaxInt64).Result()
+	if len(networkTopologyKeys) < n {
+		networkTopologyKeys, _, err = nt.rdb.Scan(ctx, 0, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHost.ID, "*"), maxScanCount).Result()
 		if err != nil {
 			return nil, err
 		}
@@ -353,8 +356,12 @@ func (nt *networkTopology) Neighbours(root *resource.Host, number int) ([]*resou
 		}
 	}
 
-	var neighbours []*resource.Host
+	neighbours := make([]*resource.Host, 0, n)
 	for _, networkTopologyKey := range networkTopologyKeys {
+		if len(neighbours) >= n {
+			break
+		}
+
 		_, _, _, neighbourID, err := pkgredis.ParseNetworkTopologyKeyInScheduler(networkTopologyKey)
 		if err != nil {
 			logger.Error(err)
@@ -367,10 +374,6 @@ func (nt *networkTopology) Neighbours(root *resource.Host, number int) ([]*resou
 			continue
 		}
 		neighbours = append(neighbours, neighbour)
-
-		if len(neighbours) >= number {
-			break
-		}
 	}
 
 	return neighbours, nil
@@ -383,7 +386,7 @@ func (nt *networkTopology) Snapshot() error {
 
 	now := time.Now()
 	id := uuid.NewString()
-	probedCountKeys, _, err := nt.rdb.Scan(ctx, 0, pkgredis.MakeProbedCountKeyInScheduler("*"), math.MaxInt64).Result()
+	probedCountKeys, _, err := nt.rdb.Scan(ctx, 0, pkgredis.MakeProbedCountKeyInScheduler("*"), maxScanCount).Result()
 	if err != nil {
 		return err
 	}
@@ -396,7 +399,7 @@ func (nt *networkTopology) Snapshot() error {
 		}
 
 		// Construct destination hosts for network topology.
-		networkTopologyKeys, _, err := nt.rdb.Scan(ctx, 0, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, "*"), math.MaxInt64).Result()
+		networkTopologyKeys, _, err := nt.rdb.Scan(ctx, 0, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHostID, "*"), maxScanCount).Result()
 		if err != nil {
 			logger.Error(err)
 			continue
