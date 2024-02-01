@@ -200,7 +200,7 @@ func TestScan(t *testing.T) {
 		t.Error("invalid number of scaning cache keys")
 	}
 
-	keys, err = tc.Scan("(", 2)
+	_, err = tc.Scan("(", 2)
 	if err == nil {
 		t.Error("parse a fault regular expression and returns")
 	}
