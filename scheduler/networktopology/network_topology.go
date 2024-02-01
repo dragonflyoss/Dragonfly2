@@ -47,7 +47,7 @@ const (
 	// findProbedCandidateHostsLimit is the limit of find probed candidate hosts.
 	findProbedCandidateHostsLimit = 50
 
-	// defaultScanCountLimit is the default number of work that should be done at every call "Scan" in order to retrieve elements from redis.
+	// defaultScanCountLimit is the predefined amount of work performed with each 'Scan' operation called when retrieve elements from Redis.
 	defaultScanCountLimit = 64
 )
 
