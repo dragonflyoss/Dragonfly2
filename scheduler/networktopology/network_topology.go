@@ -334,7 +334,7 @@ func (nt *networkTopology) Neighbours(root *resource.Host, number int) ([]*resou
 		return nil, err
 	}
 
-	// If we cannot get a sufficient number of neighbors from the cache, then we access redis.
+	// If we can not get a sufficient number of neighbors from the cache, access redis to get them.
 	if len(networkTopologyKeys) < number {
 		networkTopologyKeys, _, err = nt.rdb.Scan(ctx, 0, pkgredis.MakeNetworkTopologyKeyInScheduler(root.ID, "*"), math.MaxInt64).Result()
 		if err != nil {

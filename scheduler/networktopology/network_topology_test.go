@@ -901,7 +901,7 @@ func TestNetworkTopology_Neighbours(t *testing.T) {
 		expect func(t *testing.T, networkTopology NetworkTopology, err error)
 	}{
 		{
-			name: "get neighbour from cache success",
+			name: "get neighbour from cache",
 			mock: func(mr *resource.MockResourceMockRecorder, mockCache *cache.MockCacheMockRecorder, hostManager resource.HostManager,
 				mh *resource.MockHostManagerMockRecorder, mockRDBClient redismock.ClientMock) {
 				mockCache.Scan(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), 1).Return(
