@@ -85,12 +85,12 @@ type cache struct {
 }
 
 // Scan all items to get a specified number of matching regex keys.
-func (c *cache) Scan(p string, n int) ([]string, error) {
+func (c *cache) Scan(m string, n int) ([]string, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
 	var keys []string
-	reg, err := regexp.Compile(p)
+	reg, err := regexp.Compile(m)
 	if err != nil {
 		return nil, err
 	}
