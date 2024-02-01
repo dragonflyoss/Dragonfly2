@@ -202,7 +202,7 @@ func TestScan(t *testing.T) {
 
 	_, err = tc.Scan("(", 2)
 	if err == nil {
-		t.Error("parse a fault regular expression and returns")
+		t.Error("parse a fault regular expression")
 	}
 }
 
