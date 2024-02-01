@@ -161,7 +161,7 @@ func TestScan(t *testing.T) {
 	}
 
 	if len(keys) != 1 {
-		t.Error("invalid number of scaning cache keys")
+		t.Error("Invalid number of scaning cache keys")
 	}
 
 	keys, err = tc.Scan("^b", 2)
@@ -170,7 +170,7 @@ func TestScan(t *testing.T) {
 	}
 
 	if len(keys) != 2 {
-		t.Error("invalid number of scaning cache keys")
+		t.Error("Invalid number of scaning cache keys")
 	}
 
 	keys, err = tc.Scan("^b", 4)
@@ -179,7 +179,7 @@ func TestScan(t *testing.T) {
 	}
 
 	if len(keys) != 2 {
-		t.Error("invalid number of scaning cache keys")
+		t.Error("Invalid number of scaning cache keys")
 	}
 
 	keys, err = tc.Scan("^ba", 2)
@@ -188,7 +188,7 @@ func TestScan(t *testing.T) {
 	}
 
 	if len(keys) != 2 {
-		t.Error("invalid number of scaning cache keys")
+		t.Error("Invalid number of scaning cache keys")
 	}
 
 	keys, err = tc.Scan("^a", 2)
@@ -197,12 +197,12 @@ func TestScan(t *testing.T) {
 	}
 
 	if len(keys) != 0 {
-		t.Error("invalid number of scaning cache keys")
+		t.Error("Invalid number of scaning cache keys")
 	}
 
 	_, err = tc.Scan("(", 2)
 	if err == nil {
-		t.Error("parse a fault regular expression")
+		t.Error("Parse a fault regular expression")
 	}
 }
 
