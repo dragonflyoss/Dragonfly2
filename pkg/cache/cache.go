@@ -57,7 +57,7 @@ const (
 )
 
 type Cache interface {
-	Scan(p string, n int) ([]string, error)
+	Scan(m string, n int) ([]string, error)
 	Set(k string, x any, d time.Duration)
 	SetDefault(k string, x any)
 	Add(k string, x any, d time.Duration) error
