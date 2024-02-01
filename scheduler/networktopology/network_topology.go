@@ -79,7 +79,7 @@ type NetworkTopology interface {
 	// ProbedCount is the number of times the host has been probed.
 	ProbedCount(string) (uint64, error)
 
-	// Neighbours gets the specified number of neighbors for source node.
+	// Neighbours gets the specified number of neighbors for source host.
 	Neighbours(*resource.Host, int) ([]*resource.Host, error)
 
 	// Snapshot writes the current network topology to the storage.
@@ -327,7 +327,7 @@ func (nt *networkTopology) ProbedCount(hostID string) (uint64, error) {
 	return probedCount, nil
 }
 
-// Neighbours gets the specified number of neighbors for source node.
+// Neighbours gets the specified number of neighbors for source host.
 func (nt *networkTopology) Neighbours(srcHost *resource.Host, n int) ([]*resource.Host, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
