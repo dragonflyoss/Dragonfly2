@@ -84,7 +84,7 @@ type cache struct {
 	janitor           *janitor
 }
 
-// Scan all items to get a specified number of matching regex keys.
+// Scan all items to get a specified number of matching regexp key.
 func (c *cache) Scan(m string, n int) ([]string, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
