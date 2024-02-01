@@ -900,7 +900,7 @@ func TestNetworkTopology_Neighbours(t *testing.T) {
 		expect func(t *testing.T, networkTopology NetworkTopology, err error)
 	}{
 		{
-			name: "get neighbour from cache",
+			name: "get neighbours from cache",
 			mock: func(mr *resource.MockResourceMockRecorder, mockCache *cache.MockCacheMockRecorder, hostManager resource.HostManager,
 				mh *resource.MockHostManagerMockRecorder, mockRDBClient redismock.ClientMock) {
 				mockCache.Scan(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), 1).Return(
@@ -919,21 +919,21 @@ func TestNetworkTopology_Neighbours(t *testing.T) {
 			},
 		},
 		{
-			name: "get neighbour from cache error",
+			name: "get neighbours from cache error",
 			mock: func(mr *resource.MockResourceMockRecorder, mockCache *cache.MockCacheMockRecorder, hostManager resource.HostManager,
 				mh *resource.MockHostManagerMockRecorder, mockRDBClient redismock.ClientMock) {
 				mockCache.Scan(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), 1).Return(
-					nil, errors.New("get neighbour from cache error")).Times(1)
+					nil, errors.New("get neighbours from cache error")).Times(1)
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
 				_, err = networkTopology.Neighbours(mockSeedHost, 1)
-				assert.EqualError(err, "get neighbour from cache error")
+				assert.EqualError(err, "get neighbours from cache error")
 			},
 		},
 		{
-			name: "get neighbour keys from redis",
+			name: "get neighbours keys from redis",
 			mock: func(mr *resource.MockResourceMockRecorder, mockCache *cache.MockCacheMockRecorder, hostManager resource.HostManager,
 				mh *resource.MockHostManagerMockRecorder, mockRDBClient redismock.ClientMock) {
 				mockCache.Scan(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), 2).Return(
@@ -965,24 +965,24 @@ func TestNetworkTopology_Neighbours(t *testing.T) {
 			},
 		},
 		{
-			name: "get neighbour keys from redis error",
+			name: "get neighbours keys from redis error",
 			mock: func(mr *resource.MockResourceMockRecorder, mockCache *cache.MockCacheMockRecorder, hostManager resource.HostManager,
 				mh *resource.MockHostManagerMockRecorder, mockRDBClient redismock.ClientMock) {
 				mockCache.Scan(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), 2).Return(
 					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)}, nil).Times(1)
 				mockRDBClient.MatchExpectationsInOrder(true)
 				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), defaultScanCountLimit).SetErr(
-					errors.New("get neighbour keys from redis error"))
+					errors.New("get neighbours keys from redis error"))
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
 				_, err = networkTopology.Neighbours(mockSeedHost, 2)
-				assert.EqualError(err, "get neighbour keys from redis error")
+				assert.EqualError(err, "get neighbours keys from redis error")
 			},
 		},
 		{
-			name: "get neighbour data from redis error",
+			name: "get neighbours data from redis error",
 			mock: func(mr *resource.MockResourceMockRecorder, mockCache *cache.MockCacheMockRecorder, hostManager resource.HostManager,
 				mh *resource.MockHostManagerMockRecorder, mockRDBClient redismock.ClientMock) {
 				mockCache.Scan(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), 2).Return(
@@ -997,7 +997,7 @@ func TestNetworkTopology_Neighbours(t *testing.T) {
 				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(map[string]string{})
 				mockCache.Set(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), map[string]string{}, mockCacheTLL)
 				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "bar")).SetErr(
-					errors.New("get neighbour data from redis error"))
+					errors.New("get neighbours data from redis error"))
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Eq(mockHost.ID)).Return(mockHost, true).Times(1),

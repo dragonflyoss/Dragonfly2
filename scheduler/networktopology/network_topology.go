@@ -78,7 +78,8 @@ type NetworkTopology interface {
 	// ProbedCount is the number of times the host has been probed.
 	ProbedCount(string) (uint64, error)
 
-	// Neighbours gets the specified number neighbors for source host by regexp scaning and parsing keys from cache and redis,
+	// Neighbours gets the specified number neighbors of source host for aggregation, by regexp scaning cache
+	// (if it is not enough for code to work, access redis to get neighbors), then parsing keys and loading host,
 	// while updating the cache data.
 	Neighbours(*resource.Host, int) ([]*resource.Host, error)
 
@@ -327,7 +328,8 @@ func (nt *networkTopology) ProbedCount(hostID string) (uint64, error) {
 	return probedCount, nil
 }
 
-// Neighbours gets the specified number neighbors for source host by regexp scaning and parsing keys from cache and redis,
+// Neighbours gets the specified number neighbors of source host for aggregation, by regexp scaning cache
+// (if it is not enough for code to work, access redis to get neighbors), then parsing keys and loading host,
 // while updating the cache data.
 func (nt *networkTopology) Neighbours(srcHost *resource.Host, n int) ([]*resource.Host, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
@@ -338,7 +340,7 @@ func (nt *networkTopology) Neighbours(srcHost *resource.Host, n int) ([]*resourc
 		return nil, err
 	}
 
-	// If we can not get a sufficient number of neighbors from the cache, access redis to get them.
+	// If it is not enough for code to work, access redis to get neighbors.
 	if len(networkTopologyKeys) < n {
 		networkTopologyKeys, _, err = nt.rdb.Scan(ctx, 0, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHost.ID, "*"), defaultScanCountLimit).Result()
 		if err != nil {
