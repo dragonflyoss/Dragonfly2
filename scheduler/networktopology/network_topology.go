@@ -79,7 +79,7 @@ type NetworkTopology interface {
 	// ProbedCount is the number of times the host has been probed.
 	ProbedCount(string) (uint64, error)
 
-	// Neighbours gets the specified number of neighbors for root node.
+	// Neighbours gets the specified number of neighbors for source node.
 	Neighbours(*resource.Host, int) ([]*resource.Host, error)
 
 	// Snapshot writes the current network topology to the storage.
