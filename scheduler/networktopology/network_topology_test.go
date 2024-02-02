@@ -18,7 +18,6 @@ package networktopology
 
 import (
 	"errors"
-	"math"
 	"reflect"
 	"strconv"
 	"testing"
@@ -82,9 +81,9 @@ func TestNetworkTopology_Serve(t *testing.T) {
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
 				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, mockRDBClient redismock.ClientMock, mc *cache.MockCacheMockRecorder) {
 				mockRDBClient.MatchExpectationsInOrder(true)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), math.MaxInt64).SetVal(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), defaultScanCountLimit).SetVal(
 					[]string{pkgredis.MakeProbedCountKeyInScheduler(mockSeedHost.ID)}, 0)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), math.MaxInt64).SetVal(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), defaultScanCountLimit).SetVal(
 					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)}, 0)
 				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(mockNetworkTopology)
 				gomock.InOrder(
@@ -112,11 +111,11 @@ func TestNetworkTopology_Serve(t *testing.T) {
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
 				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, mockRDBClient redismock.ClientMock, mc *cache.MockCacheMockRecorder) {
 				mockRDBClient.MatchExpectationsInOrder(true)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), math.MaxInt64).SetErr(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), defaultScanCountLimit).SetErr(
 					errors.New("get probed count keys error"))
-				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), math.MaxInt64).SetVal(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), defaultScanCountLimit).SetVal(
 					[]string{pkgredis.MakeProbedCountKeyInScheduler(mockSeedHost.ID)}, 0)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), math.MaxInt64).SetVal(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), defaultScanCountLimit).SetVal(
 					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)}, 0)
 				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(mockNetworkTopology)
 				gomock.InOrder(
@@ -658,10 +657,10 @@ func TestNetworkTopology_DeleteHost(t *testing.T) {
 				pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)},
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder, keys []string) {
 				mockRDBClient.MatchExpectationsInOrder(true)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, "*"), math.MaxInt64).SetVal([]string{}, 0)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler("*", mockHost.ID), math.MaxInt64).SetVal([]string{keys[1]}, 0)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeProbesKeyInScheduler(mockHost.ID, "*"), math.MaxInt64).SetVal([]string{}, 0)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeProbesKeyInScheduler("*", mockHost.ID), math.MaxInt64).SetVal([]string{keys[2]}, 0)
+				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, "*"), defaultScanCountLimit).SetVal([]string{}, 0)
+				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler("*", mockHost.ID), defaultScanCountLimit).SetVal([]string{keys[1]}, 0)
+				mockRDBClient.ExpectScan(0, pkgredis.MakeProbesKeyInScheduler(mockHost.ID, "*"), defaultScanCountLimit).SetVal([]string{}, 0)
+				mockRDBClient.ExpectScan(0, pkgredis.MakeProbesKeyInScheduler("*", mockHost.ID), defaultScanCountLimit).SetVal([]string{keys[2]}, 0)
 				mockRDBClient.ExpectDel(keys...).SetVal(4)
 				mockCache.Delete(pkgredis.MakeProbedCountKeyInScheduler(mockHost.ID))
 				mockCache.Delete(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID))
@@ -677,7 +676,7 @@ func TestNetworkTopology_DeleteHost(t *testing.T) {
 			name:       "get source network topology keys error",
 			deleteKeys: []string{},
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder, keys []string) {
-				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, "*"), math.MaxInt64).SetErr(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, "*"), defaultScanCountLimit).SetErr(
 					errors.New("get source network topology keys error"))
 			},
 			run: func(t *testing.T, networkTopology NetworkTopology, err error) {
@@ -691,8 +690,8 @@ func TestNetworkTopology_DeleteHost(t *testing.T) {
 			deleteKeys: []string{},
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder, keys []string) {
 				mockRDBClient.MatchExpectationsInOrder(true)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, "*"), math.MaxInt64).SetVal([]string{}, 0)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler("*", mockHost.ID), math.MaxInt64).SetErr(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, "*"), defaultScanCountLimit).SetVal([]string{}, 0)
+				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler("*", mockHost.ID), defaultScanCountLimit).SetErr(
 					errors.New("get destination network topology keys error"))
 			},
 			run: func(t *testing.T, networkTopology NetworkTopology, err error) {
@@ -706,9 +705,9 @@ func TestNetworkTopology_DeleteHost(t *testing.T) {
 			deleteKeys: []string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)},
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder, keys []string) {
 				mockRDBClient.MatchExpectationsInOrder(true)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, "*"), math.MaxInt64).SetVal([]string{}, 0)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler("*", mockHost.ID), math.MaxInt64).SetVal([]string{keys[0]}, 0)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeProbesKeyInScheduler(mockHost.ID, "*"), math.MaxInt64).SetErr(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, "*"), defaultScanCountLimit).SetVal([]string{}, 0)
+				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler("*", mockHost.ID), defaultScanCountLimit).SetVal([]string{keys[0]}, 0)
+				mockRDBClient.ExpectScan(0, pkgredis.MakeProbesKeyInScheduler(mockHost.ID, "*"), defaultScanCountLimit).SetErr(
 					errors.New("get source probes keys error"))
 			},
 			run: func(t *testing.T, networkTopology NetworkTopology, err error) {
@@ -721,10 +720,10 @@ func TestNetworkTopology_DeleteHost(t *testing.T) {
 			name:       "get destination probes keys error",
 			deleteKeys: []string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)},
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder, keys []string) {
-				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, "*"), math.MaxInt64).SetVal([]string{}, 0)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler("*", mockHost.ID), math.MaxInt64).SetVal([]string{keys[0]}, 0)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeProbesKeyInScheduler(mockHost.ID, "*"), math.MaxInt64).SetVal([]string{}, 0)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeProbesKeyInScheduler("*", mockHost.ID), math.MaxInt64).SetErr(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, "*"), defaultScanCountLimit).SetVal([]string{}, 0)
+				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler("*", mockHost.ID), defaultScanCountLimit).SetVal([]string{keys[0]}, 0)
+				mockRDBClient.ExpectScan(0, pkgredis.MakeProbesKeyInScheduler(mockHost.ID, "*"), defaultScanCountLimit).SetVal([]string{}, 0)
+				mockRDBClient.ExpectScan(0, pkgredis.MakeProbesKeyInScheduler("*", mockHost.ID), defaultScanCountLimit).SetErr(
 					errors.New("get destination probes keys error"))
 			},
 			run: func(t *testing.T, networkTopology NetworkTopology, err error) {
@@ -740,10 +739,10 @@ func TestNetworkTopology_DeleteHost(t *testing.T) {
 				pkgredis.MakeProbesKeyInScheduler(mockSeedHost.ID, mockHost.ID)},
 			mock: func(mockRDBClient redismock.ClientMock, mockCache *cache.MockCacheMockRecorder, keys []string) {
 				mockRDBClient.MatchExpectationsInOrder(true)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, "*"), math.MaxInt64).SetVal([]string{}, 0)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler("*", mockHost.ID), math.MaxInt64).SetVal([]string{keys[1]}, 0)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeProbesKeyInScheduler(mockHost.ID, "*"), math.MaxInt64).SetVal([]string{}, 0)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeProbesKeyInScheduler("*", mockHost.ID), math.MaxInt64).SetVal([]string{keys[2]}, 0)
+				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockHost.ID, "*"), defaultScanCountLimit).SetVal([]string{}, 0)
+				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler("*", mockHost.ID), defaultScanCountLimit).SetVal([]string{keys[1]}, 0)
+				mockRDBClient.ExpectScan(0, pkgredis.MakeProbesKeyInScheduler(mockHost.ID, "*"), defaultScanCountLimit).SetVal([]string{}, 0)
+				mockRDBClient.ExpectScan(0, pkgredis.MakeProbesKeyInScheduler("*", mockHost.ID), defaultScanCountLimit).SetVal([]string{keys[2]}, 0)
 				mockRDBClient.ExpectDel(keys...).SetErr(errors.New("delete network topology and probes error"))
 			},
 			run: func(t *testing.T, networkTopology NetworkTopology, err error) {
@@ -893,6 +892,216 @@ func TestNetworkTopology_ProbedCount(t *testing.T) {
 	}
 }
 
+func TestNetworkTopology_Neighbours(t *testing.T) {
+	tests := []struct {
+		name string
+		mock func(mr *resource.MockResourceMockRecorder, mockCache *cache.MockCacheMockRecorder, hostManager resource.HostManager,
+			mh *resource.MockHostManagerMockRecorder, mockRDBClient redismock.ClientMock)
+		expect func(t *testing.T, networkTopology NetworkTopology, err error)
+	}{
+		{
+			name: "get neighbours from cache",
+			mock: func(mr *resource.MockResourceMockRecorder, mockCache *cache.MockCacheMockRecorder, hostManager resource.HostManager,
+				mh *resource.MockHostManagerMockRecorder, mockRDBClient redismock.ClientMock) {
+				mockCache.Scan(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), 1).Return(
+					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)}, nil).Times(1)
+				gomock.InOrder(
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Eq(mockHost.ID)).Return(mockHost, true).Times(1),
+				)
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				neighbours, err := networkTopology.Neighbours(mockSeedHost, 1)
+				assert.NoError(err)
+				assert.Equal(len(neighbours), 1)
+			},
+		},
+		{
+			name: "get neighbours from cache error",
+			mock: func(mr *resource.MockResourceMockRecorder, mockCache *cache.MockCacheMockRecorder, hostManager resource.HostManager,
+				mh *resource.MockHostManagerMockRecorder, mockRDBClient redismock.ClientMock) {
+				mockCache.Scan(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), 1).Return(
+					nil, errors.New("get neighbours from cache error")).Times(1)
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				_, err = networkTopology.Neighbours(mockSeedHost, 1)
+				assert.EqualError(err, "get neighbours from cache error")
+			},
+		},
+		{
+			name: "get neighbours keys from redis",
+			mock: func(mr *resource.MockResourceMockRecorder, mockCache *cache.MockCacheMockRecorder, hostManager resource.HostManager,
+				mh *resource.MockHostManagerMockRecorder, mockRDBClient redismock.ClientMock) {
+				mockCache.Scan(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), 2).Return(
+					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)}, nil).Times(1)
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), defaultScanCountLimit).SetVal(
+					[]string{
+						pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID),
+						pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "bar"),
+					}, 0)
+
+				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(map[string]string{})
+				mockCache.Set(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), map[string]string{}, mockCacheTLL)
+				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "bar")).SetVal(map[string]string{})
+				mockCache.Set(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "bar"), map[string]string{}, mockCacheTLL)
+				gomock.InOrder(
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Eq(mockHost.ID)).Return(mockHost, true).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Eq("bar")).Return(&resource.Host{ID: "bar"}, true).Times(1),
+				)
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				neighbours, err := networkTopology.Neighbours(mockSeedHost, 2)
+				assert.NoError(err)
+				assert.Equal(len(neighbours), 2)
+			},
+		},
+		{
+			name: "get neighbours keys from redis error",
+			mock: func(mr *resource.MockResourceMockRecorder, mockCache *cache.MockCacheMockRecorder, hostManager resource.HostManager,
+				mh *resource.MockHostManagerMockRecorder, mockRDBClient redismock.ClientMock) {
+				mockCache.Scan(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), 2).Return(
+					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)}, nil).Times(1)
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), defaultScanCountLimit).SetErr(
+					errors.New("get neighbours keys from redis error"))
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				_, err = networkTopology.Neighbours(mockSeedHost, 2)
+				assert.EqualError(err, "get neighbours keys from redis error")
+			},
+		},
+		{
+			name: "get neighbours data from redis error",
+			mock: func(mr *resource.MockResourceMockRecorder, mockCache *cache.MockCacheMockRecorder, hostManager resource.HostManager,
+				mh *resource.MockHostManagerMockRecorder, mockRDBClient redismock.ClientMock) {
+				mockCache.Scan(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), 2).Return(
+					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)}, nil).Times(1)
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), defaultScanCountLimit).SetVal(
+					[]string{
+						pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID),
+						pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "bar"),
+					}, 0)
+
+				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(map[string]string{})
+				mockCache.Set(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), map[string]string{}, mockCacheTLL)
+				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "bar")).SetErr(
+					errors.New("get neighbours data from redis error"))
+				gomock.InOrder(
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Eq(mockHost.ID)).Return(mockHost, true).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Eq("bar")).Return(&resource.Host{ID: "bar"}, true).Times(1),
+				)
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				neighbours, err := networkTopology.Neighbours(mockSeedHost, 2)
+				assert.NoError(err)
+				assert.Equal(len(neighbours), 2)
+			},
+		},
+		{
+			name: "parse network topology key error",
+			mock: func(mr *resource.MockResourceMockRecorder, mockCache *cache.MockCacheMockRecorder, hostManager resource.HostManager,
+				mh *resource.MockHostManagerMockRecorder, mockRDBClient redismock.ClientMock) {
+				mockCache.Scan(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), 1).Return(
+					[]string{"foo"}, nil).Times(1)
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				neighbours, err := networkTopology.Neighbours(mockSeedHost, 1)
+				assert.NoError(err)
+				assert.Equal(len(neighbours), 0)
+			},
+		},
+		{
+			name: "load host error",
+			mock: func(mr *resource.MockResourceMockRecorder, mockCache *cache.MockCacheMockRecorder, hostManager resource.HostManager,
+				mh *resource.MockHostManagerMockRecorder, mockRDBClient redismock.ClientMock) {
+				mockCache.Scan(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), 1).Return(
+					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)}, nil).Times(1)
+				gomock.InOrder(
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Eq(mockHost.ID)).Return(mockHost, false).Times(1),
+				)
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				neighbours, err := networkTopology.Neighbours(mockSeedHost, 1)
+				assert.NoError(err)
+				assert.Equal(len(neighbours), 0)
+			},
+		},
+		{
+			name: "neighbors number is greater than the required number",
+			mock: func(mr *resource.MockResourceMockRecorder, mockCache *cache.MockCacheMockRecorder, hostManager resource.HostManager,
+				mh *resource.MockHostManagerMockRecorder, mockRDBClient redismock.ClientMock) {
+				mockCache.Scan(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), 2).Return(
+					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)}, nil).Times(1)
+				mockRDBClient.MatchExpectationsInOrder(true)
+				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), defaultScanCountLimit).SetVal(
+					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID),
+						pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "bar"),
+						pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "baz")}, 0)
+
+				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(map[string]string{})
+				mockCache.Set(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID), map[string]string{}, mockCacheTLL)
+				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "bar")).SetVal(map[string]string{})
+				mockCache.Set(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "bar"), map[string]string{}, mockCacheTLL)
+				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "baz")).SetVal(map[string]string{})
+				mockCache.Set(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "baz"), map[string]string{}, mockCacheTLL)
+				gomock.InOrder(
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Eq(mockHost.ID)).Return(mockHost, true).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Eq("bar")).Return(&resource.Host{ID: "bar"}, true).Times(1),
+				)
+			},
+			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				neighbours, err := networkTopology.Neighbours(mockSeedHost, 2)
+				assert.NoError(err)
+				assert.Equal(len(neighbours), 2)
+				assert.Equal(neighbours[0].ID, mockHost.ID)
+				assert.Equal(neighbours[1].ID, "bar")
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+
+			rdb, mockRDBClient := redismock.NewClientMock()
+			res := resource.NewMockResource(ctl)
+			hostManager := resource.NewMockHostManager(ctl)
+			cache := cache.NewMockCache(ctl)
+			storage := storagemocks.NewMockStorage(ctl)
+			tc.mock(res.EXPECT(), cache.EXPECT(), hostManager, hostManager.EXPECT(), mockRDBClient)
+
+			networkTopology, err := NewNetworkTopology(mockNetworkTopologyConfig, rdb, cache, res, storage)
+			tc.expect(t, networkTopology, err)
+			mockRDBClient.ClearExpect()
+		})
+	}
+}
+
 func TestNetworkTopology_Snapshot(t *testing.T) {
 	tests := []struct {
 		name string
@@ -905,9 +1114,9 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
 				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, mockRDBClient redismock.ClientMock, mc *cache.MockCacheMockRecorder) {
 				mockRDBClient.MatchExpectationsInOrder(true)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), math.MaxInt64).SetVal(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), defaultScanCountLimit).SetVal(
 					[]string{pkgredis.MakeProbedCountKeyInScheduler(mockSeedHost.ID)}, 0)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), math.MaxInt64).SetVal(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), defaultScanCountLimit).SetVal(
 					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)}, 0)
 				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(mockNetworkTopology)
 				gomock.InOrder(
@@ -932,7 +1141,7 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
 				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, mockRDBClient redismock.ClientMock, mc *cache.MockCacheMockRecorder) {
 				mockRDBClient.MatchExpectationsInOrder(true)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), math.MaxInt64).SetErr(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), defaultScanCountLimit).SetErr(
 					errors.New("get probed count keys error"))
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
@@ -945,7 +1154,7 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 			name: "parse probed count keys in scheduler error",
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
 				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, mockRDBClient redismock.ClientMock, mc *cache.MockCacheMockRecorder) {
-				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), math.MaxInt64).SetVal(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), defaultScanCountLimit).SetVal(
 					[]string{"foo"}, 0)
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
@@ -959,9 +1168,9 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
 				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, mockRDBClient redismock.ClientMock, mc *cache.MockCacheMockRecorder) {
 				mockRDBClient.MatchExpectationsInOrder(true)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), math.MaxInt64).SetVal(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), defaultScanCountLimit).SetVal(
 					[]string{pkgredis.MakeProbedCountKeyInScheduler(mockSeedHost.ID)}, 0)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), math.MaxInt64).SetErr(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), defaultScanCountLimit).SetErr(
 					errors.New("get network topology keys error"))
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error) {
@@ -974,9 +1183,9 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 			name: "parse network topology keys in scheduler error",
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
 				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, mockRDBClient redismock.ClientMock, mc *cache.MockCacheMockRecorder) {
-				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), math.MaxInt64).SetVal(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), defaultScanCountLimit).SetVal(
 					[]string{pkgredis.MakeProbedCountKeyInScheduler(mockSeedHost.ID)}, 0)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), math.MaxInt64).SetVal(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), defaultScanCountLimit).SetVal(
 					[]string{"foo"}, 0)
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
@@ -995,9 +1204,9 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
 				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, mockRDBClient redismock.ClientMock, mc *cache.MockCacheMockRecorder) {
 				mockRDBClient.MatchExpectationsInOrder(true)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), math.MaxInt64).SetVal(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), defaultScanCountLimit).SetVal(
 					[]string{pkgredis.MakeProbedCountKeyInScheduler(mockSeedHost.ID)}, 0)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), math.MaxInt64).SetVal(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), defaultScanCountLimit).SetVal(
 					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)}, 0)
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
@@ -1018,9 +1227,9 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
 				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, mockRDBClient redismock.ClientMock, mc *cache.MockCacheMockRecorder) {
 				mockRDBClient.MatchExpectationsInOrder(true)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), math.MaxInt64).SetVal(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), defaultScanCountLimit).SetVal(
 					[]string{pkgredis.MakeProbedCountKeyInScheduler(mockSeedHost.ID)}, 0)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), math.MaxInt64).SetVal(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), defaultScanCountLimit).SetVal(
 					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)}, 0)
 				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetErr(
 					errors.New("get averageRTT error"))
@@ -1045,9 +1254,9 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
 				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, mockRDBClient redismock.ClientMock, mc *cache.MockCacheMockRecorder) {
 				mockRDBClient.MatchExpectationsInOrder(true)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), math.MaxInt64).SetVal(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), defaultScanCountLimit).SetVal(
 					[]string{pkgredis.MakeProbedCountKeyInScheduler(mockSeedHost.ID)}, 0)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), math.MaxInt64).SetVal(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), defaultScanCountLimit).SetVal(
 					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)}, 0)
 				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(mockNetworkTopology)
 				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetErr(
@@ -1074,9 +1283,9 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
 				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, mockRDBClient redismock.ClientMock, mc *cache.MockCacheMockRecorder) {
 				mockRDBClient.MatchExpectationsInOrder(true)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), math.MaxInt64).SetVal(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), defaultScanCountLimit).SetVal(
 					[]string{pkgredis.MakeProbedCountKeyInScheduler(mockSeedHost.ID)}, 0)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), math.MaxInt64).SetVal(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), defaultScanCountLimit).SetVal(
 					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)}, 0)
 				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(mockNetworkTopology)
 				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetErr(
@@ -1103,9 +1312,9 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 			name: "construct source hosts for network topology error",
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
 				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, mockRDBClient redismock.ClientMock, mc *cache.MockCacheMockRecorder) {
-				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), math.MaxInt64).SetVal(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), defaultScanCountLimit).SetVal(
 					[]string{pkgredis.MakeProbedCountKeyInScheduler(mockSeedHost.ID)}, 0)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), math.MaxInt64).SetVal(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), defaultScanCountLimit).SetVal(
 					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)}, 0)
 				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(mockNetworkTopology)
 				gomock.InOrder(
@@ -1129,9 +1338,9 @@ func TestNetworkTopology_Snapshot(t *testing.T) {
 			mock: func(mr *resource.MockResourceMockRecorder, hostManager resource.HostManager,
 				mh *resource.MockHostManagerMockRecorder, ms *storagemocks.MockStorageMockRecorder, mockRDBClient redismock.ClientMock, mc *cache.MockCacheMockRecorder) {
 				mockRDBClient.MatchExpectationsInOrder(true)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), math.MaxInt64).SetVal(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeProbedCountKeyInScheduler("*"), defaultScanCountLimit).SetVal(
 					[]string{pkgredis.MakeProbedCountKeyInScheduler(mockSeedHost.ID)}, 0)
-				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), math.MaxInt64).SetVal(
+				mockRDBClient.ExpectScan(0, pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, "*"), defaultScanCountLimit).SetVal(
 					[]string{pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)}, 0)
 				mockRDBClient.ExpectHGetAll(pkgredis.MakeNetworkTopologyKeyInScheduler(mockSeedHost.ID, mockHost.ID)).SetVal(mockNetworkTopology)
 				gomock.InOrder(

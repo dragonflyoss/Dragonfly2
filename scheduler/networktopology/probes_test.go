@@ -156,6 +156,10 @@ var (
 			QueueLength: 5,
 			Count:       10,
 		},
+		Cache: config.CacheConfig{
+			Interval: 5 * time.Minute,
+			TTL:      5 * time.Minute,
+		},
 	}
 
 	mockNetworkTopology = map[string]string{
@@ -166,6 +170,7 @@ var (
 
 	mockCacheExpiration = time.Now()
 	mockProbedCount     = 10
+	mockCacheTLL        = 5 * time.Minute
 )
 
 func Test_NewProbes(t *testing.T) {
