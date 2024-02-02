@@ -25,6 +25,16 @@ scheduler:
     enableHost: true
   config:
     verbose: true
+    scheduler:
+      algorithm: nt
+    networkTopology:
+      collectInterval: 2m
+      probe:
+        queueLength: 5
+        count: 10
+      cache:
+        interval: 5m
+        ttl: 5m
 
 seedPeer:
   image: d7yio/dfdaemon
@@ -55,6 +65,10 @@ seedPeer:
     verbose: true
     download:
       prefetch: true
+    networkTopology:
+      enable: true
+      probe:
+        interval: 10s
 
 dfdaemon:
   image: d7yio/dfdaemon
@@ -89,6 +103,10 @@ dfdaemon:
       cacheRecursiveMetadata: 10m
     scheduler:
       disableAutoBackSource: true
+    networkTopology:
+      enable: true
+      probe:
+        interval: 10s  
     proxy:
       defaultFilter: "Expires&Signature&ns"
       security:

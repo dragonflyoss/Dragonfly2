@@ -25,6 +25,16 @@ scheduler:
     enableHost: true
   config:
     verbose: true
+    scheduler:
+      algorithm: nt
+    networkTopology:
+      collectInterval: 2m
+      probe:
+        queueLength: 5
+        count: 10
+      cache:
+        interval: 5m
+        ttl: 5m
 
 seedPeer:
   image: d7yio/dfdaemon
@@ -59,6 +69,10 @@ seedPeer:
         thresholdSize: 10M
         thresholdSpeed: 2M
         goroutineCount: 4
+    networkTopology:
+      enable: true
+      probe:
+        interval: 10s    
 
 dfdaemon:
   image: d7yio/dfdaemon
@@ -108,6 +122,10 @@ dfdaemon:
       proxies:
         - regx: blobs/sha256.*
         - regx: file-server
+    networkTopology:
+      enable: true
+      probe:
+        interval: 10s    
 
 manager:
   image: d7yio/manager
