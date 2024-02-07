@@ -70,10 +70,33 @@ func waitForProbedInNetworkTopology() bool {
 		case <-ticker.C:
 			out, err := redisPod.Command("redis-cli", "-a", "dragonfly", "-n", "3", "dbsize").CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
-			keyNumber, err := strconv.Atoi(strings.Split(string(out), "\n")[1])
-			if keyNumber != 0 && err == nil {
-				return true
+			key, err := strconv.Atoi(strings.Split(string(out), "\n")[1])
+			if key == 0 || err != nil {
+				continue
 			}
+
+			out, err = redisPod.Command("redis-cli", "-a", "dragonfly", "-n", "3", "KEYS", "scheduler:network-topology:*").CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
+			networkTopologyKey := strings.Split(string(out), "\n")[1]
+			if networkTopologyKey == "" || err != nil {
+				continue
+			}
+
+			out, err = redisPod.Command("redis-cli", "-a", "dragonfly", "-n", "3", "KEYS", "scheduler:probes:*").CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
+			probesKey := strings.Split(string(out), "\n")[1]
+			if probesKey == "" || err != nil {
+				continue
+			}
+
+			out, err = redisPod.Command("redis-cli", "-a", "dragonfly", "-n", "3", "KEYS", "scheduler:probed-count:*").CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
+			probedCountKey := strings.Split(string(out), "\n")[1]
+			if probedCountKey == "" || err != nil {
+				continue
+			}
+
+			return true
 		}
 	}
 }
