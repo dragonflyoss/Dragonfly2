@@ -328,8 +328,8 @@ func (nt *networkTopology) ProbedCount(hostID string) (uint64, error) {
 	return probedCount, nil
 }
 
-// Neighbours gets the specified number neighbors of source host for aggregation, by regexp scaning cache
-// (if it is not enough for code to work, access redis to get neighbors), then parsing keys and loading host,
+// Neighbours gets the specified number neighbors of source host for aggregation by regexp scaning cache
+// (if it is not enough for code to work, get neighbors from redis), then parsing keys and loading host,
 // while updating the cache data.
 func (nt *networkTopology) Neighbours(srcHost *resource.Host, n int) ([]*resource.Host, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
@@ -340,7 +340,7 @@ func (nt *networkTopology) Neighbours(srcHost *resource.Host, n int) ([]*resourc
 		return nil, err
 	}
 
-	// If it is not enough for code to work, access redis to get neighbors.
+	// If it is not enough for code to work, get neighbors from redis.
 	if len(networkTopologyKeys) < n {
 		networkTopologyKeys, _, err = nt.rdb.Scan(ctx, 0, pkgredis.MakeNetworkTopologyKeyInScheduler(srcHost.ID, "*"), defaultScanCountLimit).Result()
 		if err != nil {
