@@ -105,6 +105,9 @@ type V1 interface {
 	// Delete file from P2P cache system.
 	DeleteTask(context.Context, *dfdaemonv1.DeleteTaskRequest, ...grpc.CallOption) error
 
+	// LeaveHost leaves the host from the scheduler.
+	LeaveHost(context.Context, ...grpc.CallOption) error
+
 	// Check daemon health.
 	CheckHealth(context.Context, ...grpc.CallOption) error
 
@@ -169,6 +172,15 @@ func (v *v1) DeleteTask(ctx context.Context, req *dfdaemonv1.DeleteTaskRequest, 
 	defer cancel()
 
 	_, err := v.DaemonClient.DeleteTask(ctx, req, opts...)
+	return err
+}
+
+// LeaveHost leaves the host from the scheduler.
+func (v *v1) LeaveHost(ctx context.Context, opts ...grpc.CallOption) error {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
+	_, err := v.DaemonClient.LeaveHost(ctx, new(emptypb.Empty), opts...)
 	return err
 }
 
