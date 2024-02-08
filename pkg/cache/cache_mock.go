@@ -53,19 +53,6 @@ func (mr *MockCacheMockRecorder) Add(k, x, d any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockCache)(nil).Add), k, x, d)
 }
 
-// Scan mocks base method
-func (_m *MockCache) Scan(p string, n int) ([]string, error) {
-	ret := _m.ctrl.Call(_m, "Scan", p, n)
-	ret0, _ := ret[0].([]string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Scan indicates an expected call of Scan
-func (_mr *MockCacheMockRecorder) Scan(arg0, arg1 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "Scan", reflect.TypeOf((*MockCache)(nil).Scan), arg0, arg1)
-}
-
 // Delete mocks base method.
 func (m *MockCache) Delete(k string) {
 	m.ctrl.T.Helper()
@@ -241,6 +228,21 @@ func (m *MockCache) SaveFile(fname string) error {
 func (mr *MockCacheMockRecorder) SaveFile(fname any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveFile", reflect.TypeOf((*MockCache)(nil).SaveFile), fname)
+}
+
+// Scan mocks base method.
+func (m_2 *MockCache) Scan(m string, n int) ([]string, error) {
+	m_2.ctrl.T.Helper()
+	ret := m_2.ctrl.Call(m_2, "Scan", m, n)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Scan indicates an expected call of Scan.
+func (mr *MockCacheMockRecorder) Scan(m, n any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Scan", reflect.TypeOf((*MockCache)(nil).Scan), m, n)
 }
 
 // Set mocks base method.

@@ -171,6 +171,25 @@ func (mr *MockV1MockRecorder) ImportTask(arg0, arg1 any, arg2 ...any) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ImportTask", reflect.TypeOf((*MockV1)(nil).ImportTask), varargs...)
 }
 
+// LeaveHost mocks base method.
+func (m *MockV1) LeaveHost(arg0 context.Context, arg1 ...grpc.CallOption) error {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0}
+	for _, a := range arg1 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "LeaveHost", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// LeaveHost indicates an expected call of LeaveHost.
+func (mr *MockV1MockRecorder) LeaveHost(arg0 any, arg1 ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LeaveHost", reflect.TypeOf((*MockV1)(nil).LeaveHost), varargs...)
+}
+
 // StatTask mocks base method.
 func (m *MockV1) StatTask(arg0 context.Context, arg1 *dfdaemon.StatTaskRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()

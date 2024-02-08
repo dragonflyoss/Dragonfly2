@@ -46,6 +46,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/net/ip"
 	dfdaemonclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
+	schedulerclientmocks "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client/mocks"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
@@ -72,9 +73,10 @@ func TestServer_New(t *testing.T) {
 			mockpeerHost := &schedulerv1.PeerHost{}
 			mockpeerTaskManager := peer.NewMockTaskManager(ctrl)
 			mockStorageManger := mocks.NewMockManager(ctrl)
+			mockSchedulerClient := schedulerclientmocks.NewMockV1(ctrl)
 			var mockdownloadOpts []grpc.ServerOption
 			var mockpeerOpts []grpc.ServerOption
-			_, err := New(mockpeerHost, mockpeerTaskManager, mockStorageManger, 16, 0, mockdownloadOpts, mockpeerOpts)
+			_, err := New(mockpeerHost, mockpeerTaskManager, mockStorageManger, mockSchedulerClient, 16, 0, mockdownloadOpts, mockpeerOpts)
 			tc.expect(t, err)
 		})
 	}
