@@ -56,7 +56,7 @@ type CacheOption struct {
 	WorkHome string `yaml:"workHome,omitempty" mapstructure:"workHome,omitempty"`
 
 	// DaemonSocket is socket path of dfdaemon to connect.
-	DaemonSocket string `yaml:"daemonSocket,omitempty" mapstructure:"daemonSocket,omitempty"`
+	DaemonSocket string `yaml:"daemonSocket,omitempty" mapstructure:"daemon-sock,omitempty"`
 
 	// Output full output path for export task
 	Output string `yaml:"output,omitempty" mapstructure:"output,omitempty"`
