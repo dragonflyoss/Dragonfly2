@@ -83,7 +83,7 @@ func init() {
 	flags.Duration("timeout", dfcacheConfig.Timeout, "Timeout for this cache operation, 0 is infinite")
 	flags.String("workhome", dfcacheConfig.WorkHome, "Dfcache working directory")
 	flags.String("logdir", dfcacheConfig.LogDir, "Dfcache log directory")
-	flags.String("daemon-sock", dfcacheConfig.DaemonSocket, "Dfdaemon socket path to connect")
+	flags.String("daemon-sock", dfcacheConfig.DaemonSock, "Dfdaemon socket path to connect")
 
 	// Bind common flags
 	if err := viper.BindPFlags(flags); err != nil {
@@ -106,8 +106,8 @@ func initDfcacheDfpath(cfg *config.CacheOption) (dfpath.Dfpath, error) {
 		options = append(options, dfpath.WithLogDir(cfg.LogDir))
 	}
 
-	if cfg.DaemonSocket != "" {
-		options = append(options, dfpath.WithDownloadUnixSocketPath(cfg.DaemonSocket))
+	if cfg.DaemonSock != "" {
+		options = append(options, dfpath.WithDownloadUnixSocketPath(cfg.DaemonSock))
 	}
 
 	return dfpath.New(options...)
