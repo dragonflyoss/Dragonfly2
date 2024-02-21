@@ -177,6 +177,40 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 			},
 		},
 		{
+			name: "match according to hostname condition",
+			schedulerClusters: []models.SchedulerCluster{
+				{
+					Name: "foo",
+					Scopes: map[string]any{
+						"hostnames": []string{"f.*"},
+					},
+					Schedulers: []models.Scheduler{
+						{
+							Hostname: "foo",
+							State:    "active",
+						},
+					},
+				},
+				{
+					Name:   "bar",
+					Scopes: map[string]any{},
+					Schedulers: []models.Scheduler{
+						{
+							Hostname: "bar",
+							State:    "active",
+						},
+					},
+				},
+			},
+			conditions: map[string]string{},
+			expect: func(t *testing.T, data []models.SchedulerCluster, err error) {
+				assert := assert.New(t)
+				assert.Equal(data[0].Name, "foo")
+				assert.Equal(data[1].Name, "bar")
+				assert.Equal(len(data), 2)
+			},
+		},
+		{
 			name: "match according to idc and location conditions",
 			schedulerClusters: []models.SchedulerCluster{
 				{
@@ -266,9 +300,10 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 				{
 					Name: "foo",
 					Scopes: map[string]any{
-						"idc":      "IDC-1",
-						"location": "LOCATION-2",
-						"cidrs":    []string{"128.168.1.0/24"},
+						"idc":       "IDC-1",
+						"location":  "LOCATION-2",
+						"cidrs":     []string{"128.168.1.0/24"},
+						"hostnames": []string{"b.*"},
 					},
 					Schedulers: []models.Scheduler{
 						{
@@ -280,9 +315,10 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 				{
 					Name: "bar",
 					Scopes: map[string]any{
-						"idc":      "IDC-1",
-						"location": "LOCATION-1",
-						"cidrs":    []string{"128.168.1.0/24"},
+						"idc":       "IDC-1",
+						"location":  "LOCATION-1",
+						"cidrs":     []string{"128.168.1.0/24"},
+						"hostnames": []string{"c.*"},
 					},
 					Schedulers: []models.Scheduler{
 						{
@@ -294,9 +330,10 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 				{
 					Name: "baz",
 					Scopes: map[string]any{
-						"idc":      "IDC-1",
-						"location": "LOCATION-1|LOCATION-2",
-						"cidrs":    []string{"128.168.1.0/24"},
+						"idc":       "IDC-1",
+						"location":  "LOCATION-1|LOCATION-2",
+						"cidrs":     []string{"128.168.1.0/24"},
+						"hostnames": []string{"f.*"},
 					},
 					Schedulers: []models.Scheduler{
 						{
@@ -308,9 +345,10 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 				{
 					Name: "bax",
 					Scopes: map[string]any{
-						"idc":      "IDC-1",
-						"location": "LOCATION-2",
-						"cidrs":    []string{"128.168.1.0/24"},
+						"idc":       "IDC-1",
+						"location":  "LOCATION-2",
+						"cidrs":     []string{"128.168.1.0/24"},
+						"hostnames": []string{"d.*"},
 					},
 					Schedulers: []models.Scheduler{
 						{
@@ -323,9 +361,10 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 				{
 					Name: "bac",
 					Scopes: map[string]any{
-						"idc":      "IDC-1",
-						"location": "LOCATION-2",
-						"cidrs":    []string{"128.168.1.0/24"},
+						"idc":       "IDC-1",
+						"location":  "LOCATION-2",
+						"cidrs":     []string{"128.168.1.0/24"},
+						"hostnames": []string{"e.*"},
 					},
 					Schedulers: []models.Scheduler{
 						{
@@ -337,9 +376,10 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 				{
 					Name: "bae",
 					Scopes: map[string]any{
-						"idc":      "IDC-1",
-						"location": "LOCATION-2",
-						"cidrs":    []string{"128.168.1.0/24"},
+						"idc":       "IDC-1",
+						"location":  "LOCATION-2",
+						"cidrs":     []string{"128.168.1.0/24"},
+						"hostnames": []string{"a.*"},
 					},
 					Schedulers: []models.Scheduler{
 						{
@@ -352,9 +392,10 @@ func TestSearcher_FindSchedulerClusters(t *testing.T) {
 				{
 					Name: "bat",
 					Scopes: map[string]any{
-						"idc":      "IDC-1",
-						"location": "LOCATION-2",
-						"cidrs":    []string{"192.168.1.0/24"},
+						"idc":       "IDC-1",
+						"location":  "LOCATION-2",
+						"cidrs":     []string{"192.168.1.0/24"},
+						"hostnames": []string{"g.*"},
 					},
 					Schedulers: []models.Scheduler{
 						{
