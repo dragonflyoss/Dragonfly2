@@ -86,9 +86,9 @@ var rootCmd = &cobra.Command{
 		}
 
 		rotateConfig := logger.LogRotateConfig{
-			MaxSize:    cfg.LogMaxSize,
-			MaxAge:     cfg.LogMaxAge,
-			MaxBackups: cfg.LogMaxBackups}
+			MaxSize:    dfgetConfig.LogMaxSize,
+			MaxAge:     dfgetConfig.LogMaxAge,
+			MaxBackups: dfgetConfig.LogMaxBackups}
 
 		// Initialize logger
 		if err := logger.InitDfget(dfgetConfig.Verbose, dfgetConfig.Console, d.LogDir(), rotateConfig); err != nil {
