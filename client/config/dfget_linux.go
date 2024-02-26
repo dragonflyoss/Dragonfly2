@@ -45,4 +45,7 @@ var dfgetConfig = ClientOption{
 	ShowProgress:      false,
 	Recursive:         false,
 	RecursiveLevel:    5,
+	LogMaxSize:        DefaultLogRotateMaxSize,
+	LogMaxAge:         DefaultLogRotateMaxAge,
+	LogMaxBackups:     DefaultLogRotateMaxBackups,
 }

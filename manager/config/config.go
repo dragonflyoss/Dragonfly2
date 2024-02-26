@@ -406,6 +406,9 @@ func New() *Config {
 			REST: RESTConfig{
 				Addr: DefaultRESTAddr,
 			},
+			LogMaxSize:    DefaultLogRotateMaxSize,
+			LogMaxAge:     DefaultLogRotateMaxAge,
+			LogMaxBackups: DefaultLogRotateMaxBackups,
 		},
 		Auth: AuthConfig{
 			JWT: JWTConfig{

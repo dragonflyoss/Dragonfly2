@@ -44,12 +44,6 @@ var (
 )
 
 const (
-	defaultRotateMaxSize    = 1024
-	defaultRotateMaxBackups = 20
-	defaultRotateMaxAge     = 7
-)
-
-const (
 	encodeTimeFormat = "2006-01-02 15:04:05.000"
 )
 
@@ -60,26 +54,11 @@ var customGrpcLevel atomic.Bool
 
 func CreateLogger(filePath string, compress bool, stats bool, verbose bool, config LogRotateConfig) (*zap.Logger, zap.AtomicLevel, error) {
 
-	maxSize := defaultRotateMaxSize
-	if config.MaxSize > 0 {
-		maxSize = config.MaxSize
-	}
-
-	maxAge := defaultRotateMaxAge
-	if config.MaxAge > 0 {
-		maxAge = config.MaxAge
-	}
-
-	maxBackups := defaultRotateMaxBackups
-	if config.MaxBackups > 0 {
-		maxBackups = config.MaxBackups
-	}
-
 	rotateConfig := &lumberjack.Logger{
 		Filename:   filePath,
-		MaxSize:    maxSize,
-		MaxAge:     maxAge,
-		MaxBackups: maxBackups,
+		MaxSize:    config.MaxSize,
+		MaxAge:     config.MaxAge,
+		MaxBackups: config.MaxBackups,
 		LocalTime:  true,
 		Compress:   compress,
 	}

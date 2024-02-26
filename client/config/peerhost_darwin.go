@@ -186,5 +186,8 @@ var peerHostConfig = func() *DaemonOption {
 				Interval: DefaultProbeInterval,
 			},
 		},
+		LogMaxSize:    DefaultLogRotateMaxSize,
+		LogMaxAge:     DefaultLogRotateMaxAge,
+		LogMaxBackups: DefaultLogRotateMaxBackups,
 	}
 }

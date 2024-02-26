@@ -136,6 +136,9 @@ func New() *Config {
 		Server: ServerConfig{
 			AdvertisePort: DefaultServerAdvertisePort,
 			Port:          DefaultServerPort,
+			LogMaxSize:    DefaultLogRotateMaxSize,
+			LogMaxAge:     DefaultLogRotateMaxAge,
+			LogMaxBackups: DefaultLogRotateMaxBackups,
 		},
 		Metrics: MetricsConfig{
 			Enable: false,
