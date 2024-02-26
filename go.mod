@@ -89,9 +89,9 @@ require (
 	google.golang.org/protobuf v1.32.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v3 v3.0.1
-	gorm.io/driver/mysql v1.5.2
+	gorm.io/driver/mysql v1.5.4
 	gorm.io/driver/postgres v1.5.2
-	gorm.io/gorm v1.25.5
+	gorm.io/gorm v1.25.7-0.20240204074919-46816ad31dde
 	gorm.io/plugin/soft_delete v1.2.1
 	k8s.io/component-base v0.29.2
 	logur.dev/adapter/zap v0.5.0
