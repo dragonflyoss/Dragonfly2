@@ -255,6 +255,7 @@ func (s *managerServerV1) UpdateSeedPeer(ctx context.Context, req *managerv1.Upd
 	seedPeer := models.SeedPeer{}
 	if err := s.db.WithContext(ctx).First(&seedPeer, models.SeedPeer{
 		Hostname:          req.Hostname,
+		IP:                req.Ip,
 		SeedPeerClusterID: uint(req.SeedPeerClusterId),
 	}).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -454,6 +455,7 @@ func (s *managerServerV1) UpdateScheduler(ctx context.Context, req *managerv1.Up
 	scheduler := models.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, models.Scheduler{
 		Hostname:           req.Hostname,
+		IP:                 req.Ip,
 		SchedulerClusterID: uint(req.SchedulerClusterId),
 	}).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -969,6 +971,7 @@ func (s *managerServerV1) KeepAlive(stream managerv1.Manager_KeepAliveServer) er
 		scheduler := models.Scheduler{}
 		if err := s.db.First(&scheduler, models.Scheduler{
 			Hostname:           hostname,
+			IP:                 ip,
 			SchedulerClusterID: clusterID,
 		}).Updates(models.Scheduler{
 			State: models.SchedulerStateActive,
@@ -989,6 +992,7 @@ func (s *managerServerV1) KeepAlive(stream managerv1.Manager_KeepAliveServer) er
 		seedPeer := models.SeedPeer{}
 		if err := s.db.First(&seedPeer, models.SeedPeer{
 			Hostname:          hostname,
+			IP:                ip,
 			SeedPeerClusterID: clusterID,
 		}).Updates(models.SeedPeer{
 			State: models.SeedPeerStateActive,
@@ -1012,6 +1016,7 @@ func (s *managerServerV1) KeepAlive(stream managerv1.Manager_KeepAliveServer) er
 				scheduler := models.Scheduler{}
 				if err := s.db.First(&scheduler, models.Scheduler{
 					Hostname:           hostname,
+					IP:                 ip,
 					SchedulerClusterID: clusterID,
 				}).Updates(models.Scheduler{
 					State: models.SchedulerStateInactive,
@@ -1032,6 +1037,7 @@ func (s *managerServerV1) KeepAlive(stream managerv1.Manager_KeepAliveServer) er
 				seedPeer := models.SeedPeer{}
 				if err := s.db.First(&seedPeer, models.SeedPeer{
 					Hostname:          hostname,
+					IP:                ip,
 					SeedPeerClusterID: clusterID,
 				}).Updates(models.SeedPeer{
 					State: models.SeedPeerStateInactive,
