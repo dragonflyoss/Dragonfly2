@@ -9,6 +9,9 @@ server:
   host: foo
   logDir: foo
   dataDir: foo
+  logMaxSize: 512
+  logMaxAge: 5
+  logMaxBackups: 3
 
 metrics:
   enable: false

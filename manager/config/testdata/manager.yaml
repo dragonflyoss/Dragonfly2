@@ -3,6 +3,9 @@ server:
   workHome: foo
   cacheDir: foo
   logDir: foo
+  logMaxSize: 512
+  logMaxAge: 5
+  logMaxBackups: 3
   pluginDir: foo
   grpc:
     advertiseIP: 0.0.0.0

@@ -52,15 +52,18 @@ type DaemonOption struct {
 	GCInterval util.Duration `mapstructure:"gcInterval" yaml:"gcInterval"`
 	Metrics    string        `mapstructure:"metrics" yaml:"metrics"`
 
-	WorkHome     string `mapstructure:"workHome" yaml:"workHome"`
-	WorkHomeMode uint32 `mapstructure:"workHomeMode" yaml:"workHomeMode"`
-	CacheDir     string `mapstructure:"cacheDir" yaml:"cacheDir"`
-	CacheDirMode uint32 `mapstructure:"cacheDirMode" yaml:"cacheDirMode"`
-	LogDir       string `mapstructure:"logDir" yaml:"logDir"`
-	PluginDir    string `mapstructure:"pluginDir" yaml:"pluginDir"`
-	DataDir      string `mapstructure:"dataDir" yaml:"dataDir"`
-	DataDirMode  uint32 `mapstructure:"dataDirMode" yaml:"dataDirMode"`
-	KeepStorage  bool   `mapstructure:"keepStorage" yaml:"keepStorage"`
+	WorkHome      string `mapstructure:"workHome" yaml:"workHome"`
+	WorkHomeMode  uint32 `mapstructure:"workHomeMode" yaml:"workHomeMode"`
+	CacheDir      string `mapstructure:"cacheDir" yaml:"cacheDir"`
+	CacheDirMode  uint32 `mapstructure:"cacheDirMode" yaml:"cacheDirMode"`
+	LogDir        string `mapstructure:"logDir" yaml:"logDir"`
+	LogMaxSize    int    `yaml:"logMaxSize" mapstructure:"logMaxSize"`
+	LogMaxAge     int    `yaml:"logMaxAge" mapstructure:"logMaxAge"`
+	LogMaxBackups int    `yaml:"logMaxBackups" mapstructure:"logMaxBackups"`
+	PluginDir     string `mapstructure:"pluginDir" yaml:"pluginDir"`
+	DataDir       string `mapstructure:"dataDir" yaml:"dataDir"`
+	DataDirMode   uint32 `mapstructure:"dataDirMode" yaml:"dataDirMode"`
+	KeepStorage   bool   `mapstructure:"keepStorage" yaml:"keepStorage"`
 
 	Security        GlobalSecurityOption  `mapstructure:"security" yaml:"security"`
 	Scheduler       SchedulerOption       `mapstructure:"scheduler" yaml:"scheduler"`
