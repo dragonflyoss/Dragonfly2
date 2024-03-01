@@ -362,8 +362,8 @@ type CacheConfig struct {
 	// Interval is cache cleanup interval.
 	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
 
-	// TTL is networkTopology cache items TLL.
-	TTL time.Duration `yaml:"ttl" mapstructure:"tll"`
+	// TTL is networkTopology cache items TTL.
+	TTL time.Duration `yaml:"ttl" mapstructure:"ttl"`
 }
 
 type TrainerConfig struct {
