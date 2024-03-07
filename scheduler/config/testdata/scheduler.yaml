@@ -9,6 +9,9 @@ server:
   logDir: foo
   pluginDir: foo
   dataDir: foo
+  logMaxSize: 512
+  logMaxAge: 5
+  logMaxBackups: 3
 
 scheduler:
   algorithm: default

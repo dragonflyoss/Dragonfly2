@@ -64,6 +64,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/os/user"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
+	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	"d7y.io/dragonfly/v2/pkg/safe"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/scheduler/resource"
@@ -82,6 +83,7 @@ type server struct {
 	peerHost        *schedulerv1.PeerHost
 	peerTaskManager peer.TaskManager
 	storageManager  storage.Manager
+	schedulerClient schedulerclient.V1
 
 	healthServer   *health.Server
 	downloadServer *grpc.Server
@@ -99,13 +101,14 @@ func init() {
 }
 
 func New(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskManager,
-	storageManager storage.Manager, recursiveConcurrent int, cacheRecursiveMetadata time.Duration,
+	storageManager storage.Manager, schedulerClient schedulerclient.V1, recursiveConcurrent int, cacheRecursiveMetadata time.Duration,
 	downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Server, error) {
 	s := &server{
 		KeepAlive:       util.NewKeepAlive("rpc server"),
 		peerHost:        peerHost,
 		peerTaskManager: peerTaskManager,
 		storageManager:  storageManager,
+		schedulerClient: schedulerClient,
 
 		recursiveConcurrent:    recursiveConcurrent,
 		cacheRecursiveMetadata: cacheRecursiveMetadata,
@@ -1100,6 +1103,13 @@ func (s *server) DeleteTask(ctx context.Context, req *dfdaemonv1.DeleteTaskReque
 	}
 
 	return new(emptypb.Empty), nil
+}
+
+// LeaveHost will leave host from scheduler
+func (s *server) LeaveHost(ctx context.Context, _ *emptypb.Empty) (*emptypb.Empty, error) {
+	return new(emptypb.Empty), s.schedulerClient.LeaveHost(ctx, &schedulerv1.LeaveHostRequest{
+		Id: s.peerHost.Id,
+	})
 }
 
 func checkOutput(output string) error {

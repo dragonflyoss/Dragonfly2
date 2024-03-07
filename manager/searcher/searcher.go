@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -46,13 +47,16 @@ const (
 
 const (
 	// cidrAffinityWeight is CIDR affinity weight.
-	cidrAffinityWeight float64 = 0.4
+	cidrAffinityWeight float64 = 0.3
+
+	// hostnameAffinityWeight is hostname affinity weight.
+	hostnameAffinityWeight = 0.3
 
 	// idcAffinityWeight is IDC affinity weight.
-	idcAffinityWeight float64 = 0.35
+	idcAffinityWeight float64 = 0.25
 
 	// locationAffinityWeight is location affinity weight.
-	locationAffinityWeight = 0.24
+	locationAffinityWeight = 0.14
 
 	// clusterTypeWeight is cluster type weight.
 	clusterTypeWeight float64 = 0.01
@@ -73,9 +77,10 @@ const (
 
 // Scheduler cluster scopes.
 type Scopes struct {
-	IDC      string   `mapstructure:"idc"`
-	Location string   `mapstructure:"location"`
-	CIDRs    []string `mapstructure:"cidrs"`
+	IDC       string   `mapstructure:"idc"`
+	Location  string   `mapstructure:"location"`
+	CIDRs     []string `mapstructure:"cidrs"`
+	Hostnames []string `mapstructure:"hostnames"`
 }
 
 type Searcher interface {
@@ -150,6 +155,7 @@ func FilterSchedulerClusters(conditions map[string]string, schedulerClusters []m
 // Evaluate the degree of matching between scheduler cluster and dfdaemon.
 func Evaluate(ip, hostname string, conditions map[string]string, scopes Scopes, cluster models.SchedulerCluster, log *zap.SugaredLogger) float64 {
 	return cidrAffinityWeight*calculateCIDRAffinityScore(ip, scopes.CIDRs, log) +
+		hostnameAffinityWeight*calculateHostnameAffinityScore(hostname, scopes.Hostnames, log) +
 		idcAffinityWeight*calculateIDCAffinityScore(conditions[ConditionIDC], scopes.IDC) +
 		locationAffinityWeight*calculateMultiElementAffinityScore(conditions[ConditionLocation], scopes.Location) +
 		clusterTypeWeight*calculateClusterTypeScore(cluster)
@@ -184,6 +190,31 @@ func calculateCIDRAffinityScore(ip string, cidrs []string, log *zap.SugaredLogge
 	}
 
 	return maxScore
+}
+
+// calculateHostnameAffinityScore 0.0~1.0 larger and better.
+func calculateHostnameAffinityScore(hostname string, hostnames []string, log *zap.SugaredLogger) float64 {
+	if hostname == "" {
+		return minScore
+	}
+
+	if len(hostnames) == 0 {
+		return minScore
+	}
+
+	for _, v := range hostnames {
+		regex, err := regexp.Compile(v)
+		if err != nil {
+			log.Error(err)
+			continue
+		}
+
+		if regex.MatchString(hostname) {
+			return maxScore
+		}
+	}
+
+	return minScore
 }
 
 // calculateIDCAffinityScore 0.0~1.0 larger and better.

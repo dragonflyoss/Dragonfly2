@@ -64,13 +64,13 @@ const (
 	DefaultSchedulerBackToSourceCount = 200
 
 	// DefaultSchedulerRetryBackToSourceLimit is default retry back-to-source limit for scheduler.
-	DefaultSchedulerRetryBackToSourceLimit = 3
+	DefaultSchedulerRetryBackToSourceLimit = 4
 
 	// DefaultSchedulerRetryLimit is default retry limit for scheduler.
 	DefaultSchedulerRetryLimit = 5
 
 	// DefaultSchedulerRetryInterval is default retry interval for scheduler.
-	DefaultSchedulerRetryInterval = 400 * time.Millisecond
+	DefaultSchedulerRetryInterval = 500 * time.Millisecond
 
 	// DefaultSchedulerPieceDownloadTimeout is default timeout of downloading piece.
 	DefaultSchedulerPieceDownloadTimeout = 30 * time.Minute
@@ -199,4 +199,15 @@ const (
 
 	// DefaultTrainerUploadTimeout is the default timeout of uploading dataset to trainer.
 	DefaultTrainerUploadTimeout = 1 * time.Hour
+)
+
+const (
+	// DefaultLogRotateMaxSize is the default maximum size in megabytes of log files before rotation.
+	DefaultLogRotateMaxSize = 1024
+
+	// DefaultLogRotateMaxAge is the default number of days to retain old log files.
+	DefaultLogRotateMaxAge = 7
+
+	// DefaultLogRotateMaxBackups is the default number of old log files to keep.
+	DefaultLogRotateMaxBackups = 20
 )

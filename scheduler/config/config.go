@@ -102,6 +102,15 @@ type ServerConfig struct {
 	// Server log directory.
 	LogDir string `yaml:"logDir" mapstructure:"logDir"`
 
+	// Maximum size in megabytes of log files before rotation (default: 1024)
+	LogMaxSize int `yaml:"logMaxSize" mapstructure:"logMaxSize"`
+
+	// Maximum number of days to retain old log files (default: 7)
+	LogMaxAge int `yaml:"logMaxAge" mapstructure:"logMaxAge"`
+
+	// Maximum number of old log files to keep (default: 20)
+	LogMaxBackups int `yaml:"logMaxBackups" mapstructure:"logMaxBackups"`
+
 	// Server plugin directory.
 	PluginDir string `yaml:"pluginDir" mapstructure:"pluginDir"`
 
@@ -353,8 +362,8 @@ type CacheConfig struct {
 	// Interval is cache cleanup interval.
 	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
 
-	// TTL is networkTopology cache items TLL.
-	TTL time.Duration `yaml:"ttl" mapstructure:"tll"`
+	// TTL is networkTopology cache items TTL.
+	TTL time.Duration `yaml:"ttl" mapstructure:"ttl"`
 }
 
 type TrainerConfig struct {
@@ -378,6 +387,9 @@ func New() *Config {
 			Port:          DefaultServerPort,
 			AdvertisePort: DefaultServerAdvertisePort,
 			Host:          fqdn.FQDNHostname,
+			LogMaxSize:    DefaultLogRotateMaxSize,
+			LogMaxAge:     DefaultLogRotateMaxAge,
+			LogMaxBackups: DefaultLogRotateMaxBackups,
 		},
 		Scheduler: SchedulerConfig{
 			Algorithm:              DefaultSchedulerAlgorithm,

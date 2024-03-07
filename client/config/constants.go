@@ -93,3 +93,14 @@ const (
 	// DefaultProbeInterval is the default interval of probing host.
 	DefaultProbeInterval = 20 * time.Minute
 )
+
+const (
+	// DefaultLogRotateMaxSize is the default maximum size in megabytes of log files before rotation.
+	DefaultLogRotateMaxSize = 1024
+
+	// DefaultLogRotateMaxAge is the default number of days to retain old log files.
+	DefaultLogRotateMaxAge = 7
+
+	// DefaultLogRotateMaxBackups is the default number of old log files to keep.
+	DefaultLogRotateMaxBackups = 20
+)

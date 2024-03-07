@@ -78,6 +78,15 @@ type ServerConfig struct {
 	// Server log directory.
 	LogDir string `yaml:"logDir" mapstructure:"logDir"`
 
+	// Maximum size in megabytes of log files before rotation (default: 1024)
+	LogMaxSize int `yaml:"logMaxSize" mapstructure:"logMaxSize"`
+
+	// Maximum number of days to retain old log files (default: 7)
+	LogMaxAge int `yaml:"logMaxAge" mapstructure:"logMaxAge"`
+
+	// Maximum number of old log files to keep (default: 20)
+	LogMaxBackups int `yaml:"logMaxBackups" mapstructure:"logMaxBackups"`
+
 	// Server plugin directory.
 	PluginDir string `yaml:"pluginDir" mapstructure:"pluginDir"`
 
@@ -397,6 +406,9 @@ func New() *Config {
 			REST: RESTConfig{
 				Addr: DefaultRESTAddr,
 			},
+			LogMaxSize:    DefaultLogRotateMaxSize,
+			LogMaxAge:     DefaultLogRotateMaxAge,
+			LogMaxBackups: DefaultLogRotateMaxBackups,
 		},
 		Auth: AuthConfig{
 			JWT: JWTConfig{

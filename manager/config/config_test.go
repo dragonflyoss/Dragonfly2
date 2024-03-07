@@ -113,11 +113,14 @@ var (
 func TestConfig_Load(t *testing.T) {
 	config := &Config{
 		Server: ServerConfig{
-			Name:      "foo",
-			WorkHome:  "foo",
-			CacheDir:  "foo",
-			LogDir:    "foo",
-			PluginDir: "foo",
+			Name:          "foo",
+			WorkHome:      "foo",
+			CacheDir:      "foo",
+			LogDir:        "foo",
+			LogMaxSize:    512,
+			LogMaxAge:     5,
+			LogMaxBackups: 3,
+			PluginDir:     "foo",
 			GRPC: GRPCConfig{
 				AdvertiseIP: net.IPv4zero,
 				ListenIP:    net.IPv4zero,

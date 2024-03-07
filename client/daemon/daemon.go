@@ -307,7 +307,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		peerServerOption = append(peerServerOption, grpc.Creds(tlsCredentials))
 	}
 
-	rpcManager, err := rpcserver.New(host, peerTaskManager, storageManager,
+	rpcManager, err := rpcserver.New(host, peerTaskManager, storageManager, schedulerClient,
 		opt.Download.RecursiveConcurrent.GoroutineCount, opt.Download.CacheRecursiveMetadata, downloadServerOption, peerServerOption)
 	if err != nil {
 		return nil, err

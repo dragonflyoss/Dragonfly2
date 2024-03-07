@@ -84,7 +84,7 @@ jobs:
           install: true
 
       - name: Setup Kind
-        uses: helm/kind-action@v1.8.0
+        uses: helm/kind-action@v1.9.0
         with:
           version: ${{ env.KIND_VERSION }}
           config: ${{ env.KIND_CONFIG_PATH }}
@@ -117,7 +117,7 @@ jobs:
         run: make actions-e2e-test-coverage
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.txt

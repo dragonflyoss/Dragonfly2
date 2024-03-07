@@ -753,6 +753,7 @@ func (s *managerServerV2) KeepAlive(stream managerv2.Manager_KeepAliveServer) er
 		scheduler := models.Scheduler{}
 		if err := s.db.First(&scheduler, models.Scheduler{
 			Hostname:           hostname,
+			IP:                 ip,
 			SchedulerClusterID: clusterID,
 		}).Updates(models.Scheduler{
 			State: models.SchedulerStateActive,
@@ -773,6 +774,7 @@ func (s *managerServerV2) KeepAlive(stream managerv2.Manager_KeepAliveServer) er
 		seedPeer := models.SeedPeer{}
 		if err := s.db.First(&seedPeer, models.SeedPeer{
 			Hostname:          hostname,
+			IP:                ip,
 			SeedPeerClusterID: clusterID,
 		}).Updates(models.SeedPeer{
 			State: models.SeedPeerStateActive,
@@ -796,6 +798,7 @@ func (s *managerServerV2) KeepAlive(stream managerv2.Manager_KeepAliveServer) er
 				scheduler := models.Scheduler{}
 				if err := s.db.First(&scheduler, models.Scheduler{
 					Hostname:           hostname,
+					IP:                 ip,
 					SchedulerClusterID: clusterID,
 				}).Updates(models.Scheduler{
 					State: models.SchedulerStateInactive,
@@ -816,6 +819,7 @@ func (s *managerServerV2) KeepAlive(stream managerv2.Manager_KeepAliveServer) er
 				seedPeer := models.SeedPeer{}
 				if err := s.db.First(&seedPeer, models.SeedPeer{
 					Hostname:          hostname,
+					IP:                ip,
 					SeedPeerClusterID: clusterID,
 				}).Updates(models.SeedPeer{
 					State: models.SeedPeerStateInactive,
