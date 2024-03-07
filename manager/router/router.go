@@ -72,9 +72,6 @@ func Init(cfg *config.Config, logDir string, service service.Service, database *
 	r.Use(ginzap.Ginzap(logger.GinLogger.Desugar(), time.RFC3339, true))
 	r.Use(ginzap.RecoveryWithZap(logger.GinLogger.Desugar(), true))
 
-	// Error middleware.
-	r.Use(middlewares.Error())
-
 	// CORS middleware.
 	r.Use(middlewares.CORS())
 
@@ -90,6 +87,9 @@ func Init(cfg *config.Config, logDir string, service service.Service, database *
 
 	// Personal access token middleware.
 	personalAccessToken := middlewares.PersonalAccessToken(database.DB)
+
+	// Error middleware.
+	r.Use(middlewares.Error())
 
 	// Manager view.
 	r.Use(static.Serve("/", assets))

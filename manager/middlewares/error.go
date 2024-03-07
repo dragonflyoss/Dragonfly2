@@ -35,8 +35,8 @@ import (
 
 type ErrorResponse struct {
 	Message     string `json:"message,omitempty"`
-	Error       string `json:"errors,omitempty"`
-	DocumentURL string `json:"documentation_url,omitempty"`
+	Error       string `json:"error,omitempty"`
+	DocumentURL string `json:"document_url,omitempty"`
 }
 
 func Error() gin.HandlerFunc {
@@ -124,5 +124,6 @@ func Error() gin.HandlerFunc {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{
 			Message: err.Err.Error(),
 		})
+		c.Abort()
 	}
 }
