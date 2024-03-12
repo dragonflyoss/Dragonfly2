@@ -20,12 +20,12 @@ jobs:
         with:
           fetch-depth: 1
 
-      # - name: Check large files
-        # uses: actionsdesk/lfs-warning@v3.2
-        # env:
-          # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # with:
-          # filesizelimit: "1048576"
-          # exclusionPatterns: |
-            # deploy/helm-charts
-            # manager/console
+      - name: Check large files
+        uses: actionsdesk/lfs-warning@v3.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          filesizelimit: "1048576"
+          exclusionPatterns: |
+            deploy/helm-charts
+            manager/console
