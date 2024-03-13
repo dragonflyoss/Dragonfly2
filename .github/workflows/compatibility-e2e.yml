@@ -58,7 +58,6 @@ jobs:
           dotnet: true
           haskell: true
           large-packages: true
-          docker-images: true
           swap-storage: true
 
       - name: Checkout code
@@ -82,6 +81,14 @@ jobs:
         id: buildx
         with:
           install: true
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
 
       - name: Setup Kind
         uses: helm/kind-action@v1.9.0
@@ -115,6 +122,14 @@ jobs:
           DRAGONFLY_COMPATIBILITY_E2E_TEST_IMAGE: ${{ matrix.image }}
           DRAGONFLY_STABLE_IMAGE_TAG: ${{ matrix.image-tag }}
         run: make actions-e2e-test-coverage
+
+      # Temp fix
+      # https://github.com/docker/build-push-action/issues/252
+      # https://github.com/moby/buildkit/issues/1896
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
