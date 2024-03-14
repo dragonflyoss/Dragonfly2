@@ -28,8 +28,8 @@ import (
 	. "github.com/onsi/ginkgo/v2" //nolint
 	. "github.com/onsi/gomega"    //nolint
 
-	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
 	_ "d7y.io/dragonfly/v2/test/e2e/manager"
+	"d7y.io/dragonfly/v2/test/e2e/util"
 )
 
 var featureGatesFlag string
@@ -41,21 +41,21 @@ func init() {
 var _ = AfterSuite(func() {
 	for _, server := range servers {
 		for i := 0; i < server.replicas; i++ {
-			out, err := e2eutil.KubeCtlCommand("-n", server.namespace, "get", "pod", "-l", fmt.Sprintf("component=%s", server.name),
+			out, err := util.KubeCtlCommand("-n", server.namespace, "get", "pod", "-l", fmt.Sprintf("component=%s", server.name),
 				"-o", fmt.Sprintf("jsonpath='{.items[%d].metadata.name}'", i)).CombinedOutput()
 			if err != nil {
 				fmt.Printf("get pod error: %s, output: %s\n", err, string(out))
 				continue
 			}
 			podName := strings.Trim(string(out), "'")
-			pod := e2eutil.NewPodExec(server.namespace, podName, server.name)
+			pod := util.NewPodExec(server.namespace, podName, server.name)
 
 			var (
 				retryCount    = 0
 				maxRetryCount = 10
 			)
 		retry:
-			countOut, err := e2eutil.KubeCtlCommand("-n", server.namespace, "get", "pod", "-l", fmt.Sprintf("component=%s", server.name),
+			countOut, err := util.KubeCtlCommand("-n", server.namespace, "get", "pod", "-l", fmt.Sprintf("component=%s", server.name),
 				"-o", fmt.Sprintf("jsonpath='{.items[%d].status.containerStatuses[0].restartCount}'", i)).CombinedOutput()
 			if err != nil {
 				fmt.Printf("get pod %s restart count error: %s, output: %s\n", podName, err, string(countOut))
@@ -86,17 +86,17 @@ var _ = AfterSuite(func() {
 			}
 
 			if count > 0 {
-				if err := e2eutil.UploadArtifactPrevStdout(server.namespace, podName, fmt.Sprintf("%s-%d", server.name, i), server.name); err != nil {
+				if err := util.UploadArtifactPrevStdout(server.namespace, podName, fmt.Sprintf("%s-%d", server.name, i), server.name); err != nil {
 					fmt.Printf("upload pod %s artifact stdout file error: %v\n", podName, err)
 				}
 			}
 
-			if err := e2eutil.UploadArtifactStdout(server.namespace, podName, fmt.Sprintf("%s-%d", server.name, i), server.name); err != nil {
+			if err := util.UploadArtifactStdout(server.namespace, podName, fmt.Sprintf("%s-%d", server.name, i), server.name); err != nil {
 				fmt.Printf("upload pod %s artifact prev stdout file error: %v\n", podName, err)
 			}
 
 			if server.pprofPort > 0 {
-				if out, err := e2eutil.UploadArtifactPProf(server.namespace, podName,
+				if out, err := util.UploadArtifactPProf(server.namespace, podName,
 					fmt.Sprintf("%s-%d", server.name, i), server.name, server.pprofPort); err != nil {
 					fmt.Printf("upload pod %s artifact pprof error: %v, output: %s\n", podName, err, out)
 				}
@@ -107,14 +107,14 @@ var _ = AfterSuite(func() {
 })
 
 var _ = BeforeSuite(func() {
-	err := e2eutil.FeatureGates.Set(featureGatesFlag)
+	err := util.FeatureGates.Set(featureGatesFlag)
 	Expect(err).NotTo(HaveOccurred())
-	fmt.Printf("feature gates: %q, flags: %q\n", e2eutil.FeatureGates.String(), featureGatesFlag)
+	fmt.Printf("feature gates: %q, flags: %q\n", util.FeatureGates.String(), featureGatesFlag)
 
 	mode := os.Getenv("DRAGONFLY_COMPATIBILITY_E2E_TEST_MODE")
 	imageName := os.Getenv("DRAGONFLY_COMPATIBILITY_E2E_TEST_IMAGE")
 	if mode != "" && imageName != "" {
-		rawImages, err := e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", fmt.Sprintf("component=%s", mode),
+		rawImages, err := util.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", fmt.Sprintf("component=%s", mode),
 			"-o", "jsonpath='{range .items[0]}{.spec.containers[0].image}{end}'").CombinedOutput()
 		image := strings.Trim(string(rawImages), "'")
 		Expect(err).NotTo(HaveOccurred())
@@ -124,25 +124,25 @@ var _ = BeforeSuite(func() {
 		Expect(fmt.Sprintf("dragonflyoss/%s:%s", imageName, stableImageTag)).To(Equal(image))
 	}
 
-	rawGitCommit, err := e2eutil.GitCommand("rev-parse", "--short", "HEAD").CombinedOutput()
+	rawGitCommit, err := util.GitCommand("rev-parse", "--short", "HEAD").CombinedOutput()
 	Expect(err).NotTo(HaveOccurred())
 	gitCommit := strings.Fields(string(rawGitCommit))[0]
 	fmt.Printf("git merge commit: %s\n", gitCommit)
 
-	rawPodName, err := e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", "component=dfdaemon",
+	rawPodName, err := util.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", "component=dfdaemon",
 		"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
 	podName := strings.Trim(string(rawPodName), "'")
 	Expect(err).NotTo(HaveOccurred())
 	Expect(strings.HasPrefix(podName, "dragonfly-dfdaemon-")).Should(BeTrue())
 
-	pod := e2eutil.NewPodExec(dragonflyNamespace, podName, "dfdaemon")
+	pod := util.NewPodExec(dragonflyNamespace, podName, "dfdaemon")
 	rawDfgetVersion, err := pod.Command("dfget", "version").CombinedOutput()
 	Expect(err).NotTo(HaveOccurred())
 	dfgetGitCommit := strings.Fields(string(rawDfgetVersion))[7]
 	fmt.Printf("raw dfget version:\n%s\n", rawDfgetVersion)
 	fmt.Printf("dfget merge commit: %s\n", dfgetGitCommit)
 
-	if !e2eutil.FeatureGates.Enabled(e2eutil.FeatureGateCommit) {
+	if !util.FeatureGates.Enabled(util.FeatureGateCommit) {
 		return
 	}
 	if mode == dfdaemonCompatibilityTestMode {
@@ -152,16 +152,16 @@ var _ = BeforeSuite(func() {
 
 	Expect(gitCommit).To(Equal(dfgetGitCommit))
 
-	if e2eutil.FeatureGates.Enabled(e2eutil.FeatureGateRange) {
-		out, err := e2eutil.DockerCopy("/bin/", "/tmp/sha256sum-offset").CombinedOutput()
+	if util.FeatureGates.Enabled(util.FeatureGateRange) {
+		out, err := util.DockerCopy("/bin/", "/tmp/sha256sum-offset").CombinedOutput()
 		if err != nil {
 			fmt.Println(string(out))
 		}
 		Expect(err).NotTo(HaveOccurred())
 	}
 
-	if e2eutil.FeatureGates.Enabled(e2eutil.FeatureGateRecursive) {
-		out, err := e2eutil.DockerCopy("/bin/", "/tmp/download-grpc-test").CombinedOutput()
+	if util.FeatureGates.Enabled(util.FeatureGateRecursive) {
+		out, err := util.DockerCopy("/bin/", "/tmp/download-grpc-test").CombinedOutput()
 		if err != nil {
 			fmt.Println(string(out))
 		}

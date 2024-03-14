@@ -22,19 +22,19 @@ import (
 	. "github.com/onsi/ginkgo/v2" //nolint
 	. "github.com/onsi/gomega"    //nolint
 
-	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
+	"d7y.io/dragonfly/v2/test/e2e/util"
 )
 
 var _ = Describe("Containerd with CRI support", func() {
 	Context("docker.io/library/busybox:latest image", func() {
 		It("pull should be ok", Label("containerd", "pull"), func() {
-			out, err := e2eutil.CriCtlCommand("pull", "d7y.io/library/busybox:latest").CombinedOutput()
+			out, err := util.CriCtlCommand("pull", "d7y.io/library/busybox:latest").CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("rmi should be ok", Label("containerd", "rmi"), func() {
-			out, err := e2eutil.CriCtlCommand("rmi", "d7y.io/library/busybox:latest").CombinedOutput()
+			out, err := util.CriCtlCommand("rmi", "d7y.io/library/busybox:latest").CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 		})

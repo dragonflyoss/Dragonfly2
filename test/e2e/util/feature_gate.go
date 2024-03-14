@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package e2eutil
+package util
 
 import "k8s.io/component-base/featuregate"
 

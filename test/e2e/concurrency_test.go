@@ -22,43 +22,43 @@ import (
 	. "github.com/onsi/ginkgo/v2" //nolint
 	. "github.com/onsi/gomega"    //nolint
 
-	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
+	"d7y.io/dragonfly/v2/test/e2e/util"
 )
 
 var _ = Describe("Download concurrency", func() {
 	Context("ab", func() {
 		It("concurrent 100 should be ok", Label("concurrent", "100"), func() {
-			url := e2eutil.GetFileURL(hostnameFilePath)
+			url := util.GetFileURL(hostnameFilePath)
 			fmt.Println("download url " + url)
 
-			out, err := e2eutil.ABCommand("-c", "100", "-n", "200", "-X", proxy, url).CombinedOutput()
+			out, err := util.ABCommand("-c", "100", "-n", "200", "-X", proxy, url).CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("concurrent 200 should be ok", Label("concurrent", "200"), func() {
-			url := e2eutil.GetFileURL(hostnameFilePath)
+			url := util.GetFileURL(hostnameFilePath)
 			fmt.Println("download url " + url)
 
-			out, err := e2eutil.ABCommand("-c", "200", "-n", "400", "-X", proxy, url).CombinedOutput()
+			out, err := util.ABCommand("-c", "200", "-n", "400", "-X", proxy, url).CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("concurrent 500 should be ok", Label("concurrent", "500"), func() {
-			url := e2eutil.GetFileURL(hostnameFilePath)
+			url := util.GetFileURL(hostnameFilePath)
 			fmt.Println("download url " + url)
 
-			out, err := e2eutil.ABCommand("-c", "500", "-n", "1000", "-X", proxy, url).CombinedOutput()
+			out, err := util.ABCommand("-c", "500", "-n", "1000", "-X", proxy, url).CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("concurrent 1000 should be ok", Label("concurrent", "1000"), func() {
-			url := e2eutil.GetFileURL(hostnameFilePath)
+			url := util.GetFileURL(hostnameFilePath)
 			fmt.Println("download url " + url)
 
-			out, err := e2eutil.ABCommand("-c", "1000", "-n", "2000", "-X", proxy, url).CombinedOutput()
+			out, err := util.ABCommand("-c", "1000", "-n", "2000", "-X", proxy, url).CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 		})
