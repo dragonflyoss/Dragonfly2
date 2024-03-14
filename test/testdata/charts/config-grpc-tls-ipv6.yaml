@@ -25,6 +25,16 @@ scheduler:
     enableHost: true
   config:
     verbose: true
+    scheduler:
+      algorithm: nt
+    networkTopology:
+      collectInterval: 2m
+      probe:
+        queueLength: 5
+        count: 10
+      cache:
+        interval: 5m
+        ttl: 5m
     security:
       autoIssueCert: true
       tlsVerify: true
@@ -98,6 +108,10 @@ seedPeer:
         thresholdSize: 10M
         thresholdSpeed: 2M
         goroutineCount: 4
+    networkTopology:
+      enable: true
+      probe:
+        interval: 10s    
     security:
       autoIssueCert: true
       tlsVerify: true
@@ -186,6 +200,10 @@ dfdaemon:
       proxies:
         - regx: blobs/sha256.*
         - regx: file-server
+    networkTopology:
+      enable: true
+      probe:
+        interval: 10s
     security:
       autoIssueCert: true
       tlsVerify: true
