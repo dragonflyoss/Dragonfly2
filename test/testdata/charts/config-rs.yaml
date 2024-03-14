@@ -1,0 +1,121 @@
+manager:
+  image: dragonflyoss/manager
+  tag: latest
+  replicas: 1
+  resources:
+    requests:
+      cpu: "0"
+      memory: "0"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+  extraVolumeMounts:
+  - name: logs
+    mountPath: "/var/log/"
+  - name: artifact
+    mountPath: /tmp/artifact
+  extraVolumes:
+  - name: logs
+    emptyDir: { }
+  - name: artifact
+    hostPath:
+      path: /tmp/artifact
+  metrics:
+    enable: true
+  config:
+    verbose: true
+
+scheduler:
+  image: dragonflyoss/scheduler
+  tag: latest
+  replicas: 3
+  resources:
+    requests:
+      cpu: "0"
+      memory: "0"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+  extraVolumeMounts:
+  - name: logs
+    mountPath: "/var/log/"
+  - name: artifact
+    mountPath: /tmp/artifact
+  extraVolumes:
+  - name: logs
+    emptyDir: { }
+  - name: artifact
+    hostPath:
+      path: /tmp/artifact
+  metrics:
+    enable: true
+    enableHost: true
+  config:
+    verbose: true
+
+seedClient:
+  enable: true
+  replicas: 3
+  image: dragonflyoss/client
+  tag: latest
+  resources:
+    requests:
+      cpu: "0"
+      memory: "0"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+  extraVolumeMounts:
+  - name: logs
+    mountPath: "/var/log/"
+  - name: artifact
+    mountPath: /tmp/artifact
+  extraVolumes:
+  - name: logs
+    emptyDir: { }
+  - name: artifact
+    hostPath:
+      path: /tmp/artifact
+  config:
+    dynconfig:
+      refreshInterval: 1s
+    scheduler:
+      announceInterval: 1s
+    log:
+      level: info
+
+client:
+  enable: true
+  image: dragonflyoss/client
+  tag: latest
+  resources:
+    requests:
+      cpu: "0"
+      memory: "0"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+  extraVolumeMounts:
+  - name: logs
+    mountPath: "/var/log/"
+  - name: artifact
+    mountPath: /tmp/artifact
+  extraVolumes:
+  - name: logs
+    emptyDir: { }
+  - name: artifact
+    hostPath:
+      path: /tmp/artifact
+  config:
+    dynconfig:
+      refreshInterval: 1s
+    scheduler:
+      announceInterval: 1s
+    log:
+      level: info 
+
+dfdaemon:
+  enable: false
+
+seedPeer:
+  enable: false

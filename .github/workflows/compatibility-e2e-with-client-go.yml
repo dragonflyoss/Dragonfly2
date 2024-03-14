@@ -1,4 +1,4 @@
-name: Compatibility E2E Test
+name: Compatibility E2E Test(Golang Client)
 
 on:
   push:
@@ -17,6 +17,7 @@ env:
   DRAGONFLY_CHARTS_PATH: deploy/helm-charts/charts/dragonfly
   DRAGONFLY_CHARTS_CONFIG_PATH: test/testdata/charts/config-compatibility.yaml
   DRAGONFLY_FILE_SERVER_PATH: test/testdata/k8s/file-server.yaml
+  DRAGONFLY_FILE_SERVER_NO_CONTENT_LENGTH_PATH: test/testdata/k8s/file-server-no-content-length.yaml
   DRAGONFLY_PROXY_SERVER_PATH: test/testdata/k8s/proxy.yaml
 
 jobs:
@@ -97,6 +98,7 @@ jobs:
         run: |
           helm install --wait --timeout 10m --dependency-update --create-namespace --namespace dragonfly-system --set ${{ matrix.chart-name }}.tag=${{ matrix.image-tag }} --set ${{ matrix.chart-name }}.image=dragonflyoss/${{ matrix.image }} -f ${{ env.DRAGONFLY_CHARTS_CONFIG_PATH }} dragonfly ${{ env.DRAGONFLY_CHARTS_PATH }}
           kubectl apply -f ${{ env.DRAGONFLY_FILE_SERVER_PATH }}
+          kubectl apply -f ${{ env.DRAGONFLY_FILE_SERVER_NO_CONTENT_LENGTH_PATH }}
           kubectl apply -f ${{ env.DRAGONFLY_PROXY_SERVER_PATH }}
           kubectl wait po file-server-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
           kubectl wait po file-server-no-content-length-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
