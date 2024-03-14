@@ -35,24 +35,24 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/structure"
-	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
+	"d7y.io/dragonfly/v2/test/e2e/util"
 )
 
 var _ = Describe("Preheat with manager", func() {
 	Context("preheat", func() {
 		It("preheat files should be ok", Label("preheat", "file"), func() {
-			var seedPeerPods [3]*e2eutil.PodExec
+			var seedPeerPods [3]*util.PodExec
 			for i := 0; i < 3; i++ {
 				seedPeerPods[i] = getSeedPeerExec(i)
 			}
 			fsPod := getFileServerExec()
 
-			for _, v := range e2eutil.GetFileList() {
-				url := e2eutil.GetFileURL(v)
+			for _, v := range util.GetFileList() {
+				url := util.GetFileURL(v)
 				fmt.Println("download url: " + url)
 
 				// get original file digest
-				out, err := e2eutil.DockerCommand("sha256sum", v).CombinedOutput()
+				out, err := util.DockerCommand("sha256sum", v).CombinedOutput()
 				fmt.Println("original sha256sum: " + string(out))
 				Expect(err).NotTo(HaveOccurred())
 				sha256sum1 := strings.Split(string(out), " ")[0]
@@ -104,7 +104,7 @@ var _ = Describe("Preheat with manager", func() {
 				}
 			)
 
-			var seedPeerPods [3]*e2eutil.PodExec
+			var seedPeerPods [3]*util.PodExec
 			for i := 0; i < 3; i++ {
 				seedPeerPods[i] = getSeedPeerExec(i)
 			}
@@ -140,7 +140,7 @@ var _ = Describe("Preheat with manager", func() {
 		})
 
 		It("preheat image for linux/amd64 platform should be ok", Label("preheat", "image"), func() {
-			if !e2eutil.FeatureGates.Enabled(e2eutil.FeatureGatePreheatMultiArchImage) {
+			if !util.FeatureGates.Enabled(util.FeatureGatePreheatMultiArchImage) {
 				fmt.Println("feature gate preheat multi arch image is disable, skip")
 				return
 			}
@@ -165,7 +165,7 @@ var _ = Describe("Preheat with manager", func() {
 				}
 			)
 
-			var seedPeerPods [3]*e2eutil.PodExec
+			var seedPeerPods [3]*util.PodExec
 			for i := 0; i < 3; i++ {
 				seedPeerPods[i] = getSeedPeerExec(i)
 			}
@@ -202,7 +202,7 @@ var _ = Describe("Preheat with manager", func() {
 		})
 
 		It("preheat image for linux/arm64 platform  should be ok", Label("preheat", "image"), func() {
-			if !e2eutil.FeatureGates.Enabled(e2eutil.FeatureGatePreheatMultiArchImage) {
+			if !util.FeatureGates.Enabled(util.FeatureGatePreheatMultiArchImage) {
 				fmt.Println("feature gate preheat multi arch image is disable, skip")
 				return
 			}
@@ -227,7 +227,7 @@ var _ = Describe("Preheat with manager", func() {
 				}
 			)
 
-			var seedPeerPods [3]*e2eutil.PodExec
+			var seedPeerPods [3]*util.PodExec
 			for i := 0; i < 3; i++ {
 				seedPeerPods[i] = getSeedPeerExec(i)
 			}
@@ -265,7 +265,7 @@ var _ = Describe("Preheat with manager", func() {
 	})
 })
 
-func waitForDone(preheat *models.Job, pod *e2eutil.PodExec) bool {
+func waitForDone(preheat *models.Job, pod *util.PodExec) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
@@ -294,7 +294,7 @@ func waitForDone(preheat *models.Job, pod *e2eutil.PodExec) bool {
 	}
 }
 
-func checkPreheatResult(seedPeerPods [3]*e2eutil.PodExec, seedPeerTaskID string) (string, error) {
+func checkPreheatResult(seedPeerPods [3]*util.PodExec, seedPeerTaskID string) (string, error) {
 	var sha256sum string
 	for _, seedPeer := range seedPeerPods {
 		taskDir := fmt.Sprintf("%s/%s", seedPeerDataPath, seedPeerTaskID)
@@ -320,23 +320,23 @@ func checkPreheatResult(seedPeerPods [3]*e2eutil.PodExec, seedPeerTaskID string)
 }
 
 // getSeedPeerExec get seed peer pods
-func getSeedPeerExec(n int) *e2eutil.PodExec {
-	out, err := e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", "component=seed-peer",
+func getSeedPeerExec(n int) *util.PodExec {
+	out, err := util.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", "component=seed-peer",
 		"-o", fmt.Sprintf("jsonpath='{range .items[%d]}{.metadata.name}{end}'", n)).CombinedOutput()
 	podName := strings.Trim(string(out), "'")
 	Expect(err).NotTo(HaveOccurred())
 	fmt.Println(podName)
 	Expect(strings.HasPrefix(podName, "dragonfly-seed-peer-")).Should(BeTrue())
-	return e2eutil.NewPodExec(dragonflyNamespace, podName, "seed-peer")
+	return util.NewPodExec(dragonflyNamespace, podName, "seed-peer")
 }
 
 // getFileServerExec get the file-server pod for curl
-func getFileServerExec() *e2eutil.PodExec {
-	out, err := e2eutil.KubeCtlCommand("-n", e2eNamespace, "get", "pod", "-l", "component=file-server",
+func getFileServerExec() *util.PodExec {
+	out, err := util.KubeCtlCommand("-n", e2eNamespace, "get", "pod", "-l", "component=file-server",
 		"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
 	podName := strings.Trim(string(out), "'")
 	Expect(err).NotTo(HaveOccurred())
 	fmt.Println(podName)
 	Expect(strings.HasPrefix(podName, "file-server-")).Should(BeTrue())
-	return e2eutil.NewPodExec(e2eNamespace, podName, "")
+	return util.NewPodExec(e2eNamespace, podName, "")
 }

@@ -8,7 +8,7 @@ curDir=$(cd "$(dirname "$0")" && pwd)
 cd "${curDir}/../" || return
 
 D7Y_VERSION=${D7Y_VERSION:-"latest"}
-D7Y_REGISTRY=${D7Y_REGISTRY:-d7yio}
+D7Y_REGISTRY=${D7Y_REGISTRY:-dragonflyoss}
 IMAGES_DIR="build/images"
 BASE_IMAGE=${BASE_IMAGE:-alpine:3.17}
 

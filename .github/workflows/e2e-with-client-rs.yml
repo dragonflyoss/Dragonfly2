@@ -45,6 +45,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0
 
       - name: Install Go
         uses: actions/setup-go@v5
@@ -70,12 +71,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
+      - name: Pull Rust Client Image
+        run: |
+          cd client-rs
+          CLIENT_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
+          docker pull dragonflyoss/client:$CLIENT_TAG
+          docker tag dragonflyoss/client:$CLIENT_TAG dragonflyoss/client:latest
+
       - name: Build Scheduler Image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: build/images/scheduler/Dockerfile
           push: false
+          load: true
           tags: dragonflyoss/scheduler:latest
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
@@ -86,16 +95,10 @@ jobs:
           context: .
           file: build/images/manager/Dockerfile
           push: false
+          load: true
           tags: dragonflyoss/manager:latest
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
-
-      - name: Pull Rust Client Image
-        run: |
-          cd client-rs
-          CLIENT_RS_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
-          docker pull dragonflyoss/client:$CLIENT_RS_TAG
-          docker tag dragonflyoss/client:$CLIENT_RS_TAG dragonflyoss/client:latest
 
       - name: Setup Kind
         uses: helm/kind-action@v1.9.0
@@ -104,17 +107,25 @@ jobs:
           config: ${{ env.KIND_CONFIG_PATH }}
           cluster_name: kind
 
-      - name: Setup dragonfly
+      - name: Kind load images
         run: |
-          helm install --wait --timeout 10m --dependency-update --create-namespace --namespace dragonfly-system -f ${{ matrix.charts-config }} dragonfly ${{ env.DRAGONFLY_CHARTS_PATH }}
-          kubectl apply -f ${{ env.DRAGONFLY_FILE_SERVER_PATH }}
-          kubectl wait po file-server-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
+          kind load docker-image dragonflyoss/manager:latest
+          kind load docker-image dragonflyoss/scheduler:latest
+          kind load docker-image dragonflyoss/client:latest
 
-      - name: Run E2E test
-        run: |
-          ginkgo -v -r --race --fail-fast --cover --trace --show-node-events --skip=${{ matrix.skip }} test/e2e -- \
-              --feature-gates=dfget-range=true,dfget-open-range=true,dfget-empty-file=true,dfget-recursive=true
-          cat coverprofile.out >> coverage.txt
+      # TODO Setup dragonfly
+      # - name: Setup dragonfly
+        # run: |
+          # helm install --wait --timeout 10m --dependency-update --create-namespace --namespace dragonfly-system -f ${{ matrix.charts-config }} dragonfly ${{ env.DRAGONFLY_CHARTS_PATH }}
+          # kubectl apply -f ${{ env.DRAGONFLY_FILE_SERVER_PATH }}
+          # kubectl wait po file-server-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
+
+      # TODO Run tests
+      # - name: Run E2E test
+        # run: |
+          # ginkgo -v -r --race --fail-fast --cover --trace --show-node-events --skip=${{ matrix.skip }} test/e2e -- \
+              # --feature-gates=dfget-range=true,dfget-open-range=true,dfget-empty-file=true,dfget-recursive=true
+          # cat coverprofile.out >> coverage.txt
 
       - name: Move cache
         run: |

@@ -42,7 +42,7 @@ spec:
     spec:
       containers:
       - name: server
-        image: d7yio/no-content-length:latest
+        image: dragonflyoss/no-content-length:latest
         imagePullPolicy: "IfNotPresent"
         ports:
         - containerPort: 80
