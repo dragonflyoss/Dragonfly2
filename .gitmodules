@@ -4,3 +4,6 @@
 [submodule "manager/console"]
 	path = manager/console
 	url = https://github.com/dragonflyoss/console.git
+[submodule "client-rs"]
+	path = client-rs
+	url = https://github.com/dragonflyoss/client.git
