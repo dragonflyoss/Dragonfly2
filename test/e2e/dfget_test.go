@@ -27,7 +27,7 @@ import (
 	. "github.com/onsi/gomega"    //nolint
 
 	"d7y.io/dragonfly/v2/pkg/net/http"
-	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
+	"d7y.io/dragonfly/v2/test/e2e/util"
 )
 
 var _ = Describe("Download with dfget and proxy", func() {
@@ -48,15 +48,15 @@ var _ = Describe("Download with dfget and proxy", func() {
 func getFileSizes() map[string]int {
 	var (
 		details = map[string]int{}
-		files   = e2eutil.GetFileList()
+		files   = util.GetFileList()
 	)
 
-	if e2eutil.FeatureGates.Enabled(e2eutil.FeatureGateEmptyFile) {
+	if util.FeatureGates.Enabled(util.FeatureGateEmptyFile) {
 		fmt.Printf("dfget-empty-file feature gate enabled\n")
 		files = append(files, "/tmp/empty-file")
 	}
 	for _, path := range files {
-		out, err := e2eutil.DockerCommand("stat", "--printf=%s", path).CombinedOutput()
+		out, err := util.DockerCommand("stat", "--printf=%s", path).CombinedOutput()
 		if err != nil {
 			fmt.Printf("stat %s erro: %s, stdout: %s", path, err, string(out))
 		}
@@ -96,7 +96,7 @@ func getRandomRange(size int) *http.Range {
 func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 	It(name, Label("download", "normal"), func() {
 		fileDetails := getFileSizes()
-		out, err := e2eutil.KubeCtlCommand("-n", ns, "get", "pod", "-l", label,
+		out, err := util.KubeCtlCommand("-n", ns, "get", "pod", "-l", label,
 			"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
 		podName := strings.Trim(string(out), "'")
 		Expect(err).NotTo(HaveOccurred())
@@ -104,8 +104,8 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 		Expect(strings.HasPrefix(podName, podNamePrefix)).Should(BeTrue())
 
 		// copy test tools into container
-		if e2eutil.FeatureGates.Enabled(e2eutil.FeatureGateRange) {
-			out, err = e2eutil.KubeCtlCommand("-n", ns, "cp", "-c", container, "/tmp/sha256sum-offset",
+		if util.FeatureGates.Enabled(util.FeatureGateRange) {
+			out, err = util.KubeCtlCommand("-n", ns, "cp", "-c", container, "/tmp/sha256sum-offset",
 				fmt.Sprintf("%s:/bin/", podName)).CombinedOutput()
 			if err != nil {
 				fmt.Println(string(out))
@@ -113,7 +113,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 			Expect(err).NotTo(HaveOccurred())
 		}
 
-		pod := e2eutil.NewPodExec(ns, podName, container)
+		pod := util.NewPodExec(ns, podName, container)
 
 		// install curl
 		out, err = pod.Command("apk", "add", "-U", "curl").CombinedOutput()
@@ -125,25 +125,25 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 			if size == 0 {
 				continue
 			}
-			url1 := e2eutil.GetFileURL(path)
-			url2 := e2eutil.GetNoContentLengthFileURL(path)
+			url1 := util.GetFileURL(path)
+			url2 := util.GetNoContentLengthFileURL(path)
 
 			// make ranged requests to invoke prefetch feature
-			if e2eutil.FeatureGates.Enabled(e2eutil.FeatureGateRange) {
+			if util.FeatureGates.Enabled(util.FeatureGateRange) {
 				rg1, rg2 := getRandomRange(size), getRandomRange(size)
 				downloadSingleFile(ns, pod, path, url1, size, rg1, rg1.String())
-				if e2eutil.FeatureGates.Enabled(e2eutil.FeatureGateNoLength) {
+				if util.FeatureGates.Enabled(util.FeatureGateNoLength) {
 					downloadSingleFile(ns, pod, path, url2, size, rg2, rg2.String())
 				}
 
-				if e2eutil.FeatureGates.Enabled(e2eutil.FeatureGateOpenRange) {
+				if util.FeatureGates.Enabled(util.FeatureGateOpenRange) {
 					rg3, rg4 := getRandomRange(size), getRandomRange(size)
 					// set target length
 					rg3.Length = int64(size) - rg3.Start
 					rg4.Length = int64(size) - rg4.Start
 
 					downloadSingleFile(ns, pod, path, url1, size, rg3, fmt.Sprintf("bytes=%d-", rg3.Start))
-					if e2eutil.FeatureGates.Enabled(e2eutil.FeatureGateNoLength) {
+					if util.FeatureGates.Enabled(util.FeatureGateNoLength) {
 						downloadSingleFile(ns, pod, path, url2, size, rg4, fmt.Sprintf("bytes=%d-", rg4.Start))
 					}
 				}
@@ -151,13 +151,13 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 
 			downloadSingleFile(ns, pod, path, url1, size, nil, "")
 
-			if e2eutil.FeatureGates.Enabled(e2eutil.FeatureGateNoLength) {
+			if util.FeatureGates.Enabled(util.FeatureGateNoLength) {
 				downloadSingleFile(ns, pod, path, url2, size, nil, "")
 			}
 		}
 	})
 	It(name+" - recursive with dfget", Label("download", "recursive", "dfget"), func() {
-		if !e2eutil.FeatureGates.Enabled(e2eutil.FeatureGateRecursive) {
+		if !util.FeatureGates.Enabled(util.FeatureGateRecursive) {
 			fmt.Println("feature gate recursive is disable, skip")
 			return
 		}
@@ -169,12 +169,12 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 		// sha256sum txt: /host/tmp/dragonfly-test.sha256sum.txt
 		subDirs := []string{"bin", "lib64", "libexec", "sbin"}
 
-		out, err := e2eutil.KubeCtlCommand("-n", ns, "get", "pod", "-l", label,
+		out, err := util.KubeCtlCommand("-n", ns, "get", "pod", "-l", label,
 			"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
 		podName := strings.Trim(string(out), "'")
 		Expect(err).NotTo(HaveOccurred())
 		fmt.Println("test in pod: " + podName)
-		pod := e2eutil.NewPodExec(ns, podName, container)
+		pod := util.NewPodExec(ns, podName, container)
 
 		for _, dir := range subDirs {
 			var dfget []string
@@ -209,7 +209,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 		sha256sum1 := strings.TrimSpace(string(out))
 
 		// get the original sha256sum in minio pod
-		minioPod := e2eutil.NewPodExec("dragonfly-e2e", "minio-0", "minio")
+		minioPod := util.NewPodExec("dragonfly-e2e", "minio-0", "minio")
 		out, err = minioPod.Command("cat", "/host/tmp/dragonfly-test.sha256sum.txt").CombinedOutput()
 		Expect(err).NotTo(HaveOccurred())
 		sha256sum2 := strings.TrimSpace(string(out))
@@ -222,7 +222,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 	})
 
 	It(name+" - recursive with grpc", Label("download", "recursive", "grpc"), func() {
-		if !e2eutil.FeatureGates.Enabled(e2eutil.FeatureGateRecursive) {
+		if !util.FeatureGates.Enabled(util.FeatureGateRecursive) {
 			fmt.Println("feature gate recursive is disable, skip")
 			return
 		}
@@ -234,15 +234,15 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 		// sha256sum txt: /host/tmp/dragonfly-test.sha256sum.txt
 		subDirs := []string{"bin", "lib64", "libexec", "sbin"}
 
-		out, err := e2eutil.KubeCtlCommand("-n", ns, "get", "pod", "-l", label,
+		out, err := util.KubeCtlCommand("-n", ns, "get", "pod", "-l", label,
 			"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
 		podName := strings.Trim(string(out), "'")
 		Expect(err).NotTo(HaveOccurred())
 		fmt.Println("test in pod: " + podName)
-		pod := e2eutil.NewPodExec(ns, podName, container)
+		pod := util.NewPodExec(ns, podName, container)
 
 		// copy test tools into container
-		out, err = e2eutil.KubeCtlCommand("-n", ns, "cp", "-c", container, "/tmp/download-grpc-test",
+		out, err = util.KubeCtlCommand("-n", ns, "cp", "-c", container, "/tmp/download-grpc-test",
 			fmt.Sprintf("%s:/bin/", podName)).CombinedOutput()
 		if err != nil {
 			fmt.Println(string(out))
@@ -269,7 +269,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 		sha256sum1 := strings.TrimSpace(string(out))
 
 		// get the original sha256sum in minio pod
-		minioPod := e2eutil.NewPodExec("dragonfly-e2e", "minio-0", "minio")
+		minioPod := util.NewPodExec("dragonfly-e2e", "minio-0", "minio")
 		out, err = minioPod.Command("cat", "/host/tmp/dragonfly-test.sha256sum.txt").CombinedOutput()
 		Expect(err).NotTo(HaveOccurred())
 		sha256sum2 := strings.TrimSpace(string(out))
@@ -282,7 +282,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 	})
 }
 
-func downloadSingleFile(ns string, pod *e2eutil.PodExec, path, url string, size int, rg *http.Range, rawRg string) {
+func downloadSingleFile(ns string, pod *util.PodExec, path, url string, size int, rg *http.Range, rawRg string) {
 	var (
 		sha256sum []string
 		dfget     []string
@@ -320,7 +320,7 @@ func downloadSingleFile(ns string, pod *e2eutil.PodExec, path, url string, size 
 			url, size, rawRg, rg.Length)
 	}
 	// get original file digest
-	out, err := e2eutil.DockerCommand(sha256sum...).CombinedOutput()
+	out, err := util.DockerCommand(sha256sum...).CombinedOutput()
 	fmt.Println("original sha256sum: " + string(out))
 	Expect(err).NotTo(HaveOccurred())
 	sha256sum1 := strings.Split(string(out), " ")[0]
