@@ -39,6 +39,11 @@ var _ = Describe("Evaluator with networkTopology", func() {
 				return
 			}
 			Expect(waitForProbedInNetworkTopology()).Should(BeTrue())
+
+			if waitForProbedInNetworkTopology() == true {
+				time.Sleep(2 * time.Minute)
+				Expect(checkNetworkTopologyUpdated()).Should(BeTrue())
+			}
 		})
 	})
 })
@@ -81,11 +86,21 @@ func waitForProbedInNetworkTopology() bool {
 			if networkTopologyKey == "" || err != nil {
 				continue
 			}
+			networkTopologyOut, err := redisPod.Command("redis-cli", "-a", "dragonfly", "-n", "3", "HGETALL", networkTopologyKey).CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
+			if networkTopologyOut == nil || err != nil {
+				continue
+			}
 
 			out, err = redisPod.Command("redis-cli", "-a", "dragonfly", "-n", "3", "KEYS", "scheduler:probes:*").CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 			probesKey := strings.Split(string(out), "\n")[1]
 			if probesKey == "" || err != nil {
+				continue
+			}
+			probesOut, err := redisPod.Command("redis-cli", "-a", "dragonfly", "-n", "3", "LRANGE", probesKey, "0", "-1").CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
+			if probesOut == nil || err != nil {
 				continue
 			}
 
@@ -95,8 +110,45 @@ func waitForProbedInNetworkTopology() bool {
 			if probedCountKey == "" || err != nil {
 				continue
 			}
+			probedCountOut, err := redisPod.Command("redis-cli", "-a", "dragonfly", "-n", "3", "GET", probedCountKey).CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
+			if probedCountOut == nil || err != nil {
+				continue
+			}
 
 			return true
 		}
 	}
+}
+
+func checkNetworkTopologyUpdated() bool {
+	redisPod := getRedisExec()
+
+	var networkTopologyKey string
+	out, err := redisPod.Command("redis-cli", "-a", "dragonfly", "-n", "3", "KEYS", "scheduler:network-topology:*").CombinedOutput()
+	Expect(err).NotTo(HaveOccurred())
+	for i := 0; i < 3; i++ {
+		networkTopologyKey = strings.Split(string(out), "\n")[i]
+		updatedAtOut, err := redisPod.Command("redis-cli", "-a", "dragonfly", "-n", "3", "dragonfly", "HGET", networkTopologyKey, "updatedAt").CombinedOutput()
+		Expect(err).NotTo(HaveOccurred())
+		createdAtOut, err := redisPod.Command("redis-cli", "-a", "dragonfly", "-n", "3", "dragonfly", "HGET", networkTopologyKey, "createdAt").CombinedOutput()
+		Expect(err).NotTo(HaveOccurred())
+		if strings.Split(string(updatedAtOut), "\n")[1] == strings.Split(string(createdAtOut), "\n")[1] {
+			return false
+		}
+	}
+
+	var probedCountKey string
+	out, err = redisPod.Command("redis-cli", "-a", "dragonfly", "-n", "3", "KEYS", "scheduler:probed-count:*").CombinedOutput()
+	Expect(err).NotTo(HaveOccurred())
+	for i := 0; i < 3; i++ {
+		probedCountKey = strings.Split(string(out), "\n")[i]
+		probedCountOut, err := redisPod.Command("redis-cli", "-a", "dragonfly", "-n", "3", "GET", probedCountKey).CombinedOutput()
+		Expect(err).NotTo(HaveOccurred())
+		if strings.Split(string(probedCountOut), "\n")[1] == "0" {
+			return false
+		}
+	}
+
+	return true
 }
