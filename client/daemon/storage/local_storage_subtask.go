@@ -83,7 +83,7 @@ func (t *localSubTaskStore) WritePiece(ctx context.Context, req *WritePieceReque
 		return 0, err
 	}
 
-	n, err = io.Copy(file, io.LimitReader(req.Reader, req.Range.Length))
+	n, err = tryWriteWithBuffer(file, req.Reader, req.Range.Length)
 	if err != nil {
 		return 0, err
 	}
