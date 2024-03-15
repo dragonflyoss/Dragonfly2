@@ -975,10 +975,15 @@ func (s *storageManager) diskUsageExceed() (exceed bool, bytes int64) {
 	return true, int64(bs)
 }
 
+type onlyWriter struct {
+	io.Writer
+}
+
 func tryWriteWithBuffer(writer io.Writer, reader io.Reader, readSize int64) (written int64, err error) {
 	if writeBufferPool != nil {
 		buf := writeBufferPool.Get().([]byte)
-		written, err = io.CopyBuffer(writer, io.LimitReader(reader, readSize), buf)
+		// skip io.ReadFrom logic in io.CopyBuffer, force to use buffer
+		written, err = io.CopyBuffer(onlyWriter{writer}, io.LimitReader(reader, readSize), buf)
 		//nolint:all
 		writeBufferPool.Put(buf)
 	} else {
