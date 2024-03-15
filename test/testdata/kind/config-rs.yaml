@@ -1,0 +1,18 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  ipFamily: dual
+nodes:
+  - role: control-plane
+    image: kindest/node:v1.23.4
+    extraPortMappings:
+      - containerPort: 4001
+        hostPort: 4001
+        protocol: TCP
+    extraMounts:
+      - hostPath: ./test/testdata/containerd/config.toml
+        containerPath: /etc/containerd/config.toml
+      - hostPath: /tmp/artifact
+        containerPath: /tmp/artifact
+      - hostPath: /dev/fuse
+        containerPath: /dev/fuse

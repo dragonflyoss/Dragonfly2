@@ -73,10 +73,45 @@ jobs:
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build manager console assets
-        run: |-
-          make build-manager-console
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
 
-      - name: Build
-        run: |-
-          make build
+      - name: Build Scheduler Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: build/images/scheduler/Dockerfile
+          push: false
+          tags: dragonflyoss/scheduler:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Build Manager Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: build/images/manager/Dockerfile
+          push: false
+          tags: dragonflyoss/manager:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Build Dfdaemon Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: build/images/dfdaemon/Dockerfile
+          push: false
+          tags: dragonflyoss/dfdaemon:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache

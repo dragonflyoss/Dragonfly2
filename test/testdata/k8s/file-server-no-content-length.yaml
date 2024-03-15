@@ -8,15 +8,15 @@ metadata:
 apiVersion: v1
 kind: Service
 metadata:
-  name: file-server
+  name: file-server-no-content-length
   namespace: dragonfly-e2e
 spec:
   selector:
     app: dragonfly
-    component: file-server
+    component: file-server-no-content-length
   type: ClusterIP
   ports:
-  - name: nginx
+  - name: server
     port: 80
     protocol: TCP
     targetPort: 80
@@ -25,31 +25,30 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: file-server
+  name: file-server-no-content-length
   namespace: dragonfly-e2e
 spec:
-  serviceName: file-server
+  serviceName: file-server-no-content-length
   selector:
     matchLabels:
       app: dragonfly
-      component: file-server
+      component: file-server-no-content-length
   replicas: 1
   template:
     metadata:
       labels:
         app: dragonfly
-        component: file-server
+        component: file-server-no-content-length
     spec:
       containers:
-      - name: nginx
-        # Pull image with dragonfly
-        image: d7y.io/library/nginx:1.21.1-alpine
+      - name: server
+        image: dragonflyoss/no-content-length:latest
         imagePullPolicy: "IfNotPresent"
         ports:
         - containerPort: 80
         volumeMounts:
         - name: files
-          mountPath: /usr/share/nginx/html/kind
+          mountPath: /static/kind
       volumes:
       - name: files
         hostPath:

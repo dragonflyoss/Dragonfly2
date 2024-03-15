@@ -1,5 +1,5 @@
 scheduler:
-  image: d7yio/scheduler
+  image: dragonflyoss/scheduler
   tag: latest
   replicas: 3
   resources:
@@ -66,7 +66,7 @@ scheduler:
       enableIPv6: true
 
 seedPeer:
-  image: d7yio/dfdaemon
+  image: dragonflyoss/dfdaemon
   tag: latest
   replicas: 3
   resources:
@@ -139,7 +139,7 @@ seedPeer:
       enableIPv6: true
 
 dfdaemon:
-  image: d7yio/dfdaemon
+  image: dragonflyoss/dfdaemon
   tag: latest
   resources:
     requests:
@@ -227,7 +227,7 @@ dfdaemon:
       enableIPv6: true
 
 manager:
-  image: d7yio/manager
+  image: dragonflyoss/manager
   tag: latest
   replicas: 1
   resources:
