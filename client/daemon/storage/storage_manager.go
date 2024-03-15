@@ -229,9 +229,7 @@ func WithWriteBufferSize(size int64) func(*storageManager) error {
 	return func(manager *storageManager) error {
 		if size > 0 {
 			writeBufferPool = &sync.Pool{New: func() any {
-				// wa for SA6002: argument should be pointer-like to avoid allocations (staticcheck)
-				buf := make([]byte, size)
-				return &buf
+				return make([]byte, size)
 			}}
 		}
 		return nil
@@ -979,8 +977,9 @@ func (s *storageManager) diskUsageExceed() (exceed bool, bytes int64) {
 
 func tryWriteWithBuffer(writer io.Writer, reader io.Reader, readSize int64) (written int64, err error) {
 	if writeBufferPool != nil {
-		buf := writeBufferPool.Get().(*[]byte)
-		written, err = io.CopyBuffer(writer, io.LimitReader(reader, readSize), *buf)
+		buf := writeBufferPool.Get().([]byte)
+		written, err = io.CopyBuffer(writer, io.LimitReader(reader, readSize), buf)
+		//nolint:all
 		writeBufferPool.Put(buf)
 	} else {
 		written, err = io.Copy(writer, io.LimitReader(reader, readSize))
