@@ -1,0 +1,137 @@
+scheduler:
+  image: dragonflyoss/scheduler
+  tag: latest
+  replicas: 3
+  resources:
+    requests:
+      cpu: "0"
+      memory: "0"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+  extraVolumeMounts:
+  - name: logs
+    mountPath: "/var/log/"
+  - name: artifact
+    mountPath: /tmp/artifact
+  extraVolumes:
+  - name: logs
+    emptyDir: { }
+  - name: artifact
+    hostPath:
+      path: /tmp/artifact
+  metrics:
+    enable: true
+    enableHost: true
+  config:
+    verbose: true
+
+seedPeer:
+  image: dragonflyoss/dfdaemon
+  tag: latest
+  replicas: 3
+  resources:
+    requests:
+      cpu: "0"
+      memory: "0"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+  extraVolumeMounts:
+  - name: logs
+    mountPath: "/var/log/dragonfly"
+    subPath: dragonfly
+  - name: artifact
+    mountPath: /tmp/artifact
+  extraVolumes:
+  - name: logs
+    emptyDir: { }
+  - name: artifact
+    hostPath:
+      path: /tmp/artifact
+  metrics:
+    enable: true
+  config:
+    verbose: true
+    storage:
+      writeBufferSize: 1Mi
+    download:
+      prefetch: true
+
+dfdaemon:
+  image: dragonflyoss/dfdaemon
+  tag: latest
+  resources:
+    requests:
+      cpu: "0"
+      memory: "0"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+  extraVolumeMounts:
+  - name: logs
+    mountPath: "/var/log/"
+  - name: artifact
+    mountPath: /tmp/artifact
+  extraVolumes:
+  - name: logs
+    emptyDir: { }
+  - name: artifact
+    hostPath:
+      path: /tmp/artifact
+  metrics:
+    enable: true
+  config:
+    verbose: true
+    pprofPort: 9999
+    download:
+      prefetch: true
+    storage:
+      writeBufferSize: 1Mi
+    scheduler:
+      disableAutoBackSource: true
+    proxy:
+      defaultFilter: "Expires&Signature&ns"
+      security:
+        insecure: true
+      tcpListen:
+        namespace: /run/dragonfly/net
+        # if you want to change port, please update hostPort in $.Values.dfdaemon.hostPort
+        # port in configmap is generated from $.Values.dfdaemon.hostPort
+        # port: 65001
+      registryMirror:
+        url: https://index.docker.io
+      proxies:
+        - regx: blobs/sha256.*
+        - regx: file-server
+
+manager:
+  image: dragonflyoss/manager
+  tag: latest
+  replicas: 1
+  resources:
+    requests:
+      cpu: "0"
+      memory: "0"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+  extraVolumeMounts:
+  - name: logs
+    mountPath: "/var/log/"
+  - name: artifact
+    mountPath: /tmp/artifact
+  extraVolumes:
+  - name: logs
+    emptyDir: { }
+  - name: artifact
+    hostPath:
+      path: /tmp/artifact
+  metrics:
+    enable: true
+  config:
+    verbose: true
+
+containerRuntime:
+  containerd:
+    enable: true
