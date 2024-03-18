@@ -21,7 +21,7 @@ env:
   DRAGONFLY_PROXY_SERVER_PATH: test/testdata/k8s/proxy.yaml
 
 jobs:
-  compatibility_e2e_tests:
+  compatibility_e2e_tests_with_client_go:
     name: e2e_tests_with_${{ matrix.module }}
     timeout-minutes: 60
     runs-on: ubuntu-latest

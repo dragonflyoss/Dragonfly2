@@ -21,7 +21,7 @@ env:
   DRAGONFLY_MINIO_SERVER_PATH: test/testdata/k8s/minio.yaml
 
 jobs:
-  e2e_tests:
+  e2e_tests_with_client_go:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
