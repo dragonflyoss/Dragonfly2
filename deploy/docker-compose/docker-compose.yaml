@@ -44,6 +44,9 @@ services:
       interval: 1s
       timeout: 2s
       retries: 30
+    # Enable when running in none root mode
+    # user: "1000:1000"
+    command: ["--verbose", "--console"]
     ports:
       - 65003:65003
       - 8080:8080
@@ -61,6 +64,9 @@ services:
       interval: 1s
       timeout: 2s
       retries: 30
+    command: ["--verbose", "--console"]
+    # Enable when running in none root mode
+    # user: "1000:1000"
     volumes:
       - ./log/peer:/var/log/dragonfly/daemon
       - ./config/dfget.yaml:/etc/dragonfly/dfget.yaml:ro
@@ -83,6 +89,9 @@ services:
     volumes:
       - ./log/scheduler:/var/log/dragonfly/scheduler
       - ./config/scheduler.yaml:/etc/dragonfly/scheduler.yaml:ro
+    # Enable when running in none root mode
+    # user: "1000:1000"
+    command: ["--verbose", "--console"]
     ports:
       - 8002:8002
 
@@ -101,6 +110,9 @@ services:
     volumes:
       - ./log/seed-peer:/var/log/dragonfly/daemon
       - ./config/seed-peer.yaml:/etc/dragonfly/dfget.yaml:ro
+    # Enable when running in none root mode
+    # user: "1000:1000"
+    command: ["--verbose", "--console"]
     ports:
       - 65006:65006
       - 65007:65007

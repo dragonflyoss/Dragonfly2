@@ -22,3 +22,10 @@ RUN curl -fsSL "$GOLANG_DOWNLOAD_URL" -o golang.tar.gz \
 	&& tar -C /usr/local -xzf golang.tar.gz \
 	&& rm golang.tar.gz \
 	&& go install github.com/go-delve/delve/cmd/dlv@v1.7.0
+
+# Create none root user and group
+ARG USER_NAME=dragonfly
+ARG USER_UID=1000
+ARG GROUP_NAME=dragonfly
+ARG GROUP_GID=1000
+RUN groupadd -g $GROUP_GID $GROUP_NAME && useradd -u $USER_UID -g $GROUP_GID -m -s /bin/bash $USER_NAME
