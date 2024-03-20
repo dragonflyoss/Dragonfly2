@@ -22,15 +22,29 @@ import (
 
 	"github.com/hashicorp/memberlist"
 	"golang.org/x/exp/maps"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"d7y.io/api/v2/pkg/apis/dfdaemon/v1"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 var (
-	ErrIsAlreadyExists = errors.New("member is already exist")
-	ErrNotFound        = errors.New("member not found")
+	ErrAlreadyExists = errors.New("member is already exist")
+	ErrNotFound      = errors.New("member not found")
 )
+
+func IsErrAlreadyExists(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	if errors.Is(err, ErrAlreadyExists) {
+		return true
+	}
+
+	return status.Code(err) == codes.AlreadyExists
+}
 
 type memberPool struct {
 	localMember   *MemberMeta
@@ -74,10 +88,11 @@ func (mp *memberPool) Register(hostID string, sr PeerMetadataSendReceiveCloser) 
 	defer mp.lock.Unlock()
 
 	if _, ok := mp.sendReceivers[hostID]; ok {
-		return ErrIsAlreadyExists
+		return ErrAlreadyExists
 	}
 
 	mp.sendReceivers[hostID] = sr
+	logger.Infof("%s registered in %s", hostID, mp.localMember.HostID)
 	return nil
 }
 
@@ -92,6 +107,7 @@ func (mp *memberPool) UnRegister(hostID string) {
 	}
 
 	delete(mp.sendReceivers, hostID)
+	logger.Infof("%s unregistered in %s", hostID, mp.localMember.HostID)
 	_ = sr.Close()
 }
 

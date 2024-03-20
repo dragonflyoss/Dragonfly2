@@ -26,6 +26,7 @@ import (
 
 	dfdaemonv1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/retry"
 )
 
 func (p *peerExchange) PeerExchange(exchangeServer dfdaemonv1.Daemon_PeerExchangeServer) error {
@@ -49,13 +50,24 @@ func (p *peerExchange) PeerExchange(exchangeServer dfdaemonv1.Daemon_PeerExchang
 	}
 
 	hostID := hostIDs[0]
-	log := logger.With("member", pr.Addr.String(), "hostID", hostID, "grpcCall", "PeerExchange")
+	log := logger.With("member", pr.Addr.String(), "hostID", p.localMember.HostID, "targetHostID", hostID, "grpcCall", "PeerExchange")
 
-	member, err := p.PeerExchangeMember().FindMember(hostID)
-	if errors.Is(err, ErrNotFound) {
-		log.Errorf("member not found")
-		return status.Error(codes.NotFound, "member not found")
-	}
+	// try to find member
+	var member *MemberMeta
+	_, _, err := retry.Run(ctx, 0.01, 0.1, 10, func() (data any, cancel bool, err error) {
+		member, err = p.PeerExchangeMember().FindMember(hostID)
+		if errors.Is(err, ErrNotFound) {
+			log.Errorf("%s member not found, retry later", hostID)
+			select {
+			case <-ctx.Done():
+				cancel = true
+			default:
+			}
+			return member, cancel, status.Error(codes.NotFound, "member not found")
+		}
+		return member, cancel, nil
+	})
+
 	if err != nil {
 		log.Errorf("failed to extract peer info: %s", err)
 		return status.Errorf(codes.InvalidArgument, "failed to extract peer info: %s", err)
@@ -69,17 +81,18 @@ func (p *peerExchange) PeerExchange(exchangeServer dfdaemonv1.Daemon_PeerExchang
 			},
 		),
 	)
-	if errors.Is(err, ErrIsAlreadyExists) {
-		log.Debugf("member is already exist")
+
+	if IsErrAlreadyExists(err) {
+		log.Infof("member is already exist")
 		return status.Error(codes.AlreadyExists, err.Error())
 	}
-
-	defer p.PeerExchangeMember().UnRegister(hostID)
 
 	if err != nil {
 		log.Debugf("failed to register member: %s", err)
 		return status.Errorf(codes.Internal, "failed to register member: %s", err)
 	}
+
+	defer p.PeerExchangeMember().UnRegister(hostID)
 
 	logger.Infof("receive connection from %s, %s start receive peer metadata", member.HostID, p.localMember.HostID)
 
@@ -89,7 +102,7 @@ func (p *peerExchange) PeerExchange(exchangeServer dfdaemonv1.Daemon_PeerExchang
 	for {
 		data, err = exchangeServer.Recv()
 		if err != nil {
-			if !errors.Is(err, ErrIsAlreadyExists) {
+			if !IsErrAlreadyExists(err) {
 				log.Errorf("failed to receive peer metadata: %s, member: %s, local host id: %s",
 					err, member.HostID, p.localMember.HostID)
 			}

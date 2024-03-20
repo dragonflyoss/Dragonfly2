@@ -19,6 +19,7 @@ package pex
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"testing"
@@ -29,13 +30,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/grpclog"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
 	dfdaemonv1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
+	"d7y.io/dragonfly/v2/pkg/retry"
 )
 
 func TestPeerExchange(t *testing.T) {
+	grpclog.SetLoggerV2(grpclog.NewLoggerV2(io.Discard, io.Discard, io.Discard))
 	testCases := []struct {
 		name        string
 		memberCount int
@@ -158,13 +162,30 @@ func TestPeerExchange(t *testing.T) {
 
 			pexServers := setupMembers(assert, memberCount)
 
-			// for large scale members, need wait more time for inter-connections ready
-			time.Sleep(time.Duration(memberCount/3) * time.Second)
-
 			// 1. ensure members' connections
-			for _, pex := range pexServers {
-				memberKeys := pex.memberManager.memberPool.MemberKeys()
-				assert.Equal(memberCount-1, len(memberKeys))
+			// for large scale members, need wait more time for inter-connections ready
+			_, _, err := retry.Run(context.Background(), float64(memberCount/3), 10, 10, func() (data any, cancel bool, err error) {
+				var shouldRetry bool
+				for _, pex := range pexServers {
+					memberKeys := pex.memberManager.memberPool.MemberKeys()
+					if memberCount-1 != len(memberKeys) {
+						shouldRetry = true
+					}
+				}
+				if shouldRetry {
+					return nil, false, fmt.Errorf("members count not match")
+				}
+				return nil, false, nil
+			})
+
+			// make sure all members are ready
+			if err != nil {
+				for _, pex := range pexServers {
+					memberKeys := pex.memberManager.memberPool.MemberKeys()
+					assert.Equal(memberCount-1, len(memberKeys),
+						fmt.Sprintf("%s should have %d members", pex.localMember.HostID, memberCount-1))
+				}
+				return
 			}
 
 			// 2. broadcast peers in all pex servers
@@ -185,27 +206,27 @@ func TestPeerExchange(t *testing.T) {
 			for _, peer := range peers {
 				for _, pex := range pexServers {
 					peersByTask, ok := pex.PeerSearchBroadcaster().FindPeersByTask(peer.TaskId)
+					// check peer state
 					switch peer.State {
 					case dfdaemonv1.PeerState_Running, dfdaemonv1.PeerState_Success:
-						assert.True(ok)
+						assert.True(ok, fmt.Sprintf("%s should have task %s", pex.localMember.HostID, peer.TaskId))
 						// other members + local member
-						assert.Equal(memberCount, len(peersByTask))
+						assert.Equal(memberCount, len(peersByTask),
+							fmt.Sprintf("%s should have %d peers for task %s", pex.localMember.HostID, memberCount, peer.TaskId))
+
+						// check all peers is in other members
 						for _, realPeer := range peersByTask {
 							if realPeer.isLocal {
 								continue
 							}
 							var found bool
 							found = isPeerExistInOtherPEXServers(pexServers, pex.localMember.HostID, peer, realPeer)
-							assert.True(found)
+							assert.True(found, fmt.Sprintf("peer %s/%s in %s should be found in other members", peer.TaskId, realPeer.PeerID, pex.localMember.HostID))
 						}
 					case dfdaemonv1.PeerState_Failed, dfdaemonv1.PeerState_Deleted:
-						assert.False(ok)
-						assert.Equal(0, len(peersByTask))
-						for _, realPeer := range peersByTask {
-							var found bool
-							found = isPeerExistInOtherPEXServers(pexServers, pex.localMember.HostID, peer, realPeer)
-							assert.False(found)
-						}
+						assert.False(ok, fmt.Sprintf("%s should not have task %s", pex.localMember.HostID, peer.TaskId))
+						assert.Equal(0, len(peersByTask),
+							fmt.Sprintf("%s should not have any peers for task %s", pex.localMember.HostID, peer.TaskId))
 					default:
 
 					}
@@ -235,6 +256,10 @@ func genPeerID(peer *dfdaemonv1.PeerMetadata, pex *peerExchange) string {
 
 type mockServer struct {
 	PeerExchangeFunc func(dfdaemonv1.Daemon_PeerExchangeServer) error
+}
+
+func (m *mockServer) LeaveHost(ctx context.Context, empty *emptypb.Empty) (*emptypb.Empty, error) {
+	panic("should not be invoked")
 }
 
 func (m *mockServer) Download(request *dfdaemonv1.DownRequest, server dfdaemonv1.Daemon_DownloadServer) error {

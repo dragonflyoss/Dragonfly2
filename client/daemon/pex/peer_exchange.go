@@ -152,8 +152,10 @@ func (p *peerExchange) Serve(localMember *MemberMeta) error {
 	localMember.isLocal = true
 	p.memberConfig.Delegate = newPeerExchangeDelegate(localMember)
 	p.localMember = localMember
+
 	p.memberManager.localMember = localMember
 	p.memberManager.memberPool.localMember = localMember
+	p.memberManager.logger = logger.With("component", "peerExchangeCluster", "hostID", localMember.HostID)
 
 	member, err := memberlist.Create(p.memberConfig)
 	if err != nil {
@@ -233,11 +235,11 @@ func (p *peerExchange) reSyncMember() {
 		memberAddrs := p.memberManager.memberPool.MemberKeys()
 		add, del := diffMembers(members, memberAddrs)
 		for _, member := range add {
-			logger.Infof("re-sync add member: %s", member.HostID)
+			logger.Infof("%s re-sync add member: %s", p.localMember.HostID, member.HostID)
 			p.memberManager.syncNode(member)
 		}
 		for _, id := range del {
-			logger.Infof("re-sync del member: %s", id)
+			logger.Infof("%s re-sync del member: %s", p.localMember.HostID, id)
 			p.memberManager.memberPool.UnRegister(id)
 		}
 	}

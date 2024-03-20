@@ -19,7 +19,6 @@ package pex
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/rand"
 	"sync"
@@ -126,7 +125,7 @@ func (p *peerExchangeMemberManager) syncNode(member *MemberMeta) {
 	time.Sleep(time.Duration(r.Intn(100)) * time.Millisecond)
 
 	if p.memberPool.IsRegistered(member.HostID) {
-		p.logger.Debugf("node %s is already registered", member.HostID)
+		p.logger.Infof("node %s is already registered", member.HostID)
 		return
 	}
 
@@ -142,8 +141,8 @@ func (p *peerExchangeMemberManager) syncNode(member *MemberMeta) {
 	}
 
 	err = p.memberPool.Register(member.HostID, NewPeerMetadataSendReceiveCloser(peerExchangeClient, closeFunc))
-	if errors.Is(err, ErrIsAlreadyExists) {
-		p.logger.Debugf("node %s is already registered", member.HostID)
+	if IsErrAlreadyExists(err) {
+		p.logger.Infof("node %s is already registered", member.HostID)
 		return
 	}
 
@@ -157,7 +156,7 @@ func (p *peerExchangeMemberManager) syncNode(member *MemberMeta) {
 		for {
 			data, err = peerExchangeClient.Recv()
 			if err != nil {
-				if !errors.Is(err, ErrIsAlreadyExists) {
+				if !IsErrAlreadyExists(err) {
 					p.logger.Errorf("failed to receive peer metadata: %s, member: %s, local host id: %s",
 						err, member.HostID, p.localMember.HostID)
 				}
