@@ -298,7 +298,7 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 	meta.Priority = priority
 
 	taskID := idgen.TaskIDV1(url, meta)
-	log := logger.With(append(logKV, "task", taskID))
+	log := logger.With(append(logKV, "task", taskID)...)
 
 	log.Infof("start download with url: %s", url)
 	log.Debugf("request url: %s, with header: %#v", url, req.Header)
