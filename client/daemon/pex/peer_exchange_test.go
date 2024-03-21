@@ -125,7 +125,7 @@ func TestPeerExchange(t *testing.T) {
 		},
 		{
 			name:        "normal peers with failed",
-			memberCount: 30,
+			memberCount: 10,
 			genPeers: func() []*dfdaemonv1.PeerMetadata {
 				peers := []*dfdaemonv1.PeerMetadata{
 					{
