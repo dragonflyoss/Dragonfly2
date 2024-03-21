@@ -374,8 +374,11 @@ type ProxyOption struct {
 	ProxyRules         []*ProxyRule      `mapstructure:"proxies" yaml:"proxies"`
 	HijackHTTPS        *HijackConfig     `mapstructure:"hijackHTTPS" yaml:"hijackHTTPS"`
 	DumpHTTPContent    bool              `mapstructure:"dumpHTTPContent" yaml:"dumpHTTPContent"`
-	// ExtraRegistryMirrors add more mirror for different ports
+	// ExtraRegistryMirrors add more mirrors for different ports
 	ExtraRegistryMirrors []*RegistryMirror `mapstructure:"extraRegistryMirrors" yaml:"extraRegistryMirrors"`
+	// RedirectReplicaThreshold is used for auto redirecting traffic when the replicas of single task exists is bigger then threshold
+	// for using this option, must enable PeerExchange feature
+	RedirectReplicaThreshold int64 `mapstructure:"redirectReplicaThreshold" yaml:"redirectReplicaThreshold"`
 }
 
 func (p *ProxyOption) UnmarshalJSON(b []byte) error {

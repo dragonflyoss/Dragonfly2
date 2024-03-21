@@ -20,12 +20,15 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"math"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/http/httputil"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -39,6 +42,8 @@ import (
 
 	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
 	errordetailsv1 "d7y.io/api/v2/pkg/apis/errordetails/v1"
+	"d7y.io/dragonfly/v2/client/daemon/pex"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
@@ -67,6 +72,9 @@ type transport struct {
 
 	// peerTaskManager is the peer task manager
 	peerTaskManager peer.TaskManager
+
+	peerSearcher             pex.PeerSearchBroadcaster
+	redirectReplicaThreshold int
 
 	// defaultFilter is used when http request without X-Dragonfly-Filter Header
 	defaultFilter string
@@ -161,6 +169,14 @@ func WithDumpHTTPContent(b bool) Option {
 	}
 }
 
+func WithPeerSearcher(peerSearcher pex.PeerSearchBroadcaster, redirectReplicaThreshold int64) Option {
+	return func(rt *transport) *transport {
+		rt.peerSearcher = peerSearcher
+		rt.redirectReplicaThreshold = int(redirectReplicaThreshold)
+		return rt
+	}
+}
+
 var tracer trace.Tracer
 
 func init() {
@@ -168,7 +184,7 @@ func init() {
 }
 
 // New constructs a new instance of a RoundTripper with additional options.
-func New(options ...Option) (http.RoundTripper, error) {
+func New(options ...Option) http.RoundTripper {
 	rt := &transport{
 		baseRoundTripper:   defaultHTTPTransport(nil),
 		shouldUseDragonfly: NeedUseDragonfly,
@@ -178,7 +194,7 @@ func New(options ...Option) (http.RoundTripper, error) {
 		opt(rt)
 	}
 
-	return rt, nil
+	return rt
 }
 
 // RoundTrip only process first redirect at present
@@ -238,10 +254,6 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 	if span.SpanContext().TraceID().IsValid() {
 		logKV = append(logKV, "trace", span.SpanContext().TraceID().String())
 	}
-	log := logger.With(logKV...)
-
-	log.Infof("start download with url: %s", url)
-	log.Debugf("request url: %s, with header: %#v", url, req.Header)
 
 	// Init meta value
 	meta := &commonv1.UrlMeta{Header: map[string]string{}}
@@ -285,6 +297,37 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 	meta.Application = application
 	meta.Priority = priority
 
+	taskID := idgen.TaskIDV1(url, meta)
+	log := logger.With(append(logKV, "task", taskID))
+
+	log.Infof("start download with url: %s", url)
+	log.Debugf("request url: %s, with header: %#v", url, req.Header)
+
+	if rt.peerSearcher != nil {
+		tasks, found := rt.peerSearcher.FindPeersByTask(taskID)
+		if found {
+			task := tasks[0]
+			// check local peer
+			if task.IsLocal {
+				log.Infof("find available local peer: %s/%s", taskID, task.PeerID)
+				goto local
+			}
+
+			// check threshold
+			if len(tasks) < rt.redirectReplicaThreshold {
+				log.Infof("redirect replica threshold not reached, try to make replica from other peers")
+				goto local
+			}
+
+			resp, err := rt.proxyToPeers(log, req, tasks)
+			if err == nil {
+				return resp, nil
+			}
+			log.Warnf("proxy to other peers error: %s, fallback to download", err)
+		}
+	}
+
+local:
 	body, attr, err := rt.peerTaskManager.StartStreamTask(
 		ctx,
 		&peer.StreamTaskRequest{
@@ -292,6 +335,7 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 			URLMeta: meta,
 			Range:   rg,
 			PeerID:  peerID,
+			TaskID:  taskID,
 		},
 	)
 	if err != nil {
@@ -336,18 +380,18 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 		}
 	}
 
-	var status int
+	var httpStatus int
 	if meta.Range == "" {
-		status = http.StatusOK
+		httpStatus = http.StatusOK
 	} else {
-		status = http.StatusPartialContent
+		httpStatus = http.StatusPartialContent
 		if hdr.Get(headers.ContentRange) == "" && contentLength > 0 {
 			value := fmt.Sprintf("bytes %d-%d/%d", rg.Start, rg.Start+contentLength-1, rg.Start+contentLength)
 			hdr.Set(headers.ContentRange, value)
 		}
 	}
 	resp := &http.Response{
-		StatusCode:    status,
+		StatusCode:    httpStatus,
 		Body:          body,
 		Header:        hdr,
 		ContentLength: contentLength,
@@ -357,6 +401,47 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 		ProtoMinor: req.ProtoMinor,
 	}
 	return resp, nil
+}
+
+func (rt *transport) proxyToPeers(log *logger.SugaredLoggerOnWith, req *http.Request, peers []*pex.DestPeer) (*http.Response, error) {
+	// shuffle peers
+	if len(peers) > 1 {
+		rand.New(rand.NewSource(time.Now().UnixNano()))
+		rand.Shuffle(len(peers), func(i, j int) { peers[i], peers[j] = peers[j], peers[i] })
+	}
+
+	for _, destPeer := range peers {
+		proxyURL, err := url.Parse(fmt.Sprintf("http://%s:%d", destPeer.IP, destPeer.ProxyPort))
+		if err != nil {
+			log.Warnf("parse proxy url error: %s, dest peer: %#v", err, destPeer)
+			continue
+		}
+
+		// TODO peer transport pool
+		roundTripper := &http.Transport{
+			Proxy: http.ProxyURL(proxyURL),
+			DialContext: func(dialer *net.Dialer) func(context.Context, string, string) (net.Conn, error) {
+				return dialer.DialContext
+			}(&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}),
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		}
+		resp, err := roundTripper.RoundTrip(req)
+		if err == nil {
+			// TODO check response code
+			log.Infof("proxy traffic to peer %s on host %s", destPeer.PeerID, destPeer.HostID)
+			return resp, nil
+		}
+
+		log.Warnf("round trip error: %s, dest peer: %#v", err, destPeer)
+	}
+	return nil, errors.New("no peers return available response")
 }
 
 func (rt *transport) processDumpHTTPContent(req *http.Request, resp *http.Response) {

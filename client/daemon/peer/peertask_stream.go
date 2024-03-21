@@ -45,6 +45,8 @@ type StreamTaskRequest struct {
 	Range *http.Range
 	// peer's id and must be global uniqueness
 	PeerID string
+	// option task id
+	TaskID string
 }
 
 // StreamTask represents a peer task with stream io for reading directly without once more disk io

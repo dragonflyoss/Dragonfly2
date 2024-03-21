@@ -42,6 +42,7 @@ import (
 
 	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
 	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
+	"d7y.io/dragonfly/v2/client/daemon/pex"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
@@ -86,6 +87,9 @@ type Proxy struct {
 
 	// peerTaskManager is the peer task manager
 	peerTaskManager peer.TaskManager
+
+	peerSearcher             pex.PeerSearchBroadcaster
+	redirectReplicaThreshold int64
 
 	// peerHost is the peer host info
 	peerHost *schedulerv1.PeerHost
@@ -264,13 +268,16 @@ func WithDumpHTTPContent(dump bool) Option {
 	}
 }
 
-// NewProxy returns a new transparent proxy from the given options
-func NewProxy(options ...Option) (*Proxy, error) {
-	return NewProxyWithOptions(options...)
+func WithPeerSearcher(peerSearcher pex.PeerSearchBroadcaster, redirectReplicaThreshold int64) Option {
+	return func(p *Proxy) *Proxy {
+		p.peerSearcher = peerSearcher
+		p.redirectReplicaThreshold = redirectReplicaThreshold
+		return p
+	}
 }
 
-// NewProxyWithOptions constructs a new instance of a Proxy with additional options.
-func NewProxyWithOptions(options ...Option) (*Proxy, error) {
+// NewProxy returns a new transparent proxy from the given options
+func NewProxy(options ...Option) (*Proxy, error) {
 	proxy := &Proxy{
 		directHandler: http.NewServeMux(),
 		tracer:        otel.Tracer("dfget-daemon-proxy"),
@@ -524,7 +531,7 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 }
 
 func (proxy *Proxy) newTransport(tlsConfig *tls.Config) http.RoundTripper {
-	rt, _ := transport.New(
+	opts := []transport.Option{
 		transport.WithPeerIDGenerator(proxy.peerIDGenerator),
 		transport.WithPeerTaskManager(proxy.peerTaskManager),
 		transport.WithTLS(tlsConfig),
@@ -534,13 +541,16 @@ func (proxy *Proxy) newTransport(tlsConfig *tls.Config) http.RoundTripper {
 		transport.WithDefaultApplication(proxy.defaultApplication),
 		transport.WithDefaultPriority(proxy.defaultPriority),
 		transport.WithDumpHTTPContent(proxy.dumpHTTPContent),
-	)
-	return rt
+	}
+	if proxy.peerSearcher != nil {
+		opts = append(opts, transport.WithPeerSearcher(proxy.peerSearcher, proxy.redirectReplicaThreshold))
+	}
+	return transport.New(opts...)
 }
 
 func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
 	reverseProxy := newReverseProxy(proxy.registry)
-	t, err := transport.New(
+	opts := []transport.Option{
 		transport.WithPeerIDGenerator(proxy.peerIDGenerator),
 		transport.WithPeerTaskManager(proxy.peerTaskManager),
 		transport.WithTLS(proxy.registry.TLSConfig()),
@@ -550,10 +560,11 @@ func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
 		transport.WithDefaultApplication(proxy.defaultApplication),
 		transport.WithDefaultPriority(proxy.defaultPriority),
 		transport.WithDumpHTTPContent(proxy.dumpHTTPContent),
-	)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to get transport: %v", err), http.StatusInternalServerError)
 	}
+	if proxy.peerSearcher != nil {
+		opts = append(opts, transport.WithPeerSearcher(proxy.peerSearcher, proxy.redirectReplicaThreshold))
+	}
+	t := transport.New(opts...)
 
 	reverseProxy.Transport = t
 	reverseProxy.ErrorHandler = func(rw http.ResponseWriter, req *http.Request, err error) {

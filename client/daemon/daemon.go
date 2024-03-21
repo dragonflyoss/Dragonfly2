@@ -318,7 +318,19 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	// register notify for health check
 	dynconfig.Register(rpcManager)
 
-	proxyManager, err := proxy.NewProxyManager(host, peerTaskManager, opt.Proxy)
+	var peerExchange pex.PeerExchangeServer
+	if opt.PeerExchange.Enable && opt.Scheduler.Manager.Enable && opt.Scheduler.Manager.SeedPeer.Enable {
+		peerExchange, err = pex.NewPeerExchange(
+			pex.NewSeedPeerMemberLister(dynconfig.GetSeedPeers),
+			opt.Download.GRPCDialTimeout, []grpc.DialOption{
+				grpc.WithTransportCredentials(grpcCredentials),
+			})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	proxyManager, err := proxy.NewProxyManager(host, peerTaskManager, peerExchange, opt.Proxy)
 	if err != nil {
 		return nil, err
 	}
@@ -339,18 +351,6 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	var objectStorage objectstorage.ObjectStorage
 	if opt.ObjectStorage.Enable {
 		objectStorage, err = objectstorage.New(opt, dynconfig, peerTaskManager, storageManager, d.LogDir())
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	var peerExchange pex.PeerExchangeServer
-	if opt.PeerExchange.Enable && opt.Scheduler.Manager.Enable && opt.Scheduler.Manager.SeedPeer.Enable {
-		peerExchange, err = pex.NewPeerExchange(
-			pex.NewSeedPeerMemberLister(dynconfig.GetSeedPeers),
-			opt.Download.GRPCDialTimeout, []grpc.DialOption{
-				grpc.WithTransportCredentials(grpcCredentials),
-			})
 		if err != nil {
 			return nil, err
 		}
