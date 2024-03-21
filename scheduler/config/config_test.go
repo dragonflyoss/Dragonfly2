@@ -732,7 +732,7 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Manager = mockManagerConfig
 				cfg.Database.Redis = mockRedisConfig
 				cfg.Job = mockJobConfig
-				cfg.Storage.BufferSize = 0
+				cfg.Storage.BufferSize = -1
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
