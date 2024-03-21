@@ -42,13 +42,13 @@ import (
 
 	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
 	errordetailsv1 "d7y.io/api/v2/pkg/apis/errordetails/v1"
-	"d7y.io/dragonfly/v2/client/daemon/pex"
-	"d7y.io/dragonfly/v2/pkg/idgen"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
+	"d7y.io/dragonfly/v2/client/daemon/pex"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 )
 
