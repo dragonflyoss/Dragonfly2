@@ -42,11 +42,11 @@ import (
 
 	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
 	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
-	"d7y.io/dragonfly/v2/client/daemon/pex"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
+	"d7y.io/dragonfly/v2/client/daemon/pex"
 	"d7y.io/dragonfly/v2/client/daemon/transport"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
