@@ -25,7 +25,7 @@ type peerExchangeDelegate struct {
 type MemberMeta struct {
 	HostID    string
 	IP        string
-	RpcPort   int32
+	RPCPort   int32
 	ProxyPort int32
 	IsLocal   bool
 }

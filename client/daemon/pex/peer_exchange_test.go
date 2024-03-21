@@ -310,7 +310,7 @@ func setupMember(assert *assert.Assertions, member *testMember, members []*membe
 	memberMeta := &MemberMeta{
 		HostID:    fmt.Sprintf("host-%d", member.idx),
 		IP:        "127.0.0.1",
-		RpcPort:   int32(member.rpcPort),
+		RPCPort:   int32(member.rpcPort),
 		ProxyPort: 0,
 	}
 
@@ -338,10 +338,14 @@ func setupMember(assert *assert.Assertions, member *testMember, members []*membe
 	dfdaemonv1.RegisterDaemonServer(s, ms)
 	go func() {
 		if err := s.Serve(listen); err != nil {
-			log.Fatalf("Server exited with error: %v", err)
+			log.Fatalf("grpc Serve exited with error: %v", err)
 		}
 	}()
-	go pex.Serve(memberMeta)
+	go func() {
+		if err := pex.Serve(memberMeta); err != nil {
+			log.Fatalf("pex Serve exited with error: %v", err)
+		}
+	}()
 	return pex.(*peerExchange)
 }
 

@@ -45,7 +45,7 @@ func TestTransport_RoundTrip(t *testing.T) {
 			return io.NopCloser(bytes.NewBuffer(testData)), nil, nil
 		},
 	)
-	rt, _ := New(
+	rt := New(
 		WithPeerIDGenerator(peer.NewPeerIDGenerator("127.0.0.1")),
 		WithPeerTaskManager(peerTaskManager),
 		WithCondition(func(r *http.Request) bool {

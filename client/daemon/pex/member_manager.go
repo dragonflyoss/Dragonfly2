@@ -29,6 +29,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	dfdaemonv1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
@@ -82,7 +83,7 @@ func (p *peerExchangeMemberManager) NotifyJoin(node *memberlist.Node) {
 		return
 	}
 	p.logger.Infof("member %s joined, ip: %s, rpc port: %d, proxy port: %d",
-		member.HostID, member.IP, member.RpcPort, member.ProxyPort)
+		member.HostID, member.IP, member.RPCPort, member.ProxyPort)
 	p.syncNode(member)
 }
 
@@ -175,7 +176,7 @@ func (p *peerExchangeMemberManager) connectMember(meta *MemberMeta) (dfdaemoncli
 
 	netAddr := &dfnet.NetAddr{
 		Type: dfnet.TCP,
-		Addr: fmt.Sprintf("%s:%d", formatIP, meta.RpcPort),
+		Addr: fmt.Sprintf("%s:%d", formatIP, meta.RPCPort),
 	}
 
 	dialOptions := append(p.GRPCDialOptions, grpc.WithBlock())

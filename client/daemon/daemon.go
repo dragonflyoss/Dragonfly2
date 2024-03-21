@@ -675,7 +675,7 @@ func (cd *clientDaemon) Serve() error {
 			err := cd.pexServer.Serve(&pex.MemberMeta{
 				HostID:    cd.schedPeerHost.Id,
 				IP:        ip.IPv4.String(), // TODO support ipv6
-				RpcPort:   cd.schedPeerHost.RpcPort,
+				RPCPort:   cd.schedPeerHost.RpcPort,
 				ProxyPort: int32(proxyPort),
 			})
 			if err != nil {
