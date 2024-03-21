@@ -42,7 +42,6 @@ import (
 	zapadapter "logur.dev/adapter/zap"
 
 	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
-	"d7y.io/dragonfly/v2/client/daemon/pex"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/announcer"
@@ -51,6 +50,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/networktopology"
 	"d7y.io/dragonfly/v2/client/daemon/objectstorage"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
+	"d7y.io/dragonfly/v2/client/daemon/pex"
 	"d7y.io/dragonfly/v2/client/daemon/proxy"
 	"d7y.io/dragonfly/v2/client/daemon/rpcserver"
 	"d7y.io/dragonfly/v2/client/daemon/storage"

@@ -33,10 +33,10 @@ import (
 	"gopkg.in/yaml.v3"
 
 	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
-	"d7y.io/dragonfly/v2/client/daemon/pex"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
+	"d7y.io/dragonfly/v2/client/daemon/pex"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
