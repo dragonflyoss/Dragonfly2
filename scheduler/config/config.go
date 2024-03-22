@@ -615,7 +615,7 @@ func (cfg *Config) Validate() error {
 		return errors.New("storage requires parameter maxBackups")
 	}
 
-	if cfg.Storage.BufferSize <= 0 {
+	if cfg.Storage.BufferSize < 0 {
 		return errors.New("storage requires parameter bufferSize")
 	}
 
