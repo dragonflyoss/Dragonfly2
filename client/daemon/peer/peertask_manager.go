@@ -352,10 +352,7 @@ func (ptm *peerTaskManager) StartStreamTask(ctx context.Context, req *StreamTask
 		IsMigrating: false,
 	}
 
-	var taskID string
-	if req.TaskID == "" {
-		taskID = idgen.TaskIDV1(req.URL, req.URLMeta)
-	}
+	taskID := req.TaskID()
 
 	if ptm.Multiplex {
 		// try breakpoint resume for task has range header

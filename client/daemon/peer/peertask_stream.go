@@ -27,6 +27,7 @@ import (
 
 	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
 	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
@@ -45,8 +46,14 @@ type StreamTaskRequest struct {
 	Range *http.Range
 	// peer's id and must be global uniqueness
 	PeerID string
-	// option task id
-	TaskID string
+	taskID string
+}
+
+func (req *StreamTaskRequest) TaskID() string {
+	if req.taskID == "" {
+		req.taskID = idgen.TaskIDV1(req.URL, req.URLMeta)
+	}
+	return req.taskID
 }
 
 // StreamTask represents a peer task with stream io for reading directly without once more disk io

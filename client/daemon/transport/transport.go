@@ -48,7 +48,6 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/pex"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/idgen"
 	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 )
 
@@ -243,7 +242,7 @@ func NeedUseDragonfly(req *http.Request) bool {
 // download uses dragonfly to download.
 // the ctx has span info from transport, did not use the ctx from request
 func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Response, error) {
-	url := req.URL.String()
+	reqURL := req.URL.String()
 	peerID := rt.peerIDGenerator.PeerID()
 
 	ctx, span := tracer.Start(ctx, config.SpanTransport, trace.WithSpanKind(trace.SpanKindClient))
@@ -297,11 +296,17 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 	meta.Application = application
 	meta.Priority = priority
 
-	taskID := idgen.TaskIDV1(url, meta)
+	streamTaskRequest := &peer.StreamTaskRequest{
+		URL:     reqURL,
+		URLMeta: meta,
+		Range:   rg,
+		PeerID:  peerID,
+	}
+	taskID := streamTaskRequest.TaskID()
 	log := logger.With(append(logKV, "task", taskID)...)
 
-	log.Infof("start download with url: %s", url)
-	log.Debugf("request url: %s, with header: %#v", url, req.Header)
+	log.Infof("start download with url: %s", reqURL)
+	log.Debugf("request url: %s, with header: %#v", reqURL, req.Header)
 
 	if rt.peerSearcher != nil {
 		tasks, found := rt.peerSearcher.FindPeersByTask(taskID)
@@ -309,7 +314,7 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 			task := tasks[0]
 			// check local peer
 			if task.IsLocal {
-				log.Infof("find available local peer: %s/%s", taskID, task.PeerID)
+				log.Infof("find available local peer: %s", task.PeerID)
 				goto local
 			}
 
@@ -328,16 +333,7 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 	}
 
 local:
-	body, attr, err := rt.peerTaskManager.StartStreamTask(
-		ctx,
-		&peer.StreamTaskRequest{
-			URL:     url,
-			URLMeta: meta,
-			Range:   rg,
-			PeerID:  peerID,
-			TaskID:  taskID,
-		},
-	)
+	body, attr, err := rt.peerTaskManager.StartStreamTask(ctx, streamTaskRequest)
 	if err != nil {
 		log.Errorf("start stream task error: %v", err)
 		// check underlay status code
@@ -435,7 +431,7 @@ func (rt *transport) proxyToPeers(log *logger.SugaredLoggerOnWith, req *http.Req
 		resp, err := roundTripper.RoundTrip(req)
 		if err == nil {
 			// TODO check response code
-			log.Infof("proxy traffic to peer %s on host %s", destPeer.PeerID, destPeer.HostID)
+			log.Infof("proxy traffic to peer %s on host %s, ip: %s", destPeer.PeerID, destPeer.HostID, destPeer.IP)
 			return resp, nil
 		}
 
