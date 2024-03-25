@@ -93,8 +93,8 @@ func (p *peerExchangeMemberManager) NotifyLeave(node *memberlist.Node) {
 		p.logger.Errorf("failed to extract node meta %s(%#v): %s", string(node.Meta), node, err)
 		return
 	}
-	p.logger.Infof("member %s leaved", member.HostID)
-	p.memberPool.UnRegister(member.HostID)
+	p.logger.Infof("member %s/%s leaved", member.IP, member.HostID)
+	p.memberPool.UnRegister(member)
 }
 
 func (p *peerExchangeMemberManager) NotifyUpdate(node *memberlist.Node) {
@@ -141,16 +141,16 @@ func (p *peerExchangeMemberManager) syncNode(member *MemberMeta) {
 		return grpcClient.Close()
 	}
 
-	err = p.memberPool.Register(member.HostID, NewPeerMetadataSendReceiveCloser(peerExchangeClient, closeFunc))
+	err = p.memberPool.Register(member, NewPeerMetadataSendReceiveCloser(peerExchangeClient, closeFunc))
 	if IsErrAlreadyExists(err) {
-		p.logger.Infof("node %s is already registered", member.HostID)
+		p.logger.Infof("node %s/%s is already registered", member.IP, member.HostID)
 		return
 	}
 
 	p.logger.Infof("connected to %s/%s, start receive peer metadata", member.IP, member.HostID)
 
 	go func() {
-		defer p.memberPool.UnRegister(member.HostID)
+		defer p.memberPool.UnRegister(member)
 		// TODO send exist peers
 
 		var data *dfdaemonv1.PeerExchangeData
@@ -158,8 +158,8 @@ func (p *peerExchangeMemberManager) syncNode(member *MemberMeta) {
 			data, err = peerExchangeClient.Recv()
 			if err != nil {
 				if !IsErrAlreadyExists(err) {
-					p.logger.Errorf("failed to receive peer metadata: %s, member: %s, local host id: %s",
-						err, member.HostID, p.localMember.HostID)
+					p.logger.Errorf("failed to receive peer metadata: %s, member: %s/%s, local host id: %s",
+						err, member.IP, member.HostID, p.localMember.HostID)
 				}
 				return
 			}

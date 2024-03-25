@@ -74,7 +74,7 @@ func (p *peerExchange) PeerExchange(exchangeServer dfdaemonv1.Daemon_PeerExchang
 		return status.Errorf(codes.InvalidArgument, "failed to extract peer info: %s", err)
 	}
 
-	err = p.PeerExchangeMember().Register(hostID,
+	err = p.PeerExchangeMember().Register(member,
 		NewPeerMetadataSendReceiveCloser(
 			exchangeServer,
 			func() error {
@@ -93,7 +93,7 @@ func (p *peerExchange) PeerExchange(exchangeServer dfdaemonv1.Daemon_PeerExchang
 		return status.Errorf(codes.Internal, "failed to register member: %s", err)
 	}
 
-	defer p.PeerExchangeMember().UnRegister(hostID)
+	defer p.PeerExchangeMember().UnRegister(member)
 
 	log.Infof("receive connection from %s/%s, start receive peer metadata", member.HostID, member.IP)
 

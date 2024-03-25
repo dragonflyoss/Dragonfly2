@@ -166,6 +166,7 @@ func (p *peerExchange) SearchPeer(task string) SearchPeerResult {
 
 	switch searchPeerResult.Type {
 	case SearchPeerResultTypeLocal:
+		// check replica threshold and reclaim local cache
 		if len(searchPeerResult.Peers) > p.config.replicaThreshold {
 			p.tryReclaim(task, searchPeerResult)
 		}
@@ -294,7 +295,7 @@ func (p *peerExchange) reSyncMember() {
 		}
 		for _, id := range del {
 			logger.Infof("%s re-sync del member: %s", p.localMember.HostID, id)
-			p.memberManager.memberPool.UnRegister(id)
+			p.memberManager.memberPool.UnRegisterByHostID(id)
 		}
 	}
 }

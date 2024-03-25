@@ -84,7 +84,9 @@ func (mp *memberPool) FindMember(hostID string) (*MemberMeta, error) {
 	return nil, ErrNotFound
 }
 
-func (mp *memberPool) Register(hostID string, sr PeerMetadataSendReceiveCloser) error {
+func (mp *memberPool) Register(member *MemberMeta, sr PeerMetadataSendReceiveCloser) error {
+	hostID := member.HostID
+
 	mp.lock.Lock()
 	defer mp.lock.Unlock()
 
@@ -93,11 +95,13 @@ func (mp *memberPool) Register(hostID string, sr PeerMetadataSendReceiveCloser) 
 	}
 
 	mp.sendReceivers[hostID] = sr
-	logger.Infof("%s registered in %s", hostID, mp.localMember.HostID)
+	logger.Infof("%s/%s registered", member.IP, hostID)
 	return nil
 }
 
-func (mp *memberPool) UnRegister(hostID string) {
+func (mp *memberPool) UnRegister(member *MemberMeta) {
+	hostID := member.HostID
+
 	mp.lock.Lock()
 	defer mp.lock.Unlock()
 
@@ -108,7 +112,22 @@ func (mp *memberPool) UnRegister(hostID string) {
 	}
 
 	delete(mp.sendReceivers, hostID)
-	logger.Infof("%s unregistered in %s", hostID, mp.localMember.HostID)
+	logger.Infof("%s/%s unregistered", member.IP, hostID)
+	_ = sr.Close()
+}
+
+func (mp *memberPool) UnRegisterByHostID(hostID string) {
+	mp.lock.Lock()
+	defer mp.lock.Unlock()
+
+	defer mp.peerPool.clean(hostID)
+	sr, ok := mp.sendReceivers[hostID]
+	if !ok {
+		return
+	}
+
+	delete(mp.sendReceivers, hostID)
+	logger.Infof("%s unregistered", hostID)
 	_ = sr.Close()
 }
 
@@ -130,7 +149,7 @@ func (mp *memberPool) broadcast(data *dfdaemon.PeerExchangeData) {
 		err := sr.Send(data)
 		if err != nil {
 			logger.Errorf("send peer metadata to %s error: %s, UnRegister member in background", hostID, err)
-			go mp.UnRegister(hostID)
+			go mp.UnRegisterByHostID(hostID)
 		}
 	}
 }

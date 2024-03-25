@@ -34,8 +34,9 @@ type PeerExchangeServer interface {
 
 type PeerExchangeMember interface {
 	FindMember(hostID string) (*MemberMeta, error)
-	Register(hostID string, sr PeerMetadataSendReceiveCloser) error
-	UnRegister(hostID string)
+	Register(member *MemberMeta, sr PeerMetadataSendReceiveCloser) error
+	UnRegister(member *MemberMeta)
+	UnRegisterByHostID(hostID string)
 }
 
 type PeerExchangeSynchronizer interface {

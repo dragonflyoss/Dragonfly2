@@ -104,8 +104,6 @@ func (p *peerPool) Search(task string) SearchPeerResult {
 		}
 	}
 
-	// TODO check replica threshold and reclaim local cache
-
 	return SearchPeerResult{
 		Type:  typ,
 		Peers: dp,
