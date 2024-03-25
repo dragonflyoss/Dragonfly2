@@ -319,7 +319,9 @@ func setupMember(assert *assert.Assertions, member *testMember, members []*membe
 	lister := NewStaticPeerMemberLister(members)
 
 	pex, err := NewPeerExchange(
-		nil,
+		func(task, peer string) error {
+			return nil
+		},
 		lister,
 		time.Minute,
 		[]grpc.DialOption{

@@ -64,6 +64,8 @@ type SearchPeerResult struct {
 	Peers []*DestPeer
 }
 
+type ReclaimFunc func(task, peer string) error
+
 type PeerSearchBroadcaster interface {
 	SearchPeer(task string) SearchPeerResult
 	BroadcastPeer(data *dfdaemonv1.PeerMetadata)

@@ -321,7 +321,13 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	var peerExchange pex.PeerExchangeServer
 	if opt.PeerExchange.Enable && opt.Scheduler.Manager.Enable && opt.Scheduler.Manager.SeedPeer.Enable {
 		peerExchange, err = pex.NewPeerExchange(
-			storageManager,
+			func(task, peer string) error {
+				return storageManager.UnregisterTask(context.Background(),
+					storage.CommonTaskRequest{
+						PeerID: peer,
+						TaskID: task,
+					})
+			},
 			pex.NewSeedPeerMemberLister(dynconfig.GetSeedPeers),
 			opt.Download.GRPCDialTimeout, []grpc.DialOption{
 				grpc.WithTransportCredentials(grpcCredentials),

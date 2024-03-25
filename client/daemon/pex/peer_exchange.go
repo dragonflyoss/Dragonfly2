@@ -17,7 +17,6 @@
 package pex
 
 import (
-	"context"
 	"fmt"
 	"math/rand"
 	"time"
@@ -27,21 +26,20 @@ import (
 	"google.golang.org/grpc"
 
 	dfdaemonv1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
-	"d7y.io/dragonfly/v2/client/daemon/storage"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
 )
 
 type peerExchange struct {
-	config         *peerExchangeConfig
-	memberConfig   *memberlist.Config
-	localMember    *MemberMeta
-	memberlist     *memberlist.Memberlist
-	memberManager  *peerExchangeMemberManager
-	storageManager storage.Manager
-	lister         InitialMemberLister
-	stopCh         chan struct{}
+	config        *peerExchangeConfig
+	memberConfig  *memberlist.Config
+	localMember   *MemberMeta
+	memberlist    *memberlist.Memberlist
+	memberManager *peerExchangeMemberManager
+	reclaim       ReclaimFunc
+	lister        InitialMemberLister
+	stopCh        chan struct{}
 }
 
 type peerExchangeConfig struct {
@@ -105,7 +103,7 @@ func WithReplicaThreshold(threshold int) func(*memberlist.Config, *peerExchangeC
 }
 
 func NewPeerExchange(
-	storageManager storage.Manager,
+	reclaim ReclaimFunc,
 	lister InitialMemberLister,
 	grpcDialTimeout time.Duration,
 	grpcDialOptions []grpc.DialOption, opts ...func(*memberlist.Config, *peerExchangeConfig)) (PeerExchangeServer, error) {
@@ -134,12 +132,12 @@ func NewPeerExchange(
 	logger.Infof("peer exchange replica threshold: %d", pexConfig.replicaThreshold)
 
 	pex := &peerExchange{
-		config:         pexConfig,
-		memberConfig:   memberConfig,
-		memberManager:  memberManager,
-		storageManager: storageManager,
-		lister:         lister,
-		stopCh:         make(chan struct{}),
+		config:        pexConfig,
+		memberConfig:  memberConfig,
+		memberManager: memberManager,
+		reclaim:       reclaim,
+		lister:        lister,
+		stopCh:        make(chan struct{}),
 	}
 	return pex, nil
 }
@@ -187,12 +185,7 @@ func (p *peerExchange) tryReclaim(task string, searchPeerResult SearchPeerResult
 		peer := searchPeerResult.Peers[0].PeerID
 		searchPeerResult.Type = SearchPeerResultTypeRemote
 		p.memberManager.logger.Debugf("task %s peer %s replica threshold reached, try to reclaim local cache", task, peer)
-		err := p.storageManager.UnregisterTask(
-			context.Background(),
-			storage.CommonTaskRequest{
-				PeerID: peer,
-				TaskID: task,
-			})
+		err := p.reclaim(task, peer)
 		if err != nil {
 			p.memberManager.logger.Debugf("task %s peer %s reclaim local cache error: %s", task, peer, err)
 		}

@@ -881,14 +881,6 @@ func (s *storageManager) TryGC() (bool, error) {
 		})
 		for _, task := range tasks {
 			task.MarkReclaim()
-			// broadcast delete peer event
-			if s.peerSearchBroadcaster != nil {
-				s.peerSearchBroadcaster.BroadcastPeer(&dfdaemonv1.PeerMetadata{
-					TaskId: task.TaskID,
-					PeerId: task.PeerID,
-					State:  dfdaemonv1.PeerState_Deleted,
-				})
-			}
 			markedTasks = append(markedTasks, PeerTaskMetadata{task.PeerID, task.TaskID})
 			logger.Infof("quota threshold reached, mark task %s/%s reclaimed, last access: %s, size: %s",
 				task.TaskID, task.PeerID, time.Unix(0, task.lastAccess.Load()).Format(time.RFC3339Nano),
@@ -900,6 +892,17 @@ func (s *storageManager) TryGC() (bool, error) {
 		}
 		if bytesExceed > 0 {
 			logger.Warnf("no enough tasks to gc, remind %d bytes", bytesExceed)
+		}
+	}
+
+	// broadcast delete peer event
+	if s.peerSearchBroadcaster != nil {
+		for _, task := range markedTasks {
+			s.peerSearchBroadcaster.BroadcastPeer(&dfdaemonv1.PeerMetadata{
+				TaskId: task.TaskID,
+				PeerId: task.PeerID,
+				State:  dfdaemonv1.PeerState_Deleted,
+			})
 		}
 	}
 
@@ -950,6 +953,15 @@ func (s *storageManager) deleteTask(meta PeerTaskMetadata) error {
 	if !ok {
 		logger.Warnf("deleteTask: task meta not found: %v", meta)
 		return nil
+	}
+
+	// broadcast delete peer event
+	if s.peerSearchBroadcaster != nil {
+		s.peerSearchBroadcaster.BroadcastPeer(&dfdaemonv1.PeerMetadata{
+			TaskId: meta.TaskID,
+			PeerId: meta.PeerID,
+			State:  dfdaemonv1.PeerState_Deleted,
+		})
 	}
 
 	logger.Debugf("deleteTask: deleting task: %v", meta)
