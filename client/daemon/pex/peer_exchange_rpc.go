@@ -95,7 +95,7 @@ func (p *peerExchange) PeerExchange(exchangeServer dfdaemonv1.Daemon_PeerExchang
 
 	defer p.PeerExchangeMember().UnRegister(hostID)
 
-	logger.Infof("receive connection from %s, %s start receive peer metadata", member.HostID, p.localMember.HostID)
+	log.Infof("receive connection from %s/%s, start receive peer metadata", member.HostID, member.IP)
 
 	// TODO send exist peers
 

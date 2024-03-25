@@ -147,7 +147,7 @@ func (p *peerExchangeMemberManager) syncNode(member *MemberMeta) {
 		return
 	}
 
-	p.logger.Infof("connected to %s, %s start receive peer metadata", member.HostID, p.localMember.HostID)
+	p.logger.Infof("connected to %s/%s, start receive peer metadata", member.IP, member.HostID)
 
 	go func() {
 		defer p.memberPool.UnRegister(member.HostID)
