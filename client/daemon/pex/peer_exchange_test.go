@@ -206,28 +206,29 @@ func TestPeerExchange(t *testing.T) {
 			// 3. verify peers
 			for _, peer := range peers {
 				for _, pex := range pexServers {
-					peersByTask, ok := pex.PeerSearchBroadcaster().FindPeersByTask(peer.TaskId)
+					searchPeerResult := pex.PeerSearchBroadcaster().SearchPeer(peer.TaskId)
 					// check peer state
 					switch peer.State {
 					case dfdaemonv1.PeerState_Running, dfdaemonv1.PeerState_Success:
-						assert.True(ok, fmt.Sprintf("%s should have task %s", pex.localMember.HostID, peer.TaskId))
+						assert.Truef(searchPeerResult.Type != SearchPeerResultTypeNotFound,
+							"%s should have task %s", pex.localMember.HostID, peer.TaskId)
 						// other members + local member
-						assert.Equal(memberCount, len(peersByTask),
-							fmt.Sprintf("%s should have %d peers for task %s", pex.localMember.HostID, memberCount, peer.TaskId))
+						assert.Equalf(memberCount, len(searchPeerResult.Peers),
+							"%s should have %d peers for task %s", pex.localMember.HostID, memberCount, peer.TaskId)
 
 						// check all peers is in other members
-						for _, realPeer := range peersByTask {
+						for _, realPeer := range searchPeerResult.Peers {
 							if realPeer.IsLocal {
 								continue
 							}
 							var found bool
 							found = isPeerExistInOtherPEXServers(pexServers, pex.localMember.HostID, peer, realPeer)
-							assert.True(found, fmt.Sprintf("peer %s/%s in %s should be found in other members", peer.TaskId, realPeer.PeerID, pex.localMember.HostID))
+							assert.Truef(found, "peer %s/%s in %s should be found in other members", peer.TaskId, realPeer.PeerID, pex.localMember.HostID)
 						}
 					case dfdaemonv1.PeerState_Failed, dfdaemonv1.PeerState_Deleted:
-						assert.False(ok, fmt.Sprintf("%s should not have task %s", pex.localMember.HostID, peer.TaskId))
-						assert.Equal(0, len(peersByTask),
-							fmt.Sprintf("%s should not have any peers for task %s", pex.localMember.HostID, peer.TaskId))
+						assert.Truef(searchPeerResult.Type == SearchPeerResultTypeNotFound, "%s should not have task %s", pex.localMember.HostID, peer.TaskId)
+						assert.Equalf(0, len(searchPeerResult.Peers),
+							"%s should not have any peers for task %s", pex.localMember.HostID, peer.TaskId)
 					default:
 
 					}

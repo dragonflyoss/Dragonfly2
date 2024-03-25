@@ -309,26 +309,23 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 	log.Debugf("request url: %s, with header: %#v", reqURL, req.Header)
 
 	if rt.peerSearcher != nil {
-		tasks, found := rt.peerSearcher.FindPeersByTask(taskID)
-		if found {
-			task := tasks[0]
-			// check local peer
-			if task.IsLocal {
-				log.Infof("find available local peer: %s", task.PeerID)
-				goto local
-			}
-
-			// check threshold
-			if len(tasks) < rt.redirectReplicaThreshold {
+		searchPeerResult := rt.peerSearcher.SearchPeer(taskID)
+		switch searchPeerResult.Type {
+		case pex.SearchPeerResultTypeLocal, pex.SearchPeerResultTypeNotFound:
+			goto local
+		case pex.SearchPeerResultTypeRemote:
+			// check threshold first
+			// TODO move this logic to search peer
+			if len(searchPeerResult.Peers) < rt.redirectReplicaThreshold {
 				log.Infof("redirect replica threshold not reached, try to make replica from other peers")
 				goto local
 			}
 
-			resp, err := rt.proxyToPeers(log, req, tasks)
+			resp, err := rt.proxyToPeers(log, req, searchPeerResult.Peers)
 			if err == nil {
 				return resp, nil
 			}
-			log.Warnf("proxy to other peers error: %s, fallback to download", err)
+			log.Warnf("proxy to other peers error: %s, fallback to local", err)
 		}
 	}
 

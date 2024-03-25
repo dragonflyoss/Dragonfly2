@@ -135,8 +135,8 @@ func (p *peerExchange) PeerSearchBroadcaster() PeerSearchBroadcaster {
 	return p
 }
 
-func (p *peerExchange) FindPeersByTask(task string) ([]*DestPeer, bool) {
-	return p.memberManager.peerPool.Find(task)
+func (p *peerExchange) SearchPeer(task string) SearchPeerResult {
+	return p.memberManager.peerPool.Search(task)
 }
 
 func (p *peerExchange) BroadcastPeer(data *dfdaemonv1.PeerMetadata) {

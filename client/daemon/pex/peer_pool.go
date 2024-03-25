@@ -80,23 +80,36 @@ func (p *peerPool) sync(nodeMeta *MemberMeta, peer *dfdaemonv1.PeerMetadata) {
 	}
 }
 
-func (p *peerPool) Find(task string) ([]*DestPeer, bool) {
+func (p *peerPool) Search(task string) SearchPeerResult {
 	p.lock.RLock()
 	defer p.lock.RUnlock()
 	peers, ok := p.tasks[task]
-	if !ok {
-		return nil, false
+	if !ok || len(peers) == 0 {
+		return SearchPeerResult{
+			Type: SearchPeerResultTypeNotFound,
+		}
 	}
-	var dp []*DestPeer
+
+	var (
+		dp  []*DestPeer
+		typ SearchPeerResultType = SearchPeerResultTypeRemote
+	)
 	for _, peer := range peers {
 		// put local peer first
 		if peer.IsLocal {
+			typ = SearchPeerResultTypeLocal
 			dp = append([]*DestPeer{peer}, dp...)
 		} else {
 			dp = append(dp, peer)
 		}
 	}
-	return dp, ok
+
+	// TODO check replica threshold and reclaim local cache
+
+	return SearchPeerResult{
+		Type:  typ,
+		Peers: dp,
+	}
 }
 
 func (p *peerPool) clean(hostID string) {

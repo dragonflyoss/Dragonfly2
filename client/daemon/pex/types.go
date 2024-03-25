@@ -51,8 +51,21 @@ type DestPeer struct {
 	PeerID string
 }
 
+type SearchPeerResultType int
+
+const (
+	SearchPeerResultTypeLocal = iota
+	SearchPeerResultTypeRemote
+	SearchPeerResultTypeNotFound
+)
+
+type SearchPeerResult struct {
+	Type  SearchPeerResultType
+	Peers []*DestPeer
+}
+
 type PeerSearchBroadcaster interface {
-	FindPeersByTask(task string) ([]*DestPeer, bool)
+	SearchPeer(task string) SearchPeerResult
 	BroadcastPeer(data *dfdaemonv1.PeerMetadata)
 	BroadcastPeers(data *dfdaemonv1.PeerExchangeData)
 }
