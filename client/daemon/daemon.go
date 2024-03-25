@@ -310,14 +310,6 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		peerServerOption = append(peerServerOption, grpc.Creds(tlsCredentials))
 	}
 
-	rpcManager, err := rpcserver.New(host, peerTaskManager, storageManager, schedulerClient,
-		opt.Download.RecursiveConcurrent.GoroutineCount, opt.Download.CacheRecursiveMetadata, downloadServerOption, peerServerOption)
-	if err != nil {
-		return nil, err
-	}
-	// register notify for health check
-	dynconfig.Register(rpcManager)
-
 	var peerExchange pex.PeerExchangeServer
 	if opt.PeerExchange.Enable && opt.Scheduler.Manager.Enable && opt.Scheduler.Manager.SeedPeer.Enable {
 		peerExchange, err = pex.NewPeerExchange(
@@ -339,6 +331,14 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			return nil, err
 		}
 	}
+
+	rpcManager, err := rpcserver.New(host, peerTaskManager, storageManager, peerExchange.PeerExchangeRPC(), schedulerClient,
+		opt.Download.RecursiveConcurrent.GoroutineCount, opt.Download.CacheRecursiveMetadata, downloadServerOption, peerServerOption)
+	if err != nil {
+		return nil, err
+	}
+	// register notify for health check
+	dynconfig.Register(rpcManager)
 
 	proxyManager, err := proxy.NewProxyManager(host, peerTaskManager, peerExchange, opt.Proxy)
 	if err != nil {

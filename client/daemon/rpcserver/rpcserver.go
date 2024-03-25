@@ -84,11 +84,8 @@ type server struct {
 	peerHost        *schedulerv1.PeerHost
 	peerTaskManager peer.TaskManager
 	storageManager  storage.Manager
+	peerExchanger   pex.PeerExchangeRPC
 	schedulerClient schedulerclient.V1
-
-	peerExchangeMember pex.PeerExchangeMember
-	peerExchangeSync   pex.PeerExchangeSynchronizer
-	peerExchanger      pex.PeerExchangeRPC
 
 	healthServer   *health.Server
 	downloadServer *grpc.Server
@@ -106,13 +103,14 @@ func init() {
 }
 
 func New(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskManager,
-	storageManager storage.Manager, schedulerClient schedulerclient.V1, recursiveConcurrent int, cacheRecursiveMetadata time.Duration,
+	storageManager storage.Manager, peerExchanger pex.PeerExchangeRPC, schedulerClient schedulerclient.V1, recursiveConcurrent int, cacheRecursiveMetadata time.Duration,
 	downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Server, error) {
 	s := &server{
 		KeepAlive:       util.NewKeepAlive("rpc server"),
 		peerHost:        peerHost,
 		peerTaskManager: peerTaskManager,
 		storageManager:  storageManager,
+		peerExchanger:   peerExchanger,
 		schedulerClient: schedulerClient,
 
 		recursiveConcurrent:    recursiveConcurrent,
