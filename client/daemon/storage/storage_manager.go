@@ -625,7 +625,11 @@ func (s *storageManager) cleanIndex(taskID, peerID string) {
 		}
 		remain = append(remain, t)
 	}
-	s.indexTask2PeerTask[taskID] = remain
+	if len(remain) > 0 {
+		s.indexTask2PeerTask[taskID] = remain
+	} else {
+		delete(s.indexTask2PeerTask, taskID)
+	}
 }
 
 func (s *storageManager) cleanSubIndex(taskID, peerID string) {
@@ -644,7 +648,11 @@ func (s *storageManager) cleanSubIndex(taskID, peerID string) {
 		}
 		remain = append(remain, t)
 	}
-	s.subIndexTask2PeerTask[taskID] = remain
+	if len(remain) > 0 {
+		s.subIndexTask2PeerTask[taskID] = remain
+	} else {
+		delete(s.subIndexTask2PeerTask, taskID)
+	}
 }
 
 func (s *storageManager) ValidateDigest(req *PeerTaskMetadata) error {
