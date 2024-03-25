@@ -311,7 +311,10 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		peerServerOption = append(peerServerOption, grpc.Creds(tlsCredentials))
 	}
 
-	var peerExchange pex.PeerExchangeServer
+	var (
+		peerExchange pex.PeerExchangeServer
+		pexRPC       pex.PeerExchangeRPC
+	)
 	if opt.PeerExchange.Enable && opt.Scheduler.Manager.Enable && opt.Scheduler.Manager.SeedPeer.Enable {
 		peerExchange, err = pex.NewPeerExchange(
 			func(task, peer string) error {
@@ -340,7 +343,11 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		}
 	}
 
-	rpcManager, err := rpcserver.New(host, peerTaskManager, storageManager, peerExchange.PeerExchangeRPC(), schedulerClient,
+	if peerExchange != nil {
+		pexRPC = peerExchange.PeerExchangeRPC()
+	}
+
+	rpcManager, err := rpcserver.New(host, peerTaskManager, storageManager, pexRPC, schedulerClient,
 		opt.Download.RecursiveConcurrent.GoroutineCount, opt.Download.CacheRecursiveMetadata, downloadServerOption, peerServerOption)
 	if err != nil {
 		return nil, err
