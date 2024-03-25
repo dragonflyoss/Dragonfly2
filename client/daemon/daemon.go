@@ -268,52 +268,10 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		return nil, err
 	}
 
-	peerTaskManagerOption := &peer.TaskManagerOption{
-		TaskOption: peer.TaskOption{
-			PeerHost:        host,
-			SchedulerOption: opt.Scheduler,
-			PieceManager:    pieceManager,
-			StorageManager:  storageManager,
-			WatchdogTimeout: opt.Download.WatchdogTimeout,
-			CalculateDigest: opt.Download.CalculateDigest,
-			GRPCCredentials: grpcCredentials,
-			GRPCDialTimeout: opt.Download.GRPCDialTimeout,
-		},
-		SchedulerClient:   schedulerClient,
-		PerPeerRateLimit:  opt.Download.PerPeerRateLimit.Limit,
-		TotalRateLimit:    opt.Download.TotalRateLimit.Limit,
-		TrafficShaperType: opt.Download.TrafficShaperType,
-		Multiplex:         opt.Storage.Multiplex,
-		Prefetch:          opt.Download.Prefetch,
-		GetPiecesMaxRetry: opt.Download.GetPiecesMaxRetry,
-		SplitRunningTasks: opt.Download.SplitRunningTasks,
-	}
-	peerTaskManager, err := peer.NewPeerTaskManager(peerTaskManagerOption)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO(jim): more server options
-	var downloadServerOption []grpc.ServerOption
-	if !opt.Download.DownloadGRPC.Security.Insecure || certifyClient != nil {
-		tlsCredentials, err := loadLegacyGPRCTLSCredentials(opt.Download.DownloadGRPC.Security, certifyClient, opt.Security)
-		if err != nil {
-			return nil, err
-		}
-		downloadServerOption = append(downloadServerOption, grpc.Creds(tlsCredentials))
-	}
-	var peerServerOption []grpc.ServerOption
-	if !opt.Download.PeerGRPC.Security.Insecure || certifyClient != nil {
-		tlsCredentials, err := loadLegacyGPRCTLSCredentials(opt.Download.PeerGRPC.Security, certifyClient, opt.Security)
-		if err != nil {
-			return nil, err
-		}
-		peerServerOption = append(peerServerOption, grpc.Creds(tlsCredentials))
-	}
-
 	var (
-		peerExchange pex.PeerExchangeServer
-		pexRPC       pex.PeerExchangeRPC
+		peerExchange          pex.PeerExchangeServer
+		peerExchangeRPC       pex.PeerExchangeRPC
+		peerSearchBroadcaster pex.PeerSearchBroadcaster
 	)
 	if opt.PeerExchange.Enable && opt.Scheduler.Manager.Enable && opt.Scheduler.Manager.SeedPeer.Enable {
 		peerExchange, err = pex.NewPeerExchange(
@@ -344,10 +302,55 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	}
 
 	if peerExchange != nil {
-		pexRPC = peerExchange.PeerExchangeRPC()
+		peerExchangeRPC = peerExchange.PeerExchangeRPC()
+		peerSearchBroadcaster = peerExchange.PeerSearchBroadcaster()
 	}
 
-	rpcManager, err := rpcserver.New(host, peerTaskManager, storageManager, pexRPC, schedulerClient,
+	peerTaskManagerOption := &peer.TaskManagerOption{
+		TaskOption: peer.TaskOption{
+			PeerHost:        host,
+			SchedulerOption: opt.Scheduler,
+			PieceManager:    pieceManager,
+			StorageManager:  storageManager,
+			WatchdogTimeout: opt.Download.WatchdogTimeout,
+			CalculateDigest: opt.Download.CalculateDigest,
+			GRPCCredentials: grpcCredentials,
+			GRPCDialTimeout: opt.Download.GRPCDialTimeout,
+		},
+		SchedulerClient:       schedulerClient,
+		PerPeerRateLimit:      opt.Download.PerPeerRateLimit.Limit,
+		TotalRateLimit:        opt.Download.TotalRateLimit.Limit,
+		TrafficShaperType:     opt.Download.TrafficShaperType,
+		Multiplex:             opt.Storage.Multiplex,
+		Prefetch:              opt.Download.Prefetch,
+		GetPiecesMaxRetry:     opt.Download.GetPiecesMaxRetry,
+		SplitRunningTasks:     opt.Download.SplitRunningTasks,
+		PeerSearchBroadcaster: peerSearchBroadcaster,
+	}
+	peerTaskManager, err := peer.NewPeerTaskManager(peerTaskManagerOption)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO(jim): more server options
+	var downloadServerOption []grpc.ServerOption
+	if !opt.Download.DownloadGRPC.Security.Insecure || certifyClient != nil {
+		tlsCredentials, err := loadLegacyGPRCTLSCredentials(opt.Download.DownloadGRPC.Security, certifyClient, opt.Security)
+		if err != nil {
+			return nil, err
+		}
+		downloadServerOption = append(downloadServerOption, grpc.Creds(tlsCredentials))
+	}
+	var peerServerOption []grpc.ServerOption
+	if !opt.Download.PeerGRPC.Security.Insecure || certifyClient != nil {
+		tlsCredentials, err := loadLegacyGPRCTLSCredentials(opt.Download.PeerGRPC.Security, certifyClient, opt.Security)
+		if err != nil {
+			return nil, err
+		}
+		peerServerOption = append(peerServerOption, grpc.Creds(tlsCredentials))
+	}
+
+	rpcManager, err := rpcserver.New(host, peerTaskManager, storageManager, peerExchangeRPC, schedulerClient,
 		opt.Download.RecursiveConcurrent.GoroutineCount, opt.Download.CacheRecursiveMetadata, downloadServerOption, peerServerOption)
 	if err != nil {
 		return nil, err
