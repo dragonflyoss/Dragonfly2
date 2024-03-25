@@ -41,6 +41,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	zapadapter "logur.dev/adapter/zap"
 
+	managerv1 "d7y.io/api/v2/pkg/apis/manager/v1"
 	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 
 	"d7y.io/dragonfly/v2/client/config"
@@ -320,7 +321,14 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 						TaskID: task,
 					})
 			},
-			pex.NewSeedPeerMemberLister(dynconfig.GetSeedPeers),
+			pex.NewSeedPeerMemberLister(func() ([]*managerv1.SeedPeer, error) {
+				peers, err := dynconfig.GetSeedPeers()
+				if err == nil {
+					return peers, nil
+				}
+				_ = dynconfig.Refresh()
+				return dynconfig.GetSeedPeers()
+			}),
 			opt.Download.GRPCDialTimeout, []grpc.DialOption{
 				grpc.WithTransportCredentials(grpcCredentials),
 			},
