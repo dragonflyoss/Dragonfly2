@@ -17,7 +17,9 @@
 package pex
 
 import (
+	"context"
 	"fmt"
+	"math/rand"
 	"time"
 
 	"github.com/hashicorp/memberlist"
@@ -25,24 +27,27 @@ import (
 	"google.golang.org/grpc"
 
 	dfdaemonv1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
+	"d7y.io/dragonfly/v2/client/daemon/storage"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
 )
 
 type peerExchange struct {
-	config        *peerExchangeConfig
-	memberConfig  *memberlist.Config
-	localMember   *MemberMeta
-	memberlist    *memberlist.Memberlist
-	memberManager *peerExchangeMemberManager
-	lister        InitialMemberLister
-	stopCh        chan struct{}
+	config         *peerExchangeConfig
+	memberConfig   *memberlist.Config
+	localMember    *MemberMeta
+	memberlist     *memberlist.Memberlist
+	memberManager  *peerExchangeMemberManager
+	storageManager storage.Manager
+	lister         InitialMemberLister
+	stopCh         chan struct{}
 }
 
 type peerExchangeConfig struct {
 	initialRetryInterval time.Duration
-	reSyncRetryInterval  time.Duration
+	reSyncInterval       time.Duration
+	replicaThreshold     int
 }
 
 func WithName(name string) func(*memberlist.Config, *peerExchangeConfig) {
@@ -77,17 +82,31 @@ func WithAdvertisePort(advertisePort int) func(*memberlist.Config, *peerExchange
 
 func WithInitialRetryInterval(interval time.Duration) func(*memberlist.Config, *peerExchangeConfig) {
 	return func(memberConfig *memberlist.Config, pexConfig *peerExchangeConfig) {
-		pexConfig.initialRetryInterval = interval
+		if interval > 0 {
+			pexConfig.initialRetryInterval = interval
+		}
 	}
 }
 
 func WithReSyncInterval(interval time.Duration) func(*memberlist.Config, *peerExchangeConfig) {
 	return func(memberConfig *memberlist.Config, pexConfig *peerExchangeConfig) {
-		pexConfig.reSyncRetryInterval = interval
+		if interval > 0 {
+			pexConfig.reSyncInterval = interval
+		}
 	}
 }
 
-func NewPeerExchange(lister InitialMemberLister,
+func WithReplicaThreshold(threshold int) func(*memberlist.Config, *peerExchangeConfig) {
+	return func(memberConfig *memberlist.Config, pexConfig *peerExchangeConfig) {
+		if threshold > 0 {
+			pexConfig.replicaThreshold = threshold
+		}
+	}
+}
+
+func NewPeerExchange(
+	storageManager storage.Manager,
+	lister InitialMemberLister,
 	grpcDialTimeout time.Duration,
 	grpcDialOptions []grpc.DialOption, opts ...func(*memberlist.Config, *peerExchangeConfig)) (PeerExchangeServer, error) {
 	memberManager := newPeerExchangeMemberManager(grpcDialTimeout, grpcDialOptions)
@@ -97,7 +116,8 @@ func NewPeerExchange(lister InitialMemberLister,
 
 	pexConfig := &peerExchangeConfig{
 		initialRetryInterval: 10 * time.Second,
-		reSyncRetryInterval:  time.Minute,
+		reSyncInterval:       time.Minute,
+		replicaThreshold:     2,
 	}
 
 	for _, opt := range opts {
@@ -109,12 +129,17 @@ func NewPeerExchange(lister InitialMemberLister,
 		memberConfig.AdvertiseAddr = ip.IPv4.String()
 	}
 
+	logger.Infof("peer exchange initial retry interval: %s", pexConfig.initialRetryInterval)
+	logger.Infof("peer exchange re-sync interval: %s", pexConfig.reSyncInterval)
+	logger.Infof("peer exchange replica threshold: %d", pexConfig.replicaThreshold)
+
 	pex := &peerExchange{
-		config:        pexConfig,
-		memberConfig:  memberConfig,
-		memberManager: memberManager,
-		lister:        lister,
-		stopCh:        make(chan struct{}),
+		config:         pexConfig,
+		memberConfig:   memberConfig,
+		memberManager:  memberManager,
+		storageManager: storageManager,
+		lister:         lister,
+		stopCh:         make(chan struct{}),
 	}
 	return pex, nil
 }
@@ -136,7 +161,42 @@ func (p *peerExchange) PeerSearchBroadcaster() PeerSearchBroadcaster {
 }
 
 func (p *peerExchange) SearchPeer(task string) SearchPeerResult {
-	return p.memberManager.peerPool.Search(task)
+	searchPeerResult := p.memberManager.peerPool.Search(task)
+	if p.config.replicaThreshold <= 0 || len(searchPeerResult.Peers) == 0 {
+		return searchPeerResult
+	}
+
+	switch searchPeerResult.Type {
+	case SearchPeerResultTypeLocal:
+		if len(searchPeerResult.Peers) > p.config.replicaThreshold {
+			p.tryReclaim(task, searchPeerResult)
+		}
+	case SearchPeerResultTypeRemote:
+		if len(searchPeerResult.Peers) < p.config.replicaThreshold {
+			searchPeerResult.Type = SearchPeerResultTypeLocal
+			p.memberManager.logger.Debugf("task %s redirect replica threshold not reached, try to make replica from other peers", task)
+		}
+	}
+	return searchPeerResult
+}
+
+func (p *peerExchange) tryReclaim(task string, searchPeerResult SearchPeerResult) {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	// reclaim with 1% probability for shrink double reclaim with other members
+	if r.Int31n(100) == 0 {
+		peer := searchPeerResult.Peers[0].PeerID
+		searchPeerResult.Type = SearchPeerResultTypeRemote
+		p.memberManager.logger.Debugf("task %s peer %s replica threshold reached, try to reclaim local cache", task, peer)
+		err := p.storageManager.UnregisterTask(
+			context.Background(),
+			storage.CommonTaskRequest{
+				PeerID: peer,
+				TaskID: task,
+			})
+		if err != nil {
+			p.memberManager.logger.Debugf("task %s peer %s reclaim local cache error: %s", task, peer, err)
+		}
+	}
 }
 
 func (p *peerExchange) BroadcastPeer(data *dfdaemonv1.PeerMetadata) {
@@ -215,7 +275,7 @@ func (p *peerExchange) Stop() error {
 
 func (p *peerExchange) reSyncMember() {
 	for {
-		time.Sleep(p.config.reSyncRetryInterval)
+		time.Sleep(p.config.reSyncInterval)
 		var members []*MemberMeta
 		for _, m := range p.memberlist.Members() {
 			meta, err := ExtractNodeMeta(m)

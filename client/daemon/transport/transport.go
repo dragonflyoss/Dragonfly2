@@ -72,8 +72,7 @@ type transport struct {
 	// peerTaskManager is the peer task manager
 	peerTaskManager peer.TaskManager
 
-	peerSearcher             pex.PeerSearchBroadcaster
-	redirectReplicaThreshold int
+	peerSearcher pex.PeerSearchBroadcaster
 
 	// defaultFilter is used when http request without X-Dragonfly-Filter Header
 	defaultFilter string
@@ -168,10 +167,9 @@ func WithDumpHTTPContent(b bool) Option {
 	}
 }
 
-func WithPeerSearcher(peerSearcher pex.PeerSearchBroadcaster, redirectReplicaThreshold int64) Option {
+func WithPeerSearcher(peerSearcher pex.PeerSearchBroadcaster) Option {
 	return func(rt *transport) *transport {
 		rt.peerSearcher = peerSearcher
-		rt.redirectReplicaThreshold = int(redirectReplicaThreshold)
 		return rt
 	}
 }
@@ -314,13 +312,6 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 		case pex.SearchPeerResultTypeLocal, pex.SearchPeerResultTypeNotFound:
 			goto local
 		case pex.SearchPeerResultTypeRemote:
-			// check threshold first
-			// TODO move this logic to search peer
-			if len(searchPeerResult.Peers) < rt.redirectReplicaThreshold {
-				log.Infof("redirect replica threshold not reached, try to make replica from other peers")
-				goto local
-			}
-
 			resp, err := rt.proxyToPeers(log, req, searchPeerResult.Peers)
 			if err == nil {
 				return resp, nil
@@ -399,8 +390,8 @@ local:
 func (rt *transport) proxyToPeers(log *logger.SugaredLoggerOnWith, req *http.Request, peers []*pex.DestPeer) (*http.Response, error) {
 	// shuffle peers
 	if len(peers) > 1 {
-		rand.New(rand.NewSource(time.Now().UnixNano()))
-		rand.Shuffle(len(peers), func(i, j int) { peers[i], peers[j] = peers[j], peers[i] })
+		r := rand.New(rand.NewSource(time.Now().UnixNano()))
+		r.Shuffle(len(peers), func(i, j int) { peers[i], peers[j] = peers[j], peers[i] })
 	}
 
 	for _, destPeer := range peers {

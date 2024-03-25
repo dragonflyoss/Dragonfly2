@@ -91,9 +91,8 @@ func NewProxyManager(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskMa
 		options = append(options, WithRegistryMirror(registry))
 	}
 
-	if peerExchange != nil && proxyOption.RedirectReplicaThreshold > 0 {
-		logger.Infof("redirect replica threshold: %d", proxyOption.RedirectReplicaThreshold)
-		options = append(options, WithPeerSearcher(peerExchange.PeerSearchBroadcaster(), proxyOption.RedirectReplicaThreshold))
+	if peerExchange != nil {
+		options = append(options, WithPeerSearcher(peerExchange.PeerSearchBroadcaster()))
 	}
 
 	if len(proxyRules) > 0 {

@@ -376,9 +376,6 @@ type ProxyOption struct {
 	DumpHTTPContent    bool              `mapstructure:"dumpHTTPContent" yaml:"dumpHTTPContent"`
 	// ExtraRegistryMirrors add more mirrors for different ports
 	ExtraRegistryMirrors []*RegistryMirror `mapstructure:"extraRegistryMirrors" yaml:"extraRegistryMirrors"`
-	// RedirectReplicaThreshold is used for auto redirecting traffic when the replicas of single task exists is bigger then threshold
-	// for using this option, must enable PeerExchange feature
-	RedirectReplicaThreshold int64 `mapstructure:"redirectReplicaThreshold" yaml:"redirectReplicaThreshold"`
 }
 
 func (p *ProxyOption) UnmarshalJSON(b []byte) error {
@@ -972,8 +969,10 @@ type ProbeOption struct {
 type PeerExchangeOption struct {
 	// Enable peer exchange service.
 	Enable bool `mapstructure:"enable" yaml:"enable"`
-	// InitialInterval is the initial interval when start and join gossip.
+	// InitialInterval is the initial retry interval when start and join gossip.
 	InitialInterval time.Duration `mapstructure:"initialInterval" yaml:"initialInterval"`
 	// ReSyncInterval is the re-sync interval for check running gossip members.
 	ReSyncInterval time.Duration `mapstructure:"reSyncInterval" yaml:"reSyncInterval"`
+	// ReplicaThreshold is used for keeping replicas in all peers is not bigger than threshold to save storage
+	ReplicaThreshold int `mapstructure:"replicaThreshold" yaml:"replicaThreshold"`
 }

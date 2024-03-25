@@ -318,7 +318,9 @@ func setupMember(assert *assert.Assertions, member *testMember, members []*membe
 
 	lister := NewStaticPeerMemberLister(members)
 
-	pex, err := NewPeerExchange(lister,
+	pex, err := NewPeerExchange(
+		nil,
+		lister,
 		time.Minute,
 		[]grpc.DialOption{
 			grpc.WithTransportCredentials(insecure.NewCredentials()),

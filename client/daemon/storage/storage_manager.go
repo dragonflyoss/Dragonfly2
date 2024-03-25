@@ -948,7 +948,7 @@ func (s *storageManager) TryGC() (bool, error) {
 func (s *storageManager) deleteTask(meta PeerTaskMetadata) error {
 	task, ok := s.LoadAndDeleteTask(meta)
 	if !ok {
-		logger.Infof("deleteTask: task meta not found: %v", meta)
+		logger.Warnf("deleteTask: task meta not found: %v", meta)
 		return nil
 	}
 

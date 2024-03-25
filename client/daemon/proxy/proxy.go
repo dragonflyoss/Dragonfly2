@@ -88,8 +88,7 @@ type Proxy struct {
 	// peerTaskManager is the peer task manager
 	peerTaskManager peer.TaskManager
 
-	peerSearcher             pex.PeerSearchBroadcaster
-	redirectReplicaThreshold int64
+	peerSearcher pex.PeerSearchBroadcaster
 
 	// peerHost is the peer host info
 	peerHost *schedulerv1.PeerHost
@@ -268,10 +267,9 @@ func WithDumpHTTPContent(dump bool) Option {
 	}
 }
 
-func WithPeerSearcher(peerSearcher pex.PeerSearchBroadcaster, redirectReplicaThreshold int64) Option {
+func WithPeerSearcher(peerSearcher pex.PeerSearchBroadcaster) Option {
 	return func(p *Proxy) *Proxy {
 		p.peerSearcher = peerSearcher
-		p.redirectReplicaThreshold = redirectReplicaThreshold
 		return p
 	}
 }
@@ -543,7 +541,7 @@ func (proxy *Proxy) newTransport(tlsConfig *tls.Config) http.RoundTripper {
 		transport.WithDumpHTTPContent(proxy.dumpHTTPContent),
 	}
 	if proxy.peerSearcher != nil {
-		opts = append(opts, transport.WithPeerSearcher(proxy.peerSearcher, proxy.redirectReplicaThreshold))
+		opts = append(opts, transport.WithPeerSearcher(proxy.peerSearcher))
 	}
 	return transport.New(opts...)
 }
@@ -562,7 +560,7 @@ func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
 		transport.WithDumpHTTPContent(proxy.dumpHTTPContent),
 	}
 	if proxy.peerSearcher != nil {
-		opts = append(opts, transport.WithPeerSearcher(proxy.peerSearcher, proxy.redirectReplicaThreshold))
+		opts = append(opts, transport.WithPeerSearcher(proxy.peerSearcher))
 	}
 	t := transport.New(opts...)
 
