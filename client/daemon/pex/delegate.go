@@ -23,11 +23,12 @@ type peerExchangeDelegate struct {
 }
 
 type MemberMeta struct {
+	// keep private field, so isLocal meta in other members' list is false
+	isLocal   bool
 	HostID    string
 	IP        string
 	RPCPort   int32
 	ProxyPort int32
-	isLocal   bool
 }
 
 func newPeerExchangeDelegate(nodeMata *MemberMeta) *peerExchangeDelegate {

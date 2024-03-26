@@ -310,7 +310,10 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 		searchPeerResult := rt.peerSearcher.SearchPeer(taskID)
 		switch searchPeerResult.Type {
 		case pex.SearchPeerResultTypeLocal:
-			log.Debugf("search peer returns local peer exists")
+			log.Debugf("local peer exists")
+			goto local
+		case pex.SearchPeerResultTypeReplica:
+			log.Debugf("make replica from other peers")
 			goto local
 		case pex.SearchPeerResultTypeNotFound:
 			log.Debugf("no available peer after search peer")

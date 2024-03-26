@@ -63,7 +63,7 @@ func (p *peerPool) sync(nodeMeta *MemberMeta, peer *dfdaemonv1.PeerMetadata) {
 
 	switch peer.State {
 	case dfdaemonv1.PeerState_Unknown:
-		logger.Warnf("receive unknown state peer %s/%s from %s/%s, is local: %b",
+		logger.Warnf("receive unknown state peer %s/%s from %s/%s, is local: %t",
 			peer.TaskId, peer.PeerId, nodeMeta.IP, nodeMeta.HostID, nodeMeta.isLocal)
 		return
 	case dfdaemonv1.PeerState_Running:
@@ -71,21 +71,21 @@ func (p *peerPool) sync(nodeMeta *MemberMeta, peer *dfdaemonv1.PeerMetadata) {
 			MemberMeta: nodeMeta,
 			PeerID:     peer.PeerId,
 		}
-		logger.Debugf("receive running peer %s/%s from %s/%s, is local: %b",
+		logger.Debugf("receive running peer %s/%s from %s/%s, is local: %t",
 			peer.TaskId, peer.PeerId, nodeMeta.IP, nodeMeta.HostID, nodeMeta.isLocal)
 	case dfdaemonv1.PeerState_Success:
 		peers[nodeMeta.HostID] = &DestPeer{
 			MemberMeta: nodeMeta,
 			PeerID:     peer.PeerId,
 		}
-		logger.Debugf("receive successful peer %s/%s from %s/%s, is local: %b",
+		logger.Debugf("receive successful peer %s/%s from %s/%s, is local: %t",
 			peer.TaskId, peer.PeerId, nodeMeta.IP, nodeMeta.HostID, nodeMeta.isLocal)
 	case dfdaemonv1.PeerState_Failed, dfdaemonv1.PeerState_Deleted:
 		clean()
-		logger.Debugf("receive deleted peer %s/%s from %s/%s, is local: %b",
+		logger.Debugf("receive deleted peer %s/%s from %s/%s, is local: %t",
 			peer.TaskId, peer.PeerId, nodeMeta.IP, nodeMeta.HostID, nodeMeta.isLocal)
 	default:
-		logger.Warnf("receive unknown state peer %s/%s from %s/%s, is local: %b",
+		logger.Warnf("receive unknown state peer %s/%s from %s/%s, is local: %t",
 			peer.TaskId, peer.PeerId, nodeMeta.IP, nodeMeta.HostID, nodeMeta.isLocal)
 		return
 	}

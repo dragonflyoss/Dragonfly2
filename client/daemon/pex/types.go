@@ -56,6 +56,7 @@ type SearchPeerResultType int
 
 const (
 	SearchPeerResultTypeLocal = iota
+	SearchPeerResultTypeReplica
 	SearchPeerResultTypeRemote
 	SearchPeerResultTypeNotFound
 )

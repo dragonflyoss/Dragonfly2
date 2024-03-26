@@ -172,7 +172,7 @@ func (p *peerExchange) SearchPeer(task string) SearchPeerResult {
 		}
 	case SearchPeerResultTypeRemote:
 		if len(searchPeerResult.Peers) < p.config.replicaThreshold {
-			searchPeerResult.Type = SearchPeerResultTypeLocal
+			searchPeerResult.Type = SearchPeerResultTypeReplica
 			p.memberManager.logger.Debugf("task %s redirect replica threshold not reached, try to make replica from other peers", task)
 		}
 	}
