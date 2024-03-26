@@ -721,8 +721,8 @@ loop:
 				if !firstPacketReceived {
 					close(firstPacketDone)
 				}
-				pt.forceBackSource()
 				pt.Infof("receive back source code")
+				pt.forceBackSource()
 				return
 			}
 			pt.Errorf("receive peer packet with error: %d", peerPacket.Code)
