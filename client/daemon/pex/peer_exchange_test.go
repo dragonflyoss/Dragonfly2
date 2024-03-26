@@ -218,7 +218,7 @@ func TestPeerExchange(t *testing.T) {
 
 						// check all peers is in other members
 						for _, realPeer := range searchPeerResult.Peers {
-							if realPeer.IsLocal {
+							if realPeer.isLocal {
 								continue
 							}
 							var found bool

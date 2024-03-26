@@ -27,7 +27,7 @@ type MemberMeta struct {
 	IP        string
 	RPCPort   int32
 	ProxyPort int32
-	IsLocal   bool
+	isLocal   bool
 }
 
 func newPeerExchangeDelegate(nodeMata *MemberMeta) *peerExchangeDelegate {

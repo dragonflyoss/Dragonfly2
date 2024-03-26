@@ -204,7 +204,7 @@ func (p *peerExchange) BroadcastPeers(data *dfdaemonv1.PeerExchangeData) {
 }
 
 func (p *peerExchange) Serve(localMember *MemberMeta) error {
-	localMember.IsLocal = true
+	localMember.isLocal = true
 	p.memberConfig.Delegate = newPeerExchangeDelegate(localMember)
 	p.localMember = localMember
 
