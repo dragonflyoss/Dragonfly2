@@ -65,7 +65,13 @@ func (p *peerPool) sync(nodeMeta *MemberMeta, peer *dfdaemonv1.PeerMetadata) {
 	case dfdaemonv1.PeerState_Unknown:
 		logger.Warnf("receive unknown state peer %s/%s from %s/%s", peer.TaskId, peer.PeerId, nodeMeta.IP, nodeMeta.HostID)
 		return
-	case dfdaemonv1.PeerState_Running, dfdaemonv1.PeerState_Success:
+	case dfdaemonv1.PeerState_Running:
+		peers[nodeMeta.HostID] = &DestPeer{
+			MemberMeta: nodeMeta,
+			PeerID:     peer.PeerId,
+		}
+		logger.Debugf("receive running peer %s/%s from %s/%s", peer.TaskId, peer.PeerId, nodeMeta.IP, nodeMeta.HostID)
+	case dfdaemonv1.PeerState_Success:
 		peers[nodeMeta.HostID] = &DestPeer{
 			MemberMeta: nodeMeta,
 			PeerID:     peer.PeerId,

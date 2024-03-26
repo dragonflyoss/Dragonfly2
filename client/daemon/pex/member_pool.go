@@ -146,9 +146,10 @@ func (mp *memberPool) broadcast(data *dfdaemon.PeerExchangeData) {
 	mp.peerPool.Sync(mp.localMember, data)
 
 	for hostID, sr := range mp.sendReceivers {
+		logger.Debugf("send peer metadata to host %s, peer count: %d", hostID, len(data.PeerMetadatas))
 		err := sr.Send(data)
 		if err != nil {
-			logger.Errorf("send peer metadata to %s error: %s, UnRegister member in background", hostID, err)
+			logger.Errorf("send peer metadata to host %s error: %s, UnRegister member in background", hostID, err)
 			go mp.UnRegisterByHostID(hostID)
 		}
 	}
