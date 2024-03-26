@@ -185,10 +185,10 @@ func (p *peerExchange) tryReclaim(task string, searchPeerResult SearchPeerResult
 	if r.Int31n(100) == 0 {
 		peer := searchPeerResult.Peers[0].PeerID
 		searchPeerResult.Type = SearchPeerResultTypeRemote
-		p.memberManager.logger.Debugf("task %s peer %s replica threshold reached, try to reclaim local cache", task, peer)
+		p.memberManager.logger.Debugf("task %s replica threshold reached, try to reclaim local peer cache %s", task, peer)
 		err := p.reclaim(task, peer)
 		if err != nil {
-			p.memberManager.logger.Debugf("task %s peer %s reclaim local cache error: %s", task, peer, err)
+			p.memberManager.logger.Warnf("task %s peer %s reclaim local cache error: %s", task, peer, err)
 		}
 	}
 }

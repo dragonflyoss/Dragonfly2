@@ -309,7 +309,11 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 	if rt.peerSearcher != nil {
 		searchPeerResult := rt.peerSearcher.SearchPeer(taskID)
 		switch searchPeerResult.Type {
-		case pex.SearchPeerResultTypeLocal, pex.SearchPeerResultTypeNotFound:
+		case pex.SearchPeerResultTypeLocal:
+			log.Debugf("search peer returns local peer exists")
+			goto local
+		case pex.SearchPeerResultTypeNotFound:
+			log.Debugf("no available peer after search peer")
 			goto local
 		case pex.SearchPeerResultTypeRemote:
 			resp, err := rt.proxyToPeers(log, req, searchPeerResult.Peers)
@@ -395,13 +399,13 @@ func (rt *transport) proxyToPeers(log *logger.SugaredLoggerOnWith, req *http.Req
 	}
 
 	for _, destPeer := range peers {
-		proxyURL, err := url.Parse(fmt.Sprintf("http://%s:%d", destPeer.IP, destPeer.ProxyPort))
+		// TODO peer transport pool
+		proxyRaw := fmt.Sprintf("http://%s:%d", destPeer.IP, destPeer.ProxyPort)
+		proxyURL, err := url.Parse(proxyRaw)
 		if err != nil {
 			log.Warnf("parse proxy url error: %s, dest peer: %#v", err, destPeer)
 			continue
 		}
-
-		// TODO peer transport pool
 		roundTripper := &http.Transport{
 			Proxy: http.ProxyURL(proxyURL),
 			DialContext: func(dialer *net.Dialer) func(context.Context, string, string) (net.Conn, error) {
@@ -416,14 +420,23 @@ func (rt *transport) proxyToPeers(log *logger.SugaredLoggerOnWith, req *http.Req
 			TLSHandshakeTimeout:   10 * time.Second,
 			ExpectContinueTimeout: 1 * time.Second,
 		}
+
+		log.Debugf("round trip with peer: %s", proxyRaw)
 		resp, err := roundTripper.RoundTrip(req)
-		if err == nil {
-			// TODO check response code
-			log.Infof("proxy traffic to peer %s on host %s, ip: %s", destPeer.PeerID, destPeer.HostID, destPeer.IP)
-			return resp, nil
+		if err != nil {
+			log.Warnf("round trip error: %s, dest peer: %#v", err, destPeer)
+			continue
 		}
 
-		log.Warnf("round trip error: %s, dest peer: %#v", err, destPeer)
+		// status code 4xx-5xx is bad code
+		// currently, we can not detect the error come from d7y or original server, retry next peer
+		if resp.StatusCode > 399 {
+			log.Warnf("invalid status code: %d, dest peer: %#v", resp.StatusCode, destPeer)
+			continue
+		}
+
+		log.Debugf("proxy traffic success")
+		return resp, nil
 	}
 	return nil, errors.New("no peers return available response")
 }
