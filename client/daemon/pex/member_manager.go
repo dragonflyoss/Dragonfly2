@@ -116,6 +116,7 @@ func ExtractNodeMeta(node *memberlist.Node) (*MemberMeta, error) {
 }
 
 func (p *peerExchangeMemberManager) syncNode(member *MemberMeta) {
+	p.logger.Infof("start to sync node: %#v", member)
 	if p.isLocal(member) {
 		p.logger.Debugf("skip sync local node: %s", member.IP)
 		return
