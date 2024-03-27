@@ -41,9 +41,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
+	dfdaemonv1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
+	"d7y.io/dragonfly/v2/client/daemon/pex"
 	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
@@ -147,6 +149,8 @@ type storageManager struct {
 
 	subIndexRWMutex       sync.RWMutex
 	subIndexTask2PeerTask map[string][]*localSubTaskStore // key: task id, value: slice of localSubTaskStore
+
+	peerSearchBroadcaster pex.PeerSearchBroadcaster
 }
 
 var _ gc.GC = (*storageManager)(nil)
@@ -232,6 +236,13 @@ func WithWriteBufferSize(size int64) func(*storageManager) error {
 				return make([]byte, size)
 			}}
 		}
+		return nil
+	}
+}
+
+func WithPeerSearchBroadcaster(peerSearchBroadcaster pex.PeerSearchBroadcaster) func(*storageManager) error {
+	return func(manager *storageManager) error {
+		manager.peerSearchBroadcaster = peerSearchBroadcaster
 		return nil
 	}
 }
@@ -711,6 +722,8 @@ func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 			}
 			continue
 		}
+
+		var peerMetadata []*dfdaemonv1.PeerMetadata
 		for _, peerDir := range peerDirs {
 			peerID := peerDir.Name()
 			dataDir := path.Join(s.storeOption.DataPath, taskID, peerID)
@@ -755,7 +768,11 @@ func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 				PeerID: peerID,
 				TaskID: taskID,
 			}, t)
-
+			peerMetadata = append(peerMetadata, &dfdaemonv1.PeerMetadata{
+				TaskId: taskID,
+				PeerId: peerID,
+				State:  dfdaemonv1.PeerState_Success,
+			})
 			// update index
 			if ts, ok := s.indexTask2PeerTask[taskID]; ok {
 				ts = append(ts, t)
@@ -763,6 +780,12 @@ func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 			} else {
 				s.indexTask2PeerTask[taskID] = []*localTaskStore{t}
 			}
+		}
+		if s.peerSearchBroadcaster != nil {
+			s.peerSearchBroadcaster.BroadcastPeers(
+				&dfdaemonv1.PeerExchangeData{
+					PeerMetadatas: peerMetadata,
+				})
 		}
 	}
 	// remove load error peer tasks
@@ -880,6 +903,17 @@ func (s *storageManager) TryGC() (bool, error) {
 		}
 	}
 
+	// broadcast delete peer event
+	if s.peerSearchBroadcaster != nil {
+		for _, task := range markedTasks {
+			s.peerSearchBroadcaster.BroadcastPeer(&dfdaemonv1.PeerMetadata{
+				TaskId: task.TaskID,
+				PeerId: task.PeerID,
+				State:  dfdaemonv1.PeerState_Deleted,
+			})
+		}
+	}
+
 	for _, key := range s.markedReclaimTasks {
 		t, ok := s.tasks.Load(key)
 		if !ok {
@@ -925,8 +959,17 @@ func (s *storageManager) TryGC() (bool, error) {
 func (s *storageManager) deleteTask(meta PeerTaskMetadata) error {
 	task, ok := s.LoadAndDeleteTask(meta)
 	if !ok {
-		logger.Infof("deleteTask: task meta not found: %v", meta)
+		logger.Warnf("deleteTask: task meta not found: %v", meta)
 		return nil
+	}
+
+	// broadcast delete peer event
+	if s.peerSearchBroadcaster != nil {
+		s.peerSearchBroadcaster.BroadcastPeer(&dfdaemonv1.PeerMetadata{
+			TaskId: meta.TaskID,
+			PeerId: meta.PeerID,
+			State:  dfdaemonv1.PeerState_Deleted,
+		})
 	}
 
 	logger.Debugf("deleteTask: deleting task: %v", meta)

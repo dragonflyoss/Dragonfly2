@@ -33,6 +33,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/net/http"
 )
 
@@ -45,6 +46,14 @@ type StreamTaskRequest struct {
 	Range *http.Range
 	// peer's id and must be global uniqueness
 	PeerID string
+	taskID string
+}
+
+func (req *StreamTaskRequest) TaskID() string {
+	if req.taskID == "" {
+		req.taskID = idgen.TaskIDV1(req.URL, req.URLMeta)
+	}
+	return req.taskID
 }
 
 // StreamTask represents a peer task with stream io for reading directly without once more disk io

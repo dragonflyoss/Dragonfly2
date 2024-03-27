@@ -76,7 +76,7 @@ func TestServer_New(t *testing.T) {
 			mockSchedulerClient := schedulerclientmocks.NewMockV1(ctrl)
 			var mockdownloadOpts []grpc.ServerOption
 			var mockpeerOpts []grpc.ServerOption
-			_, err := New(mockpeerHost, mockpeerTaskManager, mockStorageManger, mockSchedulerClient, 16, 0, mockdownloadOpts, mockpeerOpts)
+			_, err := New(mockpeerHost, mockpeerTaskManager, mockStorageManger, nil, mockSchedulerClient, 16, 0, mockdownloadOpts, mockpeerOpts)
 			tc.expect(t, err)
 		})
 	}

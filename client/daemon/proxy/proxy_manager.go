@@ -36,6 +36,7 @@ import (
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
+	"d7y.io/dragonfly/v2/client/daemon/pex"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
@@ -59,7 +60,7 @@ type proxyManager struct {
 
 var _ Manager = (*proxyManager)(nil)
 
-func NewProxyManager(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskManager, proxyOption *config.ProxyOption) (Manager, error) {
+func NewProxyManager(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskManager, peerExchange pex.PeerExchangeServer, proxyOption *config.ProxyOption) (Manager, error) {
 	// proxy is option, when nil, just disable it
 	if proxyOption == nil {
 		logger.Infof("proxy config is empty, disabled")
@@ -88,6 +89,10 @@ func NewProxyManager(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskMa
 	if registry != nil {
 		logger.Infof("registry mirror: %s", registry.Remote)
 		options = append(options, WithRegistryMirror(registry))
+	}
+
+	if peerExchange != nil {
+		options = append(options, WithPeerSearcher(peerExchange.PeerSearchBroadcaster()))
 	}
 
 	if len(proxyRules) > 0 {
