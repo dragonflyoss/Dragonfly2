@@ -269,7 +269,7 @@ func (t *Task) DeletePeer(key string) {
 
 // PeerCount returns count of peer.
 func (t *Task) PeerCount() int {
-	return t.DAG.VertexCount()
+	return int(t.DAG.VertexCount())
 }
 
 // AddPeerEdge adds inedges between two peers.

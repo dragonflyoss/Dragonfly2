@@ -24,8 +24,8 @@ import (
 type Vertex[T comparable] struct {
 	ID       string
 	Value    T
-	Parents  set.SafeSet[*Vertex[T]]
-	Children set.SafeSet[*Vertex[T]]
+	Parents  set.Set[*Vertex[T]]
+	Children set.Set[*Vertex[T]]
 }
 
 // New returns a new Vertex instance.
@@ -33,8 +33,8 @@ func NewVertex[T comparable](id string, value T) *Vertex[T] {
 	return &Vertex[T]{
 		ID:       id,
 		Value:    value,
-		Parents:  set.NewSafeSet[*Vertex[T]](),
-		Children: set.NewSafeSet[*Vertex[T]](),
+		Parents:  set.New[*Vertex[T]](),
+		Children: set.New[*Vertex[T]](),
 	}
 }
 
