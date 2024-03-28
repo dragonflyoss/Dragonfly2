@@ -34,7 +34,11 @@ func New[T comparable]() Set[T] {
 }
 
 func (s *set[T]) Values() []T {
-	var result []T
+	if len(*s) == 0 {
+		return nil
+	}
+
+	result := make([]T, 0, len(*s))
 	for k := range *s {
 		result = append(result, k)
 	}

@@ -179,17 +179,17 @@ func TestDG_VertexCount(t *testing.T) {
 				}
 
 				d.VertexCount()
-				assert.Equal(d.VertexCount(), 1)
+				assert.Equal(d.VertexCount(), uint64(1))
 
 				d.DeleteVertex(mockVertexID)
-				assert.Equal(d.VertexCount(), 0)
+				assert.Equal(d.VertexCount(), uint64(0))
 			},
 		},
 		{
 			name: "empty dg",
 			expect: func(t *testing.T, d DG[string]) {
 				assert := assert.New(t)
-				assert.Equal(d.VertexCount(), 0)
+				assert.Equal(d.VertexCount(), uint64(0))
 			},
 		},
 	}
@@ -287,38 +287,6 @@ func TestDG_GetRandomVertices(t *testing.T) {
 
 				vertices = d.GetRandomVertices(1)
 				assert.Equal(len(vertices), 0)
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			d := NewDG[string]()
-			tc.expect(t, d)
-		})
-	}
-}
-
-func TestDG_GetVertexKeys(t *testing.T) {
-	tests := []struct {
-		name   string
-		expect func(t *testing.T, d DG[string])
-	}{
-		{
-			name: "get keys of vertices",
-			expect: func(t *testing.T, d DG[string]) {
-				assert := assert.New(t)
-				if err := d.AddVertex(mockVertexID, mockVertexValue); err != nil {
-					assert.NoError(err)
-				}
-
-				keys := d.GetVertexKeys()
-				assert.Equal(len(keys), 1)
-				assert.Equal(keys[0], mockVertexID)
-
-				d.DeleteVertex(mockVertexID)
-				keys = d.GetVertexKeys()
-				assert.Equal(len(keys), 0)
 			},
 		},
 	}
@@ -897,7 +865,25 @@ func BenchmarkDG_DeleteVertex(b *testing.B) {
 	}
 }
 
-func BenchmarkDG_GetRandomKeys(b *testing.B) {
+func BenchmarkDAG_GetVertices(b *testing.B) {
+	d := NewDG[string]()
+	for n := 0; n < b.N; n++ {
+		id := fmt.Sprint(n)
+		if err := d.AddVertex(id, string(id)); err != nil {
+			b.Fatal(err)
+		}
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		vertices := d.GetVertices()
+		if len(vertices) != b.N {
+			b.Fatal(errors.New("get vertices failed"))
+		}
+	}
+}
+
+func BenchmarkDG_GetRandomVertices(b *testing.B) {
 	d := NewDG[string]()
 	for n := 0; n < b.N; n++ {
 		id := fmt.Sprint(n)
