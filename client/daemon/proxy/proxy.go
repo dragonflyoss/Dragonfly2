@@ -673,7 +673,8 @@ func tunnelHTTPS(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	hijacker, ok := w.(http.Hijacker)
 	if !ok {
-		http.Error(w, fmt.Sprintf("Hijacking not supported, ResponseWriter: %#v", w), http.StatusInternalServerError)
+		logger.Errorf("writer is not http.Hijacker, http.ResponseWriter: %#v, http.Request: %#v", w, r)
+		http.Error(w, "Hijacking not supported", http.StatusInternalServerError)
 		return
 	}
 
