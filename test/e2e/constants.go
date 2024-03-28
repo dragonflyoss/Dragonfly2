@@ -24,7 +24,8 @@ const (
 )
 
 const (
-	dfdaemonCompatibilityTestMode = "dfdaemon"
+	dfdaemonCompatibilityTestMode  = "dfdaemon"
+	schedulerCompatibilityTestMode = "scheduler"
 )
 
 const (
