@@ -1305,12 +1305,12 @@ func (pt *peerTaskConductor) registerStorage(desiredLocation string) (err error)
 				Range: pt.rg,
 			})
 	}
+	defer close(pt.storageRegistered)
 	if err != nil {
 		pt.Log().Errorf("register task to storage manager failed: %s", err)
 		return err
 	}
 	pt.storageRegisterSuccess = true
-	close(pt.storageRegistered)
 	return nil
 }
 
