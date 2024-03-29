@@ -86,6 +86,10 @@ type peerTaskConductor struct {
 	needBackSource *atomic.Bool
 	seed           bool
 
+	// sub peer task need ensure parent storage registered, success or failed
+	storageRegistered      chan struct{}
+	storageRegisterSuccess bool
+
 	peerTaskManager *peerTaskManager
 
 	storage storage.TaskStorageDriver
@@ -239,6 +243,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 		seed:                seed,
 		parent:              parent,
 		rg:                  rg,
+		storageRegistered:   make(chan struct{}),
 	}
 
 	ptc.pieceDownloadCtx, ptc.pieceDownloadCancel = context.WithCancel(ptc.ctx)
@@ -722,8 +727,8 @@ loop:
 				if !firstPacketReceived {
 					close(firstPacketDone)
 				}
-				pt.forceBackSource()
 				pt.Infof("receive back source code")
+				pt.forceBackSource()
 				return
 			}
 			pt.Errorf("receive peer packet with error: %d", peerPacket.Code)
@@ -1273,7 +1278,7 @@ func (pt *peerTaskConductor) reportFailResult(request *DownloadPieceRequest, res
 	span.End()
 }
 
-func (pt *peerTaskConductor) initStorage(desiredLocation string) (err error) {
+func (pt *peerTaskConductor) registerStorage(desiredLocation string) (err error) {
 	// prepare storage
 	if pt.parent == nil {
 		pt.storage, err = pt.StorageManager.RegisterTask(pt.ctx,
@@ -1301,10 +1306,13 @@ func (pt *peerTaskConductor) initStorage(desiredLocation string) (err error) {
 				Range: pt.rg,
 			})
 	}
+	defer close(pt.storageRegistered)
 	if err != nil {
 		pt.Log().Errorf("register task to storage manager failed: %s", err)
+		return err
 	}
-	return err
+	pt.storageRegisterSuccess = true
+	return nil
 }
 
 func (pt *peerTaskConductor) UpdateStorage() error {
