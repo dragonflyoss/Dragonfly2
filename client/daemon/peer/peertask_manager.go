@@ -203,6 +203,7 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	rg *nethttp.Range,
 	desiredLocation string,
 	seed bool) (*peerTaskConductor, bool, error) {
+retry:
 	if ptc, ok := ptm.findPeerTaskConductor(taskID); ok {
 		logger.Debugf("peer task found: %s/%s", ptc.taskID, ptc.peerID)
 		return ptc, false, nil
@@ -226,7 +227,17 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	metrics.PeerTaskCount.Add(1)
 	logger.Debugf("peer task created: %s/%s", ptc.taskID, ptc.peerID)
 
-	err := ptc.initStorage(desiredLocation)
+	// wait parent RegisterTask done
+	if parent != nil {
+		<-parent.storageRegistered
+		if !parent.storageRegisterSuccess {
+			parent = nil
+			logger.Warnf("parent peer task %s/%s register failed, fallback to non-sub peer task", parent.taskID, parent.peerID)
+			goto retry
+		}
+	}
+
+	err := ptc.registerStorage(desiredLocation)
 	if err != nil {
 		ptc.Errorf("init storage error: %s", err)
 		ptc.cancelNotRegisterred(commonv1.Code_ClientError, err.Error())
@@ -250,7 +261,7 @@ func (ptm *peerTaskManager) createSplitedPeerTaskConductor(
 	metrics.PeerTaskCount.Add(1)
 	logger.Debugf("standalone peer task created: %s/%s", ptc.taskID, ptc.peerID)
 
-	err := ptc.initStorage(desiredLocation)
+	err := ptc.registerStorage(desiredLocation)
 	if err != nil {
 		ptc.Errorf("init storage error: %s", err)
 		ptc.cancelNotRegisterred(commonv1.Code_ClientError, err.Error())
@@ -290,7 +301,7 @@ func (ptm *peerTaskManager) prefetchParentTask(request *schedulerv1.PeerTaskRequ
 		limit = ptm.PerPeerRateLimit
 	}
 
-	logger.Infof("prefetch peer task %s/%s", taskID, req.PeerId)
+	logger.Infof("prefetch peer task %s/%s, sub peer task %s/%s", taskID, req.PeerId, request.TaskId, request.PeerId)
 	prefetch, err := ptm.getPeerTaskConductor(context.Background(), taskID, req, limit, nil, nil, desiredLocation, false)
 	if err != nil {
 		logger.Errorf("prefetch peer task %s error: %s", taskID, err)
