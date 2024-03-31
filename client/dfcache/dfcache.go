@@ -120,7 +120,7 @@ func Import(cfg *config.DfcacheConfig, client dfdaemonclient.V1) error {
 		return fmt.Errorf("validate import option failed: %w", err)
 	}
 
-	wLog := logger.With("Cid", cfg.Cid, "Tag", cfg.Tag, "file", cfg.Path)
+	wLog := logger.With("Cid", cfg.Cid, "Tag", cfg.Tag, "file", cfg.Input)
 	wLog.Info("init success and start to import")
 
 	if cfg.Timeout > 0 {
@@ -162,7 +162,7 @@ func newImportRequest(cfg *config.DfcacheConfig) *dfdaemonv1.ImportTaskRequest {
 	return &dfdaemonv1.ImportTaskRequest{
 		Type: commonv1.TaskType_DfCache,
 		Url:  newCid(cfg.Cid),
-		Path: cfg.Path,
+		Path: cfg.Input,
 		UrlMeta: &commonv1.UrlMeta{
 			Tag: cfg.Tag,
 		},
