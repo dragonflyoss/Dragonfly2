@@ -70,9 +70,8 @@ type CacheOption struct {
 	// Output full output path for export task
 	Output string `yaml:"output,omitempty" mapstructure:"output,omitempty"`
 
-	// Path full input path for import task
-	// TODO: change to Input
-	Path string `yaml:"path,omitempty" mapstructure:"path,omitempty"`
+	// Input full input path for import task
+	Input string `yaml:"input,omitempty" mapstructure:"input,omitempty"`
 
 	// RateLimit limits export task
 	RateLimit rate.Limit `yaml:"rateLimit,omitempty" mapstructure:"rateLimit,omitempty"`
@@ -140,15 +139,15 @@ func ConvertCacheStat(cfg *CacheOption, args []string) error {
 
 func convertCacheImport(cfg *CacheOption, args []string) error {
 	var err error
-	if cfg.Path == "" && len(args) > 0 {
-		cfg.Path = args[0]
+	if cfg.Input == "" && len(args) > 0 {
+		cfg.Input = args[0]
 	}
-	if cfg.Path == "" {
+	if cfg.Input == "" {
 		return fmt.Errorf("missing input file: %w", dferrors.ErrInvalidArgument)
 	}
 
-	if cfg.Path, err = filepath.Abs(cfg.Path); err != nil {
-		return fmt.Errorf("get absulate path for %s: %w", cfg.Path, err)
+	if cfg.Input, err = filepath.Abs(cfg.Input); err != nil {
+		return fmt.Errorf("get absulate path for %s: %w", cfg.Input, err)
 	}
 	return nil
 }
@@ -197,15 +196,15 @@ func (cfg *CacheOption) String() string {
 }
 
 func (cfg *CacheOption) checkInput() error {
-	stat, err := os.Stat(cfg.Path)
+	stat, err := os.Stat(cfg.Input)
 	if err != nil {
-		return fmt.Errorf("stat input path %q: %w", cfg.Path, err)
+		return fmt.Errorf("stat input path %q: %w", cfg.Input, err)
 	}
 	if stat.IsDir() {
-		return fmt.Errorf("path[%q] is directory but requires file path", cfg.Path)
+		return fmt.Errorf("path[%q] is directory but requires file path", cfg.Input)
 	}
-	if err := syscall.Access(cfg.Path, syscall.O_RDONLY); err != nil {
-		return fmt.Errorf("access %q: %w", cfg.Path, err)
+	if err := syscall.Access(cfg.Input, syscall.O_RDONLY); err != nil {
+		return fmt.Errorf("access %q: %w", cfg.Input, err)
 	}
 	return nil
 }

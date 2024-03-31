@@ -48,7 +48,7 @@ func initImport() {
 	rootCmd.AddCommand(importCmd)
 
 	flags := importCmd.Flags()
-	flags.StringVarP(&dfcacheConfig.Path, "input", "I", "", "import the given file into P2P network")
+	flags.StringVarP(&dfcacheConfig.Input, "input", "I", "", "import the given file into P2P network")
 	if err := viper.BindPFlags(flags); err != nil {
 		panic(fmt.Errorf("bind cache import flags to viper: %w", err))
 	}
