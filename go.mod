@@ -53,10 +53,9 @@ require (
 	github.com/mdlayher/vsock v1.2.1
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/montanaflynn/stats v0.7.1
-	github.com/onsi/ginkgo/v2 v2.16.0
+	github.com/onsi/ginkgo/v2 v2.17.1
 	github.com/onsi/gomega v1.32.0
 	github.com/opencontainers/image-spec v1.1.0
-	github.com/orcaman/concurrent-map/v2 v2.0.1
 	github.com/phayes/freeport v0.0.0-20220201140144-74d24b5ae9f5
 	github.com/prometheus/client_golang v1.19.0
 	github.com/schollz/progressbar/v3 v3.14.2
