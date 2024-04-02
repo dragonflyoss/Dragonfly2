@@ -26,7 +26,7 @@ require (
 	github.com/gammazero/deque v0.2.1
 	github.com/gin-contrib/gzip v0.0.6
 	github.com/gin-contrib/static v1.1.1
-	github.com/gin-contrib/zap v1.1.0
+	github.com/gin-contrib/zap v1.1.1
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-echarts/statsview v0.3.4
 	github.com/go-http-utils/headers v0.0.0-20181008091004-fed159eddc2a

@@ -458,8 +458,8 @@ github.com/gin-contrib/sse v0.1.0 h1:Y/yl/+YNO8GZSjAhjMsSuLt29uWRFHdHYUb5lYOV9qE
 github.com/gin-contrib/sse v0.1.0/go.mod h1:RHrZQHXnP2xjPF+u1gW/2HnVO7nvIa9PG3Gm+fLHvGI=
 github.com/gin-contrib/static v1.1.1 h1:XEvBd4DDLG1HBlyPBQU1XO8NlTpw6mgdqcPteetYA5k=
 github.com/gin-contrib/static v1.1.1/go.mod h1:yRGmar7+JYvbMLRPIi4H5TVVSBwULfT9vetnVD0IO74=
-github.com/gin-contrib/zap v1.1.0 h1:GWzL9+zmK8OJdiycaK2SK1/D3SZIYpieJDD0QCNAU1o=
-github.com/gin-contrib/zap v1.1.0/go.mod h1:KzROP9rAL7ofFd1P8lx7Oo2lerwPWNL5vv4f6U/mAk8=
+github.com/gin-contrib/zap v1.1.1 h1:DDyIF9YQorl3gZzAabIowRywHJuohDfiLnhwvWKl6SY=
+github.com/gin-contrib/zap v1.1.1/go.mod h1:YW8KOko2kYLy8g6k9YgVNTj7SIcrUEzYiAd9IjiBPs0=
 github.com/gin-gonic/gin v1.8.1/go.mod h1:ji8BvRH1azfM+SYow9zQ6SZMvR8qOMZHmsCuWR9tTTk=
 github.com/gin-gonic/gin v1.9.1 h1:4idEAncQnU5cB7BeOkPtxjfCSye0AAm1R0RVIqJ+Jmg=
 github.com/gin-gonic/gin v1.9.1/go.mod h1:hPrL7YrpYKXt5YId3A/Tnip5kqbEAP+KLuI3SUcPTeU=
