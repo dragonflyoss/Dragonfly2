@@ -273,10 +273,11 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 }
 
 type mockManager struct {
-	testSpec        *testSpec
-	peerTaskManager *peerTaskManager
-	schedulerClient schedulerclient.V1
-	storageManager  storage.Manager
+	testSpec         *testSpec
+	peerTaskManager  *peerTaskManager
+	schedulerClient  schedulerclient.V1
+	storageManager   storage.Manager
+	componentsOption componentsOption
 }
 
 func (m *mockManager) CleanUp() {
@@ -320,10 +321,11 @@ func setupMockManager(ctrl *gomock.Controller, ts *testSpec, opt componentsOptio
 		},
 	}
 	return &mockManager{
-		testSpec:        ts,
-		peerTaskManager: ptm,
-		schedulerClient: schedulerClient,
-		storageManager:  storageManager,
+		testSpec:         ts,
+		peerTaskManager:  ptm,
+		schedulerClient:  schedulerClient,
+		storageManager:   storageManager,
+		componentsOption: opt,
 	}
 }
 
@@ -733,6 +735,25 @@ func (ts *testSpec) runFileTaskTest(assert *testifyassert.Assertions, require *t
 	outputBytes, err := os.ReadFile(output)
 	require.Nil(err, "load output file")
 	require.Equal(ts.taskData, outputBytes, "output and desired output must match")
+
+	ts.checkPieceMd5(require, mm)
+}
+
+func (ts *testSpec) checkPieceMd5(require *testifyrequire.Assertions, mm *mockManager) {
+	pieces, err := mm.storageManager.GetPieces(context.Background(), &commonv1.PieceTaskRequest{
+		TaskId:   mm.componentsOption.taskID,
+		SrcPid:   "",
+		DstPid:   ts.peerID,
+		StartNum: 0,
+		Limit:    10000,
+	})
+	require.Nil(err, "get all pieces")
+	if len(ts.taskData) > 0 {
+		require.Greater(len(pieces.PieceInfos), 0)
+		for _, piece := range pieces.PieceInfos {
+			require.NotEmpty(piece.PieceMd5, "piece md5 should not be empty")
+		}
+	}
 }
 
 func (ts *testSpec) runStreamTaskTest(_ *testifyassert.Assertions, require *testifyrequire.Assertions, mm *mockManager, urlMeta *commonv1.UrlMeta) {
@@ -748,6 +769,8 @@ func (ts *testSpec) runStreamTaskTest(_ *testifyassert.Assertions, require *test
 	outputBytes, err := io.ReadAll(r)
 	require.Nil(err, "load read data")
 	require.Equal(ts.taskData, outputBytes, "output and desired output must match")
+
+	ts.checkPieceMd5(require, mm)
 }
 
 func (ts *testSpec) runSeedTaskTest(_ *testifyassert.Assertions, require *testifyrequire.Assertions, mm *mockManager, urlMeta *commonv1.UrlMeta) {
@@ -792,6 +815,8 @@ loop:
 	}
 
 	require.True(success, "seed task should success")
+
+	ts.checkPieceMd5(require, mm)
 }
 
 func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *testifyrequire.Assertions, mm *mockManager, urlMeta *commonv1.UrlMeta) {
@@ -955,4 +980,6 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 	outputBytes, err := os.ReadFile(output)
 	assert.Nil(err, "load output file should be ok")
 	assert.Equal(ts.taskData, outputBytes, "file output and desired output must match")
+
+	ts.checkPieceMd5(require, mm)
 }
