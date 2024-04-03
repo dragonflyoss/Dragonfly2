@@ -707,7 +707,7 @@ func (cd *clientDaemon) Serve() error {
 				ProxyPort: int32(proxyPort),
 			})
 			if err != nil {
-				logger.Errorf("health http server error: %v", err)
+				logger.Errorf("peer exchange server error: %v", err)
 			}
 		}()
 	}
