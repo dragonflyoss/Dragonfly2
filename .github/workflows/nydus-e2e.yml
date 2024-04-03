@@ -35,6 +35,51 @@ jobs:
         with:
           install: true
 
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Build Scheduler Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: build/images/scheduler/Dockerfile
+          push: false
+          load: true
+          tags: dragonflyoss/scheduler:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Build Manager Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: build/images/manager/Dockerfile
+          push: false
+          load: true
+          tags: dragonflyoss/manager:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Build Dfdaemon Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: build/images/dfdaemon/Dockerfile
+          push: false
+          load: true
+          tags: dragonflyoss/dfdaemon:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Build images of the testing tools 
+        run: |
+          make docker-build-testing-tools
+
       - name: Setup Kind
         uses: helm/kind-action@v1.9.0
         with:
@@ -42,11 +87,11 @@ jobs:
           config: ${{ env.KIND_CONFIG_PATH }}
           cluster_name: kind
 
-      - name: Build images
+      - name: Kind load images
         run: |
-          hack/gen-buildx.sh
-          make docker-build docker-build-testing-tools
-          make kind-load
+          kind load docker-image dragonflyoss/manager:latest
+          kind load docker-image dragonflyoss/scheduler:latest
+          kind load docker-image dragonflyoss/dfdaemon:latest
 
       - name: Setup dragonfly
         run: |
@@ -67,6 +112,7 @@ jobs:
           echo "snapshotter pod name ${p}"
           # helm wait is wait for daemonset, in this e2e test we ensure the pod is ready
           kubectl -n $ns wait po $p --for=condition=ready --timeout=2m
+
       - name: Run E2E test
         run: |
           docker exec kind-control-plane curl -L -o nerdctl-${NERDCTL_VER}-linux-amd64.tar.gz https://github.com/containerd/nerdctl/releases/download/v${NERDCTL_VER}/nerdctl-${NERDCTL_VER}-linux-amd64.tar.gz
@@ -79,6 +125,12 @@ jobs:
           kubectl apply -f test/testdata/k8s/nydus.yaml
           kubectl wait po nydus-pod --for=condition=ready --timeout=1m
           kubectl delete -f test/testdata/k8s/nydus.yaml
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
       - name: Dump logs
         if: always()
         continue-on-error: true
@@ -94,6 +146,7 @@ jobs:
 
           docker exec kind-control-plane journalctl -u containerd >> $log_dir/containerd.log
           docker exec kind-control-plane journalctl -u kubelet >> $log_dir/kubelet.log
+
       - name: Upload Logs
         uses: actions/upload-artifact@v4
         if: always()

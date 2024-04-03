@@ -25,16 +25,6 @@ scheduler:
     enableHost: true
   config:
     verbose: true
-    scheduler:
-      algorithm: nt
-    networkTopology:
-      collectInterval: 2m
-      probe:
-        queueLength: 5
-        count: 10
-      cache:
-        interval: 5m
-        ttl: 5m
 
 seedPeer:
   image: dragonflyoss/dfdaemon
@@ -63,12 +53,10 @@ seedPeer:
     enable: true
   config:
     verbose: true
+    storage:
+      writeBufferSize: 1Mi
     download:
       prefetch: true
-    networkTopology:
-      enable: true
-      probe:
-        interval: 10s  
 
 dfdaemon:
   image: dragonflyoss/dfdaemon
@@ -98,6 +86,8 @@ dfdaemon:
     pprofPort: 9999
     download:
       prefetch: true
+    storage:
+      writeBufferSize: 1Mi
     scheduler:
       disableAutoBackSource: true
     proxy:
@@ -114,10 +104,6 @@ dfdaemon:
       proxies:
         - regx: blobs/sha256.*
         - regx: file-server
-    networkTopology:
-      enable: true
-      probe:
-        interval: 10s    
 
 manager:
   image: dragonflyoss/manager

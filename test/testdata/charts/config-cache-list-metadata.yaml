@@ -1,5 +1,5 @@
 scheduler:
-  image: d7yio/scheduler
+  image: dragonflyoss/scheduler
   tag: latest
   replicas: 3
   resources:
@@ -37,7 +37,7 @@ scheduler:
         ttl: 5m
 
 seedPeer:
-  image: d7yio/dfdaemon
+  image: dragonflyoss/dfdaemon
   tag: latest
   replicas: 3
   resources:
@@ -71,7 +71,7 @@ seedPeer:
         interval: 10s
 
 dfdaemon:
-  image: d7yio/dfdaemon
+  image: dragonflyoss/dfdaemon
   tag: latest
   resources:
     requests:
@@ -123,7 +123,7 @@ dfdaemon:
         - regx: file-server
 
 manager:
-  image: d7yio/manager
+  image: dragonflyoss/manager
   tag: latest
   replicas: 1
   resources:

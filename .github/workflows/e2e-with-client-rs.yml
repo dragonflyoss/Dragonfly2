@@ -1,0 +1,148 @@
+name: E2E Test(Rust Client)
+
+on:
+  push:
+    branches: [main, release-*]
+    paths-ignore: ["**.md", "**.png", "**.jpg", "**.svg", "**/docs/**"]
+  pull_request:
+    branches: [main, release-*]
+    paths-ignore: ["**.md", "**.png", "**.jpg", "**.svg", "**/docs/**"]
+  schedule:
+    - cron: '0 4 * * *'
+
+env:
+  KIND_VERSION: v0.12.0
+  CONTAINERD_VERSION: v1.5.2
+  KIND_CONFIG_PATH: test/testdata/kind/config-rs.yaml
+  DRAGONFLY_CHARTS_PATH: deploy/helm-charts/charts/dragonfly
+  DRAGONFLY_FILE_SERVER_PATH: test/testdata/k8s/file-server.yaml
+
+jobs:
+  e2e_tests_with_client_rs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        module:
+          - "normal"
+        include:
+          - module: normal
+            charts-config: test/testdata/charts/config-rs.yaml
+            skip: ""
+    steps:
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Get dependencies
+        run: |
+          go install github.com/onsi/ginkgo/v2/ginkgo@v2.12.0
+          mkdir -p /tmp/artifact
+
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v3
+        id: buildx
+        with:
+          install: true
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Pull Rust Client Image
+        run: |
+          cd client-rs
+          CLIENT_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
+          docker pull dragonflyoss/client:$CLIENT_TAG
+          docker tag dragonflyoss/client:$CLIENT_TAG dragonflyoss/client:latest
+
+      - name: Build Scheduler Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: build/images/scheduler/Dockerfile
+          push: false
+          load: true
+          tags: dragonflyoss/scheduler:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Build Manager Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: build/images/manager/Dockerfile
+          push: false
+          load: true
+          tags: dragonflyoss/manager:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Setup Kind
+        uses: helm/kind-action@v1.9.0
+        with:
+          version: ${{ env.KIND_VERSION }}
+          config: ${{ env.KIND_CONFIG_PATH }}
+          cluster_name: kind
+
+      - name: Kind load images
+        run: |
+          kind load docker-image dragonflyoss/manager:latest
+          kind load docker-image dragonflyoss/scheduler:latest
+          kind load docker-image dragonflyoss/client:latest
+
+      # TODO Setup dragonfly
+      # - name: Setup dragonfly
+        # run: |
+          # helm install --wait --timeout 10m --dependency-update --create-namespace --namespace dragonfly-system -f ${{ matrix.charts-config }} dragonfly ${{ env.DRAGONFLY_CHARTS_PATH }}
+          # kubectl apply -f ${{ env.DRAGONFLY_FILE_SERVER_PATH }}
+          # kubectl wait po file-server-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
+
+      # TODO Run tests
+      # - name: Run E2E test
+        # run: |
+          # ginkgo -v -r --race --fail-fast --cover --trace --show-node-events --skip=${{ matrix.skip }} test/e2e -- \
+              # --feature-gates=dfget-range=true,dfget-open-range=true,dfget-empty-file=true,dfget-recursive=true
+          # cat coverprofile.out >> coverage.txt
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.txt
+          flags: e2etests
+
+      - name: Upload Logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ matrix.module }}-e2e-tests-logs
+          path: |
+            /tmp/artifact/**/*.log

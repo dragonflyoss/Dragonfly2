@@ -1,0 +1,37 @@
+# explicitly use v2 config format
+version = 2
+
+[debug]
+  level = "debug"
+
+[plugins."io.containerd.grpc.v1.cri".containerd]
+  # save disk space when using a single snapshotter
+  discard_unpacked_layers = false
+  # explicitly use default snapshotter so we can sed it in entrypoint
+  snapshotter = "overlayfs"
+  # explicit default here, as we're configuring it below
+  default_runtime_name = "runc"
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+  # set default runtime handler to v2, which has a per-pod shim
+  runtime_type = "io.containerd.runc.v2"
+
+# Setup a runtime with the magic name ("test-handler") used for Kubernetes
+# runtime class tests ...
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test-handler]
+  runtime_type = "io.containerd.runc.v2"
+
+[plugins."io.containerd.grpc.v1.cri"]
+  # use fixed sandbox image
+  sandbox_image = "registry.k8s.io/pause:3.5"
+  # allow hugepages controller to be missing
+  # see https://github.com/containerd/cri/pull/1501
+  tolerate_missing_hugepages_controller = true
+  # restrict_oom_score_adj needs to be true when running inside UserNS (rootless)
+  restrict_oom_score_adj = false
+
+# Mirrors use d7y.io instead of docker.io.
+# when using docker.io to generate an endpoint, https://index.docker.io will be returned by default.
+# https://github.com/containerd/containerd/blob/main/pkg/cri/server/image_pull.go#L456
+# https://github.com/containerd/containerd/blob/main/remotes/docker/resolver.go#L121
+[plugins."io.containerd.grpc.v1.cri".registry.mirrors."d7y.io"]
+  endpoint = ["http://127.0.0.1:4001"]

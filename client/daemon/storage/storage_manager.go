@@ -121,7 +121,10 @@ const (
 	GCName = "StorageManager"
 )
 
-var tracer trace.Tracer
+var (
+	tracer          trace.Tracer
+	writeBufferPool *sync.Pool
+)
 
 func init() {
 	tracer = otel.Tracer("dfget-daemon-gc")
@@ -218,6 +221,17 @@ func WithStorageOption(opt *config.StorageOption) func(*storageManager) error {
 func WithGCInterval(gcInterval time.Duration) func(*storageManager) error {
 	return func(manager *storageManager) error {
 		manager.gcInterval = gcInterval
+		return nil
+	}
+}
+
+func WithWriteBufferSize(size int64) func(*storageManager) error {
+	return func(manager *storageManager) error {
+		if size > 0 {
+			writeBufferPool = &sync.Pool{New: func() any {
+				return make([]byte, size)
+			}}
+		}
 		return nil
 	}
 }
@@ -611,7 +625,11 @@ func (s *storageManager) cleanIndex(taskID, peerID string) {
 		}
 		remain = append(remain, t)
 	}
-	s.indexTask2PeerTask[taskID] = remain
+	if len(remain) > 0 {
+		s.indexTask2PeerTask[taskID] = remain
+	} else {
+		delete(s.indexTask2PeerTask, taskID)
+	}
 }
 
 func (s *storageManager) cleanSubIndex(taskID, peerID string) {
@@ -630,7 +648,11 @@ func (s *storageManager) cleanSubIndex(taskID, peerID string) {
 		}
 		remain = append(remain, t)
 	}
-	s.subIndexTask2PeerTask[taskID] = remain
+	if len(remain) > 0 {
+		s.subIndexTask2PeerTask[taskID] = remain
+	} else {
+		delete(s.subIndexTask2PeerTask, taskID)
+	}
 }
 
 func (s *storageManager) ValidateDigest(req *PeerTaskMetadata) error {
@@ -959,4 +981,21 @@ func (s *storageManager) diskUsageExceed() (exceed bool, bytes int64) {
 	logger.Infof("disk used percent %f, exceed threshold percent %f, %d bytes to reclaim",
 		usage.UsedPercent, s.storeOption.DiskGCThresholdPercent, int64(bs))
 	return true, int64(bs)
+}
+
+type onlyWriter struct {
+	io.Writer
+}
+
+func tryWriteWithBuffer(writer io.Writer, reader io.Reader, readSize int64) (written int64, err error) {
+	if writeBufferPool != nil {
+		buf := writeBufferPool.Get().([]byte)
+		// skip io.ReadFrom logic in io.CopyBuffer, force to use buffer
+		written, err = io.CopyBuffer(onlyWriter{writer}, io.LimitReader(reader, readSize), buf)
+		//nolint:all
+		writeBufferPool.Put(buf)
+	} else {
+		written, err = io.Copy(writer, io.LimitReader(reader, readSize))
+	}
+	return written, err
 }

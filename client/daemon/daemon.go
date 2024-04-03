@@ -243,7 +243,8 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	}
 	dirMode := os.FileMode(opt.DataDirMode)
 	storageManager, err := storage.NewStorageManager(opt.Storage.StoreStrategy, &opt.Storage,
-		gcCallback, dirMode, storage.WithGCInterval(opt.GCInterval.Duration))
+		gcCallback, dirMode, storage.WithGCInterval(opt.GCInterval.Duration),
+		storage.WithWriteBufferSize(opt.Storage.WriteBufferSize.ToNumber()))
 	if err != nil {
 		return nil, err
 	}

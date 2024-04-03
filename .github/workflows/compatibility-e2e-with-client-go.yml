@@ -1,4 +1,4 @@
-name: Compatibility E2E Test
+name: Compatibility E2E Test(Golang Client)
 
 on:
   push:
@@ -17,10 +17,11 @@ env:
   DRAGONFLY_CHARTS_PATH: deploy/helm-charts/charts/dragonfly
   DRAGONFLY_CHARTS_CONFIG_PATH: test/testdata/charts/config-compatibility.yaml
   DRAGONFLY_FILE_SERVER_PATH: test/testdata/k8s/file-server.yaml
+  DRAGONFLY_FILE_SERVER_NO_CONTENT_LENGTH_PATH: test/testdata/k8s/file-server-no-content-length.yaml
   DRAGONFLY_PROXY_SERVER_PATH: test/testdata/k8s/proxy.yaml
 
 jobs:
-  compatibility_e2e_tests:
+  compatibility_e2e_tests_with_client_go:
     name: e2e_tests_with_${{ matrix.module }}
     timeout-minutes: 60
     runs-on: ubuntu-latest
@@ -78,6 +79,58 @@ jobs:
         with:
           install: true
 
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Build Scheduler Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: build/images/scheduler/Dockerfile
+          push: false
+          load: true
+          tags: dragonflyoss/scheduler:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Build Manager Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: build/images/manager/Dockerfile
+          push: false
+          load: true
+          tags: dragonflyoss/manager:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Build Dfdaemon Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: build/images/dfdaemon/Dockerfile
+          push: false
+          load: true
+          tags: dragonflyoss/dfdaemon:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Build No Content Length Image
+        uses: docker/build-push-action@v5
+        with:
+          context: test/tools/no-content-length/
+          file: test/tools/no-content-length/Dockerfile
+          push: false
+          load: true
+          tags: dragonflyoss/no-content-length:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
       - name: Setup Kind
         uses: helm/kind-action@v1.9.0
         with:
@@ -85,18 +138,18 @@ jobs:
           config: ${{ env.KIND_CONFIG_PATH }}
           cluster_name: kind
 
-      - name: Build images
+      - name: Kind load images
         run: |
-          hack/gen-buildx.sh
-          make docker-build docker-build-testing-tools
-          docker pull dragonflyoss/${{ matrix.image }}:${{ matrix.image-tag }}
-          make kind-load
-          kind load docker-image dragonflyoss/${{ matrix.image }}:${{ matrix.image-tag }}
+          kind load docker-image dragonflyoss/manager:latest
+          kind load docker-image dragonflyoss/scheduler:latest
+          kind load docker-image dragonflyoss/dfdaemon:latest
+          kind load docker-image dragonflyoss/no-content-length:latest
 
       - name: Setup dragonfly
         run: |
           helm install --wait --timeout 10m --dependency-update --create-namespace --namespace dragonfly-system --set ${{ matrix.chart-name }}.tag=${{ matrix.image-tag }} --set ${{ matrix.chart-name }}.image=dragonflyoss/${{ matrix.image }} -f ${{ env.DRAGONFLY_CHARTS_CONFIG_PATH }} dragonfly ${{ env.DRAGONFLY_CHARTS_PATH }}
           kubectl apply -f ${{ env.DRAGONFLY_FILE_SERVER_PATH }}
+          kubectl apply -f ${{ env.DRAGONFLY_FILE_SERVER_NO_CONTENT_LENGTH_PATH }}
           kubectl apply -f ${{ env.DRAGONFLY_PROXY_SERVER_PATH }}
           kubectl wait po file-server-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
           kubectl wait po file-server-no-content-length-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
@@ -110,6 +163,11 @@ jobs:
           DRAGONFLY_COMPATIBILITY_E2E_TEST_IMAGE: ${{ matrix.image }}
           DRAGONFLY_STABLE_IMAGE_TAG: ${{ matrix.image-tag }}
         run: make actions-e2e-test-coverage
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

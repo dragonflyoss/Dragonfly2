@@ -5,7 +5,7 @@ set -o errexit
 set -o pipefail
 
 D7Y_VERSION=${D7Y_VERSION:-"latest"}
-D7Y_REGISTRY=${D7Y_REGISTRY:-d7yio}
+D7Y_REGISTRY=${D7Y_REGISTRY:-dragonflyoss}
 curDir=$(cd "$(dirname "$0")" && pwd)
 cd "${curDir}/../" || return
 

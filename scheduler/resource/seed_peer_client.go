@@ -84,7 +84,7 @@ func newSeedPeerClient(dynconfig config.DynconfigInterface, hostManager HostMana
 		return nil, err
 	}
 
-	fmt.Println("cdnsystemClient", cdnsystemClient)
+	logger.Infof("cdnsystemClient: %#v", cdnsystemClient)
 
 	// Initialize dfdaemon v2 grpc client.
 	dfdaemonClient, err := dfdaemonclient.GetV2(context.Background(), dynconfig, opts...)
@@ -92,7 +92,7 @@ func newSeedPeerClient(dynconfig config.DynconfigInterface, hostManager HostMana
 		return nil, err
 	}
 
-	fmt.Println("dfdaemonClient", dfdaemonClient)
+	logger.Infof("dfdaemonClient: %#v", dfdaemonClient)
 
 	sc := &seedPeerClient{
 		hostManager: hostManager,
