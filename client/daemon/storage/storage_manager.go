@@ -677,42 +677,74 @@ func (s *storageManager) IsInvalid(req *PeerTaskMetadata) (bool, error) {
 	return t.IsInvalid(req)
 }
 
-func (s *storageManager) reloadPersistentTaskByTaskDir(gcCallback GCCallback, wg *sync.WaitGroup, dirCh <-chan string, done chan struct{}) {
-	for {
-		select {
-		case taskID := <-dirCh:
-			taskDir := path.Join(s.storeOption.DataPath, taskID)
-			peerDirs, err := os.ReadDir(taskDir)
-			if err != nil {
-				logger.Errorf("read dir %s error: %s", taskDir, err)
-			} else {
-				var loadErrDirs []string
-				for _, peer := range peerDirs {
-					peerID := peer.Name()
-					loadErr := s.reloadPersistentTaskByPeerDir(gcCallback, taskID, peerID)
-					if loadErr != nil {
-						loadErrDirs = append(loadErrDirs, path.Join(s.storeOption.DataPath, taskID, peerID))
-					}
-				}
+func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) {
+	dirs, err := os.ReadDir(s.storeOption.DataPath)
+	if os.IsNotExist(err) {
+		return
+	}
+	if err != nil {
+		return
+	}
 
-				if len(loadErrDirs) > 0 {
-					s.removeErrorPeers(loadErrDirs)
-				}
-				// remove empty task dir
-				if len(peerDirs) == 0 || len(loadErrDirs) == len(peerDirs) {
-					// skip dot files or directories
-					if !strings.HasPrefix(taskDir, ".") {
-						if err := os.Remove(taskDir); err != nil {
-							logger.Errorf("remove empty task dir %s failed: %s", taskDir, err)
-						} else {
-							logger.Infof("remove empty task dir %s", taskDir)
-						}
-					}
+	wg := &sync.WaitGroup{}
+	wg.Add(len(dirs))
+	dirCh := make(chan string, 1000)
+	done := make(chan struct{})
+
+	for i := 0; i < s.storeOption.ReloadGoroutineCount; i++ {
+		go func() {
+			for {
+				select {
+				case taskID := <-dirCh:
+					s.reloadPersistentTaskByTaskDir(gcCallback, taskID)
+					wg.Done()
+				case <-done:
+					return
 				}
 			}
-			wg.Done()
-		case <-done:
-			return
+		}()
+	}
+
+	logger.Infof("start to reload task data from disk, count: %d", len(dirs))
+
+	start := time.Now()
+	for _, dir := range dirs {
+		dirCh <- dir.Name()
+	}
+	wg.Wait()
+
+	logger.Infof("reload task data from disk done, cost: %dms", time.Now().Sub(start).Milliseconds())
+	close(done)
+}
+
+func (s *storageManager) reloadPersistentTaskByTaskDir(gcCallback GCCallback, taskID string) {
+	taskDir := path.Join(s.storeOption.DataPath, taskID)
+	peerDirs, err := os.ReadDir(taskDir)
+	if err != nil {
+		logger.Errorf("read dir %s error: %s", taskDir, err)
+	} else {
+		var loadErrDirs []string
+		for _, peer := range peerDirs {
+			peerID := peer.Name()
+			loadErr := s.reloadPersistentTaskByPeerDir(gcCallback, taskID, peerID)
+			if loadErr != nil {
+				loadErrDirs = append(loadErrDirs, path.Join(s.storeOption.DataPath, taskID, peerID))
+			}
+		}
+
+		if len(loadErrDirs) > 0 {
+			s.removeErrorPeers(loadErrDirs)
+		}
+		// remove empty task dir
+		if len(peerDirs) == 0 || len(loadErrDirs) == len(peerDirs) {
+			// skip dot files or directories
+			if !strings.HasPrefix(taskDir, ".") {
+				if err := os.Remove(taskDir); err != nil {
+					logger.Errorf("remove empty task dir %s failed: %s", taskDir, err)
+				} else {
+					logger.Infof("remove empty task dir %s", taskDir)
+				}
+			}
 		}
 	}
 }
@@ -794,36 +826,6 @@ func (s *storageManager) removeErrorPeers(loadErrDirs []string) {
 		}
 		logger.Warnf("remove load error directory %s ok", dir)
 	}
-}
-
-func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) {
-	dirs, err := os.ReadDir(s.storeOption.DataPath)
-	if os.IsNotExist(err) {
-		return
-	}
-	if err != nil {
-		return
-	}
-
-	wg := &sync.WaitGroup{}
-	wg.Add(len(dirs))
-	dirCh := make(chan string, 1000)
-	done := make(chan struct{})
-
-	for i := 0; i < s.storeOption.ReloadGoroutineCount; i++ {
-		go s.reloadPersistentTaskByTaskDir(gcCallback, wg, dirCh, done)
-	}
-
-	logger.Infof("start to reload task data from disk, count: %d", len(dirs))
-
-	start := time.Now()
-	for _, dir := range dirs {
-		dirCh <- dir.Name()
-	}
-	wg.Wait()
-
-	logger.Infof("reload task data from disk done, cost: %dms", time.Now().Sub(start).Milliseconds())
-	close(done)
 }
 
 func (s *storageManager) TryGC() (bool, error) {
