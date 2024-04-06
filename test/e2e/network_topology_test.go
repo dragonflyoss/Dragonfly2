@@ -41,7 +41,7 @@ var _ = Describe("Evaluator with networkTopology", func() {
 			Expect(waitForProbedInNetworkTopology()).Should(BeTrue())
 
 			if waitForProbedInNetworkTopology() == true {
-				time.Sleep(5 * time.Minute)
+				time.Sleep(2 * time.Minute)
 				Expect(checkNetworkTopologyUpdated()).Should(BeTrue())
 			}
 		})
@@ -145,7 +145,9 @@ func checkNetworkTopologyUpdated() bool {
 		probedCountKey = strings.Split(string(out), "\n")[i]
 		probedCountOut, err := redisPod.Command("redis-cli", "-a", "dragonfly", "-n", "3", "GET", probedCountKey).CombinedOutput()
 		Expect(err).NotTo(HaveOccurred())
-		if strings.Split(string(probedCountOut), "\n")[1] == "1" {
+		probedCount, err := strconv.Atoi(strings.Split(string(probedCountOut), "\n")[1])
+		Expect(err).NotTo(HaveOccurred())
+		if probedCount <= 1 && probedCount >= 50 {
 			return false
 		}
 	}
