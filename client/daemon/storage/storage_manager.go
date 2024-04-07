@@ -203,6 +203,9 @@ func NewStorageManager(storeStrategy config.StoreStrategy, opt *config.StorageOp
 		}
 	}
 
+	if s.storeOption.ReloadGoroutineCount <= 0 {
+		s.storeOption.ReloadGoroutineCount = 64
+	}
 	s.ReloadPersistentTask(gcCallback)
 
 	gc.Register(GCName, s)
@@ -678,11 +681,22 @@ func (s *storageManager) IsInvalid(req *PeerTaskMetadata) (bool, error) {
 }
 
 func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) {
-	dirs, err := os.ReadDir(s.storeOption.DataPath)
+	entries, err := os.ReadDir(s.storeOption.DataPath)
 	if os.IsNotExist(err) {
 		return
 	}
 	if err != nil {
+		return
+	}
+
+	var dirs []os.DirEntry
+	for _, entry := range entries {
+		if entry.IsDir() {
+			dirs = append(dirs, entry)
+		}
+	}
+	count := len(dirs)
+	if count == 0 {
 		return
 	}
 
@@ -691,7 +705,12 @@ func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) {
 	dirCh := make(chan string, 1000)
 	done := make(chan struct{})
 
-	for i := 0; i < s.storeOption.ReloadGoroutineCount; i++ {
+	reloadGoroutineCount := s.storeOption.ReloadGoroutineCount
+	if count < reloadGoroutineCount {
+		reloadGoroutineCount = count
+	}
+
+	for i := 0; i < reloadGoroutineCount; i++ {
 		go func() {
 			for {
 				select {
