@@ -741,28 +741,29 @@ func (s *storageManager) reloadPersistentTaskByTaskDir(gcCallback GCCallback, ta
 	peerDirs, err := os.ReadDir(taskDir)
 	if err != nil {
 		logger.Errorf("read dir %s error: %s", taskDir, err)
-	} else {
-		var loadErrDirs []string
-		for _, peer := range peerDirs {
-			peerID := peer.Name()
-			loadErr := s.reloadPersistentTaskByPeerDir(gcCallback, taskID, peerID)
-			if loadErr != nil {
-				loadErrDirs = append(loadErrDirs, path.Join(s.storeOption.DataPath, taskID, peerID))
-			}
-		}
+		return
+	}
 
-		if len(loadErrDirs) > 0 {
-			s.removeErrorPeers(loadErrDirs)
+	var loadErrDirs []string
+	for _, peer := range peerDirs {
+		peerID := peer.Name()
+		loadErr := s.reloadPersistentTaskByPeerDir(gcCallback, taskID, peerID)
+		if loadErr != nil {
+			loadErrDirs = append(loadErrDirs, path.Join(s.storeOption.DataPath, taskID, peerID))
 		}
-		// remove empty task dir
-		if len(peerDirs) == 0 || len(loadErrDirs) == len(peerDirs) {
-			// skip dot files or directories
-			if !strings.HasPrefix(taskDir, ".") {
-				if err := os.Remove(taskDir); err != nil {
-					logger.Errorf("remove empty task dir %s failed: %s", taskDir, err)
-				} else {
-					logger.Infof("remove empty task dir %s", taskDir)
-				}
+	}
+
+	if len(loadErrDirs) > 0 {
+		s.removeErrorPeers(loadErrDirs)
+	}
+	// remove empty task dir
+	if len(peerDirs) == 0 || len(loadErrDirs) == len(peerDirs) {
+		// skip dot files or directories
+		if !strings.HasPrefix(taskDir, ".") {
+			if err := os.Remove(taskDir); err != nil {
+				logger.Errorf("remove empty task dir %s failed: %s", taskDir, err)
+			} else {
+				logger.Infof("remove empty task dir %s", taskDir)
 			}
 		}
 	}
