@@ -67,7 +67,7 @@ seedPeer:
       writeBufferSize: 1Mi
     download:
       prefetch: true
-      networkTopology:
+    networkTopology:
       enable: true
       probe:
         interval: 10s 
