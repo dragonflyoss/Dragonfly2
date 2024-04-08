@@ -49,8 +49,8 @@ cloud.google.com/go/storage v1.5.0/go.mod h1:tpKbwo567HUNpVclU5sGELwQWBDZ8gh0Zeo
 cloud.google.com/go/storage v1.6.0/go.mod h1:N7U0C8pVQ/+NIKOBQyamJIeKQKkZ+mxpohlUTyfDhBk=
 cloud.google.com/go/storage v1.8.0/go.mod h1:Wv1Oy7z6Yz3DshWRJFhqM/UCfaWIRTdp0RXyy7KQOVs=
 cloud.google.com/go/storage v1.10.0/go.mod h1:FLPqc6j+Ki4BU591ie1oL6qBQGu2Bl/tZ9ullr3+Kg0=
-d7y.io/api/v2 v2.0.106 h1:ODF1xqa2Wl55zMBr2dA40mYDtBx5leesg3iNh2gihBs=
-d7y.io/api/v2 v2.0.106/go.mod h1:88TODGMZpc4M3LRzJgNGr0cS0RwZV/tgz3oLn2+lIQ8=
+d7y.io/api/v2 v2.0.107 h1:zZNYw3X45FctudV/ymojSsJjiBxqOBvtOaFuXWnZJUI=
+d7y.io/api/v2 v2.0.107/go.mod h1:88TODGMZpc4M3LRzJgNGr0cS0RwZV/tgz3oLn2+lIQ8=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20201218220906-28db891af037/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 github.com/Azure/azure-sdk-for-go v16.2.1+incompatible/go.mod h1:9XXNKU+eRnpl9moKnB4QOLf1HestfXbmab5FXxiDBjc=
