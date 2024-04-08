@@ -41,6 +41,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	zapadapter "logur.dev/adapter/zap"
 
+	"d7y.io/api/v2/pkg/apis/dfdaemon/v1"
 	managerv1 "d7y.io/api/v2/pkg/apis/manager/v1"
 	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 
@@ -231,56 +232,17 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		return nil, fmt.Errorf("failed to get schedulers: %w", err)
 	}
 
-	// Storage.Option.DataPath is same with Daemon DataDir
-	opt.Storage.DataPath = d.DataDir()
-	gcCallback := func(request storage.CommonTaskRequest) {
-		er := schedulerClient.LeaveTask(context.Background(), &schedulerv1.PeerTarget{
-			TaskId: request.TaskID,
-			PeerId: request.PeerID,
-		})
-		if er != nil {
-			logger.Errorf("step 4: leave task %s/%s, error: %v", request.TaskID, request.PeerID, er)
-		} else {
-			logger.Infof("step 4: leave task %s/%s state ok", request.TaskID, request.PeerID)
-		}
-	}
-	dirMode := os.FileMode(opt.DataDirMode)
-	storageManager, err := storage.NewStorageManager(opt.Storage.StoreStrategy, &opt.Storage,
-		gcCallback, dirMode, storage.WithGCInterval(opt.GCInterval.Duration),
-		storage.WithWriteBufferSize(opt.Storage.WriteBufferSize.ToNumber()))
-	if err != nil {
-		return nil, err
-	}
-
-	pmOpts := []peer.PieceManagerOption{
-		peer.WithLimiter(rate.NewLimiter(opt.Download.TotalRateLimit.Limit, int(opt.Download.TotalRateLimit.Limit))),
-		peer.WithCalculateDigest(opt.Download.CalculateDigest),
-		peer.WithTransportOption(opt.Download.Transport),
-		peer.WithConcurrentOption(opt.Download.Concurrent),
-	}
-
-	if opt.Download.SyncPieceViaHTTPS && opt.Scheduler.Manager.Enable {
-		pmOpts = append(pmOpts, peer.WithSyncPieceViaHTTPS(string(opt.Security.CACert)))
-	}
-
-	pieceManager, err := peer.NewPieceManager(opt.Download.PieceDownloadTimeout, pmOpts...)
-	if err != nil {
-		return nil, err
-	}
-
 	var (
 		peerExchange          pex.PeerExchangeServer
 		peerExchangeRPC       pex.PeerExchangeRPC
 		peerSearchBroadcaster pex.PeerSearchBroadcaster
+		reclaimFunc           func(task, peer string) error
 	)
-	if opt.PeerExchange.Enable && opt.Scheduler.Manager.Enable && opt.Scheduler.Manager.SeedPeer.Enable {
+
+	if opt.IsSupportPeerExchange() {
 		peerExchange, err = pex.NewPeerExchange(
 			func(task, peer string) error {
-				return storageManager.UnregisterTask(context.Background(),
-					storage.CommonTaskRequest{
-						PeerID: peer,
-						TaskID: task,
-					})
+				return reclaimFunc(task, peer)
 			},
 			pex.NewSeedPeerMemberLister(func() ([]*managerv1.SeedPeer, error) {
 				peers, err := dynconfig.GetSeedPeers()
@@ -304,6 +266,52 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	if peerExchange != nil {
 		peerExchangeRPC = peerExchange.PeerExchangeRPC()
 		peerSearchBroadcaster = peerExchange.PeerSearchBroadcaster()
+	}
+
+	// Storage.Option.DataPath is same with Daemon DataDir
+	opt.Storage.DataPath = d.DataDir()
+	gcCallback := func(request storage.CommonTaskRequest) {
+		er := schedulerClient.LeaveTask(context.Background(), &schedulerv1.PeerTarget{
+			TaskId: request.TaskID,
+			PeerId: request.PeerID,
+		})
+		if er != nil {
+			logger.Errorf("step 4: leave task %s/%s, error: %v", request.TaskID, request.PeerID, er)
+		} else {
+			logger.Infof("step 4: leave task %s/%s state ok", request.TaskID, request.PeerID)
+		}
+	}
+	dirMode := os.FileMode(opt.DataDirMode)
+	storageManager, err := storage.NewStorageManager(opt.Storage.StoreStrategy, &opt.Storage,
+		gcCallback, dirMode, storage.WithGCInterval(opt.GCInterval.Duration),
+		storage.WithWriteBufferSize(opt.Storage.WriteBufferSize.ToNumber()),
+		storage.WithPeerSearchBroadcaster(peerSearchBroadcaster))
+	if err != nil {
+		return nil, err
+	}
+
+	reclaimFunc = func(task, peer string) error {
+		return storageManager.UnregisterTask(context.Background(),
+			storage.CommonTaskRequest{
+				PeerID: peer,
+				TaskID: task,
+			})
+	}
+
+	pmOpts := []peer.PieceManagerOption{
+		peer.WithLimiter(rate.NewLimiter(opt.Download.TotalRateLimit.Limit, int(opt.Download.TotalRateLimit.Limit))),
+		peer.WithCalculateDigest(opt.Download.CalculateDigest),
+		peer.WithTransportOption(opt.Download.Transport),
+		peer.WithConcurrentOption(opt.Download.Concurrent),
+	}
+
+	if opt.Download.SyncPieceViaHTTPS && opt.Scheduler.Manager.Enable {
+		pmOpts = append(pmOpts, peer.WithSyncPieceViaHTTPS(string(opt.Security.CACert)))
+	}
+
+	pieceManager, err := peer.NewPieceManager(opt.Download.PieceDownloadTimeout, pmOpts...)
+	if err != nil {
+		return nil, err
 	}
 
 	peerTaskManagerOption := &peer.TaskManagerOption{
@@ -569,7 +577,14 @@ func (cd *clientDaemon) Serve() error {
 	var (
 		watchers []func(daemon *config.DaemonOption)
 		interval = cd.Option.Reload.Interval.Duration
+		allPeers [][]*dfdaemon.PeerMetadata
 	)
+
+	// get all peers to broadcast to other daemons
+	if cd.Option.IsSupportPeerExchange() {
+		allPeers = cd.StorageManager.ListAllPeers(1000)
+	}
+
 	cd.GCManager.Start()
 	// prepare download service listen
 	if cd.Option.Download.DownloadGRPC.UnixListen == nil {
@@ -698,7 +713,7 @@ func (cd *clientDaemon) Serve() error {
 		})
 	}
 
-	if cd.Option.PeerExchange.Enable && cd.Option.Scheduler.Manager.Enable && cd.Option.Scheduler.Manager.SeedPeer.Enable {
+	if cd.Option.IsSupportPeerExchange() {
 		go func() {
 			err := cd.pexServer.Serve(&pex.MemberMeta{
 				HostID:    cd.schedPeerHost.Id,
@@ -709,6 +724,14 @@ func (cd *clientDaemon) Serve() error {
 			if err != nil {
 				logger.Errorf("peer exchange server error: %v", err)
 			}
+		}()
+		go func() {
+			time.Sleep(cd.Option.PeerExchange.InitialBroadcastDelay)
+			logger.Infof("start to broadcast peers")
+			for _, peers := range allPeers {
+				cd.pexServer.PeerSearchBroadcaster().BroadcastPeers(&dfdaemon.PeerExchangeData{PeerMetadatas: peers})
+			}
+			logger.Infof("broadcast peers done")
 		}()
 	}
 

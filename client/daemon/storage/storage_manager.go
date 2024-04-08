@@ -108,6 +108,8 @@ type Manager interface {
 	FindPartialCompletedTask(taskID string, rg *nethttp.Range) *ReusePeerTask
 	// CleanUp cleans all storage data
 	CleanUp()
+	// ListAllPeers return all peers info
+	ListAllPeers(perGroupCount int) [][]*dfdaemonv1.PeerMetadata
 }
 
 var (
@@ -1071,4 +1073,36 @@ func tryWriteWithBuffer(writer io.Writer, reader io.Reader, readSize int64) (wri
 		written, err = io.Copy(writer, io.LimitReader(reader, readSize))
 	}
 	return written, err
+}
+
+func (s *storageManager) ListAllPeers(perGroupCount int) [][]*dfdaemonv1.PeerMetadata {
+	s.indexRWMutex.RLock()
+	defer s.indexRWMutex.RUnlock()
+
+	if perGroupCount == 0 {
+		perGroupCount = 1000
+	}
+
+	allPeers := make([][]*dfdaemonv1.PeerMetadata, 0, len(s.indexTask2PeerTask)/perGroupCount)
+	peers := make([]*dfdaemonv1.PeerMetadata, 0, perGroupCount)
+
+	for taskID, task := range s.indexTask2PeerTask {
+		for _, peer := range task {
+			peers = append(peers, &dfdaemonv1.PeerMetadata{
+				TaskId: taskID,
+				PeerId: peer.PeerID,
+				State:  dfdaemonv1.PeerState_Success,
+			})
+
+			if len(peers) == perGroupCount {
+				allPeers = append(allPeers, peers)
+				peers = make([]*dfdaemonv1.PeerMetadata, 0, perGroupCount)
+			}
+		}
+	}
+
+	if len(peers) > 0 {
+		allPeers = append(allPeers, peers)
+	}
+	return allPeers
 }

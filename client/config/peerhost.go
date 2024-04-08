@@ -230,6 +230,10 @@ func (p *DaemonOption) Validate() error {
 	return nil
 }
 
+func (p *DaemonOption) IsSupportPeerExchange() bool {
+	return p.PeerExchange.Enable && p.Scheduler.Manager.Enable && p.Scheduler.Manager.SeedPeer.Enable
+}
+
 type GlobalSecurityOption struct {
 	// AutoIssueCert indicates to issue client certificates for all grpc call
 	// if AutoIssueCert is false, any other option in Security will be ignored
@@ -973,6 +977,8 @@ type PeerExchangeOption struct {
 	Enable bool `mapstructure:"enable" yaml:"enable"`
 	// InitialInterval is the initial retry interval when start and join gossip.
 	InitialInterval time.Duration `mapstructure:"initialInterval" yaml:"initialInterval"`
+	// InitialBroadcastDelay is the initial broadcast delay when daemon start due to we can only broadcast peers after join gossip with all daemons, it should be less than TaskExpireTime
+	InitialBroadcastDelay time.Duration `mapstructure:"initialInterval" yaml:"initialInterval"`
 	// ReSyncInterval is the re-sync interval for check running gossip members.
 	ReSyncInterval time.Duration `mapstructure:"reSyncInterval" yaml:"reSyncInterval"`
 	// ReplicaThreshold is used for keeping replicas in all peers is not bigger than threshold to save storage
