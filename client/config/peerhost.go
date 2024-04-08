@@ -636,6 +636,8 @@ type StorageOption struct {
 	// WriteBufferSize indicates the buffer size when read from source, same usage with io.Copy
 	// for some resource plugins, bigger buffer size with better performance, on the other hand, bigger buffer size cost huge memory
 	WriteBufferSize unit.Bytes `mapstructure:"writeBufferSize" yaml:"writeBufferSize"`
+	// ReloadGoroutineCount indicates concurrent goroutine count when daemon load cache data
+	ReloadGoroutineCount int `mapstructure:"reloadGoroutineCount" yaml:"reloadGoroutineCount"`
 }
 
 type StoreStrategy string
