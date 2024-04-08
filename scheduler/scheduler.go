@@ -28,6 +28,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/johanbrandhorst/certify"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -123,7 +124,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	s.storage = storage
 
 	// Initialize dial options of manager grpc client.
-	managerDialOptions := []grpc.DialOption{}
+	managerDialOptions := []grpc.DialOption{grpc.WithStatsHandler(otelgrpc.NewClientHandler())}
 	if cfg.Security.AutoIssueCert {
 		clientTransportCredentials, err := rpc.NewClientCredentials(cfg.Security.TLSPolicy, nil, []byte(cfg.Security.CACert))
 		if err != nil {
@@ -144,7 +145,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 
 	// Initialize dial options of trainer grpc client.
 	if cfg.Trainer.Enable {
-		trainerDialOptions := []grpc.DialOption{}
+		trainerDialOptions := []grpc.DialOption{grpc.WithStatsHandler(otelgrpc.NewClientHandler())}
 		if cfg.Security.AutoIssueCert {
 			clientTransportCredentials, err := rpc.NewClientCredentials(cfg.Security.TLSPolicy, nil, []byte(cfg.Security.CACert))
 			if err != nil {
