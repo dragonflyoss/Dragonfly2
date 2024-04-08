@@ -27,6 +27,16 @@ scheduler:
     verbose: true
     network:
       enableIPv6: true
+    scheduler:
+      algorithm: nt  
+    networkTopology:
+      collectInterval: 2m
+      probe:
+        queueLength: 5
+        count: 10
+      cache:
+        interval: 5m
+        ttl: 5m  
 
 seedPeer:
   image: dragonflyoss/dfdaemon
@@ -59,6 +69,10 @@ seedPeer:
       prefetch: true
     network:
       enableIPv6: true
+    networkTopology:
+      enable: true
+      probe:
+        interval: 10s  
 
 dfdaemon:
   image: dragonflyoss/dfdaemon
@@ -106,6 +120,10 @@ dfdaemon:
         - regx: file-server
     network:
       enableIPv6: true
+    networkTopology:
+      enable: true
+      probe:
+        interval: 10s  
 
 manager:
   image: dragonflyoss/manager

@@ -19,6 +19,7 @@
 package resource
 
 import (
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -108,7 +109,7 @@ func New(cfg *config.Config, gc gc.GC, dynconfig config.DynconfigInterface, opti
 
 	// Initialize seed peer interface.
 	if cfg.SeedPeer.Enable {
-		dialOptions := []grpc.DialOption{}
+		dialOptions := []grpc.DialOption{grpc.WithStatsHandler(otelgrpc.NewClientHandler())}
 		if resource.transportCredentials != nil {
 			dialOptions = append(dialOptions, grpc.WithTransportCredentials(resource.transportCredentials))
 		} else {

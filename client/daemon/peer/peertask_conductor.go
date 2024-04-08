@@ -618,6 +618,12 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 		pt.cancel(commonv1.Code_ClientError, err.Error())
 		return
 	}
+	reader, err := digest.NewReader(digest.AlgorithmMD5, bytes.NewBuffer(pt.tinyData.Content))
+	if err != nil {
+		pt.Errorf("create digest reader: %s", err)
+		pt.cancel(commonv1.Code_ClientError, err.Error())
+		return
+	}
 	n, err := pt.GetStorage().WritePiece(ctx,
 		&storage.WritePieceRequest{
 			PeerTaskMetadata: storage.PeerTaskMetadata{
@@ -635,7 +641,7 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 				Style: 0,
 			},
 			UnknownLength: false,
-			Reader:        bytes.NewBuffer(pt.tinyData.Content),
+			Reader:        reader,
 			NeedGenMetadata: func(n int64) (int32, int64, bool) {
 				return 1, contentLength, true
 			},

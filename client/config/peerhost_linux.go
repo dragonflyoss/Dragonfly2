@@ -142,6 +142,7 @@ var peerHostConfig = func() *DaemonOption {
 			StoreStrategy:          SimpleLocalTaskStoreStrategy,
 			Multiplex:              false,
 			DiskGCThresholdPercent: 95,
+			ReloadGoroutineCount:   64,
 		},
 		Health: &HealthOption{
 			ListenOption: ListenOption{
