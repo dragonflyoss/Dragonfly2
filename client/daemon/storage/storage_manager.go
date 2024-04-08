@@ -515,7 +515,8 @@ func (s *storageManager) FindCompletedTask(taskID string) *ReusePeerTask {
 	if !ok {
 		return nil
 	}
-	for _, t := range ts {
+	for i := len(ts) - 1; i > -1; i-- {
+		t := ts[i]
 		if t.invalid.Load() {
 			continue
 		}
@@ -549,7 +550,8 @@ func (s *storageManager) FindPartialCompletedTask(taskID string, rg *nethttp.Ran
 	if !ok {
 		return nil
 	}
-	for _, t := range ts {
+	for i := len(ts) - 1; i > -1; i-- {
+		t := ts[i]
 		if t.invalid.Load() {
 			continue
 		}
@@ -583,7 +585,8 @@ func (s *storageManager) FindCompletedSubTask(taskID string) *ReusePeerTask {
 	if !ok {
 		return nil
 	}
-	for _, t := range ts {
+	for i := len(ts) - 1; i > -1; i-- {
+		t := ts[i]
 		if t.invalid.Load() {
 			continue
 		}
