@@ -663,16 +663,31 @@ func tunnelHTTPS(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
+	defer func() {
+		// Close() will close both read and write, we need wait all stream is done, then close connections
+		if err = dst.Close(); err != nil {
+			logger.Errorf("close hijacked destination error: %s", err)
+		}
+	}()
+
 	w.WriteHeader(http.StatusOK)
 	hijacker, ok := w.(http.Hijacker)
 	if !ok {
+		logger.Errorf("writer is not http.Hijacker, http.ResponseWriter: %#v, http.Request: %#v", w, r)
 		http.Error(w, "Hijacking not supported", http.StatusInternalServerError)
 		return
 	}
+
 	clientConn, _, err := hijacker.Hijack()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		return
 	}
+	defer func() {
+		if err = clientConn.Close(); err != nil {
+			logger.Errorf("close hijacked client error: %s", err)
+		}
+	}()
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -689,14 +704,6 @@ func tunnelHTTPS(w http.ResponseWriter, r *http.Request) {
 		logger.Errorf("copy hijacked stream from destination to client error: %s", err)
 	}
 	wg.Wait()
-
-	// Close() will close both read and write, we need wait all stream is done, then close connections
-	if err = dst.Close(); err != nil {
-		logger.Errorf("close hijacked destination error: %s", err)
-	}
-	if err = clientConn.Close(); err != nil {
-		logger.Errorf("close hijacked client error: %s", err)
-	}
 }
 
 func copyHeader(dst, src http.Header) {
