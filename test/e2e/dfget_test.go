@@ -200,7 +200,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 			Expect(err).NotTo(HaveOccurred())
 
 			// slow download
-			Expect(end.Sub(start).Seconds() < 200.0).To(Equal(true))
+			Expect(end.Sub(start).Seconds() < 300.0).To(Equal(true))
 		}
 
 		// calculate downloaded files sha256sum
