@@ -26,8 +26,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/johanbrandhorst/certify"
+	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"

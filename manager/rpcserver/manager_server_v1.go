@@ -26,8 +26,8 @@ import (
 	"strings"
 	"time"
 
-	cachev8 "github.com/go-redis/cache/v8"
-	"github.com/go-redis/redis/v8"
+	cachev9 "github.com/go-redis/cache/v9"
+	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -165,7 +165,7 @@ func (s *managerServerV1) GetSeedPeer(ctx context.Context, req *managerv1.GetSee
 	}
 
 	// Cache data.
-	if err := s.cache.Once(&cachev8.Item{
+	if err := s.cache.Once(&cachev9.Item{
 		Ctx:   ctx,
 		Key:   cacheKey,
 		Value: &pbSeedPeer,
@@ -237,7 +237,7 @@ func (s *managerServerV1) ListSeedPeers(ctx context.Context, req *managerv1.List
 	}
 
 	// Cache data.
-	if err := s.cache.Once(&cachev8.Item{
+	if err := s.cache.Once(&cachev9.Item{
 		Ctx:   ctx,
 		Key:   cacheKey,
 		Value: &pbListSeedPeersResponse,
@@ -437,7 +437,7 @@ func (s *managerServerV1) GetScheduler(ctx context.Context, req *managerv1.GetSc
 	}
 
 	// Cache data.
-	if err := s.cache.Once(&cachev8.Item{
+	if err := s.cache.Once(&cachev9.Item{
 		Ctx:   ctx,
 		Key:   cacheKey,
 		Value: &pbScheduler,
@@ -650,7 +650,7 @@ func (s *managerServerV1) ListSchedulers(ctx context.Context, req *managerv1.Lis
 	}
 
 	// Cache data.
-	if err := s.cache.Once(&cachev8.Item{
+	if err := s.cache.Once(&cachev9.Item{
 		Ctx:   ctx,
 		Key:   cacheKey,
 		Value: &pbListSchedulersResponse,
@@ -712,7 +712,7 @@ func (s *managerServerV1) ListBuckets(ctx context.Context, req *managerv1.ListBu
 	}
 
 	// Cache data.
-	if err := s.cache.Once(&cachev8.Item{
+	if err := s.cache.Once(&cachev9.Item{
 		Ctx:   ctx,
 		Key:   cacheKey,
 		Value: &pbListBucketsResponse,
@@ -786,7 +786,7 @@ func (s *managerServerV1) ListApplications(ctx context.Context, req *managerv1.L
 	}
 
 	// Cache data.
-	if err := s.cache.Once(&cachev8.Item{
+	if err := s.cache.Once(&cachev9.Item{
 		Ctx:   ctx,
 		Key:   cacheKey,
 		Value: &pbListApplicationsResponse,
