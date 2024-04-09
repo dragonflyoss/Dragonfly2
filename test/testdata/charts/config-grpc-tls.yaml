@@ -109,7 +109,7 @@ seedPeer:
     networkTopology:
       enable: true
       probe:
-        interval: 10s
+        interval: 15s
     security:
       autoIssueCert: true
       tlsVerify: true
@@ -185,7 +185,7 @@ dfdaemon:
     networkTopology:
       enable: true
       probe:
-        interval: 10s
+        interval: 15s
     proxy:
       defaultFilter: "Expires&Signature&ns"
       security:

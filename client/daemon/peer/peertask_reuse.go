@@ -206,6 +206,7 @@ func (ptm *peerTaskManager) storePartialFile(ctx context.Context, request *FileT
 		log.Errorf("open dest file error when reuse peer task: %s", err)
 		return err
 	}
+	defer f.Close()
 	rc, err := ptm.StorageManager.ReadAllPieces(ctx,
 		&storage.ReadAllPiecesRequest{PeerTaskMetadata: reuse.PeerTaskMetadata, Range: rg})
 	if err != nil {
