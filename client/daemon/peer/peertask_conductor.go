@@ -35,6 +35,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
+	dfdaemonv1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
 	errordetailsv1 "d7y.io/api/v2/pkg/apis/errordetails/v1"
 	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 
@@ -1435,6 +1436,21 @@ func (pt *peerTaskConductor) done() {
 	} else {
 		pt.Infof("step 3: report successful peer result ok")
 	}
+
+	if pt.peerTaskManager.PeerSearchBroadcaster != nil {
+		var state dfdaemonv1.PeerState
+		if success {
+			state = dfdaemonv1.PeerState_Success
+		} else {
+			state = dfdaemonv1.PeerState_Failed
+		}
+		pt.peerTaskManager.PeerSearchBroadcaster.BroadcastPeer(
+			&dfdaemonv1.PeerMetadata{
+				TaskId: pt.taskID,
+				PeerId: pt.peerID,
+				State:  state,
+			})
+	}
 }
 
 func (pt *peerTaskConductor) Fail() {
@@ -1524,6 +1540,15 @@ func (pt *peerTaskConductor) fail() {
 	pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
 	pt.span.SetAttributes(config.AttributePeerTaskCode.Int(int(pt.failedCode)))
 	pt.span.SetAttributes(config.AttributePeerTaskMessage.String(pt.failedReason))
+
+	if pt.peerTaskManager.PeerSearchBroadcaster != nil {
+		pt.peerTaskManager.PeerSearchBroadcaster.BroadcastPeer(
+			&dfdaemonv1.PeerMetadata{
+				TaskId: pt.taskID,
+				PeerId: pt.peerID,
+				State:  dfdaemonv1.PeerState_Failed,
+			})
+	}
 }
 
 // Validate stores metadata and validates digest

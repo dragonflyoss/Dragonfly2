@@ -320,7 +320,7 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 	}
 	req.URL = signURL
 
-	taskID := idgen.TaskIDV1(signURL, urlMeta)
+	taskID := req.TaskID()
 	log := logger.WithTaskID(taskID)
 	log.Infof("get object %s meta: %s %#v", objectKey, signURL, urlMeta)
 

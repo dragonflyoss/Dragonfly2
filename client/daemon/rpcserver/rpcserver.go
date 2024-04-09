@@ -56,6 +56,7 @@ import (
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
+	"d7y.io/dragonfly/v2/client/daemon/pex"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/internal/dferrors"
@@ -83,6 +84,7 @@ type server struct {
 	peerHost        *schedulerv1.PeerHost
 	peerTaskManager peer.TaskManager
 	storageManager  storage.Manager
+	peerExchanger   pex.PeerExchangeRPC
 	schedulerClient schedulerclient.V1
 
 	healthServer   *health.Server
@@ -101,13 +103,14 @@ func init() {
 }
 
 func New(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskManager,
-	storageManager storage.Manager, schedulerClient schedulerclient.V1, recursiveConcurrent int, cacheRecursiveMetadata time.Duration,
+	storageManager storage.Manager, peerExchanger pex.PeerExchangeRPC, schedulerClient schedulerclient.V1, recursiveConcurrent int, cacheRecursiveMetadata time.Duration,
 	downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Server, error) {
 	s := &server{
 		KeepAlive:       util.NewKeepAlive("rpc server"),
 		peerHost:        peerHost,
 		peerTaskManager: peerTaskManager,
 		storageManager:  storageManager,
+		peerExchanger:   peerExchanger,
 		schedulerClient: schedulerClient,
 
 		recursiveConcurrent:    recursiveConcurrent,

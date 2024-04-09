@@ -32,9 +32,11 @@ import (
 	"google.golang.org/grpc/status"
 
 	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
+	dfdaemonv1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
 	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
+	"d7y.io/dragonfly/v2/client/daemon/pex"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
@@ -137,6 +139,8 @@ type TaskManagerOption struct {
 	Prefetch          bool
 	GetPiecesMaxRetry int
 	SplitRunningTasks bool
+
+	PeerSearchBroadcaster pex.PeerSearchBroadcaster
 }
 
 func NewPeerTaskManager(opt *TaskManagerOption) (TaskManager, error) {
@@ -223,6 +227,13 @@ retry:
 		return p, false, nil
 	}
 	ptm.runningPeerTasks.Store(taskID, ptc)
+	if ptm.PeerSearchBroadcaster != nil {
+		ptm.PeerSearchBroadcaster.BroadcastPeer(&dfdaemonv1.PeerMetadata{
+			TaskId: taskID,
+			PeerId: ptc.peerID,
+			State:  dfdaemonv1.PeerState_Running,
+		})
+	}
 	ptm.conductorLock.Unlock()
 	metrics.PeerTaskCount.Add(1)
 	logger.Debugf("peer task created: %s/%s", ptc.taskID, ptc.peerID)
@@ -352,7 +363,8 @@ func (ptm *peerTaskManager) StartStreamTask(ctx context.Context, req *StreamTask
 		IsMigrating: false,
 	}
 
-	taskID := idgen.TaskIDV1(req.URL, req.URLMeta)
+	taskID := req.TaskID()
+
 	if ptm.Multiplex {
 		// try breakpoint resume for task has range header
 		if req.Range != nil && !ptm.SplitRunningTasks {

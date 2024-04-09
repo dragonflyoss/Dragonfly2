@@ -41,9 +41,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
+	dfdaemonv1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
+	"d7y.io/dragonfly/v2/client/daemon/pex"
 	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
@@ -106,6 +108,8 @@ type Manager interface {
 	FindPartialCompletedTask(taskID string, rg *nethttp.Range) *ReusePeerTask
 	// CleanUp cleans all storage data
 	CleanUp()
+	// ListAllPeers return all peers info
+	ListAllPeers(perGroupCount int) [][]*dfdaemonv1.PeerMetadata
 }
 
 var (
@@ -147,6 +151,8 @@ type storageManager struct {
 
 	subIndexRWMutex       sync.RWMutex
 	subIndexTask2PeerTask map[string][]*localSubTaskStore // key: task id, value: slice of localSubTaskStore
+
+	peerSearchBroadcaster pex.PeerSearchBroadcaster
 }
 
 var _ gc.GC = (*storageManager)(nil)
@@ -233,6 +239,13 @@ func WithWriteBufferSize(size int64) func(*storageManager) error {
 				return make([]byte, size)
 			}}
 		}
+		return nil
+	}
+}
+
+func WithPeerSearchBroadcaster(peerSearchBroadcaster pex.PeerSearchBroadcaster) func(*storageManager) error {
+	return func(manager *storageManager) error {
+		manager.peerSearchBroadcaster = peerSearchBroadcaster
 		return nil
 	}
 }
@@ -922,6 +935,17 @@ func (s *storageManager) TryGC() (bool, error) {
 		}
 	}
 
+	// broadcast delete peer event
+	if s.peerSearchBroadcaster != nil {
+		for _, task := range markedTasks {
+			s.peerSearchBroadcaster.BroadcastPeer(&dfdaemonv1.PeerMetadata{
+				TaskId: task.TaskID,
+				PeerId: task.PeerID,
+				State:  dfdaemonv1.PeerState_Deleted,
+			})
+		}
+	}
+
 	for _, key := range s.markedReclaimTasks {
 		t, ok := s.tasks.Load(key)
 		if !ok {
@@ -967,8 +991,17 @@ func (s *storageManager) TryGC() (bool, error) {
 func (s *storageManager) deleteTask(meta PeerTaskMetadata) error {
 	task, ok := s.LoadAndDeleteTask(meta)
 	if !ok {
-		logger.Infof("deleteTask: task meta not found: %v", meta)
+		logger.Warnf("deleteTask: task meta not found: %v", meta)
 		return nil
+	}
+
+	// broadcast delete peer event
+	if s.peerSearchBroadcaster != nil {
+		s.peerSearchBroadcaster.BroadcastPeer(&dfdaemonv1.PeerMetadata{
+			TaskId: meta.TaskID,
+			PeerId: meta.PeerID,
+			State:  dfdaemonv1.PeerState_Deleted,
+		})
 	}
 
 	logger.Debugf("deleteTask: deleting task: %v", meta)
@@ -1040,4 +1073,36 @@ func tryWriteWithBuffer(writer io.Writer, reader io.Reader, readSize int64) (wri
 		written, err = io.Copy(writer, io.LimitReader(reader, readSize))
 	}
 	return written, err
+}
+
+func (s *storageManager) ListAllPeers(perGroupCount int) [][]*dfdaemonv1.PeerMetadata {
+	s.indexRWMutex.RLock()
+	defer s.indexRWMutex.RUnlock()
+
+	if perGroupCount == 0 {
+		perGroupCount = 1000
+	}
+
+	allPeers := make([][]*dfdaemonv1.PeerMetadata, 0, len(s.indexTask2PeerTask)/perGroupCount)
+	peers := make([]*dfdaemonv1.PeerMetadata, 0, perGroupCount)
+
+	for taskID, task := range s.indexTask2PeerTask {
+		for _, peer := range task {
+			peers = append(peers, &dfdaemonv1.PeerMetadata{
+				TaskId: taskID,
+				PeerId: peer.PeerID,
+				State:  dfdaemonv1.PeerState_Success,
+			})
+
+			if len(peers) == perGroupCount {
+				allPeers = append(allPeers, peers)
+				peers = make([]*dfdaemonv1.PeerMetadata, 0, perGroupCount)
+			}
+		}
+	}
+
+	if len(peers) > 0 {
+		allPeers = append(allPeers, peers)
+	}
+	return allPeers
 }

@@ -41,6 +41,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	zapadapter "logur.dev/adapter/zap"
 
+	"d7y.io/api/v2/pkg/apis/dfdaemon/v1"
+	managerv1 "d7y.io/api/v2/pkg/apis/manager/v1"
 	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 
 	"d7y.io/dragonfly/v2/client/config"
@@ -50,6 +52,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/networktopology"
 	"d7y.io/dragonfly/v2/client/daemon/objectstorage"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
+	"d7y.io/dragonfly/v2/client/daemon/pex"
 	"d7y.io/dragonfly/v2/client/daemon/proxy"
 	"d7y.io/dragonfly/v2/client/daemon/rpcserver"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -97,6 +100,7 @@ type clientDaemon struct {
 	ProxyManager   proxy.Manager
 	StorageManager storage.Manager
 	GCManager      gc.Manager
+	pexServer      pex.PeerExchangeServer
 
 	PeerTaskManager peer.TaskManager
 	PieceManager    peer.PieceManager
@@ -228,6 +232,42 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		return nil, fmt.Errorf("failed to get schedulers: %w", err)
 	}
 
+	var (
+		peerExchange          pex.PeerExchangeServer
+		peerExchangeRPC       pex.PeerExchangeRPC
+		peerSearchBroadcaster pex.PeerSearchBroadcaster
+		reclaimFunc           func(task, peer string) error
+	)
+
+	if opt.IsSupportPeerExchange() {
+		peerExchange, err = pex.NewPeerExchange(
+			func(task, peer string) error {
+				return reclaimFunc(task, peer)
+			},
+			pex.NewSeedPeerMemberLister(func() ([]*managerv1.SeedPeer, error) {
+				peers, err := dynconfig.GetSeedPeers()
+				if err == nil {
+					return peers, nil
+				}
+				_ = dynconfig.Refresh()
+				return dynconfig.GetSeedPeers()
+			}),
+			opt.Download.GRPCDialTimeout, []grpc.DialOption{
+				grpc.WithTransportCredentials(grpcCredentials),
+			},
+			pex.WithInitialRetryInterval(opt.PeerExchange.InitialInterval),
+			pex.WithReSyncInterval(opt.PeerExchange.ReSyncInterval),
+			pex.WithReplicaThreshold(opt.PeerExchange.ReplicaThreshold))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if peerExchange != nil {
+		peerExchangeRPC = peerExchange.PeerExchangeRPC()
+		peerSearchBroadcaster = peerExchange.PeerSearchBroadcaster()
+	}
+
 	// Storage.Option.DataPath is same with Daemon DataDir
 	opt.Storage.DataPath = d.DataDir()
 	gcCallback := func(request storage.CommonTaskRequest) {
@@ -244,9 +284,18 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	dirMode := os.FileMode(opt.DataDirMode)
 	storageManager, err := storage.NewStorageManager(opt.Storage.StoreStrategy, &opt.Storage,
 		gcCallback, dirMode, storage.WithGCInterval(opt.GCInterval.Duration),
-		storage.WithWriteBufferSize(opt.Storage.WriteBufferSize.ToNumber()))
+		storage.WithWriteBufferSize(opt.Storage.WriteBufferSize.ToNumber()),
+		storage.WithPeerSearchBroadcaster(peerSearchBroadcaster))
 	if err != nil {
 		return nil, err
+	}
+
+	reclaimFunc = func(task, peer string) error {
+		return storageManager.UnregisterTask(context.Background(),
+			storage.CommonTaskRequest{
+				PeerID: peer,
+				TaskID: task,
+			})
 	}
 
 	pmOpts := []peer.PieceManagerOption{
@@ -276,14 +325,15 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			GRPCCredentials: grpcCredentials,
 			GRPCDialTimeout: opt.Download.GRPCDialTimeout,
 		},
-		SchedulerClient:   schedulerClient,
-		PerPeerRateLimit:  opt.Download.PerPeerRateLimit.Limit,
-		TotalRateLimit:    opt.Download.TotalRateLimit.Limit,
-		TrafficShaperType: opt.Download.TrafficShaperType,
-		Multiplex:         opt.Storage.Multiplex,
-		Prefetch:          opt.Download.Prefetch,
-		GetPiecesMaxRetry: opt.Download.GetPiecesMaxRetry,
-		SplitRunningTasks: opt.Download.SplitRunningTasks,
+		SchedulerClient:       schedulerClient,
+		PerPeerRateLimit:      opt.Download.PerPeerRateLimit.Limit,
+		TotalRateLimit:        opt.Download.TotalRateLimit.Limit,
+		TrafficShaperType:     opt.Download.TrafficShaperType,
+		Multiplex:             opt.Storage.Multiplex,
+		Prefetch:              opt.Download.Prefetch,
+		GetPiecesMaxRetry:     opt.Download.GetPiecesMaxRetry,
+		SplitRunningTasks:     opt.Download.SplitRunningTasks,
+		PeerSearchBroadcaster: peerSearchBroadcaster,
 	}
 	peerTaskManager, err := peer.NewPeerTaskManager(peerTaskManagerOption)
 	if err != nil {
@@ -308,7 +358,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		peerServerOption = append(peerServerOption, grpc.Creds(tlsCredentials))
 	}
 
-	rpcManager, err := rpcserver.New(host, peerTaskManager, storageManager, schedulerClient,
+	rpcManager, err := rpcserver.New(host, peerTaskManager, storageManager, peerExchangeRPC, schedulerClient,
 		opt.Download.RecursiveConcurrent.GoroutineCount, opt.Download.CacheRecursiveMetadata, downloadServerOption, peerServerOption)
 	if err != nil {
 		return nil, err
@@ -316,7 +366,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	// register notify for health check
 	dynconfig.Register(rpcManager)
 
-	proxyManager, err := proxy.NewProxyManager(host, peerTaskManager, opt.Proxy)
+	proxyManager, err := proxy.NewProxyManager(host, peerTaskManager, peerExchange, opt.Proxy)
 	if err != nil {
 		return nil, err
 	}
@@ -354,6 +404,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		UploadManager:   uploadManager,
 		ObjectStorage:   objectStorage,
 		StorageManager:  storageManager,
+		pexServer:       peerExchange,
 		GCManager:       gc.NewManager(opt.GCInterval.Duration),
 		dynconfig:       dynconfig,
 		dfpath:          d,
@@ -526,7 +577,14 @@ func (cd *clientDaemon) Serve() error {
 	var (
 		watchers []func(daemon *config.DaemonOption)
 		interval = cd.Option.Reload.Interval.Duration
+		allPeers [][]*dfdaemon.PeerMetadata
 	)
+
+	// get all peers to broadcast to other daemons
+	if cd.Option.IsSupportPeerExchange() {
+		allPeers = cd.StorageManager.ListAllPeers(1000)
+	}
+
 	cd.GCManager.Start()
 	// prepare download service listen
 	if cd.Option.Download.DownloadGRPC.UnixListen == nil {
@@ -603,12 +661,16 @@ func (cd *clientDaemon) Serve() error {
 		return nil
 	})
 
+	var proxyPort int
 	if cd.ProxyManager.IsEnabled() {
 		// prepare proxy service listen
 		if cd.Option.Proxy.TCPListen == nil {
 			return errors.New("proxy tcp listen option is empty")
 		}
-		proxyListener, proxyPort, err := cd.prepareTCPListener(cd.Option.Proxy.ListenOption, true)
+		var (
+			proxyListener net.Listener
+		)
+		proxyListener, proxyPort, err = cd.prepareTCPListener(cd.Option.Proxy.ListenOption, true)
 		if err != nil {
 			logger.Errorf("failed to listen for proxy service: %v", err)
 			return err
@@ -649,6 +711,28 @@ func (cd *clientDaemon) Serve() error {
 		watchers = append(watchers, func(daemon *config.DaemonOption) {
 			cd.ProxyManager.Watch(daemon.Proxy)
 		})
+	}
+
+	if cd.Option.IsSupportPeerExchange() {
+		go func() {
+			err := cd.pexServer.Serve(&pex.MemberMeta{
+				HostID:    cd.schedPeerHost.Id,
+				IP:        ip.IPv4.String(), // TODO support ipv6
+				RPCPort:   cd.schedPeerHost.RpcPort,
+				ProxyPort: int32(proxyPort),
+			})
+			if err != nil {
+				logger.Errorf("peer exchange server error: %v", err)
+			}
+		}()
+		go func() {
+			time.Sleep(cd.Option.PeerExchange.InitialBroadcastDelay)
+			logger.Infof("start to broadcast peers")
+			for _, peers := range allPeers {
+				cd.pexServer.PeerSearchBroadcaster().BroadcastPeers(&dfdaemon.PeerExchangeData{PeerMetadatas: peers})
+			}
+			logger.Infof("broadcast peers done")
+		}()
 	}
 
 	// serve upload service

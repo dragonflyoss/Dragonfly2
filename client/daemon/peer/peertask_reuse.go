@@ -241,11 +241,11 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context, taskID s
 		reuse = ptm.StorageManager.FindCompletedTask(taskID)
 	}
 
+	// for ranged request, check the parent task
 	if reuse == nil {
 		if request.Range == nil {
 			return nil, nil, false
 		}
-		// for ranged request, check the parent task
 		reuseRange = request.Range
 		taskID = idgen.ParentTaskIDV1(request.URL, request.URLMeta)
 		reuse = ptm.StorageManager.FindPartialCompletedTask(taskID, reuseRange)

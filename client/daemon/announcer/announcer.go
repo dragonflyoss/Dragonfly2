@@ -302,7 +302,7 @@ func (a *announcer) newAnnounceHostRequest() (*schedulerv1.AnnounceHostRequest, 
 
 // announceSeedPeer announces peer information to manager.
 func (a *announcer) announceToManager() error {
-	// Accounce seed peer information to manager.
+	// Announce seed peer information to manager.
 	if a.config.Scheduler.Manager.SeedPeer.Enable {
 		var objectStoragePort int32
 		if a.config.ObjectStorage.Enable {
