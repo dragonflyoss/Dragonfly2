@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 
 	"d7y.io/dragonfly/v2/pkg/types"
 )

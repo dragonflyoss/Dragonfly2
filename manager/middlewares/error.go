@@ -22,9 +22,9 @@ import (
 
 	"github.com/VividCortex/mysqlerr"
 	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v8"
 	"github.com/go-sql-driver/mysql"
 	redigo "github.com/gomodule/redigo/redis"
+	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 

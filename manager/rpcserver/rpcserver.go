@@ -20,7 +20,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
 	"gorm.io/gorm"
 
