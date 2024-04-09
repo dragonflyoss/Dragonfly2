@@ -67,10 +67,10 @@ seedPeer:
       writeBufferSize: 1Mi
     download:
       prefetch: true
-      networkTopology:
+    networkTopology:
       enable: true
       probe:
-        interval: 10s 
+        interval: 15s 
 
 dfdaemon:
   image: dragonflyoss/dfdaemon
@@ -121,7 +121,7 @@ dfdaemon:
     networkTopology:
       enable: true
       probe:
-        interval: 10s     
+        interval: 15s     
 
 manager:
   image: dragonflyoss/manager
