@@ -121,7 +121,7 @@ var _ = BeforeSuite(func() {
 		fmt.Printf("special image name: %s\n", image)
 
 		stableImageTag := os.Getenv("DRAGONFLY_STABLE_IMAGE_TAG")
-		Expect(fmt.Sprintf("dragonflyoss/%s:%s", imageName, stableImageTag)).To(Equal(image))
+		Expect(fmt.Sprintf("docker.io/dragonflyoss/%s:%s", imageName, stableImageTag)).To(Equal(image))
 	}
 
 	rawGitCommit, err := util.GitCommand("rev-parse", "--short", "HEAD").CombinedOutput()

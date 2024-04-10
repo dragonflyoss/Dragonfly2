@@ -147,7 +147,7 @@ jobs:
 
       - name: Setup dragonfly
         run: |
-          helm install --wait --timeout 10m --dependency-update --create-namespace --namespace dragonfly-system --set ${{ matrix.chart-name }}.tag=${{ matrix.image-tag }} --set ${{ matrix.chart-name }}.image=dragonflyoss/${{ matrix.image }} -f ${{ env.DRAGONFLY_CHARTS_CONFIG_PATH }} dragonfly ${{ env.DRAGONFLY_CHARTS_PATH }}
+          helm install --wait --timeout 10m --dependency-update --create-namespace --namespace dragonfly-system --set ${{ matrix.chart-name }}.image.tag=${{ matrix.image-tag }} --set ${{ matrix.chart-name }}.image.repository=dragonflyoss/${{ matrix.image }} -f ${{ env.DRAGONFLY_CHARTS_CONFIG_PATH }} dragonfly ${{ env.DRAGONFLY_CHARTS_PATH }}
           kubectl apply -f ${{ env.DRAGONFLY_FILE_SERVER_PATH }}
           kubectl apply -f ${{ env.DRAGONFLY_FILE_SERVER_NO_CONTENT_LENGTH_PATH }}
           kubectl apply -f ${{ env.DRAGONFLY_PROXY_SERVER_PATH }}
