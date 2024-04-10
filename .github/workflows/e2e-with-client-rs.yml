@@ -74,7 +74,9 @@ jobs:
       - name: Pull Rust Client Image
         run: |
           cd client-rs
-          CLIENT_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
+          # TODO Use the latest tag.
+          # CLIENT_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
+          CLIENT_TAG=latest
           docker pull dragonflyoss/client:$CLIENT_TAG
           docker tag dragonflyoss/client:$CLIENT_TAG dragonflyoss/client:latest
 
