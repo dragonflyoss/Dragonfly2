@@ -85,8 +85,7 @@ func (ts *plainTrafficShaper) Start() {
 		for {
 			select {
 			case <-ticker.C:
-				ts.lastSecondBandwidth.Store(ts.usingBandWidth.Load())
-				ts.usingBandWidth.Store(0)
+				ts.lastSecondBandwidth.Store(ts.usingBandWidth.Swap(0))
 			case <-ts.stopCh:
 				return
 			}
@@ -157,8 +156,7 @@ func (ts *samplingTrafficShaper) Start() {
 		for {
 			select {
 			case <-ticker.C:
-				ts.lastSecondBandwidth.Store(ts.usingBandWidth.Load())
-				ts.usingBandWidth.Store(0)
+				ts.lastSecondBandwidth.Store(ts.usingBandWidth.Swap(0))
 				ts.updateLimit()
 			case <-ts.stopCh:
 				return
