@@ -257,7 +257,7 @@ func (s *storageManager) RegisterTask(ctx context.Context, req *RegisterTaskRequ
 			TaskID: req.TaskID,
 		})
 	if ok {
-		return ts, nil
+		return s.keepAliveTaskStorageDriver(ts), nil
 	}
 	// double check if task store exists
 	// if ok, just unlock and return
@@ -268,10 +268,14 @@ func (s *storageManager) RegisterTask(ctx context.Context, req *RegisterTaskRequ
 			PeerID: req.PeerID,
 			TaskID: req.TaskID,
 		}); ok {
-		return ts, nil
+		return s.keepAliveTaskStorageDriver(ts), nil
 	}
 	// still not exist, create a new task store
-	return s.CreateTask(req)
+	ts, err := s.CreateTask(req)
+	if err != nil {
+		return nil, err
+	}
+	return s.keepAliveTaskStorageDriver(ts), err
 }
 
 func (s *storageManager) RegisterSubTask(ctx context.Context, req *RegisterSubTaskRequest) (TaskStorageDriver, error) {
@@ -301,7 +305,7 @@ func (s *storageManager) RegisterSubTask(ctx context.Context, req *RegisterSubTa
 			TaskID: req.SubTask.TaskID,
 		}, subtask)
 	s.Unlock()
-	return subtask, nil
+	return s.keepAliveTaskStorageDriver(subtask), nil
 }
 
 func (s *storageManager) WritePiece(ctx context.Context, req *WritePieceRequest) (int64, error) {
@@ -1105,4 +1109,11 @@ func (s *storageManager) ListAllPeers(perGroupCount int) [][]*dfdaemonv1.PeerMet
 		allPeers = append(allPeers, peers)
 	}
 	return allPeers
+}
+
+func (s *storageManager) keepAliveTaskStorageDriver(ts TaskStorageDriver) TaskStorageDriver {
+	return &keepAliveTaskStorageDriver{
+		KeepAlive:         s,
+		TaskStorageDriver: ts,
+	}
 }
