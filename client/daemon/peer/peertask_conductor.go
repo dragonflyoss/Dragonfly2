@@ -916,9 +916,22 @@ func (pt *peerTaskConductor) pullSinglePiece() {
 		result  *DownloadPieceResult
 	)
 
+	// fallback to download from other peers with p2p mode
+	fallback := func() {
+		span.RecordError(err)
+		span.SetAttributes(config.AttributePieceSuccess.Bool(false))
+		span.End()
+
+		pt.Warnf("single piece download failed, switch to download from other peers")
+		pt.ReportPieceResult(request, result, err)
+
+		pt.pullPiecesWithP2P()
+	}
+
 	err = pt.UpdateStorage()
 	if err != nil {
-		goto fallback
+		fallback()
+		return
 	}
 
 	request = &DownloadPieceRequest{
@@ -932,26 +945,17 @@ func (pt *peerTaskConductor) pullSinglePiece() {
 	}
 
 	result, err = pt.PieceManager.DownloadPiece(ctx, request)
-	if err == nil {
-		pt.reportSuccessResult(request, result)
-		pt.PublishPieceInfo(request.piece.PieceNum, request.piece.RangeSize)
-
-		span.SetAttributes(config.AttributePieceSuccess.Bool(true))
-		span.End()
-		pt.Infof("single piece download success")
+	if err != nil {
+		fallback()
 		return
 	}
 
-	// fallback to download from other peers
-fallback:
-	span.RecordError(err)
-	span.SetAttributes(config.AttributePieceSuccess.Bool(false))
+	pt.reportSuccessResult(request, result)
+	pt.PublishPieceInfo(request.piece.PieceNum, request.piece.RangeSize)
+
+	span.SetAttributes(config.AttributePieceSuccess.Bool(true))
 	span.End()
-
-	pt.Warnf("single piece download failed, switch to download from other peers")
-	pt.ReportPieceResult(request, result, err)
-
-	pt.pullPiecesWithP2P()
+	pt.Infof("single piece download success")
 	return
 }
 
