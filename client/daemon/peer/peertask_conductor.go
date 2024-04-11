@@ -910,25 +910,14 @@ func (pt *peerTaskConductor) pullSinglePiece() {
 	pt.SetTotalPieces(1)
 	pt.SetPieceMd5Sign(digest.SHA256FromStrings(pt.singlePiece.PieceInfo.PieceMd5))
 
-	request := &DownloadPieceRequest{
-		storage: pt.GetStorage(),
-		piece:   pt.singlePiece.PieceInfo,
-		log:     pt.Log(),
-		TaskID:  pt.GetTaskID(),
-		PeerID:  pt.GetPeerID(),
-		DstPid:  pt.singlePiece.DstPid,
-		DstAddr: pt.singlePiece.DstAddr,
-	}
+	var (
+		err     error
+		request *DownloadPieceRequest
+		result  *DownloadPieceResult
+	)
 
-	if result, err := pt.PieceManager.DownloadPiece(ctx, request); err == nil {
-		pt.reportSuccessResult(request, result)
-		pt.PublishPieceInfo(request.piece.PieceNum, request.piece.RangeSize)
-
-		span.SetAttributes(config.AttributePieceSuccess.Bool(true))
-		span.End()
-		pt.Infof("single piece download success")
-	} else {
-		// fallback to download from other peers
+	// fallback to download from other peers with p2p mode
+	fallback := func() {
 		span.RecordError(err)
 		span.SetAttributes(config.AttributePieceSuccess.Bool(false))
 		span.End()
@@ -938,6 +927,36 @@ func (pt *peerTaskConductor) pullSinglePiece() {
 
 		pt.pullPiecesWithP2P()
 	}
+
+	err = pt.UpdateStorage()
+	if err != nil {
+		fallback()
+		return
+	}
+
+	request = &DownloadPieceRequest{
+		storage: pt.GetStorage(),
+		piece:   pt.singlePiece.PieceInfo,
+		log:     pt.Log(),
+		TaskID:  pt.GetTaskID(),
+		PeerID:  pt.GetPeerID(),
+		DstPid:  pt.singlePiece.DstPid,
+		DstAddr: pt.singlePiece.DstAddr,
+	}
+
+	result, err = pt.PieceManager.DownloadPiece(ctx, request)
+	if err != nil {
+		fallback()
+		return
+	}
+
+	pt.reportSuccessResult(request, result)
+	pt.PublishPieceInfo(request.piece.PieceNum, request.piece.RangeSize)
+
+	span.SetAttributes(config.AttributePieceSuccess.Bool(true))
+	span.End()
+	pt.Infof("single piece download success")
+	return
 }
 
 func (pt *peerTaskConductor) updateMetadata(piecePacket *commonv1.PiecePacket) {
