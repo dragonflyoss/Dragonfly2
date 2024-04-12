@@ -35,6 +35,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
+	dfdaemonv1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
 	errordetailsv1 "d7y.io/api/v2/pkg/apis/errordetails/v1"
 	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 
@@ -909,25 +910,14 @@ func (pt *peerTaskConductor) pullSinglePiece() {
 	pt.SetTotalPieces(1)
 	pt.SetPieceMd5Sign(digest.SHA256FromStrings(pt.singlePiece.PieceInfo.PieceMd5))
 
-	request := &DownloadPieceRequest{
-		storage: pt.GetStorage(),
-		piece:   pt.singlePiece.PieceInfo,
-		log:     pt.Log(),
-		TaskID:  pt.GetTaskID(),
-		PeerID:  pt.GetPeerID(),
-		DstPid:  pt.singlePiece.DstPid,
-		DstAddr: pt.singlePiece.DstAddr,
-	}
+	var (
+		err     error
+		request *DownloadPieceRequest
+		result  *DownloadPieceResult
+	)
 
-	if result, err := pt.PieceManager.DownloadPiece(ctx, request); err == nil {
-		pt.reportSuccessResult(request, result)
-		pt.PublishPieceInfo(request.piece.PieceNum, request.piece.RangeSize)
-
-		span.SetAttributes(config.AttributePieceSuccess.Bool(true))
-		span.End()
-		pt.Infof("single piece download success")
-	} else {
-		// fallback to download from other peers
+	// fallback to download from other peers with p2p mode
+	fallback := func() {
 		span.RecordError(err)
 		span.SetAttributes(config.AttributePieceSuccess.Bool(false))
 		span.End()
@@ -937,6 +927,36 @@ func (pt *peerTaskConductor) pullSinglePiece() {
 
 		pt.pullPiecesWithP2P()
 	}
+
+	err = pt.UpdateStorage()
+	if err != nil {
+		fallback()
+		return
+	}
+
+	request = &DownloadPieceRequest{
+		storage: pt.GetStorage(),
+		piece:   pt.singlePiece.PieceInfo,
+		log:     pt.Log(),
+		TaskID:  pt.GetTaskID(),
+		PeerID:  pt.GetPeerID(),
+		DstPid:  pt.singlePiece.DstPid,
+		DstAddr: pt.singlePiece.DstAddr,
+	}
+
+	result, err = pt.PieceManager.DownloadPiece(ctx, request)
+	if err != nil {
+		fallback()
+		return
+	}
+
+	pt.reportSuccessResult(request, result)
+	pt.PublishPieceInfo(request.piece.PieceNum, request.piece.RangeSize)
+
+	span.SetAttributes(config.AttributePieceSuccess.Bool(true))
+	span.End()
+	pt.Infof("single piece download success")
+	return
 }
 
 func (pt *peerTaskConductor) updateMetadata(piecePacket *commonv1.PiecePacket) {
@@ -1435,6 +1455,21 @@ func (pt *peerTaskConductor) done() {
 	} else {
 		pt.Infof("step 3: report successful peer result ok")
 	}
+
+	if pt.peerTaskManager.PeerSearchBroadcaster != nil {
+		var state dfdaemonv1.PeerState
+		if success {
+			state = dfdaemonv1.PeerState_Success
+		} else {
+			state = dfdaemonv1.PeerState_Failed
+		}
+		pt.peerTaskManager.PeerSearchBroadcaster.BroadcastPeer(
+			&dfdaemonv1.PeerMetadata{
+				TaskId: pt.taskID,
+				PeerId: pt.peerID,
+				State:  state,
+			})
+	}
 }
 
 func (pt *peerTaskConductor) Fail() {
@@ -1524,6 +1559,15 @@ func (pt *peerTaskConductor) fail() {
 	pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
 	pt.span.SetAttributes(config.AttributePeerTaskCode.Int(int(pt.failedCode)))
 	pt.span.SetAttributes(config.AttributePeerTaskMessage.String(pt.failedReason))
+
+	if pt.peerTaskManager.PeerSearchBroadcaster != nil {
+		pt.peerTaskManager.PeerSearchBroadcaster.BroadcastPeer(
+			&dfdaemonv1.PeerMetadata{
+				TaskId: pt.taskID,
+				PeerId: pt.peerID,
+				State:  dfdaemonv1.PeerState_Failed,
+			})
+	}
 }
 
 // Validate stores metadata and validates digest

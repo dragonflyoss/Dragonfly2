@@ -78,6 +78,7 @@ type DaemonOption struct {
 	Network         *NetworkOption        `mapstructure:"network" yaml:"network"`
 	Announcer       AnnouncerOption       `mapstructure:"announcer" yaml:"announcer"`
 	NetworkTopology NetworkTopologyOption `mapstructure:"networkTopology" yaml:"networkTopology"`
+	PeerExchange    PeerExchangeOption    `mapstructure:"peerExchange" yaml:"peerExchange"`
 }
 
 func NewDaemonConfig() *DaemonOption {
@@ -229,6 +230,10 @@ func (p *DaemonOption) Validate() error {
 	return nil
 }
 
+func (p *DaemonOption) IsSupportPeerExchange() bool {
+	return p.PeerExchange.Enable && p.Scheduler.Manager.Enable && p.Scheduler.Manager.SeedPeer.Enable
+}
+
 type GlobalSecurityOption struct {
 	// AutoIssueCert indicates to issue client certificates for all grpc call
 	// if AutoIssueCert is false, any other option in Security will be ignored
@@ -373,7 +378,7 @@ type ProxyOption struct {
 	ProxyRules         []*ProxyRule      `mapstructure:"proxies" yaml:"proxies"`
 	HijackHTTPS        *HijackConfig     `mapstructure:"hijackHTTPS" yaml:"hijackHTTPS"`
 	DumpHTTPContent    bool              `mapstructure:"dumpHTTPContent" yaml:"dumpHTTPContent"`
-	// ExtraRegistryMirrors add more mirror for different ports
+	// ExtraRegistryMirrors add more mirrors for different ports
 	ExtraRegistryMirrors []*RegistryMirror `mapstructure:"extraRegistryMirrors" yaml:"extraRegistryMirrors"`
 }
 
@@ -965,4 +970,17 @@ type NetworkTopologyOption struct {
 type ProbeOption struct {
 	// Interval is the interval of probing hosts.
 	Interval time.Duration `mapstructure:"interval" yaml:"interval"`
+}
+
+type PeerExchangeOption struct {
+	// Enable peer exchange service.
+	Enable bool `mapstructure:"enable" yaml:"enable"`
+	// InitialInterval is the initial retry interval when start and join gossip.
+	InitialInterval time.Duration `mapstructure:"initialInterval" yaml:"initialInterval"`
+	// InitialBroadcastDelay is the initial broadcast delay when daemon start due to we can only broadcast peers after join gossip with all daemons, it should be less than TaskExpireTime
+	InitialBroadcastDelay time.Duration `mapstructure:"initialInterval" yaml:"initialInterval"`
+	// ReSyncInterval is the re-sync interval for check running gossip members.
+	ReSyncInterval time.Duration `mapstructure:"reSyncInterval" yaml:"reSyncInterval"`
+	// ReplicaThreshold is used for keeping replicas in all peers is not bigger than threshold to save storage
+	ReplicaThreshold int `mapstructure:"replicaThreshold" yaml:"replicaThreshold"`
 }

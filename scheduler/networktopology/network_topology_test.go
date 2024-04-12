@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-redis/redismock/v8"
+	"github.com/go-redis/redismock/v9"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 

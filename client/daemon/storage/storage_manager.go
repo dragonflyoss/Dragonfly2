@@ -41,9 +41,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
+	dfdaemonv1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
+	"d7y.io/dragonfly/v2/client/daemon/pex"
 	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
@@ -106,6 +108,8 @@ type Manager interface {
 	FindPartialCompletedTask(taskID string, rg *nethttp.Range) *ReusePeerTask
 	// CleanUp cleans all storage data
 	CleanUp()
+	// ListAllPeers return all peers info
+	ListAllPeers(perGroupCount int) [][]*dfdaemonv1.PeerMetadata
 }
 
 var (
@@ -147,6 +151,8 @@ type storageManager struct {
 
 	subIndexRWMutex       sync.RWMutex
 	subIndexTask2PeerTask map[string][]*localSubTaskStore // key: task id, value: slice of localSubTaskStore
+
+	peerSearchBroadcaster pex.PeerSearchBroadcaster
 }
 
 var _ gc.GC = (*storageManager)(nil)
@@ -237,6 +243,13 @@ func WithWriteBufferSize(size int64) func(*storageManager) error {
 	}
 }
 
+func WithPeerSearchBroadcaster(peerSearchBroadcaster pex.PeerSearchBroadcaster) func(*storageManager) error {
+	return func(manager *storageManager) error {
+		manager.peerSearchBroadcaster = peerSearchBroadcaster
+		return nil
+	}
+}
+
 func (s *storageManager) RegisterTask(ctx context.Context, req *RegisterTaskRequest) (TaskStorageDriver, error) {
 	ts, ok := s.LoadTask(
 		PeerTaskMetadata{
@@ -244,7 +257,7 @@ func (s *storageManager) RegisterTask(ctx context.Context, req *RegisterTaskRequ
 			TaskID: req.TaskID,
 		})
 	if ok {
-		return ts, nil
+		return s.keepAliveTaskStorageDriver(ts), nil
 	}
 	// double check if task store exists
 	// if ok, just unlock and return
@@ -255,10 +268,14 @@ func (s *storageManager) RegisterTask(ctx context.Context, req *RegisterTaskRequ
 			PeerID: req.PeerID,
 			TaskID: req.TaskID,
 		}); ok {
-		return ts, nil
+		return s.keepAliveTaskStorageDriver(ts), nil
 	}
 	// still not exist, create a new task store
-	return s.CreateTask(req)
+	ts, err := s.CreateTask(req)
+	if err != nil {
+		return nil, err
+	}
+	return s.keepAliveTaskStorageDriver(ts), err
 }
 
 func (s *storageManager) RegisterSubTask(ctx context.Context, req *RegisterSubTaskRequest) (TaskStorageDriver, error) {
@@ -288,7 +305,7 @@ func (s *storageManager) RegisterSubTask(ctx context.Context, req *RegisterSubTa
 			TaskID: req.SubTask.TaskID,
 		}, subtask)
 	s.Unlock()
-	return subtask, nil
+	return s.keepAliveTaskStorageDriver(subtask), nil
 }
 
 func (s *storageManager) WritePiece(ctx context.Context, req *WritePieceRequest) (int64, error) {
@@ -922,6 +939,17 @@ func (s *storageManager) TryGC() (bool, error) {
 		}
 	}
 
+	// broadcast delete peer event
+	if s.peerSearchBroadcaster != nil {
+		for _, task := range markedTasks {
+			s.peerSearchBroadcaster.BroadcastPeer(&dfdaemonv1.PeerMetadata{
+				TaskId: task.TaskID,
+				PeerId: task.PeerID,
+				State:  dfdaemonv1.PeerState_Deleted,
+			})
+		}
+	}
+
 	for _, key := range s.markedReclaimTasks {
 		t, ok := s.tasks.Load(key)
 		if !ok {
@@ -967,8 +995,17 @@ func (s *storageManager) TryGC() (bool, error) {
 func (s *storageManager) deleteTask(meta PeerTaskMetadata) error {
 	task, ok := s.LoadAndDeleteTask(meta)
 	if !ok {
-		logger.Infof("deleteTask: task meta not found: %v", meta)
+		logger.Warnf("deleteTask: task meta not found: %v", meta)
 		return nil
+	}
+
+	// broadcast delete peer event
+	if s.peerSearchBroadcaster != nil {
+		s.peerSearchBroadcaster.BroadcastPeer(&dfdaemonv1.PeerMetadata{
+			TaskId: meta.TaskID,
+			PeerId: meta.PeerID,
+			State:  dfdaemonv1.PeerState_Deleted,
+		})
 	}
 
 	logger.Debugf("deleteTask: deleting task: %v", meta)
@@ -1040,4 +1077,43 @@ func tryWriteWithBuffer(writer io.Writer, reader io.Reader, readSize int64) (wri
 		written, err = io.Copy(writer, io.LimitReader(reader, readSize))
 	}
 	return written, err
+}
+
+func (s *storageManager) ListAllPeers(perGroupCount int) [][]*dfdaemonv1.PeerMetadata {
+	s.indexRWMutex.RLock()
+	defer s.indexRWMutex.RUnlock()
+
+	if perGroupCount == 0 {
+		perGroupCount = 1000
+	}
+
+	allPeers := make([][]*dfdaemonv1.PeerMetadata, 0, len(s.indexTask2PeerTask)/perGroupCount)
+	peers := make([]*dfdaemonv1.PeerMetadata, 0, perGroupCount)
+
+	for taskID, task := range s.indexTask2PeerTask {
+		for _, peer := range task {
+			peers = append(peers, &dfdaemonv1.PeerMetadata{
+				TaskId: taskID,
+				PeerId: peer.PeerID,
+				State:  dfdaemonv1.PeerState_Success,
+			})
+
+			if len(peers) == perGroupCount {
+				allPeers = append(allPeers, peers)
+				peers = make([]*dfdaemonv1.PeerMetadata, 0, perGroupCount)
+			}
+		}
+	}
+
+	if len(peers) > 0 {
+		allPeers = append(allPeers, peers)
+	}
+	return allPeers
+}
+
+func (s *storageManager) keepAliveTaskStorageDriver(ts TaskStorageDriver) TaskStorageDriver {
+	return &keepAliveTaskStorageDriver{
+		KeepAlive:         s,
+		TaskStorageDriver: ts,
+	}
 }

@@ -30,7 +30,7 @@ import (
 	machineryv1config "github.com/RichardKnop/machinery/v1/config"
 	machineryv1log "github.com/RichardKnop/machinery/v1/log"
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
