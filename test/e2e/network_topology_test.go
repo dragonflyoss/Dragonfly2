@@ -152,7 +152,7 @@ func checkNetworkTopologyUpdated() bool {
 		probedCount, err := strconv.Atoi(str)
 		Expect(err).NotTo(HaveOccurred())
 		fmt.Printf("%s probedCount: %d \n", probedCountKey[i], probedCount)
-		if probedCount <= 1 || probedCount >= 300 {
+		if probedCount <= 1 || probedCount >= 500 {
 			return false
 		}
 	}

@@ -70,7 +70,7 @@ seedPeer:
     networkTopology:
       enable: true
       probe:
-        interval: 15s 
+        interval: 20s 
 
 dfdaemon:
   image: dragonflyoss/dfdaemon
@@ -121,7 +121,7 @@ dfdaemon:
     networkTopology:
       enable: true
       probe:
-        interval: 15s     
+        interval: 20s     
 
 manager:
   image: dragonflyoss/manager
