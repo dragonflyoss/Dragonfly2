@@ -48,7 +48,7 @@ func New(cfg *config.Config) (*Database, error) {
 	)
 	switch cfg.Database.Type {
 	case config.DatabaseTypeMysql, config.DatabaseTypeMariaDB:
-		db, err = newMyqsl(cfg)
+		db, err = newMysql(cfg)
 		if err != nil {
 			logger.Errorf("mysql: %s", err.Error())
 			return nil, err
