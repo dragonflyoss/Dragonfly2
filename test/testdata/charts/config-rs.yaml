@@ -1,6 +1,7 @@
 manager:
-  image: dragonflyoss/manager
-  tag: latest
+  image:
+    repository: dragonflyoss/manager
+    tag: latest
   replicas: 1
   resources:
     requests:
@@ -26,8 +27,9 @@ manager:
     verbose: true
 
 scheduler:
-  image: dragonflyoss/scheduler
-  tag: latest
+  image:
+    repository: dragonflyoss/scheduler
+    tag: latest
   replicas: 3
   resources:
     requests:
@@ -56,8 +58,9 @@ scheduler:
 seedClient:
   enable: true
   replicas: 3
-  image: dragonflyoss/client
-  tag: latest
+  image:
+    repository: dragonflyoss/client
+    tag: latest
   resources:
     requests:
       cpu: "0"
@@ -86,8 +89,9 @@ seedClient:
 
 client:
   enable: true
-  image: dragonflyoss/client
-  tag: latest
+  image:
+    repository: dragonflyoss/client
+    tag: latest
   resources:
     requests:
       cpu: "0"
