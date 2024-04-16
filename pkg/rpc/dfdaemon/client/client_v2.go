@@ -85,8 +85,8 @@ type V2 interface {
 	// DownloadPiece downloads piece from the other peer.
 	DownloadPiece(context.Context, *dfdaemonv2.DownloadPieceRequest, ...grpc.CallOption) (*dfdaemonv2.DownloadPieceResponse, error)
 
-	// TriggerDownloadTask triggers download task from the other peer.
-	TriggerDownloadTask(context.Context, string, *dfdaemonv2.TriggerDownloadTaskRequest, ...grpc.CallOption) error
+	// DownloadTask downloads task from p2p network.
+	DownloadTask(context.Context, string, *dfdaemonv2.DownloadTaskRequest, ...grpc.CallOption) (dfdaemonv2.DfdaemonUpload_DownloadTaskClient, error)
 
 	// Close tears down the ClientConn and all underlying connections.
 	Close() error
@@ -123,15 +123,11 @@ func (v *v2) DownloadPiece(ctx context.Context, req *dfdaemonv2.DownloadPieceReq
 	)
 }
 
-// TriggerDownloadTask triggers download task from the other peer.
-func (v *v2) TriggerDownloadTask(ctx context.Context, taskID string, req *dfdaemonv2.TriggerDownloadTaskRequest, opts ...grpc.CallOption) error {
-	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
-	defer cancel()
-
-	_, err := v.DfdaemonUploadClient.TriggerDownloadTask(
+// DownloadTask downloads task from p2p network.
+func (v *v2) DownloadTask(ctx context.Context, taskID string, req *dfdaemonv2.DownloadTaskRequest, opts ...grpc.CallOption) (dfdaemonv2.DfdaemonUpload_DownloadTaskClient, error) {
+	return v.DfdaemonUploadClient.DownloadTask(
 		context.WithValue(ctx, pkgbalancer.ContextKey, taskID),
 		req,
 		opts...,
 	)
-	return err
 }

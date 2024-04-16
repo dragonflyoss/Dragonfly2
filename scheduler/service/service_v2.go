@@ -1323,7 +1323,7 @@ func (v *V2) downloadTaskBySeedPeer(ctx context.Context, taskID string, download
 		if v.config.SeedPeer.Enable && !peer.Task.IsSeedPeerFailed() {
 			go func(ctx context.Context, taskID string, download *commonv2.Download, hostType types.HostType) {
 				peer.Log.Infof("%s seed peer triggers download task", hostType.Name())
-				if err := v.resource.SeedPeer().TriggerDownloadTask(context.Background(), taskID, &dfdaemonv2.TriggerDownloadTaskRequest{Download: download}); err != nil {
+				if err := v.resource.SeedPeer().TriggerDownloadTask(context.Background(), taskID, &dfdaemonv2.DownloadTaskRequest{Download: download}); err != nil {
 					peer.Log.Errorf("%s seed peer triggers download task failed %s", hostType.Name(), err.Error())
 					return
 				}
@@ -1340,7 +1340,7 @@ func (v *V2) downloadTaskBySeedPeer(ctx context.Context, taskID string, download
 		if v.config.SeedPeer.Enable && !peer.Task.IsSeedPeerFailed() {
 			go func(ctx context.Context, taskID string, download *commonv2.Download, hostType types.HostType) {
 				peer.Log.Infof("%s seed peer triggers download task", hostType.Name())
-				if err := v.resource.SeedPeer().TriggerDownloadTask(context.Background(), taskID, &dfdaemonv2.TriggerDownloadTaskRequest{Download: download}); err != nil {
+				if err := v.resource.SeedPeer().TriggerDownloadTask(context.Background(), taskID, &dfdaemonv2.DownloadTaskRequest{Download: download}); err != nil {
 					peer.Log.Errorf("%s seed peer triggers download task failed %s", hostType.Name(), err.Error())
 					return
 				}
@@ -1357,7 +1357,7 @@ func (v *V2) downloadTaskBySeedPeer(ctx context.Context, taskID string, download
 		if v.config.SeedPeer.Enable && !peer.Task.IsSeedPeerFailed() {
 			go func(ctx context.Context, taskID string, download *commonv2.Download, hostType types.HostType) {
 				peer.Log.Infof("%s seed peer triggers download task", hostType.Name())
-				if err := v.resource.SeedPeer().TriggerDownloadTask(context.Background(), taskID, &dfdaemonv2.TriggerDownloadTaskRequest{Download: download}); err != nil {
+				if err := v.resource.SeedPeer().TriggerDownloadTask(context.Background(), taskID, &dfdaemonv2.DownloadTaskRequest{Download: download}); err != nil {
 					peer.Log.Errorf("%s seed peer triggers download task failed %s", hostType.Name(), err.Error())
 					return
 				}

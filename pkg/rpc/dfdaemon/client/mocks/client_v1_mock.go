@@ -190,6 +190,26 @@ func (mr *MockV1MockRecorder) LeaveHost(arg0 any, arg1 ...any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LeaveHost", reflect.TypeOf((*MockV1)(nil).LeaveHost), varargs...)
 }
 
+// PeerExchange mocks base method.
+func (m *MockV1) PeerExchange(ctx context.Context, opts ...grpc.CallOption) (dfdaemon.Daemon_PeerExchangeClient, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "PeerExchange", varargs...)
+	ret0, _ := ret[0].(dfdaemon.Daemon_PeerExchangeClient)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PeerExchange indicates an expected call of PeerExchange.
+func (mr *MockV1MockRecorder) PeerExchange(ctx any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PeerExchange", reflect.TypeOf((*MockV1)(nil).PeerExchange), varargs...)
+}
+
 // StatTask mocks base method.
 func (m *MockV1) StatTask(arg0 context.Context, arg1 *dfdaemon.StatTaskRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
