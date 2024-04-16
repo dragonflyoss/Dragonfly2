@@ -43,7 +43,7 @@ const (
 	defaultMysqlWriteTimeout = 2 * time.Minute
 )
 
-func newMyqsl(cfg *config.Config) (*gorm.DB, error) {
+func newMysql(cfg *config.Config) (*gorm.DB, error) {
 	mysqlCfg := &cfg.Database.Mysql
 
 	// Format dsn string.
