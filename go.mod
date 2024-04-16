@@ -5,7 +5,7 @@ go 1.21
 require (
 	d7y.io/api/v2 v2.0.109
 	github.com/MysteriousPotato/go-lockable v1.0.0
-	github.com/RichardKnop/machinery v1.10.6
+	github.com/RichardKnop/machinery v1.10.8
 	github.com/Showmax/go-fqdn v1.0.0
 	github.com/VividCortex/mysqlerr v1.0.0
 	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
@@ -140,8 +140,7 @@ require (
 	github.com/go-openapi/swag v0.22.3 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/go-redis/redis/v8 v8.11.4 // indirect
-	github.com/go-redsync/redsync/v4 v4.5.1 // indirect
+	github.com/go-redsync/redsync/v4 v4.8.1 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
@@ -203,6 +202,7 @@ require (
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
+	github.com/rabbitmq/amqp091-go v1.9.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/rs/cors v1.8.2 // indirect
@@ -216,7 +216,6 @@ require (
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/streadway/amqp v1.0.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
