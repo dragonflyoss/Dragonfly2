@@ -37,6 +37,10 @@ func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheat
 		return nil, err
 	}
 
+	if json.Args.PieceLength == 0 {
+		json.Args.PieceLength = types.DefaultPreheatJobPieceLength
+	}
+
 	groupJobState, err := s.job.CreatePreheat(ctx, candidateSchedulers, json.Args)
 	if err != nil {
 		return nil, err

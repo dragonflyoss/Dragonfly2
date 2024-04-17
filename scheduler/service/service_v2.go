@@ -819,7 +819,7 @@ func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
 // handleRegisterPeerRequest handles RegisterPeerRequest of AnnouncePeerRequest.
 func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.Scheduler_AnnouncePeerServer, hostID, taskID, peerID string, req *schedulerv2.RegisterPeerRequest) error {
 	// Handle resource included host, task, and peer.
-	_, task, peer, err := v.handleResource(ctx, stream, hostID, taskID, peerID, req.GetDownload())
+	host, task, peer, err := v.handleResource(ctx, stream, hostID, taskID, peerID, req.GetDownload())
 	if err != nil {
 		return err
 	}
@@ -836,7 +836,7 @@ func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.S
 	// If scheduler trigger seed peer download back-to-source,
 	// the needBackToSource flag should be true.
 	case download.GetNeedBackToSource():
-		peer.Log.Infof("peer need back to source")
+		peer.Log.Info("peer need back to source")
 		peer.NeedBackToSource.Store(true)
 	// If task is pending, failed, leave, or succeeded and has no available peer,
 	// scheduler trigger seed peer download back-to-source.
@@ -845,18 +845,27 @@ func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.S
 		task.FSM.Is(resource.TaskStateLeave) ||
 		task.FSM.Is(resource.TaskStateSucceeded) &&
 			!task.HasAvailablePeer(blocklist):
-		// If trigger the seed peer download back-to-source,
-		// the need back-to-source flag should be true.
-		download.NeedBackToSource = true
 
-		// Output path should be empty, prevent the seed peer
-		// copy file to output path.
-		download.OutputPath = nil
-		if err := v.downloadTaskBySeedPeer(ctx, taskID, download, peer); err != nil {
-			// Collect RegisterPeerFailureCount metrics.
-			metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
-			return err
+		// If HostType is normal, trigger seed peer download back-to-source.
+		if host.Type == types.HostTypeNormal {
+			// If trigger the seed peer download back-to-source,
+			// the need back-to-source flag should be true.
+			download.NeedBackToSource = true
+
+			// Output path should be empty, prevent the seed peer
+			// copy file to output path.
+			download.OutputPath = nil
+			if err := v.downloadTaskBySeedPeer(ctx, taskID, download, peer); err != nil {
+				// Collect RegisterPeerFailureCount metrics.
+				metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+					peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+				return err
+			}
+		} else {
+			// If HostType is not normal, peer is seed peer, and
+			// trigger seed peer download back-to-source directly.
+			peer.Log.Info("peer need back to source")
+			peer.NeedBackToSource.Store(true)
 		}
 	}
 
