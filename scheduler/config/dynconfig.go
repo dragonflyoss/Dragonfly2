@@ -419,9 +419,9 @@ func (mc *managerClient) Get() (any, error) {
 		Ip:         mc.config.Server.AdvertiseIP.String(),
 	})
 	if err != nil {
-		if s, ok := status.FromError(err); ok {
+		if st, ok := status.FromError(err); ok {
 			// TODO Compatible with old version manager.
-			if slices.Contains([]codes.Code{codes.Unimplemented, codes.NotFound}, s.Code()) {
+			if slices.Contains([]codes.Code{codes.Unimplemented, codes.NotFound}, st.Code()) {
 				return DynconfigData{
 					Scheduler:    getSchedulerResp,
 					Applications: nil,

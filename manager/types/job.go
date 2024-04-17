@@ -16,6 +16,11 @@
 
 package types
 
+const (
+	// DefaultPreheatJobPieceLength is the default piece length for preheating.
+	DefaultPreheatJobPieceLength = 4 * 1024 * 1024
+)
+
 type CreateJobRequest struct {
 	BIO                 string         `json:"bio" binding:"omitempty"`
 	Type                string         `json:"type" binding:"required"`
@@ -64,6 +69,9 @@ type PreheatArgs struct {
 
 	// FilteredQueryParams is the filtered query params for preheating.
 	FilteredQueryParams string `json:"filteredQueryParams" binding:"omitempty"`
+
+	// PieceLength is the piece length for preheating.
+	PieceLength uint32 `json:"pieceLength" binding:"omitempty"`
 
 	// Headers is the http headers for authentication.
 	Headers map[string]string `json:"headers" binding:"omitempty"`
