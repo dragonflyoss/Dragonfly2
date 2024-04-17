@@ -21,6 +21,7 @@ package resource
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -49,7 +50,7 @@ const (
 type SeedPeer interface {
 	// TriggerDownloadTask triggers the seed peer to download task.
 	// Used only in v2 version of the grpc.
-	TriggerDownloadTask(context.Context, string, *dfdaemonv2.TriggerDownloadTaskRequest) error
+	TriggerDownloadTask(context.Context, string, *dfdaemonv2.DownloadTaskRequest) error
 
 	// TriggerTask triggers the seed peer to download task.
 	// Used only in v1 version of the grpc.
@@ -89,11 +90,26 @@ func newSeedPeer(cfg *config.Config, client SeedPeerClient, peerManager PeerMana
 
 // TriggerDownloadTask triggers the seed peer to download task.
 // Used only in v2 version of the grpc.
-func (s *seedPeer) TriggerDownloadTask(ctx context.Context, taskID string, req *dfdaemonv2.TriggerDownloadTaskRequest) error {
+func (s *seedPeer) TriggerDownloadTask(ctx context.Context, taskID string, req *dfdaemonv2.DownloadTaskRequest) error {
 	ctx, cancel := context.WithCancel(trace.ContextWithSpan(ctx, trace.SpanFromContext(ctx)))
 	defer cancel()
 
-	return s.client.TriggerDownloadTask(ctx, taskID, req)
+	stream, err := s.client.DownloadTask(ctx, taskID, req)
+	if err != nil {
+		return err
+	}
+
+	// Wait for the download task to complete.
+	for {
+		_, err := stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+
+			return err
+		}
+	}
 }
 
 // TriggerTask triggers the seed peer to download task.

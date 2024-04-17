@@ -70,7 +70,7 @@ func (mr *MockSeedPeerMockRecorder) Stop() *gomock.Call {
 }
 
 // TriggerDownloadTask mocks base method.
-func (m *MockSeedPeer) TriggerDownloadTask(arg0 context.Context, arg1 string, arg2 *dfdaemon.TriggerDownloadTaskRequest) error {
+func (m *MockSeedPeer) TriggerDownloadTask(arg0 context.Context, arg1 string, arg2 *dfdaemon.DownloadTaskRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TriggerDownloadTask", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)

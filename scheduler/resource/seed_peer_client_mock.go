@@ -91,6 +91,26 @@ func (mr *MockSeedPeerClientMockRecorder) DownloadPiece(arg0, arg1 any, arg2 ...
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadPiece", reflect.TypeOf((*MockSeedPeerClient)(nil).DownloadPiece), varargs...)
 }
 
+// DownloadTask mocks base method.
+func (m *MockSeedPeerClient) DownloadTask(arg0 context.Context, arg1 string, arg2 *dfdaemon.DownloadTaskRequest, arg3 ...grpc.CallOption) (dfdaemon.DfdaemonUpload_DownloadTaskClient, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0, arg1, arg2}
+	for _, a := range arg3 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DownloadTask", varargs...)
+	ret0, _ := ret[0].(dfdaemon.DfdaemonUpload_DownloadTaskClient)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DownloadTask indicates an expected call of DownloadTask.
+func (mr *MockSeedPeerClientMockRecorder) DownloadTask(arg0, arg1, arg2 any, arg3 ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0, arg1, arg2}, arg3...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadTask", reflect.TypeOf((*MockSeedPeerClient)(nil).DownloadTask), varargs...)
+}
+
 // GetPieceTasks mocks base method.
 func (m *MockSeedPeerClient) GetPieceTasks(arg0 context.Context, arg1 *common.PieceTaskRequest, arg2 ...grpc.CallOption) (*common.PiecePacket, error) {
 	m.ctrl.T.Helper()
@@ -181,23 +201,4 @@ func (mr *MockSeedPeerClientMockRecorder) SyncPieces(arg0, arg1 any, arg2 ...any
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncPieces", reflect.TypeOf((*MockSeedPeerClient)(nil).SyncPieces), varargs...)
-}
-
-// TriggerDownloadTask mocks base method.
-func (m *MockSeedPeerClient) TriggerDownloadTask(arg0 context.Context, arg1 string, arg2 *dfdaemon.TriggerDownloadTaskRequest, arg3 ...grpc.CallOption) error {
-	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1, arg2}
-	for _, a := range arg3 {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "TriggerDownloadTask", varargs...)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// TriggerDownloadTask indicates an expected call of TriggerDownloadTask.
-func (mr *MockSeedPeerClientMockRecorder) TriggerDownloadTask(arg0, arg1, arg2 any, arg3 ...any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1, arg2}, arg3...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TriggerDownloadTask", reflect.TypeOf((*MockSeedPeerClient)(nil).TriggerDownloadTask), varargs...)
 }
