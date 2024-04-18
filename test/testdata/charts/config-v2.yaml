@@ -81,9 +81,9 @@ seedClient:
       path: /tmp/artifact
   config:
     dynconfig:
-      refreshInterval: 1s
+      refreshInterval: 2s
     scheduler:
-      announceInterval: 1s
+      announceInterval: 2s
     log:
       level: info
 
@@ -110,11 +110,27 @@ client:
   - name: artifact
     hostPath:
       path: /tmp/artifact
+  dfinit:
+    enable: true
+    image:
+      repository: dragonflyoss/dfinit
+      tag: latest
+    config:
+      containerRuntime:
+        containerd:
+          configPath: /etc/containerd/config.toml
+          registries:
+            - hostNamespace: docker.io
+              serverAddr: https://index.docker.io
+              capabilities: ["pull", "resolve"]
+            - hostNamespace: ghcr.io
+              serverAddr: https://ghcr.io
+              capabilities: ["pull", "resolve"]
   config:
     dynconfig:
-      refreshInterval: 1s
+      refreshInterval: 2s
     scheduler:
-      announceInterval: 1s
+      announceInterval: 2s
     log:
       level: info 
 

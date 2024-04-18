@@ -1,11 +1,11 @@
-name: Compatibility E2E Test(Golang Client)
+name: E2E Test(API v1)
 
 on:
   push:
     branches: [main, release-*]
     paths-ignore: ["**.md", "**.png", "**.jpg", "**.svg", "**/docs/**"]
   pull_request:
-    branches: [main, release-*]
+    branches: [amain, release-*]
     paths-ignore: ["**.md", "**.png", "**.jpg", "**.svg", "**/docs/**"]
   schedule:
     - cron: '0 4 * * *'
@@ -15,36 +15,55 @@ env:
   CONTAINERD_VERSION: v1.5.2
   KIND_CONFIG_PATH: test/testdata/kind/config.yaml
   DRAGONFLY_CHARTS_PATH: deploy/helm-charts/charts/dragonfly
-  DRAGONFLY_CHARTS_CONFIG_PATH: test/testdata/charts/config-compatibility.yaml
   DRAGONFLY_FILE_SERVER_PATH: test/testdata/k8s/file-server.yaml
   DRAGONFLY_FILE_SERVER_NO_CONTENT_LENGTH_PATH: test/testdata/k8s/file-server-no-content-length.yaml
   DRAGONFLY_PROXY_SERVER_PATH: test/testdata/k8s/proxy.yaml
+  DRAGONFLY_MINIO_SERVER_PATH: test/testdata/k8s/minio.yaml
 
 jobs:
-  compatibility_e2e_tests_with_client_go:
-    name: e2e_tests_with_${{ matrix.module }}
-    timeout-minutes: 60
+  e2e_tests_with_client_go:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     strategy:
       matrix:
-        module: ["manager", "scheduler", "dfdaemon", "seed-peer"]
+        module:
+          - "normal"
+          - "concurent-back-source"
+          - "grpc-tls"
+          - "disable-seed-peer"
+          - "grpc-tls-ipv6"
+          - "ipv6"
+          - "split-running-tasks"
+          - "cache-list-metadata"
+          - "write-buffer-size"
         include:
-          - module: manager
-            image: manager
-            image-tag: v2.0.9
-            chart-name: manager
-          - module: scheduler
-            image: scheduler
-            image-tag: v2.0.9
-            chart-name: scheduler
-          - module: dfdaemon
-            image: dfdaemon
-            image-tag: v2.0.2
-            chart-name: dfdaemon
-          - module: seed-peer
-            image: dfdaemon
-            image-tag: v2.0.9
-            chart-name: seedPeer
+          - module: normal
+            charts-config: test/testdata/charts/config.yaml
+            skip: ""
+          - module: concurent-back-source
+            charts-config: test/testdata/charts/config-concurent-back-source.yaml
+            skip: ""
+          - module: grpc-tls
+            charts-config: test/testdata/charts/config-grpc-tls.yaml
+            skip: ""
+          - module: disable-seed-peer
+            charts-config: test/testdata/charts/config-disable-seed-peer.yaml
+            skip: preheat
+          - module: ipv6
+            charts-config: test/testdata/charts/config-ipv6.yaml
+            skip: ""
+          - module: grpc-tls-ipv6
+            charts-config: test/testdata/charts/config-grpc-tls-ipv6.yaml
+            skip: ""
+          - module: split-running-tasks
+            charts-config: test/testdata/charts/config-split-running-tasks.yaml
+            skip: ""
+          - module: cache-list-metadata
+            charts-config: test/testdata/charts/config-cache-list-metadata.yaml
+            skip: ""
+          - module: write-buffer-size
+            charts-config: test/testdata/charts/config-write-buffer-size.yaml
+            skip: ""
     steps:
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
@@ -71,7 +90,6 @@ jobs:
         run: |
           go install github.com/onsi/ginkgo/v2/ginkgo@v2.12.0
           mkdir -p /tmp/artifact
-          go mod vendor
 
       - name: Setup buildx
         uses: docker/setup-buildx-action@v3
@@ -147,22 +165,28 @@ jobs:
 
       - name: Setup dragonfly
         run: |
-          helm install --wait --timeout 10m --dependency-update --create-namespace --namespace dragonfly-system --set ${{ matrix.chart-name }}.image.tag=${{ matrix.image-tag }} --set ${{ matrix.chart-name }}.image.repository=dragonflyoss/${{ matrix.image }} -f ${{ env.DRAGONFLY_CHARTS_CONFIG_PATH }} dragonfly ${{ env.DRAGONFLY_CHARTS_PATH }}
+          helm install --wait --timeout 10m --dependency-update --create-namespace --namespace dragonfly-system -f ${{ matrix.charts-config }} dragonfly ${{ env.DRAGONFLY_CHARTS_PATH }}
           kubectl apply -f ${{ env.DRAGONFLY_FILE_SERVER_PATH }}
           kubectl apply -f ${{ env.DRAGONFLY_FILE_SERVER_NO_CONTENT_LENGTH_PATH }}
           kubectl apply -f ${{ env.DRAGONFLY_PROXY_SERVER_PATH }}
+          kubectl apply -f ${{ env.DRAGONFLY_MINIO_SERVER_PATH }}
           kubectl wait po file-server-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
           kubectl wait po file-server-no-content-length-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
           kubectl wait po proxy-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
           kubectl wait po proxy-1 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
           kubectl wait po proxy-2 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
+          kubectl wait po minio-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
 
-      - name: Run Compatibility E2E test
-        env:
-          DRAGONFLY_COMPATIBILITY_E2E_TEST_MODE: ${{ matrix.module }}
-          DRAGONFLY_COMPATIBILITY_E2E_TEST_IMAGE: ${{ matrix.image }}
-          DRAGONFLY_STABLE_IMAGE_TAG: ${{ matrix.image-tag }}
-        run: make actions-e2e-test-coverage
+      - name: Run E2E test
+        run: |
+          set -x
+          make build-e2e-sha256sum
+          make build-e2e-download-grpc-test
+          # generate an empty file
+          docker exec kind-control-plane touch /tmp/empty-file
+          ginkgo -v -r --race --fail-fast --cover --trace --show-node-events --skip=${{ matrix.skip }} --skip=client-rs test/e2e/v1 -- \
+              --feature-gates=dfget-range=true,dfget-open-range=true,dfget-empty-file=true,dfget-recursive=true
+          cat coverprofile.out >> coverage.txt
 
       - name: Move cache
         run: |
@@ -174,12 +198,12 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.txt
-          flags: ${{ matrix }}-compatibility-e2etests
+          flags: e2etests
 
       - name: Upload Logs
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: ${{ matrix.module }}-compatibility-e2e-tests-logs
+          name: ${{ matrix.module }}-e2e-tests-logs
           path: |
             /tmp/artifact/**/*.log

@@ -35,7 +35,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/structure"
-	"d7y.io/dragonfly/v2/test/e2e/util"
+	"d7y.io/dragonfly/v2/test/e2e/v1/util"
 )
 
 var _ = Describe("Preheat with manager", func() {

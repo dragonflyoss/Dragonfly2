@@ -22,7 +22,7 @@ import (
 	. "github.com/onsi/ginkgo/v2" //nolint
 	. "github.com/onsi/gomega"    //nolint
 
-	"d7y.io/dragonfly/v2/test/e2e/util"
+	"d7y.io/dragonfly/v2/test/e2e/v2/util"
 )
 
 var _ = Describe("Download concurrency", func() {
@@ -31,7 +31,7 @@ var _ = Describe("Download concurrency", func() {
 			url := util.GetFileURL(hostnameFilePath)
 			fmt.Println("download url " + url)
 
-			out, err := util.ABCommand("-c", "100", "-n", "200", "-X", proxy, url).CombinedOutput()
+			out, err := util.ABCommand("-c", "100", "-n", "200", "-X", "localhost:4001", url).CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -40,7 +40,7 @@ var _ = Describe("Download concurrency", func() {
 			url := util.GetFileURL(hostnameFilePath)
 			fmt.Println("download url " + url)
 
-			out, err := util.ABCommand("-c", "200", "-n", "400", "-X", proxy, url).CombinedOutput()
+			out, err := util.ABCommand("-c", "200", "-n", "400", "-X", "localhost:4001", url).CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -49,7 +49,7 @@ var _ = Describe("Download concurrency", func() {
 			url := util.GetFileURL(hostnameFilePath)
 			fmt.Println("download url " + url)
 
-			out, err := util.ABCommand("-c", "500", "-n", "1000", "-X", proxy, url).CombinedOutput()
+			out, err := util.ABCommand("-c", "500", "-n", "1000", "-X", "localhost:4001", url).CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -58,7 +58,7 @@ var _ = Describe("Download concurrency", func() {
 			url := util.GetFileURL(hostnameFilePath)
 			fmt.Println("download url " + url)
 
-			out, err := util.ABCommand("-c", "1000", "-n", "2000", "-X", proxy, url).CombinedOutput()
+			out, err := util.ABCommand("-c", "1000", "-n", "2000", "-X", "localhost:4001", url).CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 		})
