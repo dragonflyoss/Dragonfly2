@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2024 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,4 +104,28 @@ func (p *PodExec) CurlCommand(method string, header map[string]string, data map[
 
 func KubeCtlCopyCommand(ns, pod, source, target string) *exec.Cmd {
 	return KubeCtlCommand("-n", ns, "cp", pod+":"+source, target)
+}
+
+func ClientExec() (*PodExec, error) {
+	out, err := KubeCtlCommand("-n", DragonflyNamespace, "get", "pod", "-l", "component=client",
+		"-o", fmt.Sprintf("jsonpath='{range .items[0]}{.metadata.name}{end}'")).CombinedOutput()
+	if err != nil {
+		return nil, err
+	}
+
+	podName := strings.Trim(string(out), "'")
+	fmt.Println(podName)
+	return NewPodExec(DragonflyNamespace, podName, "client"), nil
+}
+
+func SeedClientExec(n int) (*PodExec, error) {
+	out, err := KubeCtlCommand("-n", DragonflyNamespace, "get", "pod", "-l", "component=seed-client",
+		"-o", fmt.Sprintf("jsonpath='{range .items[%d]}{.metadata.name}{end}'", n)).CombinedOutput()
+	if err != nil {
+		return nil, err
+	}
+
+	podName := strings.Trim(string(out), "'")
+	fmt.Println(podName)
+	return NewPodExec(DragonflyNamespace, podName, "seed-client"), nil
 }

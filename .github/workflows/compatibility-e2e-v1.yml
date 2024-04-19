@@ -1,11 +1,11 @@
-name: Compatibility E2E Test(API v1)
+name: Compatibility E2E Test(API v1 - Golang Client)
 
 on:
   push:
     branches: [main, release-*]
     paths-ignore: ["**.md", "**.png", "**.jpg", "**.svg", "**/docs/**"]
   pull_request:
-    branches: [amain, release-*]
+    branches: [main, release-*]
     paths-ignore: ["**.md", "**.png", "**.jpg", "**.svg", "**/docs/**"]
   schedule:
     - cron: '0 4 * * *'
@@ -21,8 +21,7 @@ env:
   DRAGONFLY_PROXY_SERVER_PATH: test/testdata/k8s/proxy.yaml
 
 jobs:
-  compatibility_e2e_tests_with_client_go:
-    name: e2e_tests_with_${{ matrix.module }}
+  compatibility_e2e_tests:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     strategy:

@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, release-*]
   pull_request:
-    branches: [amain, release-*]
+    branches: [main, release-*]
 
 env:
   GO_VERSION: '1.21'

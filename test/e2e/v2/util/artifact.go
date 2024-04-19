@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2024 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,11 @@ func UploadArtifactStdout(namespace, podName, logDirName, logPrefix string) erro
 
 	logFileName := fmt.Sprintf("%s-stdout.log", logPrefix)
 	logDirname := fmt.Sprintf("/tmp/artifact/%s/", logDirName)
+
+	if err := os.MkdirAll(logDirname, defaultFileMode); err != nil {
+		return err
+	}
+
 	if err := os.WriteFile(logFileName, out, defaultFileMode); err != nil {
 		return err
 	}
@@ -55,6 +60,11 @@ func UploadArtifactPrevStdout(namespace, podName, logDirName, logPrefix string) 
 
 	logFileName := fmt.Sprintf("%s-prev-stdout.log", logPrefix)
 	logDirname := fmt.Sprintf("/tmp/artifact/%s/", logDirName)
+
+	if err := os.MkdirAll(logDirname, defaultFileMode); err != nil {
+		return err
+	}
+
 	if err := os.WriteFile(logFileName, out, defaultFileMode); err != nil {
 		return err
 	}

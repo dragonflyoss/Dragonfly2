@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2024 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,23 +25,25 @@ import (
 	. "github.com/onsi/ginkgo/v2" //nolint
 	. "github.com/onsi/gomega"    //nolint
 
-	_ "d7y.io/dragonfly/v2/test/e2e/v2/manager"
+	// _ "d7y.io/dragonfly/v2/test/e2e/v2/manager"
 	"d7y.io/dragonfly/v2/test/e2e/v2/util"
 )
 
 var _ = AfterSuite(func() {
-	for _, server := range servers {
-		for i := 0; i < server.replicas; i++ {
-			out, err := util.KubeCtlCommand("-n", server.namespace, "get", "pod", "-l", fmt.Sprintf("component=%s", server.name),
+	for _, server := range util.Servers {
+		for i := 0; i < server.Replicas; i++ {
+			fmt.Printf("\n------------------------------ Get %s-%d Artifact Started ------------------------------\n", server.Name, i)
+
+			out, err := util.KubeCtlCommand("-n", server.Namespace, "get", "pod", "-l", fmt.Sprintf("component=%s", server.Name),
 				"-o", fmt.Sprintf("jsonpath='{.items[%d].metadata.name}'", i)).CombinedOutput()
 			if err != nil {
 				fmt.Printf("get pod error: %s, output: %s\n", err, string(out))
 				continue
 			}
 			podName := strings.Trim(string(out), "'")
-			pod := util.NewPodExec(server.namespace, podName, server.name)
+			pod := util.NewPodExec(server.Namespace, podName, server.Name)
 
-			countOut, err := util.KubeCtlCommand("-n", server.namespace, "get", "pod", "-l", fmt.Sprintf("component=%s", server.name),
+			countOut, err := util.KubeCtlCommand("-n", server.Namespace, "get", "pod", "-l", fmt.Sprintf("component=%s", server.Name),
 				"-o", fmt.Sprintf("jsonpath='{.items[%d].status.containerStatuses[0].restartCount}'", i)).CombinedOutput()
 			if err != nil {
 				fmt.Printf("get pod %s restart count error: %s, output: %s\n", podName, err, string(countOut))
@@ -56,24 +58,25 @@ var _ = AfterSuite(func() {
 			fmt.Printf("pod %s restart count: %d\n", podName, count)
 
 			out, err = pod.Command("sh", "-c", fmt.Sprintf(`
-              set -x
-              cp -r /var/log/dragonfly/%s /tmp/artifact/%s-%d
-              cp -r /var/log/dragonfly/dfget /tmp/artifact/%s-%d-dfget
-              find /tmp/artifact -type d -exec chmod 777 {} \;
-              `, server.logDirName, server.name, i, server.name, i)).CombinedOutput()
+			set -x
+			cp -r /var/log/dragonfly/%s /tmp/artifact/%s-%d
+			find /tmp/artifact -type d -exec chmod 777 {} \;
+			`, server.LogDirName, server.Name, i)).CombinedOutput()
 			if err != nil {
 				fmt.Printf("copy log output: %q, error: %s\n", string(out), err)
 			}
 
 			if count > 0 {
-				if err := util.UploadArtifactPrevStdout(server.namespace, podName, fmt.Sprintf("%s-%d", server.name, i), server.name); err != nil {
+				if err := util.UploadArtifactPrevStdout(server.Namespace, podName, fmt.Sprintf("%s-%d", server.Name, i), server.Name); err != nil {
 					fmt.Printf("upload pod %s artifact prev stdout file error: %v\n", podName, err)
 				}
 			}
 
-			if err := util.UploadArtifactStdout(server.namespace, podName, fmt.Sprintf("%s-%d", server.name, i), server.name); err != nil {
+			if err := util.UploadArtifactStdout(server.Namespace, podName, fmt.Sprintf("%s-%d", server.Name, i), server.Name); err != nil {
 				fmt.Printf("upload pod %s artifact stdout file error: %v\n", podName, err)
 			}
+
+			fmt.Printf("------------------------------ Get %s-%d Artifact Finished ------------------------------\n", server.Name, i)
 		}
 	}
 })

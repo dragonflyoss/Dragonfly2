@@ -5,7 +5,7 @@ on:
     branches: [main, release-*]
     paths-ignore: ['**.md', '**.png', '**.jpg', '**.svg', '**/docs/**']
   pull_request:
-    branches: [amain, release-*]
+    branches: [main, release-*]
     paths-ignore: ['**.md', '**.png', '**.jpg', '**.svg', '**/docs/**']
   schedule:
     - cron: '0 4 * * *'
