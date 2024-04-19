@@ -27,7 +27,7 @@ import (
 	. "github.com/onsi/gomega"    //nolint
 
 	"d7y.io/dragonfly/v2/pkg/net/http"
-	"d7y.io/dragonfly/v2/test/e2e/util"
+	"d7y.io/dragonfly/v2/test/e2e/v1/util"
 )
 
 var _ = Describe("Download with dfget and proxy", func() {

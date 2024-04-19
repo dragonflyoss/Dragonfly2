@@ -1,4 +1,4 @@
-name: E2E Test(Rust Client)
+name: E2E Test(API v2 - Rust Client)
 
 on:
   push:
@@ -13,12 +13,12 @@ on:
 env:
   KIND_VERSION: v0.12.0
   CONTAINERD_VERSION: v1.5.2
-  KIND_CONFIG_PATH: test/testdata/kind/config-rs.yaml
+  KIND_CONFIG_PATH: test/testdata/kind/config-v2.yaml
   DRAGONFLY_CHARTS_PATH: deploy/helm-charts/charts/dragonfly
   DRAGONFLY_FILE_SERVER_PATH: test/testdata/k8s/file-server.yaml
 
 jobs:
-  e2e_tests_with_client_rs:
+  e2e_tests:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
@@ -27,7 +27,7 @@ jobs:
           - "normal"
         include:
           - module: normal
-            charts-config: test/testdata/charts/config-rs.yaml
+            charts-config: test/testdata/charts/config-v2.yaml
             skip: ""
     steps:
       - name: Free Disk Space (Ubuntu)
@@ -74,11 +74,11 @@ jobs:
       - name: Pull Rust Client Image
         run: |
           cd client-rs
-          # TODO Use the latest tag.
-          # CLIENT_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
-          CLIENT_TAG=latest
+          CLIENT_TAG=$(git describe --tags $(git rev-parse HEAD))
           docker pull dragonflyoss/client:$CLIENT_TAG
           docker tag dragonflyoss/client:$CLIENT_TAG dragonflyoss/client:latest
+          docker pull dragonflyoss/dfinit:$CLIENT_TAG
+          docker tag dragonflyoss/dfinit:$CLIENT_TAG dragonflyoss/dfinit:latest
 
       - name: Build Scheduler Image
         uses: docker/build-push-action@v5
@@ -114,20 +114,19 @@ jobs:
           kind load docker-image dragonflyoss/manager:latest
           kind load docker-image dragonflyoss/scheduler:latest
           kind load docker-image dragonflyoss/client:latest
+          kind load docker-image dragonflyoss/dfinit:latest
 
-      # TODO Setup dragonfly
-      # - name: Setup dragonfly
-        # run: |
-          # helm install --wait --timeout 10m --dependency-update --create-namespace --namespace dragonfly-system -f ${{ matrix.charts-config }} dragonfly ${{ env.DRAGONFLY_CHARTS_PATH }}
-          # kubectl apply -f ${{ env.DRAGONFLY_FILE_SERVER_PATH }}
-          # kubectl wait po file-server-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
+      - name: Setup dragonfly
+        run: |
+          helm install --wait --timeout 10m --dependency-update --create-namespace --namespace dragonfly-system -f ${{ matrix.charts-config }} dragonfly ${{ env.DRAGONFLY_CHARTS_PATH }}
+          kubectl apply -f ${{ env.DRAGONFLY_FILE_SERVER_PATH }}
+          kubectl wait po file-server-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
+          kubectl get po -n dragonfly-system
 
-      # TODO Run tests
-      # - name: Run E2E test
-        # run: |
-          # ginkgo -v -r --race --fail-fast --cover --trace --show-node-events --skip=${{ matrix.skip }} test/e2e -- \
-              # --feature-gates=dfget-range=true,dfget-open-range=true,dfget-empty-file=true,dfget-recursive=true
-          # cat coverprofile.out >> coverage.txt
+      - name: Run E2E test
+        run: |
+          ginkgo -v -r --race --fail-fast --cover --trace --show-node-events --skip=${{ matrix.skip }} test/e2e/v2
+          cat coverprofile.out >> coverage.txt
 
       - name: Move cache
         run: |

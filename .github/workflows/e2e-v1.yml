@@ -1,4 +1,4 @@
-name: E2E Test(Golang Client)
+name: E2E Test(API v1 - Golang Client)
 
 on:
   push:
@@ -21,7 +21,7 @@ env:
   DRAGONFLY_MINIO_SERVER_PATH: test/testdata/k8s/minio.yaml
 
 jobs:
-  e2e_tests_with_client_go:
+  e2e_tests:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
@@ -184,7 +184,7 @@ jobs:
           make build-e2e-download-grpc-test
           # generate an empty file
           docker exec kind-control-plane touch /tmp/empty-file
-          ginkgo -v -r --race --fail-fast --cover --trace --show-node-events --skip=${{ matrix.skip }} test/e2e -- \
+          ginkgo -v -r --race --fail-fast --cover --trace --show-node-events --skip=${{ matrix.skip }} test/e2e/v1 -- \
               --feature-gates=dfget-range=true,dfget-open-range=true,dfget-empty-file=true,dfget-recursive=true
           cat coverprofile.out >> coverage.txt
 

@@ -1,4 +1,4 @@
-name: Compatibility E2E Test(Golang Client)
+name: Compatibility E2E Test(API v1 - Golang Client)
 
 on:
   push:
@@ -21,8 +21,7 @@ env:
   DRAGONFLY_PROXY_SERVER_PATH: test/testdata/k8s/proxy.yaml
 
 jobs:
-  compatibility_e2e_tests_with_client_go:
-    name: e2e_tests_with_${{ matrix.module }}
+  compatibility_e2e_tests:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     strategy:
@@ -162,7 +161,9 @@ jobs:
           DRAGONFLY_COMPATIBILITY_E2E_TEST_MODE: ${{ matrix.module }}
           DRAGONFLY_COMPATIBILITY_E2E_TEST_IMAGE: ${{ matrix.image }}
           DRAGONFLY_STABLE_IMAGE_TAG: ${{ matrix.image-tag }}
-        run: make actions-e2e-test-coverage
+        run: |
+          ginkgo -v -r --race --fail-fast --cover --trace --show-node-events test/e2e/v1
+          cat coverprofile.out >> coverage.txt
 
       - name: Move cache
         run: |
