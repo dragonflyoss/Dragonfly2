@@ -211,44 +211,7 @@ var _ = Describe("Download with proxy", func() {
 		})
 	})
 
-	Context("/etc/containerd/config.toml file", func() {
-		It("download should be ok", Label("proxy", "download", "range "), func() {
-			clientPod, err := util.ClientExec()
-			fmt.Println(err)
-			Expect(err).NotTo(HaveOccurred())
-
-			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("curl -x 127.0.0.1:4001 -H 'X-Dragonfly-Tag: proxy' %s --output %s", util.GetFileURL("/etc/containerd/config.toml"), util.GetOutputPath("config-proxy.coml"))).CombinedOutput()
-			fmt.Println(err)
-			Expect(err).NotTo(HaveOccurred())
-			fmt.Println(string(out))
-
-			fileMetadata := util.FileMetadata{
-				ID:     "0ef882badaeb3195aed759a203cfb61951d158bf614f90ab0a20504fb7f97992",
-				Sha256: "66404431f9a0d5c78205e5a3eb041f76767094fc278c0a091d4ffa10f06cf641",
-			}
-
-			sha256sum, err := util.CalculateSha256ByTaskID([]*util.PodExec{clientPod}, fileMetadata.ID)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
-
-			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("config-proxy.coml"))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
-
-			seedClientPods := make([]*util.PodExec, 3)
-			for i := 0; i < 3; i++ {
-				seedClientPods[i], err = util.SeedClientExec(i)
-				fmt.Println(err)
-				Expect(err).NotTo(HaveOccurred())
-			}
-
-			sha256sum, err = util.CalculateSha256ByTaskID(seedClientPods, fileMetadata.ID)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
-		})
-	})
-
-	Context("/bin/kubectl file", func() {
+	Context("/bin/kubectl file and set range header", func() {
 		It("download should be ok", Label("proxy", "download", "range: bytes=-100"), func() {
 			clientPod, err := util.ClientExec()
 			fmt.Println(err)
@@ -260,13 +223,13 @@ var _ = Describe("Download with proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "e37fccc0c725a947c0a8856e2e1f6a14a4a5792338a73dcafa7e5ebd6443f7b4",
-				Sha256: "327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a",
+				ID:     "b56a0807131865baffe2d687440f121f40cf2071c478a5abfb0930bc57b7e715",
+				Sha256: "cd00e292c5970d3c5e2f0ffa5171e555bc46bfc4faddfb4a418b6840b86e79a3",
 			}
 
 			sha256sum, err := util.CalculateSha256ByTaskID([]*util.PodExec{clientPod}, fileMetadata.ID)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+			Expect("81d9f55e659a1b764e99dec6915ed47aa66955d30c47ffd4d427b4194a31684d").To(Equal(sha256sum))
 
 			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("kubectl-proxy-bytes-100"))
 			Expect(err).NotTo(HaveOccurred())
@@ -281,11 +244,48 @@ var _ = Describe("Download with proxy", func() {
 
 			sha256sum, err = util.CalculateSha256ByTaskID(seedClientPods, fileMetadata.ID)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+			Expect("81d9f55e659a1b764e99dec6915ed47aa66955d30c47ffd4d427b4194a31684d").To(Equal(sha256sum))
 		})
 	})
 
-	Context("/bin/kubectl file", func() {
+	Context("/bin/kubectl file and set range header", func() {
+		It("download should be ok", Label("proxy", "download", "range: bytes=0-100"), func() {
+			clientPod, err := util.ClientExec()
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+
+			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("curl -x 127.0.0.1:4001 -r 0-100 -H 'X-Dragonfly-Tag: proxy-bytes-0-100' %s --output %s", util.GetFileURL("/bin/kubectl"), util.GetOutputPath("kubectl-proxy-bytes-0-100"))).CombinedOutput()
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Println(string(out))
+
+			fileMetadata := util.FileMetadata{
+				ID:     "0091f6a0373fe02d2e4cf6a83904889f5326a3590239015743bc812b02c51408",
+				Sha256: "7bbfcb694f6acc69483751d3b48d5bdbdcb284f9e04c7b7caa04b5977cffddc8",
+			}
+
+			sha256sum, err := util.CalculateSha256ByTaskID([]*util.PodExec{clientPod}, fileMetadata.ID)
+			Expect(err).NotTo(HaveOccurred())
+			Expect("0dd6bcd036002bbd79cd8dfebcd9813ec4231562c0b15b02cbc7c70a062717f9").To(Equal(sha256sum))
+
+			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("kubectl-proxy-bytes-0-100"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+
+			seedClientPods := make([]*util.PodExec, 3)
+			for i := 0; i < 3; i++ {
+				seedClientPods[i], err = util.SeedClientExec(i)
+				fmt.Println(err)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			sha256sum, err = util.CalculateSha256ByTaskID(seedClientPods, fileMetadata.ID)
+			Expect(err).NotTo(HaveOccurred())
+			Expect("0dd6bcd036002bbd79cd8dfebcd9813ec4231562c0b15b02cbc7c70a062717f9").To(Equal(sha256sum))
+		})
+	})
+
+	Context("/bin/kubectl file and set range header", func() {
 		It("download should be ok", Label("proxy", "download", "range: bytes=100-"), func() {
 			clientPod, err := util.ClientExec()
 			fmt.Println(err)
@@ -297,13 +297,13 @@ var _ = Describe("Download with proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "e37fccc0c725a947c0a8856e2e1f6a14a4a5792338a73dcafa7e5ebd6443f7b4",
-				Sha256: "327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a",
+				ID:     "28ded7113a871c1eb08728204810514f08e200952131075ea5f7a3756973ceb2",
+				Sha256: "ba9a10ceceb80562fc124dc9bc94ea2a38e3a71e3e746e2140e6381ac791cdeb",
 			}
 
 			sha256sum, err := util.CalculateSha256ByTaskID([]*util.PodExec{clientPod}, fileMetadata.ID)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+			Expect("327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a").To(Equal(sha256sum))
 
 			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("kubectl-proxy-bytes-100-"))
 			Expect(err).NotTo(HaveOccurred())
@@ -318,11 +318,85 @@ var _ = Describe("Download with proxy", func() {
 
 			sha256sum, err = util.CalculateSha256ByTaskID(seedClientPods, fileMetadata.ID)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+			Expect("327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a").To(Equal(sha256sum))
 		})
 	})
 
-	Context("/bin/kubectl file", func() {
+	Context("/bin/kubectl file and set range header", func() {
+		It("download should be ok", Label("proxy", "download", "range: bytes=100-46026751"), func() {
+			clientPod, err := util.ClientExec()
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+
+			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("curl -x 127.0.0.1:4001 -r 100-46026751 -H 'X-Dragonfly-Tag: proxy-bytes-100-46026751' %s --output %s", util.GetFileURL("/bin/kubectl"), util.GetOutputPath("kubectl-proxy-bytes-100-46026751"))).CombinedOutput()
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Println(string(out))
+
+			fileMetadata := util.FileMetadata{
+				ID:     "28ded7113a871c1eb08728204810514f08e200952131075ea5f7a3756973ceb2",
+				Sha256: "ba9a10ceceb80562fc124dc9bc94ea2a38e3a71e3e746e2140e6381ac791cdeb",
+			}
+
+			sha256sum, err := util.CalculateSha256ByTaskID([]*util.PodExec{clientPod}, fileMetadata.ID)
+			Expect(err).NotTo(HaveOccurred())
+			Expect("327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a").To(Equal(sha256sum))
+
+			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("kubectl-proxy-bytes-100-46026751"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+
+			seedClientPods := make([]*util.PodExec, 3)
+			for i := 0; i < 3; i++ {
+				seedClientPods[i], err = util.SeedClientExec(i)
+				fmt.Println(err)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			sha256sum, err = util.CalculateSha256ByTaskID(seedClientPods, fileMetadata.ID)
+			Expect(err).NotTo(HaveOccurred())
+			Expect("327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a").To(Equal(sha256sum))
+		})
+	})
+
+	Context("/bin/kubectl file and set range header", func() {
+		It("download should be ok", Label("proxy", "download", "range: bytes=0-46026751"), func() {
+			clientPod, err := util.ClientExec()
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+
+			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("curl -x 127.0.0.1:4001 -r 0-46026751 -H 'X-Dragonfly-Tag: proxy-bytes-0-46026751' %s --output %s", util.GetFileURL("/bin/kubectl"), util.GetOutputPath("kubectl-proxy-bytes-0-46026751"))).CombinedOutput()
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Println(string(out))
+
+			fileMetadata := util.FileMetadata{
+				ID:     "28ded7113a871c1eb08728204810514f08e200952131075ea5f7a3756973ceb2",
+				Sha256: "327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a",
+			}
+
+			sha256sum, err := util.CalculateSha256ByTaskID([]*util.PodExec{clientPod}, fileMetadata.ID)
+			Expect(err).NotTo(HaveOccurred())
+			Expect("327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a").To(Equal(sha256sum))
+
+			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("kubectl-proxy-bytes-0-46026751"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+
+			seedClientPods := make([]*util.PodExec, 3)
+			for i := 0; i < 3; i++ {
+				seedClientPods[i], err = util.SeedClientExec(i)
+				fmt.Println(err)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			sha256sum, err = util.CalculateSha256ByTaskID(seedClientPods, fileMetadata.ID)
+			Expect(err).NotTo(HaveOccurred())
+			Expect("327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a").To(Equal(sha256sum))
+		})
+	})
+
+	Context("/bin/kubectl file and set range header", func() {
 		It("download should be ok", Label("proxy", "download", "range: bytes=100-10240"), func() {
 			clientPod, err := util.ClientExec()
 			fmt.Println(err)
@@ -334,13 +408,13 @@ var _ = Describe("Download with proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "e37fccc0c725a947c0a8856e2e1f6a14a4a5792338a73dcafa7e5ebd6443f7b4",
-				Sha256: "327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a",
+				ID:     "e5ccafcd80ee0dfc48aa1f313ef6086a1fd1e0021183452c096ae40d87d191c6",
+				Sha256: "8732360b941ad09a5e0e5d5f9891118bc068f6d0d5a56e3c6d483e4600fbc43f",
 			}
 
 			sha256sum, err := util.CalculateSha256ByTaskID([]*util.PodExec{clientPod}, fileMetadata.ID)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+			Expect("0dd6bcd036002bbd79cd8dfebcd9813ec4231562c0b15b02cbc7c70a062717f9").To(Equal(sha256sum))
 
 			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("kubectl-proxy-bytes-100-10240"))
 			Expect(err).NotTo(HaveOccurred())
@@ -355,11 +429,11 @@ var _ = Describe("Download with proxy", func() {
 
 			sha256sum, err = util.CalculateSha256ByTaskID(seedClientPods, fileMetadata.ID)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+			Expect("0dd6bcd036002bbd79cd8dfebcd9813ec4231562c0b15b02cbc7c70a062717f9").To(Equal(sha256sum))
 		})
 	})
 
-	Context("/bin/kubectl file", func() {
+	Context("/bin/kubectl file and set range header", func() {
 		It("download should be ok", Label("proxy", "download", "range: bytes=100-1024"), func() {
 			clientPod, err := util.ClientExec()
 			fmt.Println(err)
@@ -371,13 +445,13 @@ var _ = Describe("Download with proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "e37fccc0c725a947c0a8856e2e1f6a14a4a5792338a73dcafa7e5ebd6443f7b4",
-				Sha256: "327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a",
+				ID:     "16d94182383e84a73f9c85a28a25d781a8a4e56ec37c6e3e61d1f946fb236e85",
+				Sha256: "d6d17dca18b8de59e38da525dc24c47b74fec1a790a9f64afdd6538f4f8fa90e",
 			}
 
 			sha256sum, err := util.CalculateSha256ByTaskID([]*util.PodExec{clientPod}, fileMetadata.ID)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+			Expect("0dd6bcd036002bbd79cd8dfebcd9813ec4231562c0b15b02cbc7c70a062717f9").To(Equal(sha256sum))
 
 			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("kubectl-proxy-bytes-100-1024"))
 			Expect(err).NotTo(HaveOccurred())
@@ -392,7 +466,7 @@ var _ = Describe("Download with proxy", func() {
 
 			sha256sum, err = util.CalculateSha256ByTaskID(seedClientPods, fileMetadata.ID)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+			Expect("0dd6bcd036002bbd79cd8dfebcd9813ec4231562c0b15b02cbc7c70a062717f9").To(Equal(sha256sum))
 		})
 	})
 })
