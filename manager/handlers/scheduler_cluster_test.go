@@ -17,6 +17,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -46,14 +47,21 @@ var (
 		   "name": "foo",
 		   "seed_peer_cluster_id": 2
 		}`
-	mockSchedulerClusterResponseBody = `{"id":2,"created_at":"2024-04-17T18:00:21.5804709Z","updated_at":"2024-04-17T18:00:21.5804709Z","is_del":0,"name":"foo","bio":"bio","config":{"CandidateParentLimit":1,"FilterParentLimit":10},"client_config":{"LoadLimit":1},"scopes":null,"is_default":false,"seed_peer_clusters":null,"schedulers":null,"peers":null,"jobs":null}`
-	mockSchedulerClusterModel        = &models.SchedulerCluster{
+	mockSchedulerClusterModel = &models.SchedulerCluster{
 		BaseModel:    mockBaseModel,
 		Name:         "foo",
 		BIO:          "bio",
 		IsDefault:    false,
 		Config:       models.JSONMap{"CandidateParentLimit": 1, "FilterParentLimit": 10},
 		ClientConfig: models.JSONMap{"LoadLimit": 1},
+	}
+	mockUnmarshalSchedulerClusterModel = &models.SchedulerCluster{
+		BaseModel:    mockBaseModel,
+		Name:         "foo",
+		BIO:          "bio",
+		IsDefault:    false,
+		Config:       models.JSONMap{"CandidateParentLimit": float64(1), "FilterParentLimit": float64(10)},
+		ClientConfig: models.JSONMap{"LoadLimit": float64(1)},
 	}
 )
 
@@ -95,7 +103,10 @@ func TestHandlers_CreateSchedulerCluster(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockSchedulerClusterResponseBody)
+				schedulerCluster := models.SchedulerCluster{}
+				err := json.Unmarshal(w.Body.Bytes(), &schedulerCluster)
+				assert.NoError(err)
+				assert.Equal(mockUnmarshalSchedulerClusterModel, &schedulerCluster)
 			},
 		},
 	}
@@ -193,7 +204,10 @@ func TestHandlers_UpdateSchedulerCluster(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockSchedulerClusterResponseBody)
+				schedulerCluster := models.SchedulerCluster{}
+				err := json.Unmarshal(w.Body.Bytes(), &schedulerCluster)
+				assert.NoError(err)
+				assert.Equal(mockUnmarshalSchedulerClusterModel, &schedulerCluster)
 			},
 		},
 	}
@@ -238,7 +252,10 @@ func TestHandlers_GetSchedulerCluster(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockSchedulerClusterResponseBody)
+				schedulerCluster := models.SchedulerCluster{}
+				err := json.Unmarshal(w.Body.Bytes(), &schedulerCluster)
+				assert.NoError(err)
+				assert.Equal(mockUnmarshalSchedulerClusterModel, &schedulerCluster)
 			},
 		},
 	}
@@ -286,7 +303,10 @@ func TestHandlers_GetSchedulerClusters(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), "["+mockSchedulerClusterResponseBody+"]")
+				schedulerCluster := models.SchedulerCluster{}
+				err := json.Unmarshal(w.Body.Bytes()[1:w.Body.Len()-1], &schedulerCluster)
+				assert.NoError(err)
+				assert.Equal(mockUnmarshalSchedulerClusterModel, &schedulerCluster)
 			},
 		},
 	}

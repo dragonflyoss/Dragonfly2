@@ -17,6 +17,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -41,7 +42,6 @@ var (
 			"state": "active",
 			"user_id": 4
 		}`
-	mockPersonalAccessTokenResponseBody  = `{"id":0,"created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z","is_del":0,"name":"foo","bio":"bio","token":"","scopes":null,"state":"active","expired_at":"2024-04-21T16:53:21.5804709Z","user_id":4,"user":{"id":0,"created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z","is_del":0,"email":"","name":"","avatar":"","phone":"","state":"","location":"","bio":"","configs":null}}`
 	mockCreatePersonalAccessTokenRequest = types.CreatePersonalAccessTokenRequest{
 		Name:      "foo",
 		ExpiredAt: time.Date(2024, 4, 21, 16, 53, 21, 580470900, time.UTC),
@@ -100,7 +100,10 @@ func TestHandlers_CreatePersonalAccessToken(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockPersonalAccessTokenResponseBody)
+				PersonalAccessToken := models.PersonalAccessToken{}
+				err := json.Unmarshal(w.Body.Bytes(), &PersonalAccessToken)
+				assert.NoError(err)
+				assert.Equal(mockPersonalAccessTokenModel, &PersonalAccessToken)
 			},
 		},
 	}
@@ -198,7 +201,10 @@ func TestHandlers_UpdatePersonalAccessToken(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockPersonalAccessTokenResponseBody)
+				PersonalAccessToken := models.PersonalAccessToken{}
+				err := json.Unmarshal(w.Body.Bytes(), &PersonalAccessToken)
+				assert.NoError(err)
+				assert.Equal(mockPersonalAccessTokenModel, &PersonalAccessToken)
 			},
 		},
 	}
@@ -243,7 +249,10 @@ func TestHandlers_GetPersonalAccessToken(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockPersonalAccessTokenResponseBody)
+				PersonalAccessToken := models.PersonalAccessToken{}
+				err := json.Unmarshal(w.Body.Bytes(), &PersonalAccessToken)
+				assert.NoError(err)
+				assert.Equal(mockPersonalAccessTokenModel, &PersonalAccessToken)
 			},
 		},
 	}
@@ -292,7 +301,10 @@ func TestHandlers_GetPersonalAccessTokens(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), "["+mockPersonalAccessTokenResponseBody+"]")
+				PersonalAccessToken := models.PersonalAccessToken{}
+				err := json.Unmarshal(w.Body.Bytes()[1:w.Body.Len()-1], &PersonalAccessToken)
+				assert.NoError(err)
+				assert.Equal(mockPersonalAccessTokenModel, &PersonalAccessToken)
 			},
 		},
 	}

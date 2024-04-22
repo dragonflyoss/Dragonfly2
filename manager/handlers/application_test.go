@@ -17,6 +17,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -50,7 +51,6 @@ var (
 		   "url": "http://example.com/foo",
 		   "user_id": 4
 		}`
-	mockApplicationResponseBody  = `{"id":2,"created_at":"2024-04-17T18:00:21.5804709Z","updated_at":"2024-04-17T18:00:21.5804709Z","is_del":0,"name":"foo","url":"http://example.com/foo","bio":"bio","priority":{"urls":[{"regex":"regex","value":20}],"value":20},"user_id":4,"user":{"id":0,"created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z","is_del":0,"email":"","name":"","avatar":"","phone":"","state":"","location":"","bio":"","configs":null}}`
 	mockPriorityValue            = 20
 	mockCreateApplicationRequest = types.CreateApplicationRequest{
 		Name:   "foo",
@@ -96,6 +96,15 @@ var (
 		UserID:    4,
 		Priority:  models.JSONMap{"value": 20, "urls": []interface{}{map[string]interface{}{"regex": "regex", "value": 20}}},
 	}
+	mockUnmarshalApplicationModel = models.Application{
+		BaseModel: mockBaseModel,
+		Name:      "foo",
+		URL:       "http://example.com/foo",
+		BIO:       "bio",
+		UserID:    4,
+		// when w.Body.Bytes() is unmarshal to models.Application, the value of Priority will be float64
+		Priority: models.JSONMap{"value": float64(20), "urls": []interface{}{map[string]interface{}{"regex": "regex", "value": float64(20)}}},
+	}
 )
 
 func mockApplicationRouter(h *Handlers) *gin.Engine {
@@ -135,7 +144,10 @@ func TestHandlers_CreateApplication(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockApplicationResponseBody)
+				application := models.Application{}
+				err := json.Unmarshal(w.Body.Bytes(), &application)
+				assert.NoError(err)
+				assert.Equal(mockUnmarshalApplicationModel, application)
 			},
 		},
 	}
@@ -233,7 +245,10 @@ func TestHandlers_UpdateApplication(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockApplicationResponseBody)
+				application := models.Application{}
+				err := json.Unmarshal(w.Body.Bytes(), &application)
+				assert.NoError(err)
+				assert.Equal(mockUnmarshalApplicationModel, application)
 			},
 		},
 	}
@@ -278,7 +293,10 @@ func TestHandlers_GetApplication(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockApplicationResponseBody)
+				application := models.Application{}
+				err := json.Unmarshal(w.Body.Bytes(), &application)
+				assert.NoError(err)
+				assert.Equal(mockUnmarshalApplicationModel, application)
 			},
 		},
 	}
@@ -327,7 +345,12 @@ func TestHandlers_GetApplications(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), "["+mockApplicationResponseBody+"]")
+				application := models.Application{}
+				// Remove the first and last character "[]" of the response body,
+				// because the response body is a list of models.Application.
+				err := json.Unmarshal(w.Body.Bytes()[1:w.Body.Len()-1], &application)
+				assert.NoError(err)
+				assert.Equal(mockUnmarshalApplicationModel, application)
 			},
 		},
 	}

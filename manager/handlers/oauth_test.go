@@ -17,6 +17,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -39,7 +40,6 @@ var (
 			"client_secret": "secret",
 			"name": "google"
 		}`
-	mockOauthResponseBody  = `{"id":2,"created_at":"2024-04-17T18:00:21.5804709Z","updated_at":"2024-04-17T18:00:21.5804709Z","is_del":0,"name":"google","bio":"bio","client_id":"2","client_secret":"secret","redirect_url":""}`
 	mockCreateOauthRequest = types.CreateOauthRequest{
 		Name:         "google",
 		BIO:          "bio",
@@ -98,7 +98,10 @@ func TestHandlers_CreateOauth(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockOauthResponseBody)
+				oauth := models.Oauth{}
+				err := json.Unmarshal(w.Body.Bytes(), &oauth)
+				assert.NoError(err)
+				assert.Equal(mockOauthModel, &oauth)
 			},
 		},
 	}
@@ -196,7 +199,10 @@ func TestHandlers_UpdateOauth(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockOauthResponseBody)
+				oauth := models.Oauth{}
+				err := json.Unmarshal(w.Body.Bytes(), &oauth)
+				assert.NoError(err)
+				assert.Equal(mockOauthModel, &oauth)
 			},
 		},
 	}
@@ -241,7 +247,10 @@ func TestHandlers_GetOauth(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockOauthResponseBody)
+				oauth := models.Oauth{}
+				err := json.Unmarshal(w.Body.Bytes(), &oauth)
+				assert.NoError(err)
+				assert.Equal(mockOauthModel, &oauth)
 			},
 		},
 	}
@@ -290,7 +299,10 @@ func TestHandlers_GetOauths(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), "["+mockOauthResponseBody+"]")
+				oauth := models.Oauth{}
+				err := json.Unmarshal(w.Body.Bytes()[1:w.Body.Len()-1], &oauth)
+				assert.NoError(err)
+				assert.Equal(mockOauthModel, &oauth)
 			},
 		},
 	}

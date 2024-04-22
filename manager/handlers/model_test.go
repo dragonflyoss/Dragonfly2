@@ -17,6 +17,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -37,7 +38,6 @@ var (
 		   "bio": "bio",
 		   "state": "active"
 		}`
-	mockModelResponseBody  = `{"id":2,"created_at":"2024-04-17T18:00:21.5804709Z","updated_at":"2024-04-17T18:00:21.5804709Z","is_del":0,"name":"name","type":"type","bio":"bio","version":"version","state":"state","evaluation":null,"scheduler_id":8,"scheduler":{"id":0,"created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z","is_del":0,"host_name":"","idc":"","location":"","ip":"","port":0,"state":"","features":null,"scheduler_cluster_id":0,"scheduler_cluster":{"id":0,"created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z","is_del":0,"name":"","bio":"","config":null,"client_config":null,"scopes":null,"is_default":false,"seed_peer_clusters":null,"schedulers":null,"peers":null,"jobs":null},"models":null}}`
 	mockUpdateModelRequest = types.UpdateModelRequest{
 		BIO:   "bio",
 		State: "active",
@@ -144,7 +144,10 @@ func TestHandlers_UpdateModel(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockModelResponseBody)
+				model := models.Model{}
+				err := json.Unmarshal(w.Body.Bytes(), &model)
+				assert.NoError(err)
+				assert.Equal(mockModel, &model)
 			},
 		},
 	}
@@ -189,7 +192,10 @@ func TestHandlers_GetModel(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockModelResponseBody)
+				model := models.Model{}
+				err := json.Unmarshal(w.Body.Bytes(), &model)
+				assert.NoError(err)
+				assert.Equal(mockModel, &model)
 			},
 		},
 	}
@@ -238,7 +244,10 @@ func TestHandlers_GetModels(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), "["+mockModelResponseBody+"]")
+				model := models.Model{}
+				err := json.Unmarshal(w.Body.Bytes()[1:w.Body.Len()-1], &model)
+				assert.NoError(err)
+				assert.Equal(mockModel, &model)
 			},
 		},
 	}

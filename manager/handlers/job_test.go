@@ -17,6 +17,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -44,7 +45,6 @@ var (
 			"user_id": 4,
 			"bio": "bio"
 		}`
-	mockPreheatJobResponseBody  = `{"id":2,"created_at":"2024-04-17T18:00:21.5804709Z","updated_at":"2024-04-17T18:00:21.5804709Z","is_del":0,"task_id":"2","bio":"bio","type":"preheat","state":"","args":null,"result":null,"user_id":4,"user":{"id":0,"created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z","is_del":0,"email":"","name":"","avatar":"","phone":"","state":"","location":"","bio":"","configs":null},"seed_peer_clusters":null,"scheduler_clusters":null}`
 	mockPreheatCreateJobRequest = types.CreatePreheatJobRequest{
 		UserID: 4,
 		Type:   "preheat",
@@ -109,7 +109,10 @@ func TestHandlers_CreateJob(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockPreheatJobResponseBody)
+				job := models.Job{}
+				err := json.Unmarshal(w.Body.Bytes(), &job)
+				assert.NoError(err)
+				assert.Equal(mockPreheatJobModel, &job)
 			},
 		},
 	}
@@ -207,7 +210,10 @@ func TestHandlers_UpdateJob(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockPreheatJobResponseBody)
+				job := models.Job{}
+				err := json.Unmarshal(w.Body.Bytes(), &job)
+				assert.NoError(err)
+				assert.Equal(mockPreheatJobModel, &job)
 			},
 		},
 	}
@@ -252,7 +258,10 @@ func TestHandlers_GetJob(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockPreheatJobResponseBody)
+				job := models.Job{}
+				err := json.Unmarshal(w.Body.Bytes(), &job)
+				assert.NoError(err)
+				assert.Equal(mockPreheatJobModel, &job)
 			},
 		},
 	}
@@ -301,7 +310,10 @@ func TestHandlers_GetJobs(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), "["+mockPreheatJobResponseBody+"]")
+				job := models.Job{}
+				err := json.Unmarshal(w.Body.Bytes()[1:w.Body.Len()-1], &job)
+				assert.NoError(err)
+				assert.Equal(mockPreheatJobModel, &job)
 			},
 		},
 	}

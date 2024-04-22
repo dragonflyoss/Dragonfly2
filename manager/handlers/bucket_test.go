@@ -17,6 +17,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -37,7 +38,6 @@ var (
 		{
 		  "name": "bucket"
 		}`
-	mockBucketResponseBody  = `{"Name":"bucket","CreateAt":"2024-04-17T18:00:21.5804709Z"}`
 	mockCreateBucketRequest = types.CreateBucketRequest{
 		Name: "bucket",
 	}
@@ -162,7 +162,10 @@ func TestHandlers_GetBucket(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockBucketResponseBody)
+				bucketMetadata := objectstorage.BucketMetadata{}
+				err := json.Unmarshal(w.Body.Bytes(), &bucketMetadata)
+				assert.NoError(err)
+				assert.Equal(mockBucketMetadata, &bucketMetadata)
 			},
 		},
 	}
@@ -198,7 +201,10 @@ func TestHandlers_GetBuckets(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), "["+mockBucketResponseBody+"]")
+				bucketMetadata := objectstorage.BucketMetadata{}
+				err := json.Unmarshal(w.Body.Bytes()[1:w.Body.Len()-1], &bucketMetadata)
+				assert.NoError(err)
+				assert.Equal(mockBucketMetadata, &bucketMetadata)
 			},
 		},
 	}

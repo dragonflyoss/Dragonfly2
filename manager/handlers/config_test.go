@@ -17,6 +17,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -39,7 +40,6 @@ var (
 		   "user_id": 4,
 		   "value": "value"
 		}`
-	mockConfigResponseBody  = `{"id":2,"created_at":"2024-04-17T18:00:21.5804709Z","updated_at":"2024-04-17T18:00:21.5804709Z","is_del":0,"name":"foo","value":"value","bio":"bio","user_id":4,"user":{"id":0,"created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z","is_del":0,"email":"","name":"","avatar":"","phone":"","state":"","location":"","bio":"","configs":null}}`
 	mockCreateConfigRequest = types.CreateConfigRequest{
 		Name:   "foo",
 		Value:  "value",
@@ -98,7 +98,10 @@ func TestHandlers_CreateConfig(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockConfigResponseBody)
+				config := &models.Config{}
+				err := json.Unmarshal(w.Body.Bytes(), &config)
+				assert.NoError(err)
+				assert.Equal(mockConfigModel, config)
 			},
 		},
 	}
@@ -196,7 +199,10 @@ func TestHandlers_UpdateConfig(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockConfigResponseBody)
+				config := &models.Config{}
+				err := json.Unmarshal(w.Body.Bytes(), &config)
+				assert.NoError(err)
+				assert.Equal(mockConfigModel, config)
 			},
 		},
 	}
@@ -241,7 +247,10 @@ func TestHandlers_GetConfig(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockConfigResponseBody)
+				config := &models.Config{}
+				err := json.Unmarshal(w.Body.Bytes(), &config)
+				assert.NoError(err)
+				assert.Equal(mockConfigModel, config)
 			},
 		},
 	}
@@ -290,7 +299,10 @@ func TestHandlers_GetConfigs(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), "["+mockConfigResponseBody+"]")
+				config := &models.Config{}
+				err := json.Unmarshal(w.Body.Bytes()[1:w.Body.Len()-1], &config)
+				assert.NoError(err)
+				assert.Equal(mockConfigModel, config)
 			},
 		},
 	}

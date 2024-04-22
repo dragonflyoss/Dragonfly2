@@ -30,8 +30,7 @@ import (
 )
 
 var (
-	mockRbacPermission     = []rbac.Permission{{Object: "object", Action: "action"}}
-	mockPermissionRespBody = `[{"object":"object","action":"action"}]`
+	mockRbacPermission = []rbac.Permission{{Object: "object", Action: "action"}}
 )
 
 func mockPermissionRouter(h *Handlers) *gin.Engine {
@@ -58,7 +57,7 @@ func TestHandlers_GetPermissions(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockPermissionRespBody)
+				assert.Equal(w.Body.String(), `[{"object":"object","action":"action"}]`)
 			},
 		},
 	}

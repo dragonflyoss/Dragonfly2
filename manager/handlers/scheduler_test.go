@@ -17,6 +17,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -39,7 +40,6 @@ var (
 		   "port": 8003,
 		   "scheduler_cluster_id": 2
 		}`
-	mockSchedulerResponseBody  = `{"id":2,"created_at":"2024-04-17T18:00:21.5804709Z","updated_at":"2024-04-17T18:00:21.5804709Z","is_del":0,"host_name":"foo","idc":"","location":"","ip":"127.0.0.1","port":8003,"state":"","features":null,"scheduler_cluster_id":0,"scheduler_cluster":{"id":0,"created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z","is_del":0,"name":"","bio":"","config":null,"client_config":null,"scopes":null,"is_default":false,"seed_peer_clusters":null,"schedulers":null,"peers":null,"jobs":null},"models":null}`
 	mockCreateSchedulerRequest = types.CreateSchedulerRequest{
 		Hostname:           "foo",
 		IP:                 "127.0.0.1",
@@ -96,7 +96,10 @@ func TestHandlers_CreateScheduler(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockSchedulerResponseBody)
+				scheduler := models.Scheduler{}
+				err := json.Unmarshal(w.Body.Bytes(), &scheduler)
+				assert.NoError(err)
+				assert.Equal(mockSchedulerModel, &scheduler)
 			},
 		},
 	}
@@ -194,7 +197,10 @@ func TestHandlers_UpdateScheduler(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockSchedulerResponseBody)
+				scheduler := models.Scheduler{}
+				err := json.Unmarshal(w.Body.Bytes(), &scheduler)
+				assert.NoError(err)
+				assert.Equal(mockSchedulerModel, &scheduler)
 			},
 		},
 	}
@@ -239,7 +245,10 @@ func TestHandlers_GetScheduler(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockSchedulerResponseBody)
+				scheduler := models.Scheduler{}
+				err := json.Unmarshal(w.Body.Bytes(), &scheduler)
+				assert.NoError(err)
+				assert.Equal(mockSchedulerModel, &scheduler)
 			},
 		},
 	}
@@ -287,7 +296,10 @@ func TestHandlers_GetSchedulers(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), "["+mockSchedulerResponseBody+"]")
+				scheduler := models.Scheduler{}
+				err := json.Unmarshal(w.Body.Bytes()[1:w.Body.Len()-1], &scheduler)
+				assert.NoError(err)
+				assert.Equal(mockSchedulerModel, &scheduler)
 			},
 		},
 	}

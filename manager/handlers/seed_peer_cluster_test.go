@@ -17,6 +17,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -40,12 +41,17 @@ var (
 			  "load_limit": 1
 		   }
 		}`
-	mockSeedPeerClusterResponseBody = `{"id":2,"created_at":"2024-04-17T18:00:21.5804709Z","updated_at":"2024-04-17T18:00:21.5804709Z","is_del":0,"name":"foo","bio":"bio","config":{"LoadLimit":1},"scheduler_clusters":null,"seed_peer":null,"jobs":null}`
-	mockSeedPeerClusterModel        = &models.SeedPeerCluster{
+	mockSeedPeerClusterModel = &models.SeedPeerCluster{
 		BaseModel: mockBaseModel,
 		Name:      "foo",
 		BIO:       "bio",
 		Config:    models.JSONMap{"LoadLimit": 1},
+	}
+	mockUnmarshalSeedPeerClusterModel = &models.SeedPeerCluster{
+		BaseModel: mockBaseModel,
+		Name:      "foo",
+		BIO:       "bio",
+		Config:    models.JSONMap{"LoadLimit": float64(1)},
 	}
 )
 
@@ -88,7 +94,10 @@ func TestHandlers_CreateSeedPeerCluster(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockSeedPeerClusterResponseBody)
+				seedPeerCluster := models.SeedPeerCluster{}
+				err := json.Unmarshal(w.Body.Bytes(), &seedPeerCluster)
+				assert.NoError(err)
+				assert.Equal(mockUnmarshalSeedPeerClusterModel, &seedPeerCluster)
 			},
 		},
 	}
@@ -186,7 +195,10 @@ func TestHandlers_UpdateSeedPeerCluster(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockSeedPeerClusterResponseBody)
+				seedPeerCluster := models.SeedPeerCluster{}
+				err := json.Unmarshal(w.Body.Bytes(), &seedPeerCluster)
+				assert.NoError(err)
+				assert.Equal(mockUnmarshalSeedPeerClusterModel, &seedPeerCluster)
 			},
 		},
 	}
@@ -231,7 +243,10 @@ func TestHandlers_GetSeedPeerCluster(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockSeedPeerClusterResponseBody)
+				seedPeerCluster := models.SeedPeerCluster{}
+				err := json.Unmarshal(w.Body.Bytes(), &seedPeerCluster)
+				assert.NoError(err)
+				assert.Equal(mockUnmarshalSeedPeerClusterModel, &seedPeerCluster)
 			},
 		},
 	}
@@ -279,7 +294,10 @@ func TestHandlers_GetSeedPeerClusters(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), "["+mockSeedPeerClusterResponseBody+"]")
+				seedPeerCluster := models.SeedPeerCluster{}
+				err := json.Unmarshal(w.Body.Bytes()[1:w.Body.Len()-1], &seedPeerCluster)
+				assert.NoError(err)
+				assert.Equal(mockUnmarshalSeedPeerClusterModel, &seedPeerCluster)
 			},
 		},
 	}

@@ -17,6 +17,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -41,7 +42,6 @@ var (
 			"scheduler_cluster_id": 2,
 			"type": "super"
 		}`
-	mockPeerResponseBody  = `{"id":2,"created_at":"2024-04-17T18:00:21.5804709Z","updated_at":"2024-04-17T18:00:21.5804709Z","is_del":0,"host_name":"foo","type":"super","idc":"","location":"","ip":"127.0.0.1","port":8003,"download_port":8001,"object_storage_port":0,"state":"","os":"","platform":"","platform_family":"","platform_version":"","kernel_version":"","git_version":"","git_commit":"","build_platform":"","scheduler_cluster_id":2,"scheduler_cluster":{"id":0,"created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z","is_del":0,"name":"","bio":"","config":null,"client_config":null,"scopes":null,"is_default":false,"seed_peer_clusters":null,"schedulers":null,"peers":null,"jobs":null}}`
 	mockCreatePeerRequest = types.CreatePeerRequest{
 		Hostname:           "foo",
 		Type:               "super",
@@ -97,7 +97,10 @@ func TestHandlers_CreatePeer(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockPeerResponseBody)
+				peer := models.Peer{}
+				err := json.Unmarshal(w.Body.Bytes(), &peer)
+				assert.NoError(err)
+				assert.Equal(mockPeerModel, &peer)
 			},
 		},
 	}
@@ -186,7 +189,10 @@ func TestHandlers_GetPeer(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockPeerResponseBody)
+				peer := models.Peer{}
+				err := json.Unmarshal(w.Body.Bytes(), &peer)
+				assert.NoError(err)
+				assert.Equal(mockPeerModel, &peer)
 			},
 		},
 	}
@@ -235,7 +241,10 @@ func TestHandlers_GetPeers(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), "["+mockPeerResponseBody+"]")
+				peer := models.Peer{}
+				err := json.Unmarshal(w.Body.Bytes()[1:w.Body.Len()-1], &peer)
+				assert.NoError(err)
+				assert.Equal(mockPeerModel, &peer)
 			},
 		},
 	}

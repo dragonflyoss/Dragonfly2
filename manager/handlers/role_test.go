@@ -47,7 +47,6 @@ var (
 			"action": "read",
 			"object": "object"
 		}`
-	mockRoleResponseBody  = `["maintainer"]`
 	mockCreateRoleRequest = types.CreateRoleRequest{
 		Role:        "maintainer",
 		Permissions: []rbac.Permission{{Object: "object", Action: "read"}},
@@ -162,7 +161,7 @@ func TestHandlers_GetRole(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), "["+mockRoleResponseBody+"]")
+				assert.Equal(w.Body.String(), `[["maintainer"]]`)
 			},
 		},
 	}
@@ -198,7 +197,7 @@ func TestHandlers_GetRoles(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockRoleResponseBody)
+				assert.Equal(w.Body.String(), `["maintainer"]`)
 			},
 		},
 	}

@@ -17,6 +17,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -47,7 +48,6 @@ var (
 				"load_limit": 1
 			}
 		}`
-	mockClusterResponseBody   = `{"id":2,"name":"foo","bio":"bio","scopes":null,"scheduler_cluster_id":3,"seed_peer_cluster_id":4,"scheduler_cluster_config":{"candidate_parent_limit":1,"filter_parent_limit":10},"seed_peer_cluster_config":{"load_limit":1},"peer_cluster_config":{"load_limit":1},"created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z","is_default":true}`
 	mockCreateClusterResponse = &types.CreateClusterResponse{
 		ID:                     2,
 		Name:                   "foo",
@@ -130,7 +130,10 @@ func TestHandlers_CreateCluster(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockClusterResponseBody)
+				createClusterResponse := types.CreateClusterResponse{}
+				err := json.Unmarshal(w.Body.Bytes(), &createClusterResponse)
+				assert.NoError(err)
+				assert.Equal(mockCreateClusterResponse, &createClusterResponse)
 			},
 		},
 	}
@@ -228,7 +231,10 @@ func TestHandlers_UpdateCluster(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockClusterResponseBody)
+				updateClusterResponse := types.UpdateClusterResponse{}
+				err := json.Unmarshal(w.Body.Bytes(), &updateClusterResponse)
+				assert.NoError(err)
+				assert.Equal(mockUpdateClusterResponse, &updateClusterResponse)
 			},
 		},
 	}
@@ -273,7 +279,10 @@ func TestHandlers_GetCluster(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockClusterResponseBody)
+				getClusterResponse := types.GetClusterResponse{}
+				err := json.Unmarshal(w.Body.Bytes(), &getClusterResponse)
+				assert.NoError(err)
+				assert.Equal(mockGetClusterResponse, &getClusterResponse)
 			},
 		},
 	}
@@ -322,7 +331,10 @@ func TestHandlers_GetClusters(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), "["+mockClusterResponseBody+"]")
+				getClusterResponse := types.GetClusterResponse{}
+				err := json.Unmarshal(w.Body.Bytes()[1:w.Body.Len()-1], &getClusterResponse)
+				assert.NoError(err)
+				assert.Equal(mockGetClusterResponse, &getClusterResponse)
 			},
 		},
 	}

@@ -17,6 +17,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -51,9 +52,7 @@ var (
 		   "new_password": "123456789",
 		   "old_password": "987654321"
 		}`
-	mockUserResponseBody         = `{"id":2,"created_at":"2024-04-17T18:00:21.5804709Z","updated_at":"2024-04-17T18:00:21.5804709Z","is_del":0,"email":"test@test.com","name":"name","avatar":"","phone":"1234567890","state":"","location":"","bio":"bio","configs":null}`
-	mockRolesForUserResponseBody = `["maintainer"]`
-	mockUpdateUserRequest        = types.UpdateUserRequest{
+	mockUpdateUserRequest = types.UpdateUserRequest{
 		Email: "test@test.com",
 		Phone: "12345678900",
 		BIO:   "bio",
@@ -72,13 +71,11 @@ var (
 		NewPassword: "123456789",
 	}
 	mockUserModel = &models.User{
-		BaseModel:         mockBaseModel,
-		Email:             "test@test.com",
-		Name:              "name",
-		EncryptedPassword: "encrypted987654321",
-		Phone:             "1234567890",
-		PrivateToken:      "private",
-		BIO:               "bio",
+		BaseModel: mockBaseModel,
+		Email:     "test@test.com",
+		Name:      "name",
+		Phone:     "1234567890",
+		BIO:       "bio",
 	}
 )
 
@@ -133,7 +130,10 @@ func TestHandlers_UpdateUser(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockUserResponseBody)
+				user := models.User{}
+				err := json.Unmarshal(w.Body.Bytes(), &user)
+				assert.NoError(err)
+				assert.Equal(mockUserModel, &user)
 			},
 		},
 	}
@@ -178,7 +178,10 @@ func TestHandlers_GetUser(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockUserResponseBody)
+				user := models.User{}
+				err := json.Unmarshal(w.Body.Bytes(), &user)
+				assert.NoError(err)
+				assert.Equal(mockUserModel, &user)
 			},
 		},
 	}
@@ -227,7 +230,10 @@ func TestHandlers_GetUsers(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), "["+mockUserResponseBody+"]")
+				user := models.User{}
+				err := json.Unmarshal(w.Body.Bytes()[1:w.Body.Len()-1], &user)
+				assert.NoError(err)
+				assert.Equal(mockUserModel, &user)
 			},
 		},
 	}
@@ -272,7 +278,10 @@ func TestHandlers_SignUp(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockUserResponseBody)
+				user := models.User{}
+				err := json.Unmarshal(w.Body.Bytes(), &user)
+				assert.NoError(err)
+				assert.Equal(mockUserModel, &user)
 			},
 		},
 	}
@@ -405,7 +414,7 @@ func TestHandlers_GetRolesForUser(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockRolesForUserResponseBody)
+				assert.Equal(w.Body.String(), `["maintainer"]`)
 			},
 		},
 	}

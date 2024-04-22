@@ -17,6 +17,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -41,7 +42,6 @@ var (
 		   "seed_peer_cluster_id": 2,
 		   "type": "super"
 		}`
-	mockSeedPeerResponseBody  = `{"id":0,"created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z","is_del":0,"host_name":"foo","type":"super","idc":"","location":"","ip":"127.0.0.1","port":8003,"download_port":8001,"object_storage_port":0,"state":"","seed_peer_cluster_id":2,"seed_peer_cluster":{"id":0,"created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z","is_del":0,"name":"","bio":"","config":null,"scheduler_clusters":null,"seed_peer":null,"jobs":null}}`
 	mockCreateSeedPeerRequest = types.CreateSeedPeerRequest{
 		Hostname:          "foo",
 		Type:              "super",
@@ -104,7 +104,10 @@ func TestHandlers_CreateSeedPeer(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockSeedPeerResponseBody)
+				seedPeer := models.SeedPeer{}
+				err := json.Unmarshal(w.Body.Bytes(), &seedPeer)
+				assert.NoError(err)
+				assert.Equal(mockSeedPeerModel, &seedPeer)
 			},
 		},
 	}
@@ -202,7 +205,10 @@ func TestHandlers_UpdateSeedPeer(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockSeedPeerResponseBody)
+				seedPeer := models.SeedPeer{}
+				err := json.Unmarshal(w.Body.Bytes(), &seedPeer)
+				assert.NoError(err)
+				assert.Equal(mockSeedPeerModel, &seedPeer)
 			},
 		},
 	}
@@ -247,7 +253,10 @@ func TestHandlers_GetSeedPeer(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), mockSeedPeerResponseBody)
+				seedPeer := models.SeedPeer{}
+				err := json.Unmarshal(w.Body.Bytes(), &seedPeer)
+				assert.NoError(err)
+				assert.Equal(mockSeedPeerModel, &seedPeer)
 			},
 		},
 	}
@@ -295,7 +304,10 @@ func TestHandlers_GetSeedPeers(t *testing.T) {
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)
-				assert.Equal(w.Body.String(), "["+mockSeedPeerResponseBody+"]")
+				seedPeer := models.SeedPeer{}
+				err := json.Unmarshal(w.Body.Bytes()[1:w.Body.Len()-1], &seedPeer)
+				assert.NoError(err)
+				assert.Equal(mockSeedPeerModel, &seedPeer)
 			},
 		},
 	}
