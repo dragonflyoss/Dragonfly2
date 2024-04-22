@@ -18,22 +18,9 @@ package util
 
 import "fmt"
 
-func GetFileList() []string {
-	return []string{
-		"/etc/containerd/config.toml",
-		"/etc/fstab",
-		"/etc/hostname",
-		"/usr/bin/kubectl",
-		"/usr/bin/systemctl",
-		"/usr/local/bin/containerd-shim",
-		"/usr/local/bin/clean-install",
-		"/usr/local/bin/entrypoint",
-		"/usr/local/bin/containerd-shim-runc-v2",
-		"/usr/local/bin/ctr",
-		"/usr/local/bin/containerd",
-		"/usr/local/bin/create-kubelet-cgroup-v2",
-		"/usr/local/bin/crictl",
-	}
+type FileMetadata struct {
+	ID     string
+	Sha256 string
 }
 
 func GetFileURL(filePath string) string {
@@ -41,7 +28,6 @@ func GetFileURL(filePath string) string {
 	return fmt.Sprintf("%s%s", baseURL, filePath)
 }
 
-func GetNoContentLengthFileURL(filePath string) string {
-	baseURL := "http://file-server-no-content-length.dragonfly-e2e.svc/kind"
-	return fmt.Sprintf("%s%s", baseURL, filePath)
+func GetOutputPath(fileName string) string {
+	return fmt.Sprintf("/tmp/%s", fileName)
 }

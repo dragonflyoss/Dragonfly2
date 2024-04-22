@@ -58,3 +58,30 @@ func CalculateSha256ByTaskID(pods []*PodExec, taskID string) (string, error) {
 
 	return sha256sum, nil
 }
+
+func CalculateSha256ByOutput(pods []*PodExec, output string) (string, error) {
+	var sha256sum string
+	for _, pod := range pods {
+		if _, err := pod.Command("ls", output).CombinedOutput(); err != nil {
+			// If the path does not exist, skip this client.
+			fmt.Printf("path %s does not exist: %s\n", output, err.Error())
+			continue
+		}
+
+		// Calculate sha256sum of the output content.
+		out, err := pod.Command("sh", "-c", fmt.Sprintf("sha256sum %s", output)).CombinedOutput()
+		if err != nil {
+			return "", fmt.Errorf("calculate sha256sum of %s failed: %s", output, err.Error())
+		}
+
+		fmt.Println("sha256sum: " + string(out))
+		sha256sum = strings.Split(string(out), " ")[0]
+		break
+	}
+
+	if sha256sum == "" {
+		return "", errors.New("can not found sha256sum")
+	}
+
+	return sha256sum, nil
+}
