@@ -335,7 +335,7 @@ var _ = Describe("Download Using Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "28ded7113a871c1eb08728204810514f08e200952131075ea5f7a3756973ceb2",
+				ID:     "871b9e11903e7f3cadcb25706be7fd2c153b76cdf138f713bd7b506f695fc863",
 				Sha256: "ba9a10ceceb80562fc124dc9bc94ea2a38e3a71e3e746e2140e6381ac791cdeb",
 			}
 
@@ -697,7 +697,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "871b9e11903e7f3cadcb25706be7fd2c153b76cdf138f713bd7b506f695fc863",
+				ID:     "ba4b4a0a1be91ab6b2a76f99bbd8eac5977c388cfc7de73707d30e5d5cf0a6d4",
 				Sha256: "ba9a10ceceb80562fc124dc9bc94ea2a38e3a71e3e746e2140e6381ac791cdeb",
 			}
 

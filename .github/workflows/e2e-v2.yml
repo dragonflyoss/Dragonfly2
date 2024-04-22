@@ -147,4 +147,4 @@ jobs:
         with:
           name: ${{ matrix.module }}-e2e-tests-logs
           path: |
-            /tmp/artifact/**/*.log
+            /tmp/artifact/**
