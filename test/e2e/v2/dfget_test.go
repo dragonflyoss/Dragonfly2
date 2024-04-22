@@ -25,7 +25,7 @@ import (
 	"d7y.io/dragonfly/v2/test/e2e/v2/util"
 )
 
-var _ = Describe("Download with dfget", func() {
+var _ = Describe("Download Using Dfget", func() {
 	Context("/etc/containerd/config.toml file", func() {
 		It("download should be ok", Label("dfget", "download"), func() {
 			clientPod, err := util.ClientExec()
