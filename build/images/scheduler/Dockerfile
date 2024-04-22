@@ -30,7 +30,10 @@ RUN if [ "$(uname -m)" = "ppc64le" ]; then \
 FROM ${BASE_IMAGE}
 
 ENV PATH=/opt/dragonfly/bin:$PATH
+
 RUN echo "hosts: files dns" > /etc/nsswitch.conf
+
+RUN apk --no-cache add curl
 
 COPY --from=builder /opt/dragonfly/bin/scheduler /opt/dragonfly/bin/scheduler
 COPY --from=health /bin/grpc_health_probe /bin/grpc_health_probe
