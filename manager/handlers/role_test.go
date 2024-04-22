@@ -76,7 +76,7 @@ func TestHandlers_CreateRole(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("POST", "/api/v1/roles", nil),
+			req:  httptest.NewRequest(http.MethodPost, "/api/v1/roles", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -85,7 +85,7 @@ func TestHandlers_CreateRole(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("POST", "/api/v1/roles", strings.NewReader(mockRoleReqBody)),
+			req:  httptest.NewRequest(http.MethodPost, "/api/v1/roles", strings.NewReader(mockRoleReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.CreateRole(gomock.Any(), gomock.Eq(mockCreateRoleRequest)).Return(nil).Times(1)
 			},
@@ -120,7 +120,7 @@ func TestHandlers_DestroyRole(t *testing.T) {
 	}{
 		{
 			name: "success",
-			req:  httptest.NewRequest("DELETE", "/api/v1/roles/maintainer", nil),
+			req:  httptest.NewRequest(http.MethodDelete, "/api/v1/roles/maintainer", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.DestroyRole(gomock.Any(), "maintainer").Return(true, nil).Times(1)
 			},
@@ -155,7 +155,7 @@ func TestHandlers_GetRole(t *testing.T) {
 	}{
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/api/v1/roles/maintainer", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/roles/maintainer", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetRole(gomock.Any(), "maintainer").Return([][]string{{"maintainer"}}).Times(1)
 			},
@@ -191,7 +191,7 @@ func TestHandlers_GetRoles(t *testing.T) {
 	}{
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/api/v1/roles", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/roles", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetRoles(gomock.Any()).Return([]string{"maintainer"}).Times(1)
 			},
@@ -227,7 +227,7 @@ func TestHandlers_AddPermissionForRole(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity caused by body",
-			req:  httptest.NewRequest("POST", "/api/v1/roles/maintainer/permissions", nil),
+			req:  httptest.NewRequest(http.MethodPost, "/api/v1/roles/maintainer/permissions", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -236,7 +236,7 @@ func TestHandlers_AddPermissionForRole(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("POST", "/api/v1/roles/maintainer/permissions", strings.NewReader(mockPermissionForRoleReqBody)),
+			req:  httptest.NewRequest(http.MethodPost, "/api/v1/roles/maintainer/permissions", strings.NewReader(mockPermissionForRoleReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.AddPermissionForRole(gomock.Any(), "maintainer", gomock.Eq(types.AddPermissionForRoleRequest{
 					Permission: rbac.Permission{Object: "object", Action: "read"},
@@ -273,7 +273,7 @@ func TestHandlers_DeletePermissionForRole(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity caused by body",
-			req:  httptest.NewRequest("DELETE", "/api/v1/roles/maintainer/permissions", nil),
+			req:  httptest.NewRequest(http.MethodDelete, "/api/v1/roles/maintainer/permissions", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -282,7 +282,7 @@ func TestHandlers_DeletePermissionForRole(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("DELETE", "/api/v1/roles/maintainer/permissions", strings.NewReader(mockPermissionForRoleReqBody)),
+			req:  httptest.NewRequest(http.MethodDelete, "/api/v1/roles/maintainer/permissions", strings.NewReader(mockPermissionForRoleReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.DeletePermissionForRole(gomock.Any(), "maintainer", gomock.Eq(types.DeletePermissionForRoleRequest{
 					Permission: rbac.Permission{Object: "object", Action: "read"},

@@ -81,7 +81,7 @@ func TestHandlers_CreatePeer(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("POST", "/api/v1/peers", nil),
+			req:  httptest.NewRequest(http.MethodPost, "/api/v1/peers", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -90,7 +90,7 @@ func TestHandlers_CreatePeer(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("POST", "/api/v1/peers", strings.NewReader(mockPeerReqBody)),
+			req:  httptest.NewRequest(http.MethodPost, "/api/v1/peers", strings.NewReader(mockPeerReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.CreatePeer(gomock.Any(), gomock.Eq(mockCreatePeerRequest)).Return(mockPeerModel, nil).Times(1)
 			},
@@ -126,7 +126,7 @@ func TestHandlers_DestroyPeer(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("DELETE", "/api/v1/peers/test", nil),
+			req:  httptest.NewRequest(http.MethodDelete, "/api/v1/peers/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -135,7 +135,7 @@ func TestHandlers_DestroyPeer(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("DELETE", "/api/v1/peers/2", nil),
+			req:  httptest.NewRequest(http.MethodDelete, "/api/v1/peers/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.DestroyPeer(gomock.Any(), gomock.Eq(uint(2))).Return(nil).Times(1)
 			},
@@ -170,7 +170,7 @@ func TestHandlers_GetPeer(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("GET", "/api/v1/peers/test", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/peers/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -179,7 +179,7 @@ func TestHandlers_GetPeer(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/api/v1/peers/2", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/peers/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetPeer(gomock.Any(), gomock.Eq(uint(2))).Return(mockPeerModel, nil).Times(1)
 			},
@@ -215,7 +215,7 @@ func TestHandlers_GetPeers(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("GET", "/api/v1/peers?page=-1", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/peers?page=-1", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -224,7 +224,7 @@ func TestHandlers_GetPeers(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/api/v1/peers?host_name=foo", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/peers?host_name=foo", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetPeers(gomock.Any(), gomock.Eq(types.GetPeersQuery{
 					Hostname: "foo",

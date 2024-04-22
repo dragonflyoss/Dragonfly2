@@ -72,7 +72,7 @@ func TestHandlers_CreateV1Preheat(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("POST", "/preheats", nil),
+			req:  httptest.NewRequest(http.MethodPost, "/preheats", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -81,7 +81,7 @@ func TestHandlers_CreateV1Preheat(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("POST", "/preheats", strings.NewReader(mockPreheatReqBody)),
+			req:  httptest.NewRequest(http.MethodPost, "/preheats", strings.NewReader(mockPreheatReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.CreateV1Preheat(gomock.Any(), gomock.Eq(mockCreateV1PreheatRequest)).Return(mockCreateV1PreheatResponse, nil).Times(1)
 			},
@@ -117,7 +117,7 @@ func TestHandlers_GetV1Preheat(t *testing.T) {
 	}{
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/preheats/2", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/preheats/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetV1Preheat(gomock.Any(), gomock.Eq("2")).Return(mockGetV1PreheatResponse, nil).Times(1)
 			},

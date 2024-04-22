@@ -84,7 +84,7 @@ func TestHandlers_CreatePersonalAccessToken(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("POST", "/api/v1/personal-access-tokens", nil),
+			req:  httptest.NewRequest(http.MethodPost, "/api/v1/personal-access-tokens", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -93,7 +93,7 @@ func TestHandlers_CreatePersonalAccessToken(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("POST", "/api/v1/personal-access-tokens", strings.NewReader(mockPersonalAccessTokenReqBody)),
+			req:  httptest.NewRequest(http.MethodPost, "/api/v1/personal-access-tokens", strings.NewReader(mockPersonalAccessTokenReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.CreatePersonalAccessToken(gomock.Any(), gomock.Eq(mockCreatePersonalAccessTokenRequest)).Return(mockPersonalAccessTokenModel, nil).Times(1)
 			},
@@ -129,7 +129,7 @@ func TestHandlers_DestroyPersonalAccessToken(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("DELETE", "/api/v1/personal-access-tokens/test", nil),
+			req:  httptest.NewRequest(http.MethodDelete, "/api/v1/personal-access-tokens/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -138,7 +138,7 @@ func TestHandlers_DestroyPersonalAccessToken(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("DELETE", "/api/v1/personal-access-tokens/2", nil),
+			req:  httptest.NewRequest(http.MethodDelete, "/api/v1/personal-access-tokens/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.DestroyPersonalAccessToken(gomock.Any(), gomock.Eq(uint(2))).Return(nil).Times(1)
 			},
@@ -173,7 +173,7 @@ func TestHandlers_UpdatePersonalAccessToken(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity caused by uri",
-			req:  httptest.NewRequest("PATCH", "/api/v1/personal-access-tokens/test", nil),
+			req:  httptest.NewRequest(http.MethodPatch, "/api/v1/personal-access-tokens/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -182,7 +182,7 @@ func TestHandlers_UpdatePersonalAccessToken(t *testing.T) {
 		},
 		{
 			name: "unprocessable entity caused by body",
-			req:  httptest.NewRequest("PATCH", "/api/v1/personal-access-tokens/2", nil),
+			req:  httptest.NewRequest(http.MethodPatch, "/api/v1/personal-access-tokens/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -191,7 +191,7 @@ func TestHandlers_UpdatePersonalAccessToken(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("PATCH", "/api/v1/personal-access-tokens/2", strings.NewReader(mockPersonalAccessTokenReqBody)),
+			req:  httptest.NewRequest(http.MethodPatch, "/api/v1/personal-access-tokens/2", strings.NewReader(mockPersonalAccessTokenReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.UpdatePersonalAccessToken(gomock.Any(), gomock.Eq(uint(2)), gomock.Eq(mockUpdatePersonalAccessTokenRequest)).Return(mockPersonalAccessTokenModel, nil).Times(1)
 			},
@@ -227,7 +227,7 @@ func TestHandlers_GetPersonalAccessToken(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("GET", "/api/v1/personal-access-tokens/test", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/personal-access-tokens/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -236,7 +236,7 @@ func TestHandlers_GetPersonalAccessToken(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/api/v1/personal-access-tokens/2", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/personal-access-tokens/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetPersonalAccessToken(gomock.Any(), gomock.Eq(uint(2))).Return(mockPersonalAccessTokenModel, nil).Times(1)
 			},
@@ -272,7 +272,7 @@ func TestHandlers_GetPersonalAccessTokens(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("GET", "/api/v1/personal-access-tokens?page=-1", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/personal-access-tokens?page=-1", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -281,7 +281,7 @@ func TestHandlers_GetPersonalAccessTokens(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/api/v1/personal-access-tokens?user_id=4", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/personal-access-tokens?user_id=4", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetPersonalAccessTokens(gomock.Any(), gomock.Eq(types.GetPersonalAccessTokensQuery{
 					UserID:  4,

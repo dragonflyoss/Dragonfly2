@@ -72,7 +72,7 @@ func TestHandlers_CreateSeedPeerCluster(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("POST", "/api/v1/seed-peer-clusters", nil),
+			req:  httptest.NewRequest(http.MethodPost, "/api/v1/seed-peer-clusters", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -81,7 +81,7 @@ func TestHandlers_CreateSeedPeerCluster(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("POST", "/api/v1/seed-peer-clusters", strings.NewReader(mockSeedPeerClusterReqBody)),
+			req:  httptest.NewRequest(http.MethodPost, "/api/v1/seed-peer-clusters", strings.NewReader(mockSeedPeerClusterReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.CreateSeedPeerCluster(gomock.Any(), gomock.Any()).Return(mockSeedPeerClusterModel, nil).Times(1)
 			},
@@ -117,7 +117,7 @@ func TestHandlers_DestroySeedPeerCluster(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("DELETE", "/api/v1/seed-peer-clusters/test", nil),
+			req:  httptest.NewRequest(http.MethodDelete, "/api/v1/seed-peer-clusters/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -126,7 +126,7 @@ func TestHandlers_DestroySeedPeerCluster(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("DELETE", "/api/v1/seed-peer-clusters/2", nil),
+			req:  httptest.NewRequest(http.MethodDelete, "/api/v1/seed-peer-clusters/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.DestroySeedPeerCluster(gomock.Any(), gomock.Eq(uint(2))).Return(nil).Times(1)
 			},
@@ -161,7 +161,7 @@ func TestHandlers_UpdateSeedPeerCluster(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity caused by uri",
-			req:  httptest.NewRequest("PATCH", "/api/v1/seed-peer-clusters/test", nil),
+			req:  httptest.NewRequest(http.MethodPatch, "/api/v1/seed-peer-clusters/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -170,7 +170,7 @@ func TestHandlers_UpdateSeedPeerCluster(t *testing.T) {
 		},
 		{
 			name: "unprocessable entity caused by body",
-			req:  httptest.NewRequest("PATCH", "/api/v1/seed-peer-clusters/2", nil),
+			req:  httptest.NewRequest(http.MethodPatch, "/api/v1/seed-peer-clusters/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -179,7 +179,7 @@ func TestHandlers_UpdateSeedPeerCluster(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("PATCH", "/api/v1/seed-peer-clusters/2", strings.NewReader(mockSeedPeerClusterReqBody)),
+			req:  httptest.NewRequest(http.MethodPatch, "/api/v1/seed-peer-clusters/2", strings.NewReader(mockSeedPeerClusterReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.UpdateSeedPeerCluster(gomock.Any(), gomock.Eq(uint(2)), gomock.Any()).Return(mockSeedPeerClusterModel, nil).Times(1)
 			},
@@ -215,7 +215,7 @@ func TestHandlers_GetSeedPeerCluster(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("GET", "/api/v1/seed-peer-clusters/test", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/seed-peer-clusters/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -224,7 +224,7 @@ func TestHandlers_GetSeedPeerCluster(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/api/v1/seed-peer-clusters/2", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/seed-peer-clusters/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetSeedPeerCluster(gomock.Any(), gomock.Eq(uint(2))).Return(mockSeedPeerClusterModel, nil).Times(1)
 			},
@@ -260,7 +260,7 @@ func TestHandlers_GetSeedPeerClusters(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("GET", "/api/v1/seed-peer-clusters?page=-1", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/seed-peer-clusters?page=-1", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -269,7 +269,7 @@ func TestHandlers_GetSeedPeerClusters(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/api/v1/seed-peer-clusters", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/seed-peer-clusters", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetSeedPeerClusters(gomock.Any(), gomock.Eq(types.GetSeedPeerClustersQuery{
 					Page:    1,
@@ -308,7 +308,7 @@ func TestHandlers_AddSeedPeerToSeedPeerCluster(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("PUT", "/api/v1/seed-peer-clusters/4/seed-peers/test", nil),
+			req:  httptest.NewRequest(http.MethodPut, "/api/v1/seed-peer-clusters/4/seed-peers/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -317,7 +317,7 @@ func TestHandlers_AddSeedPeerToSeedPeerCluster(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("PUT", "/api/v1/seed-peer-clusters/4/seed-peers/2", nil),
+			req:  httptest.NewRequest(http.MethodPut, "/api/v1/seed-peer-clusters/4/seed-peers/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.AddSeedPeerToSeedPeerCluster(gomock.Any(), gomock.Eq(uint(4)), gomock.Eq(uint(2))).Return(nil).Times(1)
 			},
@@ -352,7 +352,7 @@ func TestHandlers_AddSchedulerClusterToSeedPeerCluster(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("PUT", "/api/v1/seed-peer-clusters/4/scheduler-clusters/test", nil),
+			req:  httptest.NewRequest(http.MethodPut, "/api/v1/seed-peer-clusters/4/scheduler-clusters/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -361,7 +361,7 @@ func TestHandlers_AddSchedulerClusterToSeedPeerCluster(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("PUT", "/api/v1/seed-peer-clusters/4/scheduler-clusters/2", nil),
+			req:  httptest.NewRequest(http.MethodPut, "/api/v1/seed-peer-clusters/4/scheduler-clusters/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.AddSchedulerClusterToSeedPeerCluster(gomock.Any(), gomock.Eq(uint(4)), gomock.Eq(uint(2))).Return(nil).Times(1)
 			},

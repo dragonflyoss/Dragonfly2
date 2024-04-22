@@ -114,7 +114,7 @@ func TestHandlers_CreateCluster(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("POST", "/oapi/v1/clusters", nil),
+			req:  httptest.NewRequest(http.MethodPost, "/oapi/v1/clusters", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -123,7 +123,7 @@ func TestHandlers_CreateCluster(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("POST", "/oapi/v1/clusters", strings.NewReader(mockClusterReqBody)),
+			req:  httptest.NewRequest(http.MethodPost, "/oapi/v1/clusters", strings.NewReader(mockClusterReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.CreateCluster(gomock.Any(), gomock.Any()).Return(mockCreateClusterResponse, nil).Times(1)
 			},
@@ -159,7 +159,7 @@ func TestHandlers_DestroyCluster(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("DELETE", "/oapi/v1/clusters/test", nil),
+			req:  httptest.NewRequest(http.MethodDelete, "/oapi/v1/clusters/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -168,7 +168,7 @@ func TestHandlers_DestroyCluster(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("DELETE", "/oapi/v1/clusters/2", nil),
+			req:  httptest.NewRequest(http.MethodDelete, "/oapi/v1/clusters/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.DestroyCluster(gomock.Any(), gomock.Eq(uint(2))).Return(nil).Times(1)
 			},
@@ -203,7 +203,7 @@ func TestHandlers_UpdateCluster(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity caused by uri",
-			req:  httptest.NewRequest("PATCH", "/oapi/v1/clusters/test", nil),
+			req:  httptest.NewRequest(http.MethodPatch, "/oapi/v1/clusters/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -212,7 +212,7 @@ func TestHandlers_UpdateCluster(t *testing.T) {
 		},
 		{
 			name: "unprocessable entity caused by body",
-			req:  httptest.NewRequest("PATCH", "/oapi/v1/clusters/2", nil),
+			req:  httptest.NewRequest(http.MethodPatch, "/oapi/v1/clusters/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -221,7 +221,7 @@ func TestHandlers_UpdateCluster(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("PATCH", "/oapi/v1/clusters/2", strings.NewReader(mockClusterReqBody)),
+			req:  httptest.NewRequest(http.MethodPatch, "/oapi/v1/clusters/2", strings.NewReader(mockClusterReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.UpdateCluster(gomock.Any(), gomock.Eq(uint(2)), gomock.Any()).Return(mockUpdateClusterResponse, nil).Times(1)
 			},
@@ -257,7 +257,7 @@ func TestHandlers_GetCluster(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("GET", "/oapi/v1/clusters/test", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/oapi/v1/clusters/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -266,7 +266,7 @@ func TestHandlers_GetCluster(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/oapi/v1/clusters/2", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/oapi/v1/clusters/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetCluster(gomock.Any(), gomock.Eq(uint(2))).Return(mockGetClusterResponse, nil).Times(1)
 			},
@@ -302,7 +302,7 @@ func TestHandlers_GetClusters(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("GET", "/oapi/v1/clusters?page=-1", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/oapi/v1/clusters?page=-1", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -311,7 +311,7 @@ func TestHandlers_GetClusters(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/oapi/v1/clusters", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/oapi/v1/clusters", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetClusters(gomock.Any(), gomock.Eq(types.GetClustersQuery{
 					Name:    "",

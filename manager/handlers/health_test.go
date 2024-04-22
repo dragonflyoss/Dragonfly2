@@ -42,7 +42,7 @@ func TestHandlers_GetHealth(t *testing.T) {
 	}{
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/healthy", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/healthy", nil),
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
 				assert.Equal(http.StatusOK, w.Code)

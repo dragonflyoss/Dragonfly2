@@ -67,7 +67,7 @@ func TestHandlers_CreateBucket(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("POST", "/api/v1/buckets", strings.NewReader(`{"name":""}`)),
+			req:  httptest.NewRequest(http.MethodPost, "/api/v1/buckets", strings.NewReader(`{"name":""}`)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -76,7 +76,7 @@ func TestHandlers_CreateBucket(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("POST", "/api/v1/buckets", strings.NewReader(mockBucketReqBody)),
+			req:  httptest.NewRequest(http.MethodPost, "/api/v1/buckets", strings.NewReader(mockBucketReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.CreateBucket(gomock.Any(), gomock.Eq(mockCreateBucketRequest)).Return(nil).Times(1)
 			},
@@ -111,7 +111,7 @@ func TestHandlers_DestroyBucket(t *testing.T) {
 	}{
 		{
 			name: "not found",
-			req:  httptest.NewRequest("DELETE", "/api/v1/buckets", nil),
+			req:  httptest.NewRequest(http.MethodDelete, "/api/v1/buckets", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -120,7 +120,7 @@ func TestHandlers_DestroyBucket(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("DELETE", "/api/v1/buckets/bucket", nil),
+			req:  httptest.NewRequest(http.MethodDelete, "/api/v1/buckets/bucket", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.DestroyBucket(gomock.Any(), gomock.Eq("bucket")).Return(nil).Times(1)
 			},
@@ -155,7 +155,7 @@ func TestHandlers_GetBucket(t *testing.T) {
 	}{
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/api/v1/buckets/bucket", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/buckets/bucket", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetBucket(gomock.Any(), gomock.Eq("bucket")).Return(mockBucketMetadata, nil).Times(1)
 			},
@@ -191,7 +191,7 @@ func TestHandlers_GetBuckets(t *testing.T) {
 	}{
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/api/v1/buckets", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/buckets", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetBuckets(gomock.Any()).Return([]*objectstorage.BucketMetadata{mockBucketMetadata}, nil).Times(1)
 			},

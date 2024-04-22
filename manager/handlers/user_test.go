@@ -108,7 +108,7 @@ func TestHandlers_UpdateUser(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity caused by uri",
-			req:  httptest.NewRequest("PATCH", "/api/v1/users/test", nil),
+			req:  httptest.NewRequest(http.MethodPatch, "/api/v1/users/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -117,7 +117,7 @@ func TestHandlers_UpdateUser(t *testing.T) {
 		},
 		{
 			name: "unprocessable entity caused by body",
-			req:  httptest.NewRequest("PATCH", "/api/v1/users/2", nil),
+			req:  httptest.NewRequest(http.MethodPatch, "/api/v1/users/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -126,7 +126,7 @@ func TestHandlers_UpdateUser(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("PATCH", "/api/v1/users/2", strings.NewReader(mockUserReqBody)),
+			req:  httptest.NewRequest(http.MethodPatch, "/api/v1/users/2", strings.NewReader(mockUserReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.UpdateUser(gomock.Any(), gomock.Eq(uint(2)), gomock.Eq(mockUpdateUserRequest)).Return(mockUserModel, nil).Times(1)
 			},
@@ -162,7 +162,7 @@ func TestHandlers_GetUser(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("GET", "/api/v1/users/test", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/users/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -171,7 +171,7 @@ func TestHandlers_GetUser(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/api/v1/users/2", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/users/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetUser(gomock.Any(), gomock.Eq(uint(2))).Return(mockUserModel, nil).Times(1)
 			},
@@ -207,7 +207,7 @@ func TestHandlers_GetUsers(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("GET", "/api/v1/users?page=-1", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/users?page=-1", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -216,7 +216,7 @@ func TestHandlers_GetUsers(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/api/v1/users?name=name", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/users?name=name", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetUsers(gomock.Any(), gomock.Eq(types.GetUsersQuery{
 					Name:    "name",
@@ -256,7 +256,7 @@ func TestHandlers_SignUp(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("POST", "/api/v1/users/signup", nil),
+			req:  httptest.NewRequest(http.MethodPost, "/api/v1/users/signup", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -265,7 +265,7 @@ func TestHandlers_SignUp(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("POST", "/api/v1/users/signup", strings.NewReader(mockUserSignupReqBody)),
+			req:  httptest.NewRequest(http.MethodPost, "/api/v1/users/signup", strings.NewReader(mockUserSignupReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.SignUp(gomock.Any(), gomock.Eq(mockUserSignupRequest)).Return(mockUserModel, nil).Times(1)
 			},
@@ -301,7 +301,7 @@ func TestHandlers_ResetPassword(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity caused by uri",
-			req:  httptest.NewRequest("POST", "/api/v1/users/test/reset_password", nil),
+			req:  httptest.NewRequest(http.MethodPost, "/api/v1/users/test/reset_password", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -310,7 +310,7 @@ func TestHandlers_ResetPassword(t *testing.T) {
 		},
 		{
 			name: "unprocessable entity caused by body",
-			req:  httptest.NewRequest("POST", "/api/v1/users/2/reset_password", nil),
+			req:  httptest.NewRequest(http.MethodPost, "/api/v1/users/2/reset_password", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -319,7 +319,7 @@ func TestHandlers_ResetPassword(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("POST", "/api/v1/users/2/reset_password", strings.NewReader(mockResetPasswordReqBody)),
+			req:  httptest.NewRequest(http.MethodPost, "/api/v1/users/2/reset_password", strings.NewReader(mockResetPasswordReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.ResetPassword(gomock.Any(), uint(2), gomock.Eq(mockResetPasswordRequest)).Return(nil).Times(1)
 			},
@@ -354,7 +354,7 @@ func TestHandlers_OauthSignin(t *testing.T) {
 	}{
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/api/v1/users/signin/name", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/users/signin/name", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.OauthSignin(gomock.Any(), "name").Return("", nil).Times(1)
 			},
@@ -389,7 +389,7 @@ func TestHandlers_GetRolesForUser(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("GET", "/api/v1/users/test/roles", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/users/test/roles", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -398,7 +398,7 @@ func TestHandlers_GetRolesForUser(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/api/v1/users/2/roles", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/users/2/roles", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetRolesForUser(gomock.Any(), gomock.Eq(uint(2))).Return([]string{"maintainer"}, nil).Times(1)
 			},
@@ -434,7 +434,7 @@ func TestHandlers_AddRoleToUser(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("PUT", "/api/v1/users/test/roles/maintainer", nil),
+			req:  httptest.NewRequest(http.MethodPut, "/api/v1/users/test/roles/maintainer", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -443,7 +443,7 @@ func TestHandlers_AddRoleToUser(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("PUT", "/api/v1/users/2/roles/maintainer", nil),
+			req:  httptest.NewRequest(http.MethodPut, "/api/v1/users/2/roles/maintainer", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.AddRoleForUser(gomock.Any(), gomock.Eq(types.AddRoleForUserParams{
 					ID:   2,
@@ -481,7 +481,7 @@ func TestHandlers_DeleteRoleForUser(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("DELETE", "/api/v1/users/test/roles/maintainer", nil),
+			req:  httptest.NewRequest(http.MethodDelete, "/api/v1/users/test/roles/maintainer", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -490,7 +490,7 @@ func TestHandlers_DeleteRoleForUser(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("DELETE", "/api/v1/users/2/roles/maintainer", nil),
+			req:  httptest.NewRequest(http.MethodDelete, "/api/v1/users/2/roles/maintainer", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.DeleteRoleForUser(gomock.Any(), gomock.Eq(types.DeleteRoleForUserParams{
 					ID:   2,

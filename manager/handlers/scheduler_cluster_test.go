@@ -79,7 +79,7 @@ func TestHandlers_CreateSchedulerCluster(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("POST", "/api/v1/scheduler-clusters", nil),
+			req:  httptest.NewRequest(http.MethodPost, "/api/v1/scheduler-clusters", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -88,7 +88,7 @@ func TestHandlers_CreateSchedulerCluster(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("POST", "/api/v1/scheduler-clusters", strings.NewReader(mockSchedulerClusterReqBody)),
+			req:  httptest.NewRequest(http.MethodPost, "/api/v1/scheduler-clusters", strings.NewReader(mockSchedulerClusterReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.CreateSchedulerCluster(gomock.Any(), gomock.Any()).Return(mockSchedulerClusterModel, nil).Times(1)
 			},
@@ -124,7 +124,7 @@ func TestHandlers_DestroySchedulerCluster(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("DELETE", "/api/v1/scheduler-clusters/test", nil),
+			req:  httptest.NewRequest(http.MethodDelete, "/api/v1/scheduler-clusters/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -133,7 +133,7 @@ func TestHandlers_DestroySchedulerCluster(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("DELETE", "/api/v1/scheduler-clusters/2", nil),
+			req:  httptest.NewRequest(http.MethodDelete, "/api/v1/scheduler-clusters/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.DestroySchedulerCluster(gomock.Any(), gomock.Eq(uint(2))).Return(nil).Times(1)
 			},
@@ -168,7 +168,7 @@ func TestHandlers_UpdateSchedulerCluster(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity caused by uri",
-			req:  httptest.NewRequest("PATCH", "/api/v1/scheduler-clusters/test", nil),
+			req:  httptest.NewRequest(http.MethodPatch, "/api/v1/scheduler-clusters/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -177,7 +177,7 @@ func TestHandlers_UpdateSchedulerCluster(t *testing.T) {
 		},
 		{
 			name: "unprocessable entity caused by body",
-			req:  httptest.NewRequest("PATCH", "/api/v1/scheduler-clusters/2", nil),
+			req:  httptest.NewRequest(http.MethodPatch, "/api/v1/scheduler-clusters/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -186,7 +186,7 @@ func TestHandlers_UpdateSchedulerCluster(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("PATCH", "/api/v1/scheduler-clusters/2", strings.NewReader(mockSchedulerClusterReqBody)),
+			req:  httptest.NewRequest(http.MethodPatch, "/api/v1/scheduler-clusters/2", strings.NewReader(mockSchedulerClusterReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.UpdateSchedulerCluster(gomock.Any(), gomock.Eq(uint(2)), gomock.Any()).Return(mockSchedulerClusterModel, nil).Times(1)
 			},
@@ -222,7 +222,7 @@ func TestHandlers_GetSchedulerCluster(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("GET", "/api/v1/scheduler-clusters/test", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/scheduler-clusters/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -231,7 +231,7 @@ func TestHandlers_GetSchedulerCluster(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/api/v1/scheduler-clusters/2", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/scheduler-clusters/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetSchedulerCluster(gomock.Any(), gomock.Eq(uint(2))).Return(mockSchedulerClusterModel, nil).Times(1)
 			},
@@ -267,7 +267,7 @@ func TestHandlers_GetSchedulerClusters(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("GET", "/api/v1/scheduler-clusters?page=-1", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/scheduler-clusters?page=-1", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -276,7 +276,7 @@ func TestHandlers_GetSchedulerClusters(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/api/v1/scheduler-clusters", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/scheduler-clusters", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetSchedulerClusters(gomock.Any(), gomock.Eq(types.GetSchedulerClustersQuery{
 					Page:    1,
@@ -315,7 +315,7 @@ func TestHandlers_AddSchedulerToSchedulerCluster(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("PUT", "/api/v1/scheduler-clusters/4/schedulers/test", nil),
+			req:  httptest.NewRequest(http.MethodPut, "/api/v1/scheduler-clusters/4/schedulers/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -324,7 +324,7 @@ func TestHandlers_AddSchedulerToSchedulerCluster(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("PUT", "/api/v1/scheduler-clusters/4/schedulers/2", nil),
+			req:  httptest.NewRequest(http.MethodPut, "/api/v1/scheduler-clusters/4/schedulers/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.AddSchedulerToSchedulerCluster(gomock.Any(), gomock.Eq(uint(4)), gomock.Eq(uint(2))).Return(nil).Times(1)
 			},

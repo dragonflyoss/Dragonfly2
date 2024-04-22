@@ -82,7 +82,7 @@ func TestHandlers_CreateConfig(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("POST", "/api/v1/configs", nil),
+			req:  httptest.NewRequest(http.MethodPost, "/api/v1/configs", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -91,7 +91,7 @@ func TestHandlers_CreateConfig(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("POST", "/api/v1/configs", strings.NewReader(mockConfigReqBody)),
+			req:  httptest.NewRequest(http.MethodPost, "/api/v1/configs", strings.NewReader(mockConfigReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.CreateConfig(gomock.Any(), gomock.Eq(mockCreateConfigRequest)).Return(mockConfigModel, nil).Times(1)
 			},
@@ -127,7 +127,7 @@ func TestHandlers_DestroyConfig(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("DELETE", "/api/v1/configs/test", nil),
+			req:  httptest.NewRequest(http.MethodDelete, "/api/v1/configs/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -136,7 +136,7 @@ func TestHandlers_DestroyConfig(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("DELETE", "/api/v1/configs/2", nil),
+			req:  httptest.NewRequest(http.MethodDelete, "/api/v1/configs/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.DestroyConfig(gomock.Any(), gomock.Eq(uint(2))).Return(nil).Times(1)
 			},
@@ -171,7 +171,7 @@ func TestHandlers_UpdateConfig(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity caused by uri",
-			req:  httptest.NewRequest("PATCH", "/api/v1/configs/test", nil),
+			req:  httptest.NewRequest(http.MethodPatch, "/api/v1/configs/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -180,7 +180,7 @@ func TestHandlers_UpdateConfig(t *testing.T) {
 		},
 		{
 			name: "unprocessable entity caused by body",
-			req:  httptest.NewRequest("PATCH", "/api/v1/configs/2", nil),
+			req:  httptest.NewRequest(http.MethodPatch, "/api/v1/configs/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -189,7 +189,7 @@ func TestHandlers_UpdateConfig(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("PATCH", "/api/v1/configs/2", strings.NewReader(mockConfigReqBody)),
+			req:  httptest.NewRequest(http.MethodPatch, "/api/v1/configs/2", strings.NewReader(mockConfigReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.UpdateConfig(gomock.Any(), gomock.Eq(uint(2)), gomock.Eq(mockUpdateConfigRequest)).Return(mockConfigModel, nil).Times(1)
 			},
@@ -225,7 +225,7 @@ func TestHandlers_GetConfig(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("GET", "/api/v1/configs/test", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/configs/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -234,7 +234,7 @@ func TestHandlers_GetConfig(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/api/v1/configs/2", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/configs/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetConfig(gomock.Any(), gomock.Eq(uint(2))).Return(mockConfigModel, nil).Times(1)
 			},
@@ -270,7 +270,7 @@ func TestHandlers_GetConfigs(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("GET", "/api/v1/configs?page=-1", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/configs?page=-1", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -279,7 +279,7 @@ func TestHandlers_GetConfigs(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/api/v1/configs?page=2&perpage=10", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/configs?page=2&perpage=10", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetConfigs(gomock.Any(), gomock.Eq(types.GetConfigsQuery{
 					Name:    "",

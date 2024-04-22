@@ -75,7 +75,7 @@ func TestHandlers_DestroyModel(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("DELETE", "/api/v1/models/test", nil),
+			req:  httptest.NewRequest(http.MethodDelete, "/api/v1/models/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -84,7 +84,7 @@ func TestHandlers_DestroyModel(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("DELETE", "/api/v1/models/2", nil),
+			req:  httptest.NewRequest(http.MethodDelete, "/api/v1/models/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.DestroyModel(gomock.Any(), gomock.Eq(uint(2))).Return(nil).Times(1)
 			},
@@ -119,7 +119,7 @@ func TestHandlers_UpdateModel(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity caused by uri",
-			req:  httptest.NewRequest("PATCH", "/api/v1/models/test", nil),
+			req:  httptest.NewRequest(http.MethodPatch, "/api/v1/models/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -128,7 +128,7 @@ func TestHandlers_UpdateModel(t *testing.T) {
 		},
 		{
 			name: "unprocessable entity caused by body",
-			req:  httptest.NewRequest("PATCH", "/api/v1/models/2", nil),
+			req:  httptest.NewRequest(http.MethodPatch, "/api/v1/models/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -137,7 +137,7 @@ func TestHandlers_UpdateModel(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("PATCH", "/api/v1/models/2", strings.NewReader(mockModelReqBody)),
+			req:  httptest.NewRequest(http.MethodPatch, "/api/v1/models/2", strings.NewReader(mockModelReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.UpdateModel(gomock.Any(), gomock.Eq(uint(2)), gomock.Eq(mockUpdateModelRequest)).Return(mockModel, nil).Times(1)
 			},
@@ -173,7 +173,7 @@ func TestHandlers_GetModel(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("GET", "/api/v1/models/test", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/models/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -182,7 +182,7 @@ func TestHandlers_GetModel(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/api/v1/models/2", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/models/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetModel(gomock.Any(), gomock.Eq(uint(2))).Return(mockModel, nil).Times(1)
 			},
@@ -218,7 +218,7 @@ func TestHandlers_GetModels(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("GET", "/api/v1/models?page=-1", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/models?page=-1", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -227,7 +227,7 @@ func TestHandlers_GetModels(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/api/v1/models?name=foo", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/models?name=foo", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetModels(gomock.Any(), gomock.Eq(types.GetModelsQuery{
 					Name:    "",

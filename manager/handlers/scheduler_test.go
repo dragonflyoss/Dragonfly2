@@ -80,7 +80,7 @@ func TestHandlers_CreateScheduler(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("POST", "/api/v1/schedulers", nil),
+			req:  httptest.NewRequest(http.MethodPost, "/api/v1/schedulers", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -89,7 +89,7 @@ func TestHandlers_CreateScheduler(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("POST", "/api/v1/schedulers", strings.NewReader(mockSchedulerReqBody)),
+			req:  httptest.NewRequest(http.MethodPost, "/api/v1/schedulers", strings.NewReader(mockSchedulerReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.CreateScheduler(gomock.Any(), gomock.Eq(mockCreateSchedulerRequest)).Return(mockSchedulerModel, nil).Times(1)
 			},
@@ -125,7 +125,7 @@ func TestHandlers_DestroyScheduler(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("DELETE", "/api/v1/schedulers/test", nil),
+			req:  httptest.NewRequest(http.MethodDelete, "/api/v1/schedulers/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -134,7 +134,7 @@ func TestHandlers_DestroyScheduler(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("DELETE", "/api/v1/schedulers/2", nil),
+			req:  httptest.NewRequest(http.MethodDelete, "/api/v1/schedulers/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.DestroyScheduler(gomock.Any(), gomock.Eq(uint(2))).Return(nil).Times(1)
 			},
@@ -169,7 +169,7 @@ func TestHandlers_UpdateScheduler(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity caused by uri",
-			req:  httptest.NewRequest("PATCH", "/api/v1/schedulers/test", nil),
+			req:  httptest.NewRequest(http.MethodPatch, "/api/v1/schedulers/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -178,7 +178,7 @@ func TestHandlers_UpdateScheduler(t *testing.T) {
 		},
 		{
 			name: "unprocessable entity caused by body",
-			req:  httptest.NewRequest("PATCH", "/api/v1/schedulers/2", nil),
+			req:  httptest.NewRequest(http.MethodPatch, "/api/v1/schedulers/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -187,7 +187,7 @@ func TestHandlers_UpdateScheduler(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("PATCH", "/api/v1/schedulers/2", strings.NewReader(mockSchedulerReqBody)),
+			req:  httptest.NewRequest(http.MethodPatch, "/api/v1/schedulers/2", strings.NewReader(mockSchedulerReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.UpdateScheduler(gomock.Any(), gomock.Eq(uint(2)), gomock.Eq(mockUpdateSchedulerRequest)).Return(mockSchedulerModel, nil).Times(1)
 			},
@@ -223,7 +223,7 @@ func TestHandlers_GetScheduler(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("GET", "/api/v1/schedulers/test", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/schedulers/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -232,7 +232,7 @@ func TestHandlers_GetScheduler(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/api/v1/schedulers/2", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/schedulers/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetScheduler(gomock.Any(), gomock.Eq(uint(2))).Return(mockSchedulerModel, nil).Times(1)
 			},
@@ -268,7 +268,7 @@ func TestHandlers_GetSchedulers(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("GET", "/api/v1/schedulers?page=-1", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/schedulers?page=-1", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -277,7 +277,7 @@ func TestHandlers_GetSchedulers(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/api/v1/schedulers", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/schedulers", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetSchedulers(gomock.Any(), gomock.Eq(types.GetSchedulersQuery{
 					Page:    1,

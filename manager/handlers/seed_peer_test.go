@@ -88,7 +88,7 @@ func TestHandlers_CreateSeedPeer(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("POST", "/api/v1/seed-peers", nil),
+			req:  httptest.NewRequest(http.MethodPost, "/api/v1/seed-peers", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -97,7 +97,7 @@ func TestHandlers_CreateSeedPeer(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("POST", "/api/v1/seed-peers", strings.NewReader(mockSeedPeerReqBody)),
+			req:  httptest.NewRequest(http.MethodPost, "/api/v1/seed-peers", strings.NewReader(mockSeedPeerReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.CreateSeedPeer(gomock.Any(), gomock.Eq(mockCreateSeedPeerRequest)).Return(mockSeedPeerModel, nil).Times(1)
 			},
@@ -133,7 +133,7 @@ func TestHandlers_DestroySeedPeer(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("DELETE", "/api/v1/seed-peers/test", nil),
+			req:  httptest.NewRequest(http.MethodDelete, "/api/v1/seed-peers/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -142,7 +142,7 @@ func TestHandlers_DestroySeedPeer(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("DELETE", "/api/v1/seed-peers/2", nil),
+			req:  httptest.NewRequest(http.MethodDelete, "/api/v1/seed-peers/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.DestroySeedPeer(gomock.Any(), gomock.Eq(uint(2))).Return(nil).Times(1)
 			},
@@ -177,7 +177,7 @@ func TestHandlers_UpdateSeedPeer(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity caused by uri",
-			req:  httptest.NewRequest("PATCH", "/api/v1/seed-peers/test", nil),
+			req:  httptest.NewRequest(http.MethodPatch, "/api/v1/seed-peers/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -186,7 +186,7 @@ func TestHandlers_UpdateSeedPeer(t *testing.T) {
 		},
 		{
 			name: "unprocessable entity caused by body",
-			req:  httptest.NewRequest("PATCH", "/api/v1/seed-peers/2", nil),
+			req:  httptest.NewRequest(http.MethodPatch, "/api/v1/seed-peers/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -195,7 +195,7 @@ func TestHandlers_UpdateSeedPeer(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("PATCH", "/api/v1/seed-peers/2", strings.NewReader(mockSeedPeerReqBody)),
+			req:  httptest.NewRequest(http.MethodPatch, "/api/v1/seed-peers/2", strings.NewReader(mockSeedPeerReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.UpdateSeedPeer(gomock.Any(), gomock.Eq(uint(2)), gomock.Eq(mockUpdateSeedPeerRequest)).Return(mockSeedPeerModel, nil).Times(1)
 			},
@@ -231,7 +231,7 @@ func TestHandlers_GetSeedPeer(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("GET", "/api/v1/seed-peers/test", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/seed-peers/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -240,7 +240,7 @@ func TestHandlers_GetSeedPeer(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/api/v1/seed-peers/2", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/seed-peers/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetSeedPeer(gomock.Any(), gomock.Eq(uint(2))).Return(mockSeedPeerModel, nil).Times(1)
 			},
@@ -276,7 +276,7 @@ func TestHandlers_GetSeedPeers(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("GET", "/api/v1/seed-peers?page=-1", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/seed-peers?page=-1", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -285,7 +285,7 @@ func TestHandlers_GetSeedPeers(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/api/v1/seed-peers", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/seed-peers", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetSeedPeers(gomock.Any(), gomock.Eq(types.GetSeedPeersQuery{
 					Page:    1,

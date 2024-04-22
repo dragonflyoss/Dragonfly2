@@ -51,7 +51,7 @@ func TestHandlers_GetPermissions(t *testing.T) {
 	}{
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/api/v1/permissions", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/api/v1/permissions", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetPermissions(gomock.Any(), gomock.Any()).Return(mockRbacPermission).Times(1)
 			},

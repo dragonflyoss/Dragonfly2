@@ -84,7 +84,7 @@ func TestHandlers_CreateJob(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity by body",
-			req:  httptest.NewRequest("POST", "/oapi/v1/jobs", nil),
+			req:  httptest.NewRequest(http.MethodPost, "/oapi/v1/jobs", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -93,7 +93,7 @@ func TestHandlers_CreateJob(t *testing.T) {
 		},
 		{
 			name: "unprocessable entity by type",
-			req:  httptest.NewRequest("POST", "/oapi/v1/jobs", strings.NewReader(mockOtherJobReqBody)),
+			req:  httptest.NewRequest(http.MethodPost, "/oapi/v1/jobs", strings.NewReader(mockOtherJobReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -102,7 +102,7 @@ func TestHandlers_CreateJob(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("POST", "/oapi/v1/jobs", strings.NewReader(mockPreheatJobReqBody)),
+			req:  httptest.NewRequest(http.MethodPost, "/oapi/v1/jobs", strings.NewReader(mockPreheatJobReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.CreatePreheatJob(gomock.Any(), gomock.Eq(mockPreheatCreateJobRequest)).Return(mockPreheatJobModel, nil).Times(1)
 			},
@@ -138,7 +138,7 @@ func TestHandlers_DestroyJob(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("DELETE", "/oapi/v1/jobs/test", nil),
+			req:  httptest.NewRequest(http.MethodDelete, "/oapi/v1/jobs/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -147,7 +147,7 @@ func TestHandlers_DestroyJob(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("DELETE", "/oapi/v1/jobs/2", nil),
+			req:  httptest.NewRequest(http.MethodDelete, "/oapi/v1/jobs/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.DestroyJob(gomock.Any(), gomock.Eq(uint(2))).Return(nil).Times(1)
 			},
@@ -182,7 +182,7 @@ func TestHandlers_UpdateJob(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity caused by uri",
-			req:  httptest.NewRequest("PATCH", "/oapi/v1/jobs/test", nil),
+			req:  httptest.NewRequest(http.MethodPatch, "/oapi/v1/jobs/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -191,7 +191,7 @@ func TestHandlers_UpdateJob(t *testing.T) {
 		},
 		{
 			name: "unprocessable entity caused by body",
-			req:  httptest.NewRequest("PATCH", "/oapi/v1/jobs/2", nil),
+			req:  httptest.NewRequest(http.MethodPatch, "/oapi/v1/jobs/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -200,7 +200,7 @@ func TestHandlers_UpdateJob(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("PATCH", "/oapi/v1/jobs/2", strings.NewReader(mockPreheatJobReqBody)),
+			req:  httptest.NewRequest(http.MethodPatch, "/oapi/v1/jobs/2", strings.NewReader(mockPreheatJobReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.UpdateJob(gomock.Any(), gomock.Eq(uint(2)), gomock.Eq(mockUpdateJobRequest)).Return(mockPreheatJobModel, nil).Times(1)
 			},
@@ -236,7 +236,7 @@ func TestHandlers_GetJob(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("GET", "/oapi/v1/jobs/test", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/oapi/v1/jobs/test", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -245,7 +245,7 @@ func TestHandlers_GetJob(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/oapi/v1/jobs/2", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/oapi/v1/jobs/2", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetJob(gomock.Any(), gomock.Eq(uint(2))).Return(mockPreheatJobModel, nil).Times(1)
 			},
@@ -281,7 +281,7 @@ func TestHandlers_GetJobs(t *testing.T) {
 	}{
 		{
 			name: "unprocessable entity",
-			req:  httptest.NewRequest("GET", "/oapi/v1/jobs?page=-1", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/oapi/v1/jobs?page=-1", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -290,7 +290,7 @@ func TestHandlers_GetJobs(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest("GET", "/oapi/v1/jobs?user_id=4", nil),
+			req:  httptest.NewRequest(http.MethodGet, "/oapi/v1/jobs?user_id=4", nil),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.GetJobs(gomock.Any(), gomock.Eq(types.GetJobsQuery{
 					UserID:  4,
