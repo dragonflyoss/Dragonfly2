@@ -86,6 +86,13 @@ seedClient:
       announceInterval: 2s
     log:
       level: info
+    proxy:
+      prefetch: false
+      registryMirror:
+        addr: https://index.docker.io
+      rules:
+      - regex: blobs/sha256.*
+      - regxe: file-server.*
 
 client:
   enable: true
@@ -133,6 +140,13 @@ client:
       announceInterval: 2s
     log:
       level: info 
+    proxy:
+      prefetch: false
+      registryMirror:
+        addr: https://index.docker.io
+      rules:
+      - regex: blobs/sha256.*
+      - regxe: file-server.*
 
 dfdaemon:
   enable: false
