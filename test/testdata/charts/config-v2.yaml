@@ -87,7 +87,7 @@ seedClient:
     log:
       level: info
     proxy:
-      prefetch: false
+      prefetch: true
       registryMirror:
         addr: https://index.docker.io
       rules:

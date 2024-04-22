@@ -18,6 +18,7 @@ package e2e
 
 import (
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2" //nolint
 	. "github.com/onsi/gomega"    //nolint
@@ -25,7 +26,7 @@ import (
 	"d7y.io/dragonfly/v2/test/e2e/v2/util"
 )
 
-var _ = Describe("Download with proxy", func() {
+var _ = Describe("Download Using Proxy", func() {
 	Context("/etc/containerd/config.toml file", func() {
 		It("download should be ok", Label("proxy", "download"), func() {
 			clientPod, err := util.ClientExec()
@@ -467,6 +468,328 @@ var _ = Describe("Download with proxy", func() {
 			sha256sum, err = util.CalculateSha256ByTaskID(seedClientPods, fileMetadata.ID)
 			Expect(err).NotTo(HaveOccurred())
 			Expect("0dd6bcd036002bbd79cd8dfebcd9813ec4231562c0b15b02cbc7c70a062717f9").To(Equal(sha256sum))
+		})
+	})
+})
+
+var _ = Describe("Download Using Prefetch Proxy", func() {
+	Context("/etc/containerd/config.toml file", func() {
+		It("download should be ok", Label("prefetch-proxy", "download"), func() {
+			seedClientPod, err := util.SeedClientExec(0)
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+
+			out, err := seedClientPod.Command("sh", "-c", fmt.Sprintf("curl -x 127.0.0.1:4001 -H 'X-Dragonfly-Tag: prefetch-proxy' %s --output %s", util.GetFileURL("/etc/containerd/config.toml"), util.GetOutputPath("config-prefetch-proxy.coml"))).CombinedOutput()
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Println(string(out))
+
+			fileMetadata := util.FileMetadata{
+				ID:     "0fa5f40dfccfcd4c20b2d2dba0bab7205bfced189cc7a013919a6d155d841dab",
+				Sha256: "66404431f9a0d5c78205e5a3eb041f76767094fc278c0a091d4ffa10f06cf641",
+			}
+
+			sha256sum, err := util.CalculateSha256ByTaskID([]*util.PodExec{seedClientPod}, fileMetadata.ID)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+
+			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{seedClientPod}, util.GetOutputPath("config-prefetch-proxy.coml"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+		})
+	})
+
+	Context("/bin/kubectl file", func() {
+		It("download should be ok", Label("prefetch-proxy", "download"), func() {
+			seedClientPod, err := util.SeedClientExec(0)
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+
+			out, err := seedClientPod.Command("sh", "-c", fmt.Sprintf("curl -x 127.0.0.1:4001 -H 'X-Dragonfly-Tag: prefetch-proxy' %s --output %s", util.GetFileURL("/bin/kubectl"), util.GetOutputPath("kubectl-prefetch-proxy"))).CombinedOutput()
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Println(string(out))
+
+			fileMetadata := util.FileMetadata{
+				ID:     "8cdfeba7c8858b1bf7dc6097aeb6bae12e3a4cb8ed32cc3b60bdb45765bda590",
+				Sha256: "327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a",
+			}
+
+			sha256sum, err := util.CalculateSha256ByTaskID([]*util.PodExec{seedClientPod}, fileMetadata.ID)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+
+			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{seedClientPod}, util.GetOutputPath("kubectl-prefetch-proxy"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+		})
+	})
+
+	Context("/bin/x86_64 file", func() {
+		It("download should be ok", Label("prefetch-proxy", "download"), func() {
+			seedClientPod, err := util.SeedClientExec(0)
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+
+			out, err := seedClientPod.Command("sh", "-c", fmt.Sprintf("curl -x 127.0.0.1:4001 -H 'X-Dragonfly-Tag: prefetch-proxy' %s --output %s", util.GetFileURL("/bin/x86_64"), util.GetOutputPath("x86_64-prefetch-proxy"))).CombinedOutput()
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Println(string(out))
+
+			fileMetadata := util.FileMetadata{
+				ID:     "86b0c4424368f35e500045d5375b8b53940cadf69b71d0ae4b349ac972ad6bdb",
+				Sha256: "a1cbf1bf2d66757121677fd7fefafacd4f843a2cb44a451131002803bae56a65",
+			}
+
+			sha256sum, err := util.CalculateSha256ByTaskID([]*util.PodExec{seedClientPod}, fileMetadata.ID)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+
+			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{seedClientPod}, util.GetOutputPath("x86_64-prefetch-proxy"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+		})
+	})
+
+	Context("/bin/zless file", func() {
+		It("download should be ok", Label("prefetch-proxy", "download"), func() {
+			seedClientPod, err := util.SeedClientExec(0)
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+
+			out, err := seedClientPod.Command("sh", "-c", fmt.Sprintf("curl -x 127.0.0.1:4001 -H 'X-Dragonfly-Tag: prefetch-proxy' %s --output %s", util.GetFileURL("/bin/zless"), util.GetOutputPath("zless-prefetch-proxy"))).CombinedOutput()
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Println(string(out))
+
+			fileMetadata := util.FileMetadata{
+				ID:     "d759035bb589e9334717660701c58ef91ebab49bb5790367ede36bf78daa52a1",
+				Sha256: "b0cfe211f851049a78f5812cf5b1d7cb4f3fbb101c02c1865c940d5797f4b73b",
+			}
+
+			sha256sum, err := util.CalculateSha256ByTaskID([]*util.PodExec{seedClientPod}, fileMetadata.ID)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+
+			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{seedClientPod}, util.GetOutputPath("zless-prefetch-proxy"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+		})
+	})
+
+	Context("/bin/bash file", func() {
+		It("download should be ok", Label("prefetch-proxy", "download"), func() {
+			seedClientPod, err := util.SeedClientExec(0)
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+
+			out, err := seedClientPod.Command("sh", "-c", fmt.Sprintf("curl -x 127.0.0.1:4001 -H 'X-Dragonfly-Tag: prefetch-proxy' %s --output %s", util.GetFileURL("/bin/bash"), util.GetOutputPath("bash-prefetch-proxy"))).CombinedOutput()
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Println(string(out))
+
+			fileMetadata := util.FileMetadata{
+				ID:     "ecd74f0e4f9ff453e3c165934d473ef6946b088fecabb8a2eb7d11d2948f743c",
+				Sha256: "c37f93c73cf2f303f874c094f6f76e47b2421a3da9f0e7e0b98bea8a3d685322",
+			}
+
+			sha256sum, err := util.CalculateSha256ByTaskID([]*util.PodExec{seedClientPod}, fileMetadata.ID)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+
+			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{seedClientPod}, util.GetOutputPath("bash-prefetch-proxy"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+		})
+	})
+
+	Context("/bin/kubectl file and set range header", func() {
+		It("download should be ok", Label("prefetch-proxy", "download", "range: bytes=-100"), func() {
+			seedClientPod, err := util.SeedClientExec(0)
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+
+			out, err := seedClientPod.Command("sh", "-c", fmt.Sprintf("curl -x 127.0.0.1:4001 -r -100 -H 'X-Dragonfly-Tag: prefetch-proxy-bytes-100' %s --output %s", util.GetFileURL("/bin/kubectl"), util.GetOutputPath("kubectl-prefetch-proxy-bytes-100"))).CombinedOutput()
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Println(string(out))
+
+			fileMetadata := util.FileMetadata{
+				ID:     "2d9e6ebe90a230ff5ffad7938163456c308e072e910eac3dd063f64f62112f05",
+				Sha256: "cd00e292c5970d3c5e2f0ffa5171e555bc46bfc4faddfb4a418b6840b86e79a3",
+			}
+
+			sha256sum, err := util.CalculateSha256ByOutput([]*util.PodExec{seedClientPod}, util.GetOutputPath("kubectl-prefetch-proxy-bytes-100"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+
+			time.Sleep(5 * time.Second)
+			sha256sum, err = util.CalculateSha256ByTaskID([]*util.PodExec{seedClientPod}, fileMetadata.ID)
+			Expect(err).NotTo(HaveOccurred())
+			Expect("327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a").To(Equal(sha256sum))
+
+		})
+	})
+
+	Context("/bin/kubectl file and set range header", func() {
+		It("download should be ok", Label("prefetch-proxy", "download", "range: bytes=0-100"), func() {
+			seedClientPod, err := util.SeedClientExec(0)
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+
+			out, err := seedClientPod.Command("sh", "-c", fmt.Sprintf("curl -x 127.0.0.1:4001 -r 0-100 -H 'X-Dragonfly-Tag: prefetch-proxy-bytes-0-100' %s --output %s", util.GetFileURL("/bin/kubectl"), util.GetOutputPath("kubectl-prefetch-proxy-bytes-0-100"))).CombinedOutput()
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Println(string(out))
+
+			fileMetadata := util.FileMetadata{
+				ID:     "bd969c992e6faff240ac1601afe07bdeaa64c2b75bd5abb36a1fd6601895c542",
+				Sha256: "7bbfcb694f6acc69483751d3b48d5bdbdcb284f9e04c7b7caa04b5977cffddc8",
+			}
+
+			sha256sum, err := util.CalculateSha256ByOutput([]*util.PodExec{seedClientPod}, util.GetOutputPath("kubectl-prefetch-proxy-bytes-0-100"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+
+			time.Sleep(5 * time.Second)
+			sha256sum, err = util.CalculateSha256ByTaskID([]*util.PodExec{seedClientPod}, fileMetadata.ID)
+			Expect(err).NotTo(HaveOccurred())
+			Expect("327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a").To(Equal(sha256sum))
+		})
+	})
+
+	Context("/bin/kubectl file and set range header", func() {
+		It("download should be ok", Label("prefetch-proxy", "download", "range: bytes=100-"), func() {
+			seedClientPod, err := util.SeedClientExec(0)
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+
+			out, err := seedClientPod.Command("sh", "-c", fmt.Sprintf("curl -x 127.0.0.1:4001 -r 100- -H 'X-Dragonfly-Tag: prefetch-proxy-bytes-100-' %s --output %s", util.GetFileURL("/bin/kubectl"), util.GetOutputPath("kubectl-prefetch-proxy-bytes-100-"))).CombinedOutput()
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Println(string(out))
+
+			fileMetadata := util.FileMetadata{
+				ID:     "a58f439c45c5737613f1c1d4f10b57c06239b675fccdc32a3d078af89d2bd870",
+				Sha256: "ba9a10ceceb80562fc124dc9bc94ea2a38e3a71e3e746e2140e6381ac791cdeb",
+			}
+
+			sha256sum, err := util.CalculateSha256ByOutput([]*util.PodExec{seedClientPod}, util.GetOutputPath("kubectl-prefetch-proxy-bytes-100-"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+
+			time.Sleep(5 * time.Second)
+			sha256sum, err = util.CalculateSha256ByTaskID([]*util.PodExec{seedClientPod}, fileMetadata.ID)
+			Expect(err).NotTo(HaveOccurred())
+			Expect("327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a").To(Equal(sha256sum))
+		})
+	})
+
+	Context("/bin/kubectl file and set range header", func() {
+		It("download should be ok", Label("prefetch-proxy", "download", "range: bytes=100-46026751"), func() {
+			seedClientPod, err := util.SeedClientExec(0)
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+
+			out, err := seedClientPod.Command("sh", "-c", fmt.Sprintf("curl -x 127.0.0.1:4001 -r 100-46026751 -H 'X-Dragonfly-Tag: prefetch-proxy-bytes-100-46026751' %s --output %s", util.GetFileURL("/bin/kubectl"), util.GetOutputPath("kubectl-prefetch-proxy-bytes-100-46026751"))).CombinedOutput()
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Println(string(out))
+
+			fileMetadata := util.FileMetadata{
+				ID:     "871b9e11903e7f3cadcb25706be7fd2c153b76cdf138f713bd7b506f695fc863",
+				Sha256: "ba9a10ceceb80562fc124dc9bc94ea2a38e3a71e3e746e2140e6381ac791cdeb",
+			}
+
+			sha256sum, err := util.CalculateSha256ByOutput([]*util.PodExec{seedClientPod}, util.GetOutputPath("kubectl-prefetch-proxy-bytes-100-46026751"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+
+			time.Sleep(5 * time.Second)
+			sha256sum, err = util.CalculateSha256ByTaskID([]*util.PodExec{seedClientPod}, fileMetadata.ID)
+			Expect(err).NotTo(HaveOccurred())
+			Expect("327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a").To(Equal(sha256sum))
+		})
+	})
+
+	Context("/bin/kubectl file and set range header", func() {
+		It("download should be ok", Label("prefetch-proxy", "download", "range: bytes=0-46026751"), func() {
+			seedClientPod, err := util.SeedClientExec(0)
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+
+			out, err := seedClientPod.Command("sh", "-c", fmt.Sprintf("curl -x 127.0.0.1:4001 -r 0-46026751 -H 'X-Dragonfly-Tag: prefetch-proxy-bytes-0-46026751' %s --output %s", util.GetFileURL("/bin/kubectl"), util.GetOutputPath("kubectl-prefetch-proxy-bytes-0-46026751"))).CombinedOutput()
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Println(string(out))
+
+			fileMetadata := util.FileMetadata{
+				ID:     "66b8f945a2906550194aefee5a6da6c3a4c60b533e30340707c8bea67ce35eae",
+				Sha256: "327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a",
+			}
+
+			sha256sum, err := util.CalculateSha256ByOutput([]*util.PodExec{seedClientPod}, util.GetOutputPath("kubectl-prefetch-proxy-bytes-0-46026751"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+
+			time.Sleep(5 * time.Second)
+			sha256sum, err = util.CalculateSha256ByTaskID([]*util.PodExec{seedClientPod}, fileMetadata.ID)
+			Expect(err).NotTo(HaveOccurred())
+			Expect("327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a").To(Equal(sha256sum))
+		})
+	})
+
+	Context("/bin/kubectl file and set range header", func() {
+		It("download should be ok", Label("prefetch-proxy", "download", "range: bytes=100-10240"), func() {
+			seedClientPod, err := util.SeedClientExec(0)
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+
+			out, err := seedClientPod.Command("sh", "-c", fmt.Sprintf("curl -x 127.0.0.1:4001 -r 100-10240 -H 'X-Dragonfly-Tag: prefetch-proxy-bytes-100-10240' %s --output %s", util.GetFileURL("/bin/kubectl"), util.GetOutputPath("kubectl-prefetch-proxy-bytes-100-10240"))).CombinedOutput()
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Println(string(out))
+
+			fileMetadata := util.FileMetadata{
+				ID:     "5cfbab580dd42ef5c3a4d28488fde7e82220115dffc8aff01c0c568665405bcb",
+				Sha256: "8732360b941ad09a5e0e5d5f9891118bc068f6d0d5a56e3c6d483e4600fbc43f",
+			}
+
+			sha256sum, err := util.CalculateSha256ByOutput([]*util.PodExec{seedClientPod}, util.GetOutputPath("kubectl-prefetch-proxy-bytes-100-10240"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+
+			time.Sleep(5 * time.Second)
+			sha256sum, err = util.CalculateSha256ByTaskID([]*util.PodExec{seedClientPod}, fileMetadata.ID)
+			Expect(err).NotTo(HaveOccurred())
+			Expect("327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a").To(Equal(sha256sum))
+		})
+	})
+
+	Context("/bin/kubectl file and set range header", func() {
+		It("download should be ok", Label("prefetch-proxy", "download", "range: bytes=100-1024"), func() {
+			seedClientPod, err := util.SeedClientExec(0)
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+
+			out, err := seedClientPod.Command("sh", "-c", fmt.Sprintf("curl -x 127.0.0.1:4001 -r 100-1024 -H 'X-Dragonfly-Tag: prefetch-proxy-bytes-100-1024' %s --output %s", util.GetFileURL("/bin/kubectl"), util.GetOutputPath("kubectl-prefetch-proxy-bytes-100-1024"))).CombinedOutput()
+			fmt.Println(err)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Println(string(out))
+
+			fileMetadata := util.FileMetadata{
+				ID:     "e376250edb769e967fe48bdd05d50f4124f89f3db367b0eee9850128c93043d7",
+				Sha256: "d6d17dca18b8de59e38da525dc24c47b74fec1a790a9f64afdd6538f4f8fa90e",
+			}
+
+			sha256sum, err := util.CalculateSha256ByOutput([]*util.PodExec{seedClientPod}, util.GetOutputPath("kubectl-prefetch-proxy-bytes-100-1024"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
+
+			time.Sleep(5 * time.Second)
+			sha256sum, err = util.CalculateSha256ByTaskID([]*util.PodExec{seedClientPod}, fileMetadata.ID)
+			Expect(err).NotTo(HaveOccurred())
+			Expect("327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a").To(Equal(sha256sum))
 		})
 	})
 })

@@ -29,6 +29,7 @@ jobs:
           - module: normal
             charts-config: test/testdata/charts/config-v2.yaml
             skip: ""
+
     steps:
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
