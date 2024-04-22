@@ -50,6 +50,8 @@ ENV PATH=/opt/dragonfly/bin:$PATH
 RUN mkdir -p /opt/dragonfly/bin/manager/console \
     && echo "hosts: files dns" > /etc/nsswitch.conf
 
+RUN apk --no-cache add curl
+
 COPY --from=server-builder /opt/dragonfly/bin/manager /opt/dragonfly/bin/server
 COPY --from=health /bin/grpc_health_probe /bin/grpc_health_probe
 
