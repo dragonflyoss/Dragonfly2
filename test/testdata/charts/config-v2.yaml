@@ -81,9 +81,9 @@ seedClient:
       path: /tmp/artifact
   config:
     dynconfig:
-      refreshInterval: 2s
+      refreshInterval: 1s
     scheduler:
-      announceInterval: 2s
+      announceInterval: 1s
     log:
       level: info
     proxy:
@@ -135,9 +135,9 @@ client:
               capabilities: ["pull", "resolve"]
   config:
     dynconfig:
-      refreshInterval: 2s
+      refreshInterval: 1s
     scheduler:
-      announceInterval: 2s
+      announceInterval: 1s
     log:
       level: info 
     proxy:
