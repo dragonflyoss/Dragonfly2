@@ -85,7 +85,7 @@ var _ = BeforeSuite(func() {
 	rawGitCommit, err := util.GitCommand("rev-parse", "--short", "HEAD").CombinedOutput()
 	Expect(err).NotTo(HaveOccurred())
 	gitCommit := strings.Fields(string(rawGitCommit))[0]
-	fmt.Printf("git merge commit: %s\n", gitCommit)
+	fmt.Printf("git commit: %s\n", gitCommit)
 })
 
 // TestE2E is the root of e2e test function

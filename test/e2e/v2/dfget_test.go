@@ -18,6 +18,7 @@ package e2e
 
 import (
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2" //nolint
 	. "github.com/onsi/gomega"    //nolint
@@ -50,6 +51,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
+			time.Sleep(1 * time.Second)
 			seedClientPods := make([]*util.PodExec, 3)
 			for i := 0; i < 3; i++ {
 				seedClientPods[i], err = util.SeedClientExec(i)
@@ -87,6 +89,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
+			time.Sleep(1 * time.Second)
 			seedClientPods := make([]*util.PodExec, 3)
 			for i := 0; i < 3; i++ {
 				seedClientPods[i], err = util.SeedClientExec(i)
@@ -124,6 +127,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
+			time.Sleep(1 * time.Second)
 			seedClientPods := make([]*util.PodExec, 3)
 			for i := 0; i < 3; i++ {
 				seedClientPods[i], err = util.SeedClientExec(i)
@@ -161,6 +165,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
+			time.Sleep(1 * time.Second)
 			seedClientPods := make([]*util.PodExec, 3)
 			for i := 0; i < 3; i++ {
 				seedClientPods[i], err = util.SeedClientExec(i)
@@ -198,6 +203,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
+			time.Sleep(1 * time.Second)
 			seedClientPods := make([]*util.PodExec, 3)
 			for i := 0; i < 3; i++ {
 				seedClientPods[i], err = util.SeedClientExec(i)
@@ -235,6 +241,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
+			time.Sleep(1 * time.Second)
 			seedClientPods := make([]*util.PodExec, 3)
 			for i := 0; i < 3; i++ {
 				seedClientPods[i], err = util.SeedClientExec(i)
@@ -272,6 +279,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
+			time.Sleep(1 * time.Second)
 			seedClientPods := make([]*util.PodExec, 3)
 			for i := 0; i < 3; i++ {
 				seedClientPods[i], err = util.SeedClientExec(i)
@@ -309,6 +317,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
+			time.Sleep(1 * time.Second)
 			seedClientPods := make([]*util.PodExec, 3)
 			for i := 0; i < 3; i++ {
 				seedClientPods[i], err = util.SeedClientExec(i)
@@ -346,6 +355,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
+			time.Sleep(1 * time.Second)
 			seedClientPods := make([]*util.PodExec, 3)
 			for i := 0; i < 3; i++ {
 				seedClientPods[i], err = util.SeedClientExec(i)
@@ -383,6 +393,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
+			time.Sleep(1 * time.Second)
 			seedClientPods := make([]*util.PodExec, 3)
 			for i := 0; i < 3; i++ {
 				seedClientPods[i], err = util.SeedClientExec(i)
@@ -420,6 +431,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
+			time.Sleep(1 * time.Second)
 			seedClientPods := make([]*util.PodExec, 3)
 			for i := 0; i < 3; i++ {
 				seedClientPods[i], err = util.SeedClientExec(i)
@@ -457,6 +469,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
+			time.Sleep(1 * time.Second)
 			seedClientPods := make([]*util.PodExec, 3)
 			for i := 0; i < 3; i++ {
 				seedClientPods[i], err = util.SeedClientExec(i)
