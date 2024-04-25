@@ -1,0 +1,152 @@
+name: E2E Test With Nydus(API v1 - Golang Client)
+
+on:
+  push:
+    branches: [main, release-*]
+    paths-ignore: ["**.md", "**.png", "**.jpg", "**.svg", "**/docs/**"]
+  pull_request:
+    branches: [main, release-*]
+    paths-ignore: ["**.md", "**.png", "**.jpg", "**.svg", "**/docs/**"]
+  schedule:
+    - cron: '0 4 * * *'
+
+env:
+  GO_VERSION: '1.21'
+  KIND_VERSION: v0.12.0
+  CONTAINERD_VERSION: v1.5.2
+  NERDCTL_VER: 0.22.2
+  KIND_CONFIG_PATH: test/testdata/kind/config.yaml
+  DRAGONFLY_CHARTS_PATH: deploy/helm-charts/charts/dragonfly
+  NYDUS_SNAPSHOTTER_CHARTS_PATH: deploy/helm-charts/charts/nydus-snapshotter
+
+jobs:
+  e2e_tests_nydus:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v3
+        id: buildx
+        with:
+          install: true
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Build Scheduler Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: build/images/scheduler/Dockerfile
+          push: false
+          load: true
+          tags: dragonflyoss/scheduler:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Build Manager Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: build/images/manager/Dockerfile
+          push: false
+          load: true
+          tags: dragonflyoss/manager:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Build Dfdaemon Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: build/images/dfdaemon/Dockerfile
+          push: false
+          load: true
+          tags: dragonflyoss/dfdaemon:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Setup Kind
+        uses: helm/kind-action@v1.9.0
+        with:
+          version: ${{ env.KIND_VERSION }}
+          config: ${{ env.KIND_CONFIG_PATH }}
+          cluster_name: kind
+
+      - name: Kind load images
+        run: |
+          kind load docker-image dragonflyoss/manager:latest
+          kind load docker-image dragonflyoss/scheduler:latest
+          kind load docker-image dragonflyoss/dfdaemon:latest
+
+      - name: Setup dragonfly
+        run: |
+          helm install --wait --timeout 10m --dependency-update \
+            --create-namespace --namespace dragonfly-system \
+            -f test/testdata/charts/config.yaml \
+            dragonfly ${{ env.DRAGONFLY_CHARTS_PATH }}
+
+      - name: Setup nydus
+        run: |
+          helm install --wait --timeout 10m --dependency-update \
+            --create-namespace --namespace nydus-system \
+            -f test/testdata/charts/config-nydus.yaml \
+            nydus-snapshotter ${{ env.NYDUS_SNAPSHOTTER_CHARTS_PATH }}
+
+          export ns=nydus-system
+          p=`kubectl -n $ns get pods --no-headers -o custom-columns=NAME:metadata.name`
+          echo "snapshotter pod name ${p}"
+          # helm wait is wait for daemonset, in this e2e test we ensure the pod is ready
+          kubectl -n $ns wait po $p --for=condition=ready --timeout=2m
+
+      - name: Run E2E test
+        run: |
+          docker exec kind-control-plane curl -L -o nerdctl-${NERDCTL_VER}-linux-amd64.tar.gz https://github.com/containerd/nerdctl/releases/download/v${NERDCTL_VER}/nerdctl-${NERDCTL_VER}-linux-amd64.tar.gz
+          docker exec kind-control-plane tar xzf nerdctl-${NERDCTL_VER}-linux-amd64.tar.gz
+          docker exec kind-control-plane install -D -m 755 nerdctl /usr/local/bin/nerdctl
+
+          # this is only a simple test that run `date` in container
+          docker exec kind-control-plane /usr/local/bin/nerdctl run --snapshotter nydus --network=none ghcr.io/dragonflyoss/image-service/nginx:nydus-latest date
+
+          kubectl apply -f test/testdata/k8s/nydus.yaml
+          kubectl wait po nydus-pod --for=condition=ready --timeout=1m
+          kubectl delete -f test/testdata/k8s/nydus.yaml
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+      - name: Dump logs
+        if: always()
+        continue-on-error: true
+        run: |
+          log_dir="/tmp/nydus-log"
+          mkdir $log_dir
+          export ns=nydus-system
+          for p in `kubectl -n $ns get pods --no-headers -o custom-columns=NAME:metadata.name`; do kubectl -n $ns get pod $p -o yaml >> $log_dir/nydus-pods.log; done
+          for p in `kubectl -n $ns get pods --no-headers -o custom-columns=NAME:metadata.name`; do kubectl -n $ns describe pod $p  >> $log_dir/nydus-pods.log; done
+
+          docker exec kind-control-plane cat /etc/containerd/config.toml >> $log_dir/containerd-config.toml
+          docker exec kind-control-plane containerd config dump >> $log_dir/containerd-config-dump.toml
+
+          docker exec kind-control-plane journalctl -u containerd >> $log_dir/containerd.log
+          docker exec kind-control-plane journalctl -u kubelet >> $log_dir/kubelet.log
+
+      - name: Upload Logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nydus-e2e-tests-logs
+          path: |
+            /tmp/nydus-log

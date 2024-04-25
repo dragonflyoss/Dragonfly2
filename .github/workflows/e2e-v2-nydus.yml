@@ -1,4 +1,4 @@
-name: E2E Test With Nydus
+name: E2E Test With Nydus(API v2 - Rust Client)
 
 on:
   push:
@@ -15,7 +15,7 @@ env:
   KIND_VERSION: v0.12.0
   CONTAINERD_VERSION: v1.5.2
   NERDCTL_VER: 0.22.2
-  KIND_CONFIG_PATH: test/testdata/kind/config.yaml
+  KIND_CONFIG_PATH: test/testdata/kind/config-v2.yaml
   DRAGONFLY_CHARTS_PATH: deploy/helm-charts/charts/dragonfly
   NYDUS_SNAPSHOTTER_CHARTS_PATH: deploy/helm-charts/charts/nydus-snapshotter
 
@@ -43,6 +43,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
+      - name: Pull Rust Client Image
+        run: |
+          cd client-rs
+          CLIENT_TAG=$(git describe --tags $(git rev-parse HEAD))
+          docker pull dragonflyoss/client:$CLIENT_TAG
+          docker tag dragonflyoss/client:$CLIENT_TAG dragonflyoss/client:latest
+          docker pull dragonflyoss/dfinit:$CLIENT_TAG
+          docker tag dragonflyoss/dfinit:$CLIENT_TAG dragonflyoss/dfinit:latest
+
       - name: Build Scheduler Image
         uses: docker/build-push-action@v5
         with:
@@ -65,21 +74,6 @@ jobs:
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
 
-      - name: Build Dfdaemon Image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: build/images/dfdaemon/Dockerfile
-          push: false
-          load: true
-          tags: dragonflyoss/dfdaemon:latest
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new
-
-      - name: Build images of the testing tools 
-        run: |
-          make docker-build-testing-tools
-
       - name: Setup Kind
         uses: helm/kind-action@v1.9.0
         with:
@@ -91,20 +85,21 @@ jobs:
         run: |
           kind load docker-image dragonflyoss/manager:latest
           kind load docker-image dragonflyoss/scheduler:latest
-          kind load docker-image dragonflyoss/dfdaemon:latest
+          kind load docker-image dragonflyoss/client:latest
+          kind load docker-image dragonflyoss/dfinit:latest
 
       - name: Setup dragonfly
         run: |
           helm install --wait --timeout 10m --dependency-update \
             --create-namespace --namespace dragonfly-system \
-            -f test/testdata/charts/config.yaml \
+            -f test/testdata/charts/config-v2.yaml \
             dragonfly ${{ env.DRAGONFLY_CHARTS_PATH }}
 
       - name: Setup nydus
         run: |
           helm install --wait --timeout 10m --dependency-update \
             --create-namespace --namespace nydus-system \
-            -f test/testdata/charts/config-nydus.yaml \
+            -f test/testdata/charts/config-v2-nydus.yaml \
             nydus-snapshotter ${{ env.NYDUS_SNAPSHOTTER_CHARTS_PATH }}
 
           export ns=nydus-system
