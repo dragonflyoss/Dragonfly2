@@ -55,7 +55,7 @@ var peerHostConfig = func() *DaemonOption {
 			IDC:      "",
 		},
 		Download: DownloadOption{
-			CalculateDigest:      true,
+			CalculateDigest:      false,
 			PieceDownloadTimeout: 30 * time.Second,
 			GRPCDialTimeout:      10 * time.Second,
 			WatchdogTimeout:      30 * time.Second,
