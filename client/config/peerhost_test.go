@@ -335,7 +335,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 					},
 				},
 			},
-			CalculateDigest: true,
+			CalculateDigest: false,
 			Transport: &TransportOption{
 				DialTimeout:           time.Second,
 				KeepAlive:             time.Second,

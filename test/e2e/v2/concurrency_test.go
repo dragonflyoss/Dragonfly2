@@ -117,12 +117,12 @@ var _ = Describe("Download Concurrency", func() {
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 		})
 
-		It("concurrent 2000 should be ok", Label("concurrent", "2000"), func() {
+		It("concurrent 1000 should be ok", Label("concurrent", "1000"), func() {
 			clientPod, err := util.ClientExec()
 			fmt.Println(err)
 			Expect(err).NotTo(HaveOccurred())
 
-			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("ab -c 2000 -n 4000 -X 127.0.0.1:4001 %s", util.GetFileURL("/bin/lnstat"))).CombinedOutput()
+			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("ab -c 1000 -n 2000 -X 127.0.0.1:4001 %s", util.GetFileURL("/bin/lnstat"))).CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 

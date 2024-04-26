@@ -44,7 +44,7 @@ host:
   idc: d7y
 
 download:
-  calculateDigest: true
+  calculateDigest: false
   defaultPattern: p2p
   pieceDownloadTimeout: 30s
   totalRateLimit: 1024Mi
