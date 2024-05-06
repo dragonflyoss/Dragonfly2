@@ -165,7 +165,7 @@ func (s *subscriber) receiveRemainingPieceTaskRequests() {
 	}
 }
 
-// totalPieces is [0, n)
+// totalPieces is -1, 0, n
 func (s *subscriber) isKnownTotalPieces() bool {
 	return s.totalPieces > -1
 }
@@ -176,7 +176,8 @@ func (s *subscriber) isUnknownTotalPieces() bool {
 
 func (s *subscriber) sendRemainingPieceTasks() error {
 	// nextPieceNum is the least piece num which did not send to remote peer
-	// may great then total piece count
+	// available values: [0, n], n is total piece count
+	// when nextPieceNum is n, indicate all pieces done
 	var nextPieceNum uint32
 	s.Lock()
 	for i := int32(s.skipPieceCount); ; i++ {
