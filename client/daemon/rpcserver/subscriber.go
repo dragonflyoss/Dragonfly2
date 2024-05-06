@@ -174,6 +174,10 @@ func (s *subscriber) isUnknownTotalPieces() bool {
 	return !s.isKnownTotalPieces()
 }
 
+func (s *subscriber) isAllPiecesSent(nextPieceNum uint32) bool {
+	return nextPieceNum == uint32(s.totalPieces)
+}
+
 func (s *subscriber) sendRemainingPieceTasks() error {
 	// nextPieceNum is the least piece num which did not send to remote peer
 	// available values: [0, n], n is total piece count
@@ -209,19 +213,20 @@ loop:
 				return err
 			}
 
-			if info.Finished {
+			nextPieceNum = s.searchNextPieceNum(nextPieceNum)
+			s.Debugf("update desired next piece num: %d", nextPieceNum)
+
+			if info.Finished && s.isAllPiecesSent(nextPieceNum) {
 				s.Unlock()
 				break loop
 			}
-			nextPieceNum = s.searchNextPieceNum(nextPieceNum)
-			s.Debugf("update desired next piece num: %d", nextPieceNum)
 			s.Unlock()
 		case <-s.Success:
 			s.Infof("peer task is success, send remaining pieces")
 			s.Lock()
 			// all pieces already sent
 			// empty piece task will reach sendExistPieces to sync content length and piece count
-			if s.totalPieces > 0 && nextPieceNum == uint32(s.totalPieces) {
+			if s.totalPieces > 0 && s.isAllPiecesSent(nextPieceNum) {
 				s.Unlock()
 				break loop
 			}
@@ -241,7 +246,7 @@ loop:
 			}
 
 			nextPieceNum = s.searchNextPieceNum(nextPieceNum)
-			if int32(nextPieceNum) < s.totalPieces {
+			if !s.isAllPiecesSent(nextPieceNum) {
 				s.Unlock()
 				msg := "task success, but not all pieces are sent out"
 				s.Errorf(msg)
