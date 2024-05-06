@@ -232,17 +232,17 @@ loop:
 				return err
 			}
 
-			if s.isKnownTotalPieces() {
-				nextPieceNum = s.searchNextPieceNum(nextPieceNum)
-				if int32(nextPieceNum) < s.totalPieces {
-					s.Unlock()
-					msg := "task success, but not all pieces are sent out"
-					s.Errorf(msg)
-					return dferrors.Newf(commonv1.Code_ClientError, msg)
-				}
-			} else {
+			if s.isUnknownTotalPieces() {
 				s.Unlock()
 				msg := "task success, but total pieces is unknown"
+				s.Errorf(msg)
+				return dferrors.Newf(commonv1.Code_ClientError, msg)
+			}
+
+			nextPieceNum = s.searchNextPieceNum(nextPieceNum)
+			if int32(nextPieceNum) < s.totalPieces {
+				s.Unlock()
+				msg := "task success, but not all pieces are sent out"
 				s.Errorf(msg)
 				return dferrors.Newf(commonv1.Code_ClientError, msg)
 			}
