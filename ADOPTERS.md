@@ -93,3 +93,5 @@ refer to [Setup Dragonfly in Kubernetes](https://d7y.io/docs/getting-started/qui
 **_[Yipitdata](https://www.yipitdata.com/)_** - Large-scale image and file distribution.
 
 **_[Amap](https://mobile.amap.com/)_** - Large-scale image and file distribution.
+
+**_[iQIYI](https://www.iqiyi.com/)_** - Large-scale image distribution.
