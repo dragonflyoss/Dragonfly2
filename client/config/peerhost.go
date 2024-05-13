@@ -978,7 +978,7 @@ type PeerExchangeOption struct {
 	// InitialInterval is the initial retry interval when start and join gossip.
 	InitialInterval time.Duration `mapstructure:"initialInterval" yaml:"initialInterval"`
 	// InitialBroadcastDelay is the initial broadcast delay when daemon start due to we can only broadcast peers after join gossip with all daemons, it should be less than TaskExpireTime
-	InitialBroadcastDelay time.Duration `mapstructure:"initialInterval" yaml:"initialInterval"`
+	InitialBroadcastDelay time.Duration `mapstructure:"initialBroadcastDelay" yaml:"initialBroadcastDelay"`
 	// ReSyncInterval is the re-sync interval for check running gossip members.
 	ReSyncInterval time.Duration `mapstructure:"reSyncInterval" yaml:"reSyncInterval"`
 	// ReplicaThreshold is used for keeping replicas in all peers is not bigger than threshold to save storage
