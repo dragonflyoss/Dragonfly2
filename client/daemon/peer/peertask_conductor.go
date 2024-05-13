@@ -1086,11 +1086,16 @@ func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPiec
 	pt.runningPieces.Set(request.piece.PieceNum)
 	pt.runningPiecesLock.Unlock()
 
-	defer func() {
-		pt.runningPiecesLock.Lock()
-		pt.runningPieces.Clean(request.piece.PieceNum)
-		pt.runningPiecesLock.Unlock()
-	}()
+	var cleanRunningPieceDone bool
+	cleanRunningPiece := func() {
+		if cleanRunningPieceDone {
+			cleanRunningPieceDone = true
+			pt.runningPiecesLock.Lock()
+			pt.runningPieces.Clean(request.piece.PieceNum)
+			pt.runningPiecesLock.Unlock()
+		}
+	}
+	defer cleanRunningPiece()
 
 	ctx, span := tracer.Start(pt.pieceDownloadCtx, fmt.Sprintf(config.SpanDownloadPiece, request.piece.PieceNum))
 	span.SetAttributes(config.AttributePiece.Int(int(request.piece.PieceNum)))
@@ -1117,6 +1122,9 @@ func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPiec
 			pt.Infof("switch to back source, skip send failed piece")
 			return result
 		}
+
+		// clean running piece first
+		cleanRunningPiece()
 		attempt, success := pt.pieceTaskSyncManager.acquire(
 			&commonv1.PieceTaskRequest{
 				Limit:    1,

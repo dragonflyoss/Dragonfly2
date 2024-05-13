@@ -9,7 +9,12 @@ nodes:
       - containerPort: 4001
         hostPort: 4001
         protocol: TCP
+      - containerPort: 4003
+        hostPort: 4003
+        protocol: TCP
     extraMounts:
+      - hostPath: ./test/testdata/containerd/config-v2.toml
+        containerPath: /etc/containerd/config.toml
       - hostPath: /tmp/artifact
         containerPath: /tmp/artifact
       - hostPath: /dev/fuse

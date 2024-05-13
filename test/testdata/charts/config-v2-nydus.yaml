@@ -18,7 +18,6 @@ dragonfly:
       "X-Dragonfly-Registry": "https://ghcr.io"
     ping_url: "http://127.0.0.1:4003/healthy"
 
-
 containerRuntime:
   initContainerImage: ghcr.io/liubin/toml-cli:v0.0.7
   containerd:
