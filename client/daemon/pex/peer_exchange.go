@@ -232,9 +232,17 @@ func (p *peerExchange) Serve(localMember *MemberMeta) error {
 
 func (p *peerExchange) serve() {
 	for {
-		if err := p.listAndJoin(); err == nil {
-			break
+		err := p.listAndJoin()
+		if err == nil {
+			return
 		}
+
+		select {
+		case <-p.stopCh:
+			return
+		default:
+		}
+
 		time.Sleep(p.config.initialRetryInterval)
 	}
 }
