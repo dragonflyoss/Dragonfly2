@@ -58,6 +58,7 @@ var (
 	// layerReg the regex to determine if it is an image download
 	layerReg     = regexp.MustCompile("^.+/blobs/sha256.*$")
 	traceContext = propagation.TraceContext{}
+	proxyTTL     = 30 * time.Minute
 )
 
 // transport implements RoundTripper for dragonfly.
@@ -171,31 +172,33 @@ func WithDumpHTTPContent(b bool) Option {
 }
 
 func peerProxyCacheLoaderFunc(c *ttlcache.Cache[string, *http.Transport], hostPort string) *ttlcache.Item[string, *http.Transport] {
+	proxyURL := &url.URL{
+		Scheme: "http",
+		Host:   hostPort,
+	}
 	roundTripper := &http.Transport{
-		Proxy: http.ProxyURL(&url.URL{
-			Scheme: "http",
-			Host:   hostPort,
-		}),
+		Proxy: http.ProxyURL(proxyURL),
 		DialContext: func(dialer *net.Dialer) func(context.Context, string, string) (net.Conn, error) {
 			return dialer.DialContext
 		}(&net.Dialer{
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,
 		}),
-		ForceAttemptHTTP2:     false,
 		MaxIdleConns:          100,
 		IdleConnTimeout:       90 * time.Second,
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 	}
-	return c.Set(hostPort, roundTripper, 30*time.Minute)
+	logger.Infof("create new round tripper, url: %s", proxyURL)
+
+	return c.Set(hostPort, roundTripper, proxyTTL)
 }
 
 func WithPeerSearcher(peerSearcher pex.PeerSearchBroadcaster) Option {
 	return func(rt *transport) *transport {
 		rt.peerSearcher = peerSearcher
 		rt.peerProxyCache = ttlcache.New[string, *http.Transport](
-			ttlcache.WithTTL[string, *http.Transport](30*time.Minute),
+			ttlcache.WithTTL[string, *http.Transport](proxyTTL),
 			ttlcache.WithLoader[string, *http.Transport](ttlcache.LoaderFunc[string, *http.Transport](peerProxyCacheLoaderFunc)),
 		)
 		go rt.peerProxyCache.Start()
