@@ -35,6 +35,7 @@ import (
 	"time"
 
 	"github.com/go-http-utils/headers"
+	"github.com/jellydator/ttlcache/v3"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
@@ -73,6 +74,8 @@ type transport struct {
 	peerTaskManager peer.TaskManager
 
 	peerSearcher pex.PeerSearchBroadcaster
+
+	peerProxyCache *ttlcache.Cache[string, *http.Transport]
 
 	// defaultFilter is used when http request without X-Dragonfly-Filter Header
 	defaultFilter string
@@ -170,6 +173,31 @@ func WithDumpHTTPContent(b bool) Option {
 func WithPeerSearcher(peerSearcher pex.PeerSearchBroadcaster) Option {
 	return func(rt *transport) *transport {
 		rt.peerSearcher = peerSearcher
+		rt.peerProxyCache = ttlcache.New[string, *http.Transport](
+			ttlcache.WithTTL[string, *http.Transport](30*time.Minute),
+			ttlcache.WithLoader[string, *http.Transport](ttlcache.LoaderFunc[string, *http.Transport](
+				func(c *ttlcache.Cache[string, *http.Transport], hostPort string) *ttlcache.Item[string, *http.Transport] {
+					roundTripper := &http.Transport{
+						Proxy: http.ProxyURL(&url.URL{
+							Scheme: "http",
+							Host:   hostPort,
+						}),
+						DialContext: func(dialer *net.Dialer) func(context.Context, string, string) (net.Conn, error) {
+							return dialer.DialContext
+						}(&net.Dialer{
+							Timeout:   30 * time.Second,
+							KeepAlive: 30 * time.Second,
+						}),
+						ForceAttemptHTTP2:     false,
+						MaxIdleConns:          100,
+						IdleConnTimeout:       90 * time.Second,
+						TLSHandshakeTimeout:   10 * time.Second,
+						ExpectContinueTimeout: 1 * time.Second,
+					}
+					return c.Set(hostPort, roundTripper, 30*time.Minute)
+				})),
+		)
+		go rt.peerProxyCache.Start()
 		return rt
 	}
 }
@@ -402,29 +430,11 @@ func (rt *transport) proxyToPeers(log *logger.SugaredLoggerOnWith, req *http.Req
 	}
 
 	for _, destPeer := range peers {
-		// TODO peer transport pool
-		proxyRaw := fmt.Sprintf("http://%s:%d", destPeer.IP, destPeer.ProxyPort)
-		proxyURL, err := url.Parse(proxyRaw)
-		if err != nil {
-			log.Warnf("parse proxy url error: %s, dest peer: %#v", err, destPeer)
-			continue
-		}
-		roundTripper := &http.Transport{
-			Proxy: http.ProxyURL(proxyURL),
-			DialContext: func(dialer *net.Dialer) func(context.Context, string, string) (net.Conn, error) {
-				return dialer.DialContext
-			}(&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 30 * time.Second,
-			}),
-			ForceAttemptHTTP2:     true,
-			MaxIdleConns:          100,
-			IdleConnTimeout:       90 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-		}
+		// current only support ipv4
+		hostPort := fmt.Sprintf("%s:%d", destPeer.IP, destPeer.ProxyPort)
+		roundTripper := rt.peerProxyCache.Get(hostPort).Value()
 
-		log.Debugf("round trip with peer: %s", proxyRaw)
+		log.Debugf("round trip with peer: http://%s", hostPort)
 		resp, err := roundTripper.RoundTrip(req)
 		if err != nil {
 			log.Warnf("round trip error: %s, dest peer: %#v", err, destPeer)
