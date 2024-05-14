@@ -224,17 +224,22 @@ func (p *peerExchange) Serve(localMember *MemberMeta) error {
 	go p.memberManager.broadcastInBackground()
 	go p.reSyncMember()
 
-	for {
-		if err := p.serve(); err == nil {
-			break
-		}
-	}
+	p.serve()
 
 	<-p.stopCh
 	return nil
 }
 
-func (p *peerExchange) serve() error {
+func (p *peerExchange) serve() {
+	for {
+		if err := p.listAndJoin(); err == nil {
+			break
+		}
+		time.Sleep(p.config.initialRetryInterval)
+	}
+}
+
+func (p *peerExchange) listAndJoin() error {
 	var (
 		members []*InitialMember
 		err     error
