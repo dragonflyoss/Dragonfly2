@@ -434,7 +434,6 @@ func (rt *transport) proxyToPeers(log *logger.SugaredLoggerOnWith, req *http.Req
 	}
 
 	for _, destPeer := range peers {
-		// current only support ipv4
 		hostPort := fmt.Sprintf("%s:%d", destPeer.IP, destPeer.ProxyPort)
 		roundTripper := rt.peerProxyCache.Get(hostPort).Value()
 
