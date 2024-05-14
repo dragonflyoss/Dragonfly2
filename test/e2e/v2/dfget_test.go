@@ -40,7 +40,7 @@ var _ = Describe("Download Using Dfget", func() {
 
 			fileMetadata := util.FileMetadata{
 				ID:     "1fc5ed9922a3d741063c169ec49c2071a391db5fda8de30eb6a97f60b5038c16",
-				Sha256: "66404431f9a0d5c78205e5a3eb041f76767094fc278c0a091d4ffa10f06cf641",
+				Sha256: "6288d2a89e2a9611191c25a45de20e94d8d058c75f274a39970d41f60f367e6f",
 			}
 
 			sha256sum, err := util.CalculateSha256ByTaskID([]*util.PodExec{clientPod}, fileMetadata.ID)
@@ -230,7 +230,7 @@ var _ = Describe("Download Using Dfget", func() {
 
 			fileMetadata := util.FileMetadata{
 				ID:     "1ae51fe69c381a4604517f1d00d4315afef070bab3bcb475f11770fc5b194821",
-				Sha256: "66404431f9a0d5c78205e5a3eb041f76767094fc278c0a091d4ffa10f06cf641",
+				Sha256: "6288d2a89e2a9611191c25a45de20e94d8d058c75f274a39970d41f60f367e6f",
 			}
 
 			sha256sum, err := util.CalculateSha256ByTaskID([]*util.PodExec{clientPod}, fileMetadata.ID)
@@ -420,7 +420,7 @@ var _ = Describe("Download Using Dfget", func() {
 
 			fileMetadata := util.FileMetadata{
 				ID:     "9746acdb4bd8bf2deeb5dd8a3275e51a7fdd4adf8b0dc1d9d26a4565d3ed6592",
-				Sha256: "66404431f9a0d5c78205e5a3eb041f76767094fc278c0a091d4ffa10f06cf641",
+				Sha256: "6288d2a89e2a9611191c25a45de20e94d8d058c75f274a39970d41f60f367e6f",
 			}
 
 			sha256sum, err := util.CalculateSha256ByTaskID([]*util.PodExec{clientPod}, fileMetadata.ID)
@@ -458,7 +458,7 @@ var _ = Describe("Download Using Dfget", func() {
 
 			fileMetadata := util.FileMetadata{
 				ID:     "9746acdb4bd8bf2deeb5dd8a3275e51a7fdd4adf8b0dc1d9d26a4565d3ed6592",
-				Sha256: "66404431f9a0d5c78205e5a3eb041f76767094fc278c0a091d4ffa10f06cf641",
+				Sha256: "6288d2a89e2a9611191c25a45de20e94d8d058c75f274a39970d41f60f367e6f",
 			}
 
 			sha256sum, err := util.CalculateSha256ByTaskID([]*util.PodExec{clientPod}, fileMetadata.ID)

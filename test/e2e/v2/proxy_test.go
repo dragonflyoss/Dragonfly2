@@ -40,7 +40,7 @@ var _ = Describe("Download Using Proxy", func() {
 
 			fileMetadata := util.FileMetadata{
 				ID:     "0ef882badaeb3195aed759a203cfb61951d158bf614f90ab0a20504fb7f97992",
-				Sha256: "66404431f9a0d5c78205e5a3eb041f76767094fc278c0a091d4ffa10f06cf641",
+				Sha256: "6288d2a89e2a9611191c25a45de20e94d8d058c75f274a39970d41f60f367e6f",
 			}
 
 			sha256sum, err := util.CalculateSha256ByTaskID([]*util.PodExec{clientPod}, fileMetadata.ID)
@@ -498,7 +498,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 
 			fileMetadata := util.FileMetadata{
 				ID:     "0fa5f40dfccfcd4c20b2d2dba0bab7205bfced189cc7a013919a6d155d841dab",
-				Sha256: "66404431f9a0d5c78205e5a3eb041f76767094fc278c0a091d4ffa10f06cf641",
+				Sha256: "6288d2a89e2a9611191c25a45de20e94d8d058c75f274a39970d41f60f367e6f",
 			}
 
 			sha256sum, err := util.CalculateSha256ByTaskID([]*util.PodExec{seedClientPod}, fileMetadata.ID)

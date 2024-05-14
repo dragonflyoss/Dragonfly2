@@ -12,11 +12,11 @@ resources:
 dragonfly:
   enable: true
   mirrorConfig:
-  - host: "http://127.0.0.1:65001"
+  - host: "http://127.0.0.1:4001"
     auth_through: false
     headers:
       "X-Dragonfly-Registry": "https://ghcr.io"
-    ping_url: "http://127.0.0.1:40901/server/ping"
+    ping_url: "http://127.0.0.1:4003/healthy"
 
 containerRuntime:
   initContainerImage: ghcr.io/liubin/toml-cli:v0.0.7
