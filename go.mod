@@ -1,6 +1,7 @@
 module d7y.io/dragonfly/v2
 
 go 1.21
+toolchain go1.22.2
 
 require (
 	d7y.io/api/v2 v2.0.112
@@ -95,7 +96,7 @@ require (
 	gorm.io/driver/postgres v1.5.7
 	gorm.io/gorm v1.25.7-0.20240204074919-46816ad31dde
 	gorm.io/plugin/soft_delete v1.2.1
-	k8s.io/component-base v0.29.2
+	k8s.io/component-base v0.30.0
 	logur.dev/adapter/zap v0.5.0
 	moul.io/zapgorm2 v1.3.0
 	stathat.com/c/consistent v1.0.0
@@ -241,7 +242,7 @@ require (
 	golang.org/x/net v0.24.0 // indirect
 	golang.org/x/term v0.19.0 // indirect
 	golang.org/x/text v0.15.0 // indirect
-	golang.org/x/tools v0.17.0 // indirect
+	golang.org/x/tools v0.18.0 // indirect
 	google.golang.org/genproto v0.0.0-20240227224415-6ceb2ff114de // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240311132316-a219d84964c2 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240415180920-8c6c420018be // indirect
@@ -249,7 +250,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gorm.io/driver/sqlserver v1.4.1 // indirect
 	gorm.io/plugin/dbresolver v1.3.0 // indirect
-	k8s.io/apimachinery v0.29.2 // indirect
-	k8s.io/klog/v2 v2.110.1 // indirect
+	k8s.io/apimachinery v0.30.0 // indirect
+	k8s.io/klog/v2 v2.120.1 // indirect
 	logur.dev/logur v0.16.1 // indirect
 )
