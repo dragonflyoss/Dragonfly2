@@ -71,12 +71,6 @@ Join the conversation and help the community.
 - **Twitter**: [@dragonfly_oss](https://twitter.com/dragonfly_oss)
 - **DingTalk**: [22880028764](https://qr.dingtalk.com/action/joingroup?code=v1,k1,pkV9IbsSyDusFQdByPSK3HfCG61ZCLeb8b/lpQ3uUqI=&_dt_no_comment=1&origin=11)
 
-<!-- markdownlint-disable -->
-<div align="center">
-  <img src="docs/images/community/dingtalk-group.jpeg" width="300" title="dingtalk">
-</div>
-<!-- markdownlint-restore -->
-
 ## Contributing
 
 You should check out our
