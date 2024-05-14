@@ -189,7 +189,7 @@ func peerProxyCacheLoaderFunc(c *ttlcache.Cache[string, *http.Transport], hostPo
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 	}
-	logger.Infof("create new round tripper, url: %s", proxyURL)
+	logger.Infof("create new proxy round tripper, url: %s", proxyURL)
 
 	return c.Set(hostPort, roundTripper, proxyTTL)
 }
