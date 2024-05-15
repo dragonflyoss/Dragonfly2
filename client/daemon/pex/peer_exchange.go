@@ -203,7 +203,7 @@ func (p *peerExchange) tryReclaim(task string, searchPeerResult SearchPeerResult
 	if r.Int31n(100)+1 > p.config.replicaCleanPercentage {
 		return false
 	}
-	// peer 0 is always local peer
+	// when Type is SearchPeerResultTypeLocal, peer 0 is always local peer
 	peer := searchPeerResult.Peers[0].PeerID
 	p.memberManager.logger.Debugf("task %s replica threshold reached, try to reclaim local peer cache %s", task, peer)
 	err := p.reclaim(task, peer)
