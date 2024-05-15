@@ -310,6 +310,7 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 	filter := nethttp.PickHeader(req.Header, config.HeaderDragonflyFilter, rt.defaultFilter)
 	tag := nethttp.PickHeader(req.Header, config.HeaderDragonflyTag, rt.defaultTag)
 	application := nethttp.PickHeader(req.Header, config.HeaderDragonflyApplication, rt.defaultApplication)
+	forwarded := nethttp.PickHeader(req.Header, config.HeaderDragonflyForwardedFrom, "")
 	var priority = rt.defaultPriority
 	priorityString := nethttp.PickHeader(req.Header, config.HeaderDragonflyPriority, fmt.Sprintf("%d", rt.defaultPriority))
 	priorityInt, err := strconv.ParseInt(priorityString, 10, 32)
@@ -336,30 +337,16 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 	log := logger.With(append(logKV, "task", taskID)...)
 
 	log.Infof("start download with url: %s", reqURL)
-	log.Debugf("request url: %s, with header: %#v", reqURL, req.Header)
+	log.Debugf("request url: %s, with header: %#v, forwarded from: %q", reqURL, req.Header, forwarded)
 
-	if rt.peerSearcher != nil {
-		searchPeerResult := rt.peerSearcher.SearchPeer(taskID)
-		switch searchPeerResult.Type {
-		case pex.SearchPeerResultTypeLocal:
-			log.Debugf("local peer exists")
-			goto local
-		case pex.SearchPeerResultTypeReplica:
-			log.Debugf("make replica from other peers")
-			goto local
-		case pex.SearchPeerResultTypeNotFound:
-			log.Debugf("no available peer after search peer")
-			goto local
-		case pex.SearchPeerResultTypeRemote:
-			resp, err := rt.proxyToPeers(log, req, searchPeerResult.Peers)
-			if err == nil {
-				return resp, nil
-			}
-			log.Warnf("proxy to other peers error: %s, fallback to local", err)
+	// check whether the request is forwarded to avoid infinity forward
+	if rt.peerSearcher != nil && forwarded == "" {
+		resp := rt.tryProxyToPeers(log, req, streamTaskRequest)
+		if resp != nil {
+			return resp, nil
 		}
 	}
 
-local:
 	body, attr, err := rt.peerTaskManager.StartStreamTask(ctx, streamTaskRequest)
 	if err != nil {
 		log.Errorf("start stream task error: %v", err)
@@ -424,6 +411,50 @@ local:
 		ProtoMinor: req.ProtoMinor,
 	}
 	return resp, nil
+}
+
+func (rt *transport) tryProxyToPeers(
+	log *logger.SugaredLoggerOnWith,
+	request *http.Request,
+	taskRequest *peer.StreamTaskRequest) (resp *http.Response) {
+	// search normal peers
+	resp = rt.searchPeers(log, request, taskRequest.TaskID(), taskRequest.PeerID)
+	if resp != nil {
+		return resp
+	}
+	// search parent peers
+	if taskRequest.HasParentTask() {
+		parentTaskID := taskRequest.ParentTaskID()
+		resp = rt.searchPeers(log, request, parentTaskID, taskRequest.PeerID)
+		if resp != nil {
+			log.Debugf("proxy to parent task %s done", parentTaskID)
+			return resp
+		}
+	}
+	return nil
+}
+
+func (rt *transport) searchPeers(log *logger.SugaredLoggerOnWith, request *http.Request, taskID, sourcePeerID string) *http.Response {
+	searchPeerResult := rt.peerSearcher.SearchPeer(taskID)
+	switch searchPeerResult.Type {
+	case pex.SearchPeerResultTypeLocal:
+		log.Debugf("local peer exists")
+	case pex.SearchPeerResultTypeReplica:
+		log.Debugf("make replica from other peers")
+	case pex.SearchPeerResultTypeNotFound:
+		log.Debugf("no available peer after search peer")
+	case pex.SearchPeerResultTypeRemote:
+		// mark request is already forwarded to avoid infinity forward
+		request.Header.Set(config.HeaderDragonflyForwardedFrom, sourcePeerID)
+		resp, err := rt.proxyToPeers(log, request, searchPeerResult.Peers)
+		if err == nil {
+			return resp
+		}
+		// forward failed, remove marked header
+		request.Header.Del(config.HeaderDragonflyForwardedFrom)
+		log.Warnf("proxy to other peers error: %s, fallback to local", err)
+	}
+	return nil
 }
 
 func (rt *transport) proxyToPeers(log *logger.SugaredLoggerOnWith, req *http.Request, peers []*pex.DestPeer) (*http.Response, error) {
