@@ -758,7 +758,7 @@ func hardlink(log *logger.SugaredLoggerOnWith, dst, src string) error {
 	}
 
 	srcSysStat, ok := srcStat.Sys().(*syscall.Stat_t)
-	if ok {
+	if !ok {
 		log.Errorf("can not get inode for %q", src)
 		return err
 	}
