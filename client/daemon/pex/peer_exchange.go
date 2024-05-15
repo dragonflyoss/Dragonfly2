@@ -43,9 +43,10 @@ type peerExchange struct {
 }
 
 type peerExchangeConfig struct {
-	initialRetryInterval time.Duration
-	reSyncInterval       time.Duration
-	replicaThreshold     int
+	initialRetryInterval   time.Duration
+	reSyncInterval         time.Duration
+	replicaThreshold       int
+	replicaCleanPercentage int32
 }
 
 func WithName(name string) func(*memberlist.Config, *peerExchangeConfig) {
@@ -98,6 +99,14 @@ func WithReplicaThreshold(threshold int) func(*memberlist.Config, *peerExchangeC
 	return func(memberConfig *memberlist.Config, pexConfig *peerExchangeConfig) {
 		if threshold > 0 {
 			pexConfig.replicaThreshold = threshold
+		}
+	}
+}
+
+func WithReplicaCleanPercentage(percentage int32) func(*memberlist.Config, *peerExchangeConfig) {
+	return func(memberConfig *memberlist.Config, pexConfig *peerExchangeConfig) {
+		if percentage > 0 {
+			pexConfig.replicaCleanPercentage = percentage
 		}
 	}
 }
@@ -168,7 +177,11 @@ func (p *peerExchange) SearchPeer(task string) SearchPeerResult {
 	case SearchPeerResultTypeLocal:
 		// check replica threshold and reclaim local cache
 		if len(searchPeerResult.Peers) > p.config.replicaThreshold {
-			p.tryReclaim(task, searchPeerResult)
+			if p.tryReclaim(task, searchPeerResult) {
+				// change result type to remote and drop local peer
+				searchPeerResult.Type = SearchPeerResultTypeRemote
+				searchPeerResult.Peers = searchPeerResult.Peers[1:]
+			}
 		}
 	case SearchPeerResultTypeRemote:
 		if len(searchPeerResult.Peers) < p.config.replicaThreshold {
@@ -179,18 +192,24 @@ func (p *peerExchange) SearchPeer(task string) SearchPeerResult {
 	return searchPeerResult
 }
 
-func (p *peerExchange) tryReclaim(task string, searchPeerResult SearchPeerResult) {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	// reclaim with 1% probability for shrink double reclaim with other members
-	if r.Int31n(100) == 0 {
-		peer := searchPeerResult.Peers[0].PeerID
-		searchPeerResult.Type = SearchPeerResultTypeRemote
-		p.memberManager.logger.Debugf("task %s replica threshold reached, try to reclaim local peer cache %s", task, peer)
-		err := p.reclaim(task, peer)
-		if err != nil {
-			p.memberManager.logger.Warnf("task %s peer %s reclaim local cache error: %s", task, peer, err)
-		}
+func (p *peerExchange) tryReclaim(task string, searchPeerResult SearchPeerResult) bool {
+	if p.config.replicaCleanPercentage == 0 {
+		return false
 	}
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	// reclaim with probability for shrink double reclaim with other members
+	// Int31n is [0, n), +1 for percentage [1, 100]
+	if r.Int31n(100)+1 > p.config.replicaCleanPercentage {
+		return false
+	}
+	// peer 0 is always local peer
+	peer := searchPeerResult.Peers[0].PeerID
+	p.memberManager.logger.Debugf("task %s replica threshold reached, try to reclaim local peer cache %s", task, peer)
+	err := p.reclaim(task, peer)
+	if err != nil {
+		p.memberManager.logger.Warnf("task %s peer %s reclaim local cache error: %s", task, peer, err)
+	}
+	return true
 }
 
 func (p *peerExchange) BroadcastPeer(data *dfdaemonv1.PeerMetadata) {
