@@ -139,6 +139,7 @@ func NewPeerExchange(
 	logger.Infof("peer exchange initial retry interval: %s", pexConfig.initialRetryInterval)
 	logger.Infof("peer exchange re-sync interval: %s", pexConfig.reSyncInterval)
 	logger.Infof("peer exchange replica threshold: %d", pexConfig.replicaThreshold)
+	logger.Infof("peer exchange replica clean percentage: %d", pexConfig.replicaCleanPercentage)
 
 	pex := &peerExchange{
 		config:        pexConfig,
