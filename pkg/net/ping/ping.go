@@ -45,9 +45,7 @@ func Ping(addr string) (*ping.Statistics, error) {
 
 	// SetPrivileged sets the type of ping pinger will send.
 	// true means pinger will send a "privileged" raw ICMP ping.
-	// false means pinger will send an "unprivileged" UDP ping.
-	// NOTE: setting to true requires that it be run with super-user privileges.
-	pinger.SetPrivileged(false)
+	pinger.SetPrivileged(true)
 	if err := pinger.Run(); err != nil {
 		return nil, err
 	}
