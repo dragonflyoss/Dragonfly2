@@ -134,6 +134,9 @@ type V2 interface {
 	// Checks information of task.
 	StatTask(context.Context, *schedulerv2.StatTaskRequest, ...grpc.CallOption) (*commonv2.Task, error)
 
+	// LeaveTask releases task in scheduler.
+	LeaveTask(context.Context, *schedulerv2.LeaveTaskRequest, ...grpc.CallOption) error
+
 	// AnnounceHost announces host to scheduler.
 	AnnounceHost(context.Context, *schedulerv2.AnnounceHostRequest, ...grpc.CallOption) error
 
@@ -213,6 +216,20 @@ func (v *v2) StatTask(ctx context.Context, req *schedulerv2.StatTaskRequest, opt
 		req,
 		opts...,
 	)
+}
+
+// LeaveTask releases task in scheduler.
+func (v *v2) LeaveTask(ctx context.Context, req *schedulerv2.LeaveTaskRequest, opts ...grpc.CallOption) error {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
+	_, err := v.SchedulerClient.LeaveTask(
+		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
+		req,
+		opts...,
+	)
+
+	return err
 }
 
 // AnnounceHost announces host to scheduler.
