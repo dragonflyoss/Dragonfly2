@@ -20,7 +20,6 @@ package networktopology
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"sync"
 	"time"
@@ -157,6 +156,8 @@ func (nt *networkTopology) pingHosts(destHosts []*v1.Host) ([]*schedulerv1.Probe
 	var (
 		probes       []*schedulerv1.Probe
 		failedProbes []*schedulerv1.FailedProbe
+		probesMu     sync.Mutex
+		failProbesMu sync.Mutex
 	)
 
 	wg := &sync.WaitGroup{}
@@ -170,8 +171,8 @@ func (nt *networkTopology) pingHosts(destHosts []*v1.Host) ([]*schedulerv1.Probe
 			}
 
 			stats, err := ping.Ping(destHost.Ip)
-			fmt.Println(err)
 			if err != nil {
+				failProbesMu.Lock()
 				failedProbes = append(failedProbes, &schedulerv1.FailedProbe{
 					Host: &v1.Host{
 						Id:           destHost.Id,
@@ -184,10 +185,12 @@ func (nt *networkTopology) pingHosts(destHosts []*v1.Host) ([]*schedulerv1.Probe
 					},
 					Description: err.Error(),
 				})
+				failProbesMu.Unlock()
 
 				return
 			}
 
+			probesMu.Lock()
 			probes = append(probes, &schedulerv1.Probe{
 				Host: &v1.Host{
 					Id:           destHost.Id,
@@ -201,6 +204,7 @@ func (nt *networkTopology) pingHosts(destHosts []*v1.Host) ([]*schedulerv1.Probe
 				Rtt:       durationpb.New(stats.AvgRtt),
 				CreatedAt: timestamppb.New(time.Now()),
 			})
+			probesMu.Unlock()
 		}(destHost)
 	}
 
