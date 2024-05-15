@@ -73,7 +73,7 @@ type DynconfigInterface interface {
 	// GetSeedPeers returns the dynamic seed peers config from manager.
 	GetSeedPeers() ([]*managerv2.SeedPeer, error)
 
-	// GetSchedulerCluster returns the the scheduler cluster config from manager.
+	// GetSchedulerCluster returns the scheduler cluster config from manager.
 	GetSchedulerCluster() (*managerv2.SchedulerCluster, error)
 
 	// GetSchedulerClusterConfig returns the scheduler cluster config.
@@ -162,7 +162,7 @@ func NewDynconfig(rawManagerClient managerclient.V2, cacheDir string, cfg *Confi
 	return d, nil
 }
 
-// GetResolveSeedPeerAddrs returns the the schedulers resolve addrs.
+// GetResolveSeedPeerAddrs returns the schedulers resolve addrs.
 func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 	seedPeers, err := d.GetSeedPeers()
 	if err != nil {
@@ -257,7 +257,7 @@ func (d *dynconfig) GetApplications() ([]*managerv2.Application, error) {
 	return data.Applications, nil
 }
 
-// GetSeedPeers returns the the seed peers config from manager.
+// GetSeedPeers returns the seed peers config from manager.
 func (d *dynconfig) GetSeedPeers() ([]*managerv2.SeedPeer, error) {
 	scheduler, err := d.GetScheduler()
 	if err != nil {
@@ -271,7 +271,7 @@ func (d *dynconfig) GetSeedPeers() ([]*managerv2.SeedPeer, error) {
 	return scheduler.SeedPeers, nil
 }
 
-// GetSchedulerCluster returns the the scheduler cluster config from manager.
+// GetSchedulerCluster returns the scheduler cluster config from manager.
 func (d *dynconfig) GetSchedulerCluster() (*managerv2.SchedulerCluster, error) {
 	scheduler, err := d.GetScheduler()
 	if err != nil {
