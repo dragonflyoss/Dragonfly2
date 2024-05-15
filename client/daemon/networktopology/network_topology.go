@@ -32,6 +32,7 @@ import (
 
 	"d7y.io/dragonfly/v2/client/config"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/net/ping"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
@@ -154,9 +155,8 @@ func (nt *networkTopology) syncProbes() error {
 // we will send the probe result to the scheduler.
 func (nt *networkTopology) pingHosts(destHosts []*v1.Host) ([]*schedulerv1.Probe, []*schedulerv1.FailedProbe) {
 	var (
-		probes       []*schedulerv1.Probe
-		failedProbes []*schedulerv1.FailedProbe
-		mu           sync.Mutex
+		probes       = set.NewSafeSet[*schedulerv1.Probe]()
+		failedProbes = set.NewSafeSet[*schedulerv1.FailedProbe]()
 	)
 
 	wg := &sync.WaitGroup{}
@@ -167,8 +167,7 @@ func (nt *networkTopology) pingHosts(destHosts []*v1.Host) ([]*schedulerv1.Probe
 
 			stats, err := ping.Ping(destHost.Ip)
 			if err != nil {
-				mu.Lock()
-				failedProbes = append(failedProbes, &schedulerv1.FailedProbe{
+				failedProbes.Add(&schedulerv1.FailedProbe{
 					Host: &v1.Host{
 						Id:           destHost.Id,
 						Ip:           destHost.Ip,
@@ -180,13 +179,11 @@ func (nt *networkTopology) pingHosts(destHosts []*v1.Host) ([]*schedulerv1.Probe
 					},
 					Description: err.Error(),
 				})
-				mu.Unlock()
 
 				return
 			}
 
-			mu.Lock()
-			probes = append(probes, &schedulerv1.Probe{
+			probes.Add(&schedulerv1.Probe{
 				Host: &v1.Host{
 					Id:           destHost.Id,
 					Ip:           destHost.Ip,
@@ -199,10 +196,9 @@ func (nt *networkTopology) pingHosts(destHosts []*v1.Host) ([]*schedulerv1.Probe
 				Rtt:       durationpb.New(stats.AvgRtt),
 				CreatedAt: timestamppb.New(time.Now()),
 			})
-			mu.Unlock()
 		}(destHost)
 	}
 
 	wg.Wait()
-	return probes, failedProbes
+	return probes.Values(), failedProbes.Values()
 }
