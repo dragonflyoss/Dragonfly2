@@ -530,6 +530,17 @@ func TestNetworkTopology_pingHosts(t *testing.T) {
 				assert.Equal(len(failProbes), 0)
 			},
 		},
+		{
+			name:      "dest hosts has null pointer",
+			destHosts: []*v1.Host{nil},
+			expect: func(t *testing.T, n NetworkTopology, err error, destHosts []*v1.Host) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				probes, failProbes := n.(*networkTopology).pingHosts(destHosts)
+				assert.Equal(len(probes), 0)
+				assert.Equal(len(failProbes), 0)
+			},
+		},
 	}
 
 	for _, tc := range tests {

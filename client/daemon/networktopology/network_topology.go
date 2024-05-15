@@ -20,6 +20,7 @@ package networktopology
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sync"
 	"time"
@@ -164,7 +165,12 @@ func (nt *networkTopology) pingHosts(destHosts []*v1.Host) ([]*schedulerv1.Probe
 		go func(destHost *v1.Host) {
 			defer wg.Done()
 
+			if destHost == nil {
+				return
+			}
+
 			stats, err := ping.Ping(destHost.Ip)
+			fmt.Println(err)
 			if err != nil {
 				failedProbes = append(failedProbes, &schedulerv1.FailedProbe{
 					Host: &v1.Host{
