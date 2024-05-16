@@ -257,7 +257,8 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			},
 			pex.WithInitialRetryInterval(opt.PeerExchange.InitialInterval),
 			pex.WithReSyncInterval(opt.PeerExchange.ReSyncInterval),
-			pex.WithReplicaThreshold(opt.PeerExchange.ReplicaThreshold))
+			pex.WithReplicaThreshold(opt.PeerExchange.ReplicaThreshold),
+			pex.WithReplicaCleanPercentage(opt.PeerExchange.ReplicaCleanPercentage))
 		if err != nil {
 			return nil, err
 		}
