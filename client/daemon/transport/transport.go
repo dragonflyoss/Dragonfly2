@@ -178,13 +178,11 @@ func peerProxyCacheLoaderFunc(c *ttlcache.Cache[string, *http.Transport], hostPo
 	}
 	roundTripper := &http.Transport{
 		Proxy: http.ProxyURL(proxyURL),
-		DialContext: func(dialer *net.Dialer) func(context.Context, string, string) (net.Conn, error) {
-			return dialer.DialContext
-		}(&net.Dialer{
+		DialContext: (&net.Dialer{
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,
-		}),
-		MaxIdleConns:          100,
+		}).DialContext,
+		MaxIdleConns:          1000,
 		IdleConnTimeout:       90 * time.Second,
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
@@ -310,7 +308,7 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 	filter := nethttp.PickHeader(req.Header, config.HeaderDragonflyFilter, rt.defaultFilter)
 	tag := nethttp.PickHeader(req.Header, config.HeaderDragonflyTag, rt.defaultTag)
 	application := nethttp.PickHeader(req.Header, config.HeaderDragonflyApplication, rt.defaultApplication)
-	forwarded := nethttp.PickHeader(req.Header, config.HeaderDragonflyForwardedFrom, "")
+	forwarded := nethttp.PickHeader(req.Header, config.HeaderDragonflyForwardedFor, "")
 	var priority = rt.defaultPriority
 	priorityString := nethttp.PickHeader(req.Header, config.HeaderDragonflyPriority, fmt.Sprintf("%d", rt.defaultPriority))
 	priorityInt, err := strconv.ParseInt(priorityString, 10, 32)
@@ -445,13 +443,13 @@ func (rt *transport) searchPeers(log *logger.SugaredLoggerOnWith, request *http.
 		log.Debugf("no available peer after search peer")
 	case pex.SearchPeerResultTypeRemote:
 		// mark request is already forwarded to avoid infinity forward
-		request.Header.Set(config.HeaderDragonflyForwardedFrom, sourcePeerID)
+		request.Header.Set(config.HeaderDragonflyForwardedFor, sourcePeerID)
 		resp, err := rt.proxyToPeers(log, request, searchPeerResult.Peers)
 		if err == nil {
 			return resp
 		}
 		// forward failed, remove marked header
-		request.Header.Del(config.HeaderDragonflyForwardedFrom)
+		request.Header.Del(config.HeaderDragonflyForwardedFor)
 		log.Warnf("proxy to other peers error: %s, fallback to local", err)
 	}
 	return nil
