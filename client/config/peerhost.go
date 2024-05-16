@@ -983,4 +983,6 @@ type PeerExchangeOption struct {
 	ReSyncInterval time.Duration `mapstructure:"reSyncInterval" yaml:"reSyncInterval"`
 	// ReplicaThreshold is used for keeping replicas in all peers is not bigger than threshold to save storage
 	ReplicaThreshold int `mapstructure:"replicaThreshold" yaml:"replicaThreshold"`
+	// ReplicaCleanPercentage is percentage probability to clean local replica when reach threshold, available values: [0, 100]
+	ReplicaCleanPercentage int32 `mapstructure:"replicaCleanPercentage" yaml:"replicaCleanPercentage"`
 }
