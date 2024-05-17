@@ -124,6 +124,19 @@ func (s *schedulerServerV2) StatTask(ctx context.Context, req *schedulerv2.StatT
 	return resp, nil
 }
 
+// LeaveTask releases task in scheduler.
+func (s *schedulerServerV2) LeaveTask(ctx context.Context, req *schedulerv2.LeaveTaskRequest) (*emptypb.Empty, error) {
+	// Collect LeaseTaskCount metrics.
+	metrics.LeaveTaskCount.Inc()
+	if err := s.service.LeaveTask(ctx, req); err != nil {
+		// Collect LeaseTaskFailureCount metrics.
+		metrics.LeaveTaskFailureCount.Inc()
+		return nil, err
+	}
+
+	return new(emptypb.Empty), nil
+}
+
 // AnnounceHost announces host to scheduler.
 func (s *schedulerServerV2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequest) (*emptypb.Empty, error) {
 	// Collect AnnounceHostCount metrics.

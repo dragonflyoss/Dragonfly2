@@ -152,6 +152,25 @@ func (mr *MockV2MockRecorder) LeavePeer(arg0, arg1 any, arg2 ...any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LeavePeer", reflect.TypeOf((*MockV2)(nil).LeavePeer), varargs...)
 }
 
+// LeaveTask mocks base method.
+func (m *MockV2) LeaveTask(arg0 context.Context, arg1 *scheduler.LeaveTaskRequest, arg2 ...grpc.CallOption) error {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "LeaveTask", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// LeaveTask indicates an expected call of LeaveTask.
+func (mr *MockV2MockRecorder) LeaveTask(arg0, arg1 any, arg2 ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LeaveTask", reflect.TypeOf((*MockV2)(nil).LeaveTask), varargs...)
+}
+
 // StatPeer mocks base method.
 func (m *MockV2) StatPeer(arg0 context.Context, arg1 *scheduler.StatPeerRequest, arg2 ...grpc.CallOption) (*common.Peer, error) {
 	m.ctrl.T.Helper()

@@ -462,6 +462,39 @@ func (v *V2) StatTask(ctx context.Context, req *schedulerv2.StatTaskRequest) (*c
 	return resp, nil
 }
 
+// LeaveTask releases task in scheduler.
+func (v *V2) LeaveTask(ctx context.Context, req *schedulerv2.LeaveTaskRequest) error {
+	log := logger.WithHostAndTaskID(req.GetHostId(), req.GetTaskId())
+	log.Infof("leave task request: %#v", req)
+
+	host, loaded := v.resource.HostManager().Load(req.GetHostId())
+	if !loaded {
+		msg := fmt.Sprintf("host %s not found", req.GetHostId())
+		log.Error(msg)
+		return status.Error(codes.NotFound, msg)
+	}
+
+	host.Peers.Range(func(key, value any) bool {
+		peer, ok := value.(*resource.Peer)
+		if !ok {
+			host.Log.Errorf("invalid peer %s %#v", key, value)
+			return true
+		}
+
+		if peer.Task.ID == req.GetTaskId() {
+			if err := peer.FSM.Event(ctx, resource.PeerEventLeave); err != nil {
+				msg := fmt.Sprintf("peer fsm event failed: %s", err.Error())
+				peer.Log.Error(msg)
+				return true
+			}
+		}
+
+		return true
+	})
+
+	return nil
+}
+
 // AnnounceHost announces host to scheduler.
 func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequest) error {
 	logger.WithHostID(req.Host.GetId()).Infof("announce host request: %#v", req.GetHost())

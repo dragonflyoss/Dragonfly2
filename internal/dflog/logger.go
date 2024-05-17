@@ -171,6 +171,12 @@ func WithTaskAndPeerID(taskID, peerID string) *SugaredLoggerOnWith {
 	}
 }
 
+func WithHostAndTaskID(hostID, taskID string) *SugaredLoggerOnWith {
+	return &SugaredLoggerOnWith{
+		withArgs: []any{"hostID", hostID, "taskID", taskID},
+	}
+}
+
 func WithHostnameAndIP(hostname, ip string) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
 		withArgs: []any{"hostname", hostname, "ip", ip},

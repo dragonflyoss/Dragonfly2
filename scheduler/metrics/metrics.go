@@ -194,6 +194,20 @@ var (
 		Help:      "Counter of the number of failed of the stat task.",
 	})
 
+	LeaveTaskCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "leave_task_total",
+		Help:      "Counter of the number of the leaving task.",
+	})
+
+	LeaveTaskFailureCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "leave_task_failure_total",
+		Help:      "Counter of the number of failed of the leaving task.",
+	})
+
 	AnnounceHostCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
