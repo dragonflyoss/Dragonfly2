@@ -469,8 +469,8 @@ github.com/gin-contrib/static v1.1.2/go.mod h1:Fw90ozjHCmZBWbgrsqrDvO28YbhKEKzKp
 github.com/gin-contrib/zap v1.1.1 h1:DDyIF9YQorl3gZzAabIowRywHJuohDfiLnhwvWKl6SY=
 github.com/gin-contrib/zap v1.1.1/go.mod h1:YW8KOko2kYLy8g6k9YgVNTj7SIcrUEzYiAd9IjiBPs0=
 github.com/gin-gonic/gin v1.8.1/go.mod h1:ji8BvRH1azfM+SYow9zQ6SZMvR8qOMZHmsCuWR9tTTk=
-github.com/gin-gonic/gin v1.9.1 h1:4idEAncQnU5cB7BeOkPtxjfCSye0AAm1R0RVIqJ+Jmg=
-github.com/gin-gonic/gin v1.9.1/go.mod h1:hPrL7YrpYKXt5YId3A/Tnip5kqbEAP+KLuI3SUcPTeU=
+github.com/gin-gonic/gin v1.10.0 h1:nTuyha1TYqgedzytsKYqna+DfLos46nTv2ygFy86HFU=
+github.com/gin-gonic/gin v1.10.0/go.mod h1:4PMNQiOhvDRa013RKVbsiNwoyezlm2rm0uX/T7kzp5Y=
 github.com/go-asn1-ber/asn1-ber v1.3.1/go.mod h1:hEBeB/ic+5LoWskz+yKT7vGhhPYkProFKoKdwZRWMe0=
 github.com/go-echarts/go-echarts/v2 v2.2.3/go.mod h1:6TOomEztzGDVDkOSCFBq3ed7xOYfbOqhaBzD0YV771A=
 github.com/go-echarts/go-echarts/v2 v2.2.4 h1:SKJpdyNIyD65XjbUZjzg6SwccTNXEgmh+PlaO23g2H0=
