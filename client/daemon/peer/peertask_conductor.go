@@ -279,17 +279,19 @@ func (pt *peerTaskConductor) register() error {
 			pt.Errorf("scheduler did not response in %s", pt.SchedulerOption.ScheduleTimeout.Duration)
 		}
 		pt.Errorf("step 1: peer %s register failed: %s", pt.request.PeerId, err)
+		// can not detect source or scheduler error, create a new dummy scheduler client
+		pt.schedulerClient = &dummySchedulerClient{}
+		// when peer register failed, some actions need to do with peerPacketStream
+		pt.peerPacketStream = &dummyPeerPacketStream{}
+
 		if pt.SchedulerOption.DisableAutoBackSource {
-			// when peer register failed, some actions need to do with peerPacketStream
-			pt.peerPacketStream = &dummyPeerPacketStream{}
 			pt.Errorf("register peer task failed: %s, peer id: %s, auto back source disabled", err, pt.request.PeerId)
 			pt.span.RecordError(err)
 			pt.cancel(commonv1.Code_SchedError, err.Error())
 			return err
 		}
+
 		needBackSource = true
-		// can not detect source or scheduler error, create a new dummy scheduler client
-		pt.schedulerClient = &dummySchedulerClient{}
 		result = &schedulerv1.RegisterResult{TaskId: pt.taskID}
 		pt.Warnf("register peer task failed: %s, peer id: %s, try to back source", err, pt.request.PeerId)
 	} else {
