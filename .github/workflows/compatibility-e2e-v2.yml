@@ -28,19 +28,19 @@ jobs:
         include:
           - module: manager
             image: manager
-            image-tag: v2.1.45
+            image-tag: v2.1.46
             chart-name: manager
           - module: scheduler
             image: scheduler
-            image-tag: v2.1.45
+            image-tag: v2.1.46
             chart-name: scheduler
           - module: client
             image: client
-            image-tag: v0.1.51
+            image-tag: v0.1.71
             chart-name: client
           - module: seed-client
             image: client
-            image-tag: v0.1.51
+            image-tag: v0.1.71
             chart-name: seed-client
 
     steps:
