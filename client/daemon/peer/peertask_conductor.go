@@ -1090,7 +1090,7 @@ func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPiec
 
 	var cleanRunningPieceDone bool
 	cleanRunningPiece := func() {
-		if cleanRunningPieceDone {
+		if !cleanRunningPieceDone {
 			cleanRunningPieceDone = true
 			pt.runningPiecesLock.Lock()
 			pt.runningPieces.Clean(request.piece.PieceNum)
