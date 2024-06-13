@@ -49,5 +49,5 @@ type GetSeedPeerClustersQuery struct {
 }
 
 type SeedPeerClusterConfig struct {
-	LoadLimit uint32 `yaml:"loadLimit" mapstructure:"loadLimit" json:"load_limit" binding:"omitempty,gte=1,lte=5000"`
+	LoadLimit uint32 `yaml:"loadLimit" mapstructure:"loadLimit" json:"load_limit" binding:"omitempty,gte=1,lte=50000"`
 }
