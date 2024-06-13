@@ -278,8 +278,9 @@ func (t *Task) AddPeerEdge(fromPeer *Peer, toPeer *Peer) error {
 		return err
 	}
 
-	fromPeer.Host.ConcurrentUploadCount.Inc()
 	fromPeer.Host.UploadCount.Inc()
+	fromPeer.Host.ConcurrentUploadCount.Inc()
+	t.Log.Infof("increment %s concurrent upload count, because of add edge from %s to %s", fromPeer.Host.ID, fromPeer.ID, toPeer.ID)
 	return nil
 }
 
@@ -296,6 +297,7 @@ func (t *Task) DeletePeerInEdges(key string) error {
 		}
 
 		parent.Value.Host.ConcurrentUploadCount.Dec()
+		t.Log.Infof("decrement %s concurrent upload count, because of delete edge from %s to %s", parent.Value.Host.ID, parent.Value.ID, key)
 	}
 
 	if err := t.DAG.DeleteVertexInEdges(key); err != nil {
@@ -317,6 +319,7 @@ func (t *Task) DeletePeerOutEdges(key string) error {
 		return errors.New("vertex value is nil")
 	}
 	peer.Host.ConcurrentUploadCount.Sub(int32(vertex.Children.Len()))
+	t.Log.Infof("decrement %s concurrent upload count %d, because of delete out edge from %s", peer.Host.ID, vertex.Children.Len(), key)
 
 	if err := t.DAG.DeleteVertexOutEdges(key); err != nil {
 		return err

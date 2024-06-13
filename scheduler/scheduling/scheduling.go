@@ -512,7 +512,7 @@ func (s *scheduling) filterCandidateParents(peer *resource.Peer, blocklist set.S
 	for _, candidateParent := range peer.Task.LoadRandomPeers(uint(filterParentLimit)) {
 		// Candidate parent is in blocklist.
 		if blocklist.Contains(candidateParent.ID) {
-			peer.Log.Debugf("parent %s is not selected because it is in blocklist", candidateParent.ID)
+			peer.Log.Debugf("parent %s host %s is not selected because it is in blocklist", candidateParent.ID, candidateParent.Host.ID)
 			continue
 		}
 
@@ -527,7 +527,7 @@ func (s *scheduling) filterCandidateParents(peer *resource.Peer, blocklist set.S
 		// Candidate parent can not find in dag.
 		inDegree, err := peer.Task.PeerInDegree(candidateParent.ID)
 		if err != nil {
-			peer.Log.Debugf("can not find parent %s vertex in dag", candidateParent.ID)
+			peer.Log.Debugf("can not find parent %s host %s vertex in dag", candidateParent.ID, candidateParent.Host.ID)
 			continue
 		}
 
@@ -538,27 +538,27 @@ func (s *scheduling) filterCandidateParents(peer *resource.Peer, blocklist set.S
 		// Condition 4: Parent is seed peer.
 		if candidateParent.Host.Type == types.HostTypeNormal && inDegree == 0 && !candidateParent.FSM.Is(resource.PeerStateBackToSource) &&
 			!candidateParent.FSM.Is(resource.PeerStateSucceeded) {
-			peer.Log.Debugf("parent %s is not selected, because its download state is %d %d %s",
-				candidateParent.ID, inDegree, int(candidateParent.Host.Type), candidateParent.FSM.Current())
+			peer.Log.Debugf("parent %s host %s is not selected, because its download state is %d %d %s",
+				candidateParent.ID, candidateParent.Host.ID, inDegree, int(candidateParent.Host.Type), candidateParent.FSM.Current())
 			continue
 		}
 
 		// Candidate parent is bad node.
 		if s.evaluator.IsBadNode(candidateParent) {
-			peer.Log.Debugf("parent %s is not selected because it is bad node", candidateParent.ID)
+			peer.Log.Debugf("parent %s host %s is not selected because it is bad node", candidateParent.ID, candidateParent.Host.ID)
 			continue
 		}
 
 		// Candidate parent's free upload is empty.
 		if candidateParent.Host.FreeUploadCount() <= 0 {
-			peer.Log.Debugf("parent %s is not selected because its free upload is empty, upload limit is %d, upload count is %d",
-				candidateParent.ID, candidateParent.Host.ConcurrentUploadLimit.Load(), candidateParent.Host.ConcurrentUploadCount.Load())
+			peer.Log.Debugf("parent %s host %s is not selected because its free upload is empty, upload limit is %d, upload count is %d",
+				candidateParent.ID, candidateParent.Host.ID, candidateParent.Host.ConcurrentUploadLimit.Load(), candidateParent.Host.ConcurrentUploadCount.Load())
 			continue
 		}
 
 		// Candidate parent can add edge with peer.
 		if !peer.Task.CanAddPeerEdge(candidateParent.ID, peer.ID) {
-			peer.Log.Debugf("can not add edge with parent %s", candidateParent.ID)
+			peer.Log.Debugf("can not add edge with parent %s host %s", candidateParent.ID, candidateParent.Host.ID)
 			continue
 		}
 
