@@ -499,10 +499,14 @@ func (v *V2) LeaveTask(ctx context.Context, req *schedulerv2.LeaveTaskRequest) e
 func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequest) error {
 	logger.WithHostID(req.Host.GetId()).Infof("announce host request: %#v", req.GetHost())
 
-	// Get scheduler cluster client config by manager.
+	// Get scheduler cluster client config by manager. If the host is a seed client, set
+	// the concurrent upload limit when refresh the dynconfig in
+	// scheudler/resource/seed_peer_client.go.
 	var concurrentUploadLimit int32
-	if clientConfig, err := v.dynconfig.GetSchedulerClusterClientConfig(); err == nil {
-		concurrentUploadLimit = int32(clientConfig.LoadLimit)
+	if types.HostType(req.Host.GetType()) == types.HostTypeNormal {
+		if clientConfig, err := v.dynconfig.GetSchedulerClusterClientConfig(); err == nil {
+			concurrentUploadLimit = int32(clientConfig.LoadLimit)
+		}
 	}
 
 	host, loaded := v.resource.HostManager().Load(req.Host.GetId())

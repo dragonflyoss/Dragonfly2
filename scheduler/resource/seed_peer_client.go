@@ -83,7 +83,6 @@ func newSeedPeerClient(dynconfig config.DynconfigInterface, hostManager HostMana
 	if err != nil {
 		return nil, err
 	}
-
 	logger.Infof("cdnsystemClient: %#v", cdnsystemClient)
 
 	// Initialize dfdaemon v2 grpc client.
