@@ -25,7 +25,7 @@ import (
 
 const (
 	// DefaultSeedPeerConcurrentUploadLimit is default number for seed peer concurrent upload limit.
-	DefaultSeedPeerConcurrentUploadLimit = 800
+	DefaultSeedPeerConcurrentUploadLimit = 2000
 
 	// DefaultPeerConcurrentUploadLimit is default number for peer concurrent upload limit.
 	DefaultPeerConcurrentUploadLimit = 200
