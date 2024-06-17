@@ -147,7 +147,7 @@ func TestServiceV2_StatPeer(t *testing.T) {
 						Application:         &peer.Task.Application,
 						FilteredQueryParams: peer.Task.FilteredQueryParams,
 						RequestHeader:       peer.Task.Header,
-						PieceLength:         uint32(peer.Task.PieceLength),
+						PieceLength:         uint64(peer.Task.PieceLength),
 						ContentLength:       uint64(peer.Task.ContentLength.Load()),
 						PieceCount:          uint32(peer.Task.TotalPieceCount.Load()),
 						SizeScope:           peer.Task.SizeScope(),
@@ -261,7 +261,7 @@ func TestServiceV2_StatPeer(t *testing.T) {
 	}
 }
 
-func TestServiceV2_LeavePeer(t *testing.T) {
+func TestServiceV2_DeletePeer(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder)
@@ -327,7 +327,7 @@ func TestServiceV2_LeavePeer(t *testing.T) {
 			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, res, scheduling, dynconfig, storage, networkTopology)
 
 			tc.mock(peer, peerManager, res.EXPECT(), peerManager.EXPECT())
-			tc.expect(t, svc.LeavePeer(context.Background(), &schedulerv2.LeavePeerRequest{TaskId: mockTaskID, PeerId: mockPeerID}))
+			tc.expect(t, svc.DeletePeer(context.Background(), &schedulerv2.DeletePeerRequest{TaskId: mockTaskID, PeerId: mockPeerID}))
 		})
 	}
 }
@@ -373,7 +373,7 @@ func TestServiceV2_StatTask(t *testing.T) {
 					Application:         &task.Application,
 					FilteredQueryParams: task.FilteredQueryParams,
 					RequestHeader:       task.Header,
-					PieceLength:         uint32(task.PieceLength),
+					PieceLength:         uint64(task.PieceLength),
 					ContentLength:       uint64(task.ContentLength.Load()),
 					PieceCount:          uint32(task.TotalPieceCount.Load()),
 					SizeScope:           task.SizeScope(),
@@ -854,7 +854,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 	}
 }
 
-func TestServiceV2_LeaveHost(t *testing.T) {
+func TestServiceV2_DeleteHost(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mnt *networktopologymocks.MockNetworkTopologyMockRecorder)
@@ -924,7 +924,7 @@ func TestServiceV2_LeaveHost(t *testing.T) {
 			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, res, scheduling, dynconfig, storage, networkTopology)
 
 			tc.mock(host, mockPeer, hostManager, res.EXPECT(), hostManager.EXPECT(), networkTopology.EXPECT())
-			tc.expect(t, mockPeer, svc.LeaveHost(context.Background(), &schedulerv2.LeaveHostRequest{Id: mockHostID}))
+			tc.expect(t, mockPeer, svc.DeleteHost(context.Background(), &schedulerv2.DeleteHostRequest{Id: mockHostID}))
 		})
 	}
 }

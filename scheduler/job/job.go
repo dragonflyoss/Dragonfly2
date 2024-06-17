@@ -259,7 +259,7 @@ func (j *job) preheatV2(ctx context.Context, req *internaljob.PreheatRequest) er
 			Priority:            commonv2.Priority(req.Priority),
 			FilteredQueryParams: filteredQueryParams,
 			RequestHeader:       req.Headers,
-			PieceLength:         uint32(req.PieceLength),
+			PieceLength:         uint64(req.PieceLength),
 		}})
 	if err != nil {
 		logger.Errorf("preheat(v2) %s failed: %s", req.URL, err.Error())
