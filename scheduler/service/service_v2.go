@@ -262,7 +262,7 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 		Application:         &peer.Task.Application,
 		FilteredQueryParams: peer.Task.FilteredQueryParams,
 		RequestHeader:       peer.Task.Header,
-		PieceLength:         uint32(peer.Task.PieceLength),
+		PieceLength:         uint64(peer.Task.PieceLength),
 		ContentLength:       uint64(peer.Task.ContentLength.Load()),
 		PieceCount:          uint32(peer.Task.TotalPieceCount.Load()),
 		SizeScope:           peer.Task.SizeScope(),
@@ -370,10 +370,10 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 	return resp, nil
 }
 
-// LeavePeer releases peer in scheduler.
-func (v *V2) LeavePeer(ctx context.Context, req *schedulerv2.LeavePeerRequest) error {
+// DeletePeer releases peer in scheduler.
+func (v *V2) DeletePeer(ctx context.Context, req *schedulerv2.DeletePeerRequest) error {
 	log := logger.WithTaskAndPeerID(req.GetTaskId(), req.GetPeerId())
-	log.Infof("leave peer request: %#v", req)
+	log.Infof("delete peer request: %#v", req)
 
 	peer, loaded := v.resource.PeerManager().Load(req.GetPeerId())
 	if !loaded {
@@ -389,12 +389,6 @@ func (v *V2) LeavePeer(ctx context.Context, req *schedulerv2.LeavePeerRequest) e
 	}
 
 	return nil
-}
-
-// TODO Implement function.
-// ExchangePeer exchanges peer information.
-func (v *V2) ExchangePeer(ctx context.Context, req *schedulerv2.ExchangePeerRequest) (*schedulerv2.ExchangePeerResponse, error) {
-	return nil, nil
 }
 
 // StatTask checks information of task.
@@ -417,7 +411,7 @@ func (v *V2) StatTask(ctx context.Context, req *schedulerv2.StatTaskRequest) (*c
 		Application:         &task.Application,
 		FilteredQueryParams: task.FilteredQueryParams,
 		RequestHeader:       task.Header,
-		PieceLength:         uint32(task.PieceLength),
+		PieceLength:         uint64(task.PieceLength),
 		ContentLength:       uint64(task.ContentLength.Load()),
 		PieceCount:          uint32(task.TotalPieceCount.Load()),
 		SizeScope:           task.SizeScope(),
@@ -462,10 +456,10 @@ func (v *V2) StatTask(ctx context.Context, req *schedulerv2.StatTaskRequest) (*c
 	return resp, nil
 }
 
-// LeaveTask releases task in scheduler.
-func (v *V2) LeaveTask(ctx context.Context, req *schedulerv2.LeaveTaskRequest) error {
+// DeleteTask releases task in scheduler.
+func (v *V2) DeleteTask(ctx context.Context, req *schedulerv2.DeleteTaskRequest) error {
 	log := logger.WithHostAndTaskID(req.GetHostId(), req.GetTaskId())
-	log.Infof("leave task request: %#v", req)
+	log.Infof("delete task request: %#v", req)
 
 	host, loaded := v.resource.HostManager().Load(req.GetHostId())
 	if !loaded {
@@ -682,10 +676,10 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 	return nil
 }
 
-// LeaveHost releases host in scheduler.
-func (v *V2) LeaveHost(ctx context.Context, req *schedulerv2.LeaveHostRequest) error {
+// DeleteHost releases host in scheduler.
+func (v *V2) DeleteHost(ctx context.Context, req *schedulerv2.DeleteHostRequest) error {
 	log := logger.WithHostID(req.GetId())
-	log.Infof("leave host request: %#v", req)
+	log.Infof("delete host request: %#v", req)
 
 	host, loaded := v.resource.HostManager().Load(req.GetId())
 	if !loaded {

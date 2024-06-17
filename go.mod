@@ -3,7 +3,7 @@ module d7y.io/dragonfly/v2
 go 1.21
 
 require (
-	d7y.io/api/v2 v2.0.115
+	d7y.io/api/v2 v2.0.120
 	github.com/MysteriousPotato/go-lockable v1.0.0
 	github.com/RichardKnop/machinery v1.10.8
 	github.com/Showmax/go-fqdn v1.0.0
@@ -89,7 +89,7 @@ require (
 	golang.org/x/time v0.5.0
 	google.golang.org/api v0.183.0
 	google.golang.org/grpc v1.64.0
-	google.golang.org/protobuf v1.34.1
+	google.golang.org/protobuf v1.34.2
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/mysql v1.5.4

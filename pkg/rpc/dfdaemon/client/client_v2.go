@@ -28,6 +28,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
 
+	commonv2 "d7y.io/api/v2/pkg/apis/common/v2"
 	dfdaemonv2 "d7y.io/api/v2/pkg/apis/dfdaemon/v2"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -88,6 +89,15 @@ type V2 interface {
 	// DownloadTask downloads task from p2p network.
 	DownloadTask(context.Context, string, *dfdaemonv2.DownloadTaskRequest, ...grpc.CallOption) (dfdaemonv2.DfdaemonUpload_DownloadTaskClient, error)
 
+	// DownloadCacheTask downloads cache task from p2p network.
+	DownloadCacheTask(context.Context, *dfdaemonv2.DownloadCacheTaskRequest, ...grpc.CallOption) (dfdaemonv2.DfdaemonUpload_DownloadCacheTaskClient, error)
+
+	// StatCacheTask stats cache task information.
+	StatCacheTask(context.Context, *dfdaemonv2.StatCacheTaskRequest, ...grpc.CallOption) (*commonv2.CacheTask, error)
+
+	// DeleteCacheTask deletes cache task from p2p network.
+	DeleteCacheTask(context.Context, *dfdaemonv2.DeleteCacheTaskRequest, ...grpc.CallOption) error
+
 	// Close tears down the ClientConn and all underlying connections.
 	Close() error
 }
@@ -130,4 +140,26 @@ func (v *v2) DownloadTask(ctx context.Context, taskID string, req *dfdaemonv2.Do
 		req,
 		opts...,
 	)
+}
+
+// DownloadCacheTask downloads cache task from p2p network.
+func (v *v2) DownloadCacheTask(ctx context.Context, req *dfdaemonv2.DownloadCacheTaskRequest, opts ...grpc.CallOption) (dfdaemonv2.DfdaemonUpload_DownloadCacheTaskClient, error) {
+	return v.DfdaemonUploadClient.DownloadCacheTask(ctx, req, opts...)
+}
+
+// StatCacheTask stats cache task information.
+func (v *v2) StatCacheTask(ctx context.Context, req *dfdaemonv2.StatCacheTaskRequest, opts ...grpc.CallOption) (*commonv2.CacheTask, error) {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
+	return v.DfdaemonUploadClient.StatCacheTask(ctx, req, opts...)
+}
+
+// DeleteCacheTask deletes cache task from p2p network.
+func (v *v2) DeleteCacheTask(ctx context.Context, req *dfdaemonv2.DeleteCacheTaskRequest, opts ...grpc.CallOption) error {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
+	_, err := v.DfdaemonUploadClient.DeleteCacheTask(ctx, req, opts...)
+	return err
 }

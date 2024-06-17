@@ -83,31 +83,17 @@ func (s *schedulerServerV2) StatPeer(ctx context.Context, req *schedulerv2.StatP
 	return resp, nil
 }
 
-// LeavePeer releases peer in scheduler.
-func (s *schedulerServerV2) LeavePeer(ctx context.Context, req *schedulerv2.LeavePeerRequest) (*emptypb.Empty, error) {
+// DeletePeer releases peer in scheduler.
+func (s *schedulerServerV2) DeletePeer(ctx context.Context, req *schedulerv2.DeletePeerRequest) (*emptypb.Empty, error) {
 	// Collect LeavePeerCount metrics.
 	metrics.LeavePeerCount.Inc()
-	if err := s.service.LeavePeer(ctx, req); err != nil {
+	if err := s.service.DeletePeer(ctx, req); err != nil {
 		// Collect LeavePeerFailureCount metrics.
 		metrics.LeavePeerFailureCount.Inc()
 		return nil, err
 	}
 
 	return new(emptypb.Empty), nil
-}
-
-// ExchangePeer exchanges peer information.
-func (s *schedulerServerV2) ExchangePeer(ctx context.Context, req *schedulerv2.ExchangePeerRequest) (*schedulerv2.ExchangePeerResponse, error) {
-	// Collect ExchangePeerCount metrics.
-	metrics.ExchangePeerCount.Inc()
-	resp, err := s.service.ExchangePeer(ctx, req)
-	if err != nil {
-		// Collect ExchangePeerFailureCount metrics.
-		metrics.ExchangePeerFailureCount.Inc()
-		return nil, err
-	}
-
-	return resp, nil
 }
 
 // StatTask checks information of task.
@@ -124,11 +110,11 @@ func (s *schedulerServerV2) StatTask(ctx context.Context, req *schedulerv2.StatT
 	return resp, nil
 }
 
-// LeaveTask releases task in scheduler.
-func (s *schedulerServerV2) LeaveTask(ctx context.Context, req *schedulerv2.LeaveTaskRequest) (*emptypb.Empty, error) {
+// DeleteTask releases task in scheduler.
+func (s *schedulerServerV2) DeleteTask(ctx context.Context, req *schedulerv2.DeleteTaskRequest) (*emptypb.Empty, error) {
 	// Collect LeaseTaskCount metrics.
 	metrics.LeaveTaskCount.Inc()
-	if err := s.service.LeaveTask(ctx, req); err != nil {
+	if err := s.service.DeleteTask(ctx, req); err != nil {
 		// Collect LeaseTaskFailureCount metrics.
 		metrics.LeaveTaskFailureCount.Inc()
 		return nil, err
@@ -152,11 +138,11 @@ func (s *schedulerServerV2) AnnounceHost(ctx context.Context, req *schedulerv2.A
 	return new(emptypb.Empty), nil
 }
 
-// LeaveHost releases host in scheduler.
-func (s *schedulerServerV2) LeaveHost(ctx context.Context, req *schedulerv2.LeaveHostRequest) (*emptypb.Empty, error) {
+// DeleteHost releases host in scheduler.
+func (s *schedulerServerV2) DeleteHost(ctx context.Context, req *schedulerv2.DeleteHostRequest) (*emptypb.Empty, error) {
 	// Collect LeaveHostCount metrics.
 	metrics.LeaveHostCount.Inc()
-	if err := s.service.LeaveHost(ctx, req); err != nil {
+	if err := s.service.DeleteHost(ctx, req); err != nil {
 		// Collect LeaveHostFailureCount metrics.
 		metrics.LeaveHostFailureCount.Inc()
 		return nil, err
