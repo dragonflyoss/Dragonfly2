@@ -468,7 +468,7 @@ func (s *synchronizerWatchdog) watch(timeout time.Duration) {
 			curReadyPieces := s.peerTaskConductor.readyPieces.Settled()
 			// check ready pieces count, if not changed in timeout, report to scheduler
 			if curReadyPieces == lastReadyPieces {
-				s.peerTaskConductor.Warnf("watch sync pieces timeout")
+				s.peerTaskConductor.Warnf("watch sync pieces timeout, current pieces: %d", curReadyPieces)
 				s.reportWatchFailed()
 			} else {
 				s.peerTaskConductor.Debugf("watch ready pieces ok, current pieces: %d, last pieces: %d",
