@@ -49,7 +49,7 @@ require (
 	github.com/jellydator/ttlcache/v3 v3.2.0
 	github.com/johanbrandhorst/certify v1.9.0
 	github.com/juju/ratelimit v1.0.2
-	github.com/looplab/fsm v1.0.1
+	github.com/looplab/fsm v1.0.2
 	github.com/mcuadros/go-gin-prometheus v0.1.0
 	github.com/mdlayher/vsock v1.2.1
 	github.com/mitchellh/mapstructure v1.5.0
