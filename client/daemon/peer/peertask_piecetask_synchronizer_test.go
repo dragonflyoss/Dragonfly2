@@ -57,9 +57,8 @@ func Test_watchdog(t *testing.T) {
 			peer := &schedulerv1.PeerPacket_DestPeer{}
 			pps := mocks.NewMockScheduler_ReportPieceResultClient(ctrl)
 			watchdog := &synchronizerWatchdog{
-				done:        make(chan struct{}),
-				mainPeer:    atomic.Value{},
-				syncSuccess: atomic.NewBool(false),
+				done:     make(chan struct{}),
+				mainPeer: atomic.Value{},
 				peerTaskConductor: &peerTaskConductor{
 					SugaredLoggerOnWith: logger.With(
 						"peer", "test",
