@@ -82,7 +82,7 @@ jobs:
             ${{ runner.os }}-buildx-
 
       - name: Build Scheduler Image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: build/images/scheduler/Dockerfile
@@ -92,7 +92,7 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache-new
 
       - name: Build Manager Image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: build/images/manager/Dockerfile
@@ -102,7 +102,7 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache-new
 
       - name: Build Dfdaemon Image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: build/images/dfdaemon/Dockerfile
