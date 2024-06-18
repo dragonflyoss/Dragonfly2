@@ -163,3 +163,39 @@ func (s *schedulerServerV2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesSe
 
 	return nil
 }
+
+// TODO Implement the following methods.
+// AnnounceCachePeer announces cache peer to scheduler.
+func (s *schedulerServerV2) AnnounceCachePeer(stream schedulerv2.Scheduler_AnnounceCachePeerServer) error {
+	return nil
+}
+
+// TODO Implement the following methods.
+// StatCachePeer checks information of cache peer.
+func (s *schedulerServerV2) StatCachePeer(ctx context.Context, req *schedulerv2.StatCachePeerRequest) (*commonv2.CachePeer, error) {
+	return nil, nil
+}
+
+// TODO Implement the following methods.
+// DeleteCachePeer releases cache peer in scheduler.
+func (s *schedulerServerV2) DeleteCachePeer(ctx context.Context, req *schedulerv2.DeleteCachePeerRequest) (*emptypb.Empty, error) {
+	return new(emptypb.Empty), nil
+}
+
+// TODO Implement the following methods.
+// UploadCacheTask uploads cache task to scheduler.
+func (s *schedulerServerV2) UploadCacheTask(ctx context.Context, req *schedulerv2.UploadCacheTaskRequest) (*commonv2.CacheTask, error) {
+	return nil, nil
+}
+
+// TODO Implement the following methods.
+// StatCacheTask checks information of cache task.
+func (s *schedulerServerV2) StatCacheTask(ctx context.Context, req *schedulerv2.StatCacheTaskRequest) (*commonv2.CacheTask, error) {
+	return nil, nil
+}
+
+// TODO Implement the following methods.
+// DeleteCacheTask releases cache task in scheduler.
+func (s *schedulerServerV2) DeleteCacheTask(ctx context.Context, req *schedulerv2.DeleteCacheTaskRequest) (*emptypb.Empty, error) {
+	return new(emptypb.Empty), nil
+}

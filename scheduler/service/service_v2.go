@@ -130,8 +130,8 @@ func (v *V2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePeerServer) error
 				log.Error(err)
 				return err
 			}
-		case *schedulerv2.AnnouncePeerRequest_RescheduleRequest:
-			rescheduleRequest := announcePeerRequest.RescheduleRequest
+		case *schedulerv2.AnnouncePeerRequest_ReschedulePeerRequest:
+			rescheduleRequest := announcePeerRequest.ReschedulePeerRequest
 
 			log.Infof("receive RescheduleRequest description: %s", rescheduleRequest.GetDescription())
 			if err := v.handleRescheduleRequest(ctx, req.GetPeerId(), rescheduleRequest.GetCandidateParents()); err != nil {
@@ -393,12 +393,12 @@ func (v *V2) DeletePeer(ctx context.Context, req *schedulerv2.DeletePeerRequest)
 
 // StatTask checks information of task.
 func (v *V2) StatTask(ctx context.Context, req *schedulerv2.StatTaskRequest) (*commonv2.Task, error) {
-	log := logger.WithTaskID(req.GetId())
+	log := logger.WithTaskID(req.GetTaskId())
 	log.Infof("stat task request: %#v", req)
 
-	task, loaded := v.resource.TaskManager().Load(req.GetId())
+	task, loaded := v.resource.TaskManager().Load(req.GetTaskId())
 	if !loaded {
-		msg := fmt.Sprintf("task %s not found", req.GetId())
+		msg := fmt.Sprintf("task %s not found", req.GetTaskId())
 		log.Error(msg)
 		return nil, status.Error(codes.NotFound, msg)
 	}
@@ -678,12 +678,12 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 
 // DeleteHost releases host in scheduler.
 func (v *V2) DeleteHost(ctx context.Context, req *schedulerv2.DeleteHostRequest) error {
-	log := logger.WithHostID(req.GetId())
+	log := logger.WithHostID(req.GetHostId())
 	log.Infof("delete host request: %#v", req)
 
-	host, loaded := v.resource.HostManager().Load(req.GetId())
+	host, loaded := v.resource.HostManager().Load(req.GetHostId())
 	if !loaded {
-		msg := fmt.Sprintf("host %s not found", req.GetId())
+		msg := fmt.Sprintf("host %s not found", req.GetHostId())
 		log.Error(msg)
 		return status.Error(codes.NotFound, msg)
 	}

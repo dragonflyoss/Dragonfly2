@@ -195,7 +195,7 @@ func (v *v2) StatTask(ctx context.Context, req *schedulerv2.StatTaskRequest, opt
 	defer cancel()
 
 	return v.SchedulerClient.StatTask(
-		context.WithValue(ctx, pkgbalancer.ContextKey, req.Id),
+		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		req,
 		opts...,
 	)
