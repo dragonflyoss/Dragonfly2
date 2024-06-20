@@ -17,6 +17,7 @@
 package server
 
 import (
+	"math"
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -62,6 +63,8 @@ func New(svr dfdaemonv1.DaemonServer, healthServer healthpb.HealthServer, opts .
 	limiter := rpc.NewRateLimiterInterceptor(DefaultQPS, DefaultBurst)
 
 	grpcServer := grpc.NewServer(append([]grpc.ServerOption{
+		grpc.MaxRecvMsgSize(math.MaxInt32),
+		grpc.MaxSendMsgSize(math.MaxInt32),
 		grpc.KeepaliveParams(keepalive.ServerParameters{
 			MaxConnectionIdle:     DefaultMaxConnectionIdle,
 			MaxConnectionAge:      DefaultMaxConnectionAge,
