@@ -20,6 +20,7 @@ package client
 
 import (
 	"context"
+	"math"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
@@ -50,6 +51,10 @@ func GetV2(ctx context.Context, dynconfig config.DynconfigInterface, opts ...grp
 		resolver.SeedPeerVirtualTarget,
 		append([]grpc.DialOption{
 			grpc.WithIdleTimeout(0),
+			grpc.WithDefaultCallOptions(
+				grpc.MaxCallRecvMsgSize(math.MaxInt32),
+				grpc.MaxCallSendMsgSize(math.MaxInt32),
+			),
 			grpc.WithDefaultServiceConfig(pkgbalancer.BalancerServiceConfig),
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
 				grpc_prometheus.UnaryClientInterceptor,
