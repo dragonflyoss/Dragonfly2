@@ -224,7 +224,7 @@ func (s *server) GetPieceTasks(ctx context.Context, request *commonv1.PieceTaskR
 		}, nil
 	}
 
-	logger.Debugf("receive get piece tasks request, task id: %s, src peer: %s, dst peer: %s, piece start num: %d, limit: %d, count: %d, total piece: %s, total content length: %d",
+	logger.Debugf("receive get piece tasks request, task id: %s, src peer: %s, dst peer: %s, piece start num: %d, limit: %d, count: %d, total piece: %d, total content length: %d",
 		request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit, len(p.PieceInfos), p.TotalPiece, p.ContentLength)
 	p.DstAddr = s.uploadAddr
 	return p, nil

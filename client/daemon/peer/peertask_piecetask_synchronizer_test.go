@@ -36,19 +36,19 @@ func Test_watchdog(t *testing.T) {
 	assert := testifyassert.New(t)
 
 	var testCases = []struct {
-		name    string
-		timeout time.Duration
-		ok      bool
+		name     string
+		interval time.Duration
+		ok       bool
 	}{
 		{
-			name:    "watchdog ok",
-			timeout: time.Millisecond,
-			ok:      true,
+			name:     "watchdog ok",
+			interval: time.Second,
+			ok:       true,
 		},
 		{
-			name:    "watchdog failed",
-			timeout: time.Millisecond,
-			ok:      false,
+			name:     "watchdog failed",
+			interval: time.Second,
+			ok:       false,
 		},
 	}
 
@@ -69,9 +69,15 @@ func Test_watchdog(t *testing.T) {
 				},
 			}
 			if tt.ok {
-				watchdog.peerTaskConductor.readyPieces.Set(0)
+				// mock piece update
+				go func() {
+					for i := int32(0); i < 10; i++ {
+						watchdog.peerTaskConductor.readyPieces.Set(i)
+						time.Sleep(tt.interval)
+					}
+				}()
 			} else {
-				pps.EXPECT().Send(gomock.Any()).DoAndReturn(func(pr *schedulerv1.PieceResult) error {
+				pps.EXPECT().Send(gomock.Any()).AnyTimes().DoAndReturn(func(pr *schedulerv1.PieceResult) error {
 					assert.Equal(peer.PeerId, pr.DstPid)
 					return nil
 				})
@@ -81,10 +87,13 @@ func Test_watchdog(t *testing.T) {
 			wg := sync.WaitGroup{}
 			wg.Add(1)
 			go func() {
-				watchdog.watch(tt.timeout)
+				watchdog.watch(3 * tt.interval)
 				wg.Done()
 			}()
 
+			time.Sleep(10 * tt.interval)
+			// exit watch dog
+			close(watchdog.done)
 			wg.Wait()
 		})
 	}
