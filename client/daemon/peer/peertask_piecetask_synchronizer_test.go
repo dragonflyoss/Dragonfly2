@@ -54,6 +54,7 @@ func Test_watchdog(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
+			interval := tt.interval
 			peer := &schedulerv1.PeerPacket_DestPeer{}
 			pps := mocks.NewMockScheduler_ReportPieceResultClient(ctrl)
 			watchdog := &synchronizerWatchdog{
@@ -73,7 +74,7 @@ func Test_watchdog(t *testing.T) {
 				go func() {
 					for i := int32(0); i < 10; i++ {
 						watchdog.peerTaskConductor.readyPieces.Set(i)
-						time.Sleep(tt.interval)
+						time.Sleep(interval)
 					}
 				}()
 			} else {
@@ -86,12 +87,12 @@ func Test_watchdog(t *testing.T) {
 
 			wg := sync.WaitGroup{}
 			wg.Add(1)
-			go func() {
-				watchdog.watch(3 * tt.interval)
+			go func(interval time.Duration) {
+				watchdog.watch(3 * interval)
 				wg.Done()
-			}()
+			}(interval)
 
-			time.Sleep(10 * tt.interval)
+			time.Sleep(10 * interval)
 			// exit watch dog
 			close(watchdog.done)
 			wg.Wait()
