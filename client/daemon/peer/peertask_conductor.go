@@ -1395,7 +1395,7 @@ func (pt *peerTaskConductor) done() {
 	// update storage metadata
 	if err := pt.UpdateStorage(); err == nil {
 		// validate digest
-		if err = pt.Validate(); err == nil {
+		if err = pt.tryStore(); err == nil {
 			close(pt.successCh)
 			pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
 		} else {
@@ -1408,7 +1408,7 @@ func (pt *peerTaskConductor) done() {
 			pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
 			pt.span.SetAttributes(config.AttributePeerTaskCode.Int(int(pt.failedCode)))
 			pt.span.SetAttributes(config.AttributePeerTaskMessage.String(pt.failedReason))
-			pt.Errorf("validate digest failed: %s", err)
+			pt.Errorf("store failed: %s", err)
 			metrics.PeerTaskFailedCount.WithLabelValues(metrics.FailTypeP2P).Add(1)
 		}
 	} else {
@@ -1580,8 +1580,7 @@ func (pt *peerTaskConductor) fail() {
 	}
 }
 
-// Validate stores metadata and validates digest
-func (pt *peerTaskConductor) Validate() error {
+func (pt *peerTaskConductor) tryStore() error {
 	err := pt.GetStorage().Store(pt.ctx,
 		&storage.StoreRequest{
 			CommonTaskRequest: storage.CommonTaskRequest{
@@ -1595,22 +1594,7 @@ func (pt *peerTaskConductor) Validate() error {
 		pt.Errorf("store metadata error: %s", err)
 		return err
 	}
-
-	if !pt.CalculateDigest {
-		return nil
-	}
-	err = pt.GetStorage().ValidateDigest(
-		&storage.PeerTaskMetadata{
-			PeerID: pt.GetPeerID(),
-			TaskID: pt.GetTaskID(),
-		})
-	if err != nil {
-		pt.Errorf("validate digest error: %s", err)
-		return err
-	}
-	pt.Debugf("validate digest ok")
-
-	return err
+	return nil
 }
 
 func (pt *peerTaskConductor) PublishPieceInfo(pieceNum int32, size uint32) {
