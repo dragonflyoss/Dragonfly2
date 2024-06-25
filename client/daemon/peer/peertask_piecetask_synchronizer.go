@@ -70,7 +70,6 @@ type pieceTaskSynchronizer struct {
 type synchronizerWatchdog struct {
 	done              chan struct{}
 	mainPeer          atomic.Value // save *schedulerv1.PeerPacket_DestPeer
-	syncSuccess       *atomic.Bool
 	peerTaskConductor *peerTaskConductor
 }
 
@@ -181,7 +180,6 @@ func (s *pieceTaskSyncManager) resetWatchdog(mainPeer *schedulerv1.PeerPacket_De
 	s.watchdog = &synchronizerWatchdog{
 		done:              make(chan struct{}),
 		mainPeer:          atomic.Value{},
-		syncSuccess:       atomic.NewBool(false),
 		peerTaskConductor: s.peerTaskConductor,
 	}
 	s.watchdog.mainPeer.Store(mainPeer)
@@ -463,22 +461,30 @@ func (s *pieceTaskSynchronizer) canceled(err error) bool {
 }
 
 func (s *synchronizerWatchdog) watch(timeout time.Duration) {
-	select {
-	case <-time.After(timeout):
-		if s.peerTaskConductor.readyPieces.Settled() == 0 {
-			s.peerTaskConductor.Warnf("watch sync pieces timeout, may be a bug, " +
-				"please file a issue in https://github.com/dragonflyoss/Dragonfly2/issues")
-			s.syncSuccess.Store(false)
-			s.reportWatchFailed()
-		} else {
-			s.peerTaskConductor.Infof("watch sync pieces ok")
+	lastReadyPieces := s.peerTaskConductor.readyPieces.Settled()
+	for {
+		select {
+		case <-time.After(timeout):
+			curReadyPieces := s.peerTaskConductor.readyPieces.Settled()
+			// check ready pieces count, if not changed in timeout, report to scheduler
+			if curReadyPieces == lastReadyPieces {
+				s.peerTaskConductor.Warnf("watch sync pieces timeout, current pieces: %d", curReadyPieces)
+				s.reportWatchFailed()
+			} else {
+				s.peerTaskConductor.Debugf("watch ready pieces ok, current pieces: %d, last pieces: %d",
+					curReadyPieces, lastReadyPieces)
+				lastReadyPieces = curReadyPieces
+			}
+		case <-s.peerTaskConductor.successCh:
+			s.peerTaskConductor.Debugf("peer task success, watchdog exit")
+			return
+		case <-s.peerTaskConductor.failCh:
+			s.peerTaskConductor.Debugf("peer task fail, watchdog exit")
+			return
+		case <-s.done:
+			s.peerTaskConductor.Debugf("watchdog done, exit")
+			return
 		}
-	case <-s.peerTaskConductor.successCh:
-		s.peerTaskConductor.Debugf("peer task success, watchdog exit")
-	case <-s.peerTaskConductor.failCh:
-		s.peerTaskConductor.Debugf("peer task fail, watchdog exit")
-	case <-s.done:
-		s.peerTaskConductor.Debugf("watchdog done, exit")
 	}
 }
 
