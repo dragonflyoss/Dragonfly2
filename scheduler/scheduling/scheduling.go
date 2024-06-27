@@ -593,32 +593,6 @@ func ConstructSuccessNormalTaskResponse(candidateParents []*resource.Peer) *sche
 			}
 		}
 
-		// Set pieces to parent.
-		candidateParent.Pieces.Range(func(key, value any) bool {
-			candidateParentPiece, ok := value.(*resource.Piece)
-			if !ok {
-				candidateParent.Log.Errorf("invalid piece %s %#v", key, value)
-				return true
-			}
-
-			piece := &commonv2.Piece{
-				Number:      uint32(candidateParentPiece.Number),
-				ParentId:    &candidateParentPiece.ParentID,
-				Offset:      candidateParentPiece.Offset,
-				Length:      candidateParentPiece.Length,
-				TrafficType: &candidateParentPiece.TrafficType,
-				Cost:        durationpb.New(candidateParentPiece.Cost),
-				CreatedAt:   timestamppb.New(candidateParentPiece.CreatedAt),
-			}
-
-			if candidateParentPiece.Digest != nil {
-				piece.Digest = candidateParentPiece.Digest.String()
-			}
-
-			parent.Pieces = append(parent.Pieces, piece)
-			return true
-		})
-
 		// Set task to parent.
 		parent.Task = &commonv2.Task{
 			Id:                  candidateParent.Task.ID,
@@ -643,32 +617,6 @@ func ConstructSuccessNormalTaskResponse(candidateParents []*resource.Peer) *sche
 			dgst := candidateParent.Task.Digest.String()
 			parent.Task.Digest = &dgst
 		}
-
-		// Set pieces to parent task.
-		candidateParent.Task.Pieces.Range(func(key, value any) bool {
-			taskPiece, ok := value.(*resource.Piece)
-			if !ok {
-				candidateParent.Task.Log.Errorf("invalid piece %s %#v", key, value)
-				return true
-			}
-
-			piece := &commonv2.Piece{
-				Number:      uint32(taskPiece.Number),
-				ParentId:    &taskPiece.ParentID,
-				Offset:      taskPiece.Offset,
-				Length:      taskPiece.Length,
-				TrafficType: &taskPiece.TrafficType,
-				Cost:        durationpb.New(taskPiece.Cost),
-				CreatedAt:   timestamppb.New(taskPiece.CreatedAt),
-			}
-
-			if taskPiece.Digest != nil {
-				piece.Digest = taskPiece.Digest.String()
-			}
-
-			parent.Task.Pieces = append(parent.Task.Pieces, piece)
-			return true
-		})
 
 		// Set host to parent.
 		parent.Host = &commonv2.Host{
