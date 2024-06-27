@@ -21,7 +21,6 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -282,7 +281,7 @@ func (proxy *Proxy) updateMirrorHandler() {
 	if proxy.registry == nil || proxy.registry.Remote == nil || proxy.registry.Remote.URL == nil {
 		logger.Warnf("registry mirror url is empty, registry mirror feature is disabled")
 		h.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			http.Error(w, fmt.Sprintf("registry mirror feature is disabled"), http.StatusNotFound)
+			http.Error(w, "registry mirror feature is disabled", http.StatusNotFound)
 		})
 		return
 	}
