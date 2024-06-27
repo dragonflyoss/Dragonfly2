@@ -137,7 +137,6 @@ func NewProxyManager(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskMa
 }
 
 func (pm *proxyManager) Serve(listener net.Listener) error {
-	_ = WithDirectHandler(newDirectHandler())(pm.Proxy)
 	pm.Server.Handler = pm.Proxy
 	return pm.Server.Serve(listener)
 }
