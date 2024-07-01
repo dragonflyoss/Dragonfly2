@@ -503,6 +503,30 @@ func TestHostManager_RunGC(t *testing.T) {
 				assert.Equal(host.ID, mockSeedHost.ID)
 			},
 		},
+		{
+			name: "host elapsed exceeds twice the announce interval",
+			mock: func(m *gc.MockGCMockRecorder) {
+				m.Add(gomock.Any()).Return(nil).Times(1)
+			},
+			expect: func(t *testing.T, hostManager HostManager, mockHost *Host, mockPeer *Peer) {
+				assert := assert.New(t)
+				mockHost.AnnounceInterval = 1 * time.Microsecond
+				hostManager.Store(mockHost)
+				mockHost.StorePeer(mockPeer)
+				err := hostManager.RunGC()
+				assert.NoError(err)
+
+				mockHost.Peers.Range(func(_, value any) bool {
+					peer := value.(*Peer)
+					assert.True(peer.FSM.Is(PeerStateLeave))
+					return true
+				})
+
+				host, loaded := hostManager.Load(mockHost.ID)
+				assert.Equal(loaded, true)
+				assert.Equal(host.ID, mockHost.ID)
+			},
+		},
 	}
 
 	for _, tc := range tests {

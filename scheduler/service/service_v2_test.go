@@ -28,6 +28,7 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -488,6 +489,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 						Platform:   &mockBuild.Platform,
 					},
 				},
+				Interval: durationpb.New(5 * time.Minute),
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.AnnounceHostRequest, host *resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
@@ -512,6 +514,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 						assert.EqualValues(host.Network, mockNetwork)
 						assert.EqualValues(host.Disk, mockDisk)
 						assert.EqualValues(host.Build, mockBuild)
+						assert.EqualValues(host.AnnounceInterval, mockInterval)
 						assert.Equal(host.ConcurrentUploadLimit.Load(), int32(10))
 						assert.Equal(host.ConcurrentUploadCount.Load(), int32(0))
 						assert.Equal(host.UploadCount.Load(), int64(0))
@@ -592,6 +595,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 						Platform:   &mockBuild.Platform,
 					},
 				},
+				Interval: durationpb.New(5 * time.Minute),
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.AnnounceHostRequest, host *resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
@@ -616,6 +620,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 						assert.EqualValues(host.Network, mockNetwork)
 						assert.EqualValues(host.Disk, mockDisk)
 						assert.EqualValues(host.Build, mockBuild)
+						assert.EqualValues(host.AnnounceInterval, mockInterval)
 						assert.Equal(host.ConcurrentUploadLimit.Load(), int32(200))
 						assert.Equal(host.ConcurrentUploadCount.Load(), int32(0))
 						assert.Equal(host.UploadCount.Load(), int64(0))
@@ -696,6 +701,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 						Platform:   &mockBuild.Platform,
 					},
 				},
+				Interval: durationpb.New(5 * time.Minute),
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.AnnounceHostRequest, host *resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
@@ -721,6 +727,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 				assert.EqualValues(host.Network, mockNetwork)
 				assert.EqualValues(host.Disk, mockDisk)
 				assert.EqualValues(host.Build, mockBuild)
+				assert.EqualValues(host.AnnounceInterval, mockInterval)
 				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(10))
 				assert.Equal(host.ConcurrentUploadCount.Load(), int32(0))
 				assert.Equal(host.UploadCount.Load(), int64(0))
@@ -796,6 +803,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 						Platform:   &mockBuild.Platform,
 					},
 				},
+				Interval: durationpb.New(5 * time.Minute),
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.AnnounceHostRequest, host *resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
@@ -821,6 +829,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 				assert.EqualValues(host.Network, mockNetwork)
 				assert.EqualValues(host.Disk, mockDisk)
 				assert.EqualValues(host.Build, mockBuild)
+				assert.EqualValues(host.AnnounceInterval, mockInterval)
 				assert.Equal(host.ConcurrentUploadLimit.Load(), int32(200))
 				assert.Equal(host.ConcurrentUploadCount.Load(), int32(0))
 				assert.Equal(host.UploadCount.Load(), int64(0))
