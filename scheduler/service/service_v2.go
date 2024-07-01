@@ -584,6 +584,10 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 			options = append(options, resource.WithSchedulerClusterID(uint64(v.config.Manager.SchedulerClusterID)))
 		}
 
+		if req.GetInterval() != nil {
+			options = append(options, resource.WithAnnounceInterval(req.GetInterval().AsDuration()))
+		}
+
 		host = resource.NewHost(
 			req.Host.GetId(), req.Host.GetIp(), req.Host.GetHostname(),
 			req.Host.GetPort(), req.Host.GetDownloadPort(), types.HostType(req.Host.GetType()),
@@ -671,6 +675,10 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 			GoVersion:  req.Host.Build.GetGoVersion(),
 			Platform:   req.Host.Build.GetPlatform(),
 		}
+	}
+
+	if req.GetInterval() != nil {
+		host.AnnounceInterval = req.GetInterval().AsDuration()
 	}
 
 	return nil
