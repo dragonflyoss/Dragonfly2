@@ -44,7 +44,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/memberlist v0.5.0
-	github.com/huaweicloud/huaweicloud-sdk-go-obs v3.23.12+incompatible
+	github.com/huaweicloud/huaweicloud-sdk-go-obs v3.24.3+incompatible
 	github.com/jarcoal/httpmock v1.3.1
 	github.com/jellydator/ttlcache/v3 v3.2.0
 	github.com/johanbrandhorst/certify v1.9.0
