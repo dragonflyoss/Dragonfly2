@@ -206,7 +206,7 @@ func (t *localTaskStore) genMetadata(n int64, req *WritePieceRequest) {
 	t.TotalPieces = total
 	t.ContentLength = contentLength
 
-	var pieceDigests []string
+	pieceDigests := make([]string, 0, t.TotalPieces)
 	for i := int32(0); i < t.TotalPieces; i++ {
 		pieceDigests = append(pieceDigests, t.Pieces[i].Md5)
 	}
