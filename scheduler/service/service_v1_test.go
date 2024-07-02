@@ -183,6 +183,8 @@ var (
 		Platform:   "darwin",
 	}
 
+	mockInterval = durationpb.New(5 * time.Minute).AsDuration()
+
 	mockPeerHost = &schedulerv1.PeerHost{
 		Id:       mockHostID,
 		Ip:       "127.0.0.1",

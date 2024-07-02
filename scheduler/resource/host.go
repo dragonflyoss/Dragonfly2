@@ -122,6 +122,13 @@ func WithBuild(build Build) HostOption {
 	}
 }
 
+// WithAnnounceInterval sets host's announce interval.
+func WithAnnounceInterval(announceInterval time.Duration) HostOption {
+	return func(h *Host) {
+		h.AnnounceInterval = announceInterval
+	}
+}
+
 // Host contains content for host.
 type Host struct {
 	// ID is host id.
@@ -177,6 +184,9 @@ type Host struct {
 
 	// SchedulerClusterID is the scheduler cluster id matched by scopes.
 	SchedulerClusterID uint64
+
+	// AnnounceInterval is the interval between host announces to scheduler.
+	AnnounceInterval time.Duration
 
 	// ConcurrentUploadLimit is concurrent upload limit count.
 	ConcurrentUploadLimit *atomic.Int32
