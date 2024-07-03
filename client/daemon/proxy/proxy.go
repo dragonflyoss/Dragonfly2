@@ -21,7 +21,6 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -80,7 +79,7 @@ type Proxy struct {
 	cacheRWMutex sync.RWMutex
 
 	// directHandler are used to handle non-proxy requests
-	directHandler http.Handler
+	directHandler *http.ServeMux
 
 	// transport is used to handle http proxy requests
 	transport http.RoundTripper
@@ -171,25 +170,6 @@ func WithRegistryMirror(r *config.RegistryMirror) Option {
 func WithCert(cert *tls.Certificate) Option {
 	return func(p *Proxy) *Proxy {
 		p.cert = cert
-		return p
-	}
-}
-
-// WithDirectHandler sets the handler for non-proxy requests
-func WithDirectHandler(h *http.ServeMux) Option {
-	return func(p *Proxy) *Proxy {
-		if p.registry == nil || p.registry.Remote == nil || p.registry.Remote.URL == nil {
-			logger.Warnf("registry mirror url is empty, registry mirror feature is disabled")
-			h.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-				http.Error(w, fmt.Sprintf("registry mirror feature is disabled"), http.StatusNotFound)
-			})
-			p.directHandler = h
-			return p
-		}
-		// Make sure the root handler of the given server mux is the
-		// registry mirror reverse proxy
-		h.HandleFunc("/", p.mirrorRegistry)
-		p.directHandler = h
 		return p
 	}
 }
@@ -290,7 +270,24 @@ func NewProxy(options ...Option) (*Proxy, error) {
 	if proxy.transport == nil {
 		proxy.transport = proxy.newTransport(nil)
 	}
+
+	// check register mirror config and register handler
+	proxy.updateMirrorHandler()
 	return proxy, nil
+}
+
+func (proxy *Proxy) updateMirrorHandler() {
+	h := proxy.directHandler
+	if proxy.registry == nil || proxy.registry.Remote == nil || proxy.registry.Remote.URL == nil {
+		logger.Warnf("registry mirror url is empty, registry mirror feature is disabled")
+		h.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, "registry mirror feature is disabled", http.StatusNotFound)
+		})
+		return
+	}
+	// Make sure the root handler of the given server mux is the
+	// registry mirror reverse proxy
+	h.HandleFunc("/", proxy.mirrorRegistry)
 }
 
 func isBasicAuthMatch(basicAuth *config.BasicAuth, user, pass string) bool {
