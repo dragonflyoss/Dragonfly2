@@ -4,7 +4,6 @@ release:
 
 before:
   hooks:
-    - hack/update-version-gorelease.sh
     - make build-manager-console
     - go mod download
 
