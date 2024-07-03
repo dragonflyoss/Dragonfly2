@@ -801,9 +801,9 @@ func (s *server) download(ctx context.Context, req *dfdaemonv1.DownRequest, stre
 			if p.PeerTaskDone {
 				// update permission before send last result
 				if req.Uid != 0 && req.Gid != 0 {
-					log.Infof("change own to uid %d gid %d", req.Uid, req.Gid)
+					log.Infof("change owner to uid %d gid %d", req.Uid, req.Gid)
 					if err = os.Chown(req.Output, int(req.Uid), int(req.Gid)); err != nil {
-						log.Errorf("change own failed: %s", err)
+						log.Errorf("change owner failed: %s", err)
 						return err
 					}
 				}
