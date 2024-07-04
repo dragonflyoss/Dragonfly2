@@ -85,7 +85,7 @@ const (
 	DefaultSchedulerTaskGCInterval = 30 * time.Minute
 
 	// DefaultSchedulerHostGCInterval is default interval for host gc.
-	DefaultSchedulerHostGCInterval = 6 * time.Hour
+	DefaultSchedulerHostGCInterval = 5 * time.Minute
 
 	// DefaultSchedulerHostTTL is default ttl for host.
 	DefaultSchedulerHostTTL = 1 * time.Hour
