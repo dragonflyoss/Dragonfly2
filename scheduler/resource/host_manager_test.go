@@ -522,9 +522,8 @@ func TestHostManager_RunGC(t *testing.T) {
 					return true
 				})
 
-				host, loaded := hostManager.Load(mockHost.ID)
-				assert.Equal(loaded, true)
-				assert.Equal(host.ID, mockHost.ID)
+				_, loaded := hostManager.Load(mockHost.ID)
+				assert.Equal(loaded, false)
 			},
 		},
 	}
