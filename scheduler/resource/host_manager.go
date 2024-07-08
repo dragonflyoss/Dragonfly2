@@ -158,6 +158,10 @@ func (h *hostManager) RunGC() error {
 		if host.AnnounceInterval > 0 && elapsed > host.AnnounceInterval*2 {
 			host.Log.Info("host elapsed exceeds twice the announce interval, causing the host to leave peers")
 			host.LeavePeers()
+			// Directly reclaim the host,
+			// as host's ConcurrentUploadCount may not be 0 when the host exits abnormally.
+			host.Log.Info("host has been reclaimed")
+			h.Delete(host.ID)
 			return true
 		}
 
