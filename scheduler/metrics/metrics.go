@@ -356,111 +356,135 @@ func (t TaskSizeLevel) String() string {
 }
 
 const (
-	// TaskSizeLevel0 represents unknow size.
+	// TaskSizeLevel0 represents unknown size.
 	TaskSizeLevel0 TaskSizeLevel = iota
 
-	// TaskSizeLevel0 represents size range is from 0 to 1M.
+	// TaskSizeLevel1 represents size range is from 0 to 1M.
 	TaskSizeLevel1
 
-	// TaskSizeLevel1 represents size range is from 1M to 4M.
+	// TaskSizeLevel2 represents size range is from 1M to 4M.
 	TaskSizeLevel2
 
-	// TaskSizeLevel2 represents size range is from 4M to 8M.
+	// TaskSizeLevel3 represents size range is from 4M to 8M.
 	TaskSizeLevel3
 
-	// TaskSizeLevel3 represents size range is from 8M to 16M.
+	// TaskSizeLevel4 represents size range is from 8M to 16M.
 	TaskSizeLevel4
 
-	// TaskSizeLevel4 represents size range is from 16M to 32M.
+	// TaskSizeLevel5 represents size range is from 16M to 32M.
 	TaskSizeLevel5
 
-	// TaskSizeLevel5 represents size range is from 32M to 64M.
+	// TaskSizeLevel6 represents size range is from 32M to 64M.
 	TaskSizeLevel6
 
-	// TaskSizeLevel6 represents size range is from 64M to 128M.
+	// TaskSizeLevel7 represents size range is from 64M to 128M.
 	TaskSizeLevel7
 
-	// TaskSizeLevel7 represents size range is from 128M to 256M.
+	// TaskSizeLevel8 represents size range is from 128M to 256M.
 	TaskSizeLevel8
 
-	// TaskSizeLevel8 represents size range is from 256M to 512M.
+	// TaskSizeLevel9 represents size range is from 256M to 512M.
 	TaskSizeLevel9
 
-	// TaskSizeLevel9 represents size range is from 512M to 1G.
+	// TaskSizeLevel10 represents size range is from 512M to 1G.
 	TaskSizeLevel10
 
-	// TaskSizeLevel10 represents size range is from 1G to 4G.
+	// TaskSizeLevel11 represents size range is from 1G to 4G.
 	TaskSizeLevel11
 
-	// TaskSizeLevel11 represents size range is from 4G to 8G.
+	// TaskSizeLevel12 represents size range is from 4G to 8G.
 	TaskSizeLevel12
 
-	// TaskSizeLevel12 represents size range is from 8G to 16G.
+	// TaskSizeLevel13 represents size range is from 8G to 16G.
 	TaskSizeLevel13
 
-	// TaskSizeLevel13 represents size range is from 16G to 32G.
+	// TaskSizeLevel14 represents size range is from 16G to 32G.
 	TaskSizeLevel14
 
-	// TaskSizeLevel14 represents size range is from 32G to 64G.
+	// TaskSizeLevel15 represents size range is from 32G to 64G.
 	TaskSizeLevel15
 
-	// TaskSizeLevel15 represents size range is from 64G to 128G.
+	// TaskSizeLevel16 represents size range is from 64G to 128G.
 	TaskSizeLevel16
 
-	// TaskSizeLevel16 represents size range is from 128G to 256G.
+	// TaskSizeLevel17 represents size range is from 128G to 256G.
 	TaskSizeLevel17
 
-	// TaskSizeLevel17 represents size range is from 256G to 512G.
+	// TaskSizeLevel18 represents size range is from 256G to 512G.
 	TaskSizeLevel18
 
-	// TaskSizeLevel18 represents size range is from 512G to 1T.
+	// TaskSizeLevel19 represents size range is from 512G to 1T.
 	TaskSizeLevel19
 
 	// TaskSizeLevel20 represents size is greater than 1T.
 	TaskSizeLevel20
 )
 
+const (
+	Size1MB   = 1024 * 1024
+	Size4MB   = 4 * Size1MB
+	Size8MB   = 8 * Size1MB
+	Size16MB  = 16 * Size1MB
+	Size32MB  = 32 * Size1MB
+	Size64MB  = 64 * Size1MB
+	Size128MB = 128 * Size1MB
+	Size256MB = 256 * Size1MB
+	Size512MB = 512 * Size1MB
+
+	Size1GB   = 1024 * Size1MB
+	Size4GB   = 4 * Size1GB
+	Size8GB   = 8 * Size1GB
+	Size16GB  = 16 * Size1GB
+	Size32GB  = 32 * Size1GB
+	Size64GB  = 64 * Size1GB
+	Size128GB = 128 * Size1GB
+	Size256GB = 256 * Size1GB
+	Size512GB = 512 * Size1GB
+
+	Size1TB = 1024 * Size1GB
+)
+
 // CalculateSizeLevel calculates the size level according to the size.
 func CalculateSizeLevel(size int64) TaskSizeLevel {
 	if size <= 0 {
 		return TaskSizeLevel0
-	} else if size < 1024*1024 {
+	} else if size < Size1MB {
 		return TaskSizeLevel1
-	} else if size < 4*1024*1024 {
+	} else if size < Size4MB {
 		return TaskSizeLevel2
-	} else if size < 8*1024*1024 {
+	} else if size < Size8MB {
 		return TaskSizeLevel3
-	} else if size < 16*1024*1024 {
+	} else if size < Size16MB {
 		return TaskSizeLevel4
-	} else if size < 32*1024*1024 {
+	} else if size < Size32MB {
 		return TaskSizeLevel5
-	} else if size < 64*1024*1024 {
+	} else if size < Size64MB {
 		return TaskSizeLevel6
-	} else if size < 128*1024*1024 {
+	} else if size < Size128MB {
 		return TaskSizeLevel7
-	} else if size < 256*1024*1024 {
+	} else if size < Size256MB {
 		return TaskSizeLevel8
-	} else if size < 512*1024*1024 {
+	} else if size < Size512MB {
 		return TaskSizeLevel9
-	} else if size < 1024*1024*1024 {
+	} else if size < Size1GB {
 		return TaskSizeLevel10
-	} else if size < 4*1024*1024*1024 {
+	} else if size < Size4GB {
 		return TaskSizeLevel11
-	} else if size < 8*1024*1024*1024 {
+	} else if size < Size8GB {
 		return TaskSizeLevel12
-	} else if size < 16*1024*1024*1024 {
+	} else if size < Size16GB {
 		return TaskSizeLevel13
-	} else if size < 32*1024*1024*1024 {
+	} else if size < Size32GB {
 		return TaskSizeLevel14
-	} else if size < 64*1024*1024*1024 {
+	} else if size < Size64GB {
 		return TaskSizeLevel15
-	} else if size < 128*1024*1024*1024 {
+	} else if size < Size128GB {
 		return TaskSizeLevel16
-	} else if size < 256*1024*1024*1024 {
+	} else if size < Size256GB {
 		return TaskSizeLevel17
-	} else if size < 512*1024*1024*1024 {
+	} else if size < Size512GB {
 		return TaskSizeLevel18
-	} else if size < 1024*1024*1024*1024 {
+	} else if size < Size1TB {
 		return TaskSizeLevel19
 	} else {
 		return TaskSizeLevel20
