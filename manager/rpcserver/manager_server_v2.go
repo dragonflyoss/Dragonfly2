@@ -603,6 +603,12 @@ func (s *managerServerV2) ListSchedulers(ctx context.Context, req *managerv2.Lis
 	for _, scheduler := range schedulers {
 		seedPeers := []*managerv2.SeedPeer{}
 		for _, seedPeerCluster := range scheduler.SchedulerCluster.SeedPeerClusters {
+			// Marshal config of seed peer cluster.
+			seedPeerClusterConfig, err := seedPeerCluster.Config.MarshalJSON()
+			if err != nil {
+				return nil, status.Error(codes.DataLoss, err.Error())
+			}
+
 			for _, seedPeer := range seedPeerCluster.SeedPeers {
 				seedPeers = append(seedPeers, &managerv2.SeedPeer{
 					Id:                uint64(seedPeer.ID),
@@ -615,6 +621,12 @@ func (s *managerServerV2) ListSchedulers(ctx context.Context, req *managerv2.Lis
 					DownloadPort:      seedPeer.DownloadPort,
 					State:             seedPeer.State,
 					SeedPeerClusterId: uint64(seedPeer.SeedPeerClusterID),
+					SeedPeerCluster: &managerv2.SeedPeerCluster{
+						Id:     uint64(seedPeerCluster.ID),
+						Name:   seedPeerCluster.Name,
+						Bio:    seedPeerCluster.BIO,
+						Config: seedPeerClusterConfig,
+					},
 				})
 			}
 		}

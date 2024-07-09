@@ -5,6 +5,7 @@
 //
 //	mockgen -destination peer_manager_mock.go -source peer_manager.go -package resource
 //
+
 // Package resource is a generated GoMock package.
 package resource
 

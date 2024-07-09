@@ -5,6 +5,7 @@
 //
 //	mockgen -destination mocks/sync_peers_mock.go -source sync_peers.go -package mocks
 //
+
 // Package mocks is a generated GoMock package.
 package mocks
 

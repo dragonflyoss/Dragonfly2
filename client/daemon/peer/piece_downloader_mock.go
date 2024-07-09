@@ -5,6 +5,7 @@
 //
 //	mockgen -destination piece_downloader_mock.go -source piece_downloader.go -package peer
 //
+
 // Package peer is a generated GoMock package.
 package peer
 

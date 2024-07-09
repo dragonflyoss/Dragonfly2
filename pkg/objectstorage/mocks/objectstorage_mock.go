@@ -5,6 +5,7 @@
 //
 //	mockgen -destination mocks/objectstorage_mock.go -source objectstorage.go -package mocks
 //
+
 // Package mocks is a generated GoMock package.
 package mocks
 

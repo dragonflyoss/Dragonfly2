@@ -163,6 +163,7 @@ func (sc *seedPeerClient) updateSeedPeersForHostManager(seedPeers []*managerv2.S
 				Location: seedPeer.GetLocation(),
 				IDC:      seedPeer.GetIdc(),
 			})}
+
 			if concurrentUploadLimit > 0 {
 				options = append(options, WithConcurrentUploadLimit(concurrentUploadLimit))
 			}

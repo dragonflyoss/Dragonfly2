@@ -73,6 +73,9 @@ type DynconfigInterface interface {
 	// GetSeedPeers returns the dynamic seed peers config from manager.
 	GetSeedPeers() ([]*managerv2.SeedPeer, error)
 
+	// GetSeedPeerClusterConfig returns the seed peer cluster config.
+	GetSeedPeerClusterConfig() (types.SeedPeerClusterConfig, error)
+
 	// GetSchedulerCluster returns the scheduler cluster config from manager.
 	GetSchedulerCluster() (*managerv2.SchedulerCluster, error)
 
@@ -269,6 +272,25 @@ func (d *dynconfig) GetSeedPeers() ([]*managerv2.SeedPeer, error) {
 	}
 
 	return scheduler.SeedPeers, nil
+}
+
+// GetSeedPeerClusterConfig returns the seed peer cluster config.
+func (d *dynconfig) GetSeedPeerClusterConfig() (types.SeedPeerClusterConfig, error) {
+	seedPeers, err := d.GetSeedPeers()
+	if err != nil {
+		return types.SeedPeerClusterConfig{}, err
+	}
+
+	if len(seedPeers) == 0 {
+		return types.SeedPeerClusterConfig{}, errors.New("seed peer not found ")
+	}
+
+	var config types.SeedPeerClusterConfig
+	if err := json.Unmarshal(seedPeers[0].SeedPeerCluster.Config, &config); err != nil {
+		return types.SeedPeerClusterConfig{}, err
+	}
+
+	return config, nil
 }
 
 // GetSchedulerCluster returns the scheduler cluster config from manager.
