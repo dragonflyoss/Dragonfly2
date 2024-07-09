@@ -5,6 +5,7 @@
 //
 //	mockgen -destination mocks/dynconfig_mock.go -source dynconfig.go -package mocks
 //
+
 // Package mocks is a generated GoMock package.
 package mocks
 

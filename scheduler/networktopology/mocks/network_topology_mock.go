@@ -5,6 +5,7 @@
 //
 //	mockgen -destination mocks/network_topology_mock.go -source network_topology.go -package mocks
 //
+
 // Package mocks is a generated GoMock package.
 package mocks
 

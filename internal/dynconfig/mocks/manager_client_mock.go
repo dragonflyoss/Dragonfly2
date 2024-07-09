@@ -5,6 +5,7 @@
 //
 //	mockgen -destination mocks/manager_client_mock.go -source manager_client.go -package mocks
 //
+
 // Package mocks is a generated GoMock package.
 package mocks
 

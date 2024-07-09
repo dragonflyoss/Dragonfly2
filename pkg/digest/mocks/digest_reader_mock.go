@@ -5,6 +5,7 @@
 //
 //	mockgen -destination mocks/digest_reader_mock.go -source digest_reader.go -package mocks
 //
+
 // Package mocks is a generated GoMock package.
 package mocks
 
