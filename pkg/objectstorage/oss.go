@@ -170,8 +170,8 @@ func (o *oss) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker
 	}, nil
 }
 
-// GetOject returns data of object.
-func (o *oss) GetOject(ctx context.Context, bucketName, objectKey string) (io.ReadCloser, error) {
+// GetObject returns data of object.
+func (o *oss) GetObject(ctx context.Context, bucketName, objectKey string) (io.ReadCloser, error) {
 	bucket, err := o.client.Bucket(bucketName)
 	if err != nil {
 		return nil, err

@@ -179,8 +179,8 @@ func (s *s3) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker,
 	}, nil
 }
 
-// GetOject returns data of object.
-func (s *s3) GetOject(ctx context.Context, bucketName, objectKey string) (io.ReadCloser, error) {
+// GetObject returns data of object.
+func (s *s3) GetObject(ctx context.Context, bucketName, objectKey string) (io.ReadCloser, error) {
 	resp, err := s.client.GetObjectWithContext(ctx, &awss3.GetObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(objectKey),
