@@ -16,7 +16,6 @@ env:
   CONTAINERD_VERSION: v1.5.2
   NERDCTL_VER: 0.22.2
   KIND_CONFIG_PATH: test/testdata/kind/config.yaml
-  DRAGONFLY_CHARTS_PATH: deploy/helm-charts/charts/dragonfly
   NYDUS_SNAPSHOTTER_CHARTS_PATH: deploy/helm-charts/charts/nydus-snapshotter
 
 jobs:
@@ -91,10 +90,11 @@ jobs:
 
       - name: Setup dragonfly
         run: |
+          helm repo add dragonfly https://dragonflyoss.github.io/helm-charts/
           helm install --wait --timeout 10m --dependency-update \
             --create-namespace --namespace dragonfly-system \
             -f test/testdata/charts/config.yaml \
-            dragonfly ${{ env.DRAGONFLY_CHARTS_PATH }}
+            dragonfly dragonfly/dragonfly --version 1.1.45
 
       - name: Setup nydus
         run: |
