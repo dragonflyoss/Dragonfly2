@@ -57,6 +57,34 @@ type CreatePreheatJobRequest struct {
 	SchedulerClusterIDs []uint         `json:"scheduler_cluster_ids" binding:"omitempty"`
 }
 
+type CreateDeleteTaskJobRequest struct {
+	BIO                 string             `json:"bio" binding:"omitempty"`
+	Type                string             `json:"type" binding:"required"`
+	Args                DeleteTasksJobArgs `json:"args" binding:"omitempty"`
+	Result              map[string]any     `json:"result" binding:"omitempty"`
+	UserID              uint               `json:"user_id" binding:"omitempty"`
+	SchedulerClusterIDs []uint             `json:"scheduler_cluster_ids" binding:"omitempty"`
+}
+
+type DeleteTasksJobArgs struct {
+	TaskID string `json:"taskID" binding:"required"`
+}
+
+type CreateListTasksJobRequest struct {
+	BIO                 string           `json:"bio" binding:"omitempty"`
+	Type                string           `json:"type" binding:"required"`
+	Args                ListTasksJobArgs `json:"args" binding:"omitempty"`
+	Result              map[string]any   `json:"result" binding:"omitempty"`
+	UserID              uint             `json:"user_id" binding:"omitempty"`
+	SchedulerClusterIDs []uint           `json:"scheduler_cluster_ids" binding:"omitempty"`
+}
+
+type ListTasksJobArgs struct {
+	TaskID  string `json:"taskID" binding:"required"`
+	Page    int    `json:"page" binding:"omitempty,gte=1"`
+	PerPage int    `json:"count" binding:"omitempty,gte=1,lte=10000000"`
+}
+
 type PreheatArgs struct {
 	// Type is the preheating type, support image and file.
 	Type string `json:"type" binding:"required,oneof=image file"`
