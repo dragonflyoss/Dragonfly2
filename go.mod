@@ -1,6 +1,7 @@
 module d7y.io/dragonfly/v2
 
 go 1.21
+toolchain go1.22.5
 
 require (
 	d7y.io/api/v2 v2.0.126
@@ -35,7 +36,7 @@ require (
 	github.com/go-redis/redismock/v9 v9.2.0
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/gocarina/gocsv v0.0.0-20221105105431-c8ef78125b99
-	github.com/gofrs/flock v0.8.1
+	github.com/gofrs/flock v0.12.0
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/google/go-github v17.0.0+incompatible
