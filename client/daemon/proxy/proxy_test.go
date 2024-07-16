@@ -314,7 +314,6 @@ func (w *mockResponseWriter) WriteHeader(int) {}
 
 func (w *mockResponseWriter) Flush() {
 	w.flushCount++
-	return
 }
 
 type mockTransport struct{}
@@ -345,7 +344,7 @@ func (rc *mockReadCloser) Read(p []byte) (n int, err error) {
 	p[0] = '0'
 	p = p[:1]
 	rc.count++
-	return 1, nil
+	return len(p), nil
 }
 
 func (rc *mockReadCloser) Close() error {
