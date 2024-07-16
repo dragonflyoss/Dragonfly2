@@ -164,8 +164,8 @@ func (o *obs) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker
 	}, nil
 }
 
-// GetOject returns data of object.
-func (o *obs) GetOject(ctx context.Context, bucketName, objectKey string) (io.ReadCloser, error) {
+// GetObject returns data of object.
+func (o *obs) GetObject(ctx context.Context, bucketName, objectKey string) (io.ReadCloser, error) {
 	resp, err := o.client.GetObject(&huaweiobs.GetObjectInput{
 		GetObjectMetadataInput: huaweiobs.GetObjectMetadataInput{
 			Bucket: bucketName,

@@ -157,7 +157,7 @@ func (s *service) updateModelConfig(ctx context.Context, name string, version in
 
 	objectKey := types.MakeObjectKeyOfModelConfigFile(name)
 	var pbModelConfig inference.ModelConfig
-	reader, err := s.objectStorage.GetOject(ctx, s.config.Trainer.BucketName, objectKey)
+	reader, err := s.objectStorage.GetObject(ctx, s.config.Trainer.BucketName, objectKey)
 	if err != nil {
 		return err
 	}
