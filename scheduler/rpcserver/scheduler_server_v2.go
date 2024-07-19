@@ -165,6 +165,12 @@ func (s *schedulerServerV2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesSe
 }
 
 // TODO Implement the following methods.
+// AnnouncePeers announces peers to scheduler.
+func (s *schedulerServerV2) AnnouncePeers(stream schedulerv2.Scheduler_AnnouncePeersServer) error {
+	return nil
+}
+
+// TODO Implement the following methods.
 // AnnounceCachePeer announces cache peer to scheduler.
 func (s *schedulerServerV2) AnnounceCachePeer(stream schedulerv2.Scheduler_AnnounceCachePeerServer) error {
 	return nil
@@ -183,8 +189,20 @@ func (s *schedulerServerV2) DeleteCachePeer(ctx context.Context, req *schedulerv
 }
 
 // TODO Implement the following methods.
-// UploadCacheTask uploads cache task to scheduler.
-func (s *schedulerServerV2) UploadCacheTask(ctx context.Context, req *schedulerv2.UploadCacheTaskRequest) (*commonv2.CacheTask, error) {
+// UploadCacheTaskStarted uploads the metadata of the cache task started.
+func (s *schedulerServerV2) UploadCacheTaskStarted(ctx context.Context, request *schedulerv2.UploadCacheTaskStartedRequest) (*emptypb.Empty, error) {
+	return nil, nil
+}
+
+// TODO Implement the following methods.
+// UploadCacheTaskFinished uploads the metadata of the cache task finished.
+func (s *schedulerServerV2) UploadCacheTaskFinished(ctx context.Context, request *schedulerv2.UploadCacheTaskFinishedRequest) (*commonv2.CacheTask, error) {
+	return nil, nil
+}
+
+// TODO Implement the following methods.
+// UploadCacheTaskFailed uploads the metadata of the cache task failed.
+func (s *schedulerServerV2) UploadCacheTaskFailed(ctx context.Context, request *schedulerv2.UploadCacheTaskFailedRequest) (*emptypb.Empty, error) {
 	return nil, nil
 }
 
