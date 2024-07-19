@@ -58,31 +58,31 @@ type CreatePreheatJobRequest struct {
 }
 
 type CreateDeleteTaskJobRequest struct {
-	BIO                 string             `json:"bio" binding:"omitempty"`
-	Type                string             `json:"type" binding:"required"`
-	Args                DeleteTasksJobArgs `json:"args" binding:"omitempty"`
-	Result              map[string]any     `json:"result" binding:"omitempty"`
-	UserID              uint               `json:"user_id" binding:"omitempty"`
-	SchedulerClusterIDs []uint             `json:"scheduler_cluster_ids" binding:"omitempty"`
+	BIO                 string          `json:"bio" binding:"omitempty"`
+	Type                string          `json:"type" binding:"required"`
+	Args                DeleteTasksArgs `json:"args" binding:"omitempty"`
+	Result              map[string]any  `json:"result" binding:"omitempty"`
+	UserID              uint            `json:"user_id" binding:"omitempty"`
+	SchedulerClusterIDs []uint          `json:"scheduler_cluster_ids" binding:"omitempty"`
 }
 
-type DeleteTasksJobArgs struct {
-	TaskID string `json:"taskID" binding:"required"`
+type DeleteTasksArgs struct {
+	TaskID string `json:"task_id" binding:"required"`
 }
 
 type CreateListTasksJobRequest struct {
-	BIO                 string           `json:"bio" binding:"omitempty"`
-	Type                string           `json:"type" binding:"required"`
-	Args                ListTasksJobArgs `json:"args" binding:"omitempty"`
-	Result              map[string]any   `json:"result" binding:"omitempty"`
-	UserID              uint             `json:"user_id" binding:"omitempty"`
-	SchedulerClusterIDs []uint           `json:"scheduler_cluster_ids" binding:"omitempty"`
+	BIO                 string         `json:"bio" binding:"omitempty"`
+	Type                string         `json:"type" binding:"required"`
+	Args                ListTasksArgs  `json:"args" binding:"omitempty"`
+	Result              map[string]any `json:"result" binding:"omitempty"`
+	UserID              uint           `json:"user_id" binding:"omitempty"`
+	SchedulerClusterIDs []uint         `json:"scheduler_cluster_ids" binding:"omitempty"`
 }
 
-type ListTasksJobArgs struct {
-	TaskID  string `json:"taskID" binding:"required"`
+type ListTasksArgs struct {
+	TaskID  string `json:"task_id" binding:"required"`
 	Page    int    `json:"page" binding:"omitempty,gte=1"`
-	PerPage int    `json:"count" binding:"omitempty,gte=1,lte=10000000"`
+	PerPage int    `json:"per_page" binding:"omitempty,gte=1,lte=10000000"`
 }
 
 type PreheatArgs struct {
@@ -96,10 +96,10 @@ type PreheatArgs struct {
 	Tag string `json:"tag" binding:"omitempty"`
 
 	// FilteredQueryParams is the filtered query params for preheating.
-	FilteredQueryParams string `json:"filteredQueryParams" binding:"omitempty"`
+	FilteredQueryParams string `json:"filtered_query_params" binding:"omitempty"`
 
 	// PieceLength is the piece length for preheating.
-	PieceLength uint32 `json:"pieceLength" binding:"omitempty"`
+	PieceLength uint32 `json:"piece_length" binding:"omitempty"`
 
 	// Headers is the http headers for authentication.
 	Headers map[string]string `json:"headers" binding:"omitempty"`
