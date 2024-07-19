@@ -164,9 +164,16 @@ func (s *schedulerServerV2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesSe
 	return nil
 }
 
-// TODO Implement the following methods.
 // AnnouncePeers announces peers to scheduler.
 func (s *schedulerServerV2) AnnouncePeers(stream schedulerv2.Scheduler_AnnouncePeersServer) error {
+	// Collect AnnouncePeersCount metrics.
+	metrics.AnnouncePeersCount.Inc()
+	if err := s.service.AnnouncePeers(stream); err != nil {
+		// Collect AnnouncePeersFailureCount metrics.
+		metrics.AnnouncePeersFailureCount.Inc()
+		return err
+	}
+
 	return nil
 }
 
