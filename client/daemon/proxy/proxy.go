@@ -459,7 +459,7 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 			proxy.cacheRWMutex.RLock()
 			cached, hit := proxy.certCache.Get(cacheKey)
 			proxy.cacheRWMutex.RUnlock()
-			if hit && time.Now().Before(cached.(*tls.Certificate).Leaf.NotAfter) { // If cache hit and the cert is not expired
+			if hit && time.Now().Before(cached.(*tls.Certificate).Leaf.NotAfter.Add(-time.Hour)) { // If cache hit and the cert is not expired
 				logger.Debugf("TLS cert cache hit, cacheKey = <%s>", cacheKey)
 				return cached.(*tls.Certificate), nil
 			}
@@ -629,7 +629,7 @@ func (proxy *Proxy) shouldUseDragonfly(req *http.Request) bool {
 			if strings.Contains(rule.Redirect, "/") {
 				u, err := url.Parse(rule.Regx.ReplaceAllString(req.URL.String(), rule.Redirect))
 				if err != nil {
-					logger.Errorf("failed to rewrite url", err)
+					logger.Errorf("failed to rewrite url: %s", err)
 					return false
 				}
 				req.URL = u
