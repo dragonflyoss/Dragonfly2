@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2024 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//go:generate mockgen -destination mocks/delete_task_mock.go -source delete_task.go -package mocks
+
+//go:generate mockgen -destination mocks/manager_tasks_mock.go -source manager_tasks.go -package mocks
+
 package job
 
 import (
@@ -21,14 +23,15 @@ import (
 	"fmt"
 	"time"
 
+	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
+	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/trace"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
-	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
-	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/trace"
 )
 
 // ManagerTask is an interface for delete and list tasks.
