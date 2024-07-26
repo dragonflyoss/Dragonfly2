@@ -33,10 +33,9 @@ var _ = Describe("Download Using Dfget", func() {
 			fmt.Println(err)
 			Expect(err).NotTo(HaveOccurred())
 
-			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("dfget %s --disable-back-to-source --output %s", util.GetFileURL("/etc/containerd/config.toml"), util.GetOutputPath("config.toml"))).CombinedOutput()
-			fmt.Println(err)
+			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("dfget %s --disable-back-to-source --output %s", util.GetFileURL("/etc/containerd/config.toml"), util.GetOutputPath("config.toml-1"))).CombinedOutput()
+			fmt.Println(string(out), err)
 			Expect(err).NotTo(HaveOccurred())
-			fmt.Println(out)
 
 			fileMetadata := util.FileMetadata{
 				ID:     "1fc5ed9922a3d741063c169ec49c2071a391db5fda8de30eb6a97f60b5038c16",
@@ -47,7 +46,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
-			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("config.toml"))
+			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("config.toml-1"))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
@@ -71,10 +70,9 @@ var _ = Describe("Download Using Dfget", func() {
 			fmt.Println(err)
 			Expect(err).NotTo(HaveOccurred())
 
-			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("dfget %s --disable-back-to-source --output %s", util.GetFileURL("/bin/kubectl"), util.GetOutputPath("kubectl"))).CombinedOutput()
-			fmt.Println(err)
+			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("dfget %s --disable-back-to-source --output %s", util.GetFileURL("/bin/kubectl"), util.GetOutputPath("kubectl-1"))).CombinedOutput()
+			fmt.Println(string(out), err)
 			Expect(err).NotTo(HaveOccurred())
-			fmt.Println(out)
 
 			fileMetadata := util.FileMetadata{
 				ID:     "aaa32162d94ffb18dd407dc9abf2ac915b6dac4687dcf936a364818717d0155b",
@@ -85,7 +83,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
-			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("kubectl"))
+			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("kubectl-1"))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
@@ -109,10 +107,9 @@ var _ = Describe("Download Using Dfget", func() {
 			fmt.Println(err)
 			Expect(err).NotTo(HaveOccurred())
 
-			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("dfget %s --disable-back-to-source --output %s", util.GetFileURL("/bin/x86_64"), util.GetOutputPath("x86_64"))).CombinedOutput()
-			fmt.Println(err)
+			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("dfget %s --disable-back-to-source --output %s", util.GetFileURL("/bin/x86_64"), util.GetOutputPath("x86_64-1"))).CombinedOutput()
+			fmt.Println(string(out), err)
 			Expect(err).NotTo(HaveOccurred())
-			fmt.Println(out)
 
 			fileMetadata := util.FileMetadata{
 				ID:     "3e9135a3e652efb9e6ae0b430f61d36a91093208009ddb839a1c9a1979274f89",
@@ -123,7 +120,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
-			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("x86_64"))
+			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("x86_64-1"))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
@@ -147,10 +144,9 @@ var _ = Describe("Download Using Dfget", func() {
 			fmt.Println(err)
 			Expect(err).NotTo(HaveOccurred())
 
-			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("dfget %s --disable-back-to-source --output %s", util.GetFileURL("/bin/zless"), util.GetOutputPath("zless"))).CombinedOutput()
-			fmt.Println(err)
+			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("dfget %s --disable-back-to-source --output %s", util.GetFileURL("/bin/zless"), util.GetOutputPath("zless-1"))).CombinedOutput()
+			fmt.Println(string(out), err)
 			Expect(err).NotTo(HaveOccurred())
-			fmt.Println(out)
 
 			fileMetadata := util.FileMetadata{
 				ID:     "a36732ab9c09237884ceefe8c1a007558fd15a9c891f1f905e4b95136266da70",
@@ -161,7 +157,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
-			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("zless"))
+			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("zless-1"))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
@@ -185,10 +181,9 @@ var _ = Describe("Download Using Dfget", func() {
 			fmt.Println(err)
 			Expect(err).NotTo(HaveOccurred())
 
-			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("dfget %s --disable-back-to-source --output %s", util.GetFileURL("/bin/bash"), util.GetOutputPath("bash"))).CombinedOutput()
-			fmt.Println(err)
+			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("dfget %s --disable-back-to-source --output %s", util.GetFileURL("/bin/bash"), util.GetOutputPath("bash-1"))).CombinedOutput()
+			fmt.Println(string(out), err)
 			Expect(err).NotTo(HaveOccurred())
-			fmt.Println(out)
 
 			fileMetadata := util.FileMetadata{
 				ID:     "f2efea3df39f19e192a395843f67cfbb4338f3616014d9c5857da4c14cd01621",
@@ -199,7 +194,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
-			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("bash"))
+			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("bash-1"))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
@@ -223,10 +218,9 @@ var _ = Describe("Download Using Dfget", func() {
 			fmt.Println(err)
 			Expect(err).NotTo(HaveOccurred())
 
-			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("dfget %s --disable-back-to-source --piece-length 134217728 --output %s", util.GetFileURL("/etc/containerd/config.toml"), util.GetOutputPath("config.toml"))).CombinedOutput()
-			fmt.Println(err)
+			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("dfget %s --disable-back-to-source --piece-length 134217728 --output %s", util.GetFileURL("/etc/containerd/config.toml"), util.GetOutputPath("config.toml-2"))).CombinedOutput()
+			fmt.Println(string(out), err)
 			Expect(err).NotTo(HaveOccurred())
-			fmt.Println(out)
 
 			fileMetadata := util.FileMetadata{
 				ID:     "1ae51fe69c381a4604517f1d00d4315afef070bab3bcb475f11770fc5b194821",
@@ -237,7 +231,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
-			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("config.toml"))
+			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("config.toml-2"))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
@@ -261,10 +255,9 @@ var _ = Describe("Download Using Dfget", func() {
 			fmt.Println(err)
 			Expect(err).NotTo(HaveOccurred())
 
-			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("dfget %s --disable-back-to-source --piece-length 67108864 --output %s", util.GetFileURL("/bin/kubectl"), util.GetOutputPath("kubectl"))).CombinedOutput()
-			fmt.Println(err)
+			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("dfget %s --disable-back-to-source --piece-length 67108864 --output %s", util.GetFileURL("/bin/kubectl"), util.GetOutputPath("kubectl-2"))).CombinedOutput()
+			fmt.Println(string(out), err)
 			Expect(err).NotTo(HaveOccurred())
-			fmt.Println(out)
 
 			fileMetadata := util.FileMetadata{
 				ID:     "617d59d9cf3f9bd394ee98f327a77fc0b45a34431e59938abd0db20b467d8713",
@@ -275,7 +268,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
-			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("kubectl"))
+			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("kubectl-2"))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
@@ -299,10 +292,9 @@ var _ = Describe("Download Using Dfget", func() {
 			fmt.Println(err)
 			Expect(err).NotTo(HaveOccurred())
 
-			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("dfget %s --disable-back-to-source --piece-length 33554432 --output %s", util.GetFileURL("/bin/x86_64"), util.GetOutputPath("x86_64"))).CombinedOutput()
-			fmt.Println(err)
+			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("dfget %s --disable-back-to-source --piece-length 33554432 --output %s", util.GetFileURL("/bin/x86_64"), util.GetOutputPath("x86_64-2"))).CombinedOutput()
+			fmt.Println(string(out), err)
 			Expect(err).NotTo(HaveOccurred())
-			fmt.Println(out)
 
 			fileMetadata := util.FileMetadata{
 				ID:     "f6b341fff271d4508e6f4820511c44bac3027c005c237798f98b89743c311148",
@@ -313,7 +305,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
-			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("x86_64"))
+			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("x86_64-2"))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
@@ -337,10 +329,9 @@ var _ = Describe("Download Using Dfget", func() {
 			fmt.Println(err)
 			Expect(err).NotTo(HaveOccurred())
 
-			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("dfget %s --disable-back-to-source --piece-length 16777216 --output %s", util.GetFileURL("/bin/zless"), util.GetOutputPath("zless"))).CombinedOutput()
-			fmt.Println(err)
+			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("dfget %s --disable-back-to-source --piece-length 16777216 --output %s", util.GetFileURL("/bin/zless"), util.GetOutputPath("zless-2"))).CombinedOutput()
+			fmt.Println(string(out), err)
 			Expect(err).NotTo(HaveOccurred())
-			fmt.Println(out)
 
 			fileMetadata := util.FileMetadata{
 				ID:     "c358a010a628bd2720634ca245886c06d6555db7c020561bbea96d6c3afc13c9",
@@ -351,7 +342,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
-			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("zless"))
+			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("zless-2"))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
@@ -375,10 +366,9 @@ var _ = Describe("Download Using Dfget", func() {
 			fmt.Println(err)
 			Expect(err).NotTo(HaveOccurred())
 
-			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("dfget %s --disable-back-to-source --piece-length 1048576 --output %s", util.GetFileURL("/bin/bash"), util.GetOutputPath("bash"))).CombinedOutput()
-			fmt.Println(err)
+			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("dfget %s --disable-back-to-source --piece-length 1048576 --output %s", util.GetFileURL("/bin/bash"), util.GetOutputPath("bash-2"))).CombinedOutput()
+			fmt.Println(string(out), err)
 			Expect(err).NotTo(HaveOccurred())
-			fmt.Println(out)
 
 			fileMetadata := util.FileMetadata{
 				ID:     "08b79b117296dd83c010d566c11b77e457d8021feb858f2d7b351686f12204e7",
@@ -389,7 +379,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
-			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("bash"))
+			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("bash-2"))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
@@ -413,10 +403,9 @@ var _ = Describe("Download Using Dfget", func() {
 			fmt.Println(err)
 			Expect(err).NotTo(HaveOccurred())
 
-			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("dfget %s --disable-back-to-source --application d7y --output %s", util.GetFileURL("/etc/containerd/config.toml"), util.GetOutputPath("config.toml"))).CombinedOutput()
-			fmt.Println(err)
+			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("dfget %s --disable-back-to-source --application d7y --output %s", util.GetFileURL("/etc/containerd/config.toml"), util.GetOutputPath("config.toml-3"))).CombinedOutput()
+			fmt.Println(string(out), err)
 			Expect(err).NotTo(HaveOccurred())
-			fmt.Println(out)
 
 			fileMetadata := util.FileMetadata{
 				ID:     "9746acdb4bd8bf2deeb5dd8a3275e51a7fdd4adf8b0dc1d9d26a4565d3ed6592",
@@ -427,7 +416,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
-			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("config.toml"))
+			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("config.toml-3"))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
@@ -451,10 +440,9 @@ var _ = Describe("Download Using Dfget", func() {
 			fmt.Println(err)
 			Expect(err).NotTo(HaveOccurred())
 
-			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("dfget %s --disable-back-to-source --tag d7y --output %s", util.GetFileURL("/etc/containerd/config.toml"), util.GetOutputPath("config.toml"))).CombinedOutput()
-			fmt.Println(err)
+			out, err := clientPod.Command("sh", "-c", fmt.Sprintf("dfget %s --disable-back-to-source --tag d7y --output %s", util.GetFileURL("/etc/containerd/config.toml"), util.GetOutputPath("config.toml-4"))).CombinedOutput()
+			fmt.Println(string(out), err)
 			Expect(err).NotTo(HaveOccurred())
-			fmt.Println(out)
 
 			fileMetadata := util.FileMetadata{
 				ID:     "9746acdb4bd8bf2deeb5dd8a3275e51a7fdd4adf8b0dc1d9d26a4565d3ed6592",
@@ -465,7 +453,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
-			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("config.toml"))
+			sha256sum, err = util.CalculateSha256ByOutput([]*util.PodExec{clientPod}, util.GetOutputPath("config.toml-4"))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
