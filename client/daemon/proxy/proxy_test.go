@@ -18,9 +18,13 @@ package proxy
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -133,6 +137,56 @@ func (tc *testCase) TestMirror(t *testing.T) {
 	}
 }
 
+func (tc *testCase) TestEventStream(t *testing.T) {
+	a := assert.New(t)
+	if !a.Nil(tc.Error) {
+		return
+	}
+	tp, err := NewProxy(WithRules(tc.Rules))
+	if !a.Nil(err) {
+		return
+	}
+	tp.transport = &mockTransport{}
+	for _, item := range tc.Items {
+		req, err := http.NewRequest("GET", item.URL, nil)
+		if !a.Nil(err) {
+			continue
+		}
+		if !a.Equal(tp.shouldUseDragonfly(req), !item.Direct) {
+			fmt.Println(item.URL)
+		}
+		if item.UseHTTPS {
+			a.Equal(req.URL.Scheme, "https")
+		} else {
+			a.Equal(req.URL.Scheme, "http")
+		}
+		if item.Redirect != "" {
+			a.Equal(item.Redirect, req.URL.String())
+		}
+		if strings.Contains(req.URL.Path, "event-stream") {
+			batch := 10
+			_, span := tp.tracer.Start(req.Context(), config.SpanProxy)
+			w := &mockResponseWriter{}
+			req.Header.Set("X-Response-Batch", strconv.Itoa(batch))
+			if req.URL.Path == "/event-stream" {
+				req.Header.Set("X-Event-Stream", "true")
+				req.Header.Set("X-Response-Content-Length", "-1")
+				req.Header.Set("X-Response-Content-Encoding", "chunked")
+				req.Header.Set("X-Response-Content-Type", "text/event-stream")
+				tp.handleHTTP(span, w, req)
+				a.GreaterOrEqual(w.flushCount, batch)
+			} else {
+				req.Header.Set("X-Event-Stream", "false")
+				req.Header.Set("X-Response-Content-Length", strconv.Itoa(batch))
+				req.Header.Set("X-Response-Content-Encoding", "")
+				req.Header.Set("X-Response-Content-Type", "application/octet-stream")
+				tp.handleHTTP(span, w, req)
+				a.Less(w.flushCount, batch)
+			}
+		}
+	}
+}
+
 func TestMatch(t *testing.T) {
 	newTestCase().
 		WithRule("/blobs/sha256/", false, false, "").
@@ -234,4 +288,65 @@ func TestMatchWithRedirect(t *testing.T) {
 		WithTest("http://index.docker.io/1", false, true, "https://r/t/1").
 		TestMirror(t)
 
+}
+
+func TestProxyEventStream(t *testing.T) {
+	newTestCase().
+		WithRule("/blobs/sha256/", false, false, "").
+		WithTest("http://h/event-stream", true, false, "").
+		WithTest("http://h/not-event-stream", true, false, "").
+		TestEventStream(t)
+}
+
+type mockResponseWriter struct {
+	flushCount int
+}
+
+func (w *mockResponseWriter) Header() http.Header {
+	return http.Header{}
+}
+
+func (w *mockResponseWriter) Write(p []byte) (int, error) {
+	return len(string(p)), nil
+}
+
+func (w *mockResponseWriter) WriteHeader(int) {}
+
+func (w *mockResponseWriter) Flush() {
+	w.flushCount++
+}
+
+type mockTransport struct{}
+
+func (rt *mockTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	batch, _ := strconv.Atoi(r.Header.Get("X-Response-Batch"))
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       &mockReadCloser{batch: batch},
+		Header: http.Header{
+			"Content-Length":   []string{r.Header.Get("X-Response-Content-Length")},
+			"Content-Encoding": []string{r.Header.Get("X-Response-Content-Encoding")},
+			"Content-Type":     []string{r.Header.Get("X-Response-Content-Type")},
+		},
+	}, nil
+}
+
+type mockReadCloser struct {
+	batch int
+	count int
+}
+
+func (rc *mockReadCloser) Read(p []byte) (n int, err error) {
+	if rc.count == rc.batch {
+		return 0, io.EOF
+	}
+	time.Sleep(100 * time.Millisecond)
+	p[0] = '0'
+	p = p[:1]
+	rc.count++
+	return len(p), nil
+}
+
+func (rc *mockReadCloser) Close() error {
+	return nil
 }

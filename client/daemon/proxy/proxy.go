@@ -22,6 +22,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"io"
+	"mime"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -401,6 +402,25 @@ func parseBasicAuth(auth string) (username, password string, ok bool) {
 	return cs[:s], cs[s+1:], true
 }
 
+// flushInterval returns zero, conditionally
+// overriding its value for a specific request/response.
+func (proxy *Proxy) flushInterval(res *http.Response) time.Duration {
+	resCT := res.Header.Get("Content-Type")
+
+	// For Server-Sent Events responses, flush immediately.
+	// The MIME type is defined in https://www.w3.org/TR/eventsource/#text-event-stream
+	if baseCT, _, _ := mime.ParseMediaType(resCT); baseCT == "text/event-stream" {
+		return -1 // negative means immediately
+	}
+
+	// We might have the case of streaming for which Content-Length might be unset.
+	if res.ContentLength == -1 {
+		return -1
+	}
+
+	return 0
+}
+
 func (proxy *Proxy) handleHTTP(span trace.Span, w http.ResponseWriter, req *http.Request) {
 	resp, err := proxy.transport.RoundTrip(req)
 	if err != nil {
@@ -412,7 +432,26 @@ func (proxy *Proxy) handleHTTP(span trace.Span, w http.ResponseWriter, req *http
 	copyHeader(w.Header(), resp.Header)
 	w.WriteHeader(resp.StatusCode)
 	span.SetAttributes(semconv.HTTPStatusCodeKey.Int(resp.StatusCode))
-	if n, err := io.Copy(w, resp.Body); err != nil && err != io.EOF {
+
+	// support event stream responses, see: https://github.com/golang/go/issues/2012
+	var lw io.Writer = w
+	if flushInterval := proxy.flushInterval(resp); flushInterval != 0 {
+		mlw := &maxLatencyWriter{
+			dst:     w,
+			flush:   http.NewResponseController(w).Flush,
+			latency: flushInterval,
+		}
+		defer mlw.stop()
+
+		// set up initial timer so headers get flushed even if body writes are delayed
+		mlw.flushPending = true
+		mlw.t = time.AfterFunc(flushInterval, mlw.delayedFlush)
+
+		lw = mlw
+		logger.Debugf("handle event stream response: %s, url：%s", req.Host, req.URL.String())
+	}
+
+	if n, err := io.Copy(lw, resp.Body); err != nil && err != io.EOF {
 		if peerID := resp.Header.Get(config.HeaderDragonflyPeer); peerID != "" {
 			logger.Errorf("failed to write http body: %v, peer: %s, task: %s, written bytes: %d",
 				err, peerID, resp.Header.Get(config.HeaderDragonflyTask), n)
