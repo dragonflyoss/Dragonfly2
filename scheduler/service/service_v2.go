@@ -141,26 +141,30 @@ func (v *V2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePeerServer) error
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerFinishedRequest:
 			downloadPeerFinishedRequest := announcePeerRequest.DownloadPeerFinishedRequest
 			log.Infof("receive DownloadPeerFinishedRequest, content length: %d, piece count: %d", downloadPeerFinishedRequest.GetContentLength(), downloadPeerFinishedRequest.GetPieceCount())
-			if err := v.handleDownloadPeerFinishedRequest(ctx, req.GetPeerId()); err != nil {
+			// Notice: Handler uses context.Background() to avoid stream cancel by dfdameon.
+			if err := v.handleDownloadPeerFinishedRequest(context.Background(), req.GetPeerId()); err != nil {
 				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerBackToSourceFinishedRequest:
 			downloadPeerBackToSourceFinishedRequest := announcePeerRequest.DownloadPeerBackToSourceFinishedRequest
 			log.Infof("receive DownloadPeerBackToSourceFinishedRequest, content length: %d, piece count: %d", downloadPeerBackToSourceFinishedRequest.GetContentLength(), downloadPeerBackToSourceFinishedRequest.GetPieceCount())
-			if err := v.handleDownloadPeerBackToSourceFinishedRequest(ctx, req.GetPeerId(), downloadPeerBackToSourceFinishedRequest); err != nil {
+			// Notice: Handler uses context.Background() to avoid stream cancel by dfdameon.
+			if err := v.handleDownloadPeerBackToSourceFinishedRequest(context.Background(), req.GetPeerId(), downloadPeerBackToSourceFinishedRequest); err != nil {
 				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerFailedRequest:
 			log.Infof("receive DownloadPeerFailedRequest, description: %s", announcePeerRequest.DownloadPeerFailedRequest.GetDescription())
-			if err := v.handleDownloadPeerFailedRequest(ctx, req.GetPeerId()); err != nil {
+			// Notice: Handler uses context.Background() to avoid stream cancel by dfdameon.
+			if err := v.handleDownloadPeerFailedRequest(context.Background(), req.GetPeerId()); err != nil {
 				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerBackToSourceFailedRequest:
 			log.Infof("receive DownloadPeerBackToSourceFailedRequest, description: %s", announcePeerRequest.DownloadPeerBackToSourceFailedRequest.GetDescription())
-			if err := v.handleDownloadPeerBackToSourceFailedRequest(ctx, req.GetPeerId()); err != nil {
+			// Notice: Handler uses context.Background() to avoid stream cancel by dfdameon.
+			if err := v.handleDownloadPeerBackToSourceFailedRequest(context.Background(), req.GetPeerId()); err != nil {
 				log.Error(err)
 				return err
 			}
