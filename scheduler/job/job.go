@@ -46,6 +46,10 @@ import (
 const (
 	// preheatTimeout is timeout of preheating.
 	preheatTimeout = 20 * time.Minute
+	// listTasksTimeout is timeout of listing tasks.
+	listTasksTimeout = 10 * time.Minute
+	// deleteTaskTimeout is timeout of deleting task.
+	deleteTaskTimeout = 20 * time.Minute
 )
 
 // Job is an interface for job.
@@ -109,8 +113,10 @@ func New(cfg *config.Config, resource resource.Resource) (Job, error) {
 	}
 
 	namedJobFuncs := map[string]any{
-		internaljob.PreheatJob:   t.preheat,
-		internaljob.SyncPeersJob: t.syncPeers,
+		internaljob.PreheatJob:    t.preheat,
+		internaljob.SyncPeersJob:  t.syncPeers,
+		internaljob.ListTasksJob:  t.listTasks,
+		internaljob.DeleteTaskJob: t.deleteTask,
 	}
 
 	if err := localJob.RegisterJob(namedJobFuncs); err != nil {
@@ -296,4 +302,119 @@ func (j *job) syncPeers() (string, error) {
 	})
 
 	return internaljob.MarshalResponse(hosts)
+}
+
+// listTasks is a job to list tasks.
+func (j *job) listTasks(ctx context.Context, data string) (string, error) {
+	ctx, cancel := context.WithTimeout(ctx, listTasksTimeout)
+	defer cancel()
+
+	req := &internaljob.ListTasksRequest{}
+	if err := internaljob.UnmarshalRequest(data, req); err != nil {
+		logger.Errorf("unmarshal request err: %s, request body: %s", err.Error(), data)
+		return "", err
+	}
+
+	if err := validator.New().Struct(req); err != nil {
+		logger.Errorf("listTasks %s validate failed: %s", req.TaskID, err.Error())
+		return "", err
+	}
+
+	// Get all peers by task id
+	peers, err := j.getPeers(req.TaskID)
+	if err != nil {
+		logger.Errorf("get peers by task id %s failed: %s", req.TaskID, err.Error())
+		return "", err
+	}
+
+	// Return peers by page
+	listTaskResponse := &internaljob.ListTasksResponse{
+		Total: len(peers),
+		Page:  req.Page,
+		Peers: peers[req.Page*req.PerPage : (req.Page+1)*req.PerPage],
+	}
+
+	return internaljob.MarshalResponse(listTaskResponse)
+}
+
+// deleteTask is a job to delete task.
+func (j *job) deleteTask(ctx context.Context, data string) (string, error) {
+	ctx, cancel := context.WithTimeout(ctx, deleteTaskTimeout)
+	defer cancel()
+
+	req := &internaljob.DeleteTaskRequest{}
+	if err := internaljob.UnmarshalRequest(data, req); err != nil {
+		logger.Errorf("unmarshal request err: %s, request body: %s", err.Error(), data)
+		return "", err
+	}
+
+	if err := validator.New().Struct(req); err != nil {
+		logger.Errorf("deleteTask %s validate failed: %s", req.TaskID, err.Error())
+		return "", err
+	}
+
+	// Get all peers by task id
+	peers, err := j.getPeers(req.TaskID)
+	if err != nil {
+		logger.Errorf("get peers by task id %s failed: %s", req.TaskID, err.Error())
+		return "", err
+	}
+
+	// Delete task by task id and host id
+	successTasks := make([]*internaljob.TaskInfo, 0)
+	failureTasks := make([]*internaljob.TaskInfo, 0)
+
+	for _, peer := range peers {
+		// hostID := peer.Host.ID
+		// get task info by task id
+		task, ok := j.resource.TaskManager().Load(req.TaskID)
+		if !ok {
+			logger.Errorf("task %s not found", req.TaskID)
+			failureTasks = append(failureTasks, &internaljob.TaskInfo{
+				Task: nil,
+				Peer: peer,
+				Desc: "task not found",
+			})
+			continue
+		}
+
+		// TODO: change to scheduler delete task grpc function
+		// and add batch delete
+
+		successTasks = append(successTasks, &internaljob.TaskInfo{
+			Task: task,
+			Peer: peer,
+			Desc: "success",
+		})
+	}
+
+	deleteTaskResponse := &internaljob.DeleteTaskResponse{
+		SuccessTasks: successTasks,
+		FailureTasks: failureTasks,
+	}
+
+	return internaljob.MarshalResponse(deleteTaskResponse)
+}
+
+// getPeers try to get peers by task id
+func (j *job) getPeers(taskID string) ([]*resource.Peer, error) {
+	// get task info by task id
+	task, ok := j.resource.TaskManager().Load(taskID)
+	if !ok {
+		logger.Errorf("task %s not found", taskID)
+		return nil, fmt.Errorf("task %s not found", taskID)
+	}
+
+	// get peer info by task info
+	peers := make([]*resource.Peer, 0)
+	for _, vertex := range task.DAG.GetVertices() {
+		peer := vertex.Value
+		if peer == nil {
+			continue
+		}
+
+		peers = append(peers, peer)
+	}
+
+	return peers, nil
 }
