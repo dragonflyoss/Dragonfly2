@@ -105,6 +105,7 @@ type GroupJobState struct {
 	GroupUUID string
 	State     string
 	CreatedAt time.Time
+	UpdatedAt time.Time
 	JobStates []*machineryv1tasks.TaskState
 }
 
@@ -125,6 +126,7 @@ func (t *Job) GetGroupJobState(groupID string) (*GroupJobState, error) {
 				GroupUUID: groupID,
 				State:     machineryv1tasks.StateFailure,
 				CreatedAt: taskState.CreatedAt,
+				UpdatedAt: time.Now(),
 				JobStates: taskStates,
 			}, nil
 		}
@@ -137,6 +139,7 @@ func (t *Job) GetGroupJobState(groupID string) (*GroupJobState, error) {
 				GroupUUID: groupID,
 				State:     machineryv1tasks.StatePending,
 				CreatedAt: taskState.CreatedAt,
+				UpdatedAt: time.Now(),
 				JobStates: taskStates,
 			}, nil
 		}
@@ -146,6 +149,7 @@ func (t *Job) GetGroupJobState(groupID string) (*GroupJobState, error) {
 		GroupUUID: groupID,
 		State:     machineryv1tasks.StateSuccess,
 		CreatedAt: taskStates[0].CreatedAt,
+		UpdatedAt: time.Now(),
 		JobStates: taskStates,
 	}, nil
 }
