@@ -13,7 +13,7 @@ jobs:
   check_size:
     name: Check Size
     timeout-minutes: 10
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, ARM64]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

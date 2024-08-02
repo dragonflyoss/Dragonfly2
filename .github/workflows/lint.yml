@@ -12,7 +12,7 @@ env:
 jobs:
   lint:
     name: Lint
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, ARM64]
     timeout-minutes: 30
     steps:
       - name: Checkout code

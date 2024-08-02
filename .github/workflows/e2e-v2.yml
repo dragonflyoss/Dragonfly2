@@ -19,7 +19,7 @@ env:
 
 jobs:
   e2e_tests:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, ARM64]
     timeout-minutes: 60
     strategy:
       matrix:
