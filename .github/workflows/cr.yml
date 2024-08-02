@@ -12,7 +12,7 @@ on:
 
 jobs:
   chatgpt_code_review:
-    runs-on: [self-hosted, Linux, ARM64]
+    runs-on: ubuntu-latest
     steps:
       - name: ChatGPT Code Review
         uses: anc95/ChatGPT-CodeReview@main

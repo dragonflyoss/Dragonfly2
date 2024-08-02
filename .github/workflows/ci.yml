@@ -14,7 +14,7 @@ jobs:
   test:
     name: Test
     timeout-minutes: 60
-    runs-on: [self-hosted, Linux, ARM64]
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -54,7 +54,7 @@ jobs:
   build:
     name: Build
     timeout-minutes: 20
-    runs-on: [self-hosted, Linux, ARM64]
+    runs-on: ubuntu-latest
     needs: [test]
     steps:
       - name: Check out code

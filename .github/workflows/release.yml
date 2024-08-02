@@ -7,7 +7,7 @@ on:
 
 jobs:
   goreleaser:
-    runs-on: [self-hosted, Linux, ARM64]
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - name: Checkout
