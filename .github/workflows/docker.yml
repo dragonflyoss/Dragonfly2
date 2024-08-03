@@ -10,7 +10,7 @@ on:
 jobs:
   push_image_to_registry:
     name: Push Image
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     strategy:
       matrix:
         module: ["manager", "scheduler", "dfdaemon", "trainer"]
