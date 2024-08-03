@@ -12,7 +12,7 @@ RUN apk --no-cache add bash make gcc libc-dev git
 
 COPY . /go/src/d7y.io/dragonfly/v2
 
-RUN make build-dfget-local && make install-dfget
+RUN make build-dfget && make install-dfget
 
 FROM ${BASE_IMAGE} as health
 

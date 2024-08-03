@@ -26,7 +26,7 @@ COPY . /go/src/d7y.io/dragonfly/v2
 
 COPY --from=console-builder /build/dist /go/src/d7y.io/dragonfly/v2/manager/dist
 
-RUN make build-manager-local && make install-manager
+RUN make build-manager-server && make install-manager
 
 FROM ${BASE_IMAGE} as health
 

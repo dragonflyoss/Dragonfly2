@@ -12,7 +12,7 @@ RUN apk --no-cache add bash make gcc libc-dev git
 
 COPY . /go/src/d7y.io/dragonfly/v2
 
-RUN make build-trainer-local && make install-trainer
+RUN make build-trainer && make install-trainer
 
 FROM ${BASE_IMAGE} as health
 
