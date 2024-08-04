@@ -79,8 +79,6 @@ func (m *managerTasks) CreateListTasks(ctx context.Context, schedulers []models.
 	var span trace.Span
 	ctx, span = tracer.Start(ctx, config.SpanListTasks, trace.WithSpanKind(trace.SpanKindProducer))
 	span.SetAttributes(config.AttributeListTasksID.String(json.TaskID))
-	span.SetAttributes(config.AttributeListTasksPage.Int(json.Page))
-	span.SetAttributes(config.AttributeListTasksPerPage.Int(json.PerPage))
 	defer span.End()
 
 	args, err := internaljob.MarshalRequest(json)

@@ -80,9 +80,7 @@ type CreateListTasksJobRequest struct {
 }
 
 type ListTasksArgs struct {
-	TaskID  string `json:"task_id" binding:"required"`
-	Page    int    `json:"page" binding:"omitempty,gte=1"`
-	PerPage int    `json:"per_page" binding:"omitempty,gte=1,lte=10000000"`
+	TaskID string `json:"task_id" binding:"required"`
 }
 
 type PreheatArgs struct {
