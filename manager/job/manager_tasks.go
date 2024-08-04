@@ -118,7 +118,7 @@ func (m *managerTasks) createGroupJob(ctx context.Context, name string, args []m
 
 	logger.Infof("create manager tasks group %s in queues %v, tasks: %#v", group.GroupUUID, queues, tasks)
 	if _, err := m.job.Server.SendGroupWithContext(ctx, group, 0); err != nil {
-		logger.Errorf("create  manager tasks group %s failed", group.GroupUUID, err)
+		logger.Errorf("create manager tasks group %s failed", group.GroupUUID, err)
 		return nil, err
 	}
 
