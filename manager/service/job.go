@@ -75,6 +75,46 @@ func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheat
 	return &job, nil
 }
 
+func (s *service) CreateDeleteTaskJob(ctx context.Context, json types.CreatePeerCacheCleanJobRequest) (*models.Job, error) {
+	candidateSchedulers, err := s.findCandidateSchedulers(ctx, json.SchedulerClusterIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	groupJobState, err := s.job.CreatePeerCacheClean(ctx, candidateSchedulers, json.Args)
+	if err != nil {
+		return nil, err
+	}
+
+	args, err := structure.StructToMap(json.Args)
+	if err != nil {
+		return nil, err
+	}
+
+	var candidateSchedulerClusters []models.SchedulerCluster
+	for _, candidateScheduler := range candidateSchedulers {
+		candidateSchedulerClusters = append(candidateSchedulerClusters, candidateScheduler.SchedulerCluster)
+	}
+
+	job := models.Job{
+		TaskID:            groupJobState.GroupUUID,
+		BIO:               json.BIO,
+		Type:              json.Type,
+		State:             groupJobState.State,
+		Args:              args,
+		UserID:            json.UserID,
+		SchedulerClusters: candidateSchedulerClusters,
+	}
+
+	if err := s.db.WithContext(ctx).Create(&job).Error; err != nil {
+		return nil, err
+	}
+
+	go s.pollingJob(context.Background(), job.ID, job.TaskID)
+
+	return &job, nil
+}
+
 func (s *service) findCandidateSchedulers(ctx context.Context, schedulerClusterIDs []uint) ([]models.Scheduler, error) {
 	var candidateSchedulers []models.Scheduler
 	if len(schedulerClusterIDs) != 0 {

@@ -29,6 +29,12 @@ const (
 
 	// SyncPeersJob is the name of syncing peers job.
 	SyncPeersJob = "sync_peers"
+
+	// ListTasksJob is the name of listing tasks job.
+	ListTasksJob = "list_tasks"
+
+	// DeleteTaskJob is the name of deleting task job.
+	DeleteTaskJob = "delete_task"
 )
 
 // Machinery server configuration.

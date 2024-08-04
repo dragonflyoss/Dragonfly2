@@ -40,6 +40,8 @@ type Job struct {
 	*internaljob.Job
 	Preheat
 	SyncPeers
+	ListTasks
+	DeleteTask
 }
 
 // New returns a new Job.
