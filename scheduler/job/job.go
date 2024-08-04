@@ -306,6 +306,9 @@ func (j *job) syncPeers() (string, error) {
 
 // listTasks is a job to list tasks.
 func (j *job) listTasks(ctx context.Context, data string) (string, error) {
+	// TODO:
+	// 1. query all peers with task id
+	// 2. delete current task by task id and host id
 	ctx, cancel := context.WithTimeout(ctx, listTasksTimeout)
 	defer cancel()
 
@@ -339,6 +342,8 @@ func (j *job) listTasks(ctx context.Context, data string) (string, error) {
 
 // deleteTask is a job to delete task.
 func (j *job) deleteTask(ctx context.Context, data string) (string, error) {
+	// TODO:
+	// 1. query all peers with task id
 	ctx, cancel := context.WithTimeout(ctx, deleteTaskTimeout)
 	defer cancel()
 
@@ -380,6 +385,9 @@ func (j *job) deleteTask(ctx context.Context, data string) (string, error) {
 
 		// TODO: change to scheduler delete task grpc function
 		// and add batch delete
+		j.resource.SeedPeer().Client().DeleteCacheTask(ctx, &dfdaemonv2.DeleteCacheTaskRequest{
+			TaskId: req.TaskID,
+		})
 
 		successTasks = append(successTasks, &internaljob.TaskInfo{
 			Task: task,
