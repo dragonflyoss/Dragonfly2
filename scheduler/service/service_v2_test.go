@@ -2477,7 +2477,7 @@ func TestServiceV2_handleDownloadPieceFinishedRequest(t *testing.T) {
 			},
 			run: func(t *testing.T, svc *V2, req *schedulerv2.DownloadPieceFinishedRequest, peer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
 				assert := assert.New(t)
-				assert.ErrorIs(svc.handleDownloadPieceFinishedRequest(context.Background(), peer.ID, req), status.Error(codes.InvalidArgument, "invalid digest"))
+				assert.ErrorIs(svc.handleDownloadPieceFinishedRequest(peer.ID, req), status.Error(codes.InvalidArgument, "invalid digest"))
 			},
 		},
 		{
@@ -2501,7 +2501,7 @@ func TestServiceV2_handleDownloadPieceFinishedRequest(t *testing.T) {
 				)
 
 				assert := assert.New(t)
-				assert.ErrorIs(svc.handleDownloadPieceFinishedRequest(context.Background(), peer.ID, req), status.Errorf(codes.NotFound, "peer %s not found", peer.ID))
+				assert.ErrorIs(svc.handleDownloadPieceFinishedRequest(peer.ID, req), status.Errorf(codes.NotFound, "peer %s not found", peer.ID))
 			},
 		},
 		{
@@ -2527,7 +2527,7 @@ func TestServiceV2_handleDownloadPieceFinishedRequest(t *testing.T) {
 				)
 
 				assert := assert.New(t)
-				assert.NoError(svc.handleDownloadPieceFinishedRequest(context.Background(), peer.ID, req))
+				assert.NoError(svc.handleDownloadPieceFinishedRequest(peer.ID, req))
 
 				piece, loaded := peer.LoadPiece(int32(req.Piece.Number))
 				assert.True(loaded)
@@ -2569,7 +2569,7 @@ func TestServiceV2_handleDownloadPieceFinishedRequest(t *testing.T) {
 				)
 
 				assert := assert.New(t)
-				assert.NoError(svc.handleDownloadPieceFinishedRequest(context.Background(), peer.ID, req))
+				assert.NoError(svc.handleDownloadPieceFinishedRequest(peer.ID, req))
 
 				piece, loaded := peer.LoadPiece(int32(req.Piece.Number))
 				assert.True(loaded)
