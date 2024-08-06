@@ -470,8 +470,8 @@ func TestPeerHostOption_Load(t *testing.T) {
 				},
 			},
 			HijackHTTPS: &HijackConfig{
-				Cert: "./testdata/certs/sca.crt",
-				Key:  "./testdata/certs/sca.key",
+				Cert: types.PEMContent(_cert),
+				Key:  types.PEMContent(_key),
 				Hosts: []*HijackHost{
 					{
 						Regx:     hijackExp,
