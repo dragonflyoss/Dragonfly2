@@ -98,20 +98,20 @@ func NewProxyManager(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskMa
 			if r.Direct {
 				method = "directly"
 			}
-			scheme := ""
+			prompt := ""
 			if r.UseHTTPS {
-				scheme = "and force https"
+				prompt = " and force https"
 			}
-			logger.Infof("[%d] proxy %s %s %s", i+1, r.Regx, method, scheme)
+			logger.Infof("[%d] proxy %s %s%s", i+1, r.Regx, method, prompt)
 		}
 	}
 
 	if hijackHTTPS != nil {
 		options = append(options, WithHTTPSHosts(hijackHTTPS.Hosts...))
 		if hijackHTTPS.Cert != "" && hijackHTTPS.Key != "" {
-			cert, err := certFromFile(hijackHTTPS.Cert, hijackHTTPS.Key)
+			cert, err := certFromFile(string(hijackHTTPS.Cert), string(hijackHTTPS.Key))
 			if err != nil {
-				return nil, fmt.Errorf("cert from file: %w", err)
+				return nil, fmt.Errorf("load cert error: %w", err)
 			}
 			if cert.Leaf != nil && cert.Leaf.IsCA {
 				logger.Debugf("hijack https request with CA <%s>", cert.Leaf.Subject.CommonName)
@@ -174,13 +174,14 @@ func (pm *proxyManager) Watch(opt *config.ProxyOption) {
 	}
 }
 
-func certFromFile(certFile string, keyFile string) (*tls.Certificate, error) {
+func certFromFile(certPEM string, keyPEM string) (*tls.Certificate, error) {
 	// cert.Certificate is a chain of one or more certificates, leaf first.
-	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	cert, err := tls.X509KeyPair([]byte(certPEM), []byte(keyPEM))
 	if err != nil {
 		return nil, fmt.Errorf("load cert: %w", err)
 	}
-	logger.Infof("use self-signed certificate (%s, %s) for https hijacking", certFile, keyFile)
+
+	logger.Infof("use self-signed certificate for https hijacking")
 
 	// leaf is CA cert or server cert
 	leaf, err := x509.ParseCertificate(cert.Certificate[0])
