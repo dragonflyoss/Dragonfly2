@@ -98,25 +98,25 @@ func NewProxyManager(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskMa
 			if r.Direct {
 				method = "directly"
 			}
-			scheme := ""
+			prompt := ""
 			if r.UseHTTPS {
-				scheme = "and force https"
+				prompt = " and force https"
 			}
-			logger.Infof("[%d] proxy %s %s %s", i+1, r.Regx, method, scheme)
+			logger.Infof("[%d] proxy %s %s%s", i+1, r.Regx, method, prompt)
 		}
 	}
 
 	if hijackHTTPS != nil {
 		options = append(options, WithHTTPSHosts(hijackHTTPS.Hosts...))
 		if hijackHTTPS.Cert != "" && hijackHTTPS.Key != "" {
-			cert, err := certFromFile(hijackHTTPS.Cert, hijackHTTPS.Key)
+			cert, err := tls.X509KeyPair([]byte(hijackHTTPS.Cert), []byte(hijackHTTPS.Key))
 			if err != nil {
 				return nil, fmt.Errorf("cert from file: %w", err)
 			}
 			if cert.Leaf != nil && cert.Leaf.IsCA {
 				logger.Debugf("hijack https request with CA <%s>", cert.Leaf.Subject.CommonName)
 			}
-			options = append(options, WithCert(cert))
+			options = append(options, WithCert(&cert))
 		}
 	}
 

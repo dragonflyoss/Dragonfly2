@@ -920,8 +920,8 @@ func (r *Regexp) MarshalYAML() (any, error) {
 
 // HijackConfig represents how dfdaemon hijacks http requests.
 type HijackConfig struct {
-	Cert  string             `yaml:"cert" mapstructure:"cert"`
-	Key   string             `yaml:"key" mapstructure:"key"`
+	Cert  types.PEMContent   `yaml:"cert" mapstructure:"cert"`
+	Key   types.PEMContent   `yaml:"key" mapstructure:"key"`
 	Hosts []*HijackHost      `yaml:"hosts" mapstructure:"hosts"`
 	SNI   []*TCPListenOption `yaml:"sni" mapstructure:"sni"`
 }
