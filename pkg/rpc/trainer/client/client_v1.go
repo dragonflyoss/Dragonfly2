@@ -20,6 +20,7 @@ package client
 
 import (
 	"context"
+	"math"
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -31,7 +32,6 @@ import (
 	trainerv1 "d7y.io/api/v2/pkg/apis/trainer/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc"
 )
 
 const (
@@ -49,8 +49,12 @@ func GetV1ByAddr(ctx context.Context, target string, opts ...grpc.DialOption) (V
 		ctx,
 		target,
 		append([]grpc.DialOption{
+			grpc.WithIdleTimeout(0),
+			grpc.WithDefaultCallOptions(
+				grpc.MaxCallRecvMsgSize(math.MaxInt32),
+				grpc.MaxCallSendMsgSize(math.MaxInt32),
+			),
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
-				rpc.OTELUnaryClientInterceptor(),
 				grpc_prometheus.UnaryClientInterceptor,
 				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
 				grpc_retry.UnaryClientInterceptor(
@@ -59,7 +63,6 @@ func GetV1ByAddr(ctx context.Context, target string, opts ...grpc.DialOption) (V
 				),
 			)),
 			grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
-				rpc.OTELStreamClientInterceptor(),
 				grpc_prometheus.StreamClientInterceptor,
 				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
 			)),

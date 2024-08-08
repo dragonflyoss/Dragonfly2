@@ -30,9 +30,15 @@ RUN make build-manager-server && make install-manager
 
 FROM ${BASE_IMAGE} as health
 
-ENV GRPC_HEALTH_PROBE_VERSION v0.4.16
+ENV GRPC_HEALTH_PROBE_VERSION v0.4.24
 
-RUN wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && \
+RUN if [ "$(uname -m)" = "ppc64le" ]; then \
+    wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-ppc64le; \
+    elif [ "$(uname -m)" = "aarch64" ]; then \
+    wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-arm64; \
+    else \
+    wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64; \
+    fi && \
     chmod +x /bin/grpc_health_probe
 
 FROM ${BASE_IMAGE}
@@ -43,6 +49,8 @@ ENV PATH=/opt/dragonfly/bin:$PATH
 
 RUN mkdir -p /opt/dragonfly/bin/manager/console \
     && echo "hosts: files dns" > /etc/nsswitch.conf
+
+RUN apk --no-cache add curl
 
 COPY --from=server-builder /opt/dragonfly/bin/manager /opt/dragonfly/bin/server
 COPY --from=health /bin/grpc_health_probe /bin/grpc_health_probe

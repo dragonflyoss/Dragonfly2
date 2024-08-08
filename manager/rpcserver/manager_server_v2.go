@@ -17,24 +17,19 @@
 package rpcserver
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
-	"strings"
-	"time"
 
-	cachev8 "github.com/go-redis/cache/v8"
-	"github.com/go-redis/redis/v8"
+	cachev9 "github.com/go-redis/cache/v9"
+	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"gorm.io/gorm"
 
 	commonv2 "d7y.io/api/v2/pkg/apis/common/v2"
-	inferencev1 "d7y.io/api/v2/pkg/apis/inference/v1"
 	managerv2 "d7y.io/api/v2/pkg/apis/manager/v2"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -45,12 +40,8 @@ import (
 	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/manager/types"
-	"d7y.io/dragonfly/v2/pkg/digest"
-	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/objectstorage"
 	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
 	"d7y.io/dragonfly/v2/pkg/slices"
-	"d7y.io/dragonfly/v2/pkg/structure"
 )
 
 // managerServerV2 is v2 version of the manager grpc server.
@@ -69,22 +60,16 @@ type managerServerV2 struct {
 
 	// Searcher interface.
 	searcher searcher.Searcher
-
-	// Object storage interface.
-	objectStorage objectstorage.ObjectStorage
 }
 
 // newManagerServerV2 returns v2 version of the manager server.
-func newManagerServerV2(
-	cfg *config.Config, database *database.Database, cache *cache.Cache, searcher searcher.Searcher,
-	objectStorage objectstorage.ObjectStorage) managerv2.ManagerServer {
+func newManagerServerV2(cfg *config.Config, database *database.Database, cache *cache.Cache, searcher searcher.Searcher) managerv2.ManagerServer {
 	return &managerServerV2{
-		config:        cfg,
-		db:            database.DB,
-		rdb:           database.RDB,
-		cache:         cache,
-		searcher:      searcher,
-		objectStorage: objectStorage,
+		config:   cfg,
+		db:       database.DB,
+		rdb:      database.RDB,
+		cache:    cache,
+		searcher: searcher,
 	}
 }
 
@@ -152,7 +137,6 @@ func (s *managerServerV2) GetSeedPeer(ctx context.Context, req *managerv2.GetSee
 		Ip:                seedPeer.IP,
 		Port:              seedPeer.Port,
 		DownloadPort:      seedPeer.DownloadPort,
-		ObjectStoragePort: seedPeer.ObjectStoragePort,
 		State:             seedPeer.State,
 		SeedPeerClusterId: uint64(seedPeer.SeedPeerClusterID),
 		SeedPeerCluster: &managerv2.SeedPeerCluster{
@@ -165,7 +149,7 @@ func (s *managerServerV2) GetSeedPeer(ctx context.Context, req *managerv2.GetSee
 	}
 
 	// Cache data.
-	if err := s.cache.Once(&cachev8.Item{
+	if err := s.cache.Once(&cachev9.Item{
 		Ctx:   ctx,
 		Key:   cacheKey,
 		Value: &pbSeedPeer,
@@ -225,7 +209,6 @@ func (s *managerServerV2) ListSeedPeers(ctx context.Context, req *managerv2.List
 			Ip:                seedPeer.IP,
 			Port:              seedPeer.Port,
 			DownloadPort:      seedPeer.DownloadPort,
-			ObjectStoragePort: seedPeer.ObjectStoragePort,
 			State:             seedPeer.State,
 			SeedPeerClusterId: uint64(seedPeer.SeedPeerClusterID),
 			SeedPeerCluster: &managerv2.SeedPeerCluster{
@@ -237,7 +220,7 @@ func (s *managerServerV2) ListSeedPeers(ctx context.Context, req *managerv2.List
 	}
 
 	// Cache data.
-	if err := s.cache.Once(&cachev8.Item{
+	if err := s.cache.Once(&cachev9.Item{
 		Ctx:   ctx,
 		Key:   cacheKey,
 		Value: &pbListSeedPeersResponse,
@@ -255,6 +238,8 @@ func (s *managerServerV2) UpdateSeedPeer(ctx context.Context, req *managerv2.Upd
 	seedPeer := models.SeedPeer{}
 	if err := s.db.WithContext(ctx).First(&seedPeer, models.SeedPeer{
 		Hostname:          req.Hostname,
+		IP:                req.Ip,
+		Port:              req.Port,
 		SeedPeerClusterID: uint(req.SeedPeerClusterId),
 	}).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -271,7 +256,6 @@ func (s *managerServerV2) UpdateSeedPeer(ctx context.Context, req *managerv2.Upd
 		IP:                req.GetIp(),
 		Port:              req.GetPort(),
 		DownloadPort:      req.GetDownloadPort(),
-		ObjectStoragePort: req.GetObjectStoragePort(),
 		State:             models.SeedPeerStateActive,
 		SeedPeerClusterID: uint(req.GetSeedPeerClusterId()),
 	}).Error; err != nil {
@@ -294,7 +278,6 @@ func (s *managerServerV2) UpdateSeedPeer(ctx context.Context, req *managerv2.Upd
 		Ip:                seedPeer.IP,
 		Port:              seedPeer.Port,
 		DownloadPort:      seedPeer.DownloadPort,
-		ObjectStoragePort: seedPeer.ObjectStoragePort,
 		State:             seedPeer.State,
 		SeedPeerClusterId: uint64(seedPeer.SeedPeerClusterID),
 	}, nil
@@ -310,7 +293,6 @@ func (s *managerServerV2) createSeedPeer(ctx context.Context, req *managerv2.Upd
 		IP:                req.GetIp(),
 		Port:              req.GetPort(),
 		DownloadPort:      req.GetDownloadPort(),
-		ObjectStoragePort: req.GetObjectStoragePort(),
 		State:             models.SeedPeerStateActive,
 		SeedPeerClusterID: uint(req.GetSeedPeerClusterId()),
 	}
@@ -328,7 +310,6 @@ func (s *managerServerV2) createSeedPeer(ctx context.Context, req *managerv2.Upd
 		Ip:                seedPeer.IP,
 		Port:              seedPeer.Port,
 		DownloadPort:      seedPeer.DownloadPort,
-		ObjectStoragePort: seedPeer.ObjectStoragePort,
 		SeedPeerClusterId: uint64(seedPeer.SeedPeerClusterID),
 		State:             seedPeer.State,
 	}, nil
@@ -412,7 +393,6 @@ func (s *managerServerV2) GetScheduler(ctx context.Context, req *managerv2.GetSc
 				Ip:                seedPeer.IP,
 				Port:              seedPeer.Port,
 				DownloadPort:      seedPeer.DownloadPort,
-				ObjectStoragePort: seedPeer.ObjectStoragePort,
 				State:             seedPeer.State,
 				SeedPeerClusterId: uint64(seedPeer.SeedPeerClusterID),
 				SeedPeerCluster: &managerv2.SeedPeerCluster{
@@ -454,7 +434,7 @@ func (s *managerServerV2) GetScheduler(ctx context.Context, req *managerv2.GetSc
 	}
 
 	// Cache data.
-	if err := s.cache.Once(&cachev8.Item{
+	if err := s.cache.Once(&cachev9.Item{
 		Ctx:   ctx,
 		Key:   cacheKey,
 		Value: &pbScheduler,
@@ -472,6 +452,8 @@ func (s *managerServerV2) UpdateScheduler(ctx context.Context, req *managerv2.Up
 	scheduler := models.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, models.Scheduler{
 		Hostname:           req.Hostname,
+		IP:                 req.Ip,
+		Port:               req.Port,
 		SchedulerClusterID: uint(req.SchedulerClusterId),
 	}).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -621,6 +603,12 @@ func (s *managerServerV2) ListSchedulers(ctx context.Context, req *managerv2.Lis
 	for _, scheduler := range schedulers {
 		seedPeers := []*managerv2.SeedPeer{}
 		for _, seedPeerCluster := range scheduler.SchedulerCluster.SeedPeerClusters {
+			// Marshal config of seed peer cluster.
+			seedPeerClusterConfig, err := seedPeerCluster.Config.MarshalJSON()
+			if err != nil {
+				return nil, status.Error(codes.DataLoss, err.Error())
+			}
+
 			for _, seedPeer := range seedPeerCluster.SeedPeers {
 				seedPeers = append(seedPeers, &managerv2.SeedPeer{
 					Id:                uint64(seedPeer.ID),
@@ -631,9 +619,14 @@ func (s *managerServerV2) ListSchedulers(ctx context.Context, req *managerv2.Lis
 					Ip:                seedPeer.IP,
 					Port:              seedPeer.Port,
 					DownloadPort:      seedPeer.DownloadPort,
-					ObjectStoragePort: seedPeer.ObjectStoragePort,
 					State:             seedPeer.State,
 					SeedPeerClusterId: uint64(seedPeer.SeedPeerClusterID),
+					SeedPeerCluster: &managerv2.SeedPeerCluster{
+						Id:     uint64(seedPeerCluster.ID),
+						Name:   seedPeerCluster.Name,
+						Bio:    seedPeerCluster.BIO,
+						Config: seedPeerClusterConfig,
+					},
 				})
 			}
 		}
@@ -666,7 +659,7 @@ func (s *managerServerV2) ListSchedulers(ctx context.Context, req *managerv2.Lis
 	}
 
 	// Cache data.
-	if err := s.cache.Once(&cachev8.Item{
+	if err := s.cache.Once(&cachev9.Item{
 		Ctx:   ctx,
 		Key:   cacheKey,
 		Value: &pbListSchedulersResponse,
@@ -676,66 +669,6 @@ func (s *managerServerV2) ListSchedulers(ctx context.Context, req *managerv2.Lis
 	}
 
 	return &pbListSchedulersResponse, nil
-}
-
-// Get object storage configuration.
-func (s *managerServerV2) GetObjectStorage(ctx context.Context, req *managerv2.GetObjectStorageRequest) (*managerv2.ObjectStorage, error) {
-	if !s.config.ObjectStorage.Enable {
-		return nil, status.Error(codes.NotFound, "object storage is disabled")
-	}
-
-	return &managerv2.ObjectStorage{
-		Name:             s.config.ObjectStorage.Name,
-		Region:           s.config.ObjectStorage.Region,
-		Endpoint:         s.config.ObjectStorage.Endpoint,
-		AccessKey:        s.config.ObjectStorage.AccessKey,
-		SecretKey:        s.config.ObjectStorage.SecretKey,
-		S3ForcePathStyle: s.config.ObjectStorage.S3ForcePathStyle,
-	}, nil
-}
-
-// List buckets configuration.
-func (s *managerServerV2) ListBuckets(ctx context.Context, req *managerv2.ListBucketsRequest) (*managerv2.ListBucketsResponse, error) {
-	if !s.config.ObjectStorage.Enable {
-		return nil, status.Error(codes.NotFound, "object storage is disabled")
-	}
-
-	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
-	var pbListBucketsResponse managerv2.ListBucketsResponse
-	cacheKey := pkgredis.MakeBucketKeyInManager(s.config.ObjectStorage.Name)
-
-	// Cache hit.
-	if err := s.cache.Get(ctx, cacheKey, &pbListBucketsResponse); err != nil {
-		log.Warnf("%s cache miss because of %s", cacheKey, err.Error())
-	} else {
-		log.Debugf("%s cache hit", cacheKey)
-		return &pbListBucketsResponse, nil
-	}
-
-	// Cache miss and search buckets.
-	buckets, err := s.objectStorage.ListBucketMetadatas(ctx)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	// Construct schedulers.
-	for _, bucket := range buckets {
-		pbListBucketsResponse.Buckets = append(pbListBucketsResponse.Buckets, &managerv2.Bucket{
-			Name: bucket.Name,
-		})
-	}
-
-	// Cache data.
-	if err := s.cache.Once(&cachev8.Item{
-		Ctx:   ctx,
-		Key:   cacheKey,
-		Value: &pbListBucketsResponse,
-		TTL:   s.cache.TTL,
-	}); err != nil {
-		log.Error(err)
-	}
-
-	return &pbListBucketsResponse, nil
 }
 
 // List applications configuration.
@@ -800,7 +733,7 @@ func (s *managerServerV2) ListApplications(ctx context.Context, req *managerv2.L
 	}
 
 	// Cache data.
-	if err := s.cache.Once(&cachev8.Item{
+	if err := s.cache.Once(&cachev9.Item{
 		Ctx:   ctx,
 		Key:   cacheKey,
 		Value: &pbListApplicationsResponse,
@@ -810,158 +743,6 @@ func (s *managerServerV2) ListApplications(ctx context.Context, req *managerv2.L
 	}
 
 	return &pbListApplicationsResponse, nil
-}
-
-// CreateModel creates model and update data of model to object storage.
-func (s *managerServerV2) CreateModel(ctx context.Context, req *managerv2.CreateModelRequest) (*emptypb.Empty, error) {
-	log := logger.WithHostnameAndIP(req.GetHostname(), req.GetIp())
-
-	if !s.config.ObjectStorage.Enable {
-		log.Warn("object storage is disabled")
-		return nil, status.Error(codes.Internal, "object storage is disabled")
-	}
-
-	// Create model bucket, if not exist.
-	if err := s.createModelBucket(ctx); err != nil {
-		log.Error(err)
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	var (
-		name       string
-		typ        string
-		evaluation types.ModelEvaluation
-		version    = time.Now().Nanosecond()
-	)
-	switch createModelRequest := req.GetRequest().(type) {
-	case *managerv2.CreateModelRequest_CreateGnnRequest:
-		name = idgen.GNNModelIDV1(req.GetIp(), req.GetHostname())
-		typ = models.ModelTypeGNN
-		evaluation = types.ModelEvaluation{
-			Precision: createModelRequest.CreateGnnRequest.GetPrecision(),
-			Recall:    createModelRequest.CreateGnnRequest.GetRecall(),
-			F1Score:   createModelRequest.CreateGnnRequest.GetF1Score(),
-		}
-
-		// Update GNN model config to object storage.
-		if err := s.createModelConfig(ctx, name); err != nil {
-			log.Error(err)
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-
-		// Upload GNN model file to object storage.
-		data := createModelRequest.CreateGnnRequest.GetData()
-		dgst := digest.New(digest.AlgorithmSHA256, digest.SHA256FromBytes(data))
-		if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName,
-			types.MakeObjectKeyOfModelFile(name, version), dgst.String(), bytes.NewReader(data)); err != nil {
-			log.Error(err)
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-	case *managerv2.CreateModelRequest_CreateMlpRequest:
-		name = idgen.MLPModelIDV1(req.GetHostname(), req.GetIp())
-		typ = models.ModelTypeMLP
-		evaluation = types.ModelEvaluation{
-			MSE: createModelRequest.CreateMlpRequest.GetMse(),
-			MAE: createModelRequest.CreateMlpRequest.GetMae(),
-		}
-
-		// Update MLP model config to object storage.
-		if err := s.createModelConfig(ctx, name); err != nil {
-			log.Error(err)
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-
-		// Upload MLP model file to object storage.
-		data := createModelRequest.CreateMlpRequest.GetData()
-		dgst := digest.New(digest.AlgorithmSHA256, digest.SHA256FromBytes(data))
-		if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName,
-			types.MakeObjectKeyOfModelFile(name, version), dgst.String(), bytes.NewReader(data)); err != nil {
-			log.Error(err)
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-	default:
-		msg := fmt.Sprintf("receive unknow request: %#v", createModelRequest)
-		log.Error(msg)
-		return nil, status.Error(codes.FailedPrecondition, msg)
-	}
-
-	scheduler := models.Scheduler{}
-	if err := s.db.WithContext(ctx).First(&scheduler, &models.Scheduler{
-		Hostname: req.Hostname,
-		IP:       req.Ip,
-	}).Error; err != nil {
-		log.Error(err)
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	rawEvaluation, err := structure.StructToMap(evaluation)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	// Create model in database.
-	if err := s.db.WithContext(ctx).Model(&scheduler).Association("Models").Append(&models.Model{
-		Type:       typ,
-		Version:    fmt.Sprint(version),
-		State:      models.ModelVersionStateInactive,
-		Evaluation: rawEvaluation,
-	}); err != nil {
-		log.Error(err)
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	return new(emptypb.Empty), nil
-}
-
-// createModelBucket creates model bucket if not exist.
-func (s *managerServerV2) createModelBucket(ctx context.Context) error {
-	// Check bucket exist.
-	isExist, err := s.objectStorage.IsBucketExist(ctx, s.config.Trainer.BucketName)
-	if err != nil {
-		return err
-	}
-
-	// Create bucket if not exist.
-	if !isExist {
-		if err := s.objectStorage.CreateBucket(ctx, s.config.Trainer.BucketName); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// createModelConfig creates model config to object storage.
-func (s *managerServerV2) createModelConfig(ctx context.Context, name string) error {
-	objectKey := types.MakeObjectKeyOfModelConfigFile(name)
-	isExist, err := s.objectStorage.IsObjectExist(ctx, s.config.Trainer.BucketName, objectKey)
-	if err != nil {
-		return err
-	}
-
-	// If the model config already exists, skip it.
-	if isExist {
-		return nil
-	}
-
-	// If the model config does not exist, create a new model config.
-	pbModelConfig := inferencev1.ModelConfig{
-		Name:     name,
-		Platform: types.DefaultTritonPlatform,
-		VersionPolicy: &inferencev1.ModelVersionPolicy{
-			PolicyChoice: &inferencev1.ModelVersionPolicy_Specific_{
-				Specific: &inferencev1.ModelVersionPolicy_Specific{Versions: []int64{}},
-			},
-		},
-	}
-
-	dgst := digest.New(digest.AlgorithmSHA256, digest.SHA256FromStrings(pbModelConfig.String()))
-	if err := s.objectStorage.PutObject(ctx, s.config.Trainer.BucketName,
-		types.MakeObjectKeyOfModelConfigFile(name), dgst.String(), strings.NewReader(pbModelConfig.String())); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // KeepAlive with manager.
@@ -984,6 +765,7 @@ func (s *managerServerV2) KeepAlive(stream managerv2.Manager_KeepAliveServer) er
 		scheduler := models.Scheduler{}
 		if err := s.db.First(&scheduler, models.Scheduler{
 			Hostname:           hostname,
+			IP:                 ip,
 			SchedulerClusterID: clusterID,
 		}).Updates(models.Scheduler{
 			State: models.SchedulerStateActive,
@@ -1004,6 +786,7 @@ func (s *managerServerV2) KeepAlive(stream managerv2.Manager_KeepAliveServer) er
 		seedPeer := models.SeedPeer{}
 		if err := s.db.First(&seedPeer, models.SeedPeer{
 			Hostname:          hostname,
+			IP:                ip,
 			SeedPeerClusterID: clusterID,
 		}).Updates(models.SeedPeer{
 			State: models.SeedPeerStateActive,
@@ -1027,6 +810,7 @@ func (s *managerServerV2) KeepAlive(stream managerv2.Manager_KeepAliveServer) er
 				scheduler := models.Scheduler{}
 				if err := s.db.First(&scheduler, models.Scheduler{
 					Hostname:           hostname,
+					IP:                 ip,
 					SchedulerClusterID: clusterID,
 				}).Updates(models.Scheduler{
 					State: models.SchedulerStateInactive,
@@ -1047,6 +831,7 @@ func (s *managerServerV2) KeepAlive(stream managerv2.Manager_KeepAliveServer) er
 				seedPeer := models.SeedPeer{}
 				if err := s.db.First(&seedPeer, models.SeedPeer{
 					Hostname:          hostname,
+					IP:                ip,
 					SeedPeerClusterID: clusterID,
 				}).Updates(models.SeedPeer{
 					State: models.SeedPeerStateInactive,

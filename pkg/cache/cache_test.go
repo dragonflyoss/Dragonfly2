@@ -151,6 +151,61 @@ func TestStorePointerToStruct(t *testing.T) {
 	}
 }
 
+func TestScan(t *testing.T) {
+	tc := New(DefaultExpiration, 0)
+	tc.Set(v2, v1, DefaultExpiration)
+	tc.Set(v3, v1, DefaultExpiration)
+	keys, err := tc.Scan("^b", 1)
+	if err != nil {
+		t.Error("Couldn't parse a regular expression and returns")
+	}
+
+	if len(keys) != 1 {
+		t.Error("Invalid number of scaning cache keys")
+	}
+
+	keys, err = tc.Scan("^b", 2)
+	if err != nil {
+		t.Error("Couldn't parse a regular expression and returns")
+	}
+
+	if len(keys) != 2 {
+		t.Error("Invalid number of scaning cache keys")
+	}
+
+	keys, err = tc.Scan("^b", 4)
+	if err != nil {
+		t.Error("Couldn't parse a regular expression and returns")
+	}
+
+	if len(keys) != 2 {
+		t.Error("Invalid number of scaning cache keys")
+	}
+
+	keys, err = tc.Scan("^ba", 2)
+	if err != nil {
+		t.Error("Couldn't parse a regular expression and returns")
+	}
+
+	if len(keys) != 2 {
+		t.Error("Invalid number of scaning cache keys")
+	}
+
+	keys, err = tc.Scan("^a", 2)
+	if err != nil {
+		t.Error("Couldn't parse a regular expression and returns")
+	}
+
+	if len(keys) != 0 {
+		t.Error("Invalid number of scaning cache keys")
+	}
+
+	_, err = tc.Scan("(", 2)
+	if err == nil {
+		t.Error("Parse a fault regular expression")
+	}
+}
+
 func TestAdd(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
 	err := tc.Add(v1, v2, DefaultExpiration)

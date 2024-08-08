@@ -206,6 +206,7 @@ func (ptm *peerTaskManager) storePartialFile(ctx context.Context, request *FileT
 		log.Errorf("open dest file error when reuse peer task: %s", err)
 		return err
 	}
+	defer f.Close()
 	rc, err := ptm.StorageManager.ReadAllPieces(ctx,
 		&storage.ReadAllPiecesRequest{PeerTaskMetadata: reuse.PeerTaskMetadata, Range: rg})
 	if err != nil {
@@ -225,9 +226,8 @@ func (ptm *peerTaskManager) storePartialFile(ctx context.Context, request *FileT
 	return nil
 }
 
-func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
+func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context, taskID string,
 	request *StreamTaskRequest) (io.ReadCloser, map[string]string, bool) {
-	taskID := idgen.TaskIDV1(request.URL, request.URLMeta)
 	var (
 		reuse      *storage.ReusePeerTask
 		reuseRange *http.Range // the range of parent peer task data to read
@@ -241,11 +241,11 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 		reuse = ptm.StorageManager.FindCompletedTask(taskID)
 	}
 
+	// for ranged request, check the parent task
 	if reuse == nil {
 		if request.Range == nil {
 			return nil, nil, false
 		}
-		// for ranged request, check the parent task
 		reuseRange = request.Range
 		taskID = idgen.ParentTaskIDV1(request.URL, request.URLMeta)
 		reuse = ptm.StorageManager.FindPartialCompletedTask(taskID, reuseRange)

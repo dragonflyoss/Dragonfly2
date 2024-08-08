@@ -36,30 +36,30 @@ func Test_watchdog(t *testing.T) {
 	assert := testifyassert.New(t)
 
 	var testCases = []struct {
-		name    string
-		timeout time.Duration
-		ok      bool
+		name     string
+		interval time.Duration
+		ok       bool
 	}{
 		{
-			name:    "watchdog ok",
-			timeout: time.Millisecond,
-			ok:      true,
+			name:     "watchdog ok",
+			interval: time.Second,
+			ok:       true,
 		},
 		{
-			name:    "watchdog failed",
-			timeout: time.Millisecond,
-			ok:      false,
+			name:     "watchdog failed",
+			interval: time.Second,
+			ok:       false,
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
+			interval := tt.interval
 			peer := &schedulerv1.PeerPacket_DestPeer{}
 			pps := mocks.NewMockScheduler_ReportPieceResultClient(ctrl)
 			watchdog := &synchronizerWatchdog{
-				done:        make(chan struct{}),
-				mainPeer:    atomic.Value{},
-				syncSuccess: atomic.NewBool(false),
+				done:     make(chan struct{}),
+				mainPeer: atomic.Value{},
 				peerTaskConductor: &peerTaskConductor{
 					SugaredLoggerOnWith: logger.With(
 						"peer", "test",
@@ -70,9 +70,15 @@ func Test_watchdog(t *testing.T) {
 				},
 			}
 			if tt.ok {
-				watchdog.peerTaskConductor.readyPieces.Set(0)
+				// mock piece update
+				go func() {
+					for i := int32(0); i < 10; i++ {
+						watchdog.peerTaskConductor.readyPieces.Set(i)
+						time.Sleep(interval)
+					}
+				}()
 			} else {
-				pps.EXPECT().Send(gomock.Any()).DoAndReturn(func(pr *schedulerv1.PieceResult) error {
+				pps.EXPECT().Send(gomock.Any()).AnyTimes().DoAndReturn(func(pr *schedulerv1.PieceResult) error {
 					assert.Equal(peer.PeerId, pr.DstPid)
 					return nil
 				})
@@ -81,11 +87,14 @@ func Test_watchdog(t *testing.T) {
 
 			wg := sync.WaitGroup{}
 			wg.Add(1)
-			go func() {
-				watchdog.watch(tt.timeout)
+			go func(interval time.Duration) {
+				watchdog.watch(3 * interval)
 				wg.Done()
-			}()
+			}(interval)
 
+			time.Sleep(10 * interval)
+			// exit watch dog
+			close(watchdog.done)
 			wg.Wait()
 		})
 	}

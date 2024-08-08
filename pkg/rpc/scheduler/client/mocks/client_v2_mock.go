@@ -5,6 +5,7 @@
 //
 //	mockgen -destination mocks/client_v2_mock.go -source client_v2.go -package mocks
 //
+
 // Package mocks is a generated GoMock package.
 package mocks
 
@@ -94,62 +95,61 @@ func (mr *MockV2MockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockV2)(nil).Close))
 }
 
-// ExchangePeer mocks base method.
-func (m *MockV2) ExchangePeer(arg0 context.Context, arg1 *scheduler.ExchangePeerRequest, arg2 ...grpc.CallOption) (*scheduler.ExchangePeerResponse, error) {
+// DeleteHost mocks base method.
+func (m *MockV2) DeleteHost(arg0 context.Context, arg1 *scheduler.DeleteHostRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "ExchangePeer", varargs...)
-	ret0, _ := ret[0].(*scheduler.ExchangePeerResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ExchangePeer indicates an expected call of ExchangePeer.
-func (mr *MockV2MockRecorder) ExchangePeer(arg0, arg1 any, arg2 ...any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExchangePeer", reflect.TypeOf((*MockV2)(nil).ExchangePeer), varargs...)
-}
-
-// LeaveHost mocks base method.
-func (m *MockV2) LeaveHost(arg0 context.Context, arg1 *scheduler.LeaveHostRequest, arg2 ...grpc.CallOption) error {
-	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "LeaveHost", varargs...)
+	ret := m.ctrl.Call(m, "DeleteHost", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// LeaveHost indicates an expected call of LeaveHost.
-func (mr *MockV2MockRecorder) LeaveHost(arg0, arg1 any, arg2 ...any) *gomock.Call {
+// DeleteHost indicates an expected call of DeleteHost.
+func (mr *MockV2MockRecorder) DeleteHost(arg0, arg1 any, arg2 ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LeaveHost", reflect.TypeOf((*MockV2)(nil).LeaveHost), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteHost", reflect.TypeOf((*MockV2)(nil).DeleteHost), varargs...)
 }
 
-// LeavePeer mocks base method.
-func (m *MockV2) LeavePeer(arg0 context.Context, arg1 *scheduler.LeavePeerRequest, arg2 ...grpc.CallOption) error {
+// DeletePeer mocks base method.
+func (m *MockV2) DeletePeer(arg0 context.Context, arg1 *scheduler.DeletePeerRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "LeavePeer", varargs...)
+	ret := m.ctrl.Call(m, "DeletePeer", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// LeavePeer indicates an expected call of LeavePeer.
-func (mr *MockV2MockRecorder) LeavePeer(arg0, arg1 any, arg2 ...any) *gomock.Call {
+// DeletePeer indicates an expected call of DeletePeer.
+func (mr *MockV2MockRecorder) DeletePeer(arg0, arg1 any, arg2 ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LeavePeer", reflect.TypeOf((*MockV2)(nil).LeavePeer), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePeer", reflect.TypeOf((*MockV2)(nil).DeletePeer), varargs...)
+}
+
+// DeleteTask mocks base method.
+func (m *MockV2) DeleteTask(arg0 context.Context, arg1 *scheduler.DeleteTaskRequest, arg2 ...grpc.CallOption) error {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteTask", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteTask indicates an expected call of DeleteTask.
+func (mr *MockV2MockRecorder) DeleteTask(arg0, arg1 any, arg2 ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTask", reflect.TypeOf((*MockV2)(nil).DeleteTask), varargs...)
 }
 
 // StatPeer mocks base method.

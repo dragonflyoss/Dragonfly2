@@ -18,49 +18,15 @@ package rpc
 
 import (
 	"context"
-	"sync"
 
 	"github.com/juju/ratelimit"
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
-
-var (
-	// otelUnaryInterceptor is the unary interceptor for tracing.
-	otelUnaryInterceptor grpc.UnaryClientInterceptor
-
-	// otelStreamInterceptor is the stream interceptor for tracing.
-	otelStreamInterceptor grpc.StreamClientInterceptor
-
-	// interceptorsInitialized is used to ensure that otel interceptors are initialized only once.
-	interceptorsInitialized = sync.Once{}
-)
-
-// OTEL interceptors must be created once to avoid memory leak,
-// refer to https://github.com/open-telemetry/opentelemetry-go-contrib/issues/4226 and
-// https://github.com/argoproj/argo-cd/pull/15174.
-func ensureOTELInterceptorInitialized() {
-	interceptorsInitialized.Do(func() {
-		otelUnaryInterceptor = otelgrpc.UnaryClientInterceptor()
-		otelStreamInterceptor = otelgrpc.StreamClientInterceptor()
-	})
-}
-
-// OTELUnaryClientInterceptor returns a new unary client interceptor that traces gRPC requests.
-func OTELUnaryClientInterceptor() grpc.UnaryClientInterceptor {
-	ensureOTELInterceptorInitialized()
-	return otelUnaryInterceptor
-}
-
-// OTELStreamClientInterceptor returns a new stream client interceptor that traces gRPC requests.
-func OTELStreamClientInterceptor() grpc.StreamClientInterceptor {
-	ensureOTELInterceptorInitialized()
-	return otelStreamInterceptor
-}
 
 // Refresher is the interface for refreshing dynconfig.
 type Refresher interface {
@@ -73,6 +39,8 @@ func RefresherUnaryClientInterceptor(r Refresher) grpc.UnaryClientInterceptor {
 		err := invoker(ctx, method, req, reply, cc, opts...)
 		if s, ok := status.FromError(err); ok {
 			if s.Code() == codes.ResourceExhausted || s.Code() == codes.Unavailable {
+				logger.Errorf("refresh dynconfig addresses when unary client calling error: %s %#v %v", method, req, err)
+
 				// nolint
 				r.Refresh()
 			}
@@ -88,6 +56,8 @@ func RefresherStreamClientInterceptor(r Refresher) grpc.StreamClientInterceptor 
 		clientStream, err := streamer(ctx, desc, cc, method, opts...)
 		if s, ok := status.FromError(err); ok {
 			if s.Code() == codes.ResourceExhausted || s.Code() == codes.Unavailable {
+				logger.Errorf("refresh dynconfig addresses when stream clinet calling error: %s %v", method, err)
+
 				// nolint
 				r.Refresh()
 			}

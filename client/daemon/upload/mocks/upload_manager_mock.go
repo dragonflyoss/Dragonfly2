@@ -5,6 +5,7 @@
 //
 //	mockgen -destination mocks/upload_manager_mock.go -source upload_manager.go -package mocks
 //
+
 // Package mocks is a generated GoMock package.
 package mocks
 

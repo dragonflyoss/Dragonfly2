@@ -85,8 +85,13 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
+		rotateConfig := logger.LogRotateConfig{
+			MaxSize:    dfgetConfig.LogMaxSize,
+			MaxAge:     dfgetConfig.LogMaxAge,
+			MaxBackups: dfgetConfig.LogMaxBackups}
+
 		// Initialize logger
-		if err := logger.InitDfget(dfgetConfig.Verbose, dfgetConfig.Console, d.LogDir()); err != nil {
+		if err := logger.InitDfget(dfgetConfig.Verbose, dfgetConfig.Console, d.LogDir(), rotateConfig); err != nil {
 			return fmt.Errorf("init client dfget logger: %w", err)
 		}
 
@@ -101,13 +106,13 @@ var rootCmd = &cobra.Command{
 		// do get file
 		err = runDfget(cmd, d.DfgetLockPath(), d.DaemonSockPath())
 		if err != nil {
-			msg := fmt.Sprintf("download success: %t cost: %d ms error: %s", false, time.Since(start).Milliseconds(), err.Error())
+			msg := fmt.Sprintf("download success: %t, cost: %d ms error: %s", false, time.Since(start).Milliseconds(), err.Error())
 			logger.With("url", dfgetConfig.URL).Info(msg)
 			fmt.Println(msg)
 			return fmt.Errorf("download url %s: %w", dfgetConfig.URL, err)
 		}
 
-		msg := fmt.Sprintf("download success: %t cost: %d ms", true, time.Since(start).Milliseconds())
+		msg := fmt.Sprintf("download success: %t, cost: %d ms", true, time.Since(start).Milliseconds())
 		logger.With("url", dfgetConfig.URL).Info(msg)
 		fmt.Println(msg)
 		return nil
@@ -170,6 +175,10 @@ func init() {
 
 	flagSet.String("logdir", dfgetConfig.LogDir, "Dfget log directory")
 
+	flagSet.String("datadir", dfgetConfig.DataDir, "Dfget data directory")
+
+	flagSet.String("cachedir", dfgetConfig.CacheDir, "Dfget cache directory")
+
 	flagSet.BoolP("recursive", "r", dfgetConfig.Recursive,
 		"Recursively download all resources in target url, the target source client must support list action")
 
@@ -205,6 +214,14 @@ func initDfgetDfpath(cfg *config.ClientOption) (dfpath.Dfpath, error) {
 
 	if cfg.LogDir != "" {
 		options = append(options, dfpath.WithLogDir(cfg.LogDir))
+	}
+
+	if cfg.DataDir != "" {
+		options = append(options, dfpath.WithDataDir(cfg.DataDir))
+	}
+
+	if cfg.CacheDir != "" {
+		options = append(options, dfpath.WithCacheDir(cfg.CacheDir))
 	}
 
 	if cfg.DaemonSock != "" {
@@ -314,9 +331,10 @@ func checkAndSpawnDaemon(dfgetLockPath, daemonSockPath string) (client.V1, error
 	for {
 		select {
 		case <-timeout:
-			return nil, errors.New("the daemon is unhealthy")
+			return nil, errors.Join(errors.New("the daemon is unhealthy"), err)
 		case <-tick.C:
 			if err = dfdaemonClient.CheckHealth(context.Background()); err != nil {
+				logger.Debugf("check health failed: %s", err)
 				continue
 			}
 			return dfdaemonClient, nil

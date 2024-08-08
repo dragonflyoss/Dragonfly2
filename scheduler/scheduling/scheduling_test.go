@@ -56,7 +56,6 @@ var (
 	mockPluginDir       = "bas"
 	mockSchedulerConfig = &config.SchedulerConfig{
 		RetryLimit:             2,
-		MaxScheduleCount:       3,
 		RetryBackToSourceLimit: 1,
 		RetryInterval:          10 * time.Millisecond,
 		BackToSourceCount:      int(mockTaskBackToSourceLimit),
@@ -158,16 +157,16 @@ var (
 		Platform:   "darwin",
 	}
 
-	mockTaskBackToSourceLimit int32 = 200
-	mockTaskURL                     = "http://example.com/foo"
-	mockTaskID                      = idgen.TaskIDV2(mockTaskURL, mockTaskDigest.String(), mockTaskTag, mockTaskApplication, mockTaskPieceLength, mockTaskFilters)
-	mockTaskDigest                  = digest.New(digest.AlgorithmSHA256, "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4")
-	mockTaskTag                     = "d7y"
-	mockTaskApplication             = "foo"
-	mockTaskFilters                 = []string{"bar"}
-	mockTaskHeader                  = map[string]string{"content-length": "100"}
-	mockTaskPieceLength       int32 = 2048
-	mockResourceConfig              = &config.ResourceConfig{
+	mockTaskBackToSourceLimit   int32 = 200
+	mockTaskURL                       = "http://example.com/foo"
+	mockTaskID                        = idgen.TaskIDV2(mockTaskURL, mockTaskDigest.String(), mockTaskTag, mockTaskApplication, mockTaskPieceLength, mockTaskFilteredQueryParams)
+	mockTaskDigest                    = digest.New(digest.AlgorithmSHA256, "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4")
+	mockTaskTag                       = "d7y"
+	mockTaskApplication               = "foo"
+	mockTaskFilteredQueryParams       = []string{"bar"}
+	mockTaskHeader                    = map[string]string{"content-length": "100"}
+	mockTaskPieceLength         int32 = 2048
+	mockResourceConfig                = &config.ResourceConfig{
 		Task: config.TaskConfig{
 			DownloadTiny: config.DownloadTinyConfig{
 				Scheme:  config.DefaultResourceTaskDownloadTinyScheme,
@@ -200,11 +199,13 @@ func TestScheduling_New(t *testing.T) {
 	tests := []struct {
 		name      string
 		pluginDir string
+		options   []evaluator.NetworkTopologyOption
 		expect    func(t *testing.T, s any)
 	}{
 		{
 			name:      "new scheduling",
 			pluginDir: "bar",
+			options:   []evaluator.NetworkTopologyOption{},
 			expect: func(t *testing.T, s any) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(s).Elem().Name(), "scheduling")
@@ -213,6 +214,7 @@ func TestScheduling_New(t *testing.T) {
 		{
 			name:      "new scheduling with empty pluginDir",
 			pluginDir: "",
+			options:   []evaluator.NetworkTopologyOption{},
 			expect: func(t *testing.T, s any) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(s).Elem().Name(), "scheduling")
@@ -249,22 +251,6 @@ func TestScheduling_ScheduleCandidateParents(t *testing.T) {
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
 				assert := assert.New(t)
 				assert.ErrorIs(err, context.Canceled)
-				assert.True(peer.FSM.Is(resource.PeerStateRunning))
-				assert.True(peer.Task.FSM.Is(resource.TaskStatePending))
-			},
-		},
-		{
-			name: "peer exceeded MaxScheduleCount and peer stream load failed",
-			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv2.Scheduler_AnnouncePeerServer, ma *schedulerv2mocks.MockScheduler_AnnouncePeerServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
-				task := peer.Task
-				task.StorePeer(peer)
-				peer.ScheduleCount.Store(5)
-				peer.FSM.SetState(resource.PeerStateRunning)
-			},
-			expect: func(t *testing.T, peer *resource.Peer, err error) {
-				assert := assert.New(t)
-				assert.ErrorIs(err, status.Error(codes.FailedPrecondition, "load stream failed"))
-				assert.Equal(len(peer.Parents()), 0)
 				assert.True(peer.FSM.Is(resource.PeerStateRunning))
 				assert.True(peer.Task.FSM.Is(resource.TaskStatePending))
 			},
@@ -437,9 +423,6 @@ func TestScheduling_ScheduleCandidateParents(t *testing.T) {
 				peer.StoreAnnouncePeerStream(stream)
 				gomock.InOrder(
 					md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, errors.New("foo")).Times(2),
-					md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{
-						ConcurrentPieceCount: 2,
-					}, nil).Times(1),
 					ma.Send(gomock.Any()).Return(nil).Times(1),
 				)
 			},
@@ -463,7 +446,7 @@ func TestScheduling_ScheduleCandidateParents(t *testing.T) {
 			mockHost := resource.NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
 			peer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 			mockSeedHost := resource.NewHost(
 				mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
@@ -492,21 +475,6 @@ func TestScheduling_ScheduleParentAndCandidateParents(t *testing.T) {
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
-				assert.True(peer.FSM.Is(resource.PeerStateRunning))
-				assert.True(peer.Task.FSM.Is(resource.TaskStatePending))
-			},
-		},
-		{
-			name: "peer exceeded MaxScheduleCount and peer stream load failed",
-			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, mr *schedulerv1mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
-				task := peer.Task
-				task.StorePeer(peer)
-				peer.ScheduleCount.Store(5)
-				peer.FSM.SetState(resource.PeerStateRunning)
-			},
-			expect: func(t *testing.T, peer *resource.Peer) {
-				assert := assert.New(t)
-				assert.Equal(len(peer.Parents()), 0)
 				assert.True(peer.FSM.Is(resource.PeerStateRunning))
 				assert.True(peer.Task.FSM.Is(resource.TaskStatePending))
 			},
@@ -726,9 +694,6 @@ func TestScheduling_ScheduleParentAndCandidateParents(t *testing.T) {
 				peer.StoreReportPieceResultStream(stream)
 				gomock.InOrder(
 					md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, errors.New("foo")).Times(2),
-					md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{
-						ConcurrentPieceCount: 2,
-					}, nil).Times(1),
 					mr.Send(gomock.Any()).Return(nil).Times(1),
 				)
 			},
@@ -751,7 +716,7 @@ func TestScheduling_ScheduleParentAndCandidateParents(t *testing.T) {
 			mockHost := resource.NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
 			peer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 			mockSeedHost := resource.NewHost(
 				mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
@@ -768,6 +733,323 @@ func TestScheduling_ScheduleParentAndCandidateParents(t *testing.T) {
 }
 
 func TestScheduling_FindCandidateParents(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet[string], md *configmocks.MockDynconfigInterfaceMockRecorder)
+		expect func(t *testing.T, peer *resource.Peer, mockPeers []*resource.Peer, parents []*resource.Peer, ok bool)
+	}{
+		{
+			name: "task peers state is failed",
+			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet[string], md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateFailed)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, mockPeers []*resource.Peer, parents []*resource.Peer, ok bool) {
+				assert := assert.New(t)
+				assert.Equal(len(parents), 0)
+				assert.False(ok)
+			},
+		},
+		{
+			name: "task peers is empty",
+			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet[string], md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateRunning)
+
+				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, errors.New("foo")).Times(1)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, mockPeers []*resource.Peer, parents []*resource.Peer, ok bool) {
+				assert := assert.New(t)
+				assert.False(ok)
+			},
+		},
+		{
+			name: "task contains only one peer and peer is itself",
+			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet[string], md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateReceivedNormal)
+				peer.Task.StorePeer(peer)
+
+				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, errors.New("foo")).Times(1)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, mockPeers []*resource.Peer, parents []*resource.Peer, ok bool) {
+				assert := assert.New(t)
+				assert.False(ok)
+			},
+		},
+		{
+			name: "peer is in blocklist",
+			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet[string], md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateRunning)
+				peer.Task.StorePeer(peer)
+				peer.Task.StorePeer(mockPeers[0])
+				blocklist.Add(mockPeers[0].ID)
+
+				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, errors.New("foo")).Times(1)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, mockPeers []*resource.Peer, parents []*resource.Peer, ok bool) {
+				assert := assert.New(t)
+				assert.False(ok)
+			},
+		},
+		{
+			name: "peer is bad node",
+			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet[string], md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateReceivedNormal)
+				mockPeers[0].FSM.SetState(resource.PeerStateFailed)
+				peer.Task.StorePeer(peer)
+				peer.Task.StorePeer(mockPeers[0])
+
+				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, errors.New("foo")).Times(1)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, mockPeers []*resource.Peer, parents []*resource.Peer, ok bool) {
+				assert := assert.New(t)
+				assert.False(ok)
+			},
+		},
+		{
+			name: "parent is peer's descendant",
+			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet[string], md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateRunning)
+				mockPeers[0].FSM.SetState(resource.PeerStateRunning)
+				peer.Task.StorePeer(peer)
+				peer.Task.StorePeer(mockPeers[0])
+				if err := peer.Task.AddPeerEdge(peer, mockPeers[0]); err != nil {
+					t.Fatal(err)
+				}
+
+				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, errors.New("foo")).Times(1)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, mockPeers []*resource.Peer, parents []*resource.Peer, ok bool) {
+				assert := assert.New(t)
+				assert.False(ok)
+			},
+		},
+		{
+			name: "parent free upload load is zero",
+			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet[string], md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateReceivedNormal)
+				mockPeers[0].FSM.SetState(resource.PeerStateRunning)
+				peer.Task.StorePeer(peer)
+				peer.Task.StorePeer(mockPeers[0])
+				mockPeers[0].Host.ConcurrentUploadLimit.Store(0)
+
+				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, errors.New("foo")).Times(1)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, mockPeers []*resource.Peer, parents []*resource.Peer, ok bool) {
+				assert := assert.New(t)
+				assert.False(ok)
+			},
+		},
+		{
+			name: "find back-to-source parent",
+			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet[string], md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateRunning)
+				mockPeers[0].FSM.SetState(resource.PeerStateRunning)
+				mockPeers[1].FSM.SetState(resource.PeerStateRunning)
+				peer.Task.StorePeer(peer)
+				peer.Task.StorePeer(mockPeers[0])
+				peer.Task.StorePeer(mockPeers[1])
+				peer.Task.BackToSourcePeers.Add(mockPeers[0].ID)
+				peer.Task.BackToSourcePeers.Add(mockPeers[1].ID)
+				mockPeers[0].FSM.SetState(resource.PeerStateBackToSource)
+				mockPeers[1].FSM.SetState(resource.PeerStateBackToSource)
+				mockPeers[0].FinishedPieces.Set(0)
+				mockPeers[1].FinishedPieces.Set(0)
+				mockPeers[1].FinishedPieces.Set(1)
+				mockPeers[1].FinishedPieces.Set(2)
+
+				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, errors.New("foo")).Times(2)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, mockPeers []*resource.Peer, parents []*resource.Peer, ok bool) {
+				assert := assert.New(t)
+				assert.True(ok)
+				assert.Equal(mockPeers[1].ID, parents[0].ID)
+			},
+		},
+		{
+			name: "find seed peer parent",
+			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet[string], md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateRunning)
+				mockPeers[0].FSM.SetState(resource.PeerStateRunning)
+				mockPeers[1].FSM.SetState(resource.PeerStateRunning)
+				peer.Task.StorePeer(peer)
+				peer.Task.StorePeer(mockPeers[0])
+				peer.Task.StorePeer(mockPeers[1])
+				peer.Task.StorePeer(mockPeers[2])
+				mockPeers[0].Host.Type = pkgtypes.HostTypeSuperSeed
+				mockPeers[1].Host.Type = pkgtypes.HostTypeSuperSeed
+				mockPeers[0].FinishedPieces.Set(0)
+				mockPeers[1].FinishedPieces.Set(0)
+				mockPeers[1].FinishedPieces.Set(1)
+				mockPeers[1].FinishedPieces.Set(2)
+
+				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, errors.New("foo")).Times(2)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, mockPeers []*resource.Peer, parents []*resource.Peer, ok bool) {
+				assert := assert.New(t)
+				assert.True(ok)
+				assert.Equal(mockPeers[1].ID, parents[0].ID)
+			},
+		},
+		{
+			name: "parent state is PeerStateSucceeded",
+			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet[string], md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateRunning)
+				mockPeers[0].FSM.SetState(resource.PeerStateSucceeded)
+				mockPeers[1].FSM.SetState(resource.PeerStateSucceeded)
+				peer.Task.StorePeer(peer)
+				peer.Task.StorePeer(mockPeers[0])
+				peer.Task.StorePeer(mockPeers[1])
+				mockPeers[0].FinishedPieces.Set(0)
+				mockPeers[1].FinishedPieces.Set(0)
+				mockPeers[1].FinishedPieces.Set(1)
+				mockPeers[1].FinishedPieces.Set(2)
+
+				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, errors.New("foo")).Times(2)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, mockPeers []*resource.Peer, parents []*resource.Peer, ok bool) {
+				assert := assert.New(t)
+				assert.True(ok)
+				assert.Equal(mockPeers[1].ID, parents[0].ID)
+			},
+		},
+		{
+			name: "find parent with ancestor",
+			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet[string], md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateRunning)
+				mockPeers[0].FSM.SetState(resource.PeerStateRunning)
+				mockPeers[1].FSM.SetState(resource.PeerStateRunning)
+				peer.Task.StorePeer(peer)
+				peer.Task.StorePeer(mockPeers[0])
+				peer.Task.StorePeer(mockPeers[1])
+				peer.Task.StorePeer(mockPeers[2])
+				if err := peer.Task.AddPeerEdge(mockPeers[2], mockPeers[0]); err != nil {
+					t.Fatal(err)
+				}
+
+				if err := peer.Task.AddPeerEdge(mockPeers[2], mockPeers[1]); err != nil {
+					t.Fatal(err)
+				}
+
+				mockPeers[0].FinishedPieces.Set(0)
+				mockPeers[1].FinishedPieces.Set(0)
+				mockPeers[1].FinishedPieces.Set(1)
+				mockPeers[1].FinishedPieces.Set(2)
+
+				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, errors.New("foo")).Times(2)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, mockPeers []*resource.Peer, parents []*resource.Peer, ok bool) {
+				assert := assert.New(t)
+				assert.True(ok)
+				assert.Equal(mockPeers[1].ID, parents[0].ID)
+			},
+		},
+		{
+			name: "find parent with same host",
+			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet[string], md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateRunning)
+				mockPeers[0].FSM.SetState(resource.PeerStateRunning)
+				mockPeers[1].FSM.SetState(resource.PeerStateRunning)
+				mockPeers[0].FSM.SetState(resource.PeerStateBackToSource)
+				mockPeers[1].Host = peer.Host
+				peer.Task.StorePeer(peer)
+				peer.Task.StorePeer(mockPeers[0])
+				peer.Task.StorePeer(mockPeers[1])
+				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, errors.New("foo")).Times(2)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, mockPeers []*resource.Peer, parents []*resource.Peer, ok bool) {
+				assert := assert.New(t)
+				assert.True(ok)
+				assert.Equal(mockPeers[0].ID, parents[0].ID)
+			},
+		},
+		{
+			name: "find parent and fetch candidateParentLimit from manager dynconfig",
+			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet[string], md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateRunning)
+				mockPeers[0].FSM.SetState(resource.PeerStateRunning)
+				mockPeers[1].FSM.SetState(resource.PeerStateRunning)
+				peer.Task.StorePeer(peer)
+				peer.Task.StorePeer(mockPeers[0])
+				peer.Task.StorePeer(mockPeers[1])
+				peer.Task.BackToSourcePeers.Add(mockPeers[0].ID)
+				peer.Task.BackToSourcePeers.Add(mockPeers[1].ID)
+				mockPeers[0].FSM.SetState(resource.PeerStateBackToSource)
+				mockPeers[1].FSM.SetState(resource.PeerStateBackToSource)
+				mockPeers[0].FinishedPieces.Set(0)
+				mockPeers[1].FinishedPieces.Set(0)
+				mockPeers[1].FinishedPieces.Set(1)
+				mockPeers[1].FinishedPieces.Set(2)
+
+				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{
+					CandidateParentLimit: 3,
+				}, nil).Times(2)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, mockPeers []*resource.Peer, parents []*resource.Peer, ok bool) {
+				assert := assert.New(t)
+				assert.True(ok)
+				assert.Contains([]string{mockPeers[0].ID, mockPeers[1].ID, peer.ID}, parents[0].ID)
+			},
+		},
+		{
+			name: "candidateParents is longer than candidateParentLimit",
+			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet[string], md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateRunning)
+				mockPeers[0].FSM.SetState(resource.PeerStateRunning)
+				mockPeers[1].FSM.SetState(resource.PeerStateRunning)
+				peer.Task.StorePeer(peer)
+				peer.Task.StorePeer(mockPeers[0])
+				peer.Task.StorePeer(mockPeers[1])
+				peer.Task.BackToSourcePeers.Add(mockPeers[0].ID)
+				peer.Task.BackToSourcePeers.Add(mockPeers[1].ID)
+				mockPeers[0].FSM.SetState(resource.PeerStateBackToSource)
+				mockPeers[1].FSM.SetState(resource.PeerStateBackToSource)
+				mockPeers[0].FinishedPieces.Set(0)
+				mockPeers[1].FinishedPieces.Set(0)
+				mockPeers[1].FinishedPieces.Set(1)
+				mockPeers[1].FinishedPieces.Set(2)
+
+				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{
+					CandidateParentLimit: 1,
+				}, nil).Times(2)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, mockPeers []*resource.Peer, parents []*resource.Peer, ok bool) {
+				assert := assert.New(t)
+				assert.True(ok)
+				assert.Equal(len(parents), 1)
+				assert.Equal(parents[0].ID, mockPeers[1].ID)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
+			mockHost := resource.NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
+			peer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
+
+			var mockPeers []*resource.Peer
+			for i := 0; i < 11; i++ {
+				mockHost := resource.NewHost(
+					idgen.HostIDV2("127.0.0.1", uuid.New().String()), mockRawHost.IP, mockRawHost.Hostname,
+					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
+				peer := resource.NewPeer(idgen.PeerIDV1(fmt.Sprintf("127.0.0.%d", i)), mockResourceConfig, mockTask, mockHost)
+				mockPeers = append(mockPeers, peer)
+			}
+
+			blocklist := set.NewSafeSet[string]()
+			tc.mock(peer, mockPeers, blocklist, dynconfig.EXPECT())
+			scheduling := New(mockSchedulerConfig, dynconfig, mockPluginDir)
+			parents, found := scheduling.FindCandidateParents(context.Background(), peer, blocklist)
+			tc.expect(t, peer, mockPeers, parents, found)
+		})
+	}
+}
+
+func TestScheduling_FindParentAndCandidateParents(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet[string], md *configmocks.MockDynconfigInterfaceMockRecorder)
@@ -1063,7 +1345,7 @@ func TestScheduling_FindCandidateParents(t *testing.T) {
 			mockHost := resource.NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
 			peer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 
 			var mockPeers []*resource.Peer
@@ -1078,7 +1360,7 @@ func TestScheduling_FindCandidateParents(t *testing.T) {
 			blocklist := set.NewSafeSet[string]()
 			tc.mock(peer, mockPeers, blocklist, dynconfig.EXPECT())
 			scheduling := New(mockSchedulerConfig, dynconfig, mockPluginDir)
-			parents, found := scheduling.FindCandidateParents(context.Background(), peer, blocklist)
+			parents, found := scheduling.FindParentAndCandidateParents(context.Background(), peer, blocklist)
 			tc.expect(t, peer, mockPeers, parents, found)
 		})
 	}
@@ -1324,7 +1606,7 @@ func TestScheduling_FindSuccessParent(t *testing.T) {
 			mockHost := resource.NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
 			peer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 
 			var mockPeers []*resource.Peer
@@ -1348,16 +1630,10 @@ func TestScheduling_FindSuccessParent(t *testing.T) {
 func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(md *configmocks.MockDynconfigInterfaceMockRecorder)
 		expect func(t *testing.T, resp *schedulerv2.AnnouncePeerResponse_NormalTaskResponse, candidateParents []*resource.Peer)
 	}{
 		{
-			name: "get concurrentPieceCount from dynconfig",
-			mock: func(md *configmocks.MockDynconfigInterfaceMockRecorder) {
-				md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{
-					ConcurrentPieceCount: 1,
-				}, nil).Times(1)
-			},
+			name: "construct success normal task response",
 			expect: func(t *testing.T, resp *schedulerv2.AnnouncePeerResponse_NormalTaskResponse, candidateParents []*resource.Peer) {
 				dgst := candidateParents[0].Task.Digest.String()
 
@@ -1372,49 +1648,25 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 									Length: uint64(candidateParents[0].Range.Length),
 								},
 								Priority: candidateParents[0].Priority,
-								Pieces: []*commonv2.Piece{
-									{
-										Number:      uint32(mockPiece.Number),
-										ParentId:    &mockPiece.ParentID,
-										Offset:      mockPiece.Offset,
-										Length:      mockPiece.Length,
-										Digest:      mockPiece.Digest.String(),
-										TrafficType: &mockPiece.TrafficType,
-										Cost:        durationpb.New(mockPiece.Cost),
-										CreatedAt:   timestamppb.New(mockPiece.CreatedAt),
-									},
-								},
-								Cost:  durationpb.New(candidateParents[0].Cost.Load()),
-								State: candidateParents[0].FSM.Current(),
+								Cost:     durationpb.New(candidateParents[0].Cost.Load()),
+								State:    candidateParents[0].FSM.Current(),
 								Task: &commonv2.Task{
-									Id:            candidateParents[0].Task.ID,
-									Type:          candidateParents[0].Task.Type,
-									Url:           candidateParents[0].Task.URL,
-									Digest:        &dgst,
-									Tag:           &candidateParents[0].Task.Tag,
-									Application:   &candidateParents[0].Task.Application,
-									Filters:       candidateParents[0].Task.Filters,
-									Header:        candidateParents[0].Task.Header,
-									PieceLength:   uint32(candidateParents[0].Task.PieceLength),
-									ContentLength: uint64(candidateParents[0].Task.ContentLength.Load()),
-									PieceCount:    uint32(candidateParents[0].Task.TotalPieceCount.Load()),
-									SizeScope:     candidateParents[0].Task.SizeScope(),
-									Pieces: []*commonv2.Piece{
-										{
-											Number:      uint32(mockPiece.Number),
-											ParentId:    &mockPiece.ParentID,
-											Offset:      mockPiece.Offset,
-											Length:      mockPiece.Length,
-											Digest:      mockPiece.Digest.String(),
-											TrafficType: &mockPiece.TrafficType,
-											Cost:        durationpb.New(mockPiece.Cost),
-											CreatedAt:   timestamppb.New(mockPiece.CreatedAt),
-										},
-									},
-									State:     candidateParents[0].Task.FSM.Current(),
-									PeerCount: uint32(candidateParents[0].Task.PeerCount()),
-									CreatedAt: timestamppb.New(candidateParents[0].Task.CreatedAt.Load()),
-									UpdatedAt: timestamppb.New(candidateParents[0].Task.UpdatedAt.Load()),
+									Id:                  candidateParents[0].Task.ID,
+									Type:                candidateParents[0].Task.Type,
+									Url:                 candidateParents[0].Task.URL,
+									Digest:              &dgst,
+									Tag:                 &candidateParents[0].Task.Tag,
+									Application:         &candidateParents[0].Task.Application,
+									FilteredQueryParams: candidateParents[0].Task.FilteredQueryParams,
+									RequestHeader:       candidateParents[0].Task.Header,
+									PieceLength:         uint64(candidateParents[0].Task.PieceLength),
+									ContentLength:       uint64(candidateParents[0].Task.ContentLength.Load()),
+									PieceCount:          uint32(candidateParents[0].Task.TotalPieceCount.Load()),
+									SizeScope:           candidateParents[0].Task.SizeScope(),
+									State:               candidateParents[0].Task.FSM.Current(),
+									PeerCount:           uint32(candidateParents[0].Task.PeerCount()),
+									CreatedAt:           timestamppb.New(candidateParents[0].Task.CreatedAt.Load()),
+									UpdatedAt:           timestamppb.New(candidateParents[0].Task.UpdatedAt.Load()),
 								},
 								Host: &commonv2.Host{
 									Id:              candidateParents[0].Host.ID,
@@ -1482,141 +1734,6 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 								UpdatedAt:        timestamppb.New(candidateParents[0].UpdatedAt.Load()),
 							},
 						},
-						ConcurrentPieceCount: 1,
-					},
-				})
-			},
-		},
-		{
-			name: "use default concurrentPieceCount",
-			mock: func(md *configmocks.MockDynconfigInterfaceMockRecorder) {
-				md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{}, errors.New("foo")).Times(1)
-			},
-			expect: func(t *testing.T, resp *schedulerv2.AnnouncePeerResponse_NormalTaskResponse, candidateParents []*resource.Peer) {
-				dgst := candidateParents[0].Task.Digest.String()
-
-				assert := assert.New(t)
-				assert.EqualValues(resp, &schedulerv2.AnnouncePeerResponse_NormalTaskResponse{
-					NormalTaskResponse: &schedulerv2.NormalTaskResponse{
-						CandidateParents: []*commonv2.Peer{
-							{
-								Id: candidateParents[0].ID,
-								Range: &commonv2.Range{
-									Start:  uint64(candidateParents[0].Range.Start),
-									Length: uint64(candidateParents[0].Range.Length),
-								},
-								Priority: candidateParents[0].Priority,
-								Pieces: []*commonv2.Piece{
-									{
-										Number:      uint32(mockPiece.Number),
-										ParentId:    &mockPiece.ParentID,
-										Offset:      mockPiece.Offset,
-										Length:      mockPiece.Length,
-										Digest:      mockPiece.Digest.String(),
-										TrafficType: &mockPiece.TrafficType,
-										Cost:        durationpb.New(mockPiece.Cost),
-										CreatedAt:   timestamppb.New(mockPiece.CreatedAt),
-									},
-								},
-								Cost:  durationpb.New(candidateParents[0].Cost.Load()),
-								State: candidateParents[0].FSM.Current(),
-								Task: &commonv2.Task{
-									Id:            candidateParents[0].Task.ID,
-									Type:          candidateParents[0].Task.Type,
-									Url:           candidateParents[0].Task.URL,
-									Digest:        &dgst,
-									Tag:           &candidateParents[0].Task.Tag,
-									Application:   &candidateParents[0].Task.Application,
-									Filters:       candidateParents[0].Task.Filters,
-									Header:        candidateParents[0].Task.Header,
-									PieceLength:   uint32(candidateParents[0].Task.PieceLength),
-									ContentLength: uint64(candidateParents[0].Task.ContentLength.Load()),
-									PieceCount:    uint32(candidateParents[0].Task.TotalPieceCount.Load()),
-									SizeScope:     candidateParents[0].Task.SizeScope(),
-									Pieces: []*commonv2.Piece{
-										{
-											Number:      uint32(mockPiece.Number),
-											ParentId:    &mockPiece.ParentID,
-											Offset:      mockPiece.Offset,
-											Length:      mockPiece.Length,
-											Digest:      mockPiece.Digest.String(),
-											TrafficType: &mockPiece.TrafficType,
-											Cost:        durationpb.New(mockPiece.Cost),
-											CreatedAt:   timestamppb.New(mockPiece.CreatedAt),
-										},
-									},
-									State:     candidateParents[0].Task.FSM.Current(),
-									PeerCount: uint32(candidateParents[0].Task.PeerCount()),
-									CreatedAt: timestamppb.New(candidateParents[0].Task.CreatedAt.Load()),
-									UpdatedAt: timestamppb.New(candidateParents[0].Task.UpdatedAt.Load()),
-								},
-								Host: &commonv2.Host{
-									Id:              candidateParents[0].Host.ID,
-									Type:            uint32(candidateParents[0].Host.Type),
-									Hostname:        candidateParents[0].Host.Hostname,
-									Ip:              candidateParents[0].Host.IP,
-									Port:            candidateParents[0].Host.Port,
-									DownloadPort:    candidateParents[0].Host.DownloadPort,
-									Os:              candidateParents[0].Host.OS,
-									Platform:        candidateParents[0].Host.Platform,
-									PlatformFamily:  candidateParents[0].Host.PlatformFamily,
-									PlatformVersion: candidateParents[0].Host.PlatformVersion,
-									KernelVersion:   candidateParents[0].Host.KernelVersion,
-									Cpu: &commonv2.CPU{
-										LogicalCount:   candidateParents[0].Host.CPU.LogicalCount,
-										PhysicalCount:  candidateParents[0].Host.CPU.PhysicalCount,
-										Percent:        candidateParents[0].Host.CPU.Percent,
-										ProcessPercent: candidateParents[0].Host.CPU.ProcessPercent,
-										Times: &commonv2.CPUTimes{
-											User:      candidateParents[0].Host.CPU.Times.User,
-											System:    candidateParents[0].Host.CPU.Times.System,
-											Idle:      candidateParents[0].Host.CPU.Times.Idle,
-											Nice:      candidateParents[0].Host.CPU.Times.Nice,
-											Iowait:    candidateParents[0].Host.CPU.Times.Iowait,
-											Irq:       candidateParents[0].Host.CPU.Times.Irq,
-											Softirq:   candidateParents[0].Host.CPU.Times.Softirq,
-											Steal:     candidateParents[0].Host.CPU.Times.Steal,
-											Guest:     candidateParents[0].Host.CPU.Times.Guest,
-											GuestNice: candidateParents[0].Host.CPU.Times.GuestNice,
-										},
-									},
-									Memory: &commonv2.Memory{
-										Total:              candidateParents[0].Host.Memory.Total,
-										Available:          candidateParents[0].Host.Memory.Available,
-										Used:               candidateParents[0].Host.Memory.Used,
-										UsedPercent:        candidateParents[0].Host.Memory.UsedPercent,
-										ProcessUsedPercent: candidateParents[0].Host.Memory.ProcessUsedPercent,
-										Free:               candidateParents[0].Host.Memory.Free,
-									},
-									Network: &commonv2.Network{
-										TcpConnectionCount:       candidateParents[0].Host.Network.TCPConnectionCount,
-										UploadTcpConnectionCount: candidateParents[0].Host.Network.UploadTCPConnectionCount,
-										Location:                 &candidateParents[0].Host.Network.Location,
-										Idc:                      &candidateParents[0].Host.Network.IDC,
-									},
-									Disk: &commonv2.Disk{
-										Total:             candidateParents[0].Host.Disk.Total,
-										Free:              candidateParents[0].Host.Disk.Free,
-										Used:              candidateParents[0].Host.Disk.Used,
-										UsedPercent:       candidateParents[0].Host.Disk.UsedPercent,
-										InodesTotal:       candidateParents[0].Host.Disk.InodesTotal,
-										InodesUsed:        candidateParents[0].Host.Disk.InodesUsed,
-										InodesFree:        candidateParents[0].Host.Disk.InodesFree,
-										InodesUsedPercent: candidateParents[0].Host.Disk.InodesUsedPercent,
-									},
-									Build: &commonv2.Build{
-										GitVersion: candidateParents[0].Host.Build.GitVersion,
-										GitCommit:  &candidateParents[0].Host.Build.GitCommit,
-										GoVersion:  &candidateParents[0].Host.Build.GoVersion,
-										Platform:   &candidateParents[0].Host.Build.Platform,
-									},
-								},
-								NeedBackToSource: candidateParents[0].NeedBackToSource.Load(),
-								CreatedAt:        timestamppb.New(candidateParents[0].CreatedAt.Load()),
-								UpdatedAt:        timestamppb.New(candidateParents[0].UpdatedAt.Load()),
-							},
-						},
-						ConcurrentPieceCount: 4,
 					},
 				})
 			},
@@ -1627,11 +1744,10 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
-			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			mockHost := resource.NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
 			candidateParents := []*resource.Peer{resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, mockTask, mockHost, resource.WithRange(nethttp.Range{
 				Start:  1,
 				Length: 10,
@@ -1639,8 +1755,7 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 			candidateParents[0].StorePiece(&mockPiece)
 			candidateParents[0].Task.StorePiece(&mockPiece)
 
-			tc.mock(dynconfig.EXPECT())
-			tc.expect(t, ConstructSuccessNormalTaskResponse(dynconfig, candidateParents), candidateParents)
+			tc.expect(t, ConstructSuccessNormalTaskResponse(candidateParents), candidateParents)
 		})
 	}
 }
@@ -1648,49 +1763,15 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 func TestScheduling_ConstructSuccessPeerPacket(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(md *configmocks.MockDynconfigInterfaceMockRecorder)
 		expect func(t *testing.T, packet *schedulerv1.PeerPacket, parent *resource.Peer, candidateParents []*resource.Peer)
 	}{
 		{
-			name: "get concurrentPieceCount from dynconfig",
-			mock: func(md *configmocks.MockDynconfigInterfaceMockRecorder) {
-				md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{
-					ConcurrentPieceCount: 1,
-				}, nil).Times(1)
-			},
+			name: "construct success peer packet",
 			expect: func(t *testing.T, packet *schedulerv1.PeerPacket, parent *resource.Peer, candidateParents []*resource.Peer) {
 				assert := assert.New(t)
 				assert.EqualValues(packet, &schedulerv1.PeerPacket{
-					TaskId:        mockTaskID,
-					SrcPid:        mockPeerID,
-					ParallelCount: 1,
-					MainPeer: &schedulerv1.PeerPacket_DestPeer{
-						Ip:      parent.Host.IP,
-						RpcPort: parent.Host.Port,
-						PeerId:  parent.ID,
-					},
-					CandidatePeers: []*schedulerv1.PeerPacket_DestPeer{
-						{
-							Ip:      candidateParents[0].Host.IP,
-							RpcPort: candidateParents[0].Host.Port,
-							PeerId:  candidateParents[0].ID,
-						},
-					},
-					Code: commonv1.Code_Success,
-				})
-			},
-		},
-		{
-			name: "use default concurrentPieceCount",
-			mock: func(md *configmocks.MockDynconfigInterfaceMockRecorder) {
-				md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{}, errors.New("foo")).Times(1)
-			},
-			expect: func(t *testing.T, packet *schedulerv1.PeerPacket, parent *resource.Peer, candidateParents []*resource.Peer) {
-				assert := assert.New(t)
-				assert.EqualValues(packet, &schedulerv1.PeerPacket{
-					TaskId:        mockTaskID,
-					SrcPid:        mockPeerID,
-					ParallelCount: 4,
+					TaskId: mockTaskID,
+					SrcPid: mockPeerID,
 					MainPeer: &schedulerv1.PeerPacket_DestPeer{
 						Ip:      parent.Host.IP,
 						RpcPort: parent.Host.Port,
@@ -1713,18 +1794,16 @@ func TestScheduling_ConstructSuccessPeerPacket(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
-			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			mockHost := resource.NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
 
 			peer := resource.NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 			parent := resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, mockTask, mockHost)
 			candidateParents := []*resource.Peer{resource.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, mockTask, mockHost)}
 
-			tc.mock(dynconfig.EXPECT())
-			tc.expect(t, ConstructSuccessPeerPacket(dynconfig, peer, parent, candidateParents), parent, candidateParents)
+			tc.expect(t, ConstructSuccessPeerPacket(peer, parent, candidateParents), parent, candidateParents)
 		})
 	}
 }

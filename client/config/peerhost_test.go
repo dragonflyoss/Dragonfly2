@@ -247,16 +247,19 @@ func TestPeerHostOption_Load(t *testing.T) {
 		GCInterval: util.Duration{
 			Duration: 60000000000,
 		},
-		Metrics:      ":8000",
-		WorkHome:     "/tmp/dragonfly/dfdaemon/",
-		WorkHomeMode: 0700,
-		CacheDir:     "/var/cache/dragonfly/",
-		CacheDirMode: 0700,
-		LogDir:       "/var/log/dragonfly/",
-		PluginDir:    "/tmp/dragonfly/dfdaemon/plugins/",
-		DataDir:      "/var/lib/dragonfly/",
-		DataDirMode:  0700,
-		KeepStorage:  false,
+		Metrics:       ":8000",
+		WorkHome:      "/tmp/dragonfly/dfdaemon/",
+		WorkHomeMode:  0700,
+		CacheDir:      "/var/cache/dragonfly/",
+		CacheDirMode:  0700,
+		LogDir:        "/var/log/dragonfly/",
+		PluginDir:     "/tmp/dragonfly/dfdaemon/plugins/",
+		DataDir:       "/var/lib/dragonfly/",
+		LogMaxSize:    512,
+		LogMaxAge:     5,
+		LogMaxBackups: 3,
+		DataDirMode:   0700,
+		KeepStorage:   false,
 		Scheduler: SchedulerOption{
 			Manager: ManagerOption{
 				Enable: false,
@@ -332,7 +335,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 					},
 				},
 			},
-			CalculateDigest: true,
+			CalculateDigest: false,
 			Transport: &TransportOption{
 				DialTimeout:           time.Second,
 				KeepAlive:             time.Second,
@@ -467,8 +470,8 @@ func TestPeerHostOption_Load(t *testing.T) {
 				},
 			},
 			HijackHTTPS: &HijackConfig{
-				Cert: "./testdata/certs/sca.crt",
-				Key:  "./testdata/certs/sca.key",
+				Cert: types.PEMContent(_cert),
+				Key:  types.PEMContent(_key),
 				Hosts: []*HijackHost{
 					{
 						Regx:     hijackExp,

@@ -29,3 +29,4 @@ jobs:
           exclusionPatterns: |
             deploy/helm-charts
             manager/console
+            client-rs

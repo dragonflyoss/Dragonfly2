@@ -50,7 +50,7 @@ const (
 	FailedPeerCountLimit = 200
 
 	// Peer count limit for task.
-	PeerCountLimitForTask = 700
+	PeerCountLimitForTask = 300
 )
 
 const (
@@ -121,8 +121,8 @@ type Task struct {
 	// Application identifies different task for same url.
 	Application string
 
-	// Filter url used to generate task id.
-	Filters []string
+	// FilteredQueryParams is filtered query params.
+	FilteredQueryParams []string
 
 	// Task request headers.
 	Header map[string]string
@@ -169,27 +169,27 @@ type Task struct {
 }
 
 // New task instance.
-func NewTask(id, url, tag, application string, typ commonv2.TaskType, filters []string,
+func NewTask(id, url, tag, application string, typ commonv2.TaskType, filteredQueryParams []string,
 	header map[string]string, backToSourceLimit int32, options ...TaskOption) *Task {
 	t := &Task{
-		ID:                id,
-		Type:              typ,
-		URL:               url,
-		Tag:               tag,
-		Application:       application,
-		Filters:           filters,
-		Header:            header,
-		DirectPiece:       []byte{},
-		ContentLength:     atomic.NewInt64(-1),
-		TotalPieceCount:   atomic.NewInt32(0),
-		BackToSourceLimit: atomic.NewInt32(backToSourceLimit),
-		BackToSourcePeers: set.NewSafeSet[string](),
-		Pieces:            &sync.Map{},
-		DAG:               dag.NewDAG[*Peer](),
-		PeerFailedCount:   atomic.NewInt32(0),
-		CreatedAt:         atomic.NewTime(time.Now()),
-		UpdatedAt:         atomic.NewTime(time.Now()),
-		Log:               logger.WithTask(id, url),
+		ID:                  id,
+		Type:                typ,
+		URL:                 url,
+		Tag:                 tag,
+		Application:         application,
+		FilteredQueryParams: filteredQueryParams,
+		Header:              header,
+		DirectPiece:         []byte{},
+		ContentLength:       atomic.NewInt64(-1),
+		TotalPieceCount:     atomic.NewInt32(0),
+		BackToSourceLimit:   atomic.NewInt32(backToSourceLimit),
+		BackToSourcePeers:   set.NewSafeSet[string](),
+		Pieces:              &sync.Map{},
+		DAG:                 dag.NewDAG[*Peer](),
+		PeerFailedCount:     atomic.NewInt32(0),
+		CreatedAt:           atomic.NewTime(time.Now()),
+		UpdatedAt:           atomic.NewTime(time.Now()),
+		Log:                 logger.WithTask(id, url),
 	}
 
 	// Initialize state machine.
@@ -269,7 +269,7 @@ func (t *Task) DeletePeer(key string) {
 
 // PeerCount returns count of peer.
 func (t *Task) PeerCount() int {
-	return t.DAG.VertexCount()
+	return int(t.DAG.VertexCount())
 }
 
 // AddPeerEdge adds inedges between two peers.
@@ -278,8 +278,9 @@ func (t *Task) AddPeerEdge(fromPeer *Peer, toPeer *Peer) error {
 		return err
 	}
 
-	fromPeer.Host.ConcurrentUploadCount.Inc()
 	fromPeer.Host.UploadCount.Inc()
+	fromPeer.Host.ConcurrentUploadCount.Inc()
+	t.Log.Infof("increment %s concurrent upload count, because of add edge from %s to %s", fromPeer.Host.ID, fromPeer.ID, toPeer.ID)
 	return nil
 }
 
@@ -296,6 +297,7 @@ func (t *Task) DeletePeerInEdges(key string) error {
 		}
 
 		parent.Value.Host.ConcurrentUploadCount.Dec()
+		t.Log.Infof("decrement %s concurrent upload count, because of delete edge from %s to %s", parent.Value.Host.ID, parent.Value.ID, key)
 	}
 
 	if err := t.DAG.DeleteVertexInEdges(key); err != nil {
@@ -317,6 +319,7 @@ func (t *Task) DeletePeerOutEdges(key string) error {
 		return errors.New("vertex value is nil")
 	}
 	peer.Host.ConcurrentUploadCount.Sub(int32(vertex.Children.Len()))
+	t.Log.Infof("decrement %s concurrent upload count %d, because of delete out edge from %s", peer.Host.ID, vertex.Children.Len(), key)
 
 	if err := t.DAG.DeleteVertexOutEdges(key); err != nil {
 		return err
@@ -373,8 +376,7 @@ func (t *Task) HasAvailablePeer(blocklist set.SafeSet[string]) bool {
 			continue
 		}
 
-		if peer.FSM.Is(PeerStatePending) ||
-			peer.FSM.Is(PeerStateRunning) ||
+		if peer.FSM.Is(PeerStateRunning) ||
 			peer.FSM.Is(PeerStateSucceeded) ||
 			peer.FSM.Is(PeerStateBackToSource) {
 			hasAvailablePeer = true

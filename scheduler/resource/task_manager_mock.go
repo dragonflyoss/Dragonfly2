@@ -5,6 +5,7 @@
 //
 //	mockgen -destination task_manager_mock.go -source task_manager.go -package resource
 //
+
 // Package resource is a generated GoMock package.
 package resource
 

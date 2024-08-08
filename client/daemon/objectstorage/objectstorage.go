@@ -67,7 +67,7 @@ const (
 )
 
 const (
-	PrometheusSubsystemName = "dragonfly_dfdaemon_object_stroage"
+	PrometheusSubsystemName = "dragonfly_dfdaemon_object_storage"
 	OtelServiceName         = "dragonfly-dfdaemon-object-storage"
 )
 
@@ -75,7 +75,7 @@ const (
 	RouterGroupBuckets = "/buckets"
 )
 
-var GinLogFileName = "gin-object-stroage.log"
+var GinLogFileName = "gin-object-storage.log"
 
 const (
 	// defaultSignExpireTime is default expire of sign url.
@@ -320,7 +320,7 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 	}
 	req.URL = signURL
 
-	taskID := idgen.TaskIDV1(signURL, urlMeta)
+	taskID := req.TaskID()
 	log := logger.WithTaskID(taskID)
 	log.Infof("get object %s meta: %s %#v", objectKey, signURL, urlMeta)
 

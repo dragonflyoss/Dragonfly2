@@ -189,10 +189,9 @@ func trafficShaperSetupPeerTaskManagerComponents(ctrl *gomock.Controller, opt tr
 					return nil, dferrors.Newf(commonv1.Code_SchedNeedBackSource, "fake back source error")
 				}
 				return &schedulerv1.PeerPacket{
-					Code:          commonv1.Code_Success,
-					TaskId:        task.taskID,
-					SrcPid:        "127.0.0.1",
-					ParallelCount: 4,
+					Code:   commonv1.Code_Success,
+					TaskId: task.taskID,
+					SrcPid: "127.0.0.1",
 					MainPeer: &schedulerv1.PeerPacket_DestPeer{
 						Ip:      "127.0.0.1",
 						RpcPort: port,

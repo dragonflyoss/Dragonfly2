@@ -1,6 +1,7 @@
 scheduler:
-  image: d7yio/scheduler
-  tag: latest
+  image:
+    repository: dragonflyoss/scheduler
+    tag: latest
   replicas: 3
   resources:
     requests:
@@ -25,10 +26,21 @@ scheduler:
     enableHost: true
   config:
     verbose: true
+    scheduler:
+      algorithm: nt
+    networkTopology:
+      collectInterval: 2m
+      probe:
+        queueLength: 5
+        count: 10
+      cache:
+        interval: 5m
+        ttl: 5m
 
 seedPeer:
-  image: d7yio/dfdaemon
-  tag: latest
+  image:
+    repository: dragonflyoss/dfdaemon
+    tag: latest
   replicas: 3
   resources:
     requests:
@@ -55,10 +67,15 @@ seedPeer:
     verbose: true
     download:
       prefetch: true
+    networkTopology:
+      enable: true
+      probe:
+        interval: 20s  
 
 dfdaemon:
-  image: d7yio/dfdaemon
-  tag: latest
+  image:
+    repository: dragonflyoss/dfdaemon
+    tag: latest
   resources:
     requests:
       cpu: "0"
@@ -100,10 +117,15 @@ dfdaemon:
       proxies:
         - regx: blobs/sha256.*
         - regx: file-server
+    networkTopology:
+      enable: true
+      probe:
+        interval: 20s    
 
 manager:
-  image: d7yio/manager
-  tag: latest
+  image:
+    repository: dragonflyoss/manager
+    tag: latest
   replicas: 1
   resources:
     requests:

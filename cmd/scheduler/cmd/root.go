@@ -66,8 +66,13 @@ generate and maintain a P2P network during the download process, and push suitab
 			return err
 		}
 
+		rotateConfig := logger.LogRotateConfig{
+			MaxSize:    cfg.Server.LogMaxSize,
+			MaxAge:     cfg.Server.LogMaxAge,
+			MaxBackups: cfg.Server.LogMaxBackups}
+
 		// Initialize logger.
-		if err := logger.InitScheduler(cfg.Verbose, cfg.Console, d.LogDir()); err != nil {
+		if err := logger.InitScheduler(cfg.Verbose, cfg.Console, d.LogDir(), rotateConfig); err != nil {
 			return fmt.Errorf("init scheduler logger: %w", err)
 		}
 		logger.RedirectStdoutAndStderr(cfg.Console, path.Join(d.LogDir(), types.SchedulerName))

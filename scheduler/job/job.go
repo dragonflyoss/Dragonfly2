@@ -22,20 +22,23 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
 	"github.com/RichardKnop/machinery/v1"
-	"github.com/go-http-utils/headers"
 	"github.com/go-playground/validator/v10"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	cdnsystemv1 "d7y.io/api/v2/pkg/apis/cdnsystem/v1"
 	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
+	commonv2 "d7y.io/api/v2/pkg/apis/common/v2"
+	dfdaemonv2 "d7y.io/api/v2/pkg/apis/dfdaemon/v2"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
@@ -148,8 +151,9 @@ func (j *job) Serve() {
 	}()
 }
 
-// preheat is a job to preheat.
-func (j *job) preheat(ctx context.Context, req string) error {
+// preheat is a job to preheat, it is not supported to preheat
+// with range requests.
+func (j *job) preheat(ctx context.Context, data string) error {
 	ctx, cancel := context.WithTimeout(ctx, preheatTimeout)
 	defer cancel()
 
@@ -163,59 +167,116 @@ func (j *job) preheat(ctx context.Context, req string) error {
 		return fmt.Errorf("cluster %d scheduler %s has no available seed peer", j.config.Manager.SchedulerClusterID, j.config.Server.AdvertiseIP)
 	}
 
-	preheat := &internaljob.PreheatRequest{}
-	if err := internaljob.UnmarshalRequest(req, preheat); err != nil {
-		logger.Errorf("unmarshal request err: %s, request body: %s", err.Error(), req)
+	req := &internaljob.PreheatRequest{}
+	if err := internaljob.UnmarshalRequest(data, req); err != nil {
+		logger.Errorf("unmarshal request err: %s, request body: %s", err.Error(), data)
 		return err
 	}
 
-	if err := validator.New().Struct(preheat); err != nil {
-		logger.Errorf("preheat %s validate failed: %s", preheat.URL, err.Error())
+	if err := validator.New().Struct(req); err != nil {
+		logger.Errorf("preheat %s validate failed: %s", req.URL, err.Error())
 		return err
 	}
 
-	urlMeta := &commonv1.UrlMeta{
-		Digest:      preheat.Digest,
-		Tag:         preheat.Tag,
-		Filter:      preheat.Filter,
-		Header:      preheat.Headers,
-		Application: preheat.Application,
-		Priority:    commonv1.Priority(preheat.Priority),
-	}
-	if preheat.Headers != nil {
-		if r, ok := preheat.Headers[headers.Range]; ok {
-			// Range in dragonfly is without "bytes=".
-			urlMeta.Range = strings.TrimPrefix(r, http.RangePrefix)
+	// Preheat by v2 grpc protocol. If seed peer does not support
+	// v2 protocol, preheat by v1 grpc protocol.
+	if err := j.preheatV2(ctx, req); err != nil {
+		logger.Errorf("preheat %s failed: %s", req.URL, err.Error())
+
+		if st, ok := status.FromError(err); ok {
+			if st.Code() == codes.Unimplemented {
+				if err := j.preheatV1(ctx, req); err != nil {
+					return err
+				}
+
+				return nil
+			}
 		}
+
+		return err
+	}
+
+	return nil
+}
+
+// preheatV1 preheats job by v1 grpc protocol.
+func (j *job) preheatV1(ctx context.Context, req *internaljob.PreheatRequest) error {
+	urlMeta := &commonv1.UrlMeta{
+		Digest:      req.Digest,
+		Tag:         req.Tag,
+		Filter:      req.FilteredQueryParams,
+		Header:      req.Headers,
+		Application: req.Application,
+		Priority:    commonv1.Priority(req.Priority),
 	}
 
 	// Trigger seed peer download seeds.
-	taskID := idgen.TaskIDV1(preheat.URL, urlMeta)
-	log := logger.WithTask(taskID, preheat.URL)
-	log.Infof("preheat %s tag: %s, range: %s, filter: %s, digest: %s",
-		preheat.URL, urlMeta.Tag, urlMeta.Range, urlMeta.Filter, urlMeta.Digest)
-	log.Debugf("preheat %s headers: %#v", preheat.URL, urlMeta.Header)
+	taskID := idgen.TaskIDV1(req.URL, urlMeta)
+	log := logger.WithTask(taskID, req.URL)
+	log.Infof("preheat(v1) %s tag: %s, filtered query params: %s, digest: %s, headers: %#v",
+		req.URL, urlMeta.Tag, urlMeta.Filter, urlMeta.Digest, urlMeta.Header)
 
 	stream, err := j.resource.SeedPeer().Client().ObtainSeeds(ctx, &cdnsystemv1.SeedRequest{
 		TaskId:  taskID,
-		Url:     preheat.URL,
+		Url:     req.URL,
 		UrlMeta: urlMeta,
 	})
 	if err != nil {
-		log.Errorf("preheat %s failed: %s", preheat.URL, err.Error())
+		log.Errorf("preheat(v1) %s failed: %s", req.URL, err.Error())
 		return err
 	}
 
 	for {
 		piece, err := stream.Recv()
 		if err != nil {
-			log.Errorf("preheat %s recive piece failed: %s", preheat.URL, err.Error())
+			log.Errorf("preheat(v1) %s recive piece failed: %s", req.URL, err.Error())
 			return err
 		}
 
 		if piece.Done == true {
-			log.Infof("preheat %s succeeded", preheat.URL)
+			log.Infof("preheat(v1) %s succeeded", req.URL)
 			return nil
+		}
+	}
+}
+
+// preheatV2 preheats job by v2 grpc protocol.
+func (j *job) preheatV2(ctx context.Context, req *internaljob.PreheatRequest) error {
+	filteredQueryParams := strings.Split(req.FilteredQueryParams, idgen.FilteredQueryParamsSeparator)
+	taskID := idgen.TaskIDV2(req.URL, req.Digest, req.Tag, req.Application, int32(req.PieceLength), filteredQueryParams)
+
+	log := logger.WithTask(taskID, req.URL)
+	log.Infof("preheat(v2) %s tag: %s, filtered query params: %s, digest: %s, headers: %#v",
+		req.URL, req.Tag, req.FilteredQueryParams, req.Digest, req.Headers)
+
+	stream, err := j.resource.SeedPeer().Client().DownloadTask(ctx, taskID, &dfdaemonv2.DownloadTaskRequest{
+		Download: &commonv2.Download{
+			Url:                 req.URL,
+			Digest:              &req.Digest,
+			Type:                commonv2.TaskType_DFDAEMON,
+			Tag:                 &req.Tag,
+			Application:         &req.Application,
+			Priority:            commonv2.Priority(req.Priority),
+			FilteredQueryParams: filteredQueryParams,
+			RequestHeader:       req.Headers,
+			PieceLength:         uint64(req.PieceLength),
+		}})
+	if err != nil {
+		logger.Errorf("preheat(v2) %s failed: %s", req.URL, err.Error())
+		return err
+	}
+
+	// Wait for the download task to complete.
+	for {
+		_, err := stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				log.Infof("preheat(v2) %s succeeded", req.URL)
+				return nil
+			}
+
+			log.Errorf("preheat(v2) %s recive piece failed: %s", req.URL, err.Error())
+			return err
 		}
 	}
 }

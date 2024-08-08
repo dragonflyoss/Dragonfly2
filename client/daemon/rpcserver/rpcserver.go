@@ -56,6 +56,7 @@ import (
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
+	"d7y.io/dragonfly/v2/client/daemon/pex"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/internal/dferrors"
@@ -64,6 +65,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/os/user"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
+	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	"d7y.io/dragonfly/v2/pkg/safe"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/scheduler/resource"
@@ -82,6 +84,8 @@ type server struct {
 	peerHost        *schedulerv1.PeerHost
 	peerTaskManager peer.TaskManager
 	storageManager  storage.Manager
+	peerExchanger   pex.PeerExchangeRPC
+	schedulerClient schedulerclient.V1
 
 	healthServer   *health.Server
 	downloadServer *grpc.Server
@@ -99,13 +103,15 @@ func init() {
 }
 
 func New(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskManager,
-	storageManager storage.Manager, recursiveConcurrent int, cacheRecursiveMetadata time.Duration,
+	storageManager storage.Manager, peerExchanger pex.PeerExchangeRPC, schedulerClient schedulerclient.V1, recursiveConcurrent int, cacheRecursiveMetadata time.Duration,
 	downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Server, error) {
 	s := &server{
 		KeepAlive:       util.NewKeepAlive("rpc server"),
 		peerHost:        peerHost,
 		peerTaskManager: peerTaskManager,
 		storageManager:  storageManager,
+		peerExchanger:   peerExchanger,
+		schedulerClient: schedulerClient,
 
 		recursiveConcurrent:    recursiveConcurrent,
 		cacheRecursiveMetadata: cacheRecursiveMetadata,
@@ -218,8 +224,8 @@ func (s *server) GetPieceTasks(ctx context.Context, request *commonv1.PieceTaskR
 		}, nil
 	}
 
-	logger.Debugf("receive get piece tasks request, task id: %s, src peer: %s, dst peer: %s, piece start num: %d, limit: %d, count: %d, total content length: %d",
-		request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit, len(p.PieceInfos), p.ContentLength)
+	logger.Debugf("receive get piece tasks request, task id: %s, src peer: %s, dst peer: %s, piece start num: %d, limit: %d, count: %d, total piece: %d, total content length: %d",
+		request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit, len(p.PieceInfos), p.TotalPiece, p.ContentLength)
 	p.DstAddr = s.uploadAddr
 	return p, nil
 }
@@ -792,6 +798,16 @@ func (s *server) download(ctx context.Context, req *dfdaemonv1.DownRequest, stre
 				log.Errorf("task %s/%s failed: %d/%s", p.PeerID, p.TaskID, p.State.Code, p.State.Msg)
 				return dferrors.New(p.State.Code, p.State.Msg)
 			}
+			if p.PeerTaskDone {
+				// update permission before send last result
+				if req.Uid != 0 && req.Gid != 0 {
+					log.Infof("change owner to uid %d gid %d", req.Uid, req.Gid)
+					if err = os.Chown(req.Output, int(req.Uid), int(req.Gid)); err != nil {
+						log.Errorf("change owner failed: %s", err)
+						return err
+					}
+				}
+			}
 			err = stream.Send(&dfdaemonv1.DownResult{
 				TaskId:          p.TaskID,
 				PeerId:          p.PeerID,
@@ -807,13 +823,6 @@ func (s *server) download(ctx context.Context, req *dfdaemonv1.DownRequest, stre
 			if p.PeerTaskDone {
 				p.DoneCallback()
 				log.Infof("task %s/%s done", p.PeerID, p.TaskID)
-				if req.Uid != 0 && req.Gid != 0 {
-					log.Infof("change own to uid %d gid %d", req.Uid, req.Gid)
-					if err = os.Chown(req.Output, int(req.Uid), int(req.Gid)); err != nil {
-						log.Errorf("change own failed: %s", err)
-						return err
-					}
-				}
 				return nil
 			}
 		case <-ctx.Done():
@@ -1100,6 +1109,13 @@ func (s *server) DeleteTask(ctx context.Context, req *dfdaemonv1.DeleteTaskReque
 	}
 
 	return new(emptypb.Empty), nil
+}
+
+// LeaveHost will leave host from scheduler
+func (s *server) LeaveHost(ctx context.Context, _ *emptypb.Empty) (*emptypb.Empty, error) {
+	return new(emptypb.Empty), s.schedulerClient.LeaveHost(ctx, &schedulerv1.LeaveHostRequest{
+		Id: s.peerHost.Id,
+	})
 }
 
 func checkOutput(output string) error {

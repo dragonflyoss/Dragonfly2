@@ -21,19 +21,22 @@ package resource
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 	"time"
+
+	"go.opentelemetry.io/otel/trace"
 
 	cdnsystemv1 "d7y.io/api/v2/pkg/apis/cdnsystem/v1"
 	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
 	commonv2 "d7y.io/api/v2/pkg/apis/common/v2"
+	dfdaemonv2 "d7y.io/api/v2/pkg/apis/dfdaemon/v2"
 	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
-	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
 )
@@ -45,9 +48,9 @@ const (
 
 // SeedPeer is the interface used for seed peer.
 type SeedPeer interface {
-	// DownloadTask downloads task back-to-source.
+	// TriggerDownloadTask triggers the seed peer to download task.
 	// Used only in v2 version of the grpc.
-	DownloadTask(context.Context, *Task, types.HostType) error
+	TriggerDownloadTask(context.Context, string, *dfdaemonv2.DownloadTaskRequest) error
 
 	// TriggerTask triggers the seed peer to download task.
 	// Used only in v1 version of the grpc.
@@ -63,7 +66,7 @@ type SeedPeer interface {
 // seedPeer contains content for seed peer.
 type seedPeer struct {
 	// config is the config of resource.
-	config *config.ResourceConfig
+	config *config.Config
 
 	// client is the dynamic client of seed peer.
 	client SeedPeerClient
@@ -76,7 +79,7 @@ type seedPeer struct {
 }
 
 // New SeedPeer interface.
-func newSeedPeer(cfg *config.ResourceConfig, client SeedPeerClient, peerManager PeerManager, hostManager HostManager) SeedPeer {
+func newSeedPeer(cfg *config.Config, client SeedPeerClient, peerManager PeerManager, hostManager HostManager) SeedPeer {
 	return &seedPeer{
 		config:      cfg,
 		client:      client,
@@ -85,14 +88,28 @@ func newSeedPeer(cfg *config.ResourceConfig, client SeedPeerClient, peerManager 
 	}
 }
 
-// TODO Implement DownloadTask
-// DownloadTask downloads task back-to-source.
+// TriggerDownloadTask triggers the seed peer to download task.
 // Used only in v2 version of the grpc.
-func (s *seedPeer) DownloadTask(ctx context.Context, task *Task, hostType types.HostType) error {
-	// ctx, cancel := context.WithCancel(trace.ContextWithSpan(context.Background(), trace.SpanFromContext(ctx)))
-	// defer cancel()
+func (s *seedPeer) TriggerDownloadTask(ctx context.Context, taskID string, req *dfdaemonv2.DownloadTaskRequest) error {
+	ctx, cancel := context.WithCancel(trace.ContextWithSpan(ctx, trace.SpanFromContext(ctx)))
+	defer cancel()
 
-	return nil
+	stream, err := s.client.DownloadTask(ctx, taskID, req)
+	if err != nil {
+		return err
+	}
+
+	// Wait for the download task to complete.
+	for {
+		_, err := stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+
+			return err
+		}
+	}
 }
 
 // TriggerTask triggers the seed peer to download task.
@@ -100,7 +117,7 @@ func (s *seedPeer) DownloadTask(ctx context.Context, task *Task, hostType types.
 func (s *seedPeer) TriggerTask(ctx context.Context, rg *http.Range, task *Task) (*Peer, *schedulerv1.PeerResult, error) {
 	urlMeta := &commonv1.UrlMeta{
 		Tag:         task.Tag,
-		Filter:      strings.Join(task.Filters, idgen.URLFilterSeparator),
+		Filter:      strings.Join(task.FilteredQueryParams, idgen.FilteredQueryParamsSeparator),
 		Header:      task.Header,
 		Application: task.Application,
 		Priority:    commonv1.Priority_LEVEL0,
@@ -146,7 +163,7 @@ func (s *seedPeer) TriggerTask(ctx context.Context, rg *http.Range, task *Task) 
 			initialized = true
 
 			// Initialize seed peer.
-			peer, err = s.initSeedPeer(ctx, rg, task, pieceSeed)
+			peer, err = s.initSeedPeer(ctx, rg, task, pieceSeed.HostId, pieceSeed.PeerId)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -211,21 +228,21 @@ func (s *seedPeer) TriggerTask(ctx context.Context, rg *http.Range, task *Task) 
 }
 
 // Initialize seed peer.
-func (s *seedPeer) initSeedPeer(ctx context.Context, rg *http.Range, task *Task, ps *cdnsystemv1.PieceSeed) (*Peer, error) {
+func (s *seedPeer) initSeedPeer(ctx context.Context, rg *http.Range, task *Task, hostID string, peerID string) (*Peer, error) {
 	// Load host from manager.
-	host, loaded := s.hostManager.Load(ps.HostId)
+	host, loaded := s.hostManager.Load(hostID)
 	if !loaded {
-		task.Log.Errorf("can not find seed host id: %s", ps.HostId)
-		return nil, fmt.Errorf("can not find host id: %s", ps.HostId)
+		task.Log.Errorf("can not find seed host id: %s", hostID)
+		return nil, fmt.Errorf("can not find host id: %s", hostID)
 	}
 	host.UpdatedAt.Store(time.Now())
 
 	// Load peer from manager.
-	peer, loaded := s.peerManager.Load(ps.PeerId)
+	peer, loaded := s.peerManager.Load(peerID)
 	if loaded {
 		return peer, nil
 	}
-	task.Log.Infof("can not find seed peer: %s", ps.PeerId)
+	task.Log.Infof("can not find seed peer: %s", peerID)
 
 	options := []PeerOption{}
 	if rg != nil {
@@ -233,7 +250,7 @@ func (s *seedPeer) initSeedPeer(ctx context.Context, rg *http.Range, task *Task,
 	}
 
 	// New and store seed peer without range.
-	peer = NewPeer(ps.PeerId, s.config, task, host, options...)
+	peer = NewPeer(peerID, &s.config.Resource, task, host, options...)
 	s.peerManager.Store(peer)
 	peer.Log.Info("seed peer has been stored")
 

@@ -20,6 +20,7 @@ package client
 
 import (
 	"context"
+	"math"
 
 	"github.com/google/uuid"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -47,9 +48,13 @@ func GetV1(ctx context.Context, target string, opts ...grpc.DialOption) (V1, err
 		ctx,
 		target,
 		append([]grpc.DialOption{
+			grpc.WithIdleTimeout(0),
+			grpc.WithDefaultCallOptions(
+				grpc.MaxCallRecvMsgSize(math.MaxInt32),
+				grpc.MaxCallSendMsgSize(math.MaxInt32),
+			),
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
 				rpc.ConvertErrorUnaryClientInterceptor,
-				rpc.OTELUnaryClientInterceptor(),
 				grpc_prometheus.UnaryClientInterceptor,
 				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
 				grpc_retry.UnaryClientInterceptor(
@@ -59,7 +64,6 @@ func GetV1(ctx context.Context, target string, opts ...grpc.DialOption) (V1, err
 			)),
 			grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
 				rpc.ConvertErrorStreamClientInterceptor,
-				rpc.OTELStreamClientInterceptor(),
 				grpc_prometheus.StreamClientInterceptor,
 				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
 			)),
@@ -103,6 +107,12 @@ type V1 interface {
 
 	// Delete file from P2P cache system.
 	DeleteTask(context.Context, *dfdaemonv1.DeleteTaskRequest, ...grpc.CallOption) error
+
+	// LeaveHost leaves the host from the scheduler.
+	LeaveHost(context.Context, ...grpc.CallOption) error
+
+	// PeerExchange exchange peer metadata between daemons
+	PeerExchange(ctx context.Context, opts ...grpc.CallOption) (dfdaemonv1.Daemon_PeerExchangeClient, error)
 
 	// Check daemon health.
 	CheckHealth(context.Context, ...grpc.CallOption) error
@@ -171,6 +181,15 @@ func (v *v1) DeleteTask(ctx context.Context, req *dfdaemonv1.DeleteTaskRequest, 
 	return err
 }
 
+// LeaveHost leaves the host from the scheduler.
+func (v *v1) LeaveHost(ctx context.Context, opts ...grpc.CallOption) error {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
+	_, err := v.DaemonClient.LeaveHost(ctx, new(emptypb.Empty), opts...)
+	return err
+}
+
 // Check daemon health.
 func (v *v1) CheckHealth(ctx context.Context, opts ...grpc.CallOption) error {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
@@ -178,4 +197,14 @@ func (v *v1) CheckHealth(ctx context.Context, opts ...grpc.CallOption) error {
 
 	_, err := v.DaemonClient.CheckHealth(ctx, new(emptypb.Empty), opts...)
 	return err
+}
+
+// PeerExchange exchange peer metadata between daemons
+func (v *v1) PeerExchange(ctx context.Context, opts ...grpc.CallOption) (dfdaemonv1.Daemon_PeerExchangeClient, error) {
+	stream, err := v.DaemonClient.PeerExchange(ctx, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return stream, nil
 }

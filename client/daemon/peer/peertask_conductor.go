@@ -35,6 +35,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
+	dfdaemonv1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
 	errordetailsv1 "d7y.io/api/v2/pkg/apis/errordetails/v1"
 	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 
@@ -84,6 +85,10 @@ type peerTaskConductor struct {
 	// needBackSource indicates downloading resource from instead of other peers
 	needBackSource *atomic.Bool
 	seed           bool
+
+	// sub peer task need ensure parent storage registered, success or failed
+	storageRegistered      chan struct{}
+	storageRegisterSuccess bool
 
 	peerTaskManager *peerTaskManager
 
@@ -238,6 +243,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 		seed:                seed,
 		parent:              parent,
 		rg:                  rg,
+		storageRegistered:   make(chan struct{}),
 	}
 
 	ptc.pieceDownloadCtx, ptc.pieceDownloadCancel = context.WithCancel(ptc.ctx)
@@ -269,21 +275,23 @@ func (pt *peerTaskConductor) register() error {
 	regSpan.End()
 
 	if err != nil {
-		if err == context.DeadlineExceeded {
+		if errors.Is(err, context.DeadlineExceeded) {
 			pt.Errorf("scheduler did not response in %s", pt.SchedulerOption.ScheduleTimeout.Duration)
 		}
 		pt.Errorf("step 1: peer %s register failed: %s", pt.request.PeerId, err)
+		// can not detect source or scheduler error, create a new dummy scheduler client
+		pt.schedulerClient = &dummySchedulerClient{}
+		// when peer register failed, some actions need to do with peerPacketStream
+		pt.peerPacketStream = &dummyPeerPacketStream{}
+
 		if pt.SchedulerOption.DisableAutoBackSource {
-			// when peer register failed, some actions need to do with peerPacketStream
-			pt.peerPacketStream = &dummyPeerPacketStream{}
 			pt.Errorf("register peer task failed: %s, peer id: %s, auto back source disabled", err, pt.request.PeerId)
 			pt.span.RecordError(err)
 			pt.cancel(commonv1.Code_SchedError, err.Error())
 			return err
 		}
+
 		needBackSource = true
-		// can not detect source or scheduler error, create a new dummy scheduler client
-		pt.schedulerClient = &dummySchedulerClient{}
 		result = &schedulerv1.RegisterResult{TaskId: pt.taskID}
 		pt.Warnf("register peer task failed: %s, peer id: %s, try to back source", err, pt.request.PeerId)
 	} else {
@@ -612,6 +620,12 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 		pt.cancel(commonv1.Code_ClientError, err.Error())
 		return
 	}
+	reader, err := digest.NewReader(digest.AlgorithmMD5, bytes.NewBuffer(pt.tinyData.Content))
+	if err != nil {
+		pt.Errorf("create digest reader: %s", err)
+		pt.cancel(commonv1.Code_ClientError, err.Error())
+		return
+	}
 	n, err := pt.GetStorage().WritePiece(ctx,
 		&storage.WritePieceRequest{
 			PeerTaskMetadata: storage.PeerTaskMetadata{
@@ -629,7 +643,7 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 				Style: 0,
 			},
 			UnknownLength: false,
-			Reader:        bytes.NewBuffer(pt.tinyData.Content),
+			Reader:        reader,
 			NeedGenMetadata: func(n int64) (int32, int64, bool) {
 				return 1, contentLength, true
 			},
@@ -721,8 +735,8 @@ loop:
 				if !firstPacketReceived {
 					close(firstPacketDone)
 				}
-				pt.forceBackSource()
 				pt.Infof("receive back source code")
+				pt.forceBackSource()
 				return
 			}
 			pt.Errorf("receive peer packet with error: %d", peerPacket.Code)
@@ -747,13 +761,12 @@ loop:
 			pt.Warnf("scheduler client send a peerPacket with empty peers")
 			continue
 		}
-		pt.Infof("receive new peer packet, main peer: %s, parallel count: %d",
-			peerPacket.MainPeer.PeerId, peerPacket.ParallelCount)
+		pt.Infof("receive new peer packet, main peer: %s", peerPacket.MainPeer.PeerId)
 		pt.span.AddEvent("receive new peer packet",
 			trace.WithAttributes(config.AttributeMainPeer.String(peerPacket.MainPeer.PeerId)))
 
 		if !firstPacketReceived {
-			pt.initDownloadPieceWorkers(peerPacket.ParallelCount, pieceRequestQueue)
+			pt.initDownloadPieceWorkers(pieceRequestQueue)
 			firstPeerSpan.SetAttributes(config.AttributeMainPeer.String(peerPacket.MainPeer.PeerId))
 			firstPeerSpan.End()
 		}
@@ -788,6 +801,21 @@ func (pt *peerTaskConductor) updateSynchronizers(lastNum int32, p *schedulerv1.P
 	return desiredPiece
 }
 
+/*
+When one scheduler goes away(force killed or broken tcp connection) before the peer task done, we will receive the following error message:
+
+	receive peer packet failed: rpc error: code = Unavailable desc = closing transport due to: connection error: desc = "error reading from server: EOF", received prior goaway: code: NO_ERROR, debug data: "graceful_stop"
+
+The underlay error is "connection error: desc = \"error reading from server: EOF\"", the grpc code is codes.Unavailable.
+
+refer grpc-go link:
+https://github.com/grpc/grpc-go/blob/v1.60.1/test/goaway_test.go#L118
+https://github.com/grpc/grpc-go/blob/v1.60.1/internal/transport/http2_client.go#L987
+*/
+func isSchedulerUnavailable(err error) bool {
+	return status.Code(err) == codes.Unavailable
+}
+
 func (pt *peerTaskConductor) confirmReceivePeerPacketError(err error) (cont bool) {
 	select {
 	case <-pt.successCh:
@@ -801,8 +829,7 @@ func (pt *peerTaskConductor) confirmReceivePeerPacketError(err error) (cont bool
 		failedReason string
 	)
 	// extract DfError for grpc status
-	err = dferrors.ConvertGRPCErrorToDfError(err)
-	de, ok := err.(*dferrors.DfError)
+	de, ok := dferrors.IsGRPCDfError(err)
 	if ok {
 		switch de.Code {
 		case commonv1.Code_SchedNeedBackSource:
@@ -825,6 +852,14 @@ func (pt *peerTaskConductor) confirmReceivePeerPacketError(err error) (cont bool
 		}
 	} else {
 		pt.Errorf("receive peer packet failed: %s", err)
+		if isSchedulerUnavailable(err) {
+			regErr := pt.register()
+			if regErr == nil {
+				pt.Infof("reregister ok")
+				return true
+			}
+			pt.Errorf("reregister to scheduler error: %s", regErr)
+		}
 	}
 	pt.cancel(failedCode, failedReason)
 	return false
@@ -877,25 +912,14 @@ func (pt *peerTaskConductor) pullSinglePiece() {
 	pt.SetTotalPieces(1)
 	pt.SetPieceMd5Sign(digest.SHA256FromStrings(pt.singlePiece.PieceInfo.PieceMd5))
 
-	request := &DownloadPieceRequest{
-		storage: pt.GetStorage(),
-		piece:   pt.singlePiece.PieceInfo,
-		log:     pt.Log(),
-		TaskID:  pt.GetTaskID(),
-		PeerID:  pt.GetPeerID(),
-		DstPid:  pt.singlePiece.DstPid,
-		DstAddr: pt.singlePiece.DstAddr,
-	}
+	var (
+		err     error
+		request *DownloadPieceRequest
+		result  *DownloadPieceResult
+	)
 
-	if result, err := pt.PieceManager.DownloadPiece(ctx, request); err == nil {
-		pt.reportSuccessResult(request, result)
-		pt.PublishPieceInfo(request.piece.PieceNum, request.piece.RangeSize)
-
-		span.SetAttributes(config.AttributePieceSuccess.Bool(true))
-		span.End()
-		pt.Infof("single piece download success")
-	} else {
-		// fallback to download from other peers
+	// fallback to download from other peers with p2p mode
+	fallback := func() {
 		span.RecordError(err)
 		span.SetAttributes(config.AttributePieceSuccess.Bool(false))
 		span.End()
@@ -905,6 +929,36 @@ func (pt *peerTaskConductor) pullSinglePiece() {
 
 		pt.pullPiecesWithP2P()
 	}
+
+	err = pt.UpdateStorage()
+	if err != nil {
+		fallback()
+		return
+	}
+
+	request = &DownloadPieceRequest{
+		storage: pt.GetStorage(),
+		piece:   pt.singlePiece.PieceInfo,
+		log:     pt.Log(),
+		TaskID:  pt.GetTaskID(),
+		PeerID:  pt.GetPeerID(),
+		DstPid:  pt.singlePiece.DstPid,
+		DstAddr: pt.singlePiece.DstAddr,
+	}
+
+	result, err = pt.PieceManager.DownloadPiece(ctx, request)
+	if err != nil {
+		fallback()
+		return
+	}
+
+	pt.reportSuccessResult(request, result)
+	pt.PublishPieceInfo(request.piece.PieceNum, request.piece.RangeSize)
+
+	span.SetAttributes(config.AttributePieceSuccess.Bool(true))
+	span.End()
+	pt.Infof("single piece download success")
+	return
 }
 
 func (pt *peerTaskConductor) updateMetadata(piecePacket *commonv1.PiecePacket) {
@@ -952,11 +1006,9 @@ func (pt *peerTaskConductor) updateMetadata(piecePacket *commonv1.PiecePacket) {
 	}
 }
 
-func (pt *peerTaskConductor) initDownloadPieceWorkers(count int32, pieceRequestQueue PieceDispatcher) {
-	if count < 1 {
-		count = 4
-	}
-	for i := int32(0); i < count; i++ {
+func (pt *peerTaskConductor) initDownloadPieceWorkers(pieceRequestQueue PieceDispatcher) {
+	count := 4
+	for i := int32(0); i < int32(count); i++ {
 		go pt.downloadPieceWorker(i, pieceRequestQueue)
 	}
 }
@@ -1036,11 +1088,16 @@ func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPiec
 	pt.runningPieces.Set(request.piece.PieceNum)
 	pt.runningPiecesLock.Unlock()
 
-	defer func() {
-		pt.runningPiecesLock.Lock()
-		pt.runningPieces.Clean(request.piece.PieceNum)
-		pt.runningPiecesLock.Unlock()
-	}()
+	var cleanRunningPieceDone bool
+	cleanRunningPiece := func() {
+		if !cleanRunningPieceDone {
+			cleanRunningPieceDone = true
+			pt.runningPiecesLock.Lock()
+			pt.runningPieces.Clean(request.piece.PieceNum)
+			pt.runningPiecesLock.Unlock()
+		}
+	}
+	defer cleanRunningPiece()
 
 	ctx, span := tracer.Start(pt.pieceDownloadCtx, fmt.Sprintf(config.SpanDownloadPiece, request.piece.PieceNum))
 	span.SetAttributes(config.AttributePiece.Int(int(request.piece.PieceNum)))
@@ -1067,6 +1124,9 @@ func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPiec
 			pt.Infof("switch to back source, skip send failed piece")
 			return result
 		}
+
+		// clean running piece first
+		cleanRunningPiece()
 		attempt, success := pt.pieceTaskSyncManager.acquire(
 			&commonv1.PieceTaskRequest{
 				Limit:    1,
@@ -1253,7 +1313,7 @@ func (pt *peerTaskConductor) reportFailResult(request *DownloadPieceRequest, res
 	span.End()
 }
 
-func (pt *peerTaskConductor) initStorage(desiredLocation string) (err error) {
+func (pt *peerTaskConductor) registerStorage(desiredLocation string) (err error) {
 	// prepare storage
 	if pt.parent == nil {
 		pt.storage, err = pt.StorageManager.RegisterTask(pt.ctx,
@@ -1281,10 +1341,13 @@ func (pt *peerTaskConductor) initStorage(desiredLocation string) (err error) {
 				Range: pt.rg,
 			})
 	}
+	defer close(pt.storageRegistered)
 	if err != nil {
 		pt.Log().Errorf("register task to storage manager failed: %s", err)
+		return err
 	}
-	return err
+	pt.storageRegisterSuccess = true
+	return nil
 }
 
 func (pt *peerTaskConductor) UpdateStorage() error {
@@ -1332,7 +1395,7 @@ func (pt *peerTaskConductor) done() {
 	// update storage metadata
 	if err := pt.UpdateStorage(); err == nil {
 		// validate digest
-		if err = pt.Validate(); err == nil {
+		if err = pt.tryStore(); err == nil {
 			close(pt.successCh)
 			pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
 		} else {
@@ -1345,7 +1408,7 @@ func (pt *peerTaskConductor) done() {
 			pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
 			pt.span.SetAttributes(config.AttributePeerTaskCode.Int(int(pt.failedCode)))
 			pt.span.SetAttributes(config.AttributePeerTaskMessage.String(pt.failedReason))
-			pt.Errorf("validate digest failed: %s", err)
+			pt.Errorf("store failed: %s", err)
 			metrics.PeerTaskFailedCount.WithLabelValues(metrics.FailTypeP2P).Add(1)
 		}
 	} else {
@@ -1401,6 +1464,21 @@ func (pt *peerTaskConductor) done() {
 		pt.Errorf("step 3: report successful peer result, error: %v", err)
 	} else {
 		pt.Infof("step 3: report successful peer result ok")
+	}
+
+	if pt.peerTaskManager.PeerSearchBroadcaster != nil {
+		var state dfdaemonv1.PeerState
+		if success {
+			state = dfdaemonv1.PeerState_Success
+		} else {
+			state = dfdaemonv1.PeerState_Failed
+		}
+		pt.peerTaskManager.PeerSearchBroadcaster.BroadcastPeer(
+			&dfdaemonv1.PeerMetadata{
+				TaskId: pt.taskID,
+				PeerId: pt.peerID,
+				State:  state,
+			})
 	}
 }
 
@@ -1491,10 +1569,18 @@ func (pt *peerTaskConductor) fail() {
 	pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
 	pt.span.SetAttributes(config.AttributePeerTaskCode.Int(int(pt.failedCode)))
 	pt.span.SetAttributes(config.AttributePeerTaskMessage.String(pt.failedReason))
+
+	if pt.peerTaskManager.PeerSearchBroadcaster != nil {
+		pt.peerTaskManager.PeerSearchBroadcaster.BroadcastPeer(
+			&dfdaemonv1.PeerMetadata{
+				TaskId: pt.taskID,
+				PeerId: pt.peerID,
+				State:  dfdaemonv1.PeerState_Failed,
+			})
+	}
 }
 
-// Validate stores metadata and validates digest
-func (pt *peerTaskConductor) Validate() error {
+func (pt *peerTaskConductor) tryStore() error {
 	err := pt.GetStorage().Store(pt.ctx,
 		&storage.StoreRequest{
 			CommonTaskRequest: storage.CommonTaskRequest{
@@ -1508,22 +1594,7 @@ func (pt *peerTaskConductor) Validate() error {
 		pt.Errorf("store metadata error: %s", err)
 		return err
 	}
-
-	if !pt.CalculateDigest {
-		return nil
-	}
-	err = pt.GetStorage().ValidateDigest(
-		&storage.PeerTaskMetadata{
-			PeerID: pt.GetPeerID(),
-			TaskID: pt.GetTaskID(),
-		})
-	if err != nil {
-		pt.Errorf("validate digest error: %s", err)
-		return err
-	}
-	pt.Debugf("validate digest ok")
-
-	return err
+	return nil
 }
 
 func (pt *peerTaskConductor) PublishPieceInfo(pieceNum int32, size uint32) {

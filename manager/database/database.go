@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -48,7 +48,7 @@ func New(cfg *config.Config) (*Database, error) {
 	)
 	switch cfg.Database.Type {
 	case config.DatabaseTypeMysql, config.DatabaseTypeMariaDB:
-		db, err = newMyqsl(cfg)
+		db, err = newMysql(cfg)
 		if err != nil {
 			logger.Errorf("mysql: %s", err.Error())
 			return nil, err
@@ -116,8 +116,7 @@ func seed(db *gorm.DB) error {
 				"filter_parent_limit":    schedulerconfig.DefaultSchedulerFilterParentLimit,
 			},
 			ClientConfig: map[string]any{
-				"load_limit":             schedulerconfig.DefaultPeerConcurrentUploadLimit,
-				"concurrent_piece_count": schedulerconfig.DefaultPeerConcurrentPieceCount,
+				"load_limit": schedulerconfig.DefaultPeerConcurrentUploadLimit,
 			},
 			Scopes:    map[string]any{},
 			IsDefault: true,

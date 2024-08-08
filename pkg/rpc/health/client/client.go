@@ -21,6 +21,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"math"
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -30,7 +31,6 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc"
 )
 
 const (
@@ -44,13 +44,16 @@ func GetClient(ctx context.Context, target string, opts ...grpc.DialOption) (Cli
 		ctx,
 		target,
 		append([]grpc.DialOption{
+			grpc.WithIdleTimeout(0),
+			grpc.WithDefaultCallOptions(
+				grpc.MaxCallRecvMsgSize(math.MaxInt32),
+				grpc.MaxCallSendMsgSize(math.MaxInt32),
+			),
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
-				rpc.OTELUnaryClientInterceptor(),
 				grpc_prometheus.UnaryClientInterceptor,
 				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
 			)),
 			grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
-				rpc.OTELStreamClientInterceptor(),
 				grpc_prometheus.StreamClientInterceptor,
 				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
 			)),

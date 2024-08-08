@@ -24,10 +24,12 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	commonv2 "d7y.io/api/v2/pkg/apis/common/v2"
+	dfdaemonv2 "d7y.io/api/v2/pkg/apis/dfdaemon/v2"
 	schedulerv2 "d7y.io/api/v2/pkg/apis/scheduler/v2"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -91,7 +93,7 @@ func (v *V2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePeerServer) error
 	for {
 		select {
 		case <-ctx.Done():
-			logger.Infof("context was done")
+			logger.Info("context was done")
 			return ctx.Err()
 		default:
 		}
@@ -106,92 +108,97 @@ func (v *V2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePeerServer) error
 			return err
 		}
 
-		logger := logger.WithPeer(req.GetHostId(), req.GetTaskId(), req.GetPeerId())
+		log := logger.WithPeer(req.GetHostId(), req.GetTaskId(), req.GetPeerId())
 		switch announcePeerRequest := req.GetRequest().(type) {
 		case *schedulerv2.AnnouncePeerRequest_RegisterPeerRequest:
-			logger.Infof("receive AnnouncePeerRequest_RegisterPeerRequest: %s", announcePeerRequest.RegisterPeerRequest.Download.Url)
-			if err := v.handleRegisterPeerRequest(ctx, stream, req.GetHostId(), req.GetTaskId(), req.GetPeerId(), announcePeerRequest.RegisterPeerRequest); err != nil {
-				logger.Error(err)
-				return err
-			}
-		case *schedulerv2.AnnouncePeerRequest_RegisterSeedPeerRequest:
-			logger.Infof("receive AnnouncePeerRequest_RegisterSeedPeerRequest: %s", announcePeerRequest.RegisterSeedPeerRequest.Download.Url)
-			if err := v.handleRegisterSeedPeerRequest(ctx, stream, req.GetHostId(), req.GetTaskId(), req.GetPeerId(), announcePeerRequest.RegisterSeedPeerRequest); err != nil {
-				logger.Error(err)
+			registerPeerRequest := announcePeerRequest.RegisterPeerRequest
+			log.Infof("receive RegisterPeerRequest, url: %s, range: %#v, header: %#v, need back-to-source: %t",
+				registerPeerRequest.Download.GetUrl(), registerPeerRequest.Download.GetRange(), registerPeerRequest.Download.GetRequestHeader(), registerPeerRequest.Download.GetNeedBackToSource())
+			if err := v.handleRegisterPeerRequest(ctx, stream, req.GetHostId(), req.GetTaskId(), req.GetPeerId(), registerPeerRequest); err != nil {
+				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerStartedRequest:
-			logger.Infof("receive AnnouncePeerRequest_DownloadPeerStartedRequest: %#v", announcePeerRequest.DownloadPeerStartedRequest)
+			log.Info("receive DownloadPeerStartedRequest")
 			if err := v.handleDownloadPeerStartedRequest(ctx, req.GetPeerId()); err != nil {
-				logger.Error(err)
+				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerBackToSourceStartedRequest:
-			logger.Infof("receive AnnouncePeerRequest_DownloadPeerBackToSourceStartedRequest: %#v", announcePeerRequest.DownloadPeerBackToSourceStartedRequest)
+			log.Info("receive DownloadPeerBackToSourceStartedRequest")
 			if err := v.handleDownloadPeerBackToSourceStartedRequest(ctx, req.GetPeerId()); err != nil {
-				logger.Error(err)
+				log.Error(err)
 				return err
 			}
-		case *schedulerv2.AnnouncePeerRequest_RescheduleRequest:
-			logger.Infof("receive AnnouncePeerRequest_RescheduleRequest: %#v", announcePeerRequest.RescheduleRequest)
-			if err := v.handleRescheduleRequest(ctx, req.GetPeerId()); err != nil {
-				logger.Error(err)
+		case *schedulerv2.AnnouncePeerRequest_ReschedulePeerRequest:
+			rescheduleRequest := announcePeerRequest.ReschedulePeerRequest
+
+			log.Infof("receive RescheduleRequest description: %s", rescheduleRequest.GetDescription())
+			if err := v.handleRescheduleRequest(ctx, req.GetPeerId(), rescheduleRequest.GetCandidateParents()); err != nil {
+				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerFinishedRequest:
-			logger.Infof("receive AnnouncePeerRequest_DownloadPeerFinishedRequest: %#v", announcePeerRequest.DownloadPeerFinishedRequest)
-			if err := v.handleDownloadPeerFinishedRequest(ctx, req.GetPeerId()); err != nil {
-				logger.Error(err)
+			downloadPeerFinishedRequest := announcePeerRequest.DownloadPeerFinishedRequest
+			log.Infof("receive DownloadPeerFinishedRequest, content length: %d, piece count: %d", downloadPeerFinishedRequest.GetContentLength(), downloadPeerFinishedRequest.GetPieceCount())
+			// Notice: Handler uses context.Background() to avoid stream cancel by dfdameon.
+			if err := v.handleDownloadPeerFinishedRequest(context.Background(), req.GetPeerId()); err != nil {
+				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerBackToSourceFinishedRequest:
-			logger.Infof("receive AnnouncePeerRequest_DownloadPeerBackToSourceFinishedRequest: %#v", announcePeerRequest.DownloadPeerBackToSourceFinishedRequest)
-			if err := v.handleDownloadPeerBackToSourceFinishedRequest(ctx, req.GetPeerId(), announcePeerRequest.DownloadPeerBackToSourceFinishedRequest); err != nil {
-				logger.Error(err)
+			downloadPeerBackToSourceFinishedRequest := announcePeerRequest.DownloadPeerBackToSourceFinishedRequest
+			log.Infof("receive DownloadPeerBackToSourceFinishedRequest, content length: %d, piece count: %d", downloadPeerBackToSourceFinishedRequest.GetContentLength(), downloadPeerBackToSourceFinishedRequest.GetPieceCount())
+			// Notice: Handler uses context.Background() to avoid stream cancel by dfdameon.
+			if err := v.handleDownloadPeerBackToSourceFinishedRequest(context.Background(), req.GetPeerId(), downloadPeerBackToSourceFinishedRequest); err != nil {
+				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerFailedRequest:
-			logger.Infof("receive AnnouncePeerRequest_DownloadPeerFailedRequest: %#v", announcePeerRequest.DownloadPeerFailedRequest)
-			if err := v.handleDownloadPeerFailedRequest(ctx, req.GetPeerId()); err != nil {
-				logger.Error(err)
+			log.Infof("receive DownloadPeerFailedRequest, description: %s", announcePeerRequest.DownloadPeerFailedRequest.GetDescription())
+			// Notice: Handler uses context.Background() to avoid stream cancel by dfdameon.
+			if err := v.handleDownloadPeerFailedRequest(context.Background(), req.GetPeerId()); err != nil {
+				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPeerBackToSourceFailedRequest:
-			logger.Infof("receive AnnouncePeerRequest_DownloadPeerBackToSourceFailedRequest: %#v", announcePeerRequest.DownloadPeerBackToSourceFailedRequest)
-			if err := v.handleDownloadPeerBackToSourceFailedRequest(ctx, req.GetPeerId()); err != nil {
-				logger.Error(err)
+			log.Infof("receive DownloadPeerBackToSourceFailedRequest, description: %s", announcePeerRequest.DownloadPeerBackToSourceFailedRequest.GetDescription())
+			// Notice: Handler uses context.Background() to avoid stream cancel by dfdameon.
+			if err := v.handleDownloadPeerBackToSourceFailedRequest(context.Background(), req.GetPeerId()); err != nil {
+				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPieceFinishedRequest:
-			logger.Infof("receive AnnouncePeerRequest_DownloadPieceFinishedRequest: %#v", announcePeerRequest.DownloadPieceFinishedRequest)
-			if err := v.handleDownloadPieceFinishedRequest(ctx, req.GetPeerId(), announcePeerRequest.DownloadPieceFinishedRequest); err != nil {
-				logger.Error(err)
+			piece := announcePeerRequest.DownloadPieceFinishedRequest.Piece
+			log.Infof("receive DownloadPieceFinishedRequest, piece number: %d, piece length: %d, traffic type: %s, cost: %s, parent id: %s", piece.GetNumber(), piece.GetLength(), piece.GetTrafficType(), piece.GetCost().AsDuration().String(), piece.GetParentId())
+			if err := v.handleDownloadPieceFinishedRequest(req.GetPeerId(), announcePeerRequest.DownloadPieceFinishedRequest); err != nil {
+				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPieceBackToSourceFinishedRequest:
-			logger.Infof("receive AnnouncePeerRequest_DownloadPieceBackToSourceFinishedRequest: %#v", announcePeerRequest.DownloadPieceBackToSourceFinishedRequest)
+			piece := announcePeerRequest.DownloadPieceBackToSourceFinishedRequest.Piece
+			log.Infof("receive DownloadPieceBackToSourceFinishedRequest, piece number: %d, piece length: %d, traffic type: %s, cost: %s, parent id: %s", piece.GetNumber(), piece.GetLength(), piece.GetTrafficType(), piece.GetCost().AsDuration().String(), piece.GetParentId())
 			if err := v.handleDownloadPieceBackToSourceFinishedRequest(ctx, req.GetPeerId(), announcePeerRequest.DownloadPieceBackToSourceFinishedRequest); err != nil {
-				logger.Error(err)
+				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPieceFailedRequest:
-			logger.Infof("receive AnnouncePeerRequest_DownloadPieceFailedRequest: %#v", announcePeerRequest.DownloadPieceFailedRequest)
-			if err := v.handleDownloadPieceFailedRequest(ctx, req.GetPeerId(), announcePeerRequest.DownloadPieceFailedRequest); err != nil {
-				logger.Error(err)
+			downloadPieceFailedRequest := announcePeerRequest.DownloadPieceFailedRequest
+			log.Infof("receive DownloadPieceFailedRequest, piece number: %d, temporary: %t, parent id: %s", downloadPieceFailedRequest.GetPieceNumber(), downloadPieceFailedRequest.GetTemporary(), downloadPieceFailedRequest.GetParentId())
+			if err := v.handleDownloadPieceFailedRequest(ctx, req.GetPeerId(), downloadPieceFailedRequest); err != nil {
+				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_DownloadPieceBackToSourceFailedRequest:
-			logger.Infof("receive AnnouncePeerRequest_DownloadPieceBackToSourceFailedRequest: %#v", announcePeerRequest.DownloadPieceBackToSourceFailedRequest)
-			if err := v.handleDownloadPieceBackToSourceFailedRequest(ctx, req.GetPeerId(), announcePeerRequest.DownloadPieceBackToSourceFailedRequest); err != nil {
-				logger.Error(err)
+			downloadPieceBackToSourceFailedRequest := announcePeerRequest.DownloadPieceBackToSourceFailedRequest
+			log.Infof("receive DownloadPieceBackToSourceFailedRequest, piece number: %d", downloadPieceBackToSourceFailedRequest.GetPieceNumber())
+			if err := v.handleDownloadPieceBackToSourceFailedRequest(ctx, req.GetPeerId(), downloadPieceBackToSourceFailedRequest); err != nil {
+				log.Error(err)
 				return err
 			}
-		case *schedulerv2.AnnouncePeerRequest_SyncPiecesFailedRequest:
-			logger.Infof("receive AnnouncePeerRequest_SyncPiecesFailedRequest: %#v", announcePeerRequest.SyncPiecesFailedRequest)
-			v.handleSyncPiecesFailedRequest(ctx, announcePeerRequest.SyncPiecesFailedRequest)
 		default:
 			msg := fmt.Sprintf("receive unknow request: %#v", announcePeerRequest)
-			logger.Error(msg)
+			log.Error(msg)
 			return status.Error(codes.FailedPrecondition, msg)
 		}
 	}
@@ -252,21 +259,21 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 
 	// Set task to response.
 	resp.Task = &commonv2.Task{
-		Id:            peer.Task.ID,
-		Type:          peer.Task.Type,
-		Url:           peer.Task.URL,
-		Tag:           &peer.Task.Tag,
-		Application:   &peer.Task.Application,
-		Filters:       peer.Task.Filters,
-		Header:        peer.Task.Header,
-		PieceLength:   uint32(peer.Task.PieceLength),
-		ContentLength: uint64(peer.Task.ContentLength.Load()),
-		PieceCount:    uint32(peer.Task.TotalPieceCount.Load()),
-		SizeScope:     peer.Task.SizeScope(),
-		State:         peer.Task.FSM.Current(),
-		PeerCount:     uint32(peer.Task.PeerCount()),
-		CreatedAt:     timestamppb.New(peer.Task.CreatedAt.Load()),
-		UpdatedAt:     timestamppb.New(peer.Task.UpdatedAt.Load()),
+		Id:                  peer.Task.ID,
+		Type:                peer.Task.Type,
+		Url:                 peer.Task.URL,
+		Tag:                 &peer.Task.Tag,
+		Application:         &peer.Task.Application,
+		FilteredQueryParams: peer.Task.FilteredQueryParams,
+		RequestHeader:       peer.Task.Header,
+		PieceLength:         uint64(peer.Task.PieceLength),
+		ContentLength:       uint64(peer.Task.ContentLength.Load()),
+		PieceCount:          uint32(peer.Task.TotalPieceCount.Load()),
+		SizeScope:           peer.Task.SizeScope(),
+		State:               peer.Task.FSM.Current(),
+		PeerCount:           uint32(peer.Task.PeerCount()),
+		CreatedAt:           timestamppb.New(peer.Task.CreatedAt.Load()),
+		UpdatedAt:           timestamppb.New(peer.Task.UpdatedAt.Load()),
 	}
 
 	// Set digest to task response.
@@ -367,14 +374,15 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 	return resp, nil
 }
 
-// LeavePeer releases peer in scheduler.
-func (v *V2) LeavePeer(ctx context.Context, req *schedulerv2.LeavePeerRequest) error {
-	logger.WithTaskAndPeerID(req.GetTaskId(), req.GetPeerId()).Infof("leave peer request: %#v", req)
+// DeletePeer releases peer in scheduler.
+func (v *V2) DeletePeer(ctx context.Context, req *schedulerv2.DeletePeerRequest) error {
+	log := logger.WithTaskAndPeerID(req.GetTaskId(), req.GetPeerId())
+	log.Infof("delete peer request: %#v", req)
 
 	peer, loaded := v.resource.PeerManager().Load(req.GetPeerId())
 	if !loaded {
 		msg := fmt.Sprintf("peer %s not found", req.GetPeerId())
-		logger.Error(msg)
+		log.Error(msg)
 		return status.Error(codes.NotFound, msg)
 	}
 
@@ -387,39 +395,34 @@ func (v *V2) LeavePeer(ctx context.Context, req *schedulerv2.LeavePeerRequest) e
 	return nil
 }
 
-// TODO Implement function.
-// ExchangePeer exchanges peer information.
-func (v *V2) ExchangePeer(ctx context.Context, req *schedulerv2.ExchangePeerRequest) (*schedulerv2.ExchangePeerResponse, error) {
-	return nil, nil
-}
-
 // StatTask checks information of task.
 func (v *V2) StatTask(ctx context.Context, req *schedulerv2.StatTaskRequest) (*commonv2.Task, error) {
-	logger.WithTaskID(req.GetId()).Infof("stat task request: %#v", req)
+	log := logger.WithTaskID(req.GetTaskId())
+	log.Infof("stat task request: %#v", req)
 
-	task, loaded := v.resource.TaskManager().Load(req.GetId())
+	task, loaded := v.resource.TaskManager().Load(req.GetTaskId())
 	if !loaded {
-		msg := fmt.Sprintf("task %s not found", req.GetId())
-		logger.Error(msg)
+		msg := fmt.Sprintf("task %s not found", req.GetTaskId())
+		log.Error(msg)
 		return nil, status.Error(codes.NotFound, msg)
 	}
 
 	resp := &commonv2.Task{
-		Id:            task.ID,
-		Type:          task.Type,
-		Url:           task.URL,
-		Tag:           &task.Tag,
-		Application:   &task.Application,
-		Filters:       task.Filters,
-		Header:        task.Header,
-		PieceLength:   uint32(task.PieceLength),
-		ContentLength: uint64(task.ContentLength.Load()),
-		PieceCount:    uint32(task.TotalPieceCount.Load()),
-		SizeScope:     task.SizeScope(),
-		State:         task.FSM.Current(),
-		PeerCount:     uint32(task.PeerCount()),
-		CreatedAt:     timestamppb.New(task.CreatedAt.Load()),
-		UpdatedAt:     timestamppb.New(task.UpdatedAt.Load()),
+		Id:                  task.ID,
+		Type:                task.Type,
+		Url:                 task.URL,
+		Tag:                 &task.Tag,
+		Application:         &task.Application,
+		FilteredQueryParams: task.FilteredQueryParams,
+		RequestHeader:       task.Header,
+		PieceLength:         uint64(task.PieceLength),
+		ContentLength:       uint64(task.ContentLength.Load()),
+		PieceCount:          uint32(task.TotalPieceCount.Load()),
+		SizeScope:           task.SizeScope(),
+		State:               task.FSM.Current(),
+		PeerCount:           uint32(task.PeerCount()),
+		CreatedAt:           timestamppb.New(task.CreatedAt.Load()),
+		UpdatedAt:           timestamppb.New(task.UpdatedAt.Load()),
 	}
 
 	// Set digest to response.
@@ -457,14 +460,54 @@ func (v *V2) StatTask(ctx context.Context, req *schedulerv2.StatTaskRequest) (*c
 	return resp, nil
 }
 
+// DeleteTask releases task in scheduler.
+func (v *V2) DeleteTask(ctx context.Context, req *schedulerv2.DeleteTaskRequest) error {
+	log := logger.WithHostAndTaskID(req.GetHostId(), req.GetTaskId())
+	log.Infof("delete task request: %#v", req)
+
+	host, loaded := v.resource.HostManager().Load(req.GetHostId())
+	if !loaded {
+		msg := fmt.Sprintf("host %s not found", req.GetHostId())
+		log.Error(msg)
+		return status.Error(codes.NotFound, msg)
+	}
+
+	host.Peers.Range(func(key, value any) bool {
+		peer, ok := value.(*resource.Peer)
+		if !ok {
+			host.Log.Errorf("invalid peer %s %#v", key, value)
+			return true
+		}
+
+		if peer.Task.ID == req.GetTaskId() {
+			if err := peer.FSM.Event(ctx, resource.PeerEventLeave); err != nil {
+				msg := fmt.Sprintf("peer fsm event failed: %s", err.Error())
+				peer.Log.Error(msg)
+				return true
+			}
+		}
+
+		return true
+	})
+
+	return nil
+}
+
 // AnnounceHost announces host to scheduler.
 func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequest) error {
 	logger.WithHostID(req.Host.GetId()).Infof("announce host request: %#v", req.GetHost())
 
-	// Get scheduler cluster client config by manager.
+	// Get cluster config by manager.
 	var concurrentUploadLimit int32
-	if clientConfig, err := v.dynconfig.GetSchedulerClusterClientConfig(); err == nil {
-		concurrentUploadLimit = int32(clientConfig.LoadLimit)
+	switch types.HostType(req.Host.GetType()) {
+	case types.HostTypeNormal:
+		if clientConfig, err := v.dynconfig.GetSchedulerClusterClientConfig(); err == nil {
+			concurrentUploadLimit = int32(clientConfig.LoadLimit)
+		}
+	case types.HostTypeSuperSeed, types.HostTypeStrongSeed, types.HostTypeWeakSeed:
+		if seedPeerConfig, err := v.dynconfig.GetSeedPeerClusterConfig(); err == nil {
+			concurrentUploadLimit = int32(seedPeerConfig.LoadLimit)
+		}
 	}
 
 	host, loaded := v.resource.HostManager().Load(req.Host.GetId())
@@ -548,8 +591,8 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 			options = append(options, resource.WithSchedulerClusterID(uint64(v.config.Manager.SchedulerClusterID)))
 		}
 
-		if req.Host.GetObjectStoragePort() != 0 {
-			options = append(options, resource.WithObjectStoragePort(req.Host.GetObjectStoragePort()))
+		if req.GetInterval() != nil {
+			options = append(options, resource.WithAnnounceInterval(req.GetInterval().AsDuration()))
 		}
 
 		host = resource.NewHost(
@@ -641,17 +684,22 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 		}
 	}
 
+	if req.GetInterval() != nil {
+		host.AnnounceInterval = req.GetInterval().AsDuration()
+	}
+
 	return nil
 }
 
-// LeaveHost releases host in scheduler.
-func (v *V2) LeaveHost(ctx context.Context, req *schedulerv2.LeaveHostRequest) error {
-	logger.WithHostID(req.GetId()).Infof("leave host request: %#v", req)
+// DeleteHost releases host in scheduler.
+func (v *V2) DeleteHost(ctx context.Context, req *schedulerv2.DeleteHostRequest) error {
+	log := logger.WithHostID(req.GetHostId())
+	log.Infof("delete host request: %#v", req)
 
-	host, loaded := v.resource.HostManager().Load(req.GetId())
+	host, loaded := v.resource.HostManager().Load(req.GetHostId())
 	if !loaded {
-		msg := fmt.Sprintf("host %s not found", req.GetId())
-		logger.Error(msg)
+		msg := fmt.Sprintf("host %s not found", req.GetHostId())
+		log.Error(msg)
 		return status.Error(codes.NotFound, msg)
 	}
 
@@ -661,7 +709,7 @@ func (v *V2) LeaveHost(ctx context.Context, req *schedulerv2.LeaveHostRequest) e
 	// Delete host from network topology.
 	if v.networkTopology != nil {
 		if err := v.networkTopology.DeleteHost(host.ID); err != nil {
-			logger.Errorf("delete network topology host error: %s", err.Error())
+			log.Errorf("delete network topology host error: %s", err.Error())
 			return err
 		}
 	}
@@ -686,15 +734,15 @@ func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
 			return err
 		}
 
-		logger := logger.WithHost(req.Host.GetId(), req.Host.GetHostname(), req.Host.GetIp())
+		log := logger.WithHost(req.Host.GetId(), req.Host.GetHostname(), req.Host.GetIp())
 		switch syncProbesRequest := req.GetRequest().(type) {
 		case *schedulerv2.SyncProbesRequest_ProbeStartedRequest:
 			// Find probed hosts in network topology. Based on the source host information,
 			// the most candidate hosts will be evaluated.
-			logger.Info("receive SyncProbesRequest_ProbeStartedRequest")
+			log.Info("receive SyncProbesRequest_ProbeStartedRequest")
 			hosts, err := v.networkTopology.FindProbedHosts(req.Host.GetId())
 			if err != nil {
-				logger.Error(err)
+				log.Error(err)
 				return status.Error(codes.FailedPrecondition, err.Error())
 			}
 
@@ -763,26 +811,26 @@ func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
 				})
 			}
 
-			logger.Infof("probe started: %#v", probedHosts)
+			log.Infof("probe started: %#v", probedHosts)
 			if err := stream.Send(&schedulerv2.SyncProbesResponse{
 				Hosts: probedHosts,
 			}); err != nil {
-				logger.Error(err)
+				log.Error(err)
 				return err
 			}
 		case *schedulerv2.SyncProbesRequest_ProbeFinishedRequest:
 			// Store probes in network topology. First create the association between
 			// source host and destination host, and then store the value of probe.
-			logger.Info("receive SyncProbesRequest_ProbeFinishedRequest")
+			log.Info("receive SyncProbesRequest_ProbeFinishedRequest")
 			for _, probe := range syncProbesRequest.ProbeFinishedRequest.Probes {
 				probedHost, loaded := v.resource.HostManager().Load(probe.Host.Id)
 				if !loaded {
-					logger.Errorf("host %s not found", probe.Host.Id)
+					log.Errorf("host %s not found", probe.Host.Id)
 					continue
 				}
 
 				if err := v.networkTopology.Store(req.Host.GetId(), probedHost.ID); err != nil {
-					logger.Errorf("store failed: %s", err.Error())
+					log.Errorf("store failed: %s", err.Error())
 					continue
 				}
 
@@ -791,24 +839,24 @@ func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
 					RTT:       probe.Rtt.AsDuration(),
 					CreatedAt: probe.CreatedAt.AsTime(),
 				}); err != nil {
-					logger.Errorf("enqueue failed: %s", err.Error())
+					log.Errorf("enqueue failed: %s", err.Error())
 					continue
 				}
 
-				logger.Infof("probe finished: %#v", probe)
+				log.Infof("probe finished: %#v", probe)
 			}
 		case *schedulerv2.SyncProbesRequest_ProbeFailedRequest:
 			// Log failed probes.
-			logger.Info("receive SyncProbesRequest_ProbeFailedRequest")
+			log.Info("receive SyncProbesRequest_ProbeFailedRequest")
 			var failedProbedHostIDs []string
 			for _, failedProbe := range syncProbesRequest.ProbeFailedRequest.Probes {
 				failedProbedHostIDs = append(failedProbedHostIDs, failedProbe.Host.Id)
 			}
 
-			logger.Warnf("probe failed: %#v", failedProbedHostIDs)
+			log.Warnf("probe failed: %#v", failedProbedHostIDs)
 		default:
 			msg := fmt.Sprintf("receive unknow request: %#v", syncProbesRequest)
-			logger.Error(msg)
+			log.Error(msg)
 			return status.Error(codes.FailedPrecondition, msg)
 		}
 	}
@@ -817,7 +865,7 @@ func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
 // handleRegisterPeerRequest handles RegisterPeerRequest of AnnouncePeerRequest.
 func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.Scheduler_AnnouncePeerServer, hostID, taskID, peerID string, req *schedulerv2.RegisterPeerRequest) error {
 	// Handle resource included host, task, and peer.
-	_, task, peer, err := v.handleResource(ctx, stream, hostID, taskID, peerID, req.GetDownload())
+	host, task, peer, err := v.handleResource(ctx, stream, hostID, taskID, peerID, req.GetDownload())
 	if err != nil {
 		return err
 	}
@@ -827,62 +875,102 @@ func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.S
 	metrics.RegisterPeerCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
-	// When there are no available peers for a task, the scheduler needs to trigger
-	// the first task download in the p2p cluster.
 	blocklist := set.NewSafeSet[string]()
 	blocklist.Add(peer.ID)
-	if task.FSM.Is(resource.TaskStateFailed) || !task.HasAvailablePeer(blocklist) {
-		if err := v.downloadTaskBySeedPeer(ctx, peer); err != nil {
-			// Collect RegisterPeerFailureCount metrics.
-			metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
-			return err
+	download := proto.Clone(req.Download).(*commonv2.Download)
+	switch {
+	// If scheduler trigger seed peer download back-to-source,
+	// the needBackToSource flag should be true.
+	case download.GetNeedBackToSource():
+		peer.Log.Info("peer need back to source")
+		peer.NeedBackToSource.Store(true)
+	// If task is pending, failed, leave, or succeeded and has no available peer,
+	// scheduler trigger seed peer download back-to-source.
+	case task.FSM.Is(resource.TaskStatePending) ||
+		task.FSM.Is(resource.TaskStateFailed) ||
+		task.FSM.Is(resource.TaskStateLeave) ||
+		task.FSM.Is(resource.TaskStateSucceeded) &&
+			!task.HasAvailablePeer(blocklist):
+
+		// If HostType is normal, trigger seed peer download back-to-source.
+		if host.Type == types.HostTypeNormal {
+			// If trigger the seed peer download back-to-source,
+			// the need back-to-source flag should be true.
+			download.NeedBackToSource = true
+
+			// Output path should be empty, prevent the seed peer
+			// copy file to output path.
+			download.OutputPath = nil
+			if err := v.downloadTaskBySeedPeer(ctx, taskID, download, peer); err != nil {
+				// Collect RegisterPeerFailureCount metrics.
+				metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+					peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+				return err
+			}
+		} else {
+			// If HostType is not normal, peer is seed peer, and
+			// trigger seed peer download back-to-source directly.
+			peer.Log.Info("peer need back to source")
+			peer.NeedBackToSource.Store(true)
 		}
 	}
 
-	// Scheduling parent for the peer.
-	if err := v.schedule(ctx, peer); err != nil {
-		// Collect RegisterPeerFailureCount metrics.
-		metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-			peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
-		return err
+	// Handle task with peer register request.
+	if !peer.Task.FSM.Is(resource.TaskStateRunning) {
+		if err := peer.Task.FSM.Event(ctx, resource.TaskEventDownload); err != nil {
+			// Collect RegisterPeerFailureCount metrics.
+			metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+			return status.Error(codes.Internal, err.Error())
+		}
+	} else {
+		peer.Task.UpdatedAt.Store(time.Now())
 	}
 
-	return nil
-}
+	// FSM event state transition by size scope.
+	sizeScope := peer.Task.SizeScope()
+	switch sizeScope {
+	case commonv2.SizeScope_EMPTY:
+		// Return an EmptyTaskResponse directly.
+		peer.Log.Info("scheduling as SizeScope_EMPTY")
+		stream, loaded := peer.LoadAnnouncePeerStream()
+		if !loaded {
+			return status.Error(codes.NotFound, "AnnouncePeerStream not found")
+		}
 
-// handleRegisterSeedPeerRequest handles RegisterSeedPeerRequest of AnnouncePeerRequest.
-func (v *V2) handleRegisterSeedPeerRequest(ctx context.Context, stream schedulerv2.Scheduler_AnnouncePeerServer, hostID, taskID, peerID string, req *schedulerv2.RegisterSeedPeerRequest) error {
-	// Handle resource included host, task, and peer.
-	_, task, peer, err := v.handleResource(ctx, stream, hostID, taskID, peerID, req.GetDownload())
-	if err != nil {
-		return err
+		if err := peer.FSM.Event(ctx, resource.PeerEventRegisterEmpty); err != nil {
+			return status.Errorf(codes.Internal, err.Error())
+		}
+
+		if err := stream.Send(&schedulerv2.AnnouncePeerResponse{
+			Response: &schedulerv2.AnnouncePeerResponse_EmptyTaskResponse{
+				EmptyTaskResponse: &schedulerv2.EmptyTaskResponse{},
+			},
+		}); err != nil {
+			peer.Log.Error(err)
+			return status.Error(codes.Internal, err.Error())
+		}
+
+		return nil
+	case commonv2.SizeScope_NORMAL, commonv2.SizeScope_TINY, commonv2.SizeScope_SMALL, commonv2.SizeScope_UNKNOW:
+		peer.Log.Info("scheduling as SizeScope_NORMAL")
+		if err := peer.FSM.Event(ctx, resource.PeerEventRegisterNormal); err != nil {
+			return status.Error(codes.Internal, err.Error())
+		}
+
+		// Scheduling parent for the peer.
+		peer.BlockParents.Add(peer.ID)
+		if err := v.scheduling.ScheduleCandidateParents(ctx, peer, peer.BlockParents); err != nil {
+			// Collect RegisterPeerFailureCount metrics.
+			metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
+				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+			return status.Error(codes.FailedPrecondition, err.Error())
+		}
+
+		return nil
+	default:
+		return status.Errorf(codes.FailedPrecondition, "invalid size cope %#v", sizeScope)
 	}
-
-	// Collect RegisterPeerCount metrics.
-	priority := peer.CalculatePriority(v.dynconfig)
-	metrics.RegisterPeerCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
-
-	// When there are no available peers for a task, the scheduler needs to trigger
-	// the first task download in the p2p cluster.
-	blocklist := set.NewSafeSet[string]()
-	blocklist.Add(peer.ID)
-	if task.FSM.Is(resource.TaskStateFailed) || !task.HasAvailablePeer(blocklist) {
-		// When the task has no available peer,
-		// the seed peer will download back-to-source directly.
-		peer.NeedBackToSource.Store(true)
-	}
-
-	// Scheduling parent for the peer.
-	if err := v.schedule(ctx, peer); err != nil {
-		// Collect RegisterPeerFailureCount metrics.
-		metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-			peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
-		return err
-	}
-
-	return nil
 }
 
 // handleDownloadPeerStartedRequest handles DownloadPeerStartedRequest of AnnouncePeerRequest.
@@ -898,23 +986,13 @@ func (v *V2) handleDownloadPeerStartedRequest(ctx context.Context, peerID string
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
 	// Handle peer with peer started request.
-	if err := peer.FSM.Event(ctx, resource.PeerEventDownload); err != nil {
-		// Collect DownloadPeerStartedFailureCount metrics.
-		metrics.DownloadPeerStartedFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-			peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
-		return status.Error(codes.Internal, err.Error())
-	}
-
-	// Handle task with peer started request.
-	if !peer.Task.FSM.Is(resource.TaskStateRunning) {
-		if err := peer.Task.FSM.Event(ctx, resource.TaskEventDownload); err != nil {
+	if !peer.FSM.Is(resource.PeerStateRunning) {
+		if err := peer.FSM.Event(ctx, resource.PeerEventDownload); err != nil {
 			// Collect DownloadPeerStartedFailureCount metrics.
 			metrics.DownloadPeerStartedFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
 				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 			return status.Error(codes.Internal, err.Error())
 		}
-	} else {
-		peer.Task.UpdatedAt.Store(time.Now())
 	}
 
 	return nil
@@ -933,33 +1011,28 @@ func (v *V2) handleDownloadPeerBackToSourceStartedRequest(ctx context.Context, p
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 
 	// Handle peer with peer back-to-source started request.
-	if err := peer.FSM.Event(ctx, resource.PeerEventDownloadBackToSource); err != nil {
-		// Collect DownloadPeerBackToSourceStartedFailureCount metrics.
-		metrics.DownloadPeerBackToSourceStartedFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-			peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
-		return status.Error(codes.Internal, err.Error())
-	}
-
-	// Handle task with peer back-to-source started request.
-	if !peer.Task.FSM.Is(resource.TaskStateRunning) {
-		if err := peer.Task.FSM.Event(ctx, resource.TaskEventDownload); err != nil {
+	if !peer.FSM.Is(resource.PeerStateRunning) {
+		if err := peer.FSM.Event(ctx, resource.PeerEventDownloadBackToSource); err != nil {
 			// Collect DownloadPeerBackToSourceStartedFailureCount metrics.
 			metrics.DownloadPeerBackToSourceStartedFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
 				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 			return status.Error(codes.Internal, err.Error())
 		}
-	} else {
-		peer.Task.UpdatedAt.Store(time.Now())
 	}
 
 	return nil
 }
 
 // handleRescheduleRequest handles RescheduleRequest of AnnouncePeerRequest.
-func (v *V2) handleRescheduleRequest(ctx context.Context, peerID string) error {
+func (v *V2) handleRescheduleRequest(ctx context.Context, peerID string, candidateParents []*commonv2.Peer) error {
 	peer, loaded := v.resource.PeerManager().Load(peerID)
 	if !loaded {
 		return status.Errorf(codes.NotFound, "peer %s not found", peerID)
+	}
+
+	// Add candidate parent ids to block parents.
+	for _, candidateParent := range candidateParents {
+		peer.BlockParents.Add(candidateParent.GetId())
 	}
 
 	if err := v.scheduling.ScheduleCandidateParents(ctx, peer, peer.BlockParents); err != nil {
@@ -987,7 +1060,7 @@ func (v *V2) handleDownloadPeerFinishedRequest(ctx context.Context, peerID strin
 	metrics.DownloadPeerCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 	// TODO to be determined which traffic type to use, temporarily use TrafficType_REMOTE_PEER instead
-	metrics.DownloadPeerDuration.WithLabelValues(metrics.CalculateSizeLevel(peer.Task.ContentLength.Load()).String()).Observe(float64(peer.Cost.Load()))
+	metrics.DownloadPeerDuration.WithLabelValues(metrics.CalculateSizeLevel(peer.Task.ContentLength.Load()).String()).Observe(float64(peer.Cost.Load().Milliseconds()))
 
 	return nil
 }
@@ -1020,7 +1093,7 @@ func (v *V2) handleDownloadPeerBackToSourceFinishedRequest(ctx context.Context, 
 	metrics.DownloadPeerCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
 		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
 	// TODO to be determined which traffic type to use, temporarily use TrafficType_REMOTE_PEER instead
-	metrics.DownloadPeerDuration.WithLabelValues(metrics.CalculateSizeLevel(peer.Task.ContentLength.Load()).String()).Observe(float64(peer.Cost.Load()))
+	metrics.DownloadPeerDuration.WithLabelValues(metrics.CalculateSizeLevel(peer.Task.ContentLength.Load()).String()).Observe(float64(peer.Cost.Load().Milliseconds()))
 
 	return nil
 }
@@ -1081,7 +1154,7 @@ func (v *V2) handleDownloadPeerBackToSourceFailedRequest(ctx context.Context, pe
 }
 
 // handleDownloadPieceFinishedRequest handles DownloadPieceFinishedRequest of AnnouncePeerRequest.
-func (v *V2) handleDownloadPieceFinishedRequest(ctx context.Context, peerID string, req *schedulerv2.DownloadPieceFinishedRequest) error {
+func (v *V2) handleDownloadPieceFinishedRequest(peerID string, req *schedulerv2.DownloadPieceFinishedRequest) error {
 	// Construct piece.
 	piece := &resource.Piece{
 		Number:      int32(req.Piece.GetNumber()),
@@ -1246,11 +1319,6 @@ func (v *V2) handleDownloadPieceBackToSourceFailedRequest(ctx context.Context, p
 	return status.Error(codes.Internal, "download piece from source failed")
 }
 
-// TODO Implement function.
-// handleSyncPiecesFailedRequest handles SyncPiecesFailedRequest of AnnouncePeerRequest.
-func (v *V2) handleSyncPiecesFailedRequest(ctx context.Context, req *schedulerv2.SyncPiecesFailedRequest) {
-}
-
 // handleResource handles resource included host, task, and peer.
 func (v *V2) handleResource(ctx context.Context, stream schedulerv2.Scheduler_AnnouncePeerServer, hostID, taskID, peerID string, download *commonv2.Download) (*resource.Host, *resource.Task, *resource.Peer, error) {
 	// If the host does not exist and the host address cannot be found,
@@ -1275,12 +1343,12 @@ func (v *V2) handleResource(ctx context.Context, stream schedulerv2.Scheduler_An
 		}
 
 		task = resource.NewTask(taskID, download.GetUrl(), download.GetTag(), download.GetApplication(), download.GetType(),
-			download.GetFilters(), download.GetHeader(), int32(v.config.Scheduler.BackToSourceCount), options...)
+			download.GetFilteredQueryParams(), download.GetRequestHeader(), int32(v.config.Scheduler.BackToSourceCount), options...)
 		v.resource.TaskManager().Store(task)
 	} else {
 		task.URL = download.GetUrl()
-		task.Filters = download.GetFilters()
-		task.Header = download.GetHeader()
+		task.FilteredQueryParams = download.GetFilteredQueryParams()
+		task.Header = download.GetRequestHeader()
 	}
 
 	// Store new peer or load peer.
@@ -1299,7 +1367,7 @@ func (v *V2) handleResource(ctx context.Context, stream schedulerv2.Scheduler_An
 }
 
 // downloadTaskBySeedPeer downloads task by seed peer.
-func (v *V2) downloadTaskBySeedPeer(ctx context.Context, peer *resource.Peer) error {
+func (v *V2) downloadTaskBySeedPeer(ctx context.Context, taskID string, download *commonv2.Download, peer *resource.Peer) error {
 	// Trigger the first download task based on different priority levels,
 	// refer to https://github.com/dragonflyoss/api/blob/main/pkg/apis/common/v2/common.proto#L74.
 	priority := peer.CalculatePriority(v.dynconfig)
@@ -1308,12 +1376,16 @@ func (v *V2) downloadTaskBySeedPeer(ctx context.Context, peer *resource.Peer) er
 	case commonv2.Priority_LEVEL6, commonv2.Priority_LEVEL0:
 		// Super peer is first triggered to download back-to-source.
 		if v.config.SeedPeer.Enable && !peer.Task.IsSeedPeerFailed() {
-			go func(ctx context.Context, peer *resource.Peer, hostType types.HostType) {
-				if err := v.resource.SeedPeer().DownloadTask(context.Background(), peer.Task, hostType); err != nil {
-					peer.Log.Errorf("%s seed peer downloads task failed %s", hostType.Name(), err.Error())
+			go func(ctx context.Context, taskID string, download *commonv2.Download, hostType types.HostType) {
+				peer.Log.Infof("%s seed peer triggers download task", hostType.Name())
+				if err := v.resource.SeedPeer().TriggerDownloadTask(context.Background(), taskID, &dfdaemonv2.DownloadTaskRequest{Download: download}); err != nil {
+					peer.Log.Errorf("%s seed peer triggers download task failed %s", hostType.Name(), err.Error())
 					return
 				}
-			}(ctx, peer, types.HostTypeSuperSeed)
+
+				peer.Log.Infof("%s seed peer triggers download task success", hostType.Name())
+			}(ctx, taskID, download, types.HostTypeSuperSeed)
+
 			break
 		}
 
@@ -1321,12 +1393,16 @@ func (v *V2) downloadTaskBySeedPeer(ctx context.Context, peer *resource.Peer) er
 	case commonv2.Priority_LEVEL5:
 		// Strong peer is first triggered to download back-to-source.
 		if v.config.SeedPeer.Enable && !peer.Task.IsSeedPeerFailed() {
-			go func(ctx context.Context, peer *resource.Peer, hostType types.HostType) {
-				if err := v.resource.SeedPeer().DownloadTask(context.Background(), peer.Task, hostType); err != nil {
-					peer.Log.Errorf("%s seed peer downloads task failed %s", hostType.Name(), err.Error())
+			go func(ctx context.Context, taskID string, download *commonv2.Download, hostType types.HostType) {
+				peer.Log.Infof("%s seed peer triggers download task", hostType.Name())
+				if err := v.resource.SeedPeer().TriggerDownloadTask(context.Background(), taskID, &dfdaemonv2.DownloadTaskRequest{Download: download}); err != nil {
+					peer.Log.Errorf("%s seed peer triggers download task failed %s", hostType.Name(), err.Error())
 					return
 				}
-			}(ctx, peer, types.HostTypeStrongSeed)
+
+				peer.Log.Infof("%s seed peer triggers download task success", hostType.Name())
+			}(ctx, taskID, download, types.HostTypeSuperSeed)
+
 			break
 		}
 
@@ -1334,12 +1410,16 @@ func (v *V2) downloadTaskBySeedPeer(ctx context.Context, peer *resource.Peer) er
 	case commonv2.Priority_LEVEL4:
 		// Weak peer is first triggered to download back-to-source.
 		if v.config.SeedPeer.Enable && !peer.Task.IsSeedPeerFailed() {
-			go func(ctx context.Context, peer *resource.Peer, hostType types.HostType) {
-				if err := v.resource.SeedPeer().DownloadTask(context.Background(), peer.Task, hostType); err != nil {
-					peer.Log.Errorf("%s seed peer downloads task failed %s", hostType.Name(), err.Error())
+			go func(ctx context.Context, taskID string, download *commonv2.Download, hostType types.HostType) {
+				peer.Log.Infof("%s seed peer triggers download task", hostType.Name())
+				if err := v.resource.SeedPeer().TriggerDownloadTask(context.Background(), taskID, &dfdaemonv2.DownloadTaskRequest{Download: download}); err != nil {
+					peer.Log.Errorf("%s seed peer triggers download task failed %s", hostType.Name(), err.Error())
 					return
 				}
-			}(ctx, peer, types.HostTypeWeakSeed)
+
+				peer.Log.Infof("%s seed peer triggers download task success", hostType.Name())
+			}(ctx, taskID, download, types.HostTypeSuperSeed)
+
 			break
 		}
 
@@ -1356,51 +1436,6 @@ func (v *V2) downloadTaskBySeedPeer(ctx context.Context, peer *resource.Peer) er
 		return status.Errorf(codes.FailedPrecondition, "%s peer is forbidden", commonv2.Priority_LEVEL1.String())
 	default:
 		return status.Errorf(codes.InvalidArgument, "invalid priority %#v", priority)
-	}
-
-	return nil
-}
-
-// schedule provides different scheduling strategies for different task type.
-func (v *V2) schedule(ctx context.Context, peer *resource.Peer) error {
-	sizeScope := peer.Task.SizeScope()
-	switch sizeScope {
-	case commonv2.SizeScope_EMPTY:
-		// Return an EmptyTaskResponse directly.
-		peer.Log.Info("scheduling as SizeScope_EMPTY")
-		stream, loaded := peer.LoadAnnouncePeerStream()
-		if !loaded {
-			return status.Error(codes.NotFound, "AnnouncePeerStream not found")
-		}
-
-		if err := peer.FSM.Event(ctx, resource.PeerEventRegisterEmpty); err != nil {
-			return status.Errorf(codes.Internal, err.Error())
-		}
-
-		if err := stream.Send(&schedulerv2.AnnouncePeerResponse{
-			Response: &schedulerv2.AnnouncePeerResponse_EmptyTaskResponse{
-				EmptyTaskResponse: &schedulerv2.EmptyTaskResponse{},
-			},
-		}); err != nil {
-			peer.Log.Error(err)
-			return status.Error(codes.Internal, err.Error())
-		}
-
-		return nil
-	case commonv2.SizeScope_NORMAL, commonv2.SizeScope_TINY, commonv2.SizeScope_SMALL, commonv2.SizeScope_UNKNOW:
-	default:
-		return status.Errorf(codes.FailedPrecondition, "invalid size cope %#v", sizeScope)
-	}
-
-	// Scheduling as a normal task, it will control how peers download tasks
-	// based on RetryLimit and RetryBackToSourceLimit configurations.
-	peer.Log.Info("scheduling as SizeScope_NORMAL")
-	if err := peer.FSM.Event(ctx, resource.PeerEventRegisterNormal); err != nil {
-		return status.Error(codes.Internal, err.Error())
-	}
-
-	if err := v.scheduling.ScheduleCandidateParents(ctx, peer, set.NewSafeSet[string]()); err != nil {
-		return status.Error(codes.FailedPrecondition, err.Error())
 	}
 
 	return nil

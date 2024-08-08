@@ -106,7 +106,7 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 	t.RLock()
 	if piece, ok := t.Pieces[req.Num]; ok {
 		t.RUnlock()
-		t.Debugf("piece %d already exist,ignore writing piece", req.Num)
+		t.Debugf("piece %d already exist, ignore writing piece", req.Num)
 		// discard already downloaded data for back source
 		n, err = io.CopyN(io.Discard, req.Reader, piece.Range.Length)
 		if err != nil && err != io.EOF {
@@ -139,7 +139,7 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 		return 0, err
 	}
 
-	n, err = io.Copy(file, io.LimitReader(req.Reader, req.Range.Length))
+	n, err = tryWriteWithBuffer(file, req.Reader, req.Range.Length)
 	if err != nil {
 		return n, err
 	}
@@ -206,7 +206,7 @@ func (t *localTaskStore) genMetadata(n int64, req *WritePieceRequest) {
 	t.TotalPieces = total
 	t.ContentLength = contentLength
 
-	var pieceDigests []string
+	pieceDigests := make([]string, 0, t.TotalPieces)
 	for i := int32(0); i < t.TotalPieces; i++ {
 		pieceDigests = append(pieceDigests, t.Pieces[i].Md5)
 	}
@@ -758,7 +758,7 @@ func hardlink(log *logger.SugaredLoggerOnWith, dst, src string) error {
 	}
 
 	srcSysStat, ok := srcStat.Sys().(*syscall.Stat_t)
-	if ok {
+	if !ok {
 		log.Errorf("can not get inode for %q", src)
 		return err
 	}

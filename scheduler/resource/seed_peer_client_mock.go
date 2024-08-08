@@ -5,6 +5,7 @@
 //
 //	mockgen -destination seed_peer_client_mock.go -source seed_peer_client.go -package resource
 //
+
 // Package resource is a generated GoMock package.
 package resource
 
@@ -14,6 +15,8 @@ import (
 
 	cdnsystem "d7y.io/api/v2/pkg/apis/cdnsystem/v1"
 	common "d7y.io/api/v2/pkg/apis/common/v1"
+	common0 "d7y.io/api/v2/pkg/apis/common/v2"
+	dfdaemon "d7y.io/api/v2/pkg/apis/dfdaemon/v2"
 	config "d7y.io/dragonfly/v2/scheduler/config"
 	gomock "go.uber.org/mock/gomock"
 	grpc "google.golang.org/grpc"
@@ -70,6 +73,85 @@ func (mr *MockSeedPeerClientMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockSeedPeerClient)(nil).Close))
 }
 
+// DeleteCacheTask mocks base method.
+func (m *MockSeedPeerClient) DeleteCacheTask(arg0 context.Context, arg1 *dfdaemon.DeleteCacheTaskRequest, arg2 ...grpc.CallOption) error {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteCacheTask", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteCacheTask indicates an expected call of DeleteCacheTask.
+func (mr *MockSeedPeerClientMockRecorder) DeleteCacheTask(arg0, arg1 any, arg2 ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCacheTask", reflect.TypeOf((*MockSeedPeerClient)(nil).DeleteCacheTask), varargs...)
+}
+
+// DownloadCacheTask mocks base method.
+func (m *MockSeedPeerClient) DownloadCacheTask(arg0 context.Context, arg1 *dfdaemon.DownloadCacheTaskRequest, arg2 ...grpc.CallOption) (dfdaemon.DfdaemonUpload_DownloadCacheTaskClient, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DownloadCacheTask", varargs...)
+	ret0, _ := ret[0].(dfdaemon.DfdaemonUpload_DownloadCacheTaskClient)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DownloadCacheTask indicates an expected call of DownloadCacheTask.
+func (mr *MockSeedPeerClientMockRecorder) DownloadCacheTask(arg0, arg1 any, arg2 ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadCacheTask", reflect.TypeOf((*MockSeedPeerClient)(nil).DownloadCacheTask), varargs...)
+}
+
+// DownloadPiece mocks base method.
+func (m *MockSeedPeerClient) DownloadPiece(arg0 context.Context, arg1 *dfdaemon.DownloadPieceRequest, arg2 ...grpc.CallOption) (*dfdaemon.DownloadPieceResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DownloadPiece", varargs...)
+	ret0, _ := ret[0].(*dfdaemon.DownloadPieceResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DownloadPiece indicates an expected call of DownloadPiece.
+func (mr *MockSeedPeerClientMockRecorder) DownloadPiece(arg0, arg1 any, arg2 ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadPiece", reflect.TypeOf((*MockSeedPeerClient)(nil).DownloadPiece), varargs...)
+}
+
+// DownloadTask mocks base method.
+func (m *MockSeedPeerClient) DownloadTask(arg0 context.Context, arg1 string, arg2 *dfdaemon.DownloadTaskRequest, arg3 ...grpc.CallOption) (dfdaemon.DfdaemonUpload_DownloadTaskClient, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0, arg1, arg2}
+	for _, a := range arg3 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DownloadTask", varargs...)
+	ret0, _ := ret[0].(dfdaemon.DfdaemonUpload_DownloadTaskClient)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DownloadTask indicates an expected call of DownloadTask.
+func (mr *MockSeedPeerClientMockRecorder) DownloadTask(arg0, arg1, arg2 any, arg3 ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0, arg1, arg2}, arg3...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadTask", reflect.TypeOf((*MockSeedPeerClient)(nil).DownloadTask), varargs...)
+}
+
 // GetPieceTasks mocks base method.
 func (m *MockSeedPeerClient) GetPieceTasks(arg0 context.Context, arg1 *common.PieceTaskRequest, arg2 ...grpc.CallOption) (*common.PiecePacket, error) {
 	m.ctrl.T.Helper()
@@ -122,6 +204,26 @@ func (mr *MockSeedPeerClientMockRecorder) OnNotify(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnNotify", reflect.TypeOf((*MockSeedPeerClient)(nil).OnNotify), arg0)
 }
 
+// StatCacheTask mocks base method.
+func (m *MockSeedPeerClient) StatCacheTask(arg0 context.Context, arg1 *dfdaemon.StatCacheTaskRequest, arg2 ...grpc.CallOption) (*common0.CacheTask, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "StatCacheTask", varargs...)
+	ret0, _ := ret[0].(*common0.CacheTask)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StatCacheTask indicates an expected call of StatCacheTask.
+func (mr *MockSeedPeerClientMockRecorder) StatCacheTask(arg0, arg1 any, arg2 ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatCacheTask", reflect.TypeOf((*MockSeedPeerClient)(nil).StatCacheTask), varargs...)
+}
+
 // SyncPieceTasks mocks base method.
 func (m *MockSeedPeerClient) SyncPieceTasks(arg0 context.Context, arg1 *common.PieceTaskRequest, arg2 ...grpc.CallOption) (cdnsystem.Seeder_SyncPieceTasksClient, error) {
 	m.ctrl.T.Helper()
@@ -140,4 +242,24 @@ func (mr *MockSeedPeerClientMockRecorder) SyncPieceTasks(arg0, arg1 any, arg2 ..
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncPieceTasks", reflect.TypeOf((*MockSeedPeerClient)(nil).SyncPieceTasks), varargs...)
+}
+
+// SyncPieces mocks base method.
+func (m *MockSeedPeerClient) SyncPieces(arg0 context.Context, arg1 *dfdaemon.SyncPiecesRequest, arg2 ...grpc.CallOption) (dfdaemon.DfdaemonUpload_SyncPiecesClient, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "SyncPieces", varargs...)
+	ret0, _ := ret[0].(dfdaemon.DfdaemonUpload_SyncPiecesClient)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SyncPieces indicates an expected call of SyncPieces.
+func (mr *MockSeedPeerClientMockRecorder) SyncPieces(arg0, arg1 any, arg2 ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncPieces", reflect.TypeOf((*MockSeedPeerClient)(nil).SyncPieces), varargs...)
 }

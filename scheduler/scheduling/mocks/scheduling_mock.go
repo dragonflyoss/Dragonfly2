@@ -5,6 +5,7 @@
 //
 //	mockgen -destination mocks/scheduling_mock.go -source scheduling.go -package mocks
 //
+
 // Package mocks is a generated GoMock package.
 package mocks
 
@@ -53,6 +54,21 @@ func (m *MockScheduling) FindCandidateParents(arg0 context.Context, arg1 *resour
 func (mr *MockSchedulingMockRecorder) FindCandidateParents(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindCandidateParents", reflect.TypeOf((*MockScheduling)(nil).FindCandidateParents), arg0, arg1, arg2)
+}
+
+// FindParentAndCandidateParents mocks base method.
+func (m *MockScheduling) FindParentAndCandidateParents(arg0 context.Context, arg1 *resource.Peer, arg2 set.SafeSet[string]) ([]*resource.Peer, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindParentAndCandidateParents", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]*resource.Peer)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// FindParentAndCandidateParents indicates an expected call of FindParentAndCandidateParents.
+func (mr *MockSchedulingMockRecorder) FindParentAndCandidateParents(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindParentAndCandidateParents", reflect.TypeOf((*MockScheduling)(nil).FindParentAndCandidateParents), arg0, arg1, arg2)
 }
 
 // FindSuccessParent mocks base method.

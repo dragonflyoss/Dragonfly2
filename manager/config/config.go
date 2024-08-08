@@ -78,6 +78,15 @@ type ServerConfig struct {
 	// Server log directory.
 	LogDir string `yaml:"logDir" mapstructure:"logDir"`
 
+	// Maximum size in megabytes of log files before rotation (default: 1024)
+	LogMaxSize int `yaml:"logMaxSize" mapstructure:"logMaxSize"`
+
+	// Maximum number of days to retain old log files (default: 7)
+	LogMaxAge int `yaml:"logMaxAge" mapstructure:"logMaxAge"`
+
+	// Maximum number of old log files to keep (default: 20)
+	LogMaxBackups int `yaml:"logMaxBackups" mapstructure:"logMaxBackups"`
+
 	// Server plugin directory.
 	PluginDir string `yaml:"pluginDir" mapstructure:"pluginDir"`
 
@@ -269,9 +278,6 @@ type GRPCConfig struct {
 	// AdvertiseIP is advertise ip.
 	AdvertiseIP net.IP `yaml:"advertiseIP" mapstructure:"advertiseIP"`
 
-	// AdvertisePort is advertise port.
-	AdvertisePort int `yaml:"advertisePort" mapstructure:"advertisePort"`
-
 	// ListenIP is listen ip, like: 0.0.0.0, 192.168.0.1.
 	ListenIP net.IP `mapstructure:"listenIP" yaml:"listenIP"`
 
@@ -392,7 +398,6 @@ func New() *Config {
 		Server: ServerConfig{
 			Name: DefaultServerName,
 			GRPC: GRPCConfig{
-				AdvertisePort: DefaultGRPCAdvertisePort,
 				PortRange: TCPListenPortRange{
 					Start: DefaultGRPCPort,
 					End:   DefaultGRPCPort,
@@ -401,6 +406,9 @@ func New() *Config {
 			REST: RESTConfig{
 				Addr: DefaultRESTAddr,
 			},
+			LogMaxSize:    DefaultLogRotateMaxSize,
+			LogMaxAge:     DefaultLogRotateMaxAge,
+			LogMaxBackups: DefaultLogRotateMaxBackups,
 		},
 		Auth: AuthConfig{
 			JWT: JWTConfig{
@@ -483,10 +491,6 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Server.GRPC.AdvertiseIP == nil {
 		return errors.New("grpc requires parameter advertiseIP")
-	}
-
-	if cfg.Server.GRPC.AdvertisePort <= 0 {
-		return errors.New("grpc requires parameter advertisePort")
 	}
 
 	if cfg.Server.GRPC.ListenIP == nil {

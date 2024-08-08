@@ -47,7 +47,11 @@ func (s *safeSet[T]) Values() []T {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	var result []T
+	if len(s.data) == 0 {
+		return nil
+	}
+
+	result := make([]T, 0, len(s.data))
 	for k := range s.data {
 		result = append(result, k)
 	}

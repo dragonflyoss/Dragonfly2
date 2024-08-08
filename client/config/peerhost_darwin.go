@@ -58,6 +58,7 @@ var peerHostConfig = func() *DaemonOption {
 			CalculateDigest:      true,
 			PieceDownloadTimeout: 30 * time.Second,
 			GRPCDialTimeout:      10 * time.Second,
+			WatchdogTimeout:      30 * time.Second,
 			GetPiecesMaxRetry:    100,
 			RecursiveConcurrent: RecursiveConcurrent{
 				GoroutineCount: 32,
@@ -141,6 +142,7 @@ var peerHostConfig = func() *DaemonOption {
 			StoreStrategy:          SimpleLocalTaskStoreStrategy,
 			Multiplex:              false,
 			DiskGCThresholdPercent: 95,
+			ReloadGoroutineCount:   64,
 		},
 		Health: &HealthOption{
 			ListenOption: ListenOption{
@@ -184,6 +186,17 @@ var peerHostConfig = func() *DaemonOption {
 			Probe: ProbeOption{
 				Interval: DefaultProbeInterval,
 			},
+		},
+		LogMaxSize:    DefaultLogRotateMaxSize,
+		LogMaxAge:     DefaultLogRotateMaxAge,
+		LogMaxBackups: DefaultLogRotateMaxBackups,
+		PeerExchange: PeerExchangeOption{
+			Enable:                 false,
+			InitialInterval:        time.Minute,
+			InitialBroadcastDelay:  3 * time.Minute,
+			ReSyncInterval:         10 * time.Minute,
+			ReplicaThreshold:       2,
+			ReplicaCleanPercentage: 1,
 		},
 	}
 }

@@ -106,7 +106,7 @@ spec:
     spec:
       containers:
       - name: proxy
-        image: d7yio/dfdaemon:latest
+        image: dragonflyoss/dfdaemon:latest
         imagePullPolicy: "IfNotPresent"
         ports:
         - containerPort: 65001

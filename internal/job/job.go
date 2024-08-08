@@ -30,7 +30,7 @@ import (
 	machineryv1config "github.com/RichardKnop/machinery/v1/config"
 	machineryv1log "github.com/RichardKnop/machinery/v1/log"
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
@@ -105,6 +105,7 @@ type GroupJobState struct {
 	GroupUUID string
 	State     string
 	CreatedAt time.Time
+	UpdatedAt time.Time
 	JobStates []*machineryv1tasks.TaskState
 }
 
@@ -125,6 +126,7 @@ func (t *Job) GetGroupJobState(groupID string) (*GroupJobState, error) {
 				GroupUUID: groupID,
 				State:     machineryv1tasks.StateFailure,
 				CreatedAt: taskState.CreatedAt,
+				UpdatedAt: time.Now(),
 				JobStates: taskStates,
 			}, nil
 		}
@@ -137,6 +139,7 @@ func (t *Job) GetGroupJobState(groupID string) (*GroupJobState, error) {
 				GroupUUID: groupID,
 				State:     machineryv1tasks.StatePending,
 				CreatedAt: taskState.CreatedAt,
+				UpdatedAt: time.Now(),
 				JobStates: taskStates,
 			}, nil
 		}
@@ -146,6 +149,7 @@ func (t *Job) GetGroupJobState(groupID string) (*GroupJobState, error) {
 		GroupUUID: groupID,
 		State:     machineryv1tasks.StateSuccess,
 		CreatedAt: taskStates[0].CreatedAt,
+		UpdatedAt: time.Now(),
 		JobStates: taskStates,
 	}, nil
 }

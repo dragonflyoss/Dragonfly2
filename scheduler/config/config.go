@@ -73,9 +73,6 @@ type Config struct {
 	// Network configuration.
 	Network NetworkConfig `yaml:"network" mapstructure:"network"`
 
-	// NetworkTopology configuration.
-	NetworkTopology NetworkTopologyConfig `yaml:"networkTopology" mapstructure:"networkTopology"`
-
 	// Trainer configuration.
 	Trainer TrainerConfig `yaml:"trainer" mapstructure:"trainer"`
 }
@@ -105,6 +102,15 @@ type ServerConfig struct {
 	// Server log directory.
 	LogDir string `yaml:"logDir" mapstructure:"logDir"`
 
+	// Maximum size in megabytes of log files before rotation (default: 1024)
+	LogMaxSize int `yaml:"logMaxSize" mapstructure:"logMaxSize"`
+
+	// Maximum number of days to retain old log files (default: 7)
+	LogMaxAge int `yaml:"logMaxAge" mapstructure:"logMaxAge"`
+
+	// Maximum number of old log files to keep (default: 20)
+	LogMaxBackups int `yaml:"logMaxBackups" mapstructure:"logMaxBackups"`
+
 	// Server plugin directory.
 	PluginDir string `yaml:"pluginDir" mapstructure:"pluginDir"`
 
@@ -115,9 +121,6 @@ type ServerConfig struct {
 type SchedulerConfig struct {
 	// Algorithm is scheduling algorithm used by the scheduler.
 	Algorithm string `yaml:"algorithm" mapstructure:"algorithm"`
-
-	// MaxScheduleCount is max schedule count.
-	MaxScheduleCount int `yaml:"maxScheduleCount" mapstructure:"maxScheduleCount"`
 
 	// BackToSourceCount is single task allows the peer to back-to-source count.
 	BackToSourceCount int `yaml:"backToSourceCount" mapstructure:"backToSourceCount"`
@@ -133,6 +136,9 @@ type SchedulerConfig struct {
 
 	// GC configuration.
 	GC GCConfig `yaml:"gc" mapstructure:"gc"`
+
+	// NetworkTopology configuration.
+	NetworkTopology NetworkTopologyConfig `yaml:"networkTopology" mapstructure:"networkTopology"`
 }
 
 type DatabaseConfig struct {
@@ -334,14 +340,14 @@ type NetworkConfig struct {
 }
 
 type NetworkTopologyConfig struct {
-	// Enable network topology service, including probe, network topology collection.
-	Enable bool `yaml:"enable" mapstructure:"enable"`
-
 	// CollectInterval is the interval of collecting network topology.
 	CollectInterval time.Duration `mapstructure:"collectInterval" yaml:"collectInterval"`
 
 	// Probe is the configuration of probe.
 	Probe ProbeConfig `yaml:"probe" mapstructure:"probe"`
+
+	// Cache is the configuration of cache.
+	Cache CacheConfig `yaml:"cache" mapstructure:"cache"`
 }
 
 type ProbeConfig struct {
@@ -350,6 +356,14 @@ type ProbeConfig struct {
 
 	// Count is the number of probing hosts.
 	Count int `mapstructure:"count" yaml:"count"`
+}
+
+type CacheConfig struct {
+	// Interval is cache cleanup interval.
+	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
+
+	// TTL is networkTopology cache items TTL.
+	TTL time.Duration `yaml:"ttl" mapstructure:"ttl"`
 }
 
 type TrainerConfig struct {
@@ -373,10 +387,12 @@ func New() *Config {
 			Port:          DefaultServerPort,
 			AdvertisePort: DefaultServerAdvertisePort,
 			Host:          fqdn.FQDNHostname,
+			LogMaxSize:    DefaultLogRotateMaxSize,
+			LogMaxAge:     DefaultLogRotateMaxAge,
+			LogMaxBackups: DefaultLogRotateMaxBackups,
 		},
 		Scheduler: SchedulerConfig{
 			Algorithm:              DefaultSchedulerAlgorithm,
-			MaxScheduleCount:       DefaultSchedulerMaxScheduleCount,
 			BackToSourceCount:      DefaultSchedulerBackToSourceCount,
 			RetryBackToSourceLimit: DefaultSchedulerRetryBackToSourceLimit,
 			RetryLimit:             DefaultSchedulerRetryLimit,
@@ -388,6 +404,17 @@ func New() *Config {
 				TaskGCInterval:       DefaultSchedulerTaskGCInterval,
 				HostGCInterval:       DefaultSchedulerHostGCInterval,
 				HostTTL:              DefaultSchedulerHostTTL,
+			},
+			NetworkTopology: NetworkTopologyConfig{
+				CollectInterval: DefaultSchedulerNetworkTopologyCollectInterval,
+				Probe: ProbeConfig{
+					QueueLength: DefaultSchedulerNetworkTopologyProbeQueueLength,
+					Count:       DefaultSchedulerNetworkTopologyProbeCount,
+				},
+				Cache: CacheConfig{
+					Interval: DefaultSchedulerNetworkTopologyCacheInterval,
+					TTL:      DefaultSchedulerNetworkTopologyCacheTLL,
+				},
 			},
 		},
 		Database: DatabaseConfig{
@@ -451,14 +478,6 @@ func New() *Config {
 		Network: NetworkConfig{
 			EnableIPv6: DefaultNetworkEnableIPv6,
 		},
-		NetworkTopology: NetworkTopologyConfig{
-			Enable:          true,
-			CollectInterval: DefaultNetworkTopologyCollectInterval,
-			Probe: ProbeConfig{
-				QueueLength: DefaultProbeQueueLength,
-				Count:       DefaultProbeCount,
-			},
-		},
 		Trainer: TrainerConfig{
 			Enable:        false,
 			Addr:          DefaultTrainerAddr,
@@ -492,10 +511,6 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Scheduler.Algorithm == "" {
 		return errors.New("scheduler requires parameter algorithm")
-	}
-
-	if cfg.Scheduler.MaxScheduleCount <= 0 {
-		return errors.New("scheduler requires parameter maxScheduleCount")
 	}
 
 	if cfg.Scheduler.BackToSourceCount == 0 {
@@ -600,7 +615,7 @@ func (cfg *Config) Validate() error {
 		return errors.New("storage requires parameter maxBackups")
 	}
 
-	if cfg.Storage.BufferSize <= 0 {
+	if cfg.Storage.BufferSize < 0 {
 		return errors.New("storage requires parameter bufferSize")
 	}
 
@@ -632,16 +647,26 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	if cfg.NetworkTopology.CollectInterval <= 0 {
-		return errors.New("networkTopology requires parameter collectInterval")
-	}
+	if cfg.Scheduler.Algorithm == NetworkTopologyAlgorithm {
+		if cfg.Scheduler.NetworkTopology.CollectInterval <= 0 {
+			return errors.New("networkTopology requires parameter collectInterval")
+		}
 
-	if cfg.NetworkTopology.Probe.QueueLength <= 0 {
-		return errors.New("probe requires parameter queueLength")
-	}
+		if cfg.Scheduler.NetworkTopology.Probe.QueueLength <= 0 {
+			return errors.New("probe requires parameter queueLength")
+		}
 
-	if cfg.NetworkTopology.Probe.Count <= 0 {
-		return errors.New("probe requires parameter count")
+		if cfg.Scheduler.NetworkTopology.Probe.Count <= 0 {
+			return errors.New("probe requires parameter count")
+		}
+
+		if cfg.Scheduler.NetworkTopology.Cache.Interval <= 0 {
+			return errors.New("networkTopology requires parameter interval")
+		}
+
+		if cfg.Scheduler.NetworkTopology.Cache.TTL <= 0 {
+			return errors.New("networkTopology requires parameter ttl")
+		}
 	}
 
 	if cfg.Trainer.Enable {
@@ -711,6 +736,10 @@ func (cfg *Config) Convert() error {
 		} else {
 			cfg.Server.ListenIP = net.IPv4zero
 		}
+	}
+
+	if cfg.Server.AdvertisePort == 0 {
+		cfg.Server.AdvertisePort = cfg.Server.Port
 	}
 
 	return nil

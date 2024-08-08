@@ -9,10 +9,12 @@ server:
   logDir: foo
   pluginDir: foo
   dataDir: foo
+  logMaxSize: 512
+  logMaxAge: 5
+  logMaxBackups: 3
 
 scheduler:
   algorithm: default
-  maxScheduleCount: 12
   backToSourceCount: 3
   retryBackToSourceLimit: 2
   retryLimit: 10
@@ -24,6 +26,14 @@ scheduler:
     taskGCInterval: 30s
     hostGCInterval: 1m
     hostTTL: 1m
+  networkTopology:
+    collectInterval: 60s
+    probe:
+      queueLength: 5
+      count: 10
+    cache:
+      interval: 5m  
+      ttl: 5m  
 
 database:
   redis:
@@ -91,13 +101,6 @@ security:
 
 network:
   enableIPv6: true
-
-networkTopology:
-  enable: true
-  collectInterval: 60s
-  probe:
-    queueLength: 5
-    count: 10
 
 trainer:
   enable: false

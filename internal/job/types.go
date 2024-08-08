@@ -17,13 +17,14 @@
 package job
 
 type PreheatRequest struct {
-	URL         string            `json:"url" validate:"required,url"`
-	Tag         string            `json:"tag" validate:"omitempty"`
-	Digest      string            `json:"digest" validate:"omitempty"`
-	Filter      string            `json:"filter" validate:"omitempty"`
-	Headers     map[string]string `json:"headers" validate:"omitempty"`
-	Application string            `json:"application" validate:"omitempty"`
-	Priority    int32             `json:"priority" validate:"omitempty"`
+	URL                 string            `json:"url" validate:"required,url"`
+	Tag                 string            `json:"tag" validate:"omitempty"`
+	Digest              string            `json:"digest" validate:"omitempty"`
+	FilteredQueryParams string            `json:"filteredQueryParams" validate:"omitempty"`
+	Headers             map[string]string `json:"headers" validate:"omitempty"`
+	Application         string            `json:"application" validate:"omitempty"`
+	Priority            int32             `json:"priority" validate:"omitempty"`
+	PieceLength         uint32            `json:"pieceLength" validate:"omitempty"`
 }
 
 type PreheatResponse struct {

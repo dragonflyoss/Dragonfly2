@@ -83,31 +83,17 @@ func (s *schedulerServerV2) StatPeer(ctx context.Context, req *schedulerv2.StatP
 	return resp, nil
 }
 
-// LeavePeer releases peer in scheduler.
-func (s *schedulerServerV2) LeavePeer(ctx context.Context, req *schedulerv2.LeavePeerRequest) (*emptypb.Empty, error) {
+// DeletePeer releases peer in scheduler.
+func (s *schedulerServerV2) DeletePeer(ctx context.Context, req *schedulerv2.DeletePeerRequest) (*emptypb.Empty, error) {
 	// Collect LeavePeerCount metrics.
 	metrics.LeavePeerCount.Inc()
-	if err := s.service.LeavePeer(ctx, req); err != nil {
+	if err := s.service.DeletePeer(ctx, req); err != nil {
 		// Collect LeavePeerFailureCount metrics.
 		metrics.LeavePeerFailureCount.Inc()
 		return nil, err
 	}
 
 	return new(emptypb.Empty), nil
-}
-
-// ExchangePeer exchanges peer information.
-func (s *schedulerServerV2) ExchangePeer(ctx context.Context, req *schedulerv2.ExchangePeerRequest) (*schedulerv2.ExchangePeerResponse, error) {
-	// Collect ExchangePeerCount metrics.
-	metrics.ExchangePeerCount.Inc()
-	resp, err := s.service.ExchangePeer(ctx, req)
-	if err != nil {
-		// Collect ExchangePeerFailureCount metrics.
-		metrics.ExchangePeerFailureCount.Inc()
-		return nil, err
-	}
-
-	return resp, nil
 }
 
 // StatTask checks information of task.
@@ -122,6 +108,19 @@ func (s *schedulerServerV2) StatTask(ctx context.Context, req *schedulerv2.StatT
 	}
 
 	return resp, nil
+}
+
+// DeleteTask releases task in scheduler.
+func (s *schedulerServerV2) DeleteTask(ctx context.Context, req *schedulerv2.DeleteTaskRequest) (*emptypb.Empty, error) {
+	// Collect LeaseTaskCount metrics.
+	metrics.LeaveTaskCount.Inc()
+	if err := s.service.DeleteTask(ctx, req); err != nil {
+		// Collect LeaseTaskFailureCount metrics.
+		metrics.LeaveTaskFailureCount.Inc()
+		return nil, err
+	}
+
+	return new(emptypb.Empty), nil
 }
 
 // AnnounceHost announces host to scheduler.
@@ -139,11 +138,11 @@ func (s *schedulerServerV2) AnnounceHost(ctx context.Context, req *schedulerv2.A
 	return new(emptypb.Empty), nil
 }
 
-// LeaveHost releases host in scheduler.
-func (s *schedulerServerV2) LeaveHost(ctx context.Context, req *schedulerv2.LeaveHostRequest) (*emptypb.Empty, error) {
+// DeleteHost releases host in scheduler.
+func (s *schedulerServerV2) DeleteHost(ctx context.Context, req *schedulerv2.DeleteHostRequest) (*emptypb.Empty, error) {
 	// Collect LeaveHostCount metrics.
 	metrics.LeaveHostCount.Inc()
-	if err := s.service.LeaveHost(ctx, req); err != nil {
+	if err := s.service.DeleteHost(ctx, req); err != nil {
 		// Collect LeaveHostFailureCount metrics.
 		metrics.LeaveHostFailureCount.Inc()
 		return nil, err
@@ -163,4 +162,58 @@ func (s *schedulerServerV2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesSe
 	}
 
 	return nil
+}
+
+// TODO Implement the following methods.
+// AnnouncePeers announces peers to scheduler.
+func (s *schedulerServerV2) AnnouncePeers(stream schedulerv2.Scheduler_AnnouncePeersServer) error {
+	return nil
+}
+
+// TODO Implement the following methods.
+// AnnounceCachePeer announces cache peer to scheduler.
+func (s *schedulerServerV2) AnnounceCachePeer(stream schedulerv2.Scheduler_AnnounceCachePeerServer) error {
+	return nil
+}
+
+// TODO Implement the following methods.
+// StatCachePeer checks information of cache peer.
+func (s *schedulerServerV2) StatCachePeer(ctx context.Context, req *schedulerv2.StatCachePeerRequest) (*commonv2.CachePeer, error) {
+	return nil, nil
+}
+
+// TODO Implement the following methods.
+// DeleteCachePeer releases cache peer in scheduler.
+func (s *schedulerServerV2) DeleteCachePeer(ctx context.Context, req *schedulerv2.DeleteCachePeerRequest) (*emptypb.Empty, error) {
+	return new(emptypb.Empty), nil
+}
+
+// TODO Implement the following methods.
+// UploadCacheTaskStarted uploads the metadata of the cache task started.
+func (s *schedulerServerV2) UploadCacheTaskStarted(ctx context.Context, request *schedulerv2.UploadCacheTaskStartedRequest) (*emptypb.Empty, error) {
+	return nil, nil
+}
+
+// TODO Implement the following methods.
+// UploadCacheTaskFinished uploads the metadata of the cache task finished.
+func (s *schedulerServerV2) UploadCacheTaskFinished(ctx context.Context, request *schedulerv2.UploadCacheTaskFinishedRequest) (*commonv2.CacheTask, error) {
+	return nil, nil
+}
+
+// TODO Implement the following methods.
+// UploadCacheTaskFailed uploads the metadata of the cache task failed.
+func (s *schedulerServerV2) UploadCacheTaskFailed(ctx context.Context, request *schedulerv2.UploadCacheTaskFailedRequest) (*emptypb.Empty, error) {
+	return nil, nil
+}
+
+// TODO Implement the following methods.
+// StatCacheTask checks information of cache task.
+func (s *schedulerServerV2) StatCacheTask(ctx context.Context, req *schedulerv2.StatCacheTaskRequest) (*commonv2.CacheTask, error) {
+	return nil, nil
+}
+
+// TODO Implement the following methods.
+// DeleteCacheTask releases cache task in scheduler.
+func (s *schedulerServerV2) DeleteCacheTask(ctx context.Context, req *schedulerv2.DeleteCacheTaskRequest) (*emptypb.Empty, error) {
+	return new(emptypb.Empty), nil
 }

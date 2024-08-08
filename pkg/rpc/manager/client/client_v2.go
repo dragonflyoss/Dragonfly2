@@ -21,6 +21,7 @@ package client
 import (
 	"context"
 	"errors"
+	"math"
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -36,7 +37,6 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
-	"d7y.io/dragonfly/v2/pkg/rpc"
 	healthclient "d7y.io/dragonfly/v2/pkg/rpc/health/client"
 )
 
@@ -46,8 +46,12 @@ func GetV2ByAddr(ctx context.Context, target string, opts ...grpc.DialOption) (V
 		ctx,
 		target,
 		append([]grpc.DialOption{
+			grpc.WithIdleTimeout(0),
+			grpc.WithDefaultCallOptions(
+				grpc.MaxCallRecvMsgSize(math.MaxInt32),
+				grpc.MaxCallSendMsgSize(math.MaxInt32),
+			),
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
-				rpc.OTELUnaryClientInterceptor(),
 				grpc_prometheus.UnaryClientInterceptor,
 				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
 				grpc_retry.UnaryClientInterceptor(
@@ -56,7 +60,6 @@ func GetV2ByAddr(ctx context.Context, target string, opts ...grpc.DialOption) (V
 				),
 			)),
 			grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
-				rpc.OTELStreamClientInterceptor(),
 				grpc_prometheus.StreamClientInterceptor,
 				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
 			)),
@@ -106,17 +109,8 @@ type V2 interface {
 	// List acitve schedulers configuration.
 	ListSchedulers(context.Context, *managerv2.ListSchedulersRequest, ...grpc.CallOption) (*managerv2.ListSchedulersResponse, error)
 
-	// Get object storage configuration.
-	GetObjectStorage(context.Context, *managerv2.GetObjectStorageRequest, ...grpc.CallOption) (*managerv2.ObjectStorage, error)
-
-	// List buckets configuration.
-	ListBuckets(context.Context, *managerv2.ListBucketsRequest, ...grpc.CallOption) (*managerv2.ListBucketsResponse, error)
-
 	// List applications configuration.
 	ListApplications(context.Context, *managerv2.ListApplicationsRequest, ...grpc.CallOption) (*managerv2.ListApplicationsResponse, error)
-
-	// Create model and update data of model to object storage.
-	CreateModel(context.Context, *managerv2.CreateModelRequest, ...grpc.CallOption) error
 
 	// KeepAlive with manager.
 	KeepAlive(time.Duration, *managerv2.KeepAliveRequest, <-chan struct{}, ...grpc.CallOption)
@@ -181,37 +175,12 @@ func (v *v2) ListSchedulers(ctx context.Context, req *managerv2.ListSchedulersRe
 	return v.ManagerClient.ListSchedulers(ctx, req, opts...)
 }
 
-// Get object storage configuration.
-func (v *v2) GetObjectStorage(ctx context.Context, req *managerv2.GetObjectStorageRequest, opts ...grpc.CallOption) (*managerv2.ObjectStorage, error) {
-	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
-	defer cancel()
-
-	return v.ManagerClient.GetObjectStorage(ctx, req, opts...)
-}
-
-// List buckets configuration.
-func (v *v2) ListBuckets(ctx context.Context, req *managerv2.ListBucketsRequest, opts ...grpc.CallOption) (*managerv2.ListBucketsResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
-	defer cancel()
-
-	return v.ManagerClient.ListBuckets(ctx, req, opts...)
-}
-
 // List applications configuration.
 func (v *v2) ListApplications(ctx context.Context, req *managerv2.ListApplicationsRequest, opts ...grpc.CallOption) (*managerv2.ListApplicationsResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
 	return v.ManagerClient.ListApplications(ctx, req, opts...)
-}
-
-// Create model and update data of model to object storage.
-func (v *v2) CreateModel(ctx context.Context, req *managerv2.CreateModelRequest, opts ...grpc.CallOption) error {
-	ctx, cancel := context.WithTimeout(ctx, createModelContextTimeout)
-	defer cancel()
-
-	_, err := v.ManagerClient.CreateModel(ctx, req, opts...)
-	return err
 }
 
 // List acitve schedulers configuration.

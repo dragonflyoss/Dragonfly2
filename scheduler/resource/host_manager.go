@@ -20,6 +20,7 @@ package resource
 
 import (
 	"sync"
+	"time"
 
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	pkggc "d7y.io/dragonfly/v2/pkg/gc"
@@ -142,7 +143,7 @@ func (h *hostManager) LoadRandomHosts(n int, blocklist set.SafeSet[string]) []*H
 	return hosts
 }
 
-// Try to reclaim host.
+// RunGC tries to reclaim host.
 func (h *hostManager) RunGC() error {
 	h.Map.Range(func(_, value any) bool {
 		host, ok := value.(*Host)
@@ -151,11 +152,26 @@ func (h *hostManager) RunGC() error {
 			return true
 		}
 
+		// If the host's elapsed exceeds twice the announcing interval,
+		// then leave peers in host.
+		elapsed := time.Since(host.UpdatedAt.Load())
+		if host.AnnounceInterval > 0 && elapsed > host.AnnounceInterval*2 {
+			host.Log.Info("host elapsed exceeds twice the announce interval, causing the host to leave peers")
+			host.LeavePeers()
+			// Directly reclaim the host,
+			// as host's ConcurrentUploadCount may not be 0 when the host exits abnormally.
+			host.Log.Info("host has been reclaimed")
+			h.Delete(host.ID)
+			return true
+		}
+
+		// Reclaim the host.
 		if host.PeerCount.Load() == 0 &&
 			host.ConcurrentUploadCount.Load() == 0 &&
 			host.Type == types.HostTypeNormal {
 			host.Log.Info("host has been reclaimed")
 			h.Delete(host.ID)
+			return true
 		}
 
 		return true

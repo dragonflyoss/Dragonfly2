@@ -1,6 +1,7 @@
 scheduler:
-  image: d7yio/scheduler
-  tag: latest
+  image:
+    repository: dragonflyoss/scheduler
+    tag: latest
   replicas: 3
   resources:
     requests:
@@ -25,6 +26,16 @@ scheduler:
     enableHost: true
   config:
     verbose: true
+    scheduler:
+      algorithm: nt
+    networkTopology:
+      collectInterval: 2m
+      probe:
+        queueLength: 5
+        count: 10
+      cache:
+        interval: 5m
+        ttl: 5m
     security:
       autoIssueCert: true
       tlsVerify: true
@@ -64,8 +75,9 @@ scheduler:
         -----END CERTIFICATE-----
 
 seedPeer:
-  image: d7yio/dfdaemon
-  tag: latest
+  image:
+    repository: dragonflyoss/dfdaemon
+    tag: latest
   replicas: 3
   resources:
     requests:
@@ -96,6 +108,10 @@ seedPeer:
         thresholdSize: 10M
         thresholdSpeed: 2M
         goroutineCount: 4
+    networkTopology:
+      enable: true
+      probe:
+        interval: 20s
     security:
       autoIssueCert: true
       tlsVerify: true
@@ -135,8 +151,9 @@ seedPeer:
         -----END CERTIFICATE-----
 
 dfdaemon:
-  image: d7yio/dfdaemon
-  tag: latest
+  image:
+    repository: dragonflyoss/dfdaemon
+    tag: latest
   resources:
     requests:
       cpu: "0"
@@ -168,6 +185,10 @@ dfdaemon:
         goroutineCount: 4
     scheduler:
       disableAutoBackSource: true
+    networkTopology:
+      enable: true
+      probe:
+        interval: 20s
     proxy:
       defaultFilter: "Expires&Signature&ns"
       security:
@@ -221,8 +242,9 @@ dfdaemon:
         -----END CERTIFICATE-----
 
 manager:
-  image: d7yio/manager
-  tag: latest
+  image:
+    repository: dragonflyoss/manager
+    tag: latest
   replicas: 1
   resources:
     requests:

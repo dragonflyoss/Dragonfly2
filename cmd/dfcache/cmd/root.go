@@ -83,6 +83,7 @@ func init() {
 	flags.Duration("timeout", dfcacheConfig.Timeout, "Timeout for this cache operation, 0 is infinite")
 	flags.String("workhome", dfcacheConfig.WorkHome, "Dfcache working directory")
 	flags.String("logdir", dfcacheConfig.LogDir, "Dfcache log directory")
+	flags.String("daemon-sock", dfcacheConfig.DaemonSock, "Dfdaemon socket path to connect")
 
 	// Bind common flags
 	if err := viper.BindPFlags(flags); err != nil {
@@ -103,6 +104,10 @@ func initDfcacheDfpath(cfg *config.CacheOption) (dfpath.Dfpath, error) {
 
 	if cfg.LogDir != "" {
 		options = append(options, dfpath.WithLogDir(cfg.LogDir))
+	}
+
+	if cfg.DaemonSock != "" {
+		options = append(options, dfpath.WithDownloadUnixSocketPath(cfg.DaemonSock))
 	}
 
 	return dfpath.New(options...)
@@ -131,8 +136,13 @@ func runDfcacheSubcmd(cmdName string, args []string) error {
 		return err
 	}
 
+	rotateConfig := logger.LogRotateConfig{
+		MaxSize:    dfcacheConfig.LogMaxSize,
+		MaxAge:     dfcacheConfig.LogMaxAge,
+		MaxBackups: dfcacheConfig.LogMaxBackups}
+
 	// Initialize logger
-	if err := logger.InitDfcache(dfcacheConfig.Console, d.LogDir()); err != nil {
+	if err := logger.InitDfcache(dfcacheConfig.Console, d.LogDir(), rotateConfig); err != nil {
 		return fmt.Errorf("init client dfcache logger: %w", err)
 	}
 	logger.Infof("version:\n%s", version.Version())

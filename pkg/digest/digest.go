@@ -26,12 +26,21 @@ import (
 	"errors"
 	"fmt"
 	"hash"
+	"hash/crc32"
 	"io"
 	"os"
 	"strings"
+
+	"github.com/zeebo/blake3"
 )
 
 const (
+	// AlgorithmCRC32 is crc32 algorithm name of hash.
+	AlgorithmCRC32 = "crc32"
+
+	// AlgorithmBlake3 is blake3 algorithm name of hash.
+	AlgorithmBlake3 = "blake3"
+
 	// AlgorithmSHA1 is sha1 algorithm name of hash.
 	AlgorithmSHA1 = "sha1"
 
@@ -77,6 +86,10 @@ func HashFile(path string, algorithm string) (string, error) {
 
 	var h hash.Hash
 	switch algorithm {
+	case AlgorithmCRC32:
+		h = crc32.NewIEEE()
+	case AlgorithmBlake3:
+		h = blake3.New()
 	case AlgorithmSHA1:
 		h = sha1.New()
 	case AlgorithmSHA256:
@@ -109,6 +122,14 @@ func Parse(digest string) (*Digest, error) {
 	encoded := values[1]
 
 	switch algorithm {
+	case AlgorithmCRC32:
+		if len(encoded) != 8 {
+			return nil, errors.New("invalid encoded")
+		}
+	case AlgorithmBlake3:
+		if len(encoded) != 64 {
+			return nil, errors.New("invalid encoded")
+		}
 	case AlgorithmSHA1:
 		if len(encoded) != 40 {
 			return nil, errors.New("invalid encoded")

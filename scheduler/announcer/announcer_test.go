@@ -59,11 +59,11 @@ func TestAnnouncer_New(t *testing.T) {
 	mockTrainerClient := trainerclientmocks.NewMockV1(ctl)
 
 	tests := []struct {
-		name   string
-		config *config.Config
-		option []Option
-		mock   func(m *managerclientmocks.MockV2MockRecorder)
-		expect func(t *testing.T, announcer Announcer, err error)
+		name    string
+		config  *config.Config
+		options []Option
+		mock    func(m *managerclientmocks.MockV2MockRecorder)
+		expect  func(t *testing.T, announcer Announcer, err error)
 	}{
 		{
 			name: "new announcer",
@@ -82,7 +82,7 @@ func TestAnnouncer_New(t *testing.T) {
 					SchedulerClusterID: 1,
 				},
 			},
-			option: []Option{},
+			options: []Option{},
 			mock: func(m *managerclientmocks.MockV2MockRecorder) {
 				m.UpdateScheduler(gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
 			},
@@ -111,7 +111,7 @@ func TestAnnouncer_New(t *testing.T) {
 					SchedulerClusterID: 1,
 				},
 			},
-			option: []Option{WithTrainerClient(mockTrainerClient)},
+			options: []Option{WithTrainerClient(mockTrainerClient)},
 			mock: func(m *managerclientmocks.MockV2MockRecorder) {
 				m.UpdateScheduler(gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
 			},
@@ -141,7 +141,7 @@ func TestAnnouncer_New(t *testing.T) {
 					SchedulerClusterID: 1,
 				},
 			},
-			option: []Option{},
+			options: []Option{},
 			mock: func(m *managerclientmocks.MockV2MockRecorder) {
 				m.UpdateScheduler(gomock.Any(), gomock.Any()).Return(nil, errors.New("foo")).Times(1)
 			},
@@ -158,7 +158,7 @@ func TestAnnouncer_New(t *testing.T) {
 			mockStorage := storagemocks.NewMockStorage(ctl)
 			tc.mock(mockManagerClient.EXPECT())
 
-			a, err := New(tc.config, mockManagerClient, mockStorage, tc.option...)
+			a, err := New(tc.config, mockManagerClient, mockStorage, tc.options...)
 			tc.expect(t, a, err)
 		})
 	}
@@ -170,13 +170,13 @@ func TestAnnouncer_Serve(t *testing.T) {
 	mockTrainerClient := trainerclientmocks.NewMockV1(ctl)
 
 	tests := []struct {
-		name   string
-		config *config.Config
-		data   []byte
-		option []Option
-		sleep  func()
-		mock   func(stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder)
-		except func(t *testing.T, a Announcer)
+		name    string
+		config  *config.Config
+		data    []byte
+		options []Option
+		sleep   func()
+		mock    func(stream trainerv1.Trainer_TrainClient, data []byte, m *managerclientmocks.MockV2MockRecorder, mtc *trainerclientmocks.MockV1MockRecorder, ms *storagemocks.MockStorageMockRecorder, mt *trainerv1mocks.MockTrainer_TrainClientMockRecorder)
+		except  func(t *testing.T, a Announcer)
 	}{
 		{
 			name: "started announcer server success",
@@ -202,8 +202,8 @@ func TestAnnouncer_Serve(t *testing.T) {
 					UploadTimeout: 10 * time.Second,
 				},
 			},
-			data:   []byte("bar"),
-			option: []Option{WithTrainerClient(mockTrainerClient)},
+			data:    []byte("bar"),
+			options: []Option{WithTrainerClient(mockTrainerClient)},
 			sleep: func() {
 				time.Sleep(3 * time.Second)
 			},
@@ -273,8 +273,8 @@ func TestAnnouncer_Serve(t *testing.T) {
 					SchedulerClusterID: 1,
 				},
 			},
-			data:   []byte("bar"),
-			option: []Option{},
+			data:    []byte("bar"),
+			options: []Option{},
 			sleep: func() {
 				time.Sleep(100 * time.Millisecond)
 			},
@@ -310,7 +310,7 @@ func TestAnnouncer_Serve(t *testing.T) {
 			mockStorage := storagemocks.NewMockStorage(ctl)
 
 			tc.mock(stream, tc.data, mockManagerClient.EXPECT(), mockTrainerClient.EXPECT(), mockStorage.EXPECT(), stream.EXPECT())
-			a, err := New(tc.config, mockManagerClient, mockStorage, tc.option...)
+			a, err := New(tc.config, mockManagerClient, mockStorage, tc.options...)
 			if err != nil {
 				t.Fatal(err)
 			}

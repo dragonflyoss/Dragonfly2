@@ -1,10 +1,6 @@
 # Binaries for programs and plugins
 *.exe
 *.exe~
-*.dll
-*.so
-*.dylib
-bin/
 
 # Test binary, built with `go test -c`
 *.test
@@ -67,3 +63,5 @@ artifacts
 .run
 deploy/docker-compose/log
 deploy/docker-compose/config
+test/e2e/v1/*.log
+test/e2e/v2/*.log

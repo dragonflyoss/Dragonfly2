@@ -20,11 +20,13 @@ package client
 
 import (
 	"context"
+	"math"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
@@ -50,9 +52,13 @@ func GetV2(ctx context.Context, dynconfig config.Dynconfig, opts ...grpc.DialOpt
 		ctx,
 		resolver.SchedulerVirtualTarget,
 		append([]grpc.DialOption{
+			grpc.WithIdleTimeout(0),
+			grpc.WithDefaultCallOptions(
+				grpc.MaxCallRecvMsgSize(math.MaxInt32),
+				grpc.MaxCallSendMsgSize(math.MaxInt32),
+			),
 			grpc.WithDefaultServiceConfig(pkgbalancer.BalancerServiceConfig),
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
-				rpc.OTELUnaryClientInterceptor(),
 				grpc_prometheus.UnaryClientInterceptor,
 				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
 				grpc_retry.UnaryClientInterceptor(
@@ -62,7 +68,6 @@ func GetV2(ctx context.Context, dynconfig config.Dynconfig, opts ...grpc.DialOpt
 				rpc.RefresherUnaryClientInterceptor(dynconfig),
 			)),
 			grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
-				rpc.OTELStreamClientInterceptor(),
 				grpc_prometheus.StreamClientInterceptor,
 				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
 				rpc.RefresherStreamClientInterceptor(dynconfig),
@@ -88,9 +93,14 @@ func GetV2ByAddr(ctx context.Context, target string, opts ...grpc.DialOption) (V
 		ctx,
 		target,
 		append([]grpc.DialOption{
+			grpc.WithIdleTimeout(0),
+			grpc.WithDefaultCallOptions(
+				grpc.MaxCallRecvMsgSize(math.MaxInt32),
+				grpc.MaxCallSendMsgSize(math.MaxInt32),
+			),
+			grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 			grpc.WithDefaultServiceConfig(pkgbalancer.BalancerServiceConfig),
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
-				rpc.OTELUnaryClientInterceptor(),
 				grpc_prometheus.UnaryClientInterceptor,
 				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
 				grpc_retry.UnaryClientInterceptor(
@@ -99,7 +109,6 @@ func GetV2ByAddr(ctx context.Context, target string, opts ...grpc.DialOption) (V
 				),
 			)),
 			grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
-				rpc.OTELStreamClientInterceptor(),
 				grpc_prometheus.StreamClientInterceptor,
 				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
 			)),
@@ -124,21 +133,20 @@ type V2 interface {
 	// Checks information of peer.
 	StatPeer(context.Context, *schedulerv2.StatPeerRequest, ...grpc.CallOption) (*commonv2.Peer, error)
 
-	// LeavePeer releases peer in scheduler.
-	LeavePeer(context.Context, *schedulerv2.LeavePeerRequest, ...grpc.CallOption) error
-
-	// TODO exchange peer api definition.
-	// ExchangePeer exchanges peer information.
-	ExchangePeer(context.Context, *schedulerv2.ExchangePeerRequest, ...grpc.CallOption) (*schedulerv2.ExchangePeerResponse, error)
+	// DeletePeer releases peer in scheduler.
+	DeletePeer(context.Context, *schedulerv2.DeletePeerRequest, ...grpc.CallOption) error
 
 	// Checks information of task.
 	StatTask(context.Context, *schedulerv2.StatTaskRequest, ...grpc.CallOption) (*commonv2.Task, error)
 
+	// DeleteTask releases task in scheduler.
+	DeleteTask(context.Context, *schedulerv2.DeleteTaskRequest, ...grpc.CallOption) error
+
 	// AnnounceHost announces host to scheduler.
 	AnnounceHost(context.Context, *schedulerv2.AnnounceHostRequest, ...grpc.CallOption) error
 
-	// LeaveHost releases host in scheduler.
-	LeaveHost(context.Context, *schedulerv2.LeaveHostRequest, ...grpc.CallOption) error
+	// DeleteHost releases host in scheduler.
+	DeleteHost(context.Context, *schedulerv2.DeleteHostRequest, ...grpc.CallOption) error
 
 	// SyncProbes sync probes of the host.
 	SyncProbes(context.Context, *schedulerv2.SyncProbesRequest, ...grpc.CallOption) (schedulerv2.Scheduler_SyncProbesClient, error)
@@ -176,12 +184,12 @@ func (v *v2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest, opt
 	)
 }
 
-// LeavePeer releases peer in scheduler.
-func (v *v2) LeavePeer(ctx context.Context, req *schedulerv2.LeavePeerRequest, opts ...grpc.CallOption) error {
+// DeletePeer releases peer in scheduler.
+func (v *v2) DeletePeer(ctx context.Context, req *schedulerv2.DeletePeerRequest, opts ...grpc.CallOption) error {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
-	_, err := v.SchedulerClient.LeavePeer(
+	_, err := v.SchedulerClient.DeletePeer(
 		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		req,
 		opts...,
@@ -190,29 +198,30 @@ func (v *v2) LeavePeer(ctx context.Context, req *schedulerv2.LeavePeerRequest, o
 	return err
 }
 
-// TODO exchange peer api definition.
-// ExchangePeer exchanges peer information.
-func (v *v2) ExchangePeer(ctx context.Context, req *schedulerv2.ExchangePeerRequest, opts ...grpc.CallOption) (*schedulerv2.ExchangePeerResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
-	defer cancel()
-
-	return v.SchedulerClient.ExchangePeer(
-		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
-		req,
-		opts...,
-	)
-}
-
 // Checks information of task.
 func (v *v2) StatTask(ctx context.Context, req *schedulerv2.StatTaskRequest, opts ...grpc.CallOption) (*commonv2.Task, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
 	return v.SchedulerClient.StatTask(
-		context.WithValue(ctx, pkgbalancer.ContextKey, req.Id),
+		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
 		req,
 		opts...,
 	)
+}
+
+// DeleteTask releases task in scheduler.
+func (v *v2) DeleteTask(ctx context.Context, req *schedulerv2.DeleteTaskRequest, opts ...grpc.CallOption) error {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
+	_, err := v.SchedulerClient.DeleteTask(
+		context.WithValue(ctx, pkgbalancer.ContextKey, req.TaskId),
+		req,
+		opts...,
+	)
+
+	return err
 }
 
 // AnnounceHost announces host to scheduler.
@@ -244,8 +253,8 @@ func (v *v2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 	return eg.Wait()
 }
 
-// LeaveHost releases host in all schedulers.
-func (v *v2) LeaveHost(ctx context.Context, req *schedulerv2.LeaveHostRequest, opts ...grpc.CallOption) error {
+// DeleteHost releases host in all schedulers.
+func (v *v2) DeleteHost(ctx context.Context, req *schedulerv2.DeleteHostRequest, opts ...grpc.CallOption) error {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
@@ -253,13 +262,13 @@ func (v *v2) LeaveHost(ctx context.Context, req *schedulerv2.LeaveHostRequest, o
 	if err != nil {
 		return err
 	}
-	logger.Infof("leave host circle is %#v", circle)
+	logger.Infof("delete host circle is %#v", circle)
 
 	eg, _ := errgroup.WithContext(ctx)
 	for _, virtualTaskID := range circle {
 		virtualTaskID := virtualTaskID
 		eg.Go(func() error {
-			if _, err := v.SchedulerClient.LeaveHost(
+			if _, err := v.SchedulerClient.DeleteHost(
 				context.WithValue(ctx, pkgbalancer.ContextKey, virtualTaskID),
 				req,
 				opts...,

@@ -20,7 +20,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
 	"gorm.io/gorm"
 
@@ -122,7 +122,7 @@ func New(
 
 	return s, managerserver.New(
 		newManagerServerV1(s.config, database, s.cache, s.searcher, s.objectStorage),
-		newManagerServerV2(s.config, database, s.cache, s.searcher, s.objectStorage),
+		newManagerServerV2(s.config, database, s.cache, s.searcher),
 		newSecurityServerV1(s.selfSignedCert),
 		s.serverOptions...), nil
 }

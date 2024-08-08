@@ -25,19 +25,16 @@ import (
 
 const (
 	// DefaultSeedPeerConcurrentUploadLimit is default number for seed peer concurrent upload limit.
-	DefaultSeedPeerConcurrentUploadLimit = 300
+	DefaultSeedPeerConcurrentUploadLimit = 2000
 
 	// DefaultPeerConcurrentUploadLimit is default number for peer concurrent upload limit.
-	DefaultPeerConcurrentUploadLimit = 50
-
-	// DefaultPeerConcurrentPieceCount is default number for pieces to concurrent downloading.
-	DefaultPeerConcurrentPieceCount = 4
+	DefaultPeerConcurrentUploadLimit = 200
 
 	// DefaultSchedulerCandidateParentLimit is default limit the number of candidate parent.
 	DefaultSchedulerCandidateParentLimit = 4
 
 	// DefaultSchedulerFilterParentLimit is default limit the number for filter parent.
-	DefaultSchedulerFilterParentLimit = 40
+	DefaultSchedulerFilterParentLimit = 15
 )
 
 const (
@@ -63,20 +60,17 @@ const (
 	// DefaultSchedulerAlgorithm is default algorithm for scheduler.
 	DefaultSchedulerAlgorithm = "default"
 
-	// DefaultSchedulerMaxScheduleCount is default schedule limit for peer.
-	DefaultSchedulerMaxScheduleCount = 30
-
 	// DefaultSchedulerBackToSourceCount is default back-to-source count for scheduler.
-	DefaultSchedulerBackToSourceCount = 3
+	DefaultSchedulerBackToSourceCount = 200
 
 	// DefaultSchedulerRetryBackToSourceLimit is default retry back-to-source limit for scheduler.
-	DefaultSchedulerRetryBackToSourceLimit = 5
+	DefaultSchedulerRetryBackToSourceLimit = 4
 
 	// DefaultSchedulerRetryLimit is default retry limit for scheduler.
-	DefaultSchedulerRetryLimit = 10
+	DefaultSchedulerRetryLimit = 5
 
 	// DefaultSchedulerRetryInterval is default retry interval for scheduler.
-	DefaultSchedulerRetryInterval = 50 * time.Millisecond
+	DefaultSchedulerRetryInterval = 500 * time.Millisecond
 
 	// DefaultSchedulerPieceDownloadTimeout is default timeout of downloading piece.
 	DefaultSchedulerPieceDownloadTimeout = 30 * time.Minute
@@ -91,7 +85,7 @@ const (
 	DefaultSchedulerTaskGCInterval = 30 * time.Minute
 
 	// DefaultSchedulerHostGCInterval is default interval for host gc.
-	DefaultSchedulerHostGCInterval = 6 * time.Hour
+	DefaultSchedulerHostGCInterval = 5 * time.Minute
 
 	// DefaultSchedulerHostTTL is default ttl for host.
 	DefaultSchedulerHostTTL = 1 * time.Hour
@@ -101,6 +95,24 @@ const (
 
 	// DefaultCPU is default cpu usage.
 	DefaultCPU = 1
+
+	// NetworkTopologyAlgorithm is a scheduling algorithm based on rules and network topology.
+	NetworkTopologyAlgorithm = "nt"
+
+	// DefaultNetworkTopologyCollectInterval is the default interval of collecting network topology.
+	DefaultSchedulerNetworkTopologyCollectInterval = 2 * time.Hour
+
+	// DefaultNetworkTopologyCacheInterval is the default cache cleanup interval.
+	DefaultSchedulerNetworkTopologyCacheInterval = 5 * time.Minute
+
+	// DefaultNetworkTopologyCacheTLL is the default ttl of networkTopology cache.
+	DefaultSchedulerNetworkTopologyCacheTLL = 5 * time.Minute
+
+	// DefaultProbeQueueLength is the default length of probe queue.
+	DefaultSchedulerNetworkTopologyProbeQueueLength = 5
+
+	// DefaultProbeCount is the default number of probing hosts.
+	DefaultSchedulerNetworkTopologyProbeCount = 5
 )
 
 const (
@@ -179,17 +191,6 @@ const (
 )
 
 const (
-	// DefaultNetworkTopologyCollectInterval is the default interval of collecting network topology.
-	DefaultNetworkTopologyCollectInterval = 2 * time.Hour
-
-	// DefaultProbeQueueLength is the default length of probe queue.
-	DefaultProbeQueueLength = 5
-
-	// DefaultProbeCount is the default number of probing hosts.
-	DefaultProbeCount = 5
-)
-
-const (
 	// DefaultTrainerAddr is the default address of trainer.
 	DefaultTrainerAddr = "127.0.0.1:9090"
 
@@ -198,4 +199,15 @@ const (
 
 	// DefaultTrainerUploadTimeout is the default timeout of uploading dataset to trainer.
 	DefaultTrainerUploadTimeout = 1 * time.Hour
+)
+
+const (
+	// DefaultLogRotateMaxSize is the default maximum size in megabytes of log files before rotation.
+	DefaultLogRotateMaxSize = 1024
+
+	// DefaultLogRotateMaxAge is the default number of days to retain old log files.
+	DefaultLogRotateMaxAge = 7
+
+	// DefaultLogRotateMaxBackups is the default number of old log files to keep.
+	DefaultLogRotateMaxBackups = 20
 )

@@ -22,9 +22,9 @@ import (
 
 	"github.com/VividCortex/mysqlerr"
 	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v8"
 	"github.com/go-sql-driver/mysql"
 	redigo "github.com/gomodule/redigo/redis"
+	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
@@ -35,8 +35,8 @@ import (
 
 type ErrorResponse struct {
 	Message     string `json:"message,omitempty"`
-	Error       string `json:"errors,omitempty"`
-	DocumentURL string `json:"documentation_url,omitempty"`
+	Error       string `json:"error,omitempty"`
+	DocumentURL string `json:"document_url,omitempty"`
 }
 
 func Error() gin.HandlerFunc {
@@ -124,5 +124,6 @@ func Error() gin.HandlerFunc {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{
 			Message: err.Err.Error(),
 		})
+		c.Abort()
 	}
 }

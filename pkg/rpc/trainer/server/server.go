@@ -17,6 +17,7 @@
 package server
 
 import (
+	"math"
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -60,6 +61,9 @@ func New(trainerServerV1 trainerv1.TrainerServer, opts ...grpc.ServerOption) *gr
 	limiter := rpc.NewRateLimiterInterceptor(DefaultQPS, DefaultBurst)
 
 	grpcServer := grpc.NewServer(append([]grpc.ServerOption{
+		grpc.MaxRecvMsgSize(math.MaxInt32),
+		grpc.MaxSendMsgSize(math.MaxInt32),
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		grpc.KeepaliveParams(keepalive.ServerParameters{
 			MaxConnectionIdle:     DefaultMaxConnectionIdle,
 			MaxConnectionAge:      DefaultMaxConnectionAge,
@@ -67,7 +71,6 @@ func New(trainerServerV1 trainerv1.TrainerServer, opts ...grpc.ServerOption) *gr
 		}),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			grpc_ratelimit.UnaryServerInterceptor(limiter),
-			otelgrpc.UnaryServerInterceptor(),
 			grpc_prometheus.UnaryServerInterceptor,
 			grpc_zap.UnaryServerInterceptor(logger.GrpcLogger.Desugar()),
 			grpc_validator.UnaryServerInterceptor(),
@@ -75,7 +78,6 @@ func New(trainerServerV1 trainerv1.TrainerServer, opts ...grpc.ServerOption) *gr
 		)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_ratelimit.StreamServerInterceptor(limiter),
-			otelgrpc.StreamServerInterceptor(),
 			grpc_prometheus.StreamServerInterceptor,
 			grpc_zap.StreamServerInterceptor(logger.GrpcLogger.Desugar()),
 			grpc_validator.StreamServerInterceptor(),

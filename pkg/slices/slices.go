@@ -67,3 +67,36 @@ func Reverse[S ~[]T, T any](s S) {
 		s[i], s[j] = s[j], s[i]
 	}
 }
+
+// Difference returns the difference between two slices.
+// The first value is the collection of element absent of l2.
+// The second value is the collection of element absent of l1.
+func Difference[T comparable](l1 []T, l2 []T) ([]T, []T) {
+	left := []T{}
+	right := []T{}
+
+	visitedLeft := map[T]struct{}{}
+	visitedRight := map[T]struct{}{}
+
+	for _, e := range l1 {
+		visitedLeft[e] = struct{}{}
+	}
+
+	for _, e := range l2 {
+		visitedRight[e] = struct{}{}
+	}
+
+	for _, e := range l1 {
+		if _, ok := visitedRight[e]; !ok {
+			left = append(left, e)
+		}
+	}
+
+	for _, e := range l2 {
+		if _, ok := visitedLeft[e]; !ok {
+			right = append(right, e)
+		}
+	}
+
+	return left, right
+}

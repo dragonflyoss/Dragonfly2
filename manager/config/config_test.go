@@ -113,15 +113,17 @@ var (
 func TestConfig_Load(t *testing.T) {
 	config := &Config{
 		Server: ServerConfig{
-			Name:      "foo",
-			WorkHome:  "foo",
-			CacheDir:  "foo",
-			LogDir:    "foo",
-			PluginDir: "foo",
+			Name:          "foo",
+			WorkHome:      "foo",
+			CacheDir:      "foo",
+			LogDir:        "foo",
+			LogMaxSize:    512,
+			LogMaxAge:     5,
+			LogMaxBackups: 3,
+			PluginDir:     "foo",
 			GRPC: GRPCConfig{
-				AdvertiseIP:   net.IPv4zero,
-				AdvertisePort: 65003,
-				ListenIP:      net.IPv4zero,
+				AdvertiseIP: net.IPv4zero,
+				ListenIP:    net.IPv4zero,
 				PortRange: TCPListenPortRange{
 					Start: 65003,
 					End:   65003,
@@ -284,17 +286,6 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "grpc requires parameter advertiseIP")
-			},
-		},
-		{
-			name:   "grpc requires parameter advertisePort",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Server.GRPC.AdvertisePort = 0
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "grpc requires parameter advertisePort")
 			},
 		},
 		{

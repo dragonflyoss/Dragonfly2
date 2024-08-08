@@ -46,6 +46,14 @@ type StreamTaskRequest struct {
 	Range *http.Range
 	// peer's id and must be global uniqueness
 	PeerID string
+	taskID string
+}
+
+func (req *StreamTaskRequest) TaskID() string {
+	if req.taskID == "" {
+		req.taskID = idgen.TaskIDV1(req.URL, req.URLMeta)
+	}
+	return req.taskID
 }
 
 // StreamTask represents a peer task with stream io for reading directly without once more disk io
@@ -73,6 +81,7 @@ type resumeStreamTask struct {
 
 func (ptm *peerTaskManager) newStreamTask(
 	ctx context.Context,
+	taskID string,
 	request *schedulerv1.PeerTaskRequest,
 	rg *http.Range) (*streamTask, error) {
 	metrics.StreamTaskCount.Add(1)
@@ -87,7 +96,6 @@ func (ptm *peerTaskManager) newStreamTask(
 		parent = ptm.prefetchParentTask(request, "")
 	}
 
-	taskID := idgen.TaskIDV1(request.Url, request.UrlMeta)
 	ptc, err := ptm.getPeerTaskConductor(ctx, taskID, request, limit, parent, rg, "", false)
 	if err != nil {
 		return nil, err

@@ -4839,11 +4839,6 @@ const docTemplate = `{
         "d7y_io_dragonfly_v2_manager_types.SchedulerClusterClientConfig": {
             "type": "object",
             "properties": {
-                "concurrent_piece_count": {
-                    "type": "integer",
-                    "maximum": 50,
-                    "minimum": 1
-                },
                 "load_limit": {
                     "type": "integer",
                     "maximum": 2000,

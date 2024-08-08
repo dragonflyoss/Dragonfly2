@@ -503,6 +503,29 @@ func TestHostManager_RunGC(t *testing.T) {
 				assert.Equal(host.ID, mockSeedHost.ID)
 			},
 		},
+		{
+			name: "host elapsed exceeds twice the announce interval",
+			mock: func(m *gc.MockGCMockRecorder) {
+				m.Add(gomock.Any()).Return(nil).Times(1)
+			},
+			expect: func(t *testing.T, hostManager HostManager, mockHost *Host, mockPeer *Peer) {
+				assert := assert.New(t)
+				mockHost.AnnounceInterval = 1 * time.Microsecond
+				hostManager.Store(mockHost)
+				mockHost.StorePeer(mockPeer)
+				err := hostManager.RunGC()
+				assert.NoError(err)
+
+				mockHost.Peers.Range(func(_, value any) bool {
+					peer := value.(*Peer)
+					assert.True(peer.FSM.Is(PeerStateLeave))
+					return true
+				})
+
+				_, loaded := hostManager.Load(mockHost.ID)
+				assert.Equal(loaded, false)
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -515,7 +538,7 @@ func TestHostManager_RunGC(t *testing.T) {
 			mockHost := NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilters, mockTaskHeader, mockTaskBackToSourceLimit)
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit)
 			mockPeer := NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 			hostManager, err := newHostManager(mockHostGCConfig, gc)
 			if err != nil {

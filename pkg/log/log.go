@@ -34,7 +34,7 @@ func SetGrpcLevel(level zapcore.Level) {
 }
 
 // SetupDaemon sets daemon log config: path, console
-func SetupDaemon(logDir string, verbose bool, console bool) error {
+func SetupDaemon(logDir string, verbose bool, console bool, rotateConfig logger.LogRotateConfig) error {
 	var options []dfpath.Option
 	if logDir != "" {
 		options = append(options, dfpath.WithLogDir(logDir))
@@ -45,5 +45,5 @@ func SetupDaemon(logDir string, verbose bool, console bool) error {
 		return err
 	}
 
-	return logger.InitDaemon(verbose, console, d.LogDir())
+	return logger.InitDaemon(verbose, console, d.LogDir(), rotateConfig)
 }

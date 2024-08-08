@@ -11,6 +11,9 @@ workHomeMode: 0700
 cacheDir: /var/cache/dragonfly/
 cacheDirMode: 0700
 logDir: /var/log/dragonfly/
+logMaxSize: 512
+logMaxAge: 5
+logMaxBackups: 3
 pluginDir: /tmp/dragonfly/dfdaemon/plugins/
 dataDir: /var/lib/dragonfly/
 dataDirMode: 0700
@@ -41,7 +44,7 @@ host:
   idc: d7y
 
 download:
-  calculateDigest: true
+  calculateDigest: false
   defaultPattern: p2p
   pieceDownloadTimeout: 30s
   totalRateLimit: 1024Mi

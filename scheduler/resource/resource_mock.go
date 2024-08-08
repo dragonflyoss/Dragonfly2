@@ -5,6 +5,7 @@
 //
 //	mockgen -destination resource_mock.go -source resource.go -package resource
 //
+
 // Package resource is a generated GoMock package.
 package resource
 

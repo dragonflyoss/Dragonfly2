@@ -73,7 +73,10 @@ type DynconfigInterface interface {
 	// GetSeedPeers returns the dynamic seed peers config from manager.
 	GetSeedPeers() ([]*managerv2.SeedPeer, error)
 
-	// GetSchedulerCluster returns the the scheduler cluster config from manager.
+	// GetSeedPeerClusterConfig returns the seed peer cluster config.
+	GetSeedPeerClusterConfig() (types.SeedPeerClusterConfig, error)
+
+	// GetSchedulerCluster returns the scheduler cluster config from manager.
 	GetSchedulerCluster() (*managerv2.SchedulerCluster, error)
 
 	// GetSchedulerClusterConfig returns the scheduler cluster config.
@@ -162,7 +165,7 @@ func NewDynconfig(rawManagerClient managerclient.V2, cacheDir string, cfg *Confi
 	return d, nil
 }
 
-// GetResolveSeedPeerAddrs returns the the schedulers resolve addrs.
+// GetResolveSeedPeerAddrs returns the schedulers resolve addrs.
 func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 	seedPeers, err := d.GetSeedPeers()
 	if err != nil {
@@ -201,7 +204,7 @@ func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 		}
 
 		if addr == "" {
-			logger.Warnf("seed peer %s %s %s has not reachable addresses",
+			logger.Warnf("seed peer %s %s %d has not reachable addresses",
 				seedPeer.GetIp(), seedPeer.GetHostname(), seedPeer.GetPort())
 			continue
 		}
@@ -257,7 +260,7 @@ func (d *dynconfig) GetApplications() ([]*managerv2.Application, error) {
 	return data.Applications, nil
 }
 
-// GetSeedPeers returns the the seed peers config from manager.
+// GetSeedPeers returns the seed peers config from manager.
 func (d *dynconfig) GetSeedPeers() ([]*managerv2.SeedPeer, error) {
 	scheduler, err := d.GetScheduler()
 	if err != nil {
@@ -271,7 +274,26 @@ func (d *dynconfig) GetSeedPeers() ([]*managerv2.SeedPeer, error) {
 	return scheduler.SeedPeers, nil
 }
 
-// GetSchedulerCluster returns the the scheduler cluster config from manager.
+// GetSeedPeerClusterConfig returns the seed peer cluster config.
+func (d *dynconfig) GetSeedPeerClusterConfig() (types.SeedPeerClusterConfig, error) {
+	seedPeers, err := d.GetSeedPeers()
+	if err != nil {
+		return types.SeedPeerClusterConfig{}, err
+	}
+
+	if len(seedPeers) == 0 {
+		return types.SeedPeerClusterConfig{}, errors.New("seed peer not found ")
+	}
+
+	var config types.SeedPeerClusterConfig
+	if err := json.Unmarshal(seedPeers[0].SeedPeerCluster.Config, &config); err != nil {
+		return types.SeedPeerClusterConfig{}, err
+	}
+
+	return config, nil
+}
+
+// GetSchedulerCluster returns the scheduler cluster config from manager.
 func (d *dynconfig) GetSchedulerCluster() (*managerv2.SchedulerCluster, error) {
 	scheduler, err := d.GetScheduler()
 	if err != nil {
@@ -319,6 +341,7 @@ func (d *dynconfig) GetSchedulerClusterClientConfig() (types.SchedulerClusterCli
 func (d *dynconfig) Refresh() error {
 	// If another load is in progress, return directly.
 	if !d.mu.TryLock() {
+		logger.Warn("refresh is running")
 		return nil
 	}
 	defer d.mu.Unlock()
@@ -418,9 +441,9 @@ func (mc *managerClient) Get() (any, error) {
 		Ip:         mc.config.Server.AdvertiseIP.String(),
 	})
 	if err != nil {
-		if s, ok := status.FromError(err); ok {
+		if st, ok := status.FromError(err); ok {
 			// TODO Compatible with old version manager.
-			if slices.Contains([]codes.Code{codes.Unimplemented, codes.NotFound}, s.Code()) {
+			if slices.Contains([]codes.Code{codes.Unimplemented, codes.NotFound}, st.Code()) {
 				return DynconfigData{
 					Scheduler:    getSchedulerResp,
 					Applications: nil,

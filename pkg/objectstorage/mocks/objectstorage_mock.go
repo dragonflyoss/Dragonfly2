@@ -5,6 +5,7 @@
 //
 //	mockgen -destination mocks/objectstorage_mock.go -source objectstorage.go -package mocks
 //
+
 // Package mocks is a generated GoMock package.
 package mocks
 
@@ -126,6 +127,21 @@ func (mr *MockObjectStorageMockRecorder) GetMetadata(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetadata", reflect.TypeOf((*MockObjectStorage)(nil).GetMetadata), ctx)
 }
 
+// GetObject mocks base method.
+func (m *MockObjectStorage) GetObject(ctx context.Context, bucketName, objectKey string) (io.ReadCloser, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetObject", ctx, bucketName, objectKey)
+	ret0, _ := ret[0].(io.ReadCloser)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetObject indicates an expected call of GetObject.
+func (mr *MockObjectStorageMockRecorder) GetObject(ctx, bucketName, objectKey any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObject", reflect.TypeOf((*MockObjectStorage)(nil).GetObject), ctx, bucketName, objectKey)
+}
+
 // GetObjectMetadata mocks base method.
 func (m *MockObjectStorage) GetObjectMetadata(ctx context.Context, bucketName, objectKey string) (*objectstorage.ObjectMetadata, bool, error) {
 	m.ctrl.T.Helper()
@@ -155,21 +171,6 @@ func (m *MockObjectStorage) GetObjectMetadatas(ctx context.Context, bucketName, 
 func (mr *MockObjectStorageMockRecorder) GetObjectMetadatas(ctx, bucketName, prefix, marker, delimiter, limit any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectMetadatas", reflect.TypeOf((*MockObjectStorage)(nil).GetObjectMetadatas), ctx, bucketName, prefix, marker, delimiter, limit)
-}
-
-// GetOject mocks base method.
-func (m *MockObjectStorage) GetOject(ctx context.Context, bucketName, objectKey string) (io.ReadCloser, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOject", ctx, bucketName, objectKey)
-	ret0, _ := ret[0].(io.ReadCloser)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetOject indicates an expected call of GetOject.
-func (mr *MockObjectStorageMockRecorder) GetOject(ctx, bucketName, objectKey any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOject", reflect.TypeOf((*MockObjectStorage)(nil).GetOject), ctx, bucketName, objectKey)
 }
 
 // GetSignURL mocks base method.

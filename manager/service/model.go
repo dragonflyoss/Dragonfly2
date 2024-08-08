@@ -25,7 +25,7 @@ import (
 	"strconv"
 	"strings"
 
-	inferencev1 "d7y.io/api/v2/pkg/apis/inference/v1"
+	inference "d7y.io/api/v2/pkg/apis/inference"
 
 	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
@@ -156,8 +156,8 @@ func (s *service) updateModelConfig(ctx context.Context, name string, version in
 	}
 
 	objectKey := types.MakeObjectKeyOfModelConfigFile(name)
-	var pbModelConfig inferencev1.ModelConfig
-	reader, err := s.objectStorage.GetOject(ctx, s.config.Trainer.BucketName, objectKey)
+	var pbModelConfig inference.ModelConfig
+	reader, err := s.objectStorage.GetObject(ctx, s.config.Trainer.BucketName, objectKey)
 	if err != nil {
 		return err
 	}
@@ -173,7 +173,7 @@ func (s *service) updateModelConfig(ctx context.Context, name string, version in
 	}
 
 	switch policyChoice := pbModelConfig.VersionPolicy.PolicyChoice.(type) {
-	case *inferencev1.ModelVersionPolicy_Specific_:
+	case *inference.ModelVersionPolicy_Specific_:
 		// If the version already exists, add the version to the existing version list.
 		policyChoice.Specific.Versions = []int64{version}
 	default:

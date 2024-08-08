@@ -106,10 +106,11 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []models.Schedul
 	case PreheatFileType:
 		files = []internaljob.PreheatRequest{
 			{
-				URL:     json.URL,
-				Tag:     json.Tag,
-				Filter:  json.Filter,
-				Headers: json.Headers,
+				URL:                 json.URL,
+				Tag:                 json.Tag,
+				FilteredQueryParams: json.FilteredQueryParams,
+				PieceLength:         json.PieceLength,
+				Headers:             json.Headers,
 			},
 		}
 	default:
@@ -175,9 +176,7 @@ func (p *preheat) getImageLayers(ctx context.Context, args types.PreheatArgs) ([
 		return nil, err
 	}
 
-	// Init docker auth client.
-	client, err := newImageAuthClient(
-		image,
+	opts := []imageAuthClientOption{
 		withHTTPClient(&http.Client{
 			Timeout: p.registryTimeout,
 			Transport: &http.Transport{
@@ -186,7 +185,17 @@ func (p *preheat) getImageLayers(ctx context.Context, args types.PreheatArgs) ([
 			},
 		}),
 		withBasicAuth(args.Username, args.Password),
-	)
+	}
+	// Background:
+	//   Harbor uses the V1 preheat request and will carry the auth info in the headers.
+	header := nethttp.MapToHeader(args.Headers)
+	if token := header.Get("Authorization"); len(token) > 0 {
+		opts = append(opts, withIssuedToken(token))
+		header.Set("Authorization", token)
+	}
+
+	// Init docker auth client.
+	client, err := newImageAuthClient(image, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +210,6 @@ func (p *preheat) getImageLayers(ctx context.Context, args types.PreheatArgs) ([
 	}
 
 	// Get manifests.
-	header := nethttp.MapToHeader(args.Headers)
 	manifests, err := p.getManifests(ctx, client, image, header.Clone(), platform)
 	if err != nil {
 		return nil, err
@@ -229,6 +237,13 @@ func (p *preheat) getManifests(ctx context.Context, client *imageAuthClient, ima
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, image.manifestURL(), nil)
 	if err != nil {
 		return nil, err
+	}
+
+	// Set header from the user request.
+	for key, values := range header {
+		for _, value := range values {
+			req.Header.Add(key, value)
+		}
 	}
 
 	// Set accept header with media types.
@@ -301,10 +316,11 @@ func (p *preheat) parseLayers(manifests []distribution.Manifest, args types.Preh
 		for _, v := range m.References() {
 			header.Set("Accept", v.MediaType)
 			layer := internaljob.PreheatRequest{
-				URL:     image.blobsURL(v.Digest.String()),
-				Tag:     args.Tag,
-				Filter:  args.Filter,
-				Headers: nethttp.HeaderToMap(header),
+				URL:                 image.blobsURL(v.Digest.String()),
+				Tag:                 args.Tag,
+				FilteredQueryParams: args.FilteredQueryParams,
+				PieceLength:         args.PieceLength,
+				Headers:             nethttp.HeaderToMap(header),
 			}
 
 			layers = append(layers, layer)
@@ -334,8 +350,20 @@ func withHTTPClient(client *http.Client) imageAuthClientOption {
 	}
 }
 
+// withIssuedToken sets the issuedToken for imageAuthClient.
+func withIssuedToken(token string) imageAuthClientOption {
+	return func(c *imageAuthClient) {
+		c.issuedToken = token
+	}
+}
+
 // imageAuthClient is a client for image authentication.
 type imageAuthClient struct {
+	// issuedToken is the issued token specified in header from user request,
+	// there is no need to go through v2 authentication to get a new token
+	// if the token is not empty, just use this token to access v2 API directly.
+	issuedToken string
+
 	// httpClient is the http client.
 	httpClient *http.Client
 
@@ -355,6 +383,11 @@ func newImageAuthClient(image *preheatImage, opts ...imageAuthClientOption) (*im
 
 	for _, opt := range opts {
 		opt(d)
+	}
+
+	// return earlier if issued token is not empty
+	if len(d.issuedToken) > 0 {
+		return d, nil
 	}
 
 	// New a challenge manager for the supported authentication types.
@@ -395,6 +428,10 @@ func (d *imageAuthClient) Do(req *http.Request) (*http.Response, error) {
 
 // GetAuthToken returns the bearer token.
 func (d *imageAuthClient) GetAuthToken() string {
+	if len(d.issuedToken) > 0 {
+		return d.issuedToken
+	}
+
 	return d.interceptorTokenHandler.GetAuthToken()
 }
 

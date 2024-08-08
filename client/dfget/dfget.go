@@ -97,35 +97,38 @@ func singleDownload(ctx context.Context, client dfdaemonclient.V1, cfg *config.D
 		downError error
 	)
 
-	if stream, downError = client.Download(ctx, request); downError == nil {
-		if cfg.ShowProgress {
-			pb = newProgressBar(-1)
+	if stream, downError = client.Download(ctx, request); downError != nil {
+		goto processError
+	}
+
+	if cfg.ShowProgress {
+		pb = newProgressBar(-1)
+	}
+
+	for {
+		if result, downError = stream.Recv(); downError != nil {
+			break
 		}
 
-		for {
-			if result, downError = stream.Recv(); downError != nil {
-				break
+		if result.CompletedLength > 0 && pb != nil {
+			_ = pb.Set64(int64(result.CompletedLength))
+		}
+
+		// success
+		if result.Done {
+			if pb != nil {
+				pb.Describe("Downloaded")
+				_ = pb.Close()
 			}
 
-			if result.CompletedLength > 0 && pb != nil {
-				_ = pb.Set64(int64(result.CompletedLength))
-			}
+			wLog.Infof("download from daemon success, length: %d bytes, cost: %d ms", result.CompletedLength, time.Since(start).Milliseconds())
+			fmt.Printf("finish total length %d bytes\n", result.CompletedLength)
 
-			// success
-			if result.Done {
-				if pb != nil {
-					pb.Describe("Downloaded")
-					_ = pb.Close()
-				}
-
-				wLog.Infof("download from daemon success, length: %d bytes cost: %d ms", result.CompletedLength, time.Since(start).Milliseconds())
-				fmt.Printf("finish total length %d bytes\n", result.CompletedLength)
-
-				break
-			}
+			break
 		}
 	}
 
+processError:
 	if downError != nil && !cfg.KeepOriginalOffset {
 		wLog.Warnf("daemon downloads file error: %v", downError)
 		fmt.Printf("daemon downloads file error: %v\n", downError)
@@ -215,7 +218,7 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 	}
 	renameOK = true
 
-	wLog.Infof("download from source success, length: %d bytes cost: %d ms", written, time.Since(start).Milliseconds())
+	wLog.Infof("download from source success, length: %d bytes, cost: %d ms", written, time.Since(start).Milliseconds())
 	fmt.Printf("finish total length %d bytes\n", written)
 
 	return nil
@@ -281,21 +284,7 @@ func newDownRequest(cfg *config.DfgetConfig, hdr map[string]string) *dfdaemonv1.
 }
 
 func newProgressBar(max int64) *progressbar.ProgressBar {
-	return progressbar.NewOptions64(max,
-		progressbar.OptionShowBytes(true),
-		progressbar.OptionSetPredictTime(true),
-		progressbar.OptionUseANSICodes(true),
-		progressbar.OptionEnableColorCodes(true),
-		progressbar.OptionFullWidth(),
-		progressbar.OptionSetDescription("[cyan]Downloading...[reset]"),
-		progressbar.OptionSetRenderBlankState(true),
-		progressbar.OptionSetTheme(progressbar.Theme{
-			Saucer:        "[green]=[reset]",
-			SaucerHead:    "[green]>[reset]",
-			SaucerPadding: " ",
-			BarStart:      "[",
-			BarEnd:        "]",
-		}))
+	return progressbar.DefaultBytes(-1, "Downloading")
 }
 
 func accept(u string, accept, reject string) bool {

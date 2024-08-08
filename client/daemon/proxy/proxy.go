@@ -21,8 +21,8 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"io"
+	"mime"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -46,6 +46,7 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
+	"d7y.io/dragonfly/v2/client/daemon/pex"
 	"d7y.io/dragonfly/v2/client/daemon/transport"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
@@ -79,13 +80,15 @@ type Proxy struct {
 	cacheRWMutex sync.RWMutex
 
 	// directHandler are used to handle non-proxy requests
-	directHandler http.Handler
+	directHandler *http.ServeMux
 
 	// transport is used to handle http proxy requests
 	transport http.RoundTripper
 
 	// peerTaskManager is the peer task manager
 	peerTaskManager peer.TaskManager
+
+	peerSearcher pex.PeerSearchBroadcaster
 
 	// peerHost is the peer host info
 	peerHost *schedulerv1.PeerHost
@@ -172,25 +175,6 @@ func WithCert(cert *tls.Certificate) Option {
 	}
 }
 
-// WithDirectHandler sets the handler for non-proxy requests
-func WithDirectHandler(h *http.ServeMux) Option {
-	return func(p *Proxy) *Proxy {
-		if p.registry == nil || p.registry.Remote == nil || p.registry.Remote.URL == nil {
-			logger.Warnf("registry mirror url is empty, registry mirror feature is disabled")
-			h.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-				http.Error(w, fmt.Sprintf("registry mirror feature is disabled"), http.StatusNotFound)
-			})
-			p.directHandler = h
-			return p
-		}
-		// Make sure the root handler of the given server mux is the
-		// registry mirror reverse proxy
-		h.HandleFunc("/", p.mirrorRegistry)
-		p.directHandler = h
-		return p
-	}
-}
-
 // WithRules sets the proxy rules
 func WithRules(rules []*config.ProxyRule) Option {
 	return func(p *Proxy) *Proxy {
@@ -264,13 +248,15 @@ func WithDumpHTTPContent(dump bool) Option {
 	}
 }
 
-// NewProxy returns a new transparent proxy from the given options
-func NewProxy(options ...Option) (*Proxy, error) {
-	return NewProxyWithOptions(options...)
+func WithPeerSearcher(peerSearcher pex.PeerSearchBroadcaster) Option {
+	return func(p *Proxy) *Proxy {
+		p.peerSearcher = peerSearcher
+		return p
+	}
 }
 
-// NewProxyWithOptions constructs a new instance of a Proxy with additional options.
-func NewProxyWithOptions(options ...Option) (*Proxy, error) {
+// NewProxy returns a new transparent proxy from the given options
+func NewProxy(options ...Option) (*Proxy, error) {
 	proxy := &Proxy{
 		directHandler: http.NewServeMux(),
 		tracer:        otel.Tracer("dfget-daemon-proxy"),
@@ -285,7 +271,24 @@ func NewProxyWithOptions(options ...Option) (*Proxy, error) {
 	if proxy.transport == nil {
 		proxy.transport = proxy.newTransport(nil)
 	}
+
+	// check register mirror config and register handler
+	proxy.updateMirrorHandler()
 	return proxy, nil
+}
+
+func (proxy *Proxy) updateMirrorHandler() {
+	h := proxy.directHandler
+	if proxy.registry == nil || proxy.registry.Remote == nil || proxy.registry.Remote.URL == nil {
+		logger.Warnf("registry mirror url is empty, registry mirror feature is disabled")
+		h.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, "registry mirror feature is disabled", http.StatusNotFound)
+		})
+		return
+	}
+	// Make sure the root handler of the given server mux is the
+	// registry mirror reverse proxy
+	h.HandleFunc("/", proxy.mirrorRegistry)
 }
 
 func isBasicAuthMatch(basicAuth *config.BasicAuth, user, pass string) bool {
@@ -399,6 +402,25 @@ func parseBasicAuth(auth string) (username, password string, ok bool) {
 	return cs[:s], cs[s+1:], true
 }
 
+// flushInterval returns zero, conditionally
+// overriding its value for a specific request/response.
+func (proxy *Proxy) flushInterval(res *http.Response) time.Duration {
+	resCT := res.Header.Get("Content-Type")
+
+	// For Server-Sent Events responses, flush immediately.
+	// The MIME type is defined in https://www.w3.org/TR/eventsource/#text-event-stream
+	if baseCT, _, _ := mime.ParseMediaType(resCT); baseCT == "text/event-stream" {
+		return -1 // negative means immediately
+	}
+
+	// We might have the case of streaming for which Content-Length might be unset.
+	if res.ContentLength == -1 {
+		return -1
+	}
+
+	return 0
+}
+
 func (proxy *Proxy) handleHTTP(span trace.Span, w http.ResponseWriter, req *http.Request) {
 	resp, err := proxy.transport.RoundTrip(req)
 	if err != nil {
@@ -410,7 +432,26 @@ func (proxy *Proxy) handleHTTP(span trace.Span, w http.ResponseWriter, req *http
 	copyHeader(w.Header(), resp.Header)
 	w.WriteHeader(resp.StatusCode)
 	span.SetAttributes(semconv.HTTPStatusCodeKey.Int(resp.StatusCode))
-	if n, err := io.Copy(w, resp.Body); err != nil && err != io.EOF {
+
+	// support event stream responses, see: https://github.com/golang/go/issues/2012
+	var lw io.Writer = w
+	if flushInterval := proxy.flushInterval(resp); flushInterval != 0 {
+		mlw := &maxLatencyWriter{
+			dst:     w,
+			flush:   http.NewResponseController(w).Flush,
+			latency: flushInterval,
+		}
+		defer mlw.stop()
+
+		// set up initial timer so headers get flushed even if body writes are delayed
+		mlw.flushPending = true
+		mlw.t = time.AfterFunc(flushInterval, mlw.delayedFlush)
+
+		lw = mlw
+		logger.Debugf("handle event stream response: %s, url：%s", req.Host, req.URL.String())
+	}
+
+	if n, err := io.Copy(lw, resp.Body); err != nil && err != io.EOF {
 		if peerID := resp.Header.Get(config.HeaderDragonflyPeer); peerID != "" {
 			logger.Errorf("failed to write http body: %v, peer: %s, task: %s, written bytes: %d",
 				err, peerID, resp.Header.Get(config.HeaderDragonflyTask), n)
@@ -457,7 +498,7 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 			proxy.cacheRWMutex.RLock()
 			cached, hit := proxy.certCache.Get(cacheKey)
 			proxy.cacheRWMutex.RUnlock()
-			if hit && time.Now().Before(cached.(*tls.Certificate).Leaf.NotAfter) { // If cache hit and the cert is not expired
+			if hit && time.Now().Before(cached.(*tls.Certificate).Leaf.NotAfter.Add(-time.Hour)) { // If cache hit and the cert is not expired
 				logger.Debugf("TLS cert cache hit, cacheKey = <%s>", cacheKey)
 				return cached.(*tls.Certificate), nil
 			}
@@ -524,7 +565,7 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 }
 
 func (proxy *Proxy) newTransport(tlsConfig *tls.Config) http.RoundTripper {
-	rt, _ := transport.New(
+	opts := []transport.Option{
 		transport.WithPeerIDGenerator(proxy.peerIDGenerator),
 		transport.WithPeerTaskManager(proxy.peerTaskManager),
 		transport.WithTLS(tlsConfig),
@@ -534,13 +575,16 @@ func (proxy *Proxy) newTransport(tlsConfig *tls.Config) http.RoundTripper {
 		transport.WithDefaultApplication(proxy.defaultApplication),
 		transport.WithDefaultPriority(proxy.defaultPriority),
 		transport.WithDumpHTTPContent(proxy.dumpHTTPContent),
-	)
-	return rt
+	}
+	if proxy.peerSearcher != nil {
+		opts = append(opts, transport.WithPeerSearcher(proxy.peerSearcher))
+	}
+	return transport.New(opts...)
 }
 
 func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
 	reverseProxy := newReverseProxy(proxy.registry)
-	t, err := transport.New(
+	opts := []transport.Option{
 		transport.WithPeerIDGenerator(proxy.peerIDGenerator),
 		transport.WithPeerTaskManager(proxy.peerTaskManager),
 		transport.WithTLS(proxy.registry.TLSConfig()),
@@ -550,10 +594,11 @@ func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
 		transport.WithDefaultApplication(proxy.defaultApplication),
 		transport.WithDefaultPriority(proxy.defaultPriority),
 		transport.WithDumpHTTPContent(proxy.dumpHTTPContent),
-	)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to get transport: %v", err), http.StatusInternalServerError)
 	}
+	if proxy.peerSearcher != nil {
+		opts = append(opts, transport.WithPeerSearcher(proxy.peerSearcher))
+	}
+	t := transport.New(opts...)
 
 	reverseProxy.Transport = t
 	reverseProxy.ErrorHandler = func(rw http.ResponseWriter, req *http.Request, err error) {
@@ -623,7 +668,7 @@ func (proxy *Proxy) shouldUseDragonfly(req *http.Request) bool {
 			if strings.Contains(rule.Redirect, "/") {
 				u, err := url.Parse(rule.Regx.ReplaceAllString(req.URL.String(), rule.Redirect))
 				if err != nil {
-					logger.Errorf("failed to rewrite url", err)
+					logger.Errorf("failed to rewrite url: %s", err)
 					return false
 				}
 				req.URL = u
@@ -663,16 +708,31 @@ func tunnelHTTPS(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
+	defer func() {
+		// Close() will close both read and write, we need wait all stream is done, then close connections
+		if err = dst.Close(); err != nil {
+			logger.Errorf("close hijacked destination error: %s", err)
+		}
+	}()
+
 	w.WriteHeader(http.StatusOK)
 	hijacker, ok := w.(http.Hijacker)
 	if !ok {
+		logger.Errorf("writer is not http.Hijacker, http.ResponseWriter: %#v, http.Request: %#v", w, r)
 		http.Error(w, "Hijacking not supported", http.StatusInternalServerError)
 		return
 	}
+
 	clientConn, _, err := hijacker.Hijack()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		return
 	}
+	defer func() {
+		if err = clientConn.Close(); err != nil {
+			logger.Errorf("close hijacked client error: %s", err)
+		}
+	}()
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -689,14 +749,6 @@ func tunnelHTTPS(w http.ResponseWriter, r *http.Request) {
 		logger.Errorf("copy hijacked stream from destination to client error: %s", err)
 	}
 	wg.Wait()
-
-	// Close() will close both read and write, we need wait all stream is done, then close connections
-	if err = dst.Close(); err != nil {
-		logger.Errorf("close hijacked destination error: %s", err)
-	}
-	if err = clientConn.Close(); err != nil {
-		logger.Errorf("close hijacked client error: %s", err)
-	}
 }
 
 func copyHeader(dst, src http.Header) {

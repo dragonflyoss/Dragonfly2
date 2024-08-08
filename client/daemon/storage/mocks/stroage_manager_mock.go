@@ -5,6 +5,7 @@
 //
 //	mockgen -destination mocks/stroage_manager_mock.go -source storage_manager.go -package mocks
 //
+
 // Package mocks is a generated GoMock package.
 package mocks
 
@@ -15,6 +16,7 @@ import (
 	time "time"
 
 	common "d7y.io/api/v2/pkg/apis/common/v1"
+	dfdaemon "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
 	storage "d7y.io/dragonfly/v2/client/daemon/storage"
 	http "d7y.io/dragonfly/v2/pkg/net/http"
 	gomock "go.uber.org/mock/gomock"
@@ -415,6 +417,20 @@ func (m *MockManager) Keep() {
 func (mr *MockManagerMockRecorder) Keep() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Keep", reflect.TypeOf((*MockManager)(nil).Keep))
+}
+
+// ListAllPeers mocks base method.
+func (m *MockManager) ListAllPeers(perGroupCount int) [][]*dfdaemon.PeerMetadata {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListAllPeers", perGroupCount)
+	ret0, _ := ret[0].([][]*dfdaemon.PeerMetadata)
+	return ret0
+}
+
+// ListAllPeers indicates an expected call of ListAllPeers.
+func (mr *MockManagerMockRecorder) ListAllPeers(perGroupCount any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAllPeers", reflect.TypeOf((*MockManager)(nil).ListAllPeers), perGroupCount)
 }
 
 // ReadAllPieces mocks base method.

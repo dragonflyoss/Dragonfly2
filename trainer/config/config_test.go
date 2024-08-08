@@ -62,6 +62,9 @@ func TestConfig_Load(t *testing.T) {
 			ListenIP:      net.ParseIP("0.0.0.0"),
 			Port:          9090,
 			LogDir:        "foo",
+			LogMaxSize:    512,
+			LogMaxAge:     5,
+			LogMaxBackups: 3,
 			DataDir:       "foo",
 		},
 		Metrics: MetricsConfig{

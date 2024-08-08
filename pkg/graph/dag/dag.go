@@ -20,11 +20,9 @@ package dag
 
 import (
 	"errors"
-	"math/rand"
 	"sync"
-	"time"
 
-	cmap "github.com/orcaman/concurrent-map/v2"
+	"go.uber.org/atomic"
 
 	"d7y.io/dragonfly/v2/pkg/container/set"
 )
@@ -32,6 +30,9 @@ import (
 var (
 	// ErrVertexNotFound represents vertex not found.
 	ErrVertexNotFound = errors.New("vertex not found")
+
+	// ErrVertexInvalid represents vertex invalid.
+	ErrVertexInvalid = errors.New("vertex invalid")
 
 	// ErrVertexAlreadyExists represents vertex already exists.
 	ErrVertexAlreadyExists = errors.New("vertex already exists")
@@ -63,9 +64,6 @@ type DAG[T comparable] interface {
 	// GetRandomVertices returns random map of vertices.
 	GetRandomVertices(n uint) []*Vertex[T]
 
-	// GetVertexKeys returns keys of vertices.
-	GetVertexKeys() []string
-
 	// GetSourceVertices returns source vertices.
 	GetSourceVertices() []*Vertex[T]
 
@@ -73,7 +71,7 @@ type DAG[T comparable] interface {
 	GetSinkVertices() []*Vertex[T]
 
 	// VertexCount returns count of vertices.
-	VertexCount() int
+	VertexCount() uint64
 
 	// AddEdge adds edge between two vertices.
 	AddEdge(fromVertexID, toVertexID string) error
@@ -93,14 +91,17 @@ type DAG[T comparable] interface {
 
 // dag provides directed acyclic graph function.
 type dag[T comparable] struct {
+	vertices *sync.Map
+	count    *atomic.Uint64
 	mu       sync.RWMutex
-	vertices cmap.ConcurrentMap[string, *Vertex[T]]
 }
 
 // New returns a new DAG interface.
 func NewDAG[T comparable]() DAG[T] {
 	return &dag[T]{
-		vertices: cmap.New[*Vertex[T]](),
+		vertices: &sync.Map{},
+		count:    atomic.NewUint64(0),
+		mu:       sync.RWMutex{},
 	}
 }
 
@@ -109,11 +110,11 @@ func (d *dag[T]) AddVertex(id string, value T) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	if _, ok := d.vertices.Get(id); ok {
+	if _, loaded := d.vertices.LoadOrStore(id, NewVertex(id, value)); loaded {
 		return ErrVertexAlreadyExists
 	}
 
-	d.vertices.Set(id, NewVertex(id, value))
+	d.count.Inc()
 	return nil
 }
 
@@ -122,7 +123,12 @@ func (d *dag[T]) DeleteVertex(id string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	vertex, ok := d.vertices.Get(id)
+	rawVertex, loaded := d.vertices.Load(id)
+	if !loaded {
+		return
+	}
+
+	vertex, ok := rawVertex.(*Vertex[T])
 	if !ok {
 		return
 	}
@@ -136,14 +142,20 @@ func (d *dag[T]) DeleteVertex(id string) {
 		continue
 	}
 
-	d.vertices.Remove(id)
+	d.vertices.Delete(id)
+	d.count.Dec()
 }
 
 // GetVertex gets vertex from graph.
 func (d *dag[T]) GetVertex(id string) (*Vertex[T], error) {
-	vertex, ok := d.vertices.Get(id)
-	if !ok {
+	rawVertex, loaded := d.vertices.Load(id)
+	if !loaded {
 		return nil, ErrVertexNotFound
+	}
+
+	vertex, ok := rawVertex.(*Vertex[T])
+	if !ok {
+		return nil, ErrVertexInvalid
 	}
 
 	return vertex, nil
@@ -151,7 +163,26 @@ func (d *dag[T]) GetVertex(id string) (*Vertex[T], error) {
 
 // GetVertices returns map of vertices.
 func (d *dag[T]) GetVertices() map[string]*Vertex[T] {
-	return d.vertices.Items()
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
+	vertices := make(map[string]*Vertex[T], d.count.Load())
+	d.vertices.Range(func(key, value interface{}) bool {
+		vertex, ok := value.(*Vertex[T])
+		if !ok {
+			return true
+		}
+
+		id, ok := key.(string)
+		if !ok {
+			return true
+		}
+
+		vertices[id] = vertex
+		return true
+	})
+
+	return vertices
 }
 
 // GetRandomVertices returns random map of vertices.
@@ -159,32 +190,27 @@ func (d *dag[T]) GetRandomVertices(n uint) []*Vertex[T] {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
-	keys := d.GetVertexKeys()
-	if int(n) >= len(keys) {
-		n = uint(len(keys))
+	if n == 0 {
+		return nil
 	}
 
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	permutation := r.Perm(len(keys))[:n]
 	randomVertices := make([]*Vertex[T], 0, n)
-	for _, v := range permutation {
-		key := keys[v]
-		if vertex, err := d.GetVertex(key); err == nil {
-			randomVertices = append(randomVertices, vertex)
+	d.vertices.Range(func(key, value interface{}) bool {
+		vertex, ok := value.(*Vertex[T])
+		if !ok {
+			return true
 		}
-	}
+
+		randomVertices = append(randomVertices, vertex)
+		return uint(len(randomVertices)) < n
+	})
 
 	return randomVertices
 }
 
-// GetVertexKeys returns keys of vertices.
-func (d *dag[T]) GetVertexKeys() []string {
-	return d.vertices.Keys()
-}
-
 // VertexCount returns count of vertices.
-func (d *dag[T]) VertexCount() int {
-	return d.vertices.Count()
+func (d *dag[T]) VertexCount() uint64 {
+	return d.count.Load()
 }
 
 // AddEdge adds edge between two vertices.
@@ -196,14 +222,14 @@ func (d *dag[T]) AddEdge(fromVertexID, toVertexID string) error {
 		return ErrCycleBetweenVertices
 	}
 
-	fromVertex, ok := d.vertices.Get(fromVertexID)
-	if !ok {
-		return ErrVertexNotFound
+	fromVertex, err := d.GetVertex(fromVertexID)
+	if err != nil {
+		return err
 	}
 
-	toVertex, ok := d.vertices.Get(toVertexID)
-	if !ok {
-		return ErrVertexNotFound
+	toVertex, err := d.GetVertex(toVertexID)
+	if err != nil {
+		return err
 	}
 
 	for _, child := range fromVertex.Children.Values() {
@@ -232,14 +258,14 @@ func (d *dag[T]) DeleteEdge(fromVertexID, toVertexID string) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	fromVertex, ok := d.vertices.Get(fromVertexID)
-	if !ok {
-		return ErrVertexNotFound
+	fromVertex, err := d.GetVertex(fromVertexID)
+	if err != nil {
+		return err
 	}
 
-	toVertex, ok := d.vertices.Get(toVertexID)
-	if !ok {
-		return ErrVertexNotFound
+	toVertex, err := d.GetVertex(toVertexID)
+	if err != nil {
+		return err
 	}
 
 	fromVertex.Children.Delete(toVertex)
@@ -256,12 +282,12 @@ func (d *dag[T]) CanAddEdge(fromVertexID, toVertexID string) bool {
 		return false
 	}
 
-	fromVertex, ok := d.vertices.Get(fromVertexID)
-	if !ok {
+	fromVertex, err := d.GetVertex(fromVertexID)
+	if err != nil {
 		return false
 	}
 
-	if _, ok := d.vertices.Get(toVertexID); !ok {
+	if _, err := d.GetVertex(toVertexID); err != nil {
 		return false
 	}
 
@@ -283,9 +309,9 @@ func (d *dag[T]) DeleteVertexInEdges(id string) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	vertex, ok := d.vertices.Get(id)
-	if !ok {
-		return ErrVertexNotFound
+	vertex, err := d.GetVertex(id)
+	if err != nil {
+		return err
 	}
 
 	for _, parent := range vertex.Parents.Values() {
@@ -301,9 +327,9 @@ func (d *dag[T]) DeleteVertexOutEdges(id string) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	vertex, ok := d.vertices.Get(id)
-	if !ok {
-		return ErrVertexNotFound
+	vertex, err := d.GetVertex(id)
+	if err != nil {
+		return err
 	}
 
 	for _, child := range vertex.Children.Values() {
@@ -320,7 +346,7 @@ func (d *dag[T]) GetSourceVertices() []*Vertex[T] {
 	defer d.mu.RUnlock()
 
 	var sourceVertices []*Vertex[T]
-	for _, vertex := range d.vertices.Items() {
+	for _, vertex := range d.GetVertices() {
 		if vertex.InDegree() == 0 {
 			sourceVertices = append(sourceVertices, vertex)
 		}
@@ -335,7 +361,7 @@ func (d *dag[T]) GetSinkVertices() []*Vertex[T] {
 	defer d.mu.RUnlock()
 
 	var sinkVertices []*Vertex[T]
-	for _, vertex := range d.vertices.Items() {
+	for _, vertex := range d.GetVertices() {
 		if vertex.OutDegree() == 0 {
 			sinkVertices = append(sinkVertices, vertex)
 		}
@@ -354,8 +380,8 @@ func (d *dag[T]) depthFirstSearch(fromVertexID, toVertexID string) bool {
 
 // search finds successors of vertex.
 func (d *dag[T]) search(vertexID string, successors map[string]struct{}) {
-	vertex, ok := d.vertices.Get(vertexID)
-	if !ok {
+	vertex, err := d.GetVertex(vertexID)
+	if err != nil {
 		return
 	}
 

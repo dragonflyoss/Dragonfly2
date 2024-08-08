@@ -1,0 +1,176 @@
+name: E2E Test With Nydus(API v2 - Rust Client)
+
+on:
+  push:
+    branches: [main, release-*]
+    paths-ignore: ["**.md", "**.png", "**.jpg", "**.svg", "**/docs/**"]
+  pull_request:
+    branches: [main, release-*]
+    paths-ignore: ["**.md", "**.png", "**.jpg", "**.svg", "**/docs/**"]
+  schedule:
+    - cron: '0 4 * * *'
+
+env:
+  GO_VERSION: '1.21'
+  KIND_VERSION: v0.12.0
+  CONTAINERD_VERSION: v1.5.2
+  NERDCTL_VER: 0.22.2
+  KIND_CONFIG_PATH: test/testdata/kind/config-v2.yaml
+  DRAGONFLY_CHARTS_PATH: deploy/helm-charts/charts/dragonfly
+  NYDUS_SNAPSHOTTER_CHARTS_PATH: deploy/helm-charts/charts/nydus-snapshotter
+
+jobs:
+  e2e_tests_nydus:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v3
+        id: buildx
+        with:
+          install: true
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Pull Rust Client Image
+        run: |
+          cd client-rs
+          CLIENT_TAG=$(git describe --tags $(git rev-parse HEAD))
+          docker pull dragonflyoss/client:$CLIENT_TAG
+          docker tag dragonflyoss/client:$CLIENT_TAG dragonflyoss/client:latest
+          docker pull dragonflyoss/dfinit:$CLIENT_TAG
+          docker tag dragonflyoss/dfinit:$CLIENT_TAG dragonflyoss/dfinit:latest
+
+      - name: Build Scheduler Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: build/images/scheduler/Dockerfile
+          push: false
+          load: true
+          tags: dragonflyoss/scheduler:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Build Manager Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: build/images/manager/Dockerfile
+          push: false
+          load: true
+          tags: dragonflyoss/manager:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Setup Kind
+        uses: helm/kind-action@v1.10.0
+        with:
+          version: ${{ env.KIND_VERSION }}
+          config: ${{ env.KIND_CONFIG_PATH }}
+          cluster_name: kind
+
+      - name: Kind load images
+        run: |
+          kind load docker-image dragonflyoss/manager:latest
+          kind load docker-image dragonflyoss/scheduler:latest
+          kind load docker-image dragonflyoss/client:latest
+          kind load docker-image dragonflyoss/dfinit:latest
+
+      - name: Setup dragonfly
+        run: |
+          helm install --wait --timeout 10m --dependency-update \
+            --create-namespace --namespace dragonfly-system \
+            -f test/testdata/charts/config-v2.yaml \
+            dragonfly ${{ env.DRAGONFLY_CHARTS_PATH }}
+
+      - name: Setup nydus
+        run: |
+          helm install --wait --timeout 10m --dependency-update \
+            --create-namespace --namespace nydus-system \
+            -f test/testdata/charts/config-v2-nydus.yaml \
+            nydus-snapshotter ${{ env.NYDUS_SNAPSHOTTER_CHARTS_PATH }}
+
+          export ns=nydus-system
+          p=`kubectl -n $ns get pods --no-headers -o custom-columns=NAME:metadata.name`
+          echo "snapshotter pod name ${p}"
+          # helm wait is wait for daemonset, in this e2e test we ensure the pod is ready
+          kubectl -n $ns wait po $p --for=condition=ready --timeout=2m
+
+      - name: Run E2E test
+        run: |
+          docker exec kind-control-plane curl -L -o nerdctl-${NERDCTL_VER}-linux-amd64.tar.gz https://github.com/containerd/nerdctl/releases/download/v${NERDCTL_VER}/nerdctl-${NERDCTL_VER}-linux-amd64.tar.gz
+          docker exec kind-control-plane tar xzf nerdctl-${NERDCTL_VER}-linux-amd64.tar.gz
+          docker exec kind-control-plane install -D -m 755 nerdctl /usr/local/bin/nerdctl
+
+          # this is only a simple test that run `date` in container
+          docker exec kind-control-plane /usr/local/bin/nerdctl run --snapshotter nydus --network=none ghcr.io/dragonflyoss/image-service/nginx:nydus-latest date
+
+          kubectl apply -f test/testdata/k8s/nydus.yaml
+          kubectl wait po nydus-pod --for=condition=ready --timeout=1m
+          kubectl delete -f test/testdata/k8s/nydus.yaml
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+      - name: Dump logs
+        if: always()
+        continue-on-error: true
+        run: |
+          # Dump nydus logs.
+          nydus_log_dir="/tmp/nydus"
+          mkdir -p $nydus_log_dir
+          export nydus_ns=nydus-system
+          for p in `kubectl -n $nydus_ns get pods --no-headers -o custom-columns=NAME:metadata.name`; do kubectl -n $nydus_ns get pod $p -o yaml >> $nydus_log_dir/nydus-pods.log; done
+          for p in `kubectl -n $nydus_ns get pods --no-headers -o custom-columns=NAME:metadata.name`; do kubectl -n $nydus_ns describe pod $p  >> $nydus_log_dir/nydus-pods.log; done
+
+          docker exec kind-control-plane cat /etc/containerd/config.toml >> $nydus_log_dir/containerd-config.toml
+          docker exec kind-control-plane containerd config dump >> $nydus_log_dir/containerd-config-dump.toml
+
+          docker exec kind-control-plane journalctl -u containerd >> $nydus_log_dir/containerd.log
+          docker exec kind-control-plane journalctl -u kubelet >> $nydus_log_dir/kubelet.log
+
+          # Dump dragonfly client logs.
+          dragonfly_log_dir="tmp/dragonfly"
+          mkdir -p $dragonfly_log_dir
+          export dragonfly_ns=dragonfly-system
+
+          pod_names=$(kubectl get pods -l component=client -o custom-columns=NAME:metadata.name --no-headers -n $dragonfly_ns)
+          for pod_name in $pod_names; do
+              mkdir -p "/tmp/dragonfly/${pod_name}"
+              kubectl cp "${pod_name}:/var/log/dragonfly" "/tmp/dragonfly/${pod_name}" -n $dragonfly_ns
+          done
+
+      - name: Upload Logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nydus-e2e-tests-logs
+          path: |
+            /tmp/nydus
+            /tmp/dragonfly

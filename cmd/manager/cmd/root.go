@@ -62,8 +62,13 @@ for managing schedulers and seed peers, offering http apis and portal, etc.`,
 			return err
 		}
 
+		rotateConfig := logger.LogRotateConfig{
+			MaxSize:    cfg.Server.LogMaxSize,
+			MaxAge:     cfg.Server.LogMaxAge,
+			MaxBackups: cfg.Server.LogMaxBackups}
+
 		// Initialize logger.
-		if err := logger.InitManager(cfg.Verbose, cfg.Console, d.LogDir()); err != nil {
+		if err := logger.InitManager(cfg.Verbose, cfg.Console, d.LogDir(), rotateConfig); err != nil {
 			return fmt.Errorf("init manager logger: %w", err)
 		}
 		logger.RedirectStdoutAndStderr(cfg.Console, path.Join(d.LogDir(), types.ManagerName))

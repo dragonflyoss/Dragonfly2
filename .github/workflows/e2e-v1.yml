@@ -1,0 +1,209 @@
+name: E2E Test(API v1 - Golang Client)
+
+on:
+  push:
+    branches: [main, release-*]
+    paths-ignore: ["**.md", "**.png", "**.jpg", "**.svg", "**/docs/**"]
+  pull_request:
+    branches: [main, release-*]
+    paths-ignore: ["**.md", "**.png", "**.jpg", "**.svg", "**/docs/**"]
+  schedule:
+    - cron: '0 4 * * *'
+
+env:
+  KIND_VERSION: v0.12.0
+  CONTAINERD_VERSION: v1.5.2
+  KIND_CONFIG_PATH: test/testdata/kind/config.yaml
+  DRAGONFLY_FILE_SERVER_PATH: test/testdata/k8s/file-server.yaml
+  DRAGONFLY_FILE_SERVER_NO_CONTENT_LENGTH_PATH: test/testdata/k8s/file-server-no-content-length.yaml
+  DRAGONFLY_PROXY_SERVER_PATH: test/testdata/k8s/proxy.yaml
+  DRAGONFLY_MINIO_SERVER_PATH: test/testdata/k8s/minio.yaml
+
+jobs:
+  e2e_tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        module:
+          - "normal"
+          - "concurent-back-source"
+          - "grpc-tls"
+          - "disable-seed-peer"
+          - "grpc-tls-ipv6"
+          - "ipv6"
+          - "split-running-tasks"
+          - "cache-list-metadata"
+          - "write-buffer-size"
+        include:
+          - module: normal
+            charts-config: test/testdata/charts/config.yaml
+            skip: ""
+          - module: concurent-back-source
+            charts-config: test/testdata/charts/config-concurent-back-source.yaml
+            skip: ""
+          - module: grpc-tls
+            charts-config: test/testdata/charts/config-grpc-tls.yaml
+            skip: ""
+          - module: disable-seed-peer
+            charts-config: test/testdata/charts/config-disable-seed-peer.yaml
+            skip: preheat
+          - module: ipv6
+            charts-config: test/testdata/charts/config-ipv6.yaml
+            skip: ""
+          - module: grpc-tls-ipv6
+            charts-config: test/testdata/charts/config-grpc-tls-ipv6.yaml
+            skip: ""
+          - module: split-running-tasks
+            charts-config: test/testdata/charts/config-split-running-tasks.yaml
+            skip: ""
+          - module: cache-list-metadata
+            charts-config: test/testdata/charts/config-cache-list-metadata.yaml
+            skip: ""
+          - module: write-buffer-size
+            charts-config: test/testdata/charts/config-write-buffer-size.yaml
+            skip: ""
+    steps:
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Get dependencies
+        run: |
+          go install github.com/onsi/ginkgo/v2/ginkgo@v2.12.0
+          mkdir -p /tmp/artifact
+
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v3
+        id: buildx
+        with:
+          install: true
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Build Scheduler Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: build/images/scheduler/Dockerfile
+          push: false
+          load: true
+          tags: dragonflyoss/scheduler:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Build Manager Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: build/images/manager/Dockerfile
+          push: false
+          load: true
+          tags: dragonflyoss/manager:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Build Dfdaemon Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: build/images/dfdaemon/Dockerfile
+          push: false
+          load: true
+          tags: dragonflyoss/dfdaemon:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Build No Content Length Image
+        uses: docker/build-push-action@v6
+        with:
+          context: test/tools/no-content-length/
+          file: test/tools/no-content-length/Dockerfile
+          push: false
+          load: true
+          tags: dragonflyoss/no-content-length:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Setup Kind
+        uses: helm/kind-action@v1.10.0
+        with:
+          version: ${{ env.KIND_VERSION }}
+          config: ${{ env.KIND_CONFIG_PATH }}
+          cluster_name: kind
+
+      - name: Kind load images
+        run: |
+          kind load docker-image dragonflyoss/manager:latest
+          kind load docker-image dragonflyoss/scheduler:latest
+          kind load docker-image dragonflyoss/dfdaemon:latest
+          kind load docker-image dragonflyoss/no-content-length:latest
+
+      - name: Setup dragonfly
+        run: |
+          helm repo add dragonfly https://dragonflyoss.github.io/helm-charts/
+          helm install --wait --timeout 10m --dependency-update --create-namespace --namespace dragonfly-system -f ${{ matrix.charts-config }} dragonfly dragonfly/dragonfly --version 1.1.45
+          kubectl apply -f ${{ env.DRAGONFLY_FILE_SERVER_PATH }}
+          kubectl apply -f ${{ env.DRAGONFLY_FILE_SERVER_NO_CONTENT_LENGTH_PATH }}
+          kubectl apply -f ${{ env.DRAGONFLY_PROXY_SERVER_PATH }}
+          kubectl apply -f ${{ env.DRAGONFLY_MINIO_SERVER_PATH }}
+          kubectl wait po file-server-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
+          kubectl wait po file-server-no-content-length-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
+          kubectl wait po proxy-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
+          kubectl wait po proxy-1 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
+          kubectl wait po proxy-2 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
+          kubectl wait po minio-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
+
+      - name: Run E2E test
+        run: |
+          set -x
+          make build-e2e-sha256sum
+          make build-e2e-download-grpc-test
+          # generate an empty file
+          docker exec kind-control-plane touch /tmp/empty-file
+          ginkgo -v -r --race --fail-fast --cover --trace --show-node-events --skip=${{ matrix.skip }} test/e2e/v1 -- \
+              --feature-gates=dfget-range=true,dfget-open-range=true,dfget-empty-file=true,dfget-recursive=true
+          cat coverprofile.out >> coverage.txt
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.txt
+          flags: e2etests
+
+      - name: Upload Logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ matrix.module }}-e2e-tests-logs
+          path: |
+            /tmp/artifact/**/*.log

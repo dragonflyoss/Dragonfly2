@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination cache_mock.go -source cache.go -package cache
 package cache
 
 import (
@@ -23,6 +24,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"sync"
 	"time"
@@ -55,6 +57,7 @@ const (
 )
 
 type Cache interface {
+	Scan(m string, n int) ([]string, error)
 	Set(k string, x any, d time.Duration)
 	SetDefault(k string, x any)
 	Add(k string, x any, d time.Duration) error
@@ -79,6 +82,30 @@ type cache struct {
 	mu                sync.RWMutex
 	onEvicted         func(string, any)
 	janitor           *janitor
+}
+
+// Scan all items to get a specified number of matching regexp key.
+func (c *cache) Scan(m string, n int) ([]string, error) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	regex, err := regexp.Compile(m)
+	if err != nil {
+		return nil, err
+	}
+
+	keys := make([]string, 0, n)
+	for item := range c.items {
+		if len(keys) >= n {
+			break
+		}
+
+		if regex.MatchString(item) {
+			keys = append(keys, item)
+		}
+	}
+
+	return keys, nil
 }
 
 // Add an item to the cache, replacing any existing item. If the duration is 0

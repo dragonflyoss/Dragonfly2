@@ -26,15 +26,15 @@ import (
 	"strings"
 	"time"
 
-	cachev8 "github.com/go-redis/cache/v8"
-	"github.com/go-redis/redis/v8"
+	cachev9 "github.com/go-redis/cache/v9"
+	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"gorm.io/gorm"
 
 	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
-	inferencev1 "d7y.io/api/v2/pkg/apis/inference/v1"
+	inference "d7y.io/api/v2/pkg/apis/inference"
 	managerv1 "d7y.io/api/v2/pkg/apis/manager/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -165,7 +165,7 @@ func (s *managerServerV1) GetSeedPeer(ctx context.Context, req *managerv1.GetSee
 	}
 
 	// Cache data.
-	if err := s.cache.Once(&cachev8.Item{
+	if err := s.cache.Once(&cachev9.Item{
 		Ctx:   ctx,
 		Key:   cacheKey,
 		Value: &pbSeedPeer,
@@ -237,7 +237,7 @@ func (s *managerServerV1) ListSeedPeers(ctx context.Context, req *managerv1.List
 	}
 
 	// Cache data.
-	if err := s.cache.Once(&cachev8.Item{
+	if err := s.cache.Once(&cachev9.Item{
 		Ctx:   ctx,
 		Key:   cacheKey,
 		Value: &pbListSeedPeersResponse,
@@ -255,6 +255,7 @@ func (s *managerServerV1) UpdateSeedPeer(ctx context.Context, req *managerv1.Upd
 	seedPeer := models.SeedPeer{}
 	if err := s.db.WithContext(ctx).First(&seedPeer, models.SeedPeer{
 		Hostname:          req.Hostname,
+		IP:                req.Ip,
 		SeedPeerClusterID: uint(req.SeedPeerClusterId),
 	}).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -436,7 +437,7 @@ func (s *managerServerV1) GetScheduler(ctx context.Context, req *managerv1.GetSc
 	}
 
 	// Cache data.
-	if err := s.cache.Once(&cachev8.Item{
+	if err := s.cache.Once(&cachev9.Item{
 		Ctx:   ctx,
 		Key:   cacheKey,
 		Value: &pbScheduler,
@@ -454,6 +455,7 @@ func (s *managerServerV1) UpdateScheduler(ctx context.Context, req *managerv1.Up
 	scheduler := models.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, models.Scheduler{
 		Hostname:           req.Hostname,
+		IP:                 req.Ip,
 		SchedulerClusterID: uint(req.SchedulerClusterId),
 	}).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -648,7 +650,7 @@ func (s *managerServerV1) ListSchedulers(ctx context.Context, req *managerv1.Lis
 	}
 
 	// Cache data.
-	if err := s.cache.Once(&cachev8.Item{
+	if err := s.cache.Once(&cachev9.Item{
 		Ctx:   ctx,
 		Key:   cacheKey,
 		Value: &pbListSchedulersResponse,
@@ -710,7 +712,7 @@ func (s *managerServerV1) ListBuckets(ctx context.Context, req *managerv1.ListBu
 	}
 
 	// Cache data.
-	if err := s.cache.Once(&cachev8.Item{
+	if err := s.cache.Once(&cachev9.Item{
 		Ctx:   ctx,
 		Key:   cacheKey,
 		Value: &pbListBucketsResponse,
@@ -784,7 +786,7 @@ func (s *managerServerV1) ListApplications(ctx context.Context, req *managerv1.L
 	}
 
 	// Cache data.
-	if err := s.cache.Once(&cachev8.Item{
+	if err := s.cache.Once(&cachev9.Item{
 		Ctx:   ctx,
 		Key:   cacheKey,
 		Value: &pbListApplicationsResponse,
@@ -930,12 +932,12 @@ func (s *managerServerV1) createModelConfig(ctx context.Context, name string) er
 	}
 
 	// If the model config does not exist, create a new model config.
-	pbModelConfig := inferencev1.ModelConfig{
+	pbModelConfig := inference.ModelConfig{
 		Name:     name,
 		Platform: types.DefaultTritonPlatform,
-		VersionPolicy: &inferencev1.ModelVersionPolicy{
-			PolicyChoice: &inferencev1.ModelVersionPolicy_Specific_{
-				Specific: &inferencev1.ModelVersionPolicy_Specific{},
+		VersionPolicy: &inference.ModelVersionPolicy{
+			PolicyChoice: &inference.ModelVersionPolicy_Specific_{
+				Specific: &inference.ModelVersionPolicy_Specific{},
 			},
 		},
 	}
@@ -969,6 +971,7 @@ func (s *managerServerV1) KeepAlive(stream managerv1.Manager_KeepAliveServer) er
 		scheduler := models.Scheduler{}
 		if err := s.db.First(&scheduler, models.Scheduler{
 			Hostname:           hostname,
+			IP:                 ip,
 			SchedulerClusterID: clusterID,
 		}).Updates(models.Scheduler{
 			State: models.SchedulerStateActive,
@@ -989,6 +992,7 @@ func (s *managerServerV1) KeepAlive(stream managerv1.Manager_KeepAliveServer) er
 		seedPeer := models.SeedPeer{}
 		if err := s.db.First(&seedPeer, models.SeedPeer{
 			Hostname:          hostname,
+			IP:                ip,
 			SeedPeerClusterID: clusterID,
 		}).Updates(models.SeedPeer{
 			State: models.SeedPeerStateActive,
@@ -1012,6 +1016,7 @@ func (s *managerServerV1) KeepAlive(stream managerv1.Manager_KeepAliveServer) er
 				scheduler := models.Scheduler{}
 				if err := s.db.First(&scheduler, models.Scheduler{
 					Hostname:           hostname,
+					IP:                 ip,
 					SchedulerClusterID: clusterID,
 				}).Updates(models.Scheduler{
 					State: models.SchedulerStateInactive,
@@ -1032,6 +1037,7 @@ func (s *managerServerV1) KeepAlive(stream managerv1.Manager_KeepAliveServer) er
 				seedPeer := models.SeedPeer{}
 				if err := s.db.First(&seedPeer, models.SeedPeer{
 					Hostname:          hostname,
+					IP:                ip,
 					SeedPeerClusterID: clusterID,
 				}).Updates(models.SeedPeer{
 					State: models.SeedPeerStateInactive,

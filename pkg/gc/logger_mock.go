@@ -5,6 +5,7 @@
 //
 //	mockgen -destination logger_mock.go -source logger.go -package gc
 //
+
 // Package gc is a generated GoMock package.
 package gc
 

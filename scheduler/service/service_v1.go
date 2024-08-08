@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-http-utils/headers"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -92,12 +93,22 @@ func NewV1(
 
 // RegisterPeerTask registers peer and triggers seed peer download task.
 func (v *V1) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest) (*schedulerv1.RegisterResult, error) {
-	logger.WithPeer(req.PeerHost.GetId(), req.GetTaskId(), req.GetPeerId()).Infof("register peer task request: %#v", req)
+	log := logger.WithPeer(req.PeerHost.GetId(), req.GetTaskId(), req.GetPeerId())
+	log.Infof("register peer task request: %#v", req)
 
 	// Store resource.
 	task := v.storeTask(ctx, req, commonv2.TaskType_DFDAEMON)
 	host := v.storeHost(ctx, req.GetPeerHost())
 	peer := v.storePeer(ctx, req.GetPeerId(), req.UrlMeta.GetPriority(), req.UrlMeta.GetRange(), task, host)
+
+	// Prefetch the entire task.
+	if req.GetPrefetch() {
+		go func() {
+			if _, err := v.prefetchTask(ctx, req); err != nil {
+				peer.Log.Errorf("prefetch task failed: %s", err.Error())
+			}
+		}()
+	}
 
 	// Trigger the first download of the task.
 	if err := v.triggerTask(ctx, req, task, host, peer, v.dynconfig); err != nil {
@@ -281,12 +292,13 @@ func (v *V1) ReportPieceResult(stream schedulerv1.Scheduler_ReportPieceResultSer
 
 // ReportPeerResult handles peer result reported by dfdaemon.
 func (v *V1) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult) error {
-	logger.WithTaskAndPeerID(req.GetTaskId(), req.GetPeerId()).Infof("report peer result request: %#v", req)
+	log := logger.WithTaskAndPeerID(req.GetTaskId(), req.GetPeerId())
+	log.Infof("report peer result request: %#v", req)
 
 	peer, loaded := v.resource.PeerManager().Load(req.GetPeerId())
 	if !loaded {
 		msg := fmt.Sprintf("peer %s not found", req.GetPeerId())
-		logger.Error(msg)
+		log.Error(msg)
 		return dferrors.New(commonv1.Code_SchedPeerNotFound, msg)
 	}
 
@@ -347,7 +359,7 @@ func (v *V1) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequ
 	}
 
 	task := resource.NewTask(taskID, req.GetUrl(), req.UrlMeta.GetTag(), req.UrlMeta.GetApplication(), types.TaskTypeV1ToV2(req.GetTaskType()),
-		strings.Split(req.UrlMeta.GetFilter(), idgen.URLFilterSeparator), req.UrlMeta.GetHeader(), int32(v.config.Scheduler.BackToSourceCount), options...)
+		strings.Split(req.UrlMeta.GetFilter(), idgen.FilteredQueryParamsSeparator), req.UrlMeta.GetHeader(), int32(v.config.Scheduler.BackToSourceCount), options...)
 	task, _ = v.resource.TaskManager().LoadOrStore(task)
 	host := v.storeHost(ctx, req.GetPeerHost())
 	peer := v.storePeer(ctx, peerID, req.UrlMeta.GetPriority(), req.UrlMeta.GetRange(), task, host)
@@ -420,12 +432,13 @@ func (v *V1) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequ
 
 // StatTask checks the current state of the task.
 func (v *V1) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest) (*schedulerv1.Task, error) {
-	logger.WithTaskID(req.GetTaskId()).Infof("stat task request: %#v", req)
+	log := logger.WithTaskID(req.GetTaskId())
+	log.Infof("stat task request: %#v", req)
 
 	task, loaded := v.resource.TaskManager().Load(req.GetTaskId())
 	if !loaded {
 		msg := fmt.Sprintf("task %s not found", req.GetTaskId())
-		logger.Info(msg)
+		log.Info(msg)
 		return nil, dferrors.New(commonv1.Code_PeerTaskNotFound, msg)
 	}
 
@@ -442,12 +455,13 @@ func (v *V1) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest) (*s
 
 // LeaveTask releases peer in scheduler.
 func (v *V1) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget) error {
-	logger.WithTaskAndPeerID(req.GetTaskId(), req.GetPeerId()).Infof("leave task request: %#v", req)
+	log := logger.WithTaskAndPeerID(req.GetTaskId(), req.GetPeerId())
+	log.Infof("leave task request: %#v", req)
 
 	peer, loaded := v.resource.PeerManager().Load(req.GetPeerId())
 	if !loaded {
 		msg := fmt.Sprintf("peer %s not found", req.GetPeerId())
-		logger.Error(msg)
+		log.Error(msg)
 		return dferrors.New(commonv1.Code_SchedPeerNotFound, msg)
 	}
 
@@ -646,12 +660,13 @@ func (v *V1) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequ
 
 // LeaveHost releases host in scheduler.
 func (v *V1) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostRequest) error {
-	logger.WithHostID(req.GetId()).Infof("leave host request: %#v", req)
+	log := logger.WithHostID(req.GetId())
+	log.Infof("leave host request: %#v", req)
 
 	host, loaded := v.resource.HostManager().Load(req.GetId())
 	if !loaded {
 		msg := fmt.Sprintf("host %s not found", req.GetId())
-		logger.Error(msg)
+		log.Error(msg)
 		return dferrors.New(commonv1.Code_BadRequest, msg)
 	}
 
@@ -661,7 +676,7 @@ func (v *V1) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostRequest) e
 	// Delete host from network topology.
 	if v.networkTopology != nil {
 		if err := v.networkTopology.DeleteHost(host.ID); err != nil {
-			logger.Errorf("delete network topology host error: %s", err.Error())
+			log.Errorf("delete network topology host error: %s", err.Error())
 			return err
 		}
 	}
@@ -686,15 +701,15 @@ func (v *V1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
 			return err
 		}
 
-		logger := logger.WithHost(req.Host.GetId(), req.Host.GetHostname(), req.Host.GetIp())
+		log := logger.WithHost(req.Host.GetId(), req.Host.GetHostname(), req.Host.GetIp())
 		switch syncProbesRequest := req.GetRequest().(type) {
 		case *schedulerv1.SyncProbesRequest_ProbeStartedRequest:
 			// Find probed hosts in network topology. Based on the source host information,
 			// the most candidate hosts will be evaluated.
-			logger.Info("receive SyncProbesRequest_ProbeStartedRequest")
+			log.Info("receive SyncProbesRequest_ProbeStartedRequest")
 			hosts, err := v.networkTopology.FindProbedHosts(req.Host.GetId())
 			if err != nil {
-				logger.Error(err)
+				log.Error(err)
 				return status.Error(codes.FailedPrecondition, err.Error())
 			}
 
@@ -711,26 +726,26 @@ func (v *V1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
 				})
 			}
 
-			logger.Infof("probe started: %#v", probedHosts)
+			log.Infof("probe started: %#v", probedHosts)
 			if err := stream.Send(&schedulerv1.SyncProbesResponse{
 				Hosts: probedHosts,
 			}); err != nil {
-				logger.Error(err)
+				log.Error(err)
 				return err
 			}
 		case *schedulerv1.SyncProbesRequest_ProbeFinishedRequest:
 			// Store probes in network topology. First create the association between
 			// source host and destination host, and then store the value of probe.
-			logger.Info("receive SyncProbesRequest_ProbeFinishedRequest")
+			log.Info("receive SyncProbesRequest_ProbeFinishedRequest")
 			for _, probe := range syncProbesRequest.ProbeFinishedRequest.Probes {
 				probedHost, loaded := v.resource.HostManager().Load(probe.Host.Id)
 				if !loaded {
-					logger.Errorf("host %s not found", probe.Host.Id)
+					log.Errorf("host %s not found", probe.Host.Id)
 					continue
 				}
 
 				if err := v.networkTopology.Store(req.Host.GetId(), probedHost.ID); err != nil {
-					logger.Errorf("store failed: %s", err.Error())
+					log.Errorf("store failed: %s", err.Error())
 					continue
 				}
 
@@ -739,27 +754,70 @@ func (v *V1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
 					RTT:       probe.Rtt.AsDuration(),
 					CreatedAt: probe.CreatedAt.AsTime(),
 				}); err != nil {
-					logger.Errorf("enqueue failed: %s", err.Error())
+					log.Errorf("enqueue failed: %s", err.Error())
 					continue
 				}
 
-				logger.Infof("probe finished: %#v", probe)
+				log.Infof("probe finished: %#v", probe)
 			}
 		case *schedulerv1.SyncProbesRequest_ProbeFailedRequest:
 			// Log failed probes.
-			logger.Info("receive SyncProbesRequest_ProbeFailedRequest")
+			log.Info("receive SyncProbesRequest_ProbeFailedRequest")
 			var failedProbedHostIDs []string
 			for _, failedProbe := range syncProbesRequest.ProbeFailedRequest.Probes {
 				failedProbedHostIDs = append(failedProbedHostIDs, failedProbe.Host.Id)
 			}
 
-			logger.Warnf("probe failed: %#v", failedProbedHostIDs)
+			log.Warnf("probe failed: %#v", failedProbedHostIDs)
 		default:
 			msg := fmt.Sprintf("receive unknow request: %#v", syncProbesRequest)
-			logger.Error(msg)
+			log.Error(msg)
 			return status.Error(codes.FailedPrecondition, msg)
 		}
 	}
+}
+
+// prefetchTask prefetches the task with seed peer.
+func (v *V1) prefetchTask(ctx context.Context, rawReq *schedulerv1.PeerTaskRequest) (*resource.Task, error) {
+	// If seed peer is disabled, then return error.
+	if !v.config.SeedPeer.Enable {
+		return nil, errors.New("seed peer is disabled")
+	}
+
+	log := logger.WithTaskAndPeerID(rawReq.GetTaskId(), rawReq.GetPeerId())
+
+	// Construct prefetch task request.
+	req := &schedulerv1.PeerTaskRequest{
+		Url: rawReq.GetUrl(),
+		UrlMeta: &commonv1.UrlMeta{
+			// Remove digest.
+			Digest: "",
+			Tag:    rawReq.GetUrlMeta().GetTag(),
+			// Remove range.
+			Range:       "",
+			Filter:      rawReq.GetUrlMeta().GetFilter(),
+			Header:      rawReq.GetUrlMeta().GetHeader(),
+			Application: rawReq.GetUrlMeta().GetApplication(),
+			Priority:    rawReq.GetUrlMeta().GetPriority(),
+		},
+		Prefetch:    rawReq.GetPrefetch(),
+		IsMigrating: rawReq.GetIsMigrating(),
+	}
+
+	// Delete range header.
+	delete(req.UrlMeta.Header, headers.Range)
+
+	// Generate entire task id.
+	req.TaskId = idgen.TaskIDV1(req.GetUrl(), req.GetUrlMeta())
+
+	// Start trigger seed peer task.
+	log.Infof("prefetch task: %s", req.TaskId)
+
+	// Store resource.
+	task := v.storeTask(ctx, req, commonv2.TaskType_DFDAEMON)
+
+	v.triggerSeedPeerTask(ctx, nil, task)
+	return task, nil
 }
 
 // triggerTask triggers the first download of the task.
@@ -859,7 +917,7 @@ func (v *V1) triggerSeedPeerTask(ctx context.Context, rg *http.Range, task *reso
 
 // storeTask stores a new task or reuses a previous task.
 func (v *V1) storeTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, typ commonv2.TaskType) *resource.Task {
-	filters := strings.Split(req.UrlMeta.GetFilter(), idgen.URLFilterSeparator)
+	filteredQueryParams := strings.Split(req.UrlMeta.GetFilter(), idgen.FilteredQueryParamsSeparator)
 
 	task, loaded := v.resource.TaskManager().Load(req.GetTaskId())
 	if !loaded {
@@ -869,7 +927,7 @@ func (v *V1) storeTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, ty
 		}
 
 		task := resource.NewTask(req.GetTaskId(), req.GetUrl(), req.UrlMeta.GetTag(), req.UrlMeta.GetApplication(),
-			typ, filters, req.UrlMeta.GetHeader(), int32(v.config.Scheduler.BackToSourceCount), options...)
+			typ, filteredQueryParams, req.UrlMeta.GetHeader(), int32(v.config.Scheduler.BackToSourceCount), options...)
 		v.resource.TaskManager().Store(task)
 		task.Log.Info("create new task")
 		return task
@@ -878,7 +936,7 @@ func (v *V1) storeTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, ty
 	// Task is the pointer, if the task already exists, the next request will
 	// update the task's Url and UrlMeta in task manager.
 	task.URL = req.GetUrl()
-	task.Filters = filters
+	task.FilteredQueryParams = filteredQueryParams
 	task.Header = req.UrlMeta.GetHeader()
 	task.Log.Info("task already exists")
 	return task
@@ -977,7 +1035,7 @@ func (v *V1) registerTinyTask(ctx context.Context, peer *resource.Peer) (*schedu
 
 // registerSmallTask registers the small task.
 func (v *V1) registerSmallTask(ctx context.Context, peer *resource.Peer) (*schedulerv1.RegisterResult, error) {
-	candidateParents, found := v.scheduling.FindCandidateParents(ctx, peer, set.NewSafeSet[string]())
+	candidateParents, found := v.scheduling.FindParentAndCandidateParents(ctx, peer, set.NewSafeSet[string]())
 	if !found {
 		return nil, errors.New("candidate parent not found")
 	}

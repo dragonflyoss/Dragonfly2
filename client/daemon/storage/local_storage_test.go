@@ -137,7 +137,7 @@ func TestLocalTaskStore_PutAndGetPiece(t *testing.T) {
 			)
 			sm, err := NewStorageManager(config.SimpleLocalTaskStoreStrategy,
 				&config.StorageOption{
-					DataPath: test.DataDir,
+					DataPath: path.Join(test.DataDir, "storage-test"),
 					TaskExpireTime: clientutil.Duration{
 						Duration: time.Minute,
 					},

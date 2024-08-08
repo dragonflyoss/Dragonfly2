@@ -2,7 +2,7 @@ version: "3"
 services:
   redis:
     image: redis:6-alpine
-    container_name: redis
+    container_name: dragonfly-redis
     command: >
       --requirepass dragonfly
     healthcheck:
@@ -15,7 +15,7 @@ services:
 
   mysql:
     image: mariadb:10.6
-    container_name: mysql
+    container_name: dragonfly-mysql
     environment:
       - MARIADB_USER=dragonfly
       - MARIADB_PASSWORD=dragonfly
@@ -31,7 +31,7 @@ services:
 
   manager:
     image: dragonflyoss/manager:latest
-    container_name: manager
+    container_name: dragonfly-manager
     depends_on:
       - redis
       - mysql
@@ -54,7 +54,7 @@ services:
       - manager
       - scheduler
       - seed-peer
-    container_name: peer
+    container_name: dragonfly-seed-peer
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "/bin/grpc_health_probe -addr=:65000 || exit 1"]
@@ -73,7 +73,7 @@ services:
     image: dragonflyoss/scheduler:latest
     depends_on:
       - manager
-    container_name: scheduler
+    container_name: dragonfly-scheduler
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "/bin/grpc_health_probe -addr=:8002 || exit 1"]
@@ -91,7 +91,7 @@ services:
     depends_on:
       - manager
       - scheduler
-    container_name: seed-peer
+    container_name: dragonfly-dfdaemon
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "/bin/grpc_health_probe -addr=:65006 || exit 1"]

@@ -21,7 +21,7 @@ visit [VKE](https://www.volcengine.com/product/vke) & [CR](https://www.volcengin
 **_[Alibaba Cloud(Aliyun)](https://www.alibabacloud.com/)_** - Aliyun provides install
 [Dragonfly 1.x](https://github.com/dragonflyoss/Dragonfly) in
 [Container Registry](https://www.alibabacloud.com/product/container-registry), refer to
-[Use P2P Acceleration in ASK](https://www.alibabacloud.com/help/en/container-registry/latest/use-the-p2p-acceleration-feature-in-ask-and-ack-clusters).
+[Use P2P Acceleration in ACK](https://www.alibabacloud.com/help/en/container-registry/latest/use-the-p2p-acceleration-feature-in-ask-and-ack-clusters).
 **Recommend to deploy the more efficient and stable
 [Dragonfly 2.0](https://github.com/dragonflyoss/Dragonfly2)**,
 refer to [Setup Dragonfly in Kubernetes](https://d7y.io/docs/getting-started/quick-start/kubernetes/).
@@ -93,3 +93,5 @@ refer to [Setup Dragonfly in Kubernetes](https://d7y.io/docs/getting-started/qui
 **_[Yipitdata](https://www.yipitdata.com/)_** - Large-scale image and file distribution.
 
 **_[Amap](https://mobile.amap.com/)_** - Large-scale image and file distribution.
+
+**_[iQIYI](https://www.iqiyi.com/)_** - Large-scale image distribution.

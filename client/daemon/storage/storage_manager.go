@@ -41,9 +41,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
+	dfdaemonv1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
+	"d7y.io/dragonfly/v2/client/daemon/pex"
 	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
@@ -106,6 +108,8 @@ type Manager interface {
 	FindPartialCompletedTask(taskID string, rg *nethttp.Range) *ReusePeerTask
 	// CleanUp cleans all storage data
 	CleanUp()
+	// ListAllPeers return all peers info
+	ListAllPeers(perGroupCount int) [][]*dfdaemonv1.PeerMetadata
 }
 
 var (
@@ -121,7 +125,10 @@ const (
 	GCName = "StorageManager"
 )
 
-var tracer trace.Tracer
+var (
+	tracer          trace.Tracer
+	writeBufferPool *sync.Pool
+)
 
 func init() {
 	tracer = otel.Tracer("dfget-daemon-gc")
@@ -144,6 +151,8 @@ type storageManager struct {
 
 	subIndexRWMutex       sync.RWMutex
 	subIndexTask2PeerTask map[string][]*localSubTaskStore // key: task id, value: slice of localSubTaskStore
+
+	peerSearchBroadcaster pex.PeerSearchBroadcaster
 }
 
 var _ gc.GC = (*storageManager)(nil)
@@ -200,9 +209,10 @@ func NewStorageManager(storeStrategy config.StoreStrategy, opt *config.StorageOp
 		}
 	}
 
-	if err := s.ReloadPersistentTask(gcCallback); err != nil {
-		logger.Warnf("reload tasks error: %s", err)
+	if s.storeOption.ReloadGoroutineCount <= 0 {
+		s.storeOption.ReloadGoroutineCount = 64
 	}
+	s.ReloadPersistentTask(gcCallback)
 
 	gc.Register(GCName, s)
 	return s, nil
@@ -222,6 +232,24 @@ func WithGCInterval(gcInterval time.Duration) func(*storageManager) error {
 	}
 }
 
+func WithWriteBufferSize(size int64) func(*storageManager) error {
+	return func(manager *storageManager) error {
+		if size > 0 {
+			writeBufferPool = &sync.Pool{New: func() any {
+				return make([]byte, size)
+			}}
+		}
+		return nil
+	}
+}
+
+func WithPeerSearchBroadcaster(peerSearchBroadcaster pex.PeerSearchBroadcaster) func(*storageManager) error {
+	return func(manager *storageManager) error {
+		manager.peerSearchBroadcaster = peerSearchBroadcaster
+		return nil
+	}
+}
+
 func (s *storageManager) RegisterTask(ctx context.Context, req *RegisterTaskRequest) (TaskStorageDriver, error) {
 	ts, ok := s.LoadTask(
 		PeerTaskMetadata{
@@ -229,7 +257,7 @@ func (s *storageManager) RegisterTask(ctx context.Context, req *RegisterTaskRequ
 			TaskID: req.TaskID,
 		})
 	if ok {
-		return ts, nil
+		return s.keepAliveTaskStorageDriver(ts), nil
 	}
 	// double check if task store exists
 	// if ok, just unlock and return
@@ -240,10 +268,14 @@ func (s *storageManager) RegisterTask(ctx context.Context, req *RegisterTaskRequ
 			PeerID: req.PeerID,
 			TaskID: req.TaskID,
 		}); ok {
-		return ts, nil
+		return s.keepAliveTaskStorageDriver(ts), nil
 	}
 	// still not exist, create a new task store
-	return s.CreateTask(req)
+	ts, err := s.CreateTask(req)
+	if err != nil {
+		return nil, err
+	}
+	return s.keepAliveTaskStorageDriver(ts), err
 }
 
 func (s *storageManager) RegisterSubTask(ctx context.Context, req *RegisterSubTaskRequest) (TaskStorageDriver, error) {
@@ -273,7 +305,7 @@ func (s *storageManager) RegisterSubTask(ctx context.Context, req *RegisterSubTa
 			TaskID: req.SubTask.TaskID,
 		}, subtask)
 	s.Unlock()
-	return subtask, nil
+	return s.keepAliveTaskStorageDriver(subtask), nil
 }
 
 func (s *storageManager) WritePiece(ctx context.Context, req *WritePieceRequest) (int64, error) {
@@ -501,7 +533,8 @@ func (s *storageManager) FindCompletedTask(taskID string) *ReusePeerTask {
 	if !ok {
 		return nil
 	}
-	for _, t := range ts {
+	for i := len(ts) - 1; i > -1; i-- {
+		t := ts[i]
 		if t.invalid.Load() {
 			continue
 		}
@@ -535,7 +568,8 @@ func (s *storageManager) FindPartialCompletedTask(taskID string, rg *nethttp.Ran
 	if !ok {
 		return nil
 	}
-	for _, t := range ts {
+	for i := len(ts) - 1; i > -1; i-- {
+		t := ts[i]
 		if t.invalid.Load() {
 			continue
 		}
@@ -569,7 +603,8 @@ func (s *storageManager) FindCompletedSubTask(taskID string) *ReusePeerTask {
 	if !ok {
 		return nil
 	}
-	for _, t := range ts {
+	for i := len(ts) - 1; i > -1; i-- {
+		t := ts[i]
 		if t.invalid.Load() {
 			continue
 		}
@@ -611,7 +646,11 @@ func (s *storageManager) cleanIndex(taskID, peerID string) {
 		}
 		remain = append(remain, t)
 	}
-	s.indexTask2PeerTask[taskID] = remain
+	if len(remain) > 0 {
+		s.indexTask2PeerTask[taskID] = remain
+	} else {
+		delete(s.indexTask2PeerTask, taskID)
+	}
 }
 
 func (s *storageManager) cleanSubIndex(taskID, peerID string) {
@@ -630,7 +669,11 @@ func (s *storageManager) cleanSubIndex(taskID, peerID string) {
 		}
 		remain = append(remain, t)
 	}
-	s.subIndexTask2PeerTask[taskID] = remain
+	if len(remain) > 0 {
+		s.subIndexTask2PeerTask[taskID] = remain
+	} else {
+		delete(s.subIndexTask2PeerTask, taskID)
+	}
 }
 
 func (s *storageManager) ValidateDigest(req *PeerTaskMetadata) error {
@@ -657,96 +700,142 @@ func (s *storageManager) IsInvalid(req *PeerTaskMetadata) (bool, error) {
 	return t.IsInvalid(req)
 }
 
-func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
-	dirs, err := os.ReadDir(s.storeOption.DataPath)
+func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) {
+	entries, err := os.ReadDir(s.storeOption.DataPath)
 	if os.IsNotExist(err) {
-		return nil
+		return
 	}
 	if err != nil {
-		return err
+		return
 	}
-	var (
-		loadErrs    []error
-		loadErrDirs []string
-	)
-	for _, dir := range dirs {
-		taskID := dir.Name()
-		taskDir := path.Join(s.storeOption.DataPath, taskID)
-		peerDirs, err := os.ReadDir(taskDir)
-		if err != nil {
-			continue
+
+	var dirs []os.DirEntry
+	for _, entry := range entries {
+		if entry.IsDir() {
+			dirs = append(dirs, entry)
 		}
-		// remove empty task dir
-		if len(peerDirs) == 0 {
-			// skip dot files or directories
-			if strings.HasPrefix(taskDir, ".") {
-				continue
+	}
+	count := len(dirs)
+	if count == 0 {
+		return
+	}
+
+	wg := &sync.WaitGroup{}
+	wg.Add(len(dirs))
+	dirCh := make(chan string, 1000)
+	done := make(chan struct{})
+
+	reloadGoroutineCount := s.storeOption.ReloadGoroutineCount
+	if count < reloadGoroutineCount {
+		reloadGoroutineCount = count
+	}
+
+	for i := 0; i < reloadGoroutineCount; i++ {
+		go func() {
+			for {
+				select {
+				case taskID := <-dirCh:
+					s.reloadPersistentTaskByTaskDir(gcCallback, taskID)
+					wg.Done()
+				case <-done:
+					return
+				}
 			}
+		}()
+	}
+
+	logger.Infof("start to reload task data from disk, count: %d", len(dirs))
+
+	start := time.Now()
+	for _, dir := range dirs {
+		dirCh <- dir.Name()
+	}
+	wg.Wait()
+
+	logger.Infof("reload task data from disk done, cost: %dms", time.Now().Sub(start).Milliseconds())
+	close(done)
+}
+
+func (s *storageManager) reloadPersistentTaskByTaskDir(gcCallback GCCallback, taskID string) {
+	taskDir := path.Join(s.storeOption.DataPath, taskID)
+	peerDirs, err := os.ReadDir(taskDir)
+	if err != nil {
+		logger.Errorf("read dir %s error: %s", taskDir, err)
+		return
+	}
+
+	var loadErrDirs []string
+	for _, peer := range peerDirs {
+		peerID := peer.Name()
+		loadErr := s.reloadPersistentTaskByPeerDir(gcCallback, taskID, peerID)
+		if loadErr != nil {
+			loadErrDirs = append(loadErrDirs, path.Join(s.storeOption.DataPath, taskID, peerID))
+		}
+	}
+
+	if len(loadErrDirs) > 0 {
+		s.removeErrorPeers(loadErrDirs)
+	}
+	// remove empty task dir
+	if len(peerDirs) == 0 || len(loadErrDirs) == len(peerDirs) {
+		// skip dot files or directories
+		if !strings.HasPrefix(taskDir, ".") {
 			if err := os.Remove(taskDir); err != nil {
 				logger.Errorf("remove empty task dir %s failed: %s", taskDir, err)
 			} else {
 				logger.Infof("remove empty task dir %s", taskDir)
 			}
-			continue
-		}
-		for _, peerDir := range peerDirs {
-			peerID := peerDir.Name()
-			dataDir := path.Join(s.storeOption.DataPath, taskID, peerID)
-			t := &localTaskStore{
-				dataDir:             dataDir,
-				metadataFilePath:    path.Join(dataDir, taskMetadata),
-				expireTime:          s.storeOption.TaskExpireTime.Duration,
-				gcCallback:          gcCallback,
-				SugaredLoggerOnWith: logger.With("task", taskID, "peer", peerID, "component", s.storeStrategy),
-			}
-			t.touch()
-
-			metadataFile, err := os.Open(t.metadataFilePath)
-			if err != nil {
-				loadErrs = append(loadErrs, err)
-				loadErrDirs = append(loadErrDirs, dataDir)
-				logger.With("action", "reload", "stage", "read metadata", "taskID", taskID, "peerID", peerID).
-					Warnf("open task metadata error: %s", err)
-				continue
-			}
-			bytes, err0 := io.ReadAll(metadataFile)
-			if err0 != nil {
-				metadataFile.Close()
-				loadErrs = append(loadErrs, err0)
-				loadErrDirs = append(loadErrDirs, dataDir)
-				logger.With("action", "reload", "stage", "read metadata", "taskID", taskID, "peerID", peerID).
-					Warnf("load task from disk error: %s", err0)
-				continue
-			}
-			metadataFile.Close()
-
-			if err0 = json.Unmarshal(bytes, &t.persistentMetadata); err0 != nil {
-				loadErrs = append(loadErrs, err0)
-				loadErrDirs = append(loadErrDirs, dataDir)
-				logger.With("action", "reload", "stage", "parse metadata", "taskID", taskID, "peerID", peerID).
-					Warnf("load task from disk error: %s, data base64 encode: %s", err0, base64.StdEncoding.EncodeToString(bytes))
-				continue
-			}
-			logger.Debugf("load task %s/%s from disk, metadata %s, last access: %v, expire time: %s",
-				t.persistentMetadata.TaskID, t.persistentMetadata.PeerID, t.metadataFilePath, time.Unix(0, t.lastAccess.Load()), t.expireTime)
-			s.tasks.Store(PeerTaskMetadata{
-				PeerID: peerID,
-				TaskID: taskID,
-			}, t)
-
-			// update index
-			if ts, ok := s.indexTask2PeerTask[taskID]; ok {
-				ts = append(ts, t)
-				s.indexTask2PeerTask[taskID] = ts
-			} else {
-				s.indexTask2PeerTask[taskID] = []*localTaskStore{t}
-			}
 		}
 	}
+}
+
+func (s *storageManager) reloadPersistentTaskByPeerDir(gcCallback GCCallback, taskID, peerID string) error {
+	dataDir := path.Join(s.storeOption.DataPath, taskID, peerID)
+	t := &localTaskStore{
+		dataDir:             dataDir,
+		metadataFilePath:    path.Join(dataDir, taskMetadata),
+		expireTime:          s.storeOption.TaskExpireTime.Duration,
+		gcCallback:          gcCallback,
+		SugaredLoggerOnWith: logger.With("task", taskID, "peer", peerID, "component", s.storeStrategy),
+	}
+	t.touch()
+
+	bytes, err := os.ReadFile(t.metadataFilePath)
+	if err != nil {
+		logger.With("action", "reload", "stage", "read metadata", "taskID", taskID, "peerID", peerID).
+			Warnf("load task metadata from disk error: %s", err)
+		return err
+	}
+
+	if err = json.Unmarshal(bytes, &t.persistentMetadata); err != nil {
+		logger.With("action", "reload", "stage", "parse metadata", "taskID", taskID, "peerID", peerID).
+			Warnf("load task from disk error: %s, data base64 encode: %s", err, base64.StdEncoding.EncodeToString(bytes))
+		return err
+	}
+	logger.Debugf("load task %s/%s from disk, metadata %s, last access: %v, expire time: %s",
+		t.persistentMetadata.TaskID, t.persistentMetadata.PeerID, t.metadataFilePath, time.Unix(0, t.lastAccess.Load()), t.expireTime)
+	s.tasks.Store(PeerTaskMetadata{
+		PeerID: peerID,
+		TaskID: taskID,
+	}, t)
+
+	// update index
+	s.indexRWMutex.Lock()
+	if ts, ok := s.indexTask2PeerTask[taskID]; ok {
+		ts = append(ts, t)
+		s.indexTask2PeerTask[taskID] = ts
+	} else {
+		s.indexTask2PeerTask[taskID] = []*localTaskStore{t}
+	}
+	s.indexRWMutex.Unlock()
+	return nil
+}
+
+func (s *storageManager) removeErrorPeers(loadErrDirs []string) {
 	// remove load error peer tasks
 	for _, dir := range loadErrDirs {
 		// remove metadata
-		if err = os.Remove(path.Join(dir, taskMetadata)); err != nil {
+		if err := os.Remove(path.Join(dir, taskMetadata)); err != nil {
 			logger.Warnf("remove load error file %s error: %s", path.Join(dir, taskMetadata), err)
 		} else {
 			logger.Warnf("remove load error file %s ok", path.Join(dir, taskMetadata))
@@ -777,14 +866,6 @@ func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 		}
 		logger.Warnf("remove load error directory %s ok", dir)
 	}
-	if len(loadErrs) > 0 {
-		var sb strings.Builder
-		for _, err := range loadErrs {
-			sb.WriteString(err.Error())
-		}
-		return fmt.Errorf("load tasks from disk error: %q", sb.String())
-	}
-	return nil
 }
 
 func (s *storageManager) TryGC() (bool, error) {
@@ -858,6 +939,17 @@ func (s *storageManager) TryGC() (bool, error) {
 		}
 	}
 
+	// broadcast delete peer event
+	if s.peerSearchBroadcaster != nil {
+		for _, task := range markedTasks {
+			s.peerSearchBroadcaster.BroadcastPeer(&dfdaemonv1.PeerMetadata{
+				TaskId: task.TaskID,
+				PeerId: task.PeerID,
+				State:  dfdaemonv1.PeerState_Deleted,
+			})
+		}
+	}
+
 	for _, key := range s.markedReclaimTasks {
 		t, ok := s.tasks.Load(key)
 		if !ok {
@@ -903,8 +995,17 @@ func (s *storageManager) TryGC() (bool, error) {
 func (s *storageManager) deleteTask(meta PeerTaskMetadata) error {
 	task, ok := s.LoadAndDeleteTask(meta)
 	if !ok {
-		logger.Infof("deleteTask: task meta not found: %v", meta)
+		logger.Warnf("deleteTask: task meta not found: %v", meta)
 		return nil
+	}
+
+	// broadcast delete peer event
+	if s.peerSearchBroadcaster != nil {
+		s.peerSearchBroadcaster.BroadcastPeer(&dfdaemonv1.PeerMetadata{
+			TaskId: meta.TaskID,
+			PeerId: meta.PeerID,
+			State:  dfdaemonv1.PeerState_Deleted,
+		})
 	}
 
 	logger.Debugf("deleteTask: deleting task: %v", meta)
@@ -959,4 +1060,60 @@ func (s *storageManager) diskUsageExceed() (exceed bool, bytes int64) {
 	logger.Infof("disk used percent %f, exceed threshold percent %f, %d bytes to reclaim",
 		usage.UsedPercent, s.storeOption.DiskGCThresholdPercent, int64(bs))
 	return true, int64(bs)
+}
+
+type onlyWriter struct {
+	io.Writer
+}
+
+func tryWriteWithBuffer(writer io.Writer, reader io.Reader, readSize int64) (written int64, err error) {
+	if writeBufferPool != nil {
+		buf := writeBufferPool.Get().([]byte)
+		// skip io.ReadFrom logic in io.CopyBuffer, force to use buffer
+		written, err = io.CopyBuffer(onlyWriter{writer}, io.LimitReader(reader, readSize), buf)
+		//nolint:all
+		writeBufferPool.Put(buf)
+	} else {
+		written, err = io.Copy(writer, io.LimitReader(reader, readSize))
+	}
+	return written, err
+}
+
+func (s *storageManager) ListAllPeers(perGroupCount int) [][]*dfdaemonv1.PeerMetadata {
+	s.indexRWMutex.RLock()
+	defer s.indexRWMutex.RUnlock()
+
+	if perGroupCount == 0 {
+		perGroupCount = 1000
+	}
+
+	allPeers := make([][]*dfdaemonv1.PeerMetadata, 0, len(s.indexTask2PeerTask)/perGroupCount)
+	peers := make([]*dfdaemonv1.PeerMetadata, 0, perGroupCount)
+
+	for taskID, task := range s.indexTask2PeerTask {
+		for _, peer := range task {
+			peers = append(peers, &dfdaemonv1.PeerMetadata{
+				TaskId: taskID,
+				PeerId: peer.PeerID,
+				State:  dfdaemonv1.PeerState_Success,
+			})
+
+			if len(peers) == perGroupCount {
+				allPeers = append(allPeers, peers)
+				peers = make([]*dfdaemonv1.PeerMetadata, 0, perGroupCount)
+			}
+		}
+	}
+
+	if len(peers) > 0 {
+		allPeers = append(allPeers, peers)
+	}
+	return allPeers
+}
+
+func (s *storageManager) keepAliveTaskStorageDriver(ts TaskStorageDriver) TaskStorageDriver {
+	return &keepAliveTaskStorageDriver{
+		KeepAlive:         s,
+		TaskStorageDriver: ts,
+	}
 }

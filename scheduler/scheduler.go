@@ -26,8 +26,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/johanbrandhorst/certify"
+	"github.com/redis/go-redis/v9"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -54,6 +55,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/rpcserver"
 	"d7y.io/dragonfly/v2/scheduler/scheduling"
+	"d7y.io/dragonfly/v2/scheduler/scheduling/evaluator"
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
@@ -122,7 +124,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	s.storage = storage
 
 	// Initialize dial options of manager grpc client.
-	managerDialOptions := []grpc.DialOption{}
+	managerDialOptions := []grpc.DialOption{grpc.WithStatsHandler(otelgrpc.NewClientHandler())}
 	if cfg.Security.AutoIssueCert {
 		clientTransportCredentials, err := rpc.NewClientCredentials(cfg.Security.TLSPolicy, nil, []byte(cfg.Security.CACert))
 		if err != nil {
@@ -143,7 +145,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 
 	// Initialize dial options of trainer grpc client.
 	if cfg.Trainer.Enable {
-		trainerDialOptions := []grpc.DialOption{}
+		trainerDialOptions := []grpc.DialOption{grpc.WithStatsHandler(otelgrpc.NewClientHandler())}
 		if cfg.Security.AutoIssueCert {
 			clientTransportCredentials, err := rpc.NewClientCredentials(cfg.Security.TLSPolicy, nil, []byte(cfg.Security.CACert))
 			if err != nil {
@@ -257,16 +259,21 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		}
 	}
 
+	// Initialize options of evaluator.
+	evaluatorNetworkTopologyOptions := []evaluator.NetworkTopologyOption{}
 	// Initialize network topology service.
-	if cfg.NetworkTopology.Enable && pkgredis.IsEnabled(cfg.Database.Redis.Addrs) {
-		s.networkTopology, err = networktopology.NewNetworkTopology(cfg.NetworkTopology, rdb, resource, s.storage)
+	if cfg.Scheduler.Algorithm == evaluator.NetworkTopologyAlgorithm {
+		cache := cache.New(cfg.Scheduler.NetworkTopology.Cache.TTL, cfg.Scheduler.NetworkTopology.Cache.Interval)
+		s.networkTopology, err = networktopology.NewNetworkTopology(cfg.Scheduler.NetworkTopology, rdb, cache, resource, s.storage)
 		if err != nil {
 			return nil, err
 		}
+
+		evaluatorNetworkTopologyOptions = append(evaluatorNetworkTopologyOptions, evaluator.WithNetworkTopology(s.networkTopology))
 	}
 
 	// Initialize scheduling.
-	scheduling := scheduling.New(&cfg.Scheduler, dynconfig, d.PluginDir())
+	scheduling := scheduling.New(&cfg.Scheduler, dynconfig, d.PluginDir(), evaluatorNetworkTopologyOptions...)
 
 	// Initialize server options of scheduler grpc server.
 	schedulerServerOptions := []grpc.ServerOption{}

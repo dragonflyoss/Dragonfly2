@@ -115,8 +115,8 @@ type ObjectStorage interface {
 	// GetObjectMetadatas returns the metadata of the objects.
 	GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) (*ObjectMetadatas, error)
 
-	// GetOject returns data of object.
-	GetOject(ctx context.Context, bucketName, objectKey string) (io.ReadCloser, error)
+	// GetObject returns data of object.
+	GetObject(ctx context.Context, bucketName, objectKey string) (io.ReadCloser, error)
 
 	// PutObject puts data of object.
 	PutObject(ctx context.Context, bucketName, objectKey, digest string, reader io.Reader) error

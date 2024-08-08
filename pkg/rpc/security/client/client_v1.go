@@ -21,6 +21,7 @@ package client
 import (
 	"context"
 	"errors"
+	"math"
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -33,7 +34,6 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
-	"d7y.io/dragonfly/v2/pkg/rpc"
 	healthclient "d7y.io/dragonfly/v2/pkg/rpc/health/client"
 )
 
@@ -55,8 +55,12 @@ func GetV1(ctx context.Context, target string, opts ...grpc.DialOption) (V1, err
 		ctx,
 		target,
 		append([]grpc.DialOption{
+			grpc.WithIdleTimeout(0),
+			grpc.WithDefaultCallOptions(
+				grpc.MaxCallRecvMsgSize(math.MaxInt32),
+				grpc.MaxCallSendMsgSize(math.MaxInt32),
+			),
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
-				rpc.OTELUnaryClientInterceptor(),
 				grpc_prometheus.UnaryClientInterceptor,
 				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
 				grpc_retry.UnaryClientInterceptor(
@@ -65,7 +69,6 @@ func GetV1(ctx context.Context, target string, opts ...grpc.DialOption) (V1, err
 				),
 			)),
 			grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
-				rpc.OTELStreamClientInterceptor(),
 				grpc_prometheus.StreamClientInterceptor,
 				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
 			)),

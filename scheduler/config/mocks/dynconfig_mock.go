@@ -5,6 +5,7 @@
 //
 //	mockgen -destination mocks/dynconfig_mock.go -source dynconfig.go -package mocks
 //
+
 // Package mocks is a generated GoMock package.
 package mocks
 
@@ -156,6 +157,21 @@ func (m *MockDynconfigInterface) GetSchedulerClusterConfig() (types.SchedulerClu
 func (mr *MockDynconfigInterfaceMockRecorder) GetSchedulerClusterConfig() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchedulerClusterConfig", reflect.TypeOf((*MockDynconfigInterface)(nil).GetSchedulerClusterConfig))
+}
+
+// GetSeedPeerClusterConfig mocks base method.
+func (m *MockDynconfigInterface) GetSeedPeerClusterConfig() (types.SeedPeerClusterConfig, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSeedPeerClusterConfig")
+	ret0, _ := ret[0].(types.SeedPeerClusterConfig)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSeedPeerClusterConfig indicates an expected call of GetSeedPeerClusterConfig.
+func (mr *MockDynconfigInterfaceMockRecorder) GetSeedPeerClusterConfig() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSeedPeerClusterConfig", reflect.TypeOf((*MockDynconfigInterface)(nil).GetSeedPeerClusterConfig))
 }
 
 // GetSeedPeers mocks base method.

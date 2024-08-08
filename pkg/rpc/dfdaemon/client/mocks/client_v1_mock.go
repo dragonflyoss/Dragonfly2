@@ -5,6 +5,7 @@
 //
 //	mockgen -destination mocks/client_v1_mock.go -source client_v1.go -package mocks
 //
+
 // Package mocks is a generated GoMock package.
 package mocks
 
@@ -169,6 +170,45 @@ func (mr *MockV1MockRecorder) ImportTask(arg0, arg1 any, arg2 ...any) *gomock.Ca
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ImportTask", reflect.TypeOf((*MockV1)(nil).ImportTask), varargs...)
+}
+
+// LeaveHost mocks base method.
+func (m *MockV1) LeaveHost(arg0 context.Context, arg1 ...grpc.CallOption) error {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0}
+	for _, a := range arg1 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "LeaveHost", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// LeaveHost indicates an expected call of LeaveHost.
+func (mr *MockV1MockRecorder) LeaveHost(arg0 any, arg1 ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LeaveHost", reflect.TypeOf((*MockV1)(nil).LeaveHost), varargs...)
+}
+
+// PeerExchange mocks base method.
+func (m *MockV1) PeerExchange(ctx context.Context, opts ...grpc.CallOption) (dfdaemon.Daemon_PeerExchangeClient, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "PeerExchange", varargs...)
+	ret0, _ := ret[0].(dfdaemon.Daemon_PeerExchangeClient)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PeerExchange indicates an expected call of PeerExchange.
+func (mr *MockV1MockRecorder) PeerExchange(ctx any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PeerExchange", reflect.TypeOf((*MockV1)(nil).PeerExchange), varargs...)
 }
 
 // StatTask mocks base method.

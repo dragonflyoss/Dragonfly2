@@ -5,6 +5,7 @@
 //
 //	mockgen -destination runner_mock.go -source task.go -package gc
 //
+
 // Package gc is a generated GoMock package.
 package gc
 

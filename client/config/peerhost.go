@@ -52,15 +52,18 @@ type DaemonOption struct {
 	GCInterval util.Duration `mapstructure:"gcInterval" yaml:"gcInterval"`
 	Metrics    string        `mapstructure:"metrics" yaml:"metrics"`
 
-	WorkHome     string `mapstructure:"workHome" yaml:"workHome"`
-	WorkHomeMode uint32 `mapstructure:"workHomeMode" yaml:"workHomeMode"`
-	CacheDir     string `mapstructure:"cacheDir" yaml:"cacheDir"`
-	CacheDirMode uint32 `mapstructure:"cacheDirMode" yaml:"cacheDirMode"`
-	LogDir       string `mapstructure:"logDir" yaml:"logDir"`
-	PluginDir    string `mapstructure:"pluginDir" yaml:"pluginDir"`
-	DataDir      string `mapstructure:"dataDir" yaml:"dataDir"`
-	DataDirMode  uint32 `mapstructure:"dataDirMode" yaml:"dataDirMode"`
-	KeepStorage  bool   `mapstructure:"keepStorage" yaml:"keepStorage"`
+	WorkHome      string `mapstructure:"workHome" yaml:"workHome"`
+	WorkHomeMode  uint32 `mapstructure:"workHomeMode" yaml:"workHomeMode"`
+	CacheDir      string `mapstructure:"cacheDir" yaml:"cacheDir"`
+	CacheDirMode  uint32 `mapstructure:"cacheDirMode" yaml:"cacheDirMode"`
+	LogDir        string `mapstructure:"logDir" yaml:"logDir"`
+	LogMaxSize    int    `yaml:"logMaxSize" mapstructure:"logMaxSize"`
+	LogMaxAge     int    `yaml:"logMaxAge" mapstructure:"logMaxAge"`
+	LogMaxBackups int    `yaml:"logMaxBackups" mapstructure:"logMaxBackups"`
+	PluginDir     string `mapstructure:"pluginDir" yaml:"pluginDir"`
+	DataDir       string `mapstructure:"dataDir" yaml:"dataDir"`
+	DataDirMode   uint32 `mapstructure:"dataDirMode" yaml:"dataDirMode"`
+	KeepStorage   bool   `mapstructure:"keepStorage" yaml:"keepStorage"`
 
 	Security        GlobalSecurityOption  `mapstructure:"security" yaml:"security"`
 	Scheduler       SchedulerOption       `mapstructure:"scheduler" yaml:"scheduler"`
@@ -75,6 +78,7 @@ type DaemonOption struct {
 	Network         *NetworkOption        `mapstructure:"network" yaml:"network"`
 	Announcer       AnnouncerOption       `mapstructure:"announcer" yaml:"announcer"`
 	NetworkTopology NetworkTopologyOption `mapstructure:"networkTopology" yaml:"networkTopology"`
+	PeerExchange    PeerExchangeOption    `mapstructure:"peerExchange" yaml:"peerExchange"`
 }
 
 func NewDaemonConfig() *DaemonOption {
@@ -226,6 +230,10 @@ func (p *DaemonOption) Validate() error {
 	return nil
 }
 
+func (p *DaemonOption) IsSupportPeerExchange() bool {
+	return p.PeerExchange.Enable && p.Scheduler.Manager.Enable && p.Scheduler.Manager.SeedPeer.Enable
+}
+
 type GlobalSecurityOption struct {
 	// AutoIssueCert indicates to issue client certificates for all grpc call
 	// if AutoIssueCert is false, any other option in Security will be ignored
@@ -370,7 +378,7 @@ type ProxyOption struct {
 	ProxyRules         []*ProxyRule      `mapstructure:"proxies" yaml:"proxies"`
 	HijackHTTPS        *HijackConfig     `mapstructure:"hijackHTTPS" yaml:"hijackHTTPS"`
 	DumpHTTPContent    bool              `mapstructure:"dumpHTTPContent" yaml:"dumpHTTPContent"`
-	// ExtraRegistryMirrors add more mirror for different ports
+	// ExtraRegistryMirrors add more mirrors for different ports
 	ExtraRegistryMirrors []*RegistryMirror `mapstructure:"extraRegistryMirrors" yaml:"extraRegistryMirrors"`
 }
 
@@ -630,6 +638,11 @@ type StorageOption struct {
 	// Multiplex indicates reusing underlying storage for same task id
 	Multiplex     bool          `mapstructure:"multiplex" yaml:"multiplex"`
 	StoreStrategy StoreStrategy `mapstructure:"strategy" yaml:"strategy"`
+	// WriteBufferSize indicates the buffer size when read from source, same usage with io.Copy
+	// for some resource plugins, bigger buffer size with better performance, on the other hand, bigger buffer size cost huge memory
+	WriteBufferSize unit.Bytes `mapstructure:"writeBufferSize" yaml:"writeBufferSize"`
+	// ReloadGoroutineCount indicates concurrent goroutine count when daemon load cache data
+	ReloadGoroutineCount int `mapstructure:"reloadGoroutineCount" yaml:"reloadGoroutineCount"`
 }
 
 type StoreStrategy string
@@ -907,8 +920,8 @@ func (r *Regexp) MarshalYAML() (any, error) {
 
 // HijackConfig represents how dfdaemon hijacks http requests.
 type HijackConfig struct {
-	Cert  string             `yaml:"cert" mapstructure:"cert"`
-	Key   string             `yaml:"key" mapstructure:"key"`
+	Cert  types.PEMContent   `yaml:"cert" mapstructure:"cert"`
+	Key   types.PEMContent   `yaml:"key" mapstructure:"key"`
 	Hosts []*HijackHost      `yaml:"hosts" mapstructure:"hosts"`
 	SNI   []*TCPListenOption `yaml:"sni" mapstructure:"sni"`
 }
@@ -957,4 +970,19 @@ type NetworkTopologyOption struct {
 type ProbeOption struct {
 	// Interval is the interval of probing hosts.
 	Interval time.Duration `mapstructure:"interval" yaml:"interval"`
+}
+
+type PeerExchangeOption struct {
+	// Enable peer exchange service.
+	Enable bool `mapstructure:"enable" yaml:"enable"`
+	// InitialInterval is the initial retry interval when start and join gossip.
+	InitialInterval time.Duration `mapstructure:"initialInterval" yaml:"initialInterval"`
+	// InitialBroadcastDelay is the initial broadcast delay when daemon start due to we can only broadcast peers after join gossip with all daemons, it should be less than TaskExpireTime
+	InitialBroadcastDelay time.Duration `mapstructure:"initialBroadcastDelay" yaml:"initialBroadcastDelay"`
+	// ReSyncInterval is the re-sync interval for check running gossip members.
+	ReSyncInterval time.Duration `mapstructure:"reSyncInterval" yaml:"reSyncInterval"`
+	// ReplicaThreshold is used for keeping replicas in all peers is not bigger than threshold to save storage
+	ReplicaThreshold int `mapstructure:"replicaThreshold" yaml:"replicaThreshold"`
+	// ReplicaCleanPercentage is percentage probability to clean local replica when reach threshold, available values: [0, 100]
+	ReplicaCleanPercentage int32 `mapstructure:"replicaCleanPercentage" yaml:"replicaCleanPercentage"`
 }
