@@ -35,16 +35,12 @@ type PreheatResponse struct {
 
 // ListTasksRequest defines the request parameters for listing tasks.
 type ListTasksRequest struct {
-	TaskID  string `json:"task_id" validate:"required"`
-	Page    int    `json:"page" validate:"required"`
-	PerPage int    `json:"per_page" validate:"required"`
+	TaskID string `json:"task_id" validate:"required"`
 }
 
 // ListTasksResponse defines the response parameters for listing tasks.
 type ListTasksResponse struct {
 	Peers []*resource.Peer `json:"peers"`
-	Page  int              `json:"page"`
-	Total int              `json:"total"`
 }
 
 // DeleteTaskRequest defines the request parameters for deleting task.
@@ -52,16 +48,16 @@ type DeleteTaskRequest struct {
 	TaskID string `json:"task_id" validate:"required"`
 }
 
-// TaskInfo includes information about a task along with peer details and a description.
-type TaskInfo struct {
-	Task *resource.Task `json:"task"`
-	Peer *resource.Peer `json:"peer"`
-	Desc string         `json:"desc"`
+// Task includes information about a task along with peer details and a description.
+type Task struct {
+	Task        *resource.Task `json:"task"`
+	Peer        *resource.Peer `json:"peer"`
+	Description string         `json:"description"`
 }
 
 // DeleteTaskResponse represents the response after attempting to delete tasks,
 // categorizing them into successfully and unsuccessfully deleted.
 type DeleteTaskResponse struct {
-	SuccessTasks []*TaskInfo `json:"success_tasks"`
-	FailureTasks []*TaskInfo `json:"failure_tasks"`
+	SuccessTasks []*Task `json:"success_tasks"`
+	FailureTasks []*Task `json:"failure_tasks"`
 }
