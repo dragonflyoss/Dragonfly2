@@ -151,13 +151,13 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	if opt.Scheduler.Manager.Enable {
 		var grpcCredentials credentials.TransportCredentials
 
-		if opt.Security.CACert == "" {
-			grpcCredentials = insecure.NewCredentials()
-		} else {
+		if opt.Security.AutoIssueCert {
 			grpcCredentials, err = loadManagerGPRCTLSCredentials(opt.Security)
 			if err != nil {
 				return nil, err
 			}
+		} else {
+			grpcCredentials = insecure.NewCredentials()
 		}
 
 		managerClient, err = managerclient.GetV1ByNetAddrs(
