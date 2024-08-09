@@ -16,11 +16,13 @@
 
 package job
 
+import "d7y.io/dragonfly/v2/scheduler/resource"
+
 type PreheatRequest struct {
 	URL                 string            `json:"url" validate:"required,url"`
 	Tag                 string            `json:"tag" validate:"omitempty"`
 	Digest              string            `json:"digest" validate:"omitempty"`
-	FilteredQueryParams string            `json:"filteredQueryParams" validate:"omitempty"`
+	FilteredQueryParams string            `json:"filtered_query_params" validate:"omitempty"`
 	Headers             map[string]string `json:"headers" validate:"omitempty"`
 	Application         string            `json:"application" validate:"omitempty"`
 	Priority            int32             `json:"priority" validate:"omitempty"`
@@ -28,4 +30,34 @@ type PreheatRequest struct {
 }
 
 type PreheatResponse struct {
+	TaskID string `json:"taskID"`
+}
+
+// ListTasksRequest defines the request parameters for listing tasks.
+type ListTasksRequest struct {
+	TaskID string `json:"task_id" validate:"required"`
+}
+
+// ListTasksResponse defines the response parameters for listing tasks.
+type ListTasksResponse struct {
+	Peers []*resource.Peer `json:"peers"`
+}
+
+// DeleteTaskRequest defines the request parameters for deleting task.
+type DeleteTaskRequest struct {
+	TaskID string `json:"task_id" validate:"required"`
+}
+
+// Task includes information about a task along with peer details and a description.
+type Task struct {
+	Task        *resource.Task `json:"task"`
+	Peer        *resource.Peer `json:"peer"`
+	Description string         `json:"description"`
+}
+
+// DeleteTaskResponse represents the response after attempting to delete tasks,
+// categorizing them into successfully and unsuccessfully deleted.
+type DeleteTaskResponse struct {
+	SuccessTasks []*Task `json:"success_tasks"`
+	FailureTasks []*Task `json:"failure_tasks"`
 }

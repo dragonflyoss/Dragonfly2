@@ -296,6 +296,9 @@ type JobConfig struct {
 
 	// Sync peers configuration.
 	SyncPeers SyncPeersConfig `yaml:"syncPeers" mapstructure:"syncPeers"`
+
+	// Manager tasks configuration.
+	ManagerTasks ManagerTasksConfig `yaml:"managerTasks" mapstructure:"managerTasks"`
 }
 
 type PreheatConfig struct {
@@ -312,6 +315,11 @@ type SyncPeersConfig struct {
 	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
 
 	// Timeout is the timeout for syncing peers information from the single scheduler.
+	Timeout time.Duration `yaml:"timeout" mapstructure:"timeout"`
+}
+
+type ManagerTasksConfig struct {
+	// Timeout is the timeout for manager tasks information for the single scheduler.
 	Timeout time.Duration `yaml:"timeout" mapstructure:"timeout"`
 }
 
@@ -454,6 +462,9 @@ func New() *Config {
 			SyncPeers: SyncPeersConfig{
 				Interval: DefaultJobSyncPeersInterval,
 				Timeout:  DefaultJobSyncPeersTimeout,
+			},
+			ManagerTasks: ManagerTasksConfig{
+				Timeout: DefaultJobManagerTasksTimeout,
 			},
 		},
 		ObjectStorage: ObjectStorageConfig{

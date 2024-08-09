@@ -39,6 +39,18 @@ var (
 			"user_id": 4,
 			"bio": "bio"
 		}`
+	mockListTasksJobReqBody = `
+		{
+			"type": "list_tasks",
+			"user_id": 4,
+			"bio": "bio"
+		}`
+	mockDeleteTaskJobReqBody = `
+		{
+			"type": "delete_task",
+			"user_id": 4,
+			"bio": "bio"
+		}`
 	mockOtherJobReqBody = `
 		{
 			"type": "others",
@@ -50,6 +62,16 @@ var (
 		Type:   "preheat",
 		BIO:    "bio",
 	}
+	mockListTasksCreateJobRequest = types.CreateListTasksJobRequest{
+		UserID: 4,
+		Type:   "list_tasks",
+		BIO:    "bio",
+	}
+	mockDeleteTaskCreateJobRequest = types.CreateDeleteTaskJobRequest{
+		UserID: 4,
+		Type:   "delete_task",
+		BIO:    "bio",
+	}
 	mockUpdateJobRequest = types.UpdateJobRequest{
 		UserID: 4,
 		BIO:    "bio",
@@ -58,6 +80,20 @@ var (
 		BaseModel: mockBaseModel,
 		UserID:    4,
 		Type:      "preheat",
+		BIO:       "bio",
+		TaskID:    "2",
+	}
+	mockListTasksJobModel = &models.Job{
+		BaseModel: mockBaseModel,
+		UserID:    4,
+		Type:      "list_tasks",
+		BIO:       "bio",
+		TaskID:    "2",
+	}
+	mockDeleteTaskJobModel = &models.Job{
+		BaseModel: mockBaseModel,
+		UserID:    4,
+		Type:      "delete_task",
 		BIO:       "bio",
 		TaskID:    "2",
 	}
@@ -113,6 +149,36 @@ func TestHandlers_CreateJob(t *testing.T) {
 				err := json.Unmarshal(w.Body.Bytes(), &job)
 				assert.NoError(err)
 				assert.Equal(mockPreheatJobModel, &job)
+			},
+		},
+		{
+			name: "success",
+			req:  httptest.NewRequest(http.MethodPost, "/oapi/v1/jobs", strings.NewReader(mockListTasksJobReqBody)),
+			mock: func(ms *mocks.MockServiceMockRecorder) {
+				ms.CreateListTasksJob(gomock.Any(), gomock.Eq(mockListTasksCreateJobRequest)).Return(mockListTasksJobModel, nil).Times(1)
+			},
+			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
+				assert := assert.New(t)
+				assert.Equal(http.StatusOK, w.Code)
+				job := models.Job{}
+				err := json.Unmarshal(w.Body.Bytes(), &job)
+				assert.NoError(err)
+				assert.Equal(mockListTasksJobModel, &job)
+			},
+		},
+		{
+			name: "success",
+			req:  httptest.NewRequest(http.MethodPost, "/oapi/v1/jobs", strings.NewReader(mockDeleteTaskJobReqBody)),
+			mock: func(ms *mocks.MockServiceMockRecorder) {
+				ms.CreateDeleteTaskJob(gomock.Any(), gomock.Eq(mockDeleteTaskCreateJobRequest)).Return(mockDeleteTaskJobModel, nil).Times(1)
+			},
+			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
+				assert := assert.New(t)
+				assert.Equal(http.StatusOK, w.Code)
+				job := models.Job{}
+				err := json.Unmarshal(w.Body.Bytes(), &job)
+				assert.NoError(err)
+				assert.Equal(mockDeleteTaskJobModel, &job)
 			},
 		},
 	}

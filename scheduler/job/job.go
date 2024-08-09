@@ -23,11 +23,18 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/RichardKnop/machinery/v1"
 	"github.com/go-playground/validator/v10"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -46,6 +53,14 @@ import (
 const (
 	// preheatTimeout is timeout of preheating.
 	preheatTimeout = 20 * time.Minute
+	// deleteTaskTimeout is timeout of deleting task.
+	deleteTaskTimeout = 20 * time.Minute
+	// deleteTaskConcurrency is the number of concurrent delete tasks.
+	deleteTaskConcurrency = 10
+	// deleteTaskMaxRetries is the maximum number of retries for delete tasks.
+	deleteTaskMaxRetries = 3
+	// deleteTaskBackoffWaitBetween is waiting for a fixed period of time between calls in backoff linear.
+	deleteTaskBackoffWaitBetween = 500 * time.Millisecond
 )
 
 // Job is an interface for job.
@@ -109,8 +124,10 @@ func New(cfg *config.Config, resource resource.Resource) (Job, error) {
 	}
 
 	namedJobFuncs := map[string]any{
-		internaljob.PreheatJob:   t.preheat,
-		internaljob.SyncPeersJob: t.syncPeers,
+		internaljob.PreheatJob:    t.preheat,
+		internaljob.SyncPeersJob:  t.syncPeers,
+		internaljob.ListTasksJob:  t.listTasks,
+		internaljob.DeleteTaskJob: t.deleteTask,
 	}
 
 	if err := localJob.RegisterJob(namedJobFuncs); err != nil {
@@ -296,4 +313,164 @@ func (j *job) syncPeers() (string, error) {
 	})
 
 	return internaljob.MarshalResponse(hosts)
+}
+
+// listTasks is a job to list tasks.
+func (j *job) listTasks(ctx context.Context, data string) (string, error) {
+	req := &internaljob.ListTasksRequest{}
+	if err := internaljob.UnmarshalRequest(data, req); err != nil {
+		logger.Errorf("unmarshal request err: %s, request body: %s", err.Error(), data)
+		return "", err
+	}
+
+	if err := validator.New().Struct(req); err != nil {
+		logger.Errorf("listTasks %s validate failed: %s", req.TaskID, err.Error())
+		return "", err
+	}
+
+	// Get all peers by task id
+	peers, err := j.getValidPeers(req.TaskID)
+	if err != nil {
+		logger.Errorf("get peers by task id %s failed: %s", req.TaskID, err.Error())
+		return "", err
+	}
+
+	listTaskResponse := &internaljob.ListTasksResponse{
+		Peers: peers,
+	}
+
+	return internaljob.MarshalResponse(listTaskResponse)
+}
+
+// deleteTask is a job to delete task.
+func (j *job) deleteTask(ctx context.Context, data string) (string, error) {
+	ctx, cancel := context.WithTimeout(ctx, deleteTaskTimeout)
+	defer cancel()
+
+	req := &internaljob.DeleteTaskRequest{}
+	if err := internaljob.UnmarshalRequest(data, req); err != nil {
+		logger.Errorf("unmarshal request err: %s, request body: %s", err.Error(), data)
+		return "", err
+	}
+
+	if err := validator.New().Struct(req); err != nil {
+		logger.Errorf("deleteTask %s validate failed: %s", req.TaskID, err.Error())
+		return "", err
+	}
+
+	// Get all peers by task id
+	peers, err := j.getValidPeers(req.TaskID)
+	if err != nil {
+		logger.Errorf("get peers by task id %s failed: %s", req.TaskID, err.Error())
+		return "", err
+	}
+
+	// Delete task by task id and host id
+	successTasks := make([]*internaljob.Task, 0)
+	failureTasks := make([]*internaljob.Task, 0)
+
+	// Create a wait group to limit delete rpc concurrency
+	// and avoid too many rpc requests to the host.
+	wg := sync.WaitGroup{}
+	deleteTaskLimit := make(chan struct{}, deleteTaskConcurrency)
+	for _, peer := range peers {
+		wg.Add(1)
+		deleteTaskLimit <- struct{}{}
+		go func(peer *resource.Peer) {
+			defer func() {
+				wg.Done()
+				<-deleteTaskLimit
+			}()
+
+			// Get dfdaemon client from host
+			target := fmt.Sprintf("%s:%d", peer.Host.IP, peer.Host.Port)
+			conn, err := grpc.DialContext(
+				ctx,
+				target,
+				grpc.WithIdleTimeout(0),
+				grpc.WithDefaultCallOptions(
+					grpc.MaxCallRecvMsgSize(math.MaxInt32),
+					grpc.MaxCallSendMsgSize(math.MaxInt32),
+				),
+				grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
+					grpc_prometheus.UnaryClientInterceptor,
+					grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
+					grpc_retry.UnaryClientInterceptor(
+						grpc_retry.WithMax(deleteTaskMaxRetries),
+						grpc_retry.WithBackoff(grpc_retry.BackoffLinear(deleteTaskBackoffWaitBetween)),
+					),
+				)),
+			)
+			if err != nil {
+				logger.Errorf("create grpc client to %s failed: %s", target, err.Error())
+				failureTasks = append(failureTasks, &internaljob.Task{
+					Task:        peer.Task,
+					Peer:        peer,
+					Description: err.Error(),
+				})
+				return
+			}
+
+			dfdaemonUploadClient := dfdaemonv2.NewDfdaemonUploadClient(conn)
+			_, err = dfdaemonUploadClient.DeleteCacheTask(ctx, &dfdaemonv2.DeleteCacheTaskRequest{
+				TaskId: req.TaskID,
+			})
+			if err != nil {
+				logger.Errorf("delete task %s from %s failed: %s", req.TaskID, target, err.Error())
+				failureTasks = append(failureTasks, &internaljob.Task{
+					Task:        peer.Task,
+					Peer:        peer,
+					Description: err.Error(),
+				})
+				return
+			}
+
+			successTasks = append(successTasks, &internaljob.Task{
+				Task:        peer.Task,
+				Peer:        peer,
+				Description: fmt.Sprintf("delete task %s from %s success", req.TaskID, target),
+			})
+		}(peer)
+	}
+
+	wg.Wait()
+
+	deleteTaskResponse := &internaljob.DeleteTaskResponse{
+		SuccessTasks: successTasks,
+		FailureTasks: failureTasks,
+	}
+
+	return internaljob.MarshalResponse(deleteTaskResponse)
+}
+
+// getValidPeers try to get valid peers by task id
+func (j *job) getValidPeers(taskID string) ([]*resource.Peer, error) {
+	// get task info by task id
+	task, ok := j.resource.TaskManager().Load(taskID)
+	if !ok {
+		logger.Errorf("task %s not found", taskID)
+		return nil, fmt.Errorf("task %s not found", taskID)
+	}
+
+	// get peer info by task info
+	peers := make([]*resource.Peer, 0)
+	for _, vertex := range task.DAG.GetVertices() {
+		peer := vertex.Value
+		if peer == nil {
+			continue
+		}
+
+		peers = append(peers, peer)
+	}
+
+	// Choose finished peers as list tasks result
+	finishedPeers := make([]*resource.Peer, len(peers))
+	for _, peer := range peers {
+		currentState := peer.FSM.Current()
+		if currentState == resource.PeerStateSucceeded || currentState == resource.PeerStateFailed {
+			finishedPeers = append(finishedPeers, peer)
+		}
+	}
+
+	return finishedPeers, nil
 }
