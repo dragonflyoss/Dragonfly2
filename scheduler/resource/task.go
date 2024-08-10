@@ -249,6 +249,25 @@ func (t *Task) LoadRandomPeers(n uint) []*Peer {
 	return peers
 }
 
+// LoadFinishedPeers return finished peers.
+func (t *Task) LoadFinishedPeers() []*Peer {
+	// Choose finished peers
+	var finishedPeers []*Peer
+	for _, vertex := range t.DAG.GetVertices() {
+		peer := vertex.Value
+		if peer == nil {
+			continue
+		}
+
+		currentState := peer.FSM.Current()
+		if currentState == PeerStateSucceeded || currentState == PeerStateFailed {
+			finishedPeers = append(finishedPeers, peer)
+		}
+	}
+
+	return finishedPeers
+}
+
 // StorePeer set peer.
 func (t *Task) StorePeer(peer *Peer) {
 	t.DAG.AddVertex(peer.ID, peer) // nolint: errcheck
