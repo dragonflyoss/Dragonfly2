@@ -3,7 +3,7 @@ module d7y.io/dragonfly/v2
 go 1.21
 
 require (
-	d7y.io/api/v2 v2.0.142
+	d7y.io/api/v2 v2.0.147
 	github.com/MysteriousPotato/go-lockable v1.0.0
 	github.com/RichardKnop/machinery v1.10.8
 	github.com/Showmax/go-fqdn v1.0.0
@@ -129,7 +129,7 @@ require (
 	github.com/distribution/reference v0.5.0 // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/docker/libtrust v0.0.0-20150114040149-fa567046d9b1 // indirect
-	github.com/envoyproxy/protoc-gen-validate v1.0.4 // indirect
+	github.com/envoyproxy/protoc-gen-validate v1.1.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.4 // indirect
