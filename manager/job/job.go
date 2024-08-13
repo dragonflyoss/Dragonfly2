@@ -40,6 +40,7 @@ type Job struct {
 	*internaljob.Job
 	Preheat
 	SyncPeers
+	ManagerTasks
 }
 
 // New returns a new Job.
@@ -74,10 +75,13 @@ func New(cfg *config.Config, gdb *gorm.DB) (*Job, error) {
 		return nil, err
 	}
 
+	managerTasks := newManagerTasks(j, cfg.Job.ManagerTasks.Timeout)
+
 	return &Job{
-		Job:       j,
-		Preheat:   preheat,
-		SyncPeers: syncPeers,
+		Job:          j,
+		Preheat:      preheat,
+		SyncPeers:    syncPeers,
+		ManagerTasks: managerTasks,
 	}, nil
 }
 
