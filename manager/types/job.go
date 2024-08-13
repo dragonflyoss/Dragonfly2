@@ -57,32 +57,6 @@ type CreatePreheatJobRequest struct {
 	SchedulerClusterIDs []uint         `json:"scheduler_cluster_ids" binding:"omitempty"`
 }
 
-type CreateDeleteTaskJobRequest struct {
-	BIO                 string          `json:"bio" binding:"omitempty"`
-	Type                string          `json:"type" binding:"required"`
-	Args                DeleteTasksArgs `json:"args" binding:"omitempty"`
-	Result              map[string]any  `json:"result" binding:"omitempty"`
-	UserID              uint            `json:"user_id" binding:"omitempty"`
-	SchedulerClusterIDs []uint          `json:"scheduler_cluster_ids" binding:"omitempty"`
-}
-
-type DeleteTasksArgs struct {
-	TaskID string `json:"task_id" binding:"required"`
-}
-
-type CreateListTasksJobRequest struct {
-	BIO                 string         `json:"bio" binding:"omitempty"`
-	Type                string         `json:"type" binding:"required"`
-	Args                ListTasksArgs  `json:"args" binding:"omitempty"`
-	Result              map[string]any `json:"result" binding:"omitempty"`
-	UserID              uint           `json:"user_id" binding:"omitempty"`
-	SchedulerClusterIDs []uint         `json:"scheduler_cluster_ids" binding:"omitempty"`
-}
-
-type ListTasksArgs struct {
-	TaskID string `json:"task_id" binding:"required"`
-}
-
 type PreheatArgs struct {
 	// Type is the preheating type, support image and file.
 	Type string `json:"type" binding:"required,oneof=image file"`
@@ -110,4 +84,30 @@ type PreheatArgs struct {
 
 	// The image type preheating task can specify the image architecture type. eg: linux/amd64.
 	Platform string `json:"platform" binding:"omitempty"`
+}
+
+type CreateGetTaskJobRequest struct {
+	BIO                 string         `json:"bio" binding:"omitempty"`
+	Type                string         `json:"type" binding:"required"`
+	Args                GetTaskArgs    `json:"args" binding:"omitempty"`
+	Result              map[string]any `json:"result" binding:"omitempty"`
+	UserID              uint           `json:"user_id" binding:"omitempty"`
+	SchedulerClusterIDs []uint         `json:"scheduler_cluster_ids" binding:"omitempty"`
+}
+
+type GetTaskArgs struct {
+	TaskID string `json:"task_id" binding:"required"`
+}
+
+type CreateDeleteTaskJobRequest struct {
+	BIO                 string         `json:"bio" binding:"omitempty"`
+	Type                string         `json:"type" binding:"required"`
+	Args                DeleteTaskArgs `json:"args" binding:"omitempty"`
+	Result              map[string]any `json:"result" binding:"omitempty"`
+	UserID              uint           `json:"user_id" binding:"omitempty"`
+	SchedulerClusterIDs []uint         `json:"scheduler_cluster_ids" binding:"omitempty"`
+}
+
+type DeleteTaskArgs struct {
+	TaskID string `json:"task_id" binding:"required"`
 }

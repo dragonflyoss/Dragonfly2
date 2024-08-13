@@ -98,9 +98,6 @@ const (
 
 	// DefaultJobSyncPeersTimeout is the default timeout for syncing all peers information from the scheduler.
 	DefaultJobSyncPeersTimeout = 10 * time.Minute
-
-	// DefaultJobManagerTasksTimeout is the default timeout for manager tasks, for delete task and list tasks.
-	DefaultJobManagerTasksTimeout = 10 * time.Minute
 )
 
 const (

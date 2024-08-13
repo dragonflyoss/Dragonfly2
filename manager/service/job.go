@@ -115,13 +115,13 @@ func (s *service) CreateDeleteTaskJob(ctx context.Context, json types.CreateDele
 	return &job, nil
 }
 
-func (s *service) CreateListTasksJob(ctx context.Context, json types.CreateListTasksJobRequest) (*models.Job, error) {
+func (s *service) CreateGetTaskJob(ctx context.Context, json types.CreateGetTaskJobRequest) (*models.Job, error) {
 	candidateSchedulers, err := s.findCandidateSchedulers(ctx, json.SchedulerClusterIDs)
 	if err != nil {
 		return nil, err
 	}
 
-	groupJobState, err := s.job.CreateListTasks(ctx, candidateSchedulers, json.Args)
+	groupJobState, err := s.job.CreateGetTask(ctx, candidateSchedulers, json.Args)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +153,6 @@ func (s *service) CreateListTasksJob(ctx context.Context, json types.CreateListT
 	go s.pollingJob(context.Background(), job.ID, job.TaskID)
 
 	return &job, nil
-
 }
 
 func (s *service) findCandidateSchedulers(ctx context.Context, schedulerClusterIDs []uint) ([]models.Scheduler, error) {
@@ -232,6 +231,12 @@ func (s *service) pollingJob(ctx context.Context, id uint, groupID string) {
 			log.Errorf("polling group failed: %s", err.Error())
 			return nil, false, err
 		}
+
+		fmt.Println("111111111111111111111111111111111111")
+		fmt.Println("111111111111111111111111111111111111")
+		fmt.Println(result)
+		fmt.Println("111111111111111111111111111111111111")
+		fmt.Println("111111111111111111111111111111111111")
 
 		if err := s.db.WithContext(ctx).First(&job, id).Updates(models.Job{
 			State:  groupJob.State,

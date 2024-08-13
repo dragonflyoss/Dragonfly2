@@ -18,6 +18,7 @@ package job
 
 import "d7y.io/dragonfly/v2/scheduler/resource"
 
+// PreheatRequest defines the request parameters for preheating.
 type PreheatRequest struct {
 	URL                 string            `json:"url" validate:"required,url"`
 	Tag                 string            `json:"tag" validate:"omitempty"`
@@ -29,17 +30,18 @@ type PreheatRequest struct {
 	PieceLength         uint32            `json:"pieceLength" validate:"omitempty"`
 }
 
+// PreheatResponse defines the response parameters for preheating.
 type PreheatResponse struct {
-	TaskID string `json:"taskID"`
+	TaskID string `json:"task_id"`
 }
 
-// ListTasksRequest defines the request parameters for listing tasks.
-type ListTasksRequest struct {
+// GetTaskRequest defines the request parameters for getting task.
+type GetTaskRequest struct {
 	TaskID string `json:"task_id" validate:"required"`
 }
 
-// ListTasksResponse defines the response parameters for listing tasks.
-type ListTasksResponse struct {
+// GetTaskResponse defines the response parameters for getting task.
+type GetTaskResponse struct {
 	Peers []*resource.Peer `json:"peers"`
 }
 
@@ -48,16 +50,14 @@ type DeleteTaskRequest struct {
 	TaskID string `json:"task_id" validate:"required"`
 }
 
-// Task includes information about a task along with peer details and a description.
-type Task struct {
-	Task        *resource.Task `json:"task"`
-	Peer        *resource.Peer `json:"peer"`
-	Description string         `json:"description"`
+// DeleteTaskResponse defines the response parameters for deleting task.
+type DeleteTaskResponse struct {
+	SuccessPeers []*DeletePeerResponse `json:"success_peers"`
+	FailurePeers []*DeletePeerResponse `json:"failure_peers"`
 }
 
-// DeleteTaskResponse represents the response after attempting to delete tasks,
-// categorizing them into successfully and unsuccessfully deleted.
-type DeleteTaskResponse struct {
-	SuccessTasks []*Task `json:"success_tasks"`
-	FailureTasks []*Task `json:"failure_tasks"`
+// DeletePeerResponse represents the response after attempting to delete a peer.
+type DeletePeerResponse struct {
+	Peer        *resource.Peer `json:"peer"`
+	Description string         `json:"description"`
 }

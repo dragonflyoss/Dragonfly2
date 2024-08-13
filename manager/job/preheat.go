@@ -118,7 +118,11 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []models.Schedul
 	}
 
 	// Initialize queues.
-	queues := getSchedulerQueues(schedulers)
+	queues, err := getSchedulerQueues(schedulers)
+	if err != nil {
+		return nil, err
+	}
+
 	return p.createGroupJob(ctx, files, queues)
 }
 

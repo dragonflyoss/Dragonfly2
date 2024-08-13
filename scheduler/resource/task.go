@@ -34,6 +34,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/graph/dag"
+	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 	"d7y.io/dragonfly/v2/pkg/types"
 )
 
@@ -249,18 +250,23 @@ func (t *Task) LoadRandomPeers(n uint) []*Peer {
 	return peers
 }
 
+// LoadPeers return all peers.
+func (t *Task) LoadPeers() []*Peer {
+	var peers []*Peer
+	for _, vertex := range t.DAG.GetVertices() {
+		peers = append(peers, vertex.Value)
+	}
+
+	return peers
+}
+
 // LoadFinishedPeers return finished peers.
 func (t *Task) LoadFinishedPeers() []*Peer {
-	// Choose finished peers
 	var finishedPeers []*Peer
 	for _, vertex := range t.DAG.GetVertices() {
 		peer := vertex.Value
-		if peer == nil {
-			continue
-		}
-
-		currentState := peer.FSM.Current()
-		if currentState == PeerStateSucceeded || currentState == PeerStateFailed {
+		peerState := peer.FSM.Current()
+		if pkgstrings.Contains([]string{PeerStateSucceeded, PeerStateFailed, PeerStateLeave}, peerState) {
 			finishedPeers = append(finishedPeers, peer)
 		}
 	}

@@ -115,7 +115,7 @@ type Service interface {
 
 	CreatePreheatJob(context.Context, types.CreatePreheatJobRequest) (*models.Job, error)
 	CreateDeleteTaskJob(context.Context, types.CreateDeleteTaskJobRequest) (*models.Job, error)
-	CreateListTasksJob(context.Context, types.CreateListTasksJobRequest) (*models.Job, error)
+	CreateGetTaskJob(context.Context, types.CreateGetTaskJobRequest) (*models.Job, error)
 	DestroyJob(context.Context, uint) error
 	UpdateJob(context.Context, uint, types.UpdateJobRequest) (*models.Job, error)
 	GetJob(context.Context, uint) (*models.Job, error)
