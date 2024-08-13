@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/go-http-utils/headers"
@@ -226,6 +227,10 @@ func (ptm *peerTaskManager) storePartialFile(ctx context.Context, request *FileT
 	return nil
 }
 
+func noRangeEnd(rg string) bool {
+	return strings.HasSuffix(rg, "-")
+}
+
 func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context, taskID string,
 	request *StreamTaskRequest) (io.ReadCloser, map[string]string, bool) {
 	var (
@@ -329,12 +334,13 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context, taskID s
 			reuseRange.Start+reuseRange.Length-1, reuse.ContentLength)
 	} else if request.Range != nil {
 		// the length is from reuse task, ensure it equal with request
-		if length != request.Range.Length {
+		// skip check no range end case
+		if length != request.Range.Length && noRangeEnd(request.URLMeta.Range) {
 			log.Errorf("target task length %d did not match range length %d", length, request.Range.Length)
 			return nil, nil, false
 		}
 		attr[headers.ContentRange] = fmt.Sprintf("bytes %d-%d/*", request.Range.Start,
-			request.Range.Start+request.Range.Length-1)
+			request.Range.Start+length-1)
 	}
 
 	// TODO record time when file closed, need add a type to implement Close and WriteTo
