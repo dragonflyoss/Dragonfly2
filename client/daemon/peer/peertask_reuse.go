@@ -227,8 +227,8 @@ func (ptm *peerTaskManager) storePartialFile(ctx context.Context, request *FileT
 	return nil
 }
 
-func noRangeEnd(rg string) bool {
-	return strings.HasSuffix(rg, "-")
+func hasRangeEnd(rg string) bool {
+	return !strings.HasSuffix(rg, "-")
 }
 
 func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context, taskID string,
@@ -335,7 +335,7 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context, taskID s
 	} else if request.Range != nil {
 		// the length is from reuse task, ensure it equal with request
 		// skip check no range end case
-		if length != request.Range.Length && noRangeEnd(request.URLMeta.Range) {
+		if length != request.Range.Length && hasRangeEnd(request.URLMeta.Range) {
 			log.Errorf("target task length %d did not match range length %d", length, request.Range.Length)
 			return nil, nil, false
 		}
