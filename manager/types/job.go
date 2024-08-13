@@ -57,6 +57,32 @@ type CreatePreheatJobRequest struct {
 	SchedulerClusterIDs []uint         `json:"scheduler_cluster_ids" binding:"omitempty"`
 }
 
+type CreateDeleteTaskJobRequest struct {
+	BIO                 string          `json:"bio" binding:"omitempty"`
+	Type                string          `json:"type" binding:"required"`
+	Args                DeleteTasksArgs `json:"args" binding:"omitempty"`
+	Result              map[string]any  `json:"result" binding:"omitempty"`
+	UserID              uint            `json:"user_id" binding:"omitempty"`
+	SchedulerClusterIDs []uint          `json:"scheduler_cluster_ids" binding:"omitempty"`
+}
+
+type DeleteTasksArgs struct {
+	TaskID string `json:"task_id" binding:"required"`
+}
+
+type CreateListTasksJobRequest struct {
+	BIO                 string         `json:"bio" binding:"omitempty"`
+	Type                string         `json:"type" binding:"required"`
+	Args                ListTasksArgs  `json:"args" binding:"omitempty"`
+	Result              map[string]any `json:"result" binding:"omitempty"`
+	UserID              uint           `json:"user_id" binding:"omitempty"`
+	SchedulerClusterIDs []uint         `json:"scheduler_cluster_ids" binding:"omitempty"`
+}
+
+type ListTasksArgs struct {
+	TaskID string `json:"task_id" binding:"required"`
+}
+
 type PreheatArgs struct {
 	// Type is the preheating type, support image and file.
 	Type string `json:"type" binding:"required,oneof=image file"`
@@ -68,10 +94,10 @@ type PreheatArgs struct {
 	Tag string `json:"tag" binding:"omitempty"`
 
 	// FilteredQueryParams is the filtered query params for preheating.
-	FilteredQueryParams string `json:"filteredQueryParams" binding:"omitempty"`
+	FilteredQueryParams string `json:"filtered_query_params" binding:"omitempty"`
 
 	// PieceLength is the piece length for preheating.
-	PieceLength uint32 `json:"pieceLength" binding:"omitempty"`
+	PieceLength uint32 `json:"piece_length" binding:"omitempty"`
 
 	// Headers is the http headers for authentication.
 	Headers map[string]string `json:"headers" binding:"omitempty"`

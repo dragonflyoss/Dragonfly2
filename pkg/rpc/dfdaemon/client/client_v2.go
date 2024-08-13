@@ -83,6 +83,41 @@ func GetV2(ctx context.Context, dynconfig config.DynconfigInterface, opts ...grp
 	}, nil
 }
 
+// GetV2ByAddr returns v2 version of the dfdaemon client by address.
+func GetV2ByAddr(ctx context.Context, target string, opts ...grpc.DialOption) (V2, error) {
+	conn, err := grpc.DialContext(
+		ctx,
+		target,
+		append([]grpc.DialOption{
+			grpc.WithIdleTimeout(0),
+			grpc.WithDefaultCallOptions(
+				grpc.MaxCallRecvMsgSize(math.MaxInt32),
+				grpc.MaxCallSendMsgSize(math.MaxInt32),
+			),
+			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
+				grpc_prometheus.UnaryClientInterceptor,
+				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
+				grpc_retry.UnaryClientInterceptor(
+					grpc_retry.WithMax(maxRetries),
+					grpc_retry.WithBackoff(grpc_retry.BackoffLinear(backoffWaitBetween)),
+				),
+			)),
+			grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
+				grpc_prometheus.StreamClientInterceptor,
+				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
+			)),
+		}, opts...)...,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &v2{
+		DfdaemonUploadClient: dfdaemonv2.NewDfdaemonUploadClient(conn),
+		ClientConn:           conn,
+	}, nil
+}
+
 // V2 is the interface for v2 version of the grpc client.
 type V2 interface {
 	// SyncPieces syncs pieces from the other peers.
