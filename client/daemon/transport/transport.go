@@ -402,6 +402,8 @@ local:
 
 	var contentLength int64 = -1
 	if l, ok := attr[headers.ContentLength]; ok {
+		// for library like opencv, it depends on AcceptRanges, otherwise it will complain "partial file" error
+		hdr.Set(headers.AcceptRanges, "bytes")
 		if i, e := strconv.ParseInt(l, 10, 64); e == nil {
 			contentLength = i
 		}
