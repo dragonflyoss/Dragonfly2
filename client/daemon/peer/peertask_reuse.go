@@ -333,14 +333,20 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context, taskID s
 		attr[headers.ContentRange] = fmt.Sprintf("bytes %d-%d/%d", reuseRange.Start,
 			reuseRange.Start+reuseRange.Length-1, reuse.ContentLength)
 	} else if request.Range != nil {
-		// the length is from reuse task, ensure it equal with request
-		// skip check no range end case
-		if length != request.Range.Length && hasRangeEnd(request.URLMeta.Range) {
-			log.Errorf("target task length %d did not match range length %d", length, request.Range.Length)
-			return nil, nil, false
+		// skip check length for no range end case
+		if !hasRangeEnd(request.URLMeta.Range) {
+			// no range end, indicate start + length = total size
+			attr[headers.ContentRange] = fmt.Sprintf("bytes %d-%d/%d", request.Range.Start,
+				request.Range.Start+length-1, request.Range.Start+length)
+		} else {
+			// the length is from reuse task, ensure it equal with request
+			if length != request.Range.Length {
+				log.Errorf("target task length %d did not match range length %d", length, request.Range.Length)
+				return nil, nil, false
+			}
+			attr[headers.ContentRange] = fmt.Sprintf("bytes %d-%d/*", request.Range.Start,
+				request.Range.Start+length-1)
 		}
-		attr[headers.ContentRange] = fmt.Sprintf("bytes %d-%d/*", request.Range.Start,
-			request.Range.Start+length-1)
 	}
 
 	// TODO record time when file closed, need add a type to implement Close and WriteTo
