@@ -59,7 +59,7 @@ type V1 struct {
 	// Scheduling interface.
 	scheduling scheduling.Scheduling
 
-	// Scheduelr service config.
+	// Scheduler service config.
 	config *config.Config
 
 	// Dynamic config.

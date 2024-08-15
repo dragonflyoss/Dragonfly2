@@ -37,7 +37,7 @@ type Response struct {
 	// Validate this response is okay to transfer in p2p network, like status 200 or 206 in http is valid to do this,
 	// otherwise return status code to original client
 	Validate func() error
-	// Temporary indecates the error whether the error is temporary, if is true, we can retry it later
+	// Temporary indicates the error whether the error is temporary, if is true, we can retry it later
 	Temporary bool
 }
 

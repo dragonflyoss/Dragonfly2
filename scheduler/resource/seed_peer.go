@@ -59,7 +59,7 @@ type SeedPeer interface {
 	// Client returns grpc client of seed peer.
 	Client() SeedPeerClient
 
-	// Stop seed peer serivce.
+	// Stop seed peer service.
 	Stop() error
 }
 
@@ -266,7 +266,7 @@ func (s *seedPeer) Client() SeedPeerClient {
 	return s.client
 }
 
-// Stop seed peer serivce.
+// Stop seed peer service.
 func (s *seedPeer) Stop() error {
 	return s.client.Close()
 }

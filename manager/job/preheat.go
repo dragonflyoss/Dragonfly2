@@ -223,7 +223,7 @@ func (p *preheat) getImageLayers(ctx context.Context, args types.PreheatArgs) ([
 	// set authorization header
 	header.Set("Authorization", client.GetAuthToken())
 
-	// prase image layers to preheat
+	// parse image layers to preheat
 	layers, err := p.parseLayers(manifests, args, header.Clone(), image)
 	if err != nil {
 		return nil, err

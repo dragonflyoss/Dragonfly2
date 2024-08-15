@@ -58,7 +58,7 @@ func WithValidityPeriod(d time.Duration) Option {
 	}
 }
 
-// NewDragonflyIssuer returns a new certify.Issuer instence.
+// NewDragonflyIssuer returns a new certify.Issuer instance.
 func NewDragonflyIssuer(securityClient securityclient.V1, opts ...Option) certify.Issuer {
 	i := &dragonflyIssuer{
 		securityClient: securityClient,

@@ -55,7 +55,7 @@ func newSchedulerServerV1(
 
 // RegisterPeerTask registers peer and triggers seed peer download task.
 func (s *schedulerServerV1) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest) (*schedulerv1.RegisterResult, error) {
-	// FIXME Scheudler will not generate task id.
+	// FIXME Scheduler will not generate task id.
 	if req.TaskId == "" {
 		req.TaskId = idgen.TaskIDV1(req.Url, req.UrlMeta)
 	}

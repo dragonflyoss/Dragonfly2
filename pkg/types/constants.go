@@ -49,7 +49,7 @@ const (
 	// ManagerMetricsName is name of manager metrics.
 	ManagerMetricsName = "manager"
 
-	// SchedulerMetricsName is name of scheduelr metrics.
+	// SchedulerMetricsName is name of Scheduler metrics.
 	SchedulerMetricsName = "scheduler"
 
 	// DfdaemonMetricsName is name of dfdaemon metrics.

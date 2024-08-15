@@ -61,7 +61,7 @@ type Dfstore interface {
 	// GetObjectMetadataRequestWithContext returns *http.Request of getting object metadata.
 	GetObjectMetadataRequestWithContext(ctx context.Context, input *GetObjectMetadataInput) (*http.Request, error)
 
-	// GetObjectMetadataWithContext returns matedata of object.
+	// GetObjectMetadataWithContext returns metadata of object.
 	GetObjectMetadataWithContext(ctx context.Context, input *GetObjectMetadataInput) (*pkgobjectstorage.ObjectMetadata, error)
 
 	// GetObjectRequestWithContext returns *http.Request of getting object.

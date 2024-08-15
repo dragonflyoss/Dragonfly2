@@ -59,7 +59,7 @@ func WithLogger(logger Logger) Option {
 	}
 }
 
-// New returns a new GC instence.
+// New returns a new GC instance.
 func New(options ...Option) GC {
 	g := &gc{
 		tasks:  &sync.Map{},

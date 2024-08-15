@@ -138,7 +138,7 @@ func TestDynconfig_Get(t *testing.T) {
 
 				gomock.InOrder(
 					m.Get().Return(d, nil).Times(1),
-					m.Get().Return(nil, errors.New("manager serivce error")).Times(1),
+					m.Get().Return(nil, errors.New("manager service error")).Times(1),
 				)
 			},
 			run: func(t *testing.T, d Dynconfig[TestDynconfig]) {

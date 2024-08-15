@@ -103,7 +103,7 @@ type V1 interface {
 	// Update scheduler configuration.
 	UpdateScheduler(context.Context, *managerv1.UpdateSchedulerRequest, ...grpc.CallOption) (*managerv1.Scheduler, error)
 
-	// List acitve schedulers configuration.
+	// List active schedulers configuration.
 	ListSchedulers(context.Context, *managerv1.ListSchedulersRequest, ...grpc.CallOption) (*managerv1.ListSchedulersResponse, error)
 
 	// Get object storage configuration.
@@ -132,7 +132,7 @@ type v1 struct {
 	*grpc.ClientConn
 }
 
-// List acitve seed peers configuration.
+// List active seed peers configuration.
 func (v *v1) ListSeedPeers(ctx context.Context, req *managerv1.ListSeedPeersRequest, opts ...grpc.CallOption) (*managerv1.ListSeedPeersResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
@@ -164,7 +164,7 @@ func (v *v1) UpdateScheduler(ctx context.Context, req *managerv1.UpdateScheduler
 	return v.ManagerClient.UpdateScheduler(ctx, req, opts...)
 }
 
-// List acitve schedulers configuration.
+// List active schedulers configuration.
 func (v *v1) ListSchedulers(ctx context.Context, req *managerv1.ListSchedulersRequest, opts ...grpc.CallOption) (*managerv1.ListSchedulersResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
@@ -205,7 +205,7 @@ func (v *v1) CreateModel(ctx context.Context, req *managerv1.CreateModelRequest,
 	return err
 }
 
-// List acitve schedulers configuration.
+// List active schedulers configuration.
 func (v *v1) KeepAlive(interval time.Duration, keepalive *managerv1.KeepAliveRequest, done <-chan struct{}, opts ...grpc.CallOption) {
 	log := logger.WithKeepAlive(keepalive.Hostname, keepalive.Ip, keepalive.SourceType.Enum().String(), keepalive.ClusterId)
 retry:

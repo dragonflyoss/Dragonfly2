@@ -43,7 +43,7 @@ type training struct {
 	// Storage interface.
 	storage storage.Storage
 
-	// Manager service clent.
+	// Manager service client.
 	managerClient managerclient.V2
 }
 

@@ -52,7 +52,7 @@ func WithManagerValidityPeriod(d time.Duration) ManagerOption {
 	}
 }
 
-// NewDragonflyManagerIssuer returns a new certify.Issuer instence.
+// NewDragonflyManagerIssuer returns a new certify.Issuer instance.
 func NewDragonflyManagerIssuer(tlsCACert *tls.Certificate, opts ...ManagerOption) certify.Issuer {
 	i := &dragonflyManagerIssuer{
 		tlsCACert:      tlsCACert,

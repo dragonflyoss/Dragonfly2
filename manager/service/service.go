@@ -152,7 +152,7 @@ type service struct {
 	objectStorage objectstorage.ObjectStorage
 }
 
-// NewREST returns a new REST instence
+// NewREST returns a new REST instance
 func New(cfg *config.Config, database *database.Database, cache *cache.Cache, job *job.Job, enforcer *casbin.Enforcer, objectStorage objectstorage.ObjectStorage) Service {
 	return &service{
 		config:        cfg,

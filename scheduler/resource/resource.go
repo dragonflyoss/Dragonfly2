@@ -42,7 +42,7 @@ type Resource interface {
 	// Task manager interface.
 	TaskManager() TaskManager
 
-	// Stop resource serivce.
+	// Stop resource service.
 	Stop() error
 }
 
@@ -147,7 +147,7 @@ func (r *resource) TaskManager() TaskManager {
 	return r.taskManager
 }
 
-// Stop resource serivce.
+// Stop resource service.
 func (r *resource) Stop() error {
 	if r.config.SeedPeer.Enable {
 		return r.seedPeer.Stop()

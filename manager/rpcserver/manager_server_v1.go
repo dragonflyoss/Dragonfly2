@@ -177,7 +177,7 @@ func (s *managerServerV1) GetSeedPeer(ctx context.Context, req *managerv1.GetSee
 	return &pbSeedPeer, nil
 }
 
-// List acitve seed peers configuration.
+// List active seed peers configuration.
 func (s *managerServerV1) ListSeedPeers(ctx context.Context, req *managerv1.ListSeedPeersRequest) (*managerv1.ListSeedPeersResponse, error) {
 	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
 	log.Debugf("list seed peers, version %s, commit %s", req.Version, req.Commit)
@@ -536,7 +536,7 @@ func (s *managerServerV1) createScheduler(ctx context.Context, req *managerv1.Up
 	}, nil
 }
 
-// List acitve schedulers configuration.
+// List active schedulers configuration.
 func (s *managerServerV1) ListSchedulers(ctx context.Context, req *managerv1.ListSchedulersRequest) (*managerv1.ListSchedulersResponse, error) {
 	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
 	log.Debugf("list schedulers, version %s, commit %s", req.Version, req.Commit)
@@ -560,7 +560,7 @@ func (s *managerServerV1) ListSchedulers(ctx context.Context, req *managerv1.Lis
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Remove schedulers which not have scehdule featrue. As OceanBase does not support JSON type,
+	// Remove schedulers which not have schedule feature. As OceanBase does not support JSON type,
 	// it is not possible to use datatypes.JSONQuery for filtering.
 	var tmpSchedulerClusters []models.SchedulerCluster
 	for _, schedulerCluster := range schedulerClusters {
