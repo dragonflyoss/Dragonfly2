@@ -133,7 +133,7 @@ func WithTransportCredentials(creds credentials.TransportCredentials) DynconfigO
 	}
 }
 
-// NewDynconfig returns a new dynconfig instence.
+// NewDynconfig returns a new dynconfig instance.
 func NewDynconfig(rawManagerClient managerclient.V2, cacheDir string, cfg *Config, options ...DynconfigOption) (DynconfigInterface, error) {
 	cachePath := filepath.Join(cacheDir, cacheFileName)
 	d := &dynconfig{

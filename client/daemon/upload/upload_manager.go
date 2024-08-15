@@ -88,7 +88,7 @@ func WithCertify(ct *certify.Certify) func(manager *uploadManager) {
 	}
 }
 
-// New returns a new Manager instence.
+// New returns a new Manager instance.
 func NewUploadManager(cfg *config.DaemonOption, storageManager storage.Manager, logDir string, opts ...Option) (Manager, error) {
 	um := &uploadManager{
 		storageManager: storageManager,
@@ -200,7 +200,7 @@ func (um *uploadManager) getDownload(ctx *gin.Context) {
 		return
 	}
 
-	var query DownalodQuery
+	var query DownloadQuery
 	if err := ctx.ShouldBindQuery(&query); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return

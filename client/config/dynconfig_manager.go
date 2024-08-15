@@ -57,7 +57,7 @@ type dynconfigManager struct {
 	mu                   sync.Mutex
 }
 
-// newDynconfigManager returns a new manager dynconfig instence.
+// newDynconfigManager returns a new manager dynconfig instance.
 func newDynconfigManager(cfg *DaemonOption, rawManagerClient managerclient.V1, cacheDir string, creds credentials.TransportCredentials) (Dynconfig, error) {
 	cachePath := filepath.Join(cacheDir, cacheFileName)
 	d, err := internaldynconfig.New[DynconfigData](

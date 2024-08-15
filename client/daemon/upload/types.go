@@ -21,6 +21,6 @@ type DownloadParams struct {
 	TaskID     string `uri:"task_id" binding:"required"`
 }
 
-type DownalodQuery struct {
+type DownloadQuery struct {
 	PeerID string `form:"peerId" binding:"required"`
 }

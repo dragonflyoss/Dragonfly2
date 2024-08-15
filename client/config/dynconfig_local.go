@@ -46,7 +46,7 @@ type dynconfigLocal struct {
 	transportCredentials credentials.TransportCredentials
 }
 
-// newDynconfigLocal returns a new local dynconfig instence.
+// newDynconfigLocal returns a new local dynconfig instance.
 func newDynconfigLocal(cfg *DaemonOption, creds credentials.TransportCredentials) (Dynconfig, error) {
 	return &dynconfigLocal{
 		config:               cfg,

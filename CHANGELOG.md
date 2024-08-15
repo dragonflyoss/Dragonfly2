@@ -112,7 +112,7 @@
 - add unit test for Header.get ([#2568](https://github.com/dragonflyoss/Dragonfly2/issues/2568))
 - add unit test for Header.has ([#2555](https://github.com/dragonflyoss/Dragonfly2/issues/2555))
 - add unit test for Request.Context() ([#2554](https://github.com/dragonflyoss/Dragonfly2/issues/2554))
-- trainer serivce unit tests ([#2545](https://github.com/dragonflyoss/Dragonfly2/issues/2545))
+- trainer service unit tests ([#2545](https://github.com/dragonflyoss/Dragonfly2/issues/2545))
 - add unit test for model and digest ([#2538](https://github.com/dragonflyoss/Dragonfly2/issues/2538))
 - optimize TestDigest_HashFile ([#2515](https://github.com/dragonflyoss/Dragonfly2/issues/2515))
 - improve hash file encode test case in digest test ([#2513](https://github.com/dragonflyoss/Dragonfly2/issues/2513))
@@ -688,7 +688,7 @@
 - update d7y.io/api package and change cpu percent validation ([#2236](https://github.com/dragonflyoss/Dragonfly2/issues/2236))
 - add authinfo injector ([#2149](https://github.com/dragonflyoss/Dragonfly2/issues/2149))
 - when the cache is missing, change the error log to a warning log ([#2235](https://github.com/dragonflyoss/Dragonfly2/issues/2235))
--  if the scheduler feature is not in feature flags, then it will stop providing the featrue ([#2234](https://github.com/dragonflyoss/Dragonfly2/issues/2234))
+-  if the scheduler feature is not in feature flags, then it will stop providing the feature ([#2234](https://github.com/dragonflyoss/Dragonfly2/issues/2234))
 - add train interval and trainer addresses ([#2223](https://github.com/dragonflyoss/Dragonfly2/issues/2223))
 - add logger.CoreLogger to searcher plugin ([#2232](https://github.com/dragonflyoss/Dragonfly2/issues/2232))
 - add log to searcher plugin ([#2231](https://github.com/dragonflyoss/Dragonfly2/issues/2231))
@@ -1853,7 +1853,7 @@
 - update d7y.io/api package and change cpu percent validation ([#2236](https://github.com/dragonflyoss/Dragonfly2/issues/2236))
 - add authinfo injector ([#2149](https://github.com/dragonflyoss/Dragonfly2/issues/2149))
 - when the cache is missing, change the error log to a warning log ([#2235](https://github.com/dragonflyoss/Dragonfly2/issues/2235))
--  if the scheduler feature is not in feature flags, then it will stop providing the featrue ([#2234](https://github.com/dragonflyoss/Dragonfly2/issues/2234))
+-  if the scheduler feature is not in feature flags, then it will stop providing the feature ([#2234](https://github.com/dragonflyoss/Dragonfly2/issues/2234))
 - add train interval and trainer addresses ([#2223](https://github.com/dragonflyoss/Dragonfly2/issues/2223))
 
 ### Fix
