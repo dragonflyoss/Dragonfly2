@@ -269,10 +269,6 @@ func NeedUseDragonfly(req *http.Request) bool {
 	return req.Method == http.MethodGet && layerReg.MatchString(req.URL.Path)
 }
 
-func isRedundantRangeHeader(header string) bool {
-	return header == "bytes=0-"
-}
-
 // download uses dragonfly to download.
 // the ctx has span info from transport, did not use the ctx from request
 func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Response, error) {
@@ -293,7 +289,7 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 	var rg *nethttp.Range
 
 	// Set meta range's value
-	if rangeHeader := req.Header.Get("Range"); !isRedundantRangeHeader(rangeHeader) && len(rangeHeader) > 0 {
+	if rangeHeader := req.Header.Get("Range"); len(rangeHeader) > 0 {
 		rgs, err := nethttp.ParseRange(rangeHeader, math.MaxInt64)
 		if err != nil {
 			span.RecordError(err)
@@ -414,8 +410,8 @@ local:
 		httpStatus = http.StatusOK
 	} else {
 		httpStatus = http.StatusPartialContent
-		if hdr.Get(headers.ContentRange) == "" && contentLength > 0 {
-			value := fmt.Sprintf("bytes %d-%d/%d", rg.Start, rg.Start+contentLength-1, rg.Start+contentLength)
+		if len(hdr.Get(headers.ContentRange)) == 0 && contentLength > 0 {
+			value := fmt.Sprintf("bytes %d-%d/*", rg.Start, rg.Start+contentLength-1)
 			hdr.Set(headers.ContentRange, value)
 		}
 	}
