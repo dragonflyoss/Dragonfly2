@@ -27,7 +27,6 @@ type PreheatRequest struct {
 	Headers             map[string]string `json:"headers" validate:"omitempty"`
 	Application         string            `json:"application" validate:"omitempty"`
 	Priority            int32             `json:"priority" validate:"omitempty"`
-	PieceLength         uint32            `json:"pieceLength" validate:"omitempty"`
 }
 
 // PreheatResponse defines the response parameters for preheating.

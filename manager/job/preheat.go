@@ -109,7 +109,6 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []models.Schedul
 				URL:                 json.URL,
 				Tag:                 json.Tag,
 				FilteredQueryParams: json.FilteredQueryParams,
-				PieceLength:         json.PieceLength,
 				Headers:             json.Headers,
 			},
 		}
@@ -323,7 +322,6 @@ func (p *preheat) parseLayers(manifests []distribution.Manifest, args types.Preh
 				URL:                 image.blobsURL(v.Digest.String()),
 				Tag:                 args.Tag,
 				FilteredQueryParams: args.FilteredQueryParams,
-				PieceLength:         args.PieceLength,
 				Headers:             nethttp.HeaderToMap(header),
 			}
 

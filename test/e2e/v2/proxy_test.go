@@ -39,7 +39,7 @@ var _ = Describe("Download Using Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "0ef882badaeb3195aed759a203cfb61951d158bf614f90ab0a20504fb7f97992",
+				ID:     "090278fc27871e8bb93c4546a0f44dd16126ed476a23bee7c4b0812357e2042b",
 				Sha256: "6288d2a89e2a9611191c25a45de20e94d8d058c75f274a39970d41f60f367e6f",
 			}
 
@@ -77,7 +77,7 @@ var _ = Describe("Download Using Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "e37fccc0c725a947c0a8856e2e1f6a14a4a5792338a73dcafa7e5ebd6443f7b4",
+				ID:     "80c17d9f21dcfd8b6f4526d131e65cd70dd0ad644033ea1900ea9a7deeed6dc3",
 				Sha256: "327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a",
 			}
 
@@ -115,7 +115,7 @@ var _ = Describe("Download Using Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "7c7cf5c8303626754ba4ae6575c1c96cd3fcad985687ec0d15744e68b15661d6",
+				ID:     "559fb82754b3cd804f75d4e9e58ae6cd9aba5c49e24e7f52891bee5c815ed2b8",
 				Sha256: "a1cbf1bf2d66757121677fd7fefafacd4f843a2cb44a451131002803bae56a65",
 			}
 
@@ -153,7 +153,7 @@ var _ = Describe("Download Using Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "297205e16a85e8cf803067c84fdd659c1877ff595e76e7633e4aa52b64321dee",
+				ID:     "c8e05b7c9ebae46268691292fd2905c2cb4250af12ce91e53750e16eec69ce5a",
 				Sha256: "b0cfe211f851049a78f5812cf5b1d7cb4f3fbb101c02c1865c940d5797f4b73b",
 			}
 
@@ -191,7 +191,7 @@ var _ = Describe("Download Using Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "b4df90b001f49adcc64d71f68b1c01ad462f631c94c7c7ffc12d97f351874da1",
+				ID:     "8a541eb07998f3980807ec1d183d74516bf6e2afe76d674e813ddca99938e02e",
 				Sha256: "c37f93c73cf2f303f874c094f6f76e47b2421a3da9f0e7e0b98bea8a3d685322",
 			}
 
@@ -229,7 +229,7 @@ var _ = Describe("Download Using Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "b56a0807131865baffe2d687440f121f40cf2071c478a5abfb0930bc57b7e715",
+				ID:     "ef524d1361ee2c0f0b0a457f1d5e605b3fe4f3dd2fd131950004bb20fa83d6fa",
 				Sha256: "cd00e292c5970d3c5e2f0ffa5171e555bc46bfc4faddfb4a418b6840b86e79a3",
 			}
 
@@ -267,7 +267,7 @@ var _ = Describe("Download Using Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "0091f6a0373fe02d2e4cf6a83904889f5326a3590239015743bc812b02c51408",
+				ID:     "d22bb2076dc27f0f0be5d3ecc1e95a63ea516ce5dff49d235cf2266e98625474",
 				Sha256: "7bbfcb694f6acc69483751d3b48d5bdbdcb284f9e04c7b7caa04b5977cffddc8",
 			}
 
@@ -305,7 +305,7 @@ var _ = Describe("Download Using Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "28ded7113a871c1eb08728204810514f08e200952131075ea5f7a3756973ceb2",
+				ID:     "f58775d042d37c406dbe03a294446e994f183e5872e93477025ad049f62a0a85",
 				Sha256: "ba9a10ceceb80562fc124dc9bc94ea2a38e3a71e3e746e2140e6381ac791cdeb",
 			}
 
@@ -343,7 +343,7 @@ var _ = Describe("Download Using Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "871b9e11903e7f3cadcb25706be7fd2c153b76cdf138f713bd7b506f695fc863",
+				ID:     "6353c7c65066bf24acdfe62601ba17a1636d217169e79f7ea3f2ebf7f0940e06",
 				Sha256: "ba9a10ceceb80562fc124dc9bc94ea2a38e3a71e3e746e2140e6381ac791cdeb",
 			}
 
@@ -381,7 +381,7 @@ var _ = Describe("Download Using Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "28ded7113a871c1eb08728204810514f08e200952131075ea5f7a3756973ceb2",
+				ID:     "1ff704a22e421b2f9b99f7f8e2228e6f71d9c987ef242348acc031d003d3e941",
 				Sha256: "327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a",
 			}
 
@@ -419,7 +419,7 @@ var _ = Describe("Download Using Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "e5ccafcd80ee0dfc48aa1f313ef6086a1fd1e0021183452c096ae40d87d191c6",
+				ID:     "dba445f5310c2a63fabeaad075511357e411b74f68a47bc579ed36f78a380013",
 				Sha256: "8732360b941ad09a5e0e5d5f9891118bc068f6d0d5a56e3c6d483e4600fbc43f",
 			}
 
@@ -457,7 +457,7 @@ var _ = Describe("Download Using Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "16d94182383e84a73f9c85a28a25d781a8a4e56ec37c6e3e61d1f946fb236e85",
+				ID:     "ae82ec86b58e7a91853ce6a3d52a59a1d590365a91b30db57df922bd8a6bc952",
 				Sha256: "d6d17dca18b8de59e38da525dc24c47b74fec1a790a9f64afdd6538f4f8fa90e",
 			}
 
@@ -497,7 +497,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "0fa5f40dfccfcd4c20b2d2dba0bab7205bfced189cc7a013919a6d155d841dab",
+				ID:     "4a4df08f3aa3311e29556582de4269294a6805f81b7d8d38b83e8a91bc461d4e",
 				Sha256: "6288d2a89e2a9611191c25a45de20e94d8d058c75f274a39970d41f60f367e6f",
 			}
 
@@ -523,7 +523,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "8cdfeba7c8858b1bf7dc6097aeb6bae12e3a4cb8ed32cc3b60bdb45765bda590",
+				ID:     "3496028e92e0e35651f92e86ffde1dfa3c03a66265d248f8d3254ac78d30ef83",
 				Sha256: "327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a",
 			}
 
@@ -549,7 +549,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "86b0c4424368f35e500045d5375b8b53940cadf69b71d0ae4b349ac972ad6bdb",
+				ID:     "91ae78d5302e267bd245bae82c6ab90e18a8a4234bb87642f108901e801a1e2a",
 				Sha256: "a1cbf1bf2d66757121677fd7fefafacd4f843a2cb44a451131002803bae56a65",
 			}
 
@@ -575,7 +575,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "d759035bb589e9334717660701c58ef91ebab49bb5790367ede36bf78daa52a1",
+				ID:     "d2ccf9401074d729a88359394f1d9b4888ee6b7d9e4045e49bf1fa8d7caaf1d7",
 				Sha256: "b0cfe211f851049a78f5812cf5b1d7cb4f3fbb101c02c1865c940d5797f4b73b",
 			}
 
@@ -601,7 +601,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "ecd74f0e4f9ff453e3c165934d473ef6946b088fecabb8a2eb7d11d2948f743c",
+				ID:     "a8a7a947d233ce5298c937c7e3cb52321810533d89c526c751b71a2dd91bc908",
 				Sha256: "c37f93c73cf2f303f874c094f6f76e47b2421a3da9f0e7e0b98bea8a3d685322",
 			}
 
@@ -627,7 +627,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "2d9e6ebe90a230ff5ffad7938163456c308e072e910eac3dd063f64f62112f05",
+				ID:     "cbc6213119267fb7437947a971673a6a3eb65d3b972eac55b227104a4069f32c",
 				Sha256: "cd00e292c5970d3c5e2f0ffa5171e555bc46bfc4faddfb4a418b6840b86e79a3",
 			}
 
@@ -655,7 +655,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "bd969c992e6faff240ac1601afe07bdeaa64c2b75bd5abb36a1fd6601895c542",
+				ID:     "ab59a8e67be5672729f97ecd6c9824561ab6e77652d59ea4e7b6eaf18a5a443e",
 				Sha256: "7bbfcb694f6acc69483751d3b48d5bdbdcb284f9e04c7b7caa04b5977cffddc8",
 			}
 
@@ -682,7 +682,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "a58f439c45c5737613f1c1d4f10b57c06239b675fccdc32a3d078af89d2bd870",
+				ID:     "235c7f0377f3cea69659756c883243fd071ffb527c38d6abb407bf428ecc6489",
 				Sha256: "ba9a10ceceb80562fc124dc9bc94ea2a38e3a71e3e746e2140e6381ac791cdeb",
 			}
 
@@ -709,7 +709,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "ba4b4a0a1be91ab6b2a76f99bbd8eac5977c388cfc7de73707d30e5d5cf0a6d4",
+				ID:     "5135a54f35215fcbdfcea61313bc746ee4d2112781e7b346967aa53e3d266377",
 				Sha256: "ba9a10ceceb80562fc124dc9bc94ea2a38e3a71e3e746e2140e6381ac791cdeb",
 			}
 
@@ -736,7 +736,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "66b8f945a2906550194aefee5a6da6c3a4c60b533e30340707c8bea67ce35eae",
+				ID:     "c573851cdcabc1d5f7344c576ff67bdfe3f63f65b49e08942f24c15a1808a027",
 				Sha256: "327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a",
 			}
 
@@ -763,7 +763,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "5cfbab580dd42ef5c3a4d28488fde7e82220115dffc8aff01c0c568665405bcb",
+				ID:     "cc826acc16c2ab33525874eb66baddb180709b33380983d489e510d6674ef6bb",
 				Sha256: "8732360b941ad09a5e0e5d5f9891118bc068f6d0d5a56e3c6d483e4600fbc43f",
 			}
 
@@ -790,7 +790,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "e376250edb769e967fe48bdd05d50f4124f89f3db367b0eee9850128c93043d7",
+				ID:     "60645e89632f754c704450108e2d188f7496cb63bb6055a5b1bf5c71f29d0b3a",
 				Sha256: "d6d17dca18b8de59e38da525dc24c47b74fec1a790a9f64afdd6538f4f8fa90e",
 			}
 

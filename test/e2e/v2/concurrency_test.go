@@ -37,7 +37,7 @@ var _ = Describe("Download Concurrency", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fileMetadata := util.FileMetadata{
-				ID:     "423990483b62613df9671fb8f3cf48f4c46b9486debf65e62a765719547a00d2",
+				ID:     "de7d72a4f865bb1b1d3a9b7288bfd369a500277f5565736b2ba67aa205958df7",
 				Sha256: "fc44bbbba20490450c73530db3d1b935f893f38d7d8084ca132952a765ff5ff6",
 			}
 
@@ -67,7 +67,7 @@ var _ = Describe("Download Concurrency", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fileMetadata := util.FileMetadata{
-				ID:     "f533d0d08acd4e6d57c0249e97aa08195deb41a470cf781cdfc15e4bf34a87e9",
+				ID:     "510f018dc34c7e6ced07db2e88654a4e565e7982d5c73994e48e901f633c8113",
 				Sha256: "dc102987a36be20846821ac74648534863ff0fe8897d4250273a6ffc80481d91",
 			}
 
@@ -97,7 +97,7 @@ var _ = Describe("Download Concurrency", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fileMetadata := util.FileMetadata{
-				ID:     "7eee7f3238d0e8c40ac822dbc156384c160d2b3ea0fab1bbddcbe91f31c7caae",
+				ID:     "381ee3f1dd0b55d151997e107e5517e4ac315677a4ed67c3cd814fe7b86481d1",
 				Sha256: "54e54b7ff54ef70d4db2adcd24a27e3b9af3cd99fc0213983bac1e8035429be6",
 			}
 
@@ -127,7 +127,7 @@ var _ = Describe("Download Concurrency", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fileMetadata := util.FileMetadata{
-				ID:     "90fd5db5089bee6c00a2eedd616df7b34cfe22894235bb6bbe44ac1e9a9051a6",
+				ID:     "0068ce9e9beaca3ec33911d537be56de2d12e1b201bf3230aefe803919c373a5",
 				Sha256: "87c09b7c338f258809ca2d436bbe06ac94a3166b3f3e1125a86f35d9a9aa1d2f",
 			}
 

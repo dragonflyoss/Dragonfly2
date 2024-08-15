@@ -37,10 +37,6 @@ func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheat
 		return nil, err
 	}
 
-	if json.Args.PieceLength == 0 {
-		json.Args.PieceLength = types.DefaultPreheatJobPieceLength
-	}
-
 	groupJobState, err := s.job.CreatePreheat(ctx, candidateSchedulers, json.Args)
 	if err != nil {
 		return nil, err
@@ -231,12 +227,6 @@ func (s *service) pollingJob(ctx context.Context, id uint, groupID string) {
 			log.Errorf("polling group failed: %s", err.Error())
 			return nil, false, err
 		}
-
-		fmt.Println("111111111111111111111111111111111111")
-		fmt.Println("111111111111111111111111111111111111")
-		fmt.Println(result)
-		fmt.Println("111111111111111111111111111111111111")
-		fmt.Println("111111111111111111111111111111111111")
 
 		if err := s.db.WithContext(ctx).First(&job, id).Updates(models.Job{
 			State:  groupJob.State,

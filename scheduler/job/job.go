@@ -249,13 +249,12 @@ func (j *job) preheatV1(ctx context.Context, req *internaljob.PreheatRequest) er
 // preheatV2 preheats job by v2 grpc protocol.
 func (j *job) preheatV2(ctx context.Context, req *internaljob.PreheatRequest) error {
 	filteredQueryParams := strings.Split(req.FilteredQueryParams, idgen.FilteredQueryParamsSeparator)
-	taskID := idgen.TaskIDV2(req.URL, req.Digest, req.Tag, req.Application, int32(req.PieceLength), filteredQueryParams)
+	taskID := idgen.TaskIDV2(req.URL, req.Digest, req.Tag, req.Application, filteredQueryParams)
 
 	log := logger.WithTask(taskID, req.URL)
 	log.Infof("preheat(v2) %s tag: %s, filtered query params: %s, digest: %s, headers: %#v",
 		req.URL, req.Tag, req.FilteredQueryParams, req.Digest, req.Headers)
 
-	pieceLength := uint64(req.PieceLength)
 	stream, err := j.resource.SeedPeer().Client().DownloadTask(ctx, taskID, &dfdaemonv2.DownloadTaskRequest{
 		Download: &commonv2.Download{
 			Url:                 req.URL,
@@ -266,7 +265,6 @@ func (j *job) preheatV2(ctx context.Context, req *internaljob.PreheatRequest) er
 			Priority:            commonv2.Priority(req.Priority),
 			FilteredQueryParams: filteredQueryParams,
 			RequestHeader:       req.Headers,
-			PieceLength:         &pieceLength,
 		}})
 	if err != nil {
 		logger.Errorf("preheat(v2) %s failed: %s", req.URL, err.Error())
