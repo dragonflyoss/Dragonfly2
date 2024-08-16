@@ -27,6 +27,7 @@ var PassThroughHeaders = map[string]struct{}{
 
 	headers.Authorization:   {},
 	headers.ContentType:     {},
+	headers.ContentRange:    {},
 	headers.ContentEncoding: {},
 	headers.WWWAuthenticate: {},
 }
