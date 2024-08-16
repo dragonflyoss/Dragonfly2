@@ -169,6 +169,12 @@ func (m *MockService) CreateConfig(arg0 context.Context, arg1 types.CreateConfig
 	return ret0, ret1
 }
 
+// CreateConfig indicates an expected call of CreateConfig.
+func (mr *MockServiceMockRecorder) CreateConfig(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateConfig", reflect.TypeOf((*MockService)(nil).CreateConfig), arg0, arg1)
+}
+
 // CreateDeleteTaskJob mocks base method.
 func (m *MockService) CreateDeleteTaskJob(arg0 context.Context, arg1 types.CreateDeleteTaskJobRequest) (*models.Job, error) {
 	m.ctrl.T.Helper()
@@ -184,25 +190,19 @@ func (mr *MockServiceMockRecorder) CreateDeleteTaskJob(arg0, arg1 any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDeleteTaskJob", reflect.TypeOf((*MockService)(nil).CreateDeleteTaskJob), arg0, arg1)
 }
 
-// CreateListTasksJob mocks base method.
-func (m *MockService) CreateListTasksJob(arg0 context.Context, arg1 types.CreateListTasksJobRequest) (*models.Job, error) {
+// CreateGetTaskJob mocks base method.
+func (m *MockService) CreateGetTaskJob(arg0 context.Context, arg1 types.CreateGetTaskJobRequest) (*models.Job, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateListTasksJob", arg0, arg1)
+	ret := m.ctrl.Call(m, "CreateGetTaskJob", arg0, arg1)
 	ret0, _ := ret[0].(*models.Job)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CreateListTasksJob indicates an expected call of CreateListTasksJob.
-func (mr *MockServiceMockRecorder) CreateListTasksJob(arg0, arg1 any) *gomock.Call {
+// CreateGetTaskJob indicates an expected call of CreateGetTaskJob.
+func (mr *MockServiceMockRecorder) CreateGetTaskJob(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateListTasksJob", reflect.TypeOf((*MockService)(nil).CreateListTasksJob), arg0, arg1)
-}
-
-// CreateConfig indicates an expected call of CreateConfig.
-func (mr *MockServiceMockRecorder) CreateConfig(arg0, arg1 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateConfig", reflect.TypeOf((*MockService)(nil).CreateConfig), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateGetTaskJob", reflect.TypeOf((*MockService)(nil).CreateGetTaskJob), arg0, arg1)
 }
 
 // CreateOauth mocks base method.

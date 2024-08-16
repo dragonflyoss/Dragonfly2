@@ -51,7 +51,6 @@ func (s *service) CreateV1Preheat(ctx context.Context, json types.CreateV1Prehea
 			Type:                json.Type,
 			URL:                 json.URL,
 			FilteredQueryParams: json.FilteredQueryParams,
-			PieceLength:         types.DefaultPreheatJobPieceLength,
 			Headers:             json.Headers,
 		},
 	})

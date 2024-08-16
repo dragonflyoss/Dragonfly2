@@ -37,10 +37,6 @@ func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheat
 		return nil, err
 	}
 
-	if json.Args.PieceLength == 0 {
-		json.Args.PieceLength = types.DefaultPreheatJobPieceLength
-	}
-
 	groupJobState, err := s.job.CreatePreheat(ctx, candidateSchedulers, json.Args)
 	if err != nil {
 		return nil, err
@@ -115,13 +111,13 @@ func (s *service) CreateDeleteTaskJob(ctx context.Context, json types.CreateDele
 	return &job, nil
 }
 
-func (s *service) CreateListTasksJob(ctx context.Context, json types.CreateListTasksJobRequest) (*models.Job, error) {
+func (s *service) CreateGetTaskJob(ctx context.Context, json types.CreateGetTaskJobRequest) (*models.Job, error) {
 	candidateSchedulers, err := s.findCandidateSchedulers(ctx, json.SchedulerClusterIDs)
 	if err != nil {
 		return nil, err
 	}
 
-	groupJobState, err := s.job.CreateListTasks(ctx, candidateSchedulers, json.Args)
+	groupJobState, err := s.job.CreateGetTask(ctx, candidateSchedulers, json.Args)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +149,6 @@ func (s *service) CreateListTasksJob(ctx context.Context, json types.CreateListT
 	go s.pollingJob(context.Background(), job.ID, job.TaskID)
 
 	return &job, nil
-
 }
 
 func (s *service) findCandidateSchedulers(ctx context.Context, schedulerClusterIDs []uint) ([]models.Scheduler, error) {

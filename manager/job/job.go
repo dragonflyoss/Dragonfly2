@@ -40,7 +40,7 @@ type Job struct {
 	*internaljob.Job
 	Preheat
 	SyncPeers
-	ManagerTasks
+	Task
 }
 
 // New returns a new Job.
@@ -75,13 +75,12 @@ func New(cfg *config.Config, gdb *gorm.DB) (*Job, error) {
 		return nil, err
 	}
 
-	managerTasks := newManagerTasks(j, cfg.Job.ManagerTasks.Timeout)
-
+	task := newTask(j)
 	return &Job{
-		Job:          j,
-		Preheat:      preheat,
-		SyncPeers:    syncPeers,
-		ManagerTasks: managerTasks,
+		Job:       j,
+		Preheat:   preheat,
+		SyncPeers: syncPeers,
+		Task:      task,
 	}, nil
 }
 
@@ -96,18 +95,18 @@ func (j *Job) Stop() {
 }
 
 // getSchedulerQueues gets scheduler queues.
-func getSchedulerQueues(schedulers []models.Scheduler) []internaljob.Queue {
+func getSchedulerQueues(schedulers []models.Scheduler) ([]internaljob.Queue, error) {
 	var queues []internaljob.Queue
 	for _, scheduler := range schedulers {
 		queue, err := internaljob.GetSchedulerQueue(scheduler.SchedulerClusterID, scheduler.Hostname)
 		if err != nil {
-			continue
+			return nil, err
 		}
 
 		queues = append(queues, queue)
 	}
 
-	return queues
+	return queues, nil
 }
 
 // getSchedulerQueue gets scheduler queue.

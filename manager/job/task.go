@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-//go:generate mockgen -destination mocks/manager_tasks_mock.go -source manager_tasks.go -package mocks
+//go:generate mockgen -destination mocks/task_mock.go -source task.go -package mocks
 
 package job
 
@@ -34,30 +34,27 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-// ManagerTask is an interface for delete and list tasks.
-type ManagerTasks interface {
+// Task is an interface for manager tasks.
+type Task interface {
 	// CreateDeleteTask create a delete task job
-	CreateDeleteTask(context.Context, []models.Scheduler, types.DeleteTasksArgs) (*internaljob.GroupJobState, error)
-	// CreateListTasks create a list tasks job
-	CreateListTasks(context.Context, []models.Scheduler, types.ListTasksArgs) (*internaljob.GroupJobState, error)
+	CreateDeleteTask(context.Context, []models.Scheduler, types.DeleteTaskArgs) (*internaljob.GroupJobState, error)
+
+	// CreateGetTask create a get task job
+	CreateGetTask(context.Context, []models.Scheduler, types.GetTaskArgs) (*internaljob.GroupJobState, error)
 }
 
-// managerTasks is an implementation of ManagerTasks.
-type managerTasks struct {
-	job             *internaljob.Job
-	registryTimeout time.Duration
+// task is an implementation of Task.
+type task struct {
+	job *internaljob.Job
 }
 
-// newManagerTasks create a new ManagerTasks.
-func newManagerTasks(job *internaljob.Job, registryTimeout time.Duration) ManagerTasks {
-	return &managerTasks{
-		job:             job,
-		registryTimeout: registryTimeout,
-	}
+// newTask returns a new Task.
+func newTask(job *internaljob.Job) Task {
+	return &task{job}
 }
 
-// Create a delete task job.
-func (m *managerTasks) CreateDeleteTask(ctx context.Context, schedulers []models.Scheduler, json types.DeleteTasksArgs) (*internaljob.GroupJobState, error) {
+// CreateDeleteTask create a delete task job
+func (t *task) CreateDeleteTask(ctx context.Context, schedulers []models.Scheduler, json types.DeleteTaskArgs) (*internaljob.GroupJobState, error) {
 	var span trace.Span
 	ctx, span = tracer.Start(ctx, config.SpanDeleteTask, trace.WithSpanKind(trace.SpanKindProducer))
 	span.SetAttributes(config.AttributeDeleteTaskID.String(json.TaskID))
@@ -70,15 +67,19 @@ func (m *managerTasks) CreateDeleteTask(ctx context.Context, schedulers []models
 	}
 
 	// Initialize queues.
-	queues := getSchedulerQueues(schedulers)
-	return m.createGroupJob(ctx, internaljob.DeleteTaskJob, args, queues)
+	queues, err := getSchedulerQueues(schedulers)
+	if err != nil {
+		return nil, err
+	}
+
+	return t.createGroupJob(ctx, internaljob.DeleteTaskJob, args, queues)
 }
 
-// Create a list tasks job.
-func (m *managerTasks) CreateListTasks(ctx context.Context, schedulers []models.Scheduler, json types.ListTasksArgs) (*internaljob.GroupJobState, error) {
+// CreateGetTask create a get task job
+func (t *task) CreateGetTask(ctx context.Context, schedulers []models.Scheduler, json types.GetTaskArgs) (*internaljob.GroupJobState, error) {
 	var span trace.Span
-	ctx, span = tracer.Start(ctx, config.SpanListTasks, trace.WithSpanKind(trace.SpanKindProducer))
-	span.SetAttributes(config.AttributeListTasksID.String(json.TaskID))
+	ctx, span = tracer.Start(ctx, config.SpanGetTask, trace.WithSpanKind(trace.SpanKindProducer))
+	span.SetAttributes(config.AttributeGetTaskID.String(json.TaskID))
 	defer span.End()
 
 	args, err := internaljob.MarshalRequest(json)
@@ -88,12 +89,16 @@ func (m *managerTasks) CreateListTasks(ctx context.Context, schedulers []models.
 	}
 
 	// Initialize queues.
-	queues := getSchedulerQueues(schedulers)
-	return m.createGroupJob(ctx, internaljob.ListTasksJob, args, queues)
+	queues, err := getSchedulerQueues(schedulers)
+	if err != nil {
+		return nil, err
+	}
+
+	return t.createGroupJob(ctx, internaljob.GetTaskJob, args, queues)
 }
 
 // createGroupJob creates a group job.
-func (m *managerTasks) createGroupJob(ctx context.Context, name string, args []machineryv1tasks.Arg, queues []internaljob.Queue) (*internaljob.GroupJobState, error) {
+func (t *task) createGroupJob(ctx context.Context, name string, args []machineryv1tasks.Arg, queues []internaljob.Queue) (*internaljob.GroupJobState, error) {
 	var signatures []*machineryv1tasks.Signature
 	for _, queue := range queues {
 		signatures = append(signatures, &machineryv1tasks.Signature{
@@ -114,9 +119,9 @@ func (m *managerTasks) createGroupJob(ctx context.Context, name string, args []m
 		tasks = append(tasks, *signature)
 	}
 
-	logger.Infof("create manager tasks group %s in queues %v, tasks: %#v", group.GroupUUID, queues, tasks)
-	if _, err := m.job.Server.SendGroupWithContext(ctx, group, 0); err != nil {
-		logger.Errorf("create manager tasks group %s failed", group.GroupUUID, err)
+	logger.Infof("create task group %s in queues %v, tasks: %#v", group.GroupUUID, queues, tasks)
+	if _, err := t.job.Server.SendGroupWithContext(ctx, group, 0); err != nil {
+		logger.Errorf("create task group %s failed", group.GroupUUID, err)
 		return nil, err
 	}
 

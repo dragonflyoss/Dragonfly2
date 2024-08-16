@@ -109,7 +109,6 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []models.Schedul
 				URL:                 json.URL,
 				Tag:                 json.Tag,
 				FilteredQueryParams: json.FilteredQueryParams,
-				PieceLength:         json.PieceLength,
 				Headers:             json.Headers,
 			},
 		}
@@ -118,7 +117,11 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []models.Schedul
 	}
 
 	// Initialize queues.
-	queues := getSchedulerQueues(schedulers)
+	queues, err := getSchedulerQueues(schedulers)
+	if err != nil {
+		return nil, err
+	}
+
 	return p.createGroupJob(ctx, files, queues)
 }
 
@@ -319,7 +322,6 @@ func (p *preheat) parseLayers(manifests []distribution.Manifest, args types.Preh
 				URL:                 image.blobsURL(v.Digest.String()),
 				Tag:                 args.Tag,
 				FilteredQueryParams: args.FilteredQueryParams,
-				PieceLength:         args.PieceLength,
 				Headers:             nethttp.HeaderToMap(header),
 			}
 

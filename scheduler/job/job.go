@@ -47,6 +47,7 @@ import (
 const (
 	// preheatTimeout is timeout of preheating.
 	preheatTimeout = 20 * time.Minute
+
 	// deleteTaskTimeout is timeout of deleting task.
 	deleteTaskTimeout = 20 * time.Minute
 )
@@ -114,7 +115,7 @@ func New(cfg *config.Config, resource resource.Resource) (Job, error) {
 	namedJobFuncs := map[string]any{
 		internaljob.PreheatJob:    t.preheat,
 		internaljob.SyncPeersJob:  t.syncPeers,
-		internaljob.ListTasksJob:  t.listTasks,
+		internaljob.GetTaskJob:    t.getTask,
 		internaljob.DeleteTaskJob: t.deleteTask,
 	}
 
@@ -248,7 +249,7 @@ func (j *job) preheatV1(ctx context.Context, req *internaljob.PreheatRequest) er
 // preheatV2 preheats job by v2 grpc protocol.
 func (j *job) preheatV2(ctx context.Context, req *internaljob.PreheatRequest) error {
 	filteredQueryParams := strings.Split(req.FilteredQueryParams, idgen.FilteredQueryParamsSeparator)
-	taskID := idgen.TaskIDV2(req.URL, req.Digest, req.Tag, req.Application, int32(req.PieceLength), filteredQueryParams)
+	taskID := idgen.TaskIDV2(req.URL, req.Digest, req.Tag, req.Application, filteredQueryParams)
 
 	log := logger.WithTask(taskID, req.URL)
 	log.Infof("preheat(v2) %s tag: %s, filtered query params: %s, digest: %s, headers: %#v",
@@ -264,7 +265,6 @@ func (j *job) preheatV2(ctx context.Context, req *internaljob.PreheatRequest) er
 			Priority:            commonv2.Priority(req.Priority),
 			FilteredQueryParams: filteredQueryParams,
 			RequestHeader:       req.Headers,
-			PieceLength:         uint64(req.PieceLength),
 		}})
 	if err != nil {
 		logger.Errorf("preheat(v2) %s failed: %s", req.URL, err.Error())
@@ -303,31 +303,28 @@ func (j *job) syncPeers() (string, error) {
 	return internaljob.MarshalResponse(hosts)
 }
 
-// listTasks is a job to list tasks.
-func (j *job) listTasks(ctx context.Context, data string) (string, error) {
-	req := &internaljob.ListTasksRequest{}
+// getTask is a job to get task.
+func (j *job) getTask(ctx context.Context, data string) (string, error) {
+	req := &internaljob.GetTaskRequest{}
 	if err := internaljob.UnmarshalRequest(data, req); err != nil {
 		logger.Errorf("unmarshal request err: %s, request body: %s", err.Error(), data)
 		return "", err
 	}
 
 	if err := validator.New().Struct(req); err != nil {
-		logger.Errorf("listTasks %s validate failed: %s", req.TaskID, err.Error())
+		logger.Errorf("getTask %s validate failed: %s", req.TaskID, err.Error())
 		return "", err
 	}
 
-	// Get all peers by task id
-	peers, err := j.getFinishedPeers(req.TaskID)
-	if err != nil {
-		logger.Errorf("get peers by task id %s failed: %s", req.TaskID, err.Error())
-		return "", err
+	task, ok := j.resource.TaskManager().Load(req.TaskID)
+	if !ok {
+		logger.Errorf("task %s not found", req.TaskID)
+		return "", fmt.Errorf("task %s not found", req.TaskID)
 	}
 
-	listTaskResponse := &internaljob.ListTasksResponse{
-		Peers: peers,
-	}
-
-	return internaljob.MarshalResponse(listTaskResponse)
+	return internaljob.MarshalResponse(&internaljob.GetTaskResponse{
+		Peers: task.LoadPeers(),
+	})
 }
 
 // deleteTask is a job to delete task.
@@ -346,68 +343,51 @@ func (j *job) deleteTask(ctx context.Context, data string) (string, error) {
 		return "", err
 	}
 
-	// Get all peers by task id
-	peers, err := j.getFinishedPeers(req.TaskID)
-	if err != nil {
-		logger.Errorf("get peers by task id %s failed: %s", req.TaskID, err.Error())
-		return "", err
-	}
-
-	// Delete task by task id and host id
-	successTasks := make([]*internaljob.Task, 0)
-	failureTasks := make([]*internaljob.Task, 0)
-
-	// TODO: Create a limiter to limit delete rpc concurrency
-	// and avoid too many rpc requests to the host.
-	for _, peer := range peers {
-		// Get dfdaemon client from host
-		target := fmt.Sprintf("%s:%d", peer.Host.IP, peer.Host.Port)
-		dfdaemonUploadClient, err := dfdaemonclient.GetV2ByAddr(ctx, target)
-		if err != nil {
-			logger.Errorf("get dfdaemon client from %s failed: %s", target, err.Error())
-			failureTasks = append(failureTasks, &internaljob.Task{
-				Task:        peer.Task,
-				Peer:        peer,
-				Description: err.Error(),
-			})
-			continue
-		}
-		err = dfdaemonUploadClient.DeleteCacheTask(ctx, &dfdaemonv2.DeleteCacheTaskRequest{
-			TaskId: req.TaskID,
-		})
-		if err != nil {
-			logger.Errorf("delete task %s from %s failed: %s", req.TaskID, target, err.Error())
-			failureTasks = append(failureTasks, &internaljob.Task{
-				Task:        peer.Task,
-				Peer:        peer,
-				Description: err.Error(),
-			})
-			continue
-		}
-
-		successTasks = append(successTasks, &internaljob.Task{
-			Task:        peer.Task,
-			Peer:        peer,
-			Description: fmt.Sprintf("delete task %s from %s success", req.TaskID, target),
-		})
-	}
-
-	deleteTaskResponse := &internaljob.DeleteTaskResponse{
-		SuccessTasks: successTasks,
-		FailureTasks: failureTasks,
-	}
-
-	return internaljob.MarshalResponse(deleteTaskResponse)
-}
-
-// getFinishedPeers try to get valid peers by task id
-func (j *job) getFinishedPeers(taskID string) ([]*resource.Peer, error) {
-	// get task info by task id
-	task, ok := j.resource.TaskManager().Load(taskID)
+	task, ok := j.resource.TaskManager().Load(req.TaskID)
 	if !ok {
-		logger.Errorf("task %s not found", taskID)
-		return nil, fmt.Errorf("task %s not found", taskID)
+		logger.Errorf("task %s not found", req.TaskID)
+		return "", fmt.Errorf("task %s not found", req.TaskID)
 	}
 
-	return task.LoadFinishedPeers(), nil
+	successPeers := []*internaljob.DeletePeerResponse{}
+	failurePeers := []*internaljob.DeletePeerResponse{}
+
+	finishedPeers := task.LoadFinishedPeers()
+	for _, finishedPeer := range finishedPeers {
+		log := logger.WithPeer(finishedPeer.Host.ID, finishedPeer.Task.ID, finishedPeer.ID)
+
+		addr := fmt.Sprintf("%s:%d", finishedPeer.Host.IP, finishedPeer.Host.Port)
+		dfdaemonClient, err := dfdaemonclient.GetV2ByAddr(ctx, addr)
+		if err != nil {
+			log.Errorf("get client from %s failed: %s", addr, err.Error())
+			failurePeers = append(failurePeers, &internaljob.DeletePeerResponse{
+				Peer:        finishedPeer,
+				Description: err.Error(),
+			})
+
+			continue
+		}
+
+		if err = dfdaemonClient.DeleteCacheTask(ctx, &dfdaemonv2.DeleteCacheTaskRequest{
+			TaskId: req.TaskID,
+		}); err != nil {
+			logger.Errorf("delete task failed: %s", err.Error())
+			failurePeers = append(failurePeers, &internaljob.DeletePeerResponse{
+				Peer:        finishedPeer,
+				Description: err.Error(),
+			})
+
+			continue
+		}
+
+		successPeers = append(successPeers, &internaljob.DeletePeerResponse{
+			Peer:        finishedPeer,
+			Description: "",
+		})
+	}
+
+	return internaljob.MarshalResponse(&internaljob.DeleteTaskResponse{
+		FailurePeers: failurePeers,
+		SuccessPeers: successPeers,
+	})
 }

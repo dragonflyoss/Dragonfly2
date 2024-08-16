@@ -39,9 +39,9 @@ var (
 			"user_id": 4,
 			"bio": "bio"
 		}`
-	mockListTasksJobReqBody = `
+	mockGetTaskJobReqBody = `
 		{
-			"type": "list_tasks",
+			"type": "get_task",
 			"user_id": 4,
 			"bio": "bio"
 		}`
@@ -62,12 +62,12 @@ var (
 		Type:   "preheat",
 		BIO:    "bio",
 	}
-	mockListTasksCreateJobRequest = types.CreateListTasksJobRequest{
+	mockCreateGetTaskJobRequest = types.CreateGetTaskJobRequest{
 		UserID: 4,
-		Type:   "list_tasks",
+		Type:   "get_task",
 		BIO:    "bio",
 	}
-	mockDeleteTaskCreateJobRequest = types.CreateDeleteTaskJobRequest{
+	mockCreateDeleteTaskJobRequest = types.CreateDeleteTaskJobRequest{
 		UserID: 4,
 		Type:   "delete_task",
 		BIO:    "bio",
@@ -83,10 +83,10 @@ var (
 		BIO:       "bio",
 		TaskID:    "2",
 	}
-	mockListTasksJobModel = &models.Job{
+	mockGetTaskJobModel = &models.Job{
 		BaseModel: mockBaseModel,
 		UserID:    4,
-		Type:      "list_tasks",
+		Type:      "get_task",
 		BIO:       "bio",
 		TaskID:    "2",
 	}
@@ -153,9 +153,9 @@ func TestHandlers_CreateJob(t *testing.T) {
 		},
 		{
 			name: "success",
-			req:  httptest.NewRequest(http.MethodPost, "/oapi/v1/jobs", strings.NewReader(mockListTasksJobReqBody)),
+			req:  httptest.NewRequest(http.MethodPost, "/oapi/v1/jobs", strings.NewReader(mockGetTaskJobReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
-				ms.CreateListTasksJob(gomock.Any(), gomock.Eq(mockListTasksCreateJobRequest)).Return(mockListTasksJobModel, nil).Times(1)
+				ms.CreateGetTaskJob(gomock.Any(), gomock.Eq(mockCreateGetTaskJobRequest)).Return(mockGetTaskJobModel, nil).Times(1)
 			},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)
@@ -163,14 +163,14 @@ func TestHandlers_CreateJob(t *testing.T) {
 				job := models.Job{}
 				err := json.Unmarshal(w.Body.Bytes(), &job)
 				assert.NoError(err)
-				assert.Equal(mockListTasksJobModel, &job)
+				assert.Equal(mockGetTaskJobModel, &job)
 			},
 		},
 		{
 			name: "success",
 			req:  httptest.NewRequest(http.MethodPost, "/oapi/v1/jobs", strings.NewReader(mockDeleteTaskJobReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
-				ms.CreateDeleteTaskJob(gomock.Any(), gomock.Eq(mockDeleteTaskCreateJobRequest)).Return(mockDeleteTaskJobModel, nil).Times(1)
+				ms.CreateDeleteTaskJob(gomock.Any(), gomock.Eq(mockCreateDeleteTaskJobRequest)).Return(mockDeleteTaskJobModel, nil).Times(1)
 			},
 			expect: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert := assert.New(t)

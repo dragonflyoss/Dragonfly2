@@ -64,7 +64,7 @@ var _ = Describe("Preheat with Manager", func() {
 			Expect(done).Should(BeTrue())
 
 			fileMetadata := util.FileMetadata{
-				ID:     "e8ef42dcc1e8da5e77b19bf39532f91f0bfeb85ed0d3ce277e1823f91c5a255a",
+				ID:     "6ba5a8781902368d2b07eb8b6d6044a96f49d5008feace1ea8e3ebfc0b96d0a1",
 				Sha256: "80f1d8cd843a98b23b30e90e7e43a14e05935351f354d678bc465f7be66ef3dd",
 			}
 
@@ -111,7 +111,7 @@ var _ = Describe("Preheat with Manager", func() {
 			Expect(done).Should(BeTrue())
 
 			fileMetadata := util.FileMetadata{
-				ID:     "bf3cd4dd9b582ac4a9253d28d38f0d2cb942455572a2a2d2fc9a82e1e83eda4f",
+				ID:     "f4d85d5d6db12bdcdee48a1f3ace8420756399bdfcbddd430b6b2330ad4c00df",
 				Sha256: "4c7f0f298ab3350859f90664d706b8ccaa95072f1f1f3dd74f559642e5483cd5",
 			}
 
@@ -158,7 +158,7 @@ var _ = Describe("Preheat with Manager", func() {
 			Expect(done).Should(BeTrue())
 
 			fileMetadata := util.FileMetadata{
-				ID:     "c6273a9e7140bc2af543fbb15e16186e8f07b054f7bfd1556dce5a76dba7dd28",
+				ID:     "bd2024e044b8b29dcfd930ae1eae9594c8d94f89cc6403303cf07c892c00db7d",
 				Sha256: "a1cbf1bf2d66757121677fd7fefafacd4f843a2cb44a451131002803bae56a65",
 			}
 
@@ -205,7 +205,7 @@ var _ = Describe("Preheat with Manager", func() {
 			Expect(done).Should(BeTrue())
 
 			fileMetadata := util.FileMetadata{
-				ID:     "b9615c0754d6e5dafe0b3b8b1aafc836635efd528a3815288646728c946a0469",
+				ID:     "039d6a3441cc8e47bf83d6bb504be958f6b08511d8c23afcb0dd8c266b23fa93",
 				Sha256: "5a963cbdd08df27651e9c9d006567267ebb3c80f7b8fc0f218ade5771df2998b",
 			}
 
@@ -251,11 +251,11 @@ var _ = Describe("Preheat with Manager", func() {
 
 			taskMetadatas := []util.TaskMetadata{
 				{
-					ID:     "22b576f99cff7676bdb10a4fdf1f1ae5163ccf9023d07d5f1be355a86c3e99e7",
+					ID:     "b32d9d9ab534cd803ae7ecf6655fe2e397edb6bc6e160d462d3d762ca4281150",
 					Sha256: "a711f05d33845e2e9deffcfcc5adf082d7c6e97e3e3a881d193d9aae38f092a8",
 				},
 				{
-					ID:     "3ef8cc79ebac6ad32b68e0ea4b0a863b808b72377e645d1d87c73d073aea18d8",
+					ID:     "21213381947bc939549355f00318f22c2f35fb3a907b79a145aab45f0a18aff7",
 					Sha256: "f643e116a03d9604c344edb345d7592c48cc00f2a4848aaf773411f4fb30d2f5",
 				},
 			}
@@ -305,23 +305,23 @@ var _ = Describe("Preheat with Manager", func() {
 
 			taskMetadatas := []util.TaskMetadata{
 				{
-					ID:     "db5beca8a19049e0420e4efa08983e6b22162c1192de39a363ed16ea6459ee28",
+					ID:     "f3d195d2de9da87385bd381258f436e163efaed266b3ff56eac7b89d40cacfb3",
 					Sha256: "f1f1039835051ecc04909f939530e86a20f02d2ce5ad7a81c0fa3616f7303944",
 				},
 				{
-					ID:     "b89495f24d34cae8e9174df15b60d34d490547d3029e3c187079cc3b475ff250",
+					ID:     "d5f00b6bdba48fdd8920ae419ca0a007b3e15ff93d0c10495da981aaea657ef0",
 					Sha256: "c1d6d1b2d5a367259e6e51a7f4d1ccd66a28cc9940d6599d8a8ea9544dd4b4a8",
 				},
 				{
-					ID:     "efc4e319971484d86cc43a48a9e3eccc23736cabc50ba4d1e707a841eaf42e12",
+					ID:     "5ae39f96a141d56d403f5098bcbefc13882ae3eeb1926d3c1fcfe8644f0ba7eb",
 					Sha256: "871ab018db94b4ae7b137764837bc4504393a60656ba187189e985cd809064f7",
 				},
 				{
-					ID:     "5ff373729cb097252966b0fad599bad4c87e0dc96bf77c65b91badc99d2f7e99",
+					ID:     "11b4932bf84ca19d80ef974d02f62b9d82bd42c1a7b9c2e5112097dbafcec601",
 					Sha256: "f1a1d290795d904815786e41d39a41dc1af5de68a9e9020baba8bd83b32d8f95",
 				},
 				{
-					ID:     "99e12b50d80a25090c7928fe3ce35ca97bd373c45fe90870b3b70884bf9c34c9",
+					ID:     "0d15761559736d2e40678c72f7df9f330328c13abdbc5e3aa4c027c17f42b1c6",
 					Sha256: "f1ffc4b5459e82dc8e7ddd1d1a2ec469e85a1f076090c22851a1f2ce6f71e1a6",
 				},
 			}
@@ -369,23 +369,23 @@ var _ = Describe("Preheat with Manager", func() {
 
 			taskMetadatas := []util.TaskMetadata{
 				{
-					ID:     "4fed91258f022c3f8eb8c0408e871bff653bf8015f9e9ec71bd03a2bb639119b",
+					ID:     "b742ff16c917a4559f1909a1f1bb1a8cf66d242344d33a8ef8ca4b5bfc588b6a",
 					Sha256: "a0d7a8f11f7e25ca59f0bf470187dd9aa27e7ca951cf67a53c750deea5d3b076",
 				},
 				{
-					ID:     "fb47239bde6b518227ccce5ed86b0b1570a9e42ba94ca72f99f5db640350e22a",
+					ID:     "3ed59c2363a552a8b3e9b1d4aed8efef18c7861678db52afd71db57ee238f317",
 					Sha256: "a880266d3b77f75696023df2da1ef66c3c565e0f70596242395c9e68de955c7c",
 				},
 				{
-					ID:     "efc4e319971484d86cc43a48a9e3eccc23736cabc50ba4d1e707a841eaf42e12",
+					ID:     "5ae39f96a141d56d403f5098bcbefc13882ae3eeb1926d3c1fcfe8644f0ba7eb",
 					Sha256: "871ab018db94b4ae7b137764837bc4504393a60656ba187189e985cd809064f7",
 				},
 				{
-					ID:     "7860f1bd9cc5eca105df4c40719351562f04f5f0bda7805c34ed475ddd66d778",
+					ID:     "7f83153778995fabe52d43913bc70cfe6e1f858e9450d93750903b9cbcd1007b",
 					Sha256: "9b5952218d7711195c6c6fbddbef2780507d20851ca68845d180397d1348f0d8",
 				},
 				{
-					ID:     "34be7b23dcbb09487133810e30c1e701a4285f742d4dbe6f6fda496014f90af6",
+					ID:     "9368993adbbee8e4eeedfbd9279c88c7ea8f6dfe9b6ff035eac5dc2bf351b706",
 					Sha256: "889f4c960ac4ff70774e9c4cfa64efc4823ade0702d0f96c20ff0054ffbbe504",
 				},
 			}
