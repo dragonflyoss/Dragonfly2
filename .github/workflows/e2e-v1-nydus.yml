@@ -18,24 +18,27 @@ env:
   KIND_CONFIG_PATH: test/testdata/kind/config.yaml
   NYDUS_SNAPSHOTTER_CHARTS_PATH: deploy/helm-charts/charts/nydus-snapshotter
 
+permissions:  
+  contents: read
+
 jobs:
   e2e_tests_nydus:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           submodules: recursive
 
       - name: Setup buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1
         id: buildx
         with:
           install: true
 
       - name: Cache Docker layers
-        uses: actions/cache@v4
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-buildx-${{ github.sha }}
@@ -43,7 +46,7 @@ jobs:
             ${{ runner.os }}-buildx-
 
       - name: Build Scheduler Image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@5cd11c3a4ced054e52742c5fd54dca954e0edd85 # v6.7.0
         with:
           context: .
           file: build/images/scheduler/Dockerfile
@@ -54,7 +57,7 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache-new
 
       - name: Build Manager Image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@5cd11c3a4ced054e52742c5fd54dca954e0edd85 # v6.7.0
         with:
           context: .
           file: build/images/manager/Dockerfile
@@ -65,7 +68,7 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache-new
 
       - name: Build Dfdaemon Image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@5cd11c3a4ced054e52742c5fd54dca954e0edd85 # v6.7.0
         with:
           context: .
           file: build/images/dfdaemon/Dockerfile
@@ -76,7 +79,7 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache-new
 
       - name: Setup Kind
-        uses: helm/kind-action@v1.10.0
+        uses: helm/kind-action@0025e74a8c7512023d06dc019c617aa3cf561fde # v1.10.0
         with:
           version: ${{ env.KIND_VERSION }}
           config: ${{ env.KIND_CONFIG_PATH }}
@@ -144,7 +147,7 @@ jobs:
           docker exec kind-control-plane journalctl -u kubelet >> $log_dir/kubelet.log
 
       - name: Upload Logs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
         if: always()
         with:
           name: nydus-e2e-tests-logs

@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: ChatGPT Code Review
-        uses: anc95/ChatGPT-CodeReview@main
+        uses: anc95/ChatGPT-CodeReview@8c74515780ea4f00def44ce7c17cfe6b5500602a # main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
