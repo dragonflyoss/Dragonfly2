@@ -873,7 +873,7 @@ func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.S
 	// Collect RegisterPeerCount metrics.
 	priority := peer.CalculatePriority(v.dynconfig)
 	metrics.RegisterPeerCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+		peer.Host.Type.Name()).Inc()
 
 	blocklist := set.NewSafeSet[string]()
 	blocklist.Add(peer.ID)
@@ -904,7 +904,7 @@ func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.S
 			if err := v.downloadTaskBySeedPeer(ctx, taskID, download, peer); err != nil {
 				// Collect RegisterPeerFailureCount metrics.
 				metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-					peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+					peer.Host.Type.Name()).Inc()
 				return err
 			}
 		} else {
@@ -920,7 +920,7 @@ func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.S
 		if err := peer.Task.FSM.Event(ctx, resource.TaskEventDownload); err != nil {
 			// Collect RegisterPeerFailureCount metrics.
 			metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+				peer.Host.Type.Name()).Inc()
 			return status.Error(codes.Internal, err.Error())
 		}
 	} else {
@@ -960,13 +960,18 @@ func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.S
 
 		// Scheduling parent for the peer.
 		peer.BlockParents.Add(peer.ID)
+
+		// Record the start time.
+		start := time.Now()
 		if err := v.scheduling.ScheduleCandidateParents(ctx, peer, peer.BlockParents); err != nil {
 			// Collect RegisterPeerFailureCount metrics.
 			metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+				peer.Host.Type.Name()).Inc()
 			return status.Error(codes.FailedPrecondition, err.Error())
 		}
 
+		// Collect SchedulingDuration metrics.
+		metrics.ScheduleDuration.Observe(float64(time.Since(start).Milliseconds()))
 		return nil
 	default:
 		return status.Errorf(codes.FailedPrecondition, "invalid size cope %#v", sizeScope)
@@ -983,14 +988,14 @@ func (v *V2) handleDownloadPeerStartedRequest(ctx context.Context, peerID string
 	// Collect DownloadPeerStartedCount metrics.
 	priority := peer.CalculatePriority(v.dynconfig)
 	metrics.DownloadPeerStartedCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+		peer.Host.Type.Name()).Inc()
 
 	// Handle peer with peer started request.
 	if !peer.FSM.Is(resource.PeerStateRunning) {
 		if err := peer.FSM.Event(ctx, resource.PeerEventDownload); err != nil {
 			// Collect DownloadPeerStartedFailureCount metrics.
 			metrics.DownloadPeerStartedFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+				peer.Host.Type.Name()).Inc()
 			return status.Error(codes.Internal, err.Error())
 		}
 	}
@@ -1008,14 +1013,14 @@ func (v *V2) handleDownloadPeerBackToSourceStartedRequest(ctx context.Context, p
 	// Collect DownloadPeerBackToSourceStartedCount metrics.
 	priority := peer.CalculatePriority(v.dynconfig)
 	metrics.DownloadPeerBackToSourceStartedCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+		peer.Host.Type.Name()).Inc()
 
 	// Handle peer with peer back-to-source started request.
 	if !peer.FSM.Is(resource.PeerStateRunning) {
 		if err := peer.FSM.Event(ctx, resource.PeerEventDownloadBackToSource); err != nil {
 			// Collect DownloadPeerBackToSourceStartedFailureCount metrics.
 			metrics.DownloadPeerBackToSourceStartedFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+				peer.Host.Type.Name()).Inc()
 			return status.Error(codes.Internal, err.Error())
 		}
 	}
@@ -1035,10 +1040,14 @@ func (v *V2) handleRescheduleRequest(ctx context.Context, peerID string, candida
 		peer.BlockParents.Add(candidateParent.GetId())
 	}
 
+	// Record the start time.
+	start := time.Now()
 	if err := v.scheduling.ScheduleCandidateParents(ctx, peer, peer.BlockParents); err != nil {
 		return status.Error(codes.FailedPrecondition, err.Error())
 	}
 
+	// Collect SchedulingDuration metrics.
+	metrics.ScheduleDuration.Observe(float64(time.Since(start).Milliseconds()))
 	return nil
 }
 
@@ -1058,7 +1067,7 @@ func (v *V2) handleDownloadPeerFinishedRequest(ctx context.Context, peerID strin
 	// Collect DownloadPeerCount and DownloadPeerDuration metrics.
 	priority := peer.CalculatePriority(v.dynconfig)
 	metrics.DownloadPeerCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+		peer.Host.Type.Name()).Inc()
 	// TODO to be determined which traffic type to use, temporarily use TrafficType_REMOTE_PEER instead
 	metrics.DownloadPeerDuration.WithLabelValues(metrics.CalculateSizeLevel(peer.Task.ContentLength.Load()).String()).Observe(float64(peer.Cost.Load().Milliseconds()))
 
@@ -1091,7 +1100,7 @@ func (v *V2) handleDownloadPeerBackToSourceFinishedRequest(ctx context.Context, 
 	// Collect DownloadPeerCount and DownloadPeerDuration metrics.
 	priority := peer.CalculatePriority(v.dynconfig)
 	metrics.DownloadPeerCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+		peer.Host.Type.Name()).Inc()
 	// TODO to be determined which traffic type to use, temporarily use TrafficType_REMOTE_PEER instead
 	metrics.DownloadPeerDuration.WithLabelValues(metrics.CalculateSizeLevel(peer.Task.ContentLength.Load()).String()).Observe(float64(peer.Cost.Load().Milliseconds()))
 
@@ -1116,9 +1125,9 @@ func (v *V2) handleDownloadPeerFailedRequest(ctx context.Context, peerID string)
 	// Collect DownloadPeerCount and DownloadPeerFailureCount metrics.
 	priority := peer.CalculatePriority(v.dynconfig)
 	metrics.DownloadPeerCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+		peer.Host.Type.Name()).Inc()
 	metrics.DownloadPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+		peer.Host.Type.Name()).Inc()
 
 	return nil
 }
@@ -1146,9 +1155,9 @@ func (v *V2) handleDownloadPeerBackToSourceFailedRequest(ctx context.Context, pe
 	// Collect DownloadPeerCount and DownloadPeerBackToSourceFailureCount metrics.
 	priority := peer.CalculatePriority(v.dynconfig)
 	metrics.DownloadPeerCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+		peer.Host.Type.Name()).Inc()
 	metrics.DownloadPeerBackToSourceFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+		peer.Host.Type.Name()).Inc()
 
 	return nil
 }
@@ -1201,14 +1210,14 @@ func (v *V2) handleDownloadPieceFinishedRequest(peerID string, req *schedulerv2.
 
 	// Collect piece and traffic metrics.
 	metrics.DownloadPieceCount.WithLabelValues(piece.TrafficType.String(), peer.Task.Type.String(),
-		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+		peer.Host.Type.Name()).Inc()
 	metrics.Traffic.WithLabelValues(piece.TrafficType.String(), peer.Task.Type.String(),
-		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Add(float64(piece.Length))
+		peer.Host.Type.Name()).Add(float64(piece.Length))
 	if v.config.Metrics.EnableHost {
-		metrics.HostTraffic.WithLabelValues(metrics.HostTrafficDownloadType, peer.Task.Type.String(), peer.Task.Tag, peer.Task.Application,
+		metrics.HostTraffic.WithLabelValues(metrics.HostTrafficDownloadType, peer.Task.Type.String(),
 			peer.Host.Type.Name(), peer.Host.ID, peer.Host.IP, peer.Host.Hostname).Add(float64(piece.Length))
 		if loadedParent {
-			metrics.HostTraffic.WithLabelValues(metrics.HostTrafficUploadType, peer.Task.Type.String(), peer.Task.Tag, peer.Task.Application,
+			metrics.HostTraffic.WithLabelValues(metrics.HostTrafficUploadType, peer.Task.Type.String(),
 				parent.Host.Type.Name(), parent.Host.ID, parent.Host.IP, parent.Host.Hostname).Add(float64(piece.Length))
 		}
 	}
@@ -1257,11 +1266,11 @@ func (v *V2) handleDownloadPieceBackToSourceFinishedRequest(ctx context.Context,
 
 	// Collect piece and traffic metrics.
 	metrics.DownloadPieceCount.WithLabelValues(piece.TrafficType.String(), peer.Task.Type.String(),
-		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+		peer.Host.Type.Name()).Inc()
 	metrics.Traffic.WithLabelValues(piece.TrafficType.String(), peer.Task.Type.String(),
-		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Add(float64(piece.Length))
+		peer.Host.Type.Name()).Add(float64(piece.Length))
 	if v.config.Metrics.EnableHost {
-		metrics.HostTraffic.WithLabelValues(metrics.HostTrafficDownloadType, peer.Task.Type.String(), peer.Task.Tag, peer.Task.Application,
+		metrics.HostTraffic.WithLabelValues(metrics.HostTrafficDownloadType, peer.Task.Type.String(),
 			peer.Host.Type.Name(), peer.Host.ID, peer.Host.IP, peer.Host.Hostname).Add(float64(piece.Length))
 	}
 
@@ -1277,9 +1286,9 @@ func (v *V2) handleDownloadPieceFailedRequest(ctx context.Context, peerID string
 
 	// Collect DownloadPieceCount and DownloadPieceFailureCount metrics.
 	metrics.DownloadPieceCount.WithLabelValues(commonv2.TrafficType_REMOTE_PEER.String(), peer.Task.Type.String(),
-		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+		peer.Host.Type.Name()).Inc()
 	metrics.DownloadPieceFailureCount.WithLabelValues(commonv2.TrafficType_REMOTE_PEER.String(), peer.Task.Type.String(),
-		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+		peer.Host.Type.Name()).Inc()
 
 	if req.Temporary {
 		// Handle peer with piece temporary failed request.
@@ -1312,9 +1321,9 @@ func (v *V2) handleDownloadPieceBackToSourceFailedRequest(ctx context.Context, p
 
 	// Collect DownloadPieceCount and DownloadPieceFailureCount metrics.
 	metrics.DownloadPieceCount.WithLabelValues(commonv2.TrafficType_BACK_TO_SOURCE.String(), peer.Task.Type.String(),
-		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+		peer.Host.Type.Name()).Inc()
 	metrics.DownloadPieceFailureCount.WithLabelValues(commonv2.TrafficType_BACK_TO_SOURCE.String(), peer.Task.Type.String(),
-		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+		peer.Host.Type.Name()).Inc()
 
 	return status.Error(codes.Internal, "download piece from source failed")
 }

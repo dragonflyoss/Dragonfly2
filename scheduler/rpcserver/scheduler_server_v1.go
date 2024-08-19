@@ -59,19 +59,16 @@ func (s *schedulerServerV1) RegisterPeerTask(ctx context.Context, req *scheduler
 	if req.TaskId == "" {
 		req.TaskId = idgen.TaskIDV1(req.Url, req.UrlMeta)
 	}
-
-	tag := req.UrlMeta.Tag
-	application := req.UrlMeta.Application
 	priority := req.UrlMeta.Priority
 
 	// Collect RegisterPeerCount metrics.
 	metrics.RegisterPeerCount.WithLabelValues(priority.String(), commonv1.TaskType_Normal.String(),
-		tag, application, types.HostTypeNormalName).Inc()
+		types.HostTypeNormalName).Inc()
 	resp, err := s.service.RegisterPeerTask(ctx, req)
 	if err != nil {
 		// Collect RegisterPeerFailureCount metrics.
 		metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), commonv1.TaskType_Normal.String(),
-			tag, application, types.HostTypeNormalName).Inc()
+			types.HostTypeNormalName).Inc()
 	}
 
 	return resp, err
