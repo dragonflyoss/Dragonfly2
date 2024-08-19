@@ -252,10 +252,10 @@ func (v *V1) ReportPieceResult(stream schedulerv1.Scheduler_ReportPieceResultSer
 
 			// Collect host traffic metrics.
 			if v.config.Metrics.Enable && v.config.Metrics.EnableHost {
-				metrics.HostTraffic.WithLabelValues(metrics.HostTrafficDownloadType, peer.Task.Type.String(), peer.Task.Tag, peer.Task.Application,
+				metrics.HostTraffic.WithLabelValues(metrics.HostTrafficDownloadType, peer.Task.Type.String(),
 					peer.Host.Type.Name(), peer.Host.ID, peer.Host.IP, peer.Host.Hostname).Add(float64(piece.PieceInfo.RangeSize))
 				if parent, loaded := v.resource.PeerManager().Load(piece.DstPid); loaded {
-					metrics.HostTraffic.WithLabelValues(metrics.HostTrafficUploadType, peer.Task.Type.String(), peer.Task.Tag, peer.Task.Application,
+					metrics.HostTraffic.WithLabelValues(metrics.HostTrafficUploadType, peer.Task.Type.String(),
 						parent.Host.Type.Name(), parent.Host.ID, parent.Host.IP, parent.Host.Hostname).Add(float64(piece.PieceInfo.RangeSize))
 				} else if !resource.IsPieceBackToSource(piece.DstPid) {
 					peer.Log.Warnf("dst peer %s not found", piece.DstPid)
@@ -265,10 +265,10 @@ func (v *V1) ReportPieceResult(stream schedulerv1.Scheduler_ReportPieceResultSer
 			// Collect traffic metrics.
 			if !resource.IsPieceBackToSource(piece.DstPid) {
 				metrics.Traffic.WithLabelValues(commonv2.TrafficType_REMOTE_PEER.String(), peer.Task.Type.String(),
-					peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Add(float64(piece.PieceInfo.RangeSize))
+					peer.Host.Type.Name()).Add(float64(piece.PieceInfo.RangeSize))
 			} else {
 				metrics.Traffic.WithLabelValues(commonv2.TrafficType_BACK_TO_SOURCE.String(), peer.Task.Type.String(),
-					peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Add(float64(piece.PieceInfo.RangeSize))
+					peer.Host.Type.Name()).Add(float64(piece.PieceInfo.RangeSize))
 			}
 			continue
 		}
@@ -305,7 +305,7 @@ func (v *V1) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult) 
 	// Collect DownloadPeerCount metrics.
 	priority := peer.CalculatePriority(v.dynconfig)
 	metrics.DownloadPeerCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-		peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+		peer.Host.Type.Name()).Inc()
 
 	parents := peer.Parents()
 	if !req.GetSuccess() {
@@ -313,7 +313,7 @@ func (v *V1) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult) 
 		if peer.FSM.Is(resource.PeerStateBackToSource) {
 			// Collect DownloadPeerBackToSourceFailureCount metrics.
 			metrics.DownloadPeerBackToSourceFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+				peer.Host.Type.Name()).Inc()
 
 			go v.createDownloadRecord(peer, parents, req)
 			v.handleTaskFailure(ctx, peer.Task, req.GetSourceError(), nil)
@@ -323,7 +323,7 @@ func (v *V1) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult) 
 
 		// Collect DownloadPeerFailureCount metrics.
 		metrics.DownloadPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
-			peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
+			peer.Host.Type.Name()).Inc()
 
 		go v.createDownloadRecord(peer, parents, req)
 		v.handlePeerFailure(ctx, peer)
@@ -1035,11 +1035,16 @@ func (v *V1) registerTinyTask(ctx context.Context, peer *resource.Peer) (*schedu
 
 // registerSmallTask registers the small task.
 func (v *V1) registerSmallTask(ctx context.Context, peer *resource.Peer) (*schedulerv1.RegisterResult, error) {
+	// Record the start time.
+	start := time.Now()
 	candidateParents, found := v.scheduling.FindParentAndCandidateParents(ctx, peer, set.NewSafeSet[string]())
 	if !found {
 		return nil, errors.New("candidate parent not found")
 	}
 	candidateParent := candidateParents[0]
+
+	// Collect SchedulingDuration metrics.
+	metrics.ScheduleDuration.Observe(float64(time.Since(start).Milliseconds()))
 
 	// When task size scope is small, parent must be downloaded successfully
 	// before returning to the parent directly.
@@ -1147,7 +1152,12 @@ func (v *V1) handleBeginOfPiece(ctx context.Context, peer *resource.Peer) {
 			return
 		}
 
+		// Record the start time.
+		start := time.Now()
 		v.scheduling.ScheduleParentAndCandidateParents(ctx, peer, set.NewSafeSet[string]())
+
+		// Collect SchedulingDuration metrics.
+		metrics.ScheduleDuration.Observe(float64(time.Since(start).Milliseconds()))
 	default:
 	}
 }
@@ -1218,7 +1228,13 @@ func (v *V1) handlePieceFailure(ctx context.Context, peer *resource.Peer, piece 
 	if !loaded {
 		peer.Log.Errorf("parent %s not found", piece.DstPid)
 		peer.BlockParents.Add(piece.DstPid)
+
+		// Record the start time.
+		start := time.Now()
 		v.scheduling.ScheduleParentAndCandidateParents(ctx, peer, peer.BlockParents)
+
+		// Collect SchedulingDuration metrics.
+		metrics.ScheduleDuration.Observe(float64(time.Since(start).Milliseconds()))
 		return
 	}
 
@@ -1277,7 +1293,13 @@ func (v *V1) handlePieceFailure(ctx context.Context, peer *resource.Peer, piece 
 
 	peer.Log.Infof("reschedule parent because of failed piece")
 	peer.BlockParents.Add(parent.ID)
+
+	// Record the start time.
+	start := time.Now()
 	v.scheduling.ScheduleParentAndCandidateParents(ctx, peer, peer.BlockParents)
+
+	// Collect SchedulingDuration metrics.
+	metrics.ScheduleDuration.Observe(float64(time.Since(start).Milliseconds()))
 }
 
 // handlePeerSuccess handles successful peer.
@@ -1319,7 +1341,13 @@ func (v *V1) handlePeerFailure(ctx context.Context, peer *resource.Peer) {
 	// Reschedule a new parent to children of peer to exclude the current failed peer.
 	for _, child := range peer.Children() {
 		child.Log.Infof("reschedule parent because of parent peer %s is failed", peer.ID)
+
+		// Record the start time.
+		start := time.Now()
 		v.scheduling.ScheduleParentAndCandidateParents(ctx, child, child.BlockParents)
+
+		// Collect SchedulingDuration metrics.
+		metrics.ScheduleDuration.Observe(float64(time.Since(start).Milliseconds()))
 	}
 }
 
@@ -1334,7 +1362,13 @@ func (v *V1) handleLegacySeedPeer(ctx context.Context, peer *resource.Peer) {
 	// Reschedule a new parent to children of peer to exclude the current failed peer.
 	for _, child := range peer.Children() {
 		child.Log.Infof("reschedule parent because of parent peer %s is failed", peer.ID)
+
+		// Record the start time.
+		start := time.Now()
 		v.scheduling.ScheduleParentAndCandidateParents(ctx, child, child.BlockParents)
+
+		// Collect SchedulingDuration metrics.
+		metrics.ScheduleDuration.Observe(float64(time.Since(start).Milliseconds()))
 	}
 }
 

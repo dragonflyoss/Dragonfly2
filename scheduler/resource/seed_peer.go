@@ -213,7 +213,7 @@ func (s *seedPeer) TriggerTask(ctx context.Context, rg *http.Range, task *Task) 
 				trafficType = commonv2.TrafficType_LOCAL_PEER
 			}
 			metrics.Traffic.WithLabelValues(trafficType.String(), peer.Task.Type.String(),
-				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Add(float64(pieceSeed.PieceInfo.RangeSize))
+				peer.Host.Type.Name()).Add(float64(pieceSeed.PieceInfo.RangeSize))
 		}
 
 		// Handle end of piece.
