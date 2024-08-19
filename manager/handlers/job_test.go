@@ -137,7 +137,7 @@ func TestHandlers_CreateJob(t *testing.T) {
 			},
 		},
 		{
-			name: "success",
+			name: "create preheat job success",
 			req:  httptest.NewRequest(http.MethodPost, "/oapi/v1/jobs", strings.NewReader(mockPreheatJobReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.CreatePreheatJob(gomock.Any(), gomock.Eq(mockPreheatCreateJobRequest)).Return(mockPreheatJobModel, nil).Times(1)
@@ -152,7 +152,7 @@ func TestHandlers_CreateJob(t *testing.T) {
 			},
 		},
 		{
-			name: "success",
+			name: "create get task job success",
 			req:  httptest.NewRequest(http.MethodPost, "/oapi/v1/jobs", strings.NewReader(mockGetTaskJobReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.CreateGetTaskJob(gomock.Any(), gomock.Eq(mockCreateGetTaskJobRequest)).Return(mockGetTaskJobModel, nil).Times(1)
@@ -167,7 +167,7 @@ func TestHandlers_CreateJob(t *testing.T) {
 			},
 		},
 		{
-			name: "success",
+			name: "create delete task job success",
 			req:  httptest.NewRequest(http.MethodPost, "/oapi/v1/jobs", strings.NewReader(mockDeleteTaskJobReqBody)),
 			mock: func(ms *mocks.MockServiceMockRecorder) {
 				ms.CreateDeleteTaskJob(gomock.Any(), gomock.Eq(mockCreateDeleteTaskJobRequest)).Return(mockDeleteTaskJobModel, nil).Times(1)

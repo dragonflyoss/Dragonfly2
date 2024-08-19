@@ -75,6 +75,25 @@ func (mr *MockV2MockRecorder) DeleteCacheTask(arg0, arg1 any, arg2 ...any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCacheTask", reflect.TypeOf((*MockV2)(nil).DeleteCacheTask), varargs...)
 }
 
+// DeleteTask mocks base method.
+func (m *MockV2) DeleteTask(arg0 context.Context, arg1 *dfdaemon.DeleteTaskRequest, arg2 ...grpc.CallOption) error {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteTask", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteTask indicates an expected call of DeleteTask.
+func (mr *MockV2MockRecorder) DeleteTask(arg0, arg1 any, arg2 ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTask", reflect.TypeOf((*MockV2)(nil).DeleteTask), varargs...)
+}
+
 // DownloadCacheTask mocks base method.
 func (m *MockV2) DownloadCacheTask(arg0 context.Context, arg1 *dfdaemon.DownloadCacheTaskRequest, arg2 ...grpc.CallOption) (dfdaemon.DfdaemonUpload_DownloadCacheTaskClient, error) {
 	m.ctrl.T.Helper()
@@ -153,6 +172,26 @@ func (mr *MockV2MockRecorder) StatCacheTask(arg0, arg1 any, arg2 ...any) *gomock
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatCacheTask", reflect.TypeOf((*MockV2)(nil).StatCacheTask), varargs...)
+}
+
+// StatTask mocks base method.
+func (m *MockV2) StatTask(arg0 context.Context, arg1 *dfdaemon.StatTaskRequest, arg2 ...grpc.CallOption) (*common.Task, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "StatTask", varargs...)
+	ret0, _ := ret[0].(*common.Task)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StatTask indicates an expected call of StatTask.
+func (mr *MockV2MockRecorder) StatTask(arg0, arg1 any, arg2 ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatTask", reflect.TypeOf((*MockV2)(nil).StatTask), varargs...)
 }
 
 // SyncPieces mocks base method.

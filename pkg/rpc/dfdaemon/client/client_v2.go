@@ -129,6 +129,12 @@ type V2 interface {
 	// DownloadTask downloads task from p2p network.
 	DownloadTask(context.Context, string, *dfdaemonv2.DownloadTaskRequest, ...grpc.CallOption) (dfdaemonv2.DfdaemonUpload_DownloadTaskClient, error)
 
+	// StatTask stats task information.
+	StatTask(context.Context, *dfdaemonv2.StatTaskRequest, ...grpc.CallOption) (*commonv2.Task, error)
+
+	// DeleteTask deletes task from p2p network.
+	DeleteTask(context.Context, *dfdaemonv2.DeleteTaskRequest, ...grpc.CallOption) error
+
 	// DownloadCacheTask downloads cache task from p2p network.
 	DownloadCacheTask(context.Context, *dfdaemonv2.DownloadCacheTaskRequest, ...grpc.CallOption) (dfdaemonv2.DfdaemonUpload_DownloadCacheTaskClient, error)
 
@@ -180,6 +186,23 @@ func (v *v2) DownloadTask(ctx context.Context, taskID string, req *dfdaemonv2.Do
 		req,
 		opts...,
 	)
+}
+
+// StatTask stats task information.
+func (v *v2) StatTask(ctx context.Context, req *dfdaemonv2.StatTaskRequest, opts ...grpc.CallOption) (*commonv2.Task, error) {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
+	return v.DfdaemonUploadClient.StatTask(ctx, req, opts...)
+}
+
+// DeleteTask deletes task from p2p network.
+func (v *v2) DeleteTask(ctx context.Context, req *dfdaemonv2.DeleteTaskRequest, opts ...grpc.CallOption) error {
+	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
+	defer cancel()
+
+	_, err := v.DfdaemonUploadClient.DeleteTask(ctx, req, opts...)
+	return err
 }
 
 // DownloadCacheTask downloads cache task from p2p network.
