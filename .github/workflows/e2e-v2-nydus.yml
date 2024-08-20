@@ -167,7 +167,7 @@ jobs:
           done
 
       - name: Upload Logs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.3.6
         if: always()
         with:
           name: nydus-e2e-tests-logs
