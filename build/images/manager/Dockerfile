@@ -1,6 +1,6 @@
 ARG BASE_IMAGE=alpine:3.17
 
-FROM node:20-alpine as console-builder
+FROM node:20-alpine AS console-builder
 
 WORKDIR /build
 
@@ -12,7 +12,7 @@ COPY ./manager/console /build
 
 RUN yarn build
 
-FROM golang:1.21.1-alpine3.17 as server-builder
+FROM golang:1.21.1-alpine3.17 AS server-builder
 
 ARG GOPROXY
 ARG GOTAGS
@@ -28,7 +28,7 @@ COPY --from=console-builder /build/dist /go/src/d7y.io/dragonfly/v2/manager/dist
 
 RUN make build-manager-server && make install-manager
 
-FROM ${BASE_IMAGE} as health
+FROM ${BASE_IMAGE} AS health
 
 ENV GRPC_HEALTH_PROBE_VERSION v0.4.24
 
