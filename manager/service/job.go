@@ -98,22 +98,58 @@ func (s *service) CreateDeleteTaskJob(ctx context.Context, json types.CreateDele
 		return nil, err
 	}
 
-	groupJobState, err := s.job.CreateDeleteTask(ctx, candidateSchedulers, json.Args)
-	if err != nil {
-		return nil, err
-	}
-
 	var candidateSchedulerClusters []models.SchedulerCluster
 	for _, candidateScheduler := range candidateSchedulers {
 		candidateSchedulerClusters = append(candidateSchedulerClusters, candidateScheduler.SchedulerCluster)
 	}
 
-	job := models.Job{
+	var job *models.Job
+	defer func() {
+		if job != nil {
+			if err := s.db.WithContext(ctx).Create(job).Error; err != nil {
+				logger.Errorf("create job failed: %s", err.Error())
+			}
+		}
+	}()
+
+	groupJobState, result, err := s.job.DeleteTask(ctx, candidateSchedulers, json.Args)
+	if err != nil {
+		if groupJobState != nil {
+			job = &models.Job{
+				TaskID:            groupJobState.GroupUUID,
+				BIO:               json.BIO,
+				Type:              json.Type,
+				State:             machineryv1tasks.StateFailure,
+				Args:              args,
+				UserID:            json.UserID,
+				SchedulerClusters: candidateSchedulerClusters,
+			}
+		}
+		return job, err
+	}
+
+	// Convert the result to JSONMap.
+	resultMap, err := structure.StructToMap(result)
+	if err != nil {
+		job = &models.Job{
+			TaskID:            groupJobState.GroupUUID,
+			BIO:               json.BIO,
+			Type:              json.Type,
+			State:             machineryv1tasks.StateFailure,
+			Args:              args,
+			UserID:            json.UserID,
+			SchedulerClusters: candidateSchedulerClusters,
+		}
+		return job, err
+	}
+	
+	job = &models.Job{
 		TaskID:            groupJobState.GroupUUID,
 		BIO:               json.BIO,
 		Type:              json.Type,
-		State:             groupJobState.State,
+		State:             machineryv1tasks.StateSuccess,
 		Args:              args,
+		Result:            resultMap,
 		UserID:            json.UserID,
 		SchedulerClusters: candidateSchedulerClusters,
 	}
@@ -132,11 +168,6 @@ func (s *service) CreateGetTaskJob(ctx context.Context, json types.CreateGetTask
 		return nil, err
 	}
 
-	groupJobState, err := s.job.CreateGetTask(ctx, candidateSchedulers, json.Args)
-	if err != nil {
-		return nil, err
-	}
-
 	var candidateSchedulerClusters []models.SchedulerCluster
 	for _, candidateScheduler := range candidateSchedulers {
 		candidateSchedulerClusters = append(candidateSchedulerClusters, candidateScheduler.SchedulerCluster)
@@ -147,12 +178,53 @@ func (s *service) CreateGetTaskJob(ctx context.Context, json types.CreateGetTask
 		return nil, err
 	}
 
-	job := models.Job{
+	var job *models.Job
+	defer func() {
+		if job != nil {
+			if err := s.db.WithContext(ctx).Create(job).Error; err != nil {
+				logger.Errorf("create job failed: %s", err.Error())
+			}
+		}
+	}()
+
+	groupJobState, result, err := s.job.GetTask(ctx, candidateSchedulers, json.Args)
+	if err != nil {
+		if groupJobState != nil {
+			job = &models.Job{
+				TaskID:            groupJobState.GroupUUID,
+				BIO:               json.BIO,
+				Type:              json.Type,
+				State:             machineryv1tasks.StateFailure,
+				Args:              args,
+				UserID:            json.UserID,
+				SchedulerClusters: candidateSchedulerClusters,
+			}
+		}
+		return job, err
+	}
+
+	// Convert the result to JSONMap.
+	resultMap, err := structure.StructToMap(result)
+	if err != nil {
+		job = &models.Job{
+			TaskID:            groupJobState.GroupUUID,
+			BIO:               json.BIO,
+			Type:              json.Type,
+			State:             machineryv1tasks.StateFailure,
+			Args:              args,
+			UserID:            json.UserID,
+			SchedulerClusters: candidateSchedulerClusters,
+		}
+		return job, err
+	}
+
+	job = &models.Job{
 		TaskID:            groupJobState.GroupUUID,
 		BIO:               json.BIO,
 		Type:              json.Type,
-		State:             groupJobState.State,
+		State:             machineryv1tasks.StateSuccess,
 		Args:              args,
+		Result:            resultMap,
 		UserID:            json.UserID,
 		SchedulerClusters: candidateSchedulerClusters,
 	}
