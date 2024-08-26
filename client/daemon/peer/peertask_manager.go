@@ -242,8 +242,8 @@ retry:
 	if parent != nil {
 		<-parent.storageRegistered
 		if !parent.storageRegisterSuccess {
-			parent = nil
 			logger.Warnf("parent peer task %s/%s register failed, fallback to non-sub peer task", parent.taskID, parent.peerID)
+			parent = nil
 			goto retry
 		}
 	}
