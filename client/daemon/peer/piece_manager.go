@@ -44,6 +44,7 @@ import (
 	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 
 	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
@@ -518,6 +519,7 @@ func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, 
 			return storage.ErrShortRead
 		}
 
+		metrics.BackSourceTotal.Add(float64(result.Size))
 		pt.ReportPieceResult(request, result, nil)
 		pt.PublishPieceInfo(pieceNum, uint32(result.Size))
 		if supportConcurrent && pieceNum+2 < maxPieceNum {
@@ -599,6 +601,7 @@ func (pm *pieceManager) downloadUnknownLengthSource(pt Task, pieceSize uint32, r
 			break
 		}
 
+		metrics.BackSourceTotal.Add(float64(result.Size))
 		pt.SetTotalPieces(totalPieces)
 		pt.SetContentLength(contentLength)
 		pt.ReportPieceResult(request, result, nil)
@@ -1147,6 +1150,7 @@ func (pm *pieceManager) downloadPieceGroupFromSource(ctx context.Context,
 			return storage.ErrShortRead
 		}
 
+		metrics.BackSourceTotal.Add(float64(result.Size))
 		pt.ReportPieceResult(request, result, nil)
 		pt.PublishPieceInfo(pieceNum, uint32(result.Size))
 

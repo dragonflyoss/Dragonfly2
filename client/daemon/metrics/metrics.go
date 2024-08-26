@@ -165,6 +165,13 @@ var (
 		Help:      "Counter of the total prefetched tasks.",
 	})
 
+	BackSourceTotal = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.DfdaemonMetricsName,
+		Name:      "back_source_total",
+		Help:      "Total bytes of back source.",
+	})
+
 	VersionGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.DfdaemonMetricsName,
