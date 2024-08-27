@@ -92,7 +92,6 @@ func migrate(db *gorm.DB) error {
 		&models.Oauth{},
 		&models.Config{},
 		&models.Application{},
-		&models.Model{},
 		&models.PersonalAccessToken{},
 		&models.Peer{},
 	)
