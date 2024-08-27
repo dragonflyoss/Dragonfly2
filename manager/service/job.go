@@ -129,18 +129,9 @@ func (s *service) CreateDeleteTaskJob(ctx context.Context, json types.CreateDele
 	}
 
 	// Convert the result to JSONMap.
-	resultMap, err := structure.StructToMap(result)
-	if err != nil {
-		job = &models.Job{
-			TaskID:            groupJobState.GroupUUID,
-			BIO:               json.BIO,
-			Type:              json.Type,
-			State:             machineryv1tasks.StateFailure,
-			Args:              args,
-			UserID:            json.UserID,
-			SchedulerClusters: candidateSchedulerClusters,
-		}
-		return job, err
+	resultMap := make(models.JSONMap)
+	for key, value := range result {
+		resultMap[key] = value
 	}
 	
 	job = &models.Job{
@@ -204,18 +195,9 @@ func (s *service) CreateGetTaskJob(ctx context.Context, json types.CreateGetTask
 	}
 
 	// Convert the result to JSONMap.
-	resultMap, err := structure.StructToMap(result)
-	if err != nil {
-		job = &models.Job{
-			TaskID:            groupJobState.GroupUUID,
-			BIO:               json.BIO,
-			Type:              json.Type,
-			State:             machineryv1tasks.StateFailure,
-			Args:              args,
-			UserID:            json.UserID,
-			SchedulerClusters: candidateSchedulerClusters,
-		}
-		return job, err
+	resultMap := make(models.JSONMap)
+	for key, value := range result {
+		resultMap[key] = value
 	}
 
 	job = &models.Job{

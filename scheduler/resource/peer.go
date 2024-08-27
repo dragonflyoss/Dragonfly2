@@ -19,6 +19,7 @@ package resource
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -532,4 +533,71 @@ func (p *Peer) CalculatePriority(dynconfig config.DynconfigInterface) commonv2.P
 	}
 
 	return application.Priority.Value
+}
+
+// MarshalJSON marshals a peer into a json string.
+func (p *Peer) MarshalJSON() ([]byte, error) {
+	// Marshal peers but ignore the task field.
+	type PeerAlias struct {
+		ID               string                 `json:"id"`
+		Config           *config.ResourceConfig `json:"config,omitempty"`
+		Range            *nethttp.Range         `json:"range,omitempty"`
+		Priority         commonv2.Priority      `json:"priority"`
+		Pieces           map[int32]*Piece       `json:"pieces,omitempty"`
+		FinishedPieces   *bitset.BitSet         `json:"finished_pieces,omitempty"`
+		PieceCosts       []time.Duration        `json:"piece_costs"`
+		Cost             time.Duration          `json:"cost,omitempty"`
+		BlockParents     []string               `json:"block_parents"`
+		NeedBackToSource bool                   `json:"need_back_to_source"`
+		PieceUpdatedAt   time.Time              `json:"piece_updated_at"`
+		CreatedAt        time.Time              `json:"created_at"`
+		UpdatedAt        time.Time              `json:"updated_at"`
+	}
+
+	peer := &PeerAlias{
+		ID:               p.ID,
+		Config:           p.Config,
+		Range:            p.Range,
+		Priority:         p.Priority,
+		FinishedPieces:   p.FinishedPieces,
+		PieceCosts:       p.pieceCosts,
+		NeedBackToSource: p.NeedBackToSource != nil && p.NeedBackToSource.Load(),
+		PieceUpdatedAt:   time.Time{},
+		CreatedAt:        time.Time{},
+		UpdatedAt:        time.Time{},
+	}
+
+	if p.BlockParents != nil && p.BlockParents.Len() > 0 {
+		peer.BlockParents = p.BlockParents.Values()
+	}
+
+	// Check and load atomic fields
+	if p.Cost != nil {
+		peer.Cost = p.Cost.Load()
+	}
+
+	if p.PieceUpdatedAt != nil {
+		peer.PieceUpdatedAt = p.PieceUpdatedAt.Load()
+	}
+
+	if p.CreatedAt != nil {
+		peer.CreatedAt = p.CreatedAt.Load()
+	}
+
+	if p.UpdatedAt != nil {
+		peer.UpdatedAt = p.UpdatedAt.Load()
+	}
+
+	// Handle Pieces (sync.Map) safely
+	peer.Pieces = make(map[int32]*Piece)
+	p.Pieces.Range(func(key, value interface{}) bool {
+		k, ok1 := key.(int32)
+		v, ok2 := value.(*Piece)
+		if ok1 && ok2 {
+			peer.Pieces[k] = v
+		}
+		return true
+	})
+
+	return json.Marshal(peer)
 }

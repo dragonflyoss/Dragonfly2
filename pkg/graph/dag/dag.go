@@ -19,9 +19,7 @@
 package dag
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
 	"sync"
 
 	"go.uber.org/atomic"
@@ -393,72 +391,4 @@ func (d *dag[T]) search(vertexID string, successors map[string]struct{}) {
 			d.search(child.ID, successors)
 		}
 	}
-}
-
-// MarshalJSON implements the json.Marshaler interface.
-// It serializes the DAG into JSON format.
-func (d *dag[T]) MarshalJSON() ([]byte, error) {
-	// We create a temporary structure to hold the vertices and edges
-	type dagJSON struct {
-		Vertices map[string]T        `json:"vertices"`
-		Edges    map[string][]string `json:"edges"`
-	}
-
-	vertices := d.GetVertices()
-	verticesMap := make(map[string]T, len(vertices))
-	edgesMap := make(map[string][]string, len(vertices))
-
-	// Fill vertices and edges
-	for id, vertex := range vertices {
-		verticesMap[id] = vertex.Value
-
-		for _, child := range vertex.Children.Values() {
-			edgesMap[id] = append(edgesMap[id], child.ID)
-		}
-	}
-
-	// Marshal the temporary structure
-	dagData := dagJSON{
-		Vertices: verticesMap,
-		Edges:    edgesMap,
-	}
-
-	return json.Marshal(dagData)
-}
-
-// UnmarshalJSON implements the json.Unmarshaler interface.
-// It deserializes the JSON data into a DAG.
-func (d *dag[T]) UnmarshalJSON(data []byte) error {
-	// Define a temporary structure to hold the vertices and edges during unmarshaling
-	type dagJSON struct {
-		Vertices map[string]T        `json:"vertices"`
-		Edges    map[string][]string `json:"edges"`
-	}
-
-	var dagData dagJSON
-	if err := json.Unmarshal(data, &dagData); err != nil {
-		return err
-	}
-
-	// Clear existing DAG
-	d.vertices = &sync.Map{}
-	d.count = atomic.NewUint64(0)
-
-	// Rebuild the vertices
-	for id, value := range dagData.Vertices {
-		if err := d.AddVertex(id, value); err != nil {
-			return err
-		}
-	}
-
-	// Rebuild the edges
-	for fromID, toIDs := range dagData.Edges {
-		for _, toID := range toIDs {
-			if err := d.AddEdge(fromID, toID); err != nil {
-				return fmt.Errorf("failed to add edge from %s to %s: %w", fromID, toID, err)
-			}
-		}
-	}
-
-	return nil
 }
