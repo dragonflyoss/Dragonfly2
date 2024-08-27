@@ -368,7 +368,7 @@ func (j *job) deleteTask(ctx context.Context, data string) (string, error) {
 			continue
 		}
 
-		if err = dfdaemonClient.DeleteCacheTask(ctx, &dfdaemonv2.DeleteCacheTaskRequest{
+		if err = dfdaemonClient.DeleteTask(ctx, &dfdaemonv2.DeleteTaskRequest{
 			TaskId: req.TaskID,
 		}); err != nil {
 			logger.Errorf("delete task failed: %s", err.Error())

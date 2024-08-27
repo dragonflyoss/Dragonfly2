@@ -28,6 +28,7 @@ import (
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
+	"google.golang.org/grpc/credentials/insecure"
 
 	commonv2 "d7y.io/api/v2/pkg/apis/common/v2"
 	dfdaemonv2 "d7y.io/api/v2/pkg/apis/dfdaemon/v2"
@@ -102,6 +103,7 @@ func GetV2ByAddr(ctx context.Context, target string, opts ...grpc.DialOption) (V
 					grpc_retry.WithBackoff(grpc_retry.BackoffLinear(backoffWaitBetween)),
 				),
 			)),
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
 			grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
 				grpc_prometheus.StreamClientInterceptor,
 				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),

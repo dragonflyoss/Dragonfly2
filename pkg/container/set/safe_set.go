@@ -19,6 +19,7 @@
 package set
 
 import (
+	"encoding/json"
 	"sync"
 )
 
@@ -102,4 +103,28 @@ func (s *safeSet[T]) Clear() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.data = make(map[T]struct{})
+}
+
+func (s *safeSet[T]) MarshalJSON() ([]byte, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return json.Marshal(s.Values())
+}
+
+func (s *safeSet[T]) UnmarshalJSON(data []byte) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var values []T
+	if err := json.Unmarshal(data, &values); err != nil {
+		return err
+	}
+
+	s.data = make(map[T]struct{}, len(values))
+	for _, v := range values {
+		s.data[v] = struct{}{}
+	}
+
+	return nil
 }
