@@ -18,7 +18,6 @@ package source
 
 import (
 	"crypto/tls"
-	"fmt"
 	"net"
 	"net/http"
 	"net/url"
@@ -26,6 +25,8 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 var ProxyEnv = "D7Y_SOURCE_PROXY"
@@ -40,26 +41,34 @@ type transportOption struct {
 	TLSHandshakeTimeout   time.Duration `yaml:"tlsHandshakeTimeout"`
 	ExpectContinueTimeout time.Duration `yaml:"expectContinueTimeout"`
 	InsecureSkipVerify    bool          `yaml:"insecureSkipVerify"`
+	EnableTrace           bool          `yaml:"enableTrace"`
 }
 
-func UpdateTransportOption(transport *http.Transport, optionYaml []byte) error {
+func UpdateTransportOption(optionYaml []byte) (http.RoundTripper, error) {
 	opt := &transportOption{}
 	err := yaml.Unmarshal(optionYaml, opt)
 	if err != nil {
-		return err
+		return nil, err
 	}
+
+	var roundTripper http.RoundTripper
+
+	transport := DefaultTransport()
+	roundTripper = transport
 
 	if len(opt.Proxy) > 0 {
 		proxy, err := url.Parse(opt.Proxy)
 		if err != nil {
-			fmt.Printf("proxy parse error: %s\n", err)
-			return err
+			logger.Errorf("proxy parse error: %s\n", err)
+			return nil, err
 		}
+		logger.Debugf("update transport upstream proxy: %s", opt.Proxy)
 		transport.Proxy = http.ProxyURL(proxy)
 	}
 
 	if opt.IdleConnTimeout > 0 {
 		transport.IdleConnTimeout = opt.IdleConnTimeout
+		logger.Debugf("update transport idle conn timeout: %s", opt.IdleConnTimeout)
 	}
 	if opt.DialTimeout > 0 && opt.KeepAlive > 0 {
 		transport.DialContext = (&net.Dialer{
@@ -67,23 +76,33 @@ func UpdateTransportOption(transport *http.Transport, optionYaml []byte) error {
 			KeepAlive: opt.KeepAlive,
 			DualStack: true,
 		}).DialContext
+		logger.Debugf("update transport dial timeout: %s, keep alive: %s", opt.DialTimeout, opt.KeepAlive)
 	}
 	if opt.MaxIdleConns > 0 {
 		transport.MaxIdleConns = opt.MaxIdleConns
+		logger.Debugf("update transport max idle conns: %d", opt.MaxIdleConns)
 	}
 	if opt.ExpectContinueTimeout > 0 {
 		transport.ExpectContinueTimeout = opt.ExpectContinueTimeout
+		logger.Debugf("update transport expect continue timeout: %s", opt.ExpectContinueTimeout)
 	}
 	if opt.ResponseHeaderTimeout > 0 {
 		transport.ResponseHeaderTimeout = opt.ResponseHeaderTimeout
+		logger.Debugf("update transport response header timeout: %s", opt.ResponseHeaderTimeout)
 	}
 	if opt.TLSHandshakeTimeout > 0 {
 		transport.TLSHandshakeTimeout = opt.TLSHandshakeTimeout
+		logger.Debugf("update transport tls handshake timeout: %s", opt.TLSHandshakeTimeout)
 	}
 	if opt.InsecureSkipVerify {
 		transport.TLSClientConfig.InsecureSkipVerify = opt.InsecureSkipVerify
+		logger.Debugf("update transport skip insecure verify")
 	}
-	return nil
+	if opt.EnableTrace {
+		roundTripper = withTraceRoundTripper()
+		logger.Debugf("update transport with trace")
+	}
+	return roundTripper, nil
 }
 
 func DefaultTransport() *http.Transport {
@@ -94,7 +113,7 @@ func DefaultTransport() *http.Transport {
 	if proxyEnv := os.Getenv(ProxyEnv); len(proxyEnv) > 0 {
 		proxy, err = url.Parse(proxyEnv)
 		if err != nil {
-			fmt.Printf("proxy parse error: %s\n", err)
+			logger.Errorf("proxy parse error: %s\n", err)
 		}
 	}
 
@@ -119,13 +138,12 @@ func DefaultTransport() *http.Transport {
 }
 
 func ParseToHTTPClient(optionYaml []byte) (*http.Client, error) {
-	transport := DefaultTransport()
-	err := UpdateTransportOption(transport, optionYaml)
+	roundTripper, err := UpdateTransportOption(optionYaml)
 	if err != nil {
 		return nil, err
 	}
 
 	return &http.Client{
-		Transport: transport,
+		Transport: roundTripper,
 	}, nil
 }
