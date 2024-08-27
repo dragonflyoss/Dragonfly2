@@ -34,7 +34,7 @@ var (
 	})
 )
 
-func withTraceRoundTripper() http.RoundTripper {
+func withTraceRoundTripper(next http.RoundTripper) http.RoundTripper {
 	trace := promhttp.InstrumentTrace{
 		GotConn:     nil,
 		PutIdleConn: nil,
@@ -52,5 +52,5 @@ func withTraceRoundTripper() http.RoundTripper {
 		Wait100Continue:   nil,
 		WroteRequest:      nil,
 	}
-	return promhttp.InstrumentRoundTripperTrace(&trace, http.DefaultTransport)
+	return promhttp.InstrumentRoundTripperTrace(&trace, next)
 }

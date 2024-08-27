@@ -99,7 +99,7 @@ func UpdateTransportOption(optionYaml []byte) (http.RoundTripper, error) {
 		logger.Debugf("update transport skip insecure verify")
 	}
 	if opt.EnableTrace {
-		roundTripper = withTraceRoundTripper()
+		roundTripper = withTraceRoundTripper(transport)
 		logger.Debugf("update transport with trace")
 	}
 	return roundTripper, nil
