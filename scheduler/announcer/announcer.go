@@ -29,11 +29,6 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
-const (
-	// defaultUploadBufferSize is the buffer size for upload.
-	defaultUploadBufferSize = 128 * 1024 * 1024
-)
-
 // Announcer is the interface used for announce service.
 type Announcer interface {
 	// Started announcer server.

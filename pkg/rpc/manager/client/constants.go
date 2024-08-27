@@ -24,9 +24,6 @@ const (
 	// contextTimeout is timeout of grpc invoke.
 	contextTimeout = 2 * time.Minute
 
-	// createModelContextTimeout is timeout of CreateModel grpc invoke.
-	createModelContextTimeout = 30 * time.Minute
-
 	// maxRetries is maximum number of retries.
 	maxRetries = 3
 
