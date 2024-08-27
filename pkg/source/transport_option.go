@@ -36,6 +36,8 @@ type transportOption struct {
 	DialTimeout           time.Duration `yaml:"dialTimeout"`
 	KeepAlive             time.Duration `yaml:"keepAlive"`
 	MaxIdleConns          int           `yaml:"maxIdleConns"`
+	MaxIdleConnsPerHost   int           `yaml:"maxIdleConnsPerHost"`
+	MaxConnsPerHost       int           `yaml:"maxConnsPerHost"`
 	IdleConnTimeout       time.Duration `yaml:"idleConnTimeout"`
 	ResponseHeaderTimeout time.Duration `yaml:"responseHeaderTimeout"`
 	TLSHandshakeTimeout   time.Duration `yaml:"tlsHandshakeTimeout"`
@@ -81,6 +83,14 @@ func UpdateTransportOption(optionYaml []byte) (http.RoundTripper, error) {
 	if opt.MaxIdleConns > 0 {
 		transport.MaxIdleConns = opt.MaxIdleConns
 		logger.Debugf("update transport max idle conns: %d", opt.MaxIdleConns)
+	}
+	if opt.MaxIdleConnsPerHost > 0 {
+		transport.MaxIdleConnsPerHost = opt.MaxIdleConnsPerHost
+		logger.Debugf("update transport max idle conns per host: %d", opt.MaxIdleConnsPerHost)
+	}
+	if opt.MaxConnsPerHost > 0 {
+		transport.MaxConnsPerHost = opt.MaxConnsPerHost
+		logger.Debugf("update transport max conns per host: %d", opt.MaxConnsPerHost)
 	}
 	if opt.ExpectContinueTimeout > 0 {
 		transport.ExpectContinueTimeout = opt.ExpectContinueTimeout
