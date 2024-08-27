@@ -45,7 +45,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	securityclient "d7y.io/dragonfly/v2/pkg/rpc/security/client"
-	trainerclient "d7y.io/dragonfly/v2/pkg/rpc/trainer/client"
 	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/announcer"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -81,9 +80,6 @@ type Server struct {
 
 	// Security client.
 	securityClient securityclient.V1
-
-	// Trainer client.
-	trainerClient trainerclient.V1
 
 	// Resource interface.
 	resource resource.Resource
@@ -143,40 +139,15 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 	s.managerClient = managerClient
 
-	// Initialize dial options of trainer grpc client.
-	if cfg.Trainer.Enable {
-		trainerDialOptions := []grpc.DialOption{grpc.WithStatsHandler(otelgrpc.NewClientHandler())}
-		if cfg.Security.AutoIssueCert {
-			clientTransportCredentials, err := rpc.NewClientCredentials(cfg.Security.TLSPolicy, nil, []byte(cfg.Security.CACert))
-			if err != nil {
-				return nil, err
-			}
-
-			trainerDialOptions = append(trainerDialOptions, grpc.WithTransportCredentials(clientTransportCredentials))
-		} else {
-			trainerDialOptions = append(trainerDialOptions, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		}
-
-		// Initialize trainer client.
-		trainerClient, err := trainerclient.GetV1ByAddr(ctx, cfg.Trainer.Addr, trainerDialOptions...)
-		if err != nil {
-			return nil, err
-		}
-		s.trainerClient = trainerClient
-	}
-
-	// Initialize dial options of announcer.
-	announcerOptions := []announcer.Option{}
-	if s.trainerClient != nil {
-		announcerOptions = append(announcerOptions, announcer.WithTrainerClient(s.trainerClient))
-	}
-
 	// Initialize announcer.
-	announcer, err := announcer.New(cfg, s.managerClient, storage, announcerOptions...)
+	announcer, err := announcer.New(cfg, s.managerClient, storage)
 	if err != nil {
 		return nil, err
 	}
 	s.announcer = announcer
+
+	// Initialize GC.
+	s.gc = gc.New(gc.WithLogger(logger.GCLogger))
 
 	// Initialize certify client.
 	var (
@@ -300,9 +271,6 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 
 	svr := rpcserver.New(cfg, resource, scheduling, dynconfig, s.storage, s.networkTopology, schedulerServerOptions...)
 	s.grpcServer = svr
-
-	// Initialize GC.
-	s.gc = gc.New(gc.WithLogger(logger.GCLogger))
 
 	// Initialize metrics.
 	if cfg.Metrics.Enable {
@@ -436,15 +404,6 @@ func (s *Server) Stop() {
 			logger.Errorf("manager client failed to stop: %s", err.Error())
 		} else {
 			logger.Info("manager client closed")
-		}
-	}
-
-	// Stop trainer client.
-	if s.trainerClient != nil {
-		if err := s.trainerClient.Close(); err != nil {
-			logger.Errorf("trainer client failed to stop: %s", err.Error())
-		} else {
-			logger.Info("trainer client closed")
 		}
 	}
 

@@ -9,7 +9,6 @@ DFCACHE_BINARY_NAME=dfcache
 DFSTORE_BINARY_NAME=dfstore
 SCHEDULER_BINARY_NAME=scheduler
 MANAGER_BINARY_NAME=manager
-TRAINER_BINARY_NAME=trainer
 
 PKG=d7y.io/dragonfly/v2
 BUILD_IMAGE=golang:1.21.1-alpine3.17
@@ -70,10 +69,6 @@ build-manager-local() {
     build-local ${MANAGER_BINARY_NAME} manager
 }
 
-build-trainer-local() {
-    build-local ${TRAINER_BINARY_NAME} trainer
-}
-
 build-docker() {
     cd "${BUILD_SOURCE_HOME}" || return
     docker run \
@@ -129,10 +124,6 @@ build-manager-console() {
     cp -r $CONSOLE_ASSETS $MANAGER_ASSETS_DIR
 }
 
-build-trainer-docker() {
-    build-docker ${TRAINER_BINARY_NAME} trainer
-}
-
 main() {
     create-dirs
     if [[ "1" == "${USE_DOCKER}" ]]; then
@@ -150,9 +141,6 @@ main() {
         scheduler)
             build-scheduler-docker
             ;;
-        trainer)
-            build-trainer-docker
-            ;;
         manager)
             build-manager-docker
             ;;
@@ -165,7 +153,6 @@ main() {
             build-dfstore-docker
             build-scheduler-docker
             build-manager-docker
-            build-trainer-docker
             ;;
         esac
     else
@@ -183,9 +170,6 @@ main() {
         scheduler)
             build-scheduler-local
             ;;
-        trainer)
-            build-trainer-local
-            ;;
         manager)
             build-manager-local
             ;;
@@ -198,7 +182,6 @@ main() {
             build-dfstore-local
             build-scheduler-local
             build-manager-local
-            build-trainer-local
             ;;
         esac
     fi
