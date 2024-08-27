@@ -22,9 +22,6 @@ main() {
     manager)
         kind-load manager
         ;;
-    trainer)
-        kind-load trainer
-        ;;
     no-content-length)
         kind-load no-content-length
     esac

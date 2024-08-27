@@ -8,7 +8,6 @@ BIN_DIR="../bin"
 DFGET_BINARY_NAME=dfget
 SCHEDULER_BINARY_NAME=scheduler
 MANAGER_BINARY_NAME=manager
-TRAINER_BINARY_NAME=trainer
 
 curDir=$(cd "$(dirname "$0")" && pwd)
 cd "${curDir}" || return
@@ -25,9 +24,6 @@ install() {
         ;;
     manager)
         install-manager
-        ;;
-    trainer)
-        install-trainer
     esac
 }
 
@@ -74,21 +70,6 @@ install-manager() {
 uninstall-manager() {
     echo "unlink /usr/local/bin/manager"
     test -e /usr/local/bin/manager && unlink /usr/local/bin/manager
-}
-
-install-trainer() {
-    local bin="${INSTALL_HOME}/${INSTALL_BIN_PATH}"
-    echo "install: ${bin}"
-    mkdir -p "${bin}"
-
-    cp "${BIN_DIR}/${GOOS}_${GOARCH}/${TRAINER_BINARY_NAME}" "${bin}"
-
-    createLink "${bin}/${TRAINER_BINARY_NAME}" /usr/local/bin/trainer
-}
-
-uninstall-trainer() {
-    echo "unlink /usr/local/bin/trainer"
-    test -e /usr/local/bin/trainer && unlink /usr/local/bin/trainer
 }
 
 createLink() {

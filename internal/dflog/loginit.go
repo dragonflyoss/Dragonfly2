@@ -157,26 +157,6 @@ func InitDfcache(console bool, dir string, rotateConfig LogRotateConfig) error {
 	return createFileLogger(console, meta, logDir, rotateConfig)
 }
 
-func InitTrainer(verbose, console bool, dir string, rotateConfig LogRotateConfig) error {
-	if console {
-		return createConsoleLogger(verbose)
-	}
-
-	logDir := filepath.Join(dir, types.TrainerName)
-	var meta = []logInitMeta{
-		{
-			fileName:             CoreLogFileName,
-			setSugaredLoggerFunc: SetCoreLogger,
-		},
-		{
-			fileName:             GrpcLogFileName,
-			setSugaredLoggerFunc: SetGrpcLogger,
-		},
-	}
-
-	return createFileLogger(console, meta, logDir, rotateConfig)
-}
-
 func createConsoleLogger(verbose bool) error {
 	levels = nil
 	config := zap.NewDevelopmentConfig()

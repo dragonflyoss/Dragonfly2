@@ -130,11 +130,6 @@ type Service interface {
 	GetApplication(context.Context, uint) (*models.Application, error)
 	GetApplications(context.Context, types.GetApplicationsQuery) ([]models.Application, int64, error)
 
-	DestroyModel(context.Context, uint) error
-	UpdateModel(context.Context, uint, types.UpdateModelRequest) (*models.Model, error)
-	GetModel(context.Context, uint) (*models.Model, error)
-	GetModels(context.Context, types.GetModelsQuery) ([]models.Model, int64, error)
-
 	CreatePersonalAccessToken(context.Context, types.CreatePersonalAccessTokenRequest) (*models.PersonalAccessToken, error)
 	DestroyPersonalAccessToken(context.Context, uint) error
 	UpdatePersonalAccessToken(context.Context, uint, types.UpdatePersonalAccessTokenRequest) (*models.PersonalAccessToken, error)

@@ -35,5 +35,4 @@ type Scheduler struct {
 	Features           Array            `gorm:"column:features;comment:feature flags" json:"features"`
 	SchedulerClusterID uint             `gorm:"index:uk_scheduler,unique;not null;comment:scheduler cluster id"  json:"scheduler_cluster_id"`
 	SchedulerCluster   SchedulerCluster `json:"scheduler_cluster"`
-	Models             []Model          `json:"models"`
 }

@@ -191,17 +191,6 @@ const (
 )
 
 const (
-	// DefaultTrainerAddr is the default address of trainer.
-	DefaultTrainerAddr = "127.0.0.1:9090"
-
-	// DefaultTrainerInterval is the default interval of training.
-	DefaultTrainerInterval = 7 * 24 * time.Hour
-
-	// DefaultTrainerUploadTimeout is the default timeout of uploading dataset to trainer.
-	DefaultTrainerUploadTimeout = 1 * time.Hour
-)
-
-const (
 	// DefaultLogRotateMaxSize is the default maximum size in megabytes of log files before rotation.
 	DefaultLogRotateMaxSize = 1024
 
