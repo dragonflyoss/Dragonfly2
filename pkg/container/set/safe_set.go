@@ -121,7 +121,7 @@ func (s *safeSet[T]) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	s.data = make(map[T]struct{})
+	s.data = make(map[T]struct{}, len(values))
 	for _, v := range values {
 		s.data[v] = struct{}{}
 	}
