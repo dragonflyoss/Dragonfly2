@@ -146,6 +146,9 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 	s.announcer = announcer
 
+	// Initialize GC.
+	s.gc = gc.New(gc.WithLogger(logger.GCLogger))
+
 	// Initialize certify client.
 	var (
 		certifyClient              *certify.Certify
@@ -188,21 +191,16 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 
 	// Initialize dynconfig client.
-	dynconfig, err := config.NewDynconfig(s.managerClient, filepath.Join(d.CacheDir(), dynconfig.CacheDirName), cfg, config.WithTransportCredentials(clientTransportCredentials))
+	dynconfigOptions := []config.DynconfigOption{}
+	if clientTransportCredentials != nil {
+		dynconfigOptions = append(dynconfigOptions, config.WithTransportCredentials(clientTransportCredentials))
+	}
+
+	dynconfig, err := config.NewDynconfig(s.managerClient, filepath.Join(d.CacheDir(), dynconfig.CacheDirName), cfg, dynconfigOptions...)
 	if err != nil {
 		return nil, err
 	}
 	s.dynconfig = dynconfig
-
-	// Initialize GC.
-	s.gc = gc.New(gc.WithLogger(logger.GCLogger))
-
-	// Initialize resource.
-	resource, err := resource.New(cfg, s.gc, dynconfig, resource.WithTransportCredentials(clientTransportCredentials))
-	if err != nil {
-		return nil, err
-	}
-	s.resource = resource
 
 	// Initialize redis client.
 	var rdb redis.UniversalClient
@@ -219,18 +217,33 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		}
 	}
 
+	// Initialize resource.
+	resourceOptions := []resource.Option{}
+	if clientTransportCredentials != nil {
+		resourceOptions = append(resourceOptions, resource.WithTransportCredentials(clientTransportCredentials))
+	}
+
+	if rdb != nil {
+		resourceOptions = append(resourceOptions, resource.WithRedisClient(rdb))
+	}
+
+	resource, err := resource.New(cfg, s.gc, dynconfig, resourceOptions...)
+	if err != nil {
+		return nil, err
+	}
+	s.resource = resource
+
 	// Initialize job service.
-	if cfg.Job.Enable && pkgredis.IsEnabled(cfg.Database.Redis.Addrs) {
+	if cfg.Job.Enable && rdb != nil {
 		s.job, err = job.New(cfg, resource)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	// Initialize options of evaluator.
+	// Initialize options of network topology options.
 	evaluatorNetworkTopologyOptions := []evaluator.NetworkTopologyOption{}
-	// Initialize network topology service.
-	if cfg.Scheduler.Algorithm == evaluator.NetworkTopologyAlgorithm {
+	if cfg.Scheduler.Algorithm == evaluator.NetworkTopologyAlgorithm && rdb != nil {
 		cache := cache.New(cfg.Scheduler.NetworkTopology.Cache.TTL, cfg.Scheduler.NetworkTopology.Cache.Interval)
 		s.networkTopology, err = networktopology.NewNetworkTopology(cfg.Scheduler.NetworkTopology, rdb, cache, resource, s.storage)
 		if err != nil {
