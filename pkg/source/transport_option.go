@@ -46,7 +46,7 @@ type transportOption struct {
 	EnableTrace           bool          `yaml:"enableTrace"`
 }
 
-func UpdateTransportOption(optionYaml []byte) (http.RoundTripper, error) {
+func CreateTransportWithOption(optionYaml []byte) (http.RoundTripper, error) {
 	opt := &transportOption{}
 	err := yaml.Unmarshal(optionYaml, opt)
 	if err != nil {
@@ -148,12 +148,12 @@ func DefaultTransport() *http.Transport {
 }
 
 func ParseToHTTPClient(optionYaml []byte) (*http.Client, error) {
-	roundTripper, err := UpdateTransportOption(optionYaml)
+	transport, err := CreateTransportWithOption(optionYaml)
 	if err != nil {
 		return nil, err
 	}
 
 	return &http.Client{
-		Transport: roundTripper,
+		Transport: transport,
 	}, nil
 }
