@@ -60,6 +60,13 @@ var (
 		Help:      "Counter of the total proxy request via Dragonfly.",
 	})
 
+	ProxyErrorRequestViaDragonflyCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.DfdaemonMetricsName,
+		Name:      "proxy_error_request_via_dragonfly_total",
+		Help:      "Counter of the total error proxy request via Dragonfly.",
+	})
+
 	ProxyRequestNotViaDragonflyCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.DfdaemonMetricsName,
