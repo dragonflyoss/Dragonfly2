@@ -32,7 +32,8 @@ var (
 		Subsystem: types.DfdaemonMetricsName,
 		Name:      "transport_latency",
 		Help:      "The latency of transport request",
-		Buckets:   prometheus.ExponentialBuckets(1, 2, 16),
+		// promhttp.InstrumentRoundTripperTrace unit is second, the buckets starts from 1 millisecond to 32.768 seconds
+		Buckets: prometheus.ExponentialBuckets(0.001, 2, 16),
 	}, []string{"stage"})
 )
 
