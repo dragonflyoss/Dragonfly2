@@ -19,10 +19,11 @@ package source
 import (
 	"net/http"
 
-	"d7y.io/dragonfly/v2/pkg/types"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	"d7y.io/dragonfly/v2/pkg/types"
 )
 
 var (
