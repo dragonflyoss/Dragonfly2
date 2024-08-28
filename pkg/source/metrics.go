@@ -27,32 +27,56 @@ import (
 )
 
 var (
-	gotFirstResponseByte = promauto.NewHistogram(prometheus.HistogramOpts{
+	transportLatency = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.DfdaemonMetricsName,
-		Name:      "transport_latency_got_first_response_byte",
-		Help:      "Total got first response byte latency of transport request",
+		Name:      "transport_latency",
+		Help:      "The latency of transport request",
 		Buckets:   prometheus.ExponentialBuckets(1, 2, 16),
-	})
+	}, []string{"stage"})
 )
 
 func withTraceRoundTripper(next http.RoundTripper) http.RoundTripper {
 	trace := promhttp.InstrumentTrace{
-		GotConn:     nil,
-		PutIdleConn: nil,
-		GotFirstResponseByte: func(f float64) {
-			gotFirstResponseByte.Observe(f)
+		GotConn: func(f float64) {
+			transportLatency.With(prometheus.Labels{"stage": "GotConn"}).Observe(f)
 		},
-		Got100Continue:    nil,
-		DNSStart:          nil,
-		DNSDone:           nil,
-		ConnectStart:      nil,
-		ConnectDone:       nil,
-		TLSHandshakeStart: nil,
-		TLSHandshakeDone:  nil,
-		WroteHeaders:      nil,
-		Wait100Continue:   nil,
-		WroteRequest:      nil,
+		PutIdleConn: func(f float64) {
+			transportLatency.With(prometheus.Labels{"stage": "PutIdleConn"}).Observe(f)
+		},
+		GotFirstResponseByte: func(f float64) {
+			transportLatency.With(prometheus.Labels{"stage": "GotFirstResponseByte"}).Observe(f)
+		},
+		Got100Continue: func(f float64) {
+			transportLatency.With(prometheus.Labels{"stage": "Got100Continue"}).Observe(f)
+		},
+		DNSStart: func(f float64) {
+			transportLatency.With(prometheus.Labels{"stage": "DNSStart"}).Observe(f)
+		},
+		DNSDone: func(f float64) {
+			transportLatency.With(prometheus.Labels{"stage": "DNSDone"}).Observe(f)
+		},
+		ConnectStart: func(f float64) {
+			transportLatency.With(prometheus.Labels{"stage": "ConnectStart"}).Observe(f)
+		},
+		ConnectDone: func(f float64) {
+			transportLatency.With(prometheus.Labels{"stage": "ConnectDone"}).Observe(f)
+		},
+		TLSHandshakeStart: func(f float64) {
+			transportLatency.With(prometheus.Labels{"stage": "TLSHandshakeStart"}).Observe(f)
+		},
+		TLSHandshakeDone: func(f float64) {
+			transportLatency.With(prometheus.Labels{"stage": "TLSHandshakeDone"}).Observe(f)
+		},
+		WroteHeaders: func(f float64) {
+			transportLatency.With(prometheus.Labels{"stage": "WroteHeaders"}).Observe(f)
+		},
+		Wait100Continue: func(f float64) {
+			transportLatency.With(prometheus.Labels{"stage": "Wait100Continue"}).Observe(f)
+		},
+		WroteRequest: func(f float64) {
+			transportLatency.With(prometheus.Labels{"stage": "WroteRequest"}).Observe(f)
+		},
 	}
 	return promhttp.InstrumentRoundTripperTrace(&trace, next)
 }
