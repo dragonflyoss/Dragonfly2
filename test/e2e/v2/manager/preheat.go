@@ -406,7 +406,7 @@ var _ = Describe("Preheat with Manager", func() {
 	})
 })
 
-func waitForDone(preheat *models.Job, pod *util.PodExec) bool {
+func waitForDone(job *models.Job, pod *util.PodExec) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
@@ -419,12 +419,12 @@ func waitForDone(preheat *models.Job, pod *util.PodExec) bool {
 			return false
 		case <-ticker.C:
 			out, err := pod.CurlCommand("", nil, nil,
-				fmt.Sprintf("http://dragonfly-manager.dragonfly-system.svc:8080/api/v1/jobs/%d", preheat.ID)).CombinedOutput()
+				fmt.Sprintf("http://dragonfly-manager.dragonfly-system.svc:8080/api/v1/jobs/%d", job.ID)).CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
-			err = json.Unmarshal(out, preheat)
+			err = json.Unmarshal(out, job)
 			Expect(err).NotTo(HaveOccurred())
-			switch preheat.State {
+			switch job.State {
 			case machineryv1tasks.StateSuccess:
 				return true
 			case machineryv1tasks.StateFailure:
