@@ -16,6 +16,7 @@ import (
 	job "d7y.io/dragonfly/v2/internal/job"
 	models "d7y.io/dragonfly/v2/manager/models"
 	types "d7y.io/dragonfly/v2/manager/types"
+	tasks "github.com/RichardKnop/machinery/v1/tasks"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -42,32 +43,34 @@ func (m *MockTask) EXPECT() *MockTaskMockRecorder {
 	return m.recorder
 }
 
-// CreateDeleteTask mocks base method.
-func (m *MockTask) CreateDeleteTask(arg0 context.Context, arg1 []models.Scheduler, arg2 types.DeleteTaskArgs) (*job.GroupJobState, error) {
+// DeleteTask mocks base method.
+func (m *MockTask) DeleteTask(arg0 context.Context, arg1 []models.Scheduler, arg2 types.DeleteTaskArgs) (*tasks.Group, map[string]*job.DeleteTaskResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateDeleteTask", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*job.GroupJobState)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "DeleteTask", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*tasks.Group)
+	ret1, _ := ret[1].(map[string]*job.DeleteTaskResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
-// CreateDeleteTask indicates an expected call of CreateDeleteTask.
-func (mr *MockTaskMockRecorder) CreateDeleteTask(arg0, arg1, arg2 any) *gomock.Call {
+// DeleteTask indicates an expected call of DeleteTask.
+func (mr *MockTaskMockRecorder) DeleteTask(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDeleteTask", reflect.TypeOf((*MockTask)(nil).CreateDeleteTask), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTask", reflect.TypeOf((*MockTask)(nil).DeleteTask), arg0, arg1, arg2)
 }
 
-// CreateGetTask mocks base method.
-func (m *MockTask) CreateGetTask(arg0 context.Context, arg1 []models.Scheduler, arg2 types.GetTaskArgs) (*job.GroupJobState, error) {
+// GetTask mocks base method.
+func (m *MockTask) GetTask(arg0 context.Context, arg1 []models.Scheduler, arg2 types.GetTaskArgs) (*tasks.Group, map[string]*job.GetTaskResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateGetTask", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*job.GroupJobState)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "GetTask", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*tasks.Group)
+	ret1, _ := ret[1].(map[string]*job.GetTaskResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
-// CreateGetTask indicates an expected call of CreateGetTask.
-func (mr *MockTaskMockRecorder) CreateGetTask(arg0, arg1, arg2 any) *gomock.Call {
+// GetTask indicates an expected call of GetTask.
+func (mr *MockTaskMockRecorder) GetTask(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateGetTask", reflect.TypeOf((*MockTask)(nil).CreateGetTask), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTask", reflect.TypeOf((*MockTask)(nil).GetTask), arg0, arg1, arg2)
 }
