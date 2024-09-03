@@ -138,14 +138,3 @@ func ManagerExec(n int) (*PodExec, error) {
 	return NewPodExec(DragonflyNamespace, podName, "manager"), nil
 }
 
-func SchedulerExec(n int) (*PodExec, error) {
-	out, err := KubeCtlCommand("-n", DragonflyNamespace, "get", "pod", "-l", "component=scheduler",
-		"-o", fmt.Sprintf("jsonpath='{range .items[%d]}{.metadata.name}{end}'", n)).CombinedOutput()
-	if err != nil {
-		return nil, err
-	}
-
-	podName := strings.Trim(string(out), "'")
-	fmt.Println(podName)
-	return NewPodExec(DragonflyNamespace, podName, "scheduler"), nil
-}
