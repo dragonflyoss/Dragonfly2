@@ -516,7 +516,8 @@ func (t *localTaskStore) CanReclaim() bool {
 	// task soft cache time reached
 	access := time.Unix(0, t.lastAccess.Load())
 	reclaim := access.Add(t.expireTime).Before(now)
-	t.Debugf("reclaim check, last access: %v, reclaim: %v", access, reclaim)
+	// TODO add a option to avoid print log too frequently
+	// t.Debugf("reclaim check, last access: %v, reclaim: %v", access, reclaim)
 	if reclaim || t.Header == nil {
 		return reclaim
 	}

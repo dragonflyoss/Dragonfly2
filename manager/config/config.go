@@ -60,9 +60,6 @@ type Config struct {
 
 	// Network configuration.
 	Network NetworkConfig `yaml:"network" mapstructure:"network"`
-
-	// Trainer configuration.
-	Trainer TrainerConfig `yaml:"trainer" mapstructure:"trainer"`
 }
 
 type ServerConfig struct {
@@ -384,14 +381,6 @@ type NetworkConfig struct {
 	EnableIPv6 bool `mapstructure:"enableIPv6" yaml:"enableIPv6"`
 }
 
-type TrainerConfig struct {
-	// Enable trainer service.
-	Enable bool `yaml:"enable" mapstructure:"enable"`
-
-	// BucketName is the object storage bucket name of model.
-	BucketName string `yaml:"bucketName" mapstructure:"bucketName"`
-}
-
 // New config instance.
 func New() *Config {
 	return &Config{
@@ -475,10 +464,6 @@ func New() *Config {
 		},
 		Network: NetworkConfig{
 			EnableIPv6: DefaultNetworkEnableIPv6,
-		},
-		Trainer: TrainerConfig{
-			Enable:     false,
-			BucketName: DefaultTrainerBucketName,
 		},
 	}
 }
@@ -689,11 +674,6 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	if cfg.Trainer.Enable {
-		if cfg.Trainer.BucketName == "" {
-			return errors.New("trainer requires parameter bucketName")
-		}
-	}
 	return nil
 }
 

@@ -216,13 +216,6 @@ func Init(cfg *config.Config, logDir string, service service.Service, database *
 	cs.GET(":id", h.GetApplication)
 	cs.GET("", h.GetApplications)
 
-	// Model.
-	model := apiv1.Group("/models", jwt.MiddlewareFunc(), rbac)
-	model.DELETE(":id", h.DestroyModel)
-	model.PATCH(":id", h.UpdateModel)
-	model.GET(":id", h.GetModel)
-	model.GET("", h.GetModels)
-
 	// Personal Access Token.
 	pat := apiv1.Group("/personal-access-tokens", jwt.MiddlewareFunc(), rbac)
 	pat.POST("", h.CreatePersonalAccessToken)

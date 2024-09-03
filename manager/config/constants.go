@@ -148,8 +148,3 @@ var (
 	// DefaultNetworkEnableIPv6 is default value of enableIPv6.
 	DefaultNetworkEnableIPv6 = false
 )
-
-var (
-	// DefaultTrainerBucketName is default object storage bucket name of model.
-	DefaultTrainerBucketName = "models"
-)

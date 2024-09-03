@@ -881,8 +881,9 @@ func (s *storageManager) TryGC() (bool, error) {
 			if ok {
 				// just calculate not reclaimed task
 				totalNotMarkedSize += lts.ContentLength
-				logger.Debugf("task %s/%s not reach gc time",
-					key.(PeerTaskMetadata).TaskID, key.(PeerTaskMetadata).PeerID)
+				// TODO add a option to avoid print log too frequently
+				// logger.Debugf("task %s/%s not reach gc time",
+				//	key.(PeerTaskMetadata).TaskID, key.(PeerTaskMetadata).PeerID)
 			}
 		}
 		return true

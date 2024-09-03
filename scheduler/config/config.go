@@ -72,9 +72,6 @@ type Config struct {
 
 	// Network configuration.
 	Network NetworkConfig `yaml:"network" mapstructure:"network"`
-
-	// Trainer configuration.
-	Trainer TrainerConfig `yaml:"trainer" mapstructure:"trainer"`
 }
 
 type ServerConfig struct {
@@ -366,20 +363,6 @@ type CacheConfig struct {
 	TTL time.Duration `yaml:"ttl" mapstructure:"ttl"`
 }
 
-type TrainerConfig struct {
-	// Enable trainer service.
-	Enable bool `yaml:"enable" mapstructure:"enable"`
-
-	// Addr is trainer service address.
-	Addr string `yaml:"addr" mapstructure:"addr"`
-
-	// Interval is the interval of training.
-	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
-
-	// UploadTimeout is the timeout of uploading dataset to trainer.
-	UploadTimeout time.Duration `yaml:"uploadTimeout" mapstructure:"uploadTimeout"`
-}
-
 // New default configuration.
 func New() *Config {
 	return &Config{
@@ -477,12 +460,6 @@ func New() *Config {
 		},
 		Network: NetworkConfig{
 			EnableIPv6: DefaultNetworkEnableIPv6,
-		},
-		Trainer: TrainerConfig{
-			Enable:        false,
-			Addr:          DefaultTrainerAddr,
-			Interval:      DefaultTrainerInterval,
-			UploadTimeout: DefaultTrainerUploadTimeout,
 		},
 	}
 }
@@ -666,20 +643,6 @@ func (cfg *Config) Validate() error {
 
 		if cfg.Scheduler.NetworkTopology.Cache.TTL <= 0 {
 			return errors.New("networkTopology requires parameter ttl")
-		}
-	}
-
-	if cfg.Trainer.Enable {
-		if cfg.Trainer.Addr == "" {
-			return errors.New("trainer requires parameter addr")
-		}
-
-		if cfg.Trainer.Interval <= 0 {
-			return errors.New("trainer requires parameter interval")
-		}
-
-		if cfg.Trainer.UploadTimeout <= 0 {
-			return errors.New("trainer requires parameter uploadTimeout")
 		}
 	}
 

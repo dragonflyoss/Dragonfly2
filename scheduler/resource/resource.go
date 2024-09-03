@@ -19,6 +19,7 @@
 package resource
 
 import (
+	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -63,6 +64,9 @@ type resource struct {
 	// Scheduler config.
 	config *config.Config
 
+	// Redis universal client interface.
+	rdb redis.UniversalClient
+
 	// TransportCredentials stores the Authenticator required to setup a client connection.
 	transportCredentials credentials.TransportCredentials
 }
@@ -75,6 +79,13 @@ type Option func(r *resource)
 func WithTransportCredentials(creds credentials.TransportCredentials) Option {
 	return func(r *resource) {
 		r.transportCredentials = creds
+	}
+}
+
+// WithRedisClient returns a Option which configures the redis client.
+func WithRedisClient(rdb redis.UniversalClient) Option {
+	return func(r *resource) {
+		r.rdb = rdb
 	}
 }
 

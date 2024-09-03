@@ -55,9 +55,6 @@ main() {
     manager)
         git-submodule
         docker-build manager
-        ;;
-    trainer)
-        docker-build trainer
     esac
 }
 

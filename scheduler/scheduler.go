@@ -45,7 +45,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	securityclient "d7y.io/dragonfly/v2/pkg/rpc/security/client"
-	trainerclient "d7y.io/dragonfly/v2/pkg/rpc/trainer/client"
 	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/announcer"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -81,9 +80,6 @@ type Server struct {
 
 	// Security client.
 	securityClient securityclient.V1
-
-	// Trainer client.
-	trainerClient trainerclient.V1
 
 	// Resource interface.
 	resource resource.Resource
@@ -143,40 +139,15 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 	s.managerClient = managerClient
 
-	// Initialize dial options of trainer grpc client.
-	if cfg.Trainer.Enable {
-		trainerDialOptions := []grpc.DialOption{grpc.WithStatsHandler(otelgrpc.NewClientHandler())}
-		if cfg.Security.AutoIssueCert {
-			clientTransportCredentials, err := rpc.NewClientCredentials(cfg.Security.TLSPolicy, nil, []byte(cfg.Security.CACert))
-			if err != nil {
-				return nil, err
-			}
-
-			trainerDialOptions = append(trainerDialOptions, grpc.WithTransportCredentials(clientTransportCredentials))
-		} else {
-			trainerDialOptions = append(trainerDialOptions, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		}
-
-		// Initialize trainer client.
-		trainerClient, err := trainerclient.GetV1ByAddr(ctx, cfg.Trainer.Addr, trainerDialOptions...)
-		if err != nil {
-			return nil, err
-		}
-		s.trainerClient = trainerClient
-	}
-
-	// Initialize dial options of announcer.
-	announcerOptions := []announcer.Option{}
-	if s.trainerClient != nil {
-		announcerOptions = append(announcerOptions, announcer.WithTrainerClient(s.trainerClient))
-	}
-
 	// Initialize announcer.
-	announcer, err := announcer.New(cfg, s.managerClient, storage, announcerOptions...)
+	announcer, err := announcer.New(cfg, s.managerClient, storage)
 	if err != nil {
 		return nil, err
 	}
 	s.announcer = announcer
+
+	// Initialize GC.
+	s.gc = gc.New(gc.WithLogger(logger.GCLogger))
 
 	// Initialize certify client.
 	var (
@@ -220,21 +191,16 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 
 	// Initialize dynconfig client.
-	dynconfig, err := config.NewDynconfig(s.managerClient, filepath.Join(d.CacheDir(), dynconfig.CacheDirName), cfg, config.WithTransportCredentials(clientTransportCredentials))
+	dynconfigOptions := []config.DynconfigOption{}
+	if clientTransportCredentials != nil {
+		dynconfigOptions = append(dynconfigOptions, config.WithTransportCredentials(clientTransportCredentials))
+	}
+
+	dynconfig, err := config.NewDynconfig(s.managerClient, filepath.Join(d.CacheDir(), dynconfig.CacheDirName), cfg, dynconfigOptions...)
 	if err != nil {
 		return nil, err
 	}
 	s.dynconfig = dynconfig
-
-	// Initialize GC.
-	s.gc = gc.New(gc.WithLogger(logger.GCLogger))
-
-	// Initialize resource.
-	resource, err := resource.New(cfg, s.gc, dynconfig, resource.WithTransportCredentials(clientTransportCredentials))
-	if err != nil {
-		return nil, err
-	}
-	s.resource = resource
 
 	// Initialize redis client.
 	var rdb redis.UniversalClient
@@ -251,18 +217,33 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		}
 	}
 
+	// Initialize resource.
+	resourceOptions := []resource.Option{}
+	if clientTransportCredentials != nil {
+		resourceOptions = append(resourceOptions, resource.WithTransportCredentials(clientTransportCredentials))
+	}
+
+	if rdb != nil {
+		resourceOptions = append(resourceOptions, resource.WithRedisClient(rdb))
+	}
+
+	resource, err := resource.New(cfg, s.gc, dynconfig, resourceOptions...)
+	if err != nil {
+		return nil, err
+	}
+	s.resource = resource
+
 	// Initialize job service.
-	if cfg.Job.Enable && pkgredis.IsEnabled(cfg.Database.Redis.Addrs) {
+	if cfg.Job.Enable && rdb != nil {
 		s.job, err = job.New(cfg, resource)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	// Initialize options of evaluator.
+	// Initialize options of network topology options.
 	evaluatorNetworkTopologyOptions := []evaluator.NetworkTopologyOption{}
-	// Initialize network topology service.
-	if cfg.Scheduler.Algorithm == evaluator.NetworkTopologyAlgorithm {
+	if cfg.Scheduler.Algorithm == evaluator.NetworkTopologyAlgorithm && rdb != nil {
 		cache := cache.New(cfg.Scheduler.NetworkTopology.Cache.TTL, cfg.Scheduler.NetworkTopology.Cache.Interval)
 		s.networkTopology, err = networktopology.NewNetworkTopology(cfg.Scheduler.NetworkTopology, rdb, cache, resource, s.storage)
 		if err != nil {
@@ -423,15 +404,6 @@ func (s *Server) Stop() {
 			logger.Errorf("manager client failed to stop: %s", err.Error())
 		} else {
 			logger.Info("manager client closed")
-		}
-	}
-
-	// Stop trainer client.
-	if s.trainerClient != nil {
-		if err := s.trainerClient.Close(); err != nil {
-			logger.Errorf("trainer client failed to stop: %s", err.Error())
-		} else {
-			logger.Info("trainer client closed")
 		}
 	}
 

@@ -34,12 +34,12 @@ build-dirs:
 .PHONY: build-dirs
 
 # Build dragonfly.
-docker-build: docker-build-dfdaemon docker-build-scheduler docker-build-manager docker-build-trainer
+docker-build: docker-build-dfdaemon docker-build-scheduler docker-build-manager
 	@echo "Build image done."
 .PHONY: docker-build
 
 # Push dragonfly images.
-docker-push: docker-push-dfdaemon docker-push-scheduler docker-push-manager docker-build-trainer
+docker-push: docker-push-dfdaemon docker-push-scheduler docker-push-manager
 	@echo "Push image done."
 .PHONY: docker-push
 
@@ -60,12 +60,6 @@ docker-build-manager:
 	@echo "Begin to use docker build manager image."
 	./hack/docker-build.sh manager
 .PHONY: docker-build-manager
-
-# Build trainer image.
-docker-build-trainer:
-	@echo "Begin to use docker build trainer image."
-	./hack/docker-build.sh trainer
-.PHONY: docker-build-trainer
 
 # Build testing tools image.
 docker-build-testing-tools: build-dirs
@@ -91,14 +85,8 @@ docker-push-manager: docker-build-manager
 	./hack/docker-push.sh manager
 .PHONY: docker-push-manager
 
-# Push trainer image.
-docker-push-trainer: docker-build-trainer
-	@echo "Begin to push trainer docker image."
-	./hack/docker-push.sh trainer
-.PHONY: docker-push-trainer
-
 # Build dragonfly.
-build: build-manager build-scheduler build-trainer build-dfget build-dfcache build-dfstore
+build: build-manager build-scheduler build-dfget build-dfcache build-dfstore
 .PHONY: build
 
 # Build dfget.
@@ -161,12 +149,6 @@ build-manager-console: build-dirs
 	./hack/build.sh manager-console
 .PHONY: build-manager-console
 
-# Build trainer.
-build-trainer: build-dirs
-	@echo "Begin to build trainer."
-	./hack/build.sh trainer
-.PHONY: build-trainer
-
 # Install dfget.
 install-dfget:
 	@echo "Begin to install dfget."
@@ -184,12 +166,6 @@ install-manager:
 	@echo "Begin to install manager."
 	./hack/install.sh install manager
 .PHONY: install-manager
-
-# Install trainer.
-install-trainer:
-	@echo "Begin to install trainer."
-	./hack/install.sh install trainer 
-.PHONY: install-trainer
 
 # Build rpm dfget.
 build-rpm-dfget: build-linux-dfget
@@ -373,7 +349,7 @@ clean-e2e-test:
 .PHONY: clean-e2e-test
 
 # Kind load dragonfly.
-kind-load: kind-load-scheduler kind-load-dfdaemon kind-load-manager kind-load-trainer kind-load-testing-tools
+kind-load: kind-load-scheduler kind-load-dfdaemon kind-load-manager kind-load-testing-tools
 	@echo "Kind load image done."
 .PHONY: kind-load
 
@@ -391,11 +367,6 @@ kind-load-dfdaemon:
 kind-load-manager:
 	@./hack/kind-load.sh manager
 .PHONY: kind-load-manager
-
-# Run kind load docker trainer.
-kind-load-trainer:
-	@./hack/kind-load.sh trainer
-.PHONY: kind-load-trainer
 
 # Run kind load docker testing tools.
 kind-load-testing-tools:
@@ -441,11 +412,9 @@ help:
 	@echo "make docker-build-dfdaemon          build dfdaemon image"
 	@echo "make docker-build-scheduler         build scheduler image"
 	@echo "make docker-build-manager           build manager image"
-	@echo "make docker-build-trainer           build trainer image"
 	@echo "make docker-push-dfdaemon           push dfdaemon image"
 	@echo "make docker-push-scheduler          push scheduler image"
 	@echo "make docker-push-manager            push manager image"
-	@echo "make docker-push-trainer            push trainer image"
 	@echo "make build                          build dragonfly"
 	@echo "make build-dfget                    build dfget"
 	@echo "make build-linux-dfget              build linux dfget"
@@ -457,13 +426,11 @@ help:
 	@echo "make build-manager                  build manager"
 	@echo "make build-manager-server           build manager server"
 	@echo "make build-manager-console          build manager console"
-	@echo "make build-trainer                  build trainer"
 	@echo "make build-e2e-sha256sum            build sha256sum test tool"
 	@echo "make build-e2e-download-grpc-test   build download grpc test tool"
 	@echo "make install-dfget                  install dfget"
 	@echo "make install-scheduler              install scheduler"
 	@echo "make install-manager                install manager"
-	@echo "make install-trainer                install trainer"
 	@echo "make build-rpm-dfget                build rpm dfget"
 	@echo "make build-rpm-dfcache              build rpm dfcache"
 	@echo "make build-rpm-dfstore              build rpm dfstore"
@@ -485,7 +452,6 @@ help:
 	@echo "make kind-load-scheduler            kind load scheduler docker image"
 	@echo "make kind-load-dfdaemon             kind load dfdaemon docker image"
 	@echo "make kind-load-manager              kind load manager docker image"
-	@echo "make kind-load-trainer              kind load trainer docker image"
 	@echo "make kind-load-testing-tools        kind load testing tools docker image"
 	@echo "make lint                           run code lint"
 	@echo "make markdownlint                   run markdown lint"
