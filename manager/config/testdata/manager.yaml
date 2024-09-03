@@ -66,6 +66,10 @@ cache:
     ttl: 1s
 
 job:
+  rateLimit:
+    fillInterval: 1s
+    capacity: 1000
+    quantum: 1000
   preheat:
     registryTimeout: 1m
     tls:
