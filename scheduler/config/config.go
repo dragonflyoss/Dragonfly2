@@ -681,16 +681,6 @@ func (cfg *Config) Convert() error {
 		cfg.Database.Redis.Password = cfg.Job.Redis.Password
 	}
 
-	// TODO Compatible with deprecated fields user name of redis of job.
-	if cfg.Database.Redis.SentinelUsername == "" && cfg.Job.Redis.SentinelUsername != "" {
-		cfg.Database.Redis.SentinelUsername = cfg.Job.Redis.SentinelUsername
-	}
-
-	// TODO Compatible with deprecated fields password of redis of job.
-	if cfg.Database.Redis.SentinelPassword == "" && cfg.Job.Redis.SentinelPassword != "" {
-		cfg.Database.Redis.SentinelPassword = cfg.Job.Redis.SentinelPassword
-	}
-
 	// TODO Compatible with deprecated fields broker database of redis of job.
 	if cfg.Database.Redis.BrokerDB == 0 && cfg.Job.Redis.BrokerDB != 0 {
 		cfg.Database.Redis.BrokerDB = cfg.Job.Redis.BrokerDB
