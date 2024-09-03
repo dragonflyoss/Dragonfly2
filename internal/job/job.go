@@ -36,12 +36,14 @@ import (
 )
 
 type Config struct {
-	Addrs      []string
-	MasterName string
-	Username   string
-	Password   string
-	BrokerDB   int
-	BackendDB  int
+	Addrs            []string
+	MasterName       string
+	Username         string
+	Password         string
+	SentinelUsername string
+	SentinelPassword string
+	BrokerDB         int
+	BackendDB        int
 }
 
 type Job struct {
@@ -55,11 +57,13 @@ func New(cfg *Config, queue Queue) (*Job, error) {
 	machineryv1log.Set(&MachineryLogger{})
 
 	if err := ping(&redis.UniversalOptions{
-		Addrs:      cfg.Addrs,
-		MasterName: cfg.MasterName,
-		Username:   cfg.Username,
-		Password:   cfg.Password,
-		DB:         cfg.BackendDB,
+		Addrs:            cfg.Addrs,
+		MasterName:       cfg.MasterName,
+		Username:         cfg.Username,
+		Password:         cfg.Password,
+		SentinelUsername: cfg.SentinelUsername,
+		SentinelPassword: cfg.SentinelPassword,
+		DB:               cfg.BackendDB,
 	}); err != nil {
 		return nil, err
 	}

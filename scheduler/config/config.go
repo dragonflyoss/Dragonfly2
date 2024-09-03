@@ -278,6 +278,12 @@ type RedisConfig struct {
 	// Password is server password.
 	Password string `yaml:"password" mapstructure:"password"`
 
+	// SentinelUsername is sentinel server username.
+	SentinelUsername string `yaml:"sentinelUsername" mapstructure:"sentinelUsername"`
+
+	// SentinelPassword is sentinel server password.
+	SentinelPassword string `yaml:"sentinelPassword" mapstructure:"sentinelPassword"`
+
 	// BrokerDB is broker database name.
 	BrokerDB int `yaml:"brokerDB" mapstructure:"brokerDB"`
 
@@ -673,6 +679,16 @@ func (cfg *Config) Convert() error {
 	// TODO Compatible with deprecated fields password of redis of job.
 	if cfg.Database.Redis.Password == "" && cfg.Job.Redis.Password != "" {
 		cfg.Database.Redis.Password = cfg.Job.Redis.Password
+	}
+
+	// TODO Compatible with deprecated fields user name of redis of job.
+	if cfg.Database.Redis.SentinelUsername == "" && cfg.Job.Redis.SentinelUsername != "" {
+		cfg.Database.Redis.SentinelUsername = cfg.Job.Redis.SentinelUsername
+	}
+
+	// TODO Compatible with deprecated fields password of redis of job.
+	if cfg.Database.Redis.SentinelPassword == "" && cfg.Job.Redis.SentinelPassword != "" {
+		cfg.Database.Redis.SentinelPassword = cfg.Job.Redis.SentinelPassword
 	}
 
 	// TODO Compatible with deprecated fields broker database of redis of job.
