@@ -55,13 +55,13 @@ var _ = Describe("Preheat with Manager", func() {
 			}
 			
 			// Randomly select a few scheduler pods to stop.
-			numToStop := 2 // Number of scheduler instances to stop.
+			numToStop := 2 
 			rand.Shuffle(len(schedulerPods), func(i, j int) {
 				schedulerPods[i], schedulerPods[j] = schedulerPods[j], schedulerPods[i]
 			})
 			for i := 0; i < numToStop; i++ {
 				pod := schedulerPods[i]
-				_, err = pod.Command("pkill", "-f", "scheduler").CombinedOutput() // or another command to stop scheduler
+				_, err = pod.Command("pkill", "-f", "scheduler").CombinedOutput()
 				Expect(err).NotTo(HaveOccurred())
 			}
 
