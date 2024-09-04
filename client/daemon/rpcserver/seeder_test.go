@@ -19,6 +19,9 @@ package rpcserver
 import (
 	"context"
 	"fmt"
+	"go.uber.org/atomic"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"io"
 	"net"
 	"sync"
@@ -395,4 +398,19 @@ func setupSeederServerAndClient(t *testing.T, srv *server, sd *seeder, assert *t
 	}
 
 	return port, client
+}
+
+func Test_ObtainSeedsResourceExhausted(t *testing.T) {
+	sd := &seeder{
+		maxConcurrent: 10,
+		concurrent:    atomic.NewInt64(10),
+	}
+
+	assert := testifyassert.New(t)
+
+	err := sd.ObtainSeeds(nil, nil)
+	assert.Error(err, "ObtainSeeds should return error")
+	st, ok := status.FromError(err)
+	assert.True(ok, "error should be status")
+	assert.Equal(codes.ResourceExhausted, st.Code())
 }

@@ -22,6 +22,7 @@ import (
 	"math"
 	"time"
 
+	"go.uber.org/atomic"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -39,7 +40,9 @@ import (
 )
 
 type seeder struct {
-	server *server
+	maxConcurrent int64
+	concurrent    *atomic.Int64
+	server        *server
 }
 
 func (s *seeder) GetPieceTasks(ctx context.Context, request *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error) {
@@ -53,6 +56,16 @@ func (s *seeder) SyncPieceTasks(tasksServer cdnsystemv1.Seeder_SyncPieceTasksSer
 func (s *seeder) ObtainSeeds(seedRequest *cdnsystemv1.SeedRequest, seedsServer cdnsystemv1.Seeder_ObtainSeedsServer) error {
 	if logger.IsDebug() {
 		printAuthInfo(seedsServer.Context())
+	}
+
+	if s.maxConcurrent > 0 {
+		if s.concurrent.Inc() > s.maxConcurrent {
+			s.concurrent.Dec()
+			logger.Infof("seed peer is busying, return ResourceExhausted")
+			return status.Errorf(codes.ResourceExhausted, "seed peer is busying, limit is %d", s.maxConcurrent)
+		}
+
+		defer s.concurrent.Dec()
 	}
 
 	metrics.SeedPeerConcurrentDownloadGauge.Inc()

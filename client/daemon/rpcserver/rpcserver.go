@@ -103,7 +103,8 @@ func init() {
 }
 
 func New(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskManager,
-	storageManager storage.Manager, peerExchanger pex.PeerExchangeRPC, schedulerClient schedulerclient.V1, recursiveConcurrent int, cacheRecursiveMetadata time.Duration,
+	storageManager storage.Manager, peerExchanger pex.PeerExchangeRPC, schedulerClient schedulerclient.V1,
+	recursiveConcurrent int, seedConcurrent int64, cacheRecursiveMetadata time.Duration,
 	downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Server, error) {
 	s := &server{
 		KeepAlive:       util.NewKeepAlive("rpc server"),
@@ -120,7 +121,9 @@ func New(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskManager,
 	}
 
 	sd := &seeder{
-		server: s,
+		server:        s,
+		maxConcurrent: seedConcurrent,
+		concurrent:    atomic.NewInt64(0),
 	}
 
 	// set not serving by default
