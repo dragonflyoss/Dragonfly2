@@ -202,7 +202,7 @@ func Init(cfg *config.Config, logDir string, service service.Service, database *
 	// TODO Add auth to the following routes and fix the tests.
 	// Job.
 	job := apiv1.Group("/jobs")
-	job.POST("", h.CreateJob)
+	job.POST("", middlewares.RateLimit(cfg.Job.RateLimit.FillInterval, cfg.Job.RateLimit.Capacity, cfg.Job.RateLimit.Quantum), h.CreateJob)
 	job.DELETE(":id", h.DestroyJob)
 	job.PATCH(":id", h.UpdateJob)
 	job.GET(":id", h.GetJob)
