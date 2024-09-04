@@ -91,10 +91,10 @@ const (
 	DefaultJobRateLimitFillInterval = 1 * time.Minute
 
 	// DefaultJobRateLimitCapacity is the default capacity for job rate limit.
-	DefaultJobRateLimitCapacity = 100
+	DefaultJobRateLimitCapacity = 10
 
 	// DefaultJobRateLimitQuantum is the default quantum for job rate limit.
-	DefaultJobRateLimitQuantum = 100
+	DefaultJobRateLimitQuantum = 10
 
 	// DefaultJobPreheatRegistryTimeout is the default timeout for requesting registry to get token and manifest.
 	DefaultJobPreheatRegistryTimeout = 1 * time.Minute
