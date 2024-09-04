@@ -64,11 +64,13 @@ func New(cfg *config.Config) (*Database, error) {
 	}
 
 	rdb, err := pkgredis.NewRedis(&redis.UniversalOptions{
-		Addrs:      cfg.Database.Redis.Addrs,
-		MasterName: cfg.Database.Redis.MasterName,
-		DB:         cfg.Database.Redis.DB,
-		Username:   cfg.Database.Redis.Username,
-		Password:   cfg.Database.Redis.Password,
+		Addrs:            cfg.Database.Redis.Addrs,
+		MasterName:       cfg.Database.Redis.MasterName,
+		DB:               cfg.Database.Redis.DB,
+		Username:         cfg.Database.Redis.Username,
+		Password:         cfg.Database.Redis.Password,
+		SentinelUsername: cfg.Database.Redis.SentinelUsername,
+		SentinelPassword: cfg.Database.Redis.SentinelPassword,
 	})
 	if err != nil {
 		logger.Errorf("redis: %s", err.Error())

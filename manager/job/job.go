@@ -46,12 +46,14 @@ type Job struct {
 // New returns a new Job.
 func New(cfg *config.Config, gdb *gorm.DB) (*Job, error) {
 	j, err := internaljob.New(&internaljob.Config{
-		Addrs:      cfg.Database.Redis.Addrs,
-		MasterName: cfg.Database.Redis.MasterName,
-		Username:   cfg.Database.Redis.Username,
-		Password:   cfg.Database.Redis.Password,
-		BrokerDB:   cfg.Database.Redis.BrokerDB,
-		BackendDB:  cfg.Database.Redis.BackendDB,
+		Addrs:            cfg.Database.Redis.Addrs,
+		MasterName:       cfg.Database.Redis.MasterName,
+		Username:         cfg.Database.Redis.Username,
+		Password:         cfg.Database.Redis.Password,
+		SentinelUsername: cfg.Database.Redis.SentinelUsername,
+		SentinelPassword: cfg.Database.Redis.SentinelPassword,
+		BrokerDB:         cfg.Database.Redis.BrokerDB,
+		BackendDB:        cfg.Database.Redis.BackendDB,
 	}, internaljob.GlobalQueue)
 	if err != nil {
 		return nil, err

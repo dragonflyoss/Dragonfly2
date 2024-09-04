@@ -61,11 +61,13 @@ const (
 func NewRedis(cfg *redis.UniversalOptions) (redis.UniversalClient, error) {
 	redis.SetLogger(&redisLogger{})
 	client := redis.NewUniversalClient(&redis.UniversalOptions{
-		Addrs:      cfg.Addrs,
-		MasterName: cfg.MasterName,
-		DB:         cfg.DB,
-		Username:   cfg.Username,
-		Password:   cfg.Password,
+		Addrs:            cfg.Addrs,
+		MasterName:       cfg.MasterName,
+		DB:               cfg.DB,
+		Username:         cfg.Username,
+		Password:         cfg.Password,
+		SentinelUsername: cfg.SentinelUsername,
+		SentinelPassword: cfg.SentinelPassword,
 	})
 
 	if err := client.Ping(context.Background()).Err(); err != nil {
