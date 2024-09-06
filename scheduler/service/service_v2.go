@@ -963,7 +963,7 @@ func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.S
 
 		// Record the start time.
 		start := time.Now()
-		if err := v.scheduling.ScheduleCandidateParents(ctx, peer, peer.BlockParents); err != nil {
+		if err := v.scheduling.ScheduleCandidateParents(context.Background(), peer, peer.BlockParents); err != nil {
 			// Collect RegisterPeerFailureCount metrics.
 			metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
 				peer.Host.Type.Name()).Inc()
@@ -1042,7 +1042,7 @@ func (v *V2) handleRescheduleRequest(ctx context.Context, peerID string, candida
 
 	// Record the start time.
 	start := time.Now()
-	if err := v.scheduling.ScheduleCandidateParents(ctx, peer, peer.BlockParents); err != nil {
+	if err := v.scheduling.ScheduleCandidateParents(context.Background(), peer, peer.BlockParents); err != nil {
 		return status.Error(codes.FailedPrecondition, err.Error())
 	}
 
