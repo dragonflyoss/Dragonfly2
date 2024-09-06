@@ -278,6 +278,12 @@ type RedisConfig struct {
 	// Password is server password.
 	Password string `yaml:"password" mapstructure:"password"`
 
+	// SentinelUsername is sentinel server username.
+	SentinelUsername string `yaml:"sentinelUsername" mapstructure:"sentinelUsername"`
+
+	// SentinelPassword is sentinel server password.
+	SentinelPassword string `yaml:"sentinelPassword" mapstructure:"sentinelPassword"`
+
 	// BrokerDB is broker database name.
 	BrokerDB int `yaml:"brokerDB" mapstructure:"brokerDB"`
 
