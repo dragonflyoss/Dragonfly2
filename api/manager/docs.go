@@ -2292,6 +2292,41 @@ const docTemplate = `{
                 }
             }
         },
+        "/scheduler-features": {
+            "get": {
+                "description": "Get Scheduler Features",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Scheduler Feature"
+                ],
+                "summary": "Get Scheudler Features",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
         "/schedulers": {
             "get": {
                 "description": "Get Schedulers",

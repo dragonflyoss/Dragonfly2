@@ -16,19 +16,6 @@
 
 package types
 
-const (
-	// SchedulerFeatureSchedule is the schedule feature of scheduler.
-	SchedulerFeatureSchedule = "schedule"
-
-	// SchedulerFeaturePreheat is the preheat feature of scheduler.
-	SchedulerFeaturePreheat = "preheat"
-)
-
-var (
-	// DefaultSchedulerFeatures is the default features of scheduler.
-	DefaultSchedulerFeatures = []string{SchedulerFeatureSchedule, SchedulerFeaturePreheat}
-)
-
 type SchedulerParams struct {
 	ID uint `uri:"id" binding:"required"`
 }
