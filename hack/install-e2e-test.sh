@@ -7,7 +7,7 @@ set -o pipefail
 KIND_CONFIG_PATH="test/testdata/kind/config.yaml"
 CHARTS_CONFIG_PATH="test/testdata/charts/config.yaml"
 FILE_SERVER_CONFIG_PATH="test/testdata/k8s/file-server.yaml"
-FILE_SERVER_NO_CONTENT_CONFIG_PATH="test/testdata/k8s/file-server.yaml"
+FILE_SERVER_NO_CONTENT_CONFIG_PATH="test/testdata/k8s/file-server-no-content-length.yaml"
 PROXY_SERVER_CONFIG_PATH="test/testdata/k8s/proxy.yaml"
 MINIO_SERVER_CONFIG_PATH="test/testdata/k8s/minio.yaml"
 CHARTS_PATH="deploy/helm-charts/charts/dragonfly"
