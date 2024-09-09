@@ -2582,6 +2582,29 @@ paths:
       summary: Add Scheduler to schedulerCluster
       tags:
       - SchedulerCluster
+  /scheduler-features:
+    get:
+      consumes:
+      - application/json
+      description: Get Scheduler Features
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Get Scheudler Features
+      tags:
+      - Scheduler Feature
   /schedulers:
     get:
       consumes:

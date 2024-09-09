@@ -917,6 +917,20 @@ func (mr *MockServiceMockRecorder) GetSchedulerClusters(arg0, arg1 any) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchedulerClusters", reflect.TypeOf((*MockService)(nil).GetSchedulerClusters), arg0, arg1)
 }
 
+// GetSchedulerFeatures mocks base method.
+func (m *MockService) GetSchedulerFeatures(arg0 context.Context) []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSchedulerFeatures", arg0)
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// GetSchedulerFeatures indicates an expected call of GetSchedulerFeatures.
+func (mr *MockServiceMockRecorder) GetSchedulerFeatures(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchedulerFeatures", reflect.TypeOf((*MockService)(nil).GetSchedulerFeatures), arg0)
+}
+
 // GetSchedulers mocks base method.
 func (m *MockService) GetSchedulers(arg0 context.Context, arg1 types.GetSchedulersQuery) ([]models.Scheduler, int64, error) {
 	m.ctrl.T.Helper()
