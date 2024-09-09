@@ -50,7 +50,7 @@ type announcer struct {
 type Option func(s *announcer)
 
 // New returns a new Announcer interface.
-func New(cfg *config.Config, managerClient managerclient.V2, storage storage.Storage, options ...Option) (Announcer, error) {
+func New(cfg *config.Config, managerClient managerclient.V2, storage storage.Storage, schedulerFeatures []string, options ...Option) (Announcer, error) {
 	a := &announcer{
 		config:        cfg,
 		managerClient: managerClient,
@@ -71,6 +71,7 @@ func New(cfg *config.Config, managerClient managerclient.V2, storage storage.Sto
 		Idc:                &a.config.Host.IDC,
 		Location:           &a.config.Host.Location,
 		SchedulerClusterId: uint64(a.config.Manager.SchedulerClusterID),
+		Features:           schedulerFeatures,
 	}); err != nil {
 		return nil, err
 	}

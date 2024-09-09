@@ -463,12 +463,19 @@ func (s *managerServerV2) UpdateScheduler(ctx context.Context, req *managerv2.Up
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	// Use default scheduler features if not set, compatible with the old version.
+	schedulerFeatures := types.DefaultSchedulerFeatures
+	if req.GetFeatures() != nil {
+		schedulerFeatures = req.GetFeatures()
+	}
+
 	if err := s.db.WithContext(ctx).Model(&scheduler).Updates(models.Scheduler{
 		IDC:                req.GetIdc(),
 		Location:           req.GetLocation(),
 		IP:                 req.GetIp(),
 		Port:               req.GetPort(),
 		SchedulerClusterID: uint(req.GetSchedulerClusterId()),
+		Features:           schedulerFeatures,
 	}).Error; err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -501,13 +508,19 @@ func (s *managerServerV2) UpdateScheduler(ctx context.Context, req *managerv2.Up
 
 // Create scheduler and associate cluster.
 func (s *managerServerV2) createScheduler(ctx context.Context, req *managerv2.UpdateSchedulerRequest) (*managerv2.Scheduler, error) {
+	// Use default scheduler features if not set, compatible with the old version.
+	schedulerFeatures := types.DefaultSchedulerFeatures
+	if req.GetFeatures() != nil {
+		schedulerFeatures = req.GetFeatures()
+	}
+
 	scheduler := models.Scheduler{
 		Hostname:           req.GetHostname(),
 		IDC:                req.GetIdc(),
 		Location:           req.GetLocation(),
 		IP:                 req.GetIp(),
 		Port:               req.GetPort(),
-		Features:           types.DefaultSchedulerFeatures,
+		Features:           schedulerFeatures,
 		SchedulerClusterID: uint(req.GetSchedulerClusterId()),
 	}
 

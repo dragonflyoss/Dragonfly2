@@ -27,6 +27,7 @@ import (
 
 	managerv2 "d7y.io/api/v2/pkg/apis/manager/v2"
 
+	managertypes "d7y.io/dragonfly/v2/manager/types"
 	managerclientmocks "d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	storagemocks "d7y.io/dragonfly/v2/scheduler/storage/mocks"
@@ -118,7 +119,7 @@ func TestAnnouncer_New(t *testing.T) {
 			mockStorage := storagemocks.NewMockStorage(ctl)
 			tc.mock(mockManagerClient.EXPECT())
 
-			a, err := New(tc.config, mockManagerClient, mockStorage)
+			a, err := New(tc.config, mockManagerClient, mockStorage, managertypes.DefaultSchedulerFeatures)
 			tc.expect(t, a, err)
 		})
 	}
@@ -170,6 +171,7 @@ func TestAnnouncer_Serve(t *testing.T) {
 						Idc:                &mockIDC,
 						Location:           &mockLocation,
 						SchedulerClusterId: uint64(1),
+						Features:           managertypes.DefaultSchedulerFeatures,
 					})).Times(1),
 					m.KeepAlive(gomock.Eq(50*time.Millisecond), gomock.Eq(&managerv2.KeepAliveRequest{
 						SourceType: managerv2.SourceType_SCHEDULER_SOURCE,
@@ -191,7 +193,7 @@ func TestAnnouncer_Serve(t *testing.T) {
 			mockStorage := storagemocks.NewMockStorage(ctl)
 
 			tc.mock(tc.data, mockManagerClient.EXPECT(), mockStorage.EXPECT())
-			a, err := New(tc.config, mockManagerClient, mockStorage)
+			a, err := New(tc.config, mockManagerClient, mockStorage, managertypes.DefaultSchedulerFeatures)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -244,6 +246,7 @@ func TestAnnouncer_announceToManager(t *testing.T) {
 						Idc:                &mockIDC,
 						Location:           &mockLocation,
 						SchedulerClusterId: uint64(1),
+						Features:           managertypes.DefaultSchedulerFeatures,
 					})).Times(1),
 					m.KeepAlive(gomock.Eq(50*time.Millisecond), gomock.Eq(&managerv2.KeepAliveRequest{
 						SourceType: managerv2.SourceType_SCHEDULER_SOURCE,
@@ -267,7 +270,7 @@ func TestAnnouncer_announceToManager(t *testing.T) {
 			mockStorage := storagemocks.NewMockStorage(ctl)
 			tc.mock(mockManagerClient.EXPECT())
 
-			a, err := New(tc.config, mockManagerClient, mockStorage)
+			a, err := New(tc.config, mockManagerClient, mockStorage, managertypes.DefaultSchedulerFeatures)
 			if err != nil {
 				t.Fatal(err)
 			}
