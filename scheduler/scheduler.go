@@ -36,6 +36,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dynconfig"
+	managertypes "d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/cache"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/gc"
@@ -139,8 +140,29 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 	s.managerClient = managerClient
 
-	// Initialize announcer.
-	announcer, err := announcer.New(cfg, s.managerClient, storage)
+	// Initialize redis client.
+	var rdb redis.UniversalClient
+	if pkgredis.IsEnabled(cfg.Database.Redis.Addrs) {
+		rdb, err = pkgredis.NewRedis(&redis.UniversalOptions{
+			Addrs:            cfg.Database.Redis.Addrs,
+			MasterName:       cfg.Database.Redis.MasterName,
+			DB:               cfg.Database.Redis.NetworkTopologyDB,
+			Username:         cfg.Database.Redis.Username,
+			Password:         cfg.Database.Redis.Password,
+			SentinelUsername: cfg.Database.Redis.SentinelUsername,
+			SentinelPassword: cfg.Database.Redis.SentinelPassword,
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Initialize announcer. If job is enabled, add scheduler feature preheat.
+	schedulerFeatures := []string{managertypes.SchedulerFeatureSchedule}
+	if cfg.Job.Enable && rdb != nil {
+		schedulerFeatures = append(schedulerFeatures, managertypes.SchedulerFeaturePreheat)
+	}
+	announcer, err := announcer.New(cfg, s.managerClient, storage, schedulerFeatures)
 	if err != nil {
 		return nil, err
 	}
@@ -201,23 +223,6 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		return nil, err
 	}
 	s.dynconfig = dynconfig
-
-	// Initialize redis client.
-	var rdb redis.UniversalClient
-	if pkgredis.IsEnabled(cfg.Database.Redis.Addrs) {
-		rdb, err = pkgredis.NewRedis(&redis.UniversalOptions{
-			Addrs:            cfg.Database.Redis.Addrs,
-			MasterName:       cfg.Database.Redis.MasterName,
-			DB:               cfg.Database.Redis.NetworkTopologyDB,
-			Username:         cfg.Database.Redis.Username,
-			Password:         cfg.Database.Redis.Password,
-			SentinelUsername: cfg.Database.Redis.SentinelUsername,
-			SentinelPassword: cfg.Database.Redis.SentinelPassword,
-		})
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	// Initialize resource.
 	resourceOptions := []resource.Option{}
