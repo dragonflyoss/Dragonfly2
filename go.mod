@@ -46,7 +46,7 @@ require (
 	github.com/hashicorp/memberlist v0.5.1
 	github.com/huaweicloud/huaweicloud-sdk-go-obs v3.24.6+incompatible
 	github.com/jarcoal/httpmock v1.3.1
-	github.com/jellydator/ttlcache/v3 v3.2.0
+	github.com/jellydator/ttlcache/v3 v3.3.0
 	github.com/johanbrandhorst/certify v1.9.0
 	github.com/juju/ratelimit v1.0.2
 	github.com/looplab/fsm v1.0.2
