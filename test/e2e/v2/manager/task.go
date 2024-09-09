@@ -42,7 +42,7 @@ var _ = Describe("Get and Delete with Manager", func() {
 				Type: internaljob.PreheatJob,
 				Args: types.PreheatArgs{
 					Type: "file",
-					URL:  util.GetFileURL("/bin/md5sum"),
+					URL:  util.GetFileURL("/bin/cat"),
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -72,6 +72,9 @@ var _ = Describe("Get and Delete with Manager", func() {
 				fmt.Println(err)
 				Expect(err).NotTo(HaveOccurred())
 			}
+
+			// Print all files and sha256sum
+			util.CalculateSha256ForAllFiles(seedClientPods)
 
 			// // Check the file is downloaded successfully
 			// sha256sum, err := util.CalculateSha256ByTaskID(seedClientPods, fileMetadata.ID)

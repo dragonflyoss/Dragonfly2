@@ -31,6 +31,43 @@ type TaskMetadata struct {
 	Sha256 string
 }
 
+// Check all files and all md5sum in clientContentDir
+func CalculateSha256ForAllFiles(pods []*PodExec) error {
+	for _, pod := range pods {
+		contentPath := clientContentDir
+
+		if _, err := pod.Command("ls", contentPath).CombinedOutput(); err != nil {
+			fmt.Printf("Path %s does not exist: %s\n", contentPath, err.Error())
+			continue
+		}
+
+		fileListOutput, err := pod.Command("sh", "-c", fmt.Sprintf("ls -1 %s", contentPath)).CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("list files in %s failed: %s", contentPath, err.Error())
+		}
+
+		files := strings.Split(string(fileListOutput), "\n")
+		for _, file := range files {
+			if file == "" {
+				continue
+			}
+
+			filePath := fmt.Sprintf("%s/%s", contentPath, file)
+
+			sha256Output, err := pod.Command("sh", "-c", fmt.Sprintf("sha256sum %s", filePath)).CombinedOutput()
+			if err != nil {
+				fmt.Printf("Failed to calculate sha256sum for file %s: %s\n", filePath, err.Error())
+				continue
+			}
+
+			sha256sum := strings.Split(string(sha256Output), " ")[0]
+			fmt.Printf("File: %s, SHA256: %s\n", filePath, sha256sum)
+		}
+	}
+
+	return nil
+}
+
 // Check files is exist or not.
 func CheckFilesExist(pods []*PodExec, taskID string) bool {
 	for _, pod := range pods {
