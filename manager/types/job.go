@@ -16,6 +16,17 @@
 
 package types
 
+// Scope is the scope for preheating.
+type Scope string
+
+const (
+	// SingleSeedPeerScope represents the scope that only single seed peer will be preheated.
+	SingleSeedPeerScope Scope = "single_seed_peer"
+
+	// AllPeersScope represents the scope that all peers will be preheated.
+	ALLPeersScope Scope = "all_peers"
+)
+
 type CreateJobRequest struct {
 	BIO                 string         `json:"bio" binding:"omitempty"`
 	Type                string         `json:"type" binding:"required"`
@@ -76,6 +87,9 @@ type PreheatArgs struct {
 
 	// The image type preheating task can specify the image architecture type. eg: linux/amd64.
 	Platform string `json:"platform" binding:"omitempty"`
+
+	// Scope is the scope for preheating.
+	Scope string `json:"scope" binding:"omitempty,oneof=single_seed_peer all_peers"`
 }
 
 type CreateGetTaskJobRequest struct {
