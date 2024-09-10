@@ -28,6 +28,7 @@ import (
 
 	"github.com/RichardKnop/machinery/v1"
 	"github.com/go-playground/validator/v10"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -38,6 +39,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaljob "d7y.io/dragonfly/v2/internal/job"
+	managertypes "d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	dfdaemonclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -165,16 +167,6 @@ func (j *job) preheat(ctx context.Context, data string) error {
 	ctx, cancel := context.WithTimeout(ctx, preheatTimeout)
 	defer cancel()
 
-	// If seed peer is disabled, return error.
-	if !j.config.SeedPeer.Enable {
-		return fmt.Errorf("cluster %d scheduler %s has disabled seed peer", j.config.Manager.SchedulerClusterID, j.config.Server.AdvertiseIP)
-	}
-
-	// If scheduler has no available seed peer, return error.
-	if len(j.resource.SeedPeer().Client().Addrs()) == 0 {
-		return fmt.Errorf("cluster %d scheduler %s has no available seed peer", j.config.Manager.SchedulerClusterID, j.config.Server.AdvertiseIP)
-	}
-
 	req := &internaljob.PreheatRequest{}
 	if err := internaljob.UnmarshalRequest(data, req); err != nil {
 		logger.Errorf("unmarshal request err: %s, request body: %s", err.Error(), data)
@@ -186,6 +178,28 @@ func (j *job) preheat(ctx context.Context, data string) error {
 		return err
 	}
 
+	switch req.Scope {
+	case managertypes.SinglePeerScope:
+		return j.preheatSinglePeer(ctx, req)
+	case managertypes.AllPeersScope:
+		return j.preheatAllPeers(ctx, req)
+	default:
+		return fmt.Errorf("invalid scope %s", req.Scope)
+	}
+}
+
+// preheatSinglePeer preheats job by single seed peer.
+func (j *job) preheatSinglePeer(ctx context.Context, req *internaljob.PreheatRequest) error {
+	// If seed peer is disabled, return error.
+	if !j.config.SeedPeer.Enable {
+		return fmt.Errorf("cluster %d scheduler %s has disabled seed peer", j.config.Manager.SchedulerClusterID, j.config.Server.AdvertiseIP)
+	}
+
+	// If scheduler has no available seed peer, return error.
+	if len(j.resource.SeedPeer().Client().Addrs()) == 0 {
+		return fmt.Errorf("cluster %d scheduler %s has no available seed peer", j.config.Manager.SchedulerClusterID, j.config.Server.AdvertiseIP)
+	}
+
 	// Preheat by v2 grpc protocol. If seed peer does not support
 	// v2 protocol, preheat by v1 grpc protocol.
 	if err := j.preheatV2(ctx, req); err != nil {
@@ -193,16 +207,42 @@ func (j *job) preheat(ctx context.Context, data string) error {
 
 		if st, ok := status.FromError(err); ok {
 			if st.Code() == codes.Unimplemented {
-				if err := j.preheatV1(ctx, req); err != nil {
-					return err
-				}
-
-				return nil
+				return j.preheatV1(ctx, req)
 			}
 		}
 
 		return err
 	}
+
+	return nil
+}
+
+// preheatAllPeers preheats job by all peers, only suoported by v2 protocol.
+func (j *job) preheatAllPeers(ctx context.Context, req *internaljob.PreheatRequest) error {
+	hosts := j.resource.HostManager().LoadAll()
+
+	eg, _ := errgroup.WithContext(ctx)
+	for _, host := range hosts {
+		eg.Go(func() error {
+			target := fmt.Sprintf("%s:%d", host.IP, host.Port)
+			dfdaemonClient, err := dfdaemonclient.GetV2ByAddr(context.Background(), target)
+			if err != nil {
+				return err
+			}
+
+			if _, err := v.SchedulerClient.AnnounceHost(
+				context.WithValue(ctx, pkgbalancer.ContextKey, virtualTaskID),
+				req,
+				opts...,
+			); err != nil {
+				return err
+			}
+
+			return nil
+		})
+	}
+
+	return eg.Wait()
 
 	return nil
 }

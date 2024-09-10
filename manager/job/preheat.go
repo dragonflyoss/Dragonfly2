@@ -110,6 +110,8 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []models.Schedul
 				Tag:                 json.Tag,
 				FilteredQueryParams: json.FilteredQueryParams,
 				Headers:             json.Headers,
+				Scope:               json.Scope,
+				BatchSize:           json.BatchSize,
 			},
 		}
 	default:
@@ -323,6 +325,8 @@ func (p *preheat) parseLayers(manifests []distribution.Manifest, args types.Preh
 				Tag:                 args.Tag,
 				FilteredQueryParams: args.FilteredQueryParams,
 				Headers:             nethttp.HeaderToMap(header),
+				Scope:               args.Scope,
+				BatchSize:           args.BatchSize,
 			}
 
 			layers = append(layers, layer)

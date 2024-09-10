@@ -16,16 +16,16 @@
 
 package types
 
-// Scope is the scope for preheating.
-type Scope string
-
 const (
-	// SingleSeedPeerScope represents the scope that only single seed peer will be preheated.
-	SingleSeedPeerScope Scope = "single_seed_peer"
+	// SinglePeerScope represents the scope that only single peer will be preheated.
+	SinglePeerScope = "single_peer"
 
 	// AllPeersScope represents the scope that all peers will be preheated.
-	ALLPeersScope Scope = "all_peers"
+	AllPeersScope = "all_peers"
 )
+
+// DefaultBatchSize is the default batch size for preheating all peers.
+const DefaultBatchSize = 50
 
 type CreateJobRequest struct {
 	BIO                 string         `json:"bio" binding:"omitempty"`
@@ -88,8 +88,11 @@ type PreheatArgs struct {
 	// The image type preheating task can specify the image architecture type. eg: linux/amd64.
 	Platform string `json:"platform" binding:"omitempty"`
 
-	// Scope is the scope for preheating.
-	Scope string `json:"scope" binding:"omitempty,oneof=single_seed_peer all_peers"`
+	// Scope is the scope for preheating, default is single_peer.
+	Scope string `json:"scope" binding:"omitempty,oneof=single_peer all_peers"`
+
+	// BatchSize is the batch size for preheating all peers, default is 50.
+	BatchSize uint `json:"batch_size" binding:"omitempty,gte=1,lte=500"`
 }
 
 type CreateGetTaskJobRequest struct {

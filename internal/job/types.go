@@ -28,6 +28,7 @@ type PreheatRequest struct {
 	Application         string            `json:"application" validate:"omitempty"`
 	Priority            int32             `json:"priority" validate:"omitempty"`
 	Scope               string            `json:"scope" validate:"omitempty"`
+	BatchSize           uint              `json:"batch_size" validate:"omitempty"`
 }
 
 // PreheatResponse defines the response parameters for preheating.

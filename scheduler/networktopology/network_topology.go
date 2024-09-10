@@ -193,7 +193,7 @@ func (nt *networkTopology) FindProbedHosts(hostID string) ([]*resource.Host, err
 
 	blocklist := set.NewSafeSet[string]()
 	blocklist.Add(hostID)
-	candidateHosts := nt.resource.HostManager().LoadRandomHosts(findProbedCandidateHostsLimit, blocklist)
+	candidateHosts := nt.resource.HostManager().LoadRandom(findProbedCandidateHostsLimit, blocklist)
 	if len(candidateHosts) == 0 {
 		return nil, errors.New("probed hosts not found")
 	}

@@ -32,6 +32,19 @@ import (
 )
 
 func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheatJobRequest) (*models.Job, error) {
+	if json.Args.Scope == "" {
+		json.Args.Scope = types.SinglePeerScope
+	}
+
+	if json.Args.BatchSize == 0 {
+		json.Args.BatchSize = types.DefaultBatchSize
+	}
+
+	args, err := structure.StructToMap(json.Args)
+	if err != nil {
+		return nil, err
+	}
+
 	candidateSchedulers, err := s.findCandidateSchedulers(ctx, json.SchedulerClusterIDs)
 	if err != nil {
 		return nil, err
@@ -45,11 +58,6 @@ func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheat
 	var candidateSchedulerClusters []models.SchedulerCluster
 	for _, candidateScheduler := range candidateSchedulers {
 		candidateSchedulerClusters = append(candidateSchedulerClusters, candidateScheduler.SchedulerCluster)
-	}
-
-	args, err := structure.StructToMap(json.Args)
-	if err != nil {
-		return nil, err
 	}
 
 	job := models.Job{

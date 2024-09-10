@@ -81,18 +81,18 @@ func (mr *MockHostManagerMockRecorder) LoadOrStore(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadOrStore", reflect.TypeOf((*MockHostManager)(nil).LoadOrStore), arg0)
 }
 
-// LoadRandomHosts mocks base method.
-func (m *MockHostManager) LoadRandomHosts(arg0 int, arg1 set.SafeSet[string]) []*Host {
+// LoadRandom mocks base method.
+func (m *MockHostManager) LoadRandom(arg0 int, arg1 set.SafeSet[string]) []*Host {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadRandomHosts", arg0, arg1)
+	ret := m.ctrl.Call(m, "LoadRandom", arg0, arg1)
 	ret0, _ := ret[0].([]*Host)
 	return ret0
 }
 
-// LoadRandomHosts indicates an expected call of LoadRandomHosts.
-func (mr *MockHostManagerMockRecorder) LoadRandomHosts(arg0, arg1 any) *gomock.Call {
+// LoadRandom indicates an expected call of LoadRandom.
+func (mr *MockHostManagerMockRecorder) LoadRandom(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadRandomHosts", reflect.TypeOf((*MockHostManager)(nil).LoadRandomHosts), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadRandom", reflect.TypeOf((*MockHostManager)(nil).LoadRandom), arg0, arg1)
 }
 
 // Range mocks base method.
