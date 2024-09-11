@@ -16,6 +16,8 @@
 
 package types
 
+import "time"
+
 const (
 	// SinglePeerScope represents the scope that only single peer will be preheated.
 	SinglePeerScope = "single_peer"
@@ -24,14 +26,18 @@ const (
 	AllPeersScope = "all_peers"
 )
 
-// DefaultBatchSize is the default batch size for preheating all peers.
-const DefaultBatchSize = 50
+const (
+	// DefaultPreheatConcurrentCount is the default concurrent count for preheating all peers.
+	DefaultPreheatConcurrentCount = 50
+
+	// DefaultJobTimeout is the default timeout for executing job.
+	DefaultJobTimeout = 30 * time.Minute
+)
 
 type CreateJobRequest struct {
 	BIO                 string         `json:"bio" binding:"omitempty"`
 	Type                string         `json:"type" binding:"required"`
 	Args                map[string]any `json:"args" binding:"omitempty"`
-	Result              map[string]any `json:"result" binding:"omitempty"`
 	UserID              uint           `json:"user_id" binding:"omitempty"`
 	SeedPeerClusterIDs  []uint         `json:"seed_peer_cluster_ids" binding:"omitempty"`
 	SchedulerClusterIDs []uint         `json:"scheduler_cluster_ids" binding:"omitempty"`
@@ -55,12 +61,11 @@ type GetJobsQuery struct {
 }
 
 type CreatePreheatJobRequest struct {
-	BIO                 string         `json:"bio" binding:"omitempty"`
-	Type                string         `json:"type" binding:"required"`
-	Args                PreheatArgs    `json:"args" binding:"omitempty"`
-	Result              map[string]any `json:"result" binding:"omitempty"`
-	UserID              uint           `json:"user_id" binding:"omitempty"`
-	SchedulerClusterIDs []uint         `json:"scheduler_cluster_ids" binding:"omitempty"`
+	BIO                 string      `json:"bio" binding:"omitempty"`
+	Type                string      `json:"type" binding:"required"`
+	Args                PreheatArgs `json:"args" binding:"omitempty"`
+	UserID              uint        `json:"user_id" binding:"omitempty"`
+	SchedulerClusterIDs []uint      `json:"scheduler_cluster_ids" binding:"omitempty"`
 }
 
 type PreheatArgs struct {
@@ -92,16 +97,18 @@ type PreheatArgs struct {
 	Scope string `json:"scope" binding:"omitempty,oneof=single_peer all_peers"`
 
 	// BatchSize is the batch size for preheating all peers, default is 50.
-	BatchSize uint `json:"batch_size" binding:"omitempty,gte=1,lte=500"`
+	ConcurrentCount int64 `json:"concurrent_count" binding:"omitempty,gte=1,lte=500"`
+
+	// Timeout is the timeout for preheating, default is 30 minutes.
+	Timeout time.Duration `json:"timeout" binding:"omitempty"`
 }
 
 type CreateGetTaskJobRequest struct {
-	BIO                 string         `json:"bio" binding:"omitempty"`
-	Type                string         `json:"type" binding:"required"`
-	Args                GetTaskArgs    `json:"args" binding:"omitempty"`
-	Result              map[string]any `json:"result" binding:"omitempty"`
-	UserID              uint           `json:"user_id" binding:"omitempty"`
-	SchedulerClusterIDs []uint         `json:"scheduler_cluster_ids" binding:"omitempty"`
+	BIO                 string      `json:"bio" binding:"omitempty"`
+	Type                string      `json:"type" binding:"required"`
+	Args                GetTaskArgs `json:"args" binding:"omitempty"`
+	UserID              uint        `json:"user_id" binding:"omitempty"`
+	SchedulerClusterIDs []uint      `json:"scheduler_cluster_ids" binding:"omitempty"`
 }
 
 type GetTaskArgs struct {
@@ -112,11 +119,14 @@ type CreateDeleteTaskJobRequest struct {
 	BIO                 string         `json:"bio" binding:"omitempty"`
 	Type                string         `json:"type" binding:"required"`
 	Args                DeleteTaskArgs `json:"args" binding:"omitempty"`
-	Result              map[string]any `json:"result" binding:"omitempty"`
 	UserID              uint           `json:"user_id" binding:"omitempty"`
 	SchedulerClusterIDs []uint         `json:"scheduler_cluster_ids" binding:"omitempty"`
 }
 
 type DeleteTaskArgs struct {
+	// TaskID is the task id for deleting.
 	TaskID string `json:"task_id" binding:"required"`
+
+	// Timeout is the timeout for deleting, default is 30 minutes.
+	Timeout time.Duration `json:"timeout" binding:"omitempty"`
 }

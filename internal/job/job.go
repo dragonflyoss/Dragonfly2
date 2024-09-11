@@ -106,14 +106,24 @@ func (t *Job) LaunchWorker(consumerTag string, concurrency int) error {
 }
 
 type GroupJobState struct {
-	GroupUUID string
-	State     string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	JobStates []*machineryv1tasks.TaskState
+	GroupUUID string     `json:"group_uuid"`
+	State     string     `json:"state"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
+	JobStates []jobState `json:"job_states"`
 }
 
-func (t *Job) GetGroupJobState(groupID string) (*GroupJobState, error) {
+type jobState struct {
+	TaskUUID  string        `json:"task_uuid"`
+	TaskName  string        `json:"task_name"`
+	State     string        `json:"state"`
+	Results   []interface{} `json:"results"`
+	Error     string        `json:"error"`
+	CreatedAt time.Time     `json:"created_at"`
+	TTL       int64         `json:"ttl"`
+}
+
+func (t *Job) GetGroupJobState(name string, groupID string) (*GroupJobState, error) {
 	taskStates, err := t.Server.GetBackend().GroupTaskStates(groupID, 0)
 	if err != nil {
 		return nil, err
@@ -121,6 +131,45 @@ func (t *Job) GetGroupJobState(groupID string) (*GroupJobState, error) {
 
 	if len(taskStates) == 0 {
 		return nil, errors.New("empty group")
+	}
+
+	jobStates := make([]jobState, 0, len(taskStates))
+	for _, taskState := range taskStates {
+		var results []interface{}
+		for _, result := range taskState.Results {
+			switch name {
+			case PreheatJob:
+				var resp PreheatResponse
+				if err := UnmarshalTaskResult(result.Value, &resp); err != nil {
+					return nil, err
+				}
+				results = append(results, resp)
+			case GetTaskJob:
+				var resp GetTaskResponse
+				if err := UnmarshalTaskResult(result.Value, &resp); err != nil {
+					return nil, err
+				}
+				results = append(results, resp)
+			case DeleteTaskJob:
+				var resp DeleteTaskResponse
+				if err := UnmarshalTaskResult(result.Value, &resp); err != nil {
+					return nil, err
+				}
+				results = append(results, resp)
+			default:
+				return nil, errors.New("unsupported unmarshal task result")
+			}
+		}
+
+		jobStates = append(jobStates, jobState{
+			TaskUUID:  taskState.TaskUUID,
+			TaskName:  taskState.TaskName,
+			State:     taskState.State,
+			Results:   results,
+			Error:     taskState.Error,
+			CreatedAt: taskState.CreatedAt,
+			TTL:       taskState.TTL,
+		})
 	}
 
 	for _, taskState := range taskStates {
@@ -131,7 +180,7 @@ func (t *Job) GetGroupJobState(groupID string) (*GroupJobState, error) {
 				State:     machineryv1tasks.StateFailure,
 				CreatedAt: taskState.CreatedAt,
 				UpdatedAt: time.Now(),
-				JobStates: taskStates,
+				JobStates: jobStates,
 			}, nil
 		}
 	}
@@ -144,7 +193,7 @@ func (t *Job) GetGroupJobState(groupID string) (*GroupJobState, error) {
 				State:     machineryv1tasks.StatePending,
 				CreatedAt: taskState.CreatedAt,
 				UpdatedAt: time.Now(),
-				JobStates: taskStates,
+				JobStates: jobStates,
 			}, nil
 		}
 	}
@@ -154,7 +203,7 @@ func (t *Job) GetGroupJobState(groupID string) (*GroupJobState, error) {
 		State:     machineryv1tasks.StateSuccess,
 		CreatedAt: taskStates[0].CreatedAt,
 		UpdatedAt: time.Now(),
-		JobStates: taskStates,
+		JobStates: jobStates,
 	}, nil
 }
 
@@ -177,6 +226,19 @@ func MarshalRequest(v any) ([]machineryv1tasks.Arg, error) {
 		Type:  "string",
 		Value: string(b),
 	}}, nil
+}
+
+func UnmarshalTaskResult(data interface{}, v any) error {
+	s, ok := data.(string)
+	if !ok {
+		return errors.New("invalid task result")
+	}
+
+	if err := json.Unmarshal([]byte(s), v); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func UnmarshalResponse(data []reflect.Value, v any) error {

@@ -75,6 +75,9 @@ func Init(cfg *config.Config, logDir string, service service.Service, database *
 	// CORS middleware.
 	r.Use(middlewares.CORS())
 
+	// Server middleware.
+	r.Use(middlewares.Server())
+
 	// gzip middleware.
 	r.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedExtensions([]string{".js", ".css"})))
 

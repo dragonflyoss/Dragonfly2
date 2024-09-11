@@ -29,11 +29,11 @@ jobs:
         include:
           - module: manager
             image: manager
-            image-tag: v2.0.9
+            image-tag: v2.1.55-alpha
             chart-name: manager
           - module: scheduler
             image: scheduler
-            image-tag: v2.0.9
+            image-tag: v2.1.55-alpha
             chart-name: scheduler
           - module: dfdaemon
             image: dfdaemon

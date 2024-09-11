@@ -16,7 +16,11 @@
 
 package job
 
-import "d7y.io/dragonfly/v2/scheduler/resource"
+import (
+	"time"
+
+	"d7y.io/dragonfly/v2/scheduler/resource"
+)
 
 // PreheatRequest defines the request parameters for preheating.
 type PreheatRequest struct {
@@ -28,12 +32,30 @@ type PreheatRequest struct {
 	Application         string            `json:"application" validate:"omitempty"`
 	Priority            int32             `json:"priority" validate:"omitempty"`
 	Scope               string            `json:"scope" validate:"omitempty"`
-	BatchSize           uint              `json:"batch_size" validate:"omitempty"`
+	ConcurrentCount     int64             `json:"concurrent_count" validate:"omitempty"`
+	Timeout             time.Duration     `json:"timeout" validate:"omitempty"`
 }
 
 // PreheatResponse defines the response parameters for preheating.
 type PreheatResponse struct {
-	TaskID string `json:"task_id"`
+	SuccessTasks       []*PreheatSuccessTask `json:"success_tasks"`
+	FailureTasks       []*PreheatFailureTask `json:"failure_tasks"`
+	SchedulerClusterID uint                  `json:"scheduler_cluster_id"`
+}
+
+// PreheatSuccessTask defines the response parameters for preheating successfully.
+type PreheatSuccessTask struct {
+	TaskID   string `json:"task_id"`
+	Hostname string `json:"hostname"`
+	IP       string `json:"ip"`
+}
+
+// PreheatFailureTask defines the response parameters for preheating failed.
+type PreheatFailureTask struct {
+	TaskID      string `json:"task_id"`
+	Hostname    string `json:"hostname"`
+	IP          string `json:"ip"`
+	Description string `json:"description"`
 }
 
 // GetTaskRequest defines the request parameters for getting task.
@@ -48,7 +70,8 @@ type GetTaskResponse struct {
 
 // DeleteTaskRequest defines the request parameters for deleting task.
 type DeleteTaskRequest struct {
-	TaskID string `json:"task_id" validate:"required"`
+	TaskID  string        `json:"task_id" validate:"required"`
+	Timeout time.Duration `json:"timeout" validate:"omitempty"`
 }
 
 // DeleteTaskResponse defines the response parameters for deleting task.
