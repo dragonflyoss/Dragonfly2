@@ -38,6 +38,7 @@ var _ = Describe("Preheat with Manager", func() {
 		It("preheat files should be ok", Label("preheat", "file"), func() {
 			managerPod, err := util.ManagerExec(0)
 			fmt.Println(err)
+			fmt.Println(err)
 			Expect(err).NotTo(HaveOccurred())
 
 			req, err := structure.StructToMap(types.CreatePreheatJobRequest{
