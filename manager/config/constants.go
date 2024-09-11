@@ -50,10 +50,10 @@ const (
 	DefaultJWTRealm = "Dragonfly"
 
 	// DefaultJWTTimeout is default of timeout in jwt.
-	DefaultJWTTimeout = 2 * 24 * time.Hour
+	DefaultJWTTimeout = 14 * 24 * time.Hour
 
 	// DefaultJWTMaxRefresh is default of max refresh in jwt.
-	DefaultJWTMaxRefresh = 2 * 24 * time.Hour
+	DefaultJWTMaxRefresh = 7 * 24 * time.Hour
 )
 
 const (
