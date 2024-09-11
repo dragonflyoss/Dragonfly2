@@ -180,7 +180,7 @@ func (s *syncPeers) mergePeers(ctx context.Context, scheduler models.Scheduler, 
 		syncPeers[result.ID] = result
 	}
 
-	rows, err := s.db.Model(&models.Peer{}).Find(&models.Peer{SchedulerClusterID: scheduler.SchedulerClusterID}).Rows()
+	rows, err := s.db.Model(&models.Peer{}).Where("scheduler_cluster_id = ?",scheduler.SchedulerClusterID).Rows()
 	if err != nil {
 		log.Error(err)
 		return
