@@ -495,8 +495,9 @@ func (j *job) getTask(ctx context.Context, data string) (string, error) {
 
 	task, ok := j.resource.TaskManager().Load(req.TaskID)
 	if !ok {
-		logger.Errorf("task %s not found", req.TaskID)
-		return "", fmt.Errorf("task %s not found", req.TaskID)
+		// Do not return error if task not found, just retunr empty response.
+		logger.Warnf("task %s not found", req.TaskID)
+		return internaljob.MarshalResponse(&internaljob.GetTaskResponse{})
 	}
 
 	return internaljob.MarshalResponse(&internaljob.GetTaskResponse{
@@ -522,8 +523,9 @@ func (j *job) deleteTask(ctx context.Context, data string) (string, error) {
 
 	task, ok := j.resource.TaskManager().Load(req.TaskID)
 	if !ok {
-		logger.Errorf("task %s not found", req.TaskID)
-		return "", fmt.Errorf("task %s not found", req.TaskID)
+		// Do not return error if task not found, just retunr empty response.
+		logger.Warnf("task %s not found", req.TaskID)
+		return internaljob.MarshalResponse(&internaljob.DeleteTaskResponse{})
 	}
 
 	successPeers := []*internaljob.DeletePeerResponse{}

@@ -31,6 +31,20 @@ type TaskMetadata struct {
 	Sha256 string
 }
 
+// Check files is exist or not.
+func CheckFilesExist(pods []*PodExec, taskID string) bool {
+	for _, pod := range pods {
+		contentPath := fmt.Sprintf("%s/%s", clientContentDir, taskID)
+		if _, err := pod.Command("ls", contentPath).CombinedOutput(); err != nil {
+			// If the path does not exist, skip this client.
+			fmt.Printf("path %s does not exist: %s\n", contentPath, err.Error())
+			continue
+		}
+		return true
+	}
+	return false
+}
+
 func CalculateSha256ByTaskID(pods []*PodExec, taskID string) (string, error) {
 	var sha256sum string
 	for _, pod := range pods {
