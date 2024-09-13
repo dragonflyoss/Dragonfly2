@@ -114,13 +114,13 @@ type GroupJobState struct {
 }
 
 type jobState struct {
-	TaskUUID  string        `json:"task_uuid"`
-	TaskName  string        `json:"task_name"`
-	State     string        `json:"state"`
-	Results   []interface{} `json:"results"`
-	Error     string        `json:"error"`
-	CreatedAt time.Time     `json:"created_at"`
-	TTL       int64         `json:"ttl"`
+	TaskUUID  string    `json:"task_uuid"`
+	TaskName  string    `json:"task_name"`
+	State     string    `json:"state"`
+	Results   []any     `json:"results"`
+	Error     string    `json:"error"`
+	CreatedAt time.Time `json:"created_at"`
+	TTL       int64     `json:"ttl"`
 }
 
 func (t *Job) GetGroupJobState(name string, groupID string) (*GroupJobState, error) {
@@ -135,7 +135,7 @@ func (t *Job) GetGroupJobState(name string, groupID string) (*GroupJobState, err
 
 	jobStates := make([]jobState, 0, len(taskStates))
 	for _, taskState := range taskStates {
-		var results []interface{}
+		var results []any
 		for _, result := range taskState.Results {
 			switch name {
 			case PreheatJob:
@@ -228,17 +228,13 @@ func MarshalRequest(v any) ([]machineryv1tasks.Arg, error) {
 	}}, nil
 }
 
-func UnmarshalTaskResult(data interface{}, v any) error {
+func UnmarshalTaskResult(data any, v any) error {
 	s, ok := data.(string)
 	if !ok {
 		return errors.New("invalid task result")
 	}
 
-	if err := json.Unmarshal([]byte(s), v); err != nil {
-		return err
-	}
-
-	return nil
+	return json.Unmarshal([]byte(s), v)
 }
 
 func UnmarshalResponse(data []reflect.Value, v any) error {

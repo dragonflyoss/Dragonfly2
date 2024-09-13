@@ -300,11 +300,23 @@ type JobConfig struct {
 	// RateLimit configuration.
 	RateLimit RateLimitConfig `yaml:"rateLimit" mapstructure:"rateLimit"`
 
+	// GC configuration, used to clean up expired jobs. If the count of the jobs is huge,
+	// it may cause performance problems.
+	GC GCConfig `yaml:"gc" mapstructure:"gc"`
+
 	// Preheat configuration.
 	Preheat PreheatConfig `yaml:"preheat" mapstructure:"preheat"`
 
 	// Sync peers configuration.
 	SyncPeers SyncPeersConfig `yaml:"syncPeers" mapstructure:"syncPeers"`
+}
+
+type GCConfig struct {
+	// Interval is the interval for gc.
+	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
+
+	// TTL is the ttl for job.
+	TTL time.Duration `yaml:"ttl" mapstructure:"ttl"`
 }
 
 type PreheatConfig struct {
@@ -465,6 +477,10 @@ func New() *Config {
 				FillInterval: DefaultJobRateLimitFillInterval,
 				Capacity:     DefaultJobRateLimitCapacity,
 				Quantum:      DefaultJobRateLimitQuantum,
+			},
+			GC: GCConfig{
+				Interval: DefaultJobGCInterval,
+				TTL:      DefaultJobGCTTL,
 			},
 			Preheat: PreheatConfig{
 				RegistryTimeout: DefaultJobPreheatRegistryTimeout,
@@ -645,6 +661,14 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Job.RateLimit.Quantum == 0 {
 		return errors.New("rateLimit requires parameter quantum")
+	}
+
+	if cfg.Job.GC.Interval == 0 {
+		return errors.New("gc requires parameter interval")
+	}
+
+	if cfg.Job.GC.TTL == 0 {
+		return errors.New("gc requires parameter ttl")
 	}
 
 	if cfg.Job.Preheat.TLS != nil {

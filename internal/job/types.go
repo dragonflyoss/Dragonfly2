@@ -45,14 +45,14 @@ type PreheatResponse struct {
 
 // PreheatSuccessTask defines the response parameters for preheating successfully.
 type PreheatSuccessTask struct {
-	TaskID   string `json:"task_id"`
+	URL      string `json:"url"`
 	Hostname string `json:"hostname"`
 	IP       string `json:"ip"`
 }
 
 // PreheatFailureTask defines the response parameters for preheating failed.
 type PreheatFailureTask struct {
-	TaskID      string `json:"task_id"`
+	URL         string `json:"url"`
 	Hostname    string `json:"hostname"`
 	IP          string `json:"ip"`
 	Description string `json:"description"`

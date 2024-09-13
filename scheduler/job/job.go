@@ -265,10 +265,10 @@ func (j *job) preheatAllPeers(ctx context.Context, taskID string, req *internalj
 			if err != nil {
 				log.Errorf("preheat failed: %s", err.Error())
 				failureTasks.Store(ip, &internaljob.PreheatFailureTask{
-					TaskID:      taskID,
+					URL:         req.URL,
 					Hostname:    hostname,
 					IP:          ip,
-					Description: err.Error(),
+					Description: fmt.Sprintf("task %s failed: %s", taskID, err.Error()),
 				})
 
 				return err
@@ -291,10 +291,10 @@ func (j *job) preheatAllPeers(ctx context.Context, taskID string, req *internalj
 			if err != nil {
 				log.Errorf("preheat failed: %s", err.Error())
 				failureTasks.Store(ip, &internaljob.PreheatFailureTask{
-					TaskID:      taskID,
+					URL:         req.URL,
 					Hostname:    hostname,
 					IP:          ip,
-					Description: err.Error(),
+					Description: fmt.Sprintf("task %s failed: %s", taskID, err.Error()),
 				})
 
 				return err
@@ -307,7 +307,7 @@ func (j *job) preheatAllPeers(ctx context.Context, taskID string, req *internalj
 					if err == io.EOF {
 						log.Info("preheat succeeded")
 						successTasks.Store(ip, &internaljob.PreheatSuccessTask{
-							TaskID:   taskID,
+							URL:      req.URL,
 							Hostname: hostname,
 							IP:       ip,
 						})
@@ -317,10 +317,10 @@ func (j *job) preheatAllPeers(ctx context.Context, taskID string, req *internalj
 
 					log.Errorf("preheat failed: %s", err.Error())
 					failureTasks.Store(ip, &internaljob.PreheatFailureTask{
-						TaskID:      taskID,
+						URL:         req.URL,
 						Hostname:    hostname,
 						IP:          ip,
-						Description: err.Error(),
+						Description: fmt.Sprintf("task %s failed: %s", taskID, err.Error()),
 					})
 
 					return err
@@ -337,17 +337,23 @@ func (j *job) preheatAllPeers(ctx context.Context, taskID string, req *internalj
 	// If successTasks is not empty, return success tasks and failure tasks.
 	// Notify the client that the preheat is successful.
 	var preheatResponse internaljob.PreheatResponse
-	successTasks.Range(func(_, value any) bool {
-		if successTask, ok := value.(*internaljob.PreheatSuccessTask); ok {
-			preheatResponse.SuccessTasks = append(preheatResponse.SuccessTasks, successTask)
+	failureTasks.Range(func(_, value any) bool {
+		if failureTask, ok := value.(*internaljob.PreheatFailureTask); ok {
+			preheatResponse.FailureTasks = append(preheatResponse.FailureTasks, failureTask)
 		}
 
 		return true
 	})
 
-	failureTasks.Range(func(_, value any) bool {
-		if failureTask, ok := value.(*internaljob.PreheatFailureTask); ok {
-			preheatResponse.FailureTasks = append(preheatResponse.FailureTasks, failureTask)
+	successTasks.Range(func(_, value any) bool {
+		if successTask, ok := value.(*internaljob.PreheatSuccessTask); ok {
+			for _, failureTask := range preheatResponse.FailureTasks {
+				if failureTask.IP == successTask.IP {
+					return true
+				}
+			}
+
+			preheatResponse.SuccessTasks = append(preheatResponse.SuccessTasks, successTask)
 		}
 
 		return true
@@ -359,7 +365,7 @@ func (j *job) preheatAllPeers(ctx context.Context, taskID string, req *internalj
 
 	msg := "no error message"
 	if len(preheatResponse.FailureTasks) > 0 {
-		msg = fmt.Sprintf("%s %s %s %s", preheatResponse.FailureTasks[0].TaskID, preheatResponse.FailureTasks[0].IP, preheatResponse.FailureTasks[0].Hostname,
+		msg = fmt.Sprintf("%s %s %s %s", taskID, preheatResponse.FailureTasks[0].IP, preheatResponse.FailureTasks[0].Hostname,
 			preheatResponse.FailureTasks[0].Description)
 	}
 
@@ -399,13 +405,13 @@ func (j *job) preheatV1(ctx context.Context, taskID string, req *internaljob.Pre
 			log.Info("preheat succeeded")
 			if host, ok := j.resource.HostManager().Load(piece.HostId); ok {
 				return &internaljob.PreheatResponse{
-					SuccessTasks: []*internaljob.PreheatSuccessTask{{TaskID: taskID, Hostname: host.Hostname, IP: host.IP}},
+					SuccessTasks: []*internaljob.PreheatSuccessTask{{URL: req.URL, Hostname: host.Hostname, IP: host.IP}},
 				}, nil
 			}
 
 			log.Warnf("host %s not found", piece.HostId)
 			return &internaljob.PreheatResponse{
-				SuccessTasks: []*internaljob.PreheatSuccessTask{{TaskID: taskID, Hostname: "unknow", IP: "unknow"}},
+				SuccessTasks: []*internaljob.PreheatSuccessTask{{URL: req.URL, Hostname: "unknow", IP: "unknow"}},
 			}, nil
 		}
 	}
@@ -439,13 +445,13 @@ func (j *job) preheatV2(ctx context.Context, taskID string, req *internaljob.Pre
 				log.Info("preheat succeeded")
 				if host, ok := j.resource.HostManager().Load(hostID); ok {
 					return &internaljob.PreheatResponse{
-						SuccessTasks: []*internaljob.PreheatSuccessTask{{TaskID: taskID, Hostname: host.Hostname, IP: host.IP}},
+						SuccessTasks: []*internaljob.PreheatSuccessTask{{URL: req.URL, Hostname: host.Hostname, IP: host.IP}},
 					}, nil
 				}
 
 				log.Warnf("host %s not found", hostID)
 				return &internaljob.PreheatResponse{
-					SuccessTasks: []*internaljob.PreheatSuccessTask{{TaskID: taskID, Hostname: "unknow", IP: "unknow"}},
+					SuccessTasks: []*internaljob.PreheatSuccessTask{{URL: req.URL, Hostname: "unknow", IP: "unknow"}},
 				}, nil
 			}
 
