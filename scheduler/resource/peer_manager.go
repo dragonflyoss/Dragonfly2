@@ -167,6 +167,18 @@ func (p *peerManager) RunGC() error {
 			return true
 		}
 
+		// If host is disabled shared, then set the peer state to PeerStateLeave and then delete peer.
+		// Avoid the disabled shared host to be scheduled, and store the unused peer in the peer manager.
+		if peer.Host.DisableShared {
+			peer.Log.Info("peer host is disabled shared, causing the peer to leave")
+			if err := peer.FSM.Event(context.Background(), PeerEventLeave); err != nil {
+				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
+				return true
+			}
+
+			return true
+		}
+
 		// If the peer's elapsed of downloading piece exceeds the pieceDownloadTimeout,
 		// then sets the peer state to PeerStateLeave and then delete peer.
 		if peer.FSM.Is(PeerStateRunning) || peer.FSM.Is(PeerStateBackToSource) {

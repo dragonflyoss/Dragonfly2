@@ -516,6 +516,12 @@ func (s *scheduling) filterCandidateParents(peer *resource.Peer, blocklist set.S
 			continue
 		}
 
+		// Candidate parent is disable shared.
+		if candidateParent.Host.DisableShared {
+			peer.Log.Debugf("parent %s host %s is not selected because it is disable shared", candidateParent.ID, candidateParent.Host.ID)
+			continue
+		}
+
 		// Candidate parent host is not allowed to be the same as the peer host,
 		// because dfdaemon cannot handle the situation
 		// where two tasks are downloading and downloading each other.

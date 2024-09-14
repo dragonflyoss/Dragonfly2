@@ -513,6 +513,7 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 	host, loaded := v.resource.HostManager().Load(req.Host.GetId())
 	if !loaded {
 		options := []resource.HostOption{
+			resource.WithDisableShared(req.Host.GetDisableShared()),
 			resource.WithOS(req.Host.GetOs()),
 			resource.WithPlatform(req.Host.GetPlatform()),
 			resource.WithPlatformFamily(req.Host.GetPlatformFamily()),
@@ -610,6 +611,7 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 	host.Port = req.Host.GetPort()
 	host.DownloadPort = req.Host.GetDownloadPort()
 	host.Type = types.HostType(req.Host.GetType())
+	host.DisableShared = req.Host.GetDisableShared()
 	host.OS = req.Host.GetOs()
 	host.Platform = req.Host.GetPlatform()
 	host.PlatformFamily = req.Host.GetPlatformFamily()

@@ -435,6 +435,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 					Ip:              "127.0.0.1",
 					Port:            8003,
 					DownloadPort:    8001,
+					DisableShared:   true,
 					Os:              "darwin",
 					Platform:        "darwin",
 					PlatformFamily:  "Standalone Workstation",
@@ -505,6 +506,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 						assert.Equal(host.IP, req.Host.Ip)
 						assert.Equal(host.Port, req.Host.Port)
 						assert.Equal(host.DownloadPort, req.Host.DownloadPort)
+						assert.Equal(host.DisableShared, req.Host.DisableShared)
 						assert.Equal(host.OS, req.Host.Os)
 						assert.Equal(host.Platform, req.Host.Platform)
 						assert.Equal(host.PlatformVersion, req.Host.PlatformVersion)
@@ -541,6 +543,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 					Ip:              "127.0.0.1",
 					Port:            8003,
 					DownloadPort:    8001,
+					DisableShared:   false,
 					Os:              "darwin",
 					Platform:        "darwin",
 					PlatformFamily:  "Standalone Workstation",
@@ -611,6 +614,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 						assert.Equal(host.IP, req.Host.Ip)
 						assert.Equal(host.Port, req.Host.Port)
 						assert.Equal(host.DownloadPort, req.Host.DownloadPort)
+						assert.Equal(host.DisableShared, req.Host.DisableShared)
 						assert.Equal(host.OS, req.Host.Os)
 						assert.Equal(host.Platform, req.Host.Platform)
 						assert.Equal(host.PlatformVersion, req.Host.PlatformVersion)
@@ -647,6 +651,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 					Ip:              "127.0.0.1",
 					Port:            8003,
 					DownloadPort:    8001,
+					DisableShared:   true,
 					Os:              "darwin",
 					Platform:        "darwin",
 					PlatformFamily:  "Standalone Workstation",
@@ -718,6 +723,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 				assert.Equal(host.IP, req.Host.Ip)
 				assert.Equal(host.Port, req.Host.Port)
 				assert.Equal(host.DownloadPort, req.Host.DownloadPort)
+				assert.Equal(host.DisableShared, req.Host.DisableShared)
 				assert.Equal(host.OS, req.Host.Os)
 				assert.Equal(host.Platform, req.Host.Platform)
 				assert.Equal(host.PlatformVersion, req.Host.PlatformVersion)
@@ -749,6 +755,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 					Ip:              "127.0.0.1",
 					Port:            8003,
 					DownloadPort:    8001,
+					DisableShared:   false,
 					Os:              "darwin",
 					Platform:        "darwin",
 					PlatformFamily:  "Standalone Workstation",
@@ -820,6 +827,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 				assert.Equal(host.IP, req.Host.Ip)
 				assert.Equal(host.Port, req.Host.Port)
 				assert.Equal(host.DownloadPort, req.Host.DownloadPort)
+				assert.Equal(host.DisableShared, req.Host.DisableShared)
 				assert.Equal(host.OS, req.Host.Os)
 				assert.Equal(host.Platform, req.Host.Platform)
 				assert.Equal(host.PlatformVersion, req.Host.PlatformVersion)
