@@ -36,11 +36,11 @@ import (
 
 // Task is an interface for manager tasks.
 type Task interface {
-	// DeleteTask delete task
-	DeleteTask(context.Context, []models.Scheduler, types.DeleteTaskArgs) (*internaljob.GroupJobState, error)
+	// CreateDeleteTask create a delete task job.
+	CreateDeleteTask(context.Context, []models.Scheduler, types.DeleteTaskArgs) (*internaljob.GroupJobState, error)
 
-	// GetTask get task
-	GetTask(context.Context, []models.Scheduler, types.GetTaskArgs) (*internaljob.GroupJobState, error)
+	// CreateGetTask create a get task job.
+	CreateGetTask(context.Context, []models.Scheduler, types.GetTaskArgs) (*internaljob.GroupJobState, error)
 }
 
 // task is an implementation of Task.
@@ -53,8 +53,8 @@ func newTask(job *internaljob.Job) Task {
 	return &task{job}
 }
 
-// DeleteTask delete task
-func (t *task) DeleteTask(ctx context.Context, schedulers []models.Scheduler, json types.DeleteTaskArgs) (*internaljob.GroupJobState, error) {
+// CreateDeleteTask create a delete task job.
+func (t *task) CreateDeleteTask(ctx context.Context, schedulers []models.Scheduler, json types.DeleteTaskArgs) (*internaljob.GroupJobState, error) {
 	var span trace.Span
 	ctx, span = tracer.Start(ctx, config.SpanDeleteTask, trace.WithSpanKind(trace.SpanKindProducer))
 	span.SetAttributes(config.AttributeDeleteTaskID.String(json.TaskID))
@@ -104,8 +104,8 @@ func (t *task) DeleteTask(ctx context.Context, schedulers []models.Scheduler, js
 	}, nil
 }
 
-// GetTask get task
-func (t *task) GetTask(ctx context.Context, schedulers []models.Scheduler, json types.GetTaskArgs) (*internaljob.GroupJobState, error) {
+// CreateGetTask create a get task job.
+func (t *task) CreateGetTask(ctx context.Context, schedulers []models.Scheduler, json types.GetTaskArgs) (*internaljob.GroupJobState, error) {
 	var span trace.Span
 	ctx, span = tracer.Start(ctx, config.SpanGetTask, trace.WithSpanKind(trace.SpanKindProducer))
 	span.SetAttributes(config.AttributeGetTaskID.String(json.TaskID))

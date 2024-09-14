@@ -50,7 +50,7 @@ func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheat
 		return nil, err
 	}
 
-	candidateSchedulers, err := s.findPreheatCapableSchedulers(ctx, json.SchedulerClusterIDs)
+	candidateSchedulers, err := s.findCandidateSchedulers(ctx, json.SchedulerClusterIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -93,17 +93,17 @@ func (s *service) CreateDeleteTaskJob(ctx context.Context, json types.CreateDele
 		return nil, err
 	}
 
-	candidateSchedulers, err := s.findActiveSchedulers(ctx, json.SchedulerClusterIDs)
+	allSchedulers, err := s.findAllSchedulers(ctx, json.SchedulerClusterIDs)
 	if err != nil {
 		return nil, err
 	}
 
-	var candidateSchedulerClusters []models.SchedulerCluster
-	for _, candidateScheduler := range candidateSchedulers {
-		candidateSchedulerClusters = append(candidateSchedulerClusters, candidateScheduler.SchedulerCluster)
+	var allSchedulerClusters []models.SchedulerCluster
+	for _, allScheduler := range allSchedulers {
+		allSchedulerClusters = append(allSchedulerClusters, allScheduler.SchedulerCluster)
 	}
 
-	groupJobState, err := s.job.DeleteTask(ctx, candidateSchedulers, json.Args)
+	groupJobState, err := s.job.CreateDeleteTask(ctx, allSchedulers, json.Args)
 	if err != nil {
 		return nil, err
 	}
@@ -112,10 +112,10 @@ func (s *service) CreateDeleteTaskJob(ctx context.Context, json types.CreateDele
 		TaskID:            groupJobState.GroupUUID,
 		BIO:               json.BIO,
 		Type:              json.Type,
-		State:             machineryv1tasks.StateSuccess,
+		State:             groupJobState.State,
 		Args:              args,
 		UserID:            json.UserID,
-		SchedulerClusters: candidateSchedulerClusters,
+		SchedulerClusters: allSchedulerClusters,
 	}
 
 	if err := s.db.WithContext(ctx).Create(&job).Error; err != nil {
@@ -127,14 +127,14 @@ func (s *service) CreateDeleteTaskJob(ctx context.Context, json types.CreateDele
 }
 
 func (s *service) CreateGetTaskJob(ctx context.Context, json types.CreateGetTaskJobRequest) (*models.Job, error) {
-	candidateSchedulers, err := s.findActiveSchedulers(ctx, json.SchedulerClusterIDs)
+	allSchedulers, err := s.findAllSchedulers(ctx, json.SchedulerClusterIDs)
 	if err != nil {
 		return nil, err
 	}
 
-	var candidateSchedulerClusters []models.SchedulerCluster
-	for _, candidateScheduler := range candidateSchedulers {
-		candidateSchedulerClusters = append(candidateSchedulerClusters, candidateScheduler.SchedulerCluster)
+	var allSchedulerClusters []models.SchedulerCluster
+	for _, allScheduler := range allSchedulers {
+		allSchedulerClusters = append(allSchedulerClusters, allScheduler.SchedulerCluster)
 	}
 
 	args, err := structure.StructToMap(json.Args)
@@ -142,7 +142,7 @@ func (s *service) CreateGetTaskJob(ctx context.Context, json types.CreateGetTask
 		return nil, err
 	}
 
-	groupJobState, err := s.job.GetTask(ctx, candidateSchedulers, json.Args)
+	groupJobState, err := s.job.CreateGetTask(ctx, allSchedulers, json.Args)
 	if err != nil {
 		return nil, err
 	}
@@ -151,10 +151,10 @@ func (s *service) CreateGetTaskJob(ctx context.Context, json types.CreateGetTask
 		TaskID:            groupJobState.GroupUUID,
 		BIO:               json.BIO,
 		Type:              json.Type,
-		State:             machineryv1tasks.StateSuccess,
+		State:             groupJobState.State,
 		Args:              args,
 		UserID:            json.UserID,
-		SchedulerClusters: candidateSchedulerClusters,
+		SchedulerClusters: allSchedulerClusters,
 	}
 
 	if err := s.db.WithContext(ctx).Create(&job).Error; err != nil {
@@ -165,7 +165,7 @@ func (s *service) CreateGetTaskJob(ctx context.Context, json types.CreateGetTask
 	return &job, nil
 }
 
-func (s *service) findActiveSchedulers(ctx context.Context, schedulerClusterIDs []uint) ([]models.Scheduler, error) {
+func (s *service) findAllSchedulers(ctx context.Context, schedulerClusterIDs []uint) ([]models.Scheduler, error) {
 	var availableSchedulers []models.Scheduler
 	if len(schedulerClusterIDs) != 0 {
 		// Find the scheduler clusters by request.
@@ -212,20 +212,55 @@ func (s *service) findActiveSchedulers(ctx context.Context, schedulerClusterIDs 
 	return availableSchedulers, nil
 }
 
-func (s *service) findPreheatCapableSchedulers(ctx context.Context, schedulerClusterIDs []uint) ([]models.Scheduler, error) {
+func (s *service) findCandidateSchedulers(ctx context.Context, schedulerClusterIDs []uint) ([]models.Scheduler, error) {
 	var candidateSchedulers []models.Scheduler
+	if len(schedulerClusterIDs) != 0 {
+		// Find the scheduler clusters by request.
+		for _, schedulerClusterID := range schedulerClusterIDs {
+			schedulerCluster := models.SchedulerCluster{}
+			if err := s.db.WithContext(ctx).First(&schedulerCluster, schedulerClusterID).Error; err != nil {
+				return nil, err
+			}
 
-	// Find the available schedulers.
-	availableSchedulers, err := s.findActiveSchedulers(ctx, schedulerClusterIDs)
-	if err != nil {
-		return nil, err
-	}
+			var schedulers []models.Scheduler
+			if err := s.db.WithContext(ctx).Preload("SchedulerCluster").Find(&schedulers, models.Scheduler{
+				SchedulerClusterID: schedulerCluster.ID,
+				State:              models.SchedulerStateActive,
+			}).Error; err != nil {
+				return nil, err
+			}
 
-	// Scan the schedulers to find the first scheduler that supports preheat.
-	for _, scheduler := range availableSchedulers {
-		if slices.Contains(scheduler.Features, types.SchedulerFeaturePreheat) {
-			candidateSchedulers = append(candidateSchedulers, scheduler)
-			break
+			// Scan the schedulers to find the first scheduler that supports preheat.
+			for _, scheduler := range schedulers {
+				if slices.Contains(scheduler.Features, types.SchedulerFeaturePreheat) {
+					candidateSchedulers = append(candidateSchedulers, scheduler)
+					break
+				}
+			}
+		}
+	} else {
+		// Find all of the scheduler clusters that has active schedulers.
+		var candidateSchedulerClusters []models.SchedulerCluster
+		if err := s.db.WithContext(ctx).Find(&candidateSchedulerClusters).Error; err != nil {
+			return nil, err
+		}
+
+		for _, candidateSchedulerCluster := range candidateSchedulerClusters {
+			var schedulers []models.Scheduler
+			if err := s.db.WithContext(ctx).Preload("SchedulerCluster").Find(&schedulers, models.Scheduler{
+				SchedulerClusterID: candidateSchedulerCluster.ID,
+				State:              models.SchedulerStateActive,
+			}).Error; err != nil {
+				continue
+			}
+
+			// Scan the schedulers to find the first scheduler that supports preheat.
+			for _, scheduler := range schedulers {
+				if slices.Contains(scheduler.Features, types.SchedulerFeaturePreheat) {
+					candidateSchedulers = append(candidateSchedulers, scheduler)
+					break
+				}
+			}
 		}
 	}
 

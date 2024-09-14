@@ -504,10 +504,12 @@ func (j *job) getTask(ctx context.Context, data string) (string, error) {
 	var peers []*internaljob.Peer
 	for _, peer := range task.LoadPeers() {
 		peers = append(peers, convertPeer(peer))
+
 	}
 
 	return internaljob.MarshalResponse(&internaljob.GetTaskResponse{
-		Peers: peers,
+		Peers:              peers,
+		SchedulerClusterID: j.config.Manager.SchedulerClusterID,
 	})
 }
 
@@ -534,8 +536,8 @@ func (j *job) deleteTask(ctx context.Context, data string) (string, error) {
 		return internaljob.MarshalResponse(&internaljob.DeleteTaskResponse{})
 	}
 
-	successPeers := []*internaljob.DeletePeerResponse{}
-	failurePeers := []*internaljob.DeletePeerResponse{}
+	successPeers := []*internaljob.DeleteSuccessPeer{}
+	failurePeers := []*internaljob.DeleteFailurePeer{}
 
 	finishedPeers := task.LoadFinishedPeers()
 	for _, finishedPeer := range finishedPeers {
@@ -545,9 +547,9 @@ func (j *job) deleteTask(ctx context.Context, data string) (string, error) {
 		dfdaemonClient, err := dfdaemonclient.GetV2ByAddr(ctx, addr)
 		if err != nil {
 			log.Errorf("get client from %s failed: %s", addr, err.Error())
-			failurePeers = append(failurePeers, &internaljob.DeletePeerResponse{
-				Peer:        convertPeer(finishedPeer),
-				Description: err.Error(),
+			failurePeers = append(failurePeers, &internaljob.DeleteFailurePeer{
+				Peer:        *convertPeer(finishedPeer),
+				Description: fmt.Sprintf("task %s failed: %s", req.TaskID, err.Error()),
 			})
 
 			continue
@@ -557,23 +559,23 @@ func (j *job) deleteTask(ctx context.Context, data string) (string, error) {
 			TaskId: req.TaskID,
 		}); err != nil {
 			logger.Errorf("delete task failed: %s", err.Error())
-			failurePeers = append(failurePeers, &internaljob.DeletePeerResponse{
-				Peer:        convertPeer(finishedPeer),
-				Description: err.Error(),
+			failurePeers = append(failurePeers, &internaljob.DeleteFailurePeer{
+				Peer:        *convertPeer(finishedPeer),
+				Description: fmt.Sprintf("task %s failed: %s", req.TaskID, err.Error()),
 			})
 
 			continue
 		}
 
-		successPeers = append(successPeers, &internaljob.DeletePeerResponse{
-			Peer:        convertPeer(finishedPeer),
-			Description: "",
+		successPeers = append(successPeers, &internaljob.DeleteSuccessPeer{
+			Peer: *convertPeer(finishedPeer),
 		})
 	}
 
 	return internaljob.MarshalResponse(&internaljob.DeleteTaskResponse{
-		FailurePeers: failurePeers,
-		SuccessPeers: successPeers,
+		FailurePeers:       failurePeers,
+		SuccessPeers:       successPeers,
+		SchedulerClusterID: j.config.Manager.SchedulerClusterID,
 	})
 }
 
@@ -608,7 +610,6 @@ func convertPeer(p *resource.Peer) *internaljob.Peer {
 		peer.UpdatedAt = p.UpdatedAt.Load()
 	}
 
-	// Handle Pieces (sync.Map) safely
 	peer.Pieces = make(map[int32]*resource.Piece)
 	p.Pieces.Range(func(key, value interface{}) bool {
 		k, ok1 := key.(int32)

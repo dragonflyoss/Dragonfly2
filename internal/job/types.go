@@ -69,25 +69,8 @@ type GetTaskRequest struct {
 
 // GetTaskResponse defines the response parameters for getting task.
 type GetTaskResponse struct {
-	Peers []*Peer `json:"peers"`
-}
-
-// DeleteTaskRequest defines the request parameters for deleting task.
-type DeleteTaskRequest struct {
-	TaskID  string        `json:"task_id" validate:"required"`
-	Timeout time.Duration `json:"timeout" validate:"omitempty"`
-}
-
-// DeleteTaskResponse defines the response parameters for deleting task.
-type DeleteTaskResponse struct {
-	SuccessPeers []*DeletePeerResponse `json:"success_peers"`
-	FailurePeers []*DeletePeerResponse `json:"failure_peers"`
-}
-
-// DeletePeerResponse represents the response after attempting to delete a peer.
-type DeletePeerResponse struct {
-	Peer        *Peer  `json:"peer"`
-	Description string `json:"description"`
+	Peers              []*Peer `json:"peers"`
+	SchedulerClusterID uint    `json:"scheduler_cluster_id"`
 }
 
 // Peer represents the peer information.
@@ -105,4 +88,28 @@ type Peer struct {
 	PieceUpdatedAt   time.Time                 `json:"piece_updated_at"`
 	CreatedAt        time.Time                 `json:"created_at"`
 	UpdatedAt        time.Time                 `json:"updated_at"`
+}
+
+// DeleteTaskRequest defines the request parameters for deleting task.
+type DeleteTaskRequest struct {
+	TaskID  string        `json:"task_id" validate:"required"`
+	Timeout time.Duration `json:"timeout" validate:"omitempty"`
+}
+
+// DeleteTaskResponse defines the response parameters for deleting task.
+type DeleteTaskResponse struct {
+	SuccessPeers       []*DeleteSuccessPeer `json:"success_peers"`
+	FailurePeers       []*DeleteFailurePeer `json:"failure_peers"`
+	SchedulerClusterID uint                 `json:"scheduler_cluster_id"`
+}
+
+// DeleteSuccessPeer defines the response parameters for deleting peer successfully.
+type DeleteSuccessPeer struct {
+	Peer
+}
+
+// DeleteFailurePeer defines the response parameters for deleting peer failed.
+type DeleteFailurePeer struct {
+	Peer
+	Description string `json:"description"`
 }

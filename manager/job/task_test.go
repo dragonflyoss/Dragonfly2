@@ -49,19 +49,18 @@ func TestDeleteTask(t *testing.T) {
 				}
 				expectedResponses := map[string]*job.DeleteTaskResponse{
 					"scheduler1": {
-						SuccessPeers: []*job.DeletePeerResponse{
+						SuccessPeers: []*job.DeleteSuccessPeer{
 							{
-								Peer:        &internaljob.Peer{ID: "peer1"},
-								Description: "Deleted successfully",
+								Peer: internaljob.Peer{ID: "peer1"},
 							},
 						},
-						FailurePeers: []*job.DeletePeerResponse{},
+						FailurePeers: []*job.DeleteFailurePeer{},
 					},
 					"scheduler2": {
-						SuccessPeers: []*job.DeletePeerResponse{},
-						FailurePeers: []*job.DeletePeerResponse{
+						SuccessPeers: []*job.DeleteSuccessPeer{},
+						FailurePeers: []*job.DeleteFailurePeer{
 							{
-								Peer:        &internaljob.Peer{ID: "peer2"},
+								Peer:        internaljob.Peer{ID: "peer2"},
 								Description: "Failed to delete",
 							},
 						},
