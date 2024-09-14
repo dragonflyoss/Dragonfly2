@@ -306,7 +306,7 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 				blocklist.Add(mockSeedHost.ID)
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
-					mh.LoadRandomHosts(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
+					mh.LoadRandom(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
 					mc.GetWithExpiration(gomock.Any()).Return(uint64(6), mockCacheExpiration, true).Times(1),
 					mc.GetWithExpiration(gomock.Any()).Return(nil, mockCacheExpiration, false).Times(5),
 					mc.Set(gomock.Any(), gomock.Any(), gomock.Any()).Times(5),
@@ -344,7 +344,7 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 				blocklist.Add(mockSeedHost.ID)
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
-					mh.LoadRandomHosts(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
+					mh.LoadRandom(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
 					mc.GetWithExpiration(gomock.Any()).Return(nil, mockCacheExpiration, false).Times(6),
 					mc.Set(gomock.Any(), gomock.Any(), gomock.Any()).Times(6),
 				)
@@ -379,7 +379,7 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 				blocklist.Add(mockSeedHost.ID)
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
-					mh.LoadRandomHosts(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
+					mh.LoadRandom(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
 				)
 
 				var probedCountKeys []string
@@ -410,7 +410,7 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 				blocklist.Add(mockSeedHost.ID)
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
-					mh.LoadRandomHosts(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
+					mh.LoadRandom(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
 					mc.GetWithExpiration(gomock.Any()).Return(nil, mockCacheExpiration, false).Times(6),
 				)
 
@@ -439,7 +439,7 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 				blocklist.Add(mockSeedHost.ID)
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
-					mh.LoadRandomHosts(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
+					mh.LoadRandom(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
 				)
 			},
 			expect: func(t *testing.T, networkTopology NetworkTopology, err error, hosts []*resource.Host) {
@@ -463,7 +463,7 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 				blocklist.Add(mockSeedHost.ID)
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
-					mh.LoadRandomHosts(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
+					mh.LoadRandom(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
 					mc.GetWithExpiration(gomock.Any()).Return(nil, mockCacheExpiration, false).Times(6),
 				)
 
@@ -494,7 +494,7 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 				blocklist.Add(mockSeedHost.ID)
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
-					mh.LoadRandomHosts(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
+					mh.LoadRandom(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
 					mc.GetWithExpiration(gomock.Any()).Return(nil, mockCacheExpiration, false).Times(6),
 				)
 
@@ -525,7 +525,7 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 				blocklist.Add(mockSeedHost.ID)
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
-					mh.LoadRandomHosts(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
+					mh.LoadRandom(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
 					mc.GetWithExpiration(gomock.Any()).Return(nil, mockCacheExpiration, false).Times(5),
 					mc.GetWithExpiration(gomock.Any()).Return("foo", mockCacheExpiration, true).Times(1),
 					mc.Set(gomock.Any(), gomock.Any(), gomock.Any()).Times(5),
@@ -563,7 +563,7 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 				blocklist.Add(mockSeedHost.ID)
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
-					mh.LoadRandomHosts(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
+					mh.LoadRandom(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
 					mc.GetWithExpiration(gomock.Any()).Return(nil, mockCacheExpiration, false).Times(6),
 					mc.Set(gomock.Any(), gomock.Any(), gomock.Any()).Times(5),
 				)
@@ -601,7 +601,7 @@ func TestNetworkTopology_FindProbedHosts(t *testing.T) {
 				blocklist.Add(mockSeedHost.ID)
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
-					mh.LoadRandomHosts(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
+					mh.LoadRandom(gomock.Eq(findProbedCandidateHostsLimit), gomock.Eq(blocklist)).Return(hosts).Times(1),
 					mc.GetWithExpiration(gomock.Any()).Return(nil, mockCacheExpiration, false).Times(6),
 				)
 

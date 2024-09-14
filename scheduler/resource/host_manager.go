@@ -53,8 +53,11 @@ type HostManager interface {
 	// If f returns false, range stops the iteration.
 	Range(f func(any, any) bool)
 
-	// LoadRandomHosts loads host randomly through the Range of sync.Map.
-	LoadRandomHosts(int, set.SafeSet[string]) []*Host
+	// LoadRandom loads host randomly through the Range of sync.Map.
+	LoadRandom(int, set.SafeSet[string]) []*Host
+
+	// LoadAll loads all hosts through the Range of sync.Map.
+	LoadAll() []*Host
 
 	// Try to reclaim host.
 	RunGC() error
@@ -118,8 +121,25 @@ func (h *hostManager) Range(f func(key, value any) bool) {
 	h.Map.Range(f)
 }
 
-// LoadRandomHosts loads host randomly through the Range of sync.Map.
-func (h *hostManager) LoadRandomHosts(n int, blocklist set.SafeSet[string]) []*Host {
+// LoadAll loads all hosts through the Range of sync.Map.
+func (h *hostManager) LoadAll() []*Host {
+	hosts := make([]*Host, 0)
+	h.Map.Range(func(key, value any) bool {
+		host, ok := value.(*Host)
+		if !ok {
+			host.Log.Error("invalid host")
+			return true
+		}
+
+		hosts = append(hosts, host)
+		return true
+	})
+
+	return hosts
+}
+
+// LoadRandom loads host randomly through the Range of sync.Map.
+func (h *hostManager) LoadRandom(n int, blocklist set.SafeSet[string]) []*Host {
 	hosts := make([]*Host, 0, n)
 	h.Map.Range(func(key, value any) bool {
 		if len(hosts) >= n {

@@ -167,7 +167,7 @@ func (d *dag[T]) GetVertices() map[string]*Vertex[T] {
 	defer d.mu.RUnlock()
 
 	vertices := make(map[string]*Vertex[T], d.count.Load())
-	d.vertices.Range(func(key, value interface{}) bool {
+	d.vertices.Range(func(key, value any) bool {
 		vertex, ok := value.(*Vertex[T])
 		if !ok {
 			return true
@@ -195,7 +195,7 @@ func (d *dag[T]) GetRandomVertices(n uint) []*Vertex[T] {
 	}
 
 	randomVertices := make([]*Vertex[T], 0, n)
-	d.vertices.Range(func(key, value interface{}) bool {
+	d.vertices.Range(func(key, value any) bool {
 		vertex, ok := value.(*Vertex[T])
 		if !ok {
 			return true
