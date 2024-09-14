@@ -26,10 +26,10 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"d7y.io/dragonfly/v2/internal/job"
+	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/job/mocks"
 	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
-	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
 func TestDeleteTask(t *testing.T) {
@@ -51,7 +51,7 @@ func TestDeleteTask(t *testing.T) {
 					"scheduler1": {
 						SuccessPeers: []*job.DeletePeerResponse{
 							{
-								Peer:        &resource.Peer{ID: "peer1"},
+								Peer:        &internaljob.Peer{ID: "peer1"},
 								Description: "Deleted successfully",
 							},
 						},
@@ -61,7 +61,7 @@ func TestDeleteTask(t *testing.T) {
 						SuccessPeers: []*job.DeletePeerResponse{},
 						FailurePeers: []*job.DeletePeerResponse{
 							{
-								Peer:        &resource.Peer{ID: "peer2"},
+								Peer:        &internaljob.Peer{ID: "peer2"},
 								Description: "Failed to delete",
 							},
 						},
@@ -137,13 +137,13 @@ func TestGetTask(t *testing.T) {
 				}
 				expectedResponses := map[string]*job.GetTaskResponse{
 					"scheduler1": {
-						Peers: []*resource.Peer{
+						Peers: []*internaljob.Peer{
 							{ID: "peer1"},
 							{ID: "peer2"},
 						},
 					},
 					"scheduler2": {
-						Peers: []*resource.Peer{
+						Peers: []*internaljob.Peer{
 							{ID: "peer3"},
 							{ID: "peer4"},
 						},

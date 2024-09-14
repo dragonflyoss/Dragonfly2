@@ -500,8 +500,14 @@ func (j *job) getTask(ctx context.Context, data string) (string, error) {
 		return internaljob.MarshalResponse(&internaljob.GetTaskResponse{})
 	}
 
+	// Convert peer struct to peer response.
+	var peers []*internaljob.Peer
+	for _, peer := range task.LoadPeers() {
+		peers = append(peers, convertPeer(peer))
+	}
+
 	return internaljob.MarshalResponse(&internaljob.GetTaskResponse{
-		Peers: task.LoadPeers(),
+		Peers: peers,
 	})
 }
 
@@ -540,7 +546,7 @@ func (j *job) deleteTask(ctx context.Context, data string) (string, error) {
 		if err != nil {
 			log.Errorf("get client from %s failed: %s", addr, err.Error())
 			failurePeers = append(failurePeers, &internaljob.DeletePeerResponse{
-				Peer:        finishedPeer,
+				Peer:        convertPeer(finishedPeer),
 				Description: err.Error(),
 			})
 
@@ -552,7 +558,7 @@ func (j *job) deleteTask(ctx context.Context, data string) (string, error) {
 		}); err != nil {
 			logger.Errorf("delete task failed: %s", err.Error())
 			failurePeers = append(failurePeers, &internaljob.DeletePeerResponse{
-				Peer:        finishedPeer,
+				Peer:        convertPeer(finishedPeer),
 				Description: err.Error(),
 			})
 
@@ -560,7 +566,7 @@ func (j *job) deleteTask(ctx context.Context, data string) (string, error) {
 		}
 
 		successPeers = append(successPeers, &internaljob.DeletePeerResponse{
-			Peer:        finishedPeer,
+			Peer:        convertPeer(finishedPeer),
 			Description: "",
 		})
 	}
@@ -569,4 +575,49 @@ func (j *job) deleteTask(ctx context.Context, data string) (string, error) {
 		FailurePeers: failurePeers,
 		SuccessPeers: successPeers,
 	})
+}
+
+func convertPeer(p *resource.Peer) *internaljob.Peer {
+	peer := &internaljob.Peer{
+		ID:               p.ID,
+		Config:           p.Config,
+		Range:            p.Range,
+		Priority:         int32(p.Priority),
+		FinishedPieces:   p.FinishedPieces,
+		PieceCosts:       p.PieceCosts(),
+		NeedBackToSource: p.NeedBackToSource != nil && p.NeedBackToSource.Load(),
+	}
+
+	if p.BlockParents != nil && p.BlockParents.Len() > 0 {
+		peer.BlockParents = p.BlockParents.Values()
+	}
+
+	if p.Cost != nil {
+		peer.Cost = p.Cost.Load()
+	}
+
+	if p.PieceUpdatedAt != nil {
+		peer.PieceUpdatedAt = p.PieceUpdatedAt.Load()
+	}
+
+	if p.CreatedAt != nil {
+		peer.CreatedAt = p.CreatedAt.Load()
+	}
+
+	if p.UpdatedAt != nil {
+		peer.UpdatedAt = p.UpdatedAt.Load()
+	}
+
+	// Handle Pieces (sync.Map) safely
+	peer.Pieces = make(map[int32]*resource.Piece)
+	p.Pieces.Range(func(key, value interface{}) bool {
+		k, ok1 := key.(int32)
+		v, ok2 := value.(*resource.Piece)
+		if ok1 && ok2 {
+			peer.Pieces[k] = v
+		}
+		return true
+	})
+
+	return peer
 }

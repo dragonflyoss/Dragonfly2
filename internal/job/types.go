@@ -19,6 +19,10 @@ package job
 import (
 	"time"
 
+	"github.com/bits-and-blooms/bitset"
+
+	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
@@ -65,7 +69,7 @@ type GetTaskRequest struct {
 
 // GetTaskResponse defines the response parameters for getting task.
 type GetTaskResponse struct {
-	Peers []*resource.Peer `json:"peers"`
+	Peers []*Peer `json:"peers"`
 }
 
 // DeleteTaskRequest defines the request parameters for deleting task.
@@ -82,6 +86,23 @@ type DeleteTaskResponse struct {
 
 // DeletePeerResponse represents the response after attempting to delete a peer.
 type DeletePeerResponse struct {
-	Peer        *resource.Peer `json:"peer"`
-	Description string         `json:"description"`
+	Peer        *Peer  `json:"peer"`
+	Description string `json:"description"`
+}
+
+// Peer represents the peer information.
+type Peer struct {
+	ID               string                    `json:"id"`
+	Config           *config.ResourceConfig    `json:"config,omitempty"`
+	Range            *nethttp.Range            `json:"range,omitempty"`
+	Priority         int32                     `json:"priority"`
+	Pieces           map[int32]*resource.Piece `json:"pieces,omitempty"`
+	FinishedPieces   *bitset.BitSet            `json:"finished_pieces,omitempty"`
+	PieceCosts       []time.Duration           `json:"piece_costs"`
+	Cost             time.Duration             `json:"cost,omitempty"`
+	BlockParents     []string                  `json:"block_parents"`
+	NeedBackToSource bool                      `json:"need_back_to_source"`
+	PieceUpdatedAt   time.Time                 `json:"piece_updated_at"`
+	CreatedAt        time.Time                 `json:"created_at"`
+	UpdatedAt        time.Time                 `json:"updated_at"`
 }

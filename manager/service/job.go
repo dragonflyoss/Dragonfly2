@@ -50,7 +50,7 @@ func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheat
 		return nil, err
 	}
 
-	candidateSchedulers, err := s.findCandidateSchedulers(ctx, json.SchedulerClusterIDs)
+	candidateSchedulers, err := s.findPreheatCapableSchedulers(ctx, json.SchedulerClusterIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (s *service) CreateDeleteTaskJob(ctx context.Context, json types.CreateDele
 		return nil, err
 	}
 
-	candidateSchedulers, err := s.findCandidateSchedulers(ctx, json.SchedulerClusterIDs)
+	candidateSchedulers, err := s.findActiveSchedulers(ctx, json.SchedulerClusterIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -103,44 +103,17 @@ func (s *service) CreateDeleteTaskJob(ctx context.Context, json types.CreateDele
 		candidateSchedulerClusters = append(candidateSchedulerClusters, candidateScheduler.SchedulerCluster)
 	}
 
-	var job *models.Job
-	defer func() {
-		if job != nil {
-			if err := s.db.WithContext(ctx).Create(job).Error; err != nil {
-				logger.Errorf("create job failed: %s", err.Error())
-			}
-		}
-	}()
-
-	groupJobState, result, err := s.job.DeleteTask(ctx, candidateSchedulers, json.Args)
+	groupJobState, err := s.job.DeleteTask(ctx, candidateSchedulers, json.Args)
 	if err != nil {
-		if groupJobState != nil {
-			job = &models.Job{
-				TaskID:            groupJobState.GroupUUID,
-				BIO:               json.BIO,
-				Type:              json.Type,
-				State:             machineryv1tasks.StateFailure,
-				Args:              args,
-				UserID:            json.UserID,
-				SchedulerClusters: candidateSchedulerClusters,
-			}
-		}
-		return job, err
+		return nil, err
 	}
 
-	// Convert the result to JSONMap.
-	resultMap := make(models.JSONMap)
-	for key, value := range result {
-		resultMap[key] = value
-	}
-
-	job = &models.Job{
+	job := models.Job{
 		TaskID:            groupJobState.GroupUUID,
 		BIO:               json.BIO,
 		Type:              json.Type,
 		State:             machineryv1tasks.StateSuccess,
 		Args:              args,
-		Result:            resultMap,
 		UserID:            json.UserID,
 		SchedulerClusters: candidateSchedulerClusters,
 	}
@@ -154,7 +127,7 @@ func (s *service) CreateDeleteTaskJob(ctx context.Context, json types.CreateDele
 }
 
 func (s *service) CreateGetTaskJob(ctx context.Context, json types.CreateGetTaskJobRequest) (*models.Job, error) {
-	candidateSchedulers, err := s.findAvailableSchedulers(ctx, json.SchedulerClusterIDs)
+	candidateSchedulers, err := s.findActiveSchedulers(ctx, json.SchedulerClusterIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -169,44 +142,17 @@ func (s *service) CreateGetTaskJob(ctx context.Context, json types.CreateGetTask
 		return nil, err
 	}
 
-	var job *models.Job
-	defer func() {
-		if job != nil {
-			if err := s.db.WithContext(ctx).Create(job).Error; err != nil {
-				logger.Errorf("create job failed: %s", err.Error())
-			}
-		}
-	}()
-
-	groupJobState, result, err := s.job.GetTask(ctx, candidateSchedulers, json.Args)
+	groupJobState, err := s.job.GetTask(ctx, candidateSchedulers, json.Args)
 	if err != nil {
-		if groupJobState != nil {
-			job = &models.Job{
-				TaskID:            groupJobState.GroupUUID,
-				BIO:               json.BIO,
-				Type:              json.Type,
-				State:             machineryv1tasks.StateFailure,
-				Args:              args,
-				UserID:            json.UserID,
-				SchedulerClusters: candidateSchedulerClusters,
-			}
-		}
-		return job, err
+		return nil, err
 	}
 
-	// Convert the result to JSONMap.
-	resultMap := make(models.JSONMap)
-	for key, value := range result {
-		resultMap[key] = value
-	}
-
-	job = &models.Job{
+	job := models.Job{
 		TaskID:            groupJobState.GroupUUID,
 		BIO:               json.BIO,
 		Type:              json.Type,
 		State:             machineryv1tasks.StateSuccess,
 		Args:              args,
-		Result:            resultMap,
 		UserID:            json.UserID,
 		SchedulerClusters: candidateSchedulerClusters,
 	}
@@ -219,7 +165,7 @@ func (s *service) CreateGetTaskJob(ctx context.Context, json types.CreateGetTask
 	return &job, nil
 }
 
-func (s *service) findAvailableSchedulers(ctx context.Context, schedulerClusterIDs []uint) ([]models.Scheduler, error) {
+func (s *service) findActiveSchedulers(ctx context.Context, schedulerClusterIDs []uint) ([]models.Scheduler, error) {
 	var availableSchedulers []models.Scheduler
 	if len(schedulerClusterIDs) != 0 {
 		// Find the scheduler clusters by request.
@@ -266,11 +212,11 @@ func (s *service) findAvailableSchedulers(ctx context.Context, schedulerClusterI
 	return availableSchedulers, nil
 }
 
-func (s *service) findCandidateSchedulers(ctx context.Context, schedulerClusterIDs []uint) ([]models.Scheduler, error) {
+func (s *service) findPreheatCapableSchedulers(ctx context.Context, schedulerClusterIDs []uint) ([]models.Scheduler, error) {
 	var candidateSchedulers []models.Scheduler
 
 	// Find the available schedulers.
-	availableSchedulers, err := s.findAvailableSchedulers(ctx, schedulerClusterIDs)
+	availableSchedulers, err := s.findActiveSchedulers(ctx, schedulerClusterIDs)
 	if err != nil {
 		return nil, err
 	}

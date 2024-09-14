@@ -34,16 +34,13 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-// DefaultDeleteTaskTimeout is the default timeout for delete task.
-const DefaultDeleteTaskTimeout = 120 * time.Second
-
 // Task is an interface for manager tasks.
 type Task interface {
 	// DeleteTask delete task
-	DeleteTask(context.Context, []models.Scheduler, types.DeleteTaskArgs) (*machineryv1tasks.Group, map[string]*internaljob.DeleteTaskResponse, error)
+	DeleteTask(context.Context, []models.Scheduler, types.DeleteTaskArgs) (*internaljob.GroupJobState, error)
 
 	// GetTask get task
-	GetTask(context.Context, []models.Scheduler, types.GetTaskArgs) (*machineryv1tasks.Group, map[string]*internaljob.GetTaskResponse, error)
+	GetTask(context.Context, []models.Scheduler, types.GetTaskArgs) (*internaljob.GroupJobState, error)
 }
 
 // task is an implementation of Task.
@@ -57,7 +54,7 @@ func newTask(job *internaljob.Job) Task {
 }
 
 // DeleteTask delete task
-func (t *task) DeleteTask(ctx context.Context, schedulers []models.Scheduler, json types.DeleteTaskArgs) (*machineryv1tasks.Group, map[string]*internaljob.DeleteTaskResponse, error) {
+func (t *task) DeleteTask(ctx context.Context, schedulers []models.Scheduler, json types.DeleteTaskArgs) (*internaljob.GroupJobState, error) {
 	var span trace.Span
 	ctx, span = tracer.Start(ctx, config.SpanDeleteTask, trace.WithSpanKind(trace.SpanKindProducer))
 	span.SetAttributes(config.AttributeDeleteTaskID.String(json.TaskID))
@@ -66,13 +63,12 @@ func (t *task) DeleteTask(ctx context.Context, schedulers []models.Scheduler, js
 	args, err := internaljob.MarshalRequest(json)
 	if err != nil {
 		logger.Errorf("delete task marshal request: %v, error: %v", args, err)
-		return nil, nil, err
+		return nil, err
 	}
 
-	// Initialize queues.
 	queues, err := getSchedulerQueues(schedulers)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	var signatures []*machineryv1tasks.Signature
@@ -87,7 +83,7 @@ func (t *task) DeleteTask(ctx context.Context, schedulers []models.Scheduler, js
 
 	group, err := machineryv1tasks.NewGroup(signatures...)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	var tasks []machineryv1tasks.Signature
@@ -96,36 +92,20 @@ func (t *task) DeleteTask(ctx context.Context, schedulers []models.Scheduler, js
 	}
 
 	logger.Infof("create task group %s in queues %v, tasks: %#v", group.GroupUUID, queues, tasks)
-	asyncResults, err := t.job.Server.SendGroupWithContext(ctx, group, 0)
-	if err != nil {
-		logger.Errorf("create task group %s failed", group.GroupUUID, err)
-		return group, nil, err
+	if _, err := t.job.Server.SendGroupWithContext(ctx, group, 0); err != nil {
+		logger.Errorf("create preheat group %s failed", group.GroupUUID, err)
+		return nil, err
 	}
 
-	deleteTaskResponses := make(map[string]*internaljob.DeleteTaskResponse, len(schedulers))
-	for _, asyncResult := range asyncResults {
-		results, err := asyncResult.GetWithTimeout(DefaultDeleteTaskTimeout, DefaultTaskPollingInterval)
-		if err != nil {
-			return group, nil, err
-		}
-
-		// Unmarshal task group result.
-		var deleteTaskResponse internaljob.DeleteTaskResponse
-		if err := internaljob.UnmarshalResponse(results, &deleteTaskResponse); err != nil {
-			logger.Errorf("unmarshal task group result failed: %v", err)
-			deleteTaskResponses[asyncResult.Signature.RoutingKey] = nil
-			continue
-		}
-
-		// Store task group result by routing key.
-		deleteTaskResponses[asyncResult.Signature.RoutingKey] = &deleteTaskResponse
-	}
-
-	return group, deleteTaskResponses, nil
+	return &internaljob.GroupJobState{
+		GroupUUID: group.GroupUUID,
+		State:     machineryv1tasks.StatePending,
+		CreatedAt: time.Now(),
+	}, nil
 }
 
 // GetTask get task
-func (t *task) GetTask(ctx context.Context, schedulers []models.Scheduler, json types.GetTaskArgs) (*machineryv1tasks.Group, map[string]*internaljob.GetTaskResponse, error) {
+func (t *task) GetTask(ctx context.Context, schedulers []models.Scheduler, json types.GetTaskArgs) (*internaljob.GroupJobState, error) {
 	var span trace.Span
 	ctx, span = tracer.Start(ctx, config.SpanGetTask, trace.WithSpanKind(trace.SpanKindProducer))
 	span.SetAttributes(config.AttributeGetTaskID.String(json.TaskID))
@@ -134,13 +114,12 @@ func (t *task) GetTask(ctx context.Context, schedulers []models.Scheduler, json 
 	args, err := internaljob.MarshalRequest(json)
 	if err != nil {
 		logger.Errorf("list tasks marshal request: %v, error: %v", args, err)
-		return nil, nil, err
+		return nil, err
 	}
 
-	// Initialize queues.
 	queues, err := getSchedulerQueues(schedulers)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	var signatures []*machineryv1tasks.Signature
@@ -155,7 +134,7 @@ func (t *task) GetTask(ctx context.Context, schedulers []models.Scheduler, json 
 
 	group, err := machineryv1tasks.NewGroup(signatures...)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	var tasks []machineryv1tasks.Signature
@@ -164,30 +143,14 @@ func (t *task) GetTask(ctx context.Context, schedulers []models.Scheduler, json 
 	}
 
 	logger.Infof("create task group %s in queues %v, tasks: %#v", group.GroupUUID, queues, tasks)
-	asyncResults, err := t.job.Server.SendGroupWithContext(ctx, group, 0)
-	if err != nil {
+	if _, err := t.job.Server.SendGroupWithContext(ctx, group, 0); err != nil {
 		logger.Errorf("create task group %s failed", group.GroupUUID, err)
-		return group, nil, err
+		return nil, err
 	}
 
-	getTaskResponses := make(map[string]*internaljob.GetTaskResponse, len(schedulers))
-	for _, asyncResult := range asyncResults {
-		results, err := asyncResult.GetWithTimeout(DefaultDeleteTaskTimeout, DefaultTaskPollingInterval)
-		if err != nil {
-			return group, nil, err
-		}
-
-		// Unmarshal task group result.
-		var getTaskResponse internaljob.GetTaskResponse
-		if err := internaljob.UnmarshalResponse(results, &getTaskResponse); err != nil {
-			logger.Errorf("unmarshal task group result failed: %v", err)
-			getTaskResponses[asyncResult.Signature.RoutingKey] = nil
-			continue
-		}
-
-		// Store task group result by routing key.
-		getTaskResponses[asyncResult.Signature.RoutingKey] = &getTaskResponse
-	}
-
-	return group, getTaskResponses, nil
+	return &internaljob.GroupJobState{
+		GroupUUID: group.GroupUUID,
+		State:     machineryv1tasks.StatePending,
+		CreatedAt: time.Now(),
+	}, nil
 }
