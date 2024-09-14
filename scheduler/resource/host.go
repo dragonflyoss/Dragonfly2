@@ -52,6 +52,13 @@ func WithConcurrentUploadLimit(limit int32) HostOption {
 	}
 }
 
+// WithDisableShared sets host's DisableShared.
+func WithDisableShared(disableShared bool) HostOption {
+	return func(h *Host) {
+		h.DisableShared = disableShared
+	}
+}
+
 // WithOS sets host's os.
 func WithOS(os string) HostOption {
 	return func(h *Host) {
@@ -151,6 +158,10 @@ type Host struct {
 
 	// ObjectStoragePort is object storage port.
 	ObjectStoragePort int32
+
+	// DisableShared is whether the host is disabled for
+	// shared with other peers.
+	DisableShared bool
 
 	// Host OS.
 	OS string
@@ -363,6 +374,7 @@ func NewHost(
 		Hostname:              hostname,
 		Port:                  port,
 		DownloadPort:          downloadPort,
+		DisableShared:         false,
 		ConcurrentUploadLimit: atomic.NewInt32(int32(concurrentUploadLimit)),
 		ConcurrentUploadCount: atomic.NewInt32(0),
 		UploadCount:           atomic.NewInt64(0),

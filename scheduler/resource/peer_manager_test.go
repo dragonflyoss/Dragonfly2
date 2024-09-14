@@ -348,6 +348,35 @@ func TestPeerManager_RunGC(t *testing.T) {
 			},
 		},
 		{
+			name: "peer reclaimed with disabled shared",
+			gcConfig: &config.GCConfig{
+				PieceDownloadTimeout: 5 * time.Minute,
+				PeerGCInterval:       1 * time.Second,
+				PeerTTL:              1 * time.Microsecond,
+				HostTTL:              10 * time.Second,
+			},
+			mock: func(m *gc.MockGCMockRecorder) {
+				m.Add(gomock.Any()).Return(nil).Times(1)
+			},
+			expect: func(t *testing.T, peerManager PeerManager, mockHost *Host, mockTask *Task, mockPeer *Peer) {
+				assert := assert.New(t)
+				peerManager.Store(mockPeer)
+				mockPeer.Host.DisableShared = true
+				err := peerManager.RunGC()
+				assert.NoError(err)
+
+				peer, loaded := peerManager.Load(mockPeer.ID)
+				assert.Equal(loaded, true)
+				assert.Equal(peer.FSM.Current(), PeerStateLeave)
+
+				err = peerManager.RunGC()
+				assert.NoError(err)
+
+				_, loaded = peerManager.Load(mockPeer.ID)
+				assert.Equal(loaded, false)
+			},
+		},
+		{
 			name: "peer download piece timeout and peer state is PeerStateRunning",
 			gcConfig: &config.GCConfig{
 				PieceDownloadTimeout: 1 * time.Microsecond,
