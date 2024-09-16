@@ -88,7 +88,7 @@ require (
 	golang.org/x/sys v0.24.0
 	golang.org/x/time v0.5.0
 	google.golang.org/api v0.189.0
-	google.golang.org/grpc v1.66.0
+	google.golang.org/grpc v1.66.2
 	google.golang.org/protobuf v1.34.2
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v3 v3.0.1
