@@ -56,6 +56,10 @@ jobs:
           fi
           echo "hashes=$hashes" >> $GITHUB_OUTPUT
 
+      - name: Set tag output
+        id: tag
+        run: echo "tag_name=${GITHUB_REF#refs/*/}" >> "$GITHUB_OUTPUT"
+
   provenance:
     needs: [goreleaser]
     permissions:
@@ -66,3 +70,5 @@ jobs:
     with:
       base64-subjects: "${{ needs.goreleaser.outputs.hashes }}"
       upload-assets: true # upload to a new release
+      upload-tag-name: "${{ needs.release.outputs.tag_name }}"
+      draft-release: true
