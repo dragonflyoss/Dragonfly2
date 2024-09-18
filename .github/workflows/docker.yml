@@ -64,6 +64,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
       - name: Login Docker Hub
         uses: docker/login-action@v3.3.0
         with:
@@ -76,7 +79,10 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify base image
+        run: |          
+          cosign dockerfile verify --base-image-only --key https://github.com/GoogleContainerTools/distroless build/images/${{ matrix.module }}/Dockerfile
 
       - name: Push to Registry
         uses: docker/build-push-action@v6.7.0
@@ -85,8 +91,12 @@ jobs:
           platforms: ${{ matrix.platforms }}
           file: build/images/${{ matrix.module }}/Dockerfile
           labels: |-
+            org.opencontainers.image.title=${{ github.event.repository.name }}
+            org.opencontainers.image.description=${{ github.event.repository.description }}
+            org.opencontainers.image.url=${{ github.event.repository.html_url }}
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.get_version.outputs.VERSION }}
           build-args: |
             GITVERSION=git-${{ steps.vars.outputs.git_revision }}
             VERSION=${{ steps.get_version.outputs.VERSION }}
@@ -96,6 +106,31 @@ jobs:
           push: true
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Sign container image
+        run: |
+            cosign sign --key env://COSIGN_KEY dragonflyoss/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
+            cosign sign --key env://COSIGN_KEY ghcr.io/${{ env.IMAGE_REPOSITORY }}/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
+        env:
+          COSIGN_KEY: ${{secrets.COSIGN_KEY}}
+          COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
+
+      - name: Check images
+        run: |
+          docker buildx imagetools inspect dragonflyoss/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
+          docker pull dragonflyoss/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
+          cosign verify --key cosign.pub dragonflyoss/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }} 
+          docker buildx imagetools inspect ghcr.io/${{ env.IMAGE_REPOSITORY }}/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
+          docker pull ghcr.io/${{ env.IMAGE_REPOSITORY }}/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
+          cosign verify --key cosign.pub ghcr.io/${{ env.IMAGE_REPOSITORY }}/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }} 
+
+      - uses: anchore/sbom-action@v0
+        with:
+          image: dragonflyoss/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
+
+      - uses: anchore/sbom-action@v0
+        with:
+          image: ghcr.io/${{ env.IMAGE_REPOSITORY }}/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
 
       - name: Move cache
         run: |
