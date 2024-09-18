@@ -107,8 +107,8 @@ jobs:
 
       - name: Sign container image
         run: |
-            cosign sign --key env://COSIGN_KEY dragonflyoss/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
-            cosign sign --key env://COSIGN_KEY ghcr.io/${{ env.IMAGE_REPOSITORY }}/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
+            cosign sign -y --key env://COSIGN_KEY dragonflyoss/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
+            cosign sign -y --key env://COSIGN_KEY ghcr.io/${{ env.IMAGE_REPOSITORY }}/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
         env:
           COSIGN_KEY: ${{secrets.COSIGN_KEY}}
           COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
