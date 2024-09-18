@@ -79,6 +79,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Verify base image
         run: |          
