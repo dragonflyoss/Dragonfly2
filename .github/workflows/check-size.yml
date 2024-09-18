@@ -19,12 +19,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
         with:
           fetch-depth: 1
 
       - name: Check large files
-        uses: actionsdesk/lfs-warning@v3.3
+        uses: actionsdesk/lfs-warning@e5f9a4c21f4bee104db7c0f23954dde59e5df909
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
