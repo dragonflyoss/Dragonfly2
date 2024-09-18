@@ -75,6 +75,9 @@ func Init(cfg *config.Config, logDir string, service service.Service, database *
 	// CORS middleware.
 	r.Use(middlewares.CORS())
 
+	// Server middleware.
+	r.Use(middlewares.Server())
+
 	// gzip middleware.
 	r.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedExtensions([]string{".js", ".css"})))
 
@@ -158,6 +161,10 @@ func Init(cfg *config.Config, logDir string, service service.Service, database *
 	s.PATCH(":id", h.UpdateScheduler)
 	s.GET(":id", h.GetScheduler)
 	s.GET("", h.GetSchedulers)
+
+	// Scheduler Feature.
+	sf := apiv1.Group("/scheduler-features", jwt.MiddlewareFunc(), rbac)
+	sf.GET("", h.GetSchedulerFeatures)
 
 	// Seed Peer Cluster.
 	spc := apiv1.Group("/seed-peer-clusters", jwt.MiddlewareFunc(), rbac)

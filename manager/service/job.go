@@ -24,6 +24,7 @@ import (
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/retry"
@@ -32,6 +33,23 @@ import (
 )
 
 func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheatJobRequest) (*models.Job, error) {
+	if json.Args.Scope == "" {
+		json.Args.Scope = types.SinglePeerScope
+	}
+
+	if json.Args.ConcurrentCount == 0 {
+		json.Args.ConcurrentCount = types.DefaultPreheatConcurrentCount
+	}
+
+	if json.Args.Timeout == 0 {
+		json.Args.Timeout = types.DefaultJobTimeout
+	}
+
+	args, err := structure.StructToMap(json.Args)
+	if err != nil {
+		return nil, err
+	}
+
 	candidateSchedulers, err := s.findCandidateSchedulers(ctx, json.SchedulerClusterIDs)
 	if err != nil {
 		return nil, err
@@ -47,11 +65,6 @@ func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheat
 		candidateSchedulerClusters = append(candidateSchedulerClusters, candidateScheduler.SchedulerCluster)
 	}
 
-	args, err := structure.StructToMap(json.Args)
-	if err != nil {
-		return nil, err
-	}
-
 	job := models.Job{
 		TaskID:            groupJobState.GroupUUID,
 		BIO:               json.BIO,
@@ -66,12 +79,20 @@ func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheat
 		return nil, err
 	}
 
-	go s.pollingJob(context.Background(), job.ID, job.TaskID)
-
+	go s.pollingJob(context.Background(), internaljob.PreheatJob, job.ID, job.TaskID)
 	return &job, nil
 }
 
 func (s *service) CreateDeleteTaskJob(ctx context.Context, json types.CreateDeleteTaskJobRequest) (*models.Job, error) {
+	if json.Args.Timeout == 0 {
+		json.Args.Timeout = types.DefaultJobTimeout
+	}
+
+	args, err := structure.StructToMap(json.Args)
+	if err != nil {
+		return nil, err
+	}
+
 	candidateSchedulers, err := s.findCandidateSchedulers(ctx, json.SchedulerClusterIDs)
 	if err != nil {
 		return nil, err
@@ -87,11 +108,6 @@ func (s *service) CreateDeleteTaskJob(ctx context.Context, json types.CreateDele
 		candidateSchedulerClusters = append(candidateSchedulerClusters, candidateScheduler.SchedulerCluster)
 	}
 
-	args, err := structure.StructToMap(json.Args)
-	if err != nil {
-		return nil, err
-	}
-
 	job := models.Job{
 		TaskID:            groupJobState.GroupUUID,
 		BIO:               json.BIO,
@@ -106,8 +122,7 @@ func (s *service) CreateDeleteTaskJob(ctx context.Context, json types.CreateDele
 		return nil, err
 	}
 
-	go s.pollingJob(context.Background(), job.ID, job.TaskID)
-
+	go s.pollingJob(context.Background(), internaljob.DeleteTaskJob, job.ID, job.TaskID)
 	return &job, nil
 }
 
@@ -146,8 +161,7 @@ func (s *service) CreateGetTaskJob(ctx context.Context, json types.CreateGetTask
 		return nil, err
 	}
 
-	go s.pollingJob(context.Background(), job.ID, job.TaskID)
-
+	go s.pollingJob(context.Background(), internaljob.GetTaskJob, job.ID, job.TaskID)
 	return &job, nil
 }
 
@@ -210,13 +224,13 @@ func (s *service) findCandidateSchedulers(ctx context.Context, schedulerClusterI
 	return candidateSchedulers, nil
 }
 
-func (s *service) pollingJob(ctx context.Context, id uint, groupID string) {
+func (s *service) pollingJob(ctx context.Context, name string, id uint, groupID string) {
 	var (
 		job models.Job
 		log = logger.WithGroupAndJobID(groupID, fmt.Sprint(id))
 	)
 	if _, _, err := retry.Run(ctx, 5, 10, 480, func() (any, bool, error) {
-		groupJob, err := s.job.GetGroupJobState(groupID)
+		groupJob, err := s.job.GetGroupJobState(name, groupID)
 		if err != nil {
 			log.Errorf("polling group failed: %s", err.Error())
 			return nil, false, err

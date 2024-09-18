@@ -839,6 +839,22 @@ func TestScheduling_FindCandidateParents(t *testing.T) {
 			},
 		},
 		{
+			name: "parent is disabled share data with other peers",
+			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet[string], md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateReceivedNormal)
+				mockPeers[0].FSM.SetState(resource.PeerStateRunning)
+				peer.Task.StorePeer(peer)
+				peer.Task.StorePeer(mockPeers[0])
+				mockPeers[0].Host.DisableShared = true
+
+				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, errors.New("foo")).Times(1)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, mockPeers []*resource.Peer, parents []*resource.Peer, ok bool) {
+				assert := assert.New(t)
+				assert.False(ok)
+			},
+		},
+		{
 			name: "find back-to-source parent",
 			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet[string], md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)

@@ -308,7 +308,7 @@ func TestHostManager_Delete(t *testing.T) {
 	}
 }
 
-func TestHostManager_LoadRandomHosts(t *testing.T) {
+func TestHostManager_LoadRandom(t *testing.T) {
 	tests := []struct {
 		name   string
 		hosts  []*Host
@@ -336,7 +336,7 @@ func TestHostManager_LoadRandomHosts(t *testing.T) {
 
 				blocklist := set.NewSafeSet[string]()
 				blocklist.Add(mockRawSeedHost.ID)
-				h := hm.LoadRandomHosts(2, blocklist)
+				h := hm.LoadRandom(2, blocklist)
 				assert.Equal(len(h), 1)
 			},
 		},
@@ -361,7 +361,7 @@ func TestHostManager_LoadRandomHosts(t *testing.T) {
 
 				blocklist := set.NewSafeSet[string]()
 				blocklist.Add(mockRawSeedHost.ID)
-				h := hm.LoadRandomHosts(0, blocklist)
+				h := hm.LoadRandom(0, blocklist)
 				assert.Equal(len(h), 0)
 			},
 		},
@@ -379,7 +379,7 @@ func TestHostManager_LoadRandomHosts(t *testing.T) {
 
 				blocklist := set.NewSafeSet[string]()
 				blocklist.Add(mockRawSeedHost.ID)
-				h := hm.LoadRandomHosts(1, blocklist)
+				h := hm.LoadRandom(1, blocklist)
 				assert.Equal(len(h), 0)
 			},
 		},
@@ -404,7 +404,7 @@ func TestHostManager_LoadRandomHosts(t *testing.T) {
 
 				blocklist := set.NewSafeSet[string]()
 				blocklist.Add(mockRawSeedHost.ID)
-				h := hm.LoadRandomHosts(3, blocklist)
+				h := hm.LoadRandom(3, blocklist)
 				assert.Equal(len(h), 1)
 			},
 		},

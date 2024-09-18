@@ -7,9 +7,13 @@ on:
     tags:
       - v*
 
+permissions:  
+  contents: read
+
 jobs:
   push_image_to_registry:
     name: Push Image
+    permissions: write-all
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -24,7 +28,7 @@ jobs:
     timeout-minutes: 120
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
         with:
           submodules: recursive
 
@@ -48,42 +52,49 @@ jobs:
            echo IMAGE_REPOSITORY=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]') >> $GITHUB_ENV
 
       - name: Setup QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@49b3bc8e6bdd4a60e6116a5414239cba5943d3cf
 
       - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db
 
       - name: Cache Docker layers
-        uses: actions/cache@v4
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9
         with:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-buildx-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-buildx-
 
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
       - name: Login Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567
         with:
           registry: docker.io
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push to Registry
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@5cd11c3a4ced054e52742c5fd54dca954e0edd85
         with:
           context: .
           platforms: ${{ matrix.platforms }}
           file: build/images/${{ matrix.module }}/Dockerfile
           labels: |-
+            org.opencontainers.image.title="dragonfly"
+            org.opencontainers.image.description=${{ github.event.repository.description }}
+            org.opencontainers.image.url=${{ github.event.repository.html_url }}
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.get_version.outputs.VERSION }}
           build-args: |
             GITVERSION=git-${{ steps.vars.outputs.git_revision }}
             VERSION=${{ steps.get_version.outputs.VERSION }}
@@ -93,6 +104,33 @@ jobs:
           push: true
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Sign container image
+        run: |
+            cosign sign -y --key env://COSIGN_KEY dragonflyoss/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
+            cosign sign -y --key env://COSIGN_KEY ghcr.io/${{ env.IMAGE_REPOSITORY }}/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
+        env:
+          COSIGN_KEY: ${{secrets.COSIGN_KEY}}
+          COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
+
+      - name: Check images
+        run: |
+          docker buildx imagetools inspect dragonflyoss/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
+          docker pull dragonflyoss/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
+          cosign verify --key env://COSIGN_PUBLIC_KEY dragonflyoss/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }} 
+          docker buildx imagetools inspect ghcr.io/${{ env.IMAGE_REPOSITORY }}/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
+          docker pull ghcr.io/${{ env.IMAGE_REPOSITORY }}/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
+          cosign verify --key env://COSIGN_PUBLIC_KEY ghcr.io/${{ env.IMAGE_REPOSITORY }}/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }} 
+        env:
+          COSIGN_PUBLIC_KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}
+
+      - uses: anchore/sbom-action@v0
+        with:
+          image: dragonflyoss/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
+
+      - uses: anchore/sbom-action@v0
+        with:
+          image: ghcr.io/${{ env.IMAGE_REPOSITORY }}/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
 
       - name: Move cache
         run: |

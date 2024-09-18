@@ -70,6 +70,9 @@ job:
     fillInterval: 1s
     capacity: 1000
     quantum: 1000
+  gc:
+    interval: 1s
+    ttl: 1s
   preheat:
     registryTimeout: 1m
     tls:

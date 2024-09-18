@@ -50,10 +50,10 @@ const (
 	DefaultJWTRealm = "Dragonfly"
 
 	// DefaultJWTTimeout is default of timeout in jwt.
-	DefaultJWTTimeout = 2 * 24 * time.Hour
+	DefaultJWTTimeout = 14 * 24 * time.Hour
 
 	// DefaultJWTMaxRefresh is default of max refresh in jwt.
-	DefaultJWTMaxRefresh = 2 * 24 * time.Hour
+	DefaultJWTMaxRefresh = 7 * 24 * time.Hour
 )
 
 const (
@@ -95,6 +95,12 @@ const (
 
 	// DefaultJobRateLimitQuantum is the default quantum for job rate limit.
 	DefaultJobRateLimitQuantum = 10
+
+	// DefaultJobGCInterval is the default interval for gc job.
+	DefaultJobGCInterval = 24 * time.Hour
+
+	// DefaultJobGCTTL is the default ttl for job.
+	DefaultJobGCTTL = 24 * time.Hour
 
 	// DefaultJobPreheatRegistryTimeout is the default timeout for requesting registry to get token and manifest.
 	DefaultJobPreheatRegistryTimeout = 1 * time.Minute

@@ -94,7 +94,7 @@ var (
 		URL:       "http://example.com/foo",
 		BIO:       "bio",
 		UserID:    4,
-		Priority:  models.JSONMap{"value": 20, "urls": []interface{}{map[string]interface{}{"regex": "regex", "value": 20}}},
+		Priority:  models.JSONMap{"value": 20, "urls": []any{map[string]any{"regex": "regex", "value": 20}}},
 	}
 	mockUnmarshalApplicationModel = models.Application{
 		BaseModel: mockBaseModel,
@@ -103,7 +103,7 @@ var (
 		BIO:       "bio",
 		UserID:    4,
 		// when w.Body.Bytes() is unmarshal to models.Application, the value of Priority will be float64
-		Priority: models.JSONMap{"value": float64(20), "urls": []interface{}{map[string]interface{}{"regex": "regex", "value": float64(20)}}},
+		Priority: models.JSONMap{"value": float64(20), "urls": []any{map[string]any{"regex": "regex", "value": float64(20)}}},
 	}
 )
 
