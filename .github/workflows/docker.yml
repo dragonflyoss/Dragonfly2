@@ -117,10 +117,12 @@ jobs:
         run: |
           docker buildx imagetools inspect dragonflyoss/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
           docker pull dragonflyoss/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
-          cosign verify --key cosign.pub dragonflyoss/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }} 
+          cosign verify --key env://COSIGN_PUBLIC_KEY dragonflyoss/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }} 
           docker buildx imagetools inspect ghcr.io/${{ env.IMAGE_REPOSITORY }}/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
           docker pull ghcr.io/${{ env.IMAGE_REPOSITORY }}/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
-          cosign verify --key cosign.pub ghcr.io/${{ env.IMAGE_REPOSITORY }}/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }} 
+          cosign verify --key env://COSIGN_PUBLIC_KEY ghcr.io/${{ env.IMAGE_REPOSITORY }}/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }} 
+        env:
+          COSIGN_PUBLIC_KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}
 
       - uses: anchore/sbom-action@v0
         with:
