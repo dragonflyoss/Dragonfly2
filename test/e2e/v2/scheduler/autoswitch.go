@@ -195,7 +195,6 @@ func waitForDone(preheat *models.Job, pod *util.PodExec) bool {
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal job status")
 			switch preheat.State {
 			case machineryv1tasks.StateSuccess:
-				fmt.Printf("Job completed successfully: %+v\n", preheat)
 				return true
 			case machineryv1tasks.StateFailure:
 				return false
