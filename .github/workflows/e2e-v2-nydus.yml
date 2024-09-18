@@ -25,7 +25,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
         with:
           tool-cache: false
           android: true
@@ -36,19 +36,19 @@ jobs:
           swap-storage: true
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.1.7
         with:
           submodules: recursive
           fetch-depth: 0
 
       - name: Setup buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v3.6.1
         id: buildx
         with:
           install: true
 
       - name: Cache Docker layers
-        uses: actions/cache@v4
+        uses: actions/cache@v4.0.2
         with:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-buildx-${{ github.sha }}
@@ -65,7 +65,7 @@ jobs:
           docker tag dragonflyoss/dfinit:$CLIENT_TAG dragonflyoss/dfinit:latest
 
       - name: Build Scheduler Image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v6.7.0
         with:
           context: .
           file: build/images/scheduler/Dockerfile
@@ -76,7 +76,7 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache-new
 
       - name: Build Manager Image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v6.7.0
         with:
           context: .
           file: build/images/manager/Dockerfile
