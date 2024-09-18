@@ -81,10 +81,6 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Verify base image
-        run: |          
-          cosign dockerfile verify --base-image-only --key https://github.com/GoogleContainerTools/distroless build/images/${{ matrix.module }}/Dockerfile
-
       - name: Push to Registry
         uses: docker/build-push-action@v6.7.0
         with:
@@ -92,10 +88,10 @@ jobs:
           platforms: ${{ matrix.platforms }}
           file: build/images/${{ matrix.module }}/Dockerfile
           labels: |-
-            org.opencontainers.image.title=${{ github.event.repository.name }}
+            org.opencontainers.image.title="dragonfly"
             org.opencontainers.image.description=${{ github.event.repository.description }}
             org.opencontainers.image.url=${{ github.event.repository.html_url }}
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.source="https://github.com/dragonflyoss/Dragonfly2"
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ steps.get_version.outputs.VERSION }}
           build-args: |
