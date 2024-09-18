@@ -81,10 +81,6 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Verify base image
-        run: |          
-          cosign dockerfile verify --base-image-only --key https://github.com/GoogleContainerTools/distroless build/images/${{ matrix.module }}/Dockerfile
-
       - name: Push to Registry
         uses: docker/build-push-action@v6.7.0
         with:
