@@ -18,10 +18,10 @@ import (
 	"d7y.io/dragonfly/v2/test/e2e/v2/util"
 )
 
-var _ = Describe("preheat with Manager", func() {
+var _ = Describe("pre with Manager", func() {
 
 	Context("/bin/md5sum file", func() {
-		It("should handle stopping some scheduler instances during pre", Label("preheat", "scheduler"), func() {
+		It("should handle stopping some scheduler instances during", Label("switch", "scheduler"), func() {
 			// Start preheat job.
 			managerPod, err := util.ManagerExec(0)
 			Expect(err).NotTo(HaveOccurred(), "Failed to execute manager pod")
@@ -55,11 +55,15 @@ var _ = Describe("preheat with Manager", func() {
 				fmt.Printf("Scheduler Pod: %s, IP: %s\n", pod, ip)
 			}
 
-			// Sleep for a while before scaling down to ensure all three schedulers are active for some time.
+			// Sleep for a while to ensure all schedulers are active.
 			time.Sleep(3 * time.Second)
 
+			// Perform the first download.
+			done := waitForDone(job, managerPod)
+			Expect(done).Should(BeTrue(), "Preheat job did not complete successfully")
+
 			// Scale down scheduler statefulset.
-			initialReplicas, err := scaleScheduler(1) 
+			initialReplicas, err := scaleScheduler(1)
 			Expect(err).NotTo(HaveOccurred(), "Failed to scale down scheduler")
 
 			// Ensure we restore the scheduler statefulset after the job completes.
@@ -67,10 +71,6 @@ var _ = Describe("preheat with Manager", func() {
 				_, err := scaleScheduler(initialReplicas)
 				Expect(err).NotTo(HaveOccurred(), "Failed to restore scheduler replicas")
 			}
-
-			// Wait for the job to complete.
-			done := waitForDone(job, managerPod)
-			Expect(done).Should(BeTrue(), "Preheat job did not complete successfully")
 
 			// Get and print scheduler IPs after scaling down.
 			pods, err = getSchedulerPods()
@@ -81,6 +81,29 @@ var _ = Describe("preheat with Manager", func() {
 				Expect(err).NotTo(HaveOccurred(), "Failed to get pod IP")
 				fmt.Printf("Scheduler Pod: %s, IP: %s\n", pod, ip)
 			}
+
+			// Start a new preheat job.
+			req, err = structure.StructToMap(types.CreatePreheatJobRequest{
+				Type: internaljob.PreheatJob,
+				Args: types.PreheatArgs{
+					Type: "file",
+					URL:  util.GetFileURL("/bin/md5sum"),
+				},
+			})
+			Expect(err).NotTo(HaveOccurred(), "Failed to convert request to map")
+
+			out, err = managerPod.CurlCommand("POST", map[string]string{"Content-Type": "application/json"}, req,
+				"http://dragonfly-manager.dragonfly-system.svc:8080/api/v1/jobs").CombinedOutput()
+			Expect(err).NotTo(HaveOccurred(), "Failed to start preheat job")
+			fmt.Println(string(out))
+
+			err = json.Unmarshal(out, job)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal job response")
+			fmt.Printf("Job ID: %d\n", job.ID)
+
+			// Wait for the second job to complete.
+			done = waitForDone(job, managerPod)
+			Expect(done).Should(BeTrue(), "Preheat job did not complete successfully")
 
 			// Check file integrity.
 			fileMetadata := util.FileMetadata{
@@ -172,6 +195,7 @@ func waitForDone(preheat *models.Job, pod *util.PodExec) bool {
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal job status")
 			switch preheat.State {
 			case machineryv1tasks.StateSuccess:
+				fmt.Printf("Job completed successfully: %+v\n", preheat)
 				return true
 			case machineryv1tasks.StateFailure:
 				return false
