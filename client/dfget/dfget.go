@@ -160,7 +160,7 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 	}
 	defer func() {
 		if !renameOK {
-			tempPath := path.Join(filepath.Dir(cfg.Output), tempFile.Name())
+			tempPath := tempFile.Name()
 			removeErr := os.Remove(tempPath)
 			if removeErr != nil {
 				wLog.Infof("remove temporary file %s error: %s", tempPath, removeErr)
