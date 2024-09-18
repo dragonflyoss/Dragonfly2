@@ -13,6 +13,7 @@ permissions:
 jobs:
   push_image_to_registry:
     name: Push Image
+    permissions: write-all
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -91,7 +92,7 @@ jobs:
             org.opencontainers.image.title="dragonfly"
             org.opencontainers.image.description=${{ github.event.repository.description }}
             org.opencontainers.image.url=${{ github.event.repository.html_url }}
-            org.opencontainers.image.source="https://github.com/dragonflyoss/Dragonfly2"
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ steps.get_version.outputs.VERSION }}
           build-args: |
