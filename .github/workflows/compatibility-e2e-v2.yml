@@ -59,13 +59,13 @@ jobs:
           swap-storage: true
 
       - name: Checkout code
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
         with:
           submodules: recursive
           fetch-depth: 0
 
       - name: Install Go
-        uses: actions/setup-go@v5.0.2
+        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32
         with:
           go-version-file: go.mod
 
@@ -75,13 +75,13 @@ jobs:
           mkdir -p /tmp/artifact
 
       - name: Setup buildx
-        uses: docker/setup-buildx-action@v3.6.1
+        uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db
         id: buildx
         with:
           install: true
 
       - name: Cache Docker layers
-        uses: actions/cache@v4.0.2
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9
         with:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-buildx-${{ github.sha }}
@@ -98,7 +98,7 @@ jobs:
           docker tag dragonflyoss/dfinit:$CLIENT_TAG dragonflyoss/dfinit:latest
 
       - name: Build Scheduler Image
-        uses: docker/build-push-action@v6.7.0
+        uses: docker/build-push-action@5cd11c3a4ced054e52742c5fd54dca954e0edd85
         with:
           context: .
           file: build/images/scheduler/Dockerfile
@@ -109,7 +109,7 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache-new
 
       - name: Build Manager Image
-        uses: docker/build-push-action@v6.7.0
+        uses: docker/build-push-action@5cd11c3a4ced054e52742c5fd54dca954e0edd85
         with:
           context: .
           file: build/images/manager/Dockerfile
@@ -120,7 +120,7 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache-new
 
       - name: Setup Kind
-        uses: helm/kind-action@v1.10.0
+        uses: helm/kind-action@0025e74a8c7512023d06dc019c617aa3cf561fde
         with:
           version: ${{ env.KIND_VERSION }}
           config: ${{ env.KIND_CONFIG_PATH }}
@@ -150,14 +150,14 @@ jobs:
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4.5.0
+        uses: codecov/codecov-action@e28ff129e5465c2c0dcc6f003fc735cb6ae0c673
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.txt
           flags: e2etests
 
       - name: Upload Logs
-        uses: actions/upload-artifact@v4.3.6
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a
         if: always()
         with:
           name: ${{ matrix.module }}-e2e-tests-logs
