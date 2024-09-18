@@ -38,7 +38,6 @@ jobs:
         uses: goreleaser/goreleaser-action@286f3b13b1b49da4ac219696163fb8c1c93e1200
         id: run-goreleaser
         with:
-          distribution: goreleaser
           version: latest
           args: release
         env:
