@@ -10,6 +10,9 @@ on:
   schedule:
     - cron: '0 4 * * *'
 
+permissions:  
+  contents: read
+
 env:
   KIND_VERSION: v0.12.0
   CONTAINERD_VERSION: v1.5.2

@@ -10,6 +10,9 @@ on:
   schedule:
     - cron: '0 4 * * *'
 
+permissions:  
+  contents: read
+
 env:
   GO_VERSION: '1.21'
   KIND_VERSION: v0.12.0
