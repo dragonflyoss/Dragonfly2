@@ -86,6 +86,8 @@ jobs:
         uses: docker/build-push-action@5cd11c3a4ced054e52742c5fd54dca954e0edd85
         with:
           context: .
+          sbom: true
+          provenance: true
           platforms: ${{ matrix.platforms }}
           file: build/images/${{ matrix.module }}/Dockerfile
           labels: |-
@@ -123,14 +125,6 @@ jobs:
           cosign verify --key env://COSIGN_PUBLIC_KEY ghcr.io/${{ env.IMAGE_REPOSITORY }}/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }} 
         env:
           COSIGN_PUBLIC_KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}
-
-      - uses: anchore/sbom-action@v0
-        with:
-          image: dragonflyoss/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
-
-      - uses: anchore/sbom-action@v0
-        with:
-          image: ghcr.io/${{ env.IMAGE_REPOSITORY }}/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
 
       - name: Move cache
         run: |
