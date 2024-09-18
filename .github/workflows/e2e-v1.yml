@@ -65,7 +65,7 @@ jobs:
             skip: ""
     steps:
       - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
         with:
           tool-cache: false
           android: true
@@ -76,12 +76,12 @@ jobs:
           swap-storage: true
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.1.7
         with:
           submodules: recursive
 
       - name: Install Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v5.0.2
         with:
           go-version-file: go.mod
 
@@ -91,13 +91,13 @@ jobs:
           mkdir -p /tmp/artifact
 
       - name: Setup buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v3.6.1
         id: buildx
         with:
           install: true
 
       - name: Cache Docker layers
-        uses: actions/cache@v4
+        uses: actions/cache@v4.0.2
         with:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-buildx-${{ github.sha }}
@@ -105,7 +105,7 @@ jobs:
             ${{ runner.os }}-buildx-
 
       - name: Build Scheduler Image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v6.7.0
         with:
           context: .
           file: build/images/scheduler/Dockerfile
@@ -116,7 +116,7 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache-new
 
       - name: Build Manager Image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v6.7.0
         with:
           context: .
           file: build/images/manager/Dockerfile
@@ -127,7 +127,7 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache-new
 
       - name: Build Dfdaemon Image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v6.7.0
         with:
           context: .
           file: build/images/dfdaemon/Dockerfile
@@ -138,7 +138,7 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache-new
 
       - name: Build No Content Length Image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v6.7.0
         with:
           context: test/tools/no-content-length/
           file: test/tools/no-content-length/Dockerfile
@@ -194,7 +194,7 @@ jobs:
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v4.5.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.txt

@@ -10,6 +10,9 @@ on:
   schedule:
     - cron: '0 4 * * *'
 
+permissions:  
+  contents: read
+
 env:
   GO_VERSION: '1.21'
   KIND_VERSION: v0.12.0
@@ -24,18 +27,18 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.1.7
         with:
           submodules: recursive
 
       - name: Setup buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v3.6.1
         id: buildx
         with:
           install: true
 
       - name: Cache Docker layers
-        uses: actions/cache@v4
+        uses: actions/cache@v4.0.2
         with:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-buildx-${{ github.sha }}
@@ -43,7 +46,7 @@ jobs:
             ${{ runner.os }}-buildx-
 
       - name: Build Scheduler Image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v6.7.0
         with:
           context: .
           file: build/images/scheduler/Dockerfile
@@ -54,7 +57,7 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache-new
 
       - name: Build Manager Image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v6.7.0
         with:
           context: .
           file: build/images/manager/Dockerfile
@@ -65,7 +68,7 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache-new
 
       - name: Build Dfdaemon Image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v6.7.0
         with:
           context: .
           file: build/images/dfdaemon/Dockerfile
