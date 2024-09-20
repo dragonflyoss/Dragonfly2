@@ -17,12 +17,9 @@
 package manager
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 
-	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 	. "github.com/onsi/ginkgo/v2" //nolint
 	. "github.com/onsi/gomega"    //nolint
 
@@ -405,32 +402,3 @@ var _ = Describe("Preheat with Manager", func() {
 		})
 	})
 })
-
-func waitForDone(job *models.Job, pod *util.PodExec) bool {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return false
-		case <-ticker.C:
-			out, err := pod.CurlCommand("", nil, nil,
-				fmt.Sprintf("http://dragonfly-manager.dragonfly-system.svc:8080/api/v1/jobs/%d", job.ID)).CombinedOutput()
-			fmt.Println(string(out))
-			Expect(err).NotTo(HaveOccurred())
-			err = json.Unmarshal(out, job)
-			Expect(err).NotTo(HaveOccurred())
-			switch job.State {
-			case machineryv1tasks.StateSuccess:
-				return true
-			case machineryv1tasks.StateFailure:
-				return false
-			default:
-			}
-		}
-	}
-}

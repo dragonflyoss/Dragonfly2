@@ -16,15 +16,20 @@
 
 package slices
 
-// Contains returns true if an element is present in a collection.
-func Contains[T comparable](s []T, e T) bool {
-	for _, v := range s {
-		if v == e {
-			return true
+// Contains returns true if elements is present in a collection.
+func Contains[T comparable](s []T, els ...T) bool {
+	ss := make(map[T]struct{}, len(s))
+	for _, el := range s {
+		ss[el] = struct{}{}
+	}
+
+	for _, el := range els {
+		if _, found := ss[el]; !found {
+			return false
 		}
 	}
 
-	return false
+	return true
 }
 
 // FindDuplicate returns duplicate element in a collection.

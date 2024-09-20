@@ -36,11 +36,11 @@ import (
 
 // Task is an interface for manager tasks.
 type Task interface {
-	// CreateDeleteTask create a delete task job.
-	CreateDeleteTask(context.Context, []models.Scheduler, types.DeleteTaskArgs) (*internaljob.GroupJobState, error)
-
 	// CreateGetTask create a get task job.
 	CreateGetTask(context.Context, []models.Scheduler, types.GetTaskArgs) (*internaljob.GroupJobState, error)
+
+	// CreateDeleteTask create a delete task job.
+	CreateDeleteTask(context.Context, []models.Scheduler, types.DeleteTaskArgs) (*internaljob.GroupJobState, error)
 }
 
 // task is an implementation of Task.
@@ -51,6 +51,57 @@ type task struct {
 // newTask returns a new Task.
 func newTask(job *internaljob.Job) Task {
 	return &task{job}
+}
+
+// CreateGetTask create a get task job.
+func (t *task) CreateGetTask(ctx context.Context, schedulers []models.Scheduler, json types.GetTaskArgs) (*internaljob.GroupJobState, error) {
+	var span trace.Span
+	ctx, span = tracer.Start(ctx, config.SpanGetTask, trace.WithSpanKind(trace.SpanKindProducer))
+	span.SetAttributes(config.AttributeGetTaskID.String(json.TaskID))
+	defer span.End()
+
+	args, err := internaljob.MarshalRequest(json)
+	if err != nil {
+		logger.Errorf("get tasks marshal request: %v, error: %v", args, err)
+		return nil, err
+	}
+
+	queues, err := getSchedulerQueues(schedulers)
+	if err != nil {
+		return nil, err
+	}
+
+	var signatures []*machineryv1tasks.Signature
+	for _, queue := range queues {
+		signatures = append(signatures, &machineryv1tasks.Signature{
+			UUID:       fmt.Sprintf("task_%s", uuid.New().String()),
+			Name:       internaljob.GetTaskJob,
+			RoutingKey: queue.String(),
+			Args:       args,
+		})
+	}
+
+	group, err := machineryv1tasks.NewGroup(signatures...)
+	if err != nil {
+		return nil, err
+	}
+
+	var tasks []machineryv1tasks.Signature
+	for _, signature := range signatures {
+		tasks = append(tasks, *signature)
+	}
+
+	logger.Infof("create task group %s in queues %v, tasks: %#v", group.GroupUUID, queues, tasks)
+	if _, err := t.job.Server.SendGroupWithContext(ctx, group, 0); err != nil {
+		logger.Errorf("create task group %s failed", group.GroupUUID, err)
+		return nil, err
+	}
+
+	return &internaljob.GroupJobState{
+		GroupUUID: group.GroupUUID,
+		State:     machineryv1tasks.StatePending,
+		CreatedAt: time.Now(),
+	}, nil
 }
 
 // CreateDeleteTask create a delete task job.
@@ -94,57 +145,6 @@ func (t *task) CreateDeleteTask(ctx context.Context, schedulers []models.Schedul
 	logger.Infof("create task group %s in queues %v, tasks: %#v", group.GroupUUID, queues, tasks)
 	if _, err := t.job.Server.SendGroupWithContext(ctx, group, 0); err != nil {
 		logger.Errorf("create preheat group %s failed", group.GroupUUID, err)
-		return nil, err
-	}
-
-	return &internaljob.GroupJobState{
-		GroupUUID: group.GroupUUID,
-		State:     machineryv1tasks.StatePending,
-		CreatedAt: time.Now(),
-	}, nil
-}
-
-// CreateGetTask create a get task job.
-func (t *task) CreateGetTask(ctx context.Context, schedulers []models.Scheduler, json types.GetTaskArgs) (*internaljob.GroupJobState, error) {
-	var span trace.Span
-	ctx, span = tracer.Start(ctx, config.SpanGetTask, trace.WithSpanKind(trace.SpanKindProducer))
-	span.SetAttributes(config.AttributeGetTaskID.String(json.TaskID))
-	defer span.End()
-
-	args, err := internaljob.MarshalRequest(json)
-	if err != nil {
-		logger.Errorf("list tasks marshal request: %v, error: %v", args, err)
-		return nil, err
-	}
-
-	queues, err := getSchedulerQueues(schedulers)
-	if err != nil {
-		return nil, err
-	}
-
-	var signatures []*machineryv1tasks.Signature
-	for _, queue := range queues {
-		signatures = append(signatures, &machineryv1tasks.Signature{
-			UUID:       fmt.Sprintf("task_%s", uuid.New().String()),
-			Name:       internaljob.GetTaskJob,
-			RoutingKey: queue.String(),
-			Args:       args,
-		})
-	}
-
-	group, err := machineryv1tasks.NewGroup(signatures...)
-	if err != nil {
-		return nil, err
-	}
-
-	var tasks []machineryv1tasks.Signature
-	for _, signature := range signatures {
-		tasks = append(tasks, *signature)
-	}
-
-	logger.Infof("create task group %s in queues %v, tasks: %#v", group.GroupUUID, queues, tasks)
-	if _, err := t.job.Server.SendGroupWithContext(ctx, group, 0); err != nil {
-		logger.Errorf("create task group %s failed", group.GroupUUID, err)
 		return nil, err
 	}
 
