@@ -489,22 +489,32 @@ func (j *job) getTask(ctx context.Context, data string) (string, error) {
 	}
 
 	if err := validator.New().Struct(req); err != nil {
-		logger.Errorf("getTask %s validate failed: %s", req.TaskID, err.Error())
+		logger.Errorf("get task %s validate failed: %s", req.TaskID, err.Error())
 		return "", err
 	}
+
+	log := logger.WithTaskID(req.TaskID)
+	log.Infof("get task request: %#v", req)
 
 	task, ok := j.resource.TaskManager().Load(req.TaskID)
 	if !ok {
 		// Do not return error if task not found, just retunr empty response.
-		logger.Warnf("task %s not found", req.TaskID)
-		return internaljob.MarshalResponse(&internaljob.GetTaskResponse{})
+		log.Warn("task not found")
+		return internaljob.MarshalResponse(&internaljob.GetTaskResponse{
+			SchedulerClusterID: j.config.Manager.SchedulerClusterID,
+		})
 	}
 
-	// Convert peer struct to peer response.
 	var peers []*internaljob.Peer
 	for _, peer := range task.LoadPeers() {
-		peers = append(peers, convertPeer(peer))
-
+		peers = append(peers, &internaljob.Peer{
+			ID:        peer.ID,
+			Hostname:  peer.Host.Hostname,
+			IP:        peer.Host.IP,
+			HostType:  peer.Host.Type.Name(),
+			CreatedAt: peer.CreatedAt.Load(),
+			UpdatedAt: peer.UpdatedAt.Load(),
+		})
 	}
 
 	return internaljob.MarshalResponse(&internaljob.GetTaskResponse{
@@ -522,9 +532,12 @@ func (j *job) deleteTask(ctx context.Context, data string) (string, error) {
 	}
 
 	if err := validator.New().Struct(req); err != nil {
-		logger.Errorf("deleteTask %s validate failed: %s", req.TaskID, err.Error())
+		logger.Errorf("delete task %s validate failed: %s", req.TaskID, err.Error())
 		return "", err
 	}
+
+	log := logger.WithTaskID(req.TaskID)
+	log.Infof("delete task request: %#v", req)
 
 	ctx, cancel := context.WithTimeout(ctx, req.Timeout)
 	defer cancel()
@@ -532,12 +545,14 @@ func (j *job) deleteTask(ctx context.Context, data string) (string, error) {
 	task, ok := j.resource.TaskManager().Load(req.TaskID)
 	if !ok {
 		// Do not return error if task not found, just retunr empty response.
-		logger.Warnf("task %s not found", req.TaskID)
-		return internaljob.MarshalResponse(&internaljob.DeleteTaskResponse{})
+		log.Warn("task not found")
+		return internaljob.MarshalResponse(&internaljob.DeleteTaskResponse{
+			SchedulerClusterID: j.config.Manager.SchedulerClusterID,
+		})
 	}
 
-	successPeers := []*internaljob.DeleteSuccessPeer{}
-	failurePeers := []*internaljob.DeleteFailurePeer{}
+	successTasks := []*internaljob.DeleteSuccessTask{}
+	failureTasks := []*internaljob.DeleteFailureTask{}
 
 	finishedPeers := task.LoadFinishedPeers()
 	for _, finishedPeer := range finishedPeers {
@@ -547,8 +562,10 @@ func (j *job) deleteTask(ctx context.Context, data string) (string, error) {
 		dfdaemonClient, err := dfdaemonclient.GetV2ByAddr(ctx, addr)
 		if err != nil {
 			log.Errorf("get client from %s failed: %s", addr, err.Error())
-			failurePeers = append(failurePeers, &internaljob.DeleteFailurePeer{
-				Peer:        *convertPeer(finishedPeer),
+			failureTasks = append(failureTasks, &internaljob.DeleteFailureTask{
+				Hostname:    finishedPeer.Host.Hostname,
+				IP:          finishedPeer.Host.IP,
+				HostType:    finishedPeer.Host.Type.Name(),
 				Description: fmt.Sprintf("task %s failed: %s", req.TaskID, err.Error()),
 			})
 
@@ -558,67 +575,28 @@ func (j *job) deleteTask(ctx context.Context, data string) (string, error) {
 		if err = dfdaemonClient.DeleteTask(ctx, &dfdaemonv2.DeleteTaskRequest{
 			TaskId: req.TaskID,
 		}); err != nil {
-			logger.Errorf("delete task failed: %s", err.Error())
-			failurePeers = append(failurePeers, &internaljob.DeleteFailurePeer{
-				Peer:        *convertPeer(finishedPeer),
+			log.Errorf("delete task failed: %s", err.Error())
+			failureTasks = append(failureTasks, &internaljob.DeleteFailureTask{
+				Hostname:    finishedPeer.Host.Hostname,
+				IP:          finishedPeer.Host.IP,
+				HostType:    finishedPeer.Host.Type.Name(),
 				Description: fmt.Sprintf("task %s failed: %s", req.TaskID, err.Error()),
 			})
 
 			continue
 		}
 
-		successPeers = append(successPeers, &internaljob.DeleteSuccessPeer{
-			Peer: *convertPeer(finishedPeer),
+		task.DeletePeer(finishedPeer.ID)
+		successTasks = append(successTasks, &internaljob.DeleteSuccessTask{
+			Hostname: finishedPeer.Host.Hostname,
+			IP:       finishedPeer.Host.IP,
+			HostType: finishedPeer.Host.Type.Name(),
 		})
 	}
 
 	return internaljob.MarshalResponse(&internaljob.DeleteTaskResponse{
-		FailurePeers:       failurePeers,
-		SuccessPeers:       successPeers,
+		SuccessTasks:       successTasks,
+		FailureTasks:       failureTasks,
 		SchedulerClusterID: j.config.Manager.SchedulerClusterID,
 	})
-}
-
-func convertPeer(p *resource.Peer) *internaljob.Peer {
-	peer := &internaljob.Peer{
-		ID:               p.ID,
-		Config:           p.Config,
-		Range:            p.Range,
-		Priority:         int32(p.Priority),
-		FinishedPieces:   p.FinishedPieces,
-		PieceCosts:       p.PieceCosts(),
-		NeedBackToSource: p.NeedBackToSource != nil && p.NeedBackToSource.Load(),
-	}
-
-	if p.BlockParents != nil && p.BlockParents.Len() > 0 {
-		peer.BlockParents = p.BlockParents.Values()
-	}
-
-	if p.Cost != nil {
-		peer.Cost = p.Cost.Load()
-	}
-
-	if p.PieceUpdatedAt != nil {
-		peer.PieceUpdatedAt = p.PieceUpdatedAt.Load()
-	}
-
-	if p.CreatedAt != nil {
-		peer.CreatedAt = p.CreatedAt.Load()
-	}
-
-	if p.UpdatedAt != nil {
-		peer.UpdatedAt = p.UpdatedAt.Load()
-	}
-
-	peer.Pieces = make(map[int32]*resource.Piece)
-	p.Pieces.Range(func(key, value interface{}) bool {
-		k, ok1 := key.(int32)
-		v, ok2 := value.(*resource.Piece)
-		if ok1 && ok2 {
-			peer.Pieces[k] = v
-		}
-		return true
-	})
-
-	return peer
 }

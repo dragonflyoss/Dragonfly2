@@ -83,12 +83,11 @@ func New(cfg *config.Config, gdb *gorm.DB) (*Job, error) {
 		return nil, err
 	}
 
-	task := newTask(j)
 	return &Job{
 		Job:       j,
 		Preheat:   preheat,
 		SyncPeers: syncPeers,
-		Task:      task,
+		Task:      newTask(j),
 		GC:        gc,
 	}, nil
 }

@@ -25,26 +25,38 @@ func TestContains(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    []int
-		element  int
+		elements []int
 		expected bool
 	}{
 		{
-			name:     "element present",
+			name:     "single element present",
 			input:    []int{1, 2, 3},
-			element:  2,
+			elements: []int{2},
 			expected: true,
 		},
 		{
-			name:     "element not present",
+			name:     "single element not present",
 			input:    []int{1, 2, 3},
-			element:  4,
+			elements: []int{4},
+			expected: false,
+		},
+		{
+			name:     "multi elements present",
+			input:    []int{1, 2, 3},
+			elements: []int{2, 3},
+			expected: true,
+		},
+		{
+			name:     "multi elements not present",
+			input:    []int{1, 2, 3},
+			elements: []int{2, 4},
 			expected: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := Contains(tt.input, tt.element)
+			result := Contains(tt.input, tt.elements...)
 			if result != tt.expected {
 				t.Errorf("expected %v, but got %v", tt.expected, result)
 			}
