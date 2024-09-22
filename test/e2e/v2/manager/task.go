@@ -30,9 +30,9 @@ import (
 	"d7y.io/dragonfly/v2/test/e2e/v2/util"
 )
 
-var _ = Describe("Get and delete task with Manager", func() {
-	Context("get and delete /bin/cat task", func() {
-		It("get and delete task should be ok", func() {
+var _ = Describe("GetTask and DeleteTask with Manager", func() {
+	Context("/bin/cat file", Label("getTask", "deleteTask", "file"), func() {
+		It("getTask and deleteTask should be ok", func() {
 			// Create preheat job.
 			managerPod, err := util.ManagerExec(0)
 			fmt.Println(err)
@@ -103,6 +103,35 @@ var _ = Describe("Get and delete task with Manager", func() {
 
 			// Check get task response is not null.
 			Expect(job.Result).NotTo(BeNil())
+			groupJobStateData, err := json.Marshal(job.Result)
+			Expect(err).NotTo(HaveOccurred())
+			groupJobState := internaljob.GroupJobState{}
+			err = json.Unmarshal(groupJobStateData, &groupJobState)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(groupJobState.JobStates)).Should(BeNumerically("==", 3))
+
+			// Check get task response is valid.
+			foundValidResult := false
+			for _, state := range groupJobState.JobStates {
+				for _, result := range state.Results {
+					resultData, err := json.Marshal(result)
+					Expect(err).NotTo(HaveOccurred())
+
+					getTaskResponse := internaljob.GetTaskResponse{}
+					err = json.Unmarshal(resultData, &getTaskResponse)
+					Expect(err).NotTo(HaveOccurred())
+
+					if len(getTaskResponse.Peers) > 0 {
+						foundValidResult = true
+						break
+					}
+				}
+
+				if foundValidResult {
+					break
+				}
+			}
+			Expect(foundValidResult).To(BeTrue())
 
 			// Delete task.
 			req, err = structure.StructToMap(types.CreateDeleteTaskJobRequest{
@@ -128,6 +157,35 @@ var _ = Describe("Get and delete task with Manager", func() {
 
 			// Check delete task response is not null.
 			Expect(job.Result).NotTo(BeNil())
+			groupJobStateData, err = json.Marshal(job.Result)
+			Expect(err).NotTo(HaveOccurred())
+			groupJobState = internaljob.GroupJobState{}
+			err = json.Unmarshal(groupJobStateData, &groupJobState)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(groupJobState.JobStates)).Should(BeNumerically("==", 3))
+
+			// Check delete task response is valid.
+			foundValidResult = false
+			for _, state := range groupJobState.JobStates {
+				for _, result := range state.Results {
+					resultData, err := json.Marshal(result)
+					Expect(err).NotTo(HaveOccurred())
+
+					deleteTaskResponse := internaljob.DeleteTaskResponse{}
+					err = json.Unmarshal(resultData, &deleteTaskResponse)
+					Expect(err).NotTo(HaveOccurred())
+
+					if len(deleteTaskResponse.SuccessTasks) > 0 || len(deleteTaskResponse.FailureTasks) > 0 {
+						foundValidResult = true
+						break
+					}
+				}
+
+				if foundValidResult {
+					break
+				}
+			}
+			Expect(foundValidResult).To(BeTrue())
 
 			// Check file is deleted successfully.
 			exist := util.CheckFilesExist(seedClientPods, fileMetadata.ID)
