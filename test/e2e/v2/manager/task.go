@@ -33,7 +33,6 @@ import (
 var _ = Describe("GetTask and DeleteTask with Manager", func() {
 	Context("/bin/cat file", Label("getTask", "deleteTask", "file"), func() {
 		It("getTask and deleteTask should be ok", func() {
-			// Create preheat job.
 			managerPod, err := util.ManagerExec(0)
 			fmt.Println(err)
 			Expect(err).NotTo(HaveOccurred())
@@ -74,12 +73,10 @@ var _ = Describe("GetTask and DeleteTask with Manager", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 
-			// Check the file is downloaded successfully.
 			sha256sum, err := util.CalculateSha256ByTaskID(seedClientPods, fileMetadata.ID)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
-			// Get task.
 			req, err = structure.StructToMap(types.CreateGetTaskJobRequest{
 				Type: internaljob.GetTaskJob,
 				Args: types.GetTaskArgs{
@@ -100,11 +97,8 @@ var _ = Describe("GetTask and DeleteTask with Manager", func() {
 
 			done = waitForDone(job, managerPod)
 			Expect(done).Should(BeTrue())
-
-			// Check get task response is valid.
 			Expect(validateTaskResponse(job)).To(BeTrue())
 
-			// Delete task.
 			req, err = structure.StructToMap(types.CreateDeleteTaskJobRequest{
 				Type: internaljob.DeleteTaskJob,
 				Args: types.DeleteTaskArgs{
@@ -125,11 +119,8 @@ var _ = Describe("GetTask and DeleteTask with Manager", func() {
 
 			done = waitForDone(job, managerPod)
 			Expect(done).Should(BeTrue())
-
-			// Check delete task response is valid.
 			Expect(validateTaskResponse(job)).To(BeTrue())
 
-			// Check file is deleted successfully.
 			exist := util.CheckFilesExist(seedClientPods, fileMetadata.ID)
 			Expect(exist).Should(BeFalse())
 		})
@@ -137,7 +128,6 @@ var _ = Describe("GetTask and DeleteTask with Manager", func() {
 
 	Context("/bin/pwd file", Label("getTask", "deleteTask", "file"), func() {
 		It("getTask and deleteTask should be ok", func() {
-			// Create preheat job.
 			managerPod, err := util.ManagerExec(0)
 			fmt.Println(err)
 			Expect(err).NotTo(HaveOccurred())
@@ -178,12 +168,10 @@ var _ = Describe("GetTask and DeleteTask with Manager", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 
-			// Check the file is downloaded successfully.
 			sha256sum, err := util.CalculateSha256ByTaskID(seedClientPods, fileMetadata.ID)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
 
-			// Get task.
 			req, err = structure.StructToMap(types.CreateGetTaskJobRequest{
 				Type: internaljob.GetTaskJob,
 				Args: types.GetTaskArgs{
@@ -204,11 +192,8 @@ var _ = Describe("GetTask and DeleteTask with Manager", func() {
 
 			done = waitForDone(job, managerPod)
 			Expect(done).Should(BeTrue())
-
-			// Check get task response is valid.
 			Expect(validateTaskResponse(job)).To(BeTrue())
 
-			// Delete task.
 			req, err = structure.StructToMap(types.CreateDeleteTaskJobRequest{
 				Type: internaljob.DeleteTaskJob,
 				Args: types.DeleteTaskArgs{
@@ -229,11 +214,8 @@ var _ = Describe("GetTask and DeleteTask with Manager", func() {
 
 			done = waitForDone(job, managerPod)
 			Expect(done).Should(BeTrue())
-
-			// Check delete task response is valid.
 			Expect(validateTaskResponse(job)).To(BeTrue())
 
-			// Check file is deleted successfully.
 			exist := util.CheckFilesExist(seedClientPods, fileMetadata.ID)
 			Expect(exist).Should(BeFalse())
 		})
@@ -257,11 +239,9 @@ var _ = Describe("GetTask and DeleteTask with Manager", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 
-			// Check the file is not exist.
 			exist := util.CheckFilesExist(seedClientPods, fileMetadata.ID)
 			Expect(exist).Should(BeFalse())
 
-			// Get task.
 			req, err := structure.StructToMap(types.CreateGetTaskJobRequest{
 				Type: internaljob.GetTaskJob,
 				Args: types.GetTaskArgs{
@@ -282,11 +262,8 @@ var _ = Describe("GetTask and DeleteTask with Manager", func() {
 
 			done := waitForDone(job, managerPod)
 			Expect(done).Should(BeTrue())
-
-			// Check get task response is invalid.
 			Expect(validateTaskResponse(job)).To(BeFalse())
 
-			// Delete task.
 			req, err = structure.StructToMap(types.CreateDeleteTaskJobRequest{
 				Type: internaljob.DeleteTaskJob,
 				Args: types.DeleteTaskArgs{
@@ -308,23 +285,22 @@ var _ = Describe("GetTask and DeleteTask with Manager", func() {
 			done = waitForDone(job, managerPod)
 			Expect(done).Should(BeTrue())
 
-			// Check delete task response is invalid.
 			Expect(validateTaskResponse(job)).To(BeFalse())
 		})
 	})
 })
 
 func validateTaskResponse(job *models.Job) bool {
-	// Check task response is not null.
 	Expect(job.Result).NotTo(BeNil())
+
 	groupJobStateData, err := json.Marshal(job.Result)
 	Expect(err).NotTo(HaveOccurred())
+
 	groupJobState := internaljob.GroupJobState{}
 	err = json.Unmarshal(groupJobStateData, &groupJobState)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(len(groupJobState.JobStates)).Should(BeNumerically("==", 3))
 
-	// Check task response is valid.
 	for _, state := range groupJobState.JobStates {
 		for _, result := range state.Results {
 			resultData, err := json.Marshal(result)

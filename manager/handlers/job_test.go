@@ -81,21 +81,21 @@ var (
 		UserID:    4,
 		Type:      "preheat",
 		BIO:       "bio",
-		TaskID:    "2",
+		TaskID:    "dec6fe878785cea844dcecdf2ea25e19156822201016455733e47e9f0bfab563",
 	}
 	mockGetTaskJobModel = &models.Job{
 		BaseModel: mockBaseModel,
 		UserID:    4,
 		Type:      "get_task",
 		BIO:       "bio",
-		TaskID:    "2",
+		TaskID:    "7575d21d69495905a4709bf4e10d0e5cffcf7fd1e76e93171e0ef6e0abcf07a8",
 	}
 	mockDeleteTaskJobModel = &models.Job{
 		BaseModel: mockBaseModel,
 		UserID:    4,
 		Type:      "delete_task",
 		BIO:       "bio",
-		TaskID:    "2",
+		TaskID:    "04a29122b0c4d0affde2d577fb36bb956caa3da10e9130375623c24a5f865a49",
 	}
 )
 
