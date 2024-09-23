@@ -329,6 +329,7 @@ type DownloadOption struct {
 	ResourceClients ResourceClientsOption `mapstructure:"resourceClients" yaml:"resourceClients"`
 
 	RecursiveConcurrent    RecursiveConcurrent `mapstructure:"recursiveConcurrent" yaml:"recursiveConcurrent"`
+	SeedConcurrent         int64               `mapstructure:"seedConcurrent" yaml:"seedConcurrent"`
 	CacheRecursiveMetadata time.Duration       `mapstructure:"cacheRecursiveMetadata" yaml:"cacheRecursiveMetadata"`
 }
 

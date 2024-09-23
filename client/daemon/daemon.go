@@ -360,7 +360,8 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	}
 
 	rpcManager, err := rpcserver.New(host, peerTaskManager, storageManager, peerExchangeRPC, schedulerClient,
-		opt.Download.RecursiveConcurrent.GoroutineCount, opt.Download.CacheRecursiveMetadata, downloadServerOption, peerServerOption)
+		opt.Download.RecursiveConcurrent.GoroutineCount, opt.Download.SeedConcurrent,
+		opt.Download.CacheRecursiveMetadata, downloadServerOption, peerServerOption)
 	if err != nil {
 		return nil, err
 	}
