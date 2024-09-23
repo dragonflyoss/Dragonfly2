@@ -10,7 +10,7 @@ on:
   schedule:
     - cron: '0 4 * * *'
 
-permissions:  
+permissions:
   contents: read
 
 env:
@@ -31,11 +31,11 @@ jobs:
         include:
           - module: manager
             image: manager
-            image-tag: v2.1.56
+            image-tag: v2.1.58
             chart-name: manager
           - module: scheduler
             image: scheduler
-            image-tag: v2.1.56
+            image-tag: v2.1.58
             chart-name: scheduler
           - module: client
             image: client
