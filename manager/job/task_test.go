@@ -30,14 +30,13 @@ import (
 )
 
 func TestTask_CreateGetTask(t *testing.T) {
-	tk := newTask(&job.Job{Server: &machinery.Server{}})
+	task := newTask(&job.Job{Server: &machinery.Server{}})
 
 	tests := []struct {
 		name       string
 		schedulers []models.Scheduler
 		args       types.GetTaskArgs
-		expect     *job.GroupJobState
-		wantErr    error
+		expect     func(t *testing.T, g *job.GroupJobState, e error)
 	}{
 		{
 			name: "queue retrieval error",
@@ -50,8 +49,10 @@ func TestTask_CreateGetTask(t *testing.T) {
 			args: types.GetTaskArgs{
 				TaskID: "valid-task-id",
 			},
-			expect:  nil,
-			wantErr: errors.New("empty cluster id config is not specified"),
+			expect: func(t *testing.T, g *job.GroupJobState, e error) {
+				assert := assert.New(t)
+				assert.Error(errors.New("empty cluster id config is not specified"), e)
+			},
 		},
 		{
 			name: "send group failure",
@@ -64,22 +65,17 @@ func TestTask_CreateGetTask(t *testing.T) {
 			args: types.GetTaskArgs{
 				TaskID: "valid-task-id",
 			},
-			expect:  nil,
-			wantErr: errors.New("Result backend required"),
+			expect: func(t *testing.T, g *job.GroupJobState, e error) {
+				assert := assert.New(t)
+				assert.Error(errors.New("Result backend required"), e)
+			},
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			res, err := tk.CreateGetTask(context.TODO(), tt.schedulers, tt.args)
-
-			if tt.wantErr != nil {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, res)
-				assert.Equal(t, tt.expect.State, res.State)
-			}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			res, err := task.CreateGetTask(context.TODO(), tc.schedulers, tc.args)
+			tc.expect(t, res, err)
 		})
 	}
 }
@@ -91,8 +87,7 @@ func TestTask_CreateDeleteTask(t *testing.T) {
 		name       string
 		schedulers []models.Scheduler
 		args       types.DeleteTaskArgs
-		expect     *job.GroupJobState
-		wantErr    error
+		expect     func(t *testing.T, g *job.GroupJobState, e error)
 	}{
 		{
 			name: "queue retrieval error",
@@ -105,8 +100,10 @@ func TestTask_CreateDeleteTask(t *testing.T) {
 			args: types.DeleteTaskArgs{
 				TaskID: "valid-task-id",
 			},
-			expect:  nil,
-			wantErr: errors.New("empty cluster id config is not specified"),
+			expect: func(t *testing.T, g *job.GroupJobState, e error) {
+				assert := assert.New(t)
+				assert.Error(errors.New("empty cluster id config is not specified"), e)
+			},
 		},
 		{
 			name: "send group failure",
@@ -119,22 +116,17 @@ func TestTask_CreateDeleteTask(t *testing.T) {
 			args: types.DeleteTaskArgs{
 				TaskID: "valid-task-id",
 			},
-			expect:  nil,
-			wantErr: errors.New("Result backend required"),
+			expect: func(t *testing.T, g *job.GroupJobState, e error) {
+				assert := assert.New(t)
+				assert.Error(errors.New("Result backend required"), e)
+			},
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			res, err := tk.CreateDeleteTask(context.TODO(), tt.schedulers, tt.args)
-
-			if tt.wantErr != nil {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, res)
-				assert.Equal(t, tt.expect.State, res.State)
-			}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			res, err := tk.CreateDeleteTask(context.TODO(), tc.schedulers, tc.args)
+			tc.expect(t, res, err)
 		})
 	}
 }

@@ -102,8 +102,7 @@ var _ = Describe("GetTask and DeleteTask with Manager", func() {
 			Expect(done).Should(BeTrue())
 
 			// Check get task response is valid.
-			isValid := checkTaskResponse(job)
-			Expect(isValid).To(BeTrue())
+			Expect(validateTaskResponse(job)).To(BeTrue())
 
 			// Delete task.
 			req, err = structure.StructToMap(types.CreateDeleteTaskJobRequest{
@@ -128,8 +127,7 @@ var _ = Describe("GetTask and DeleteTask with Manager", func() {
 			Expect(done).Should(BeTrue())
 
 			// Check delete task response is valid.
-			isValid = checkTaskResponse(job)
-			Expect(isValid).To(BeTrue())
+			Expect(validateTaskResponse(job)).To(BeTrue())
 
 			// Check file is deleted successfully.
 			exist := util.CheckFilesExist(seedClientPods, fileMetadata.ID)
@@ -208,8 +206,7 @@ var _ = Describe("GetTask and DeleteTask with Manager", func() {
 			Expect(done).Should(BeTrue())
 
 			// Check get task response is valid.
-			isValid := checkTaskResponse(job)
-			Expect(isValid).To(BeTrue())
+			Expect(validateTaskResponse(job)).To(BeTrue())
 
 			// Delete task.
 			req, err = structure.StructToMap(types.CreateDeleteTaskJobRequest{
@@ -234,8 +231,7 @@ var _ = Describe("GetTask and DeleteTask with Manager", func() {
 			Expect(done).Should(BeTrue())
 
 			// Check delete task response is valid.
-			isValid = checkTaskResponse(job)
-			Expect(isValid).To(BeTrue())
+			Expect(validateTaskResponse(job)).To(BeTrue())
 
 			// Check file is deleted successfully.
 			exist := util.CheckFilesExist(seedClientPods, fileMetadata.ID)
@@ -288,8 +284,7 @@ var _ = Describe("GetTask and DeleteTask with Manager", func() {
 			Expect(done).Should(BeTrue())
 
 			// Check get task response is invalid.
-			isValid := checkTaskResponse(job)
-			Expect(isValid).To(BeFalse())
+			Expect(validateTaskResponse(job)).To(BeFalse())
 
 			// Delete task.
 			req, err = structure.StructToMap(types.CreateDeleteTaskJobRequest{
@@ -314,13 +309,12 @@ var _ = Describe("GetTask and DeleteTask with Manager", func() {
 			Expect(done).Should(BeTrue())
 
 			// Check delete task response is invalid.
-			isValid = checkTaskResponse(job)
-			Expect(isValid).To(BeFalse())
+			Expect(validateTaskResponse(job)).To(BeFalse())
 		})
 	})
 })
 
-func checkTaskResponse(job *models.Job) bool {
+func validateTaskResponse(job *models.Job) bool {
 	// Check task response is not null.
 	Expect(job.Result).NotTo(BeNil())
 	groupJobStateData, err := json.Marshal(job.Result)
