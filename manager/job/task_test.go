@@ -47,7 +47,7 @@ func TestTask_CreateGetTask(t *testing.T) {
 				},
 			},
 			args: types.GetTaskArgs{
-				TaskID: "valid-task-id",
+				TaskID: "e7a7132d133ab769af4b64c54c0ea4572d2089142d9f1c04203572697439f467",
 			},
 			expect: func(t *testing.T, g *job.GroupJobState, e error) {
 				assert := assert.New(t)
@@ -63,7 +63,7 @@ func TestTask_CreateGetTask(t *testing.T) {
 				},
 			},
 			args: types.GetTaskArgs{
-				TaskID: "valid-task-id",
+				TaskID: "55697b6298a6ee5118443f23c4f4532666421361d31d4b1e822d2480c42eda0c",
 			},
 			expect: func(t *testing.T, g *job.GroupJobState, e error) {
 				assert := assert.New(t)
@@ -98,7 +98,7 @@ func TestTask_CreateDeleteTask(t *testing.T) {
 				},
 			},
 			args: types.DeleteTaskArgs{
-				TaskID: "valid-task-id",
+				TaskID: "e7a7132d133ab769af4b64c54c0ea4572d2089142d9f1c04203572697439f467",
 			},
 			expect: func(t *testing.T, g *job.GroupJobState, e error) {
 				assert := assert.New(t)
@@ -114,7 +114,7 @@ func TestTask_CreateDeleteTask(t *testing.T) {
 				},
 			},
 			args: types.DeleteTaskArgs{
-				TaskID: "valid-task-id",
+				TaskID: "55697b6298a6ee5118443f23c4f4532666421361d31d4b1e822d2480c42eda0c",
 			},
 			expect: func(t *testing.T, g *job.GroupJobState, e error) {
 				assert := assert.New(t)
