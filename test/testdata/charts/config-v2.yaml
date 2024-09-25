@@ -43,6 +43,9 @@ scheduler:
     limits:
       cpu: "2"
       memory: "4Gi"
+  service:
+    type: NodePort
+    nodePort: 30802
   extraVolumeMounts:
   - name: logs
     mountPath: "/var/log/"

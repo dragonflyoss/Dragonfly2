@@ -136,10 +136,18 @@ func (s *schedulerServerV2) AnnounceHost(ctx context.Context, req *schedulerv2.A
 	return new(emptypb.Empty), nil
 }
 
-// TODO Implement the following methods.
 // ListHosts lists hosts in scheduler.
 func (s *schedulerServerV2) ListHosts(ctx context.Context, _ *emptypb.Empty) (*schedulerv2.ListHostsResponse, error) {
-	return nil, nil
+	// Collect ListHostsCount metrics.
+	metrics.ListHostsCount.Inc()
+	resp, err := s.service.ListHosts(ctx)
+	if err != nil {
+		// Collect ListHostsFailureCount metrics.
+		metrics.ListHostsCountFailureCount.Inc()
+		return nil, err
+	}
+
+	return resp, nil
 }
 
 // DeleteHost releases host in scheduler.
