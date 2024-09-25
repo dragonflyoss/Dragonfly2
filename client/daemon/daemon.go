@@ -28,6 +28,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 	"sync"
 	"time"
 
@@ -118,6 +119,11 @@ type clientDaemon struct {
 func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	// update plugin directory
 	source.UpdatePluginDir(d.PluginDir())
+
+	if opt.MaxThreads > 10000 {
+		debug.SetMaxThreads(opt.MaxThreads)
+		logger.Infof("update runtime max threads: %d", opt.MaxThreads)
+	}
 
 	// FIXME the viper casts all case sensitive keys into lower case, but the resource clients option is map[string]interface{}, it should not be casted.
 	// issue: https://github.com/spf13/viper/issues/1014

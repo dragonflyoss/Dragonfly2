@@ -51,6 +51,11 @@ type DaemonOption struct {
 	AliveTime  util.Duration `mapstructure:"aliveTime" yaml:"aliveTime"`
 	GCInterval util.Duration `mapstructure:"gcInterval" yaml:"gcInterval"`
 	Metrics    string        `mapstructure:"metrics" yaml:"metrics"`
+	// MaxThreads indicates to invoke debug.SetMaxThreads to set max threads that golang runtime can create,
+	// it's useful for large-scale downloading resource with none native golang source code, like call cgo to invoke c++
+	// one cgo call will create a standalone os tread, the default 10000 limit is to small.
+	// Normally, we can also set seed concurrent to limit for large-scale downloading at same time.
+	MaxThreads int `mapstructure:"maxThreads" yaml:"maxThreads"`
 
 	WorkHome      string `mapstructure:"workHome" yaml:"workHome"`
 	WorkHomeMode  uint32 `mapstructure:"workHomeMode" yaml:"workHomeMode"`
