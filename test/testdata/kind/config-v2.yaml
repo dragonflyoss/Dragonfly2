@@ -12,6 +12,9 @@ nodes:
       - containerPort: 4003
         hostPort: 4003
         protocol: TCP
+      - containerPort: 30802
+        hostPort: 8002
+        protocol: TCP
     extraMounts:
       - hostPath: ./test/testdata/containerd/config-v2.toml
         containerPath: /etc/containerd/config.toml

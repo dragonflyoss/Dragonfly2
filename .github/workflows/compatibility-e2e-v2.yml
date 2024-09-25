@@ -45,6 +45,7 @@ jobs:
             image: client
             image-tag: v0.1.112
             chart-name: seed-client
+        skip: "Clients go offline normally and abnormally"
 
     steps:
       - name: Free Disk Space (Ubuntu)
