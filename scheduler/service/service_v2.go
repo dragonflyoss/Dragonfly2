@@ -1451,3 +1451,51 @@ func (v *V2) downloadTaskBySeedPeer(ctx context.Context, taskID string, download
 
 	return nil
 }
+
+// TODO Implement the following methods.
+// AnnounceCachePeer announces cache peer to scheduler.
+func (v *V2) AnnounceCachePeer(stream schedulerv2.Scheduler_AnnounceCachePeerServer) error {
+	return nil
+}
+
+// TODO Implement the following methods.
+// StatCachePeer checks information of cache peer.
+func (v *V2) StatCachePeer(ctx context.Context, req *schedulerv2.StatCachePeerRequest) (*commonv2.CachePeer, error) {
+	return nil, nil
+}
+
+// TODO Implement the following methods.
+// DeleteCachePeer releases cache peer in scheduler.
+func (v *V2) DeleteCachePeer(ctx context.Context, req *schedulerv2.DeleteCachePeerRequest) error {
+	return nil
+}
+
+// TODO Implement the following methods.
+// UploadCacheTaskStarted uploads the metadata of the cache task started.
+func (v *V2) UploadCacheTaskStarted(ctx context.Context, req *schedulerv2.UploadCacheTaskStartedRequest) error {
+	return nil
+}
+
+// TODO Implement the following methods.
+// UploadCacheTaskFinished uploads the metadata of the cache task finished.
+func (v *V2) UploadCacheTaskFinished(ctx context.Context, req *schedulerv2.UploadCacheTaskFinishedRequest) (*commonv2.CacheTask, error) {
+	return nil, nil
+}
+
+// TODO Implement the following methods.
+// UploadCacheTaskFailed uploads the metadata of the cache task failed.
+func (v *V2) UploadCacheTaskFailed(ctx context.Context, req *schedulerv2.UploadCacheTaskFailedRequest) error {
+	return nil
+}
+
+// TODO Implement the following methods.
+// StatCacheTask checks information of cache task.
+func (v *V2) StatCacheTask(ctx context.Context, req *schedulerv2.StatCacheTaskRequest) (*commonv2.CacheTask, error) {
+	return nil, nil
+}
+
+// TODO Implement the following methods.
+// DeleteCacheTask releases cache task in scheduler.
+func (v *V2) DeleteCacheTask(ctx context.Context, req *schedulerv2.DeleteCacheTaskRequest) error {
+	return nil
+}
