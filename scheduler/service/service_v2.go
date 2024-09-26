@@ -1453,49 +1453,49 @@ func (v *V2) downloadTaskBySeedPeer(ctx context.Context, taskID string, download
 }
 
 // TODO Implement the following methods.
-// AnnounceCachePeer announces cache peer to scheduler.
-func (v *V2) AnnounceCachePeer(stream schedulerv2.Scheduler_AnnounceCachePeerServer) error {
+// AnnouncePersistentCachePeer announces persistent cache peer to scheduler.
+func (v *V2) AnnouncePersistentCachePeer(stream schedulerv2.Scheduler_AnnouncePersistentCachePeerServer) error {
 	return nil
 }
 
 // TODO Implement the following methods.
-// StatCachePeer checks information of cache peer.
-func (v *V2) StatCachePeer(ctx context.Context, req *schedulerv2.StatCachePeerRequest) (*commonv2.CachePeer, error) {
+// StatPersistentCachePeer checks information of persistent cache peer.
+func (v *V2) StatPersistentCachePeer(ctx context.Context, req *schedulerv2.StatPersistentCachePeerRequest) (*commonv2.PersistentCachePeer, error) {
 	return nil, nil
 }
 
 // TODO Implement the following methods.
-// DeleteCachePeer releases cache peer in scheduler.
-func (v *V2) DeleteCachePeer(ctx context.Context, req *schedulerv2.DeleteCachePeerRequest) error {
+// DeletePersistentCachePeer releases persistent cache peer in scheduler.
+func (v *V2) DeletePersistentCachePeer(ctx context.Context, req *schedulerv2.DeletePersistentCachePeerRequest) error {
 	return nil
 }
 
 // TODO Implement the following methods.
-// UploadCacheTaskStarted uploads the metadata of the cache task started.
-func (v *V2) UploadCacheTaskStarted(ctx context.Context, req *schedulerv2.UploadCacheTaskStartedRequest) error {
+// UploadPersistentCacheTaskStarted uploads the metadata of the persistent cache task started.
+func (v *V2) UploadPersistentCacheTaskStarted(ctx context.Context, req *schedulerv2.UploadPersistentCacheTaskStartedRequest) error {
 	return nil
 }
 
 // TODO Implement the following methods.
-// UploadCacheTaskFinished uploads the metadata of the cache task finished.
-func (v *V2) UploadCacheTaskFinished(ctx context.Context, req *schedulerv2.UploadCacheTaskFinishedRequest) (*commonv2.CacheTask, error) {
+// UploadPersistentCacheTaskFinished uploads the metadata of the persistent cache task finished.
+func (v *V2) UploadPersistentCacheTaskFinished(ctx context.Context, req *schedulerv2.UploadPersistentCacheTaskFinishedRequest) (*commonv2.PersistentCacheTask, error) {
 	return nil, nil
 }
 
 // TODO Implement the following methods.
-// UploadCacheTaskFailed uploads the metadata of the cache task failed.
-func (v *V2) UploadCacheTaskFailed(ctx context.Context, req *schedulerv2.UploadCacheTaskFailedRequest) error {
+// UploadPersistentCacheTaskFailed uploads the metadata of the persistent cache task failed.
+func (v *V2) UploadPersistentCacheTaskFailed(ctx context.Context, req *schedulerv2.UploadPersistentCacheTaskFailedRequest) error {
 	return nil
 }
 
 // TODO Implement the following methods.
-// StatCacheTask checks information of cache task.
-func (v *V2) StatCacheTask(ctx context.Context, req *schedulerv2.StatCacheTaskRequest) (*commonv2.CacheTask, error) {
+// StatPersistentCacheTask checks information of persistent cache task.
+func (v *V2) StatPersistentCacheTask(ctx context.Context, req *schedulerv2.StatPersistentCacheTaskRequest) (*commonv2.PersistentCacheTask, error) {
 	return nil, nil
 }
 
 // TODO Implement the following methods.
-// DeleteCacheTask releases cache task in scheduler.
-func (v *V2) DeleteCacheTask(ctx context.Context, req *schedulerv2.DeleteCacheTaskRequest) error {
+// DeletePersistentCacheTask releases persistent cache task in scheduler.
+func (v *V2) DeletePersistentCacheTask(ctx context.Context, req *schedulerv2.DeletePersistentCacheTaskRequest) error {
 	return nil
 }

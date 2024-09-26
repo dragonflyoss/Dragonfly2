@@ -170,107 +170,107 @@ func (s *schedulerServerV2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesSe
 	return nil
 }
 
-// AnnounceCachePeer announces cache peer to scheduler.
-func (s *schedulerServerV2) AnnounceCachePeer(stream schedulerv2.Scheduler_AnnounceCachePeerServer) error {
-	// Collect AnnounceCachePeerCount metrics.
-	metrics.AnnounceCachePeerCount.Inc()
-	if err := s.service.AnnounceCachePeer(stream); err != nil {
-		// Collect AnnounceCachePeerFailureCount metrics.
-		metrics.AnnounceCachePeerFailureCount.Inc()
+// AnnouncePersistentCachePeer announces persistent cache peer to scheduler.
+func (s *schedulerServerV2) AnnouncePersistentCachePeer(stream schedulerv2.Scheduler_AnnouncePersistentCachePeerServer) error {
+	// Collect AnnouncePersistentCachePeerCount metrics.
+	metrics.AnnouncePersistentCachePeerCount.Inc()
+	if err := s.service.AnnouncePersistentCachePeer(stream); err != nil {
+		// Collect AnnouncePersistentCachePeerFailureCount metrics.
+		metrics.AnnouncePersistentCachePeerFailureCount.Inc()
 		return err
 	}
 
 	return nil
 }
 
-// StatCachePeer checks information of cache peer.
-func (s *schedulerServerV2) StatCachePeer(ctx context.Context, req *schedulerv2.StatCachePeerRequest) (*commonv2.CachePeer, error) {
-	// Collect StatCachePeerCount metrics.
-	metrics.StatCachePeerCount.Inc()
-	resp, err := s.service.StatCachePeer(ctx, req)
+// StatPersistentCachePeer checks information of persistent cache peer.
+func (s *schedulerServerV2) StatPersistentCachePeer(ctx context.Context, req *schedulerv2.StatPersistentCachePeerRequest) (*commonv2.PersistentCachePeer, error) {
+	// Collect StatPersistentCachePeerCount metrics.
+	metrics.StatPersistentCachePeerCount.Inc()
+	resp, err := s.service.StatPersistentCachePeer(ctx, req)
 	if err != nil {
-		// Collect StatCachePeerFailureCount metrics.
-		metrics.StatCachePeerFailureCount.Inc()
+		// Collect StatPersistentCachePeerFailureCount metrics.
+		metrics.StatPersistentCachePeerFailureCount.Inc()
 		return nil, err
 	}
 
 	return resp, nil
 }
 
-// DeleteCachePeer releases cache peer in scheduler.
-func (s *schedulerServerV2) DeleteCachePeer(ctx context.Context, req *schedulerv2.DeleteCachePeerRequest) (*emptypb.Empty, error) {
-	// Collect DeleteCachePeerCount metrics.
-	metrics.DeleteCachePeerCount.Inc()
-	if err := s.service.DeleteCachePeer(ctx, req); err != nil {
-		// Collect DeleteCachePeerFailureCount metrics.
-		metrics.DeleteCachePeerFailureCount.Inc()
+// DeletePersistentCachePeer releases persistent cache peer in scheduler.
+func (s *schedulerServerV2) DeletePersistentCachePeer(ctx context.Context, req *schedulerv2.DeletePersistentCachePeerRequest) (*emptypb.Empty, error) {
+	// Collect DeletePersistentCachePeerCount metrics.
+	metrics.DeletePersistentCachePeerCount.Inc()
+	if err := s.service.DeletePersistentCachePeer(ctx, req); err != nil {
+		// Collect DeletePersistentCachePeerFailureCount metrics.
+		metrics.DeletePersistentCachePeerFailureCount.Inc()
 		return nil, err
 	}
 
 	return new(emptypb.Empty), nil
 }
 
-// UploadCacheTaskStarted uploads the metadata of the cache task started.
-func (s *schedulerServerV2) UploadCacheTaskStarted(ctx context.Context, req *schedulerv2.UploadCacheTaskStartedRequest) (*emptypb.Empty, error) {
-	// Collect UploadCacheTaskStartedCount metrics.
-	metrics.UploadCacheTaskStartedCount.Inc()
-	if err := s.service.UploadCacheTaskStarted(ctx, req); err != nil {
-		// Collect UploadCacheTaskStartedFailureCount metrics.
-		metrics.UploadCacheTaskStartedFailureCount.Inc()
+// UploadPersistentCacheTaskStarted uploads the metadata of the persistent cache task started.
+func (s *schedulerServerV2) UploadPersistentCacheTaskStarted(ctx context.Context, req *schedulerv2.UploadPersistentCacheTaskStartedRequest) (*emptypb.Empty, error) {
+	// Collect UploadPersistentCacheTaskStartedCount metrics.
+	metrics.UploadPersistentCacheTaskStartedCount.Inc()
+	if err := s.service.UploadPersistentCacheTaskStarted(ctx, req); err != nil {
+		// Collect UploadPersistentCacheTaskStartedFailureCount metrics.
+		metrics.UploadPersistentCacheTaskStartedFailureCount.Inc()
 		return nil, err
 	}
 
 	return new(emptypb.Empty), nil
 }
 
-// UploadCacheTaskFinished uploads the metadata of the cache task finished.
-func (s *schedulerServerV2) UploadCacheTaskFinished(ctx context.Context, req *schedulerv2.UploadCacheTaskFinishedRequest) (*commonv2.CacheTask, error) {
-	// Collect UploadCacheTaskFinishedCount metrics.
-	metrics.UploadCacheTaskFinishedCount.Inc()
-	resp, err := s.service.UploadCacheTaskFinished(ctx, req)
+// UploadPersistentCacheTaskFinished uploads the metadata of the persistent cache task finished.
+func (s *schedulerServerV2) UploadPersistentCacheTaskFinished(ctx context.Context, req *schedulerv2.UploadPersistentCacheTaskFinishedRequest) (*commonv2.PersistentCacheTask, error) {
+	// Collect UploadPersistentCacheTaskFinishedCount metrics.
+	metrics.UploadPersistentCacheTaskFinishedCount.Inc()
+	resp, err := s.service.UploadPersistentCacheTaskFinished(ctx, req)
 	if err != nil {
-		// Collect UploadCacheTaskFinishedFailureCount metrics.
-		metrics.UploadCacheTaskFinishedFailureCount.Inc()
+		// Collect UploadPersistentCacheTaskFinishedFailureCount metrics.
+		metrics.UploadPersistentCacheTaskFinishedFailureCount.Inc()
 		return nil, err
 	}
 
 	return resp, nil
 }
 
-// UploadCacheTaskFailed uploads the metadata of the cache task failed.
-func (s *schedulerServerV2) UploadCacheTaskFailed(ctx context.Context, req *schedulerv2.UploadCacheTaskFailedRequest) (*emptypb.Empty, error) {
-	// Collect UploadCacheTaskFailedCount metrics.
-	metrics.UploadCacheTaskFailedCount.Inc()
-	if err := s.service.UploadCacheTaskFailed(ctx, req); err != nil {
-		// Collect UploadCacheTaskFailedFailureCount metrics.
-		metrics.UploadCacheTaskFailedFailureCount.Inc()
+// UploadPersistentCacheTaskFailed uploads the metadata of the persistent cache task failed.
+func (s *schedulerServerV2) UploadPersistentCacheTaskFailed(ctx context.Context, req *schedulerv2.UploadPersistentCacheTaskFailedRequest) (*emptypb.Empty, error) {
+	// Collect UploadPersistentCacheTaskFailedCount metrics.
+	metrics.UploadPersistentCacheTaskFailedCount.Inc()
+	if err := s.service.UploadPersistentCacheTaskFailed(ctx, req); err != nil {
+		// Collect UploadPersistentCacheTaskFailedFailureCount metrics.
+		metrics.UploadPersistentCacheTaskFailedFailureCount.Inc()
 		return nil, err
 	}
 
 	return new(emptypb.Empty), nil
 }
 
-// StatCacheTask checks information of cache task.
-func (s *schedulerServerV2) StatCacheTask(ctx context.Context, req *schedulerv2.StatCacheTaskRequest) (*commonv2.CacheTask, error) {
-	// Collect StatCacheTaskCount metrics.
-	metrics.StatCacheTaskCount.Inc()
-	resp, err := s.service.StatCacheTask(ctx, req)
+// StatPersistentCacheTask checks information of persistent cache task.
+func (s *schedulerServerV2) StatPersistentCacheTask(ctx context.Context, req *schedulerv2.StatPersistentCacheTaskRequest) (*commonv2.PersistentCacheTask, error) {
+	// Collect StatPersistentCacheTaskCount metrics.
+	metrics.StatPersistentCacheTaskCount.Inc()
+	resp, err := s.service.StatPersistentCacheTask(ctx, req)
 	if err != nil {
-		// Collect StatCacheTaskFailureCount metrics.
-		metrics.StatCacheTaskFailureCount.Inc()
+		// Collect StatPersistentCacheTaskFailureCount metrics.
+		metrics.StatPersistentCacheTaskFailureCount.Inc()
 		return nil, err
 	}
 
 	return resp, nil
 }
 
-// DeleteCacheTask releases cache task in scheduler.
-func (s *schedulerServerV2) DeleteCacheTask(ctx context.Context, req *schedulerv2.DeleteCacheTaskRequest) (*emptypb.Empty, error) {
-	// Collect DeleteCacheTaskCount metrics.
-	metrics.DeleteCacheTaskCount.Inc()
-	if err := s.service.DeleteCacheTask(ctx, req); err != nil {
-		// Collect DeleteCacheTaskFailureCount metrics.
-		metrics.DeleteCacheTaskFailureCount.Inc()
+// DeletePersistentCacheTask releases persistent cache task in scheduler.
+func (s *schedulerServerV2) DeletePersistentCacheTask(ctx context.Context, req *schedulerv2.DeletePersistentCacheTaskRequest) (*emptypb.Empty, error) {
+	// Collect DeletePersistentCacheTaskCount metrics.
+	metrics.DeletePersistentCacheTaskCount.Inc()
+	if err := s.service.DeletePersistentCacheTask(ctx, req); err != nil {
+		// Collect DeletePersistentCacheTaskFailureCount metrics.
+		metrics.DeletePersistentCacheTaskFailureCount.Inc()
 		return nil, err
 	}
 

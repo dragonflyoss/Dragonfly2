@@ -36,7 +36,7 @@ import (
 	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 	v1mocks "d7y.io/api/v2/pkg/apis/scheduler/v1/mocks"
 	schedulerv2 "d7y.io/api/v2/pkg/apis/scheduler/v2"
-	v2mocks "d7y.io/api/v2/pkg/apis/scheduler/v2/mocks"
+	schedulerv2mock "d7y.io/api/v2/pkg/apis/scheduler/v2/mocks"
 
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
@@ -51,7 +51,7 @@ var (
 func TestPeer_NewPeer(t *testing.T) {
 	ctl := gomock.NewController(t)
 	defer ctl.Finish()
-	stream := v2mocks.NewMockScheduler_AnnouncePeerServer(ctl)
+	stream := schedulerv2mock.NewMockScheduler_AnnouncePeerServer(ctl)
 
 	tests := []struct {
 		name    string
@@ -169,7 +169,7 @@ func TestPeer_NewPeer(t *testing.T) {
 			mockHost := NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			tc.expect(t, NewPeer(tc.id, mockResourceConfig, mockTask, mockHost, tc.options...), mockTask, mockHost)
 		})
 	}
@@ -204,7 +204,7 @@ func TestPeer_AppendPieceCost(t *testing.T) {
 			mockHost := NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			peer := NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 
 			tc.expect(t, peer)
@@ -241,7 +241,7 @@ func TestPeer_PieceCosts(t *testing.T) {
 			mockHost := NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			peer := NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 
 			tc.expect(t, peer)
@@ -283,7 +283,7 @@ func TestPeer_LoadReportPieceResultStream(t *testing.T) {
 			mockHost := NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			peer := NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 			tc.expect(t, peer, stream)
 		})
@@ -316,7 +316,7 @@ func TestPeer_StoreReportPieceResultStream(t *testing.T) {
 			mockHost := NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			peer := NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 			tc.expect(t, peer, stream)
 		})
@@ -349,7 +349,7 @@ func TestPeer_DeleteReportPieceResultStream(t *testing.T) {
 			mockHost := NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			peer := NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 			tc.expect(t, peer, stream)
 		})
@@ -385,12 +385,12 @@ func TestPeer_LoadAnnouncePeerStream(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
-			stream := v2mocks.NewMockScheduler_AnnouncePeerServer(ctl)
+			stream := schedulerv2mock.NewMockScheduler_AnnouncePeerServer(ctl)
 
 			mockHost := NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			peer := NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 			tc.expect(t, peer, stream)
 		})
@@ -418,12 +418,12 @@ func TestPeer_StoreAnnouncePeerStream(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
-			stream := v2mocks.NewMockScheduler_AnnouncePeerServer(ctl)
+			stream := schedulerv2mock.NewMockScheduler_AnnouncePeerServer(ctl)
 
 			mockHost := NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			peer := NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 			tc.expect(t, peer, stream)
 		})
@@ -451,12 +451,12 @@ func TestPeer_DeleteAnnouncePeerStream(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
-			stream := v2mocks.NewMockScheduler_AnnouncePeerServer(ctl)
+			stream := schedulerv2mock.NewMockScheduler_AnnouncePeerServer(ctl)
 
 			mockHost := NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			peer := NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 			tc.expect(t, peer, stream)
 		})
@@ -512,7 +512,7 @@ func TestPeer_LoadPiece(t *testing.T) {
 			mockHost := NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			peer := NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 
 			peer.StorePiece(tc.piece)
@@ -553,7 +553,7 @@ func TestPeer_StorePiece(t *testing.T) {
 			mockHost := NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			peer := NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 
 			peer.StorePiece(tc.piece)
@@ -598,7 +598,7 @@ func TestPeer_DeletePiece(t *testing.T) {
 			mockHost := NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			peer := NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 
 			peer.StorePiece(tc.piece)
@@ -646,7 +646,7 @@ func TestPeer_Parents(t *testing.T) {
 			mockHost := NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			peer := NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 			seedPeer := NewPeer(mockSeedPeerID, mockResourceConfig, mockTask, mockHost)
 			tc.expect(t, peer, seedPeer, stream)
@@ -692,7 +692,7 @@ func TestPeer_Children(t *testing.T) {
 			mockHost := NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			peer := NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 			seedPeer := NewPeer(mockSeedPeerID, mockResourceConfig, mockTask, mockHost)
 			tc.expect(t, peer, seedPeer, stream)
@@ -774,7 +774,7 @@ func TestPeer_DownloadTinyFile(t *testing.T) {
 			mockHost := NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			peer := NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 
 			if tc.mockServer == nil {
@@ -926,7 +926,7 @@ func TestPeer_CalculatePriority(t *testing.T) {
 			mockHost := NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			peer := NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 			tc.mock(peer, dynconfig.EXPECT())
 			tc.expect(t, peer.CalculatePriority(dynconfig))

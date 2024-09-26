@@ -73,23 +73,23 @@ func (mr *MockSeedPeerClientMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockSeedPeerClient)(nil).Close))
 }
 
-// DeleteCacheTask mocks base method.
-func (m *MockSeedPeerClient) DeleteCacheTask(arg0 context.Context, arg1 *dfdaemon.DeleteCacheTaskRequest, arg2 ...grpc.CallOption) error {
+// DeletePersistentCacheTask mocks base method.
+func (m *MockSeedPeerClient) DeletePersistentCacheTask(arg0 context.Context, arg1 *dfdaemon.DeletePersistentCacheTaskRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "DeleteCacheTask", varargs...)
+	ret := m.ctrl.Call(m, "DeletePersistentCacheTask", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// DeleteCacheTask indicates an expected call of DeleteCacheTask.
-func (mr *MockSeedPeerClientMockRecorder) DeleteCacheTask(arg0, arg1 any, arg2 ...any) *gomock.Call {
+// DeletePersistentCacheTask indicates an expected call of DeletePersistentCacheTask.
+func (mr *MockSeedPeerClientMockRecorder) DeletePersistentCacheTask(arg0, arg1 any, arg2 ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCacheTask", reflect.TypeOf((*MockSeedPeerClient)(nil).DeleteCacheTask), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePersistentCacheTask", reflect.TypeOf((*MockSeedPeerClient)(nil).DeletePersistentCacheTask), varargs...)
 }
 
 // DeleteTask mocks base method.
@@ -111,24 +111,24 @@ func (mr *MockSeedPeerClientMockRecorder) DeleteTask(arg0, arg1 any, arg2 ...any
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTask", reflect.TypeOf((*MockSeedPeerClient)(nil).DeleteTask), varargs...)
 }
 
-// DownloadCacheTask mocks base method.
-func (m *MockSeedPeerClient) DownloadCacheTask(arg0 context.Context, arg1 *dfdaemon.DownloadCacheTaskRequest, arg2 ...grpc.CallOption) (dfdaemon.DfdaemonUpload_DownloadCacheTaskClient, error) {
+// DownloadPersistentCacheTask mocks base method.
+func (m *MockSeedPeerClient) DownloadPersistentCacheTask(arg0 context.Context, arg1 *dfdaemon.DownloadPersistentCacheTaskRequest, arg2 ...grpc.CallOption) (dfdaemon.DfdaemonUpload_DownloadPersistentCacheTaskClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "DownloadCacheTask", varargs...)
-	ret0, _ := ret[0].(dfdaemon.DfdaemonUpload_DownloadCacheTaskClient)
+	ret := m.ctrl.Call(m, "DownloadPersistentCacheTask", varargs...)
+	ret0, _ := ret[0].(dfdaemon.DfdaemonUpload_DownloadPersistentCacheTaskClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// DownloadCacheTask indicates an expected call of DownloadCacheTask.
-func (mr *MockSeedPeerClientMockRecorder) DownloadCacheTask(arg0, arg1 any, arg2 ...any) *gomock.Call {
+// DownloadPersistentCacheTask indicates an expected call of DownloadPersistentCacheTask.
+func (mr *MockSeedPeerClientMockRecorder) DownloadPersistentCacheTask(arg0, arg1 any, arg2 ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadCacheTask", reflect.TypeOf((*MockSeedPeerClient)(nil).DownloadCacheTask), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadPersistentCacheTask", reflect.TypeOf((*MockSeedPeerClient)(nil).DownloadPersistentCacheTask), varargs...)
 }
 
 // DownloadPiece mocks base method.
@@ -223,24 +223,24 @@ func (mr *MockSeedPeerClientMockRecorder) OnNotify(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnNotify", reflect.TypeOf((*MockSeedPeerClient)(nil).OnNotify), arg0)
 }
 
-// StatCacheTask mocks base method.
-func (m *MockSeedPeerClient) StatCacheTask(arg0 context.Context, arg1 *dfdaemon.StatCacheTaskRequest, arg2 ...grpc.CallOption) (*common0.CacheTask, error) {
+// StatPersistentCacheTask mocks base method.
+func (m *MockSeedPeerClient) StatPersistentCacheTask(arg0 context.Context, arg1 *dfdaemon.StatPersistentCacheTaskRequest, arg2 ...grpc.CallOption) (*common0.PersistentCacheTask, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "StatCacheTask", varargs...)
-	ret0, _ := ret[0].(*common0.CacheTask)
+	ret := m.ctrl.Call(m, "StatPersistentCacheTask", varargs...)
+	ret0, _ := ret[0].(*common0.PersistentCacheTask)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// StatCacheTask indicates an expected call of StatCacheTask.
-func (mr *MockSeedPeerClientMockRecorder) StatCacheTask(arg0, arg1 any, arg2 ...any) *gomock.Call {
+// StatPersistentCacheTask indicates an expected call of StatPersistentCacheTask.
+func (mr *MockSeedPeerClientMockRecorder) StatPersistentCacheTask(arg0, arg1 any, arg2 ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatCacheTask", reflect.TypeOf((*MockSeedPeerClient)(nil).StatCacheTask), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatPersistentCacheTask", reflect.TypeOf((*MockSeedPeerClient)(nil).StatPersistentCacheTask), varargs...)
 }
 
 // StatTask mocks base method.

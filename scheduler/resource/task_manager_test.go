@@ -131,7 +131,7 @@ func TestTaskManager_Load(t *testing.T) {
 			gc := gc.NewMockGC(ctl)
 			tc.mock(gc.EXPECT())
 
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			taskManager, err := newTaskManager(mockTaskGCConfig, gc)
 			if err != nil {
 				t.Fatal(err)
@@ -184,7 +184,7 @@ func TestTaskManager_Store(t *testing.T) {
 			gc := gc.NewMockGC(ctl)
 			tc.mock(gc.EXPECT())
 
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			taskManager, err := newTaskManager(mockTaskGCConfig, gc)
 			if err != nil {
 				t.Fatal(err)
@@ -235,7 +235,7 @@ func TestTaskManager_LoadOrStore(t *testing.T) {
 			gc := gc.NewMockGC(ctl)
 			tc.mock(gc.EXPECT())
 
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			taskManager, err := newTaskManager(mockTaskGCConfig, gc)
 			if err != nil {
 				t.Fatal(err)
@@ -288,7 +288,7 @@ func TestTaskManager_Delete(t *testing.T) {
 			gc := gc.NewMockGC(ctl)
 			tc.mock(gc.EXPECT())
 
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			taskManager, err := newTaskManager(mockTaskGCConfig, gc)
 			if err != nil {
 				t.Fatal(err)
@@ -349,7 +349,7 @@ func TestTaskManager_RunGC(t *testing.T) {
 			mockHost := NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			mockPeer := NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
 			taskManager, err := newTaskManager(mockTaskGCConfig, gc)
 			if err != nil {

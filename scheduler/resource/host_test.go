@@ -616,7 +616,7 @@ func TestHost_LoadPeer(t *testing.T) {
 			host := NewHost(
 				tc.rawHost.ID, tc.rawHost.IP, tc.rawHost.Hostname,
 				tc.rawHost.Port, tc.rawHost.DownloadPort, tc.rawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			mockPeer := NewPeer(mockPeerID, mockResourceConfig, mockTask, host)
 
 			host.StorePeer(mockPeer)
@@ -661,7 +661,7 @@ func TestHost_StorePeer(t *testing.T) {
 			host := NewHost(
 				tc.rawHost.ID, tc.rawHost.IP, tc.rawHost.Hostname,
 				tc.rawHost.Port, tc.rawHost.DownloadPort, tc.rawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			mockPeer := NewPeer(tc.peerID, mockResourceConfig, mockTask, host)
 
 			host.StorePeer(mockPeer)
@@ -707,7 +707,7 @@ func TestHost_DeletePeer(t *testing.T) {
 			host := NewHost(
 				tc.rawHost.ID, tc.rawHost.IP, tc.rawHost.Hostname,
 				tc.rawHost.Port, tc.rawHost.DownloadPort, tc.rawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			mockPeer := NewPeer(mockPeerID, mockResourceConfig, mockTask, host)
 
 			host.StorePeer(mockPeer)
@@ -759,7 +759,7 @@ func TestHost_LeavePeers(t *testing.T) {
 			host := NewHost(
 				tc.rawHost.ID, tc.rawHost.IP, tc.rawHost.Hostname,
 				tc.rawHost.Port, tc.rawHost.DownloadPort, tc.rawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			mockPeer := NewPeer(mockPeerID, mockResourceConfig, mockTask, host)
 
 			tc.expect(t, host, mockPeer)
@@ -811,7 +811,7 @@ func TestHost_FreeUploadCount(t *testing.T) {
 			host := NewHost(
 				tc.rawHost.ID, tc.rawHost.IP, tc.rawHost.Hostname,
 				tc.rawHost.Port, tc.rawHost.DownloadPort, tc.rawHost.Type)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_DFDAEMON, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
 			mockPeer := NewPeer(mockPeerID, mockResourceConfig, mockTask, host)
 
 			tc.expect(t, host, mockTask, mockPeer)
