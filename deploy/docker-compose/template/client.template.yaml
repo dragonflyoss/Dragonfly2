@@ -1,0 +1,164 @@
+# verbose prints log to stdout.
+verbose: true
+
+log:
+  # Specify the logging level [trace, debug, info, warn, error]
+  level: info
+
+# host is the host configuration for dfdaemon.
+host:
+  ## idc is the idc of the host.
+  idc: ''
+  ## location is the location of the host.
+  location: ''
+  ## hostname is the hostname of the host.
+  # hostname: ""
+  ## ip is the advertise ip of the host.
+  ip: __IP__
+
+server:
+  # pluginDir is the directory to store plugins.
+  pluginDir: /var/lib/dragonfly/plugins/dfdaemon/
+  # cacheDir is the directory to store cache files.
+  cacheDir: /var/cache/dragonfly/dfdaemon/
+
+download:
+  server:
+    # socketPath is the unix socket path for dfdaemon GRPC service.
+    socketPath: /var/run/dragonfly/dfdaemon.sock
+  # rateLimit is the default rate limit of the download speed in KiB/MiB/GiB per second, default is 10GiB/s.
+  rateLimit: 10GiB
+  # pieceTimeout is the timeout for downloading a piece from source.
+  pieceTimeout: 30s
+  # concurrentPieceCount is the number of concurrent pieces to download.
+  concurrentPieceCount: 10
+
+upload:
+  server:
+    # port is the port to the grpc server.
+    port: 4000
+    ## ip is the listen ip of the grpc server.
+    # ip: ""
+  # disableShared indicates whether disable to share data for other peers.
+  disableShared: false
+  # rateLimit is the default rate limit of the upload speed in KiB/MiB/GiB per second, default is 10GiB/s.
+  rateLimit: 10GiB
+
+manager:
+  # addrs is manager addresses.
+  addrs:
+    - http://__IP__:65003
+
+scheduler:
+  # announceInterval is the interval to announce peer to the scheduler.
+  # Announcer will provide the scheduler with peer information for scheduling,
+  # peer information includes cpu, memory, etc.
+  announceInterval: 10s
+  # scheduleTimeout is the timeout for scheduling. If the scheduling timesout, dfdaemon will back-to-source
+  # download if enableBackToSource is true, otherwise dfdaemon will return download failed.
+  scheduleTimeout: 30s
+  # maxScheduleCount is the max count of schedule.
+  maxScheduleCount: 5
+  # enableBackToSource indicates whether enable back-to-source download, when the scheduling failed.
+  enableBackToSource: true
+
+dynconfig:
+  # refreshInterval is the interval to refresh dynamic configuration from manager.
+  refreshInterval: 1m
+
+storage:
+  # dir is the directory to store task's metadata and content.
+  dir: /var/lib/dragonfly/
+  # keep indicates whether keep the task's metadata and content when the dfdaemon restarts.
+  keep: true
+  # writeBufferSize is the buffer size for writing piece to disk, default is 128KB.
+  writeBufferSize: 131072
+  # readBufferSize is the buffer size for reading piece from disk, default is 128KB.
+  readBufferSize: 131072
+
+gc:
+  # interval is the interval to do gc.
+  interval: 900s
+  policy:
+    # taskTTL is the ttl of the task.
+    taskTTL: 21600s
+    # distHighThresholdPercent is the high threshold percent of the disk usage.
+    # If the disk usage is greater than the threshold, dfdaemon will do gc.
+    distHighThresholdPercent: 80
+    # distLowThresholdPercent is the low threshold percent of the disk usage.
+    # If the disk usage is less than the threshold, dfdaemon will stop gc.
+    distLowThresholdPercent: 60
+
+proxy:
+  server:
+    # port is the port to the proxy server.
+    port: 4001
+    ## ip is the listen ip of the proxy server.
+    # ip: ""
+    ## caCert is the root CA cert path with PEM format for the proxy server to generate the server cert.
+    ## If ca_cert is empty, proxy will generate a smaple CA cert by rcgen::generate_simple_self_signed.
+    ## When client requests via the proxy, the client should not verify the server cert and set
+    ## insecure to true. If ca_cert is not empty, proxy will sign the server cert with the CA cert. If openssl is installed,
+    ## you can use openssl to generate the root CA cert and make the system trust the root CA cert.
+    ## Then set the ca_cert and ca_key to the root CA cert and key path. Dfdaemon generates the server cert
+    ## and key, and signs the server cert with the root CA cert. When client requests via the proxy,
+    ## the proxy can intercept the request by the server cert.
+    # caCert: ""
+    ## caKey is the root CA key path with PEM format for the proxy server to generate the server cert.
+    ## If ca_key is empty, proxy will generate a smaple CA key by rcgen::generate_simple_self_signed.
+    ## When client requests via the proxy, the client should not verify the server cert and set
+    ## insecure to true. If ca_key is not empty, proxy will sign the server cert with the CA cert. If openssl is installed,
+    ## you can use openssl to generate the root CA cert and make the system trust the root CA cert.
+    ## Then set the ca_cert and ca_key to the root CA cert and key path. Dfdaemon generates the server cert
+    ## and key, and signs the server cert with the root CA cert. When client requests via the proxy,
+    ## the proxy can intercept the request by the server cert.
+    # caKey: ""
+  # rules is the list of rules for the proxy server.
+  # regex is the regex of the request url.
+  # useTLS indicates whether use tls for the proxy backend.
+  # redirect is the redirect url.
+  # filteredQueryParams is the filtered query params to generate the task id.
+  # When filter is ["Signature", "Expires", "ns"], for example:
+  # http://example.com/xyz?Expires=e1&Signature=s1&ns=docker.io and http://example.com/xyz?Expires=e2&Signature=s2&ns=docker.io
+  # will generate the same task id.
+  # Default value includes the filtered query params of s3, gcs, oss, obs, cos.
+  # `X-Dragonfly-Use-P2P` header can instead of the regular expression of the rule. If the value is "true",
+  # the request will use P2P technology to distribute the content. If the value is "false",
+  # but url matches the regular expression in rules. The request will also use P2P technology to distribute the content.
+  rules:
+    - regex: 'blobs/sha256.*'
+      # useTLS: false
+      # redirect: ""
+      # filteredQueryParams: []
+  registryMirror:
+    # addr is the default address of the registry mirror. Proxy will start a registry mirror service for the
+    # client to pull the image. The client can use the default address of the registry mirror in
+    # configuration to pull the image. The `X-Dragonfly-Registry` header can instead of the default address
+    # of registry mirror.
+    addr: https://index.docker.io
+    ## certs is the client certs path with PEM format for the registry.
+    ## If registry use self-signed cert, the client should set the
+    ## cert for the registry mirror.
+    # certs: ""
+  # disableBackToSource indicates whether disable to download back-to-source when download failed.
+  disableBackToSource: false
+  # prefetch pre-downloads full of the task when download with range request.
+  prefetch: false
+  # readBufferSize is the buffer size for reading piece from disk, default is 32KB.
+  readBufferSize: 32768
+
+security:
+  # enable indicates whether enable security.
+  enable: false
+
+metrics:
+  server:
+    # port is the port to the metrics server.
+    port: 4002
+    ## ip is the listen ip of the metrics server.
+    # ip: ""
+
+## tracing is the tracing configuration for dfdaemon.
+# tracing:
+## addr is the address to report tracing log.
+# addr: ""

@@ -198,7 +198,7 @@ func TestConfig_Load(t *testing.T) {
 			},
 			Preheat: PreheatConfig{
 				RegistryTimeout: DefaultJobPreheatRegistryTimeout,
-				TLS: &PreheatTLSClientConfig{
+				TLS: PreheatTLSClientConfig{
 					CACert: "foo",
 				},
 			},
@@ -779,23 +779,6 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "gc requires parameter ttl")
-			},
-		},
-		{
-			name:   "preheat requires parameter caCert",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Auth.JWT = mockJWTConfig
-				cfg.Database.Type = DatabaseTypeMysql
-				cfg.Database.Mysql = mockMysqlConfig
-				cfg.Database.Redis = mockRedisConfig
-				cfg.Job.Preheat.TLS = &PreheatTLSClientConfig{
-					CACert: "",
-				}
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "preheat requires parameter caCert")
 			},
 		},
 		{

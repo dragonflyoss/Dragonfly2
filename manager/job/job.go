@@ -61,14 +61,14 @@ func New(cfg *config.Config, gdb *gorm.DB) (*Job, error) {
 	}
 
 	var certPool *x509.CertPool
-	if cfg.Job.Preheat.TLS != nil {
+	if len(cfg.Job.Preheat.TLS.CACert) != 0 {
 		certPool = x509.NewCertPool()
 		if !certPool.AppendCertsFromPEM([]byte(cfg.Job.Preheat.TLS.CACert)) {
 			return nil, errors.New("invalid CA Cert")
 		}
 	}
 
-	preheat, err := newPreheat(j, cfg.Job.Preheat.RegistryTimeout, certPool)
+	preheat, err := newPreheat(j, cfg.Job.Preheat.RegistryTimeout, certPool, cfg.Job.Preheat.TLS.InsecureSkipVerify)
 	if err != nil {
 		return nil, err
 	}

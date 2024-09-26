@@ -324,7 +324,7 @@ type PreheatConfig struct {
 	RegistryTimeout time.Duration `yaml:"registryTimeout" mapstructure:"registryTimeout"`
 
 	// TLS client configuration.
-	TLS *PreheatTLSClientConfig `yaml:"tls" mapstructure:"tls"`
+	TLS PreheatTLSClientConfig `yaml:"tls" mapstructure:"tls"`
 }
 
 // RateLimitConfig is the configuration for rate limit.
@@ -349,6 +349,10 @@ type SyncPeersConfig struct {
 }
 
 type PreheatTLSClientConfig struct {
+	// InsecureSkipVerify controls whether a client verifies the
+	// server's certificate chain and host name.
+	InsecureSkipVerify bool `yaml:"insecureSkipVerify" mapstructure:"insecureSkipVerify"`
+
 	// CACert is the CA certificate for preheat tls handshake, it can be path or PEM format string.
 	CACert types.PEMContent `yaml:"caCert" mapstructure:"caCert"`
 }
@@ -484,6 +488,7 @@ func New() *Config {
 			},
 			Preheat: PreheatConfig{
 				RegistryTimeout: DefaultJobPreheatRegistryTimeout,
+				TLS:             PreheatTLSClientConfig{},
 			},
 			SyncPeers: SyncPeersConfig{
 				Interval: DefaultJobSyncPeersInterval,
@@ -669,12 +674,6 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Job.GC.TTL == 0 {
 		return errors.New("gc requires parameter ttl")
-	}
-
-	if cfg.Job.Preheat.TLS != nil {
-		if cfg.Job.Preheat.TLS.CACert == "" {
-			return errors.New("preheat requires parameter caCert")
-		}
 	}
 
 	if cfg.Job.Preheat.RegistryTimeout == 0 {

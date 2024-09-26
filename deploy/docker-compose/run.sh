@@ -4,6 +4,7 @@ set -e
 
 REPO=${REPO:-dragonflyoss}
 TAG=${TAG:-latest}
+CLIENT_TAG=${CLIENT_TAG:-latest}
 
 DIR=$(cd "$(dirname "$0")" && pwd)
 cd $DIR
@@ -13,8 +14,8 @@ prepare(){
 
     ip=${IP:-$(hostname -i)}
 
-    sed "s,__IP__,$ip," template/dfget.template.yaml > config/dfget.yaml
-    sed "s,__IP__,$ip," template/seed-peer.template.yaml > config/seed-peer.yaml
+    sed "s,__IP__,$ip," template/client.template.yaml > config/client.yaml
+    sed "s,__IP__,$ip," template/seed-client.template.yaml > config/seed-client.yaml
     sed "s,__IP__,$ip," template/scheduler.template.yaml > config/scheduler.yaml
     sed "s,__IP__,$ip," template/manager.template.yaml > config/manager.yaml
 }
@@ -25,7 +26,7 @@ delete_container(){
 
     echo try to clean old containers
     ${RUNTIME} rm -f dragonfly-redis dragonfly-mysql dragonfly-manager dragonfly-scheduler \
-        dragonfly-dfdaemon dragonfly-seed-peer
+        dragonfly-client dragonfly-seed-client
 }
 
 run_container(){
@@ -34,7 +35,7 @@ run_container(){
 
     echo try to clean old containers
     ${RUNTIME} rm -f dragonfly-redis dragonfly-mysql dragonfly-manager dragonfly-scheduler \
-        dragonfly-dfdaemon dragonfly-seed-peer
+        dragonfly-client dragonfly-seed-client
 
     printf "create dragonfly-redis "
     ${RUNTIME} run -d --name dragonfly-redis --restart=always -p 6379:6379 \
@@ -55,11 +56,11 @@ run_container(){
         -v ${DIR}/config/manager.yaml:/etc/dragonfly/manager.yaml \
         ${REPO}/manager:${TAG}
 
-    printf "create dragonfly-seed-peer "
-    ${RUNTIME} run -d --name dragonfly-seed-peer --restart=always --net=host \
+    printf "create dragonfly-seed-client "
+    ${RUNTIME} run -d --name dragonfly-seed-client --restart=always --net=host \
         -v /tmp/log/dragonfly:/var/log/dragonfly \
         -v ${DIR}/config/seed-peer.yaml:/etc/dragonfly/dfget.yaml \
-        ${REPO}/dfdaemon:${TAG}
+        ${REPO}/client:${CLIENT_TAG}
 
     printf "create dragonfly-scheduler "
     ${RUNTIME} run -d --name dragonfly-scheduler --restart=always --net=host \
@@ -67,11 +68,11 @@ run_container(){
         -v ${DIR}/config/scheduler.yaml:/etc/dragonfly/scheduler.yaml \
         ${REPO}/scheduler:${TAG}
 
-    printf "create dragonfly-dfdaemon "
-    ${RUNTIME} run -d --name dragonfly-dfdaemon --restart=always --net=host \
+    printf "create dragonfly-client "
+    ${RUNTIME} run -d --name dragonfly-client --restart=always --net=host \
         -v /tmp/log/dragonfly:/var/log/dragonfly \
         -v ${DIR}/config/dfget.yaml:/etc/dragonfly/dfget.yaml \
-        ${REPO}/dfdaemon:${TAG}
+        ${REPO}/client:${CLIENT_TAG}
 }
 
 prepare
