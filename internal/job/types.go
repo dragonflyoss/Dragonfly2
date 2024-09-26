@@ -31,6 +31,8 @@ type PreheatRequest struct {
 	Priority            int32             `json:"priority" validate:"omitempty"`
 	Scope               string            `json:"scope" validate:"omitempty"`
 	ConcurrentCount     int64             `json:"concurrent_count" validate:"omitempty"`
+	CertificateChain    [][]byte          `json:"certificate_chain" validate:"omitempty"`
+	InsecureSkipVerify  bool              `json:"insecure_skip_verify" validate:"omitempty"`
 	Timeout             time.Duration     `json:"timeout" validate:"omitempty"`
 }
 

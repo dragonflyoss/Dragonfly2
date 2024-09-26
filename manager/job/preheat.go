@@ -76,14 +76,21 @@ type Preheat interface {
 
 // preheat is an implementation of Preheat.
 type preheat struct {
-	job             *internaljob.Job
-	registryTimeout time.Duration
-	rootCAs         *x509.CertPool
+	job                *internaljob.Job
+	registryTimeout    time.Duration
+	rootCAs            *x509.CertPool
+	certificateChain   [][]byte
+	insecureSkipVerify bool
 }
 
 // newPreheat creates a new Preheat.
-func newPreheat(job *internaljob.Job, registryTimeout time.Duration, rootCAs *x509.CertPool) (Preheat, error) {
-	return &preheat{job, registryTimeout, rootCAs}, nil
+func newPreheat(job *internaljob.Job, registryTimeout time.Duration, rootCAs *x509.CertPool, insecureSkipVerify bool) (Preheat, error) {
+	var certificateChain [][]byte
+	if rootCAs != nil {
+		certificateChain = rootCAs.Subjects()
+	}
+
+	return &preheat{job, registryTimeout, rootCAs, certificateChain, insecureSkipVerify}, nil
 }
 
 // CreatePreheat creates a preheat job.
@@ -112,6 +119,8 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []models.Schedul
 				Headers:             json.Headers,
 				Scope:               json.Scope,
 				ConcurrentCount:     json.ConcurrentCount,
+				CertificateChain:    p.certificateChain,
+				InsecureSkipVerify:  p.insecureSkipVerify,
 				Timeout:             json.Timeout,
 			},
 		}
@@ -187,7 +196,7 @@ func (p *preheat) getImageLayers(ctx context.Context, args types.PreheatArgs) ([
 			Timeout: p.registryTimeout,
 			Transport: &http.Transport{
 				DialContext:     nethttp.NewSafeDialer().DialContext,
-				TLSClientConfig: &tls.Config{RootCAs: p.rootCAs},
+				TLSClientConfig: &tls.Config{RootCAs: p.rootCAs, InsecureSkipVerify: p.insecureSkipVerify},
 			},
 		}),
 		withBasicAuth(args.Username, args.Password),
@@ -328,6 +337,8 @@ func (p *preheat) parseLayers(manifests []distribution.Manifest, args types.Preh
 				Headers:             nethttp.HeaderToMap(header),
 				Scope:               args.Scope,
 				ConcurrentCount:     args.ConcurrentCount,
+				CertificateChain:    p.certificateChain,
+				InsecureSkipVerify:  p.insecureSkipVerify,
 				Timeout:             args.Timeout,
 			}
 
