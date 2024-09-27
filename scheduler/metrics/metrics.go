@@ -289,115 +289,115 @@ var (
 		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.95: 0.005, 0.99: 0.001},
 	})
 
-	AnnounceCachePeerCount = promauto.NewCounter(prometheus.CounterOpts{
+	AnnouncePersistentCachePeerCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
-		Name:      "announce_cache_peer_total",
+		Name:      "announce_persistent_cache_peer_total",
 		Help:      "Counter of the number of the announcing cache peer.",
 	})
 
-	AnnounceCachePeerFailureCount = promauto.NewCounter(prometheus.CounterOpts{
+	AnnouncePersistentCachePeerFailureCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
-		Name:      "announce_cache_peer_failure_total",
+		Name:      "announce_persistent_cache_peer_failure_total",
 		Help:      "Counter of the number of failed of the announcing cache peer.",
 	})
 
-	StatCachePeerCount = promauto.NewCounter(prometheus.CounterOpts{
+	StatPersistentCachePeerCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
-		Name:      "stat_cache_peer_total",
+		Name:      "stat_persistent_cache_peer_total",
 		Help:      "Counter of the number of the stat cache peer.",
 	})
 
-	StatCachePeerFailureCount = promauto.NewCounter(prometheus.CounterOpts{
+	StatPersistentCachePeerFailureCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
-		Name:      "stat_cache_peer_failure_total",
+		Name:      "stat_persistent_cache_peer_failure_total",
 		Help:      "Counter of the number of failed of the stat cache peer.",
 	})
 
-	DeleteCachePeerCount = promauto.NewCounter(prometheus.CounterOpts{
+	DeletePersistentCachePeerCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
-		Name:      "delete_cache_peer_total",
+		Name:      "delete_persistent_cache_peer_total",
 		Help:      "Counter of the number of the deleting cache peer.",
 	})
 
-	DeleteCachePeerFailureCount = promauto.NewCounter(prometheus.CounterOpts{
+	DeletePersistentCachePeerFailureCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
-		Name:      "delete_cache_peer_failure_total",
+		Name:      "delete_persistent_cache_peer_failure_total",
 		Help:      "Counter of the number of failed of the deleting cache peer.",
 	})
 
-	UploadCacheTaskStartedCount = promauto.NewCounter(prometheus.CounterOpts{
+	UploadPersistentCacheTaskStartedCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
-		Name:      "upload_cache_peer_started_total",
+		Name:      "upload_persistent_cache_task_started_total",
 		Help:      "Counter of the number of the started uploading cache peer.",
 	})
 
-	UploadCacheTaskStartedFailureCount = promauto.NewCounter(prometheus.CounterOpts{
+	UploadPersistentCacheTaskStartedFailureCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
-		Name:      "upload_cache_peer_started_failure_total",
+		Name:      "upload_persistent_cache_task_started_failure_total",
 		Help:      "Counter of the number of failed of the started uploading cache peer.",
 	})
 
-	UploadCacheTaskFinishedCount = promauto.NewCounter(prometheus.CounterOpts{
+	UploadPersistentCacheTaskFinishedCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
-		Name:      "upload_cache_peer_finished_total",
+		Name:      "upload_persistent_cache_task_finished_total",
 		Help:      "Counter of the number of the finished uploading cache peer.",
 	})
 
-	UploadCacheTaskFinishedFailureCount = promauto.NewCounter(prometheus.CounterOpts{
+	UploadPersistentCacheTaskFinishedFailureCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
-		Name:      "upload_cache_peer_finished_failure_total",
+		Name:      "upload_persistent_cache_task_finished_failure_total",
 		Help:      "Counter of the number of failed of the finished uploading cache peer.",
 	})
 
-	UploadCacheTaskFailedCount = promauto.NewCounter(prometheus.CounterOpts{
+	UploadPersistentCacheTaskFailedCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
-		Name:      "upload_cache_peer_failed_total",
+		Name:      "upload_persistent_cache_task_failed_total",
 		Help:      "Counter of the number of the failed uploading cache peer.",
 	})
 
-	UploadCacheTaskFailedFailureCount = promauto.NewCounter(prometheus.CounterOpts{
+	UploadPersistentCacheTaskFailedFailureCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
 		Name:      "upload_cache_peer_failed_failure_total",
 		Help:      "Counter of the number of failed of the failed uploading cache peer.",
 	})
 
-	StatCacheTaskCount = promauto.NewCounter(prometheus.CounterOpts{
+	StatPersistentCacheTaskCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
-		Name:      "stat_cache_task_total",
+		Name:      "stat_persistent_cache_task_total",
 		Help:      "Counter of the number of the stat cache task.",
 	})
 
-	StatCacheTaskFailureCount = promauto.NewCounter(prometheus.CounterOpts{
+	StatPersistentCacheTaskFailureCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
-		Name:      "stat_cache_task_failure_total",
+		Name:      "stat_persistent_cache_task_failure_total",
 		Help:      "Counter of the number of failed of the stat cache task.",
 	})
 
-	DeleteCacheTaskCount = promauto.NewCounter(prometheus.CounterOpts{
+	DeletePersistentCacheTaskCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
-		Name:      "delete_cache_task_total",
+		Name:      "delete_persistent_cache_task_total",
 		Help:      "Counter of the number of the delete cache task.",
 	})
 
-	DeleteCacheTaskFailureCount = promauto.NewCounter(prometheus.CounterOpts{
+	DeletePersistentCacheTaskFailureCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,
-		Name:      "delete_cache_task_failure_total",
+		Name:      "delete_persistent_cache_task_failure_total",
 		Help:      "Counter of the number of failed of the delete cache task.",
 	})
 

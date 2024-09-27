@@ -493,7 +493,7 @@ func (t *Task) SizeScope() commonv2.SizeScope {
 
 // CanBackToSource represents whether task can back-to-source.
 func (t *Task) CanBackToSource() bool {
-	return int32(t.BackToSourcePeers.Len()) <= t.BackToSourceLimit.Load() && (t.Type == commonv2.TaskType_DFDAEMON || t.Type == commonv2.TaskType_DFSTORE)
+	return int32(t.BackToSourcePeers.Len()) <= t.BackToSourceLimit.Load() && (t.Type != commonv2.TaskType_PERSISTENT_CACHE)
 }
 
 // CanReuseDirectPiece represents whether task can reuse data of direct piece.

@@ -97,7 +97,7 @@ func (v *V1) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequ
 	log.Infof("register peer task request: %#v", req)
 
 	// Store resource.
-	task := v.storeTask(ctx, req, commonv2.TaskType_DFDAEMON)
+	task := v.storeTask(ctx, req, commonv2.TaskType_STANDARD)
 	host := v.storeHost(ctx, req.GetPeerHost())
 	peer := v.storePeer(ctx, req.GetPeerId(), req.UrlMeta.GetPriority(), req.UrlMeta.GetRange(), task, host)
 
@@ -814,7 +814,7 @@ func (v *V1) prefetchTask(ctx context.Context, rawReq *schedulerv1.PeerTaskReque
 	log.Infof("prefetch task: %s", req.TaskId)
 
 	// Store resource.
-	task := v.storeTask(ctx, req, commonv2.TaskType_DFDAEMON)
+	task := v.storeTask(ctx, req, commonv2.TaskType_STANDARD)
 
 	v.triggerSeedPeerTask(ctx, nil, task)
 	return task, nil

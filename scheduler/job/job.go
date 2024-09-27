@@ -280,7 +280,7 @@ func (j *job) preheatAllPeers(ctx context.Context, taskID string, req *internalj
 				&dfdaemonv2.DownloadTaskRequest{Download: &commonv2.Download{
 					Url:                 req.URL,
 					Digest:              &req.Digest,
-					Type:                commonv2.TaskType_DFDAEMON,
+					Type:                commonv2.TaskType_STANDARD,
 					Tag:                 &req.Tag,
 					Application:         &req.Application,
 					Priority:            commonv2.Priority(req.Priority),
@@ -425,7 +425,7 @@ func (j *job) preheatV2(ctx context.Context, taskID string, req *internaljob.Pre
 		Download: &commonv2.Download{
 			Url:                 req.URL,
 			Digest:              &req.Digest,
-			Type:                commonv2.TaskType_DFDAEMON,
+			Type:                commonv2.TaskType_STANDARD,
 			Tag:                 &req.Tag,
 			Application:         &req.Application,
 			Priority:            commonv2.Priority(req.Priority),
