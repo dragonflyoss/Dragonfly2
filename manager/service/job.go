@@ -288,7 +288,7 @@ func (s *service) pollingJob(ctx context.Context, name string, id uint, groupID 
 		job models.Job
 		log = logger.WithGroupAndJobID(groupID, fmt.Sprint(id))
 	)
-	if _, _, err := retry.Run(ctx, 5, 10, 480, func() (any, bool, error) {
+	if _, _, err := retry.Run(ctx, 30, 300, 16, func() (any, bool, error) {
 		groupJob, err := s.job.GetGroupJobState(name, groupID)
 		if err != nil {
 			log.Errorf("polling group failed: %s", err.Error())

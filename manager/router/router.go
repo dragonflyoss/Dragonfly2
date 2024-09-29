@@ -212,7 +212,7 @@ func Init(cfg *config.Config, logDir string, service service.Service, database *
 	job.POST("", middlewares.RateLimit(cfg.Job.RateLimit.FillInterval, cfg.Job.RateLimit.Capacity, cfg.Job.RateLimit.Quantum), h.CreateJob)
 	job.DELETE(":id", h.DestroyJob)
 	job.PATCH(":id", h.UpdateJob)
-	job.GET(":id", h.GetJob)
+	job.GET(":id", middlewares.RateLimit(cfg.Job.RateLimit.FillInterval, cfg.Job.RateLimit.Capacity, cfg.Job.RateLimit.Quantum), h.GetJob)
 	job.GET("", h.GetJobs)
 
 	// Application.
