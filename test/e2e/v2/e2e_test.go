@@ -26,7 +26,6 @@ import (
 	. "github.com/onsi/gomega"    //nolint
 
 	_ "d7y.io/dragonfly/v2/test/e2e/v2/manager"
-	_ "d7y.io/dragonfly/v2/test/e2e/v2/scheduler"
 	"d7y.io/dragonfly/v2/test/e2e/v2/util"
 )
 
