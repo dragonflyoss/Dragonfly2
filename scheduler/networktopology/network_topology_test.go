@@ -30,7 +30,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/cache"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
-	"d7y.io/dragonfly/v2/scheduler/resource"
+	resource "d7y.io/dragonfly/v2/scheduler/resource/standard"
 	storagemocks "d7y.io/dragonfly/v2/scheduler/storage/mocks"
 )
 

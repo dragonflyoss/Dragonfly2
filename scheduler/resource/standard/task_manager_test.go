@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package resource
+package standard
 
 import (
 	"errors"

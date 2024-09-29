@@ -46,7 +46,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	dfdaemonclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/resource"
+	resource "d7y.io/dragonfly/v2/scheduler/resource/standard"
 )
 
 // Job is an interface for job.

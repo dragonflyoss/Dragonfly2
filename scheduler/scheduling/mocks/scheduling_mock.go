@@ -14,7 +14,7 @@ import (
 	reflect "reflect"
 
 	set "d7y.io/dragonfly/v2/pkg/container/set"
-	resource "d7y.io/dragonfly/v2/scheduler/resource"
+	standard "d7y.io/dragonfly/v2/scheduler/resource/standard"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -42,10 +42,10 @@ func (m *MockScheduling) EXPECT() *MockSchedulingMockRecorder {
 }
 
 // FindCandidateParents mocks base method.
-func (m *MockScheduling) FindCandidateParents(arg0 context.Context, arg1 *resource.Peer, arg2 set.SafeSet[string]) ([]*resource.Peer, bool) {
+func (m *MockScheduling) FindCandidateParents(arg0 context.Context, arg1 *standard.Peer, arg2 set.SafeSet[string]) ([]*standard.Peer, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindCandidateParents", arg0, arg1, arg2)
-	ret0, _ := ret[0].([]*resource.Peer)
+	ret0, _ := ret[0].([]*standard.Peer)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -57,10 +57,10 @@ func (mr *MockSchedulingMockRecorder) FindCandidateParents(arg0, arg1, arg2 any)
 }
 
 // FindParentAndCandidateParents mocks base method.
-func (m *MockScheduling) FindParentAndCandidateParents(arg0 context.Context, arg1 *resource.Peer, arg2 set.SafeSet[string]) ([]*resource.Peer, bool) {
+func (m *MockScheduling) FindParentAndCandidateParents(arg0 context.Context, arg1 *standard.Peer, arg2 set.SafeSet[string]) ([]*standard.Peer, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindParentAndCandidateParents", arg0, arg1, arg2)
-	ret0, _ := ret[0].([]*resource.Peer)
+	ret0, _ := ret[0].([]*standard.Peer)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -72,10 +72,10 @@ func (mr *MockSchedulingMockRecorder) FindParentAndCandidateParents(arg0, arg1, 
 }
 
 // FindSuccessParent mocks base method.
-func (m *MockScheduling) FindSuccessParent(arg0 context.Context, arg1 *resource.Peer, arg2 set.SafeSet[string]) (*resource.Peer, bool) {
+func (m *MockScheduling) FindSuccessParent(arg0 context.Context, arg1 *standard.Peer, arg2 set.SafeSet[string]) (*standard.Peer, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindSuccessParent", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*resource.Peer)
+	ret0, _ := ret[0].(*standard.Peer)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -87,7 +87,7 @@ func (mr *MockSchedulingMockRecorder) FindSuccessParent(arg0, arg1, arg2 any) *g
 }
 
 // ScheduleCandidateParents mocks base method.
-func (m *MockScheduling) ScheduleCandidateParents(arg0 context.Context, arg1 *resource.Peer, arg2 set.SafeSet[string]) error {
+func (m *MockScheduling) ScheduleCandidateParents(arg0 context.Context, arg1 *standard.Peer, arg2 set.SafeSet[string]) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ScheduleCandidateParents", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
@@ -101,7 +101,7 @@ func (mr *MockSchedulingMockRecorder) ScheduleCandidateParents(arg0, arg1, arg2 
 }
 
 // ScheduleParentAndCandidateParents mocks base method.
-func (m *MockScheduling) ScheduleParentAndCandidateParents(arg0 context.Context, arg1 *resource.Peer, arg2 set.SafeSet[string]) {
+func (m *MockScheduling) ScheduleParentAndCandidateParents(arg0 context.Context, arg1 *standard.Peer, arg2 set.SafeSet[string]) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "ScheduleParentAndCandidateParents", arg0, arg1, arg2)
 }

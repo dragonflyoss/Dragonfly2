@@ -22,7 +22,7 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/math"
 	"d7y.io/dragonfly/v2/pkg/types"
-	"d7y.io/dragonfly/v2/scheduler/resource"
+	resource "d7y.io/dragonfly/v2/scheduler/resource/standard"
 )
 
 const (

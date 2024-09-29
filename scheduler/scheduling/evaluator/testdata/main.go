@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"d7y.io/dragonfly/v2/scheduler/resource"
+	resource "d7y.io/dragonfly/v2/scheduler/resource/standard"
 	"d7y.io/dragonfly/v2/scheduler/scheduling/evaluator"
 )
 
