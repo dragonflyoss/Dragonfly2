@@ -149,6 +149,11 @@ manager:
     enable: true
   config:
     verbose: true
+    job:
+      rateLimit:
+        fillInterval: 1m
+        capacity: 100
+        quantum: 100
 
 containerRuntime:
   containerd:
