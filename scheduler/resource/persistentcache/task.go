@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/looplab/fsm"
-	"go.uber.org/atomic"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/digest"
@@ -79,10 +78,10 @@ type Task struct {
 	PieceLength int32
 
 	// ContentLength is persistent cache task total content length.
-	ContentLength *atomic.Int64
+	ContentLength int64
 
 	// TotalPieceCount is total piece count.
-	TotalPieceCount *atomic.Int32
+	TotalPieceCount int32
 
 	// Persistent cache task state machine.
 	FSM *fsm.FSM
@@ -91,27 +90,32 @@ type Task struct {
 	TTL time.Duration
 
 	// CreatedAt is persistent cache task create time.
-	CreatedAt *atomic.Time
+	CreatedAt time.Time
 
 	// UpdatedAt is persistent cache task update time.
-	UpdatedAt *atomic.Time
+	UpdatedAt time.Time
 
 	// Persistent cache task log.
 	Log *logger.SugaredLoggerOnWith
 }
 
 // New persistent cache task instance.
-func NewTask(id, tag, application string) *Task {
+func NewTask(id, tag, application, state string, persistentReplicaCount uint64, replicaCount uint64, pieceLength int32,
+	contentLength int64, totalPieceCount int32, digest *digest.Digest, ttl time.Duration, createdAt, updatedAt time.Time,
+	log *logger.SugaredLoggerOnWith) *Task {
 	t := &Task{
-		ID:              id,
-		Tag:             tag,
-		Application:     application,
-		ContentLength:   atomic.NewInt64(-1),
-		TotalPieceCount: atomic.NewInt32(0),
-		TTL:             time.Hour * 24,
-		CreatedAt:       atomic.NewTime(time.Now()),
-		UpdatedAt:       atomic.NewTime(time.Now()),
-		Log:             logger.WithPersistentCacheTask(id),
+		ID:                     id,
+		PersistentReplicaCount: persistentReplicaCount,
+		ReplicaCount:           replicaCount,
+		Digest:                 digest,
+		Tag:                    tag,
+		Application:            application,
+		ContentLength:          contentLength,
+		TotalPieceCount:        totalPieceCount,
+		TTL:                    time.Hour * 24,
+		CreatedAt:              createdAt,
+		UpdatedAt:              updatedAt,
+		Log:                    logger.WithPersistentCacheTask(id),
 	}
 
 	// Initialize state machine.
@@ -124,19 +128,17 @@ func NewTask(id, tag, application string) *Task {
 		},
 		fsm.Callbacks{
 			TaskEventUpload: func(ctx context.Context, e *fsm.Event) {
-				t.UpdatedAt.Store(time.Now())
 				t.Log.Infof("task state is %s", e.FSM.Current())
 			},
 			TaskEventUploadSucceeded: func(ctx context.Context, e *fsm.Event) {
-				t.UpdatedAt.Store(time.Now())
 				t.Log.Infof("task state is %s", e.FSM.Current())
 			},
 			TaskEventUploadFailed: func(ctx context.Context, e *fsm.Event) {
-				t.UpdatedAt.Store(time.Now())
 				t.Log.Infof("task state is %s", e.FSM.Current())
 			},
 		},
 	)
+	t.FSM.SetState(state)
 
 	return t
 }

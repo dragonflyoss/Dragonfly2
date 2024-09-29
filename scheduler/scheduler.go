@@ -230,10 +230,6 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		resourceOptions = append(resourceOptions, resource.WithTransportCredentials(clientTransportCredentials))
 	}
 
-	if rdb != nil {
-		resourceOptions = append(resourceOptions, resource.WithRedisClient(rdb))
-	}
-
 	resource, err := resource.New(cfg, s.gc, dynconfig, resourceOptions...)
 	if err != nil {
 		return nil, err
