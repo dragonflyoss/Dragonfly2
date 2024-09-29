@@ -28,7 +28,6 @@ import (
 
 	commonv2 "d7y.io/api/v2/pkg/apis/common/v2"
 	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
-	schedulerv2 "d7y.io/api/v2/pkg/apis/scheduler/v2"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
@@ -521,35 +520,6 @@ func (t *Task) ReportPieceResultToPeers(peerPacket *schedulerv1.PeerPacket, even
 				continue
 			}
 			t.Log.Infof("task reports peer %s code %s", peer.ID, peerPacket.Code)
-
-			if err := peer.FSM.Event(context.Background(), event); err != nil {
-				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
-				continue
-			}
-		}
-	}
-}
-
-// AnnouncePeers announces all peers in the task with the state code.
-// Used only in v2 version of the grpc.
-func (t *Task) AnnouncePeers(resp *schedulerv2.AnnouncePeerResponse, event string) {
-	for _, vertex := range t.DAG.GetVertices() {
-		peer := vertex.Value
-		if peer == nil {
-			continue
-		}
-
-		if peer.FSM.Is(PeerStateRunning) {
-			stream, loaded := peer.LoadAnnouncePeerStream()
-			if !loaded {
-				continue
-			}
-
-			if err := stream.Send(resp); err != nil {
-				t.Log.Errorf("send response to peer %s failed: %s", peer.ID, err.Error())
-				continue
-			}
-			t.Log.Infof("task announces peer %s response %#v", peer.ID, resp.Response)
 
 			if err := peer.FSM.Event(context.Background(), event); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %s", err.Error())

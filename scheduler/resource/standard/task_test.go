@@ -28,8 +28,6 @@ import (
 	commonv2 "d7y.io/api/v2/pkg/apis/common/v2"
 	schedulerv1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 	v1mocks "d7y.io/api/v2/pkg/apis/scheduler/v1/mocks"
-	schedulerv2 "d7y.io/api/v2/pkg/apis/scheduler/v2"
-	v2mocks "d7y.io/api/v2/pkg/apis/scheduler/v2/mocks"
 
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/digest"
@@ -1567,89 +1565,6 @@ func TestTask_ReportPieceResultToPeers(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 			stream := v1mocks.NewMockScheduler_ReportPieceResultServer(ctl)
-
-			mockHost := NewHost(
-				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
-				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			task := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit)
-			mockPeer := NewPeer(mockPeerID, mockResourceConfig, task, mockHost)
-			task.StorePeer(mockPeer)
-			tc.run(t, task, mockPeer, stream, stream.EXPECT())
-		})
-	}
-}
-
-func TestTask_AnnouncePeers(t *testing.T) {
-	tests := []struct {
-		name string
-		run  func(t *testing.T, task *Task, mockPeer *Peer, stream schedulerv2.Scheduler_AnnouncePeerServer, ms *v2mocks.MockScheduler_AnnouncePeerServerMockRecorder)
-	}{
-		{
-			name: "peer state is PeerStatePending",
-			run: func(t *testing.T, task *Task, mockPeer *Peer, stream schedulerv2.Scheduler_AnnouncePeerServer, ms *v2mocks.MockScheduler_AnnouncePeerServerMockRecorder) {
-				mockPeer.FSM.SetState(PeerStatePending)
-				task.AnnouncePeers(&schedulerv2.AnnouncePeerResponse{}, PeerEventDownloadFailed)
-
-				assert := assert.New(t)
-				assert.True(mockPeer.FSM.Is(PeerStatePending))
-			},
-		},
-		{
-			name: "peer state is PeerStateRunning and stream is empty",
-			run: func(t *testing.T, task *Task, mockPeer *Peer, stream schedulerv2.Scheduler_AnnouncePeerServer, ms *v2mocks.MockScheduler_AnnouncePeerServerMockRecorder) {
-				mockPeer.FSM.SetState(PeerStateRunning)
-				task.AnnouncePeers(&schedulerv2.AnnouncePeerResponse{}, PeerEventDownloadFailed)
-
-				assert := assert.New(t)
-				assert.True(mockPeer.FSM.Is(PeerStateRunning))
-			},
-		},
-		{
-			name: "peer state is PeerStateRunning and stream sending failed",
-			run: func(t *testing.T, task *Task, mockPeer *Peer, stream schedulerv2.Scheduler_AnnouncePeerServer, ms *v2mocks.MockScheduler_AnnouncePeerServerMockRecorder) {
-				mockPeer.FSM.SetState(PeerStateRunning)
-				mockPeer.StoreAnnouncePeerStream(stream)
-				ms.Send(gomock.Eq(&schedulerv2.AnnouncePeerResponse{})).Return(errors.New("foo")).Times(1)
-
-				task.AnnouncePeers(&schedulerv2.AnnouncePeerResponse{}, PeerEventDownloadFailed)
-
-				assert := assert.New(t)
-				assert.True(mockPeer.FSM.Is(PeerStateRunning))
-			},
-		},
-		{
-			name: "peer state is PeerStateRunning and state changing failed",
-			run: func(t *testing.T, task *Task, mockPeer *Peer, stream schedulerv2.Scheduler_AnnouncePeerServer, ms *v2mocks.MockScheduler_AnnouncePeerServerMockRecorder) {
-				mockPeer.FSM.SetState(PeerStateRunning)
-				mockPeer.StoreAnnouncePeerStream(stream)
-				ms.Send(gomock.Eq(&schedulerv2.AnnouncePeerResponse{})).Return(errors.New("foo")).Times(1)
-
-				task.AnnouncePeers(&schedulerv2.AnnouncePeerResponse{}, PeerEventDownloadFailed)
-
-				assert := assert.New(t)
-				assert.True(mockPeer.FSM.Is(PeerStateRunning))
-			},
-		},
-		{
-			name: "peer state is PeerStateRunning and announce peer successfully",
-			run: func(t *testing.T, task *Task, mockPeer *Peer, stream schedulerv2.Scheduler_AnnouncePeerServer, ms *v2mocks.MockScheduler_AnnouncePeerServerMockRecorder) {
-				mockPeer.FSM.SetState(PeerStateRunning)
-				mockPeer.StoreAnnouncePeerStream(stream)
-				ms.Send(gomock.Eq(&schedulerv2.AnnouncePeerResponse{})).Return(nil).Times(1)
-
-				task.AnnouncePeers(&schedulerv2.AnnouncePeerResponse{}, PeerEventDownloadFailed)
-
-				assert := assert.New(t)
-				assert.True(mockPeer.FSM.Is(PeerStateFailed))
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			ctl := gomock.NewController(t)
-			defer ctl.Finish()
-			stream := v2mocks.NewMockScheduler_AnnouncePeerServer(ctl)
 
 			mockHost := NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
