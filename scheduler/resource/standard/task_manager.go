@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-//go:generate mockgen -destination task_manager_mock.go -source task_manager.go -package resource
+//go:generate mockgen -destination task_manager_mock.go -source task_manager.go -package standard
 
-package resource
+package standard
 
 import (
 	"sync"

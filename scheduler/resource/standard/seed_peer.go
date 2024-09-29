@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-//go:generate mockgen -destination seed_peer_mock.go -source seed_peer.go -package resource
+//go:generate mockgen -destination seed_peer_mock.go -source seed_peer.go -package standard
 
-package resource
+package standard
 
 import (
 	"context"

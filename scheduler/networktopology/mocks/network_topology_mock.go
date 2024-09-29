@@ -13,7 +13,7 @@ import (
 	reflect "reflect"
 
 	networktopology "d7y.io/dragonfly/v2/scheduler/networktopology"
-	resource "d7y.io/dragonfly/v2/scheduler/resource"
+	standard "d7y.io/dragonfly/v2/scheduler/resource/standard"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -55,10 +55,10 @@ func (mr *MockNetworkTopologyMockRecorder) DeleteHost(arg0 any) *gomock.Call {
 }
 
 // FindProbedHosts mocks base method.
-func (m *MockNetworkTopology) FindProbedHosts(arg0 string) ([]*resource.Host, error) {
+func (m *MockNetworkTopology) FindProbedHosts(arg0 string) ([]*standard.Host, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindProbedHosts", arg0)
-	ret0, _ := ret[0].([]*resource.Host)
+	ret0, _ := ret[0].([]*standard.Host)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -84,10 +84,10 @@ func (mr *MockNetworkTopologyMockRecorder) Has(arg0, arg1 any) *gomock.Call {
 }
 
 // Neighbours mocks base method.
-func (m *MockNetworkTopology) Neighbours(arg0 *resource.Host, arg1 int) ([]*resource.Host, error) {
+func (m *MockNetworkTopology) Neighbours(arg0 *standard.Host, arg1 int) ([]*standard.Host, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Neighbours", arg0, arg1)
-	ret0, _ := ret[0].([]*resource.Host)
+	ret0, _ := ret[0].([]*standard.Host)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

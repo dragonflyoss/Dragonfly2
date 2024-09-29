@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-//go:generate mockgen -destination resource_mock.go -source resource.go -package resource
+//go:generate mockgen -destination resource_mock.go -source resource.go -package standard
 
-package resource
+package standard
 
 import (
 	"github.com/redis/go-redis/v9"

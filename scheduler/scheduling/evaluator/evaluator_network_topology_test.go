@@ -31,7 +31,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/networktopology"
 	networktopologymocks "d7y.io/dragonfly/v2/scheduler/networktopology/mocks"
-	"d7y.io/dragonfly/v2/scheduler/resource"
+	resource "d7y.io/dragonfly/v2/scheduler/resource/standard"
 )
 
 func TestEvaluatorNetworkTopology_newEvaluatorNetworkTopology(t *testing.T) {
