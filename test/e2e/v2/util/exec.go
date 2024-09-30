@@ -103,7 +103,7 @@ func KubeCtlCopyCommand(ns, pod, source, target string) *exec.Cmd {
 }
 
 func ClientExec() (*PodExec, error) {
-	podName, err := GetClientPodName()
+	podName, err := GetClientPodName(0)
 	if err != nil {
 		return nil, err
 	}
@@ -126,9 +126,9 @@ func ManagerExec(n int) (*PodExec, error) {
 	return NewPodExec(DragonflyNamespace, podName, "manager"), nil
 }
 
-func GetClientPodName() (string, error) {
+func GetClientPodName(n int) (string, error) {
 	out, err := KubeCtlCommand("-n", DragonflyNamespace, "get", "pod", "-l", "component=client",
-		"-o", fmt.Sprintf("jsonpath='{range .items[0]}{.metadata.name}{end}'")).CombinedOutput()
+		"-o", fmt.Sprintf("jsonpath='{range .items[%d]}{.metadata.name}{end}'", n)).CombinedOutput()
 	if err != nil {
 		return "", err
 	}

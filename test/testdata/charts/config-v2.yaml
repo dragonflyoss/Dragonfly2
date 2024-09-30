@@ -114,6 +114,11 @@ client:
     limits:
       cpu: "2"
       memory: "4Gi"
+  tolerations:
+    - key: "role"
+      operator: "Equal"
+      value: "worker"
+      effect: "NoSchedule"
   extraVolumeMounts:
   - name: logs
     mountPath: "/var/log/"

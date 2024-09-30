@@ -58,7 +58,7 @@ var _ = Describe("Clients go offline normally and abnormally", func() {
 			hostCount := util.Servers[util.SeedClientServerName].Replicas + util.Servers[util.ClientServerName].Replicas
 			Expect(getHostCountFromScheduler(schedulerClient)).To(Equal(hostCount))
 
-			podName, err := util.GetClientPodName()
+			podName, err := util.GetClientPodName(1)
 			Expect(err).NotTo(HaveOccurred())
 
 			out, err := util.KubeCtlCommand("-n", util.DragonflyNamespace, "delete", "pod", podName).CombinedOutput()
@@ -66,7 +66,7 @@ var _ = Describe("Clients go offline normally and abnormally", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(getHostCountFromScheduler(schedulerClient)).To(Equal(hostCount))
 
-			podName, err = util.GetClientPodName()
+			podName, err = util.GetClientPodName(1)
 			Expect(err).NotTo(HaveOccurred())
 
 			out, err = util.KubeCtlCommand("-n", util.DragonflyNamespace, "delete", "pod", podName, "--force", "--grace-period=0").CombinedOutput()
