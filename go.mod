@@ -3,13 +3,7 @@ module d7y.io/dragonfly/v2
 go 1.21
 
 require (
-<<<<<<< HEAD
-	d7y.io/api/v2 v2.0.163
-||||||| bd8ecfbf
-	d7y.io/api/v2 v2.0.162
-=======
-	d7y.io/api/v2 v2.0.164
->>>>>>> 8d956eb3ffea71903b3dab6af775bc536838096f
+	d7y.io/api/v2 v2.0.166
 	github.com/MysteriousPotato/go-lockable v1.0.0
 	github.com/RichardKnop/machinery v1.10.8
 	github.com/Showmax/go-fqdn v1.0.0

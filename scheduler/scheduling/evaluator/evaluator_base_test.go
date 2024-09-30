@@ -109,6 +109,10 @@ var (
 		UploadTCPConnectionCount: 1,
 		Location:                 mockHostLocation,
 		IDC:                      mockHostIDC,
+		DownloadRate:             100,
+		DownloadRateLimit:        200,
+		UploadRate:               100,
+		UploadRateLimit:          200,
 	}
 
 	mockDisk = resource.Disk{

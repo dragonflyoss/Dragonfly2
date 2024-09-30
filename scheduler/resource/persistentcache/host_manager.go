@@ -278,11 +278,39 @@ func (t *hostManager) Load(ctx context.Context, hostID string) (*Host, bool) {
 		return nil, false
 	}
 
+	downloadRate, err := strconv.ParseUint(rawHost["network_download_rate"], 10, 64)
+	if err != nil {
+		fmt.Println("parsing download rate failed:", err)
+		return nil, false
+	}
+
+	downloadRateLimit, err := strconv.ParseUint(rawHost["network_download_rate_limit"], 10, 64)
+	if err != nil {
+		fmt.Println("parsing download rate limit failed:", err)
+		return nil, false
+	}
+
+	uploadRate, err := strconv.ParseUint(rawHost["network_upload_rate"], 10, 64)
+	if err != nil {
+		fmt.Println("parsing upload rate failed:", err)
+		return nil, false
+	}
+
+	uploadRateLimit, err := strconv.ParseUint(rawHost["network_upload_rate_limit"], 10, 64)
+	if err != nil {
+		fmt.Println("parsing upload rate limit failed:", err)
+		return nil, false
+	}
+
 	network := Network{
 		TCPConnectionCount:       uint32(networkTCPConnectionCount),
 		UploadTCPConnectionCount: uint32(networkUploadTCPConnectionCount),
 		Location:                 rawHost["network_location"],
 		IDC:                      rawHost["network_idc"],
+		DownloadRate:             downloadRate,
+		DownloadRateLimit:        downloadRateLimit,
+		UploadRate:               uploadRate,
+		UploadRateLimit:          uploadRateLimit,
 	}
 
 	// Set disk fields from raw host.
@@ -440,6 +468,10 @@ func (t *hostManager) Store(ctx context.Context, host *Host) {
 		"network_upload_tcp_connection_count", host.Network.UploadTCPConnectionCount,
 		"network_location", host.Network.Location,
 		"network_idc", host.Network.IDC,
+		"network_download_rate", host.Network.DownloadRate,
+		"network_download_rate_limit", host.Network.DownloadRateLimit,
+		"network_upload_rate", host.Network.UploadRate,
+		"network_upload_rate_limit", host.Network.UploadRateLimit,
 		"disk_total", host.Disk.Total,
 		"disk_free", host.Disk.Free,
 		"disk_used", host.Disk.Used,

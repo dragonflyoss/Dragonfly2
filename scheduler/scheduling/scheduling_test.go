@@ -137,6 +137,10 @@ var (
 		UploadTCPConnectionCount: 1,
 		Location:                 mockHostLocation,
 		IDC:                      mockHostIDC,
+		DownloadRate:             100,
+		DownloadRateLimit:        200,
+		UploadRate:               100,
+		UploadRateLimit:          200,
 	}
 
 	mockDisk = resource.Disk{
@@ -1724,6 +1728,10 @@ func TestScheduling_ConstructSuccessNormalTaskResponse(t *testing.T) {
 										UploadTcpConnectionCount: candidateParents[0].Host.Network.UploadTCPConnectionCount,
 										Location:                 &candidateParents[0].Host.Network.Location,
 										Idc:                      &candidateParents[0].Host.Network.IDC,
+										DownloadRate:             candidateParents[0].Host.Network.DownloadRate,
+										DownloadRateLimit:        candidateParents[0].Host.Network.DownloadRateLimit,
+										UploadRate:               candidateParents[0].Host.Network.UploadRate,
+										UploadRateLimit:          candidateParents[0].Host.Network.UploadRateLimit,
 									},
 									Disk: &commonv2.Disk{
 										Total:             candidateParents[0].Host.Disk.Total,

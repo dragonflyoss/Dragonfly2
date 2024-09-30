@@ -668,6 +668,10 @@ func ConstructSuccessNormalTaskResponse(candidateParents []*resource.Peer) *sche
 				UploadTcpConnectionCount: candidateParent.Host.Network.UploadTCPConnectionCount,
 				Location:                 &candidateParent.Host.Network.Location,
 				Idc:                      &candidateParent.Host.Network.IDC,
+				DownloadRate:             candidateParent.Host.Network.DownloadRate,
+				DownloadRateLimit:        candidateParent.Host.Network.DownloadRateLimit,
+				UploadRate:               candidateParent.Host.Network.UploadRate,
+				UploadRateLimit:          candidateParent.Host.Network.UploadRateLimit,
 			},
 			Disk: &commonv2.Disk{
 				Total:             candidateParent.Host.Disk.Total,

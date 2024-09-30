@@ -187,6 +187,18 @@ type Network struct {
 
 	// IDC where the peer host is located
 	IDC string `csv:"idc"`
+
+	// Download rate of the host, unit is byte/s.
+	DownloadRate uint64 `csv:"downloadRate"`
+
+	// Download rate limit of the host, unit is byte/s.
+	DownloadRateLimit uint64 `csv:"downloadRateLimit"`
+
+	// Upload rate of the host, unit is byte/s.
+	UploadRate uint64 `csv:"uploadRate"`
+
+	// Upload rate limit of the host, unit is byte/s.
+	UploadRateLimit uint64 `csv:"uploadRateLimit"`
 }
 
 // Build contains content for build.
