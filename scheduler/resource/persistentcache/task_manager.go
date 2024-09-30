@@ -103,7 +103,7 @@ func (t *taskManager) Load(ctx context.Context, taskID string) (*Task, bool) {
 	}
 
 	// Set time fields from raw task.
-	ttl, err := strconv.Atoi(rawTask["ttl"])
+	ttl, err := strconv.ParseInt(rawTask["ttl"], 10, 32)
 	if err != nil {
 		fmt.Println("parsing ttl failed:", err)
 		return nil, false
@@ -146,9 +146,9 @@ func (t *taskManager) Load(ctx context.Context, taskID string) (*Task, bool) {
 	), true
 }
 
-// Store sets task persistent cache task.
+// Store sets persistent cache task.
 func (t *taskManager) Store(ctx context.Context, task *Task) error {
-	_, err := t.rdb.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
+	if _, err := t.rdb.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
 		t.rdb.HSet(ctx,
 			pkgredis.MakePersistentCacheTaskKeyInScheduler(t.config.Manager.SchedulerClusterID, task.ID),
 			"id", task.ID,
@@ -167,9 +167,12 @@ func (t *taskManager) Store(ctx context.Context, task *Task) error {
 
 		t.rdb.Expire(ctx, pkgredis.MakePersistentCacheTaskKeyInScheduler(t.config.Manager.SchedulerClusterID, task.ID), task.TTL)
 		return nil
-	})
+	}); err != nil {
+		task.Log.Warnf("store task failed: %v", err)
+		return err
+	}
 
-	return err
+	return nil
 }
 
 // Delete deletes persistent cache task for a key.
