@@ -147,7 +147,7 @@ type V2 interface {
 	AnnounceHost(context.Context, *schedulerv2.AnnounceHostRequest, ...grpc.CallOption) error
 
 	// ListHosts lists hosts in scheduler.
-	ListHosts(ctx context.Context, opts ...grpc.CallOption) (*schedulerv2.ListHostsResponse, error)
+	ListHosts(ctx context.Context, taskID string, opts ...grpc.CallOption) (*schedulerv2.ListHostsResponse, error)
 
 	// DeleteHost releases host in scheduler.
 	DeleteHost(context.Context, *schedulerv2.DeleteHostRequest, ...grpc.CallOption) error
@@ -255,12 +255,12 @@ func (v *v2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 }
 
 // ListHosts lists host in all schedulers.
-func (v *v2) ListHosts(ctx context.Context, opts ...grpc.CallOption) (*schedulerv2.ListHostsResponse, error) {
+func (v *v2) ListHosts(ctx context.Context, taskID string, opts ...grpc.CallOption) (*schedulerv2.ListHostsResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, contextTimeout)
 	defer cancel()
 
 	return v.SchedulerClient.ListHosts(
-		context.WithValue(ctx, pkgbalancer.ContextKey, ""),
+		context.WithValue(ctx, pkgbalancer.ContextKey, taskID),
 		new(emptypb.Empty),
 		opts...,
 	)
