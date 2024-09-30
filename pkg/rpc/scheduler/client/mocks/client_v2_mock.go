@@ -153,9 +153,9 @@ func (mr *MockV2MockRecorder) DeleteTask(arg0, arg1 any, arg2 ...any) *gomock.Ca
 }
 
 // ListHosts mocks base method.
-func (m *MockV2) ListHosts(ctx context.Context, opts ...grpc.CallOption) (*scheduler.ListHostsResponse, error) {
+func (m *MockV2) ListHosts(ctx context.Context, taskID string, opts ...grpc.CallOption) (*scheduler.ListHostsResponse, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{ctx}
+	varargs := []any{ctx, taskID}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
@@ -166,9 +166,9 @@ func (m *MockV2) ListHosts(ctx context.Context, opts ...grpc.CallOption) (*sched
 }
 
 // ListHosts indicates an expected call of ListHosts.
-func (mr *MockV2MockRecorder) ListHosts(ctx any, opts ...any) *gomock.Call {
+func (mr *MockV2MockRecorder) ListHosts(ctx, taskID any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{ctx}, opts...)
+	varargs := append([]any{ctx, taskID}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListHosts", reflect.TypeOf((*MockV2)(nil).ListHosts), varargs...)
 }
 

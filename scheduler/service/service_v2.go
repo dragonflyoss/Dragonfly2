@@ -703,9 +703,9 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 func (v *V2) ListHosts(ctx context.Context) (*schedulerv2.ListHostsResponse, error) {
 	hosts := v.resource.HostManager().LoadAll()
 
-	resHosts := make([]*commonv2.Host, len(hosts))
+	respHosts := make([]*commonv2.Host, len(hosts))
 	for i, host := range hosts {
-		resHosts[i] = &commonv2.Host{
+		respHosts[i] = &commonv2.Host{
 			Id:              host.ID,
 			Type:            uint32(host.Type),
 			Hostname:        host.Hostname,
@@ -770,11 +770,9 @@ func (v *V2) ListHosts(ctx context.Context) (*schedulerv2.ListHostsResponse, err
 		}
 	}
 
-	resp := &schedulerv2.ListHostsResponse{
-		Hosts: resHosts,
-	}
-
-	return resp, nil
+	return &schedulerv2.ListHostsResponse{
+		Hosts: respHosts,
+	}, nil
 }
 
 // DeleteHost releases host in scheduler.

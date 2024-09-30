@@ -124,12 +124,12 @@ jobs:
 
       - name: Run E2E test
         run: |
-          docker exec kind-control-plane curl -L -o nerdctl-${NERDCTL_VER}-linux-amd64.tar.gz https://github.com/containerd/nerdctl/releases/download/v${NERDCTL_VER}/nerdctl-${NERDCTL_VER}-linux-amd64.tar.gz
-          docker exec kind-control-plane tar xzf nerdctl-${NERDCTL_VER}-linux-amd64.tar.gz
-          docker exec kind-control-plane install -D -m 755 nerdctl /usr/local/bin/nerdctl
+          docker exec kind-worker curl -L -o nerdctl-${NERDCTL_VER}-linux-amd64.tar.gz https://github.com/containerd/nerdctl/releases/download/v${NERDCTL_VER}/nerdctl-${NERDCTL_VER}-linux-amd64.tar.gz
+          docker exec kind-worker tar xzf nerdctl-${NERDCTL_VER}-linux-amd64.tar.gz
+          docker exec kind-worker install -D -m 755 nerdctl /usr/local/bin/nerdctl
 
           # this is only a simple test that run `date` in container
-          docker exec kind-control-plane /usr/local/bin/nerdctl run --snapshotter nydus --network=none ghcr.io/dragonflyoss/image-service/nginx:nydus-latest date
+          docker exec kind-worker /usr/local/bin/nerdctl run --snapshotter nydus --network=none ghcr.io/dragonflyoss/image-service/nginx:nydus-latest date
 
           kubectl apply -f test/testdata/k8s/nydus.yaml
           kubectl wait po nydus-pod --for=condition=ready --timeout=1m
