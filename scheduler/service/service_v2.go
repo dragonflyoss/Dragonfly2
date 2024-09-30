@@ -39,7 +39,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
-	"d7y.io/dragonfly/v2/scheduler/networktopology"
 	resource "d7y.io/dragonfly/v2/scheduler/resource/standard"
 	"d7y.io/dragonfly/v2/scheduler/scheduling"
 	"d7y.io/dragonfly/v2/scheduler/storage"
@@ -61,9 +60,6 @@ type V2 struct {
 
 	// Storage interface.
 	storage storage.Storage
-
-	// Network topology interface.
-	networkTopology networktopology.NetworkTopology
 }
 
 // New v2 version of service instance.
@@ -73,15 +69,13 @@ func NewV2(
 	scheduling scheduling.Scheduling,
 	dynconfig config.DynconfigInterface,
 	storage storage.Storage,
-	networkTopology networktopology.NetworkTopology,
 ) *V2 {
 	return &V2{
-		resource:        resource,
-		scheduling:      scheduling,
-		config:          cfg,
-		dynconfig:       dynconfig,
-		storage:         storage,
-		networkTopology: networkTopology,
+		resource:   resource,
+		scheduling: scheduling,
+		config:     cfg,
+		dynconfig:  dynconfig,
+		storage:    storage,
 	}
 }
 
@@ -719,165 +713,7 @@ func (v *V2) DeleteHost(ctx context.Context, req *schedulerv2.DeleteHostRequest)
 
 	// Leave peers in host.
 	host.LeavePeers()
-
-	// Delete host from network topology.
-	if v.networkTopology != nil {
-		if err := v.networkTopology.DeleteHost(host.ID); err != nil {
-			log.Errorf("delete network topology host error: %s", err.Error())
-			return err
-		}
-	}
-
 	return nil
-}
-
-// SyncProbes sync probes of the host.
-func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
-	if v.networkTopology == nil {
-		return status.Errorf(codes.Unimplemented, "network topology is not enabled")
-	}
-
-	for {
-		req, err := stream.Recv()
-		if err != nil {
-			if err == io.EOF {
-				return nil
-			}
-
-			logger.Errorf("receive error: %s", err.Error())
-			return err
-		}
-
-		log := logger.WithHost(req.Host.GetId(), req.Host.GetHostname(), req.Host.GetIp())
-		switch syncProbesRequest := req.GetRequest().(type) {
-		case *schedulerv2.SyncProbesRequest_ProbeStartedRequest:
-			// Find probed hosts in network topology. Based on the source host information,
-			// the most candidate hosts will be evaluated.
-			log.Info("receive SyncProbesRequest_ProbeStartedRequest")
-			hosts, err := v.networkTopology.FindProbedHosts(req.Host.GetId())
-			if err != nil {
-				log.Error(err)
-				return status.Error(codes.FailedPrecondition, err.Error())
-			}
-
-			var probedHosts []*commonv2.Host
-			for _, host := range hosts {
-				probedHosts = append(probedHosts, &commonv2.Host{
-					Id:              host.ID,
-					Type:            uint32(host.Type),
-					Hostname:        host.Hostname,
-					Ip:              host.IP,
-					Port:            host.Port,
-					DownloadPort:    host.DownloadPort,
-					Os:              host.OS,
-					Platform:        host.Platform,
-					PlatformFamily:  host.PlatformFamily,
-					PlatformVersion: host.PlatformVersion,
-					KernelVersion:   host.KernelVersion,
-					Cpu: &commonv2.CPU{
-						LogicalCount:   host.CPU.LogicalCount,
-						PhysicalCount:  host.CPU.PhysicalCount,
-						Percent:        host.CPU.Percent,
-						ProcessPercent: host.CPU.ProcessPercent,
-						Times: &commonv2.CPUTimes{
-							User:      host.CPU.Times.User,
-							System:    host.CPU.Times.System,
-							Idle:      host.CPU.Times.Idle,
-							Nice:      host.CPU.Times.Nice,
-							Iowait:    host.CPU.Times.Iowait,
-							Irq:       host.CPU.Times.Irq,
-							Softirq:   host.CPU.Times.Softirq,
-							Steal:     host.CPU.Times.Steal,
-							Guest:     host.CPU.Times.Guest,
-							GuestNice: host.CPU.Times.GuestNice,
-						},
-					},
-					Memory: &commonv2.Memory{
-						Total:              host.Memory.Total,
-						Available:          host.Memory.Available,
-						Used:               host.Memory.Used,
-						UsedPercent:        host.Memory.UsedPercent,
-						ProcessUsedPercent: host.Memory.ProcessUsedPercent,
-						Free:               host.Memory.Free,
-					},
-					Network: &commonv2.Network{
-						TcpConnectionCount:       host.Network.TCPConnectionCount,
-						UploadTcpConnectionCount: host.Network.UploadTCPConnectionCount,
-						Location:                 &host.Network.Location,
-						Idc:                      &host.Network.IDC,
-						DownloadRate:             host.Network.DownloadRate,
-						DownloadRateLimit:        host.Network.DownloadRateLimit,
-						UploadRate:               host.Network.UploadRate,
-						UploadRateLimit:          host.Network.UploadRateLimit,
-					},
-					Disk: &commonv2.Disk{
-						Total:             host.Disk.Total,
-						Free:              host.Disk.Free,
-						Used:              host.Disk.Used,
-						UsedPercent:       host.Disk.UsedPercent,
-						InodesTotal:       host.Disk.InodesTotal,
-						InodesUsed:        host.Disk.InodesUsed,
-						InodesFree:        host.Disk.InodesFree,
-						InodesUsedPercent: host.Disk.InodesUsedPercent,
-					},
-					Build: &commonv2.Build{
-						GitVersion: host.Build.GitVersion,
-						GitCommit:  &host.Build.GitCommit,
-						GoVersion:  &host.Build.GoVersion,
-						Platform:   &host.Build.Platform,
-					},
-				})
-			}
-
-			log.Infof("probe started: %#v", probedHosts)
-			if err := stream.Send(&schedulerv2.SyncProbesResponse{
-				Hosts: probedHosts,
-			}); err != nil {
-				log.Error(err)
-				return err
-			}
-		case *schedulerv2.SyncProbesRequest_ProbeFinishedRequest:
-			// Store probes in network topology. First create the association between
-			// source host and destination host, and then store the value of probe.
-			log.Info("receive SyncProbesRequest_ProbeFinishedRequest")
-			for _, probe := range syncProbesRequest.ProbeFinishedRequest.Probes {
-				probedHost, loaded := v.resource.HostManager().Load(probe.Host.Id)
-				if !loaded {
-					log.Errorf("host %s not found", probe.Host.Id)
-					continue
-				}
-
-				if err := v.networkTopology.Store(req.Host.GetId(), probedHost.ID); err != nil {
-					log.Errorf("store failed: %s", err.Error())
-					continue
-				}
-
-				if err := v.networkTopology.Probes(req.Host.GetId(), probe.Host.Id).Enqueue(&networktopology.Probe{
-					Host:      probedHost,
-					RTT:       probe.Rtt.AsDuration(),
-					CreatedAt: probe.CreatedAt.AsTime(),
-				}); err != nil {
-					log.Errorf("enqueue failed: %s", err.Error())
-					continue
-				}
-
-				log.Infof("probe finished: %#v", probe)
-			}
-		case *schedulerv2.SyncProbesRequest_ProbeFailedRequest:
-			// Log failed probes.
-			log.Info("receive SyncProbesRequest_ProbeFailedRequest")
-			var failedProbedHostIDs []string
-			for _, failedProbe := range syncProbesRequest.ProbeFailedRequest.Probes {
-				failedProbedHostIDs = append(failedProbedHostIDs, failedProbe.Host.Id)
-			}
-
-			log.Warnf("probe failed: %#v", failedProbedHostIDs)
-		default:
-			msg := fmt.Sprintf("receive unknow request: %#v", syncProbesRequest)
-			log.Error(msg)
-			return status.Error(codes.FailedPrecondition, msg)
-		}
-	}
 }
 
 // handleRegisterPeerRequest handles RegisterPeerRequest of AnnouncePeerRequest.

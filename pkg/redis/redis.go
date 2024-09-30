@@ -19,7 +19,6 @@ package redis
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/redis/go-redis/v9"
 
@@ -55,18 +54,6 @@ const (
 
 	// ApplicationsNamespace prefix of applications namespace cache key.
 	ApplicationsNamespace = "applications"
-
-	// BucketsNamespace prefix of buckets namespace cache key.
-	BucketsNamespace = "buckets"
-
-	// NetworkTopologyNamespace prefix of network topology namespace cache key.
-	NetworkTopologyNamespace = "network-topology"
-
-	// ProbesNamespace prefix of probes namespace cache key.
-	ProbesNamespace = "probes"
-
-	// ProbedCountNamespace prefix of probed count namespace cache key.
-	ProbedCountNamespace = "probed-count"
 )
 
 // NewRedis returns a new redis client.
@@ -134,11 +121,6 @@ func MakeApplicationsKeyInManager() string {
 	return MakeNamespaceKeyInManager(ApplicationsNamespace)
 }
 
-// MakeBucketKeyInManager make bucket key in manager.
-func MakeBucketKeyInManager(name string) string {
-	return MakeKeyInManager(BucketsNamespace, name)
-}
-
 // MakeNamespaceKeyInScheduler make namespace key in scheduler.
 func MakeNamespaceKeyInScheduler(namespace string) string {
 	return fmt.Sprintf("%s:%s", types.SchedulerName, namespace)
@@ -176,39 +158,4 @@ func MakePersistentCacheHostKeyInScheduler(schedulerClusterID uint, hostID strin
 // MakePersistentCacheHostsInScheduler make persistent cache hosts in scheduler.
 func MakePersistentCacheHostsInScheduler(schedulerClusterID uint) string {
 	return MakeKeyInScheduler(SchedulerClustersNamespace, fmt.Sprintf("%d:%s", schedulerClusterID, PersistentCacheHostsNamespace))
-}
-
-// MakeNetworkTopologyKeyInScheduler make network topology key in scheduler.
-func MakeNetworkTopologyKeyInScheduler(srcHostID, destHostID string) string {
-	return MakeKeyInScheduler(NetworkTopologyNamespace, fmt.Sprintf("%s:%s", srcHostID, destHostID))
-}
-
-// ParseNetworkTopologyKeyInScheduler parse network topology key in scheduler.
-func ParseNetworkTopologyKeyInScheduler(key string) (string, string, string, string, error) {
-	elements := strings.Split(key, KeySeparator)
-	if len(elements) != 4 {
-		return "", "", "", "", fmt.Errorf("invalid network topology key: %s", key)
-	}
-
-	return elements[0], elements[1], elements[2], elements[3], nil
-}
-
-// MakeProbesKeyInScheduler make probes key in scheduler.
-func MakeProbesKeyInScheduler(srcHostID, destHostID string) string {
-	return MakeKeyInScheduler(ProbesNamespace, fmt.Sprintf("%s:%s", srcHostID, destHostID))
-}
-
-// ParseProbedCountKeyInScheduler parse probed count key in scheduler.
-func ParseProbedCountKeyInScheduler(key string) (string, string, string, error) {
-	elements := strings.Split(key, KeySeparator)
-	if len(elements) != 3 {
-		return "", "", "", fmt.Errorf("invalid probed count key: %s", key)
-	}
-
-	return elements[0], elements[1], elements[2], nil
-}
-
-// MakeProbedCountKeyInScheduler make probed count key in scheduler.
-func MakeProbedCountKeyInScheduler(hostID string) string {
-	return MakeKeyInScheduler(ProbedCountNamespace, hostID)
 }

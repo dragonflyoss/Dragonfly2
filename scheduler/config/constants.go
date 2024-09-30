@@ -51,9 +51,6 @@ const (
 
 	// DefaultRedisBackendDB is default db for redis backend.
 	DefaultRedisBackendDB = 2
-
-	// DefaultNetworkTopologyDB is default db for network topology.
-	DefaultNetworkTopologyDB = 3
 )
 
 const (
@@ -95,24 +92,6 @@ const (
 
 	// DefaultCPU is default cpu usage.
 	DefaultCPU = 1
-
-	// NetworkTopologyAlgorithm is a scheduling algorithm based on rules and network topology.
-	NetworkTopologyAlgorithm = "nt"
-
-	// DefaultNetworkTopologyCollectInterval is the default interval of collecting network topology.
-	DefaultSchedulerNetworkTopologyCollectInterval = 2 * time.Hour
-
-	// DefaultNetworkTopologyCacheInterval is the default cache cleanup interval.
-	DefaultSchedulerNetworkTopologyCacheInterval = 5 * time.Minute
-
-	// DefaultNetworkTopologyCacheTLL is the default ttl of networkTopology cache.
-	DefaultSchedulerNetworkTopologyCacheTLL = 5 * time.Minute
-
-	// DefaultProbeQueueLength is the default length of probe queue.
-	DefaultSchedulerNetworkTopologyProbeQueueLength = 5
-
-	// DefaultProbeCount is the default number of probing hosts.
-	DefaultSchedulerNetworkTopologyProbeCount = 5
 )
 
 const (

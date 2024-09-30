@@ -199,13 +199,11 @@ func TestScheduling_New(t *testing.T) {
 	tests := []struct {
 		name      string
 		pluginDir string
-		options   []evaluator.NetworkTopologyOption
 		expect    func(t *testing.T, s any)
 	}{
 		{
 			name:      "new scheduling",
 			pluginDir: "bar",
-			options:   []evaluator.NetworkTopologyOption{},
 			expect: func(t *testing.T, s any) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(s).Elem().Name(), "scheduling")
@@ -214,7 +212,6 @@ func TestScheduling_New(t *testing.T) {
 		{
 			name:      "new scheduling with empty pluginDir",
 			pluginDir: "",
-			options:   []evaluator.NetworkTopologyOption{},
 			expect: func(t *testing.T, s any) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(s).Elem().Name(), "scheduling")

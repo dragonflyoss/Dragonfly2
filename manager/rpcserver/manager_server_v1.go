@@ -678,17 +678,6 @@ func (s *managerServerV1) ListBuckets(ctx context.Context, req *managerv1.ListBu
 		return nil, status.Error(codes.Internal, "object storage is disabled")
 	}
 
-	var pbListBucketsResponse managerv1.ListBucketsResponse
-	cacheKey := pkgredis.MakeBucketKeyInManager(s.config.ObjectStorage.Name)
-
-	// Cache hit.
-	if err := s.cache.Get(ctx, cacheKey, &pbListBucketsResponse); err != nil {
-		log.Warnf("%s cache miss because of %s", cacheKey, err.Error())
-	} else {
-		log.Debugf("%s cache hit", cacheKey)
-		return &pbListBucketsResponse, nil
-	}
-
 	// Cache miss and search buckets.
 	buckets, err := s.objectStorage.ListBucketMetadatas(ctx)
 	if err != nil {
@@ -696,20 +685,11 @@ func (s *managerServerV1) ListBuckets(ctx context.Context, req *managerv1.ListBu
 	}
 
 	// Construct schedulers.
+	var pbListBucketsResponse managerv1.ListBucketsResponse
 	for _, bucket := range buckets {
 		pbListBucketsResponse.Buckets = append(pbListBucketsResponse.Buckets, &managerv1.Bucket{
 			Name: bucket.Name,
 		})
-	}
-
-	// Cache data.
-	if err := s.cache.Once(&cachev9.Item{
-		Ctx:   ctx,
-		Key:   cacheKey,
-		Value: &pbListBucketsResponse,
-		TTL:   s.cache.TTL,
-	}); err != nil {
-		log.Error(err)
 	}
 
 	return &pbListBucketsResponse, nil

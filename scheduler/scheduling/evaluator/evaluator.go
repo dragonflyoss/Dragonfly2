@@ -29,9 +29,6 @@ const (
 	// DefaultAlgorithm is a rule-based scheduling algorithm.
 	DefaultAlgorithm = "default"
 
-	// NetworkTopologyAlgorithm is a scheduling algorithm based on rules and network topology.
-	NetworkTopologyAlgorithm = "nt"
-
 	// MLAlgorithm is a machine learning scheduling algorithm.
 	MLAlgorithm = "ml"
 
@@ -73,14 +70,12 @@ type Evaluator interface {
 type evaluator struct{}
 
 // New returns a new Evaluator.
-func New(algorithm string, pluginDir string, networkTopologyOptions ...NetworkTopologyOption) Evaluator {
+func New(algorithm string, pluginDir string) Evaluator {
 	switch algorithm {
 	case PluginAlgorithm:
 		if plugin, err := LoadPlugin(pluginDir); err == nil {
 			return plugin
 		}
-	case NetworkTopologyAlgorithm:
-		return newEvaluatorNetworkTopology(networkTopologyOptions...)
 	// TODO Implement MLAlgorithm.
 	case MLAlgorithm, DefaultAlgorithm:
 		return newEvaluatorBase()

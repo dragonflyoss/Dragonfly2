@@ -51,11 +51,9 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/job"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
-	"d7y.io/dragonfly/v2/scheduler/networktopology"
 	resource "d7y.io/dragonfly/v2/scheduler/resource/standard"
 	"d7y.io/dragonfly/v2/scheduler/rpcserver"
 	"d7y.io/dragonfly/v2/scheduler/scheduling"
-	"d7y.io/dragonfly/v2/scheduler/scheduling/evaluator"
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
@@ -96,9 +94,6 @@ type Server struct {
 
 	// Announcer interface.
 	announcer announcer.Announcer
-
-	// Network topology interface.
-	networkTopology networktopology.NetworkTopology
 
 	// GC service.
 	gc gc.GC
@@ -146,7 +141,6 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		rdb, err = pkgredis.NewRedis(&redis.UniversalOptions{
 			Addrs:            cfg.Database.Redis.Addrs,
 			MasterName:       cfg.Database.Redis.MasterName,
-			DB:               cfg.Database.Redis.NetworkTopologyDB,
 			Username:         cfg.Database.Redis.Username,
 			Password:         cfg.Database.Redis.Password,
 			SentinelUsername: cfg.Database.Redis.SentinelUsername,
@@ -244,20 +238,8 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		}
 	}
 
-	// Initialize options of network topology options.
-	evaluatorNetworkTopologyOptions := []evaluator.NetworkTopologyOption{}
-	if cfg.Scheduler.Algorithm == evaluator.NetworkTopologyAlgorithm && rdb != nil {
-		cache := cache.New(cfg.Scheduler.NetworkTopology.Cache.TTL, cfg.Scheduler.NetworkTopology.Cache.Interval)
-		s.networkTopology, err = networktopology.NewNetworkTopology(cfg.Scheduler.NetworkTopology, rdb, cache, resource, s.storage)
-		if err != nil {
-			return nil, err
-		}
-
-		evaluatorNetworkTopologyOptions = append(evaluatorNetworkTopologyOptions, evaluator.WithNetworkTopology(s.networkTopology))
-	}
-
 	// Initialize scheduling.
-	scheduling := scheduling.New(&cfg.Scheduler, dynconfig, d.PluginDir(), evaluatorNetworkTopologyOptions...)
+	scheduling := scheduling.New(&cfg.Scheduler, dynconfig, d.PluginDir())
 
 	// Initialize server options of scheduler grpc server.
 	schedulerServerOptions := []grpc.ServerOption{}
@@ -272,7 +254,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		schedulerServerOptions = append(schedulerServerOptions, grpc.Creds(insecure.NewCredentials()))
 	}
 
-	svr := rpcserver.New(cfg, resource, scheduling, dynconfig, s.storage, s.networkTopology, schedulerServerOptions...)
+	svr := rpcserver.New(cfg, resource, scheduling, dynconfig, s.storage, schedulerServerOptions...)
 	s.grpcServer = svr
 
 	// Initialize metrics.
@@ -324,14 +306,6 @@ func (s *Server) Serve() error {
 		logger.Info("announcer start successfully")
 	}()
 
-	// Serve network topology.
-	if s.networkTopology != nil {
-		go func() {
-			s.networkTopology.Serve()
-			logger.Info("network topology start successfully")
-		}()
-	}
-
 	// Generate GRPC limit listener.
 	ip, ok := ip.FormatIP(s.config.Server.ListenIP.String())
 	if !ok {
@@ -377,13 +351,6 @@ func (s *Server) Stop() {
 		logger.Info("clean download storage completed")
 	}
 
-	// Clean network topology storage.
-	if err := s.storage.ClearNetworkTopology(); err != nil {
-		logger.Errorf("clean network topology storage failed %s", err.Error())
-	} else {
-		logger.Info("clean network topology storage completed")
-	}
-
 	// Stop GC.
 	s.gc.Stop()
 	logger.Info("gc closed")
@@ -417,12 +384,6 @@ func (s *Server) Stop() {
 		} else {
 			logger.Info("security client closed")
 		}
-	}
-
-	// Stop network topology.
-	if s.networkTopology != nil {
-		s.networkTopology.Stop()
-		logger.Info("network topology closed")
 	}
 
 	// Stop GRPC server.
