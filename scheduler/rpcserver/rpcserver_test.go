@@ -26,7 +26,6 @@ import (
 
 	"d7y.io/dragonfly/v2/scheduler/config"
 	configmocks "d7y.io/dragonfly/v2/scheduler/config/mocks"
-	networktopologymocks "d7y.io/dragonfly/v2/scheduler/networktopology/mocks"
 	resource "d7y.io/dragonfly/v2/scheduler/resource/standard"
 	"d7y.io/dragonfly/v2/scheduler/scheduling/mocks"
 	storagemocks "d7y.io/dragonfly/v2/scheduler/storage/mocks"
@@ -63,9 +62,8 @@ func TestRPCServer_New(t *testing.T) {
 			res := resource.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			storage := storagemocks.NewMockStorage(ctl)
-			networkTopology := networktopologymocks.NewMockNetworkTopology(ctl)
 
-			svr := New(&config.Config{Scheduler: mockSchedulerConfig}, res, scheduling, dynconfig, storage, networkTopology)
+			svr := New(&config.Config{Scheduler: mockSchedulerConfig}, res, scheduling, dynconfig, storage)
 			tc.expect(t, svr)
 		})
 	}

@@ -62,13 +62,12 @@ var (
 	}
 
 	mockRedisConfig = RedisConfig{
-		Addrs:             []string{"127.0.0.0:6379"},
-		MasterName:        "master",
-		Username:          "baz",
-		Password:          "bax",
-		BrokerDB:          DefaultRedisBrokerDB,
-		BackendDB:         DefaultRedisBackendDB,
-		NetworkTopologyDB: DefaultNetworkTopologyDB,
+		Addrs:      []string{"127.0.0.0:6379"},
+		MasterName: "master",
+		Username:   "baz",
+		Password:   "bax",
+		BrokerDB:   DefaultRedisBrokerDB,
+		BackendDB:  DefaultRedisBackendDB,
 	}
 )
 
@@ -88,17 +87,6 @@ func TestConfig_Load(t *testing.T) {
 				HostGCInterval:       1 * time.Minute,
 				HostTTL:              1 * time.Minute,
 			},
-			NetworkTopology: NetworkTopologyConfig{
-				CollectInterval: 60 * time.Second,
-				Probe: ProbeConfig{
-					QueueLength: 5,
-					Count:       10,
-				},
-				Cache: CacheConfig{
-					Interval: 5 * time.Minute,
-					TTL:      5 * time.Minute,
-				},
-			},
 		},
 		Server: ServerConfig{
 			AdvertiseIP:   net.ParseIP("127.0.0.1"),
@@ -117,14 +105,13 @@ func TestConfig_Load(t *testing.T) {
 		},
 		Database: DatabaseConfig{
 			Redis: RedisConfig{
-				Host:              "127.0.0.1",
-				Password:          "foo",
-				Addrs:             []string{"foo", "bar"},
-				MasterName:        "baz",
-				Port:              6379,
-				BrokerDB:          DefaultRedisBrokerDB,
-				BackendDB:         DefaultRedisBackendDB,
-				NetworkTopologyDB: DefaultNetworkTopologyDB,
+				Host:       "127.0.0.1",
+				Password:   "foo",
+				Addrs:      []string{"foo", "bar"},
+				MasterName: "baz",
+				Port:       6379,
+				BrokerDB:   DefaultRedisBrokerDB,
+				BackendDB:  DefaultRedisBackendDB,
 			},
 		},
 		Resource: ResourceConfig{
@@ -310,19 +297,6 @@ func TestConfig_Validate(t *testing.T) {
 			},
 		},
 		{
-			name:   "redis requires parameter networkTopologyDB",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Database.Redis = mockRedisConfig
-				cfg.Database.Redis.NetworkTopologyDB = -1
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "redis requires parameter networkTopologyDB")
-			},
-		},
-		{
 			name:   "scheduler requires parameter algorithm",
 			config: New(),
 			mock: func(cfg *Config) {
@@ -460,81 +434,6 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "scheduler requires parameter hostGCInterval")
-			},
-		},
-		{
-			name:   "networkTopology requires parameter collectInterval",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Database.Redis = mockRedisConfig
-				cfg.Job = mockJobConfig
-				cfg.Scheduler.Algorithm = NetworkTopologyAlgorithm
-				cfg.Scheduler.NetworkTopology.CollectInterval = 0
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "networkTopology requires parameter collectInterval")
-			},
-		},
-		{
-			name:   "networkTopology requires parameter interval",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Database.Redis = mockRedisConfig
-				cfg.Job = mockJobConfig
-				cfg.Scheduler.Algorithm = NetworkTopologyAlgorithm
-				cfg.Scheduler.NetworkTopology.Cache.Interval = 0
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "networkTopology requires parameter interval")
-			},
-		},
-		{
-			name:   "networkTopology requires parameter ttl",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Database.Redis = mockRedisConfig
-				cfg.Job = mockJobConfig
-				cfg.Scheduler.Algorithm = NetworkTopologyAlgorithm
-				cfg.Scheduler.NetworkTopology.Cache.TTL = 0
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "networkTopology requires parameter ttl")
-			},
-		},
-		{
-			name:   "probe requires parameter queueLength",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Database.Redis = mockRedisConfig
-				cfg.Job = mockJobConfig
-				cfg.Scheduler.Algorithm = NetworkTopologyAlgorithm
-				cfg.Scheduler.NetworkTopology.Probe.QueueLength = 0
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "probe requires parameter queueLength")
-			},
-		},
-		{
-			name:   "probe requires parameter count",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Database.Redis = mockRedisConfig
-				cfg.Job = mockJobConfig
-				cfg.Scheduler.Algorithm = NetworkTopologyAlgorithm
-				cfg.Scheduler.NetworkTopology.Probe.Count = 0
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "probe requires parameter count")
 			},
 		},
 		{

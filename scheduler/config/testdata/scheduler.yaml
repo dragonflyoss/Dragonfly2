@@ -26,14 +26,6 @@ scheduler:
     taskGCInterval: 30s
     hostGCInterval: 1m
     hostTTL: 1m
-  networkTopology:
-    collectInterval: 60s
-    probe:
-      queueLength: 5
-      count: 10
-    cache:
-      interval: 5m  
-      ttl: 5m  
 
 database:
   redis:
@@ -44,7 +36,6 @@ database:
     password: foo
     brokerDB: 1
     backendDB: 2
-    networkTopologyDB: 3
 
 resource:
   task:

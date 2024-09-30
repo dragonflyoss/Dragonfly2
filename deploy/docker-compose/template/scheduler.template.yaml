@@ -86,8 +86,6 @@ database:
     brokerDB: 1
     # Redis backend DB.
     backendDB: 2
-    # Network topology DB.
-    networkTopologyDB: 3
 
 # Resource configuration.
 resource:
@@ -146,18 +144,6 @@ job:
   schedulerWorkerNum: 500
   # Number of workers in local queue.
   localWorkerNum: 1000
-
-# Network topology to collect configuration.
-networkTopology:
-  # enable network topology service, including probe, network topology collection.
-  enable: true
-  # collectInterval is the interval of collecting network topology.
-  collectInterval: 2h
-  probe:
-    # queueLength is the length of probe queue.
-    queueLength: 5
-    # count is the number of probing hosts.
-    count: 10
 
 # Store task download information.
 storage:

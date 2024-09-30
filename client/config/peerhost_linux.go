@@ -181,12 +181,6 @@ var peerHostConfig = func() *DaemonOption {
 		Announcer: AnnouncerOption{
 			SchedulerInterval: DefaultAnnouncerSchedulerInterval,
 		},
-		NetworkTopology: NetworkTopologyOption{
-			Enable: false,
-			Probe: ProbeOption{
-				Interval: DefaultProbeInterval,
-			},
-		},
 		LogMaxSize:    DefaultLogRotateMaxSize,
 		LogMaxAge:     DefaultLogRotateMaxAge,
 		LogMaxBackups: DefaultLogRotateMaxBackups,

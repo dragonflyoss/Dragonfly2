@@ -148,9 +148,6 @@ type V2 interface {
 	// DeleteHost releases host in scheduler.
 	DeleteHost(context.Context, *schedulerv2.DeleteHostRequest, ...grpc.CallOption) error
 
-	// SyncProbes sync probes of the host.
-	SyncProbes(context.Context, *schedulerv2.SyncProbesRequest, ...grpc.CallOption) (schedulerv2.Scheduler_SyncProbesClient, error)
-
 	// Close tears down the ClientConn and all underlying connections.
 	Close() error
 }
@@ -281,18 +278,4 @@ func (v *v2) DeleteHost(ctx context.Context, req *schedulerv2.DeleteHostRequest,
 	}
 
 	return eg.Wait()
-}
-
-// SyncProbes sync probes of the host.
-func (v *v2) SyncProbes(ctx context.Context, req *schedulerv2.SyncProbesRequest, opts ...grpc.CallOption) (schedulerv2.Scheduler_SyncProbesClient, error) {
-	stream, err := v.SchedulerClient.SyncProbes(
-		context.WithValue(ctx, pkgbalancer.ContextKey, req.Host.Id),
-		opts...,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// Send begin of piece.
-	return stream, stream.Send(req)
 }

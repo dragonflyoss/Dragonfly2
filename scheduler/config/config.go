@@ -133,9 +133,6 @@ type SchedulerConfig struct {
 
 	// GC configuration.
 	GC GCConfig `yaml:"gc" mapstructure:"gc"`
-
-	// NetworkTopology configuration.
-	NetworkTopology NetworkTopologyConfig `yaml:"networkTopology" mapstructure:"networkTopology"`
 }
 
 type DatabaseConfig struct {
@@ -289,9 +286,6 @@ type RedisConfig struct {
 
 	// BackendDB is backend database name.
 	BackendDB int `yaml:"backendDB" mapstructure:"backendDB"`
-
-	// NetworkTopologyDB is network topology database name.
-	NetworkTopologyDB int `yaml:"networkTopologyDB" mapstructure:"networkTopologyDB"`
 }
 
 type MetricsConfig struct {
@@ -342,33 +336,6 @@ type NetworkConfig struct {
 	EnableIPv6 bool `mapstructure:"enableIPv6" yaml:"enableIPv6"`
 }
 
-type NetworkTopologyConfig struct {
-	// CollectInterval is the interval of collecting network topology.
-	CollectInterval time.Duration `mapstructure:"collectInterval" yaml:"collectInterval"`
-
-	// Probe is the configuration of probe.
-	Probe ProbeConfig `yaml:"probe" mapstructure:"probe"`
-
-	// Cache is the configuration of cache.
-	Cache CacheConfig `yaml:"cache" mapstructure:"cache"`
-}
-
-type ProbeConfig struct {
-	// QueueLength is the length of probe queue.
-	QueueLength int `mapstructure:"queueLength" yaml:"queueLength"`
-
-	// Count is the number of probing hosts.
-	Count int `mapstructure:"count" yaml:"count"`
-}
-
-type CacheConfig struct {
-	// Interval is cache cleanup interval.
-	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
-
-	// TTL is networkTopology cache items TTL.
-	TTL time.Duration `yaml:"ttl" mapstructure:"ttl"`
-}
-
 // New default configuration.
 func New() *Config {
 	return &Config{
@@ -394,23 +361,11 @@ func New() *Config {
 				HostGCInterval:       DefaultSchedulerHostGCInterval,
 				HostTTL:              DefaultSchedulerHostTTL,
 			},
-			NetworkTopology: NetworkTopologyConfig{
-				CollectInterval: DefaultSchedulerNetworkTopologyCollectInterval,
-				Probe: ProbeConfig{
-					QueueLength: DefaultSchedulerNetworkTopologyProbeQueueLength,
-					Count:       DefaultSchedulerNetworkTopologyProbeCount,
-				},
-				Cache: CacheConfig{
-					Interval: DefaultSchedulerNetworkTopologyCacheInterval,
-					TTL:      DefaultSchedulerNetworkTopologyCacheTLL,
-				},
-			},
 		},
 		Database: DatabaseConfig{
 			Redis: RedisConfig{
-				BrokerDB:          DefaultRedisBrokerDB,
-				BackendDB:         DefaultRedisBackendDB,
-				NetworkTopologyDB: DefaultNetworkTopologyDB,
+				BrokerDB:  DefaultRedisBrokerDB,
+				BackendDB: DefaultRedisBackendDB,
 			},
 		},
 		Resource: ResourceConfig{
@@ -544,10 +499,6 @@ func (cfg *Config) Validate() error {
 		return errors.New("redis requires parameter backendDB")
 	}
 
-	if cfg.Database.Redis.NetworkTopologyDB < 0 {
-		return errors.New("redis requires parameter networkTopologyDB")
-	}
-
 	if !slices.Contains([]string{"http", "https"}, cfg.Resource.Task.DownloadTiny.Scheme) {
 		return errors.New("downloadTiny requires parameter scheme")
 	}
@@ -627,28 +578,6 @@ func (cfg *Config) Validate() error {
 
 		if cfg.Security.CertSpec.ValidityPeriod <= 0 {
 			return errors.New("certSpec requires parameter validityPeriod")
-		}
-	}
-
-	if cfg.Scheduler.Algorithm == NetworkTopologyAlgorithm {
-		if cfg.Scheduler.NetworkTopology.CollectInterval <= 0 {
-			return errors.New("networkTopology requires parameter collectInterval")
-		}
-
-		if cfg.Scheduler.NetworkTopology.Probe.QueueLength <= 0 {
-			return errors.New("probe requires parameter queueLength")
-		}
-
-		if cfg.Scheduler.NetworkTopology.Probe.Count <= 0 {
-			return errors.New("probe requires parameter count")
-		}
-
-		if cfg.Scheduler.NetworkTopology.Cache.Interval <= 0 {
-			return errors.New("networkTopology requires parameter interval")
-		}
-
-		if cfg.Scheduler.NetworkTopology.Cache.TTL <= 0 {
-			return errors.New("networkTopology requires parameter ttl")
 		}
 	}
 

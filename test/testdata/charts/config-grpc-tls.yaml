@@ -28,14 +28,6 @@ scheduler:
     verbose: true
     scheduler:
       algorithm: nt
-    networkTopology:
-      collectInterval: 2m
-      probe:
-        queueLength: 5
-        count: 10
-      cache:
-        interval: 5m
-        ttl: 5m
     security:
       autoIssueCert: true
       tlsVerify: true
@@ -108,10 +100,6 @@ seedPeer:
         thresholdSize: 10M
         thresholdSpeed: 2M
         goroutineCount: 4
-    networkTopology:
-      enable: true
-      probe:
-        interval: 20s
     security:
       autoIssueCert: true
       tlsVerify: true
@@ -185,10 +173,6 @@ dfdaemon:
         goroutineCount: 4
     scheduler:
       disableAutoBackSource: true
-    networkTopology:
-      enable: true
-      probe:
-        interval: 20s
     proxy:
       defaultFilter: "Expires&Signature&ns"
       security:

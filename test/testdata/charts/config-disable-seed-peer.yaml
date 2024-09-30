@@ -30,14 +30,6 @@ scheduler:
     verbose: true
     scheduler:
       algorithm: nt
-    networkTopology:
-      collectInterval: 2m
-      probe:
-        queueLength: 5
-        count: 10
-      cache:
-        interval: 5m
-        ttl: 5m
 
 seedPeer:
   enable: false
@@ -89,10 +81,6 @@ dfdaemon:
       proxies:
         - regx: blobs/sha256.*
         - regx: file-server
-    networkTopology:
-      enable: true
-      probe:
-        interval: 20s    
 
 manager:
   image:
