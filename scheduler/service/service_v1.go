@@ -27,7 +27,6 @@ import (
 
 	"github.com/go-http-utils/headers"
 	"go.opentelemetry.io/otel/trace"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	commonv1 "d7y.io/api/v2/pkg/apis/common/v1"
@@ -45,7 +44,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
-	"d7y.io/dragonfly/v2/scheduler/networktopology"
 	resource "d7y.io/dragonfly/v2/scheduler/resource/standard"
 	"d7y.io/dragonfly/v2/scheduler/scheduling"
 	"d7y.io/dragonfly/v2/scheduler/storage"
@@ -67,9 +65,6 @@ type V1 struct {
 
 	// Storage interface.
 	storage storage.Storage
-
-	// Network topology interface.
-	networkTopology networktopology.NetworkTopology
 }
 
 // New v1 version of service instance.
@@ -79,15 +74,13 @@ func NewV1(
 	scheduling scheduling.Scheduling,
 	dynconfig config.DynconfigInterface,
 	storage storage.Storage,
-	networktopology networktopology.NetworkTopology,
 ) *V1 {
 	return &V1{
-		resource:        resource,
-		scheduling:      scheduling,
-		config:          cfg,
-		dynconfig:       dynconfig,
-		storage:         storage,
-		networkTopology: networktopology,
+		resource:   resource,
+		scheduling: scheduling,
+		config:     cfg,
+		dynconfig:  dynconfig,
+		storage:    storage,
 	}
 }
 
@@ -672,109 +665,7 @@ func (v *V1) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostRequest) e
 
 	// Leave peers in host.
 	host.LeavePeers()
-
-	// Delete host from network topology.
-	if v.networkTopology != nil {
-		if err := v.networkTopology.DeleteHost(host.ID); err != nil {
-			log.Errorf("delete network topology host error: %s", err.Error())
-			return err
-		}
-	}
-
 	return nil
-}
-
-// SyncProbes sync probes of the host.
-func (v *V1) SyncProbes(stream schedulerv1.Scheduler_SyncProbesServer) error {
-	if v.networkTopology == nil {
-		return status.Errorf(codes.Unimplemented, "network topology is not enabled")
-	}
-
-	for {
-		req, err := stream.Recv()
-		if err != nil {
-			if err == io.EOF {
-				return nil
-			}
-
-			logger.Errorf("receive error: %s", err.Error())
-			return err
-		}
-
-		log := logger.WithHost(req.Host.GetId(), req.Host.GetHostname(), req.Host.GetIp())
-		switch syncProbesRequest := req.GetRequest().(type) {
-		case *schedulerv1.SyncProbesRequest_ProbeStartedRequest:
-			// Find probed hosts in network topology. Based on the source host information,
-			// the most candidate hosts will be evaluated.
-			log.Info("receive SyncProbesRequest_ProbeStartedRequest")
-			hosts, err := v.networkTopology.FindProbedHosts(req.Host.GetId())
-			if err != nil {
-				log.Error(err)
-				return status.Error(codes.FailedPrecondition, err.Error())
-			}
-
-			var probedHosts []*commonv1.Host
-			for _, host := range hosts {
-				probedHosts = append(probedHosts, &commonv1.Host{
-					Id:           host.ID,
-					Ip:           host.IP,
-					Hostname:     host.Hostname,
-					Port:         host.Port,
-					DownloadPort: host.DownloadPort,
-					Location:     host.Network.Location,
-					Idc:          host.Network.IDC,
-				})
-			}
-
-			log.Infof("probe started: %#v", probedHosts)
-			if err := stream.Send(&schedulerv1.SyncProbesResponse{
-				Hosts: probedHosts,
-			}); err != nil {
-				log.Error(err)
-				return err
-			}
-		case *schedulerv1.SyncProbesRequest_ProbeFinishedRequest:
-			// Store probes in network topology. First create the association between
-			// source host and destination host, and then store the value of probe.
-			log.Info("receive SyncProbesRequest_ProbeFinishedRequest")
-			for _, probe := range syncProbesRequest.ProbeFinishedRequest.Probes {
-				probedHost, loaded := v.resource.HostManager().Load(probe.Host.Id)
-				if !loaded {
-					log.Errorf("host %s not found", probe.Host.Id)
-					continue
-				}
-
-				if err := v.networkTopology.Store(req.Host.GetId(), probedHost.ID); err != nil {
-					log.Errorf("store failed: %s", err.Error())
-					continue
-				}
-
-				if err := v.networkTopology.Probes(req.Host.GetId(), probe.Host.Id).Enqueue(&networktopology.Probe{
-					Host:      probedHost,
-					RTT:       probe.Rtt.AsDuration(),
-					CreatedAt: probe.CreatedAt.AsTime(),
-				}); err != nil {
-					log.Errorf("enqueue failed: %s", err.Error())
-					continue
-				}
-
-				log.Infof("probe finished: %#v", probe)
-			}
-		case *schedulerv1.SyncProbesRequest_ProbeFailedRequest:
-			// Log failed probes.
-			log.Info("receive SyncProbesRequest_ProbeFailedRequest")
-			var failedProbedHostIDs []string
-			for _, failedProbe := range syncProbesRequest.ProbeFailedRequest.Probes {
-				failedProbedHostIDs = append(failedProbedHostIDs, failedProbe.Host.Id)
-			}
-
-			log.Warnf("probe failed: %#v", failedProbedHostIDs)
-		default:
-			msg := fmt.Sprintf("receive unknow request: %#v", syncProbesRequest)
-			log.Error(msg)
-			return status.Error(codes.FailedPrecondition, msg)
-		}
-	}
 }
 
 // prefetchTask prefetches the task with seed peer.

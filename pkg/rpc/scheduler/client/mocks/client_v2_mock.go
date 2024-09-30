@@ -191,23 +191,3 @@ func (mr *MockV2MockRecorder) StatTask(arg0, arg1 any, arg2 ...any) *gomock.Call
 	varargs := append([]any{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatTask", reflect.TypeOf((*MockV2)(nil).StatTask), varargs...)
 }
-
-// SyncProbes mocks base method.
-func (m *MockV2) SyncProbes(arg0 context.Context, arg1 *scheduler.SyncProbesRequest, arg2 ...grpc.CallOption) (scheduler.Scheduler_SyncProbesClient, error) {
-	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "SyncProbes", varargs...)
-	ret0, _ := ret[0].(scheduler.Scheduler_SyncProbesClient)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// SyncProbes indicates an expected call of SyncProbes.
-func (mr *MockV2MockRecorder) SyncProbes(arg0, arg1 any, arg2 ...any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncProbes", reflect.TypeOf((*MockV2)(nil).SyncProbes), varargs...)
-}

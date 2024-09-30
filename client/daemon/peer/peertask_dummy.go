@@ -64,10 +64,6 @@ func (d *dummySchedulerClient) AnnounceTask(ctx context.Context, request *schedu
 	panic("should not call this function")
 }
 
-func (d *dummySchedulerClient) SyncProbes(ctx context.Context, req *schedulerv1.SyncProbesRequest, opts ...grpc.CallOption) (schedulerv1.Scheduler_SyncProbesClient, error) {
-	panic("should not call this function")
-}
-
 func (d *dummySchedulerClient) Close() error {
 	return nil
 }
