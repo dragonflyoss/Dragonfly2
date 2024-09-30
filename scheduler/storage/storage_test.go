@@ -93,6 +93,10 @@ var (
 			UploadTCPConnectionCount: 200,
 			Location:                 "china",
 			IDC:                      "e1",
+			DownloadRate:             100,
+			DownloadRateLimit:        200,
+			UploadRate:               100,
+			UploadRateLimit:          200,
 		},
 		Disk: resource.Disk{
 			Total:             100,

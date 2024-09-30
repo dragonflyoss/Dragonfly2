@@ -346,6 +346,10 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 			UploadTcpConnectionCount: peer.Host.Network.UploadTCPConnectionCount,
 			Location:                 &peer.Host.Network.Location,
 			Idc:                      &peer.Host.Network.IDC,
+			DownloadRate:             peer.Host.Network.DownloadRate,
+			DownloadRateLimit:        peer.Host.Network.DownloadRateLimit,
+			UploadRate:               peer.Host.Network.UploadRate,
+			UploadRateLimit:          peer.Host.Network.UploadRateLimit,
 		},
 		Disk: &commonv2.Disk{
 			Total:             peer.Host.Disk.Total,
@@ -557,6 +561,10 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 				UploadTCPConnectionCount: req.Host.Network.GetUploadTcpConnectionCount(),
 				Location:                 req.Host.Network.GetLocation(),
 				IDC:                      req.Host.Network.GetIdc(),
+				DownloadRate:             req.Host.Network.GetDownloadRate(),
+				DownloadRateLimit:        req.Host.Network.GetDownloadRateLimit(),
+				UploadRate:               req.Host.Network.GetUploadRate(),
+				UploadRateLimit:          req.Host.Network.GetUploadRateLimit(),
 			}))
 		}
 
@@ -655,6 +663,10 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 			UploadTCPConnectionCount: req.Host.Network.GetUploadTcpConnectionCount(),
 			Location:                 req.Host.Network.GetLocation(),
 			IDC:                      req.Host.Network.GetIdc(),
+			DownloadRate:             req.Host.Network.GetDownloadRate(),
+			DownloadRateLimit:        req.Host.Network.GetDownloadRateLimit(),
+			UploadRate:               req.Host.Network.GetUploadRate(),
+			UploadRateLimit:          req.Host.Network.GetUploadRateLimit(),
 		}
 	}
 
