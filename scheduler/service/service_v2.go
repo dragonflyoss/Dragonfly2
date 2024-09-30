@@ -352,6 +352,10 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 			UploadTcpConnectionCount: peer.Host.Network.UploadTCPConnectionCount,
 			Location:                 &peer.Host.Network.Location,
 			Idc:                      &peer.Host.Network.IDC,
+			DownloadRate:             peer.Host.Network.DownloadRate,
+			DownloadRateLimit:        peer.Host.Network.DownloadRateLimit,
+			UploadRate:               peer.Host.Network.UploadRate,
+			UploadRateLimit:          peer.Host.Network.UploadRateLimit,
 		},
 		Disk: &commonv2.Disk{
 			Total:             peer.Host.Disk.Total,
@@ -563,6 +567,10 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 				UploadTCPConnectionCount: req.Host.Network.GetUploadTcpConnectionCount(),
 				Location:                 req.Host.Network.GetLocation(),
 				IDC:                      req.Host.Network.GetIdc(),
+				DownloadRate:             req.Host.Network.GetDownloadRate(),
+				DownloadRateLimit:        req.Host.Network.GetDownloadRateLimit(),
+				UploadRate:               req.Host.Network.GetUploadRate(),
+				UploadRateLimit:          req.Host.Network.GetUploadRateLimit(),
 			}))
 		}
 
@@ -661,6 +669,10 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 			UploadTCPConnectionCount: req.Host.Network.GetUploadTcpConnectionCount(),
 			Location:                 req.Host.Network.GetLocation(),
 			IDC:                      req.Host.Network.GetIdc(),
+			DownloadRate:             req.Host.Network.GetDownloadRate(),
+			DownloadRateLimit:        req.Host.Network.GetDownloadRateLimit(),
+			UploadRate:               req.Host.Network.GetUploadRate(),
+			UploadRateLimit:          req.Host.Network.GetUploadRateLimit(),
 		}
 	}
 
@@ -793,6 +805,10 @@ func (v *V2) SyncProbes(stream schedulerv2.Scheduler_SyncProbesServer) error {
 						UploadTcpConnectionCount: host.Network.UploadTCPConnectionCount,
 						Location:                 &host.Network.Location,
 						Idc:                      &host.Network.IDC,
+						DownloadRate:             host.Network.DownloadRate,
+						DownloadRateLimit:        host.Network.DownloadRateLimit,
+						UploadRate:               host.Network.UploadRate,
+						UploadRateLimit:          host.Network.UploadRateLimit,
 					},
 					Disk: &commonv2.Disk{
 						Total:             host.Disk.Total,
