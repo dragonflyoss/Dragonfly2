@@ -110,6 +110,18 @@ func ClientExec() (*PodExec, error) {
 	return NewPodExec(DragonflyNamespace, podName, "client"), nil
 }
 
+func AllClientsExec() ([]*PodExec, error) {
+	podName0, err := GetClientPodName(0)
+	if err != nil {
+		return nil, err
+	}
+	podName1, err := GetClientPodName(1)
+	if err != nil {
+		return nil, err
+	}
+	return []*PodExec{NewPodExec(DragonflyNamespace, podName0, "client"), NewPodExec(DragonflyNamespace, podName1, "client")}, nil
+}
+
 func SeedClientExec(n int) (*PodExec, error) {
 	podName, err := GetSeedClientPodName(n)
 	if err != nil {

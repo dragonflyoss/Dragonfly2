@@ -974,13 +974,8 @@ func TestServiceV2_ListHosts(t *testing.T) {
 			storage := storagemocks.NewMockStorage(ctl)
 			hostManager := resource.NewMockHostManager(ctl)
 			host := resource.NewHost(
-				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
-				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			host.CPU = mockCPU
-			host.Memory = mockMemory
-			host.Network = mockNetwork
-			host.Disk = mockDisk
-			host.Build = mockBuild
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname, mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type,
+				resource.WithCPU(mockCPU), resource.WithMemory(mockMemory), resource.WithNetwork(mockNetwork), resource.WithDisk(mockDisk), resource.WithBuild(mockBuild))
 			hosts := []*resource.Host{host}
 			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, res, scheduling, dynconfig, storage)
 

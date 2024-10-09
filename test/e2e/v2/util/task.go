@@ -48,6 +48,8 @@ func CheckFilesExist(pods []*PodExec, taskID string) bool {
 func CalculateSha256ByTaskID(pods []*PodExec, taskID string) (string, error) {
 	var sha256sum string
 	for _, pod := range pods {
+		res, _ := pod.Command("ls", clientContentDir).CombinedOutput()
+		fmt.Println(string(res))
 		contentPath := fmt.Sprintf("%s/%s", clientContentDir, taskID)
 		if _, err := pod.Command("ls", contentPath).CombinedOutput(); err != nil {
 			// If the path does not exist, skip this client.
