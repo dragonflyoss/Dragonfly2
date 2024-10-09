@@ -167,7 +167,7 @@ type Peer struct {
 	// Used only in v2 version of the grpc.
 	AnnouncePeerStream *atomic.Value
 
-	// Task state machine.
+	// Peer state machine.
 	FSM *fsm.FSM
 
 	// Task is peer task.
