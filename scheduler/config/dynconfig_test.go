@@ -29,6 +29,7 @@ import (
 	commonv2 "d7y.io/api/v2/pkg/apis/common/v2"
 	managerv2 "d7y.io/api/v2/pkg/apis/manager/v2"
 
+	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
 	"d7y.io/dragonfly/v2/pkg/types"
 )
@@ -462,7 +463,7 @@ func TestDynconfig_Get(t *testing.T) {
 			tc.mock(mockManagerClient.EXPECT())
 
 			mockConfig.DynConfig.RefreshInterval = tc.refreshInterval
-			d, err := NewDynconfig(mockManagerClient, mockCacheDir, mockConfig, WithTransportCredentials(nil))
+			d, err := NewDynconfig(mockManagerClient, mockCacheDir, mockConfig, rpc.NewInsecureCredentials())
 			if err != nil {
 				t.Fatal(err)
 			}

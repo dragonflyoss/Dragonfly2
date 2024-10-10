@@ -13,8 +13,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	common "d7y.io/api/v2/pkg/apis/common/v2"
-	scheduler "d7y.io/api/v2/pkg/apis/scheduler/v2"
+	v2 "d7y.io/api/v2/pkg/apis/common/v2"
+	v20 "d7y.io/api/v2/pkg/apis/scheduler/v2"
 	gomock "go.uber.org/mock/gomock"
 	grpc "google.golang.org/grpc"
 )
@@ -43,7 +43,7 @@ func (m *MockV2) EXPECT() *MockV2MockRecorder {
 }
 
 // AnnounceHost mocks base method.
-func (m *MockV2) AnnounceHost(arg0 context.Context, arg1 *scheduler.AnnounceHostRequest, arg2 ...grpc.CallOption) error {
+func (m *MockV2) AnnounceHost(arg0 context.Context, arg1 *v20.AnnounceHostRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
@@ -62,14 +62,14 @@ func (mr *MockV2MockRecorder) AnnounceHost(arg0, arg1 any, arg2 ...any) *gomock.
 }
 
 // AnnouncePeer mocks base method.
-func (m *MockV2) AnnouncePeer(arg0 context.Context, arg1 string, arg2 ...grpc.CallOption) (scheduler.Scheduler_AnnouncePeerClient, error) {
+func (m *MockV2) AnnouncePeer(arg0 context.Context, arg1 string, arg2 ...grpc.CallOption) (v20.Scheduler_AnnouncePeerClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "AnnouncePeer", varargs...)
-	ret0, _ := ret[0].(scheduler.Scheduler_AnnouncePeerClient)
+	ret0, _ := ret[0].(v20.Scheduler_AnnouncePeerClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -96,7 +96,7 @@ func (mr *MockV2MockRecorder) Close() *gomock.Call {
 }
 
 // DeleteHost mocks base method.
-func (m *MockV2) DeleteHost(arg0 context.Context, arg1 *scheduler.DeleteHostRequest, arg2 ...grpc.CallOption) error {
+func (m *MockV2) DeleteHost(arg0 context.Context, arg1 *v20.DeleteHostRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
@@ -115,7 +115,7 @@ func (mr *MockV2MockRecorder) DeleteHost(arg0, arg1 any, arg2 ...any) *gomock.Ca
 }
 
 // DeletePeer mocks base method.
-func (m *MockV2) DeletePeer(arg0 context.Context, arg1 *scheduler.DeletePeerRequest, arg2 ...grpc.CallOption) error {
+func (m *MockV2) DeletePeer(arg0 context.Context, arg1 *v20.DeletePeerRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
@@ -134,7 +134,7 @@ func (mr *MockV2MockRecorder) DeletePeer(arg0, arg1 any, arg2 ...any) *gomock.Ca
 }
 
 // DeleteTask mocks base method.
-func (m *MockV2) DeleteTask(arg0 context.Context, arg1 *scheduler.DeleteTaskRequest, arg2 ...grpc.CallOption) error {
+func (m *MockV2) DeleteTask(arg0 context.Context, arg1 *v20.DeleteTaskRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
@@ -153,14 +153,14 @@ func (mr *MockV2MockRecorder) DeleteTask(arg0, arg1 any, arg2 ...any) *gomock.Ca
 }
 
 // StatPeer mocks base method.
-func (m *MockV2) StatPeer(arg0 context.Context, arg1 *scheduler.StatPeerRequest, arg2 ...grpc.CallOption) (*common.Peer, error) {
+func (m *MockV2) StatPeer(arg0 context.Context, arg1 *v20.StatPeerRequest, arg2 ...grpc.CallOption) (*v2.Peer, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "StatPeer", varargs...)
-	ret0, _ := ret[0].(*common.Peer)
+	ret0, _ := ret[0].(*v2.Peer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -173,14 +173,14 @@ func (mr *MockV2MockRecorder) StatPeer(arg0, arg1 any, arg2 ...any) *gomock.Call
 }
 
 // StatTask mocks base method.
-func (m *MockV2) StatTask(arg0 context.Context, arg1 *scheduler.StatTaskRequest, arg2 ...grpc.CallOption) (*common.Task, error) {
+func (m *MockV2) StatTask(arg0 context.Context, arg1 *v20.StatTaskRequest, arg2 ...grpc.CallOption) (*v2.Task, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "StatTask", varargs...)
-	ret0, _ := ret[0].(*common.Task)
+	ret0, _ := ret[0].(*v2.Task)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

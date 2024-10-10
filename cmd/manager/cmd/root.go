@@ -96,10 +96,6 @@ func init() {
 
 func initDfpath(cfg *config.ServerConfig) (dfpath.Dfpath, error) {
 	var options []dfpath.Option
-	if cfg.WorkHome != "" {
-		options = append(options, dfpath.WithWorkHome(cfg.WorkHome))
-	}
-
 	if cfg.LogDir != "" {
 		options = append(options, dfpath.WithLogDir(cfg.LogDir))
 	}

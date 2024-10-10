@@ -14,8 +14,8 @@ import (
 	io "io"
 	reflect "reflect"
 
-	dfdaemon "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
-	scheduler "d7y.io/api/v2/pkg/apis/scheduler/v1"
+	v1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
+	v10 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 	storage "d7y.io/dragonfly/v2/client/daemon/storage"
 	http "d7y.io/dragonfly/v2/pkg/net/http"
 	gomock "go.uber.org/mock/gomock"
@@ -60,7 +60,7 @@ func (mr *MockPieceManagerMockRecorder) DownloadPiece(ctx, request any) *gomock.
 }
 
 // DownloadSource mocks base method.
-func (m *MockPieceManager) DownloadSource(ctx context.Context, pt Task, request *scheduler.PeerTaskRequest, parsedRange *http.Range) error {
+func (m *MockPieceManager) DownloadSource(ctx context.Context, pt Task, request *v10.PeerTaskRequest, parsedRange *http.Range) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DownloadSource", ctx, pt, request, parsedRange)
 	ret0, _ := ret[0].(error)
@@ -88,7 +88,7 @@ func (mr *MockPieceManagerMockRecorder) Import(ctx, ptm, tsd, contentLength, rea
 }
 
 // ImportFile mocks base method.
-func (m *MockPieceManager) ImportFile(ctx context.Context, ptm storage.PeerTaskMetadata, tsd storage.TaskStorageDriver, req *dfdaemon.ImportTaskRequest) error {
+func (m *MockPieceManager) ImportFile(ctx context.Context, ptm storage.PeerTaskMetadata, tsd storage.TaskStorageDriver, req *v1.ImportTaskRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ImportFile", ctx, ptm, tsd, req)
 	ret0, _ := ret[0].(error)

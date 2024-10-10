@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	scheduler "d7y.io/api/v2/pkg/apis/scheduler/v1"
+	v1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 	gomock "go.uber.org/mock/gomock"
 	grpc "google.golang.org/grpc"
 )
@@ -42,7 +42,7 @@ func (m *MockV1) EXPECT() *MockV1MockRecorder {
 }
 
 // AnnounceHost mocks base method.
-func (m *MockV1) AnnounceHost(arg0 context.Context, arg1 *scheduler.AnnounceHostRequest, arg2 ...grpc.CallOption) error {
+func (m *MockV1) AnnounceHost(arg0 context.Context, arg1 *v1.AnnounceHostRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
@@ -61,7 +61,7 @@ func (mr *MockV1MockRecorder) AnnounceHost(arg0, arg1 any, arg2 ...any) *gomock.
 }
 
 // AnnounceTask mocks base method.
-func (m *MockV1) AnnounceTask(arg0 context.Context, arg1 *scheduler.AnnounceTaskRequest, arg2 ...grpc.CallOption) error {
+func (m *MockV1) AnnounceTask(arg0 context.Context, arg1 *v1.AnnounceTaskRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
@@ -94,7 +94,7 @@ func (mr *MockV1MockRecorder) Close() *gomock.Call {
 }
 
 // LeaveHost mocks base method.
-func (m *MockV1) LeaveHost(arg0 context.Context, arg1 *scheduler.LeaveHostRequest, arg2 ...grpc.CallOption) error {
+func (m *MockV1) LeaveHost(arg0 context.Context, arg1 *v1.LeaveHostRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
@@ -113,7 +113,7 @@ func (mr *MockV1MockRecorder) LeaveHost(arg0, arg1 any, arg2 ...any) *gomock.Cal
 }
 
 // LeaveTask mocks base method.
-func (m *MockV1) LeaveTask(arg0 context.Context, arg1 *scheduler.PeerTarget, arg2 ...grpc.CallOption) error {
+func (m *MockV1) LeaveTask(arg0 context.Context, arg1 *v1.PeerTarget, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
@@ -132,14 +132,14 @@ func (mr *MockV1MockRecorder) LeaveTask(arg0, arg1 any, arg2 ...any) *gomock.Cal
 }
 
 // RegisterPeerTask mocks base method.
-func (m *MockV1) RegisterPeerTask(arg0 context.Context, arg1 *scheduler.PeerTaskRequest, arg2 ...grpc.CallOption) (*scheduler.RegisterResult, error) {
+func (m *MockV1) RegisterPeerTask(arg0 context.Context, arg1 *v1.PeerTaskRequest, arg2 ...grpc.CallOption) (*v1.RegisterResult, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "RegisterPeerTask", varargs...)
-	ret0, _ := ret[0].(*scheduler.RegisterResult)
+	ret0, _ := ret[0].(*v1.RegisterResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -152,7 +152,7 @@ func (mr *MockV1MockRecorder) RegisterPeerTask(arg0, arg1 any, arg2 ...any) *gom
 }
 
 // ReportPeerResult mocks base method.
-func (m *MockV1) ReportPeerResult(arg0 context.Context, arg1 *scheduler.PeerResult, arg2 ...grpc.CallOption) error {
+func (m *MockV1) ReportPeerResult(arg0 context.Context, arg1 *v1.PeerResult, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
@@ -171,14 +171,14 @@ func (mr *MockV1MockRecorder) ReportPeerResult(arg0, arg1 any, arg2 ...any) *gom
 }
 
 // ReportPieceResult mocks base method.
-func (m *MockV1) ReportPieceResult(arg0 context.Context, arg1 *scheduler.PeerTaskRequest, arg2 ...grpc.CallOption) (scheduler.Scheduler_ReportPieceResultClient, error) {
+func (m *MockV1) ReportPieceResult(arg0 context.Context, arg1 *v1.PeerTaskRequest, arg2 ...grpc.CallOption) (v1.Scheduler_ReportPieceResultClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "ReportPieceResult", varargs...)
-	ret0, _ := ret[0].(scheduler.Scheduler_ReportPieceResultClient)
+	ret0, _ := ret[0].(v1.Scheduler_ReportPieceResultClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -191,14 +191,14 @@ func (mr *MockV1MockRecorder) ReportPieceResult(arg0, arg1 any, arg2 ...any) *go
 }
 
 // StatTask mocks base method.
-func (m *MockV1) StatTask(arg0 context.Context, arg1 *scheduler.StatTaskRequest, arg2 ...grpc.CallOption) (*scheduler.Task, error) {
+func (m *MockV1) StatTask(arg0 context.Context, arg1 *v1.StatTaskRequest, arg2 ...grpc.CallOption) (*v1.Task, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "StatTask", varargs...)
-	ret0, _ := ret[0].(*scheduler.Task)
+	ret0, _ := ret[0].(*v1.Task)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

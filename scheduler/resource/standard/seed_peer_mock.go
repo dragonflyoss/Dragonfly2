@@ -13,8 +13,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	dfdaemon "d7y.io/api/v2/pkg/apis/dfdaemon/v2"
-	scheduler "d7y.io/api/v2/pkg/apis/scheduler/v1"
+	v2 "d7y.io/api/v2/pkg/apis/dfdaemon/v2"
+	v1 "d7y.io/api/v2/pkg/apis/scheduler/v1"
 	http "d7y.io/dragonfly/v2/pkg/net/http"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -71,7 +71,7 @@ func (mr *MockSeedPeerMockRecorder) Stop() *gomock.Call {
 }
 
 // TriggerDownloadTask mocks base method.
-func (m *MockSeedPeer) TriggerDownloadTask(arg0 context.Context, arg1 string, arg2 *dfdaemon.DownloadTaskRequest) error {
+func (m *MockSeedPeer) TriggerDownloadTask(arg0 context.Context, arg1 string, arg2 *v2.DownloadTaskRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TriggerDownloadTask", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
@@ -85,11 +85,11 @@ func (mr *MockSeedPeerMockRecorder) TriggerDownloadTask(arg0, arg1, arg2 any) *g
 }
 
 // TriggerTask mocks base method.
-func (m *MockSeedPeer) TriggerTask(arg0 context.Context, arg1 *http.Range, arg2 *Task) (*Peer, *scheduler.PeerResult, error) {
+func (m *MockSeedPeer) TriggerTask(arg0 context.Context, arg1 *http.Range, arg2 *Task) (*Peer, *v1.PeerResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TriggerTask", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*Peer)
-	ret1, _ := ret[1].(*scheduler.PeerResult)
+	ret1, _ := ret[1].(*v1.PeerResult)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }

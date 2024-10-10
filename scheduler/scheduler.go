@@ -18,7 +18,6 @@ package scheduler
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
@@ -26,27 +25,19 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/johanbrandhorst/certify"
 	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/credentials/insecure"
-	zapadapter "logur.dev/adapter/zap"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dynconfig"
 	managertypes "d7y.io/dragonfly/v2/manager/types"
-	"d7y.io/dragonfly/v2/pkg/cache"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/gc"
-	"d7y.io/dragonfly/v2/pkg/issuer"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
 	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
-	securityclient "d7y.io/dragonfly/v2/pkg/rpc/security/client"
-	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/announcer"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/job"
@@ -76,9 +67,6 @@ type Server struct {
 
 	// Manager client.
 	managerClient managerclient.V2
-
-	// Security client.
-	securityClient securityclient.V1
 
 	// Resource interface.
 	resource resource.Resource
@@ -117,15 +105,16 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 
 	// Initialize dial options of manager grpc client.
 	managerDialOptions := []grpc.DialOption{grpc.WithStatsHandler(otelgrpc.NewClientHandler())}
-	if cfg.Security.AutoIssueCert {
-		clientTransportCredentials, err := rpc.NewClientCredentials(cfg.Security.TLSPolicy, nil, []byte(cfg.Security.CACert))
+	if cfg.Manager.TLS != nil {
+		clientTransportCredentials, err := rpc.NewClientCredentials(cfg.Manager.TLS.CACert, cfg.Manager.TLS.Cert, cfg.Manager.TLS.Key)
 		if err != nil {
+			logger.Errorf("failed to create client credentials: %v", err)
 			return nil, err
 		}
 
 		managerDialOptions = append(managerDialOptions, grpc.WithTransportCredentials(clientTransportCredentials))
 	} else {
-		managerDialOptions = append(managerDialOptions, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		managerDialOptions = append(managerDialOptions, grpc.WithTransportCredentials(rpc.NewInsecureCredentials()))
 	}
 
 	// Initialize manager client.
@@ -165,66 +154,25 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	// Initialize GC.
 	s.gc = gc.New(gc.WithLogger(logger.GCLogger))
 
-	// Initialize certify client.
-	var (
-		certifyClient              *certify.Certify
-		clientTransportCredentials credentials.TransportCredentials
-	)
-	if cfg.Security.AutoIssueCert {
-		// Initialize security client.
-		securityClient, err := securityclient.GetV1(ctx, cfg.Manager.Addr, managerDialOptions...)
+	// Initialize client transport credentials.
+	clientTransportCredentials := rpc.NewInsecureCredentials()
+	if cfg.SeedPeer.TLS != nil {
+		clientTransportCredentials, err = rpc.NewClientCredentials(cfg.SeedPeer.TLS.CACert, cfg.SeedPeer.TLS.Cert, cfg.SeedPeer.TLS.Key)
 		if err != nil {
-			return nil, err
-		}
-		s.securityClient = securityClient
-
-		certifyClient = &certify.Certify{
-			CommonName:  types.SchedulerName,
-			Issuer:      issuer.NewDragonflyIssuer(s.securityClient, issuer.WithValidityPeriod(cfg.Security.CertSpec.ValidityPeriod)),
-			RenewBefore: time.Hour,
-			CertConfig: &certify.CertConfig{
-				SubjectAlternativeNames:   cfg.Security.CertSpec.DNSNames,
-				IPSubjectAlternativeNames: append(cfg.Security.CertSpec.IPAddresses, cfg.Server.AdvertiseIP),
-			},
-			IssueTimeout: 0,
-			Logger:       zapadapter.New(logger.CoreLogger.Desugar()),
-			Cache: cache.NewCertifyMutliCache(
-				certify.NewMemCache(),
-				certify.DirCache(filepath.Join(d.CacheDir(), cache.CertifyCacheDirName, types.SchedulerName))),
-		}
-
-		clientTransportCredentials, err = rpc.NewClientCredentialsByCertify(cfg.Security.TLSPolicy, []byte(cfg.Security.CACert), certifyClient)
-		if err != nil {
-			return nil, err
-		}
-
-		// Issue a certificate to reduce first time delay.
-		if _, err := certifyClient.GetCertificate(&tls.ClientHelloInfo{
-			ServerName: cfg.Server.AdvertiseIP.String(),
-		}); err != nil {
+			logger.Errorf("failed to create client credentials: %v", err)
 			return nil, err
 		}
 	}
 
-	// Initialize dynconfig client.
-	dynconfigOptions := []config.DynconfigOption{}
-	if clientTransportCredentials != nil {
-		dynconfigOptions = append(dynconfigOptions, config.WithTransportCredentials(clientTransportCredentials))
-	}
-
-	dynconfig, err := config.NewDynconfig(s.managerClient, filepath.Join(d.CacheDir(), dynconfig.CacheDirName), cfg, dynconfigOptions...)
+	// Initialize dynconfig.
+	dynconfig, err := config.NewDynconfig(s.managerClient, filepath.Join(d.CacheDir(), dynconfig.CacheDirName), cfg, clientTransportCredentials)
 	if err != nil {
 		return nil, err
 	}
 	s.dynconfig = dynconfig
 
 	// Initialize resource.
-	resourceOptions := []resource.Option{}
-	if clientTransportCredentials != nil {
-		resourceOptions = append(resourceOptions, resource.WithTransportCredentials(clientTransportCredentials))
-	}
-
-	resource, err := resource.New(cfg, s.gc, dynconfig, resourceOptions...)
+	resource, err := resource.New(cfg, s.gc, dynconfig, clientTransportCredentials)
 	if err != nil {
 		return nil, err
 	}
@@ -243,15 +191,18 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 
 	// Initialize server options of scheduler grpc server.
 	schedulerServerOptions := []grpc.ServerOption{}
-	if certifyClient != nil {
-		serverTransportCredentials, err := rpc.NewServerCredentialsByCertify(cfg.Security.TLSPolicy, cfg.Security.TLSVerify, []byte(cfg.Security.CACert), certifyClient)
+	if cfg.Server.TLS != nil {
+		// Initialize grpc server with tls.
+		transportCredentials, err := rpc.NewServerCredentials(cfg.Server.TLS.CACert, cfg.Server.TLS.Cert, cfg.Server.TLS.Key)
 		if err != nil {
+			logger.Errorf("failed to create server credentials: %v", err)
 			return nil, err
 		}
 
-		schedulerServerOptions = append(schedulerServerOptions, grpc.Creds(serverTransportCredentials))
+		schedulerServerOptions = append(schedulerServerOptions, grpc.Creds(transportCredentials))
 	} else {
-		schedulerServerOptions = append(schedulerServerOptions, grpc.Creds(insecure.NewCredentials()))
+		// Initialize grpc server without tls.
+		schedulerServerOptions = append(schedulerServerOptions, grpc.Creds(rpc.NewInsecureCredentials()))
 	}
 
 	svr := rpcserver.New(cfg, resource, scheduling, dynconfig, s.storage, schedulerServerOptions...)
@@ -306,7 +257,7 @@ func (s *Server) Serve() error {
 		logger.Info("announcer start successfully")
 	}()
 
-	// Generate GRPC limit listener.
+	// Generate GRPC listener.
 	ip, ok := ip.FormatIP(s.config.Server.ListenIP.String())
 	if !ok {
 		return errors.New("format ip failed")
@@ -374,15 +325,6 @@ func (s *Server) Stop() {
 			logger.Errorf("manager client failed to stop: %s", err.Error())
 		} else {
 			logger.Info("manager client closed")
-		}
-	}
-
-	// Stop security client.
-	if s.securityClient != nil {
-		if err := s.securityClient.Close(); err != nil {
-			logger.Errorf("security client failed to stop: %s", err.Error())
-		} else {
-			logger.Info("security client closed")
 		}
 	}
 

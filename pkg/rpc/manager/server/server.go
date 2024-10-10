@@ -35,7 +35,6 @@ import (
 
 	managerv1 "d7y.io/api/v2/pkg/apis/manager/v1"
 	managerv2 "d7y.io/api/v2/pkg/apis/manager/v2"
-	securityv1 "d7y.io/api/v2/pkg/apis/security/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -59,7 +58,7 @@ const (
 )
 
 // New returns grpc server instance and register service on grpc server.
-func New(managerServerV1 managerv1.ManagerServer, managerServerV2 managerv2.ManagerServer, securityServer securityv1.CertificateServer, opts ...grpc.ServerOption) *grpc.Server {
+func New(managerServerV1 managerv1.ManagerServer, managerServerV2 managerv2.ManagerServer, opts ...grpc.ServerOption) *grpc.Server {
 	limiter := rpc.NewRateLimiterInterceptor(DefaultQPS, DefaultBurst)
 
 	grpcServer := grpc.NewServer(append([]grpc.ServerOption{
@@ -92,9 +91,6 @@ func New(managerServerV1 managerv1.ManagerServer, managerServerV2 managerv2.Mana
 
 	// Register servers on v2 version of the grpc server.
 	managerv2.RegisterManagerServer(grpcServer, managerServerV2)
-
-	// Register security on grpc server.
-	securityv1.RegisterCertificateServer(grpcServer, securityServer)
 
 	// Register health on grpc server.
 	healthpb.RegisterHealthServer(grpcServer, health.NewServer())

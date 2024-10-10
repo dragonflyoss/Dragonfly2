@@ -106,7 +106,7 @@ func formatMysqlDSN(cfg *config.MysqlConfig) (string, error) {
 	if cfg.TLS != nil {
 		mysqlCfg.TLSConfig = "custom"
 		tls, err := tlsconfig.Client(tlsconfig.Options{
-			CAFile:             cfg.TLS.CA,
+			CAFile:             cfg.TLS.CACert,
 			CertFile:           cfg.TLS.Cert,
 			KeyFile:            cfg.TLS.Key,
 			InsecureSkipVerify: cfg.TLS.InsecureSkipVerify,
