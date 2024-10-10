@@ -60,11 +60,11 @@ var _ = Describe("Containerd with CRI support", func() {
 				},
 			}
 
-			clientPod, err := util.ClientExec()
+			clientPods, err := util.AllClientsExec()
 			fmt.Println(err)
 			Expect(err).NotTo(HaveOccurred())
 			for _, taskMetadata := range taskMetadatas {
-				sha256sum, err := util.CalculateSha256ByTaskID([]*util.PodExec{clientPod}, taskMetadata.ID)
+				sha256sum, err := util.CalculateSha256ByTaskID(clientPods, taskMetadata.ID)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(taskMetadata.Sha256).To(Equal(sha256sum))
 			}
@@ -115,12 +115,12 @@ var _ = Describe("Containerd with CRI support", func() {
 				},
 			}
 
-			clientPod, err := util.ClientExec()
+			clientPods, err := util.AllClientsExec()
 			fmt.Println(err)
 			Expect(err).NotTo(HaveOccurred())
 
 			for _, taskMetadata := range taskMetadatas {
-				sha256sum, err := util.CalculateSha256ByTaskID([]*util.PodExec{clientPod}, taskMetadata.ID)
+				sha256sum, err := util.CalculateSha256ByTaskID(clientPods, taskMetadata.ID)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(taskMetadata.Sha256).To(Equal(sha256sum))
 			}
@@ -179,12 +179,12 @@ var _ = Describe("Containerd with CRI support", func() {
 				},
 			}
 
-			clientPod, err := util.ClientExec()
+			clientPods, err := util.AllClientsExec()
 			fmt.Println(err)
 			Expect(err).NotTo(HaveOccurred())
 
 			for _, taskMetadata := range taskMetadatas {
-				sha256sum, err := util.CalculateSha256ByTaskID([]*util.PodExec{clientPod}, taskMetadata.ID)
+				sha256sum, err := util.CalculateSha256ByTaskID(clientPods, taskMetadata.ID)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(taskMetadata.Sha256).To(Equal(sha256sum))
 			}
@@ -231,12 +231,12 @@ var _ = Describe("Containerd with CRI support", func() {
 				},
 			}
 
-			clientPod, err := util.ClientExec()
+			clientPods, err := util.AllClientsExec()
 			fmt.Println(err)
 			Expect(err).NotTo(HaveOccurred())
 
 			for _, taskMetadata := range taskMetadatas {
-				sha256sum, err := util.CalculateSha256ByTaskID([]*util.PodExec{clientPod}, taskMetadata.ID)
+				sha256sum, err := util.CalculateSha256ByTaskID(clientPods, taskMetadata.ID)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(taskMetadata.Sha256).To(Equal(sha256sum))
 			}

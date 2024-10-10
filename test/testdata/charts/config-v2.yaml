@@ -43,6 +43,9 @@ scheduler:
     limits:
       cpu: "2"
       memory: "4Gi"
+  service:
+    type: NodePort
+    nodePort: 30802
   extraVolumeMounts:
   - name: logs
     mountPath: "/var/log/"
@@ -111,6 +114,10 @@ client:
     limits:
       cpu: "2"
       memory: "4Gi"
+  tolerations:
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
+      effect: "NoSchedule"
   extraVolumeMounts:
   - name: logs
     mountPath: "/var/log/"
