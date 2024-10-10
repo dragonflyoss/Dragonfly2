@@ -16,77 +16,82 @@
 
 package e2e
 
-//import (
-//	"context"
-//	"fmt"
-//	"strings"
-//	"time"
-//
-//	. "github.com/onsi/ginkgo/v2" //nolint
-//	. "github.com/onsi/gomega"    //nolint
-//	"google.golang.org/grpc"
-//	"google.golang.org/grpc/credentials/insecure"
-//
-//	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
-//	"d7y.io/dragonfly/v2/test/e2e/v2/util"
-//)
-//
-//var _ = Describe("Clients Leaving", func() {
-//	Context("normally", func() {
-//		It("number of hosts should be ok", Label("host", "leave"), func() {
-//			grpcCredentials := insecure.NewCredentials()
-//			schedulerClient, err := schedulerclient.GetV2ByAddr(context.Background(), ":8002", grpc.WithTransportCredentials(grpcCredentials))
-//			Expect(err).NotTo(HaveOccurred())
-//
-//			time.Sleep(3 * time.Minute)
-//			hostCount := util.Servers[util.SeedClientServerName].Replicas + util.Servers[util.ClientServerName].Replicas
-//			Expect(getHostCountFromScheduler(schedulerClient)).To(Equal(hostCount))
-//
-//			podName, err := util.GetClientPodName(0)
-//			Expect(err).NotTo(HaveOccurred())
-//
-//			out, err := util.KubeCtlCommand("-n", util.DragonflyNamespace, "delete", "pod", podName).CombinedOutput()
-//			fmt.Println(string(out))
-//			Expect(err).NotTo(HaveOccurred())
-//			time.Sleep(1 * time.Minute)
-//			Expect(getHostCountFromScheduler(schedulerClient)).To(Equal(hostCount))
-//		})
-//	})
-//
-//	Context("abnormally", func() {
-//		It("number of hosts should be ok", Label("host", "leave"), func() {
-//			grpcCredentials := insecure.NewCredentials()
-//			schedulerClient, err := schedulerclient.GetV2ByAddr(context.Background(), ":8002", grpc.WithTransportCredentials(grpcCredentials))
-//			Expect(err).NotTo(HaveOccurred())
-//
-//			time.Sleep(4 * time.Minute)
-//			hostCount := util.Servers[util.SeedClientServerName].Replicas + util.Servers[util.ClientServerName].Replicas
-//			Expect(getHostCountFromScheduler(schedulerClient)).To(Equal(hostCount))
-//
-//			podName, err := util.GetClientPodName(0)
-//			Expect(err).NotTo(HaveOccurred())
-//
-//			out, err := util.KubeCtlCommand("-n", util.DragonflyNamespace, "delete", "pod", podName, "--force", "--grace-period=0").CombinedOutput()
-//			fmt.Println(string(out))
-//			Expect(err).NotTo(HaveOccurred())
-//			time.Sleep(6 * time.Minute)
-//			Expect(getHostCountFromScheduler(schedulerClient)).To(Equal(hostCount))
-//		})
-//	})
-//})
-//
-//func getHostCountFromScheduler(schedulerClient schedulerclient.V2) (hostCount int) {
-//	response, err := schedulerClient.ListHosts(context.Background(), "")
-//	fmt.Println(response, err)
-//	Expect(err).NotTo(HaveOccurred())
-//
-//	hosts := response.Hosts
-//	for _, host := range hosts {
-//		// HostID: "10.244.0.13-dragonfly-seed-client-0-seed"
-//		// PeerHostID: "3dba4916d8271d6b71bb20e95a0b5494c9a941ab7ef3567f805abca8614dc128"
-//		if strings.Contains(host.Id, "-") {
-//			hostCount++
-//		}
-//	}
-//	return
-//}
+import (
+	"context"
+	"fmt"
+	"strings"
+	"time"
+
+	. "github.com/onsi/ginkgo/v2" //nolint
+	. "github.com/onsi/gomega"    //nolint
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
+	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
+	"d7y.io/dragonfly/v2/test/e2e/v2/util"
+)
+
+var _ = Describe("Clients Leaving", func() {
+	Context("normally", func() {
+		It("number of hosts should be ok", Label("host", "leave"), func() {
+			grpcCredentials := insecure.NewCredentials()
+			schedulerClient, err := schedulerclient.GetV2ByAddr(context.Background(), ":8002", grpc.WithTransportCredentials(grpcCredentials))
+			Expect(err).NotTo(HaveOccurred())
+
+			hostCount := util.Servers[util.SeedClientServerName].Replicas + util.Servers[util.ClientServerName].Replicas
+			respHostCount := getHostCountFromScheduler(schedulerClient)
+			fmt.Println("hostCount:", hostCount, "response:", respHostCount)
+			Expect(respHostCount).To(Equal(hostCount))
+
+			podName, err := util.GetClientPodName(1)
+			Expect(err).NotTo(HaveOccurred())
+
+			out, err := util.KubeCtlCommand("-n", util.DragonflyNamespace, "delete", "pod", podName).CombinedOutput()
+			fmt.Println(string(out))
+			Expect(err).NotTo(HaveOccurred())
+			respHostCount = getHostCountFromScheduler(schedulerClient)
+			fmt.Println("hostCount:", hostCount, "response:", respHostCount)
+			Expect(respHostCount).To(Equal(hostCount))
+		})
+	})
+
+	Context("abnormally", func() {
+		It("number of hosts should be ok", Label("host", "leave"), func() {
+			grpcCredentials := insecure.NewCredentials()
+			schedulerClient, err := schedulerclient.GetV2ByAddr(context.Background(), ":8002", grpc.WithTransportCredentials(grpcCredentials))
+			Expect(err).NotTo(HaveOccurred())
+
+			hostCount := util.Servers[util.SeedClientServerName].Replicas + util.Servers[util.ClientServerName].Replicas
+			respHostCount := getHostCountFromScheduler(schedulerClient)
+			fmt.Println("hostCount:", hostCount, "response:", respHostCount)
+			Expect(respHostCount).To(Equal(hostCount))
+
+			podName, err := util.GetClientPodName(1)
+			Expect(err).NotTo(HaveOccurred())
+
+			out, err := util.KubeCtlCommand("-n", util.DragonflyNamespace, "delete", "pod", podName, "--force", "--grace-period=0").CombinedOutput()
+			fmt.Println(string(out))
+			Expect(err).NotTo(HaveOccurred())
+			time.Sleep(6 * time.Minute)
+			respHostCount = getHostCountFromScheduler(schedulerClient)
+			fmt.Println("hostCount:", hostCount, "response:", respHostCount)
+			Expect(respHostCount).To(Equal(hostCount))
+		})
+	})
+})
+
+func getHostCountFromScheduler(schedulerClient schedulerclient.V2) (hostCount int) {
+	response, err := schedulerClient.ListHosts(context.Background(), "")
+	fmt.Println(response, err)
+	Expect(err).NotTo(HaveOccurred())
+
+	hosts := response.Hosts
+	for _, host := range hosts {
+		// HostID: "10.244.0.13-dragonfly-seed-client-0-seed"
+		// PeerHostID: "3dba4916d8271d6b71bb20e95a0b5494c9a941ab7ef3567f805abca8614dc128"
+		if strings.Contains(host.Id, "-") {
+			hostCount++
+		}
+	}
+	return
+}
