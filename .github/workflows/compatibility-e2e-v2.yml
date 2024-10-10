@@ -133,11 +133,6 @@ jobs:
           kind load docker-image dragonflyoss/client:latest
           kind load docker-image dragonflyoss/dfinit:latest
 
-      - name: Remove and add taints to node
-        run: |
-          kubectl taint nodes kind-control-plane node-role.kubernetes.io/master:NoSchedule-
-          kubectl taint nodes kind-worker role=worker:NoSchedule
-
       - name: Setup dragonfly
         run: |
           helm install --wait --timeout 15m --dependency-update --create-namespace --namespace dragonfly-system --set ${{ matrix.chart-name }}.image.tag=${{ matrix.image-tag }} --set ${{ matrix.chart-name }}.image.repository=dragonflyoss/${{ matrix.image }} -f ${{ env.DRAGONFLY_CHARTS_CONFIG_PATH }} dragonfly ${{ env.DRAGONFLY_CHARTS_PATH }}

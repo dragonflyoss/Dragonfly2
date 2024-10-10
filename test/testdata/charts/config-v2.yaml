@@ -115,9 +115,8 @@ client:
       cpu: "2"
       memory: "4Gi"
   tolerations:
-    - key: "role"
-      operator: "Equal"
-      value: "worker"
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
       effect: "NoSchedule"
   extraVolumeMounts:
   - name: logs
