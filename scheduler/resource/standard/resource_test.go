@@ -28,6 +28,7 @@ import (
 	managerv2 "d7y.io/api/v2/pkg/apis/manager/v2"
 
 	"d7y.io/dragonfly/v2/pkg/gc"
+	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	configmocks "d7y.io/dragonfly/v2/scheduler/config/mocks"
 )
@@ -177,7 +178,7 @@ func TestResource_New(t *testing.T) {
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			tc.mock(gc.EXPECT(), dynconfig.EXPECT())
 
-			resource, err := New(tc.config, gc, dynconfig, WithTransportCredentials(nil))
+			resource, err := New(tc.config, gc, dynconfig, rpc.NewInsecureCredentials())
 			tc.expect(t, resource, err)
 		})
 	}

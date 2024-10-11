@@ -32,7 +32,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/status"
 
@@ -121,32 +120,15 @@ type dynconfig struct {
 	mu                   *sync.Mutex
 }
 
-// DynconfigOption is a functional option for configuring the dynconfig.
-type DynconfigOption func(d *dynconfig) error
-
-// WithTransportCredentials returns a DialOption which configures a connection
-// level security credentials (e.g., TLS/SSL).
-func WithTransportCredentials(creds credentials.TransportCredentials) DynconfigOption {
-	return func(d *dynconfig) error {
-		d.transportCredentials = creds
-		return nil
-	}
-}
-
 // NewDynconfig returns a new dynconfig instance.
-func NewDynconfig(rawManagerClient managerclient.V2, cacheDir string, cfg *Config, options ...DynconfigOption) (DynconfigInterface, error) {
+func NewDynconfig(rawManagerClient managerclient.V2, cacheDir string, cfg *Config, transportCredentials credentials.TransportCredentials) (DynconfigInterface, error) {
 	cachePath := filepath.Join(cacheDir, cacheFileName)
 	d := &dynconfig{
-		observers: map[Observer]struct{}{},
-		done:      make(chan struct{}),
-		cachePath: cachePath,
-		mu:        &sync.Mutex{},
-	}
-
-	for _, opt := range options {
-		if err := opt(d); err != nil {
-			return nil, err
-		}
+		observers:            map[Observer]struct{}{},
+		done:                 make(chan struct{}),
+		cachePath:            cachePath,
+		transportCredentials: transportCredentials,
+		mu:                   &sync.Mutex{},
 	}
 
 	if rawManagerClient != nil {
@@ -177,12 +159,7 @@ func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 		resolveAddrs []resolver.Address
 	)
 	for _, seedPeer := range seedPeers {
-		dialOptions := []grpc.DialOption{}
-		if d.transportCredentials != nil {
-			dialOptions = append(dialOptions, grpc.WithTransportCredentials(d.transportCredentials))
-		} else {
-			dialOptions = append(dialOptions, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		}
+		dialOptions := []grpc.DialOption{grpc.WithTransportCredentials(d.transportCredentials)}
 
 		var addr string
 		if ip, ok := ip.FormatIP(seedPeer.GetIp()); ok {

@@ -4,7 +4,10 @@ server:
   listenIP: 0.0.0.0
   port: 8002
   host: foo
-  workHome: foo
+  tls:
+    caCert: foo
+    cert: foo
+    key: foo
   cacheDir: foo
   logDir: foo
   pluginDir: foo
@@ -54,12 +57,20 @@ host:
 
 manager:
   addr: 127.0.0.1:65003
+  tls:
+    caCert: foo
+    cert: foo
+    key: foo
   schedulerClusterID: 1
   keepAlive:
     interval: 5s
 
 seedPeer:
   enable: true
+  tls:
+    caCert: foo
+    cert: foo
+    key: foo
   taskDownloadTimeout: 12h
 
 job:
@@ -77,18 +88,6 @@ metrics:
   enable: false
   addr: ":8000"
   enableHost: true
-
-security:
-  autoIssueCert: true
-  caCert: testdata/ca.crt
-  tlsVerify: true
-  tlsPolicy: force
-  certSpec:
-    dnsNames:
-      - foo
-    ipAddresses:
-      - 0.0.0.0
-    validityPeriod: 10m
 
 network:
   enableIPv6: true

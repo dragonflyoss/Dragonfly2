@@ -1,6 +1,5 @@
 server:
   name: foo
-  workHome: foo
   cacheDir: foo
   logDir: foo
   logMaxSize: 512
@@ -13,6 +12,10 @@ server:
     port:
       start: 65003
       end: 65003
+    tls:
+      caCert: foo
+      cert: foo
+      key: foo
   rest:
     addr: :8080
     tls:
@@ -36,9 +39,9 @@ database:
     dbname: foo
     tlsConfig: preferred
     tls:
+      caCert: foo
       cert: foo
       key: foo
-      ca: foo
       insecureSkipVerify: true
     migrate: true
   postgres:
@@ -89,18 +92,6 @@ objectStorage:
   secretKey: bar
   region: baz
   s3ForcePathStyle: false
-
-security:
-  autoIssueCert: true
-  caCert: testdata/ca.crt
-  caKey: testdata/ca.key
-  tlsPolicy: force
-  certSpec:
-    dnsNames:
-      - foo
-    ipAddresses:
-      - 0.0.0.0
-    validityPeriod: 1s
 
 metrics:
   enable: true

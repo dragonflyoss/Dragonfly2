@@ -501,17 +501,6 @@ func TestPeerHostOption_Load(t *testing.T) {
 				Duration: 180000000000,
 			},
 		},
-		Security: GlobalSecurityOption{
-			AutoIssueCert: true,
-			CACert:        "-----BEGIN CERTIFICATE-----",
-			TLSVerify:     true,
-			TLSPolicy:     "force",
-			CertSpec: &CertSpec{
-				DNSNames:       []string{"foo"},
-				IPAddresses:    []net.IP{net.IPv4zero},
-				ValidityPeriod: 1000000000,
-			},
-		},
 		Network: &NetworkOption{
 			EnableIPv6: true,
 		},
@@ -679,82 +668,6 @@ func TestPeerHostOption_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "gcInterval must be greater than 0")
-			},
-		},
-		{
-			name:   "security requires parameter caCert",
-			config: NewDaemonConfig(),
-			mock: func(cfg *DaemonConfig) {
-				cfg.Scheduler.NetAddrs = []dfnet.NetAddr{
-					{
-						Type: dfnet.TCP,
-						Addr: "127.0.0.1:8002",
-					},
-				}
-				cfg.Security.AutoIssueCert = true
-				cfg.Security.CACert = ""
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "security requires parameter caCert")
-			},
-		},
-		{
-			name:   "certSpec requires parameter ipAddresses",
-			config: NewDaemonConfig(),
-			mock: func(cfg *DaemonConfig) {
-				cfg.Scheduler.NetAddrs = []dfnet.NetAddr{
-					{
-						Type: dfnet.TCP,
-						Addr: "127.0.0.1:8002",
-					},
-				}
-				cfg.Security.AutoIssueCert = true
-				cfg.Security.CACert = "test"
-				cfg.Security.CertSpec.IPAddresses = nil
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "certSpec requires parameter ipAddresses")
-			},
-		},
-		{
-			name:   "certSpec requires parameter dnsNames",
-			config: NewDaemonConfig(),
-			mock: func(cfg *DaemonConfig) {
-				cfg.Scheduler.NetAddrs = []dfnet.NetAddr{
-					{
-						Type: dfnet.TCP,
-						Addr: "127.0.0.1:8002",
-					},
-				}
-				cfg.Security.AutoIssueCert = true
-				cfg.Security.CACert = "test"
-				cfg.Security.CertSpec.IPAddresses = []net.IP{net.ParseIP("127.0.0.1")}
-				cfg.Security.CertSpec.DNSNames = nil
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "certSpec requires parameter dnsNames")
-			},
-		},
-		{
-			name:   "certSpec requires parameter validityPeriod",
-			config: NewDaemonConfig(),
-			mock: func(cfg *DaemonConfig) {
-				cfg.Scheduler.NetAddrs = []dfnet.NetAddr{
-					{
-						Type: dfnet.TCP,
-						Addr: "127.0.0.1:8002",
-					},
-				}
-				cfg.Security.AutoIssueCert = true
-				cfg.Security.CACert = "testcert"
-				cfg.Security.CertSpec.ValidityPeriod = 0
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "certSpec requires parameter validityPeriod")
 			},
 		},
 	}

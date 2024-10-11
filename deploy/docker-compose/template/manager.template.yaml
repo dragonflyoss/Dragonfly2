@@ -8,7 +8,6 @@ server:
     # # Listen ip.
     # listenIP: 0.0.0.0
     # Listen port.
-    # when this port is not available, manager will try next port.
     port:
       start: 65003
       end: 65003
@@ -21,10 +20,6 @@ server:
   #   cert: /etc/ssl/certs/server.crt
   #   # Key file path.
   #   key: /etc/ssl/private/server.pem
-  # WorkHome is working directory.
-  # In linux, default value is /usr/local/dragonfly.
-  # In macos(just for testing), default value is /Users/$USER/.dragonfly.
-  workHome: ''
   # logDir is the log directory.
   # In linux, default value is /var/log/dragonfly.
   # In macos(just for testing), default value is /Users/$USER/.dragonfly/logs.

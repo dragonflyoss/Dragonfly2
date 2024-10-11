@@ -31,9 +31,7 @@ jobs:
         module:
           - "normal"
           - "concurent-back-source"
-          - "grpc-tls"
           - "disable-seed-peer"
-          - "grpc-tls-ipv6"
           - "ipv6"
           - "split-running-tasks"
           - "cache-list-metadata"
@@ -45,17 +43,11 @@ jobs:
           - module: concurent-back-source
             charts-config: test/testdata/charts/config-concurent-back-source.yaml
             skip: ""
-          - module: grpc-tls
-            charts-config: test/testdata/charts/config-grpc-tls.yaml
-            skip: ""
           - module: disable-seed-peer
             charts-config: test/testdata/charts/config-disable-seed-peer.yaml
             skip: preheat
           - module: ipv6
             charts-config: test/testdata/charts/config-ipv6.yaml
-            skip: ""
-          - module: grpc-tls-ipv6
-            charts-config: test/testdata/charts/config-grpc-tls-ipv6.yaml
             skip: ""
           - module: split-running-tasks
             charts-config: test/testdata/charts/config-split-running-tasks.yaml

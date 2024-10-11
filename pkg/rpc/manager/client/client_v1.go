@@ -33,7 +33,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	managerv1 "d7y.io/api/v2/pkg/apis/manager/v1"
-	securityv1 "d7y.io/api/v2/pkg/apis/security/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
@@ -70,9 +69,8 @@ func GetV1ByAddr(ctx context.Context, target string, opts ...grpc.DialOption) (V
 	}
 
 	return &v1{
-		ManagerClient:     managerv1.NewManagerClient(conn),
-		CertificateClient: securityv1.NewCertificateClient(conn),
-		ClientConn:        conn,
+		ManagerClient: managerv1.NewManagerClient(conn),
+		ClientConn:    conn,
 	}, nil
 }
 
@@ -125,7 +123,6 @@ type V1 interface {
 // v1 provides v1 version of the manager grpc function.
 type v1 struct {
 	managerv1.ManagerClient
-	securityv1.CertificateClient
 	*grpc.ClientConn
 }
 

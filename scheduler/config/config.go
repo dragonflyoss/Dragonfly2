@@ -25,9 +25,7 @@ import (
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/pkg/net/fqdn"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
-	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/slices"
-	"d7y.io/dragonfly/v2/pkg/types"
 )
 
 type Config struct {
@@ -67,9 +65,6 @@ type Config struct {
 	// Metrics configuration.
 	Metrics MetricsConfig `yaml:"metrics" mapstructure:"metrics"`
 
-	// Security configuration.
-	Security SecurityConfig `yaml:"security" mapstructure:"security"`
-
 	// Network configuration.
 	Network NetworkConfig `yaml:"network" mapstructure:"network"`
 }
@@ -90,8 +85,8 @@ type ServerConfig struct {
 	// Server hostname.
 	Host string `yaml:"host" mapstructure:"host"`
 
-	// Server work directory.
-	WorkHome string `yaml:"workHome" mapstructure:"workHome"`
+	// TLS server configuration.
+	TLS *GRPCTLSServerConfig `yaml:"tls" mapstructure:"tls"`
 
 	// Server dynamic config cache directory.
 	CacheDir string `yaml:"cacheDir" mapstructure:"cacheDir"`
@@ -113,6 +108,17 @@ type ServerConfig struct {
 
 	// Server storage data directory.
 	DataDir string `yaml:"dataDir" mapstructure:"dataDir"`
+}
+
+type GRPCTLSServerConfig struct {
+	// CACert is the file path of CA certificate for mTLS.
+	CACert string `yaml:"caCert" mapstructure:"caCert"`
+
+	// Cert is the file path of server certificate for mTLS.
+	Cert string `yaml:"cert" mapstructure:"cert"`
+
+	// Key is the file path of server key for mTLS.
+	Key string `yaml:"key" mapstructure:"key"`
 }
 
 type SchedulerConfig struct {
@@ -207,6 +213,9 @@ type ManagerConfig struct {
 	// Addr is manager address.
 	Addr string `yaml:"addr" mapstructure:"addr"`
 
+	// TLS client configuration.
+	TLS *GRPCTLSClientConfig `yaml:"tls" mapstructure:"tls"`
+
 	// SchedulerClusterID is scheduler cluster id.
 	SchedulerClusterID uint `yaml:"schedulerClusterID" mapstructure:"schedulerClusterID"`
 
@@ -214,9 +223,23 @@ type ManagerConfig struct {
 	KeepAlive KeepAliveConfig `yaml:"keepAlive" mapstructure:"keepAlive"`
 }
 
+type GRPCTLSClientConfig struct {
+	// CACert is the file path of CA certificate for mTLS.
+	CACert string `yaml:"caCert" mapstructure:"caCert"`
+
+	// Cert is the file path of client certificate for mTLS.
+	Cert string `yaml:"cert" mapstructure:"cert"`
+
+	// Key is the file path of client key for mTLS.
+	Key string `yaml:"key" mapstructure:"key"`
+}
+
 type SeedPeerConfig struct {
 	// Enable is to enable seed peer as P2P peer.
 	Enable bool `yaml:"enable" mapstructure:"enable"`
+
+	// TLS client configuration.
+	TLS *GRPCTLSClientConfig `yaml:"tls" mapstructure:"tls"`
 
 	// TaskDownloadTimeout is timeout of downloading task by seed peer.
 	TaskDownloadTimeout time.Duration `yaml:"taskDownloadTimeout" mapstructure:"taskDownloadTimeout"`
@@ -299,38 +322,6 @@ type MetricsConfig struct {
 	EnableHost bool `yaml:"enableHost" mapstructure:"enableHost"`
 }
 
-type SecurityConfig struct {
-	// AutoIssueCert indicates to issue client certificates for all grpc call
-	// if AutoIssueCert is false, any other option in Security will be ignored.
-	AutoIssueCert bool `mapstructure:"autoIssueCert" yaml:"autoIssueCert"`
-
-	// CACert is the root CA certificate for all grpc tls handshake, it can be path or PEM format string.
-	CACert types.PEMContent `mapstructure:"caCert" yaml:"caCert"`
-
-	// TLSVerify indicates to verify client certificates.
-	TLSVerify bool `mapstructure:"tlsVerify" yaml:"tlsVerify"`
-
-	// TLSPolicy controls the grpc shandshake behaviors:
-	// force: both ClientHandshake and ServerHandshake are only support tls.
-	// prefer: ServerHandshake supports tls and insecure (non-tls), ClientHandshake will only support tls.
-	// default: ServerHandshake supports tls and insecure (non-tls), ClientHandshake will only support insecure (non-tls).
-	TLSPolicy string `mapstructure:"tlsPolicy" yaml:"tlsPolicy"`
-
-	// CertSpec is the desired state of certificate.
-	CertSpec CertSpec `mapstructure:"certSpec" yaml:"certSpec"`
-}
-
-type CertSpec struct {
-	// DNSNames is a list of dns names be set on the certificate.
-	DNSNames []string `mapstructure:"dnsNames" yaml:"dnsNames"`
-
-	// IPAddresses is a list of ip addresses be set on the certificate.
-	IPAddresses []net.IP `mapstructure:"ipAddresses" yaml:"ipAddresses"`
-
-	// ValidityPeriod is the validity period of certificate.
-	ValidityPeriod time.Duration `mapstructure:"validityPeriod" yaml:"validityPeriod"`
-}
-
 type NetworkConfig struct {
 	// EnableIPv6 enables ipv6 for server.
 	EnableIPv6 bool `mapstructure:"enableIPv6" yaml:"enableIPv6"`
@@ -409,16 +400,6 @@ func New() *Config {
 			Addr:       DefaultMetricsAddr,
 			EnableHost: false,
 		},
-		Security: SecurityConfig{
-			AutoIssueCert: false,
-			TLSVerify:     true,
-			TLSPolicy:     rpc.PreferTLSPolicy,
-			CertSpec: CertSpec{
-				DNSNames:       DefaultCertDNSNames,
-				IPAddresses:    DefaultCertIPAddresses,
-				ValidityPeriod: DefaultCertValidityPeriod,
-			},
-		},
 		Network: NetworkConfig{
 			EnableIPv6: DefaultNetworkEnableIPv6,
 		},
@@ -445,6 +426,20 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Server.Host == "" {
 		return errors.New("server requires parameter host")
+	}
+
+	if cfg.Server.TLS != nil {
+		if cfg.Server.TLS.CACert == "" {
+			return errors.New("server tls requires parameter caCert")
+		}
+
+		if cfg.Server.TLS.Cert == "" {
+			return errors.New("server tls requires parameter cert")
+		}
+
+		if cfg.Server.TLS.Key == "" {
+			return errors.New("server tls requires parameter key")
+		}
 	}
 
 	if cfg.Scheduler.Algorithm == "" {
@@ -515,6 +510,20 @@ func (cfg *Config) Validate() error {
 		return errors.New("manager requires parameter addr")
 	}
 
+	if cfg.Manager.TLS != nil {
+		if cfg.Manager.TLS.CACert == "" {
+			return errors.New("manager tls requires parameter caCert")
+		}
+
+		if cfg.Manager.TLS.Cert == "" {
+			return errors.New("manager tls requires parameter cert")
+		}
+
+		if cfg.Manager.TLS.Key == "" {
+			return errors.New("manager tls requires parameter key")
+		}
+	}
+
 	if cfg.Manager.SchedulerClusterID == 0 {
 		return errors.New("manager requires parameter schedulerClusterID")
 	}
@@ -525,6 +534,20 @@ func (cfg *Config) Validate() error {
 
 	if cfg.SeedPeer.TaskDownloadTimeout <= 0 {
 		return errors.New("seedPeer requires parameter taskDownloadTimeout")
+	}
+
+	if cfg.SeedPeer.TLS != nil {
+		if cfg.SeedPeer.TLS.CACert == "" {
+			return errors.New("seedPeer tls requires parameter caCert")
+		}
+
+		if cfg.SeedPeer.TLS.Cert == "" {
+			return errors.New("seedPeer tls requires parameter cert")
+		}
+
+		if cfg.SeedPeer.TLS.Key == "" {
+			return errors.New("seedPeer tls requires parameter key")
+		}
 	}
 
 	if cfg.Job.Enable {
@@ -556,28 +579,6 @@ func (cfg *Config) Validate() error {
 	if cfg.Metrics.Enable {
 		if cfg.Metrics.Addr == "" {
 			return errors.New("metrics requires parameter addr")
-		}
-	}
-
-	if cfg.Security.AutoIssueCert {
-		if cfg.Security.CACert == "" {
-			return errors.New("security requires parameter caCert")
-		}
-
-		if !slices.Contains([]string{rpc.DefaultTLSPolicy, rpc.ForceTLSPolicy, rpc.PreferTLSPolicy}, cfg.Security.TLSPolicy) {
-			return errors.New("security requires parameter tlsPolicy")
-		}
-
-		if len(cfg.Security.CertSpec.IPAddresses) == 0 {
-			return errors.New("certSpec requires parameter ipAddresses")
-		}
-
-		if len(cfg.Security.CertSpec.DNSNames) == 0 {
-			return errors.New("certSpec requires parameter dnsNames")
-		}
-
-		if cfg.Security.CertSpec.ValidityPeriod <= 0 {
-			return errors.New("certSpec requires parameter validityPeriod")
 		}
 	}
 

@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -62,29 +61,11 @@ type resource struct {
 
 	// Scheduler config.
 	config *config.Config
-
-	// TransportCredentials stores the Authenticator required to setup a client connection.
-	transportCredentials credentials.TransportCredentials
-}
-
-// Option is a functional option for configuring the resource.
-type Option func(r *resource)
-
-// WithTransportCredentials returns a DialOption which configures a connection
-// level security credentials (e.g., TLS/SSL).
-func WithTransportCredentials(creds credentials.TransportCredentials) Option {
-	return func(r *resource) {
-		r.transportCredentials = creds
-	}
 }
 
 // New returns Resource interface.
-func New(cfg *config.Config, gc gc.GC, dynconfig config.DynconfigInterface, options ...Option) (Resource, error) {
+func New(cfg *config.Config, gc gc.GC, dynconfig config.DynconfigInterface, transportCredentials credentials.TransportCredentials) (Resource, error) {
 	resource := &resource{config: cfg}
-
-	for _, opt := range options {
-		opt(resource)
-	}
 
 	// Initialize host manager interface.
 	hostManager, err := newHostManager(&cfg.Scheduler.GC, gc)
@@ -109,13 +90,7 @@ func New(cfg *config.Config, gc gc.GC, dynconfig config.DynconfigInterface, opti
 
 	// Initialize seed peer interface.
 	if cfg.SeedPeer.Enable {
-		dialOptions := []grpc.DialOption{grpc.WithStatsHandler(otelgrpc.NewClientHandler())}
-		if resource.transportCredentials != nil {
-			dialOptions = append(dialOptions, grpc.WithTransportCredentials(resource.transportCredentials))
-		} else {
-			dialOptions = append(dialOptions, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		}
-
+		dialOptions := []grpc.DialOption{grpc.WithStatsHandler(otelgrpc.NewClientHandler()), grpc.WithTransportCredentials(transportCredentials)}
 		client, err := newSeedPeerClient(dynconfig, hostManager, dialOptions...)
 		if err != nil {
 			return nil, err

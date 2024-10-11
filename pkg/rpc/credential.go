@@ -21,112 +21,93 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"net"
+	"os"
+	"time"
 
-	"github.com/johanbrandhorst/certify"
 	"google.golang.org/grpc/credentials"
-
-	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
-const (
-	// ForceTLSPolicy is both ClientHandshake and
-	// ServerHandshake are only support tls.
-	ForceTLSPolicy = "force"
-
-	// PreferTLSPolicy is ServerHandshake supports tls and
-	// insecure (non-tls), ClientHandshake will only support tls.
-	PreferTLSPolicy = "prefer"
-
-	// DefaultTLSPolicy is ServerHandshake supports tls
-	// and insecure (non-tls), ClientHandshake will only support tls.
-	DefaultTLSPolicy = "default"
-)
-
-// NewServerCredentialsByCertify returns server transport credentials by certify.
-func NewServerCredentialsByCertify(tlsPolicy string, tlsVerify bool, pemClientCAs []byte, certifyClient *certify.Certify) (credentials.TransportCredentials, error) {
-	certPool := x509.NewCertPool()
-	if !certPool.AppendCertsFromPEM(pemClientCAs) {
-		return nil, errors.New("invalid CA Cert")
+// NewServerCredentials creates a new server credentials with the given ca certificate, certificate and key.
+func NewServerCredentials(caCertFile string, certFile string, keyFile string) (credentials.TransportCredentials, error) {
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load server certificate: %v", err)
 	}
 
-	tlsConfig := &tls.Config{
-		GetCertificate: func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
-			if hello.ServerName == "" {
-				host, _, err := net.SplitHostPort(hello.Conn.LocalAddr().String())
-				if err == nil {
-					hello.ServerName = host
-				} else {
-					logger.Warnf("failed to get host from %s: %s", hello.Conn.LocalAddr().String(), err)
+	caCertPool := x509.NewCertPool()
+	caCertBytes, err := os.ReadFile(caCertFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read ca certificate: %v", err)
+	}
+
+	if !caCertPool.AppendCertsFromPEM(caCertBytes) {
+		return nil, errors.New("failed to append ca certificate")
+	}
+
+	return credentials.NewTLS(&tls.Config{
+		ClientCAs:    caCertPool,
+		Certificates: []tls.Certificate{cert},
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+	}), nil
+}
+
+// NewClientCredentials creates a new client credentials with the given ca certificate, certificate and key.
+func NewClientCredentials(caCertFile string, certFile string, keyFile string) (credentials.TransportCredentials, error) {
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load client certificate: %v", err)
+	}
+
+	caCertPool := x509.NewCertPool()
+	caCertBytes, err := os.ReadFile(caCertFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read ca certificate: %v", err)
+	}
+
+	if !caCertPool.AppendCertsFromPEM(caCertBytes) {
+		return nil, errors.New("failed to append ca certificate")
+	}
+
+	return credentials.NewTLS(&tls.Config{
+		RootCAs:      caCertPool,
+		Certificates: []tls.Certificate{cert},
+		VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+			// Parse the raw certificates.
+			certs := make([]*x509.Certificate, len(rawCerts))
+			for i, rawCert := range rawCerts {
+				cert, err := x509.ParseCertificate(rawCert)
+				if err != nil {
+					return err
 				}
+
+				certs[i] = cert
 			}
 
-			return certifyClient.GetCertificate(hello)
+			// Verify the certificate chain.
+			opts := x509.VerifyOptions{
+				Roots:       caCertPool,
+				CurrentTime: time.Now(),
+				// Skip hostname verification.
+				DNSName:       "",
+				Intermediates: x509.NewCertPool(),
+			}
+
+			for i, cert := range certs {
+				if i == 0 {
+					continue
+				}
+
+				opts.Intermediates.AddCert(cert)
+			}
+
+			_, err := certs[0].Verify(opts)
+			return err
 		},
-		ClientCAs: certPool,
-		RootCAs:   certPool,
-	}
-
-	if tlsVerify {
-		tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
-	}
-
-	switch tlsPolicy {
-	case DefaultTLSPolicy, PreferTLSPolicy:
-		return NewMuxTransportCredentials(tlsConfig,
-			WithTLSPreferClientHandshake(tlsPolicy == PreferTLSPolicy)), nil
-	case ForceTLSPolicy:
-		return credentials.NewTLS(tlsConfig), nil
-	default:
-		return nil, fmt.Errorf("invalid tlsPolicy: %s", tlsPolicy)
-	}
+	}), nil
 }
 
-// NewClientCredentialsByCertify returns client transport credentials by certify.
-func NewClientCredentialsByCertify(tlsPolicy string, pemRootCAs []byte, certifyClient *certify.Certify) (credentials.TransportCredentials, error) {
-	certPool := x509.NewCertPool()
-	if !certPool.AppendCertsFromPEM(pemRootCAs) {
-		return nil, errors.New("invalid CA Cert")
-	}
-
-	tlsConfig := &tls.Config{
-		GetClientCertificate: certifyClient.GetClientCertificate,
-		RootCAs:              certPool,
-	}
-
-	switch tlsPolicy {
-	case DefaultTLSPolicy, PreferTLSPolicy:
-		return NewMuxTransportCredentials(tlsConfig,
-			WithTLSPreferClientHandshake(tlsPolicy == PreferTLSPolicy)), nil
-	case ForceTLSPolicy:
-		return credentials.NewTLS(tlsConfig), nil
-	default:
-		return nil, fmt.Errorf("invalid tlsPolicy: %s", tlsPolicy)
-	}
-}
-
-// NewClientCredentials returns client transport credentials.
-func NewClientCredentials(tlsPolicy string, certs []tls.Certificate, pemRootCAs []byte) (credentials.TransportCredentials, error) {
-	certPool := x509.NewCertPool()
-	if !certPool.AppendCertsFromPEM(pemRootCAs) {
-		return nil, errors.New("invalid CA Cert")
-	}
-
-	tlsConfig := &tls.Config{
-		RootCAs: certPool,
-	}
-
-	if len(certs) > 0 {
-		tlsConfig.Certificates = certs
-	}
-
-	switch tlsPolicy {
-	case DefaultTLSPolicy, PreferTLSPolicy:
-		return NewMuxTransportCredentials(tlsConfig,
-			WithTLSPreferClientHandshake(tlsPolicy == PreferTLSPolicy)), nil
-	case ForceTLSPolicy:
-		return credentials.NewTLS(tlsConfig), nil
-	default:
-		return nil, fmt.Errorf("invalid tlsPolicy: %s", tlsPolicy)
-	}
+// NewInsecureCredentials creates a new insecure credentials.
+func NewInsecureCredentials() credentials.TransportCredentials {
+	return insecure.NewCredentials()
 }

@@ -24,9 +24,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
-
-	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/types"
 )
 
 var (
@@ -48,17 +45,6 @@ var (
 	mockMetricsConfig = MetricsConfig{
 		Enable: true,
 		Addr:   DefaultMetricsAddr,
-	}
-
-	mockSecurityConfig = SecurityConfig{
-		AutoIssueCert: true,
-		CACert:        types.PEMContent("foo"),
-		TLSPolicy:     rpc.PreferTLSPolicy,
-		CertSpec: CertSpec{
-			DNSNames:       DefaultCertDNSNames,
-			IPAddresses:    DefaultCertIPAddresses,
-			ValidityPeriod: DefaultCertValidityPeriod,
-		},
 	}
 
 	mockRedisConfig = RedisConfig{
@@ -94,7 +80,11 @@ func TestConfig_Load(t *testing.T) {
 			ListenIP:      net.ParseIP("0.0.0.0"),
 			Port:          8002,
 			Host:          "foo",
-			WorkHome:      "foo",
+			TLS: &GRPCTLSServerConfig{
+				CACert: "foo",
+				Cert:   "foo",
+				Key:    "foo",
+			},
 			CacheDir:      "foo",
 			LogDir:        "foo",
 			LogMaxSize:    512,
@@ -129,14 +119,24 @@ func TestConfig_Load(t *testing.T) {
 			RefreshInterval: 10 * time.Second,
 		},
 		Manager: ManagerConfig{
-			Addr:               "127.0.0.1:65003",
+			Addr: "127.0.0.1:65003",
+			TLS: &GRPCTLSClientConfig{
+				CACert: "foo",
+				Cert:   "foo",
+				Key:    "foo",
+			},
 			SchedulerClusterID: 1,
 			KeepAlive: KeepAliveConfig{
 				Interval: 5 * time.Second,
 			},
 		},
 		SeedPeer: SeedPeerConfig{
-			Enable:              true,
+			Enable: true,
+			TLS: &GRPCTLSClientConfig{
+				CACert: "foo",
+				Cert:   "foo",
+				Key:    "foo",
+			},
 			TaskDownloadTimeout: 12 * time.Hour,
 		},
 		Host: HostConfig{
@@ -158,17 +158,6 @@ func TestConfig_Load(t *testing.T) {
 			Enable:     false,
 			Addr:       ":8000",
 			EnableHost: true,
-		},
-		Security: SecurityConfig{
-			AutoIssueCert: true,
-			CACert:        "foo",
-			TLSVerify:     true,
-			TLSPolicy:     "force",
-			CertSpec: CertSpec{
-				DNSNames:       []string{"foo"},
-				IPAddresses:    []net.IP{net.IPv4zero},
-				ValidityPeriod: 10 * time.Minute,
-			},
 		},
 		Network: NetworkConfig{
 			EnableIPv6: true,
@@ -268,6 +257,51 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "server requires parameter host")
+			},
+		},
+		{
+			name:   "server tls requires parameter caCert",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Server.TLS = &GRPCTLSServerConfig{
+					CACert: "",
+					Cert:   "foo",
+					Key:    "foo",
+				}
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "server tls requires parameter caCert")
+			},
+		},
+		{
+			name:   "server tls requires parameter cert",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Server.TLS = &GRPCTLSServerConfig{
+					CACert: "foo",
+					Cert:   "",
+					Key:    "foo",
+				}
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "server tls requires parameter cert")
+			},
+		},
+		{
+			name:   "server tls requires parameter key",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Server.TLS = &GRPCTLSServerConfig{
+					CACert: "foo",
+					Cert:   "foo",
+					Key:    "",
+				}
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "server tls requires parameter key")
 			},
 		},
 		{
@@ -535,6 +569,56 @@ func TestConfig_Validate(t *testing.T) {
 			},
 		},
 		{
+			name:   "manager tls requires parameter caCert",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Job = mockJobConfig
+				cfg.Manager.TLS = &GRPCTLSClientConfig{
+					CACert: "",
+					Cert:   "foo",
+					Key:    "foo",
+				}
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "manager tls requires parameter caCert")
+			},
+		},
+		{
+			name:   "manager tls requires parameter cert",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Manager.TLS = &GRPCTLSClientConfig{
+					CACert: "foo",
+					Cert:   "",
+					Key:    "foo",
+				}
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "manager tls requires parameter cert")
+			},
+		},
+		{
+			name:   "manager tls requires parameter key",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Manager.TLS = &GRPCTLSClientConfig{
+					CACert: "foo",
+					Cert:   "foo",
+					Key:    "",
+				}
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "manager tls requires parameter key")
+			},
+		},
+		{
 			name:   "seedPeer requires parameter taskDownloadTimeout",
 			config: New(),
 			mock: func(cfg *Config) {
@@ -546,6 +630,60 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "seedPeer requires parameter taskDownloadTimeout")
+			},
+		},
+		{
+			name:   "seedPeer tls requires parameter caCert",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Job = mockJobConfig
+				cfg.SeedPeer.TLS = &GRPCTLSClientConfig{
+					CACert: "",
+					Cert:   "foo",
+					Key:    "foo",
+				}
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "seedPeer tls requires parameter caCert")
+			},
+		},
+		{
+			name:   "seedPeer tls requires parameter cert",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Job = mockJobConfig
+				cfg.SeedPeer.TLS = &GRPCTLSClientConfig{
+					CACert: "foo",
+					Cert:   "",
+					Key:    "foo",
+				}
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "seedPeer tls requires parameter cert")
+			},
+		},
+		{
+			name:   "seedPeer tls requires parameter key",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Job = mockJobConfig
+				cfg.SeedPeer.TLS = &GRPCTLSClientConfig{
+					CACert: "foo",
+					Cert:   "foo",
+					Key:    "",
+				}
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "seedPeer tls requires parameter key")
 			},
 		},
 		{
@@ -645,81 +783,6 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "metrics requires parameter addr")
-			},
-		},
-		{
-			name:   "security requires parameter caCert",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Database.Redis = mockRedisConfig
-				cfg.Job = mockJobConfig
-				cfg.Security = mockSecurityConfig
-				cfg.Security.CACert = ""
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "security requires parameter caCert")
-			},
-		},
-		{
-			name:   "security requires parameter tlsPolicy",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Database.Redis = mockRedisConfig
-				cfg.Job = mockJobConfig
-				cfg.Security = mockSecurityConfig
-				cfg.Security.TLSPolicy = ""
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "security requires parameter tlsPolicy")
-			},
-		},
-		{
-			name:   "certSpec requires parameter ipAddresses",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Database.Redis = mockRedisConfig
-				cfg.Job = mockJobConfig
-				cfg.Security = mockSecurityConfig
-				cfg.Security.CertSpec.IPAddresses = []net.IP{}
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "certSpec requires parameter ipAddresses")
-			},
-		},
-		{
-			name:   "certSpec requires parameter dnsNames",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Database.Redis = mockRedisConfig
-				cfg.Job = mockJobConfig
-				cfg.Security = mockSecurityConfig
-				cfg.Security.CertSpec.DNSNames = []string{}
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "certSpec requires parameter dnsNames")
-			},
-		},
-		{
-			name:   "certSpec requires parameter validityPeriod",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Database.Redis = mockRedisConfig
-				cfg.Job = mockJobConfig
-				cfg.Security = mockSecurityConfig
-				cfg.Security.CertSpec.ValidityPeriod = 0
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "certSpec requires parameter validityPeriod")
 			},
 		},
 	}

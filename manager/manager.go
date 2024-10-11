@@ -18,17 +18,16 @@ package manager
 
 import (
 	"context"
-	"crypto/tls"
 	"embed"
+	"errors"
+	"fmt"
 	"io/fs"
+	"net"
 	"net/http"
-	"path"
 	"time"
 
 	"github.com/gin-contrib/static"
-	"github.com/johanbrandhorst/certify"
 	"google.golang.org/grpc"
-	zapadapter "logur.dev/adapter/zap"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/cache"
@@ -41,12 +40,10 @@ import (
 	"d7y.io/dragonfly/v2/manager/rpcserver"
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/manager/service"
-	pkgcache "d7y.io/dragonfly/v2/pkg/cache"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
-	"d7y.io/dragonfly/v2/pkg/issuer"
+	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
 	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/types"
 )
 
 const (
@@ -168,53 +165,19 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	}
 
 	// Initialize signing certificate and tls credentials of grpc server.
-	var options []rpcserver.Option
-	if cfg.Security.AutoIssueCert {
-		cert, err := tls.X509KeyPair([]byte(cfg.Security.CACert), []byte(cfg.Security.CAKey))
+	var options []grpc.ServerOption
+	if cfg.Server.GRPC.TLS != nil {
+		// Initialize grpc server with tls.
+		transportCredentials, err := rpc.NewServerCredentials(cfg.Server.GRPC.TLS.CACert, cfg.Server.GRPC.TLS.Cert, cfg.Server.GRPC.TLS.Key)
 		if err != nil {
+			logger.Errorf("failed to create server credentials: %v", err)
 			return nil, err
 		}
 
-		certifyClient := &certify.Certify{
-			CommonName: types.ManagerName,
-			Issuer: issuer.NewDragonflyManagerIssuer(
-				&cert,
-				issuer.WithManagerValidityPeriod(cfg.Security.CertSpec.ValidityPeriod),
-			),
-			RenewBefore: time.Hour,
-			CertConfig: &certify.CertConfig{
-				SubjectAlternativeNames:   cfg.Security.CertSpec.DNSNames,
-				IPSubjectAlternativeNames: append(cfg.Security.CertSpec.IPAddresses, cfg.Server.GRPC.AdvertiseIP),
-			},
-			IssueTimeout: 0,
-			Logger:       zapadapter.New(logger.CoreLogger.Desugar()),
-			Cache: pkgcache.NewCertifyMutliCache(
-				certify.NewMemCache(),
-				certify.DirCache(path.Join(d.CacheDir(), pkgcache.CertifyCacheDirName, types.ManagerName))),
-		}
-
-		// Issue a certificate to reduce first time delay.
-		if _, err := certifyClient.GetCertificate(&tls.ClientHelloInfo{
-			ServerName: cfg.Server.GRPC.AdvertiseIP.String(),
-		}); err != nil {
-			logger.Errorf("issue certificate error: %s", err.Error())
-			return nil, err
-		}
-
-		// Manager GRPC server's tls varify must be false. If ClientCAs are required for client verification,
-		// the client cannot call the IssueCertificate api.
-		transportCredentials, err := rpc.NewServerCredentialsByCertify(cfg.Security.TLSPolicy, false, []byte(cfg.Security.CACert), certifyClient)
-		if err != nil {
-			return nil, err
-		}
-
-		options = append(
-			options,
-			// Set ca certificate for issuing certificate.
-			rpcserver.WithSelfSignedCert(&cert),
-			// Set tls credentials for grpc server.
-			rpcserver.WithGRPCServerOptions([]grpc.ServerOption{grpc.Creds(transportCredentials)}),
-		)
+		options = append(options, grpc.Creds(transportCredentials))
+	} else {
+		// Initialize grpc server without tls.
+		options = append(options, grpc.Creds(rpc.NewInsecureCredentials()))
 	}
 
 	// Initialize GRPC server.
@@ -275,15 +238,20 @@ func (s *Server) Serve() error {
 	}()
 
 	// Generate GRPC listener.
-	lis, _, err := rpc.ListenWithPortRange(s.config.Server.GRPC.ListenIP.String(), s.config.Server.GRPC.PortRange.Start, s.config.Server.GRPC.PortRange.End)
+	ip, ok := ip.FormatIP(s.config.Server.GRPC.ListenIP.String())
+	if !ok {
+		return errors.New("format ip failed")
+	}
+
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", ip, s.config.Server.GRPC.Port.Start))
 	if err != nil {
 		logger.Fatalf("net listener failed to start: %v", err)
 	}
-	defer lis.Close()
+	defer listener.Close()
 
 	// Started GRPC server.
-	logger.Infof("started grpc server at %s://%s", lis.Addr().Network(), lis.Addr().String())
-	if err := s.grpcServer.Serve(lis); err != nil {
+	logger.Infof("started grpc server at %s://%s", listener.Addr().Network(), listener.Addr().String())
+	if err := s.grpcServer.Serve(listener); err != nil {
 		logger.Errorf("stoped grpc server: %+v", err)
 		return err
 	}
