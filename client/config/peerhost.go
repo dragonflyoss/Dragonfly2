@@ -70,19 +70,18 @@ type DaemonOption struct {
 	DataDirMode   uint32 `mapstructure:"dataDirMode" yaml:"dataDirMode"`
 	KeepStorage   bool   `mapstructure:"keepStorage" yaml:"keepStorage"`
 
-	Security      GlobalSecurityOption `mapstructure:"security" yaml:"security"`
-	Scheduler     SchedulerOption      `mapstructure:"scheduler" yaml:"scheduler"`
-	Host          HostOption           `mapstructure:"host" yaml:"host"`
-	Download      DownloadOption       `mapstructure:"download" yaml:"download"`
-	Proxy         *ProxyOption         `mapstructure:"proxy" yaml:"proxy"`
-	Upload        UploadOption         `mapstructure:"upload" yaml:"upload"`
-	ObjectStorage ObjectStorageOption  `mapstructure:"objectStorage" yaml:"objectStorage"`
-	Storage       StorageOption        `mapstructure:"storage" yaml:"storage"`
-	Health        *HealthOption        `mapstructure:"health" yaml:"health"`
-	Reload        ReloadOption         `mapstructure:"reload" yaml:"reload"`
-	Network       *NetworkOption       `mapstructure:"network" yaml:"network"`
-	Announcer     AnnouncerOption      `mapstructure:"announcer" yaml:"announcer"`
-	PeerExchange  PeerExchangeOption   `mapstructure:"peerExchange" yaml:"peerExchange"`
+	Scheduler     SchedulerOption     `mapstructure:"scheduler" yaml:"scheduler"`
+	Host          HostOption          `mapstructure:"host" yaml:"host"`
+	Download      DownloadOption      `mapstructure:"download" yaml:"download"`
+	Proxy         *ProxyOption        `mapstructure:"proxy" yaml:"proxy"`
+	Upload        UploadOption        `mapstructure:"upload" yaml:"upload"`
+	ObjectStorage ObjectStorageOption `mapstructure:"objectStorage" yaml:"objectStorage"`
+	Storage       StorageOption       `mapstructure:"storage" yaml:"storage"`
+	Health        *HealthOption       `mapstructure:"health" yaml:"health"`
+	Reload        ReloadOption        `mapstructure:"reload" yaml:"reload"`
+	Network       *NetworkOption      `mapstructure:"network" yaml:"network"`
+	Announcer     AnnouncerOption     `mapstructure:"announcer" yaml:"announcer"`
+	PeerExchange  PeerExchangeOption  `mapstructure:"peerExchange" yaml:"peerExchange"`
 }
 
 func NewDaemonConfig() *DaemonOption {
@@ -207,55 +206,11 @@ func (p *DaemonOption) Validate() error {
 		return errors.New("gcInterval must be greater than 0")
 	}
 
-	if p.Security.AutoIssueCert {
-		if p.Security.CACert == "" {
-			return errors.New("security requires parameter caCert")
-		}
-
-		if len(p.Security.CertSpec.IPAddresses) == 0 {
-			return errors.New("certSpec requires parameter ipAddresses")
-		}
-
-		if len(p.Security.CertSpec.DNSNames) == 0 {
-			return errors.New("certSpec requires parameter dnsNames")
-		}
-
-		if p.Security.CertSpec.ValidityPeriod <= 0 {
-			return errors.New("certSpec requires parameter validityPeriod")
-		}
-	}
-
 	return nil
 }
 
 func (p *DaemonOption) IsSupportPeerExchange() bool {
 	return p.PeerExchange.Enable && p.Scheduler.Manager.Enable && p.Scheduler.Manager.SeedPeer.Enable
-}
-
-type GlobalSecurityOption struct {
-	// AutoIssueCert indicates to issue client certificates for all grpc call
-	// if AutoIssueCert is false, any other option in Security will be ignored
-	AutoIssueCert bool `mapstructure:"autoIssueCert" yaml:"autoIssueCert"`
-	// CACert is the root CA certificate for all grpc tls handshake, it can be path or PEM format string
-	CACert types.PEMContent `mapstructure:"caCert" yaml:"caCert"`
-	// TLSVerify indicates to verify client certificates.
-	TLSVerify bool `mapstructure:"tlsVerify" yaml:"tlsVerify"`
-	// TLSPolicy controls the grpc shandshake behaviors:
-	// force: both ClientHandshake and ServerHandshake are only support tls
-	// prefer: ServerHandshake supports tls and insecure (non-tls), ClientHandshake will only support tls
-	// default: ServerHandshake supports tls and insecure (non-tls), ClientHandshake will only support insecure (non-tls)
-	TLSPolicy string `mapstructure:"tlsPolicy" yaml:"tlsPolicy"`
-	// CertSpec is the desired state of certificate.
-	CertSpec *CertSpec `mapstructure:"certSpec" yaml:"certSpec"`
-}
-
-type CertSpec struct {
-	// DNSNames is a list of dns names be set on the certificate.
-	DNSNames []string `mapstructure:"dnsNames" yaml:"dnsNames"`
-	// IPAddresses is a list of ip addresses be set on the certificate.
-	IPAddresses []net.IP `mapstructure:"ipAddresses" yaml:"ipAddresses"`
-	// ValidityPeriod is the validity period of certificate.
-	ValidityPeriod time.Duration `mapstructure:"validityPeriod" yaml:"validityPeriod"`
 }
 
 type SchedulerOption struct {

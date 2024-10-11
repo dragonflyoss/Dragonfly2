@@ -15,8 +15,8 @@ import (
 	reflect "reflect"
 	time "time"
 
-	v1 "d7y.io/api/v2/pkg/apis/common/v1"
-	v10 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
+	common "d7y.io/api/v2/pkg/apis/common/v1"
+	dfdaemon "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
 	storage "d7y.io/dragonfly/v2/client/daemon/storage"
 	http "d7y.io/dragonfly/v2/pkg/net/http"
 	gomock "go.uber.org/mock/gomock"
@@ -46,10 +46,10 @@ func (m *MockTaskStorageDriver) EXPECT() *MockTaskStorageDriverMockRecorder {
 }
 
 // GetExtendAttribute mocks base method.
-func (m *MockTaskStorageDriver) GetExtendAttribute(ctx context.Context, req *storage.PeerTaskMetadata) (*v1.ExtendAttribute, error) {
+func (m *MockTaskStorageDriver) GetExtendAttribute(ctx context.Context, req *storage.PeerTaskMetadata) (*common.ExtendAttribute, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetExtendAttribute", ctx, req)
-	ret0, _ := ret[0].(*v1.ExtendAttribute)
+	ret0, _ := ret[0].(*common.ExtendAttribute)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -61,10 +61,10 @@ func (mr *MockTaskStorageDriverMockRecorder) GetExtendAttribute(ctx, req any) *g
 }
 
 // GetPieces mocks base method.
-func (m *MockTaskStorageDriver) GetPieces(ctx context.Context, req *v1.PieceTaskRequest) (*v1.PiecePacket, error) {
+func (m *MockTaskStorageDriver) GetPieces(ctx context.Context, req *common.PieceTaskRequest) (*common.PiecePacket, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPieces", ctx, req)
-	ret0, _ := ret[0].(*v1.PiecePacket)
+	ret0, _ := ret[0].(*common.PiecePacket)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -348,10 +348,10 @@ func (mr *MockManagerMockRecorder) FindPartialCompletedTask(taskID, rg any) *gom
 }
 
 // GetExtendAttribute mocks base method.
-func (m *MockManager) GetExtendAttribute(ctx context.Context, req *storage.PeerTaskMetadata) (*v1.ExtendAttribute, error) {
+func (m *MockManager) GetExtendAttribute(ctx context.Context, req *storage.PeerTaskMetadata) (*common.ExtendAttribute, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetExtendAttribute", ctx, req)
-	ret0, _ := ret[0].(*v1.ExtendAttribute)
+	ret0, _ := ret[0].(*common.ExtendAttribute)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -363,10 +363,10 @@ func (mr *MockManagerMockRecorder) GetExtendAttribute(ctx, req any) *gomock.Call
 }
 
 // GetPieces mocks base method.
-func (m *MockManager) GetPieces(ctx context.Context, req *v1.PieceTaskRequest) (*v1.PiecePacket, error) {
+func (m *MockManager) GetPieces(ctx context.Context, req *common.PieceTaskRequest) (*common.PiecePacket, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPieces", ctx, req)
-	ret0, _ := ret[0].(*v1.PiecePacket)
+	ret0, _ := ret[0].(*common.PiecePacket)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -420,10 +420,10 @@ func (mr *MockManagerMockRecorder) Keep() *gomock.Call {
 }
 
 // ListAllPeers mocks base method.
-func (m *MockManager) ListAllPeers(perGroupCount int) [][]*v10.PeerMetadata {
+func (m *MockManager) ListAllPeers(perGroupCount int) [][]*dfdaemon.PeerMetadata {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListAllPeers", perGroupCount)
-	ret0, _ := ret[0].([][]*v10.PeerMetadata)
+	ret0, _ := ret[0].([][]*dfdaemon.PeerMetadata)
 	return ret0
 }
 

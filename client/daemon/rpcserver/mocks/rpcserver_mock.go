@@ -14,7 +14,7 @@ import (
 	reflect "reflect"
 	time "time"
 
-	v1 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
+	dfdaemon "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
 	config "d7y.io/dragonfly/v2/client/config"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -144,7 +144,7 @@ func (m *MockResultSender) EXPECT() *MockResultSenderMockRecorder {
 }
 
 // Send mocks base method.
-func (m *MockResultSender) Send(arg0 *v1.DownResult) error {
+func (m *MockResultSender) Send(arg0 *dfdaemon.DownResult) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Send", arg0)
 	ret0, _ := ret[0].(error)

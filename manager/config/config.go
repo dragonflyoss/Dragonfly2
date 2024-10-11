@@ -278,10 +278,18 @@ type GRPCConfig struct {
 	ListenIP net.IP `mapstructure:"listenIP" yaml:"listenIP"`
 
 	// Port is listen port.
-	Port int `yaml:"port" mapstructure:"port"`
+	Port TCPListenPortRange `yaml:"port" mapstructure:"port"`
 
 	// TLS server configuration.
 	TLS *GRPCTLSServerConfig `yaml:"tls" mapstructure:"tls"`
+}
+
+type TCPListenPortRange struct {
+	// Start is the start port.
+	Start int
+
+	// End is the end port.
+	End int
 }
 
 type GRPCTLSServerConfig struct {
@@ -395,7 +403,10 @@ func New() *Config {
 		Server: ServerConfig{
 			Name: DefaultServerName,
 			GRPC: GRPCConfig{
-				Port: DefaultGRPCPort,
+				Port: TCPListenPortRange{
+					Start: DefaultGRPCPort,
+					End:   DefaultGRPCPort,
+				},
 			},
 			REST: RESTConfig{
 				Addr: DefaultRESTAddr,

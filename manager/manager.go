@@ -243,7 +243,7 @@ func (s *Server) Serve() error {
 		return errors.New("format ip failed")
 	}
 
-	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", ip, s.config.Server.GRPC.Port))
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", ip, s.config.Server.GRPC.Port.Start))
 	if err != nil {
 		logger.Fatalf("net listener failed to start: %v", err)
 	}

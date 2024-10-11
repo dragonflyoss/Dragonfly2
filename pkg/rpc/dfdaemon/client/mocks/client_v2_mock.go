@@ -13,8 +13,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	v2 "d7y.io/api/v2/pkg/apis/common/v2"
-	v20 "d7y.io/api/v2/pkg/apis/dfdaemon/v2"
+	common "d7y.io/api/v2/pkg/apis/common/v2"
+	dfdaemon "d7y.io/api/v2/pkg/apis/dfdaemon/v2"
 	gomock "go.uber.org/mock/gomock"
 	grpc "google.golang.org/grpc"
 )
@@ -57,7 +57,7 @@ func (mr *MockV2MockRecorder) Close() *gomock.Call {
 }
 
 // DeletePersistentCacheTask mocks base method.
-func (m *MockV2) DeletePersistentCacheTask(arg0 context.Context, arg1 *v20.DeletePersistentCacheTaskRequest, arg2 ...grpc.CallOption) error {
+func (m *MockV2) DeletePersistentCacheTask(arg0 context.Context, arg1 *dfdaemon.DeletePersistentCacheTaskRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
@@ -76,7 +76,7 @@ func (mr *MockV2MockRecorder) DeletePersistentCacheTask(arg0, arg1 any, arg2 ...
 }
 
 // DeleteTask mocks base method.
-func (m *MockV2) DeleteTask(arg0 context.Context, arg1 *v20.DeleteTaskRequest, arg2 ...grpc.CallOption) error {
+func (m *MockV2) DeleteTask(arg0 context.Context, arg1 *dfdaemon.DeleteTaskRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
@@ -95,14 +95,14 @@ func (mr *MockV2MockRecorder) DeleteTask(arg0, arg1 any, arg2 ...any) *gomock.Ca
 }
 
 // DownloadPersistentCacheTask mocks base method.
-func (m *MockV2) DownloadPersistentCacheTask(arg0 context.Context, arg1 *v20.DownloadPersistentCacheTaskRequest, arg2 ...grpc.CallOption) (v20.DfdaemonUpload_DownloadPersistentCacheTaskClient, error) {
+func (m *MockV2) DownloadPersistentCacheTask(arg0 context.Context, arg1 *dfdaemon.DownloadPersistentCacheTaskRequest, arg2 ...grpc.CallOption) (dfdaemon.DfdaemonUpload_DownloadPersistentCacheTaskClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "DownloadPersistentCacheTask", varargs...)
-	ret0, _ := ret[0].(v20.DfdaemonUpload_DownloadPersistentCacheTaskClient)
+	ret0, _ := ret[0].(dfdaemon.DfdaemonUpload_DownloadPersistentCacheTaskClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -115,14 +115,14 @@ func (mr *MockV2MockRecorder) DownloadPersistentCacheTask(arg0, arg1 any, arg2 .
 }
 
 // DownloadPiece mocks base method.
-func (m *MockV2) DownloadPiece(arg0 context.Context, arg1 *v20.DownloadPieceRequest, arg2 ...grpc.CallOption) (*v20.DownloadPieceResponse, error) {
+func (m *MockV2) DownloadPiece(arg0 context.Context, arg1 *dfdaemon.DownloadPieceRequest, arg2 ...grpc.CallOption) (*dfdaemon.DownloadPieceResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "DownloadPiece", varargs...)
-	ret0, _ := ret[0].(*v20.DownloadPieceResponse)
+	ret0, _ := ret[0].(*dfdaemon.DownloadPieceResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -135,14 +135,14 @@ func (mr *MockV2MockRecorder) DownloadPiece(arg0, arg1 any, arg2 ...any) *gomock
 }
 
 // DownloadTask mocks base method.
-func (m *MockV2) DownloadTask(arg0 context.Context, arg1 string, arg2 *v20.DownloadTaskRequest, arg3 ...grpc.CallOption) (v20.DfdaemonUpload_DownloadTaskClient, error) {
+func (m *MockV2) DownloadTask(arg0 context.Context, arg1 string, arg2 *dfdaemon.DownloadTaskRequest, arg3 ...grpc.CallOption) (dfdaemon.DfdaemonUpload_DownloadTaskClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1, arg2}
 	for _, a := range arg3 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "DownloadTask", varargs...)
-	ret0, _ := ret[0].(v20.DfdaemonUpload_DownloadTaskClient)
+	ret0, _ := ret[0].(dfdaemon.DfdaemonUpload_DownloadTaskClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -155,14 +155,14 @@ func (mr *MockV2MockRecorder) DownloadTask(arg0, arg1, arg2 any, arg3 ...any) *g
 }
 
 // StatPersistentCacheTask mocks base method.
-func (m *MockV2) StatPersistentCacheTask(arg0 context.Context, arg1 *v20.StatPersistentCacheTaskRequest, arg2 ...grpc.CallOption) (*v2.PersistentCacheTask, error) {
+func (m *MockV2) StatPersistentCacheTask(arg0 context.Context, arg1 *dfdaemon.StatPersistentCacheTaskRequest, arg2 ...grpc.CallOption) (*common.PersistentCacheTask, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "StatPersistentCacheTask", varargs...)
-	ret0, _ := ret[0].(*v2.PersistentCacheTask)
+	ret0, _ := ret[0].(*common.PersistentCacheTask)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -175,14 +175,14 @@ func (mr *MockV2MockRecorder) StatPersistentCacheTask(arg0, arg1 any, arg2 ...an
 }
 
 // StatTask mocks base method.
-func (m *MockV2) StatTask(arg0 context.Context, arg1 *v20.StatTaskRequest, arg2 ...grpc.CallOption) (*v2.Task, error) {
+func (m *MockV2) StatTask(arg0 context.Context, arg1 *dfdaemon.StatTaskRequest, arg2 ...grpc.CallOption) (*common.Task, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "StatTask", varargs...)
-	ret0, _ := ret[0].(*v2.Task)
+	ret0, _ := ret[0].(*common.Task)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -195,14 +195,14 @@ func (mr *MockV2MockRecorder) StatTask(arg0, arg1 any, arg2 ...any) *gomock.Call
 }
 
 // SyncPieces mocks base method.
-func (m *MockV2) SyncPieces(arg0 context.Context, arg1 *v20.SyncPiecesRequest, arg2 ...grpc.CallOption) (v20.DfdaemonUpload_SyncPiecesClient, error) {
+func (m *MockV2) SyncPieces(arg0 context.Context, arg1 *dfdaemon.SyncPiecesRequest, arg2 ...grpc.CallOption) (dfdaemon.DfdaemonUpload_SyncPiecesClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "SyncPieces", varargs...)
-	ret0, _ := ret[0].(v20.DfdaemonUpload_SyncPiecesClient)
+	ret0, _ := ret[0].(dfdaemon.DfdaemonUpload_SyncPiecesClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

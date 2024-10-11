@@ -25,7 +25,6 @@ import (
 
 	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/pkg/net/fqdn"
-	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/types"
 )
 
@@ -162,17 +161,6 @@ var peerHostConfig = func() *DaemonOption {
 		Reload: ReloadOption{
 			Interval: util.Duration{
 				Duration: time.Minute,
-			},
-		},
-		Security: GlobalSecurityOption{
-			AutoIssueCert: false,
-			CACert:        types.PEMContent(""),
-			TLSVerify:     false,
-			TLSPolicy:     rpc.DefaultTLSPolicy,
-			CertSpec: &CertSpec{
-				DNSNames:       DefaultCertDNSNames,
-				IPAddresses:    DefaultCertIPAddresses,
-				ValidityPeriod: DefaultCertValidityPeriod,
 			},
 		},
 		Network: &NetworkOption{

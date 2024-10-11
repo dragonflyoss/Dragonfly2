@@ -19,7 +19,7 @@ require (
 	github.com/deckarep/golang-set/v2 v2.6.0
 	github.com/distribution/distribution/v3 v3.0.0-20220620080156-3e4f8a0ab147
 	github.com/docker/distribution v2.8.3+incompatible
-	github.com/docker/docker v27.1.1+incompatible
+	github.com/docker/docker v27.3.1+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/docker/go-units v0.4.0
 	github.com/gaius-qi/ping v1.0.0
@@ -87,7 +87,7 @@ require (
 	golang.org/x/sys v0.25.0
 	golang.org/x/time v0.6.0
 	google.golang.org/api v0.199.0
-	google.golang.org/grpc v1.67.0
+	google.golang.org/grpc v1.67.1
 	google.golang.org/protobuf v1.34.2
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -96,7 +96,6 @@ require (
 	gorm.io/gorm v1.25.10
 	gorm.io/plugin/soft_delete v1.2.1
 	k8s.io/component-base v0.29.2
-	logur.dev/adapter/zap v0.5.0
 	moul.io/zapgorm2 v1.3.0
 	stathat.com/c/consistent v1.0.0
 )
@@ -253,5 +252,4 @@ require (
 	gorm.io/plugin/dbresolver v1.3.0 // indirect
 	k8s.io/apimachinery v0.29.2 // indirect
 	k8s.io/klog/v2 v2.110.1 // indirect
-	logur.dev/logur v0.16.1 // indirect
 )

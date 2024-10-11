@@ -14,7 +14,7 @@ import (
 	reflect "reflect"
 	time "time"
 
-	v2 "d7y.io/api/v2/pkg/apis/manager/v2"
+	manager "d7y.io/api/v2/pkg/apis/manager/v2"
 	gomock "go.uber.org/mock/gomock"
 	grpc "google.golang.org/grpc"
 )
@@ -57,7 +57,7 @@ func (mr *MockV2MockRecorder) Close() *gomock.Call {
 }
 
 // DeleteSeedPeer mocks base method.
-func (m *MockV2) DeleteSeedPeer(arg0 context.Context, arg1 *v2.DeleteSeedPeerRequest, arg2 ...grpc.CallOption) error {
+func (m *MockV2) DeleteSeedPeer(arg0 context.Context, arg1 *manager.DeleteSeedPeerRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
@@ -76,14 +76,14 @@ func (mr *MockV2MockRecorder) DeleteSeedPeer(arg0, arg1 any, arg2 ...any) *gomoc
 }
 
 // GetScheduler mocks base method.
-func (m *MockV2) GetScheduler(arg0 context.Context, arg1 *v2.GetSchedulerRequest, arg2 ...grpc.CallOption) (*v2.Scheduler, error) {
+func (m *MockV2) GetScheduler(arg0 context.Context, arg1 *manager.GetSchedulerRequest, arg2 ...grpc.CallOption) (*manager.Scheduler, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetScheduler", varargs...)
-	ret0, _ := ret[0].(*v2.Scheduler)
+	ret0, _ := ret[0].(*manager.Scheduler)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -96,7 +96,7 @@ func (mr *MockV2MockRecorder) GetScheduler(arg0, arg1 any, arg2 ...any) *gomock.
 }
 
 // KeepAlive mocks base method.
-func (m *MockV2) KeepAlive(arg0 time.Duration, arg1 *v2.KeepAliveRequest, arg2 <-chan struct{}, arg3 ...grpc.CallOption) {
+func (m *MockV2) KeepAlive(arg0 time.Duration, arg1 *manager.KeepAliveRequest, arg2 <-chan struct{}, arg3 ...grpc.CallOption) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1, arg2}
 	for _, a := range arg3 {
@@ -113,14 +113,14 @@ func (mr *MockV2MockRecorder) KeepAlive(arg0, arg1, arg2 any, arg3 ...any) *gomo
 }
 
 // ListApplications mocks base method.
-func (m *MockV2) ListApplications(arg0 context.Context, arg1 *v2.ListApplicationsRequest, arg2 ...grpc.CallOption) (*v2.ListApplicationsResponse, error) {
+func (m *MockV2) ListApplications(arg0 context.Context, arg1 *manager.ListApplicationsRequest, arg2 ...grpc.CallOption) (*manager.ListApplicationsResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "ListApplications", varargs...)
-	ret0, _ := ret[0].(*v2.ListApplicationsResponse)
+	ret0, _ := ret[0].(*manager.ListApplicationsResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -133,14 +133,14 @@ func (mr *MockV2MockRecorder) ListApplications(arg0, arg1 any, arg2 ...any) *gom
 }
 
 // ListSchedulers mocks base method.
-func (m *MockV2) ListSchedulers(arg0 context.Context, arg1 *v2.ListSchedulersRequest, arg2 ...grpc.CallOption) (*v2.ListSchedulersResponse, error) {
+func (m *MockV2) ListSchedulers(arg0 context.Context, arg1 *manager.ListSchedulersRequest, arg2 ...grpc.CallOption) (*manager.ListSchedulersResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "ListSchedulers", varargs...)
-	ret0, _ := ret[0].(*v2.ListSchedulersResponse)
+	ret0, _ := ret[0].(*manager.ListSchedulersResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -153,14 +153,14 @@ func (mr *MockV2MockRecorder) ListSchedulers(arg0, arg1 any, arg2 ...any) *gomoc
 }
 
 // ListSeedPeers mocks base method.
-func (m *MockV2) ListSeedPeers(arg0 context.Context, arg1 *v2.ListSeedPeersRequest, arg2 ...grpc.CallOption) (*v2.ListSeedPeersResponse, error) {
+func (m *MockV2) ListSeedPeers(arg0 context.Context, arg1 *manager.ListSeedPeersRequest, arg2 ...grpc.CallOption) (*manager.ListSeedPeersResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "ListSeedPeers", varargs...)
-	ret0, _ := ret[0].(*v2.ListSeedPeersResponse)
+	ret0, _ := ret[0].(*manager.ListSeedPeersResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -173,14 +173,14 @@ func (mr *MockV2MockRecorder) ListSeedPeers(arg0, arg1 any, arg2 ...any) *gomock
 }
 
 // UpdateScheduler mocks base method.
-func (m *MockV2) UpdateScheduler(arg0 context.Context, arg1 *v2.UpdateSchedulerRequest, arg2 ...grpc.CallOption) (*v2.Scheduler, error) {
+func (m *MockV2) UpdateScheduler(arg0 context.Context, arg1 *manager.UpdateSchedulerRequest, arg2 ...grpc.CallOption) (*manager.Scheduler, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "UpdateScheduler", varargs...)
-	ret0, _ := ret[0].(*v2.Scheduler)
+	ret0, _ := ret[0].(*manager.Scheduler)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -193,14 +193,14 @@ func (mr *MockV2MockRecorder) UpdateScheduler(arg0, arg1 any, arg2 ...any) *gomo
 }
 
 // UpdateSeedPeer mocks base method.
-func (m *MockV2) UpdateSeedPeer(arg0 context.Context, arg1 *v2.UpdateSeedPeerRequest, arg2 ...grpc.CallOption) (*v2.SeedPeer, error) {
+func (m *MockV2) UpdateSeedPeer(arg0 context.Context, arg1 *manager.UpdateSeedPeerRequest, arg2 ...grpc.CallOption) (*manager.SeedPeer, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "UpdateSeedPeer", varargs...)
-	ret0, _ := ret[0].(*v2.SeedPeer)
+	ret0, _ := ret[0].(*manager.SeedPeer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

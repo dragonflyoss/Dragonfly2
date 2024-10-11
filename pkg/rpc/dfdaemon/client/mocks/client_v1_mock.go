@@ -13,8 +13,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	v1 "d7y.io/api/v2/pkg/apis/common/v1"
-	v10 "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
+	common "d7y.io/api/v2/pkg/apis/common/v1"
+	dfdaemon "d7y.io/api/v2/pkg/apis/dfdaemon/v1"
 	gomock "go.uber.org/mock/gomock"
 	grpc "google.golang.org/grpc"
 )
@@ -76,7 +76,7 @@ func (mr *MockV1MockRecorder) Close() *gomock.Call {
 }
 
 // DeleteTask mocks base method.
-func (m *MockV1) DeleteTask(arg0 context.Context, arg1 *v10.DeleteTaskRequest, arg2 ...grpc.CallOption) error {
+func (m *MockV1) DeleteTask(arg0 context.Context, arg1 *dfdaemon.DeleteTaskRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
@@ -95,14 +95,14 @@ func (mr *MockV1MockRecorder) DeleteTask(arg0, arg1 any, arg2 ...any) *gomock.Ca
 }
 
 // Download mocks base method.
-func (m *MockV1) Download(arg0 context.Context, arg1 *v10.DownRequest, arg2 ...grpc.CallOption) (v10.Daemon_DownloadClient, error) {
+func (m *MockV1) Download(arg0 context.Context, arg1 *dfdaemon.DownRequest, arg2 ...grpc.CallOption) (dfdaemon.Daemon_DownloadClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "Download", varargs...)
-	ret0, _ := ret[0].(v10.Daemon_DownloadClient)
+	ret0, _ := ret[0].(dfdaemon.Daemon_DownloadClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -115,7 +115,7 @@ func (mr *MockV1MockRecorder) Download(arg0, arg1 any, arg2 ...any) *gomock.Call
 }
 
 // ExportTask mocks base method.
-func (m *MockV1) ExportTask(arg0 context.Context, arg1 *v10.ExportTaskRequest, arg2 ...grpc.CallOption) error {
+func (m *MockV1) ExportTask(arg0 context.Context, arg1 *dfdaemon.ExportTaskRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
@@ -134,14 +134,14 @@ func (mr *MockV1MockRecorder) ExportTask(arg0, arg1 any, arg2 ...any) *gomock.Ca
 }
 
 // GetPieceTasks mocks base method.
-func (m *MockV1) GetPieceTasks(arg0 context.Context, arg1 *v1.PieceTaskRequest, arg2 ...grpc.CallOption) (*v1.PiecePacket, error) {
+func (m *MockV1) GetPieceTasks(arg0 context.Context, arg1 *common.PieceTaskRequest, arg2 ...grpc.CallOption) (*common.PiecePacket, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetPieceTasks", varargs...)
-	ret0, _ := ret[0].(*v1.PiecePacket)
+	ret0, _ := ret[0].(*common.PiecePacket)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -154,7 +154,7 @@ func (mr *MockV1MockRecorder) GetPieceTasks(arg0, arg1 any, arg2 ...any) *gomock
 }
 
 // ImportTask mocks base method.
-func (m *MockV1) ImportTask(arg0 context.Context, arg1 *v10.ImportTaskRequest, arg2 ...grpc.CallOption) error {
+func (m *MockV1) ImportTask(arg0 context.Context, arg1 *dfdaemon.ImportTaskRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
@@ -192,14 +192,14 @@ func (mr *MockV1MockRecorder) LeaveHost(arg0 any, arg1 ...any) *gomock.Call {
 }
 
 // PeerExchange mocks base method.
-func (m *MockV1) PeerExchange(ctx context.Context, opts ...grpc.CallOption) (v10.Daemon_PeerExchangeClient, error) {
+func (m *MockV1) PeerExchange(ctx context.Context, opts ...grpc.CallOption) (dfdaemon.Daemon_PeerExchangeClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{ctx}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "PeerExchange", varargs...)
-	ret0, _ := ret[0].(v10.Daemon_PeerExchangeClient)
+	ret0, _ := ret[0].(dfdaemon.Daemon_PeerExchangeClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -212,7 +212,7 @@ func (mr *MockV1MockRecorder) PeerExchange(ctx any, opts ...any) *gomock.Call {
 }
 
 // StatTask mocks base method.
-func (m *MockV1) StatTask(arg0 context.Context, arg1 *v10.StatTaskRequest, arg2 ...grpc.CallOption) error {
+func (m *MockV1) StatTask(arg0 context.Context, arg1 *dfdaemon.StatTaskRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
@@ -231,14 +231,14 @@ func (mr *MockV1MockRecorder) StatTask(arg0, arg1 any, arg2 ...any) *gomock.Call
 }
 
 // SyncPieceTasks mocks base method.
-func (m *MockV1) SyncPieceTasks(arg0 context.Context, arg1 *v1.PieceTaskRequest, arg2 ...grpc.CallOption) (v10.Daemon_SyncPieceTasksClient, error) {
+func (m *MockV1) SyncPieceTasks(arg0 context.Context, arg1 *common.PieceTaskRequest, arg2 ...grpc.CallOption) (dfdaemon.Daemon_SyncPieceTasksClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "SyncPieceTasks", varargs...)
-	ret0, _ := ret[0].(v10.Daemon_SyncPieceTasksClient)
+	ret0, _ := ret[0].(dfdaemon.Daemon_SyncPieceTasksClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

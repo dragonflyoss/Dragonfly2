@@ -590,6 +590,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "manager tls requires parameter cert",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
 				cfg.Manager.TLS = &GRPCTLSClientConfig{
 					CACert: "foo",
 					Cert:   "",
@@ -605,6 +606,7 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "manager tls requires parameter key",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
 				cfg.Manager.TLS = &GRPCTLSClientConfig{
 					CACert: "foo",
 					Cert:   "foo",
@@ -652,6 +654,9 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "seedPeer tls requires parameter cert",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Job = mockJobConfig
 				cfg.SeedPeer.TLS = &GRPCTLSClientConfig{
 					CACert: "foo",
 					Cert:   "",
@@ -667,6 +672,9 @@ func TestConfig_Validate(t *testing.T) {
 			name:   "seedPeer tls requires parameter key",
 			config: New(),
 			mock: func(cfg *Config) {
+				cfg.Manager = mockManagerConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Job = mockJobConfig
 				cfg.SeedPeer.TLS = &GRPCTLSClientConfig{
 					CACert: "foo",
 					Cert:   "foo",

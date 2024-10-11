@@ -13,10 +13,10 @@ import (
 	context "context"
 	reflect "reflect"
 
-	v1 "d7y.io/api/v2/pkg/apis/cdnsystem/v1"
-	v10 "d7y.io/api/v2/pkg/apis/common/v1"
-	v2 "d7y.io/api/v2/pkg/apis/common/v2"
-	v20 "d7y.io/api/v2/pkg/apis/dfdaemon/v2"
+	cdnsystem "d7y.io/api/v2/pkg/apis/cdnsystem/v1"
+	common "d7y.io/api/v2/pkg/apis/common/v1"
+	common0 "d7y.io/api/v2/pkg/apis/common/v2"
+	dfdaemon "d7y.io/api/v2/pkg/apis/dfdaemon/v2"
 	config "d7y.io/dragonfly/v2/scheduler/config"
 	gomock "go.uber.org/mock/gomock"
 	grpc "google.golang.org/grpc"
@@ -74,7 +74,7 @@ func (mr *MockSeedPeerClientMockRecorder) Close() *gomock.Call {
 }
 
 // DeletePersistentCacheTask mocks base method.
-func (m *MockSeedPeerClient) DeletePersistentCacheTask(arg0 context.Context, arg1 *v20.DeletePersistentCacheTaskRequest, arg2 ...grpc.CallOption) error {
+func (m *MockSeedPeerClient) DeletePersistentCacheTask(arg0 context.Context, arg1 *dfdaemon.DeletePersistentCacheTaskRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
@@ -93,7 +93,7 @@ func (mr *MockSeedPeerClientMockRecorder) DeletePersistentCacheTask(arg0, arg1 a
 }
 
 // DeleteTask mocks base method.
-func (m *MockSeedPeerClient) DeleteTask(arg0 context.Context, arg1 *v20.DeleteTaskRequest, arg2 ...grpc.CallOption) error {
+func (m *MockSeedPeerClient) DeleteTask(arg0 context.Context, arg1 *dfdaemon.DeleteTaskRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
@@ -112,14 +112,14 @@ func (mr *MockSeedPeerClientMockRecorder) DeleteTask(arg0, arg1 any, arg2 ...any
 }
 
 // DownloadPersistentCacheTask mocks base method.
-func (m *MockSeedPeerClient) DownloadPersistentCacheTask(arg0 context.Context, arg1 *v20.DownloadPersistentCacheTaskRequest, arg2 ...grpc.CallOption) (v20.DfdaemonUpload_DownloadPersistentCacheTaskClient, error) {
+func (m *MockSeedPeerClient) DownloadPersistentCacheTask(arg0 context.Context, arg1 *dfdaemon.DownloadPersistentCacheTaskRequest, arg2 ...grpc.CallOption) (dfdaemon.DfdaemonUpload_DownloadPersistentCacheTaskClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "DownloadPersistentCacheTask", varargs...)
-	ret0, _ := ret[0].(v20.DfdaemonUpload_DownloadPersistentCacheTaskClient)
+	ret0, _ := ret[0].(dfdaemon.DfdaemonUpload_DownloadPersistentCacheTaskClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -132,14 +132,14 @@ func (mr *MockSeedPeerClientMockRecorder) DownloadPersistentCacheTask(arg0, arg1
 }
 
 // DownloadPiece mocks base method.
-func (m *MockSeedPeerClient) DownloadPiece(arg0 context.Context, arg1 *v20.DownloadPieceRequest, arg2 ...grpc.CallOption) (*v20.DownloadPieceResponse, error) {
+func (m *MockSeedPeerClient) DownloadPiece(arg0 context.Context, arg1 *dfdaemon.DownloadPieceRequest, arg2 ...grpc.CallOption) (*dfdaemon.DownloadPieceResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "DownloadPiece", varargs...)
-	ret0, _ := ret[0].(*v20.DownloadPieceResponse)
+	ret0, _ := ret[0].(*dfdaemon.DownloadPieceResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -152,14 +152,14 @@ func (mr *MockSeedPeerClientMockRecorder) DownloadPiece(arg0, arg1 any, arg2 ...
 }
 
 // DownloadTask mocks base method.
-func (m *MockSeedPeerClient) DownloadTask(arg0 context.Context, arg1 string, arg2 *v20.DownloadTaskRequest, arg3 ...grpc.CallOption) (v20.DfdaemonUpload_DownloadTaskClient, error) {
+func (m *MockSeedPeerClient) DownloadTask(arg0 context.Context, arg1 string, arg2 *dfdaemon.DownloadTaskRequest, arg3 ...grpc.CallOption) (dfdaemon.DfdaemonUpload_DownloadTaskClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1, arg2}
 	for _, a := range arg3 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "DownloadTask", varargs...)
-	ret0, _ := ret[0].(v20.DfdaemonUpload_DownloadTaskClient)
+	ret0, _ := ret[0].(dfdaemon.DfdaemonUpload_DownloadTaskClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -172,14 +172,14 @@ func (mr *MockSeedPeerClientMockRecorder) DownloadTask(arg0, arg1, arg2 any, arg
 }
 
 // GetPieceTasks mocks base method.
-func (m *MockSeedPeerClient) GetPieceTasks(arg0 context.Context, arg1 *v10.PieceTaskRequest, arg2 ...grpc.CallOption) (*v10.PiecePacket, error) {
+func (m *MockSeedPeerClient) GetPieceTasks(arg0 context.Context, arg1 *common.PieceTaskRequest, arg2 ...grpc.CallOption) (*common.PiecePacket, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetPieceTasks", varargs...)
-	ret0, _ := ret[0].(*v10.PiecePacket)
+	ret0, _ := ret[0].(*common.PiecePacket)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -192,14 +192,14 @@ func (mr *MockSeedPeerClientMockRecorder) GetPieceTasks(arg0, arg1 any, arg2 ...
 }
 
 // ObtainSeeds mocks base method.
-func (m *MockSeedPeerClient) ObtainSeeds(arg0 context.Context, arg1 *v1.SeedRequest, arg2 ...grpc.CallOption) (v1.Seeder_ObtainSeedsClient, error) {
+func (m *MockSeedPeerClient) ObtainSeeds(arg0 context.Context, arg1 *cdnsystem.SeedRequest, arg2 ...grpc.CallOption) (cdnsystem.Seeder_ObtainSeedsClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "ObtainSeeds", varargs...)
-	ret0, _ := ret[0].(v1.Seeder_ObtainSeedsClient)
+	ret0, _ := ret[0].(cdnsystem.Seeder_ObtainSeedsClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -224,14 +224,14 @@ func (mr *MockSeedPeerClientMockRecorder) OnNotify(arg0 any) *gomock.Call {
 }
 
 // StatPersistentCacheTask mocks base method.
-func (m *MockSeedPeerClient) StatPersistentCacheTask(arg0 context.Context, arg1 *v20.StatPersistentCacheTaskRequest, arg2 ...grpc.CallOption) (*v2.PersistentCacheTask, error) {
+func (m *MockSeedPeerClient) StatPersistentCacheTask(arg0 context.Context, arg1 *dfdaemon.StatPersistentCacheTaskRequest, arg2 ...grpc.CallOption) (*common0.PersistentCacheTask, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "StatPersistentCacheTask", varargs...)
-	ret0, _ := ret[0].(*v2.PersistentCacheTask)
+	ret0, _ := ret[0].(*common0.PersistentCacheTask)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -244,14 +244,14 @@ func (mr *MockSeedPeerClientMockRecorder) StatPersistentCacheTask(arg0, arg1 any
 }
 
 // StatTask mocks base method.
-func (m *MockSeedPeerClient) StatTask(arg0 context.Context, arg1 *v20.StatTaskRequest, arg2 ...grpc.CallOption) (*v2.Task, error) {
+func (m *MockSeedPeerClient) StatTask(arg0 context.Context, arg1 *dfdaemon.StatTaskRequest, arg2 ...grpc.CallOption) (*common0.Task, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "StatTask", varargs...)
-	ret0, _ := ret[0].(*v2.Task)
+	ret0, _ := ret[0].(*common0.Task)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -264,14 +264,14 @@ func (mr *MockSeedPeerClientMockRecorder) StatTask(arg0, arg1 any, arg2 ...any) 
 }
 
 // SyncPieceTasks mocks base method.
-func (m *MockSeedPeerClient) SyncPieceTasks(arg0 context.Context, arg1 *v10.PieceTaskRequest, arg2 ...grpc.CallOption) (v1.Seeder_SyncPieceTasksClient, error) {
+func (m *MockSeedPeerClient) SyncPieceTasks(arg0 context.Context, arg1 *common.PieceTaskRequest, arg2 ...grpc.CallOption) (cdnsystem.Seeder_SyncPieceTasksClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "SyncPieceTasks", varargs...)
-	ret0, _ := ret[0].(v1.Seeder_SyncPieceTasksClient)
+	ret0, _ := ret[0].(cdnsystem.Seeder_SyncPieceTasksClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -284,14 +284,14 @@ func (mr *MockSeedPeerClientMockRecorder) SyncPieceTasks(arg0, arg1 any, arg2 ..
 }
 
 // SyncPieces mocks base method.
-func (m *MockSeedPeerClient) SyncPieces(arg0 context.Context, arg1 *v20.SyncPiecesRequest, arg2 ...grpc.CallOption) (v20.DfdaemonUpload_SyncPiecesClient, error) {
+func (m *MockSeedPeerClient) SyncPieces(arg0 context.Context, arg1 *dfdaemon.SyncPiecesRequest, arg2 ...grpc.CallOption) (dfdaemon.DfdaemonUpload_SyncPiecesClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "SyncPieces", varargs...)
-	ret0, _ := ret[0].(v20.DfdaemonUpload_SyncPiecesClient)
+	ret0, _ := ret[0].(dfdaemon.DfdaemonUpload_SyncPiecesClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

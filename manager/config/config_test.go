@@ -104,7 +104,10 @@ func TestConfig_Load(t *testing.T) {
 			GRPC: GRPCConfig{
 				AdvertiseIP: net.IPv4zero,
 				ListenIP:    net.IPv4zero,
-				Port:        65003,
+				Port: TCPListenPortRange{
+					Start: 65003,
+					End:   65003,
+				},
 				TLS: &GRPCTLSServerConfig{
 					CACert: "foo",
 					Cert:   "foo",
@@ -484,13 +487,15 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Mysql.TLS = mockMysqlTLSConfig
-				cfg.Database.Mysql.TLS.Cert = "ca.crt"
-				cfg.Database.Mysql.TLS.Key = "ca.key"
-				cfg.Database.Mysql.TLS.CACert = ""
+				cfg.Database.Mysql.TLS = &MysqlTLSClientConfig{
+					CACert: "",
+					Cert:   "foo",
+					Key:    "foo",
+				}
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "tls requires parameter caCert")
+				assert.EqualError(err, "mysql tls requires parameter caCert")
 			},
 		},
 		{
@@ -501,11 +506,15 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Mysql.TLS = mockMysqlTLSConfig
-				cfg.Database.Mysql.TLS.Cert = ""
+				cfg.Database.Mysql.TLS = &MysqlTLSClientConfig{
+					CACert: "foo",
+					Cert:   "",
+					Key:    "foo",
+				}
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "tls requires parameter cert")
+				assert.EqualError(err, "mysql tls requires parameter cert")
 			},
 		},
 		{
@@ -516,12 +525,15 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Database.Type = DatabaseTypeMysql
 				cfg.Database.Mysql = mockMysqlConfig
 				cfg.Database.Mysql.TLS = mockMysqlTLSConfig
-				cfg.Database.Mysql.TLS.Cert = "ca.crt"
-				cfg.Database.Mysql.TLS.Key = ""
+				cfg.Database.Mysql.TLS = &MysqlTLSClientConfig{
+					CACert: "foo",
+					Cert:   "foo",
+					Key:    "",
+				}
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "tls requires parameter key")
+				assert.EqualError(err, "mysql tls requires parameter key")
 			},
 		},
 		{

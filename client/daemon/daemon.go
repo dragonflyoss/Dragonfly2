@@ -25,7 +25,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
@@ -38,9 +37,6 @@ import (
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/credentials/insecure"
-	zapadapter "logur.dev/adapter/zap"
 
 	"d7y.io/api/v2/pkg/apis/dfdaemon/v1"
 	managerv1 "d7y.io/api/v2/pkg/apis/manager/v1"
@@ -61,19 +57,15 @@ import (
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaldynconfig "d7y.io/dragonfly/v2/internal/dynconfig"
-	"d7y.io/dragonfly/v2/pkg/cache"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/issuer"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
-	securityclient "d7y.io/dragonfly/v2/pkg/rpc/security/client"
 	"d7y.io/dragonfly/v2/pkg/source"
 	_ "d7y.io/dragonfly/v2/pkg/source/loader" // register all source clients
-	"d7y.io/dragonfly/v2/pkg/types"
 )
 
 type Daemon interface {
@@ -108,7 +100,6 @@ type clientDaemon struct {
 	dynconfig       config.Dynconfig
 	dfpath          dfpath.Dfpath
 	managerClient   managerclient.V1
-	securityClient  securityclient.V1
 	schedulerClient schedulerclient.V1
 	certifyClient   *certify.Certify
 	announcer       announcer.Announcer
@@ -147,66 +138,13 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	}
 
 	var (
-		managerClient  managerclient.V1
-		securityClient securityclient.V1
-		certifyClient  *certify.Certify
+		managerClient managerclient.V1
+		certifyClient *certify.Certify
 	)
 
 	if opt.Scheduler.Manager.Enable {
-		var grpcCredentials credentials.TransportCredentials
-
-		if opt.Security.AutoIssueCert {
-			grpcCredentials, err = loadManagerGPRCTLSCredentials(opt.Security)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			grpcCredentials = insecure.NewCredentials()
-		}
-
 		managerClient, err = managerclient.GetV1ByNetAddrs(
-			context.Background(), opt.Scheduler.Manager.NetAddrs, grpc.WithTransportCredentials(grpcCredentials))
-		if err != nil {
-			return nil, err
-		}
-
-		if opt.Security.AutoIssueCert {
-			// Initialize security client.
-			securityClient, err = securityclient.GetV1ByAddr(context.Background(), opt.Scheduler.Manager.NetAddrs, grpc.WithTransportCredentials(grpcCredentials))
-			if err != nil {
-				return nil, err
-			}
-
-			certifyClient = &certify.Certify{
-				CommonName:  ip.IPv4.String(),
-				Issuer:      issuer.NewDragonflyIssuer(securityClient, issuer.WithValidityPeriod(opt.Security.CertSpec.ValidityPeriod)),
-				RenewBefore: time.Hour,
-				CertConfig: &certify.CertConfig{
-					SubjectAlternativeNames:   opt.Security.CertSpec.DNSNames,
-					IPSubjectAlternativeNames: append(opt.Security.CertSpec.IPAddresses, opt.Host.AdvertiseIP),
-				},
-				IssueTimeout: 0,
-				Logger:       zapadapter.New(logger.CoreLogger.Desugar()),
-				Cache: cache.NewCertifyMutliCache(
-					certify.NewMemCache(),
-					certify.DirCache(path.Join(d.CacheDir(), cache.CertifyCacheDirName, types.DfdaemonName))),
-			}
-
-			// issue a certificate to reduce first time delay
-			if _, err = certifyClient.GetCertificate(&tls.ClientHelloInfo{
-				ServerName: ip.IPv4.String(),
-			}); err != nil {
-				logger.Errorf("issue certificate error: %s", err.Error())
-				return nil, err
-			}
-		}
-	}
-
-	var grpcCredentials credentials.TransportCredentials
-	if certifyClient == nil {
-		grpcCredentials = insecure.NewCredentials()
-	} else {
-		grpcCredentials, err = loadGlobalGPRCTLSCredentials(certifyClient, opt.Security)
+			context.Background(), opt.Scheduler.Manager.NetAddrs, grpc.WithTransportCredentials(rpc.NewInsecureCredentials()))
 		if err != nil {
 			return nil, err
 		}
@@ -219,19 +157,19 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			config.ManagerSourceType, opt,
 			config.WithManagerClient(managerClient),
 			config.WithCacheDir(filepath.Join(d.CacheDir(), internaldynconfig.CacheDirName)),
-			config.WithTransportCredentials(grpcCredentials),
+			config.WithTransportCredentials(rpc.NewInsecureCredentials()),
 		)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		dynconfig, err = config.NewDynconfig(config.LocalSourceType, opt, config.WithTransportCredentials(grpcCredentials))
+		dynconfig, err = config.NewDynconfig(config.LocalSourceType, opt, config.WithTransportCredentials(rpc.NewInsecureCredentials()))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	schedulerClient, err := schedulerclient.GetV1(context.Background(), dynconfig, grpc.WithTransportCredentials(grpcCredentials))
+	schedulerClient, err := schedulerclient.GetV1(context.Background(), dynconfig, grpc.WithTransportCredentials(rpc.NewInsecureCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get schedulers: %w", err)
 	}
@@ -257,7 +195,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 				return dynconfig.GetSeedPeers()
 			}),
 			opt.Download.GRPCDialTimeout, []grpc.DialOption{
-				grpc.WithTransportCredentials(grpcCredentials),
+				grpc.WithTransportCredentials(rpc.NewInsecureCredentials()),
 			},
 			pex.WithInitialRetryInterval(opt.PeerExchange.InitialInterval),
 			pex.WithReSyncInterval(opt.PeerExchange.ReSyncInterval),
@@ -310,10 +248,6 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		peer.WithConcurrentOption(opt.Download.Concurrent),
 	}
 
-	if opt.Download.SyncPieceViaHTTPS && opt.Scheduler.Manager.Enable {
-		pmOpts = append(pmOpts, peer.WithSyncPieceViaHTTPS(string(opt.Security.CACert)))
-	}
-
 	pieceManager, err := peer.NewPieceManager(opt.Download.PieceDownloadTimeout, pmOpts...)
 	if err != nil {
 		return nil, err
@@ -327,7 +261,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			StorageManager:  storageManager,
 			WatchdogTimeout: opt.Download.WatchdogTimeout,
 			CalculateDigest: opt.Download.CalculateDigest,
-			GRPCCredentials: grpcCredentials,
+			GRPCCredentials: rpc.NewInsecureCredentials(),
 			GRPCDialTimeout: opt.Download.GRPCDialTimeout,
 		},
 		SchedulerClient:       schedulerClient,
@@ -345,27 +279,9 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		return nil, err
 	}
 
-	// TODO(jim): more server options
-	var downloadServerOption []grpc.ServerOption
-	if !opt.Download.DownloadGRPC.Security.Insecure || certifyClient != nil {
-		tlsCredentials, err := loadLegacyGPRCTLSCredentials(opt.Download.DownloadGRPC.Security, certifyClient, opt.Security)
-		if err != nil {
-			return nil, err
-		}
-		downloadServerOption = append(downloadServerOption, grpc.Creds(tlsCredentials))
-	}
-	var peerServerOption []grpc.ServerOption
-	if !opt.Download.PeerGRPC.Security.Insecure || certifyClient != nil {
-		tlsCredentials, err := loadLegacyGPRCTLSCredentials(opt.Download.PeerGRPC.Security, certifyClient, opt.Security)
-		if err != nil {
-			return nil, err
-		}
-		peerServerOption = append(peerServerOption, grpc.Creds(tlsCredentials))
-	}
-
 	rpcManager, err := rpcserver.New(host, peerTaskManager, storageManager, peerExchangeRPC, schedulerClient,
 		opt.Download.RecursiveConcurrent.GoroutineCount, opt.Download.SeedConcurrent,
-		opt.Download.CacheRecursiveMetadata, downloadServerOption, peerServerOption)
+		opt.Download.CacheRecursiveMetadata, []grpc.ServerOption{grpc.Creds(rpc.NewInsecureCredentials())}, []grpc.ServerOption{grpc.Creds(rpc.NewInsecureCredentials())})
 	if err != nil {
 		return nil, err
 	}
@@ -379,10 +295,6 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 
 	uploadOpts := []upload.Option{
 		upload.WithLimiter(rate.NewLimiter(opt.Upload.RateLimit.Limit, int(opt.Upload.RateLimit.Limit))),
-	}
-
-	if opt.Security.AutoIssueCert && opt.Scheduler.Manager.Enable {
-		uploadOpts = append(uploadOpts, upload.WithCertify(certifyClient))
 	}
 
 	uploadManager, err := upload.NewUploadManager(opt, storageManager, d.LogDir(), uploadOpts...)
@@ -415,103 +327,9 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		dynconfig:       dynconfig,
 		dfpath:          d,
 		managerClient:   managerClient,
-		securityClient:  securityClient,
 		schedulerClient: schedulerClient,
 		certifyClient:   certifyClient,
 	}, nil
-}
-
-func loadLegacyGPRCTLSCredentials(opt config.SecurityOption, certifyClient *certify.Certify, security config.GlobalSecurityOption) (credentials.TransportCredentials, error) {
-	// merge all options
-	var mergedOptions = security
-	mergedOptions.CACert += "\n" + opt.CACert
-	mergedOptions.TLSVerify = opt.TLSVerify || security.TLSVerify
-
-	if opt.TLSConfig == nil {
-		opt.TLSConfig = &tls.Config{}
-	}
-
-	// Load server's certificate and private key
-	var (
-		serverCert tls.Certificate
-		err        error
-	)
-	if certifyClient == nil {
-		serverCert, err = tls.X509KeyPair([]byte(opt.Cert), []byte(opt.Key))
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	options := []func(c *tls.Config){
-		func(c *tls.Config) {
-			if certifyClient == nil {
-				c.Certificates = []tls.Certificate{serverCert}
-			} else {
-				// enable auto issue certificate
-				c.GetCertificate = config.GetCertificate(certifyClient)
-				c.GetClientCertificate = certifyClient.GetClientCertificate
-			}
-		},
-	}
-
-	return loadGPRCTLSCredentialsWithOptions(opt.TLSConfig, security, options...)
-}
-
-var noTLSConfig *tls.Config = nil
-
-func loadGlobalGPRCTLSCredentials(certifyClient *certify.Certify, security config.GlobalSecurityOption) (credentials.TransportCredentials, error) {
-	return loadGPRCTLSCredentialsWithOptions(noTLSConfig, security, func(c *tls.Config) {
-		c.GetCertificate = config.GetCertificate(certifyClient)
-		c.GetClientCertificate = certifyClient.GetClientCertificate
-	})
-}
-
-func loadManagerGPRCTLSCredentials(security config.GlobalSecurityOption) (credentials.TransportCredentials, error) {
-	return loadGPRCTLSCredentialsWithOptions(noTLSConfig, security, func(c *tls.Config) {
-		c.ClientAuth = tls.NoClientCert
-	})
-}
-
-func loadGPRCTLSCredentialsWithOptions(baseConfig *tls.Config, security config.GlobalSecurityOption,
-	opts ...func(c *tls.Config)) (credentials.TransportCredentials, error) {
-	certPool := x509.NewCertPool()
-
-	if security.CACert == "" {
-		return nil, errors.New("empty global CA's certificate")
-	}
-
-	if !certPool.AppendCertsFromPEM([]byte(security.CACert)) {
-		return nil, errors.New("failed to add global CA's certificate")
-	}
-
-	var tlsConfig *tls.Config
-	if baseConfig == nil {
-		tlsConfig = &tls.Config{}
-	} else {
-		tlsConfig = baseConfig.Clone()
-	}
-
-	tlsConfig.RootCAs = certPool
-	tlsConfig.ClientCAs = certPool
-
-	if security.TLSVerify {
-		tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
-	}
-
-	for _, opt := range opts {
-		opt(tlsConfig)
-	}
-
-	switch security.TLSPolicy {
-	case rpc.DefaultTLSPolicy, rpc.PreferTLSPolicy:
-		return rpc.NewMuxTransportCredentials(tlsConfig,
-			rpc.WithTLSPreferClientHandshake(security.TLSPolicy == rpc.PreferTLSPolicy)), nil
-	case rpc.ForceTLSPolicy:
-		return credentials.NewTLS(tlsConfig), nil
-	default:
-		return nil, fmt.Errorf("invalid tlsPolicy: %s", security.TLSPolicy)
-	}
 }
 
 func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (net.Listener, int, error) {
@@ -951,14 +769,6 @@ func (cd *clientDaemon) Stop() {
 				logger.Errorf("manager client failed to stop: %s", err.Error())
 			} else {
 				logger.Info("manager client closed")
-			}
-		}
-
-		if cd.securityClient != nil {
-			if err := cd.securityClient.Close(); err != nil {
-				logger.Errorf("security client failed to stop: %s", err.Error())
-			} else {
-				logger.Info("security client closed")
 			}
 		}
 	})
