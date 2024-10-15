@@ -9,9 +9,6 @@ on:
 permissions:  
   contents: read
 
-env:
-  GO_VERSION: '1.21'
-
 jobs:
   check_size:
     name: Check Size
