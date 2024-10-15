@@ -1011,6 +1011,8 @@ func TestServiceV2_DeleteHost(t *testing.T) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(host, true).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Delete(gomock.Any()).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
@@ -1026,6 +1028,8 @@ func TestServiceV2_DeleteHost(t *testing.T) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(host, true).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Delete(gomock.Any()).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, err error) {

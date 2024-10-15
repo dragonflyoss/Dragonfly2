@@ -18,8 +18,6 @@ package idgen
 
 import (
 	"fmt"
-
-	"d7y.io/dragonfly/v2/pkg/digest"
 )
 
 // HostIDV1 generates v1 version of host id.
@@ -28,6 +26,9 @@ func HostIDV1(hostname string, port int32) string {
 }
 
 // HostIDV2 generates v2 version of host id.
-func HostIDV2(ip, hostname string) string {
-	return digest.SHA256FromStrings(ip, hostname)
+func HostIDV2(ip, hostname string, isSeedPeer bool) string {
+	if isSeedPeer {
+		return fmt.Sprintf("%s-%s-seed", ip, hostname)
+	}
+	return fmt.Sprintf("%s-%s", ip, hostname)
 }

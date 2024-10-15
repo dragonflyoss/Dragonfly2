@@ -33,6 +33,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/types"
 	resource "d7y.io/dragonfly/v2/scheduler/resource/standard"
 )
 
@@ -196,7 +197,11 @@ func (s *syncPeers) mergePeers(ctx context.Context, scheduler models.Scheduler, 
 
 		// If the peer exists in the sync peer results, update the peer data in the database with
 		// the sync peer results and delete the sync peer from the sync peers map.
-		id := idgen.HostIDV2(peer.IP, peer.Hostname)
+		isSeedPeer := false
+		if types.ParseHostType(peer.Type) != types.HostTypeNormal {
+			isSeedPeer = true
+		}
+		id := idgen.HostIDV2(peer.IP, peer.Hostname, isSeedPeer)
 		if syncPeer, ok := syncPeers[id]; ok {
 			if err := s.db.WithContext(ctx).First(&models.Peer{}, peer.ID).Updates(models.Peer{
 				Type:              syncPeer.Type.Name(),

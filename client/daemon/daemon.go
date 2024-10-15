@@ -128,7 +128,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	}
 
 	host := &schedulerv1.PeerHost{
-		Id:       idgen.HostIDV2(opt.Host.AdvertiseIP.String(), opt.Host.Hostname),
+		Id:       idgen.HostIDV2(opt.Host.AdvertiseIP.String(), opt.Host.Hostname, opt.Scheduler.Manager.SeedPeer.Enable),
 		Ip:       opt.Host.AdvertiseIP.String(),
 		RpcPort:  int32(opt.Download.PeerGRPC.TCPListen.PortRange.Start),
 		DownPort: 0,

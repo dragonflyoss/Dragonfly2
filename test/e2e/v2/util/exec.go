@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	kindDockerContainer = "kind-control-plane"
+	kindDockerContainer = "kind-worker"
 )
 
 func DockerCommand(arg ...string) *exec.Cmd {
@@ -108,18 +108,6 @@ func ClientExec() (*PodExec, error) {
 		return nil, err
 	}
 	return NewPodExec(DragonflyNamespace, podName, "client"), nil
-}
-
-func ClientExecAll() ([]*PodExec, error) {
-	podInWorker, err := GetClientPodNameInWorker()
-	if err != nil {
-		return nil, err
-	}
-	podInMaster, err := GetClientPodNameInMaster()
-	if err != nil {
-		return nil, err
-	}
-	return []*PodExec{NewPodExec(DragonflyNamespace, podInWorker, "client"), NewPodExec(DragonflyNamespace, podInMaster, "client")}, nil
 }
 
 func SeedClientExec(n int) (*PodExec, error) {

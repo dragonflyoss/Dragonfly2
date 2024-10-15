@@ -451,3 +451,7 @@ func (h *Host) LeavePeers() {
 func (h *Host) FreeUploadCount() int32 {
 	return h.ConcurrentUploadLimit.Load() - h.ConcurrentUploadCount.Load()
 }
+
+func (h *Host) IsSeedPeer() bool {
+	return h.Type == types.HostTypeSuperSeed || h.Type == types.HostTypeStrongSeed || h.Type == types.HostTypeWeakSeed
+}

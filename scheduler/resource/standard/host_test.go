@@ -132,8 +132,8 @@ var (
 
 	mockAnnounceInterval = 5 * time.Minute
 
-	mockHostID       = idgen.HostIDV2("127.0.0.1", "foo")
-	mockSeedHostID   = idgen.HostIDV2("127.0.0.1", "bar")
+	mockHostID       = idgen.HostIDV2("127.0.0.1", "foo", false)
+	mockSeedHostID   = idgen.HostIDV2("127.0.0.1", "bar", true)
 	mockHostLocation = "baz"
 	mockHostIDC      = "bas"
 )

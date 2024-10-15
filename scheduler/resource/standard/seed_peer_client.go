@@ -21,7 +21,7 @@ package standard
 import (
 	"context"
 	"fmt"
-	reflect "reflect"
+	"reflect"
 
 	"github.com/hashicorp/go-multierror"
 	"google.golang.org/grpc"
@@ -156,7 +156,7 @@ func (sc *seedPeerClient) updateSeedPeersForHostManager(seedPeers []*managerv2.S
 			concurrentUploadLimit = int32(config.LoadLimit)
 		}
 
-		id := idgen.HostIDV2(seedPeer.Ip, seedPeer.Hostname)
+		id := idgen.HostIDV2(seedPeer.Ip, seedPeer.Hostname, true)
 		seedPeerHost, loaded := sc.hostManager.Load(id)
 		if !loaded {
 			options := []HostOption{WithNetwork(Network{
