@@ -789,6 +789,7 @@ func (v *V2) DeleteHost(ctx context.Context, req *schedulerv2.DeleteHostRequest)
 
 	// Leave peers in host.
 	host.LeavePeers()
+	v.resource.HostManager().Delete(req.GetHostId())
 	return nil
 }
 

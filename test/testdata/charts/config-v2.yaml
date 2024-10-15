@@ -62,6 +62,9 @@ scheduler:
     enableHost: true
   config:
     verbose: true
+    scheduler:
+      gc:
+        hostGCInterval: 2m
 
 seedClient:
   enable: true
