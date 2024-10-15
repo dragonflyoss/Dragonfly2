@@ -42,7 +42,7 @@ var _ = Describe("Clients Leaving", func() {
 			time.Sleep(10 * time.Minute)
 			Expect(getHostCountFromScheduler(schedulerClient)).To(Equal(hostCount))
 
-			podName, err := util.GetClientPodName(1)
+			podName, err := util.GetClientPodNameInMaster()
 			Expect(err).NotTo(HaveOccurred())
 
 			out, err := util.KubeCtlCommand("-n", util.DragonflyNamespace, "delete", "pod", podName).CombinedOutput()
@@ -64,7 +64,7 @@ var _ = Describe("Clients Leaving", func() {
 			hostCount := util.Servers[util.SeedClientServerName].Replicas + util.Servers[util.ClientServerName].Replicas
 			Expect(getHostCountFromScheduler(schedulerClient)).To(Equal(hostCount))
 
-			podName, err := util.GetClientPodName(1)
+			podName, err := util.GetClientPodNameInMaster()
 			Expect(err).NotTo(HaveOccurred())
 
 			out, err := util.KubeCtlCommand("-n", util.DragonflyNamespace, "delete", "pod", podName, "--force", "--grace-period=0").CombinedOutput()

@@ -103,23 +103,23 @@ func KubeCtlCopyCommand(ns, pod, source, target string) *exec.Cmd {
 }
 
 func ClientExec() (*PodExec, error) {
-	podName, err := GetClientPodName(0)
+	podName, err := GetClientPodNameInWorker()
 	if err != nil {
 		return nil, err
 	}
 	return NewPodExec(DragonflyNamespace, podName, "client"), nil
 }
 
-func AllClientsExec() ([]*PodExec, error) {
-	podName0, err := GetClientPodName(0)
+func ClientExecAll() ([]*PodExec, error) {
+	podInWorker, err := GetClientPodNameInWorker()
 	if err != nil {
 		return nil, err
 	}
-	podName1, err := GetClientPodName(1)
+	podInMaster, err := GetClientPodNameInMaster()
 	if err != nil {
 		return nil, err
 	}
-	return []*PodExec{NewPodExec(DragonflyNamespace, podName0, "client"), NewPodExec(DragonflyNamespace, podName1, "client")}, nil
+	return []*PodExec{NewPodExec(DragonflyNamespace, podInWorker, "client"), NewPodExec(DragonflyNamespace, podInMaster, "client")}, nil
 }
 
 func SeedClientExec(n int) (*PodExec, error) {
@@ -138,9 +138,21 @@ func ManagerExec(n int) (*PodExec, error) {
 	return NewPodExec(DragonflyNamespace, podName, "manager"), nil
 }
 
-func GetClientPodName(n int) (string, error) {
+func GetClientPodNameInMaster() (string, error) {
 	out, err := KubeCtlCommand("-n", DragonflyNamespace, "get", "pod", "-l", "component=client",
-		"-o", fmt.Sprintf("jsonpath='{range .items[%d]}{.metadata.name}{end}'", n)).CombinedOutput()
+		"-o", "jsonpath='{.items[?(@.spec.nodeName==\"kind-control-plane\")].metadata.name}'").CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+
+	podName := strings.Trim(string(out), "'")
+	fmt.Println(podName)
+	return podName, nil
+}
+
+func GetClientPodNameInWorker() (string, error) {
+	out, err := KubeCtlCommand("-n", DragonflyNamespace, "get", "pod", "-l", "component=client",
+		"-o", "jsonpath='{.items[?(@.spec.nodeName==\"kind-worker\")].metadata.name}'").CombinedOutput()
 	if err != nil {
 		return "", err
 	}

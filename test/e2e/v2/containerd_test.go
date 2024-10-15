@@ -60,7 +60,7 @@ var _ = Describe("Containerd with CRI support", func() {
 				},
 			}
 
-			clientPods, err := util.AllClientsExec()
+			clientPods, err := util.ClientExecAll()
 			fmt.Println(err)
 			Expect(err).NotTo(HaveOccurred())
 			for _, taskMetadata := range taskMetadatas {
@@ -115,7 +115,7 @@ var _ = Describe("Containerd with CRI support", func() {
 				},
 			}
 
-			clientPods, err := util.AllClientsExec()
+			clientPods, err := util.ClientExecAll()
 			fmt.Println(err)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -179,7 +179,7 @@ var _ = Describe("Containerd with CRI support", func() {
 				},
 			}
 
-			clientPods, err := util.AllClientsExec()
+			clientPods, err := util.ClientExecAll()
 			fmt.Println(err)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -231,7 +231,7 @@ var _ = Describe("Containerd with CRI support", func() {
 				},
 			}
 
-			clientPods, err := util.AllClientsExec()
+			clientPods, err := util.ClientExecAll()
 			fmt.Println(err)
 			Expect(err).NotTo(HaveOccurred())
 
