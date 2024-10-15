@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=alpine:3.17
+ARG BASE_IMAGE=alpine:3.20
 
 FROM node:20-alpine AS console-builder
 
@@ -12,7 +12,7 @@ COPY ./manager/console /build
 
 RUN yarn build
 
-FROM golang:1.21.1-alpine3.17 AS server-builder
+FROM golang:1.22.4-alpine3.20 AS server-builder
 
 ARG GOPROXY
 ARG GOTAGS
