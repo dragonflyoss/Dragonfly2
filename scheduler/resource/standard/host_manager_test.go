@@ -539,7 +539,7 @@ func TestHostManager_RunGC(t *testing.T) {
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit)
-			mockPeer := NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
+			mockPeer := NewPeer(mockPeerID, mockTask, mockHost)
 			hostManager, err := newHostManager(mockHostGCConfig, gc)
 			if err != nil {
 				t.Fatal(err)

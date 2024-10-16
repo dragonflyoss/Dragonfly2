@@ -1222,7 +1222,7 @@ func (v *V2) handleResource(ctx context.Context, stream schedulerv2.Scheduler_An
 			options = append(options, resource.WithRange(http.Range{Start: int64(download.Range.GetStart()), Length: int64(download.Range.GetLength())}))
 		}
 
-		peer = resource.NewPeer(peerID, &v.config.Resource, task, host, options...)
+		peer = resource.NewPeer(peerID, task, host, options...)
 		v.resource.PeerManager().Store(peer)
 	}
 

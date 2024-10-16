@@ -104,17 +104,6 @@ func TestConfig_Load(t *testing.T) {
 				BackendDB:  DefaultRedisBackendDB,
 			},
 		},
-		Resource: ResourceConfig{
-			Task: TaskConfig{
-				DownloadTiny: DownloadTinyConfig{
-					Scheme:  DefaultResourceTaskDownloadTinyScheme,
-					Timeout: DefaultResourceTaskDownloadTinyTimeout,
-					TLS: DownloadTinyTLSClientConfig{
-						InsecureSkipVerify: true,
-					},
-				},
-			},
-		},
 		DynConfig: DynConfig{
 			RefreshInterval: 10 * time.Second,
 		},
@@ -468,34 +457,6 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "scheduler requires parameter hostGCInterval")
-			},
-		},
-		{
-			name:   "downloadTiny requires parameter scheme",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Database.Redis = mockRedisConfig
-				cfg.Job = mockJobConfig
-				cfg.Resource.Task.DownloadTiny.Scheme = ""
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "downloadTiny requires parameter scheme")
-			},
-		},
-		{
-			name:   "downloadTiny requires parameter timeout",
-			config: New(),
-			mock: func(cfg *Config) {
-				cfg.Manager = mockManagerConfig
-				cfg.Database.Redis = mockRedisConfig
-				cfg.Job = mockJobConfig
-				cfg.Resource.Task.DownloadTiny.Timeout = 0
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "downloadTiny requires parameter timeout")
 			},
 		},
 		{

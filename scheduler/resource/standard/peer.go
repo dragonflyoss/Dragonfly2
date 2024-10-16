@@ -138,9 +138,6 @@ type Peer struct {
 	// ID is peer id.
 	ID string
 
-	// Config is resource config.
-	Config *config.ResourceConfig
-
 	// Range is url range of request.
 	Range *nethttp.Range
 
@@ -200,10 +197,9 @@ type Peer struct {
 }
 
 // New Peer instance.
-func NewPeer(id string, cfg *config.ResourceConfig, task *Task, host *Host, options ...PeerOption) *Peer {
+func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 	p := &Peer{
 		ID:                      id,
-		Config:                  cfg,
 		Priority:                commonv2.Priority_LEVEL0,
 		Pieces:                  &sync.Map{},
 		FinishedPieces:          &bitset.BitSet{},
@@ -437,6 +433,7 @@ func (p *Peer) Children() []*Peer {
 	return children
 }
 
+// Deprecated: Remove the method in the v2 protocol.
 // DownloadTinyFile downloads tiny file from peer without range.
 func (p *Peer) DownloadTinyFile() ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), downloadTinyFileContextTimeout)
@@ -446,7 +443,7 @@ func (p *Peer) DownloadTinyFile() ([]byte, error) {
 	}
 	// Download path: ${host}:${port}/download/${taskIndex}/${taskID}?peerId=${peerID}
 	targetURL := url.URL{
-		Scheme:   p.Config.Task.DownloadTiny.Scheme,
+		Scheme:   "http",
 		Host:     fmt.Sprintf("%s:%d", p.Host.IP, p.Host.DownloadPort),
 		Path:     fmt.Sprintf("download/%s/%s", p.Task.ID[:3], p.Task.ID),
 		RawQuery: fmt.Sprintf("peerId=%s", p.ID),
@@ -461,9 +458,9 @@ func (p *Peer) DownloadTinyFile() ([]byte, error) {
 	p.Log.Infof("download tiny file %s, header is : %#v", targetURL.String(), req.Header)
 
 	client := &http.Client{
-		Timeout: p.Config.Task.DownloadTiny.Timeout,
+		Timeout: 30 * time.Second,
 		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: p.Config.Task.DownloadTiny.TLS.InsecureSkipVerify},
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
 	}
 

@@ -33,7 +33,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/types"
-	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
 var (
@@ -57,22 +56,7 @@ var (
 	mockTaskFilteredQueryParams       = []string{"bar"}
 	mockTaskHeader                    = map[string]string{"content-length": "100"}
 	mockTaskPieceLength         int32 = 2048
-	mockConfig                        = &config.Config{
-		Resource: *mockResourceConfig,
-	}
-
-	mockResourceConfig = &config.ResourceConfig{
-		Task: config.TaskConfig{
-			DownloadTiny: config.DownloadTinyConfig{
-				Scheme:  config.DefaultResourceTaskDownloadTinyScheme,
-				Timeout: config.DefaultResourceTaskDownloadTinyTimeout,
-				TLS: config.DownloadTinyTLSClientConfig{
-					InsecureSkipVerify: true,
-				},
-			},
-		},
-	}
-	mockPieceDigest = digest.New(digest.AlgorithmMD5, "ad83a945518a4ef007d8b2db2ef165b3")
+	mockPieceDigest                   = digest.New(digest.AlgorithmMD5, "ad83a945518a4ef007d8b2db2ef165b3")
 )
 
 func TestTask_NewTask(t *testing.T) {
@@ -210,7 +194,7 @@ func TestTask_LoadPeer(t *testing.T) {
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			task := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit)
-			mockPeer := NewPeer(mockPeerID, mockResourceConfig, task, mockHost)
+			mockPeer := NewPeer(mockPeerID, task, mockHost)
 
 			task.StorePeer(mockPeer)
 			peer, loaded := task.LoadPeer(tc.peerID)
@@ -227,10 +211,10 @@ func TestTask_LoadRandomPeers(t *testing.T) {
 		{
 			name: "load random peers",
 			expect: func(t *testing.T, task *Task, host *Host) {
-				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, host)
-				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, host)
-				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, host)
-				mockPeerH := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, host)
+				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, host)
+				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, host)
+				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, host)
+				mockPeerH := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, host)
 
 				task.StorePeer(mockPeerE)
 				task.StorePeer(mockPeerF)
@@ -317,7 +301,7 @@ func TestTask_StorePeer(t *testing.T) {
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			task := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit)
-			mockPeer := NewPeer(tc.peerID, mockResourceConfig, task, mockHost)
+			mockPeer := NewPeer(tc.peerID, task, mockHost)
 
 			task.StorePeer(mockPeer)
 			peer, loaded := task.LoadPeer(tc.peerID)
@@ -359,7 +343,7 @@ func TestTask_DeletePeer(t *testing.T) {
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			task := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit)
-			mockPeer := NewPeer(mockPeerID, mockResourceConfig, task, mockHost)
+			mockPeer := NewPeer(mockPeerID, task, mockHost)
 
 			task.StorePeer(mockPeer)
 			task.DeletePeer(tc.peerID)
@@ -398,7 +382,7 @@ func TestTask_PeerCount(t *testing.T) {
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			task := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit)
-			mockPeer := NewPeer(mockPeerID, mockResourceConfig, task, mockHost)
+			mockPeer := NewPeer(mockPeerID, task, mockHost)
 
 			tc.expect(t, mockPeer, task)
 		})
@@ -414,9 +398,9 @@ func TestTask_AddPeerEdge(t *testing.T) {
 			name: "add peer edge failed",
 			expect: func(t *testing.T, mockHost *Host, task *Task) {
 				assert := assert.New(t)
-				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
-				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
-				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
+				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
 
 				task.StorePeer(mockPeerE)
 				task.StorePeer(mockPeerF)
@@ -452,9 +436,9 @@ func TestTask_AddPeerEdge(t *testing.T) {
 			name: "add peer edge",
 			expect: func(t *testing.T, mockHost *Host, task *Task) {
 				assert := assert.New(t)
-				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
-				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
-				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
+				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
 
 				task.StorePeer(mockPeerE)
 				task.StorePeer(mockPeerF)
@@ -519,9 +503,9 @@ func TestTask_DeletePeerInEdges(t *testing.T) {
 			name: "delete peer inedges",
 			expect: func(t *testing.T, mockHost *Host, task *Task) {
 				assert := assert.New(t)
-				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
-				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
-				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
+				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
 
 				task.StorePeer(mockPeerE)
 				task.StorePeer(mockPeerF)
@@ -623,9 +607,9 @@ func TestTask_DeletePeerOutEdges(t *testing.T) {
 			name: "delete peer outedges",
 			expect: func(t *testing.T, mockHost *Host, task *Task) {
 				assert := assert.New(t)
-				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
-				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
-				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
+				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
 
 				task.StorePeer(mockPeerE)
 				task.StorePeer(mockPeerF)
@@ -717,9 +701,9 @@ func TestTask_CanAddPeerEdge(t *testing.T) {
 			name: "peer can not add edge",
 			expect: func(t *testing.T, mockHost *Host, task *Task) {
 				assert := assert.New(t)
-				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
-				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
-				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
+				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
 
 				task.StorePeer(mockPeerE)
 				task.StorePeer(mockPeerF)
@@ -751,9 +735,9 @@ func TestTask_CanAddPeerEdge(t *testing.T) {
 			name: "peer can add edge",
 			expect: func(t *testing.T, mockHost *Host, task *Task) {
 				assert := assert.New(t)
-				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
-				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
-				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
+				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
 
 				task.StorePeer(mockPeerE)
 				task.StorePeer(mockPeerF)
@@ -812,9 +796,9 @@ func TestTask_PeerDegree(t *testing.T) {
 			name: "peer get degree",
 			expect: func(t *testing.T, mockHost *Host, task *Task) {
 				assert := assert.New(t)
-				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
-				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
-				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
+				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
 
 				task.StorePeer(mockPeerE)
 				task.StorePeer(mockPeerF)
@@ -875,9 +859,9 @@ func TestTask_PeerInDegree(t *testing.T) {
 			name: "peer get indegree",
 			expect: func(t *testing.T, mockHost *Host, task *Task) {
 				assert := assert.New(t)
-				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
-				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
-				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
+				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
 
 				task.StorePeer(mockPeerE)
 				task.StorePeer(mockPeerF)
@@ -938,9 +922,9 @@ func TestTask_PeerOutDegree(t *testing.T) {
 			name: "peer get outdegree",
 			expect: func(t *testing.T, mockHost *Host, task *Task) {
 				assert := assert.New(t)
-				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
-				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
-				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, task, mockHost)
+				mockPeerE := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerF := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
+				mockPeerG := NewPeer(idgen.PeerIDV1("127.0.0.1"), task, mockHost)
 
 				task.StorePeer(mockPeerE)
 				task.StorePeer(mockPeerF)
@@ -1049,7 +1033,7 @@ func TestTask_HasAvailablePeer(t *testing.T) {
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			task := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit)
-			mockPeer := NewPeer(mockPeerID, mockResourceConfig, task, mockHost)
+			mockPeer := NewPeer(mockPeerID, task, mockHost)
 
 			tc.expect(t, task, mockPeer)
 		})
@@ -1116,8 +1100,8 @@ func TestTask_LoadSeedPeer(t *testing.T) {
 				mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
 				mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)
 			task := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit)
-			mockPeer := NewPeer(mockPeerID, mockResourceConfig, task, mockHost)
-			mockSeedPeer := NewPeer(mockSeedPeerID, mockResourceConfig, task, mockSeedHost)
+			mockPeer := NewPeer(mockPeerID, task, mockHost)
+			mockSeedPeer := NewPeer(mockSeedPeerID, task, mockSeedHost)
 
 			tc.expect(t, task, mockPeer, mockSeedPeer)
 		})
@@ -1183,8 +1167,8 @@ func TestTask_IsSeedPeerFailed(t *testing.T) {
 				mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
 				mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.Type)
 			task := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit)
-			mockPeer := NewPeer(mockPeerID, mockResourceConfig, task, mockHost)
-			mockSeedPeer := NewPeer(mockSeedPeerID, mockResourceConfig, task, mockSeedHost)
+			mockPeer := NewPeer(mockPeerID, task, mockHost)
+			mockSeedPeer := NewPeer(mockSeedPeerID, task, mockSeedHost)
 
 			tc.expect(t, task, mockPeer, mockSeedPeer)
 		})
@@ -1570,7 +1554,7 @@ func TestTask_ReportPieceResultToPeers(t *testing.T) {
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			task := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit)
-			mockPeer := NewPeer(mockPeerID, mockResourceConfig, task, mockHost)
+			mockPeer := NewPeer(mockPeerID, task, mockHost)
 			task.StorePeer(mockPeer)
 			tc.run(t, task, mockPeer, stream, stream.EXPECT())
 		})

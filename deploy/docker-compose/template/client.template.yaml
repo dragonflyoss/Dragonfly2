@@ -7,13 +7,14 @@ log:
 
 # host is the host configuration for dfdaemon.
 host:
-  ## idc is the idc of the host.
+  # idc is the idc of the host.
   idc: ''
-  ## location is the location of the host.
+  # location is the location of the host.
   location: ''
-  ## hostname is the hostname of the host.
-  # hostname: ""
-  ## ip is the advertise ip of the host.
+# # hostname is the hostname of the host.
+# hostname: ""
+#
+  # ip is the advertise ip of the host.
   ip: __IP__
 
 server:
@@ -37,17 +38,38 @@ upload:
   server:
     # port is the port to the grpc server.
     port: 4000
-    ## ip is the listen ip of the grpc server.
-    # ip: ""
+  # # ip is the listen ip of the grpc server.
+  # ip: ""
+  # # CA certificate file path for mTLS.
+  # caCert: /etc/ssl/certs/ca.crt
+  # # GRPC server certificate file path for mTLS.
+  # cert: /etc/ssl/certs/server.crt
+  # # GRPC server key file path for mTLS.
+  # key: /etc/ssl/private/server.pem
+  #
+# # Client configuration for remote peer's upload server.
+# client:
+#   # CA certificate file path for mTLS.
+#   caCert: /etc/ssl/certs/ca.crt
+#   # GRPC client certificate file path for mTLS.
+#   cert: /etc/ssl/certs/client.crt
+#   # GRPC client key file path for mTLS.
+#   key: /etc/ssl/private/client.pem
+#
   # disableShared indicates whether disable to share data for other peers.
   disableShared: false
   # rateLimit is the default rate limit of the upload speed in KiB/MiB/GiB per second, default is 10GiB/s.
   rateLimit: 10GiB
 
 manager:
-  # addrs is manager addresses.
-  addrs:
-    - http://__IP__:65003
+  # addr is manager addresses.
+  addr: http://__IP__:65003
+# # CA certificate file path for mTLS.
+# caCert: /etc/ssl/certs/ca.crt
+# # GRPC client certificate file path for mTLS.
+# cert: /etc/ssl/certs/client.crt
+# # GRPC client key file path for mTLS.
+# key: /etc/ssl/private/client.pem
 
 scheduler:
   # announceInterval is the interval to announce peer to the scheduler.
@@ -61,6 +83,12 @@ scheduler:
   maxScheduleCount: 5
   # enableBackToSource indicates whether enable back-to-source download, when the scheduling failed.
   enableBackToSource: true
+# # CA certificate file path for mTLS.
+# caCert: /etc/ssl/certs/ca.crt
+# # GRPC client certificate file path for mTLS.
+# cert: /etc/ssl/certs/client.crt
+# # GRPC client key file path for mTLS.
+# key: /etc/ssl/private/client.pem
 
 dynconfig:
   # refreshInterval is the interval to refresh dynamic configuration from manager.
@@ -93,26 +121,29 @@ proxy:
   server:
     # port is the port to the proxy server.
     port: 4001
-    ## ip is the listen ip of the proxy server.
-    # ip: ""
-    ## caCert is the root CA cert path with PEM format for the proxy server to generate the server cert.
-    ## If ca_cert is empty, proxy will generate a smaple CA cert by rcgen::generate_simple_self_signed.
-    ## When client requests via the proxy, the client should not verify the server cert and set
-    ## insecure to true. If ca_cert is not empty, proxy will sign the server cert with the CA cert. If openssl is installed,
-    ## you can use openssl to generate the root CA cert and make the system trust the root CA cert.
-    ## Then set the ca_cert and ca_key to the root CA cert and key path. Dfdaemon generates the server cert
-    ## and key, and signs the server cert with the root CA cert. When client requests via the proxy,
-    ## the proxy can intercept the request by the server cert.
-    # caCert: ""
-    ## caKey is the root CA key path with PEM format for the proxy server to generate the server cert.
-    ## If ca_key is empty, proxy will generate a smaple CA key by rcgen::generate_simple_self_signed.
-    ## When client requests via the proxy, the client should not verify the server cert and set
-    ## insecure to true. If ca_key is not empty, proxy will sign the server cert with the CA cert. If openssl is installed,
-    ## you can use openssl to generate the root CA cert and make the system trust the root CA cert.
-    ## Then set the ca_cert and ca_key to the root CA cert and key path. Dfdaemon generates the server cert
-    ## and key, and signs the server cert with the root CA cert. When client requests via the proxy,
-    ## the proxy can intercept the request by the server cert.
-    # caKey: ""
+  # # ip is the listen ip of the proxy server.
+  # ip: ""
+  #
+  # # caCert is the root CA cert path with PEM format for the proxy server to generate the server cert.
+  # # If ca_cert is empty, proxy will generate a smaple CA cert by rcgen::generate_simple_self_signed.
+  # # When client requests via the proxy, the client should not verify the server cert and set
+  # # insecure to true. If ca_cert is not empty, proxy will sign the server cert with the CA cert. If openssl is installed,
+  # # you can use openssl to generate the root CA cert and make the system trust the root CA cert.
+  # # Then set the ca_cert and ca_key to the root CA cert and key path. Dfdaemon generates the server cert
+  # # and key, and signs the server cert with the root CA cert. When client requests via the proxy,
+  # # the proxy can intercept the request by the server cert.
+  # caCert: ""
+  #
+  # # caKey is the root CA key path with PEM format for the proxy server to generate the server cert.
+  # # If ca_key is empty, proxy will generate a smaple CA key by rcgen::generate_simple_self_signed.
+  # # When client requests via the proxy, the client should not verify the server cert and set
+  # # insecure to true. If ca_key is not empty, proxy will sign the server cert with the CA cert. If openssl is installed,
+  # # you can use openssl to generate the root CA cert and make the system trust the root CA cert.
+  # # Then set the ca_cert and ca_key to the root CA cert and key path. Dfdaemon generates the server cert
+  # # and key, and signs the server cert with the root CA cert. When client requests via the proxy,
+  # # the proxy can intercept the request by the server cert.
+  # caKey: ""
+  #
   # rules is the list of rules for the proxy server.
   # regex is the regex of the request url.
   # useTLS indicates whether use tls for the proxy backend.
@@ -136,10 +167,11 @@ proxy:
     # configuration to pull the image. The `X-Dragonfly-Registry` header can instead of the default address
     # of registry mirror.
     addr: https://index.docker.io
-    ## certs is the client certs path with PEM format for the registry.
-    ## If registry use self-signed cert, the client should set the
-    ## cert for the registry mirror.
-    # certs: ""
+  # # cert is the client cert path with PEM format for the registry.
+  # # If registry use self-signed cert, the client should set the
+  # # cert for the registry mirror.
+  # cert: ""
+  #
   # disableBackToSource indicates whether disable to download back-to-source when download failed.
   disableBackToSource: false
   # prefetch pre-downloads full of the task when download with range request.
@@ -147,18 +179,14 @@ proxy:
   # readBufferSize is the buffer size for reading piece from disk, default is 32KB.
   readBufferSize: 32768
 
-security:
-  # enable indicates whether enable security.
-  enable: false
-
 metrics:
   server:
     # port is the port to the metrics server.
     port: 4002
-    ## ip is the listen ip of the metrics server.
-    # ip: ""
+  # # ip is the listen ip of the metrics server.
+  # ip: ""
 
-## tracing is the tracing configuration for dfdaemon.
+# # tracing is the tracing configuration for dfdaemon.
 # tracing:
-## addr is the address to report tracing log.
-# addr: ""
+#   # addr is the address to report tracing log.
+#   addr: ""

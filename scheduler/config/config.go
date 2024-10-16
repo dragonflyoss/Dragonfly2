@@ -25,7 +25,6 @@ import (
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/pkg/net/fqdn"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
-	"d7y.io/dragonfly/v2/pkg/slices"
 )
 
 type Config struct {
@@ -40,9 +39,6 @@ type Config struct {
 
 	// Database configuration.
 	Database DatabaseConfig `yaml:"database" mapstructure:"database"`
-
-	// Resource configuration.
-	Resource ResourceConfig `yaml:"resource" mapstructure:"resource"`
 
 	// Dynconfig configuration.
 	DynConfig DynConfig `yaml:"dynConfig" mapstructure:"dynConfig"`
@@ -144,16 +140,6 @@ type SchedulerConfig struct {
 type DatabaseConfig struct {
 	// Redis configuration.
 	Redis RedisConfig `yaml:"redis" mapstructure:"redis"`
-}
-
-type ResourceConfig struct {
-	// Task resource configuration.
-	Task TaskConfig `yaml:"task" mapstructure:"task"`
-}
-
-type TaskConfig struct {
-	// Download tiny task configuration.
-	DownloadTiny DownloadTinyConfig `yaml:"downloadTiny" mapstructure:"downloadTiny"`
 }
 
 type DownloadTinyConfig struct {
@@ -359,17 +345,6 @@ func New() *Config {
 				BackendDB: DefaultRedisBackendDB,
 			},
 		},
-		Resource: ResourceConfig{
-			Task: TaskConfig{
-				DownloadTiny: DownloadTinyConfig{
-					Scheme:  DefaultResourceTaskDownloadTinyScheme,
-					Timeout: DefaultResourceTaskDownloadTinyTimeout,
-					TLS: DownloadTinyTLSClientConfig{
-						InsecureSkipVerify: true,
-					},
-				},
-			},
-		},
 		DynConfig: DynConfig{
 			RefreshInterval: DefaultDynConfigRefreshInterval,
 		},
@@ -492,14 +467,6 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Database.Redis.BackendDB < 0 {
 		return errors.New("redis requires parameter backendDB")
-	}
-
-	if !slices.Contains([]string{"http", "https"}, cfg.Resource.Task.DownloadTiny.Scheme) {
-		return errors.New("downloadTiny requires parameter scheme")
-	}
-
-	if cfg.Resource.Task.DownloadTiny.Timeout == 0 {
-		return errors.New("downloadTiny requires parameter timeout")
 	}
 
 	if cfg.DynConfig.RefreshInterval <= 0 {
