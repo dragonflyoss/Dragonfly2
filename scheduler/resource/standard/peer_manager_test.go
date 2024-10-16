@@ -137,7 +137,7 @@ func TestPeerManager_Load(t *testing.T) {
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
-			mockPeer := NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
+			mockPeer := NewPeer(mockPeerID, mockTask, mockHost)
 			peerManager, err := newPeerManager(mockPeerGCConfig, gc)
 			if err != nil {
 				t.Fatal(err)
@@ -194,7 +194,7 @@ func TestPeerManager_Store(t *testing.T) {
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
-			mockPeer := NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
+			mockPeer := NewPeer(mockPeerID, mockTask, mockHost)
 			peerManager, err := newPeerManager(mockPeerGCConfig, gc)
 			if err != nil {
 				t.Fatal(err)
@@ -249,7 +249,7 @@ func TestPeerManager_LoadOrStore(t *testing.T) {
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
-			mockPeer := NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
+			mockPeer := NewPeer(mockPeerID, mockTask, mockHost)
 			peerManager, err := newPeerManager(mockPeerGCConfig, gc)
 			if err != nil {
 				t.Fatal(err)
@@ -306,7 +306,7 @@ func TestPeerManager_Delete(t *testing.T) {
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
-			mockPeer := NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
+			mockPeer := NewPeer(mockPeerID, mockTask, mockHost)
 			peerManager, err := newPeerManager(mockPeerGCConfig, gc)
 			if err != nil {
 				t.Fatal(err)
@@ -555,7 +555,7 @@ func TestPeerManager_RunGC(t *testing.T) {
 				peerManager.Store(mockPeer)
 				mockPeer.FSM.SetState(PeerStateSucceeded)
 				for i := 0; i < PeerCountLimitForTask+1; i++ {
-					peer := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockResourceConfig, mockTask, mockHost)
+					peer := NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost)
 					mockPeer.Task.StorePeer(peer)
 				}
 
@@ -579,7 +579,7 @@ func TestPeerManager_RunGC(t *testing.T) {
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, WithDigest(mockTaskDigest))
-			mockPeer := NewPeer(mockPeerID, mockResourceConfig, mockTask, mockHost)
+			mockPeer := NewPeer(mockPeerID, mockTask, mockHost)
 			peerManager, err := newPeerManager(tc.gcConfig, gc)
 			if err != nil {
 				t.Fatal(err)

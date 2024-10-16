@@ -40,14 +40,6 @@ database:
     brokerDB: 1
     backendDB: 2
 
-resource:
-  task:
-    downloadTiny:
-      scheme: http
-      timeout: 1m
-      tls:
-        insecureSkipVerify: true
-
 dynConfig:
   refreshInterval: 10s
 
