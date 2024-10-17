@@ -699,6 +699,82 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 	return nil
 }
 
+// ListHosts lists hosts in scheduler.
+func (v *V2) ListHosts(ctx context.Context) (*schedulerv2.ListHostsResponse, error) {
+	hosts := v.resource.HostManager().LoadAll()
+
+	respHosts := make([]*commonv2.Host, len(hosts))
+	for i, host := range hosts {
+		respHosts[i] = &commonv2.Host{
+			Id:              host.ID,
+			Type:            uint32(host.Type),
+			Hostname:        host.Hostname,
+			Ip:              host.IP,
+			Port:            host.Port,
+			DownloadPort:    host.DownloadPort,
+			Os:              host.OS,
+			Platform:        host.Platform,
+			PlatformFamily:  host.PlatformFamily,
+			PlatformVersion: host.PlatformVersion,
+			KernelVersion:   host.KernelVersion,
+			Cpu: &commonv2.CPU{
+				LogicalCount:   host.CPU.LogicalCount,
+				PhysicalCount:  host.CPU.PhysicalCount,
+				Percent:        host.CPU.Percent,
+				ProcessPercent: host.CPU.ProcessPercent,
+				Times: &commonv2.CPUTimes{
+					User:      host.CPU.Times.User,
+					System:    host.CPU.Times.System,
+					Idle:      host.CPU.Times.Idle,
+					Nice:      host.CPU.Times.Nice,
+					Iowait:    host.CPU.Times.Iowait,
+					Irq:       host.CPU.Times.Irq,
+					Softirq:   host.CPU.Times.Softirq,
+					Steal:     host.CPU.Times.Steal,
+					Guest:     host.CPU.Times.Guest,
+					GuestNice: host.CPU.Times.GuestNice,
+				},
+			},
+			Memory: &commonv2.Memory{
+				Total:              host.Memory.Total,
+				Available:          host.Memory.Available,
+				Used:               host.Memory.Used,
+				UsedPercent:        host.Memory.UsedPercent,
+				ProcessUsedPercent: host.Memory.ProcessUsedPercent,
+				Free:               host.Memory.Free,
+			},
+			Network: &commonv2.Network{
+				TcpConnectionCount:       host.Network.TCPConnectionCount,
+				UploadTcpConnectionCount: host.Network.UploadTCPConnectionCount,
+				Location:                 &host.Network.Location,
+				Idc:                      &host.Network.IDC,
+			},
+			Disk: &commonv2.Disk{
+				Total:             host.Disk.Total,
+				Free:              host.Disk.Free,
+				Used:              host.Disk.Used,
+				UsedPercent:       host.Disk.UsedPercent,
+				InodesTotal:       host.Disk.InodesTotal,
+				InodesUsed:        host.Disk.InodesUsed,
+				InodesFree:        host.Disk.InodesFree,
+				InodesUsedPercent: host.Disk.InodesUsedPercent,
+			},
+			Build: &commonv2.Build{
+				GitVersion: host.Build.GitVersion,
+				GitCommit:  &host.Build.GitCommit,
+				GoVersion:  &host.Build.GoVersion,
+				Platform:   &host.Build.Platform,
+			},
+			SchedulerClusterId: host.SchedulerClusterID,
+			DisableShared:      host.DisableShared,
+		}
+	}
+
+	return &schedulerv2.ListHostsResponse{
+		Hosts: respHosts,
+	}, nil
+}
+
 // DeleteHost releases host in scheduler.
 func (v *V2) DeleteHost(ctx context.Context, req *schedulerv2.DeleteHostRequest) error {
 	log := logger.WithHostID(req.GetHostId())
@@ -713,6 +789,7 @@ func (v *V2) DeleteHost(ctx context.Context, req *schedulerv2.DeleteHostRequest)
 
 	// Leave peers in host.
 	host.LeavePeers()
+	v.resource.HostManager().Delete(req.GetHostId())
 	return nil
 }
 

@@ -71,7 +71,7 @@ scheduler:
     # then the task will also be reclaimed.
     taskGCInterval: 30m
     # hostGCInterval is the interval of host gc.
-    hostGCInterval: 6h
+    hostGCInterval: 5m
     # hostTTL is time to live of host. If host announces message to scheduler,
     # then HostTTl will be reset.
     hostTTL: 1h
