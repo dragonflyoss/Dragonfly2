@@ -126,14 +126,6 @@ jobs:
         env:
           COSIGN_PUBLIC_KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}
 
-      - uses: anchore/sbom-action@v0
-        with:
-          image: dragonflyoss/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
-
-      - uses: anchore/sbom-action@v0
-        with:
-          image: ghcr.io/${{ env.IMAGE_REPOSITORY }}/${{ matrix.module }}:${{ steps.get_version.outputs.VERSION }}
-
       - name: Move cache
         run: |
           rm -rf /tmp/.buildx-cache

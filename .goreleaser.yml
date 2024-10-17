@@ -8,9 +8,6 @@ before:
     - make build-manager-console
     - go mod download
 
-sboms:
-  - artifacts: binary
-
 builds:
   - main: ./cmd/dfget
     id: dfget
