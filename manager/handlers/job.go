@@ -23,6 +23,7 @@ import (
 	"github.com/gin-gonic/gin/binding"
 
 	"d7y.io/dragonfly/v2/internal/job"
+	"d7y.io/dragonfly/v2/manager/metrics"
 	_ "d7y.io/dragonfly/v2/manager/models" // nolint
 	"d7y.io/dragonfly/v2/manager/types"
 )
@@ -45,6 +46,8 @@ func (h *Handlers) CreateJob(ctx *gin.Context) {
 		return
 	}
 
+	// Collect CreateJobCount metrics.
+	metrics.CreateJobCount.WithLabelValues(json.Type).Inc()
 	switch json.Type {
 	case job.PreheatJob:
 		var json types.CreatePreheatJobRequest

@@ -46,6 +46,20 @@ var (
 		Help:      "Counter of the number of failed of searching scheduler cluster.",
 	}, []string{"version", "commit"})
 
+	CreateJobCount = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.ManagerMetricsName,
+		Name:      "create_job_total",
+		Help:      "Counter of the number of creating job.",
+	}, []string{"name"})
+
+	CreateJobSuccessCount = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.ManagerMetricsName,
+		Name:      "create_job_success_total",
+		Help:      "Counter of the number of succeeded of creating job.",
+	}, []string{"name"})
+
 	VersionGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.ManagerMetricsName,
