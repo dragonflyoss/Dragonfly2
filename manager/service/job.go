@@ -25,6 +25,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaljob "d7y.io/dragonfly/v2/internal/job"
+	"d7y.io/dragonfly/v2/manager/metrics"
 	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/retry"
@@ -311,6 +312,9 @@ func (s *service) pollingJob(ctx context.Context, name string, id uint, groupID 
 
 		switch job.State {
 		case machineryv1tasks.StateSuccess:
+			// Collect CreateJobSuccessCount. metrics.
+			metrics.CreateJobSuccessCount.WithLabelValues(name).Inc()
+
 			log.Info("polling group succeeded")
 			return nil, true, nil
 		case machineryv1tasks.StateFailure:
