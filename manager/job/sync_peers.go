@@ -197,10 +197,7 @@ func (s *syncPeers) mergePeers(ctx context.Context, scheduler models.Scheduler, 
 
 		// If the peer exists in the sync peer results, update the peer data in the database with
 		// the sync peer results and delete the sync peer from the sync peers map.
-		isSeedPeer := false
-		if types.ParseHostType(peer.Type) != types.HostTypeNormal {
-			isSeedPeer = true
-		}
+		isSeedPeer := types.ParseHostType(peer.Type) != types.HostTypeNormal
 		id := idgen.HostIDV2(peer.IP, peer.Hostname, isSeedPeer)
 		if syncPeer, ok := syncPeers[id]; ok {
 			if err := s.db.WithContext(ctx).First(&models.Peer{}, peer.ID).Updates(models.Peer{

@@ -701,11 +701,16 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 
 // ListHosts lists hosts in scheduler.
 func (v *V2) ListHosts(ctx context.Context) (*schedulerv2.ListHostsResponse, error) {
-	hosts := v.resource.HostManager().LoadAll()
+	hosts := []*commonv2.Host{}
+	v.resource.HostManager().Range(func(_ any, value any) bool {
+		host, ok := value.(*resource.Host)
+		if !ok {
+			// Continue to next host.
+			logger.Warnf("invalid host %#v", value)
+			return true
+		}
 
-	respHosts := make([]*commonv2.Host, len(hosts))
-	for i, host := range hosts {
-		respHosts[i] = &commonv2.Host{
+		hosts = append(hosts, &commonv2.Host{
 			Id:              host.ID,
 			Type:            uint32(host.Type),
 			Hostname:        host.Hostname,
@@ -767,11 +772,13 @@ func (v *V2) ListHosts(ctx context.Context) (*schedulerv2.ListHostsResponse, err
 			},
 			SchedulerClusterId: host.SchedulerClusterID,
 			DisableShared:      host.DisableShared,
-		}
-	}
+		})
+
+		return true
+	})
 
 	return &schedulerv2.ListHostsResponse{
-		Hosts: respHosts,
+		Hosts: hosts,
 	}, nil
 }
 
@@ -789,7 +796,6 @@ func (v *V2) DeleteHost(ctx context.Context, req *schedulerv2.DeleteHostRequest)
 
 	// Leave peers in host.
 	host.LeavePeers()
-	v.resource.HostManager().Delete(req.GetHostId())
 	return nil
 }
 
