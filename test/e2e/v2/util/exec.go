@@ -78,6 +78,7 @@ func (p *PodExec) Command(arg ...string) *exec.Cmd {
 	}
 	extArgs = append(extArgs, arg...)
 	fmt.Println(fmt.Sprintf(`pod %s/%s exec: "%s"`, p.namespace, p.name, strings.Join(arg, `" "`)))
+
 	return KubeCtlCommand(extArgs...)
 }
 
@@ -86,15 +87,18 @@ func (p *PodExec) CurlCommand(method string, header map[string]string, data map[
 	if method != "" {
 		extArgs = append(extArgs, "-X", method)
 	}
+
 	if header != nil {
 		for k, v := range header {
 			extArgs = append(extArgs, "-H", fmt.Sprintf("%s:%s", k, v))
 		}
 	}
+
 	if data != nil {
 		b, _ := json.Marshal(data)
 		extArgs = append(extArgs, "-d", string(b))
 	}
+
 	return p.Command(extArgs...)
 }
 
@@ -107,6 +111,7 @@ func ClientExec() (*PodExec, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return NewPodExec(DragonflyNamespace, podName, "client"), nil
 }
 
@@ -115,6 +120,7 @@ func SeedClientExec(n int) (*PodExec, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return NewPodExec(DragonflyNamespace, podName, "seed-client"), nil
 }
 
@@ -123,6 +129,7 @@ func ManagerExec(n int) (*PodExec, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return NewPodExec(DragonflyNamespace, podName, "manager"), nil
 }
 

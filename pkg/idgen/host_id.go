@@ -30,5 +30,6 @@ func HostIDV2(ip, hostname string, isSeedPeer bool) string {
 	if isSeedPeer {
 		return fmt.Sprintf("%s-%s-seed", ip, hostname)
 	}
+
 	return fmt.Sprintf("%s-%s", ip, hostname)
 }

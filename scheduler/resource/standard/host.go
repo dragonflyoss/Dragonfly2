@@ -452,6 +452,7 @@ func (h *Host) FreeUploadCount() int32 {
 	return h.ConcurrentUploadLimit.Load() - h.ConcurrentUploadCount.Load()
 }
 
+// IsSeedPeer return whether the host is seed peer.
 func (h *Host) IsSeedPeer() bool {
-	return h.Type == types.HostTypeSuperSeed || h.Type == types.HostTypeStrongSeed || h.Type == types.HostTypeWeakSeed
+	return h.Type != types.HostTypeNormal
 }

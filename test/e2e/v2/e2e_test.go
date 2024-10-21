@@ -87,7 +87,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	gitCommit := strings.Fields(string(rawGitCommit))[0]
 	fmt.Printf("git commit: %s\n", gitCommit)
-	// Wait for peers to start and announce.
+	// Wait for peers to start and announce to scheduler.
 	time.Sleep(5 * time.Minute)
 })
 

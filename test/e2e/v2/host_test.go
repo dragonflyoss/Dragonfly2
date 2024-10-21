@@ -34,19 +34,16 @@ import (
 var _ = Describe("Clients Leaving", func() {
 	Context("graceful exit", func() {
 		It("number of hosts should be ok", Label("host", "leave"), func() {
-			// Create scheduler GRPC client.
 			schedulerClient, err := schedulerclient.GetV2ByAddr(context.Background(), ":8002", grpc.WithTransportCredentials(insecure.NewCredentials()))
 			Expect(err).NotTo(HaveOccurred())
 
-			// Get host count.
 			hostCount := util.Servers[util.ClientServerName].Replicas
-			Expect(calculateHostCountFromScheduler(schedulerClient)).To(Equal(hostCount))
+			Expect(calculateNormalHostCountFromScheduler(schedulerClient)).To(Equal(hostCount))
 
-			// Get client pod name in master node.
 			podName, err := util.GetClientPodNameInMaster()
 			Expect(err).NotTo(HaveOccurred())
 
-			// Taint master node.
+			// Add taint to master node to prevent new client from starting.
 			out, err := util.KubeCtlCommand("-n", util.DragonflyNamespace, "taint", "nodes", "kind-control-plane", "master:NoSchedule").CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
@@ -56,9 +53,9 @@ var _ = Describe("Clients Leaving", func() {
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 
-			// Wait fot the client to leave gracefully.
-			time.Sleep(1 * time.Minute)
-			Expect(calculateHostCountFromScheduler(schedulerClient)).To(Equal(hostCount - 1))
+			// Wait fot the client to leave gracefully. The gc interval is 2 minutes.
+			time.Sleep(2 * time.Minute)
+			Expect(calculateNormalHostCountFromScheduler(schedulerClient)).To(Equal(hostCount - 1))
 
 			// Remove taint in master node.
 			out, err = util.KubeCtlCommand("-n", util.DragonflyNamespace, "taint", "nodes", "kind-control-plane", "master:NoSchedule-").CombinedOutput()
@@ -72,19 +69,16 @@ var _ = Describe("Clients Leaving", func() {
 
 	Context("force delete", func() {
 		It("number of hosts should be ok", Label("host", "leave"), func() {
-			// Create scheduler GRPC client.
 			schedulerClient, err := schedulerclient.GetV2ByAddr(context.Background(), ":8002", grpc.WithTransportCredentials(insecure.NewCredentials()))
 			Expect(err).NotTo(HaveOccurred())
 
-			// Get host count.
 			hostCount := util.Servers[util.ClientServerName].Replicas
-			Expect(calculateHostCountFromScheduler(schedulerClient)).To(Equal(hostCount))
+			Expect(calculateNormalHostCountFromScheduler(schedulerClient)).To(Equal(hostCount))
 
-			// Get client pod name in master node.
 			podName, err := util.GetClientPodNameInMaster()
 			Expect(err).NotTo(HaveOccurred())
 
-			// Taint master node.
+			// Add taint to master node to prevent new client from starting.
 			out, err := util.KubeCtlCommand("-n", util.DragonflyNamespace, "taint", "nodes", "kind-control-plane", "master:NoSchedule").CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
@@ -94,9 +88,9 @@ var _ = Describe("Clients Leaving", func() {
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 
-			// Wait for host gc.
+			// Wait for host gc with interval 2 minute.
 			time.Sleep(2 * time.Minute)
-			Expect(calculateHostCountFromScheduler(schedulerClient)).To(Equal(hostCount - 1))
+			Expect(calculateNormalHostCountFromScheduler(schedulerClient)).To(Equal(hostCount - 1))
 
 			// Remove taint in master node.
 			out, err = util.KubeCtlCommand("-n", util.DragonflyNamespace, "taint", "nodes", "kind-control-plane", "master:NoSchedule-").CombinedOutput()
@@ -109,17 +103,17 @@ var _ = Describe("Clients Leaving", func() {
 	})
 })
 
-func calculateHostCountFromScheduler(schedulerClient schedulerclient.V2) (hostCount int) {
-	response, err := schedulerClient.ListHosts(context.Background(), "")
-	fmt.Println(response, err)
+func calculateNormalHostCountFromScheduler(schedulerClient schedulerclient.V2) (hostCount int) {
+	resp, err := schedulerClient.ListHosts(context.Background(), "")
+	fmt.Println(resp, err)
 	Expect(err).NotTo(HaveOccurred())
 
-	hosts := response.Hosts
-	for _, host := range hosts {
+	for _, host := range resp.Hosts {
 		hostType := types.HostType(host.Type)
-		if hostType != types.HostTypeSuperSeed && hostType != types.HostTypeStrongSeed && hostType != types.HostTypeWeakSeed {
+		if hostType == types.HostTypeNormal {
 			hostCount++
 		}
 	}
+
 	return
 }
