@@ -224,6 +224,20 @@ var (
 	}, []string{"os", "platform", "platform_family", "platform_version",
 		"kernel_version", "git_version", "git_commit", "go_version", "build_platform"})
 
+	ListHostsCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "list_hosts_total",
+		Help:      "Counter of the number of the list hosts.",
+	})
+
+	ListHostsCountFailureCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: types.MetricsNamespace,
+		Subsystem: types.SchedulerMetricsName,
+		Name:      "list_hosts_failure_total",
+		Help:      "Counter of the number of failed of the list hosts.",
+	})
+
 	LeaveHostCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: types.MetricsNamespace,
 		Subsystem: types.SchedulerMetricsName,

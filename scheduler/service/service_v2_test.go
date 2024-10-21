@@ -882,6 +882,110 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 	}
 }
 
+func TestServiceV2_ListHosts(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(host []*resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder)
+		expect func(t *testing.T, host *resource.Host, resp []*commonv2.Host, err error)
+	}{
+		{
+			name: "host loaded successfully",
+			mock: func(host []*resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder) {
+				gomock.InOrder(
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.LoadAll().Return(host).Times(1),
+				)
+			},
+			expect: func(t *testing.T, host *resource.Host, resp []*commonv2.Host, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(len(resp), 1)
+				assert.EqualValues(resp[0], &commonv2.Host{
+					Id:           mockHostID,
+					Type:         uint32(pkgtypes.HostTypeNormal),
+					Hostname:     "foo",
+					Ip:           "127.0.0.1",
+					Port:         8003,
+					DownloadPort: mockRawHost.DownloadPort,
+					Cpu: &commonv2.CPU{
+						LogicalCount:   mockCPU.LogicalCount,
+						PhysicalCount:  mockCPU.PhysicalCount,
+						Percent:        mockCPU.Percent,
+						ProcessPercent: mockCPU.ProcessPercent,
+						Times: &commonv2.CPUTimes{
+							User:      mockCPU.Times.User,
+							System:    mockCPU.Times.System,
+							Idle:      mockCPU.Times.Idle,
+							Nice:      mockCPU.Times.Nice,
+							Iowait:    mockCPU.Times.Iowait,
+							Irq:       mockCPU.Times.Irq,
+							Softirq:   mockCPU.Times.Softirq,
+							Steal:     mockCPU.Times.Steal,
+							Guest:     mockCPU.Times.Guest,
+							GuestNice: mockCPU.Times.GuestNice,
+						},
+					},
+					Memory: &commonv2.Memory{
+						Total:              mockMemory.Total,
+						Available:          mockMemory.Available,
+						Used:               mockMemory.Used,
+						UsedPercent:        mockMemory.UsedPercent,
+						ProcessUsedPercent: mockMemory.ProcessUsedPercent,
+						Free:               mockMemory.Free,
+					},
+					Network: &commonv2.Network{
+						TcpConnectionCount:       mockNetwork.TCPConnectionCount,
+						UploadTcpConnectionCount: mockNetwork.UploadTCPConnectionCount,
+						Location:                 &mockNetwork.Location,
+						Idc:                      &mockNetwork.IDC,
+						DownloadRate:             mockNetwork.DownloadRate,
+						DownloadRateLimit:        mockNetwork.DownloadRateLimit,
+						UploadRate:               mockNetwork.UploadRate,
+						UploadRateLimit:          mockNetwork.UploadRateLimit,
+					},
+					Disk: &commonv2.Disk{
+						Total:             mockDisk.Total,
+						Free:              mockDisk.Free,
+						Used:              mockDisk.Used,
+						UsedPercent:       mockDisk.UsedPercent,
+						InodesTotal:       mockDisk.InodesTotal,
+						InodesUsed:        mockDisk.InodesUsed,
+						InodesFree:        mockDisk.InodesFree,
+						InodesUsedPercent: mockDisk.InodesUsedPercent,
+					},
+					Build: &commonv2.Build{
+						GitVersion: mockBuild.GitVersion,
+						GitCommit:  &mockBuild.GitCommit,
+						GoVersion:  &mockBuild.GoVersion,
+						Platform:   &mockBuild.Platform,
+					},
+				})
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			scheduling := schedulingmocks.NewMockScheduling(ctl)
+			res := resource.NewMockResource(ctl)
+			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
+			storage := storagemocks.NewMockStorage(ctl)
+			hostManager := resource.NewMockHostManager(ctl)
+			host := resource.NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname, mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type,
+				resource.WithCPU(mockCPU), resource.WithMemory(mockMemory), resource.WithNetwork(mockNetwork), resource.WithDisk(mockDisk), resource.WithBuild(mockBuild))
+			hosts := []*resource.Host{host}
+			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, res, scheduling, dynconfig, storage)
+
+			tc.mock(hosts, hostManager, res.EXPECT(), hostManager.EXPECT())
+			resp, err := svc.ListHosts(context.Background())
+			tc.expect(t, host, resp.Hosts, err)
+		})
+	}
+}
+
 func TestServiceV2_DeleteHost(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -907,6 +1011,8 @@ func TestServiceV2_DeleteHost(t *testing.T) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(host, true).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Delete(gomock.Any()).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
@@ -922,6 +1028,8 @@ func TestServiceV2_DeleteHost(t *testing.T) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(host, true).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Delete(gomock.Any()).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, err error) {

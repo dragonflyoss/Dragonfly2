@@ -57,6 +57,6 @@ var Servers = map[string]server{
 		Name:       ClientServerName,
 		Namespace:  DragonflyNamespace,
 		LogDirName: "dfdaemon",
-		Replicas:   1,
+		Replicas:   2,
 	},
 }

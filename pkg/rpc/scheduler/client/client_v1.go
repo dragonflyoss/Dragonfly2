@@ -90,7 +90,7 @@ func GetV1(ctx context.Context, dynconfig config.Dynconfig, opts ...grpc.DialOpt
 	}, nil
 }
 
-// GetV1ByAddr returns v2 version of the scheduler client by address.
+// GetV1ByAddr returns v1 version of the scheduler client by address.
 func GetV1ByAddr(ctx context.Context, target string, opts ...grpc.DialOption) (V1, error) {
 	conn, err := grpc.DialContext(
 		ctx,

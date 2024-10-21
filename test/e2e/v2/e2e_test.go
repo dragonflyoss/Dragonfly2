@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2" //nolint
 	. "github.com/onsi/gomega"    //nolint
@@ -86,6 +87,8 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	gitCommit := strings.Fields(string(rawGitCommit))[0]
 	fmt.Printf("git commit: %s\n", gitCommit)
+	// Wait for peers to start and announce.
+	time.Sleep(5 * time.Minute)
 })
 
 // TestE2E is the root of e2e test function

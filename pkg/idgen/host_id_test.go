@@ -67,43 +67,57 @@ func TestHostIDV1(t *testing.T) {
 
 func TestHostIDV2(t *testing.T) {
 	tests := []struct {
-		name     string
-		ip       string
-		hostname string
-		expect   func(t *testing.T, d string)
+		name       string
+		ip         string
+		hostname   string
+		isSeedPeer bool
+		expect     func(t *testing.T, d string)
 	}{
 		{
-			name:     "generate HostID",
-			ip:       "127.0.0.1",
-			hostname: "foo",
+			name:       "generate HostID for peer",
+			ip:         "127.0.0.1",
+			hostname:   "foo",
+			isSeedPeer: false,
 			expect: func(t *testing.T, d string) {
 				assert := assert.New(t)
-				assert.Equal(d, "52727e8408e0ee1f999086f241ec43d5b3dbda666f1a06ef1fcbe75b4e90fa17")
+				assert.Equal(d, "127.0.0.1-foo")
 			},
 		},
 		{
-			name:     "generate HostID with empty ip",
-			ip:       "",
-			hostname: "foo",
+			name:       "generate HostID for seed peer",
+			ip:         "127.0.0.1",
+			hostname:   "foo",
+			isSeedPeer: true,
 			expect: func(t *testing.T, d string) {
 				assert := assert.New(t)
-				assert.Equal(d, "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae")
+				assert.Equal(d, "127.0.0.1-foo-seed")
 			},
 		},
 		{
-			name:     "generate HostID with empty host",
-			ip:       "127.0.0.1",
-			hostname: "",
+			name:       "generate HostID with empty ip for seed peer",
+			ip:         "",
+			hostname:   "foo",
+			isSeedPeer: true,
 			expect: func(t *testing.T, d string) {
 				assert := assert.New(t)
-				assert.Equal(d, "12ca17b49af2289436f303e0166030a21e525d266e209267433801a8fd4071a0")
+				assert.Equal(d, "-foo-seed")
+			},
+		},
+		{
+			name:       "generate HostID with empty host for seed peer",
+			ip:         "127.0.0.1",
+			hostname:   "",
+			isSeedPeer: true,
+			expect: func(t *testing.T, d string) {
+				assert := assert.New(t)
+				assert.Equal(d, "127.0.0.1--seed")
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, HostIDV2(tc.ip, tc.hostname))
+			tc.expect(t, HostIDV2(tc.ip, tc.hostname, tc.isSeedPeer))
 		})
 	}
 }

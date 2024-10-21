@@ -141,8 +141,8 @@ var (
 	mockTaskFilteredQueryParams       = []string{"bar"}
 	mockTaskHeader                    = map[string]string{"content-length": "100"}
 	mockTaskPieceLength         int32 = 2048
-	mockHostID                        = idgen.HostIDV2("127.0.0.1", "foo")
-	mockSeedHostID                    = idgen.HostIDV2("127.0.0.1", "bar")
+	mockHostID                        = idgen.HostIDV2("127.0.0.1", "foo", false)
+	mockSeedHostID                    = idgen.HostIDV2("127.0.0.1", "bar", true)
 	mockHostLocation                  = "bas"
 	mockHostIDC                       = "baz"
 	mockPeerID                        = idgen.PeerIDV2()

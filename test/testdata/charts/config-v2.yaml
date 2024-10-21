@@ -43,6 +43,9 @@ scheduler:
     limits:
       cpu: "2"
       memory: "4Gi"
+  service:
+    type: NodePort
+    nodePort: 30802
   extraVolumeMounts:
   - name: logs
     mountPath: "/var/log/"
@@ -59,6 +62,9 @@ scheduler:
     enableHost: true
   config:
     verbose: true
+    scheduler:
+      gc:
+        hostGCInterval: 2m
 
 seedClient:
   enable: true
@@ -111,6 +117,11 @@ client:
     limits:
       cpu: "2"
       memory: "4Gi"
+  # Allow client daemonSet to create a pod on master node for testing when the daemon goes offline.
+  tolerations:
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
+      effect: "NoSchedule"
   extraVolumeMounts:
   - name: logs
     mountPath: "/var/log/"

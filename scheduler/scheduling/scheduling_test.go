@@ -170,8 +170,8 @@ var (
 	mockTaskFilteredQueryParams       = []string{"bar"}
 	mockTaskHeader                    = map[string]string{"content-length": "100"}
 	mockTaskPieceLength         int32 = 2048
-	mockHostID                        = idgen.HostIDV2("127.0.0.1", "foo")
-	mockSeedHostID                    = idgen.HostIDV2("127.0.0.1", "bar")
+	mockHostID                        = idgen.HostIDV2("127.0.0.1", "foo", false)
+	mockSeedHostID                    = idgen.HostIDV2("127.0.0.1", "bar", true)
 	mockHostLocation                  = "baz"
 	mockHostIDC                       = "bas"
 	mockPeerID                        = idgen.PeerIDV2()
@@ -1040,7 +1040,7 @@ func TestScheduling_FindCandidateParents(t *testing.T) {
 			var mockPeers []*resource.Peer
 			for i := 0; i < 11; i++ {
 				mockHost := resource.NewHost(
-					idgen.HostIDV2("127.0.0.1", uuid.New().String()), mockRawHost.IP, mockRawHost.Hostname,
+					idgen.HostIDV2("127.0.0.1", uuid.New().String(), false), mockRawHost.IP, mockRawHost.Hostname,
 					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 				peer := resource.NewPeer(idgen.PeerIDV1(fmt.Sprintf("127.0.0.%d", i)), mockTask, mockHost)
 				mockPeers = append(mockPeers, peer)
@@ -1357,7 +1357,7 @@ func TestScheduling_FindParentAndCandidateParents(t *testing.T) {
 			var mockPeers []*resource.Peer
 			for i := 0; i < 11; i++ {
 				mockHost := resource.NewHost(
-					idgen.HostIDV2("127.0.0.1", uuid.New().String()), mockRawHost.IP, mockRawHost.Hostname,
+					idgen.HostIDV2("127.0.0.1", uuid.New().String(), false), mockRawHost.IP, mockRawHost.Hostname,
 					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 				peer := resource.NewPeer(idgen.PeerIDV1(fmt.Sprintf("127.0.0.%d", i)), mockTask, mockHost)
 				mockPeers = append(mockPeers, peer)
@@ -1618,7 +1618,7 @@ func TestScheduling_FindSuccessParent(t *testing.T) {
 			var mockPeers []*resource.Peer
 			for i := 0; i < 11; i++ {
 				mockHost := resource.NewHost(
-					idgen.HostIDV2("127.0.0.1", uuid.New().String()), mockRawHost.IP, mockRawHost.Hostname,
+					idgen.HostIDV2("127.0.0.1", uuid.New().String(), false), mockRawHost.IP, mockRawHost.Hostname,
 					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 				peer := resource.NewPeer(idgen.PeerIDV1(fmt.Sprintf("127.0.0.%d", i)), mockTask, mockHost)
 				mockPeers = append(mockPeers, peer)
