@@ -141,15 +141,15 @@ func WithTask(taskID, url string) *SugaredLoggerOnWith {
 	}
 }
 
-func WithPersistentCacheTask(taskID string) *SugaredLoggerOnWith {
-	return &SugaredLoggerOnWith{
-		withArgs: []any{"taskID", taskID},
-	}
-}
-
 func WithHost(hostID, hostname, ip string) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
 		withArgs: []any{"hostID", hostID, "hostname", hostname, "ip", ip},
+	}
+}
+
+func WithPeerID(peerID string) *SugaredLoggerOnWith {
+	return &SugaredLoggerOnWith{
+		withArgs: []any{"peerID", peerID},
 	}
 }
 

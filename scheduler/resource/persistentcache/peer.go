@@ -129,6 +129,7 @@ func NewPeer(id, state string, finishedPieces *bitset.BitSet, blockParents []str
 			},
 		},
 	)
+	p.FSM.SetState(state)
 
 	return p
 }
