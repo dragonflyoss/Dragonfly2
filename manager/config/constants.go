@@ -97,10 +97,10 @@ const (
 	DefaultJobRateLimitQuantum = 10
 
 	// DefaultJobGCInterval is the default interval for gc job.
-	DefaultJobGCInterval = 24 * time.Hour
+	DefaultJobGCInterval = 6 * time.Hour
 
 	// DefaultJobGCTTL is the default ttl for job.
-	DefaultJobGCTTL = 24 * time.Hour
+	DefaultJobGCTTL = 12 * time.Hour
 
 	// DefaultJobPreheatRegistryTimeout is the default timeout for requesting registry to get token and manifest.
 	DefaultJobPreheatRegistryTimeout = 1 * time.Minute
