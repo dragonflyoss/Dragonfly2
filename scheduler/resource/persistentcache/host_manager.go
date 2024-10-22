@@ -55,9 +55,7 @@ type hostManager struct {
 	rdb redis.UniversalClient
 }
 
-// TODO: Use newTaskManager for resource management.
 // New host manager interface.
-// nolint
 func newHostManager(cfg *config.Config, rdb redis.UniversalClient) HostManager {
 	return &hostManager{config: cfg, rdb: rdb}
 }

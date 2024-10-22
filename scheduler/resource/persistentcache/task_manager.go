@@ -55,9 +55,7 @@ type taskManager struct {
 	rdb redis.UniversalClient
 }
 
-// TODO: Use newTaskManager for resource management.
 // New persistent cache task manager interface.
-// nolint
 func newTaskManager(cfg *config.Config, rdb redis.UniversalClient) TaskManager {
 	return &taskManager{config: cfg, rdb: rdb}
 }

@@ -42,7 +42,8 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/job"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
-	resource "d7y.io/dragonfly/v2/scheduler/resource/standard"
+	persistentcache "d7y.io/dragonfly/v2/scheduler/resource/persistentcache"
+	standard "d7y.io/dragonfly/v2/scheduler/resource/standard"
 	"d7y.io/dragonfly/v2/scheduler/rpcserver"
 	"d7y.io/dragonfly/v2/scheduler/scheduling"
 	"d7y.io/dragonfly/v2/scheduler/storage"
@@ -69,7 +70,10 @@ type Server struct {
 	managerClient managerclient.V2
 
 	// Resource interface.
-	resource resource.Resource
+	resource standard.Resource
+
+	// Persistent cache resource interface.
+	persistentCacheResource persistentcache.Resource
 
 	// Dynamic config.
 	dynconfig config.DynconfigInterface
@@ -172,11 +176,14 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	s.dynconfig = dynconfig
 
 	// Initialize resource.
-	resource, err := resource.New(cfg, s.gc, dynconfig, clientTransportCredentials)
+	resource, err := standard.New(cfg, s.gc, dynconfig, clientTransportCredentials)
 	if err != nil {
 		return nil, err
 	}
 	s.resource = resource
+
+	// Initialize persistent cache resource.
+	s.persistentCacheResource = persistentcache.New(cfg, rdb)
 
 	// Initialize job service.
 	if cfg.Job.Enable && rdb != nil {
