@@ -141,11 +141,17 @@ func MakePersistentCacheTasksInScheduler(schedulerClusterID uint) string {
 	return MakeKeyInScheduler(SchedulerClustersNamespace, fmt.Sprintf("%d:%s", schedulerClusterID, PersistentCacheTasksNamespace))
 }
 
+// MakePersistentCachePeersOfPersistentCacheTaskInScheduler make persistent cache peers of persistent cache task in scheduler.
+func MakePersistentCachePeersOfPersistentCacheTaskInScheduler(schedulerClusterID uint, taskID string) string {
+	return MakeKeyInScheduler(SchedulerClustersNamespace, fmt.Sprintf("%d:%s:%s:%s", schedulerClusterID, PersistentCacheTasksNamespace, taskID, PersistentCachePeersNamespace))
+}
+
 // MakePersistentCachePeerKeyInScheduler make persistent cache peer key in scheduler.
 func MakePersistentCachePeerKeyInScheduler(schedulerClusterID uint, peerID string) string {
 	return MakeKeyInScheduler(SchedulerClustersNamespace, fmt.Sprintf("%d:%s:%s", schedulerClusterID, PersistentCachePeersNamespace, peerID))
 }
 
+// MakePersistentCachePeersInScheduler make persistent cache peers in scheduler.
 func MakePersistentCachePeersInScheduler(schedulerClusterID uint) string {
 	return MakeKeyInScheduler(SchedulerClustersNamespace, fmt.Sprintf("%d:%s", schedulerClusterID, PersistentCachePeersNamespace))
 }
@@ -158,4 +164,9 @@ func MakePersistentCacheHostKeyInScheduler(schedulerClusterID uint, hostID strin
 // MakePersistentCacheHostsInScheduler make persistent cache hosts in scheduler.
 func MakePersistentCacheHostsInScheduler(schedulerClusterID uint) string {
 	return MakeKeyInScheduler(SchedulerClustersNamespace, fmt.Sprintf("%d:%s", schedulerClusterID, PersistentCacheHostsNamespace))
+}
+
+// MakePersistentCachePeersOfPersistentCacheHostInScheduler make persistent cache peers of persistent cache host in scheduler.
+func MakePersistentCachePeersOfPersistentCacheHostInScheduler(schedulerClusterID uint, hostID string) string {
+	return MakeKeyInScheduler(SchedulerClustersNamespace, fmt.Sprintf("%d:%s:%s:%s", schedulerClusterID, PersistentCacheHostsNamespace, hostID, PersistentCachePeersNamespace))
 }

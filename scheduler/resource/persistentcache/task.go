@@ -115,7 +115,7 @@ func NewTask(id, tag, application, state string, persistentReplicaCount uint64, 
 		TTL:                    time.Hour * 24,
 		CreatedAt:              createdAt,
 		UpdatedAt:              updatedAt,
-		Log:                    logger.WithPersistentCacheTask(id),
+		Log:                    logger.WithTaskID(id),
 	}
 
 	// Initialize state machine.
