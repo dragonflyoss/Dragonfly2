@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination peer_manager_mock.go -source peer_manager.go -package persistentcache
+
 package persistentcache
 
 import (
@@ -61,11 +63,9 @@ type peerManager struct {
 	rdb redis.UniversalClient
 }
 
-// TODO: Use newPeerManager for resource management.
 // New peer manager interface.
-// nolint
-func newPeerManager(cfg *config.Config, taskManager TaskManager, hostManager HostManager, rdb redis.UniversalClient) PeerManager {
-	return &peerManager{config: cfg, taskManager: taskManager, hostManager: hostManager, rdb: rdb}
+func newPeerManager(cfg *config.Config, rdb redis.UniversalClient, taskManager TaskManager, hostManager HostManager) PeerManager {
+	return &peerManager{config: cfg, rdb: rdb, taskManager: taskManager, hostManager: hostManager}
 }
 
 // Load returns persistent cache peer by a key.
