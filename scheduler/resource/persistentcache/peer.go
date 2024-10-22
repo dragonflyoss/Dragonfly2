@@ -62,6 +62,9 @@ type Peer struct {
 	// ID is persistent cache peer id.
 	ID string
 
+	// Persistent is whether the peer is persistent.
+	Persistent bool
+
 	// Pieces is finished pieces bitset.
 	FinishedPieces *bitset.BitSet
 
@@ -91,7 +94,7 @@ type Peer struct {
 }
 
 // New persistent cache peer instance.
-func NewPeer(id, state string, finishedPieces *bitset.BitSet, blockParents []string, task *Task, host *Host,
+func NewPeer(id, state string, persistent bool, finishedPieces *bitset.BitSet, blockParents []string, task *Task, host *Host,
 	cost time.Duration, createdAt, updatedAt time.Time, log *logger.SugaredLoggerOnWith) *Peer {
 	p := &Peer{
 		ID:             id,

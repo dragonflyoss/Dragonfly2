@@ -212,6 +212,9 @@ type Build struct {
 	// Golang version.
 	GoVersion string `csv:"goVersion"`
 
+	// Rust version.
+	RustVersion string `csv:"rustVersion"`
+
 	// Build platform.
 	Platform string `csv:"platform"`
 }

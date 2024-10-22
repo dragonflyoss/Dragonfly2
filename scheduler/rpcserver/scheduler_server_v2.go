@@ -26,13 +26,13 @@ import (
 
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
-	resource "d7y.io/dragonfly/v2/scheduler/resource/standard"
+	"d7y.io/dragonfly/v2/scheduler/resource/persistentcache"
+	"d7y.io/dragonfly/v2/scheduler/resource/standard"
 	"d7y.io/dragonfly/v2/scheduler/scheduling"
 	"d7y.io/dragonfly/v2/scheduler/service"
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
-// TODO Implement v2 version of the rpc server apis.
 // schedulerServerV2 is v2 version of the scheduler grpc server.
 type schedulerServerV2 struct {
 	// Service interface.
@@ -42,12 +42,13 @@ type schedulerServerV2 struct {
 // newSchedulerServerV2 returns v2 version of the scheduler server.
 func newSchedulerServerV2(
 	cfg *config.Config,
-	resource resource.Resource,
+	resource standard.Resource,
+	persistentCacheResource persistentcache.Resource,
 	scheduling scheduling.Scheduling,
 	dynconfig config.DynconfigInterface,
 	storage storage.Storage,
 ) schedulerv2.SchedulerServer {
-	return &schedulerServerV2{service.NewV2(cfg, resource, scheduling, dynconfig, storage)}
+	return &schedulerServerV2{service.NewV2(cfg, resource, persistentCacheResource, scheduling, dynconfig, storage)}
 }
 
 // AnnouncePeer announces peer to scheduler.

@@ -807,7 +807,7 @@ func (v *V1) triggerSeedPeerTask(ctx context.Context, rg *http.Range, task *reso
 }
 
 // storeTask stores a new task or reuses a previous task.
-func (v *V1) storeTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, typ commonv2.TaskType) *resource.Task {
+func (v *V1) storeTask(_ context.Context, req *schedulerv1.PeerTaskRequest, typ commonv2.TaskType) *resource.Task {
 	filteredQueryParams := strings.Split(req.UrlMeta.GetFilter(), idgen.FilteredQueryParamsSeparator)
 
 	task, loaded := v.resource.TaskManager().Load(req.GetTaskId())
@@ -834,7 +834,7 @@ func (v *V1) storeTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, ty
 }
 
 // storeHost stores a new host or reuses a previous host.
-func (v *V1) storeHost(ctx context.Context, peerHost *schedulerv1.PeerHost) *resource.Host {
+func (v *V1) storeHost(_ context.Context, peerHost *schedulerv1.PeerHost) *resource.Host {
 	host, loaded := v.resource.HostManager().Load(peerHost.Id)
 	if !loaded {
 		options := []resource.HostOption{resource.WithNetwork(resource.Network{
@@ -866,7 +866,7 @@ func (v *V1) storeHost(ctx context.Context, peerHost *schedulerv1.PeerHost) *res
 }
 
 // storePeer stores a new peer or reuses a previous peer.
-func (v *V1) storePeer(ctx context.Context, id string, priority commonv1.Priority, rg string, task *resource.Task, host *resource.Host) *resource.Peer {
+func (v *V1) storePeer(_ context.Context, id string, priority commonv1.Priority, rg string, task *resource.Task, host *resource.Host) *resource.Peer {
 	peer, loaded := v.resource.PeerManager().Load(id)
 	if !loaded {
 		options := []resource.PeerOption{}
@@ -1057,7 +1057,7 @@ func (v *V1) handleBeginOfPiece(ctx context.Context, peer *resource.Peer) {
 func (v *V1) handleEndOfPiece(ctx context.Context, peer *resource.Peer) {}
 
 // handlePieceSuccess handles successful piece.
-func (v *V1) handlePieceSuccess(ctx context.Context, peer *resource.Peer, pieceResult *schedulerv1.PieceResult) {
+func (v *V1) handlePieceSuccess(_ context.Context, peer *resource.Peer, pieceResult *schedulerv1.PieceResult) {
 	// Distinguish traffic type.
 	trafficType := commonv2.TrafficType_REMOTE_PEER
 	if resource.IsPieceBackToSource(pieceResult.DstPid) {
