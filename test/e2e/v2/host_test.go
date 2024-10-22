@@ -44,7 +44,7 @@ var _ = Describe("Clients Leaving", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// Add taint to master node to prevent new client from starting.
-			out, err := util.KubeCtlCommand("-n", util.DragonflyNamespace, "taint", "nodes", "kind-control-plane", "master:NoSchedule").CombinedOutput()
+			out, err := util.KubeCtlCommand("-n", util.DragonflyNamespace, "taint", "nodes", "kind-control-plane", "E2E:NoSchedule").CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 
@@ -58,7 +58,7 @@ var _ = Describe("Clients Leaving", func() {
 			Expect(calculateNormalHostCountFromScheduler(schedulerClient)).To(Equal(hostCount - 1))
 
 			// Remove taint in master node.
-			out, err = util.KubeCtlCommand("-n", util.DragonflyNamespace, "taint", "nodes", "kind-control-plane", "master:NoSchedule-").CombinedOutput()
+			out, err = util.KubeCtlCommand("-n", util.DragonflyNamespace, "taint", "nodes", "kind-control-plane", "E2E:NoSchedule-").CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 
@@ -79,7 +79,7 @@ var _ = Describe("Clients Leaving", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// Add taint to master node to prevent new client from starting.
-			out, err := util.KubeCtlCommand("-n", util.DragonflyNamespace, "taint", "nodes", "kind-control-plane", "master:NoSchedule").CombinedOutput()
+			out, err := util.KubeCtlCommand("-n", util.DragonflyNamespace, "taint", "nodes", "kind-control-plane", "E2E:NoSchedule").CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 
@@ -93,7 +93,7 @@ var _ = Describe("Clients Leaving", func() {
 			Expect(calculateNormalHostCountFromScheduler(schedulerClient)).To(Equal(hostCount - 1))
 
 			// Remove taint in master node.
-			out, err = util.KubeCtlCommand("-n", util.DragonflyNamespace, "taint", "nodes", "kind-control-plane", "master:NoSchedule-").CombinedOutput()
+			out, err = util.KubeCtlCommand("-n", util.DragonflyNamespace, "taint", "nodes", "kind-control-plane", "E2E:NoSchedule-").CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 
