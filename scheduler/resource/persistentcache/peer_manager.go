@@ -77,6 +77,12 @@ func (p *peerManager) Load(ctx context.Context, peerID string) (*Peer, bool) {
 		return nil, false
 	}
 
+	persistent, err := strconv.ParseBool(rawPeer["persistent"])
+	if err != nil {
+		log.Errorf("parsing persistent failed: %v", err)
+		return nil, false
+	}
+
 	finishedPieces := &bitset.BitSet{}
 	if err := finishedPieces.UnmarshalBinary([]byte(rawPeer["finished_pieces"])); err != nil {
 		log.Errorf("unmarshal finished pieces failed: %v", err)
@@ -123,6 +129,7 @@ func (p *peerManager) Load(ctx context.Context, peerID string) (*Peer, bool) {
 	return NewPeer(
 		rawPeer["id"],
 		rawPeer["state"],
+		persistent,
 		finishedPieces,
 		blockParents,
 		task,
@@ -153,6 +160,7 @@ func (p *peerManager) Store(ctx context.Context, peer *Peer) error {
 		pipe.HSet(ctx,
 			pkgredis.MakePersistentCachePeerKeyInScheduler(p.config.Manager.SchedulerClusterID, peer.ID),
 			"id", peer.ID,
+			"persistent", peer.Persistent,
 			"finished_pieces", finishedPieces,
 			"state", peer.FSM.Current(),
 			"block_parents", blockParents,
