@@ -891,12 +891,12 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 func TestServiceV2_ListHosts(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(host *resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder)
-		expect func(t *testing.T, host *resource.Host, resp []*commonv2.Host, err error)
+		mock   func(host *standard.Host, hostManager standard.HostManager, mr *standard.MockResourceMockRecorder, mh *standard.MockHostManagerMockRecorder)
+		expect func(t *testing.T, host *standard.Host, resp []*commonv2.Host, err error)
 	}{
 		{
-			name: "host loading unsuccessful",
-			mock: func(host *resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder) {
+			name: "host manager is empty",
+			mock: func(host *standard.Host, hostManager standard.HostManager, mr *standard.MockResourceMockRecorder, mh *standard.MockHostManagerMockRecorder) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Range(gomock.Any()).Do(func(f func(key, value any) bool) {
@@ -904,15 +904,15 @@ func TestServiceV2_ListHosts(t *testing.T) {
 					}).Return().Times(1),
 				)
 			},
-			expect: func(t *testing.T, host *resource.Host, resp []*commonv2.Host, err error) {
+			expect: func(t *testing.T, host *standard.Host, resp []*commonv2.Host, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(len(resp), 0)
 			},
 		},
 		{
-			name: "host loading successful",
-			mock: func(host *resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder) {
+			name: "host manager is not empty",
+			mock: func(host *standard.Host, hostManager standard.HostManager, mr *standard.MockResourceMockRecorder, mh *standard.MockHostManagerMockRecorder) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Range(gomock.Any()).Do(func(f func(key, value any) bool) {
@@ -920,7 +920,7 @@ func TestServiceV2_ListHosts(t *testing.T) {
 					}).Return().Times(1),
 				)
 			},
-			expect: func(t *testing.T, host *resource.Host, resp []*commonv2.Host, err error) {
+			expect: func(t *testing.T, host *standard.Host, resp []*commonv2.Host, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(len(resp), 1)
@@ -993,16 +993,17 @@ func TestServiceV2_ListHosts(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 			scheduling := schedulingmocks.NewMockScheduling(ctl)
-			res := resource.NewMockResource(ctl)
+			resource := standard.NewMockResource(ctl)
+			persistentCacheResource := persistentcache.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			storage := storagemocks.NewMockStorage(ctl)
-			hostManager := resource.NewMockHostManager(ctl)
-			host := resource.NewHost(
+			hostManager := standard.NewMockHostManager(ctl)
+			host := standard.NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname, mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type,
-				resource.WithCPU(mockCPU), resource.WithMemory(mockMemory), resource.WithNetwork(mockNetwork), resource.WithDisk(mockDisk), resource.WithBuild(mockBuild))
-			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, res, scheduling, dynconfig, storage)
+				standard.WithCPU(mockCPU), standard.WithMemory(mockMemory), standard.WithNetwork(mockNetwork), standard.WithDisk(mockDisk), standard.WithBuild(mockBuild))
+			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, resource, persistentCacheResource, scheduling, dynconfig, storage)
 
-			tc.mock(host, hostManager, res.EXPECT(), hostManager.EXPECT())
+			tc.mock(host, hostManager, resource.EXPECT(), hostManager.EXPECT())
 			resp, err := svc.ListHosts(context.Background())
 			tc.expect(t, host, resp.Hosts, err)
 		})
@@ -1012,49 +1013,49 @@ func TestServiceV2_ListHosts(t *testing.T) {
 func TestServiceV2_DeleteHost(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder)
-		expect func(t *testing.T, peer *resource.Peer, err error)
+		mock   func(host *standard.Host, mockPeer *standard.Peer, hostManager standard.HostManager, mr *standard.MockResourceMockRecorder, mh *standard.MockHostManagerMockRecorder)
+		expect func(t *testing.T, peer *standard.Peer, err error)
 	}{
 		{
 			name: "host not found",
-			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder) {
+			mock: func(host *standard.Host, mockPeer *standard.Peer, hostManager standard.HostManager, mr *standard.MockResourceMockRecorder, mh *standard.MockHostManagerMockRecorder) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(nil, false).Times(1),
 				)
 			},
-			expect: func(t *testing.T, peer *resource.Peer, err error) {
+			expect: func(t *testing.T, peer *standard.Peer, err error) {
 				assert := assert.New(t)
 				assert.Error(err)
 			},
 		},
 		{
 			name: "host has not peers",
-			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder) {
+			mock: func(host *standard.Host, mockPeer *standard.Peer, hostManager standard.HostManager, mr *standard.MockResourceMockRecorder, mh *standard.MockHostManagerMockRecorder) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(host, true).Times(1),
 				)
 			},
-			expect: func(t *testing.T, peer *resource.Peer, err error) {
+			expect: func(t *testing.T, peer *standard.Peer, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
 			},
 		},
 		{
 			name: "peer leaves succeeded",
-			mock: func(host *resource.Host, mockPeer *resource.Peer, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder) {
+			mock: func(host *standard.Host, mockPeer *standard.Peer, hostManager standard.HostManager, mr *standard.MockResourceMockRecorder, mh *standard.MockHostManagerMockRecorder) {
 				host.Peers.Store(mockPeer.ID, mockPeer)
-				mockPeer.FSM.SetState(resource.PeerStatePending)
+				mockPeer.FSM.SetState(standard.PeerStatePending)
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(host, true).Times(1),
 				)
 			},
-			expect: func(t *testing.T, peer *resource.Peer, err error) {
+			expect: func(t *testing.T, peer *standard.Peer, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-				assert.Equal(peer.FSM.Current(), resource.PeerStateLeave)
+				assert.Equal(peer.FSM.Current(), standard.PeerStateLeave)
 			},
 		},
 	}
@@ -1064,18 +1065,19 @@ func TestServiceV2_DeleteHost(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 			scheduling := schedulingmocks.NewMockScheduling(ctl)
-			res := resource.NewMockResource(ctl)
+			resource := standard.NewMockResource(ctl)
+			persistentCacheResource := persistentcache.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			storage := storagemocks.NewMockStorage(ctl)
-			hostManager := resource.NewMockHostManager(ctl)
-			host := resource.NewHost(
+			hostManager := standard.NewMockHostManager(ctl)
+			host := standard.NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
-			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, resource.WithDigest(mockTaskDigest), resource.WithPieceLength(mockTaskPieceLength))
-			mockPeer := resource.NewPeer(mockSeedPeerID, mockTask, host)
-			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, res, scheduling, dynconfig, storage)
+			mockTask := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest), standard.WithPieceLength(mockTaskPieceLength))
+			mockPeer := standard.NewPeer(mockSeedPeerID, mockTask, host)
+			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, resource, persistentCacheResource, scheduling, dynconfig, storage)
 
-			tc.mock(host, mockPeer, hostManager, res.EXPECT(), hostManager.EXPECT())
+			tc.mock(host, mockPeer, hostManager, resource.EXPECT(), hostManager.EXPECT())
 			tc.expect(t, mockPeer, svc.DeleteHost(context.Background(), &schedulerv2.DeleteHostRequest{HostId: mockHostID}))
 		})
 	}
