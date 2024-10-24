@@ -39,7 +39,7 @@ var _ = Describe("Download Using Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "090278fc27871e8bb93c4546a0f44dd16126ed476a23bee7c4b0812357e2042b",
+				ID:     "2203d73a8d0162a86745eb25095a655e2ab866c56c3ebcc3f0bf7d6a4e329317",
 				Sha256: "6288d2a89e2a9611191c25a45de20e94d8d058c75f274a39970d41f60f367e6f",
 			}
 
@@ -77,7 +77,7 @@ var _ = Describe("Download Using Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "80c17d9f21dcfd8b6f4526d131e65cd70dd0ad644033ea1900ea9a7deeed6dc3",
+				ID:     "6b94aa169d11ba67c1852f14c4df39e5ebf84d1c0d7a6f6ad0ba2f3547883f4f",
 				Sha256: "327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a",
 			}
 
@@ -115,7 +115,7 @@ var _ = Describe("Download Using Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "559fb82754b3cd804f75d4e9e58ae6cd9aba5c49e24e7f52891bee5c815ed2b8",
+				ID:     "d6636c250217d958ef2377ca9278811cc3c538f3d29a65729ec7e73bbabf5bb6",
 				Sha256: "a1cbf1bf2d66757121677fd7fefafacd4f843a2cb44a451131002803bae56a65",
 			}
 
@@ -153,7 +153,7 @@ var _ = Describe("Download Using Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "c8e05b7c9ebae46268691292fd2905c2cb4250af12ce91e53750e16eec69ce5a",
+				ID:     "9c9754927a9b3be5b6a0524c3c6f930a292370d0c29f0617a4b54e94622b330b",
 				Sha256: "b0cfe211f851049a78f5812cf5b1d7cb4f3fbb101c02c1865c940d5797f4b73b",
 			}
 
@@ -191,7 +191,7 @@ var _ = Describe("Download Using Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "8a541eb07998f3980807ec1d183d74516bf6e2afe76d674e813ddca99938e02e",
+				ID:     "91623b36b06c8fe3c87af420b92df060884a1fda1b11951349a0f1d02f9cc2e3",
 				Sha256: "c37f93c73cf2f303f874c094f6f76e47b2421a3da9f0e7e0b98bea8a3d685322",
 			}
 
@@ -217,7 +217,7 @@ var _ = Describe("Download Using Proxy", func() {
 		})
 	})
 
-	Context("/bin/kubectl file and set range header", func() {
+	Context("/bin/kubectl file and set range header bytes=-100", func() {
 		It("download should be ok", Label("proxy", "download", "range: bytes=-100"), func() {
 			clientPod, err := util.ClientExec()
 			fmt.Println(err)
@@ -229,7 +229,7 @@ var _ = Describe("Download Using Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "ef524d1361ee2c0f0b0a457f1d5e605b3fe4f3dd2fd131950004bb20fa83d6fa",
+				ID:     "5a7a62911a30fbcdf602b3b37ce3ecb56f4c47ab65283219c5d2342223ee53cb",
 				Sha256: "cd00e292c5970d3c5e2f0ffa5171e555bc46bfc4faddfb4a418b6840b86e79a3",
 			}
 
@@ -255,7 +255,7 @@ var _ = Describe("Download Using Proxy", func() {
 		})
 	})
 
-	Context("/bin/kubectl file and set range header", func() {
+	Context("/bin/kubectl file and set range header bytes=0-100", func() {
 		It("download should be ok", Label("proxy", "download", "range: bytes=0-100"), func() {
 			clientPod, err := util.ClientExec()
 			fmt.Println(err)
@@ -267,7 +267,7 @@ var _ = Describe("Download Using Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "d22bb2076dc27f0f0be5d3ecc1e95a63ea516ce5dff49d235cf2266e98625474",
+				ID:     "41d7764fb682932aac4e1591ff01739493539e6af9072773624b3e20fe5465f4",
 				Sha256: "7bbfcb694f6acc69483751d3b48d5bdbdcb284f9e04c7b7caa04b5977cffddc8",
 			}
 
@@ -293,7 +293,7 @@ var _ = Describe("Download Using Proxy", func() {
 		})
 	})
 
-	Context("/bin/kubectl file and set range header", func() {
+	Context("/bin/kubectl file and set range header bytes=100-", func() {
 		It("download should be ok", Label("proxy", "download", "range: bytes=100-"), func() {
 			clientPod, err := util.ClientExec()
 			fmt.Println(err)
@@ -305,7 +305,7 @@ var _ = Describe("Download Using Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "f58775d042d37c406dbe03a294446e994f183e5872e93477025ad049f62a0a85",
+				ID:     "c29e8ee77bf3a0f177269fd1a216a4c404a4fb3778a483c41c8735aadffcbe66",
 				Sha256: "ba9a10ceceb80562fc124dc9bc94ea2a38e3a71e3e746e2140e6381ac791cdeb",
 			}
 
@@ -331,7 +331,7 @@ var _ = Describe("Download Using Proxy", func() {
 		})
 	})
 
-	Context("/bin/kubectl file and set range header", func() {
+	Context("/bin/kubectl file and set range header bytes=100-46026751", func() {
 		It("download should be ok", Label("proxy", "download", "range: bytes=100-46026751"), func() {
 			clientPod, err := util.ClientExec()
 			fmt.Println(err)
@@ -343,7 +343,7 @@ var _ = Describe("Download Using Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "6353c7c65066bf24acdfe62601ba17a1636d217169e79f7ea3f2ebf7f0940e06",
+				ID:     "29fe25686d520e3aedd1743fc95dc008e6102e917b33d17b75b2db204718f132",
 				Sha256: "ba9a10ceceb80562fc124dc9bc94ea2a38e3a71e3e746e2140e6381ac791cdeb",
 			}
 
@@ -369,7 +369,7 @@ var _ = Describe("Download Using Proxy", func() {
 		})
 	})
 
-	Context("/bin/kubectl file and set range header", func() {
+	Context("/bin/kubectl file and set range header bytes=0-46026751", func() {
 		It("download should be ok", Label("proxy", "download", "range: bytes=0-46026751"), func() {
 			clientPod, err := util.ClientExec()
 			fmt.Println(err)
@@ -381,7 +381,7 @@ var _ = Describe("Download Using Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "1ff704a22e421b2f9b99f7f8e2228e6f71d9c987ef242348acc031d003d3e941",
+				ID:     "09f0107339e32f9405b15fb093b25db9652104d96d3a8797afffa47f5c4c988b",
 				Sha256: "327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a",
 			}
 
@@ -407,7 +407,7 @@ var _ = Describe("Download Using Proxy", func() {
 		})
 	})
 
-	Context("/bin/kubectl file and set range header", func() {
+	Context("/bin/kubectl file and set range header bytes=100-10240", func() {
 		It("download should be ok", Label("proxy", "download", "range: bytes=100-10240"), func() {
 			clientPod, err := util.ClientExec()
 			fmt.Println(err)
@@ -419,7 +419,7 @@ var _ = Describe("Download Using Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "dba445f5310c2a63fabeaad075511357e411b74f68a47bc579ed36f78a380013",
+				ID:     "7a916912f2182f749d2779ad9c557947d7ee2a2b213705038d2441bf5089f5d0",
 				Sha256: "8732360b941ad09a5e0e5d5f9891118bc068f6d0d5a56e3c6d483e4600fbc43f",
 			}
 
@@ -445,7 +445,7 @@ var _ = Describe("Download Using Proxy", func() {
 		})
 	})
 
-	Context("/bin/kubectl file and set range header", func() {
+	Context("/bin/kubectl file and set range header bytes=100-1024", func() {
 		It("download should be ok", Label("proxy", "download", "range: bytes=100-1024"), func() {
 			clientPod, err := util.ClientExec()
 			fmt.Println(err)
@@ -457,7 +457,7 @@ var _ = Describe("Download Using Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "ae82ec86b58e7a91853ce6a3d52a59a1d590365a91b30db57df922bd8a6bc952",
+				ID:     "7a916912f2182f749d2779ad9c557947d7ee2a2b213705038d2441bf5089f5d0",
 				Sha256: "d6d17dca18b8de59e38da525dc24c47b74fec1a790a9f64afdd6538f4f8fa90e",
 			}
 
@@ -497,7 +497,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "4a4df08f3aa3311e29556582de4269294a6805f81b7d8d38b83e8a91bc461d4e",
+				ID:     "09d0b6f7a9d6825d4d703b85ec706a87334ba437310301e4a0110af8cc562648",
 				Sha256: "6288d2a89e2a9611191c25a45de20e94d8d058c75f274a39970d41f60f367e6f",
 			}
 
@@ -523,7 +523,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "3496028e92e0e35651f92e86ffde1dfa3c03a66265d248f8d3254ac78d30ef83",
+				ID:     "0812fe2767598f19d2430be8153522d916f6e6c3179bd8914941eb2c0e8568e5",
 				Sha256: "327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a",
 			}
 
@@ -549,7 +549,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "91ae78d5302e267bd245bae82c6ab90e18a8a4234bb87642f108901e801a1e2a",
+				ID:     "d93cf0cd379fbd59194c3038837a551a1151a3aedd1c931fc7324ea0b0edc289",
 				Sha256: "a1cbf1bf2d66757121677fd7fefafacd4f843a2cb44a451131002803bae56a65",
 			}
 
@@ -575,7 +575,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "d2ccf9401074d729a88359394f1d9b4888ee6b7d9e4045e49bf1fa8d7caaf1d7",
+				ID:     "ba68b1b385b2441fef06fb79a64b79367fabf4c31e2d7f21cd37b202d2e02e44",
 				Sha256: "b0cfe211f851049a78f5812cf5b1d7cb4f3fbb101c02c1865c940d5797f4b73b",
 			}
 
@@ -601,7 +601,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "a8a7a947d233ce5298c937c7e3cb52321810533d89c526c751b71a2dd91bc908",
+				ID:     "661e488117503f6c46192e86f587a5b615129cadb6f25b51b9683257a1d70b55",
 				Sha256: "c37f93c73cf2f303f874c094f6f76e47b2421a3da9f0e7e0b98bea8a3d685322",
 			}
 
@@ -615,7 +615,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 		})
 	})
 
-	Context("/bin/kubectl file and set range header", func() {
+	Context("/bin/kubectl file and set range header bytes=-100", func() {
 		It("download should be ok", Label("prefetch-proxy", "download", "range: bytes=-100"), func() {
 			seedClientPod, err := util.SeedClientExec(0)
 			fmt.Println(err)
@@ -627,7 +627,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "cbc6213119267fb7437947a971673a6a3eb65d3b972eac55b227104a4069f32c",
+				ID:     "43a914f8b0f3ab0be61ee007b4246de0043612a691eb39e07efbcbb2b11be8e5",
 				Sha256: "cd00e292c5970d3c5e2f0ffa5171e555bc46bfc4faddfb4a418b6840b86e79a3",
 			}
 
@@ -639,11 +639,10 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 			sha256sum, err = util.CalculateSha256ByTaskID([]*util.PodExec{seedClientPod}, fileMetadata.ID)
 			Expect(err).NotTo(HaveOccurred())
 			Expect("327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a").To(Equal(sha256sum))
-
 		})
 	})
 
-	Context("/bin/kubectl file and set range header", func() {
+	Context("/bin/kubectl file and set range header bytes=0-100", func() {
 		It("download should be ok", Label("prefetch-proxy", "download", "range: bytes=0-100"), func() {
 			seedClientPod, err := util.SeedClientExec(0)
 			fmt.Println(err)
@@ -655,7 +654,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "ab59a8e67be5672729f97ecd6c9824561ab6e77652d59ea4e7b6eaf18a5a443e",
+				ID:     "eb46a424abb2151d4d1337d030f3d15b510cf7827a45a0e033e81ed3d15d8743",
 				Sha256: "7bbfcb694f6acc69483751d3b48d5bdbdcb284f9e04c7b7caa04b5977cffddc8",
 			}
 
@@ -670,7 +669,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 		})
 	})
 
-	Context("/bin/kubectl file and set range header", func() {
+	Context("/bin/kubectl file and set range header bytes=100-", func() {
 		It("download should be ok", Label("prefetch-proxy", "download", "range: bytes=100-"), func() {
 			seedClientPod, err := util.SeedClientExec(0)
 			fmt.Println(err)
@@ -682,7 +681,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "235c7f0377f3cea69659756c883243fd071ffb527c38d6abb407bf428ecc6489",
+				ID:     "148e03a3ba5c45269de90465cff82d003e52a7ec7e3a2ea6fe08e45f4fb6fbdd",
 				Sha256: "ba9a10ceceb80562fc124dc9bc94ea2a38e3a71e3e746e2140e6381ac791cdeb",
 			}
 
@@ -697,7 +696,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 		})
 	})
 
-	Context("/bin/kubectl file and set range header", func() {
+	Context("/bin/kubectl file and set range header bytes=100-46026751", func() {
 		It("download should be ok", Label("prefetch-proxy", "download", "range: bytes=100-46026751"), func() {
 			seedClientPod, err := util.SeedClientExec(0)
 			fmt.Println(err)
@@ -709,7 +708,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "5135a54f35215fcbdfcea61313bc746ee4d2112781e7b346967aa53e3d266377",
+				ID:     "daf131380b88dd60a81140f87d36767cbfadc314324b71e0ee2a35679cf864b5",
 				Sha256: "ba9a10ceceb80562fc124dc9bc94ea2a38e3a71e3e746e2140e6381ac791cdeb",
 			}
 
@@ -724,7 +723,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 		})
 	})
 
-	Context("/bin/kubectl file and set range header", func() {
+	Context("/bin/kubectl file and set range header bytes=0-46026751", func() {
 		It("download should be ok", Label("prefetch-proxy", "download", "range: bytes=0-46026751"), func() {
 			seedClientPod, err := util.SeedClientExec(0)
 			fmt.Println(err)
@@ -736,7 +735,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "c573851cdcabc1d5f7344c576ff67bdfe3f63f65b49e08942f24c15a1808a027",
+				ID:     "90f143ba29e0174095ca2e59a76d86f3acaa4072aec3263c2bacf51259eaece0",
 				Sha256: "327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a",
 			}
 
@@ -751,7 +750,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 		})
 	})
 
-	Context("/bin/kubectl file and set range header", func() {
+	Context("/bin/kubectl file and set range header bytes=100-10240", func() {
 		It("download should be ok", Label("prefetch-proxy", "download", "range: bytes=100-10240"), func() {
 			seedClientPod, err := util.SeedClientExec(0)
 			fmt.Println(err)
@@ -763,7 +762,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "cc826acc16c2ab33525874eb66baddb180709b33380983d489e510d6674ef6bb",
+				ID:     "52c748b962167e66421259a7834363b3956b1a3c5f8cea5575a1f96dae4be47d",
 				Sha256: "8732360b941ad09a5e0e5d5f9891118bc068f6d0d5a56e3c6d483e4600fbc43f",
 			}
 
@@ -778,7 +777,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 		})
 	})
 
-	Context("/bin/kubectl file and set range header", func() {
+	Context("/bin/kubectl file and set range header bytes=100-1024", func() {
 		It("download should be ok", Label("prefetch-proxy", "download", "range: bytes=100-1024"), func() {
 			seedClientPod, err := util.SeedClientExec(0)
 			fmt.Println(err)
@@ -790,7 +789,7 @@ var _ = Describe("Download Using Prefetch Proxy", func() {
 			fmt.Println(string(out))
 
 			fileMetadata := util.FileMetadata{
-				ID:     "60645e89632f754c704450108e2d188f7496cb63bb6055a5b1bf5c71f29d0b3a",
+				ID:     "52c748b962167e66421259a7834363b3956b1a3c5f8cea5575a1f96dae4be47d",
 				Sha256: "d6d17dca18b8de59e38da525dc24c47b74fec1a790a9f64afdd6538f4f8fa90e",
 			}
 

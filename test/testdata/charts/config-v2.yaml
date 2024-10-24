@@ -24,6 +24,7 @@ manager:
   metrics:
     enable: true
   config:
+    console: false
     verbose: true
     job:
       rateLimit:
@@ -61,6 +62,7 @@ scheduler:
     enable: true
     enableHost: true
   config:
+    console: false
     verbose: true
     scheduler:
       gc:

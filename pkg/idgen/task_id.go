@@ -50,7 +50,7 @@ func taskIDV1(url string, meta *commonv1.UrlMeta, ignoreRange bool) string {
 		return pkgdigest.SHA256FromStrings(url)
 	}
 
-	filteredQueryParams := parseFilteredQueryParams(meta.Filter)
+	filteredQueryParams := ParseFilteredQueryParams(meta.Filter)
 
 	var (
 		u   string
@@ -81,8 +81,8 @@ func taskIDV1(url string, meta *commonv1.UrlMeta, ignoreRange bool) string {
 	return pkgdigest.SHA256FromStrings(data...)
 }
 
-// parseFilteredQueryParams parses filtered query params.
-func parseFilteredQueryParams(rawFilteredQueryParams string) []string {
+// ParseFilteredQueryParams parses filtered query params.
+func ParseFilteredQueryParams(rawFilteredQueryParams string) []string {
 	if pkgstrings.IsBlank(rawFilteredQueryParams) {
 		return nil
 	}
@@ -91,11 +91,11 @@ func parseFilteredQueryParams(rawFilteredQueryParams string) []string {
 }
 
 // TaskIDV2 generates v2 version of task id.
-func TaskIDV2(url, digest, tag, application string, filteredQueryParams []string) string {
+func TaskIDV2(url, tag, application string, filteredQueryParams []string) string {
 	url, err := neturl.FilterQueryParams(url, filteredQueryParams)
 	if err != nil {
 		url = ""
 	}
 
-	return pkgdigest.SHA256FromStrings(url, digest, tag, application)
+	return pkgdigest.SHA256FromStrings(url, tag, application)
 }
