@@ -32,6 +32,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 )
 
 // Task is an interface for manager tasks.
@@ -60,7 +61,14 @@ func (t *task) CreateGetTask(ctx context.Context, schedulers []models.Scheduler,
 	span.SetAttributes(config.AttributeGetTaskID.String(json.TaskID))
 	defer span.End()
 
-	args, err := internaljob.MarshalRequest(json)
+	taskID := json.TaskID
+	if json.URL != "" {
+		taskID = idgen.TaskIDV2(json.URL, json.Tag, json.Application, idgen.ParseFilteredQueryParams(json.FilteredQueryParams))
+	}
+
+	args, err := internaljob.MarshalRequest(internaljob.GetTaskRequest{
+		TaskID: taskID,
+	})
 	if err != nil {
 		logger.Errorf("get tasks marshal request: %v, error: %v", args, err)
 		return nil, err
@@ -111,7 +119,15 @@ func (t *task) CreateDeleteTask(ctx context.Context, schedulers []models.Schedul
 	span.SetAttributes(config.AttributeDeleteTaskID.String(json.TaskID))
 	defer span.End()
 
-	args, err := internaljob.MarshalRequest(json)
+	taskID := json.TaskID
+	if json.URL != "" {
+		taskID = idgen.TaskIDV2(json.URL, json.Tag, json.Application, idgen.ParseFilteredQueryParams(json.FilteredQueryParams))
+	}
+
+	args, err := internaljob.MarshalRequest(internaljob.DeleteTaskRequest{
+		TaskID:  taskID,
+		Timeout: json.Timeout,
+	})
 	if err != nil {
 		logger.Errorf("delete task marshal request: %v, error: %v", args, err)
 		return nil, err
