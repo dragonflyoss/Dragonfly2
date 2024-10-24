@@ -112,7 +112,20 @@ type CreateGetTaskJobRequest struct {
 }
 
 type GetTaskArgs struct {
-	TaskID string `json:"task_id" binding:"required"`
+	// TaskID is the task id for getting.
+	TaskID string `json:"task_id" binding:"omitempty"`
+
+	// URL is the download url of the task.
+	URL string `json:"url" binding:"omitempty"`
+
+	// Tag is the tag of the task.
+	Tag string `json:"tag" binding:"omitempty"`
+
+	// Application is the application of the task.
+	Application string `json:"application" binding:"omitempty"`
+
+	// FilteredQueryParams is the filtered query params of the task.
+	FilteredQueryParams string `json:"filtered_query_params" binding:"omitempty"`
 }
 
 type CreateDeleteTaskJobRequest struct {
@@ -125,7 +138,19 @@ type CreateDeleteTaskJobRequest struct {
 
 type DeleteTaskArgs struct {
 	// TaskID is the task id for deleting.
-	TaskID string `json:"task_id" binding:"required"`
+	TaskID string `json:"task_id" binding:"omitempty"`
+
+	// URL is the download url of the task.
+	URL string `json:"url" binding:"omitempty"`
+
+	// Tag is the tag of the task.
+	Tag string `json:"tag" binding:"omitempty"`
+
+	// Application is the application of the task.
+	Application string `json:"application" binding:"omitempty"`
+
+	// FilteredQueryParams is the filtered query params of the task.
+	FilteredQueryParams string `json:"filtered_query_params" binding:"omitempty"`
 
 	// Timeout is the timeout for deleting, default is 30 minutes.
 	Timeout time.Duration `json:"timeout" binding:"omitempty"`

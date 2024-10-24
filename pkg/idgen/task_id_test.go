@@ -110,7 +110,6 @@ func TestTaskIDV2(t *testing.T) {
 	tests := []struct {
 		name        string
 		url         string
-		digest      string
 		tag         string
 		application string
 		filters     []string
@@ -119,22 +118,12 @@ func TestTaskIDV2(t *testing.T) {
 		{
 			name:        "generate taskID",
 			url:         "https://example.com",
-			digest:      "sha256:c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
 			tag:         "foo",
 			application: "bar",
 			filters:     []string{},
 			expect: func(t *testing.T, d any) {
 				assert := assert.New(t)
-				assert.Equal(d, "c8659b8372599cf22c7a2de260dd6e148fca6d4e1c2940703022867f739d071d")
-			},
-		},
-		{
-			name:   "generate taskID with digest",
-			url:    "https://example.com",
-			digest: "sha256:c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
-			expect: func(t *testing.T, d any) {
-				assert := assert.New(t)
-				assert.Equal(d, "60469c583429af631a45540f05e08805b31ca4f84e7974cad35cfc84c197bcf8")
+				assert.Equal(d, "160fa7f001d9d2e893130894fbb60a5fb006e1d61bff82955f2946582bc9de1d")
 			},
 		},
 		{
@@ -168,7 +157,7 @@ func TestTaskIDV2(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, TaskIDV2(tc.url, tc.digest, tc.tag, tc.application, tc.filters))
+			tc.expect(t, TaskIDV2(tc.url, tc.tag, tc.application, tc.filters))
 		})
 	}
 }
