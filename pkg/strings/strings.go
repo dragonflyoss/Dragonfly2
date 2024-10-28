@@ -49,3 +49,12 @@ func Unique(slice []string) []string {
 
 	return result
 }
+
+// Concat concatenates multiple string slices.
+func Concat(slices ...[]string) []string {
+	var result []string
+	for _, slice := range slices {
+		result = append(result, slice...)
+	}
+	return result
+}

@@ -464,9 +464,6 @@ definitions:
         type: object
       bio:
         type: string
-      result:
-        additionalProperties: {}
-        type: object
       scheduler_cluster_ids:
         items:
           type: integer

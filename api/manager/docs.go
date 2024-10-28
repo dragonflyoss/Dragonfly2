@@ -4208,10 +4208,6 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
-                "result": {
-                    "type": "object",
-                    "additionalProperties": {}
-                },
                 "scheduler_cluster_ids": {
                     "type": "array",
                     "items": {

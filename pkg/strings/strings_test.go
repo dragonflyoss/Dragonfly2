@@ -40,3 +40,10 @@ func TestUnique(t *testing.T) {
 	assert.EqualValues(t, Unique([]string{}), []string{})
 	assert.EqualValues(t, Unique([]string{}), []string{})
 }
+
+func TestConcat(t *testing.T) {
+	assert.EqualValues(t, Concat([]string{"a", "B"}, []string{"c", "D"}), []string{"a", "B", "c", "D"})
+	assert.EqualValues(t, Concat([]string{"a", "B"}, []string{}), []string{"a", "B"})
+	assert.EqualValues(t, Concat([]string{}, []string{"c", "D"}), []string{"c", "D"})
+	assert.EqualValues(t, Concat([]string{}, []string{}), []string(nil))
+}
