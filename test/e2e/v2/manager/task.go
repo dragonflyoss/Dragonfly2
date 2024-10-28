@@ -62,7 +62,7 @@ var _ = Describe("GetTask and DeleteTask with Manager", func() {
 			Expect(done).Should(BeTrue())
 
 			fileMetadata := util.FileMetadata{
-				ID:     "6f1e003b51a34df01dd80e3498dbaad584584d97888464b33b3e2c8442a3d485",
+				ID:     "5588094e5a40f0d324052e044884a0910de8467428deebccb8c6fb560b131c28",
 				Sha256: "df954abca766aceddd79dd20429e4f222019018667446626d3a641d3c47c50fc",
 			}
 
@@ -157,7 +157,7 @@ var _ = Describe("GetTask and DeleteTask with Manager", func() {
 			Expect(done).Should(BeTrue())
 
 			fileMetadata := util.FileMetadata{
-				ID:     "ddc397119488e07671cdeec0bf54c31b544ce2fbff14441c7444f1dddda2bd91",
+				ID:     "feab7bc71cfa2618a2fe4cf593b562d59b4e8cb87e8ec249a1b951f44c78f2b6",
 				Sha256: "5286873505a9671e077f346cdfb89d5a6c99985fe3f11a972f30fedf9029bae0",
 			}
 

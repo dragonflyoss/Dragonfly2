@@ -43,13 +43,19 @@ var (
 		{
 			"type": "get_task",
 			"user_id": 4,
-			"bio": "bio"
+			"bio": "bio",
+			"args": {
+				"task_id": "7575d21d69495905a4709bf4e10d0e5cffcf7fd1e76e93171e0ef6e0abcf07a8"
+			}
 		}`
 	mockDeleteTaskJobReqBody = `
 		{
 			"type": "delete_task",
 			"user_id": 4,
-			"bio": "bio"
+			"bio": "bio",
+			"args": {
+				"task_id": "04a29122b0c4d0affde2d577fb36bb956caa3da10e9130375623c24a5f865a49"
+			}
 		}`
 	mockOtherJobReqBody = `
 		{
@@ -66,11 +72,15 @@ var (
 		UserID: 4,
 		Type:   "get_task",
 		BIO:    "bio",
+		Args:   types.GetTaskArgs{TaskID: "7575d21d69495905a4709bf4e10d0e5cffcf7fd1e76e93171e0ef6e0abcf07a8"},
 	}
 	mockCreateDeleteTaskJobRequest = types.CreateDeleteTaskJobRequest{
 		UserID: 4,
 		Type:   "delete_task",
 		BIO:    "bio",
+		Args: types.DeleteTaskArgs{
+			TaskID: "04a29122b0c4d0affde2d577fb36bb956caa3da10e9130375623c24a5f865a49",
+		},
 	}
 	mockUpdateJobRequest = types.UpdateJobRequest{
 		UserID: 4,

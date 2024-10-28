@@ -170,7 +170,7 @@ func (j *job) preheat(ctx context.Context, data string) (string, error) {
 		return "", err
 	}
 
-	taskID := idgen.TaskIDV2(req.URL, req.Digest, req.Tag, req.Application, strings.Split(req.FilteredQueryParams, idgen.FilteredQueryParamsSeparator))
+	taskID := idgen.TaskIDV2(req.URL, req.Tag, req.Application, strings.Split(req.FilteredQueryParams, idgen.FilteredQueryParamsSeparator))
 	log := logger.WithTask(taskID, req.URL)
 	log.Infof("preheat %s request: %#v", req.URL, req)
 
@@ -279,7 +279,6 @@ func (j *job) preheatAllPeers(ctx context.Context, taskID string, req *internalj
 				taskID,
 				&dfdaemonv2.DownloadTaskRequest{Download: &commonv2.Download{
 					Url:                 req.URL,
-					Digest:              &req.Digest,
 					Type:                commonv2.TaskType_STANDARD,
 					Tag:                 &req.Tag,
 					Application:         &req.Application,
@@ -376,7 +375,6 @@ func (j *job) preheatAllPeers(ctx context.Context, taskID string, req *internalj
 // preheatV1 preheats job by v1 grpc protocol.
 func (j *job) preheatV1(ctx context.Context, taskID string, req *internaljob.PreheatRequest, log *logger.SugaredLoggerOnWith) (*internaljob.PreheatResponse, error) {
 	urlMeta := &commonv1.UrlMeta{
-		Digest:      req.Digest,
 		Tag:         req.Tag,
 		Filter:      req.FilteredQueryParams,
 		Header:      req.Headers,
@@ -424,7 +422,6 @@ func (j *job) preheatV2(ctx context.Context, taskID string, req *internaljob.Pre
 	stream, err := j.resource.SeedPeer().Client().DownloadTask(ctx, taskID, &dfdaemonv2.DownloadTaskRequest{
 		Download: &commonv2.Download{
 			Url:                 req.URL,
-			Digest:              &req.Digest,
 			Type:                commonv2.TaskType_STANDARD,
 			Tag:                 &req.Tag,
 			Application:         &req.Application,

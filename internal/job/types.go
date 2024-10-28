@@ -24,7 +24,6 @@ import (
 type PreheatRequest struct {
 	URL                 string            `json:"url" validate:"required,url"`
 	Tag                 string            `json:"tag" validate:"omitempty"`
-	Digest              string            `json:"digest" validate:"omitempty"`
 	FilteredQueryParams string            `json:"filtered_query_params" validate:"omitempty"`
 	Headers             map[string]string `json:"headers" validate:"omitempty"`
 	Application         string            `json:"application" validate:"omitempty"`

@@ -61,7 +61,7 @@ var _ = Describe("Preheat with Manager", func() {
 			Expect(done).Should(BeTrue())
 
 			fileMetadata := util.FileMetadata{
-				ID:     "6ba5a8781902368d2b07eb8b6d6044a96f49d5008feace1ea8e3ebfc0b96d0a1",
+				ID:     "b0a5cfd4ccf5310803675f742dedc435a64e9a5f539f48fedbef6c30aac18b7c",
 				Sha256: "80f1d8cd843a98b23b30e90e7e43a14e05935351f354d678bc465f7be66ef3dd",
 			}
 
@@ -108,55 +108,8 @@ var _ = Describe("Preheat with Manager", func() {
 			Expect(done).Should(BeTrue())
 
 			fileMetadata := util.FileMetadata{
-				ID:     "f4d85d5d6db12bdcdee48a1f3ace8420756399bdfcbddd430b6b2330ad4c00df",
+				ID:     "802e3df5384438deaed066ca445489f6e314ebb6a2d4728d020e75a08d281942",
 				Sha256: "4c7f0f298ab3350859f90664d706b8ccaa95072f1f1f3dd74f559642e5483cd5",
-			}
-
-			seedClientPods := make([]*util.PodExec, 3)
-			for i := 0; i < 3; i++ {
-				seedClientPods[i], err = util.SeedClientExec(i)
-				fmt.Println(err)
-				Expect(err).NotTo(HaveOccurred())
-			}
-
-			sha256sum, err := util.CalculateSha256ByTaskID(seedClientPods, fileMetadata.ID)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(fileMetadata.Sha256).To(Equal(sha256sum))
-		})
-	})
-
-	Context("/bin/i386 file", func() {
-		It("preheat files should be ok", Label("preheat", "file"), func() {
-			managerPod, err := util.ManagerExec(0)
-			fmt.Println(err)
-			Expect(err).NotTo(HaveOccurred())
-
-			req, err := structure.StructToMap(types.CreatePreheatJobRequest{
-				Type: internaljob.PreheatJob,
-				Args: types.PreheatArgs{
-					Type: "file",
-					URL:  util.GetFileURL("/bin/i386"),
-				},
-			})
-			Expect(err).NotTo(HaveOccurred())
-
-			out, err := managerPod.CurlCommand("POST", map[string]string{"Content-Type": "application/json"}, req,
-				"http://dragonfly-manager.dragonfly-system.svc:8080/api/v1/jobs").CombinedOutput()
-			fmt.Println(err)
-			Expect(err).NotTo(HaveOccurred())
-			fmt.Println(string(out))
-
-			job := &models.Job{}
-			err = json.Unmarshal(out, job)
-			fmt.Println(err)
-			Expect(err).NotTo(HaveOccurred())
-
-			done := waitForDone(job, managerPod)
-			Expect(done).Should(BeTrue())
-
-			fileMetadata := util.FileMetadata{
-				ID:     "bd2024e044b8b29dcfd930ae1eae9594c8d94f89cc6403303cf07c892c00db7d",
-				Sha256: "a1cbf1bf2d66757121677fd7fefafacd4f843a2cb44a451131002803bae56a65",
 			}
 
 			seedClientPods := make([]*util.PodExec, 3)
@@ -202,7 +155,7 @@ var _ = Describe("Preheat with Manager", func() {
 			Expect(done).Should(BeTrue())
 
 			fileMetadata := util.FileMetadata{
-				ID:     "039d6a3441cc8e47bf83d6bb504be958f6b08511d8c23afcb0dd8c266b23fa93",
+				ID:     "4f1de4716ec6d1ca56daf1f5dd2520a8f6a826d90474f596cdf99a5c88fef982",
 				Sha256: "5a963cbdd08df27651e9c9d006567267ebb3c80f7b8fc0f218ade5771df2998b",
 			}
 
@@ -248,11 +201,11 @@ var _ = Describe("Preheat with Manager", func() {
 
 			taskMetadatas := []util.TaskMetadata{
 				{
-					ID:     "b32d9d9ab534cd803ae7ecf6655fe2e397edb6bc6e160d462d3d762ca4281150",
+					ID:     "b6922209dc9616f8736a860e93c3cd7288a4e801517f88eec3df514606d18cdf",
 					Sha256: "a711f05d33845e2e9deffcfcc5adf082d7c6e97e3e3a881d193d9aae38f092a8",
 				},
 				{
-					ID:     "21213381947bc939549355f00318f22c2f35fb3a907b79a145aab45f0a18aff7",
+					ID:     "c0dfae864ae65c285676063eb148d0a0064d5c6c39367fee0bcc1f3700c39c31",
 					Sha256: "f643e116a03d9604c344edb345d7592c48cc00f2a4848aaf773411f4fb30d2f5",
 				},
 			}
@@ -302,23 +255,23 @@ var _ = Describe("Preheat with Manager", func() {
 
 			taskMetadatas := []util.TaskMetadata{
 				{
-					ID:     "f3d195d2de9da87385bd381258f436e163efaed266b3ff56eac7b89d40cacfb3",
+					ID:     "c8ca6a17354d3a79397eef26803e5af84d00a3fd64b0f823922086a31ebdee18",
 					Sha256: "f1f1039835051ecc04909f939530e86a20f02d2ce5ad7a81c0fa3616f7303944",
 				},
 				{
-					ID:     "d5f00b6bdba48fdd8920ae419ca0a007b3e15ff93d0c10495da981aaea657ef0",
+					ID:     "b8de5865e2ebf537279683adfbdb5f858b0c7212e5744a1df233086496c245d7",
 					Sha256: "c1d6d1b2d5a367259e6e51a7f4d1ccd66a28cc9940d6599d8a8ea9544dd4b4a8",
 				},
 				{
-					ID:     "5ae39f96a141d56d403f5098bcbefc13882ae3eeb1926d3c1fcfe8644f0ba7eb",
+					ID:     "e4bf0d4b551afda56f9627c81ee02ab4360865d37c7dd43586e37f26f4386806",
 					Sha256: "871ab018db94b4ae7b137764837bc4504393a60656ba187189e985cd809064f7",
 				},
 				{
-					ID:     "11b4932bf84ca19d80ef974d02f62b9d82bd42c1a7b9c2e5112097dbafcec601",
+					ID:     "7da0721fd078dd46a63298747ffde8fcbe12b53378f282c9def693615ac7993e",
 					Sha256: "f1a1d290795d904815786e41d39a41dc1af5de68a9e9020baba8bd83b32d8f95",
 				},
 				{
-					ID:     "0d15761559736d2e40678c72f7df9f330328c13abdbc5e3aa4c027c17f42b1c6",
+					ID:     "3639c8c5712e77acd3751142c83150c0a12284a54fa41224a1c7acc0e343020d",
 					Sha256: "f1ffc4b5459e82dc8e7ddd1d1a2ec469e85a1f076090c22851a1f2ce6f71e1a6",
 				},
 			}
@@ -337,7 +290,7 @@ var _ = Describe("Preheat with Manager", func() {
 			}
 		})
 
-		It("preheat image for linux/arm64 platform  should be ok", Label("preheat", "image"), func() {
+		It("preheat image for linux/arm64 platform should be ok", Label("preheat", "image"), func() {
 			managerPod, err := util.ManagerExec(0)
 			fmt.Println(err)
 			Expect(err).NotTo(HaveOccurred())
@@ -366,23 +319,23 @@ var _ = Describe("Preheat with Manager", func() {
 
 			taskMetadatas := []util.TaskMetadata{
 				{
-					ID:     "b742ff16c917a4559f1909a1f1bb1a8cf66d242344d33a8ef8ca4b5bfc588b6a",
+					ID:     "9869dbb01ac214e90e4ae667e42d50210c2ff1e63292d73b14f0a7a2226c0320",
 					Sha256: "a0d7a8f11f7e25ca59f0bf470187dd9aa27e7ca951cf67a53c750deea5d3b076",
 				},
 				{
-					ID:     "3ed59c2363a552a8b3e9b1d4aed8efef18c7861678db52afd71db57ee238f317",
+					ID:     "ab049caee13f77d91568d954a5d32f5d2354497cab098887a8a663656daa9840",
 					Sha256: "a880266d3b77f75696023df2da1ef66c3c565e0f70596242395c9e68de955c7c",
 				},
 				{
-					ID:     "5ae39f96a141d56d403f5098bcbefc13882ae3eeb1926d3c1fcfe8644f0ba7eb",
+					ID:     "e4bf0d4b551afda56f9627c81ee02ab4360865d37c7dd43586e37f26f4386806",
 					Sha256: "871ab018db94b4ae7b137764837bc4504393a60656ba187189e985cd809064f7",
 				},
 				{
-					ID:     "7f83153778995fabe52d43913bc70cfe6e1f858e9450d93750903b9cbcd1007b",
+					ID:     "a26e1ac8b70926f45766fcf886f23a833793c39c62237bcda9ffeb158131c0d6",
 					Sha256: "9b5952218d7711195c6c6fbddbef2780507d20851ca68845d180397d1348f0d8",
 				},
 				{
-					ID:     "9368993adbbee8e4eeedfbd9279c88c7ea8f6dfe9b6ff035eac5dc2bf351b706",
+					ID:     "7376f665077e91cd0dc410c00242ab88775e3eae19eca4b7b3a29ded14fc3754",
 					Sha256: "889f4c960ac4ff70774e9c4cfa64efc4823ade0702d0f96c20ff0054ffbbe504",
 				},
 			}

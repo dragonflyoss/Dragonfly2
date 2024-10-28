@@ -38,7 +38,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fileMetadata := util.FileMetadata{
-				ID:     "bca2831966564d5afc95ee720836e22ce064f28ab7afc3e8ad2374565bcf3873",
+				ID:     "f82afbc76aa4d6472a982a8b8383a98d22c18c9ab06d24e989d9d4d30a49dfee",
 				Sha256: "6288d2a89e2a9611191c25a45de20e94d8d058c75f274a39970d41f60f367e6f",
 			}
 
@@ -75,7 +75,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fileMetadata := util.FileMetadata{
-				ID:     "cc2a62a71cb3555a67e54ab905ff311a1f74a1cb82137a1af3eaa5c38219bd0d",
+				ID:     "144eb7b6f67b8423c9999b9b864a35562aeff3e7d153eed2bb7f917977796bdf",
 				Sha256: "327b4022d0bfd1d5e9c0701d4a3f989a536f7e6e865e102dcd77c7e7adb31f9a",
 			}
 
@@ -112,7 +112,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fileMetadata := util.FileMetadata{
-				ID:     "fd60786a0e11228d949f1ca0e4c82e301c5daab3638159e3bb7202e3dffe12ea",
+				ID:     "7327d3aa45f16e60396d687d8c81a9d5ec9c6ca662ad9c6dad77f830c499d5e3",
 				Sha256: "a1cbf1bf2d66757121677fd7fefafacd4f843a2cb44a451131002803bae56a65",
 			}
 
@@ -149,7 +149,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fileMetadata := util.FileMetadata{
-				ID:     "9cd2ae0296e11b8e9a300deb8c13f1edba54e90356716c6a29fbc405e6cdfd45",
+				ID:     "92709a5ce8a45db2563081b843403eec5d72f8a78fe2be85ce23e0edf8b2d207",
 				Sha256: "b0cfe211f851049a78f5812cf5b1d7cb4f3fbb101c02c1865c940d5797f4b73b",
 			}
 
@@ -186,7 +186,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fileMetadata := util.FileMetadata{
-				ID:     "c288f941340197c0611b5c50e6682f367d087a3b5289cf75ac5048f8774cb7c1",
+				ID:     "56ac4873dda3db55ed78c6b26b24d51343803882714a54802bfddbb1097eb06d",
 				Sha256: "c37f93c73cf2f303f874c094f6f76e47b2421a3da9f0e7e0b98bea8a3d685322",
 			}
 
@@ -223,7 +223,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fileMetadata := util.FileMetadata{
-				ID:     "27e00689dfe0410b5b34758452f95d063d916c62ffdd28b1ab35995107696a48",
+				ID:     "fbf82ee8c8fb2f234c46947e95b4b51fc9a01b9306e52c6b717f5323b6e7c5e4",
 				Sha256: "6288d2a89e2a9611191c25a45de20e94d8d058c75f274a39970d41f60f367e6f",
 			}
 
@@ -260,7 +260,7 @@ var _ = Describe("Download Using Dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fileMetadata := util.FileMetadata{
-				ID:     "27e00689dfe0410b5b34758452f95d063d916c62ffdd28b1ab35995107696a48",
+				ID:     "fbf82ee8c8fb2f234c46947e95b4b51fc9a01b9306e52c6b717f5323b6e7c5e4",
 				Sha256: "6288d2a89e2a9611191c25a45de20e94d8d058c75f274a39970d41f60f367e6f",
 			}
 
