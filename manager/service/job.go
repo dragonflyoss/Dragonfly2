@@ -28,6 +28,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/metrics"
 	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
+	"d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/retry"
 	"d7y.io/dragonfly/v2/pkg/slices"
 	"d7y.io/dragonfly/v2/pkg/structure"
@@ -44,6 +45,10 @@ func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheat
 
 	if json.Args.Timeout == 0 {
 		json.Args.Timeout = types.DefaultJobTimeout
+	}
+
+	if json.Args.FilteredQueryParams == "" {
+		json.Args.FilteredQueryParams = http.RawDefaultFilteredQueryParams
 	}
 
 	args, err := structure.StructToMap(json.Args)
@@ -85,6 +90,10 @@ func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheat
 }
 
 func (s *service) CreateGetTaskJob(ctx context.Context, json types.CreateGetTaskJobRequest) (*models.Job, error) {
+	if json.Args.FilteredQueryParams == "" {
+		json.Args.FilteredQueryParams = http.RawDefaultFilteredQueryParams
+	}
+
 	args, err := structure.StructToMap(json.Args)
 	if err != nil {
 		return nil, err
@@ -126,6 +135,10 @@ func (s *service) CreateGetTaskJob(ctx context.Context, json types.CreateGetTask
 func (s *service) CreateDeleteTaskJob(ctx context.Context, json types.CreateDeleteTaskJobRequest) (*models.Job, error) {
 	if json.Args.Timeout == 0 {
 		json.Args.Timeout = types.DefaultJobTimeout
+	}
+
+	if json.Args.FilteredQueryParams == "" {
+		json.Args.FilteredQueryParams = http.RawDefaultFilteredQueryParams
 	}
 
 	args, err := structure.StructToMap(json.Args)
