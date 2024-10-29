@@ -20,6 +20,7 @@ import (
 type MockDfpath struct {
 	ctrl     *gomock.Controller
 	recorder *MockDfpathMockRecorder
+	isgomock struct{}
 }
 
 // MockDfpathMockRecorder is the mock recorder for MockDfpath.

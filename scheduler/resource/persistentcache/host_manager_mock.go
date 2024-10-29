@@ -20,6 +20,7 @@ import (
 type MockHostManager struct {
 	ctrl     *gomock.Controller
 	recorder *MockHostManagerMockRecorder
+	isgomock struct{}
 }
 
 // MockHostManagerMockRecorder is the mock recorder for MockHostManager.
@@ -40,9 +41,11 @@ func (m *MockHostManager) EXPECT() *MockHostManagerMockRecorder {
 }
 
 // Delete mocks base method.
-func (m *MockHostManager) Delete(arg0 context.Context, arg1 string) {
+func (m *MockHostManager) Delete(arg0 context.Context, arg1 string) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Delete", arg0, arg1)
+	ret := m.ctrl.Call(m, "Delete", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // Delete indicates an expected call of Delete.
@@ -82,9 +85,11 @@ func (mr *MockHostManagerMockRecorder) LoadAll(arg0 any) *gomock.Call {
 }
 
 // Store mocks base method.
-func (m *MockHostManager) Store(arg0 context.Context, arg1 *Host) {
+func (m *MockHostManager) Store(arg0 context.Context, arg1 *Host) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Store", arg0, arg1)
+	ret := m.ctrl.Call(m, "Store", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // Store indicates an expected call of Store.

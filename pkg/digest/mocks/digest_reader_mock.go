@@ -19,6 +19,7 @@ import (
 type MockReader struct {
 	ctrl     *gomock.Controller
 	recorder *MockReaderMockRecorder
+	isgomock struct{}
 }
 
 // MockReaderMockRecorder is the mock recorder for MockReader.

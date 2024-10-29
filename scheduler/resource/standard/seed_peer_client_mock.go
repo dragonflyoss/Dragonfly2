@@ -26,6 +26,7 @@ import (
 type MockSeedPeerClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockSeedPeerClientMockRecorder
+	isgomock struct{}
 }
 
 // MockSeedPeerClientMockRecorder is the mock recorder for MockSeedPeerClient.

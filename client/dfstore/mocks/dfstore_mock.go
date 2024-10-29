@@ -24,6 +24,7 @@ import (
 type MockDfstore struct {
 	ctrl     *gomock.Controller
 	recorder *MockDfstoreMockRecorder
+	isgomock struct{}
 }
 
 // MockDfstoreMockRecorder is the mock recorder for MockDfstore.

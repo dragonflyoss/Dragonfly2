@@ -25,6 +25,7 @@ import (
 type MockPieceManager struct {
 	ctrl     *gomock.Controller
 	recorder *MockPieceManagerMockRecorder
+	isgomock struct{}
 }
 
 // MockPieceManagerMockRecorder is the mock recorder for MockPieceManager.

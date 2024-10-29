@@ -19,6 +19,7 @@ import (
 type MockSet[T comparable] struct {
 	ctrl     *gomock.Controller
 	recorder *MockSetMockRecorder[T]
+	isgomock struct{}
 }
 
 // MockSetMockRecorder is the mock recorder for MockSet.

@@ -23,6 +23,7 @@ import (
 type MockPreheat struct {
 	ctrl     *gomock.Controller
 	recorder *MockPreheatMockRecorder
+	isgomock struct{}
 }
 
 // MockPreheatMockRecorder is the mock recorder for MockPreheat.

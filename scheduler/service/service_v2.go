@@ -1545,8 +1545,7 @@ func (v *V2) StatPersistentCacheTask(ctx context.Context, req *schedulerv2.StatP
 	}, nil
 }
 
-// TODO Implement the following methods.
 // DeletePersistentCacheTask releases persistent cache task in scheduler.
 func (v *V2) DeletePersistentCacheTask(ctx context.Context, req *schedulerv2.DeletePersistentCacheTaskRequest) error {
-	return nil
+	return v.persistentCacheResource.PeerManager().DeleteAllByTaskID(ctx, req.GetTaskId())
 }

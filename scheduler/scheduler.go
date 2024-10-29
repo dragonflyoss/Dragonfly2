@@ -158,32 +158,42 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	// Initialize GC.
 	s.gc = gc.New(gc.WithLogger(logger.GCLogger))
 
-	// Initialize client transport credentials.
-	clientTransportCredentials := rpc.NewInsecureCredentials()
+	// Initialize seed peer client transport credentials.
+	seedPeerClientTransportCredentials := rpc.NewInsecureCredentials()
 	if cfg.SeedPeer.TLS != nil {
-		clientTransportCredentials, err = rpc.NewClientCredentials(cfg.SeedPeer.TLS.CACert, cfg.SeedPeer.TLS.Cert, cfg.SeedPeer.TLS.Key)
+		seedPeerClientTransportCredentials, err = rpc.NewClientCredentials(cfg.SeedPeer.TLS.CACert, cfg.SeedPeer.TLS.Cert, cfg.SeedPeer.TLS.Key)
 		if err != nil {
-			logger.Errorf("failed to create client credentials: %v", err)
+			logger.Errorf("failed to create seed peer client credentials: %v", err)
 			return nil, err
 		}
 	}
 
 	// Initialize dynconfig.
-	dynconfig, err := config.NewDynconfig(s.managerClient, filepath.Join(d.CacheDir(), dynconfig.CacheDirName), cfg, clientTransportCredentials)
+	dynconfig, err := config.NewDynconfig(s.managerClient, filepath.Join(d.CacheDir(), dynconfig.CacheDirName), cfg, seedPeerClientTransportCredentials)
 	if err != nil {
 		return nil, err
 	}
 	s.dynconfig = dynconfig
 
 	// Initialize resource.
-	resource, err := standard.New(cfg, s.gc, dynconfig, clientTransportCredentials)
+	resource, err := standard.New(cfg, s.gc, dynconfig, seedPeerClientTransportCredentials)
 	if err != nil {
 		return nil, err
 	}
 	s.resource = resource
 
+	// Initialize seed peer client transport credentials.
+	peerClientTransportCredentials := rpc.NewInsecureCredentials()
+	if cfg.Peer.TLS != nil {
+		peerClientTransportCredentials, err = rpc.NewClientCredentials(cfg.Peer.TLS.CACert, cfg.Peer.TLS.Cert, cfg.Peer.TLS.Key)
+		if err != nil {
+			logger.Errorf("failed to create peer client credentials: %v", err)
+			return nil, err
+		}
+	}
+
 	// Initialize persistent cache resource.
-	s.persistentCacheResource = persistentcache.New(cfg, rdb)
+	s.persistentCacheResource = persistentcache.New(cfg, rdb, peerClientTransportCredentials)
 
 	// Initialize job service.
 	if cfg.Job.Enable && rdb != nil {

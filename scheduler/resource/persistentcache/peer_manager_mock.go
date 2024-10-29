@@ -20,6 +20,7 @@ import (
 type MockPeerManager struct {
 	ctrl     *gomock.Controller
 	recorder *MockPeerManagerMockRecorder
+	isgomock struct{}
 }
 
 // MockPeerManagerMockRecorder is the mock recorder for MockPeerManager.
@@ -53,6 +54,20 @@ func (mr *MockPeerManagerMockRecorder) Delete(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockPeerManager)(nil).Delete), arg0, arg1)
 }
 
+// DeleteAllByTaskID mocks base method.
+func (m *MockPeerManager) DeleteAllByTaskID(arg0 context.Context, arg1 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteAllByTaskID", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteAllByTaskID indicates an expected call of DeleteAllByTaskID.
+func (mr *MockPeerManagerMockRecorder) DeleteAllByTaskID(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAllByTaskID", reflect.TypeOf((*MockPeerManager)(nil).DeleteAllByTaskID), arg0, arg1)
+}
+
 // Load mocks base method.
 func (m *MockPeerManager) Load(arg0 context.Context, arg1 string) (*Peer, bool) {
 	m.ctrl.T.Helper()
@@ -81,6 +96,21 @@ func (m *MockPeerManager) LoadAll(arg0 context.Context) ([]*Peer, error) {
 func (mr *MockPeerManagerMockRecorder) LoadAll(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadAll", reflect.TypeOf((*MockPeerManager)(nil).LoadAll), arg0)
+}
+
+// LoadAllByTaskID mocks base method.
+func (m *MockPeerManager) LoadAllByTaskID(arg0 context.Context, arg1 string) ([]*Peer, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadAllByTaskID", arg0, arg1)
+	ret0, _ := ret[0].([]*Peer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LoadAllByTaskID indicates an expected call of LoadAllByTaskID.
+func (mr *MockPeerManagerMockRecorder) LoadAllByTaskID(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadAllByTaskID", reflect.TypeOf((*MockPeerManager)(nil).LoadAllByTaskID), arg0, arg1)
 }
 
 // Store mocks base method.

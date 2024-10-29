@@ -20,6 +20,7 @@ import (
 type MockDG[T comparable] struct {
 	ctrl     *gomock.Controller
 	recorder *MockDGMockRecorder[T]
+	isgomock struct{}
 }
 
 // MockDGMockRecorder is the mock recorder for MockDG.

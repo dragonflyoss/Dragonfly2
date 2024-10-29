@@ -26,6 +26,7 @@ import (
 type MockTaskStorageDriver struct {
 	ctrl     *gomock.Controller
 	recorder *MockTaskStorageDriverMockRecorder
+	isgomock struct{}
 }
 
 // MockTaskStorageDriverMockRecorder is the mock recorder for MockTaskStorageDriver.
@@ -197,6 +198,7 @@ func (mr *MockTaskStorageDriverMockRecorder) WritePiece(ctx, req any) *gomock.Ca
 type MockReclaimer struct {
 	ctrl     *gomock.Controller
 	recorder *MockReclaimerMockRecorder
+	isgomock struct{}
 }
 
 // MockReclaimerMockRecorder is the mock recorder for MockReclaimer.
@@ -260,6 +262,7 @@ func (mr *MockReclaimerMockRecorder) Reclaim() *gomock.Call {
 type MockManager struct {
 	ctrl     *gomock.Controller
 	recorder *MockManagerMockRecorder
+	isgomock struct{}
 }
 
 // MockManagerMockRecorder is the mock recorder for MockManager.

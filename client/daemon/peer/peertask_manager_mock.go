@@ -26,6 +26,7 @@ import (
 type MockTaskManager struct {
 	ctrl     *gomock.Controller
 	recorder *MockTaskManagerMockRecorder
+	isgomock struct{}
 }
 
 // MockTaskManagerMockRecorder is the mock recorder for MockTaskManager.
@@ -183,6 +184,7 @@ func (mr *MockTaskManagerMockRecorder) Subscribe(request any) *gomock.Call {
 type MockTask struct {
 	ctrl     *gomock.Controller
 	recorder *MockTaskMockRecorder
+	isgomock struct{}
 }
 
 // MockTaskMockRecorder is the mock recorder for MockTask.
@@ -416,6 +418,7 @@ func (mr *MockTaskMockRecorder) UpdateSourceErrorStatus(st any) *gomock.Call {
 type MockLogger struct {
 	ctrl     *gomock.Controller
 	recorder *MockLoggerMockRecorder
+	isgomock struct{}
 }
 
 // MockLoggerMockRecorder is the mock recorder for MockLogger.

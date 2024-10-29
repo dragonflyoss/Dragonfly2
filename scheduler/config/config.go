@@ -49,6 +49,9 @@ type Config struct {
 	// SeedPeer configuration.
 	SeedPeer SeedPeerConfig `yaml:"seedPeer" mapstructure:"seedPeer"`
 
+	// Peer configuration.
+	Peer PeerConfig `yaml:"peer" mapstructure:"peer"`
+
 	// Host configuration.
 	Host HostConfig `yaml:"host" mapstructure:"host"`
 
@@ -229,6 +232,11 @@ type SeedPeerConfig struct {
 
 	// TaskDownloadTimeout is timeout of downloading task by seed peer.
 	TaskDownloadTimeout time.Duration `yaml:"taskDownloadTimeout" mapstructure:"taskDownloadTimeout"`
+}
+
+type PeerConfig struct {
+	// TLS client configuration.
+	TLS *GRPCTLSClientConfig `yaml:"tls" mapstructure:"tls"`
 }
 
 type KeepAliveConfig struct {
