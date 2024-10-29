@@ -37,10 +37,10 @@ type HostManager interface {
 	Load(context.Context, string) (*Host, bool)
 
 	// Store sets host.
-	Store(context.Context, *Host)
+	Store(context.Context, *Host) error
 
 	// Delete deletes host by a key.
-	Delete(context.Context, string)
+	Delete(context.Context, string) error
 
 	// LoadAll returns all hosts.
 	LoadAll(context.Context) ([]*Host, error)
@@ -427,8 +427,8 @@ func (t *hostManager) Load(ctx context.Context, hostID string) (*Host, bool) {
 }
 
 // Store sets host.
-func (t *hostManager) Store(ctx context.Context, host *Host) {
-	t.rdb.HSet(ctx,
+func (t *hostManager) Store(ctx context.Context, host *Host) error {
+	_, err := t.rdb.HSet(ctx,
 		pkgredis.MakePersistentCacheHostKeyInScheduler(t.config.Manager.SchedulerClusterID, host.ID),
 		"id", host.ID,
 		"type", host.Type.Name(),
@@ -488,12 +488,15 @@ func (t *hostManager) Store(ctx context.Context, host *Host) {
 		"upload_count", host.UploadCount,
 		"upload_failed_count", host.UploadFailedCount,
 		"created_at", host.CreatedAt.Format(time.RFC3339),
-		"updated_at", host.UpdatedAt.Format(time.RFC3339))
+		"updated_at", host.UpdatedAt.Format(time.RFC3339)).Result()
+
+	return err
 }
 
 // Delete deletes host by a key.
-func (t *hostManager) Delete(ctx context.Context, hostID string) {
-	t.rdb.Del(ctx, pkgredis.MakePersistentCacheHostKeyInScheduler(t.config.Manager.SchedulerClusterID, hostID))
+func (t *hostManager) Delete(ctx context.Context, hostID string) error {
+	_, err := t.rdb.Del(ctx, pkgredis.MakePersistentCacheHostKeyInScheduler(t.config.Manager.SchedulerClusterID, hostID)).Result()
+	return err
 }
 
 // LoadAll returns all hosts.

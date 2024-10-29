@@ -20,6 +20,7 @@ import (
 type MockTaskManager struct {
 	ctrl     *gomock.Controller
 	recorder *MockTaskManagerMockRecorder
+	isgomock struct{}
 }
 
 // MockTaskManagerMockRecorder is the mock recorder for MockTaskManager.
@@ -40,9 +41,11 @@ func (m *MockTaskManager) EXPECT() *MockTaskManagerMockRecorder {
 }
 
 // Delete mocks base method.
-func (m *MockTaskManager) Delete(arg0 context.Context, arg1 string) {
+func (m *MockTaskManager) Delete(arg0 context.Context, arg1 string) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Delete", arg0, arg1)
+	ret := m.ctrl.Call(m, "Delete", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // Delete indicates an expected call of Delete.

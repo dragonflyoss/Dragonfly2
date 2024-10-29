@@ -19,7 +19,8 @@
 package persistentcache
 
 import (
-	"github.com/redis/go-redis/v9"
+	redis "github.com/redis/go-redis/v9"
+	"google.golang.org/grpc/credentials"
 
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
@@ -49,10 +50,10 @@ type resource struct {
 }
 
 // New returns Resource interface.
-func New(cfg *config.Config, rdb redis.UniversalClient) Resource {
+func New(cfg *config.Config, rdb redis.UniversalClient, transportCredentials credentials.TransportCredentials) Resource {
 	taskManager := newTaskManager(cfg, rdb)
 	hostManager := newHostManager(cfg, rdb)
-	peerManager := newPeerManager(cfg, rdb, taskManager, hostManager)
+	peerManager := newPeerManager(cfg, rdb, taskManager, hostManager, transportCredentials)
 	return &resource{peerManager, taskManager, hostManager}
 }
 

@@ -21,6 +21,7 @@ import (
 type MockManager struct {
 	ctrl     *gomock.Controller
 	recorder *MockManagerMockRecorder
+	isgomock struct{}
 }
 
 // MockManagerMockRecorder is the mock recorder for MockManager.
@@ -112,6 +113,7 @@ func (mr *MockManagerMockRecorder) Watch(arg0 any) *gomock.Call {
 type MockConfigWatcher struct {
 	ctrl     *gomock.Controller
 	recorder *MockConfigWatcherMockRecorder
+	isgomock struct{}
 }
 
 // MockConfigWatcherMockRecorder is the mock recorder for MockConfigWatcher.

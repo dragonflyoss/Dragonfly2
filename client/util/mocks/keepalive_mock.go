@@ -20,6 +20,7 @@ import (
 type MockKeepAlive struct {
 	ctrl     *gomock.Controller
 	recorder *MockKeepAliveMockRecorder
+	isgomock struct{}
 }
 
 // MockKeepAliveMockRecorder is the mock recorder for MockKeepAlive.

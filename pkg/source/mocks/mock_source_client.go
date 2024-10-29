@@ -20,6 +20,7 @@ import (
 type MockResourceClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockResourceClientMockRecorder
+	isgomock struct{}
 }
 
 // MockResourceClientMockRecorder is the mock recorder for MockResourceClient.
@@ -118,6 +119,7 @@ func (mr *MockResourceClientMockRecorder) IsSupportRange(request any) *gomock.Ca
 type MockResourceMetadataGetter struct {
 	ctrl     *gomock.Controller
 	recorder *MockResourceMetadataGetterMockRecorder
+	isgomock struct{}
 }
 
 // MockResourceMetadataGetterMockRecorder is the mock recorder for MockResourceMetadataGetter.
@@ -156,6 +158,7 @@ func (mr *MockResourceMetadataGetterMockRecorder) GetMetadata(request any) *gomo
 type MockResourceLister struct {
 	ctrl     *gomock.Controller
 	recorder *MockResourceListerMockRecorder
+	isgomock struct{}
 }
 
 // MockResourceListerMockRecorder is the mock recorder for MockResourceLister.
@@ -194,6 +197,7 @@ func (mr *MockResourceListerMockRecorder) List(request any) *gomock.Call {
 type MockClientManager struct {
 	ctrl     *gomock.Controller
 	recorder *MockClientManagerMockRecorder
+	isgomock struct{}
 }
 
 // MockClientManagerMockRecorder is the mock recorder for MockClientManager.
@@ -282,6 +286,7 @@ func (mr *MockClientManagerMockRecorder) UnRegister(scheme any) *gomock.Call {
 type MockHook struct {
 	ctrl     *gomock.Controller
 	recorder *MockHookMockRecorder
+	isgomock struct{}
 }
 
 // MockHookMockRecorder is the mock recorder for MockHook.

@@ -22,14 +22,20 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/bits-and-blooms/bitset"
-	"github.com/redis/go-redis/v9"
+	redis "github.com/redis/go-redis/v9"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+
+	dfdaemonv2 "d7y.io/api/v2/pkg/apis/dfdaemon/v2"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
+	dfdaemonclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
@@ -46,6 +52,12 @@ type PeerManager interface {
 
 	// LoadAll returns all peers.
 	LoadAll(context.Context) ([]*Peer, error)
+
+	// LoadAllByTaskID returns all peers by task id.
+	LoadAllByTaskID(context.Context, string) ([]*Peer, error)
+
+	// DeleteAllByTaskID deletes all peers by task id.
+	DeleteAllByTaskID(context.Context, string) error
 }
 
 // peerManager contains content for peer manager.
@@ -61,11 +73,14 @@ type peerManager struct {
 
 	// Redis universal client interface.
 	rdb redis.UniversalClient
+
+	// transportCredentials is used to mTLS for peer grpc connection.
+	transportCredentials credentials.TransportCredentials
 }
 
 // New peer manager interface.
-func newPeerManager(cfg *config.Config, rdb redis.UniversalClient, taskManager TaskManager, hostManager HostManager) PeerManager {
-	return &peerManager{config: cfg, rdb: rdb, taskManager: taskManager, hostManager: hostManager}
+func newPeerManager(cfg *config.Config, rdb redis.UniversalClient, taskManager TaskManager, hostManager HostManager, transportCredentials credentials.TransportCredentials) PeerManager {
+	return &peerManager{config: cfg, rdb: rdb, taskManager: taskManager, hostManager: hostManager, transportCredentials: transportCredentials}
 }
 
 // Load returns persistent cache peer by a key.
@@ -157,7 +172,7 @@ func (p *peerManager) Store(ctx context.Context, peer *Peer) error {
 
 	if _, err := p.rdb.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
 		// Store peer information and set expiration.
-		pipe.HSet(ctx,
+		if _, err := pipe.HSet(ctx,
 			pkgredis.MakePersistentCachePeerKeyInScheduler(p.config.Manager.SchedulerClusterID, peer.ID),
 			"id", peer.ID,
 			"persistent", peer.Persistent,
@@ -168,15 +183,33 @@ func (p *peerManager) Store(ctx context.Context, peer *Peer) error {
 			"host_id", peer.Host.ID,
 			"ttl", peer.Cost,
 			"created_at", peer.CreatedAt.Format(time.RFC3339),
-			"updated_at", peer.UpdatedAt.Format(time.RFC3339))
-		pipe.Expire(ctx, pkgredis.MakePersistentCachePeerKeyInScheduler(p.config.Manager.SchedulerClusterID, peer.ID), peer.Task.TTL)
+			"updated_at", peer.UpdatedAt.Format(time.RFC3339)).Result(); err != nil {
+			peer.Log.Errorf("store peer failed: %v", err)
+			return err
+		}
 
-		// Store the association with task and set expiration.
-		pipe.SAdd(ctx, pkgredis.MakePersistentCachePeersOfPersistentCacheTaskInScheduler(p.config.Manager.SchedulerClusterID, peer.Task.ID), peer.ID)
-		pipe.Expire(ctx, pkgredis.MakePersistentCachePeersOfPersistentCacheTaskInScheduler(p.config.Manager.SchedulerClusterID, peer.Host.ID), peer.Task.TTL)
+		if _, err := pipe.Expire(ctx, pkgredis.MakePersistentCachePeerKeyInScheduler(p.config.Manager.SchedulerClusterID, peer.ID), peer.Task.TTL).Result(); err != nil {
+			peer.Log.Errorf("set peer ttl failed: %v", err)
+			return err
+		}
 
-		// Store the association with host.
-		pipe.SAdd(ctx, pkgredis.MakePersistentCachePeersOfPersistentCacheHostInScheduler(p.config.Manager.SchedulerClusterID, peer.Host.ID), peer.ID)
+		// Store the joint-set with task and set expiration.
+		if _, err := pipe.SAdd(ctx, pkgredis.MakePersistentCachePeersOfPersistentCacheTaskInScheduler(p.config.Manager.SchedulerClusterID, peer.Task.ID), peer.ID).Result(); err != nil {
+			peer.Log.Errorf("add peer id to task joint-set failed: %v", err)
+			return err
+		}
+
+		if _, err := pipe.Expire(ctx, pkgredis.MakePersistentCachePeersOfPersistentCacheTaskInScheduler(p.config.Manager.SchedulerClusterID, peer.Host.ID), peer.Task.TTL).Result(); err != nil {
+			peer.Log.Errorf("set task joint-set ttl failed: %v", err)
+			return err
+		}
+
+		// Store the joint-set with host.
+		if _, err := pipe.SAdd(ctx, pkgredis.MakePersistentCachePeersOfPersistentCacheHostInScheduler(p.config.Manager.SchedulerClusterID, peer.Host.ID), peer.ID).Result(); err != nil {
+			peer.Log.Errorf("add peer id to host joint-set failed: %v", err)
+			return err
+		}
+
 		return nil
 	}); err != nil {
 		peer.Log.Errorf("store peer failed: %v", err)
@@ -195,9 +228,21 @@ func (p *peerManager) Delete(ctx context.Context, peerID string) error {
 			return errors.New("getting peer failed from redis")
 		}
 
-		pipe.Del(ctx, pkgredis.MakePersistentCachePeerKeyInScheduler(p.config.Manager.SchedulerClusterID, peerID))
-		pipe.SRem(ctx, pkgredis.MakePersistentCachePeersOfPersistentCacheTaskInScheduler(p.config.Manager.SchedulerClusterID, rawPeer["task_id"]), peerID)
-		pipe.SRem(ctx, pkgredis.MakePersistentCachePeersOfPersistentCacheHostInScheduler(p.config.Manager.SchedulerClusterID, rawPeer["host_id"]), peerID)
+		if _, err := pipe.Del(ctx, pkgredis.MakePersistentCachePeerKeyInScheduler(p.config.Manager.SchedulerClusterID, peerID)).Result(); err != nil {
+			log.Errorf("delete peer failed: %v", err)
+			return err
+		}
+
+		if _, err := pipe.SRem(ctx, pkgredis.MakePersistentCachePeersOfPersistentCacheTaskInScheduler(p.config.Manager.SchedulerClusterID, rawPeer["task_id"]), peerID).Result(); err != nil {
+			log.Errorf("delete peer id from task joint-set failed: %v", err)
+			return err
+		}
+
+		if _, err := pipe.SRem(ctx, pkgredis.MakePersistentCachePeersOfPersistentCacheHostInScheduler(p.config.Manager.SchedulerClusterID, rawPeer["host_id"]), peerID).Result(); err != nil {
+			log.Errorf("delete peer id from host joint-set failed: %v", err)
+			return err
+		}
+
 		return nil
 	}); err != nil {
 		log.Errorf("store peer failed: %v", err)
@@ -242,4 +287,59 @@ func (p *peerManager) LoadAll(ctx context.Context) ([]*Peer, error) {
 	}
 
 	return peers, nil
+}
+
+// LoadAllByTaskID returns all persistent cache peers by task id.
+func (p *peerManager) LoadAllByTaskID(ctx context.Context, taskID string) ([]*Peer, error) {
+	log := logger.WithTaskID(taskID)
+	peerIDs, err := p.rdb.SMembers(ctx, pkgredis.MakePersistentCachePeersOfPersistentCacheTaskInScheduler(p.config.Manager.SchedulerClusterID, taskID)).Result()
+	if err != nil {
+		log.Error("get peer ids failed")
+		return nil, err
+	}
+
+	peers := make([]*Peer, 0, len(peerIDs))
+	for _, peerID := range peerIDs {
+		peer, loaded := p.Load(ctx, peerID)
+		if !loaded {
+			log.Errorf("load peer %s failed", peerID)
+			continue
+		}
+
+		peers = append(peers, peer)
+	}
+
+	return peers, nil
+}
+
+// DeleteAllByTaskID deletes all persistent cache peers by task id.
+func (p *peerManager) DeleteAllByTaskID(ctx context.Context, taskID string) error {
+	log := logger.WithTaskID(taskID)
+	peers, err := p.LoadAllByTaskID(ctx, taskID)
+	if err != nil {
+		log.Error("load peers failed")
+		return err
+	}
+
+	for _, peer := range peers {
+		addr := fmt.Sprintf("%s:%d", peer.Host.IP, peer.Host.Port)
+		client, err := dfdaemonclient.GetV2ByAddr(ctx, addr, grpc.WithTransportCredentials(p.transportCredentials))
+		if err != nil {
+			log.Errorf("get dfdaemon client failed: %v", err)
+			continue
+		}
+
+		if err := client.DeletePersistentCacheTask(ctx, &dfdaemonv2.DeletePersistentCacheTaskRequest{TaskId: taskID}); err != nil {
+			log.Errorf("delete task %s failed", taskID)
+			continue
+		}
+
+		if err := p.Delete(ctx, peer.ID); err != nil {
+			log.Errorf("delete peer %s failed", peer.ID)
+			continue
+		}
+	}
+
+	p.taskManager.Delete(ctx, taskID)
+	return nil
 }

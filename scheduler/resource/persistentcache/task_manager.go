@@ -40,7 +40,7 @@ type TaskManager interface {
 	Store(context.Context, *Task) error
 
 	// Delete deletes persistent cache task by a key.
-	Delete(context.Context, string)
+	Delete(context.Context, string) error
 
 	// LoadAll returns all persistent cache tasks.
 	LoadAll(context.Context) ([]*Task, error)
@@ -147,7 +147,7 @@ func (t *taskManager) Load(ctx context.Context, taskID string) (*Task, bool) {
 // Store sets persistent cache task.
 func (t *taskManager) Store(ctx context.Context, task *Task) error {
 	if _, err := t.rdb.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
-		pipe.HSet(ctx,
+		if _, err := pipe.HSet(ctx,
 			pkgredis.MakePersistentCacheTaskKeyInScheduler(t.config.Manager.SchedulerClusterID, task.ID),
 			"id", task.ID,
 			"persistent_replica_count", task.PersistentReplicaCount,
@@ -161,9 +161,16 @@ func (t *taskManager) Store(ctx context.Context, task *Task) error {
 			"state", task.FSM.Current(),
 			"ttl", task.TTL,
 			"created_at", task.CreatedAt.Format(time.RFC3339),
-			"updated_at", task.UpdatedAt.Format(time.RFC3339))
+			"updated_at", task.UpdatedAt.Format(time.RFC3339)).Result(); err != nil {
+			task.Log.Errorf("store task failed: %v", err)
+			return err
+		}
 
-		pipe.Expire(ctx, pkgredis.MakePersistentCacheTaskKeyInScheduler(t.config.Manager.SchedulerClusterID, task.ID), task.TTL)
+		if _, err := pipe.Expire(ctx, pkgredis.MakePersistentCacheTaskKeyInScheduler(t.config.Manager.SchedulerClusterID, task.ID), task.TTL).Result(); err != nil {
+			task.Log.Errorf("set task ttl failed: %v", err)
+			return err
+		}
+
 		return nil
 	}); err != nil {
 		task.Log.Errorf("store task failed: %v", err)
@@ -174,8 +181,9 @@ func (t *taskManager) Store(ctx context.Context, task *Task) error {
 }
 
 // Delete deletes persistent cache task by a key.
-func (t *taskManager) Delete(ctx context.Context, taskID string) {
-	t.rdb.Del(ctx, pkgredis.MakePersistentCacheTaskKeyInScheduler(t.config.Manager.SchedulerClusterID, taskID))
+func (t *taskManager) Delete(ctx context.Context, taskID string) error {
+	_, err := t.rdb.Del(ctx, pkgredis.MakePersistentCacheTaskKeyInScheduler(t.config.Manager.SchedulerClusterID, taskID)).Result()
+	return err
 }
 
 // LoadAll returns all persistent cache tasks.

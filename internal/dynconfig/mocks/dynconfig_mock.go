@@ -19,6 +19,7 @@ import (
 type MockDynconfig[T any] struct {
 	ctrl     *gomock.Controller
 	recorder *MockDynconfigMockRecorder[T]
+	isgomock struct{}
 }
 
 // MockDynconfigMockRecorder is the mock recorder for MockDynconfig.

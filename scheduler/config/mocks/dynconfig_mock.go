@@ -23,6 +23,7 @@ import (
 type MockDynconfigInterface struct {
 	ctrl     *gomock.Controller
 	recorder *MockDynconfigInterfaceMockRecorder
+	isgomock struct{}
 }
 
 // MockDynconfigInterfaceMockRecorder is the mock recorder for MockDynconfigInterface.
@@ -261,6 +262,7 @@ func (mr *MockDynconfigInterfaceMockRecorder) Stop() *gomock.Call {
 type MockObserver struct {
 	ctrl     *gomock.Controller
 	recorder *MockObserverMockRecorder
+	isgomock struct{}
 }
 
 // MockObserverMockRecorder is the mock recorder for MockObserver.
