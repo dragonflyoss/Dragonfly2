@@ -166,7 +166,8 @@ func (t *taskManager) Store(ctx context.Context, task *Task) error {
 			return err
 		}
 
-		if _, err := pipe.Expire(ctx, pkgredis.MakePersistentCacheTaskKeyInScheduler(t.config.Manager.SchedulerClusterID, task.ID), task.TTL).Result(); err != nil {
+		ttl := task.TTL - time.Since(task.CreatedAt)
+		if _, err := pipe.Expire(ctx, pkgredis.MakePersistentCacheTaskKeyInScheduler(t.config.Manager.SchedulerClusterID, task.ID), ttl).Result(); err != nil {
 			task.Log.Errorf("set task ttl failed: %v", err)
 			return err
 		}

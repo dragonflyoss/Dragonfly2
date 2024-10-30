@@ -45,10 +45,10 @@ const (
 	TaskEventUpload = "Upload"
 
 	// Task uploaded successfully.
-	TaskEventUploadSucceeded = "UploadSucceeded"
+	TaskEventSucceeded = "Succeeded"
 
 	// Task uploaded failed.
-	TaskEventUploadFailed = "UploadFailed"
+	TaskEventFailed = "Failed"
 )
 
 // Task contains content for persistent cache task.
@@ -122,18 +122,18 @@ func NewTask(id, tag, application, state string, persistentReplicaCount uint64, 
 	t.FSM = fsm.NewFSM(
 		TaskStatePending,
 		fsm.Events{
-			{Name: TaskEventUpload, Src: []string{TaskStatePending, TaskStateFailed}, Dst: TaskStateUploading},
-			{Name: TaskEventUploadSucceeded, Src: []string{TaskStateUploading}, Dst: TaskStateSucceeded},
-			{Name: TaskEventUploadFailed, Src: []string{TaskStateUploading}, Dst: TaskStateFailed},
+			fsm.EventDesc{Name: TaskEventUpload, Src: []string{TaskStatePending, TaskStateFailed}, Dst: TaskStateUploading},
+			fsm.EventDesc{Name: TaskEventSucceeded, Src: []string{TaskStateUploading}, Dst: TaskStateSucceeded},
+			fsm.EventDesc{Name: TaskEventFailed, Src: []string{TaskStateUploading}, Dst: TaskStateFailed},
 		},
 		fsm.Callbacks{
 			TaskEventUpload: func(ctx context.Context, e *fsm.Event) {
 				t.Log.Infof("task state is %s", e.FSM.Current())
 			},
-			TaskEventUploadSucceeded: func(ctx context.Context, e *fsm.Event) {
+			TaskEventSucceeded: func(ctx context.Context, e *fsm.Event) {
 				t.Log.Infof("task state is %s", e.FSM.Current())
 			},
-			TaskEventUploadFailed: func(ctx context.Context, e *fsm.Event) {
+			TaskEventFailed: func(ctx context.Context, e *fsm.Event) {
 				t.Log.Infof("task state is %s", e.FSM.Current())
 			},
 		},

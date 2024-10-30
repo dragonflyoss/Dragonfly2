@@ -188,7 +188,8 @@ func (p *peerManager) Store(ctx context.Context, peer *Peer) error {
 			return err
 		}
 
-		if _, err := pipe.Expire(ctx, pkgredis.MakePersistentCachePeerKeyInScheduler(p.config.Manager.SchedulerClusterID, peer.ID), peer.Task.TTL).Result(); err != nil {
+		ttl := peer.Task.TTL - time.Since(peer.Task.CreatedAt)
+		if _, err := pipe.Expire(ctx, pkgredis.MakePersistentCachePeerKeyInScheduler(p.config.Manager.SchedulerClusterID, peer.ID), ttl).Result(); err != nil {
 			peer.Log.Errorf("set peer ttl failed: %v", err)
 			return err
 		}
@@ -199,7 +200,7 @@ func (p *peerManager) Store(ctx context.Context, peer *Peer) error {
 			return err
 		}
 
-		if _, err := pipe.Expire(ctx, pkgredis.MakePersistentCachePeersOfPersistentCacheTaskInScheduler(p.config.Manager.SchedulerClusterID, peer.Host.ID), peer.Task.TTL).Result(); err != nil {
+		if _, err := pipe.Expire(ctx, pkgredis.MakePersistentCachePeersOfPersistentCacheTaskInScheduler(p.config.Manager.SchedulerClusterID, peer.Host.ID), ttl).Result(); err != nil {
 			peer.Log.Errorf("set task joint-set ttl failed: %v", err)
 			return err
 		}

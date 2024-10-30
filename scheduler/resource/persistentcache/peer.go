@@ -30,6 +30,9 @@ const (
 	// Peer has been created but did not start running.
 	PeerStatePending = "Pending"
 
+	// Peer is uploading resources for p2p cluster.
+	PeerStateUploading = "Uploading"
+
 	// Peer successfully registered and perpared to download.
 	PeerStateReceived = "Received"
 
@@ -44,17 +47,20 @@ const (
 )
 
 const (
+	// Peer is uploding.
+	PeerEventUpload = "Uploda"
+
 	// Peer is registered and perpared to download.
 	PeerEventRegister = "Register"
 
 	// Peer is downloading.
 	PeerEventDownload = "Download"
 
-	// Peer downloaded successfully.
-	PeerEventDownloadSucceeded = "DownloadSucceeded"
+	// Peer downloaded or uploaded successfully.
+	PeerEventSucceeded = "Succeeded"
 
-	// Peer downloaded failed.
-	PeerEventDownloadFailed = "DownloadFailed"
+	// Peer downloaded or uploaded failed.
+	PeerEventFailed = "Failed"
 )
 
 // Peer contains content for persistent cache peer.
@@ -112,22 +118,26 @@ func NewPeer(id, state string, persistent bool, finishedPieces *bitset.BitSet, b
 	p.FSM = fsm.NewFSM(
 		PeerStatePending,
 		fsm.Events{
-			{Name: PeerEventRegister, Src: []string{PeerStatePending}, Dst: PeerStateReceived},
-			{Name: PeerEventDownload, Src: []string{PeerStateReceived}, Dst: PeerStateRunning},
-			{Name: PeerEventDownloadSucceeded, Src: []string{PeerStateRunning}, Dst: PeerStateSucceeded},
-			{Name: PeerEventDownloadFailed, Src: []string{PeerStateRunning}, Dst: PeerStateFailed},
+			fsm.EventDesc{Name: PeerEventUpload, Src: []string{PeerStatePending, PeerStateFailed}, Dst: PeerStateUploading},
+			fsm.EventDesc{Name: PeerEventRegister, Src: []string{PeerStatePending, PeerStateFailed}, Dst: PeerStateReceived},
+			fsm.EventDesc{Name: PeerEventDownload, Src: []string{PeerStateReceived}, Dst: PeerStateRunning},
+			fsm.EventDesc{Name: PeerEventSucceeded, Src: []string{PeerStateUploading, PeerStateRunning}, Dst: PeerStateSucceeded},
+			fsm.EventDesc{Name: PeerEventFailed, Src: []string{PeerStateUploading, PeerStateRunning}, Dst: PeerStateFailed},
 		},
 		fsm.Callbacks{
+			PeerEventUpload: func(ctx context.Context, e *fsm.Event) {
+				p.Log.Infof("peer state is %s", e.FSM.Current())
+			},
 			PeerEventRegister: func(ctx context.Context, e *fsm.Event) {
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 			PeerEventDownload: func(ctx context.Context, e *fsm.Event) {
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
-			PeerEventDownloadSucceeded: func(ctx context.Context, e *fsm.Event) {
+			PeerEventSucceeded: func(ctx context.Context, e *fsm.Event) {
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
-			PeerEventDownloadFailed: func(ctx context.Context, e *fsm.Event) {
+			PeerEventFailed: func(ctx context.Context, e *fsm.Event) {
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 		},
