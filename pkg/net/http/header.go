@@ -74,8 +74,13 @@ var COSFilteredQueryParams = []string{
 	"x-cos-security-token",
 }
 
+// ContainerdQueryParams is the default filtered query params with containerd to generate the task id.
+var ContainerdQueryParams = []string{
+	"ns",
+}
+
 // DefaultFilteredQueryParams is the default filtered query params to generate the task id.
-var DefaultFilteredQueryParams = pkgstrings.Concat(S3FilteredQueryParams, GCSFilteredQueryParams, OSSFilteredQueryParams, OBSFilteredQueryParams, COSFilteredQueryParams)
+var DefaultFilteredQueryParams = pkgstrings.Concat(S3FilteredQueryParams, GCSFilteredQueryParams, OSSFilteredQueryParams, OBSFilteredQueryParams, COSFilteredQueryParams, ContainerdQueryParams)
 
 // RawDefaultFilteredQueryParams is the raw default filtered query params to generate the task id.
 var RawDefaultFilteredQueryParams = strings.Join(DefaultFilteredQueryParams, idgen.FilteredQueryParamsSeparator)
