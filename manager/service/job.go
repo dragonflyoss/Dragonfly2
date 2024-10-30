@@ -186,7 +186,7 @@ func (s *service) findSchedulers(ctx context.Context, schedulerClusterIDs []uint
 		for _, schedulerClusterID := range schedulerClusterIDs {
 			schedulerCluster := models.SchedulerCluster{}
 			if err := s.db.WithContext(ctx).First(&schedulerCluster, schedulerClusterID).Error; err != nil {
-				return nil, err
+				return nil, fmt.Errorf("scheduler cluster id %d: %w", schedulerClusterID, err)
 			}
 
 			var schedulers []models.Scheduler
@@ -194,7 +194,7 @@ func (s *service) findSchedulers(ctx context.Context, schedulerClusterIDs []uint
 				SchedulerClusterID: schedulerCluster.ID,
 				State:              models.SchedulerStateActive,
 			}).Error; err != nil {
-				return nil, err
+				return nil, fmt.Errorf("scheduler cluster id %d: %w", schedulerClusterID, err)
 			}
 
 			activeSchedulers = append(activeSchedulers, schedulers...)
@@ -233,7 +233,7 @@ func (s *service) findCandidateSchedulers(ctx context.Context, schedulerClusterI
 		for _, schedulerClusterID := range schedulerClusterIDs {
 			schedulerCluster := models.SchedulerCluster{}
 			if err := s.db.WithContext(ctx).First(&schedulerCluster, schedulerClusterID).Error; err != nil {
-				return nil, err
+				return nil, fmt.Errorf("scheduler cluster id %d: %w", schedulerClusterID, err)
 			}
 
 			var schedulers []models.Scheduler
@@ -241,7 +241,7 @@ func (s *service) findCandidateSchedulers(ctx context.Context, schedulerClusterI
 				SchedulerClusterID: schedulerCluster.ID,
 				State:              models.SchedulerStateActive,
 			}).Error; err != nil {
-				return nil, err
+				return nil, fmt.Errorf("scheduler cluster id %d: %w", schedulerClusterID, err)
 			}
 
 			for _, scheduler := range schedulers {
