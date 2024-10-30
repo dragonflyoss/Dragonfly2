@@ -49,6 +49,9 @@ const (
 	// PersistentCachePeersNamespace prefix of persistent cache peers namespace cache key.
 	PersistentCachePeersNamespace = "persistent-cache-peers"
 
+	// PersistentPeersNamespace prefix of persistent peers namespace cache key.
+	PersistentPeersNamespace = "persistent-peers"
+
 	// PersistentCacheHostsNamespace prefix of persistent cache hosts namespace cache key.
 	PersistentCacheHostsNamespace = "persistent-cache-hosts"
 
@@ -144,6 +147,11 @@ func MakePersistentCacheTasksInScheduler(schedulerClusterID uint) string {
 // MakePersistentCachePeersOfPersistentCacheTaskInScheduler make persistent cache peers of persistent cache task in scheduler.
 func MakePersistentCachePeersOfPersistentCacheTaskInScheduler(schedulerClusterID uint, taskID string) string {
 	return MakeKeyInScheduler(SchedulerClustersNamespace, fmt.Sprintf("%d:%s:%s:%s", schedulerClusterID, PersistentCacheTasksNamespace, taskID, PersistentCachePeersNamespace))
+}
+
+// MakePersistentPeersOfPersistentCacheTaskInScheduler make persistent peers of persistent cache task in scheduler.
+func MakePersistentPeersOfPersistentCacheTaskInScheduler(schedulerClusterID uint, taskID string) string {
+	return MakeKeyInScheduler(SchedulerClustersNamespace, fmt.Sprintf("%d:%s:%s:%s", schedulerClusterID, PersistentCacheTasksNamespace, taskID, PersistentPeersNamespace))
 }
 
 // MakePersistentCachePeerKeyInScheduler make persistent cache peer key in scheduler.

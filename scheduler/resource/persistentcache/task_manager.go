@@ -36,6 +36,12 @@ type TaskManager interface {
 	// Load returns persistent cache task by a key.
 	Load(context.Context, string) (*Task, bool)
 
+	// LoadCorrentReplicaCount returns current replica count of the persistent cache task.
+	LoadCorrentReplicaCount(context.Context, string) (int64, error)
+
+	// LoadCurrentPersistentReplicaCount returns current persistent replica count of the persistent cache task.
+	LoadCurrentPersistentReplicaCount(context.Context, string) (int64, error)
+
 	// Store sets persistent cache task.
 	Store(context.Context, *Task) error
 
@@ -73,12 +79,6 @@ func (t *taskManager) Load(ctx context.Context, taskID string) (*Task, bool) {
 	persistentReplicaCount, err := strconv.ParseUint(rawTask["persistent_replica_count"], 10, 64)
 	if err != nil {
 		log.Errorf("parsing persistent replica count failed: %v", err)
-		return nil, false
-	}
-
-	replicaCount, err := strconv.ParseUint(rawTask["replica_count"], 10, 64)
-	if err != nil {
-		log.Errorf("parsing replica count failed: %v", err)
 		return nil, false
 	}
 
@@ -132,7 +132,6 @@ func (t *taskManager) Load(ctx context.Context, taskID string) (*Task, bool) {
 		rawTask["application"],
 		rawTask["state"],
 		persistentReplicaCount,
-		replicaCount,
 		int32(pieceLength),
 		contentLength,
 		int32(totalPieceCount),
@@ -144,6 +143,16 @@ func (t *taskManager) Load(ctx context.Context, taskID string) (*Task, bool) {
 	), true
 }
 
+// LoadCorrentReplicaCount returns current replica count of the persistent cache task.
+func (t *taskManager) LoadCorrentReplicaCount(ctx context.Context, taskID string) (int64, error) {
+	return t.rdb.SCard(ctx, pkgredis.MakePersistentCachePeersOfPersistentCacheTaskInScheduler(t.config.Manager.SchedulerClusterID, taskID)).Result()
+}
+
+// LoadCurrentPersistentReplicaCount returns current persistent replica count of the persistent cache task.
+func (t *taskManager) LoadCurrentPersistentReplicaCount(ctx context.Context, taskID string) (int64, error) {
+	return t.rdb.SCard(ctx, pkgredis.MakePersistentPeersOfPersistentCacheTaskInScheduler(t.config.Manager.SchedulerClusterID, taskID)).Result()
+}
+
 // Store sets persistent cache task.
 func (t *taskManager) Store(ctx context.Context, task *Task) error {
 	if _, err := t.rdb.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
@@ -151,7 +160,6 @@ func (t *taskManager) Store(ctx context.Context, task *Task) error {
 			pkgredis.MakePersistentCacheTaskKeyInScheduler(t.config.Manager.SchedulerClusterID, task.ID),
 			"id", task.ID,
 			"persistent_replica_count", task.PersistentReplicaCount,
-			"replica_count", task.ReplicaCount,
 			"digest", task.Digest.String(),
 			"tag", task.Tag,
 			"application", task.Application,

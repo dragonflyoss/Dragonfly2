@@ -1402,9 +1402,23 @@ func (v *V2) AnnouncePersistentCachePeer(stream schedulerv2.Scheduler_AnnouncePe
 
 // StatPersistentCachePeer checks information of persistent cache peer.
 func (v *V2) StatPersistentCachePeer(ctx context.Context, req *schedulerv2.StatPersistentCachePeerRequest) (*commonv2.PersistentCachePeer, error) {
+	log := logger.WithPeer(req.HostId, req.TaskId, req.PeerId)
 	peer, loaded := v.persistentCacheResource.PeerManager().Load(ctx, req.GetPeerId())
 	if !loaded {
+		log.Errorf("persistent cache peer %s not found", req.GetPeerId())
 		return nil, status.Errorf(codes.NotFound, "persistent cache peer %s not found", req.GetPeerId())
+	}
+
+	currentPersistentReplicaCount, err := v.persistentCacheResource.TaskManager().LoadCurrentPersistentReplicaCount(ctx, peer.Task.ID)
+	if err != nil {
+		log.Errorf("load current persistent replica count failed %s", err.Error())
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	currentReplicaCount, err := v.persistentCacheResource.TaskManager().LoadCorrentReplicaCount(ctx, peer.Task.ID)
+	if err != nil {
+		log.Errorf("load current replica count failed %s", err.Error())
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	return &commonv2.PersistentCachePeer{
@@ -1415,18 +1429,19 @@ func (v *V2) StatPersistentCachePeer(ctx context.Context, req *schedulerv2.StatP
 		CreatedAt:  timestamppb.New(peer.CreatedAt),
 		UpdatedAt:  timestamppb.New(peer.UpdatedAt),
 		Task: &commonv2.PersistentCacheTask{
-			Id:                     peer.Task.ID,
-			PersistentReplicaCount: peer.Task.PersistentReplicaCount,
-			ReplicaCount:           peer.Task.ReplicaCount,
-			Digest:                 peer.Task.Digest.String(),
-			Tag:                    &peer.Task.Tag,
-			Application:            &peer.Task.Application,
-			PieceLength:            uint64(peer.Task.PieceLength),
-			ContentLength:          uint64(peer.Task.ContentLength),
-			PieceCount:             uint32(peer.Task.TotalPieceCount),
-			State:                  peer.Task.FSM.Current(),
-			CreatedAt:              timestamppb.New(peer.Task.CreatedAt),
-			UpdatedAt:              timestamppb.New(peer.Task.UpdatedAt),
+			Id:                            peer.Task.ID,
+			PersistentReplicaCount:        peer.Task.PersistentReplicaCount,
+			CurrentPersistentReplicaCount: uint64(currentPersistentReplicaCount),
+			CurrentReplicaCount:           uint64(currentReplicaCount),
+			Digest:                        peer.Task.Digest.String(),
+			Tag:                           &peer.Task.Tag,
+			Application:                   &peer.Task.Application,
+			PieceLength:                   uint64(peer.Task.PieceLength),
+			ContentLength:                 uint64(peer.Task.ContentLength),
+			PieceCount:                    uint32(peer.Task.TotalPieceCount),
+			State:                         peer.Task.FSM.Current(),
+			CreatedAt:                     timestamppb.New(peer.Task.CreatedAt),
+			UpdatedAt:                     timestamppb.New(peer.Task.UpdatedAt),
 		},
 		Host: &commonv2.Host{
 			Id:              peer.Host.ID,
@@ -1499,9 +1514,16 @@ func (v *V2) StatPersistentCachePeer(ctx context.Context, req *schedulerv2.StatP
 	}, nil
 }
 
-// TODO Implement the following methods.
 // DeletePersistentCachePeer releases persistent cache peer in scheduler.
 func (v *V2) DeletePersistentCachePeer(ctx context.Context, req *schedulerv2.DeletePersistentCachePeerRequest) error {
+	log := logger.WithPeer(req.GetHostId(), req.GetTaskId(), req.GetPeerId())
+	if err := v.persistentCacheResource.PeerManager().Delete(ctx, req.GetPeerId()); err != nil {
+		log.Errorf("delete persistent cache peer %s error %s", req.GetPeerId(), err)
+		return status.Errorf(codes.Internal, err.Error())
+	}
+
+	// TODO(gaius) Implement copy replica to the other peers.
+	// Select the remote peer to copy the replica and trigger the download task with asynchronous.
 	return nil
 }
 
@@ -1528,7 +1550,7 @@ func (v *V2) UploadPersistentCacheTaskStarted(ctx context.Context, req *schedule
 	}
 
 	task = persistentcache.NewTask(req.GetTaskId(), req.GetTag(), req.GetApplication(), persistentcache.TaskStatePending, req.GetPersistentReplicaCount(),
-		0, int32(req.GetPieceLength()), int64(req.GetContentLength()), int32(req.GetPieceCount()), digest, req.GetTtl().AsDuration(), time.Now(), time.Now(), log)
+		int32(req.GetPieceLength()), int64(req.GetContentLength()), int32(req.GetPieceCount()), digest, req.GetTtl().AsDuration(), time.Now(), time.Now(), log)
 
 	if err := task.FSM.Event(ctx, persistentcache.TaskEventUpload); err != nil {
 		log.Errorf("task fsm event failed: %s", err.Error())
@@ -1586,7 +1608,6 @@ func (v *V2) UploadPersistentCacheTaskFinished(ctx context.Context, req *schedul
 	}
 
 	// Handle task with peer finished request, load task and update it.
-	peer.Task.ReplicaCount++
 	if err := peer.Task.FSM.Event(ctx, persistentcache.TaskEventSucceeded); err != nil {
 		log.Errorf("task fsm event failed: %s", err.Error())
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -1598,24 +1619,34 @@ func (v *V2) UploadPersistentCacheTaskFinished(ctx context.Context, req *schedul
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	// TODO(gaius) Implement copy multiple replicas to the other peers.
-	// Select the remote peer to copy the replica and trigger the download task with asynchronous.
-	if peer.Task.ReplicaCount < peer.Task.PersistentReplicaCount {
+	currentPersistentReplicaCount, err := v.persistentCacheResource.TaskManager().LoadCurrentPersistentReplicaCount(ctx, peer.Task.ID)
+	if err != nil {
+		log.Errorf("load current persistent replica count failed %s", err)
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
+	currentReplicaCount, err := v.persistentCacheResource.TaskManager().LoadCorrentReplicaCount(ctx, peer.Task.ID)
+	if err != nil {
+		log.Errorf("load current replica count failed %s", err)
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	// TODO(gaius) Implement copy multiple replicas to the other peers.
+	// Select the remote peer to copy the replica and trigger the download task with asynchronous.
 	return &commonv2.PersistentCacheTask{
-		Id:                     peer.Task.ID,
-		PersistentReplicaCount: peer.Task.PersistentReplicaCount,
-		ReplicaCount:           peer.Task.ReplicaCount,
-		Digest:                 peer.Task.Digest.String(),
-		Tag:                    &peer.Task.Tag,
-		Application:            &peer.Task.Application,
-		PieceLength:            uint64(peer.Task.PieceLength),
-		ContentLength:          uint64(peer.Task.ContentLength),
-		PieceCount:             uint32(peer.Task.TotalPieceCount),
-		State:                  peer.Task.FSM.Current(),
-		CreatedAt:              timestamppb.New(peer.Task.CreatedAt),
-		UpdatedAt:              timestamppb.New(peer.Task.UpdatedAt),
+		Id:                            peer.Task.ID,
+		PersistentReplicaCount:        peer.Task.PersistentReplicaCount,
+		CurrentPersistentReplicaCount: uint64(currentPersistentReplicaCount),
+		CurrentReplicaCount:           uint64(currentReplicaCount),
+		Digest:                        peer.Task.Digest.String(),
+		Tag:                           &peer.Task.Tag,
+		Application:                   &peer.Task.Application,
+		PieceLength:                   uint64(peer.Task.PieceLength),
+		ContentLength:                 uint64(peer.Task.ContentLength),
+		PieceCount:                    uint32(peer.Task.TotalPieceCount),
+		State:                         peer.Task.FSM.Current(),
+		CreatedAt:                     timestamppb.New(peer.Task.CreatedAt),
+		UpdatedAt:                     timestamppb.New(peer.Task.UpdatedAt),
 	}, nil
 }
 
@@ -1657,28 +1688,53 @@ func (v *V2) UploadPersistentCacheTaskFailed(ctx context.Context, req *scheduler
 
 // StatPersistentCacheTask checks information of persistent cache task.
 func (v *V2) StatPersistentCacheTask(ctx context.Context, req *schedulerv2.StatPersistentCacheTaskRequest) (*commonv2.PersistentCacheTask, error) {
+	log := logger.WithHostAndTaskID(req.GetHostId(), req.GetTaskId())
 	task, loaded := v.persistentCacheResource.TaskManager().Load(ctx, req.GetTaskId())
 	if !loaded {
+		log.Errorf("persistent cache task %s not found", req.GetTaskId())
 		return nil, status.Errorf(codes.NotFound, "persistent cache task %s not found", req.GetTaskId())
 	}
 
+	currentPersistentReplicaCount, err := v.persistentCacheResource.TaskManager().LoadCurrentPersistentReplicaCount(ctx, task.ID)
+	if err != nil {
+		log.Errorf("load current persistent replica count failed %s", err)
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	currentReplicaCount, err := v.persistentCacheResource.TaskManager().LoadCorrentReplicaCount(ctx, task.ID)
+	if err != nil {
+		log.Errorf("load current replica count failed %s", err)
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
 	return &commonv2.PersistentCacheTask{
-		Id:                     task.ID,
-		PersistentReplicaCount: task.PersistentReplicaCount,
-		ReplicaCount:           task.ReplicaCount,
-		Digest:                 task.Digest.String(),
-		Tag:                    &task.Tag,
-		Application:            &task.Application,
-		PieceLength:            uint64(task.PieceLength),
-		ContentLength:          uint64(task.ContentLength),
-		PieceCount:             uint32(task.TotalPieceCount),
-		State:                  task.FSM.Current(),
-		CreatedAt:              timestamppb.New(task.CreatedAt),
-		UpdatedAt:              timestamppb.New(task.UpdatedAt),
+		Id:                            task.ID,
+		PersistentReplicaCount:        task.PersistentReplicaCount,
+		CurrentPersistentReplicaCount: uint64(currentPersistentReplicaCount),
+		CurrentReplicaCount:           uint64(currentReplicaCount),
+		Digest:                        task.Digest.String(),
+		Tag:                           &task.Tag,
+		Application:                   &task.Application,
+		PieceLength:                   uint64(task.PieceLength),
+		ContentLength:                 uint64(task.ContentLength),
+		PieceCount:                    uint32(task.TotalPieceCount),
+		State:                         task.FSM.Current(),
+		CreatedAt:                     timestamppb.New(task.CreatedAt),
+		UpdatedAt:                     timestamppb.New(task.UpdatedAt),
 	}, nil
 }
 
 // DeletePersistentCacheTask releases persistent cache task in scheduler.
 func (v *V2) DeletePersistentCacheTask(ctx context.Context, req *schedulerv2.DeletePersistentCacheTaskRequest) error {
-	return v.persistentCacheResource.PeerManager().DeleteAllByTaskID(ctx, req.GetTaskId())
+	log := logger.WithHostAndTaskID(req.GetHostId(), req.GetTaskId())
+	if err := v.persistentCacheResource.PeerManager().DeleteAllByTaskID(ctx, req.GetTaskId()); err != nil {
+		log.Errorf("delete persistent cache peers by task %s error %s", req.GetTaskId(), err)
+	}
+
+	if err := v.persistentCacheResource.TaskManager().Delete(ctx, req.GetTaskId()); err != nil {
+		log.Errorf("delete persistent cache task %s error %s", req.GetTaskId(), err)
+		return status.Errorf(codes.Internal, err.Error())
+	}
+
+	return nil
 }
