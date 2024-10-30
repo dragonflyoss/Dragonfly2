@@ -87,7 +87,7 @@ func Error() gin.HandlerFunc {
 		// GORM error handler
 		if errors.Is(err.Err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, ErrorResponse{
-				Message: http.StatusText(http.StatusNotFound),
+				Message: err.Error(),
 			})
 			c.Abort()
 			return
