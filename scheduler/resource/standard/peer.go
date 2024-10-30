@@ -221,23 +221,23 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 	p.FSM = fsm.NewFSM(
 		PeerStatePending,
 		fsm.Events{
-			{Name: PeerEventRegisterEmpty, Src: []string{PeerStatePending}, Dst: PeerStateReceivedEmpty},
-			{Name: PeerEventRegisterTiny, Src: []string{PeerStatePending}, Dst: PeerStateReceivedTiny},
-			{Name: PeerEventRegisterSmall, Src: []string{PeerStatePending}, Dst: PeerStateReceivedSmall},
-			{Name: PeerEventRegisterNormal, Src: []string{PeerStatePending}, Dst: PeerStateReceivedNormal},
-			{Name: PeerEventDownload, Src: []string{PeerStateReceivedEmpty, PeerStateReceivedTiny, PeerStateReceivedSmall, PeerStateReceivedNormal}, Dst: PeerStateRunning},
-			{Name: PeerEventDownloadBackToSource, Src: []string{PeerStateReceivedEmpty, PeerStateReceivedTiny, PeerStateReceivedSmall, PeerStateReceivedNormal, PeerStateRunning}, Dst: PeerStateBackToSource},
-			{Name: PeerEventDownloadSucceeded, Src: []string{
+			fsm.EventDesc{Name: PeerEventRegisterEmpty, Src: []string{PeerStatePending}, Dst: PeerStateReceivedEmpty},
+			fsm.EventDesc{Name: PeerEventRegisterTiny, Src: []string{PeerStatePending}, Dst: PeerStateReceivedTiny},
+			fsm.EventDesc{Name: PeerEventRegisterSmall, Src: []string{PeerStatePending}, Dst: PeerStateReceivedSmall},
+			fsm.EventDesc{Name: PeerEventRegisterNormal, Src: []string{PeerStatePending}, Dst: PeerStateReceivedNormal},
+			fsm.EventDesc{Name: PeerEventDownload, Src: []string{PeerStateReceivedEmpty, PeerStateReceivedTiny, PeerStateReceivedSmall, PeerStateReceivedNormal}, Dst: PeerStateRunning},
+			fsm.EventDesc{Name: PeerEventDownloadBackToSource, Src: []string{PeerStateReceivedEmpty, PeerStateReceivedTiny, PeerStateReceivedSmall, PeerStateReceivedNormal, PeerStateRunning}, Dst: PeerStateBackToSource},
+			fsm.EventDesc{Name: PeerEventDownloadSucceeded, Src: []string{
 				// Since ReportPeerResult and ReportPieceResult are called in no order,
 				// the result may be reported after the register is successful.
 				PeerStateReceivedEmpty, PeerStateReceivedTiny, PeerStateReceivedSmall, PeerStateReceivedNormal,
 				PeerStateRunning, PeerStateBackToSource,
 			}, Dst: PeerStateSucceeded},
-			{Name: PeerEventDownloadFailed, Src: []string{
+			fsm.EventDesc{Name: PeerEventDownloadFailed, Src: []string{
 				PeerStatePending, PeerStateReceivedEmpty, PeerStateReceivedTiny, PeerStateReceivedSmall, PeerStateReceivedNormal,
 				PeerStateRunning, PeerStateBackToSource, PeerStateSucceeded,
 			}, Dst: PeerStateFailed},
-			{Name: PeerEventLeave, Src: []string{
+			fsm.EventDesc{Name: PeerEventLeave, Src: []string{
 				PeerStatePending, PeerStateReceivedEmpty, PeerStateReceivedTiny, PeerStateReceivedSmall, PeerStateReceivedNormal,
 				PeerStateRunning, PeerStateBackToSource, PeerStateFailed, PeerStateSucceeded,
 			}, Dst: PeerStateLeave},

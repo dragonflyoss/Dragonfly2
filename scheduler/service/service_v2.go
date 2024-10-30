@@ -22,6 +22,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/bits-and-blooms/bitset"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -1504,21 +1505,153 @@ func (v *V2) DeletePersistentCachePeer(ctx context.Context, req *schedulerv2.Del
 	return nil
 }
 
-// TODO Implement the following methods.
 // UploadPersistentCacheTaskStarted uploads the metadata of the persistent cache task started.
 func (v *V2) UploadPersistentCacheTaskStarted(ctx context.Context, req *schedulerv2.UploadPersistentCacheTaskStartedRequest) error {
+	log := logger.WithPeer(req.GetHostId(), req.GetTaskId(), req.GetPeerId())
+	host, loaded := v.persistentCacheResource.HostManager().Load(ctx, req.GetHostId())
+	if !loaded {
+		log.Error("host not found")
+		return status.Errorf(codes.NotFound, "host %s not found", req.GetHostId())
+	}
+
+	// Handle task with task started request, new task and store it.
+	task, loaded := v.persistentCacheResource.TaskManager().Load(ctx, req.GetTaskId())
+	if loaded && !task.FSM.Can(persistentcache.TaskEventUpload) {
+		log.Errorf("persistent cache task %s is %s cannot upload", task.ID, task.FSM.Current())
+		return status.Errorf(codes.FailedPrecondition, "persistent cache task %s is %s cannot upload", task.ID, task.FSM.Current())
+	}
+
+	digest, err := digest.Parse(req.GetDigest())
+	if err != nil {
+		log.Errorf("parse digest %s error %s", req.GetDigest(), err)
+		return status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	task = persistentcache.NewTask(req.GetTaskId(), req.GetTag(), req.GetApplication(), persistentcache.TaskStatePending, req.GetPersistentReplicaCount(),
+		0, int32(req.GetPieceLength()), int64(req.GetContentLength()), int32(req.GetPieceCount()), digest, req.GetTtl().AsDuration(), time.Now(), time.Now(), log)
+
+	if err := task.FSM.Event(ctx, persistentcache.TaskEventUpload); err != nil {
+		log.Errorf("task fsm event failed: %s", err.Error())
+		return status.Errorf(codes.Internal, err.Error())
+	}
+
+	if err := v.persistentCacheResource.TaskManager().Store(ctx, task); err != nil {
+		log.Errorf("store persistent cache task %s error %s", task.ID, err)
+		return status.Errorf(codes.Internal, err.Error())
+	}
+
+	// Handle peer with task started request, new peer and store it.
+	peer, loaded := v.persistentCacheResource.PeerManager().Load(ctx, req.GetPeerId())
+	if loaded {
+		log.Error("persistent cache peer already exists")
+		return status.Errorf(codes.AlreadyExists, "persistent cache peer %s already exists", peer.ID)
+	}
+
+	peer = persistentcache.NewPeer(req.GetPeerId(), persistentcache.PeerStatePending, true, bitset.New(uint(req.GetPieceCount())), nil, task, host, 0, time.Now(), time.Now(), log)
+
+	if err := peer.FSM.Event(ctx, persistentcache.PeerEventUpload); err != nil {
+		log.Errorf("peer fsm event failed: %s", err.Error())
+		return status.Errorf(codes.Internal, err.Error())
+	}
+
+	if err := v.persistentCacheResource.PeerManager().Store(ctx, peer); err != nil {
+		log.Errorf("store persistent cache peer %s error %s", peer.ID, err)
+		return status.Errorf(codes.Internal, err.Error())
+	}
+
 	return nil
 }
 
-// TODO Implement the following methods.
 // UploadPersistentCacheTaskFinished uploads the metadata of the persistent cache task finished.
 func (v *V2) UploadPersistentCacheTaskFinished(ctx context.Context, req *schedulerv2.UploadPersistentCacheTaskFinishedRequest) (*commonv2.PersistentCacheTask, error) {
-	return nil, nil
+	log := logger.WithPeer(req.GetHostId(), req.GetTaskId(), req.GetPeerId())
+	// Handle peer with task finished request, load peer and update it.
+	peer, loaded := v.persistentCacheResource.PeerManager().Load(ctx, req.GetPeerId())
+	if !loaded {
+		log.Error("persistent cache peer not found")
+		return nil, status.Errorf(codes.NotFound, "persistent cache peer %s not found", req.GetPeerId())
+	}
+
+	peer.FinishedPieces.SetAll()
+	if err := peer.FSM.Event(ctx, persistentcache.PeerEventSucceeded); err != nil {
+		log.Errorf("peer fsm event failed: %s", err.Error())
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	peer.Cost = time.Since(peer.CreatedAt)
+	peer.UpdatedAt = time.Now()
+
+	if err := v.persistentCacheResource.PeerManager().Store(ctx, peer); err != nil {
+		log.Errorf("store persistent cache peer %s error %s", peer.ID, err)
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	// Handle task with peer finished request, load task and update it.
+	peer.Task.ReplicaCount++
+	if err := peer.Task.FSM.Event(ctx, persistentcache.TaskEventSucceeded); err != nil {
+		log.Errorf("task fsm event failed: %s", err.Error())
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	peer.Task.UpdatedAt = time.Now()
+
+	if err := v.persistentCacheResource.TaskManager().Store(ctx, peer.Task); err != nil {
+		log.Errorf("store persistent cache task %s error %s", peer.Task.ID, err)
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	// TODO(gaius) Implement copy multiple replicas to the other peers.
+	// Select the remote peer to copy the replica and trigger the download task with asynchronous.
+	if peer.Task.ReplicaCount < peer.Task.PersistentReplicaCount {
+	}
+
+	return &commonv2.PersistentCacheTask{
+		Id:                     peer.Task.ID,
+		PersistentReplicaCount: peer.Task.PersistentReplicaCount,
+		ReplicaCount:           peer.Task.ReplicaCount,
+		Digest:                 peer.Task.Digest.String(),
+		Tag:                    &peer.Task.Tag,
+		Application:            &peer.Task.Application,
+		PieceLength:            uint64(peer.Task.PieceLength),
+		ContentLength:          uint64(peer.Task.ContentLength),
+		PieceCount:             uint32(peer.Task.TotalPieceCount),
+		State:                  peer.Task.FSM.Current(),
+		CreatedAt:              timestamppb.New(peer.Task.CreatedAt),
+		UpdatedAt:              timestamppb.New(peer.Task.UpdatedAt),
+	}, nil
 }
 
-// TODO Implement the following methods.
 // UploadPersistentCacheTaskFailed uploads the metadata of the persistent cache task failed.
 func (v *V2) UploadPersistentCacheTaskFailed(ctx context.Context, req *schedulerv2.UploadPersistentCacheTaskFailedRequest) error {
+	log := logger.WithPeer(req.GetHostId(), req.GetTaskId(), req.GetPeerId())
+	// Handle peer with task failed request, load peer and update it.
+	peer, loaded := v.persistentCacheResource.PeerManager().Load(ctx, req.GetPeerId())
+	if !loaded {
+		log.Error("persistent cache peer not found")
+		return status.Errorf(codes.NotFound, "persistent cache peer %s not found", req.GetPeerId())
+	}
+
+	if err := peer.FSM.Event(ctx, persistentcache.PeerEventFailed); err != nil {
+		log.Errorf("peer fsm event failed: %s", err.Error())
+		return status.Errorf(codes.Internal, err.Error())
+	}
+	peer.UpdatedAt = time.Now()
+
+	if err := v.persistentCacheResource.PeerManager().Store(ctx, peer); err != nil {
+		log.Errorf("store persistent cache peer %s error %s", peer.ID, err)
+		return status.Errorf(codes.Internal, err.Error())
+	}
+
+	// Handle task with peer failed request, load task and update it.
+	if err := peer.Task.FSM.Event(ctx, persistentcache.TaskEventSucceeded); err != nil {
+		log.Errorf("task fsm event failed: %s", err.Error())
+		return status.Errorf(codes.Internal, err.Error())
+	}
+	peer.Task.UpdatedAt = time.Now()
+
+	if err := v.persistentCacheResource.TaskManager().Store(ctx, peer.Task); err != nil {
+		log.Errorf("store persistent cache task %s error %s", peer.Task.ID, err)
+		return status.Errorf(codes.Internal, err.Error())
+	}
+
 	return nil
 }
 
