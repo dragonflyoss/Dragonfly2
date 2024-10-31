@@ -61,10 +61,6 @@ type Task struct {
 	// when the task is deleted by the user.
 	PersistentReplicaCount uint64
 
-	// Replica count of the cache task. If cache task is not persistent,
-	// the persistent cache task will be deleted when dfdaemon runs garbage collection.
-	ReplicaCount uint64
-
 	// Digest of the persistent cache task content, for example md5:xxx or sha256:yyy.
 	Digest *digest.Digest
 
@@ -100,13 +96,12 @@ type Task struct {
 }
 
 // New persistent cache task instance.
-func NewTask(id, tag, application, state string, persistentReplicaCount uint64, replicaCount uint64, pieceLength int32,
+func NewTask(id, tag, application, state string, persistentReplicaCount uint64, pieceLength int32,
 	contentLength int64, totalPieceCount int32, digest *digest.Digest, ttl time.Duration, createdAt, updatedAt time.Time,
 	log *logger.SugaredLoggerOnWith) *Task {
 	t := &Task{
 		ID:                     id,
 		PersistentReplicaCount: persistentReplicaCount,
-		ReplicaCount:           replicaCount,
 		Digest:                 digest,
 		Tag:                    tag,
 		Application:            application,

@@ -205,6 +205,19 @@ func (p *peerManager) Store(ctx context.Context, peer *Peer) error {
 			return err
 		}
 
+		// Store the joint-set with task for persistent peer and set expiration.
+		if peer.Persistent {
+			if _, err := pipe.SAdd(ctx, pkgredis.MakePersistentPeersOfPersistentCacheTaskInScheduler(p.config.Manager.SchedulerClusterID, peer.Task.ID), peer.ID).Result(); err != nil {
+				peer.Log.Errorf("add persistent peer id to task joint-set failed: %v", err)
+				return err
+			}
+
+			if _, err := pipe.Expire(ctx, pkgredis.MakePersistentPeersOfPersistentCacheTaskInScheduler(p.config.Manager.SchedulerClusterID, peer.Host.ID), ttl).Result(); err != nil {
+				peer.Log.Errorf("set task joint-set ttl failed: %v", err)
+				return err
+			}
+		}
+
 		// Store the joint-set with host.
 		if _, err := pipe.SAdd(ctx, pkgredis.MakePersistentCachePeersOfPersistentCacheHostInScheduler(p.config.Manager.SchedulerClusterID, peer.Host.ID), peer.ID).Result(); err != nil {
 			peer.Log.Errorf("add peer id to host joint-set failed: %v", err)
@@ -237,6 +250,18 @@ func (p *peerManager) Delete(ctx context.Context, peerID string) error {
 		if _, err := pipe.SRem(ctx, pkgredis.MakePersistentCachePeersOfPersistentCacheTaskInScheduler(p.config.Manager.SchedulerClusterID, rawPeer["task_id"]), peerID).Result(); err != nil {
 			log.Errorf("delete peer id from task joint-set failed: %v", err)
 			return err
+		}
+
+		persistent, err := strconv.ParseBool(rawPeer["persistent"])
+		if err != nil {
+			log.Errorf("parsing persistent failed: %v", err)
+			return err
+		}
+
+		if persistent {
+			if _, err := pipe.SRem(ctx, pkgredis.MakePersistentPeersOfPersistentCacheTaskInScheduler(p.config.Manager.SchedulerClusterID, rawPeer["task_id"]), peerID).Result(); err != nil {
+				log.Errorf("delete persistent peer id from task joint-set failed: %v", err)
+			}
 		}
 
 		if _, err := pipe.SRem(ctx, pkgredis.MakePersistentCachePeersOfPersistentCacheHostInScheduler(p.config.Manager.SchedulerClusterID, rawPeer["host_id"]), peerID).Result(); err != nil {
