@@ -54,7 +54,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/montanaflynn/stats v0.7.1
 	github.com/onsi/ginkgo/v2 v2.20.1
-	github.com/onsi/gomega v1.34.1
+	github.com/onsi/gomega v1.35.1
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/phayes/freeport v0.0.0-20220201140144-74d24b5ae9f5
 	github.com/pkg/errors v0.9.1
@@ -154,7 +154,7 @@ require (
 	github.com/google/btree v1.0.0 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
-	github.com/google/pprof v0.0.0-20240727154555-813a5fbdbec8 // indirect
+	github.com/google/pprof v0.0.0-20240827171923-fa2c70bbbfe5 // indirect
 	github.com/google/s2a-go v0.1.8 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.4 // indirect
 	github.com/googleapis/gax-go/v2 v2.13.0 // indirect
