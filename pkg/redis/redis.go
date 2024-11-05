@@ -57,6 +57,9 @@ const (
 
 	// ApplicationsNamespace prefix of applications namespace cache key.
 	ApplicationsNamespace = "applications"
+
+	// RateLimitersNamespace prefix of rate limiters namespace cache key.
+	RateLimitersNamespace = "rate-limiters"
 )
 
 // NewRedis returns a new redis client.
@@ -117,6 +120,16 @@ func MakeSeedPeersKeyForPeerInManager(hostname, ip string) string {
 // MakeSchedulersKeyForPeerInManager make schedulers key for peer in manager.
 func MakeSchedulersKeyForPeerInManager(hostname, ip string) string {
 	return MakeKeyInManager(PeersNamespace, fmt.Sprintf("%s-%s:schedulers", hostname, ip))
+}
+
+// MakeSchedulerClusterKeyInManager make distributed rate limiter key in manager.
+func MakeDistributedRateLimiterKeyInManager(key string) string {
+	return MakeKeyInManager(RateLimitersNamespace, key)
+}
+
+// MakeSchedulerClusterKeyInManager make locker key of distributed rate limiter in manager.
+func MakeDistributedRateLimiterLockerKeyInManager(key string) string {
+	return MakeKeyInManager(RateLimitersNamespace, fmt.Sprintf("%s-lock", key))
 }
 
 // MakeApplicationsKeyInManager make applications key in manager.

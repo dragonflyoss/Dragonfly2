@@ -20,7 +20,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/casbin/casbin/v2"
+	casbin "github.com/casbin/casbin/v2"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-contrib/static"
 	ginzap "github.com/gin-contrib/zap"
@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/ratelimiter"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/handlers"
@@ -43,7 +44,8 @@ const (
 	OtelServiceName         = "dragonfly-manager"
 )
 
-func Init(cfg *config.Config, logDir string, service service.Service, database *database.Database, enforcer *casbin.Enforcer, assets static.ServeFileSystem) (*gin.Engine, error) {
+func Init(cfg *config.Config, logDir string, service service.Service, database *database.Database, enforcer *casbin.Enforcer,
+	limiter ratelimiter.JobRateLimiter, assets static.ServeFileSystem) (*gin.Engine, error) {
 	// Set mode.
 	if !cfg.Verbose {
 		gin.SetMode(gin.ReleaseMode)
@@ -209,10 +211,10 @@ func Init(cfg *config.Config, logDir string, service service.Service, database *
 	// TODO Add auth to the following routes and fix the tests.
 	// Job.
 	job := apiv1.Group("/jobs")
-	job.POST("", middlewares.RateLimit(cfg.Job.RateLimit.FillInterval, cfg.Job.RateLimit.Capacity, cfg.Job.RateLimit.Quantum), h.CreateJob)
+	job.POST("", middlewares.CreateJobRateLimiter(limiter), h.CreateJob)
 	job.DELETE(":id", h.DestroyJob)
 	job.PATCH(":id", h.UpdateJob)
-	job.GET(":id", middlewares.RateLimit(cfg.Job.RateLimit.FillInterval, cfg.Job.RateLimit.Capacity, cfg.Job.RateLimit.Quantum), h.GetJob)
+	job.GET(":id", h.GetJob)
 	job.GET("", h.GetJobs)
 
 	// Application.

@@ -115,6 +115,7 @@ func seed(db *gorm.DB) error {
 			Config: map[string]any{
 				"candidate_parent_limit": schedulerconfig.DefaultSchedulerCandidateParentLimit,
 				"filter_parent_limit":    schedulerconfig.DefaultSchedulerFilterParentLimit,
+				"job_rate_limit":         config.DefaultClusterJobRateLimit,
 			},
 			ClientConfig: map[string]any{
 				"load_limit": schedulerconfig.DefaultPeerConcurrentUploadLimit,

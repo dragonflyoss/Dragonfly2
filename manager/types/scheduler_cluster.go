@@ -54,6 +54,7 @@ type GetSchedulerClustersQuery struct {
 type SchedulerClusterConfig struct {
 	CandidateParentLimit uint32 `yaml:"candidateParentLimit" mapstructure:"candidateParentLimit" json:"candidate_parent_limit" binding:"omitempty,gte=1,lte=20"`
 	FilterParentLimit    uint32 `yaml:"filterParentLimit" mapstructure:"filterParentLimit" json:"filter_parent_limit" binding:"omitempty,gte=10,lte=1000"`
+	JobRateLimit         uint32 `yaml:"jobRateLimit" mapstructure:"jobRateLimit" json:"job_rate_limit" binding:"omitempty,gte=1,lte=1000000"`
 }
 
 type SchedulerClusterClientConfig struct {

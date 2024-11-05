@@ -30,6 +30,7 @@ import (
 	"google.golang.org/grpc"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/ratelimiter"
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/database"
@@ -89,6 +90,9 @@ type Server struct {
 	// Job server.
 	job *job.Job
 
+	// Job rate limiter.
+	jobRateLimiter ratelimiter.JobRateLimiter
+
 	// GRPC server.
 	grpcServer *grpc.Server
 
@@ -147,9 +151,15 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 		}
 	}
 
+	// Initialize job rate limiter.
+	s.jobRateLimiter, err = ratelimiter.NewJobRateLimiter(db)
+	if err != nil {
+		return nil, err
+	}
+
 	// Initialize REST server.
 	restService := service.New(cfg, db, cache, job, enforcer, objectStorage)
-	router, err := router.Init(cfg, d.LogDir(), restService, db, enforcer, EmbedFolder(assets, assetsTargetPath))
+	router, err := router.Init(cfg, d.LogDir(), restService, db, enforcer, s.jobRateLimiter, EmbedFolder(assets, assetsTargetPath))
 	if err != nil {
 		return nil, err
 	}
@@ -237,6 +247,12 @@ func (s *Server) Serve() error {
 		s.job.Serve()
 	}()
 
+	// Started job rate limiter server.
+	go func() {
+		logger.Infof("started job rate limiter server")
+		s.jobRateLimiter.Serve()
+	}()
+
 	// Generate GRPC listener.
 	ip, ok := ip.FormatIP(s.config.Server.GRPC.ListenIP.String())
 	if !ok {
@@ -279,6 +295,9 @@ func (s *Server) Stop() {
 
 	// Stop job server.
 	s.job.Stop()
+
+	// Stop job rate limiter.
+	s.jobRateLimiter.Stop()
 
 	// Stop GRPC server.
 	stopped := make(chan struct{})
