@@ -18,10 +18,11 @@ package service
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/manager/job"
 	"errors"
 	"fmt"
-
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
+	"github.com/google/uuid"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaljob "d7y.io/dragonfly/v2/internal/job"
@@ -33,6 +34,43 @@ import (
 	"d7y.io/dragonfly/v2/pkg/slices"
 	"d7y.io/dragonfly/v2/pkg/structure"
 )
+
+func (s *service) CreateSyncPeersJob(ctx context.Context, json types.CreateSyncPeersJobRequest) (*models.Job, error) {
+	candidateSchedulers, err := s.findCandidateSchedulers(ctx, json.SchedulerClusterIDs, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var candidateClusters []models.SchedulerCluster
+	for _, scheduler := range candidateSchedulers {
+		candidateClusters = append(candidateClusters, scheduler.SchedulerCluster)
+	}
+
+	taskID := fmt.Sprintf("manager_%v", uuid.New().String())
+
+	if err = s.job.SyncPeers.AsyncSyncPeers(ctx, job.SyncPeersArgs{
+		CandidateSchedulerClusters: candidateClusters,
+		TaskID:                     taskID,
+	}); err != nil {
+		return nil, err
+	}
+
+	// job here is a local one controlled by the manager self.
+	job := models.Job{
+		TaskID:            taskID,
+		BIO:               json.BIO,
+		Type:              json.Type,
+		State:             machineryv1tasks.StateStarted,
+		UserID:            json.UserID,
+		SchedulerClusters: candidateClusters,
+	}
+
+	if err = s.db.WithContext(ctx).Create(&job).Error; err != nil {
+		return nil, err
+	}
+
+	return &job, nil
+}
 
 func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheatJobRequest) (*models.Job, error) {
 	if json.Args.Scope == "" {

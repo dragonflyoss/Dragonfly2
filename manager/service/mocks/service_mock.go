@@ -340,6 +340,21 @@ func (mr *MockServiceMockRecorder) CreateSeedPeerCluster(arg0, arg1 any) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSeedPeerCluster", reflect.TypeOf((*MockService)(nil).CreateSeedPeerCluster), arg0, arg1)
 }
 
+// CreateSyncPeersJob mocks base method.
+func (m *MockService) CreateSyncPeersJob(ctx context.Context, json types.CreateSyncPeersJobRequest) (*models.Job, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateSyncPeersJob", ctx, json)
+	ret0, _ := ret[0].(*models.Job)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateSyncPeersJob indicates an expected call of CreateSyncPeersJob.
+func (mr *MockServiceMockRecorder) CreateSyncPeersJob(ctx, json any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSyncPeersJob", reflect.TypeOf((*MockService)(nil).CreateSyncPeersJob), ctx, json)
+}
+
 // CreateV1Preheat mocks base method.
 func (m *MockService) CreateV1Preheat(arg0 context.Context, arg1 types.CreateV1PreheatRequest) (*types.CreateV1PreheatResponse, error) {
 	m.ctrl.T.Helper()

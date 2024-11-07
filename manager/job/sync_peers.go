@@ -21,6 +21,7 @@ package job
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
@@ -35,12 +36,13 @@ import (
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/types"
 	resource "d7y.io/dragonfly/v2/scheduler/resource/standard"
+	"github.com/samber/lo"
 )
 
 // SyncPeers is an interface for sync peers.
 type SyncPeers interface {
-	// Run sync peers.
-	Run(context.Context) error
+	// AsyncSyncPeers execute action to sync peers, which is async.
+	AsyncSyncPeers(context.Context, SyncPeersArgs) error
 
 	// Serve started sync peers server.
 	Serve()
@@ -55,6 +57,14 @@ type syncPeers struct {
 	job    *internaljob.Job
 	db     *gorm.DB
 	done   chan struct{}
+
+	syncLocker sync.Mutex
+	workChan   chan SyncPeersArgs
+}
+
+type SyncPeersArgs struct {
+	CandidateSchedulerClusters []models.SchedulerCluster
+	TaskID                     string
 }
 
 // newSyncPeers returns a new SyncPeers.
@@ -67,12 +77,67 @@ func newSyncPeers(cfg *config.Config, job *internaljob.Job, gdb *gorm.DB) (SyncP
 	}, nil
 }
 
-// Run sync peers.
-func (s *syncPeers) Run(ctx context.Context) error {
-	// Find all of the scheduler clusters that has active schedulers.
-	var candidateSchedulerClusters []models.SchedulerCluster
-	if err := s.db.WithContext(ctx).Find(&candidateSchedulerClusters).Error; err != nil {
-		return err
+// AsyncSyncPeers start to sync peers.
+func (s *syncPeers) AsyncSyncPeers(ctx context.Context, args SyncPeersArgs) error {
+	if len(args.CandidateSchedulerClusters) == 0 {
+		if err := s.db.WithContext(ctx).Find(&args.CandidateSchedulerClusters).Error; err != nil {
+			return fmt.Errorf("failed to get candidate scheduler clusters: %v", err)
+		}
+	}
+
+	s.workChan <- args
+	return nil
+}
+
+// Serve started sync peers server.
+func (s *syncPeers) Serve() {
+	tick := time.NewTicker(s.config.Job.SyncPeers.Interval)
+	for {
+		select {
+		case <-tick.C:
+			if err := s.syncPeers(context.Background(), nil); err != nil {
+				logger.Errorf("sync peers failed periodically: %v", err)
+			}
+		case args := <-s.workChan:
+			err := s.syncPeers(context.Background(), args.CandidateSchedulerClusters)
+			if err != nil {
+				logger.Errorf("sync peers failed for request: %v", err)
+			}
+
+			if args.TaskID != "" {
+				job := models.Job{}
+				state := machineryv1tasks.StateFailure
+				if err == nil {
+					state = machineryv1tasks.StateSuccess
+				}
+				if updateErr := s.db.WithContext(context.Background()).First(&job, args.TaskID).Updates(models.Job{
+					State: state,
+				}).Error; updateErr != nil {
+					logger.Errorf("update sync peers job result failed for request: %v", updateErr)
+				}
+			}
+		case <-s.done:
+			return
+		}
+	}
+}
+
+// Stop sync peers server.
+func (s *syncPeers) Stop() {
+	close(s.done)
+}
+
+// syncPeers is the real working function in synchronous mode.
+func (s *syncPeers) syncPeers(ctx context.Context, candidateSchedulerClusters []models.SchedulerCluster) error {
+	if !s.syncLocker.TryLock() {
+		return fmt.Errorf("another sync peers is already running")
+	}
+	defer s.syncLocker.Unlock()
+
+	if len(candidateSchedulerClusters) == 0 {
+		if err := s.db.WithContext(ctx).Find(&candidateSchedulerClusters).Error; err != nil {
+			return err
+		}
 	}
 
 	// Find all of the schedulers that has active scheduler cluster.
@@ -109,26 +174,6 @@ func (s *syncPeers) Run(ctx context.Context) error {
 		s.mergePeers(ctx, scheduler, results, log)
 	}
 	return nil
-}
-
-// Serve started sync peers server.
-func (s *syncPeers) Serve() {
-	tick := time.NewTicker(s.config.Job.SyncPeers.Interval)
-	for {
-		select {
-		case <-tick.C:
-			if err := s.Run(context.Background()); err != nil {
-				logger.Errorf("sync peers failed: %v", err)
-			}
-		case <-s.done:
-			return
-		}
-	}
-}
-
-// Stop sync peers server.
-func (s *syncPeers) Stop() {
-	close(s.done)
 }
 
 // createSyncPeers creates sync peers.
@@ -175,84 +220,106 @@ func (s *syncPeers) createSyncPeers(ctx context.Context, scheduler models.Schedu
 
 // Merge sync peer results with the data in the peer table.
 func (s *syncPeers) mergePeers(ctx context.Context, scheduler models.Scheduler, results []*resource.Host, log *logger.SugaredLoggerOnWith) {
-	// Convert sync peer results from slice to map.
-	syncPeers := make(map[string]*resource.Host)
-	for _, result := range results {
-		syncPeers[result.ID] = result
-	}
-
-	rows, err := s.db.Model(&models.Peer{}).Where("scheduler_cluster_id = ?", scheduler.SchedulerClusterID).Rows()
-	if err != nil {
+	// Fetch existing peers from the database
+	var existingPeers []models.Peer
+	if err := s.db.Model(&models.Peer{}).Where("scheduler_cluster_id = ?", scheduler.SchedulerClusterID).Find(&existingPeers).Error; err != nil {
 		log.Error(err)
 		return
 	}
-	defer rows.Close()
 
-	for rows.Next() {
-		peer := models.Peer{}
-		if err := s.db.ScanRows(rows, &peer); err != nil {
+	// Calculate differences using diffPeers function
+	toAdd, toUpdate, toDelete := diffPeers(existingPeers, results)
+
+	// Perform database updates based on the differences
+	if err := s.db.WithContext(ctx).CreateInBatches(toAdd, s.config.Job.SyncPeers.BatchSize).Error; err != nil {
+		log.Error(err)
+	}
+
+	for _, peer := range toUpdate {
+		if err := s.db.WithContext(ctx).Model(&models.Peer{}).Where("id = ?", peer.ID).Updates(peer).Error; err != nil {
 			log.Error(err)
-			continue
-		}
-
-		// If the peer exists in the sync peer results, update the peer data in the database with
-		// the sync peer results and delete the sync peer from the sync peers map.
-		isSeedPeer := types.ParseHostType(peer.Type) != types.HostTypeNormal
-		id := idgen.HostIDV2(peer.IP, peer.Hostname, isSeedPeer)
-		if syncPeer, ok := syncPeers[id]; ok {
-			if err := s.db.WithContext(ctx).First(&models.Peer{}, peer.ID).Updates(models.Peer{
-				Type:              syncPeer.Type.Name(),
-				IDC:               syncPeer.Network.IDC,
-				Location:          syncPeer.Network.Location,
-				Port:              syncPeer.Port,
-				DownloadPort:      syncPeer.DownloadPort,
-				ObjectStoragePort: syncPeer.ObjectStoragePort,
-				State:             models.PeerStateActive,
-				OS:                syncPeer.OS,
-				Platform:          syncPeer.Platform,
-				PlatformFamily:    syncPeer.PlatformFamily,
-				PlatformVersion:   syncPeer.PlatformVersion,
-				KernelVersion:     syncPeer.KernelVersion,
-				GitVersion:        syncPeer.Build.GitVersion,
-				GitCommit:         syncPeer.Build.GitCommit,
-				BuildPlatform:     syncPeer.Build.Platform,
-			}).Error; err != nil {
-				log.Error(err)
-			}
-
-			// Delete the sync peer from the sync peers map.
-			delete(syncPeers, id)
-		} else {
-			// If the peer does not exist in the sync peer results, delete the peer in the database.
-			if err := s.db.WithContext(ctx).Unscoped().Delete(&models.Peer{}, peer.ID).Error; err != nil {
-				log.Error(err)
-			}
 		}
 	}
 
-	// Insert the sync peers that do not exist in the database into the peer table.
-	for _, syncPeer := range syncPeers {
-		if err := s.db.WithContext(ctx).Create(&models.Peer{
-			Hostname:           syncPeer.Hostname,
-			Type:               syncPeer.Type.Name(),
-			IDC:                syncPeer.Network.IDC,
-			Location:           syncPeer.Network.Location,
-			IP:                 syncPeer.IP,
-			Port:               syncPeer.Port,
-			DownloadPort:       syncPeer.DownloadPort,
-			ObjectStoragePort:  syncPeer.ObjectStoragePort,
-			State:              models.PeerStateActive,
-			OS:                 syncPeer.OS,
-			Platform:           syncPeer.Platform,
-			PlatformFamily:     syncPeer.PlatformFamily,
-			PlatformVersion:    syncPeer.PlatformVersion,
-			KernelVersion:      syncPeer.KernelVersion,
-			GitVersion:         syncPeer.Build.GitVersion,
-			GitCommit:          syncPeer.Build.GitCommit,
-			BuildPlatform:      syncPeer.Build.Platform,
-			SchedulerClusterID: uint(syncPeer.SchedulerClusterID),
-		}).Error; err != nil {
+	for _, peer := range toDelete {
+		if err := s.db.WithContext(ctx).Unscoped().Delete(&models.Peer{}, peer.ID).Error; err != nil {
 			log.Error(err)
 		}
+	}
+}
+
+func diffPeers(existingPeers []models.Peer, currentPeers []*resource.Host) (toAdd, toUpdate, toDelete []models.Peer) {
+	// Convert current peers to a map for quick lookup
+	currentPeersMap := lo.KeyBy[string, *resource.Host](currentPeers, func(item *resource.Host) string {
+		return item.ID
+	})
+
+	// // Convert existing peers to a map for quick lookup
+	existingPeersMap := lo.KeyBy[string, models.Peer](existingPeers, func(item models.Peer) string {
+		return idgen.HostIDV2(item.IP, item.Hostname, types.ParseHostType(item.Type) != types.HostTypeNormal)
+	})
+
+	// Calculate differences
+	for id, currentPeer := range currentPeersMap {
+		if existingPeer, ok := existingPeersMap[id]; ok {
+			// Peer exists in both, check if it needs to be updated
+			if !isPeerEqual(existingPeer, *currentPeer) {
+				toUpdate = append(toUpdate, convertToModelPeer(*currentPeer))
+			}
+			// Remove from existingPeersMap to mark it as processed
+			delete(existingPeersMap, id)
+		} else {
+			// Peer exists in currentPeers but not in existingPeers, add it
+			toAdd = append(toAdd, convertToModelPeer(*currentPeer))
+		}
+	}
+
+	// Peers left in existingPeersMap are to be deleted
+	toDelete = lo.Values(existingPeersMap)
+
+	return toAdd, toUpdate, lo.Values(existingPeersMap)
+}
+
+// Helper function to check if two peers are equal
+func isPeerEqual(peer models.Peer, currentPeer resource.Host) bool {
+	// Implement the equality check based on your requirements
+	// For example, compare all fields that should be considered for equality
+	return peer.Type == currentPeer.Type.Name() &&
+		peer.IDC == currentPeer.Network.IDC &&
+		peer.Location == currentPeer.Network.Location &&
+		peer.Port == currentPeer.Port &&
+		peer.DownloadPort == currentPeer.DownloadPort &&
+		peer.ObjectStoragePort == currentPeer.ObjectStoragePort &&
+		peer.OS == currentPeer.OS &&
+		peer.Platform == currentPeer.Platform &&
+		peer.PlatformFamily == currentPeer.PlatformFamily &&
+		peer.PlatformVersion == currentPeer.PlatformVersion &&
+		peer.KernelVersion == currentPeer.KernelVersion &&
+		peer.GitVersion == currentPeer.Build.GitVersion &&
+		peer.GitCommit == currentPeer.Build.GitCommit &&
+		peer.BuildPlatform == currentPeer.Build.Platform
+}
+
+// Helper function to convert resource.Host to models.Peer
+func convertToModelPeer(peer resource.Host) models.Peer {
+	return models.Peer{
+		Hostname:           peer.Hostname,
+		Type:               peer.Type.Name(),
+		IDC:                peer.Network.IDC,
+		Location:           peer.Network.Location,
+		IP:                 peer.IP,
+		Port:               peer.Port,
+		DownloadPort:       peer.DownloadPort,
+		ObjectStoragePort:  peer.ObjectStoragePort,
+		State:              models.PeerStateActive,
+		OS:                 peer.OS,
+		Platform:           peer.Platform,
+		PlatformFamily:     peer.PlatformFamily,
+		PlatformVersion:    peer.PlatformVersion,
+		KernelVersion:      peer.KernelVersion,
+		GitVersion:         peer.Build.GitVersion,
+		GitCommit:          peer.Build.GitCommit,
+		BuildPlatform:      peer.Build.Platform,
+		SchedulerClusterID: uint(peer.SchedulerClusterID),
 	}
 }

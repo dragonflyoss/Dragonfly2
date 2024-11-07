@@ -115,6 +115,7 @@ type Service interface {
 	GetConfigs(context.Context, types.GetConfigsQuery) ([]models.Config, int64, error)
 
 	CreatePreheatJob(context.Context, types.CreatePreheatJobRequest) (*models.Job, error)
+	CreateSyncPeersJob(ctx context.Context, json types.CreateSyncPeersJobRequest) (*models.Job, error)
 	CreateDeleteTaskJob(context.Context, types.CreateDeleteTaskJobRequest) (*models.Job, error)
 	CreateGetTaskJob(context.Context, types.CreateGetTaskJobRequest) (*models.Job, error)
 	DestroyJob(context.Context, uint) error

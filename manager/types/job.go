@@ -103,6 +103,14 @@ type PreheatArgs struct {
 	Timeout time.Duration `json:"timeout" binding:"omitempty"`
 }
 
+type CreateSyncPeersJobRequest struct {
+	BIO                 string        `json:"bio" binding:"omitempty"`
+	Type                string        `json:"type" binding:"required"`
+	UserID              uint          `json:"user_id" binding:"omitempty"`
+	SchedulerClusterIDs []uint        `json:"scheduler_cluster_ids" binding:"omitempty"`
+	Timeout             time.Duration `json:"timeout" binding:"omitempty"`
+}
+
 type CreateGetTaskJobRequest struct {
 	BIO                 string      `json:"bio" binding:"omitempty"`
 	Type                string      `json:"type" binding:"required"`

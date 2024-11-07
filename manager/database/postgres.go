@@ -49,14 +49,14 @@ func newPostgres(cfg *config.Config) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	// Run migration.
+	// AsyncSyncPeers migration.
 	if postgresCfg.Migrate {
 		if err := migrate(db); err != nil {
 			return nil, err
 		}
 	}
 
-	// Run seed.
+	// AsyncSyncPeers seed.
 	if err := seed(db); err != nil {
 		return nil, err
 	}
