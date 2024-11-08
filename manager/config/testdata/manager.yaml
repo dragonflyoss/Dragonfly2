@@ -69,10 +69,6 @@ cache:
     ttl: 1s
 
 job:
-  rateLimit:
-    fillInterval: 1s
-    capacity: 1000
-    quantum: 1000
   gc:
     interval: 1s
     ttl: 1s

@@ -18,17 +18,22 @@ package middlewares
 
 import (
 	"net/http"
-	"time"
 
+	"d7y.io/dragonfly/v2/internal/ratelimiter"
+	"d7y.io/dragonfly/v2/manager/types"
 	"github.com/gin-gonic/gin"
-	"github.com/juju/ratelimit"
+	"github.com/gin-gonic/gin/binding"
 )
 
-func RateLimit(fillInterval time.Duration, capacity, quantum int64) gin.HandlerFunc {
-	bucket := ratelimit.NewBucketWithQuantum(fillInterval, capacity, quantum)
-
+func CreateJobRateLimiter(limiter ratelimiter.JobRateLimiter) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if bucket.TakeAvailable(1) < 1 {
+		var json types.CreateJobRequest
+		if err := c.ShouldBindBodyWith(&json, binding.JSON); err != nil {
+			c.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+			return
+		}
+
+		if _, err := limiter.TakeByClusterIDs(c, json.SchedulerClusterIDs, 1); err != nil {
 			c.String(http.StatusTooManyRequests, "rate limit exceeded")
 			c.Abort()
 			return

@@ -304,9 +304,6 @@ type GRPCTLSServerConfig struct {
 }
 
 type JobConfig struct {
-	// RateLimit configuration.
-	RateLimit RateLimitConfig `yaml:"rateLimit" mapstructure:"rateLimit"`
-
 	// GC configuration, used to clean up expired jobs. If the count of the jobs is huge,
 	// it may cause performance problems.
 	GC GCConfig `yaml:"gc" mapstructure:"gc"`
@@ -332,18 +329,6 @@ type PreheatConfig struct {
 
 	// TLS client configuration.
 	TLS PreheatTLSClientConfig `yaml:"tls" mapstructure:"tls"`
-}
-
-// RateLimitConfig is the configuration for rate limit.
-type RateLimitConfig struct {
-	// FillInterval is the interval between each token added to the bucket.
-	FillInterval time.Duration `yaml:"fillInterval" mapstructure:"fillInterval"`
-
-	// Capacity is the maximum number of tokens in the bucket.
-	Capacity int64 `yaml:"capacity" mapstructure:"capacity"`
-
-	// Quantum is the number of tokens taken from the bucket for each request.
-	Quantum int64 `yaml:"quantum" mapstructure:"quantum"`
 }
 
 type SyncPeersConfig struct {
@@ -453,11 +438,6 @@ func New() *Config {
 			},
 		},
 		Job: JobConfig{
-			RateLimit: RateLimitConfig{
-				FillInterval: DefaultJobRateLimitFillInterval,
-				Capacity:     DefaultJobRateLimitCapacity,
-				Quantum:      DefaultJobRateLimitQuantum,
-			},
 			GC: GCConfig{
 				Interval: DefaultJobGCInterval,
 				TTL:      DefaultJobGCTTL,
@@ -635,18 +615,6 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Cache.Local.TTL == 0 {
 		return errors.New("local requires parameter ttl")
-	}
-
-	if cfg.Job.RateLimit.FillInterval == 0 {
-		return errors.New("rateLimit requires parameter fillInterval")
-	}
-
-	if cfg.Job.RateLimit.Capacity == 0 {
-		return errors.New("rateLimit requires parameter capacity")
-	}
-
-	if cfg.Job.RateLimit.Quantum == 0 {
-		return errors.New("rateLimit requires parameter quantum")
 	}
 
 	if cfg.Job.GC.Interval == 0 {

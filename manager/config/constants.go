@@ -87,15 +87,6 @@ const (
 )
 
 const (
-	// DefaultJobRateLimitFillInterval is the default fill interval for job rate limit.
-	DefaultJobRateLimitFillInterval = 1 * time.Minute
-
-	// DefaultJobRateLimitCapacity is the default capacity for job rate limit.
-	DefaultJobRateLimitCapacity = 10
-
-	// DefaultJobRateLimitQuantum is the default quantum for job rate limit.
-	DefaultJobRateLimitQuantum = 10
-
 	// DefaultJobGCInterval is the default interval for gc job.
 	DefaultJobGCInterval = 6 * time.Hour
 
@@ -113,6 +104,9 @@ const (
 
 	// DefaultJobSyncPeersTimeout is the default timeout for syncing all peers information from the scheduler.
 	DefaultJobSyncPeersTimeout = 10 * time.Minute
+
+	// DefaultClusterJobRateLimit is default rate limit(requests per second) for job Open API by cluster.
+	DefaultClusterJobRateLimit = 10
 )
 
 const (
