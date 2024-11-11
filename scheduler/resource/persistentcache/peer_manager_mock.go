@@ -54,6 +54,20 @@ func (mr *MockPeerManagerMockRecorder) Delete(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockPeerManager)(nil).Delete), arg0, arg1)
 }
 
+// DeleteAllByHostID mocks base method.
+func (m *MockPeerManager) DeleteAllByHostID(arg0 context.Context, arg1 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteAllByHostID", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteAllByHostID indicates an expected call of DeleteAllByHostID.
+func (mr *MockPeerManagerMockRecorder) DeleteAllByHostID(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAllByHostID", reflect.TypeOf((*MockPeerManager)(nil).DeleteAllByHostID), arg0, arg1)
+}
+
 // DeleteAllByTaskID mocks base method.
 func (m *MockPeerManager) DeleteAllByTaskID(arg0 context.Context, arg1 string) error {
 	m.ctrl.T.Helper()
@@ -96,6 +110,21 @@ func (m *MockPeerManager) LoadAll(arg0 context.Context) ([]*Peer, error) {
 func (mr *MockPeerManagerMockRecorder) LoadAll(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadAll", reflect.TypeOf((*MockPeerManager)(nil).LoadAll), arg0)
+}
+
+// LoadAllByHostID mocks base method.
+func (m *MockPeerManager) LoadAllByHostID(arg0 context.Context, arg1 string) ([]*Peer, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadAllByHostID", arg0, arg1)
+	ret0, _ := ret[0].([]*Peer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LoadAllByHostID indicates an expected call of LoadAllByHostID.
+func (mr *MockPeerManagerMockRecorder) LoadAllByHostID(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadAllByHostID", reflect.TypeOf((*MockPeerManager)(nil).LoadAllByHostID), arg0, arg1)
 }
 
 // LoadAllByTaskID mocks base method.
