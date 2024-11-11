@@ -84,6 +84,20 @@ func (mr *MockHostManagerMockRecorder) LoadAll(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadAll", reflect.TypeOf((*MockHostManager)(nil).LoadAll), arg0)
 }
 
+// RunGC mocks base method.
+func (m *MockHostManager) RunGC() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RunGC")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RunGC indicates an expected call of RunGC.
+func (mr *MockHostManagerMockRecorder) RunGC() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RunGC", reflect.TypeOf((*MockHostManager)(nil).RunGC))
+}
+
 // Store mocks base method.
 func (m *MockHostManager) Store(arg0 context.Context, arg1 *Host) error {
 	m.ctrl.T.Helper()

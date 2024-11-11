@@ -23,12 +23,18 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/redis/go-redis/v9"
+	redis "github.com/redis/go-redis/v9"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	pkggc "d7y.io/dragonfly/v2/pkg/gc"
 	pkgredis "d7y.io/dragonfly/v2/pkg/redis"
 	pkgtypes "d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
+)
+
+const (
+	// GC persistent cache host id.
+	GCHostID = "persistent-cache-host"
 )
 
 // HostManager is the interface used for host manager.
@@ -44,6 +50,9 @@ type HostManager interface {
 
 	// LoadAll returns all hosts.
 	LoadAll(context.Context) ([]*Host, error)
+
+	// RunGC runs garbage collection.
+	RunGC() error
 }
 
 // hostManager contains content for host manager.
@@ -56,14 +65,25 @@ type hostManager struct {
 }
 
 // New host manager interface.
-func newHostManager(cfg *config.Config, rdb redis.UniversalClient) HostManager {
-	return &hostManager{config: cfg, rdb: rdb}
+func newHostManager(cfg *config.Config, gc pkggc.GC, rdb redis.UniversalClient) (HostManager, error) {
+	h := &hostManager{config: cfg, rdb: rdb}
+
+	if err := gc.Add(pkggc.Task{
+		ID:       GCHostID,
+		Interval: cfg.Scheduler.GC.HostGCInterval,
+		Timeout:  cfg.Scheduler.GC.HostGCInterval,
+		Runner:   h,
+	}); err != nil {
+		return nil, err
+	}
+
+	return h, nil
 }
 
 // Load returns host by a key.
-func (t *hostManager) Load(ctx context.Context, hostID string) (*Host, bool) {
+func (h *hostManager) Load(ctx context.Context, hostID string) (*Host, bool) {
 	log := logger.WithHostID(hostID)
-	rawHost, err := t.rdb.HGetAll(ctx, pkgredis.MakePersistentCacheHostKeyInScheduler(t.config.Manager.SchedulerClusterID, hostID)).Result()
+	rawHost, err := h.rdb.HGetAll(ctx, pkgredis.MakePersistentCacheHostKeyInScheduler(h.config.Manager.SchedulerClusterID, hostID)).Result()
 	if err != nil {
 		log.Errorf("getting host failed from redis: %v", err)
 		return nil, false
@@ -427,9 +447,9 @@ func (t *hostManager) Load(ctx context.Context, hostID string) (*Host, bool) {
 }
 
 // Store sets host.
-func (t *hostManager) Store(ctx context.Context, host *Host) error {
-	_, err := t.rdb.HSet(ctx,
-		pkgredis.MakePersistentCacheHostKeyInScheduler(t.config.Manager.SchedulerClusterID, host.ID),
+func (h *hostManager) Store(ctx context.Context, host *Host) error {
+	_, err := h.rdb.HSet(ctx,
+		pkgredis.MakePersistentCacheHostKeyInScheduler(h.config.Manager.SchedulerClusterID, host.ID),
 		"id", host.ID,
 		"type", host.Type.Name(),
 		"hostname", host.Hostname,
@@ -494,13 +514,13 @@ func (t *hostManager) Store(ctx context.Context, host *Host) error {
 }
 
 // Delete deletes host by a key.
-func (t *hostManager) Delete(ctx context.Context, hostID string) error {
-	_, err := t.rdb.Del(ctx, pkgredis.MakePersistentCacheHostKeyInScheduler(t.config.Manager.SchedulerClusterID, hostID)).Result()
+func (h *hostManager) Delete(ctx context.Context, hostID string) error {
+	_, err := h.rdb.Del(ctx, pkgredis.MakePersistentCacheHostKeyInScheduler(h.config.Manager.SchedulerClusterID, hostID)).Result()
 	return err
 }
 
 // LoadAll returns all hosts.
-func (t *hostManager) LoadAll(ctx context.Context) ([]*Host, error) {
+func (h *hostManager) LoadAll(ctx context.Context) ([]*Host, error) {
 	var (
 		hosts  []*Host
 		cursor uint64
@@ -512,14 +532,14 @@ func (t *hostManager) LoadAll(ctx context.Context) ([]*Host, error) {
 			err      error
 		)
 
-		hostKeys, cursor, err = t.rdb.Scan(ctx, cursor, pkgredis.MakePersistentCacheHostsInScheduler(t.config.Manager.SchedulerClusterID), 10).Result()
+		hostKeys, cursor, err = h.rdb.Scan(ctx, cursor, pkgredis.MakePersistentCacheHostsInScheduler(h.config.Manager.SchedulerClusterID), 10).Result()
 		if err != nil {
 			logger.Error("scan hosts failed")
 			return nil, err
 		}
 
 		for _, hostKey := range hostKeys {
-			host, loaded := t.Load(ctx, hostKey)
+			host, loaded := h.Load(ctx, hostKey)
 			if !loaded {
 				logger.WithHostID(hostKey).Error("load host failed")
 				continue
@@ -534,4 +554,27 @@ func (t *hostManager) LoadAll(ctx context.Context) ([]*Host, error) {
 	}
 
 	return hosts, nil
+}
+
+// RunGC runs garbage collection.
+func (h *hostManager) RunGC() error {
+	hosts, err := h.LoadAll(context.Background())
+	if err != nil {
+		logger.Error("load all hosts failed")
+		return err
+	}
+
+	for _, host := range hosts {
+		// If the host's elapsed exceeds twice the announcing interval,
+		// then leave peers in host.
+		elapsed := time.Since(host.UpdatedAt)
+		if host.AnnounceInterval > 0 && elapsed > host.AnnounceInterval*2 {
+			host.Log.Info("host has been reclaimed")
+			if err := h.Delete(context.Background(), host.ID); err != nil {
+				host.Log.Errorf("delete host failed: %v", err)
+			}
+		}
+	}
+
+	return nil
 }

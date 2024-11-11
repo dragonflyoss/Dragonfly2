@@ -22,6 +22,8 @@ import (
 	redis "github.com/redis/go-redis/v9"
 	"google.golang.org/grpc/credentials"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
@@ -50,11 +52,16 @@ type resource struct {
 }
 
 // New returns Resource interface.
-func New(cfg *config.Config, rdb redis.UniversalClient, transportCredentials credentials.TransportCredentials) Resource {
+func New(cfg *config.Config, gc gc.GC, rdb redis.UniversalClient, transportCredentials credentials.TransportCredentials) (Resource, error) {
 	taskManager := newTaskManager(cfg, rdb)
-	hostManager := newHostManager(cfg, rdb)
+	hostManager, err := newHostManager(cfg, gc, rdb)
+	if err != nil {
+		logger.Errorf("failed to create host manager: %v", err)
+		return nil, err
+	}
+
 	peerManager := newPeerManager(cfg, rdb, taskManager, hostManager, transportCredentials)
-	return &resource{peerManager, taskManager, hostManager}
+	return &resource{peerManager, taskManager, hostManager}, nil
 }
 
 // Host manager interface.
