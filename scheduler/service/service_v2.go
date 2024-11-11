@@ -515,6 +515,7 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 		}
 	}
 
+	// Handle standard host.
 	host, loaded := v.resource.HostManager().Load(req.Host.GetId())
 	if !loaded {
 		options := []standard.HostOption{
@@ -613,94 +614,263 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 
 		v.resource.HostManager().Store(host)
 		host.Log.Infof("announce new host: %#v", req)
-		return nil
+	} else {
+		// Host already exists and updates properties.
+		host.Port = req.Host.GetPort()
+		host.DownloadPort = req.Host.GetDownloadPort()
+		host.Type = types.HostType(req.Host.GetType())
+		host.DisableShared = req.Host.GetDisableShared()
+		host.OS = req.Host.GetOs()
+		host.Platform = req.Host.GetPlatform()
+		host.PlatformFamily = req.Host.GetPlatformFamily()
+		host.PlatformVersion = req.Host.GetPlatformVersion()
+		host.KernelVersion = req.Host.GetKernelVersion()
+		host.UpdatedAt.Store(time.Now())
+
+		if concurrentUploadLimit > 0 {
+			host.ConcurrentUploadLimit.Store(concurrentUploadLimit)
+		}
+
+		if req.Host.GetCpu() != nil {
+			host.CPU = standard.CPU{
+				LogicalCount:   req.Host.Cpu.GetLogicalCount(),
+				PhysicalCount:  req.Host.Cpu.GetPhysicalCount(),
+				Percent:        req.Host.Cpu.GetPercent(),
+				ProcessPercent: req.Host.Cpu.GetProcessPercent(),
+				Times: standard.CPUTimes{
+					User:      req.Host.Cpu.Times.GetUser(),
+					System:    req.Host.Cpu.Times.GetSystem(),
+					Idle:      req.Host.Cpu.Times.GetIdle(),
+					Nice:      req.Host.Cpu.Times.GetNice(),
+					Iowait:    req.Host.Cpu.Times.GetIowait(),
+					Irq:       req.Host.Cpu.Times.GetIrq(),
+					Softirq:   req.Host.Cpu.Times.GetSoftirq(),
+					Steal:     req.Host.Cpu.Times.GetSteal(),
+					Guest:     req.Host.Cpu.Times.GetGuest(),
+					GuestNice: req.Host.Cpu.Times.GetGuestNice(),
+				},
+			}
+		}
+
+		if req.Host.GetMemory() != nil {
+			host.Memory = standard.Memory{
+				Total:              req.Host.Memory.GetTotal(),
+				Available:          req.Host.Memory.GetAvailable(),
+				Used:               req.Host.Memory.GetUsed(),
+				UsedPercent:        req.Host.Memory.GetUsedPercent(),
+				ProcessUsedPercent: req.Host.Memory.GetProcessUsedPercent(),
+				Free:               req.Host.Memory.GetFree(),
+			}
+		}
+
+		if req.Host.GetNetwork() != nil {
+			host.Network = standard.Network{
+				TCPConnectionCount:       req.Host.Network.GetTcpConnectionCount(),
+				UploadTCPConnectionCount: req.Host.Network.GetUploadTcpConnectionCount(),
+				Location:                 req.Host.Network.GetLocation(),
+				IDC:                      req.Host.Network.GetIdc(),
+				DownloadRate:             req.Host.Network.GetDownloadRate(),
+				DownloadRateLimit:        req.Host.Network.GetDownloadRateLimit(),
+				UploadRate:               req.Host.Network.GetUploadRate(),
+				UploadRateLimit:          req.Host.Network.GetUploadRateLimit(),
+			}
+		}
+
+		if req.Host.GetDisk() != nil {
+			host.Disk = standard.Disk{
+				Total:             req.Host.Disk.GetTotal(),
+				Free:              req.Host.Disk.GetFree(),
+				Used:              req.Host.Disk.GetUsed(),
+				UsedPercent:       req.Host.Disk.GetUsedPercent(),
+				InodesTotal:       req.Host.Disk.GetInodesTotal(),
+				InodesUsed:        req.Host.Disk.GetInodesUsed(),
+				InodesFree:        req.Host.Disk.GetInodesFree(),
+				InodesUsedPercent: req.Host.Disk.GetInodesUsedPercent(),
+			}
+		}
+
+		if req.Host.GetBuild() != nil {
+			host.Build = standard.Build{
+				GitVersion: req.Host.Build.GetGitVersion(),
+				GitCommit:  req.Host.Build.GetGitCommit(),
+				GoVersion:  req.Host.Build.GetGoVersion(),
+				Platform:   req.Host.Build.GetPlatform(),
+			}
+		}
+
+		if req.GetInterval() != nil {
+			host.AnnounceInterval = req.GetInterval().AsDuration()
+		}
 	}
 
-	// Host already exists and updates properties.
-	host.Port = req.Host.GetPort()
-	host.DownloadPort = req.Host.GetDownloadPort()
-	host.Type = types.HostType(req.Host.GetType())
-	host.DisableShared = req.Host.GetDisableShared()
-	host.OS = req.Host.GetOs()
-	host.Platform = req.Host.GetPlatform()
-	host.PlatformFamily = req.Host.GetPlatformFamily()
-	host.PlatformVersion = req.Host.GetPlatformVersion()
-	host.KernelVersion = req.Host.GetKernelVersion()
-	host.UpdatedAt.Store(time.Now())
+	// Handle the persistent cache host.
+	persistentCacheHost, loaded := v.persistentCacheResource.HostManager().Load(ctx, req.Host.GetId())
+	if !loaded {
+		options := []persistentcache.HostOption{}
+		if concurrentUploadLimit > 0 {
+			options = append(options, persistentcache.WithConcurrentUploadLimit(concurrentUploadLimit))
+		}
 
-	if concurrentUploadLimit > 0 {
-		host.ConcurrentUploadLimit.Store(concurrentUploadLimit)
-	}
-
-	if req.Host.GetCpu() != nil {
-		host.CPU = standard.CPU{
-			LogicalCount:   req.Host.Cpu.GetLogicalCount(),
-			PhysicalCount:  req.Host.Cpu.GetPhysicalCount(),
-			Percent:        req.Host.Cpu.GetPercent(),
-			ProcessPercent: req.Host.Cpu.GetProcessPercent(),
-			Times: standard.CPUTimes{
-				User:      req.Host.Cpu.Times.GetUser(),
-				System:    req.Host.Cpu.Times.GetSystem(),
-				Idle:      req.Host.Cpu.Times.GetIdle(),
-				Nice:      req.Host.Cpu.Times.GetNice(),
-				Iowait:    req.Host.Cpu.Times.GetIowait(),
-				Irq:       req.Host.Cpu.Times.GetIrq(),
-				Softirq:   req.Host.Cpu.Times.GetSoftirq(),
-				Steal:     req.Host.Cpu.Times.GetSteal(),
-				Guest:     req.Host.Cpu.Times.GetGuest(),
-				GuestNice: req.Host.Cpu.Times.GetGuestNice(),
+		persistentCacheHost = persistentcache.NewHost(req.Host.GetId(), req.Host.GetHostname(), req.Host.GetIp(), req.Host.GetOs(),
+			req.Host.GetPlatform(), req.Host.GetPlatformFamily(), req.Host.GetPlatformVersion(), req.Host.GetKernelVersion(), req.Host.GetPort(),
+			req.Host.GetDownloadPort(), 0, 0, 0, req.Host.GetDisableShared(), types.HostType(req.Host.GetType()),
+			persistentcache.CPU{
+				LogicalCount:   req.Host.Cpu.GetLogicalCount(),
+				PhysicalCount:  req.Host.Cpu.GetPhysicalCount(),
+				Percent:        req.Host.Cpu.GetPercent(),
+				ProcessPercent: req.Host.Cpu.GetProcessPercent(),
+				Times: persistentcache.CPUTimes{
+					User:      req.Host.Cpu.Times.GetUser(),
+					System:    req.Host.Cpu.Times.GetSystem(),
+					Idle:      req.Host.Cpu.Times.GetIdle(),
+					Nice:      req.Host.Cpu.Times.GetNice(),
+					Iowait:    req.Host.Cpu.Times.GetIowait(),
+					Irq:       req.Host.Cpu.Times.GetIrq(),
+					Softirq:   req.Host.Cpu.Times.GetSoftirq(),
+					Steal:     req.Host.Cpu.Times.GetSteal(),
+					Guest:     req.Host.Cpu.Times.GetGuest(),
+					GuestNice: req.Host.Cpu.Times.GetGuestNice(),
+				},
 			},
-		}
-	}
+			persistentcache.Memory{
+				Total:              req.Host.Memory.GetTotal(),
+				Available:          req.Host.Memory.GetAvailable(),
+				Used:               req.Host.Memory.GetUsed(),
+				UsedPercent:        req.Host.Memory.GetUsedPercent(),
+				ProcessUsedPercent: req.Host.Memory.GetProcessUsedPercent(),
+				Free:               req.Host.Memory.GetFree(),
+			},
+			persistentcache.Network{
+				TCPConnectionCount:       req.Host.Network.GetTcpConnectionCount(),
+				UploadTCPConnectionCount: req.Host.Network.GetUploadTcpConnectionCount(),
+				Location:                 req.Host.Network.GetLocation(),
+				IDC:                      req.Host.Network.GetIdc(),
+				DownloadRate:             req.Host.Network.GetDownloadRate(),
+				DownloadRateLimit:        req.Host.Network.GetDownloadRateLimit(),
+				UploadRate:               req.Host.Network.GetUploadRate(),
+				UploadRateLimit:          req.Host.Network.GetUploadRateLimit(),
+			},
+			persistentcache.Disk{
+				Total:             req.Host.Disk.GetTotal(),
+				Free:              req.Host.Disk.GetFree(),
+				Used:              req.Host.Disk.GetUsed(),
+				UsedPercent:       req.Host.Disk.GetUsedPercent(),
+				InodesTotal:       req.Host.Disk.GetInodesTotal(),
+				InodesUsed:        req.Host.Disk.GetInodesUsed(),
+				InodesFree:        req.Host.Disk.GetInodesFree(),
+				InodesUsedPercent: req.Host.Disk.GetInodesUsedPercent(),
+			},
+			persistentcache.Build{
+				GitVersion: req.Host.Build.GetGitVersion(),
+				GitCommit:  req.Host.Build.GetGitCommit(),
+				GoVersion:  req.Host.Build.GetGoVersion(),
+				Platform:   req.Host.Build.GetPlatform(),
+			},
+			req.GetInterval().AsDuration(),
+			time.Now(),
+			time.Now(),
+			logger.WithHostID(req.Host.GetId()),
+			options...,
+		)
 
-	if req.Host.GetMemory() != nil {
-		host.Memory = standard.Memory{
-			Total:              req.Host.Memory.GetTotal(),
-			Available:          req.Host.Memory.GetAvailable(),
-			Used:               req.Host.Memory.GetUsed(),
-			UsedPercent:        req.Host.Memory.GetUsedPercent(),
-			ProcessUsedPercent: req.Host.Memory.GetProcessUsedPercent(),
-			Free:               req.Host.Memory.GetFree(),
+		persistentCacheHost.Log.Infof("announce new persistent cache host: %#v", req)
+		if err := v.persistentCacheResource.HostManager().Store(ctx, persistentCacheHost); err != nil {
+			persistentCacheHost.Log.Errorf("store persistent cache host failed: %s", err)
+			return err
 		}
-	}
+	} else {
+		// persistentCacheHost already exists and updates properties.
+		persistentCacheHost.Port = req.Host.GetPort()
+		persistentCacheHost.DownloadPort = req.Host.GetDownloadPort()
+		persistentCacheHost.Type = types.HostType(req.Host.GetType())
+		persistentCacheHost.DisableShared = req.Host.GetDisableShared()
+		persistentCacheHost.OS = req.Host.GetOs()
+		persistentCacheHost.Platform = req.Host.GetPlatform()
+		persistentCacheHost.PlatformFamily = req.Host.GetPlatformFamily()
+		persistentCacheHost.PlatformVersion = req.Host.GetPlatformVersion()
+		persistentCacheHost.KernelVersion = req.Host.GetKernelVersion()
+		persistentCacheHost.UpdatedAt = time.Now()
 
-	if req.Host.GetNetwork() != nil {
-		host.Network = standard.Network{
-			TCPConnectionCount:       req.Host.Network.GetTcpConnectionCount(),
-			UploadTCPConnectionCount: req.Host.Network.GetUploadTcpConnectionCount(),
-			Location:                 req.Host.Network.GetLocation(),
-			IDC:                      req.Host.Network.GetIdc(),
-			DownloadRate:             req.Host.Network.GetDownloadRate(),
-			DownloadRateLimit:        req.Host.Network.GetDownloadRateLimit(),
-			UploadRate:               req.Host.Network.GetUploadRate(),
-			UploadRateLimit:          req.Host.Network.GetUploadRateLimit(),
+		if concurrentUploadLimit > 0 {
+			persistentCacheHost.ConcurrentUploadLimit = concurrentUploadLimit
 		}
-	}
 
-	if req.Host.GetDisk() != nil {
-		host.Disk = standard.Disk{
-			Total:             req.Host.Disk.GetTotal(),
-			Free:              req.Host.Disk.GetFree(),
-			Used:              req.Host.Disk.GetUsed(),
-			UsedPercent:       req.Host.Disk.GetUsedPercent(),
-			InodesTotal:       req.Host.Disk.GetInodesTotal(),
-			InodesUsed:        req.Host.Disk.GetInodesUsed(),
-			InodesFree:        req.Host.Disk.GetInodesFree(),
-			InodesUsedPercent: req.Host.Disk.GetInodesUsedPercent(),
+		if req.Host.GetCpu() != nil {
+			persistentCacheHost.CPU = persistentcache.CPU{
+				LogicalCount:   req.Host.Cpu.GetLogicalCount(),
+				PhysicalCount:  req.Host.Cpu.GetPhysicalCount(),
+				Percent:        req.Host.Cpu.GetPercent(),
+				ProcessPercent: req.Host.Cpu.GetProcessPercent(),
+				Times: persistentcache.CPUTimes{
+					User:      req.Host.Cpu.Times.GetUser(),
+					System:    req.Host.Cpu.Times.GetSystem(),
+					Idle:      req.Host.Cpu.Times.GetIdle(),
+					Nice:      req.Host.Cpu.Times.GetNice(),
+					Iowait:    req.Host.Cpu.Times.GetIowait(),
+					Irq:       req.Host.Cpu.Times.GetIrq(),
+					Softirq:   req.Host.Cpu.Times.GetSoftirq(),
+					Steal:     req.Host.Cpu.Times.GetSteal(),
+					Guest:     req.Host.Cpu.Times.GetGuest(),
+					GuestNice: req.Host.Cpu.Times.GetGuestNice(),
+				},
+			}
 		}
-	}
 
-	if req.Host.GetBuild() != nil {
-		host.Build = standard.Build{
-			GitVersion: req.Host.Build.GetGitVersion(),
-			GitCommit:  req.Host.Build.GetGitCommit(),
-			GoVersion:  req.Host.Build.GetGoVersion(),
-			Platform:   req.Host.Build.GetPlatform(),
+		if req.Host.GetMemory() != nil {
+			persistentCacheHost.Memory = persistentcache.Memory{
+				Total:              req.Host.Memory.GetTotal(),
+				Available:          req.Host.Memory.GetAvailable(),
+				Used:               req.Host.Memory.GetUsed(),
+				UsedPercent:        req.Host.Memory.GetUsedPercent(),
+				ProcessUsedPercent: req.Host.Memory.GetProcessUsedPercent(),
+				Free:               req.Host.Memory.GetFree(),
+			}
 		}
-	}
 
-	if req.GetInterval() != nil {
-		host.AnnounceInterval = req.GetInterval().AsDuration()
+		if req.Host.GetNetwork() != nil {
+			persistentCacheHost.Network = persistentcache.Network{
+				TCPConnectionCount:       req.Host.Network.GetTcpConnectionCount(),
+				UploadTCPConnectionCount: req.Host.Network.GetUploadTcpConnectionCount(),
+				Location:                 req.Host.Network.GetLocation(),
+				IDC:                      req.Host.Network.GetIdc(),
+				DownloadRate:             req.Host.Network.GetDownloadRate(),
+				DownloadRateLimit:        req.Host.Network.GetDownloadRateLimit(),
+				UploadRate:               req.Host.Network.GetUploadRate(),
+				UploadRateLimit:          req.Host.Network.GetUploadRateLimit(),
+			}
+		}
+
+		if req.Host.GetDisk() != nil {
+			persistentCacheHost.Disk = persistentcache.Disk{
+				Total:             req.Host.Disk.GetTotal(),
+				Free:              req.Host.Disk.GetFree(),
+				Used:              req.Host.Disk.GetUsed(),
+				UsedPercent:       req.Host.Disk.GetUsedPercent(),
+				InodesTotal:       req.Host.Disk.GetInodesTotal(),
+				InodesUsed:        req.Host.Disk.GetInodesUsed(),
+				InodesFree:        req.Host.Disk.GetInodesFree(),
+				InodesUsedPercent: req.Host.Disk.GetInodesUsedPercent(),
+			}
+		}
+
+		if req.Host.GetBuild() != nil {
+			persistentCacheHost.Build = persistentcache.Build{
+				GitVersion: req.Host.Build.GetGitVersion(),
+				GitCommit:  req.Host.Build.GetGitCommit(),
+				GoVersion:  req.Host.Build.GetGoVersion(),
+				Platform:   req.Host.Build.GetPlatform(),
+			}
+		}
+
+		if req.GetInterval() != nil {
+			persistentCacheHost.AnnounceInterval = req.GetInterval().AsDuration()
+		}
+
+		persistentCacheHost.Log.Infof("update persistent cache host: %#v", req)
+		if err := v.persistentCacheResource.HostManager().Store(ctx, persistentCacheHost); err != nil {
+			persistentCacheHost.Log.Errorf("store persistent cache host failed: %s", err)
+			return err
+		}
 	}
 
 	return nil

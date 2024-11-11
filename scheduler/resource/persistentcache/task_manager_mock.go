@@ -84,6 +84,36 @@ func (mr *MockTaskManagerMockRecorder) LoadAll(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadAll", reflect.TypeOf((*MockTaskManager)(nil).LoadAll), arg0)
 }
 
+// LoadCorrentReplicaCount mocks base method.
+func (m *MockTaskManager) LoadCorrentReplicaCount(arg0 context.Context, arg1 string) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadCorrentReplicaCount", arg0, arg1)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LoadCorrentReplicaCount indicates an expected call of LoadCorrentReplicaCount.
+func (mr *MockTaskManagerMockRecorder) LoadCorrentReplicaCount(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadCorrentReplicaCount", reflect.TypeOf((*MockTaskManager)(nil).LoadCorrentReplicaCount), arg0, arg1)
+}
+
+// LoadCurrentPersistentReplicaCount mocks base method.
+func (m *MockTaskManager) LoadCurrentPersistentReplicaCount(arg0 context.Context, arg1 string) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadCurrentPersistentReplicaCount", arg0, arg1)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LoadCurrentPersistentReplicaCount indicates an expected call of LoadCurrentPersistentReplicaCount.
+func (mr *MockTaskManagerMockRecorder) LoadCurrentPersistentReplicaCount(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadCurrentPersistentReplicaCount", reflect.TypeOf((*MockTaskManager)(nil).LoadCurrentPersistentReplicaCount), arg0, arg1)
+}
+
 // Store mocks base method.
 func (m *MockTaskManager) Store(arg0 context.Context, arg1 *Task) error {
 	m.ctrl.T.Helper()

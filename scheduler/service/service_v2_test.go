@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/atomic"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -51,6 +52,181 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/resource/standard"
 	schedulingmocks "d7y.io/dragonfly/v2/scheduler/scheduling/mocks"
 	storagemocks "d7y.io/dragonfly/v2/scheduler/storage/mocks"
+)
+
+var (
+	mockRawHost = standard.Host{
+		ID:              mockHostID,
+		Type:            pkgtypes.HostTypeNormal,
+		Hostname:        "foo",
+		IP:              "127.0.0.1",
+		Port:            8003,
+		DownloadPort:    8001,
+		OS:              "darwin",
+		Platform:        "darwin",
+		PlatformFamily:  "Standalone Workstation",
+		PlatformVersion: "11.1",
+		KernelVersion:   "20.2.0",
+		CPU:             mockCPU,
+		Memory:          mockMemory,
+		Network:         mockNetwork,
+		Disk:            mockDisk,
+		Build:           mockBuild,
+		CreatedAt:       atomic.NewTime(time.Now()),
+		UpdatedAt:       atomic.NewTime(time.Now()),
+	}
+
+	mockRawSeedHost = standard.Host{
+		ID:              mockSeedHostID,
+		Type:            pkgtypes.HostTypeSuperSeed,
+		Hostname:        "bar",
+		IP:              "127.0.0.1",
+		Port:            8003,
+		DownloadPort:    8001,
+		OS:              "darwin",
+		Platform:        "darwin",
+		PlatformFamily:  "Standalone Workstation",
+		PlatformVersion: "11.1",
+		KernelVersion:   "20.2.0",
+		CPU:             mockCPU,
+		Memory:          mockMemory,
+		Network:         mockNetwork,
+		Disk:            mockDisk,
+		Build:           mockBuild,
+		CreatedAt:       atomic.NewTime(time.Now()),
+		UpdatedAt:       atomic.NewTime(time.Now()),
+	}
+
+	mockCPU = standard.CPU{
+		LogicalCount:   4,
+		PhysicalCount:  2,
+		Percent:        1,
+		ProcessPercent: 0.5,
+		Times: standard.CPUTimes{
+			User:      240662.2,
+			System:    317950.1,
+			Idle:      3393691.3,
+			Nice:      0,
+			Iowait:    0,
+			Irq:       0,
+			Softirq:   0,
+			Steal:     0,
+			Guest:     0,
+			GuestNice: 0,
+		},
+	}
+
+	mockMemory = standard.Memory{
+		Total:              17179869184,
+		Available:          5962813440,
+		Used:               11217055744,
+		UsedPercent:        65.291858,
+		ProcessUsedPercent: 41.525125,
+		Free:               2749598908,
+	}
+
+	mockNetwork = standard.Network{
+		TCPConnectionCount:       10,
+		UploadTCPConnectionCount: 1,
+		Location:                 mockHostLocation,
+		IDC:                      mockHostIDC,
+	}
+
+	mockDisk = standard.Disk{
+		Total:             499963174912,
+		Free:              37226479616,
+		Used:              423809622016,
+		UsedPercent:       91.92547406065952,
+		InodesTotal:       4882452880,
+		InodesUsed:        7835772,
+		InodesFree:        4874617108,
+		InodesUsedPercent: 0.1604884305611568,
+	}
+
+	mockBuild = standard.Build{
+		GitVersion: "v1.0.0",
+		GitCommit:  "221176b117c6d59366d68f2b34d38be50c935883",
+		GoVersion:  "1.18",
+		Platform:   "darwin",
+	}
+
+	mockInterval = durationpb.New(5 * time.Minute).AsDuration()
+
+	mockRawPersistentCacheHost = persistentcache.Host{
+		ID:              mockHostID,
+		Type:            pkgtypes.HostTypeNormal,
+		Hostname:        "foo",
+		IP:              "127.0.0.1",
+		Port:            8003,
+		DownloadPort:    8001,
+		OS:              "darwin",
+		Platform:        "darwin",
+		PlatformFamily:  "Standalone Workstation",
+		PlatformVersion: "11.1",
+		KernelVersion:   "20.2.0",
+		CPU:             mockPersistentCacheCPU,
+		Memory:          mockPersistentCacheMemory,
+		Network:         mockPersistentCacheNetwork,
+		Disk:            mockPersistentCacheDisk,
+		Build:           mockPersistentCacheBuild,
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
+	}
+
+	mockPersistentCacheCPU = persistentcache.CPU{
+		LogicalCount:   4,
+		PhysicalCount:  2,
+		Percent:        1,
+		ProcessPercent: 0.5,
+		Times: persistentcache.CPUTimes{
+			User:      240662.2,
+			System:    317950.1,
+			Idle:      3393691.3,
+			Nice:      0,
+			Iowait:    0,
+			Irq:       0,
+			Softirq:   0,
+			Steal:     0,
+			Guest:     0,
+			GuestNice: 0,
+		},
+	}
+
+	mockPersistentCacheMemory = persistentcache.Memory{
+		Total:              17179869184,
+		Available:          5962813440,
+		Used:               11217055744,
+		UsedPercent:        65.291858,
+		ProcessUsedPercent: 41.525125,
+		Free:               2749598908,
+	}
+
+	mockPersistentCacheNetwork = persistentcache.Network{
+		TCPConnectionCount:       10,
+		UploadTCPConnectionCount: 1,
+		Location:                 mockHostLocation,
+		IDC:                      mockHostIDC,
+	}
+
+	mockPersistentCacheDisk = persistentcache.Disk{
+		Total:             499963174912,
+		Free:              37226479616,
+		Used:              423809622016,
+		UsedPercent:       91.92547406065952,
+		InodesTotal:       4882452880,
+		InodesUsed:        7835772,
+		InodesFree:        4874617108,
+		InodesUsedPercent: 0.1604884305611568,
+	}
+
+	mockPersistentCacheBuild = persistentcache.Build{
+		GitVersion: "v1.0.0",
+		GitCommit:  "221176b117c6d59366d68f2b34d38be50c935883",
+		GoVersion:  "1.18",
+		Platform:   "darwin",
+	}
+
+	mockPersistentCacheInterval = durationpb.New(5 * time.Minute).AsDuration()
 )
 
 func TestService_NewV2(t *testing.T) {
@@ -424,10 +600,10 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 	tests := []struct {
 		name string
 		req  *schedulerv2.AnnounceHostRequest
-		run  func(t *testing.T, svc *V2, req *schedulerv2.AnnounceHostRequest, host *standard.Host, hostManager standard.HostManager, mr *standard.MockResourceMockRecorder, mh *standard.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder)
+		run  func(t *testing.T, svc *V2, req *schedulerv2.AnnounceHostRequest, host *standard.Host, persistentCacheHost *persistentcache.Host, hostManager standard.HostManager, persistentCacheHostManager persistentcache.HostManager, mr *standard.MockResourceMockRecorder, mpr *persistentcache.MockResourceMockRecorder, mh *standard.MockHostManagerMockRecorder, mph *persistentcache.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder)
 	}{
 		{
-			name: "host not found",
+			name: "host not found and persistent cache host not found",
 			req: &schedulerv2.AnnounceHostRequest{
 				Host: &commonv2.Host{
 					Id:              mockHostID,
@@ -497,7 +673,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 				},
 				Interval: durationpb.New(5 * time.Minute),
 			},
-			run: func(t *testing.T, svc *V2, req *schedulerv2.AnnounceHostRequest, host *standard.Host, hostManager standard.HostManager, mr *standard.MockResourceMockRecorder, mh *standard.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			run: func(t *testing.T, svc *V2, req *schedulerv2.AnnounceHostRequest, host *standard.Host, persistentCacheHost *persistentcache.Host, hostManager standard.HostManager, persistentCacheHostManager persistentcache.HostManager, mr *standard.MockResourceMockRecorder, mpr *persistentcache.MockResourceMockRecorder, mh *standard.MockHostManagerMockRecorder, mph *persistentcache.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
 					md.GetSchedulerClusterClientConfig().Return(managertypes.SchedulerClusterClientConfig{LoadLimit: 10}, nil).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
@@ -532,6 +708,36 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 						assert.NotEqual(host.UpdatedAt.Load().Nanosecond(), 0)
 						assert.NotNil(host.Log)
 					}).Return().Times(1),
+					mpr.HostManager().Return(persistentCacheHostManager).Times(1),
+					mph.Load(gomock.Any(), gomock.Any()).Return(nil, false).Times(1),
+					mpr.HostManager().Return(persistentCacheHostManager).Times(1),
+					mph.Store(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, host *persistentcache.Host) {
+						assert := assert.New(t)
+						assert.Equal(host.ID, req.Host.Id)
+						assert.Equal(host.Type, pkgtypes.HostType(req.Host.Type))
+						assert.Equal(host.Hostname, req.Host.Hostname)
+						assert.Equal(host.IP, req.Host.Ip)
+						assert.Equal(host.Port, req.Host.Port)
+						assert.Equal(host.DownloadPort, req.Host.DownloadPort)
+						assert.Equal(host.DisableShared, req.Host.DisableShared)
+						assert.Equal(host.OS, req.Host.Os)
+						assert.Equal(host.Platform, req.Host.Platform)
+						assert.Equal(host.PlatformVersion, req.Host.PlatformVersion)
+						assert.Equal(host.KernelVersion, req.Host.KernelVersion)
+						assert.EqualValues(host.CPU, mockPersistentCacheCPU)
+						assert.EqualValues(host.Memory, mockPersistentCacheMemory)
+						assert.EqualValues(host.Network, mockPersistentCacheNetwork)
+						assert.EqualValues(host.Disk, mockPersistentCacheDisk)
+						assert.EqualValues(host.Build, mockPersistentCacheBuild)
+						assert.EqualValues(host.AnnounceInterval, mockPersistentCacheInterval)
+						assert.Equal(host.ConcurrentUploadLimit, int32(10))
+						assert.Equal(host.ConcurrentUploadCount, int32(0))
+						assert.Equal(host.UploadCount, int64(0))
+						assert.Equal(host.UploadFailedCount, int64(0))
+						assert.NotEqual(host.CreatedAt.Nanosecond(), 0)
+						assert.NotEqual(host.UpdatedAt.Nanosecond(), 0)
+						assert.NotNil(host.Log)
+					}).Return(nil).Times(1),
 				)
 
 				assert := assert.New(t)
@@ -539,7 +745,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 			},
 		},
 		{
-			name: "host not found and dynconfig returns error",
+			name: "host not found and persistent cache host not found, dynconfig returns error",
 			req: &schedulerv2.AnnounceHostRequest{
 				Host: &commonv2.Host{
 					Id:              mockHostID,
@@ -609,7 +815,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 				},
 				Interval: durationpb.New(5 * time.Minute),
 			},
-			run: func(t *testing.T, svc *V2, req *schedulerv2.AnnounceHostRequest, host *standard.Host, hostManager standard.HostManager, mr *standard.MockResourceMockRecorder, mh *standard.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			run: func(t *testing.T, svc *V2, req *schedulerv2.AnnounceHostRequest, host *standard.Host, persistentCacheHost *persistentcache.Host, hostManager standard.HostManager, persistentCacheHostManager persistentcache.HostManager, mr *standard.MockResourceMockRecorder, mpr *persistentcache.MockResourceMockRecorder, mh *standard.MockHostManagerMockRecorder, mph *persistentcache.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
 					md.GetSchedulerClusterClientConfig().Return(managertypes.SchedulerClusterClientConfig{}, errors.New("foo")).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
@@ -644,6 +850,36 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 						assert.NotEqual(host.UpdatedAt.Load().Nanosecond(), 0)
 						assert.NotNil(host.Log)
 					}).Return().Times(1),
+					mpr.HostManager().Return(persistentCacheHostManager).Times(1),
+					mph.Load(gomock.Any(), gomock.Any()).Return(nil, false).Times(1),
+					mpr.HostManager().Return(persistentCacheHostManager).Times(1),
+					mph.Store(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, host *persistentcache.Host) {
+						assert := assert.New(t)
+						assert.Equal(host.ID, req.Host.Id)
+						assert.Equal(host.Type, pkgtypes.HostType(req.Host.Type))
+						assert.Equal(host.Hostname, req.Host.Hostname)
+						assert.Equal(host.IP, req.Host.Ip)
+						assert.Equal(host.Port, req.Host.Port)
+						assert.Equal(host.DownloadPort, req.Host.DownloadPort)
+						assert.Equal(host.DisableShared, req.Host.DisableShared)
+						assert.Equal(host.OS, req.Host.Os)
+						assert.Equal(host.Platform, req.Host.Platform)
+						assert.Equal(host.PlatformVersion, req.Host.PlatformVersion)
+						assert.Equal(host.KernelVersion, req.Host.KernelVersion)
+						assert.EqualValues(host.CPU, mockPersistentCacheCPU)
+						assert.EqualValues(host.Memory, mockPersistentCacheMemory)
+						assert.EqualValues(host.Network, mockPersistentCacheNetwork)
+						assert.EqualValues(host.Disk, mockPersistentCacheDisk)
+						assert.EqualValues(host.Build, mockPersistentCacheBuild)
+						assert.EqualValues(host.AnnounceInterval, mockPersistentCacheInterval)
+						assert.Equal(host.ConcurrentUploadLimit, int32(200))
+						assert.Equal(host.ConcurrentUploadCount, int32(0))
+						assert.Equal(host.UploadCount, int64(0))
+						assert.Equal(host.UploadFailedCount, int64(0))
+						assert.NotEqual(host.CreatedAt.Nanosecond(), 0)
+						assert.NotEqual(host.UpdatedAt.Nanosecond(), 0)
+						assert.NotNil(host.Log)
+					}).Return(nil).Times(1),
 				)
 
 				assert := assert.New(t)
@@ -651,7 +887,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 			},
 		},
 		{
-			name: "host already exists",
+			name: "host already exists and persistent cache host already exists",
 			req: &schedulerv2.AnnounceHostRequest{
 				Host: &commonv2.Host{
 					Id:              mockHostID,
@@ -721,11 +957,41 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 				},
 				Interval: durationpb.New(5 * time.Minute),
 			},
-			run: func(t *testing.T, svc *V2, req *schedulerv2.AnnounceHostRequest, host *standard.Host, hostManager standard.HostManager, mr *standard.MockResourceMockRecorder, mh *standard.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			run: func(t *testing.T, svc *V2, req *schedulerv2.AnnounceHostRequest, host *standard.Host, persistentCacheHost *persistentcache.Host, hostManager standard.HostManager, persistentCacheHostManager persistentcache.HostManager, mr *standard.MockResourceMockRecorder, mpr *persistentcache.MockResourceMockRecorder, mh *standard.MockHostManagerMockRecorder, mph *persistentcache.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
 					md.GetSchedulerClusterClientConfig().Return(managertypes.SchedulerClusterClientConfig{LoadLimit: 10}, nil).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(host, true).Times(1),
+					mpr.HostManager().Return(persistentCacheHostManager).Times(1),
+					mph.Load(gomock.Any(), gomock.Any()).Return(persistentCacheHost, true).Times(1),
+					mpr.HostManager().Return(persistentCacheHostManager).Times(1),
+					mph.Store(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, host *persistentcache.Host) {
+						assert := assert.New(t)
+						assert.Equal(host.ID, req.Host.Id)
+						assert.Equal(host.Type, pkgtypes.HostType(req.Host.Type))
+						assert.Equal(host.Hostname, req.Host.Hostname)
+						assert.Equal(host.IP, req.Host.Ip)
+						assert.Equal(host.Port, req.Host.Port)
+						assert.Equal(host.DownloadPort, req.Host.DownloadPort)
+						assert.Equal(host.DisableShared, req.Host.DisableShared)
+						assert.Equal(host.OS, req.Host.Os)
+						assert.Equal(host.Platform, req.Host.Platform)
+						assert.Equal(host.PlatformVersion, req.Host.PlatformVersion)
+						assert.Equal(host.KernelVersion, req.Host.KernelVersion)
+						assert.EqualValues(host.CPU, mockPersistentCacheCPU)
+						assert.EqualValues(host.Memory, mockPersistentCacheMemory)
+						assert.EqualValues(host.Network, mockPersistentCacheNetwork)
+						assert.EqualValues(host.Disk, mockPersistentCacheDisk)
+						assert.EqualValues(host.Build, mockPersistentCacheBuild)
+						assert.EqualValues(host.AnnounceInterval, mockPersistentCacheInterval)
+						assert.Equal(host.ConcurrentUploadLimit, int32(10))
+						assert.Equal(host.ConcurrentUploadCount, int32(0))
+						assert.Equal(host.UploadCount, int64(0))
+						assert.Equal(host.UploadFailedCount, int64(0))
+						assert.NotEqual(host.CreatedAt.Nanosecond(), 0)
+						assert.NotEqual(host.UpdatedAt.Nanosecond(), 0)
+						assert.NotNil(host.Log)
+					}).Return(nil).Times(1),
 				)
 
 				assert := assert.New(t)
@@ -759,7 +1025,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 			},
 		},
 		{
-			name: "host already exists and dynconfig returns error",
+			name: "host already exists and persistent cache host already exists, dynconfig returns error",
 			req: &schedulerv2.AnnounceHostRequest{
 				Host: &commonv2.Host{
 					Id:              mockHostID,
@@ -829,11 +1095,41 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 				},
 				Interval: durationpb.New(5 * time.Minute),
 			},
-			run: func(t *testing.T, svc *V2, req *schedulerv2.AnnounceHostRequest, host *standard.Host, hostManager standard.HostManager, mr *standard.MockResourceMockRecorder, mh *standard.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			run: func(t *testing.T, svc *V2, req *schedulerv2.AnnounceHostRequest, host *standard.Host, persistentCacheHost *persistentcache.Host, hostManager standard.HostManager, persistentCacheHostManager persistentcache.HostManager, mr *standard.MockResourceMockRecorder, mpr *persistentcache.MockResourceMockRecorder, mh *standard.MockHostManagerMockRecorder, mph *persistentcache.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
 					md.GetSchedulerClusterClientConfig().Return(managertypes.SchedulerClusterClientConfig{}, errors.New("foo")).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Load(gomock.Any()).Return(host, true).Times(1),
+					mpr.HostManager().Return(persistentCacheHostManager).Times(1),
+					mph.Load(gomock.Any(), gomock.Any()).Return(persistentCacheHost, true).Times(1),
+					mpr.HostManager().Return(persistentCacheHostManager).Times(1),
+					mph.Store(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, host *persistentcache.Host) {
+						assert := assert.New(t)
+						assert.Equal(host.ID, req.Host.Id)
+						assert.Equal(host.Type, pkgtypes.HostType(req.Host.Type))
+						assert.Equal(host.Hostname, req.Host.Hostname)
+						assert.Equal(host.IP, req.Host.Ip)
+						assert.Equal(host.Port, req.Host.Port)
+						assert.Equal(host.DownloadPort, req.Host.DownloadPort)
+						assert.Equal(host.DisableShared, req.Host.DisableShared)
+						assert.Equal(host.OS, req.Host.Os)
+						assert.Equal(host.Platform, req.Host.Platform)
+						assert.Equal(host.PlatformVersion, req.Host.PlatformVersion)
+						assert.Equal(host.KernelVersion, req.Host.KernelVersion)
+						assert.EqualValues(host.CPU, mockPersistentCacheCPU)
+						assert.EqualValues(host.Memory, mockPersistentCacheMemory)
+						assert.EqualValues(host.Network, mockPersistentCacheNetwork)
+						assert.EqualValues(host.Disk, mockPersistentCacheDisk)
+						assert.EqualValues(host.Build, mockPersistentCacheBuild)
+						assert.EqualValues(host.AnnounceInterval, mockPersistentCacheInterval)
+						assert.Equal(host.ConcurrentUploadLimit, int32(200))
+						assert.Equal(host.ConcurrentUploadCount, int32(0))
+						assert.Equal(host.UploadCount, int64(0))
+						assert.Equal(host.UploadFailedCount, int64(0))
+						assert.NotEqual(host.CreatedAt.Nanosecond(), 0)
+						assert.NotEqual(host.UpdatedAt.Nanosecond(), 0)
+						assert.NotNil(host.Log)
+					}).Return(nil).Times(1),
 				)
 
 				assert := assert.New(t)
@@ -866,6 +1162,260 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 				assert.NotNil(host.Log)
 			},
 		},
+		{
+			name: "host not found and persistent cache host not found, store persistent cache host failed",
+			req: &schedulerv2.AnnounceHostRequest{
+				Host: &commonv2.Host{
+					Id:              mockHostID,
+					Type:            uint32(pkgtypes.HostTypeNormal),
+					Hostname:        "hostname",
+					Ip:              "127.0.0.1",
+					Port:            8003,
+					DownloadPort:    8001,
+					DisableShared:   true,
+					Os:              "darwin",
+					Platform:        "darwin",
+					PlatformFamily:  "Standalone Workstation",
+					PlatformVersion: "11.1",
+					KernelVersion:   "20.2.0",
+					Cpu: &commonv2.CPU{
+						LogicalCount:   mockCPU.LogicalCount,
+						PhysicalCount:  mockCPU.PhysicalCount,
+						Percent:        mockCPU.Percent,
+						ProcessPercent: mockCPU.ProcessPercent,
+						Times: &commonv2.CPUTimes{
+							User:      mockCPU.Times.User,
+							System:    mockCPU.Times.System,
+							Idle:      mockCPU.Times.Idle,
+							Nice:      mockCPU.Times.Nice,
+							Iowait:    mockCPU.Times.Iowait,
+							Irq:       mockCPU.Times.Irq,
+							Softirq:   mockCPU.Times.Softirq,
+							Steal:     mockCPU.Times.Steal,
+							Guest:     mockCPU.Times.Guest,
+							GuestNice: mockCPU.Times.GuestNice,
+						},
+					},
+					Memory: &commonv2.Memory{
+						Total:              mockMemory.Total,
+						Available:          mockMemory.Available,
+						Used:               mockMemory.Used,
+						UsedPercent:        mockMemory.UsedPercent,
+						ProcessUsedPercent: mockMemory.ProcessUsedPercent,
+						Free:               mockMemory.Free,
+					},
+					Network: &commonv2.Network{
+						TcpConnectionCount:       mockNetwork.TCPConnectionCount,
+						UploadTcpConnectionCount: mockNetwork.UploadTCPConnectionCount,
+						Location:                 &mockNetwork.Location,
+						Idc:                      &mockNetwork.IDC,
+						DownloadRate:             mockNetwork.DownloadRate,
+						DownloadRateLimit:        mockNetwork.DownloadRateLimit,
+						UploadRate:               mockNetwork.UploadRate,
+						UploadRateLimit:          mockNetwork.UploadRateLimit,
+					},
+					Disk: &commonv2.Disk{
+						Total:             mockDisk.Total,
+						Free:              mockDisk.Free,
+						Used:              mockDisk.Used,
+						UsedPercent:       mockDisk.UsedPercent,
+						InodesTotal:       mockDisk.InodesTotal,
+						InodesUsed:        mockDisk.InodesUsed,
+						InodesFree:        mockDisk.InodesFree,
+						InodesUsedPercent: mockDisk.InodesUsedPercent,
+					},
+					Build: &commonv2.Build{
+						GitVersion: mockBuild.GitVersion,
+						GitCommit:  &mockBuild.GitCommit,
+						GoVersion:  &mockBuild.GoVersion,
+						Platform:   &mockBuild.Platform,
+					},
+				},
+				Interval: durationpb.New(5 * time.Minute),
+			},
+			run: func(t *testing.T, svc *V2, req *schedulerv2.AnnounceHostRequest, host *standard.Host, persistentCacheHost *persistentcache.Host, hostManager standard.HostManager, persistentCacheHostManager persistentcache.HostManager, mr *standard.MockResourceMockRecorder, mpr *persistentcache.MockResourceMockRecorder, mh *standard.MockHostManagerMockRecorder, mph *persistentcache.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				gomock.InOrder(
+					md.GetSchedulerClusterClientConfig().Return(managertypes.SchedulerClusterClientConfig{LoadLimit: 10}, nil).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Any()).Return(nil, false).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Store(gomock.Any()).Do(func(host *standard.Host) {
+						assert := assert.New(t)
+						assert.Equal(host.ID, req.Host.Id)
+						assert.Equal(host.Type, pkgtypes.HostType(req.Host.Type))
+						assert.Equal(host.Hostname, req.Host.Hostname)
+						assert.Equal(host.IP, req.Host.Ip)
+						assert.Equal(host.Port, req.Host.Port)
+						assert.Equal(host.DownloadPort, req.Host.DownloadPort)
+						assert.Equal(host.DisableShared, req.Host.DisableShared)
+						assert.Equal(host.OS, req.Host.Os)
+						assert.Equal(host.Platform, req.Host.Platform)
+						assert.Equal(host.PlatformVersion, req.Host.PlatformVersion)
+						assert.Equal(host.KernelVersion, req.Host.KernelVersion)
+						assert.EqualValues(host.CPU, mockCPU)
+						assert.EqualValues(host.Memory, mockMemory)
+						assert.EqualValues(host.Network, mockNetwork)
+						assert.EqualValues(host.Disk, mockDisk)
+						assert.EqualValues(host.Build, mockBuild)
+						assert.EqualValues(host.AnnounceInterval, mockInterval)
+						assert.Equal(host.ConcurrentUploadLimit.Load(), int32(10))
+						assert.Equal(host.ConcurrentUploadCount.Load(), int32(0))
+						assert.Equal(host.UploadCount.Load(), int64(0))
+						assert.Equal(host.UploadFailedCount.Load(), int64(0))
+						assert.NotNil(host.Peers)
+						assert.Equal(host.PeerCount.Load(), int32(0))
+						assert.NotEqual(host.CreatedAt.Load().Nanosecond(), 0)
+						assert.NotEqual(host.UpdatedAt.Load().Nanosecond(), 0)
+						assert.NotNil(host.Log)
+					}).Return().Times(1),
+					mpr.HostManager().Return(persistentCacheHostManager).Times(1),
+					mph.Load(gomock.Any(), gomock.Any()).Return(nil, false).Times(1),
+					mpr.HostManager().Return(persistentCacheHostManager).Times(1),
+					mph.Store(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, host *persistentcache.Host) {
+						assert := assert.New(t)
+						assert.Equal(host.ID, req.Host.Id)
+						assert.Equal(host.Type, pkgtypes.HostType(req.Host.Type))
+						assert.Equal(host.Hostname, req.Host.Hostname)
+						assert.Equal(host.IP, req.Host.Ip)
+						assert.Equal(host.Port, req.Host.Port)
+						assert.Equal(host.DownloadPort, req.Host.DownloadPort)
+						assert.Equal(host.DisableShared, req.Host.DisableShared)
+						assert.Equal(host.OS, req.Host.Os)
+						assert.Equal(host.Platform, req.Host.Platform)
+						assert.Equal(host.PlatformVersion, req.Host.PlatformVersion)
+						assert.Equal(host.KernelVersion, req.Host.KernelVersion)
+						assert.EqualValues(host.CPU, mockPersistentCacheCPU)
+						assert.EqualValues(host.Memory, mockPersistentCacheMemory)
+						assert.EqualValues(host.Network, mockPersistentCacheNetwork)
+						assert.EqualValues(host.Disk, mockPersistentCacheDisk)
+						assert.EqualValues(host.Build, mockPersistentCacheBuild)
+						assert.EqualValues(host.AnnounceInterval, mockPersistentCacheInterval)
+						assert.Equal(host.ConcurrentUploadLimit, int32(10))
+						assert.Equal(host.ConcurrentUploadCount, int32(0))
+						assert.Equal(host.UploadCount, int64(0))
+						assert.Equal(host.UploadFailedCount, int64(0))
+						assert.NotEqual(host.CreatedAt.Nanosecond(), 0)
+						assert.NotEqual(host.UpdatedAt.Nanosecond(), 0)
+						assert.NotNil(host.Log)
+					}).Return(errors.New("bar")).Times(1),
+				)
+
+				assert := assert.New(t)
+				assert.Error(svc.AnnounceHost(context.Background(), req))
+			},
+		},
+		{
+			name: "host already exists and persistent cache host already exists, store persistent cache host failed",
+			req: &schedulerv2.AnnounceHostRequest{
+				Host: &commonv2.Host{
+					Id:              mockHostID,
+					Type:            uint32(pkgtypes.HostTypeNormal),
+					Hostname:        "foo",
+					Ip:              "127.0.0.1",
+					Port:            8003,
+					DownloadPort:    8001,
+					DisableShared:   false,
+					Os:              "darwin",
+					Platform:        "darwin",
+					PlatformFamily:  "Standalone Workstation",
+					PlatformVersion: "11.1",
+					KernelVersion:   "20.2.0",
+					Cpu: &commonv2.CPU{
+						LogicalCount:   mockCPU.LogicalCount,
+						PhysicalCount:  mockCPU.PhysicalCount,
+						Percent:        mockCPU.Percent,
+						ProcessPercent: mockCPU.ProcessPercent,
+						Times: &commonv2.CPUTimes{
+							User:      mockCPU.Times.User,
+							System:    mockCPU.Times.System,
+							Idle:      mockCPU.Times.Idle,
+							Nice:      mockCPU.Times.Nice,
+							Iowait:    mockCPU.Times.Iowait,
+							Irq:       mockCPU.Times.Irq,
+							Softirq:   mockCPU.Times.Softirq,
+							Steal:     mockCPU.Times.Steal,
+							Guest:     mockCPU.Times.Guest,
+							GuestNice: mockCPU.Times.GuestNice,
+						},
+					},
+					Memory: &commonv2.Memory{
+						Total:              mockMemory.Total,
+						Available:          mockMemory.Available,
+						Used:               mockMemory.Used,
+						UsedPercent:        mockMemory.UsedPercent,
+						ProcessUsedPercent: mockMemory.ProcessUsedPercent,
+						Free:               mockMemory.Free,
+					},
+					Network: &commonv2.Network{
+						TcpConnectionCount:       mockNetwork.TCPConnectionCount,
+						UploadTcpConnectionCount: mockNetwork.UploadTCPConnectionCount,
+						Location:                 &mockNetwork.Location,
+						Idc:                      &mockNetwork.IDC,
+						DownloadRate:             mockNetwork.DownloadRate,
+						DownloadRateLimit:        mockNetwork.DownloadRateLimit,
+						UploadRate:               mockNetwork.UploadRate,
+						UploadRateLimit:          mockNetwork.UploadRateLimit,
+					},
+					Disk: &commonv2.Disk{
+						Total:             mockDisk.Total,
+						Free:              mockDisk.Free,
+						Used:              mockDisk.Used,
+						UsedPercent:       mockDisk.UsedPercent,
+						InodesTotal:       mockDisk.InodesTotal,
+						InodesUsed:        mockDisk.InodesUsed,
+						InodesFree:        mockDisk.InodesFree,
+						InodesUsedPercent: mockDisk.InodesUsedPercent,
+					},
+					Build: &commonv2.Build{
+						GitVersion: mockBuild.GitVersion,
+						GitCommit:  &mockBuild.GitCommit,
+						GoVersion:  &mockBuild.GoVersion,
+						Platform:   &mockBuild.Platform,
+					},
+				},
+				Interval: durationpb.New(5 * time.Minute),
+			},
+			run: func(t *testing.T, svc *V2, req *schedulerv2.AnnounceHostRequest, host *standard.Host, persistentCacheHost *persistentcache.Host, hostManager standard.HostManager, persistentCacheHostManager persistentcache.HostManager, mr *standard.MockResourceMockRecorder, mpr *persistentcache.MockResourceMockRecorder, mh *standard.MockHostManagerMockRecorder, mph *persistentcache.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				gomock.InOrder(
+					md.GetSchedulerClusterClientConfig().Return(managertypes.SchedulerClusterClientConfig{}, errors.New("foo")).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Any()).Return(host, true).Times(1),
+					mpr.HostManager().Return(persistentCacheHostManager).Times(1),
+					mph.Load(gomock.Any(), gomock.Any()).Return(persistentCacheHost, true).Times(1),
+					mpr.HostManager().Return(persistentCacheHostManager).Times(1),
+					mph.Store(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, host *persistentcache.Host) {
+						assert := assert.New(t)
+						assert.Equal(host.ID, req.Host.Id)
+						assert.Equal(host.Type, pkgtypes.HostType(req.Host.Type))
+						assert.Equal(host.Hostname, req.Host.Hostname)
+						assert.Equal(host.IP, req.Host.Ip)
+						assert.Equal(host.Port, req.Host.Port)
+						assert.Equal(host.DownloadPort, req.Host.DownloadPort)
+						assert.Equal(host.DisableShared, req.Host.DisableShared)
+						assert.Equal(host.OS, req.Host.Os)
+						assert.Equal(host.Platform, req.Host.Platform)
+						assert.Equal(host.PlatformVersion, req.Host.PlatformVersion)
+						assert.Equal(host.KernelVersion, req.Host.KernelVersion)
+						assert.EqualValues(host.CPU, mockPersistentCacheCPU)
+						assert.EqualValues(host.Memory, mockPersistentCacheMemory)
+						assert.EqualValues(host.Network, mockPersistentCacheNetwork)
+						assert.EqualValues(host.Disk, mockPersistentCacheDisk)
+						assert.EqualValues(host.Build, mockPersistentCacheBuild)
+						assert.EqualValues(host.AnnounceInterval, mockPersistentCacheInterval)
+						assert.Equal(host.ConcurrentUploadLimit, int32(200))
+						assert.Equal(host.ConcurrentUploadCount, int32(0))
+						assert.Equal(host.UploadCount, int64(0))
+						assert.Equal(host.UploadFailedCount, int64(0))
+						assert.NotEqual(host.CreatedAt.Nanosecond(), 0)
+						assert.NotEqual(host.UpdatedAt.Nanosecond(), 0)
+						assert.NotNil(host.Log)
+					}).Return(errors.New("bar")).Times(1),
+				)
+
+				assert := assert.New(t)
+				assert.Error(svc.AnnounceHost(context.Background(), req))
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -878,12 +1428,21 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			storage := storagemocks.NewMockStorage(ctl)
 			hostManager := standard.NewMockHostManager(ctl)
+			persistentcacheHostManager := persistentcache.NewMockHostManager(ctl)
 			host := standard.NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
+			persistentCacheHost := persistentcache.NewHost(
+				mockRawPersistentCacheHost.ID, mockRawPersistentCacheHost.Hostname, mockRawPersistentCacheHost.IP,
+				mockRawPersistentCacheHost.OS, mockRawPersistentCacheHost.Platform, mockRawPersistentCacheHost.PlatformFamily, mockRawPersistentCacheHost.PlatformVersion, mockRawPersistentCacheHost.KernelVersion,
+				mockRawPersistentCacheHost.Port, mockRawPersistentCacheHost.DownloadPort, mockRawPersistentCacheHost.ConcurrentUploadCount,
+				mockRawPersistentCacheHost.UploadCount, mockRawPersistentCacheHost.UploadFailedCount, mockRawPersistentCacheHost.DisableShared, pkgtypes.HostType(mockRawPersistentCacheHost.Type),
+				mockRawPersistentCacheHost.CPU, mockRawPersistentCacheHost.Memory, mockRawPersistentCacheHost.Network, mockRawPersistentCacheHost.Disk,
+				mockRawPersistentCacheHost.Build, mockRawPersistentCacheHost.AnnounceInterval, mockRawPersistentCacheHost.CreatedAt, mockRawPersistentCacheHost.UpdatedAt, mockRawHost.Log)
+
 			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, resource, persistentCacheResource, scheduling, dynconfig, storage)
 
-			tc.run(t, svc, tc.req, host, hostManager, resource.EXPECT(), hostManager.EXPECT(), dynconfig.EXPECT())
+			tc.run(t, svc, tc.req, host, persistentCacheHost, hostManager, persistentcacheHostManager, resource.EXPECT(), persistentCacheResource.EXPECT(), hostManager.EXPECT(), persistentcacheHostManager.EXPECT(), dynconfig.EXPECT())
 		})
 	}
 }
