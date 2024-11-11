@@ -408,7 +408,6 @@ func (t *hostManager) Load(ctx context.Context, hostID string) (*Host, bool) {
 		rawHost["kernel_version"],
 		int32(port),
 		int32(downloadPort),
-		int32(concurrentUploadLimit),
 		int32(concurrentUploadCount),
 		uploadCount,
 		uploadFailedCount,
@@ -423,6 +422,7 @@ func (t *hostManager) Load(ctx context.Context, hostID string) (*Host, bool) {
 		createdAt,
 		updatedAt,
 		logger.WithHost(rawHost["id"], rawHost["hostname"], rawHost["ip"]),
+		WithConcurrentUploadLimit(int32(concurrentUploadLimit)),
 	), true
 }
 

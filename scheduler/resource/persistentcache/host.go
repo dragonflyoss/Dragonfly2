@@ -21,7 +21,18 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/types"
+	"d7y.io/dragonfly/v2/scheduler/config"
 )
+
+// HostOption is a functional option for configuring the persistent cache host.
+type HostOption func(h *Host)
+
+// WithConcurrentUploadLimit sets persistent cache host's ConcurrentUploadLimit.
+func WithConcurrentUploadLimit(limit int32) HostOption {
+	return func(h *Host) {
+		h.ConcurrentUploadLimit = limit
+	}
+}
 
 // Host contains content for host.
 type Host struct {
@@ -248,11 +259,17 @@ type Disk struct {
 
 // New host instance.
 func NewHost(
-	id, hostname, ip, os, platform, platformFamily, platformVersion, kernelVersion string, port, downloadPort, concurrentUploadLimit, concurrentUploadCount int32,
+	id, hostname, ip, os, platform, platformFamily, platformVersion, kernelVersion string, port, downloadPort, concurrentUploadCount int32,
 	UploadCount, UploadFailedCount int64, disableShared bool, typ types.HostType, cpu CPU, memory Memory, network Network, disk Disk,
-	build Build, announceInterval time.Duration, createdAt, updatedAt time.Time, log *logger.SugaredLoggerOnWith,
+	build Build, announceInterval time.Duration, createdAt, updatedAt time.Time, log *logger.SugaredLoggerOnWith, options ...HostOption,
 ) *Host {
-	return &Host{
+	// Calculate default of the concurrent upload limit by host type.
+	concurrentUploadLimit := config.DefaultSeedPeerConcurrentUploadLimit
+	if typ == types.HostTypeNormal {
+		concurrentUploadLimit = config.DefaultPeerConcurrentUploadLimit
+	}
+
+	h := &Host{
 		ID:                    id,
 		Type:                  types.HostType(typ),
 		Hostname:              hostname,
@@ -271,7 +288,7 @@ func NewHost(
 		Disk:                  disk,
 		Build:                 build,
 		AnnounceInterval:      announceInterval,
-		ConcurrentUploadLimit: concurrentUploadLimit,
+		ConcurrentUploadLimit: int32(concurrentUploadLimit),
 		ConcurrentUploadCount: concurrentUploadCount,
 		UploadCount:           UploadCount,
 		UploadFailedCount:     UploadFailedCount,
@@ -279,4 +296,10 @@ func NewHost(
 		UpdatedAt:             updatedAt,
 		Log:                   logger.WithHost(id, hostname, ip),
 	}
+
+	for _, opt := range options {
+		opt(h)
+	}
+
+	return h
 }
