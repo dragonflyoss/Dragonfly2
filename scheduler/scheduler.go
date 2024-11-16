@@ -193,7 +193,11 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 
 	// Initialize persistent cache resource.
-	s.persistentCacheResource = persistentcache.New(cfg, rdb, peerClientTransportCredentials)
+	s.persistentCacheResource, err = persistentcache.New(cfg, s.gc, rdb, peerClientTransportCredentials)
+	if err != nil {
+		logger.Errorf("failed to create persistent cache resource: %v", err)
+		return nil, err
+	}
 
 	// Initialize job service.
 	if cfg.Job.Enable && rdb != nil {

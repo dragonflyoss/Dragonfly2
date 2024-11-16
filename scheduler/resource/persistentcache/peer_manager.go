@@ -58,6 +58,12 @@ type PeerManager interface {
 
 	// DeleteAllByTaskID deletes all peers by task id.
 	DeleteAllByTaskID(context.Context, string) error
+
+	// LoadAllByHostID returns all peers by host id.
+	LoadAllByHostID(context.Context, string) ([]*Peer, error)
+
+	// DeleteAllByHostID deletes all peers by host id.
+	DeleteAllByHostID(context.Context, string) error
 }
 
 // peerManager contains content for peer manager.
@@ -366,6 +372,59 @@ func (p *peerManager) DeleteAllByTaskID(ctx context.Context, taskID string) erro
 		}
 	}
 
-	p.taskManager.Delete(ctx, taskID)
+	return nil
+}
+
+// LoadAllByHostID returns all persistent cache peers by host id.
+func (p *peerManager) LoadAllByHostID(ctx context.Context, hostID string) ([]*Peer, error) {
+	log := logger.WithHostID(hostID)
+	peerIDs, err := p.rdb.SMembers(ctx, pkgredis.MakePersistentCachePeersOfPersistentCacheHostInScheduler(p.config.Manager.SchedulerClusterID, hostID)).Result()
+	if err != nil {
+		log.Error("get peer ids failed")
+		return nil, err
+	}
+
+	peers := make([]*Peer, 0, len(peerIDs))
+	for _, peerID := range peerIDs {
+		peer, loaded := p.Load(ctx, peerID)
+		if !loaded {
+			log.Errorf("load peer %s failed", peerID)
+			continue
+		}
+
+		peers = append(peers, peer)
+	}
+
+	return peers, nil
+}
+
+// DeleteAllByHostID deletes all persistent cache peers by host id.
+func (p *peerManager) DeleteAllByHostID(ctx context.Context, hostID string) error {
+	log := logger.WithTaskID(hostID)
+	peers, err := p.LoadAllByHostID(ctx, hostID)
+	if err != nil {
+		log.Error("load peers failed")
+		return err
+	}
+
+	for _, peer := range peers {
+		addr := fmt.Sprintf("%s:%d", peer.Host.IP, peer.Host.Port)
+		client, err := dfdaemonclient.GetV2ByAddr(ctx, addr, grpc.WithTransportCredentials(p.transportCredentials))
+		if err != nil {
+			log.Errorf("get dfdaemon client failed: %v", err)
+			continue
+		}
+
+		if err := client.DeletePersistentCacheTask(ctx, &dfdaemonv2.DeletePersistentCacheTaskRequest{TaskId: peer.Task.ID}); err != nil {
+			log.Errorf("delete task %s failed", peer.Task.ID)
+			continue
+		}
+
+		if err := p.Delete(ctx, peer.ID); err != nil {
+			log.Errorf("delete peer %s failed", peer.ID)
+			continue
+		}
+	}
+
 	return nil
 }
