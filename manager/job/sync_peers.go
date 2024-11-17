@@ -24,6 +24,8 @@ import (
 	"sync"
 	"time"
 
+	"gorm.io/gorm/clause"
+
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
@@ -41,8 +43,8 @@ import (
 
 // SyncPeers is an interface for sync peers.
 type SyncPeers interface {
-	// AsyncSyncPeers execute action to sync peers, which is async.
-	AsyncSyncPeers(context.Context, SyncPeersArgs) error
+	// Run execute action to sync peers, which is async.
+	Run(context.Context, SyncPeersArgs) error
 
 	// Serve started sync peers server.
 	Serve()
@@ -70,15 +72,17 @@ type SyncPeersArgs struct {
 // newSyncPeers returns a new SyncPeers.
 func newSyncPeers(cfg *config.Config, job *internaljob.Job, gdb *gorm.DB) (SyncPeers, error) {
 	return &syncPeers{
-		config: cfg,
-		db:     gdb,
-		job:    job,
-		done:   make(chan struct{}),
+		config:     cfg,
+		db:         gdb,
+		job:        job,
+		done:       make(chan struct{}),
+		workChan:   make(chan SyncPeersArgs, 10),
+		syncLocker: sync.Mutex{},
 	}, nil
 }
 
-// AsyncSyncPeers start to sync peers.
-func (s *syncPeers) AsyncSyncPeers(ctx context.Context, args SyncPeersArgs) error {
+// Run start to sync peers.
+func (s *syncPeers) Run(ctx context.Context, args SyncPeersArgs) error {
 	if len(args.CandidateSchedulerClusters) == 0 {
 		if err := s.db.WithContext(ctx).Find(&args.CandidateSchedulerClusters).Error; err != nil {
 			return fmt.Errorf("failed to get candidate scheduler clusters: %v", err)
@@ -91,14 +95,17 @@ func (s *syncPeers) AsyncSyncPeers(ctx context.Context, args SyncPeersArgs) erro
 
 // Serve started sync peers server.
 func (s *syncPeers) Serve() {
-	tick := time.NewTicker(s.config.Job.SyncPeers.Interval)
+	ticker := time.NewTicker(s.config.Job.SyncPeers.Interval)
+	defer ticker.Stop()
 	for {
 		select {
-		case <-tick.C:
+		case <-ticker.C:
+			logger.Debugf("start to sync peers periodically")
 			if err := s.syncPeers(context.Background(), nil); err != nil {
 				logger.Errorf("sync peers failed periodically: %v", err)
 			}
 		case args := <-s.workChan:
+			logger.Debugf("start to sync peers for request")
 			err := s.syncPeers(context.Background(), args.CandidateSchedulerClusters)
 			if err != nil {
 				logger.Errorf("sync peers failed for request: %v", err)
@@ -110,7 +117,7 @@ func (s *syncPeers) Serve() {
 				if err == nil {
 					state = machineryv1tasks.StateSuccess
 				}
-				if updateErr := s.db.WithContext(context.Background()).First(&job, args.TaskID).Updates(models.Job{
+				if updateErr := s.db.WithContext(context.Background()).First(&job, "task_id = ?", args.TaskID).Updates(models.Job{
 					State: state,
 				}).Error; updateErr != nil {
 					logger.Errorf("update sync peers job result failed for request: %v", updateErr)
@@ -228,76 +235,57 @@ func (s *syncPeers) mergePeers(ctx context.Context, scheduler models.Scheduler, 
 	}
 
 	// Calculate differences using diffPeers function
-	toAdd, toUpdate, toDelete := diffPeers(existingPeers, results)
+	toUpsert, toDelete := diffPeers(existingPeers, results)
 
-	// Perform database updates based on the differences
-	if err := s.db.WithContext(ctx).CreateInBatches(toAdd, s.config.Job.SyncPeers.BatchSize).Error; err != nil {
-		log.Error(err)
-	}
-
-	for _, peer := range toUpdate {
-		if err := s.db.WithContext(ctx).Model(&models.Peer{}).Where("id = ?", peer.ID).Updates(peer).Error; err != nil {
+	// Perform batch upsert
+	if len(toUpsert) > 0 {
+		// Construct the upsert query
+		if err := s.db.WithContext(ctx).
+			Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "id"}},
+				UpdateAll: true,
+			}).
+			CreateInBatches(toUpsert, s.config.Job.SyncPeers.BatchSize).
+			Error; err != nil {
 			log.Error(err)
 		}
 	}
 
-	for _, peer := range toDelete {
-		if err := s.db.WithContext(ctx).Unscoped().Delete(&models.Peer{}, peer.ID).Error; err != nil {
+	// Perform batch delete
+	if len(toDelete) > 0 {
+		if err := s.db.WithContext(ctx).
+			Delete(&toDelete).
+			Error; err != nil {
 			log.Error(err)
 		}
 	}
 }
 
-func diffPeers(existingPeers []models.Peer, currentPeers []*resource.Host) (toAdd, toUpdate, toDelete []models.Peer) {
+func diffPeers(existingPeers []models.Peer, currentPeers []*resource.Host) (toUpsert, toDelete []models.Peer) {
 	// Convert current peers to a map for quick lookup
 	currentPeersMap := lo.KeyBy[string, *resource.Host](currentPeers, func(item *resource.Host) string {
 		return item.ID
 	})
 
-	// // Convert existing peers to a map for quick lookup
+	// Convert existing peers to a map for quick lookup
 	existingPeersMap := lo.KeyBy[string, models.Peer](existingPeers, func(item models.Peer) string {
 		return idgen.HostIDV2(item.IP, item.Hostname, types.ParseHostType(item.Type) != types.HostTypeNormal)
 	})
 
 	// Calculate differences
 	for id, currentPeer := range currentPeersMap {
-		if existingPeer, ok := existingPeersMap[id]; ok {
-			// Peer exists in both, check if it needs to be updated
-			if !isPeerEqual(existingPeer, *currentPeer) {
-				toUpdate = append(toUpdate, convertToModelPeer(*currentPeer))
-			}
+		if _, ok := existingPeersMap[id]; ok {
 			// Remove from existingPeersMap to mark it as processed
 			delete(existingPeersMap, id)
-		} else {
-			// Peer exists in currentPeers but not in existingPeers, add it
-			toAdd = append(toAdd, convertToModelPeer(*currentPeer))
 		}
+		// Add all current peers to upsert list
+		toUpsert = append(toUpsert, convertToModelPeer(*currentPeer))
 	}
 
 	// Peers left in existingPeersMap are to be deleted
 	toDelete = lo.Values(existingPeersMap)
 
-	return toAdd, toUpdate, lo.Values(existingPeersMap)
-}
-
-// Helper function to check if two peers are equal
-func isPeerEqual(peer models.Peer, currentPeer resource.Host) bool {
-	// Implement the equality check based on your requirements
-	// For example, compare all fields that should be considered for equality
-	return peer.Type == currentPeer.Type.Name() &&
-		peer.IDC == currentPeer.Network.IDC &&
-		peer.Location == currentPeer.Network.Location &&
-		peer.Port == currentPeer.Port &&
-		peer.DownloadPort == currentPeer.DownloadPort &&
-		peer.ObjectStoragePort == currentPeer.ObjectStoragePort &&
-		peer.OS == currentPeer.OS &&
-		peer.Platform == currentPeer.Platform &&
-		peer.PlatformFamily == currentPeer.PlatformFamily &&
-		peer.PlatformVersion == currentPeer.PlatformVersion &&
-		peer.KernelVersion == currentPeer.KernelVersion &&
-		peer.GitVersion == currentPeer.Build.GitVersion &&
-		peer.GitCommit == currentPeer.Build.GitCommit &&
-		peer.BuildPlatform == currentPeer.Build.Platform
+	return toUpsert, toDelete
 }
 
 // Helper function to convert resource.Host to models.Peer

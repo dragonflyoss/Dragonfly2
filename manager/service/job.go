@@ -18,9 +18,10 @@ package service
 
 import (
 	"context"
-	"d7y.io/dragonfly/v2/manager/job"
 	"errors"
 	"fmt"
+
+	"d7y.io/dragonfly/v2/manager/job"
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/google/uuid"
 
@@ -36,6 +37,11 @@ import (
 )
 
 func (s *service) CreateSyncPeersJob(ctx context.Context, json types.CreateSyncPeersJobRequest) (*models.Job, error) {
+	args, err := structure.StructToMap(json)
+	if err != nil {
+		return nil, err
+	}
+
 	candidateSchedulers, err := s.findCandidateSchedulers(ctx, json.SchedulerClusterIDs, nil)
 	if err != nil {
 		return nil, err
@@ -48,7 +54,7 @@ func (s *service) CreateSyncPeersJob(ctx context.Context, json types.CreateSyncP
 
 	taskID := fmt.Sprintf("manager_%v", uuid.New().String())
 
-	if err = s.job.SyncPeers.AsyncSyncPeers(ctx, job.SyncPeersArgs{
+	if err = s.job.SyncPeers.Run(ctx, job.SyncPeersArgs{
 		CandidateSchedulerClusters: candidateClusters,
 		TaskID:                     taskID,
 	}); err != nil {
@@ -59,6 +65,7 @@ func (s *service) CreateSyncPeersJob(ctx context.Context, json types.CreateSyncP
 	job := models.Job{
 		TaskID:            taskID,
 		BIO:               json.BIO,
+		Args:              args,
 		Type:              json.Type,
 		State:             machineryv1tasks.StateStarted,
 		UserID:            json.UserID,

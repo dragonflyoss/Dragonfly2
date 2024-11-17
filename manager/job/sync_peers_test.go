@@ -17,13 +17,14 @@
 package job
 
 import (
+	"sort"
+	"testing"
+
 	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/types"
 	resource "d7y.io/dragonfly/v2/scheduler/resource/standard"
 	"github.com/stretchr/testify/assert"
-	"sort"
-	"testing"
 )
 
 func Test_diffPeers(t *testing.T) {
@@ -34,8 +35,7 @@ func Test_diffPeers(t *testing.T) {
 	tests := []struct {
 		name         string
 		args         args
-		wantToAdd    []models.Peer
-		wantToUpdate []models.Peer
+		wantToUpsert []models.Peer
 		wantToDelete []models.Peer
 	}{
 		{
@@ -77,12 +77,10 @@ func Test_diffPeers(t *testing.T) {
 						types.HostTypeSuperSeed), // append only
 				},
 			},
-			wantToAdd: []models.Peer{
-				generateModePeer("127.0.0.3", "foo3", 80, 80, types.HostTypeSuperSeed),
-			},
-			wantToUpdate: []models.Peer{
+			wantToUpsert: []models.Peer{
 				generateModePeer("127.0.0.1", "foo1", 80, 80, types.HostTypeSuperSeed),
 				generateModePeer("127.0.0.2", "foo2", 80, 80, types.HostTypeSuperSeed),
+				generateModePeer("127.0.0.3", "foo3", 80, 80, types.HostTypeSuperSeed),
 			},
 			wantToDelete: []models.Peer{
 				generateModePeer("127.0.0.4", "foo4", 80, 80, types.HostTypeNormal),
@@ -93,19 +91,15 @@ func Test_diffPeers(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotToAdd, gotToUpdate, gotToDelete := diffPeers(tt.args.existingPeers, tt.args.currentPeers)
+			gotToUpdate, gotToDelete := diffPeers(tt.args.existingPeers, tt.args.currentPeers)
 			// sort the result to compare
-			sort.Slice(gotToAdd, func(i, j int) bool {
-				return gotToAdd[i].IP < gotToAdd[j].IP
-			})
 			sort.Slice(gotToUpdate, func(i, j int) bool {
 				return gotToUpdate[i].IP < gotToUpdate[j].IP
 			})
 			sort.Slice(gotToDelete, func(i, j int) bool {
 				return gotToDelete[i].IP < gotToDelete[j].IP
 			})
-			assert.Equalf(t, tt.wantToAdd, gotToAdd, "diffPeers toAdd(%v, %v)", tt.args.existingPeers, tt.args.currentPeers)
-			assert.Equalf(t, tt.wantToUpdate, gotToUpdate, "diffPeers toUpdate(%v, %v)", tt.args.existingPeers, tt.args.currentPeers)
+			assert.Equalf(t, tt.wantToUpsert, gotToUpdate, "diffPeers toUpsert(%v, %v)", tt.args.existingPeers, tt.args.currentPeers)
 			assert.Equalf(t, tt.wantToDelete, gotToDelete, "diffPeers toDelete(%v, %v)", tt.args.existingPeers, tt.args.currentPeers)
 		})
 	}

@@ -71,14 +71,14 @@ func newMysql(cfg *config.Config) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	// AsyncSyncPeers migration.
+	// Run migration.
 	if mysqlCfg.Migrate {
 		if err := migrate(db); err != nil {
 			return nil, err
 		}
 	}
 
-	// AsyncSyncPeers seed.
+	// Run seed.
 	if err := seed(db); err != nil {
 		return nil, err
 	}

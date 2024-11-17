@@ -41,18 +41,18 @@ func (m *MockSyncPeers) EXPECT() *MockSyncPeersMockRecorder {
 	return m.recorder
 }
 
-// AsyncSyncPeers mocks base method.
-func (m *MockSyncPeers) AsyncSyncPeers(arg0 context.Context, arg1 job.SyncPeersArgs) error {
+// Run mocks base method.
+func (m *MockSyncPeers) Run(arg0 context.Context, arg1 job.SyncPeersArgs) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AsyncSyncPeers", arg0, arg1)
+	ret := m.ctrl.Call(m, "Run", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// AsyncSyncPeers indicates an expected call of AsyncSyncPeers.
-func (mr *MockSyncPeersMockRecorder) AsyncSyncPeers(arg0, arg1 any) *gomock.Call {
+// Run indicates an expected call of Run.
+func (mr *MockSyncPeersMockRecorder) Run(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsyncSyncPeers", reflect.TypeOf((*MockSyncPeers)(nil).AsyncSyncPeers), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockSyncPeers)(nil).Run), arg0, arg1)
 }
 
 // Serve mocks base method.
