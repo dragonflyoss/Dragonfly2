@@ -30,7 +30,6 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/resource/standard"
 	"d7y.io/dragonfly/v2/scheduler/scheduling"
 	"d7y.io/dragonfly/v2/scheduler/service"
-	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
 // schedulerServerV2 is v2 version of the scheduler grpc server.
@@ -46,9 +45,8 @@ func newSchedulerServerV2(
 	persistentCacheResource persistentcache.Resource,
 	scheduling scheduling.Scheduling,
 	dynconfig config.DynconfigInterface,
-	storage storage.Storage,
 ) schedulerv2.SchedulerServer {
-	return &schedulerServerV2{service.NewV2(cfg, resource, persistentCacheResource, scheduling, dynconfig, storage)}
+	return &schedulerServerV2{service.NewV2(cfg, resource, persistentCacheResource, scheduling, dynconfig)}
 }
 
 // AnnouncePeer announces peer to scheduler.

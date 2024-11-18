@@ -682,6 +682,8 @@ func ConstructSuccessNormalTaskResponse(candidateParents []*resource.Peer) *sche
 				InodesUsed:        candidateParent.Host.Disk.InodesUsed,
 				InodesFree:        candidateParent.Host.Disk.InodesFree,
 				InodesUsedPercent: candidateParent.Host.Disk.InodesUsedPercent,
+				WriteBandwidth:    candidateParent.Host.Disk.WriteBandwidth,
+				ReadBandwidth:     candidateParent.Host.Disk.ReadBandwidth,
 			},
 			Build: &commonv2.Build{
 				GitVersion: candidateParent.Host.Build.GitVersion,

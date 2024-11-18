@@ -51,7 +51,6 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/resource/persistentcache"
 	"d7y.io/dragonfly/v2/scheduler/resource/standard"
 	schedulingmocks "d7y.io/dragonfly/v2/scheduler/scheduling/mocks"
-	storagemocks "d7y.io/dragonfly/v2/scheduler/storage/mocks"
 )
 
 var (
@@ -251,9 +250,8 @@ func TestService_NewV2(t *testing.T) {
 			resource := standard.NewMockResource(ctl)
 			persistentCacheResource := persistentcache.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			storage := storagemocks.NewMockStorage(ctl)
 
-			tc.expect(t, NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig, storage))
+			tc.expect(t, NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig))
 		})
 	}
 }
@@ -423,14 +421,14 @@ func TestServiceV2_StatPeer(t *testing.T) {
 			resource := standard.NewMockResource(ctl)
 			persistentCacheResource := persistentcache.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			storage := storagemocks.NewMockStorage(ctl)
+
 			peerManager := standard.NewMockPeerManager(ctl)
 			mockHost := standard.NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest), standard.WithPieceLength(mockTaskPieceLength))
 			peer := standard.NewPeer(mockSeedPeerID, mockTask, mockHost, standard.WithRange(mockPeerRange))
-			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, resource, persistentCacheResource, scheduling, dynconfig, storage)
+			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, resource, persistentCacheResource, scheduling, dynconfig)
 
 			tc.mock(peer, peerManager, resource.EXPECT(), peerManager.EXPECT())
 			resp, err := svc.StatPeer(context.Background(), &schedulerv2.StatPeerRequest{TaskId: mockTaskID, PeerId: mockPeerID})
@@ -495,14 +493,13 @@ func TestServiceV2_DeletePeer(t *testing.T) {
 			resource := standard.NewMockResource(ctl)
 			persistentCacheResource := persistentcache.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			storage := storagemocks.NewMockStorage(ctl)
 			peerManager := standard.NewMockPeerManager(ctl)
 			mockHost := standard.NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest), standard.WithPieceLength(mockTaskPieceLength))
 			peer := standard.NewPeer(mockSeedPeerID, mockTask, mockHost, standard.WithRange(mockPeerRange))
-			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, resource, persistentCacheResource, scheduling, dynconfig, storage)
+			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, resource, persistentCacheResource, scheduling, dynconfig)
 
 			tc.mock(peer, peerManager, resource.EXPECT(), peerManager.EXPECT())
 			tc.expect(t, svc.DeletePeer(context.Background(), &schedulerv2.DeletePeerRequest{TaskId: mockTaskID, PeerId: mockPeerID}))
@@ -584,10 +581,10 @@ func TestServiceV2_StatTask(t *testing.T) {
 			resource := standard.NewMockResource(ctl)
 			persistentCacheResource := persistentcache.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			storage := storagemocks.NewMockStorage(ctl)
+
 			taskManager := standard.NewMockTaskManager(ctl)
 			task := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest), standard.WithPieceLength(mockTaskPieceLength))
-			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, resource, persistentCacheResource, scheduling, dynconfig, storage)
+			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, resource, persistentCacheResource, scheduling, dynconfig)
 
 			tc.mock(task, taskManager, resource.EXPECT(), taskManager.EXPECT())
 			resp, err := svc.StatTask(context.Background(), &schedulerv2.StatTaskRequest{TaskId: mockTaskID})
@@ -1426,7 +1423,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 			resource := standard.NewMockResource(ctl)
 			persistentCacheResource := persistentcache.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			storage := storagemocks.NewMockStorage(ctl)
+
 			hostManager := standard.NewMockHostManager(ctl)
 			persistentcacheHostManager := persistentcache.NewMockHostManager(ctl)
 			host := standard.NewHost(
@@ -1440,7 +1437,7 @@ func TestServiceV2_AnnounceHost(t *testing.T) {
 				mockRawPersistentCacheHost.CPU, mockRawPersistentCacheHost.Memory, mockRawPersistentCacheHost.Network, mockRawPersistentCacheHost.Disk,
 				mockRawPersistentCacheHost.Build, mockRawPersistentCacheHost.AnnounceInterval, mockRawPersistentCacheHost.CreatedAt, mockRawPersistentCacheHost.UpdatedAt, mockRawHost.Log)
 
-			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, resource, persistentCacheResource, scheduling, dynconfig, storage)
+			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, resource, persistentCacheResource, scheduling, dynconfig)
 
 			tc.run(t, svc, tc.req, host, persistentCacheHost, hostManager, persistentcacheHostManager, resource.EXPECT(), persistentCacheResource.EXPECT(), hostManager.EXPECT(), persistentcacheHostManager.EXPECT(), dynconfig.EXPECT())
 		})
@@ -1555,12 +1552,12 @@ func TestServiceV2_ListHosts(t *testing.T) {
 			resource := standard.NewMockResource(ctl)
 			persistentCacheResource := persistentcache.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			storage := storagemocks.NewMockStorage(ctl)
+
 			hostManager := standard.NewMockHostManager(ctl)
 			host := standard.NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname, mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type,
 				standard.WithCPU(mockCPU), standard.WithMemory(mockMemory), standard.WithNetwork(mockNetwork), standard.WithDisk(mockDisk), standard.WithBuild(mockBuild))
-			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, resource, persistentCacheResource, scheduling, dynconfig, storage)
+			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, resource, persistentCacheResource, scheduling, dynconfig)
 
 			tc.mock(host, hostManager, resource.EXPECT(), hostManager.EXPECT())
 			resp, err := svc.ListHosts(context.Background())
@@ -1627,14 +1624,14 @@ func TestServiceV2_DeleteHost(t *testing.T) {
 			resource := standard.NewMockResource(ctl)
 			persistentCacheResource := persistentcache.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			storage := storagemocks.NewMockStorage(ctl)
+
 			hostManager := standard.NewMockHostManager(ctl)
 			host := standard.NewHost(
 				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest), standard.WithPieceLength(mockTaskPieceLength))
 			mockPeer := standard.NewPeer(mockSeedPeerID, mockTask, host)
-			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, resource, persistentCacheResource, scheduling, dynconfig, storage)
+			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig, Metrics: config.MetricsConfig{EnableHost: true}}, resource, persistentCacheResource, scheduling, dynconfig)
 
 			tc.mock(host, mockPeer, hostManager, resource.EXPECT(), hostManager.EXPECT())
 			tc.expect(t, mockPeer, svc.DeleteHost(context.Background(), &schedulerv2.DeleteHostRequest{HostId: mockHostID}))
@@ -1925,7 +1922,7 @@ func TestServiceV2_handleRegisterPeerRequest(t *testing.T) {
 			resource := standard.NewMockResource(ctl)
 			persistentCacheResource := persistentcache.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			storage := storagemocks.NewMockStorage(ctl)
+
 			hostManager := standard.NewMockHostManager(ctl)
 			peerManager := standard.NewMockPeerManager(ctl)
 			taskManager := standard.NewMockTaskManager(ctl)
@@ -1937,7 +1934,7 @@ func TestServiceV2_handleRegisterPeerRequest(t *testing.T) {
 			mockTask := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest), standard.WithPieceLength(mockTaskPieceLength))
 			peer := standard.NewPeer(mockPeerID, mockTask, mockHost)
 			seedPeer := standard.NewPeer(mockSeedPeerID, mockTask, mockHost)
-			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig, storage)
+			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig)
 
 			tc.run(t, svc, tc.req, peer, seedPeer, hostManager, taskManager, peerManager, stream, resource.EXPECT(), hostManager.EXPECT(), taskManager.EXPECT(), peerManager.EXPECT(), stream.EXPECT(), scheduling.EXPECT())
 		})
@@ -2022,7 +2019,7 @@ func TestServiceV2_handleDownloadPeerStartedRequest(t *testing.T) {
 			resource := standard.NewMockResource(ctl)
 			persistentCacheResource := persistentcache.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			storage := storagemocks.NewMockStorage(ctl)
+
 			peerManager := standard.NewMockPeerManager(ctl)
 
 			mockHost := standard.NewHost(
@@ -2030,7 +2027,7 @@ func TestServiceV2_handleDownloadPeerStartedRequest(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest), standard.WithPieceLength(mockTaskPieceLength))
 			peer := standard.NewPeer(mockPeerID, mockTask, mockHost)
-			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig, storage)
+			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig)
 
 			tc.run(t, svc, peer, peerManager, resource.EXPECT(), peerManager.EXPECT(), dynconfig.EXPECT())
 		})
@@ -2115,7 +2112,7 @@ func TestServiceV2_handleDownloadPeerBackToSourceStartedRequest(t *testing.T) {
 			resource := standard.NewMockResource(ctl)
 			persistentCacheResource := persistentcache.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			storage := storagemocks.NewMockStorage(ctl)
+
 			peerManager := standard.NewMockPeerManager(ctl)
 
 			mockHost := standard.NewHost(
@@ -2123,7 +2120,7 @@ func TestServiceV2_handleDownloadPeerBackToSourceStartedRequest(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest), standard.WithPieceLength(mockTaskPieceLength))
 			peer := standard.NewPeer(mockPeerID, mockTask, mockHost)
-			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig, storage)
+			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig)
 
 			tc.run(t, svc, peer, peerManager, resource.EXPECT(), peerManager.EXPECT(), dynconfig.EXPECT())
 		})
@@ -2187,7 +2184,7 @@ func TestServiceV2_handleRescheduleRequest(t *testing.T) {
 			resource := standard.NewMockResource(ctl)
 			persistentCacheResource := persistentcache.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			storage := storagemocks.NewMockStorage(ctl)
+
 			peerManager := standard.NewMockPeerManager(ctl)
 
 			mockHost := standard.NewHost(
@@ -2195,7 +2192,7 @@ func TestServiceV2_handleRescheduleRequest(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest), standard.WithPieceLength(mockTaskPieceLength))
 			peer := standard.NewPeer(mockPeerID, mockTask, mockHost)
-			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig, storage)
+			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig)
 
 			tc.run(t, svc, peer, peerManager, resource.EXPECT(), peerManager.EXPECT(), scheduling.EXPECT())
 		})
@@ -2261,7 +2258,7 @@ func TestServiceV2_handleDownloadPeerFinishedRequest(t *testing.T) {
 			resource := standard.NewMockResource(ctl)
 			persistentCacheResource := persistentcache.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			storage := storagemocks.NewMockStorage(ctl)
+
 			peerManager := standard.NewMockPeerManager(ctl)
 
 			mockHost := standard.NewHost(
@@ -2269,7 +2266,7 @@ func TestServiceV2_handleDownloadPeerFinishedRequest(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest), standard.WithPieceLength(mockTaskPieceLength))
 			peer := standard.NewPeer(mockPeerID, mockTask, mockHost)
-			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig, storage)
+			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig)
 
 			tc.run(t, svc, peer, peerManager, resource.EXPECT(), peerManager.EXPECT(), dynconfig.EXPECT())
 		})
@@ -2443,7 +2440,7 @@ func TestServiceV2_handleDownloadPeerBackToSourceFinishedRequest(t *testing.T) {
 			resource := standard.NewMockResource(ctl)
 			persistentCacheResource := persistentcache.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			storage := storagemocks.NewMockStorage(ctl)
+
 			peerManager := standard.NewMockPeerManager(ctl)
 
 			url, err := url.Parse(s.URL)
@@ -2469,7 +2466,7 @@ func TestServiceV2_handleDownloadPeerBackToSourceFinishedRequest(t *testing.T) {
 
 			mockTask := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest), standard.WithPieceLength(mockTaskPieceLength))
 			peer := standard.NewPeer(mockPeerID, mockTask, mockHost)
-			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig, storage)
+			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig)
 
 			tc.run(t, svc, tc.req, peer, peerManager, resource.EXPECT(), peerManager.EXPECT(), dynconfig.EXPECT())
 		})
@@ -2534,7 +2531,7 @@ func TestServiceV2_handleDownloadPeerFailedRequest(t *testing.T) {
 			resource := standard.NewMockResource(ctl)
 			persistentCacheResource := persistentcache.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			storage := storagemocks.NewMockStorage(ctl)
+
 			peerManager := standard.NewMockPeerManager(ctl)
 
 			mockHost := standard.NewHost(
@@ -2542,7 +2539,7 @@ func TestServiceV2_handleDownloadPeerFailedRequest(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest), standard.WithPieceLength(mockTaskPieceLength))
 			peer := standard.NewPeer(mockPeerID, mockTask, mockHost)
-			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig, storage)
+			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig)
 
 			tc.run(t, svc, peer, peerManager, resource.EXPECT(), peerManager.EXPECT(), dynconfig.EXPECT())
 		})
@@ -2654,7 +2651,7 @@ func TestServiceV2_handleDownloadPeerBackToSourceFailedRequest(t *testing.T) {
 			resource := standard.NewMockResource(ctl)
 			persistentCacheResource := persistentcache.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			storage := storagemocks.NewMockStorage(ctl)
+
 			peerManager := standard.NewMockPeerManager(ctl)
 
 			mockHost := standard.NewHost(
@@ -2662,7 +2659,7 @@ func TestServiceV2_handleDownloadPeerBackToSourceFailedRequest(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest), standard.WithPieceLength(mockTaskPieceLength))
 			peer := standard.NewPeer(mockPeerID, mockTask, mockHost)
-			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig, storage)
+			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig)
 
 			tc.run(t, svc, peer, peerManager, resource.EXPECT(), peerManager.EXPECT(), dynconfig.EXPECT())
 		})
@@ -2813,7 +2810,7 @@ func TestServiceV2_handleDownloadPieceFinishedRequest(t *testing.T) {
 			resource := standard.NewMockResource(ctl)
 			persistentCacheResource := persistentcache.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			storage := storagemocks.NewMockStorage(ctl)
+
 			peerManager := standard.NewMockPeerManager(ctl)
 
 			mockHost := standard.NewHost(
@@ -2821,7 +2818,7 @@ func TestServiceV2_handleDownloadPieceFinishedRequest(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest), standard.WithPieceLength(mockTaskPieceLength))
 			peer := standard.NewPeer(mockPeerID, mockTask, mockHost)
-			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig, storage)
+			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig)
 
 			tc.run(t, svc, tc.req, peer, peerManager, resource.EXPECT(), peerManager.EXPECT())
 		})
@@ -2939,7 +2936,7 @@ func TestServiceV2_handleDownloadPieceBackToSourceFinishedRequest(t *testing.T) 
 			resource := standard.NewMockResource(ctl)
 			persistentCacheResource := persistentcache.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			storage := storagemocks.NewMockStorage(ctl)
+
 			peerManager := standard.NewMockPeerManager(ctl)
 
 			mockHost := standard.NewHost(
@@ -2947,7 +2944,7 @@ func TestServiceV2_handleDownloadPieceBackToSourceFinishedRequest(t *testing.T) 
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest), standard.WithPieceLength(mockTaskPieceLength))
 			peer := standard.NewPeer(mockPeerID, mockTask, mockHost)
-			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig, storage)
+			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig)
 
 			tc.run(t, svc, tc.req, peer, peerManager, resource.EXPECT(), peerManager.EXPECT())
 		})
@@ -3050,7 +3047,7 @@ func TestServiceV2_handleDownloadPieceFailedRequest(t *testing.T) {
 			resource := standard.NewMockResource(ctl)
 			persistentCacheResource := persistentcache.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			storage := storagemocks.NewMockStorage(ctl)
+
 			peerManager := standard.NewMockPeerManager(ctl)
 
 			mockHost := standard.NewHost(
@@ -3058,7 +3055,7 @@ func TestServiceV2_handleDownloadPieceFailedRequest(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest), standard.WithPieceLength(mockTaskPieceLength))
 			peer := standard.NewPeer(mockPeerID, mockTask, mockHost)
-			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig, storage)
+			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig)
 
 			tc.run(t, svc, tc.req, peer, peerManager, resource.EXPECT(), peerManager.EXPECT())
 		})
@@ -3116,7 +3113,7 @@ func TestServiceV2_handleDownloadPieceBackToSourceFailedRequest(t *testing.T) {
 			resource := standard.NewMockResource(ctl)
 			persistentCacheResource := persistentcache.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			storage := storagemocks.NewMockStorage(ctl)
+
 			peerManager := standard.NewMockPeerManager(ctl)
 
 			mockHost := standard.NewHost(
@@ -3124,7 +3121,7 @@ func TestServiceV2_handleDownloadPieceBackToSourceFailedRequest(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest), standard.WithPieceLength(mockTaskPieceLength))
 			peer := standard.NewPeer(mockPeerID, mockTask, mockHost)
-			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig, storage)
+			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig)
 
 			tc.run(t, svc, tc.req, peer, peerManager, resource.EXPECT(), peerManager.EXPECT())
 		})
@@ -3327,7 +3324,7 @@ func TestServiceV2_handleResource(t *testing.T) {
 			resource := standard.NewMockResource(ctl)
 			persistentCacheResource := persistentcache.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			storage := storagemocks.NewMockStorage(ctl)
+
 			hostManager := standard.NewMockHostManager(ctl)
 			taskManager := standard.NewMockTaskManager(ctl)
 			peerManager := standard.NewMockPeerManager(ctl)
@@ -3338,7 +3335,7 @@ func TestServiceV2_handleResource(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest), standard.WithPieceLength(mockTaskPieceLength))
 			mockPeer := standard.NewPeer(mockPeerID, mockTask, mockHost)
-			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig, storage)
+			svc := NewV2(&config.Config{Scheduler: mockSchedulerConfig}, resource, persistentCacheResource, scheduling, dynconfig)
 
 			tc.run(t, svc, tc.download, stream, mockHost, mockTask, mockPeer, hostManager, taskManager, peerManager, resource.EXPECT(), hostManager.EXPECT(), taskManager.EXPECT(), peerManager.EXPECT())
 		})
@@ -3607,7 +3604,7 @@ func TestServiceV2_downloadTaskBySeedPeer(t *testing.T) {
 			resource := standard.NewMockResource(ctl)
 			persistentCacheResource := persistentcache.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			storage := storagemocks.NewMockStorage(ctl)
+
 			seedPeerClient := standard.NewMockSeedPeer(ctl)
 
 			mockHost := standard.NewHost(
@@ -3615,7 +3612,7 @@ func TestServiceV2_downloadTaskBySeedPeer(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.Type)
 			mockTask := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest), standard.WithPieceLength(mockTaskPieceLength))
 			peer := standard.NewPeer(mockPeerID, mockTask, mockHost)
-			svc := NewV2(&tc.config, resource, persistentCacheResource, scheduling, dynconfig, storage)
+			svc := NewV2(&tc.config, resource, persistentCacheResource, scheduling, dynconfig)
 
 			tc.run(t, svc, peer, seedPeerClient, resource.EXPECT(), seedPeerClient.EXPECT())
 		})

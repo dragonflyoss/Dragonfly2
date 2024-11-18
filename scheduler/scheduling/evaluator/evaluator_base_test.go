@@ -123,6 +123,8 @@ var (
 		InodesUsed:        7835772,
 		InodesFree:        4874617108,
 		InodesUsedPercent: 0.1604884305611568,
+		WriteBandwidth:    1,
+		ReadBandwidth:     1,
 	}
 
 	mockBuild = resource.Build{

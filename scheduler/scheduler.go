@@ -46,7 +46,6 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/resource/standard"
 	"d7y.io/dragonfly/v2/scheduler/rpcserver"
 	"d7y.io/dragonfly/v2/scheduler/scheduling"
-	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
 const (
@@ -81,9 +80,6 @@ type Server struct {
 	// Async job.
 	job job.Job
 
-	// Storage interface.
-	storage storage.Storage
-
 	// Announcer interface.
 	announcer announcer.Announcer
 
@@ -94,18 +90,6 @@ type Server struct {
 // New creates a new scheduler server.
 func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	s := &Server{config: cfg}
-
-	// Initialize Storage.
-	storage, err := storage.New(
-		d.DataDir(),
-		cfg.Storage.MaxSize,
-		cfg.Storage.MaxBackups,
-		cfg.Storage.BufferSize,
-	)
-	if err != nil {
-		return nil, err
-	}
-	s.storage = storage
 
 	// Initialize dial options of manager grpc client.
 	managerDialOptions := []grpc.DialOption{grpc.WithStatsHandler(otelgrpc.NewClientHandler())}
@@ -149,7 +133,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	if cfg.Job.Enable && rdb != nil {
 		schedulerFeatures = append(schedulerFeatures, managertypes.SchedulerFeaturePreheat)
 	}
-	announcer, err := announcer.New(cfg, s.managerClient, storage, schedulerFeatures)
+	announcer, err := announcer.New(cfg, s.managerClient, schedulerFeatures)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +210,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		schedulerServerOptions = append(schedulerServerOptions, grpc.Creds(rpc.NewInsecureCredentials()))
 	}
 
-	svr := rpcserver.New(cfg, resource, s.persistentCacheResource, scheduling, dynconfig, s.storage, schedulerServerOptions...)
+	svr := rpcserver.New(cfg, resource, s.persistentCacheResource, scheduling, dynconfig, schedulerServerOptions...)
 	s.grpcServer = svr
 
 	// Initialize metrics.
@@ -314,13 +298,6 @@ func (s *Server) Stop() {
 		logger.Errorf("stop resource failed %s", err.Error())
 	} else {
 		logger.Info("stop resource closed")
-	}
-
-	// Clean download storage.
-	if err := s.storage.ClearDownload(); err != nil {
-		logger.Errorf("clean download storage failed %s", err.Error())
-	} else {
-		logger.Info("clean download storage completed")
 	}
 
 	// Stop GC.
