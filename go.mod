@@ -23,7 +23,7 @@ require (
 	github.com/docker/go-connections v0.5.0
 	github.com/docker/go-units v0.4.0
 	github.com/gaius-qi/ping v1.0.0
-	github.com/gammazero/deque v0.2.1
+	github.com/gammazero/deque v1.0.0
 	github.com/gin-contrib/gzip v1.0.1
 	github.com/gin-contrib/static v1.1.2
 	github.com/gin-contrib/zap v1.1.3
@@ -34,7 +34,6 @@ require (
 	github.com/go-redis/cache/v9 v9.0.0
 	github.com/go-redsync/redsync/v4 v4.8.1
 	github.com/go-sql-driver/mysql v1.7.0
-	github.com/gocarina/gocsv v0.0.0-20221105105431-c8ef78125b99
 	github.com/gofrs/flock v0.8.1
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/gomodule/redigo v2.0.0+incompatible
