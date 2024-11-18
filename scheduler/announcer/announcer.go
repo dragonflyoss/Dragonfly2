@@ -26,7 +26,6 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
 // Announcer is the interface used for announce service.
@@ -42,7 +41,6 @@ type Announcer interface {
 type announcer struct {
 	config        *config.Config
 	managerClient managerclient.V2
-	storage       storage.Storage
 	done          chan struct{}
 }
 
@@ -50,11 +48,10 @@ type announcer struct {
 type Option func(s *announcer)
 
 // New returns a new Announcer interface.
-func New(cfg *config.Config, managerClient managerclient.V2, storage storage.Storage, schedulerFeatures []string, options ...Option) (Announcer, error) {
+func New(cfg *config.Config, managerClient managerclient.V2, schedulerFeatures []string, options ...Option) (Announcer, error) {
 	a := &announcer{
 		config:        cfg,
 		managerClient: managerClient,
-		storage:       storage,
 		done:          make(chan struct{}),
 	}
 

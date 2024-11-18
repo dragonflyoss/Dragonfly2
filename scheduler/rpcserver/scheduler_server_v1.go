@@ -31,7 +31,6 @@ import (
 	resource "d7y.io/dragonfly/v2/scheduler/resource/standard"
 	"d7y.io/dragonfly/v2/scheduler/scheduling"
 	"d7y.io/dragonfly/v2/scheduler/service"
-	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
 // schedulerServerV1 is v1 version of the scheduler grpc server.
@@ -46,9 +45,8 @@ func newSchedulerServerV1(
 	resource resource.Resource,
 	scheduling scheduling.Scheduling,
 	dynconfig config.DynconfigInterface,
-	storage storage.Storage,
 ) schedulerv1.SchedulerServer {
-	return &schedulerServerV1{service.NewV1(cfg, resource, scheduling, dynconfig, storage)}
+	return &schedulerServerV1{service.NewV1(cfg, resource, scheduling, dynconfig)}
 }
 
 // RegisterPeerTask registers peer and triggers seed peer download task.

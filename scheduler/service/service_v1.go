@@ -46,7 +46,6 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/metrics"
 	resource "d7y.io/dragonfly/v2/scheduler/resource/standard"
 	"d7y.io/dragonfly/v2/scheduler/scheduling"
-	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
 // V1 is the interface for v1 version of the service.
@@ -62,9 +61,6 @@ type V1 struct {
 
 	// Dynamic config.
 	dynconfig config.DynconfigInterface
-
-	// Storage interface.
-	storage storage.Storage
 }
 
 // New v1 version of service instance.
@@ -73,14 +69,12 @@ func NewV1(
 	resource resource.Resource,
 	scheduling scheduling.Scheduling,
 	dynconfig config.DynconfigInterface,
-	storage storage.Storage,
 ) *V1 {
 	return &V1{
 		resource:   resource,
 		scheduling: scheduling,
 		config:     cfg,
 		dynconfig:  dynconfig,
-		storage:    storage,
 	}
 }
 
@@ -300,7 +294,6 @@ func (v *V1) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult) 
 	metrics.DownloadPeerCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
 		peer.Host.Type.Name()).Inc()
 
-	parents := peer.Parents()
 	if !req.GetSuccess() {
 		peer.Log.Error("report failed peer")
 		if peer.FSM.Is(resource.PeerStateBackToSource) {
@@ -308,7 +301,6 @@ func (v *V1) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult) 
 			metrics.DownloadPeerBackToSourceFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
 				peer.Host.Type.Name()).Inc()
 
-			go v.createDownloadRecord(peer, parents, req)
 			v.handleTaskFailure(ctx, peer.Task, req.GetSourceError(), nil)
 			v.handlePeerFailure(ctx, peer)
 			return nil
@@ -318,21 +310,18 @@ func (v *V1) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult) 
 		metrics.DownloadPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
 			peer.Host.Type.Name()).Inc()
 
-		go v.createDownloadRecord(peer, parents, req)
 		v.handlePeerFailure(ctx, peer)
 		return nil
 	}
 
 	peer.Log.Info("report success peer")
 	if peer.FSM.Is(resource.PeerStateBackToSource) {
-		go v.createDownloadRecord(peer, parents, req)
 		v.handleTaskSuccess(ctx, peer.Task, req)
 		v.handlePeerSuccess(ctx, peer)
 		metrics.DownloadPeerDuration.WithLabelValues(metrics.CalculateSizeLevel(peer.Task.ContentLength.Load()).String()).Observe(float64(req.GetCost()))
 		return nil
 	}
 
-	go v.createDownloadRecord(peer, parents, req)
 	v.handlePeerSuccess(ctx, peer)
 	metrics.DownloadPeerDuration.WithLabelValues(metrics.CalculateSizeLevel(peer.Task.ContentLength.Load()).String()).Observe(float64(req.GetCost()))
 	return nil
@@ -1336,222 +1325,5 @@ func (v *V1) handleTaskFailure(ctx context.Context, task *resource.Task, backToS
 	if err := task.FSM.Event(ctx, resource.TaskEventDownloadFailed); err != nil {
 		task.Log.Errorf("task fsm event failed: %s", err.Error())
 		return
-	}
-}
-
-// createDownloadRecord stores peer download records.
-func (v *V1) createDownloadRecord(peer *resource.Peer, parents []*resource.Peer, req *schedulerv1.PeerResult) {
-	var parentRecords []storage.Parent
-	for _, parent := range parents {
-		parentRecord := storage.Parent{
-			ID:                 parent.ID,
-			Tag:                parent.Task.Tag,
-			Application:        parent.Task.Application,
-			State:              parent.FSM.Current(),
-			Cost:               parent.Cost.Load().Nanoseconds(),
-			UploadPieceCount:   0,
-			FinishedPieceCount: int32(parent.FinishedPieces.Count()),
-			CreatedAt:          parent.CreatedAt.Load().UnixNano(),
-			UpdatedAt:          parent.UpdatedAt.Load().UnixNano(),
-			Host: storage.Host{
-				ID:                    parent.Host.ID,
-				Type:                  parent.Host.Type.Name(),
-				Hostname:              parent.Host.Hostname,
-				IP:                    parent.Host.IP,
-				Port:                  parent.Host.Port,
-				DownloadPort:          parent.Host.DownloadPort,
-				OS:                    parent.Host.OS,
-				Platform:              parent.Host.Platform,
-				PlatformFamily:        parent.Host.PlatformFamily,
-				PlatformVersion:       parent.Host.PlatformVersion,
-				KernelVersion:         parent.Host.KernelVersion,
-				ConcurrentUploadLimit: parent.Host.ConcurrentUploadLimit.Load(),
-				ConcurrentUploadCount: parent.Host.ConcurrentUploadCount.Load(),
-				UploadCount:           parent.Host.UploadCount.Load(),
-				UploadFailedCount:     parent.Host.UploadFailedCount.Load(),
-				CreatedAt:             parent.Host.CreatedAt.Load().UnixNano(),
-				UpdatedAt:             parent.Host.UpdatedAt.Load().UnixNano(),
-			},
-		}
-
-		parentRecord.Host.CPU = resource.CPU{
-			LogicalCount:   parent.Host.CPU.LogicalCount,
-			PhysicalCount:  parent.Host.CPU.PhysicalCount,
-			Percent:        parent.Host.CPU.Percent,
-			ProcessPercent: parent.Host.CPU.ProcessPercent,
-			Times: resource.CPUTimes{
-				User:      parent.Host.CPU.Times.User,
-				System:    parent.Host.CPU.Times.System,
-				Idle:      parent.Host.CPU.Times.Idle,
-				Nice:      parent.Host.CPU.Times.Nice,
-				Iowait:    parent.Host.CPU.Times.Iowait,
-				Irq:       parent.Host.CPU.Times.Irq,
-				Softirq:   parent.Host.CPU.Times.Softirq,
-				Steal:     parent.Host.CPU.Times.Steal,
-				Guest:     parent.Host.CPU.Times.Guest,
-				GuestNice: parent.Host.CPU.Times.GuestNice,
-			},
-		}
-
-		parentRecord.Host.Memory = resource.Memory{
-			Total:              parent.Host.Memory.Total,
-			Available:          parent.Host.Memory.Available,
-			Used:               parent.Host.Memory.Used,
-			UsedPercent:        parent.Host.Memory.UsedPercent,
-			ProcessUsedPercent: parent.Host.Memory.ProcessUsedPercent,
-			Free:               parent.Host.Memory.Free,
-		}
-
-		parentRecord.Host.Network = resource.Network{
-			TCPConnectionCount:       parent.Host.Network.TCPConnectionCount,
-			UploadTCPConnectionCount: parent.Host.Network.UploadTCPConnectionCount,
-			Location:                 parent.Host.Network.Location,
-			IDC:                      parent.Host.Network.IDC,
-		}
-
-		parentRecord.Host.Disk = resource.Disk{
-			Total:             parent.Host.Disk.Total,
-			Free:              parent.Host.Disk.Free,
-			Used:              parent.Host.Disk.Used,
-			UsedPercent:       parent.Host.Disk.UsedPercent,
-			InodesTotal:       parent.Host.Disk.InodesTotal,
-			InodesUsed:        parent.Host.Disk.InodesUsed,
-			InodesFree:        parent.Host.Disk.InodesFree,
-			InodesUsedPercent: parent.Host.Disk.InodesUsedPercent,
-		}
-
-		parentRecord.Host.Build = resource.Build{
-			GitVersion: parent.Host.Build.GitVersion,
-			GitCommit:  parent.Host.Build.GitCommit,
-			GoVersion:  parent.Host.Build.GoVersion,
-			Platform:   parent.Host.Build.Platform,
-		}
-
-		peer.Pieces.Range(func(key, value any) bool {
-			piece, ok := value.(*resource.Piece)
-			if !ok {
-				return true
-			}
-
-			if piece.ParentID == parent.ID {
-				parentRecord.UploadPieceCount++
-				parentRecord.Pieces = append(parentRecord.Pieces, storage.Piece{
-					Length:    int64(piece.Length),
-					Cost:      piece.Cost.Nanoseconds(),
-					CreatedAt: piece.CreatedAt.UnixNano(),
-				})
-			}
-
-			return true
-		})
-
-		parentRecords = append(parentRecords, parentRecord)
-	}
-
-	download := storage.Download{
-		ID:                 peer.ID,
-		Tag:                peer.Task.Tag,
-		Application:        peer.Task.Application,
-		State:              peer.FSM.Current(),
-		Cost:               peer.Cost.Load().Nanoseconds(),
-		FinishedPieceCount: int32(peer.FinishedPieces.Count()),
-		Parents:            parentRecords,
-		CreatedAt:          peer.CreatedAt.Load().UnixNano(),
-		UpdatedAt:          peer.UpdatedAt.Load().UnixNano(),
-		Task: storage.Task{
-			ID:                    peer.Task.ID,
-			URL:                   peer.Task.URL,
-			Type:                  peer.Task.Type.String(),
-			ContentLength:         peer.Task.ContentLength.Load(),
-			TotalPieceCount:       peer.Task.TotalPieceCount.Load(),
-			BackToSourceLimit:     peer.Task.BackToSourceLimit.Load(),
-			BackToSourcePeerCount: int32(peer.Task.BackToSourcePeers.Len()),
-			State:                 peer.Task.FSM.Current(),
-			CreatedAt:             peer.Task.CreatedAt.Load().UnixNano(),
-			UpdatedAt:             peer.Task.UpdatedAt.Load().UnixNano(),
-		},
-		Host: storage.Host{
-			ID:                    peer.Host.ID,
-			Type:                  peer.Host.Type.Name(),
-			Hostname:              peer.Host.Hostname,
-			IP:                    peer.Host.IP,
-			Port:                  peer.Host.Port,
-			DownloadPort:          peer.Host.DownloadPort,
-			OS:                    peer.Host.OS,
-			Platform:              peer.Host.Platform,
-			PlatformFamily:        peer.Host.PlatformFamily,
-			PlatformVersion:       peer.Host.PlatformVersion,
-			KernelVersion:         peer.Host.KernelVersion,
-			ConcurrentUploadLimit: peer.Host.ConcurrentUploadLimit.Load(),
-			ConcurrentUploadCount: peer.Host.ConcurrentUploadCount.Load(),
-			UploadCount:           peer.Host.UploadCount.Load(),
-			UploadFailedCount:     peer.Host.UploadFailedCount.Load(),
-			SchedulerClusterID:    int64(peer.Host.SchedulerClusterID),
-			CreatedAt:             peer.Host.CreatedAt.Load().UnixNano(),
-			UpdatedAt:             peer.Host.UpdatedAt.Load().UnixNano(),
-		},
-	}
-
-	download.Host.CPU = resource.CPU{
-		LogicalCount:   peer.Host.CPU.LogicalCount,
-		PhysicalCount:  peer.Host.CPU.PhysicalCount,
-		Percent:        peer.Host.CPU.Percent,
-		ProcessPercent: peer.Host.CPU.ProcessPercent,
-		Times: resource.CPUTimes{
-			User:      peer.Host.CPU.Times.User,
-			System:    peer.Host.CPU.Times.System,
-			Idle:      peer.Host.CPU.Times.Idle,
-			Nice:      peer.Host.CPU.Times.Nice,
-			Iowait:    peer.Host.CPU.Times.Iowait,
-			Irq:       peer.Host.CPU.Times.Irq,
-			Softirq:   peer.Host.CPU.Times.Softirq,
-			Steal:     peer.Host.CPU.Times.Steal,
-			Guest:     peer.Host.CPU.Times.Guest,
-			GuestNice: peer.Host.CPU.Times.GuestNice,
-		},
-	}
-
-	download.Host.Memory = resource.Memory{
-		Total:              peer.Host.Memory.Total,
-		Available:          peer.Host.Memory.Available,
-		Used:               peer.Host.Memory.Used,
-		UsedPercent:        peer.Host.Memory.UsedPercent,
-		ProcessUsedPercent: peer.Host.Memory.ProcessUsedPercent,
-		Free:               peer.Host.Memory.Free,
-	}
-
-	download.Host.Network = resource.Network{
-		TCPConnectionCount:       peer.Host.Network.TCPConnectionCount,
-		UploadTCPConnectionCount: peer.Host.Network.UploadTCPConnectionCount,
-		Location:                 peer.Host.Network.Location,
-		IDC:                      peer.Host.Network.IDC,
-	}
-
-	download.Host.Disk = resource.Disk{
-		Total:             peer.Host.Disk.Total,
-		Free:              peer.Host.Disk.Free,
-		Used:              peer.Host.Disk.Used,
-		UsedPercent:       peer.Host.Disk.UsedPercent,
-		InodesTotal:       peer.Host.Disk.InodesTotal,
-		InodesUsed:        peer.Host.Disk.InodesUsed,
-		InodesFree:        peer.Host.Disk.InodesFree,
-		InodesUsedPercent: peer.Host.Disk.InodesUsedPercent,
-	}
-
-	download.Host.Build = resource.Build{
-		GitVersion: peer.Host.Build.GitVersion,
-		GitCommit:  peer.Host.Build.GitCommit,
-		GoVersion:  peer.Host.Build.GoVersion,
-		Platform:   peer.Host.Build.Platform,
-	}
-
-	if req.GetCode() != commonv1.Code_Success {
-		download.Error = storage.Error{
-			Code: req.GetCode().String(),
-		}
-	}
-
-	if err := v.storage.CreateDownload(download); err != nil {
-		peer.Log.Error(err)
 	}
 }
