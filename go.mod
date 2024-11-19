@@ -23,7 +23,7 @@ require (
 	github.com/docker/go-connections v0.5.0
 	github.com/docker/go-units v0.4.0
 	github.com/gaius-qi/ping v1.0.0
-	github.com/gammazero/deque v0.2.1
+	github.com/gammazero/deque v1.0.0
 	github.com/gin-contrib/gzip v1.0.1
 	github.com/gin-contrib/static v1.1.2
 	github.com/gin-contrib/zap v1.1.3
