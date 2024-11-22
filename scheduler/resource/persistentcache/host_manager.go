@@ -413,7 +413,7 @@ func (h *hostManager) Load(ctx context.Context, hostID string) (*Host, bool) {
 	}
 
 	// Set time fields from raw host.
-	announceInterval, err := strconv.ParseInt(rawHost["announce_interval"], 10, 32)
+	announceInterval, err := strconv.ParseUint(rawHost["announce_interval"], 10, 64)
 	if err != nil {
 		log.Errorf("parsing announce interval failed: %v", err)
 		return nil, false
