@@ -20,28 +20,3 @@ export IP=<host ip>
 ```shell
 docker compose down
 ```
-
-## Deploy without Docker Compose
-
-Just run:
-
-```shell
-export IP=<host ip>
-./run.sh container
-```
-
-## Deploy with Other Container Runtime
-
-Just run:
-
-```shell
-export IP=<host ip>
-export RUNTIME=pouch
-./run.sh container
-```
-
-## Delete containers without docker compose
-
-```shell
-./run.sh delete_container
-```
