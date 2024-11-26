@@ -123,7 +123,7 @@ func Parse(digest string) (*Digest, error) {
 
 	switch algorithm {
 	case AlgorithmCRC32:
-		if len(encoded) != 8 {
+		if len(encoded) != 8 && len(encoded) != 10 {
 			return nil, errors.New("invalid encoded")
 		}
 	case AlgorithmBlake3:
