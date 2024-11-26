@@ -116,145 +116,151 @@ type Host struct {
 // CPU contains content for cpu.
 type CPU struct {
 	// Number of logical cores in the system.
-	LogicalCount uint32 `csv:"logicalCount"`
+	LogicalCount uint32
 
 	// Number of physical cores in the system.
-	PhysicalCount uint32 `csv:"physicalCount"`
+	PhysicalCount uint32
 
 	// Percent calculates the percentage of cpu used.
-	Percent float64 `csv:"percent"`
+	Percent float64
 
 	// Calculates the percentage of cpu used by process.
-	ProcessPercent float64 `csv:"processPercent"`
+	ProcessPercent float64
 
 	// Times contains the amounts of time the CPU has spent performing different kinds of work.
-	Times CPUTimes `csv:"times"`
+	Times CPUTimes
 }
 
 // CPUTimes contains content for cpu times.
 type CPUTimes struct {
 	// CPU time of user.
-	User float64 `csv:"user"`
+	User float64
 
 	// CPU time of system.
-	System float64 `csv:"system"`
+	System float64
 
 	// CPU time of idle.
-	Idle float64 `csv:"idle"`
+	Idle float64
 
 	// CPU time of nice.
-	Nice float64 `csv:"nice"`
+	Nice float64
 
 	// CPU time of iowait.
-	Iowait float64 `csv:"iowait"`
+	Iowait float64
 
 	// CPU time of irq.
-	Irq float64 `csv:"irq"`
+	Irq float64
 
 	// CPU time of softirq.
-	Softirq float64 `csv:"softirq"`
+	Softirq float64
 
 	// CPU time of steal.
-	Steal float64 `csv:"steal"`
+	Steal float64
 
 	// CPU time of guest.
-	Guest float64 `csv:"guest"`
+	Guest float64
 
 	// CPU time of guest nice.
-	GuestNice float64 `csv:"guestNice"`
+	GuestNice float64
 }
 
 // Memory contains content for memory.
 type Memory struct {
 	// Total amount of RAM on this system.
-	Total uint64 `csv:"total"`
+	Total uint64
 
 	// RAM available for programs to allocate.
-	Available uint64 `csv:"available"`
+	Available uint64
 
 	// RAM used by programs.
-	Used uint64 `csv:"used"`
+	Used uint64
 
 	// Percentage of RAM used by programs.
-	UsedPercent float64 `csv:"usedPercent"`
+	UsedPercent float64
 
 	// Calculates the percentage of memory used by process.
-	ProcessUsedPercent float64 `csv:"processUsedPercent"`
+	ProcessUsedPercent float64
 
 	// This is the kernel's notion of free memory.
-	Free uint64 `csv:"free"`
+	Free uint64
 }
 
 // Network contains content for network.
 type Network struct {
 	// Return count of tcp connections opened and status is ESTABLISHED.
-	TCPConnectionCount uint32 `csv:"tcpConnectionCount"`
+	TCPConnectionCount uint32
 
 	// Return count of upload tcp connections opened and status is ESTABLISHED.
-	UploadTCPConnectionCount uint32 `csv:"uploadTCPConnectionCount"`
+	UploadTCPConnectionCount uint32
 
 	// Location path(area|country|province|city|...).
-	Location string `csv:"location"`
+	Location string
 
 	// IDC where the peer host is located
-	IDC string `csv:"idc"`
+	IDC string
 
 	// Download rate of the host, unit is byte/s.
-	DownloadRate uint64 `csv:"downloadRate"`
+	DownloadRate uint64
 
 	// Download rate limit of the host, unit is byte/s.
-	DownloadRateLimit uint64 `csv:"downloadRateLimit"`
+	DownloadRateLimit uint64
 
 	// Upload rate of the host, unit is byte/s.
-	UploadRate uint64 `csv:"uploadRate"`
+	UploadRate uint64
 
 	// Upload rate limit of the host, unit is byte/s.
-	UploadRateLimit uint64 `csv:"uploadRateLimit"`
+	UploadRateLimit uint64
 }
 
 // Build contains content for build.
 type Build struct {
 	// Git version.
-	GitVersion string `csv:"gitVersion"`
+	GitVersion string
 
 	// Git commit.
-	GitCommit string `csv:"gitCommit"`
+	GitCommit string
 
 	// Golang version.
-	GoVersion string `csv:"goVersion"`
+	GoVersion string
 
 	// Rust version.
-	RustVersion string `csv:"rustVersion"`
+	RustVersion string
 
 	// Build platform.
-	Platform string `csv:"platform"`
+	Platform string
 }
 
 // Disk contains content for disk.
 type Disk struct {
 	// Total amount of disk on the data path of dragonfly.
-	Total uint64 `csv:"total"`
+	Total uint64
 
 	// Free amount of disk on the data path of dragonfly.
-	Free uint64 `csv:"free"`
+	Free uint64
 
 	// Used amount of disk on the data path of dragonfly.
-	Used uint64 `csv:"used"`
+	Used uint64
 
 	// Used percent of disk on the data path of dragonfly directory.
-	UsedPercent float64 `csv:"usedPercent"`
+	UsedPercent float64
 
 	// Total amount of indoes on the data path of dragonfly directory.
-	InodesTotal uint64 `csv:"inodesTotal"`
+	InodesTotal uint64
 
 	// Used amount of indoes on the data path of dragonfly directory.
-	InodesUsed uint64 `csv:"inodesUsed"`
+	InodesUsed uint64
 
 	// Free amount of indoes on the data path of dragonfly directory.
-	InodesFree uint64 `csv:"inodesFree"`
+	InodesFree uint64
 
 	// Used percent of indoes on the data path of dragonfly directory.
-	InodesUsedPercent float64 `csv:"inodesUsedPercent"`
+	InodesUsedPercent float64
+
+	// Disk write bandwidth, unit is byte/s.
+	WriteBandwidth uint64
+
+	// Disk read bandwidth, unit is byte/s.
+	ReadBandwidth uint64
 }
 
 // New host instance.

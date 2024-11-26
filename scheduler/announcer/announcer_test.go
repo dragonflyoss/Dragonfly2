@@ -30,7 +30,6 @@ import (
 	managertypes "d7y.io/dragonfly/v2/manager/types"
 	managerclientmocks "d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	storagemocks "d7y.io/dragonfly/v2/scheduler/storage/mocks"
 )
 
 var (
@@ -116,10 +115,9 @@ func TestAnnouncer_New(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockManagerClient := managerclientmocks.NewMockV2(ctl)
-			mockStorage := storagemocks.NewMockStorage(ctl)
 			tc.mock(mockManagerClient.EXPECT())
 
-			a, err := New(tc.config, mockManagerClient, mockStorage, managertypes.DefaultSchedulerFeatures)
+			a, err := New(tc.config, mockManagerClient, managertypes.DefaultSchedulerFeatures)
 			tc.expect(t, a, err)
 		})
 	}
@@ -134,7 +132,7 @@ func TestAnnouncer_Serve(t *testing.T) {
 		config *config.Config
 		data   []byte
 		sleep  func()
-		mock   func(data []byte, m *managerclientmocks.MockV2MockRecorder, ms *storagemocks.MockStorageMockRecorder)
+		mock   func(data []byte, m *managerclientmocks.MockV2MockRecorder)
 		except func(t *testing.T, a Announcer)
 	}{
 		{
@@ -161,7 +159,7 @@ func TestAnnouncer_Serve(t *testing.T) {
 			sleep: func() {
 				time.Sleep(3 * time.Second)
 			},
-			mock: func(data []byte, m *managerclientmocks.MockV2MockRecorder, ms *storagemocks.MockStorageMockRecorder) {
+			mock: func(data []byte, m *managerclientmocks.MockV2MockRecorder) {
 				gomock.InOrder(
 					m.UpdateScheduler(gomock.Any(), gomock.Eq(&managerv2.UpdateSchedulerRequest{
 						SourceType:         managerv2.SourceType_SCHEDULER_SOURCE,
@@ -190,10 +188,9 @@ func TestAnnouncer_Serve(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockManagerClient := managerclientmocks.NewMockV2(ctl)
-			mockStorage := storagemocks.NewMockStorage(ctl)
 
-			tc.mock(tc.data, mockManagerClient.EXPECT(), mockStorage.EXPECT())
-			a, err := New(tc.config, mockManagerClient, mockStorage, managertypes.DefaultSchedulerFeatures)
+			tc.mock(tc.data, mockManagerClient.EXPECT())
+			a, err := New(tc.config, mockManagerClient, managertypes.DefaultSchedulerFeatures)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -267,10 +264,9 @@ func TestAnnouncer_announceToManager(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 			mockManagerClient := managerclientmocks.NewMockV2(ctl)
-			mockStorage := storagemocks.NewMockStorage(ctl)
 			tc.mock(mockManagerClient.EXPECT())
 
-			a, err := New(tc.config, mockManagerClient, mockStorage, managertypes.DefaultSchedulerFeatures)
+			a, err := New(tc.config, mockManagerClient, managertypes.DefaultSchedulerFeatures)
 			if err != nil {
 				t.Fatal(err)
 			}

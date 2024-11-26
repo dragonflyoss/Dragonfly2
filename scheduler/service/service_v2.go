@@ -43,7 +43,6 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/resource/persistentcache"
 	"d7y.io/dragonfly/v2/scheduler/resource/standard"
 	"d7y.io/dragonfly/v2/scheduler/scheduling"
-	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
 // V2 is the interface for v2 version of the service.
@@ -62,9 +61,6 @@ type V2 struct {
 
 	// Dynamic config.
 	dynconfig config.DynconfigInterface
-
-	// Storage interface.
-	storage storage.Storage
 }
 
 // New v2 version of service instance.
@@ -74,7 +70,6 @@ func NewV2(
 	persistentCacheResource persistentcache.Resource,
 	scheduling scheduling.Scheduling,
 	dynconfig config.DynconfigInterface,
-	storage storage.Storage,
 ) *V2 {
 	return &V2{
 		resource:                resource,
@@ -82,7 +77,6 @@ func NewV2(
 		scheduling:              scheduling,
 		config:                  cfg,
 		dynconfig:               dynconfig,
-		storage:                 storage,
 	}
 }
 
@@ -367,6 +361,8 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 			InodesUsed:        peer.Host.Disk.InodesUsed,
 			InodesFree:        peer.Host.Disk.InodesFree,
 			InodesUsedPercent: peer.Host.Disk.InodesUsedPercent,
+			WriteBandwidth:    peer.Host.Disk.WriteBandwidth,
+			ReadBandwidth:     peer.Host.Disk.ReadBandwidth,
 		},
 		Build: &commonv2.Build{
 			GitVersion: peer.Host.Build.GitVersion,
@@ -586,6 +582,8 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 				InodesUsed:        req.Host.Disk.GetInodesUsed(),
 				InodesFree:        req.Host.Disk.GetInodesFree(),
 				InodesUsedPercent: req.Host.Disk.GetInodesUsedPercent(),
+				WriteBandwidth:    req.Host.Disk.GetWriteBandwidth(),
+				ReadBandwidth:     req.Host.Disk.GetReadBandwidth(),
 			}))
 		}
 
@@ -686,6 +684,8 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 				InodesUsed:        req.Host.Disk.GetInodesUsed(),
 				InodesFree:        req.Host.Disk.GetInodesFree(),
 				InodesUsedPercent: req.Host.Disk.GetInodesUsedPercent(),
+				WriteBandwidth:    req.Host.Disk.GetWriteBandwidth(),
+				ReadBandwidth:     req.Host.Disk.GetReadBandwidth(),
 			}
 		}
 
@@ -759,6 +759,8 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 				InodesUsed:        req.Host.Disk.GetInodesUsed(),
 				InodesFree:        req.Host.Disk.GetInodesFree(),
 				InodesUsedPercent: req.Host.Disk.GetInodesUsedPercent(),
+				WriteBandwidth:    req.Host.Disk.GetWriteBandwidth(),
+				ReadBandwidth:     req.Host.Disk.GetReadBandwidth(),
 			},
 			persistentcache.Build{
 				GitVersion: req.Host.Build.GetGitVersion(),
@@ -850,6 +852,8 @@ func (v *V2) AnnounceHost(ctx context.Context, req *schedulerv2.AnnounceHostRequ
 				InodesUsed:        req.Host.Disk.GetInodesUsed(),
 				InodesFree:        req.Host.Disk.GetInodesFree(),
 				InodesUsedPercent: req.Host.Disk.GetInodesUsedPercent(),
+				WriteBandwidth:    req.Host.Disk.GetWriteBandwidth(),
+				ReadBandwidth:     req.Host.Disk.GetReadBandwidth(),
 			}
 		}
 
@@ -940,6 +944,8 @@ func (v *V2) ListHosts(ctx context.Context) (*schedulerv2.ListHostsResponse, err
 				InodesUsed:        host.Disk.InodesUsed,
 				InodesFree:        host.Disk.InodesFree,
 				InodesUsedPercent: host.Disk.InodesUsedPercent,
+				WriteBandwidth:    host.Disk.WriteBandwidth,
+				ReadBandwidth:     host.Disk.ReadBandwidth,
 			},
 			Build: &commonv2.Build{
 				GitVersion: host.Build.GitVersion,
@@ -1670,6 +1676,8 @@ func (v *V2) StatPersistentCachePeer(ctx context.Context, req *schedulerv2.StatP
 				InodesUsed:        peer.Host.Disk.InodesUsed,
 				InodesFree:        peer.Host.Disk.InodesFree,
 				InodesUsedPercent: peer.Host.Disk.InodesUsedPercent,
+				WriteBandwidth:    peer.Host.Disk.WriteBandwidth,
+				ReadBandwidth:     peer.Host.Disk.ReadBandwidth,
 			},
 			Build: &commonv2.Build{
 				GitVersion:  peer.Host.Build.GitVersion,

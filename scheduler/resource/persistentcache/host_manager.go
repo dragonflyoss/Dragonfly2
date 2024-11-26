@@ -380,6 +380,18 @@ func (h *hostManager) Load(ctx context.Context, hostID string) (*Host, bool) {
 		return nil, false
 	}
 
+	diskWriteBandwidth, err := strconv.ParseUint(rawHost["disk_write_bandwidth"], 10, 64)
+	if err != nil {
+		log.Errorf("parsing disk write bandwidth failed: %v", err)
+		return nil, false
+	}
+
+	diskReadBandwidth, err := strconv.ParseUint(rawHost["disk_read_bandwidth"], 10, 64)
+	if err != nil {
+		log.Errorf("parsing disk read bandwidth failed: %v", err)
+		return nil, false
+	}
+
 	disk := Disk{
 		Total:             diskTotal,
 		Free:              diskFree,
@@ -389,6 +401,8 @@ func (h *hostManager) Load(ctx context.Context, hostID string) (*Host, bool) {
 		InodesUsed:        diskInodesUsed,
 		InodesFree:        diskInodesFree,
 		InodesUsedPercent: diskInodesUsedPercent,
+		WriteBandwidth:    diskWriteBandwidth,
+		ReadBandwidth:     diskReadBandwidth,
 	}
 
 	build := Build{
@@ -399,7 +413,7 @@ func (h *hostManager) Load(ctx context.Context, hostID string) (*Host, bool) {
 	}
 
 	// Set time fields from raw host.
-	announceInterval, err := strconv.ParseInt(rawHost["announce_interval"], 10, 32)
+	announceInterval, err := strconv.ParseUint(rawHost["announce_interval"], 10, 64)
 	if err != nil {
 		log.Errorf("parsing announce interval failed: %v", err)
 		return nil, false
@@ -498,6 +512,8 @@ func (h *hostManager) Store(ctx context.Context, host *Host) error {
 		"disk_inodes_used", host.Disk.InodesUsed,
 		"disk_inodes_free", host.Disk.InodesFree,
 		"disk_inodes_used_percent", host.Disk.InodesUsedPercent,
+		"disk_write_bandwidth", host.Disk.WriteBandwidth,
+		"disk_read_bandwidth", host.Disk.ReadBandwidth,
 		"build_git_version", host.Build.GitVersion,
 		"build_git_commit", host.Build.GitCommit,
 		"build_go_version", host.Build.GoVersion,
