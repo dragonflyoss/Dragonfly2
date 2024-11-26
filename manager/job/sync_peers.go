@@ -35,10 +35,10 @@ import (
 	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/models"
+	"d7y.io/dragonfly/v2/pkg/container/slice"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/types"
 	resource "d7y.io/dragonfly/v2/scheduler/resource/standard"
-	"github.com/samber/lo"
 )
 
 // SyncPeers is an interface for sync peers.
@@ -206,7 +206,7 @@ func (s *syncPeers) createSyncPeers(ctx context.Context, scheduler models.Schedu
 	logger.Infof("create sync peers in queue %v, task: %#v", queue, task)
 	asyncResult, err := s.job.Server.SendTaskWithContext(ctx, task)
 	if err != nil {
-		logger.Errorf("create sync peers in queue %v failed", queue, err)
+		logger.Errorf("create sync peers in queue %v failed: %v", queue, err)
 		return nil, err
 	}
 
@@ -229,9 +229,33 @@ func (s *syncPeers) createSyncPeers(ctx context.Context, scheduler models.Schedu
 func (s *syncPeers) mergePeers(ctx context.Context, scheduler models.Scheduler, results []*resource.Host, log *logger.SugaredLoggerOnWith) {
 	// Fetch existing peers from the database
 	var existingPeers []models.Peer
-	if err := s.db.Model(&models.Peer{}).Where("scheduler_cluster_id = ?", scheduler.SchedulerClusterID).Find(&existingPeers).Error; err != nil {
-		log.Error(err)
+	var count int64
+
+	if err := s.db.Model(&models.Peer{}).
+		Where("scheduler_cluster_id = ?", scheduler.SchedulerClusterID).
+		Count(&count).
+		Error; err != nil {
+		log.Error("failed to count existing peers: ", err)
 		return
+	}
+
+	log.Infof("total peers count: %d", count)
+
+	pageSize := s.config.Job.SyncPeers.BatchSize
+	totalPages := (count + int64(pageSize-1)) / int64(pageSize)
+
+	for page := 1; page <= int(totalPages); page++ {
+		var batchPeers []models.Peer
+		if err := s.db.Preload("SchedulerCluster").
+			Scopes(models.Paginate(page, pageSize)).
+			Where("scheduler_cluster_id = ?", scheduler.SchedulerClusterID).
+			Find(&batchPeers).
+			Error; err != nil {
+			log.Error("Failed to fetch peers in batch: ", err)
+			return
+		}
+
+		existingPeers = append(existingPeers, batchPeers...)
 	}
 
 	// Calculate differences using diffPeers function
@@ -263,12 +287,12 @@ func (s *syncPeers) mergePeers(ctx context.Context, scheduler models.Scheduler, 
 
 func diffPeers(existingPeers []models.Peer, currentPeers []*resource.Host) (toUpsert, toDelete []models.Peer) {
 	// Convert current peers to a map for quick lookup
-	currentPeersMap := lo.KeyBy[string, *resource.Host](currentPeers, func(item *resource.Host) string {
+	currentPeersMap := slice.KeyBy[string, *resource.Host](currentPeers, func(item *resource.Host) string {
 		return item.ID
 	})
 
 	// Convert existing peers to a map for quick lookup
-	existingPeersMap := lo.KeyBy[string, models.Peer](existingPeers, func(item models.Peer) string {
+	existingPeersMap := slice.KeyBy[string, models.Peer](existingPeers, func(item models.Peer) string {
 		return idgen.HostIDV2(item.IP, item.Hostname, types.ParseHostType(item.Type) != types.HostTypeNormal)
 	})
 
@@ -283,7 +307,7 @@ func diffPeers(existingPeers []models.Peer, currentPeers []*resource.Host) (toUp
 	}
 
 	// Peers left in existingPeersMap are to be deleted
-	toDelete = lo.Values(existingPeersMap)
+	toDelete = slice.Values(existingPeersMap)
 
 	return toUpsert, toDelete
 }

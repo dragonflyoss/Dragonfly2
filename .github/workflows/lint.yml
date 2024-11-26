@@ -23,8 +23,8 @@ jobs:
       - name: Golangci lint
         uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8
         with:
-          version: v1.54
-          args: --verbose
+          version: v1.62
+          args: --verbose --timeout=10m
 
       - name: Markdown lint
         uses: docker://avtodev/markdown-lint:v1@sha256:6aeedc2f49138ce7a1cd0adffc1b1c0321b841dc2102408967d9301c031949ee

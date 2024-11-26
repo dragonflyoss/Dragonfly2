@@ -61,7 +61,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.20.5
 	github.com/redis/go-redis/v9 v9.6.1
-	github.com/samber/lo v1.47.0
 	github.com/schollz/progressbar/v3 v3.17.1
 	github.com/shirou/gopsutil/v3 v3.24.5
 	github.com/soheilhy/cmux v0.1.5
