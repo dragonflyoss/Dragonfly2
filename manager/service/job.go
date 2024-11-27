@@ -21,12 +21,12 @@ import (
 	"errors"
 	"fmt"
 
-	"d7y.io/dragonfly/v2/manager/job"
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/google/uuid"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaljob "d7y.io/dragonfly/v2/internal/job"
+	"d7y.io/dragonfly/v2/manager/job"
 	"d7y.io/dragonfly/v2/manager/metrics"
 	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
