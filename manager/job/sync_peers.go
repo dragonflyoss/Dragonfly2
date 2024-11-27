@@ -24,12 +24,11 @@ import (
 	"sync"
 	"time"
 
-	"gorm.io/gorm/clause"
-
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaljob "d7y.io/dragonfly/v2/internal/job"

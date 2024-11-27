@@ -20,11 +20,12 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/types"
 	resource "d7y.io/dragonfly/v2/scheduler/resource/standard"
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_diffPeers(t *testing.T) {
