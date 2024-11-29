@@ -35,37 +35,70 @@ const (
 )
 
 type CreateJobRequest struct {
-	BIO                 string         `json:"bio" binding:"omitempty"`
-	Type                string         `json:"type" binding:"required"`
-	Args                map[string]any `json:"args" binding:"omitempty"`
-	UserID              uint           `json:"user_id" binding:"omitempty"`
-	SeedPeerClusterIDs  []uint         `json:"seed_peer_cluster_ids" binding:"omitempty"`
-	SchedulerClusterIDs []uint         `json:"scheduler_cluster_ids" binding:"omitempty"`
+	// BIO is the description of the job.
+	BIO string `json:"bio" binding:"omitempty"`
+
+	// Type is the type of the job.
+	Type string `json:"type" binding:"required"`
+
+	// Args is the arguments of the job.
+	Args map[string]any `json:"args" binding:"omitempty"`
+
+	// UserID is the user id of the job.
+	UserID uint `json:"user_id" binding:"omitempty"`
+
+	// SeedPeerClusterIDs is the seed peer cluster ids of the job.
+	SeedPeerClusterIDs []uint `json:"seed_peer_cluster_ids" binding:"omitempty"`
+
+	// SchedulerClusterIDs is the scheduler cluster ids of the job.
+	SchedulerClusterIDs []uint `json:"scheduler_cluster_ids" binding:"omitempty"`
 }
 
 type UpdateJobRequest struct {
-	BIO    string `json:"bio" binding:"omitempty"`
-	UserID uint   `json:"user_id" binding:"omitempty"`
+	// BIO is the description of the job.
+	BIO string `json:"bio" binding:"omitempty"`
+
+	// UserID is the user id of the job.
+	UserID uint `json:"user_id" binding:"omitempty"`
 }
 
 type JobParams struct {
+	// Type is the type of the job.
 	ID uint `uri:"id" binding:"required"`
 }
 
 type GetJobsQuery struct {
-	Type    string `form:"type" binding:"omitempty"`
-	State   string `form:"state" binding:"omitempty,oneof=PENDING RECEIVED STARTED RETRY SUCCESS FAILURE"`
-	UserID  uint   `form:"user_id" binding:"omitempty"`
-	Page    int    `form:"page" binding:"omitempty,gte=1"`
-	PerPage int    `form:"per_page" binding:"omitempty,gte=1,lte=10000000"`
+	// Type is the type of the job.
+	Type string `form:"type" binding:"omitempty"`
+
+	// State is the state of the job.
+	State string `form:"state" binding:"omitempty,oneof=PENDING RECEIVED STARTED RETRY SUCCESS FAILURE"`
+
+	// UserID is the user id of the job.
+	UserID uint `form:"user_id" binding:"omitempty"`
+
+	// Page is the page number of the job list.
+	Page int `form:"page" binding:"omitempty,gte=1"`
+
+	// PerPage is the item count per page of the job list.
+	PerPage int `form:"per_page" binding:"omitempty,gte=1,lte=10000000"`
 }
 
 type CreatePreheatJobRequest struct {
-	BIO                 string      `json:"bio" binding:"omitempty"`
-	Type                string      `json:"type" binding:"required"`
-	Args                PreheatArgs `json:"args" binding:"omitempty"`
-	UserID              uint        `json:"user_id" binding:"omitempty"`
-	SchedulerClusterIDs []uint      `json:"scheduler_cluster_ids" binding:"omitempty"`
+	// BIO is the description of the job.
+	BIO string `json:"bio" binding:"omitempty"`
+
+	// Type is the preheating type, support image and file.
+	Type string `json:"type" binding:"required"`
+
+	// Args is the arguments of the preheating job.
+	Args PreheatArgs `json:"args" binding:"omitempty"`
+
+	// UserID is the user id of the job.
+	UserID uint `json:"user_id" binding:"omitempty"`
+
+	// SchedulerClusterIDs is the scheduler cluster ids of the job.
+	SchedulerClusterIDs []uint `json:"scheduler_cluster_ids" binding:"omitempty"`
 }
 
 type PreheatArgs struct {
@@ -104,19 +137,34 @@ type PreheatArgs struct {
 }
 
 type CreateSyncPeersJobRequest struct {
-	BIO                 string        `json:"bio" binding:"omitempty"`
-	Type                string        `json:"type" binding:"required"`
-	UserID              uint          `json:"user_id" binding:"omitempty"`
-	SchedulerClusterIDs []uint        `json:"scheduler_cluster_ids" binding:"omitempty"`
-	Timeout             time.Duration `json:"timeout" binding:"omitempty"`
+	// BIO is the description of the job.
+	BIO string `json:"bio" binding:"omitempty"`
+
+	// Type is the type of the job.
+	Type string `json:"type" binding:"required"`
+
+	// UserID is the user id of the job.
+	UserID uint `json:"user_id" binding:"omitempty"`
+
+	// SeedPeerClusterIDs is the seed peer cluster ids of the job.
+	SchedulerClusterIDs []uint `json:"scheduler_cluster_ids" binding:"omitempty"`
 }
 
 type CreateGetTaskJobRequest struct {
-	BIO                 string      `json:"bio" binding:"omitempty"`
-	Type                string      `json:"type" binding:"required"`
-	Args                GetTaskArgs `json:"args" binding:"omitempty"`
-	UserID              uint        `json:"user_id" binding:"omitempty"`
-	SchedulerClusterIDs []uint      `json:"scheduler_cluster_ids" binding:"omitempty"`
+	// BIO is the description of the job.
+	BIO string `json:"bio" binding:"omitempty"`
+
+	// Type is the type of the job.
+	Type string `json:"type" binding:"required"`
+
+	// Args is the arguments of the job.
+	Args GetTaskArgs `json:"args" binding:"omitempty"`
+
+	// UserID is the user id of the job.
+	UserID uint `json:"user_id" binding:"omitempty"`
+
+	// SchedulerClusterIDs is the scheduler cluster ids of the job.
+	SchedulerClusterIDs []uint `json:"scheduler_cluster_ids" binding:"omitempty"`
 }
 
 type GetTaskArgs struct {
@@ -137,11 +185,20 @@ type GetTaskArgs struct {
 }
 
 type CreateDeleteTaskJobRequest struct {
-	BIO                 string         `json:"bio" binding:"omitempty"`
-	Type                string         `json:"type" binding:"required"`
-	Args                DeleteTaskArgs `json:"args" binding:"omitempty"`
-	UserID              uint           `json:"user_id" binding:"omitempty"`
-	SchedulerClusterIDs []uint         `json:"scheduler_cluster_ids" binding:"omitempty"`
+	// BIO is the description of the job.
+	BIO string `json:"bio" binding:"omitempty"`
+
+	// Type is the type of the job.
+	Type string `json:"type" binding:"required"`
+
+	// Args is the arguments of the job.
+	Args DeleteTaskArgs `json:"args" binding:"omitempty"`
+
+	// UserID is the user id of the job.
+	UserID uint `json:"user_id" binding:"omitempty"`
+
+	// SchedulerClusterIDs is the scheduler cluster ids of the job.
+	SchedulerClusterIDs []uint `json:"scheduler_cluster_ids" binding:"omitempty"`
 }
 
 type DeleteTaskArgs struct {

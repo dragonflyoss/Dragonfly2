@@ -22,11 +22,9 @@ import (
 	"fmt"
 
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
-	"github.com/google/uuid"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaljob "d7y.io/dragonfly/v2/internal/job"
-	"d7y.io/dragonfly/v2/manager/job"
 	"d7y.io/dragonfly/v2/manager/metrics"
 	"d7y.io/dragonfly/v2/manager/models"
 	"d7y.io/dragonfly/v2/manager/types"
@@ -36,47 +34,13 @@ import (
 	"d7y.io/dragonfly/v2/pkg/structure"
 )
 
-func (s *service) CreateSyncPeersJob(ctx context.Context, json types.CreateSyncPeersJobRequest) (*models.Job, error) {
-	args, err := structure.StructToMap(json)
+func (s *service) CreateSyncPeersJob(ctx context.Context, json types.CreateSyncPeersJobRequest) error {
+	schedulers, err := s.findSchedulerInClusters(ctx, json.SchedulerClusterIDs)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	candidateSchedulers, err := s.findCandidateSchedulers(ctx, json.SchedulerClusterIDs, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var candidateClusters []models.SchedulerCluster
-	for _, scheduler := range candidateSchedulers {
-		candidateClusters = append(candidateClusters, scheduler.SchedulerCluster)
-	}
-
-	taskID := fmt.Sprintf("manager_%v", uuid.New().String())
-
-	if err = s.job.SyncPeers.Run(ctx, job.SyncPeersArgs{
-		CandidateSchedulerClusters: candidateClusters,
-		TaskID:                     taskID,
-	}); err != nil {
-		return nil, err
-	}
-
-	// job here is a local one controlled by the manager self.
-	job := models.Job{
-		TaskID:            taskID,
-		BIO:               json.BIO,
-		Args:              args,
-		Type:              json.Type,
-		State:             machineryv1tasks.StateStarted,
-		UserID:            json.UserID,
-		SchedulerClusters: candidateClusters,
-	}
-
-	if err = s.db.WithContext(ctx).Create(&job).Error; err != nil {
-		return nil, err
-	}
-
-	return &job, nil
+	return s.job.SyncPeers.CreateSyncPeers(ctx, schedulers)
 }
 
 func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheatJobRequest) (*models.Job, error) {
@@ -101,7 +65,7 @@ func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheat
 		return nil, err
 	}
 
-	candidateSchedulers, err := s.findCandidateSchedulers(ctx, json.SchedulerClusterIDs, []string{types.SchedulerFeaturePreheat})
+	candidateSchedulers, err := s.findAllCandidateSchedulersInClusters(ctx, json.SchedulerClusterIDs, []string{types.SchedulerFeaturePreheat})
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +108,7 @@ func (s *service) CreateGetTaskJob(ctx context.Context, json types.CreateGetTask
 		return nil, err
 	}
 
-	schedulers, err := s.findSchedulers(ctx, json.SchedulerClusterIDs)
+	schedulers, err := s.findAllSchedulersInClusters(ctx, json.SchedulerClusterIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +155,7 @@ func (s *service) CreateDeleteTaskJob(ctx context.Context, json types.CreateDele
 		return nil, err
 	}
 
-	schedulers, err := s.findSchedulers(ctx, json.SchedulerClusterIDs)
+	schedulers, err := s.findAllSchedulersInClusters(ctx, json.SchedulerClusterIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +188,54 @@ func (s *service) CreateDeleteTaskJob(ctx context.Context, json types.CreateDele
 	return &job, nil
 }
 
-func (s *service) findSchedulers(ctx context.Context, schedulerClusterIDs []uint) ([]models.Scheduler, error) {
+func (s *service) findSchedulerInClusters(ctx context.Context, schedulerClusterIDs []uint) ([]models.Scheduler, error) {
+	var activeSchedulers []models.Scheduler
+	if len(schedulerClusterIDs) != 0 {
+		// Find the scheduler clusters by request.
+		for _, schedulerClusterID := range schedulerClusterIDs {
+			schedulerCluster := models.SchedulerCluster{}
+			if err := s.db.WithContext(ctx).First(&schedulerCluster, schedulerClusterID).Error; err != nil {
+				return nil, fmt.Errorf("scheduler cluster id %d: %w", schedulerClusterID, err)
+			}
+
+			scheduler := models.Scheduler{}
+			if err := s.db.WithContext(ctx).Preload("SchedulerCluster").First(&scheduler, models.Scheduler{
+				SchedulerClusterID: schedulerCluster.ID,
+				State:              models.SchedulerStateActive,
+			}).Error; err != nil {
+				return nil, fmt.Errorf("scheduler cluster id %d: %w", schedulerClusterID, err)
+			}
+
+			activeSchedulers = append(activeSchedulers, scheduler)
+		}
+	} else {
+		// Find all of the scheduler clusters that has active scheduler.
+		var schedulerClusters []models.SchedulerCluster
+		if err := s.db.WithContext(ctx).Find(&schedulerClusters).Error; err != nil {
+			return nil, err
+		}
+
+		for _, schedulerCluster := range schedulerClusters {
+			scheduler := models.Scheduler{}
+			if err := s.db.WithContext(ctx).Preload("SchedulerCluster").First(&scheduler, models.Scheduler{
+				SchedulerClusterID: schedulerCluster.ID,
+				State:              models.SchedulerStateActive,
+			}).Error; err != nil {
+				continue
+			}
+
+			activeSchedulers = append(activeSchedulers, scheduler)
+		}
+	}
+
+	if len(activeSchedulers) == 0 {
+		return nil, errors.New("active schedulers not found")
+	}
+
+	return activeSchedulers, nil
+}
+
+func (s *service) findAllSchedulersInClusters(ctx context.Context, schedulerClusterIDs []uint) ([]models.Scheduler, error) {
 	var activeSchedulers []models.Scheduler
 	if len(schedulerClusterIDs) != 0 {
 		// Find the scheduler clusters by request.
@@ -271,7 +282,7 @@ func (s *service) findSchedulers(ctx context.Context, schedulerClusterIDs []uint
 	return activeSchedulers, nil
 }
 
-func (s *service) findCandidateSchedulers(ctx context.Context, schedulerClusterIDs []uint, features []string) ([]models.Scheduler, error) {
+func (s *service) findAllCandidateSchedulersInClusters(ctx context.Context, schedulerClusterIDs []uint, features []string) ([]models.Scheduler, error) {
 	var candidateSchedulers []models.Scheduler
 	if len(schedulerClusterIDs) != 0 {
 		// Find the scheduler clusters by request.

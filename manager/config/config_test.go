@@ -188,8 +188,9 @@ func TestConfig_Load(t *testing.T) {
 				},
 			},
 			SyncPeers: SyncPeersConfig{
-				Interval: 13 * time.Hour,
-				Timeout:  2 * time.Minute,
+				Interval:  13 * time.Hour,
+				Timeout:   2 * time.Minute,
+				BatchSize: 50,
 			},
 		},
 		ObjectStorage: ObjectStorageConfig{
@@ -807,6 +808,21 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "syncPeers requires parameter timeout")
+			},
+		},
+		{
+			name:   "syncPeers requires parameter batchSize",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Job.SyncPeers.BatchSize = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "syncPeers requires parameter batchSize")
 			},
 		},
 		{

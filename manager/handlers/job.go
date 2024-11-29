@@ -70,13 +70,15 @@ func (h *Handlers) CreateJob(ctx *gin.Context) {
 			return
 		}
 
-		job, err := h.service.CreateSyncPeersJob(ctx.Request.Context(), json)
-		if err != nil {
+		// CreateSyncPeersJob is a sync operation, so don't need to return the job id,
+		// and not record the job information in the database. If return success, need to
+		// query the peers table to get the latest data.
+		if err := h.service.CreateSyncPeersJob(ctx.Request.Context(), json); err != nil {
 			ctx.Error(err) // nolint: errcheck
 			return
 		}
 
-		ctx.JSON(http.StatusOK, job)
+		ctx.JSON(http.StatusOK, http.StatusText(http.StatusOK))
 	case job.GetTaskJob:
 		var json types.CreateGetTaskJobRequest
 		if err := ctx.ShouldBindBodyWith(&json, binding.JSON); err != nil {

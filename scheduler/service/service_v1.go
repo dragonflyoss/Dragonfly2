@@ -472,6 +472,7 @@ func (v *V1) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequ
 			resource.WithPlatformFamily(req.GetPlatformFamily()),
 			resource.WithPlatformVersion(req.GetPlatformVersion()),
 			resource.WithKernelVersion(req.GetKernelVersion()),
+			resource.WithSchedulerClusterID(uint64(v.config.Manager.SchedulerClusterID)),
 		}
 
 		if concurrentUploadLimit > 0 {
@@ -539,10 +540,6 @@ func (v *V1) AnnounceHost(ctx context.Context, req *schedulerv1.AnnounceHostRequ
 				GoVersion:  req.Build.GetGoVersion(),
 				Platform:   req.Build.GetPlatform(),
 			}))
-		}
-
-		if req.GetSchedulerClusterId() != 0 {
-			options = append(options, resource.WithSchedulerClusterID(uint64(v.config.Manager.SchedulerClusterID)))
 		}
 
 		if req.GetObjectStoragePort() != 0 {
@@ -654,6 +651,9 @@ func (v *V1) LeaveHost(ctx context.Context, req *schedulerv1.LeaveHostRequest) e
 
 	// Leave peers in host.
 	host.LeavePeers()
+
+	// Delete host in scheduler.
+	v.resource.HostManager().Delete(host.ID)
 	return nil
 }
 

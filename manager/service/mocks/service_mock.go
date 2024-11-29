@@ -341,12 +341,11 @@ func (mr *MockServiceMockRecorder) CreateSeedPeerCluster(arg0, arg1 any) *gomock
 }
 
 // CreateSyncPeersJob mocks base method.
-func (m *MockService) CreateSyncPeersJob(ctx context.Context, json types.CreateSyncPeersJobRequest) (*models.Job, error) {
+func (m *MockService) CreateSyncPeersJob(ctx context.Context, json types.CreateSyncPeersJobRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateSyncPeersJob", ctx, json)
-	ret0, _ := ret[0].(*models.Job)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // CreateSyncPeersJob indicates an expected call of CreateSyncPeersJob.

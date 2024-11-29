@@ -4202,28 +4202,34 @@ const docTemplate = `{
             ],
             "properties": {
                 "args": {
+                    "description": "Args is the arguments of the job.",
                     "type": "object",
                     "additionalProperties": {}
                 },
                 "bio": {
+                    "description": "BIO is the description of the job.",
                     "type": "string"
                 },
                 "scheduler_cluster_ids": {
+                    "description": "SchedulerClusterIDs is the scheduler cluster ids of the job.",
                     "type": "array",
                     "items": {
                         "type": "integer"
                     }
                 },
                 "seed_peer_cluster_ids": {
+                    "description": "SeedPeerClusterIDs is the seed peer cluster ids of the job.",
                     "type": "array",
                     "items": {
                         "type": "integer"
                     }
                 },
                 "type": {
+                    "description": "Type is the type of the job.",
                     "type": "string"
                 },
                 "user_id": {
+                    "description": "UserID is the user id of the job.",
                     "type": "integer"
                 }
             }
@@ -4682,6 +4688,11 @@ const docTemplate = `{
                     "type": "integer",
                     "maximum": 1000,
                     "minimum": 10
+                },
+                "job_rate_limit": {
+                    "type": "integer",
+                    "maximum": 1000000,
+                    "minimum": 1
                 }
             }
         },
@@ -4881,9 +4892,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "bio": {
+                    "description": "BIO is the description of the job.",
                     "type": "string"
                 },
                 "user_id": {
+                    "description": "UserID is the user id of the job.",
                     "type": "integer"
                 }
             }
