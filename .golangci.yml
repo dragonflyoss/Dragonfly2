@@ -24,11 +24,9 @@ linters:
   enable:
     - gci
     - gofmt
-    - golint
     - misspell
     - govet
     - goconst
-    - deadcode
     - gocyclo
     - staticcheck
     - errcheck

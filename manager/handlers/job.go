@@ -63,6 +63,20 @@ func (h *Handlers) CreateJob(ctx *gin.Context) {
 		}
 
 		ctx.JSON(http.StatusOK, job)
+	case job.SyncPeersJob:
+		var json types.CreateSyncPeersJobRequest
+		if err := ctx.ShouldBindBodyWith(&json, binding.JSON); err != nil {
+			ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+			return
+		}
+
+		job, err := h.service.CreateSyncPeersJob(ctx.Request.Context(), json)
+		if err != nil {
+			ctx.Error(err) // nolint: errcheck
+			return
+		}
+
+		ctx.JSON(http.StatusOK, job)
 	case job.GetTaskJob:
 		var json types.CreateGetTaskJobRequest
 		if err := ctx.ShouldBindBodyWith(&json, binding.JSON); err != nil {

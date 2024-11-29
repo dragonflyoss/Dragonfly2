@@ -387,7 +387,7 @@ func NewHost(
 
 	h := &Host{
 		ID:                    id,
-		Type:                  types.HostType(typ),
+		Type:                  typ,
 		IP:                    ip,
 		Hostname:              hostname,
 		Port:                  port,
