@@ -30,7 +30,7 @@ import (
 )
 
 // DefaultTaskPollingInterval is the default interval for polling task.
-const DefaultTaskPollingInterval = 5 * time.Second
+const DefaultTaskPollingInterval = 10 * time.Second
 
 // tracer is a global tracer for job.
 var tracer = otel.Tracer("manager")

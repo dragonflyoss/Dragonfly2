@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	job "d7y.io/dragonfly/v2/manager/job"
+	models "d7y.io/dragonfly/v2/manager/models"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -41,18 +41,18 @@ func (m *MockSyncPeers) EXPECT() *MockSyncPeersMockRecorder {
 	return m.recorder
 }
 
-// Run mocks base method.
-func (m *MockSyncPeers) Run(arg0 context.Context, arg1 job.SyncPeersArgs) error {
+// CreateSyncPeers mocks base method.
+func (m *MockSyncPeers) CreateSyncPeers(arg0 context.Context, arg1 []models.Scheduler) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Run", arg0, arg1)
+	ret := m.ctrl.Call(m, "CreateSyncPeers", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Run indicates an expected call of Run.
-func (mr *MockSyncPeersMockRecorder) Run(arg0, arg1 any) *gomock.Call {
+// CreateSyncPeers indicates an expected call of CreateSyncPeers.
+func (mr *MockSyncPeersMockRecorder) CreateSyncPeers(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockSyncPeers)(nil).Run), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSyncPeers", reflect.TypeOf((*MockSyncPeers)(nil).CreateSyncPeers), arg0, arg1)
 }
 
 // Serve mocks base method.

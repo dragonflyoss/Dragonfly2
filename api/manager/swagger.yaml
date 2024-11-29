@@ -461,20 +461,26 @@ definitions:
     properties:
       args:
         additionalProperties: {}
+        description: Args is the arguments of the job.
         type: object
       bio:
+        description: BIO is the description of the job.
         type: string
       scheduler_cluster_ids:
+        description: SchedulerClusterIDs is the scheduler cluster ids of the job.
         items:
           type: integer
         type: array
       seed_peer_cluster_ids:
+        description: SeedPeerClusterIDs is the seed peer cluster ids of the job.
         items:
           type: integer
         type: array
       type:
+        description: Type is the type of the job.
         type: string
       user_id:
+        description: UserID is the user id of the job.
         type: integer
     required:
     - type
@@ -792,6 +798,10 @@ definitions:
         maximum: 1000
         minimum: 10
         type: integer
+      job_rate_limit:
+        maximum: 1000000
+        minimum: 1
+        type: integer
     type: object
   d7y_io_dragonfly_v2_manager_types.SchedulerClusterScopes:
     properties:
@@ -925,8 +935,10 @@ definitions:
   d7y_io_dragonfly_v2_manager_types.UpdateJobRequest:
     properties:
       bio:
+        description: BIO is the description of the job.
         type: string
       user_id:
+        description: UserID is the user id of the job.
         type: integer
     type: object
   d7y_io_dragonfly_v2_manager_types.UpdateOauthRequest:

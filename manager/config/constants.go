@@ -108,7 +108,8 @@ const (
 	// DefaultClusterJobRateLimit is default rate limit(requests per second) for job Open API by cluster.
 	DefaultClusterJobRateLimit = 10
 
-	// DefaultJobSyncPeersBatchSize is the default batch size for syncing all peers information from the scheduler.
+	// DefaultJobSyncPeersBatchSize is the default batch size for syncing all peers information from the scheduler and
+	// operating on the database.
 	DefaultJobSyncPeersBatchSize = 500
 )
 

@@ -339,7 +339,7 @@ type SyncPeersConfig struct {
 	// Timeout is the timeout for syncing peers information from the single scheduler.
 	Timeout time.Duration `yaml:"timeout" mapstructure:"timeout"`
 
-	// BatchSize is the batch size when operating gorm.
+	// BatchSize is the batch size when operating gorm database.
 	BatchSize int `yaml:"batchSize" mapstructure:"batchSize"`
 }
 
@@ -639,6 +639,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Job.SyncPeers.Timeout == 0 {
 		return errors.New("syncPeers requires parameter timeout")
+	}
+
+	if cfg.Job.SyncPeers.BatchSize == 0 {
+		return errors.New("syncPeers requires parameter batchSize")
 	}
 
 	if cfg.ObjectStorage.Enable {

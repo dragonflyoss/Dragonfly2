@@ -79,6 +79,7 @@ job:
   syncPeers:
     interval: 13h
     timeout: 2m
+    batchSize: 50
 
 objectStorage:
   enable: true
