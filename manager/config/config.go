@@ -321,6 +321,9 @@ type GCConfig struct {
 
 	// TTL is the ttl for job.
 	TTL time.Duration `yaml:"ttl" mapstructure:"ttl"`
+
+	// BatchSize is the batch size when operating gorm database.
+	BatchSize int `yaml:"batchSize" mapstructure:"batchSize"`
 }
 
 type PreheatConfig struct {
@@ -442,8 +445,9 @@ func New() *Config {
 		},
 		Job: JobConfig{
 			GC: GCConfig{
-				Interval: DefaultJobGCInterval,
-				TTL:      DefaultJobGCTTL,
+				Interval:  DefaultJobGCInterval,
+				TTL:       DefaultJobGCTTL,
+				BatchSize: DefaultJobGCBatchSize,
 			},
 			Preheat: PreheatConfig{
 				RegistryTimeout: DefaultJobPreheatRegistryTimeout,
@@ -627,6 +631,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Job.GC.TTL == 0 {
 		return errors.New("gc requires parameter ttl")
+	}
+
+	if cfg.Job.GC.BatchSize == 0 {
+		return errors.New("gc requires parameter batchSize")
 	}
 
 	if cfg.Job.Preheat.RegistryTimeout == 0 {
