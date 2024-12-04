@@ -61,7 +61,7 @@ func (gc *gc) Serve() {
 		select {
 		case <-tick.C:
 			logger.Infof("gc job started")
-			if err := gc.db.WithContext(context.Background()).Where("created_at < ?", time.Now().Add(-gc.config.Job.GC.TTL)).Unscoped().Delete(&models.Job{}).Error; err != nil {
+			if err := gc.deleteInBatches(context.Background()); err != nil {
 				logger.Errorf("gc job failed: %v", err)
 			}
 		case <-gc.done:
@@ -73,4 +73,22 @@ func (gc *gc) Serve() {
 // Stop gc server.
 func (gc *gc) Stop() {
 	close(gc.done)
+}
+
+// deleteInBatches deletes jobs in batches.
+func (gc *gc) deleteInBatches(ctx context.Context) error {
+	for {
+		result := gc.db.WithContext(ctx).Where("created_at < ?", time.Now().Add(-gc.config.Job.GC.TTL)).Limit(gc.config.Job.GC.BatchSize).Unscoped().Delete(&models.Job{})
+		if result.Error != nil {
+			return result.Error
+		}
+
+		if result.RowsAffected == 0 {
+			break
+		}
+
+		logger.Infof("gc job deleted %d jobs", result.RowsAffected)
+	}
+
+	return nil
 }

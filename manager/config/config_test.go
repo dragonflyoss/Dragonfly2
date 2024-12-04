@@ -178,8 +178,9 @@ func TestConfig_Load(t *testing.T) {
 		},
 		Job: JobConfig{
 			GC: GCConfig{
-				Interval: 1 * time.Second,
-				TTL:      1 * time.Second,
+				Interval:  1 * time.Second,
+				TTL:       1 * time.Second,
+				BatchSize: 100,
 			},
 			Preheat: PreheatConfig{
 				RegistryTimeout: DefaultJobPreheatRegistryTimeout,
@@ -763,6 +764,21 @@ func TestConfig_Validate(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "gc requires parameter ttl")
+			},
+		},
+		{
+			name:   "gc requires parameter batchSize",
+			config: New(),
+			mock: func(cfg *Config) {
+				cfg.Auth.JWT = mockJWTConfig
+				cfg.Database.Type = DatabaseTypeMysql
+				cfg.Database.Mysql = mockMysqlConfig
+				cfg.Database.Redis = mockRedisConfig
+				cfg.Job.GC.BatchSize = 0
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "gc requires parameter batchSize")
 			},
 		},
 		{

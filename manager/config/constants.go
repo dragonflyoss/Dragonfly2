@@ -93,6 +93,9 @@ const (
 	// DefaultJobGCTTL is the default ttl for job.
 	DefaultJobGCTTL = 12 * time.Hour
 
+	// DefaultJobGCBatchSize is the default batch size for operating on the database in gc job.
+	DefaultJobGCBatchSize = 5000
+
 	// DefaultJobPreheatRegistryTimeout is the default timeout for requesting registry to get token and manifest.
 	DefaultJobPreheatRegistryTimeout = 1 * time.Minute
 
