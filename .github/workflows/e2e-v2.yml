@@ -137,7 +137,7 @@ jobs:
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@015f24e6818733317a2da2edd6290ab26238649a
+        uses: codecov/codecov-action@7f8b4b4bde536c465e797be725718b88c5d95e0e
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.txt
