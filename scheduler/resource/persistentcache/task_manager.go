@@ -75,6 +75,10 @@ func (t *taskManager) Load(ctx context.Context, taskID string) (*Task, bool) {
 		return nil, false
 	}
 
+	if len(rawTask) == 0 {
+		return nil, false
+	}
+
 	// Set integer fields from raw task.
 	persistentReplicaCount, err := strconv.ParseUint(rawTask["persistent_replica_count"], 10, 64)
 	if err != nil {

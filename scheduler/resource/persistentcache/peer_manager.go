@@ -98,6 +98,10 @@ func (p *peerManager) Load(ctx context.Context, peerID string) (*Peer, bool) {
 		return nil, false
 	}
 
+	if len(rawPeer) == 0 {
+		return nil, false
+	}
+
 	persistent, err := strconv.ParseBool(rawPeer["persistent"])
 	if err != nil {
 		log.Errorf("parsing persistent failed: %v", err)
