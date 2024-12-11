@@ -42,6 +42,9 @@ type SeedPeerClient interface {
 	// Addrs returns the addresses of seed peers.
 	Addrs() []string
 
+	// SeedPeers returns the seed peers working for the scheduler.
+	SeedPeers() []*managerv2.SeedPeer
+
 	// Client is cdnsystem grpc client interface.
 	cdnsystemclient.Client
 
@@ -130,6 +133,11 @@ func (sc *seedPeerClient) Addrs() []string {
 	}
 
 	return addrs
+}
+
+// SeedPeers returns the seed peers working for the scheduler.
+func (sc *seedPeerClient) SeedPeers() []*managerv2.SeedPeer {
+	return sc.data.Scheduler.SeedPeers
 }
 
 // Dynamic config notify function.

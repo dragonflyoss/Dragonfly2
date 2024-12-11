@@ -45,7 +45,7 @@ func (s *service) CreateSyncPeersJob(ctx context.Context, json types.CreateSyncP
 
 func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheatJobRequest) (*models.Job, error) {
 	if json.Args.Scope == "" {
-		json.Args.Scope = types.SinglePeerScope
+		json.Args.Scope = types.SingleSeedPeerScope
 	}
 
 	if json.Args.ConcurrentCount == 0 {
