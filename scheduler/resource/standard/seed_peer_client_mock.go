@@ -17,6 +17,7 @@ import (
 	common "d7y.io/api/v2/pkg/apis/common/v1"
 	common0 "d7y.io/api/v2/pkg/apis/common/v2"
 	dfdaemon "d7y.io/api/v2/pkg/apis/dfdaemon/v2"
+	manager "d7y.io/api/v2/pkg/apis/manager/v2"
 	config "d7y.io/dragonfly/v2/scheduler/config"
 	gomock "go.uber.org/mock/gomock"
 	grpc "google.golang.org/grpc"
@@ -222,6 +223,20 @@ func (m *MockSeedPeerClient) OnNotify(arg0 *config.DynconfigData) {
 func (mr *MockSeedPeerClientMockRecorder) OnNotify(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnNotify", reflect.TypeOf((*MockSeedPeerClient)(nil).OnNotify), arg0)
+}
+
+// SeedPeers mocks base method.
+func (m *MockSeedPeerClient) SeedPeers() []*manager.SeedPeer {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SeedPeers")
+	ret0, _ := ret[0].([]*manager.SeedPeer)
+	return ret0
+}
+
+// SeedPeers indicates an expected call of SeedPeers.
+func (mr *MockSeedPeerClientMockRecorder) SeedPeers() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SeedPeers", reflect.TypeOf((*MockSeedPeerClient)(nil).SeedPeers))
 }
 
 // StatPersistentCacheTask mocks base method.

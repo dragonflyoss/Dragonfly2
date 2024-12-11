@@ -19,8 +19,11 @@ package types
 import "time"
 
 const (
-	// SinglePeerScope represents the scope that only single peer will be preheated.
-	SinglePeerScope = "single_peer"
+	// SingleSeedPeerScope represents the scope that only single seed peer will be preheated.
+	SingleSeedPeerScope = "single_seed_peer"
+
+	// AllSeedPeersScope represents the scope that all seed peers will be preheated.
+	AllSeedPeersScope = "all_seed_peers"
 
 	// AllPeersScope represents the scope that all peers will be preheated.
 	AllPeersScope = "all_peers"
@@ -126,8 +129,8 @@ type PreheatArgs struct {
 	// The image type preheating task can specify the image architecture type. eg: linux/amd64.
 	Platform string `json:"platform" binding:"omitempty"`
 
-	// Scope is the scope for preheating, default is single_peer.
-	Scope string `json:"scope" binding:"omitempty,oneof=single_peer all_peers"`
+	// Scope is the scope for preheating, default is single_seed_peer.
+	Scope string `json:"scope" binding:"omitempty"`
 
 	// BatchSize is the batch size for preheating all peers, default is 50.
 	ConcurrentCount int64 `json:"concurrent_count" binding:"omitempty,gte=1,lte=500"`

@@ -178,9 +178,18 @@ func (j *job) preheat(ctx context.Context, data string) (string, error) {
 	defer cancel()
 
 	switch req.Scope {
-	case managertypes.SinglePeerScope:
-		log.Info("preheat single peer")
+	case managertypes.SingleSeedPeerScope:
+		log.Info("preheat single seed peer")
 		resp, err := j.preheatSinglePeer(ctx, taskID, req, log)
+		if err != nil {
+			return "", err
+		}
+
+		resp.SchedulerClusterID = j.config.Manager.SchedulerClusterID
+		return internaljob.MarshalResponse(resp)
+	case managertypes.AllSeedPeersScope:
+		log.Info("preheat all seed peers")
+		resp, err := j.preheatAllSeedPeers(ctx, taskID, req, log)
 		if err != nil {
 			return "", err
 		}
@@ -237,10 +246,21 @@ func (j *job) preheatSinglePeer(ctx context.Context, taskID string, req *interna
 	return resp, nil
 }
 
-// preheatAllPeers preheats job by all peers, only suoported by v2 protocol. Scheduler will trigger all peers to download task.
-// If all the peer download task failed, return error. If some of the peer download task failed, return success tasks and failure tasks.
+// preheatAllSeedPeers preheats job by all peer seed peers, only suoported by v2 protocol. Scheduler will trigger all seed peers to download task.
+// If all the seed peers download task failed, return error. If some of the seed peers download task failed, return success tasks and failure tasks.
 // Notify the client that the preheat is successful.
-func (j *job) preheatAllPeers(ctx context.Context, taskID string, req *internaljob.PreheatRequest, log *logger.SugaredLoggerOnWith) (*internaljob.PreheatResponse, error) {
+func (j *job) preheatAllSeedPeers(ctx context.Context, taskID string, req *internaljob.PreheatRequest, log *logger.SugaredLoggerOnWith) (*internaljob.PreheatResponse, error) {
+	// If seed peer is disabled, return error.
+	if !j.config.SeedPeer.Enable {
+		return nil, fmt.Errorf("cluster %d scheduler %s has disabled seed peer", j.config.Manager.SchedulerClusterID, j.config.Server.AdvertiseIP)
+	}
+
+	// If scheduler has no available seed peer, return error.
+	seedPeers := j.resource.SeedPeer().Client().SeedPeers()
+	if len(seedPeers) == 0 {
+		return nil, fmt.Errorf("cluster %d scheduler %s has no available seed peer", j.config.Manager.SchedulerClusterID, j.config.Server.AdvertiseIP)
+	}
+
 	var (
 		successTasks = sync.Map{}
 		failureTasks = sync.Map{}
@@ -248,15 +268,156 @@ func (j *job) preheatAllPeers(ctx context.Context, taskID string, req *internalj
 
 	eg, _ := errgroup.WithContext(ctx)
 	eg.SetLimit(int(req.ConcurrentCount))
-	for _, host := range j.resource.HostManager().LoadAll() {
+	for _, seedPeer := range seedPeers {
 		var (
-			hostname = host.Hostname
-			ip       = host.IP
-			port     = host.Port
+			hostname = seedPeer.Hostname
+			ip       = seedPeer.Ip
+			port     = seedPeer.Port
 		)
 
 		target := fmt.Sprintf("%s:%d", ip, port)
-		log := logger.WithHost(host.ID, hostname, ip)
+		log := logger.WithHost(idgen.HostIDV2(ip, hostname, true), hostname, ip)
+
+		eg.Go(func() error {
+			log.Info("preheat started")
+			dialOptions := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+			dfdaemonClient, err := dfdaemonclient.GetV2ByAddr(ctx, target, dialOptions...)
+			if err != nil {
+				log.Errorf("preheat failed: %s", err.Error())
+				failureTasks.Store(ip, &internaljob.PreheatFailureTask{
+					URL:         req.URL,
+					Hostname:    hostname,
+					IP:          ip,
+					Description: fmt.Sprintf("task %s failed: %s", taskID, err.Error()),
+				})
+
+				return err
+			}
+
+			stream, err := dfdaemonClient.DownloadTask(
+				ctx,
+				taskID,
+				&dfdaemonv2.DownloadTaskRequest{Download: &commonv2.Download{
+					Url:                 req.URL,
+					Type:                commonv2.TaskType_STANDARD,
+					Tag:                 &req.Tag,
+					Application:         &req.Application,
+					Priority:            commonv2.Priority(req.Priority),
+					FilteredQueryParams: strings.Split(req.FilteredQueryParams, idgen.FilteredQueryParamsSeparator),
+					RequestHeader:       req.Headers,
+					Timeout:             durationpb.New(req.Timeout),
+					CertificateChain:    req.CertificateChain,
+				}})
+			if err != nil {
+				log.Errorf("preheat failed: %s", err.Error())
+				failureTasks.Store(ip, &internaljob.PreheatFailureTask{
+					URL:         req.URL,
+					Hostname:    hostname,
+					IP:          ip,
+					Description: fmt.Sprintf("task %s failed: %s", taskID, err.Error()),
+				})
+
+				return err
+			}
+
+			// Wait for the download task to complete.
+			for {
+				_, err := stream.Recv()
+				if err != nil {
+					if err == io.EOF {
+						log.Info("preheat succeeded")
+						successTasks.Store(ip, &internaljob.PreheatSuccessTask{
+							URL:      req.URL,
+							Hostname: hostname,
+							IP:       ip,
+						})
+
+						return nil
+					}
+
+					log.Errorf("preheat failed: %s", err.Error())
+					failureTasks.Store(ip, &internaljob.PreheatFailureTask{
+						URL:         req.URL,
+						Hostname:    hostname,
+						IP:          ip,
+						Description: fmt.Sprintf("task %s failed: %s", taskID, err.Error()),
+					})
+
+					return err
+				}
+			}
+		})
+	}
+
+	// Wait for all tasks to complete and print the errors.
+	if err := eg.Wait(); err != nil {
+		log.Errorf("preheat failed: %s", err.Error())
+	}
+
+	// If successTasks is not empty, return success tasks and failure tasks.
+	// Notify the client that the preheat is successful.
+	var preheatResponse internaljob.PreheatResponse
+	failureTasks.Range(func(_, value any) bool {
+		if failureTask, ok := value.(*internaljob.PreheatFailureTask); ok {
+			preheatResponse.FailureTasks = append(preheatResponse.FailureTasks, failureTask)
+		}
+
+		return true
+	})
+
+	successTasks.Range(func(_, value any) bool {
+		if successTask, ok := value.(*internaljob.PreheatSuccessTask); ok {
+			for _, failureTask := range preheatResponse.FailureTasks {
+				if failureTask.IP == successTask.IP {
+					return true
+				}
+			}
+
+			preheatResponse.SuccessTasks = append(preheatResponse.SuccessTasks, successTask)
+		}
+
+		return true
+	})
+
+	if len(preheatResponse.SuccessTasks) > 0 {
+		return &preheatResponse, nil
+	}
+
+	msg := "no error message"
+	if len(preheatResponse.FailureTasks) > 0 {
+		msg = fmt.Sprintf("%s %s %s %s", taskID, preheatResponse.FailureTasks[0].IP, preheatResponse.FailureTasks[0].Hostname,
+			preheatResponse.FailureTasks[0].Description)
+	}
+
+	return nil, fmt.Errorf("all peers preheat failed: %s", msg)
+}
+
+// preheatAllPeers preheats job by all peers, only suoported by v2 protocol. Scheduler will trigger all peers to download task.
+// If all the peers download task failed, return error. If some of the peers download task failed, return success tasks and
+// failure tasks. Notify the client that the preheat is successful.
+func (j *job) preheatAllPeers(ctx context.Context, taskID string, req *internaljob.PreheatRequest, log *logger.SugaredLoggerOnWith) (*internaljob.PreheatResponse, error) {
+	// If scheduler has no available peer, return error.
+	peers := j.resource.HostManager().LoadAll()
+	if len(peers) == 0 {
+		return nil, fmt.Errorf("cluster %d scheduler %s has no available peer", j.config.Manager.SchedulerClusterID, j.config.Server.AdvertiseIP)
+	}
+
+	var (
+		successTasks = sync.Map{}
+		failureTasks = sync.Map{}
+	)
+
+	eg, _ := errgroup.WithContext(ctx)
+	eg.SetLimit(int(req.ConcurrentCount))
+	for _, peer := range peers {
+		var (
+			hostname = peer.Hostname
+			ip       = peer.IP
+			port     = peer.Port
+		)
+
+		target := fmt.Sprintf("%s:%d", ip, port)
+		log := logger.WithHost(peer.ID, hostname, ip)
 
 		eg.Go(func() error {
 			log.Info("preheat started")
