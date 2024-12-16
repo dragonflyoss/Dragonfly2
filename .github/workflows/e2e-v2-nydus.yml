@@ -89,7 +89,7 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache-new
 
       - name: Setup Kind
-        uses: helm/kind-action@0025e74a8c7512023d06dc019c617aa3cf561fde
+        uses: helm/kind-action@ae94020eaf628e9b9b9f341a10cc0cdcf5c018fb
         with:
           version: ${{ env.KIND_VERSION }}
           config: ${{ env.KIND_CONFIG_PATH }}
