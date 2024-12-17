@@ -352,48 +352,63 @@ func Test_MakeSchedulersKeyForPeerInManager(t *testing.T) {
 		name     string
 		hostname string
 		ip       string
+		version  string
 		expect   func(t *testing.T, s string)
 	}{
 		{
 			name:     "make scheduler key for peer in manager",
 			hostname: "bar",
 			ip:       "127.0.0.1",
+			version:  "0.1.0",
 			expect: func(t *testing.T, s string) {
 				assert := assert.New(t)
-				assert.Equal(s, "manager:peers:bar-127.0.0.1:schedulers")
+				assert.Equal(s, "manager:peers:bar-127.0.0.1-0.1.0:schedulers")
 			},
 		},
 		{
 			name:     "hostname is empty",
 			hostname: "",
 			ip:       "127.0.0.1",
+			version:  "0.1.0",
 			expect: func(t *testing.T, s string) {
 				assert := assert.New(t)
-				assert.Equal(s, "manager:peers:-127.0.0.1:schedulers")
+				assert.Equal(s, "manager:peers:-127.0.0.1-0.1.0:schedulers")
 			},
 		},
 		{
 			name:     "ip is empty",
 			hostname: "bar",
 			ip:       "",
+			version:  "0.1.0",
 			expect: func(t *testing.T, s string) {
 				assert := assert.New(t)
-				assert.Equal(s, "manager:peers:bar-:schedulers")
+				assert.Equal(s, "manager:peers:bar--0.1.0:schedulers")
 			},
 		},
 		{
-			name:     "hostname and ip are empty",
-			hostname: "",
-			ip:       "",
+			name:     "version is empty",
+			hostname: "bar",
+			ip:       "127.0.0.1",
+			version:  "",
 			expect: func(t *testing.T, s string) {
 				assert := assert.New(t)
-				assert.Equal(s, "manager:peers:-:schedulers")
+				assert.Equal(s, "manager:peers:bar-127.0.0.1-:schedulers")
+			},
+		},
+		{
+			name:     "hostname, ip and version are empty",
+			hostname: "",
+			ip:       "",
+			version:  "",
+			expect: func(t *testing.T, s string) {
+				assert := assert.New(t)
+				assert.Equal(s, "manager:peers:--:schedulers")
 			},
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, MakeSchedulersKeyForPeerInManager(tc.hostname, tc.ip))
+			tc.expect(t, MakeSchedulersKeyForPeerInManager(tc.hostname, tc.ip, tc.version))
 		})
 	}
 }

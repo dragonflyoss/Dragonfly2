@@ -555,7 +555,7 @@ func (s *managerServerV2) ListSchedulers(ctx context.Context, req *managerv2.Lis
 
 	// Cache hit.
 	var pbListSchedulersResponse managerv2.ListSchedulersResponse
-	cacheKey := pkgredis.MakeSchedulersKeyForPeerInManager(req.Hostname, req.Ip)
+	cacheKey := pkgredis.MakeSchedulersKeyForPeerInManager(req.Hostname, req.Ip, req.Version)
 
 	if err := s.cache.Get(ctx, cacheKey, &pbListSchedulersResponse); err != nil {
 		log.Warnf("%s cache miss because of %s", cacheKey, err.Error())
