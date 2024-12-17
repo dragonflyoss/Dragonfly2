@@ -118,8 +118,8 @@ func MakeSeedPeersKeyForPeerInManager(hostname, ip string) string {
 }
 
 // MakeSchedulersKeyForPeerInManager make schedulers key for peer in manager.
-func MakeSchedulersKeyForPeerInManager(hostname, ip string) string {
-	return MakeKeyInManager(PeersNamespace, fmt.Sprintf("%s-%s:schedulers", hostname, ip))
+func MakeSchedulersKeyForPeerInManager(hostname, ip, version string) string {
+	return MakeKeyInManager(PeersNamespace, fmt.Sprintf("%s-%s-%s:schedulers", hostname, ip, version))
 }
 
 // MakeSchedulerClusterKeyInManager make distributed rate limiter key in manager.
