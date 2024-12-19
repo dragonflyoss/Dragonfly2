@@ -37,4 +37,6 @@ const (
 	HeaderDragonflyObjectMetaStorageClass = "X-Dragonfly-Object-Meta-Storage-Class"
 	// HeaderDragonflyObjectOperation is used for object storage operation.
 	HeaderDragonflyObjectOperation = "X-Dragonfly-Object-Operation"
+	// HeaderDragonflyForwardedFor is used to mark http request forwarded from other peers
+	HeaderDragonflyForwardedFor = "X-Dragonfly-Forwarded-For"
 )

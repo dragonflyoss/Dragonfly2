@@ -56,6 +56,14 @@ func (req *StreamTaskRequest) TaskID() string {
 	return req.taskID
 }
 
+func (req *StreamTaskRequest) HasParentTask() bool {
+	return req.Range != nil
+}
+
+func (req *StreamTaskRequest) ParentTaskID() string {
+	return idgen.ParentTaskIDV1(req.URL, req.URLMeta)
+}
+
 // StreamTask represents a peer task with stream io for reading directly without once more disk io
 type StreamTask interface {
 	// Start starts the special peer task, return an io.Reader for stream io
