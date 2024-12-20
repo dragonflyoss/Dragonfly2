@@ -63,7 +63,7 @@ func externalIPv4() (net.IP, error) {
 }
 
 // ipAddrs returns all the valid IPs available.
-// refer to https://github.com/dragonflyoss/Dragonfly2/pull/652
+// refer to https://github.com/dragonflyoss/dragonfly/pull/652
 func ipAddrs() ([]net.IP, error) {
 	// use prefer ip possible
 	var prefers []net.IP

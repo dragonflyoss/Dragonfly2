@@ -2,19 +2,14 @@
 
 ![alt][logo-linear]
 
-[![GitHub release](https://img.shields.io/github/release/dragonflyoss/Dragonfly2.svg)](https://github.com/dragonflyoss/Dragonfly2/releases)
+[![GitHub release](https://img.shields.io/github/release/dragonflyoss/dragonfly.svg)](https://github.com/dragonflyoss/dragonfly/releases)
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/dragonfly)](https://artifacthub.io/packages/search?repo=dragonfly)
-[![CI](https://github.com/dragonflyoss/Dragonfly2/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/dragonflyoss/Dragonfly2/actions/workflows/ci.yml)
-[![Coverage](https://codecov.io/gh/dragonflyoss/Dragonfly2/branch/main/graph/badge.svg)](https://codecov.io/gh/dragonflyoss/Dragonfly2)
-[![Go Report Card](https://goreportcard.com/badge/github.com/dragonflyoss/Dragonfly2?style=flat-square)](https://goreportcard.com/report/github.com/dragonflyoss/Dragonfly2)
-[![Open Source Helpers](https://www.codetriage.com/dragonflyoss/dragonfly2/badges/users.svg)](https://www.codetriage.com/dragonflyoss/dragonfly2)
-[![TODOs](https://badgen.net/https/api.tickgit.com/badgen/github.com/dragonflyoss/Dragonfly2/main)](https://www.tickgit.com/browse?repo=github.com/dragonflyoss/Dragonfly2&branch=main)
-[![Discussions](https://img.shields.io/badge/discussions-on%20github-blue?style=flat-square)](https://github.com/dragonflyoss/Dragonfly2/discussions)
+[![CI](https://github.com/dragonflyoss/dragonfly/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/dragonflyoss/dragonfly/actions/workflows/ci.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/dragonflyoss/dragonfly?style=flat-square)](https://goreportcard.com/report/github.com/dragonflyoss/dragonfly)
+[![Discussions](https://img.shields.io/badge/discussions-on%20github-blue?style=flat-square)](https://github.com/dragonflyoss/dragonfly/discussions)
 [![Twitter](https://img.shields.io/twitter/url?style=social&url=https%3A%2F%2Ftwitter.com%2Fdragonfly_oss)](https://twitter.com/dragonfly_oss)
-[![GoDoc](https://godoc.org/github.com/dragonflyoss/Dragonfly2?status.svg)](https://godoc.org/github.com/dragonflyoss/Dragonfly2)
 [![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/7103/badge)](https://bestpractices.coreinfrastructure.org/projects/7103)
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/dragonflyoss/Dragonfly2/badge)](https://scorecard.dev/viewer/?uri=github.com/dragonflyoss/Dragonfly2)
-[![LICENSE](https://img.shields.io/github/license/dragonflyoss/Dragonfly2.svg?style=flat-square)](https://github.com/dragonflyoss/Dragonfly2/blob/main/LICENSE)
+[![LICENSE](https://img.shields.io/github/license/dragonflyoss/dragonfly.svg?style=flat-square)](https://github.com/dragonflyoss/dragonfly/blob/main/LICENSE)
 
 Provide efficient, stable and secure file distribution and image acceleration
 based on p2p technology to be the best practice and
@@ -83,7 +78,7 @@ Please refer to our [Code of Conduct][codeconduct].
 
 [arch]: docs/images/arch.png
 [logo-linear]: docs/images/logo/dragonfly-linear.svg
-[discussion]: https://github.com/dragonflyoss/Dragonfly2/discussions
+[discussion]: https://github.com/dragonflyoss/dragonfly/discussions
 [contributing]: CONTRIBUTING.md
 [codeconduct]: CODE_OF_CONDUCT.md
 [d7y.io]: https://d7y.io/

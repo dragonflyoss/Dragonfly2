@@ -26,4 +26,4 @@ In the process of object storage, P2P Cache is effectively used for fast read an
 
 # BUGS
 
-See GitHub Issues: <https://github.com/dragonflyoss/Dragonfly2/issues>
+See GitHub Issues: <https://github.com/dragonflyoss/dragonfly/issues>

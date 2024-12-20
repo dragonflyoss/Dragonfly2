@@ -46,4 +46,4 @@ functionality, such as network bandwidth limit, transmission encryption and so o
 
 # BUGS
 
-See GitHub Issues: <https://github.com/dragonflyoss/Dragonfly2/issues>
+See GitHub Issues: <https://github.com/dragonflyoss/dragonfly/issues>
