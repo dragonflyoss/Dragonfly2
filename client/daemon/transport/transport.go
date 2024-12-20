@@ -525,7 +525,7 @@ var hopHeaders = []string{
 	"Upgrade",
 
 	// remove by dragonfly
-	// "Accept", Accept header should not be removed, issue: https://github.com/dragonflyoss/Dragonfly2/issues/1290
+	// "Accept", Accept header should not be removed, issue: https://github.com/dragonflyoss/dragonfly/issues/1290
 	"User-Agent",
 	"X-Forwarded-For",
 }

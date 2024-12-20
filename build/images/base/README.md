@@ -41,7 +41,7 @@ make docker-build
 ```shell
 COMMIT_ID=c1c3d652
 mkdir -p /go/src/d7y.io/dragonfly
-git clone https://github.com/dragonflyoss/Dragonfly2.git /go/src/d7y.io/dragonfly/v2
+git clone https://github.com/dragonflyoss/dragonfly.git /go/src/d7y.io/dragonfly/v2
 git reset --hard ${COMMIT_ID}
 ```
 

@@ -26,7 +26,7 @@ Instead, we encourage you to send us a private email to
 To be honest, we regard every user of Dragonfly as a very kind contributor.
 After experiencing Dragonfly, you may have some feedback for the project.
 Then feel free to open an issue via
-[NEW ISSUE](https://github.com/dragonflyoss/Dragonfly2/issues/new).
+[NEW ISSUE](https://github.com/dragonflyoss/dragonfly/issues/new).
 
 Since we collaborate project Dragonfly in a distributed way,
 we appreciate **WELL-WRITTEN**, **DETAILED**, **EXPLICIT** issue reports.
@@ -99,63 +99,63 @@ the preparation in the following steps:
 
 1. **FORK** Dragonfly to your repository.
 
-  To make this work, you just need to click the button Fork
-  in right-left of [dragonflyoss/Dragonfly2](https://github.com/dragonflyoss/Dragonfly2)
-  main page. Then you will end up with your repository in
-  `https://github.com/<your-username>/Dragonfly`,
-  in which `your-username` is your GitHub username.
+To make this work, you just need to click the button Fork
+in right-left of [dragonflyoss/dragonfly](https://github.com/dragonflyoss/dragonfly)
+main page. Then you will end up with your repository in
+`https://github.com/<your-username>/Dragonfly`,
+in which `your-username` is your GitHub username.
 
 1. **CLONE** your own repository to develop locally.
 
-  Use `git clone https://github.com/<your-username>/Dragonfly2.git`
-  to clone repository to your local machine.
-  Then you can create new branches to finish the change you wish to make.
+Use `git clone https://github.com/<your-username>/dragonfly.git`
+to clone repository to your local machine.
+Then you can create new branches to finish the change you wish to make.
 
 1. **Set Remote** upstream to be
-    `https://github.com/dragonflyoss/Dragonfly2.git`
+   `https://github.com/dragonflyoss/dragonfly.git`
 
-  using the following two commands:
+using the following two commands:
 
-  ```bash
-  git remote add upstream https://github.com/dragonflyoss/Dragonfly2.git
-  git remote set-url --push upstream no-pushing
-  ```
+```bash
+git remote add upstream https://github.com/dragonflyoss/dragonfly.git
+git remote set-url --push upstream no-pushing
+```
 
-  With this remote setting, you can check your git remote configuration like this:
+With this remote setting, you can check your git remote configuration like this:
 
-  ```bash
-  $ git remote -v
-  origin     https://github.com/<your-username>/Dragonfly2.git (fetch)
-  origin     https://github.com/<your-username>/Dragonfly2.git (push)
-  upstream   https://github.com/dragonflyoss/Dragonfly2.git (fetch)
-  upstream   no-pushing (push)
-  ```
+```bash
+$ git remote -v
+origin     https://github.com/<your-username>/dragonfly.git (fetch)
+origin     https://github.com/<your-username>/dragonfly.git (push)
+upstream   https://github.com/dragonflyoss/dragonfly.git (fetch)
+upstream   no-pushing (push)
+```
 
-  Adding this, we can easily synchronize local branches with upstream branches.
+Adding this, we can easily synchronize local branches with upstream branches.
 
 1. **Create a branch** to add a new feature or fix issues
 
-  Update local working directory:
+Update local working directory:
 
-  ```bash
-  cd Dragonfly2
-  git fetch upstream
-  git checkout main
-  git rebase upstream/main
-  ```
+```bash
+cd dragonfly
+git fetch upstream
+git checkout main
+git rebase upstream/main
+```
 
-  Create a new branch:
+Create a new branch:
 
-  ```bash
-  git checkout -b <new-branch>
-  ```
+```bash
+git checkout -b <new-branch>
+```
 
-  Make any change on the `new-branch` then build and test your codes.
+Make any change on the `new-branch` then build and test your codes.
 
 ### Branch Definition
 
 Right now we assume every contribution via pull
-request is for [branch main](https://github.com/dragonflyoss/Dragonfly2/tree/main)
+request is for [branch main](https://github.com/dragonflyoss/dragonfly/tree/main)
 in Dragonfly. Before contributing,
 be aware of branch definition would help a lot.
 
@@ -320,5 +320,5 @@ willing to participate in Dragonfly community continuously and be active.
 You can do it in either of two ways:
 
 - Submit a PR in the
-  [dragonflyoss/Dragonfly2](https://github.com/dragonflyoss/Dragonfly2) repo.
+  [dragonflyoss/dragonfly](https://github.com/dragonflyoss/dragonfly) repo.
 - Contact with the community's [maintainers](MAINTAINERS.md) offline.

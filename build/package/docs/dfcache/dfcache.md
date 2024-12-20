@@ -45,4 +45,4 @@ responsibility to go back to source and add file into P2P network.
 
 # BUGS
 
-See GitHub Issues: <https://github.com/dragonflyoss/Dragonfly2/issues>
+See GitHub Issues: <https://github.com/dragonflyoss/dragonfly/issues>
